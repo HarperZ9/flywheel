@@ -12,6 +12,7 @@ falsifier proves the framework produces both outcomes correctly on scenarios
 where the ground truth is known.
 """
 from __future__ import annotations
+import json
 import time
 from dataclasses import dataclass, field
 from typing import Callable
@@ -106,6 +107,56 @@ def _aggregate(name: str, rs: list[ArmResult]) -> EvalReport:
         sum(r.oracle_calls for r in rs) / n,
         sum(r.candidates_generated for r in rs) / n,
         sum(1 for r in rs if r.receipt_reproducible) / n)
+
+
+# F8: metric declarations {min, max, good-direction} so a scorecard reads without
+# tribal knowledge; deltas always compare against a PINNED baseline.
+METRICS = {
+    "pass_rate": {"min": 0.0, "max": 1.0, "good": "higher"},
+    "avg_oracle_calls": {"min": 0.0, "max": None, "good": "lower"},
+    "receipt_reproducibility": {"min": 0.0, "max": 1.0, "good": "higher"},
+}
+
+
+def scorecard(reports: dict[str, EvalReport], *, meta: dict | None = None) -> dict:
+    """A reconstructable scorecard: arms + declared metric semantics + meta
+    (model_ref, commit, timestamp supplied by the caller). Re-examinable without
+    re-running the eval."""
+    return {
+        "schema": "m7-scorecard/v1",
+        "metrics": METRICS,
+        "arms": {name: {"n_tasks": r.n_tasks, "pass_rate": r.pass_rate,
+                        "avg_oracle_calls": r.avg_oracle_calls,
+                        "avg_candidates": r.avg_candidates,
+                        "receipt_reproducibility": r.receipt_reproducibility}
+                 for name, r in reports.items()},
+        "meta": meta or {},
+    }
+
+
+def save_scorecard(path, reports: dict[str, EvalReport], *, meta: dict | None = None) -> None:
+    from pathlib import Path
+    Path(path).write_text(json.dumps(scorecard(reports, meta=meta), indent=2,
+                                     sort_keys=True), encoding="utf-8")
+
+
+def load_scorecard(path) -> dict:
+    from pathlib import Path
+    return json.loads(Path(path).read_text(encoding="utf-8"))
+
+
+def delta_vs_pinned(reports: dict[str, EvalReport], pinned: dict,
+                    *, arm: str = "verified_inference") -> dict:
+    """Compare a fresh run's arm against a PINNED baseline scorecard (no re-run of
+    the baseline). Positive pass_rate delta = improvement; negative = regression."""
+    cur = reports.get(arm)
+    base = (pinned.get("arms") or {}).get(arm)
+    if cur is None or base is None:
+        return {"arm": arm, "verdict": "UNVERIFIABLE", "reason": "arm missing"}
+    d_pass = round(cur.pass_rate - base["pass_rate"], 4)
+    d_oracle = round(cur.avg_oracle_calls - base["avg_oracle_calls"], 4)
+    return {"arm": arm, "pass_rate_delta": d_pass, "avg_oracle_delta": d_oracle,
+            "verdict": "IMPROVED" if d_pass > 0 else ("REGRESSED" if d_pass < 0 else "FLAT")}
 
 
 def compare(reports: dict[str, EvalReport], *, baseline: str = "single_shot",
