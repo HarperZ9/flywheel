@@ -140,8 +140,11 @@ flywheel (`cache.knowledge_hash`) + #5 correlation-steered compute
 Deferred as genuinely sprawl (need a real scenario/equivalence, no gap today):
 region-caching, determinism-hardening (oracle path already deterministic).
 
-## GPU endgame (in flight)
-- 14B CPT resumed from checkpoint-1850; watcher armed for the DONE marker.
+## GPU endgame
+- **14B CPT COMPLETE (2026-07-06): DONE rc=0, 2020/2020, 2 epochs, train_loss
+  2.18 -> 0.035.** Final adapter at checkpoint-2020 (LoRA r=16, all-targets).
+  GPU released. M7 eval running via `finish_and_eval.sh` (serving adapter + eval).
+- (history) 14B CPT resumed from checkpoint-1850; watcher caught the DONE marker.
 - On completion: `bash scripts/finish_and_eval.sh` (in WSL) — picks the latest
   checkpoint, serves the adapter (serve.py MODEL/ADAPTER paths now env-overridable
   for Linux), waits /health, runs `run_m7_eval.py`, writes m7_scorecard.json.
