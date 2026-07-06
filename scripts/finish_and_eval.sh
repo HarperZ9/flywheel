@@ -23,6 +23,12 @@ done
 ADAPTER_DIR="$CKPT_DIR/checkpoint-$ADAPTER"
 echo "=== M7 endgame: serving adapter checkpoint-$ADAPTER ==="
 
+# The oracle runs `python -m pytest`; put the venv on PATH so `python` resolves
+# to it (WSL has only python3), and ensure pytest is present (training venv omits
+# it). run_env() inherits os.environ, so the oracle subprocess gets this PATH.
+"$PY" -c "import pytest" 2>/dev/null || "$PY" -m pip install -q pytest
+export PATH="$HOME/venv-lm/bin:$PATH"
+
 export SERVE_MODEL_PATH="$RUN/models/Qwen2.5-Coder-14B-Instruct"
 export SERVE_ADAPTER_PATH="$ADAPTER_DIR"
 export SERVE_PORT="$PORT"
