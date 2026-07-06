@@ -118,7 +118,7 @@ integration, +3 prompt-canonical). Under git (genesis 7a99c68). New work:
 ## Expansion round (2026-07-06, model-independent, while the 14B trains)
 
 Research-flagged mechanisms built to falsifier-gated completion (each composes
-with the spine; ~264 tests green):
+with the spine; 261 tests green):
 - **criterion-versioning** (`transitive_witness.staleness_report`) — DRIFT vs
   REBASELINE (Red Queen 2606.26294).
 - **verifier calibration** (`calibration.py`) — who verifies the verifier; a
@@ -138,8 +138,10 @@ region-caching, determinism-hardening (oracle path already deterministic).
 
 ## GPU endgame (in flight)
 - 14B CPT resumed from checkpoint-1850; watcher armed for the DONE marker.
-- On completion: set `serve.py` ADAPTER_PATH to the final checkpoint, launch
-  serve, run `scripts/run_m7_eval.py --serve ...`; then the 32B offload smoke.
+- On completion: `bash scripts/finish_and_eval.sh` (in WSL) — picks the latest
+  checkpoint, serves the adapter (serve.py MODEL/ADAPTER paths now env-overridable
+  for Linux), waits /health, runs `run_m7_eval.py`, writes m7_scorecard.json.
+  Then the 32B offload smoke (`configs/ds_32b_actoffload.json`, unsmoked).
 
 ## Layer B harness — M1 done (structural)
 

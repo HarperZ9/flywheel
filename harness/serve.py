@@ -30,8 +30,12 @@ os.environ.setdefault("BITSANDBYTES_NOWELCOME", "1")
 
 import torch
 
-MODEL_PATH = r"E:\local-model-run\models\Qwen2.5-Coder-14B-Instruct"
-ADAPTER_PATH = ""  # set to a trained LoRA adapter dir to serve the adapted model
+# Env-overridable so the SAME server runs on Windows (E:\...) or in WSL
+# (/mnt/e/...) — the working GPU stack is WSL, so the endgame sets these to
+# Linux paths without editing this file.
+MODEL_PATH = os.environ.get(
+    "SERVE_MODEL_PATH", r"E:\local-model-run\models\Qwen2.5-Coder-14B-Instruct")
+ADAPTER_PATH = os.environ.get("SERVE_ADAPTER_PATH", "")  # trained LoRA adapter dir
 MODEL_REF = "Qwen2.5-Coder-14B-Instruct (base, nf4)"
 PORT = int(os.environ.get("SERVE_PORT", "8765"))
 QUANT_4BIT = True
