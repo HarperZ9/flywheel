@@ -27,13 +27,15 @@ from harness.eval import (run_eval, compare, save_scorecard, load_scorecard,
 from harness.oracle import PytestOracle
 from harness.proposer import ServeProposer, StubProposer
 from harness.tasks_lib import REGISTRY, materialize_all
+from harness.tasks_hard import HARD_REGISTRY
 from harness.task import load_task
 
 ARMS = [SINGLE_SHOT, VERIFIED_INFERENCE, FLAT_N, NO_SEARCH]
 
 
-def build_task_set(workroot: Path, n: int):
-    dirs = materialize_all(REGISTRY[:n], workroot / "m7-tasks")
+def build_task_set(workroot: Path, n: int, hard: bool = False):
+    reg = HARD_REGISTRY if hard else REGISTRY
+    dirs = materialize_all(reg[:n], workroot / "m7-tasks")
     return [load_task(d) for d in dirs]
 
 
@@ -41,14 +43,16 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--serve", default="http://127.0.0.1:8765")
     ap.add_argument("--dry-run", action="store_true")
-    ap.add_argument("--n-tasks", type=int, default=len(REGISTRY))
+    ap.add_argument("--hard", action="store_true", help="use the harder held-out set")
+    ap.add_argument("--n-tasks", type=int, default=0)
     ap.add_argument("--out", default="m7_scorecard.json")
     ap.add_argument("--pinned", default="")
     ap.add_argument("--workroot", default=str(Path(__file__).parent.parent / ".m7-run"))
     a = ap.parse_args()
 
+    n = a.n_tasks or (len(HARD_REGISTRY) if a.hard else len(REGISTRY))
     workroot = Path(a.workroot)
-    task_set = build_task_set(workroot, a.n_tasks)
+    task_set = build_task_set(workroot, n, hard=a.hard)
 
     if a.dry_run:
         ref = {s.task_id: s.solution for s in REGISTRY}
