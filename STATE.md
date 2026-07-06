@@ -143,7 +143,20 @@ region-caching, determinism-hardening (oracle path already deterministic).
 ## GPU endgame
 - **14B CPT COMPLETE (2026-07-06): DONE rc=0, 2020/2020, 2 epochs, train_loss
   2.18 -> 0.035.** Final adapter at checkpoint-2020 (LoRA r=16, all-targets).
-  GPU released. M7 eval running via `finish_and_eval.sh` (serving adapter + eval).
+  GPU released.
+- **M7 eval RAN on the trained 14B (2026-07-06): 100% pass (8/8) all arms,
+  receipts 100% reproducible, verdict MATCH.** Scorecard:
+  `tasks/research/m7_scorecard_20260706.json`. Two harness bugs found + fixed en
+  route (NOT a bad model): (1) served instruct model wraps code in markdown fences
+  -> `harness/extract.py` strips them in ServeProposer; (2) oracle `python -m
+  pytest` exited rc=127 (WSL has only python3; training venv lacked pytest) ->
+  finisher installs pytest + prepends venv to PATH.
+  **HONEST READ:** the pipeline is validated end-to-end on a real trained model
+  (propose -> extract -> verify -> witness -> accept, every receipt re-checkable),
+  but single_shot already saturates at 100% on these 8 easy tasks, so there is NO
+  HEADROOM to measure verified_inference's LIFT (it costs 4x oracle calls for the
+  same 100%). Measuring the lift the thesis predicts requires a HARDER held-out
+  slice where single_shot < 100%. That is the honest next benchmark step.
 - (history) 14B CPT resumed from checkpoint-1850; watcher caught the DONE marker.
 - On completion: `bash scripts/finish_and_eval.sh` (in WSL) — picks the latest
   checkpoint, serves the adapter (serve.py MODEL/ADAPTER paths now env-overridable
