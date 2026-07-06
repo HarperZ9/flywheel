@@ -1,0 +1,110 @@
+{
+  "feed_id": "x.com/zaindanaharper reposts",
+  "n_sources": 13,
+  "feed_hash": "af6abe9c3e0dd749",
+  "verdict_counts": {
+    "ACTIONABLE": 2,
+    "INSPIRATION": 6,
+    "NOISE": 5
+  },
+  "actionable": [
+    {
+      "source_id": "rp-verification-gates",
+      "title": "300 agents mean nothing without verification gates",
+      "ref": "x-repost:verification-gates",
+      "relevance": 0.444,
+      "falsifiable": true,
+      "suggested_extension": "measurable mechanism touching: agent, oracle, throughput, verification — propose a harness knob/ablation and check pass-rate delta",
+      "verdict": "ACTIONABLE"
+    },
+    {
+      "source_id": "rp-backlog-overnight",
+      "title": "Dev gave Claude a 14-month codebase, cleared 3 weeks of backlog",
+      "ref": "x-repost:backlog-overnight",
+      "relevance": 0.286,
+      "falsifiable": true,
+      "suggested_extension": "measurable mechanism touching: agent, oracle — propose a harness knob/ablation and check pass-rate delta",
+      "verdict": "ACTIONABLE"
+    }
+  ],
+  "inspiration": [
+    {
+      "source_id": "rp-google-ollama-stack",
+      "title": "Local Claude Code stack: Ollama + Gemma 4 + CLI",
+      "ref": "x-repost:ollama-gemma-stack",
+      "relevance": 0.545,
+      "falsifiable": false,
+      "suggested_extension": "",
+      "verdict": "INSPIRATION"
+    },
+    {
+      "source_id": "rp-harness-body",
+      "title": "Nvidia VP: LLM is the brain, harness is the body",
+      "ref": "x-repost:harness-is-the-body",
+      "relevance": 0.5,
+      "falsifiable": false,
+      "suggested_extension": "",
+      "verdict": "INSPIRATION"
+    },
+    {
+      "source_id": "rp-hermes-local",
+      "title": "Founder runs business on Hermes agent, 4 Mac Studios, no cloud",
+      "ref": "x-repost:hermes-local",
+      "relevance": 0.5,
+      "falsifiable": false,
+      "suggested_extension": "",
+      "verdict": "INSPIRATION"
+    },
+    {
+      "source_id": "rp-anthropic-workshops",
+      "title": "Anthropic 4 free agentic workshops",
+      "ref": "x-repost:anthropic-workshops",
+      "relevance": 0.375,
+      "falsifiable": false,
+      "suggested_extension": "",
+      "verdict": "INSPIRATION"
+    },
+    {
+      "source_id": "rp-own-local-mission",
+      "title": "Operator: enterprise-capable output from local models",
+      "ref": "x-post:own-local-mission",
+      "relevance": 0.375,
+      "falsifiable": false,
+      "suggested_extension": "",
+      "verdict": "INSPIRATION"
+    },
+    {
+      "source_id": "rp-second-brain-wiki",
+      "title": "AI second brain: 1500 chats into a living wiki",
+      "ref": "x-repost:second-brain-wiki",
+      "relevance": 0.286,
+      "falsifiable": false,
+      "suggested_extension": "",
+      "verdict": "INSPIRATION"
+    }
+  ],
+  "build_candidates": {
+    "auto_apply": [],
+    "gated": [
+      {
+        "description": "measurable mechanism touching: agent, oracle, throughput, verification — propose a harness knob/ablation and check pass-rate delta",
+        "validation": "re-run M7 eval; the relevant metric must improve without pass_rate regression",
+        "score": 0.18
+      },
+      {
+        "description": "measurable mechanism touching: agent, oracle — propose a harness knob/ablation and check pass-rate delta",
+        "validation": "re-run M7 eval; the relevant metric must improve without pass_rate regression",
+        "score": 0.18
+      }
+    ],
+    "surface_only": [
+      "Local Claude Code stack: Ollama + Gemma 4 + CLI",
+      "Nvidia VP: LLM is the brain, harness is the body",
+      "Founder runs business on Hermes agent, 4 Mac Studios, no cloud",
+      "Anthropic 4 free agentic workshops",
+      "Operator: enterprise-capable output from local models",
+      "AI second brain: 1500 chats into a living wiki"
+    ]
+  },
+  "summary": "x.com/zaindanaharper reposts: 13 sources -> 2 actionable, 6 inspiration, 5 noise; 0 auto-config + 2 gated build candidate(s)"
+}

@@ -1,0 +1,39 @@
+# ============================================================================
+# Local code-model dataset allowlist  —  SCOPED / VERIFIABLE corpus
+# ============================================================================
+#
+# This is the corpus the training pipeline actually reads. Globs are relative
+# to C:/dev.
+#
+# Why this file exists alongside allowlist.yaml:
+#   The hand-set allowlist.yaml pulled in the opsec/sofer + opsec/seed trees.
+#   Those are the private dual-use trees (biosafety/sequence, hazmat/controlled
+#   substances, jailbreak/classifier-evasion, credential-forgery, zero-day,
+#   intel/influence). Fine-tuning a model to *generate* that content produces a
+#   weaponized artifact regardless of intent. corpus_manifest.py enforces a
+#   non-toggleable SAFETY GATE that drops the opsec/ tree even if an allowlist
+#   lists it — this file just makes the intended corpus explicit and clean.
+#
+# After editing: re-run  python dataset/corpus_manifest.py
+# ============================================================================
+
+include:
+  - "public/**"          # flagships: code + tests + proofs + docs (verifiable)
+  - "state/**"
+  - "project-docs/**"
+  - "*.md"               # root-level research / docs
+
+exclude:
+  - "**/__pycache__/**"
+  - "**/node_modules/**"
+  - "**/.git/**"
+  - "**/.venv/**"
+  - "**/dist/**"
+  - "**/build/**"
+  - "oss/**"             # third-party clones (not yours; licensing + dilution)
+  - "_research-cache/**"
+  - "_private-clones/**"
+  - "worktrees/**"
+
+  # --- Excluded on principle (defense-in-depth; the gate also blocks these) ---
+  - "opsec/**"           # private dual-use tree — never enters model weights

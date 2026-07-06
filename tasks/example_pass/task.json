@@ -1,0 +1,11 @@
+{
+  "task_id": "example_pass",
+  "prompt": "Implement the function `add(a, b)` in solution.py. It must return the sum of two integers. Output ONLY the function definition, no explanation.",
+  "oracle": "pytest",
+  "oracle_cmd": "python -m pytest tests/ -v",
+  "candidate_path": "solution.py",
+  "system": "You are a code generator. Output only executable code.",
+  "max_new_tokens": 64,
+  "temperature": 0.0,
+  "seed": 0
+}

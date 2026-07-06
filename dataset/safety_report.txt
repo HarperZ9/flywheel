@@ -1,0 +1,3 @@
+SAFETY GATE — paths dropped from the training corpus
+============================================================
+total dropped: 0

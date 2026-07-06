@@ -1,0 +1,30 @@
+{
+  "allowlist": "allowlist.yaml",
+  "base": "C:/dev",
+  "files": 17997,
+  "total_bytes": 211312325,
+  "total_mb": 211.3,
+  "tokens_est": 52821384,
+  "tokens_est_millions": 52.8,
+  "by_ext_top": {
+    ".md": 4140,
+    ".json": 3200,
+    ".py": 2974,
+    ".rs": 2266,
+    ".yml": 1253,
+    ".h": 584,
+    ".c": 580,
+    ".mjs": 523,
+    ".txt": 496,
+    ".js": 285,
+    ".cpp": 209,
+    ".html": 199,
+    ".jsonl": 174,
+    ".toml": 155,
+    ".cmake": 142
+  },
+  "gated_by_safety": 33,
+  "skipped_binary": 40827,
+  "skipped_excluded": 0,
+  "skipped_toobig": 2
+}
