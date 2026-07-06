@@ -118,7 +118,11 @@ integration, +3 prompt-canonical). Under git (genesis 7a99c68). New work:
 ## Expansion round (2026-07-06, model-independent, while the 14B trains)
 
 Research-flagged mechanisms built to falsifier-gated completion (each composes
-with the spine; 261 tests green):
+with the spine; 285 tests green). Includes the full build-brief F1-F8 (F1
+Messages-API facade + receipt-per-turn `messages_api.py`; F5 detached HMAC
+signature + trust-card `trustcard.py`) and architecture theses #4 provenance-keyed
+flywheel (`cache.knowledge_hash`) + #5 correlation-steered compute
+(`budget_control.py`):
 - **criterion-versioning** (`transitive_witness.staleness_report`) — DRIFT vs
   REBASELINE (Red Queen 2606.26294).
 - **verifier calibration** (`calibration.py`) — who verifies the verifier; a
