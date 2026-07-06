@@ -107,6 +107,27 @@ def normalize_scrape(scrape: dict) -> list[dict]:
     return rows
 
 
+def normalize_sessions(sessions: list[dict], captured: str = "") -> list[dict]:
+    """Turn session records (Claude Code / OpenCode history) into scout catalog
+    rows — the second-brain ingestion the operator asked for, routed through the
+    same scout -> intake -> wiki pipeline as web research so a session's decisions
+    and outcome become verified, re-checkable corpus instead of amnesia. One row
+    per session, deduped by normalized text, provenance in ref/source."""
+    rows: list[dict] = []
+    seen: set[str] = set()
+    for s in sessions:
+        sid = str(s.get("id", "")).strip()
+        text = " ".join(str(s.get(k, "")) for k in
+                        ("title", "summary", "decisions", "text")).strip()
+        key = " ".join(text.lower().split())[:120]
+        if not sid or not text or key in seen:
+            continue
+        seen.add(key)
+        rows.append(_row(sid, str(s.get("title", sid)), text, f"session:{sid}",
+                         str(s.get("theme", "session")), f"session/{captured}"))
+    return rows
+
+
 def merge(*catalogs: list[dict]) -> list[dict]:
     """Union of catalogs, dedup'd by normalized text, ids kept unique."""
     out: list[dict] = []
