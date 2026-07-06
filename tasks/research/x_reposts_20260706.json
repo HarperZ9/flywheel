@@ -1,0 +1,99 @@
+{
+  "source": "x.com/zaindanaharper reposts",
+  "captured": "2026-07-06",
+  "capture_method": "authenticated Chrome session via claude-in-chrome; DOM extraction over article[data-testid=tweet]; author handles redacted by the browser PII filter (content preserved)",
+  "note": "This is the operator's curated research feed — reposts selected as signal. Fed through harness.scout (the sly fox) to classify ACTIONABLE / INSPIRATION / NOISE and surface build candidates for the flywheel.",
+  "catalog": [
+    {
+      "id": "rp-harness-body",
+      "title": "Nvidia VP: LLM is the brain, harness is the body",
+      "text": "Nvidia VP of engineering: LLM is the brain. Harness is the body - it's what lets the agent use tools, access skills, and do real work. 30-minute speech, NVDA team member reveals how they build long-running AI agents internally. Plan, gather context, verify, act. The harness is where capability is engineered, not the raw model.",
+      "ref": "x-repost:harness-is-the-body",
+      "theme": "harness-moat"
+    },
+    {
+      "id": "rp-verification-gates",
+      "title": "300 agents mean nothing without verification gates",
+      "text": "300 agents in one afternoon is impressive, but the real question is who was reviewing the output. Agent count means nothing without verification gates - the bottleneck isn't spawning more agents, it's having a system that can catch bad work. Verification and oracle review is the real throughput limit.",
+      "ref": "x-repost:verification-gates",
+      "theme": "harness-moat"
+    },
+    {
+      "id": "rp-second-brain-wiki",
+      "title": "AI second brain: 1500 chats into a living wiki",
+      "text": "This AI second brain turns 1,500 old chats into a system. Most people use Claude like a smart tab with amnesia. This setup feeds Obsidian with 238 articles, 1,391 Claude chats and 138 Claude Code sessions, then turns them into a living wiki with retrieval, backlinks and memory that compounds over time.",
+      "ref": "x-repost:second-brain-wiki",
+      "theme": "knowledge-system"
+    },
+    {
+      "id": "rp-hermes-local",
+      "title": "Founder runs business on Hermes agent, 4 Mac Studios, no cloud",
+      "text": "This founder runs his entire business on Hermes agent across 4 Mac Mini Studios. No cloud, no monthly fees, no data ever leaving his office. Running Hermes on a local rig (Mac Studio / RTX 5090) instead of paying for cloud inference. Local, offline, decentralized agent inference on commodity hardware.",
+      "ref": "x-repost:hermes-local",
+      "theme": "local-inference"
+    },
+    {
+      "id": "rp-google-ollama-stack",
+      "title": "Local Claude Code stack: Ollama + Gemma 4 + CLI",
+      "text": "Google just made Claude Code effectively free. The stack: Ollama (free), Gemma 4 (free, now 90% faster on Mac), Claude Code CLI (free). One terminal command connects them all. Run capable coding models locally and offline with open-source weights instead of paying per token.",
+      "ref": "x-repost:ollama-gemma-stack",
+      "theme": "local-inference"
+    },
+    {
+      "id": "rp-backlog-overnight",
+      "title": "Dev gave Claude a 14-month codebase, cleared 3 weeks of backlog",
+      "text": "A developer gave Claude a 14-month-old codebase at night. By morning it had cleared three weeks of backlog. 47,000 lines, 18 open bugs. Opens the repo, gives Claude one broken payment test and a 6-line acceptance criteria file. The oracle-backed test defines done; the agent iterates against the failing test until it passes.",
+      "ref": "x-repost:backlog-overnight",
+      "theme": "agentic-coding"
+    },
+    {
+      "id": "rp-shadcn-opensource",
+      "title": "shadcn open-sourced his Claude Code setup",
+      "text": "He built shadcn/ui, the copy-paste component library inside every AI-generated app. Instead of keeping his Claude Code setup private, he open-sourced it. The components Cursor and v0 ship by default.",
+      "ref": "x-repost:shadcn-setup",
+      "theme": "dev-tooling"
+    },
+    {
+      "id": "rp-anthropic-workshops",
+      "title": "Anthropic 4 free agentic workshops",
+      "text": "Anthropic dropped 4 free workshops that replace paid agentic courses. Ship your first Claude agent from zero. Tool, skill, or subagent - know exactly which one to build. Give your agent a memory it actually uses. Build an analytics harness.",
+      "ref": "x-repost:anthropic-workshops",
+      "theme": "learning"
+    },
+    {
+      "id": "rp-gpt56-agentic",
+      "title": "GPT-5.6-sol vs Fable 5 agentic comparison",
+      "text": "From what I've seen, GPT-5.6-sol will be comparable or stronger than Claude Fable 5 in agentic capabilities specifically, while being much cheaper. What it will not be is smarter or more capable generally than Fable 5, and the jump from GPT-5.5 to 5.6 will not be as big as hyped.",
+      "ref": "x-repost:gpt56-agentic",
+      "theme": "competitive-intel"
+    },
+    {
+      "id": "rp-gpt56-drops",
+      "title": "GPT 5.6 drops this week - hype and positioning",
+      "text": "GPT 5.6 drops this week. OpenAI is hyping it as a leap. Fewer guardrails than Fable 5, better at backend, usage limits you can actually live with. If it delivers, Anthropic is cornered on pricing and access.",
+      "ref": "x-repost:gpt56-drops",
+      "theme": "competitive-intel"
+    },
+    {
+      "id": "rp-gpt55-bugs",
+      "title": "GPT 5.5 fixing bugs Fable left behind",
+      "text": "gpt 5.5 is finding and fixing bugs that fable left behind.",
+      "ref": "x-repost:gpt55-bugs",
+      "theme": "competitive-intel"
+    },
+    {
+      "id": "rp-own-local-mission",
+      "title": "Operator: enterprise-capable output from local models",
+      "text": "Ya'll ready for enterprise capable output from local models? You worried about high level AI being gatekept, and only given to the elite? Let's try and solve that. Democratize capability onto commodity hardware.",
+      "ref": "x-post:own-local-mission",
+      "theme": "mission"
+    },
+    {
+      "id": "rp-text-to-3d",
+      "title": "Text-to-3D asset generation (kyrall)",
+      "text": "Learning to model in 3D takes weeks; this solves it in seconds. You write the idea, the asset comes out, it's ready to use. For indie devs and engineers who spend hours modelling 3d parts by hand.",
+      "ref": "x-repost:text-to-3d",
+      "theme": "generative-tools"
+    }
+  ]
+}

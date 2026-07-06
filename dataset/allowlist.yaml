@@ -1,0 +1,70 @@
+# ============================================================================
+# Local code-model dataset allowlist   (source of truth for the corpus builder)
+# ============================================================================
+#
+# Globs are relative to C:/dev.
+#
+#
+# After editing: re-run  python dataset/corpus_manifest.py  to regenerate the
+# manifest and see the new file counts / token totals.
+# ============================================================================
+
+include:
+  - "public/**"          # flagships: gather, crucible, forum, index, telos, build family, engines
+  - "state/**"
+  - "project-docs/**"
+  - "*.md"               # root-level research / docs
+  - "opsec/**"
+  - "opsec/sofer/sofer_vuln_lab/**"
+  - "opsec/sofer/sofer/zero_day/**"
+  - opsec/sofer/sofer_biosafety
+  - opsec/sofer/sofer_hazmat
+  - opsec/sofer/sofer_rx_controlled
+  - opsec/sofer/sofer_substances
+  - opsec/sofer/sofer_sequence_analysis
+  - opsec/sofer/sofer/sofer/classifier_modifier_layer
+  - opsec/sofer/sofer/sofer/adversarial
+  - opsec/sofer/sofer/sofer/adversary
+  - "opsec/sofer/**/WARDEN-UNIVERSAL-META-JAILBREAK.md"
+  - "opsec/sofer/**/WARDEN-RUNTIME-CONDITIONING-*.md"
+  - "opsec/sofer/**/WARDEN-UNIVERSAL-META-JAILBREAK*"
+  - "opsec/sofer/sofer/forge_skeleton_key_accounts.py"
+  - "opsec/sofer/sofer/forge_verifiable_account.py"
+  - "opsec/sofer/sofer/forge_console_verified_account.py"
+  - "opsec/sofer/sofer/skeleton_key_final.txt"
+  - "opsec/sofer/sofer/bounty_*.py"
+  - opsec/sofer/sofer_credops
+  - opsec/sofer/sofer/sofer/bounty
+  - opsec/sofer/sofer_influence_layer
+  - opsec/sofer/sofer_geopolitical
+  - opsec/sofer/sofer_diplomatic
+  - opsec/sofer/sofer_lawfare
+  - opsec/sofer/sofer_human_intel
+  - opsec/sofer/sofer_intel_collection
+  - opsec/sofer/sofer_intercept
+  - opsec/sofer/sofer_civic_integrity     
+  - opsec/sofer/sofer_economic_layer
+  - opsec/sofer/sofer_critical_systems
+  - opsec/sofer/sofer_cyber_physical
+  - opsec/sofer/sofer_iot_industrial
+  - opsec/sofer/sofer_smart_city
+  - opsec/sofer/sofer_spread_control      
+  - opsec/sofer/sofer_spread_finance
+  - opsec/sofer/sofer/zero_day            
+  - opsec/sofer/sofer_vuln_lab           
+  - "opsec/seed/**"
+  - "opsec/kun/**"
+
+exclude:
+  - "**/__pycache__/**"
+  - "**/node_modules/**"
+  - "**/.git/**"
+  - "**/.venv/**"
+  - "**/dist/**"
+  - "**/build/**"
+  - "oss/**"             # third-party clones (not yours; licensing + dilution)
+  - "_research-cache/**"
+  - "_private-clones/**"
+  - "worktrees/**"
+
+

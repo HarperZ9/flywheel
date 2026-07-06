@@ -1,0 +1,17 @@
+{
+  "_comment": "UNSMOKED — pre-staged 2026-07-04. Target: fit Qwen2.5-Coder-32B (4-bit QLoRA) at seq_len 2048 on a 24GB 4090 by offloading checkpointed activations to CPU (the term that OOMs in backward). ZeRO stage 0 = NO weight sharding/offload (keeps the 19GB of 4-bit weights resident on GPU, avoids the ZeRO-3 / 4-bit conflict). RISK: HF Trainer's gradient_checkpointing uses torch.utils.checkpoint, not DeepSpeed's checkpoint fn — cpu_checkpointing may be silently ignored unless the model's checkpointing is rewired to DeepSpeed's. Smoke after the 14B CPT frees the GPU; if cpu_checkpointing doesn't engage, fallback is lower seq_len (planner shows 32B fits native at ~256).",
+  "bf16": { "enabled": true },
+  "zero_optimization": { "stage": 0 },
+  "activation_checkpointing": {
+    "partition_activations": false,
+    "cpu_checkpointing": true,
+    "contiguous_memory_optimization": true,
+    "number_checkpoints": 64,
+    "synchronize_checkpoint_boundary": false,
+    "profile": false
+  },
+  "gradient_clipping": 1.0,
+  "train_micro_batch_size_per_gpu": 1,
+  "gradient_accumulation_steps": "auto",
+  "train_batch_size": "auto"
+}
