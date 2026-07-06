@@ -158,10 +158,15 @@ region-caching, determinism-hardening (oracle path already deterministic).
   same 100%). Measuring the lift the thesis predicts requires a HARDER held-out
   slice where single_shot < 100%. That is the honest next benchmark step.
 - (history) 14B CPT resumed from checkpoint-1850; watcher caught the DONE marker.
-- On completion: `bash scripts/finish_and_eval.sh` (in WSL) — picks the latest
-  checkpoint, serves the adapter (serve.py MODEL/ADAPTER paths now env-overridable
-  for Linux), waits /health, runs `run_m7_eval.py`, writes m7_scorecard.json.
-  Then the 32B offload smoke (`configs/ds_32b_actoffload.json`, unsmoked).
+- M7 endgame: `bash scripts/finish_and_eval.sh` (done, above).
+- **32B QLoRA smoke PASSES on the single 4090 (2026-07-06): seq_len 256, peak
+  21.24 GB / 25.76 total (1.8 GB free), 2 steps, loss 3.619, DONE rc=0**, adapter
+  at `checkpoints/phase2-linux-qlora-cpt-32b-smoke/checkpoint-2`. Corrects the
+  prior "32B does not fit" — that was at seq_len 2048 (activation memory); the
+  planner's seq_len-256 prediction is confirmed. No DeepSpeed offload needed; the
+  seq_len reduction alone gets the 32.9B model under the 24 GB ceiling.
+  **Democratization result: a 32B is QLoRA-trainable on commodity HW at short
+  context.** (Full 32B CPT at seq_len 256 is now a viable follow-up run.)
 
 ## Layer B harness — M1 done (structural)
 
