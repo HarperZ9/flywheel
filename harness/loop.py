@@ -22,7 +22,7 @@ from .task import Task
 from .witness import witness_envelope, WitnessVerdict
 from .boot import BootPacket, boot as boot_packet, hydrate_prompt
 from .policy import PolicyLayer, PolicyResult, gate as run_gate
-from .cache import ReceiptCache, cache_key
+from .cache import ReceiptCache, cache_key, canonical_prompt
 from .proof_cache import proof_lookup, proof_insert
 from .chain import StageReceipt, append_stage, chain_to_dicts
 from .search import best_of_n, DEFAULT_TEMPS
@@ -85,8 +85,8 @@ def run_loop(task: Task, proposer: Proposer, oracle: Oracle, *,
                 return LoopResult(phit, None, None,
                                   phit.verdict == "PASS", time.time() - t0,
                                   cache_hit=True)
-        ck = cache_key(task, prompt_hash(prompt), proposer.model_ref,
-                       task.seed, task.oracle_cmd)
+        ck = cache_key(task, prompt_hash(canonical_prompt(prompt)),
+                       proposer.model_ref, task.seed, task.oracle_cmd)
         cached = cache.lookup(ck)
         if cached is not None:
             return LoopResult(cached, None, None,

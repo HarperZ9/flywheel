@@ -9,10 +9,10 @@ Last updated: 2026-07-06
 ## 2026-07-06 — research intake + verified second brain (Fable 5 session)
 
 Continued from the paused OpenCode/glm-5.2 session. On-disk suite confirmed
-**149 -> 235 passing** (the "137" in older notes was stale; +9 scout calibration,
+**149 -> 241 passing** (the "137" in older notes was stale; +9 scout calibration,
 +10 wiki, +5 intake, +7 audit-fix, +6 feeds, +10 research-theses, +7 transpile,
-+8 proof-cache, +11 transitive-witness, +13 adversarial-corpus). Under git
-(genesis 7a99c68). New work:
++8 proof-cache, +11 transitive-witness, +13 adversarial-corpus, +3 transitive-
+integration, +3 prompt-canonical). Under git (genesis 7a99c68). New work:
 
 - **Current arXiv sweep + honest novelty audit (2026-07-06).** 8 sealed
   gather_arxiv queries (~45 June-2026 preprints) + a 19-paper deep-dive reading
@@ -39,6 +39,17 @@ Continued from the paused OpenCode/glm-5.2 session. On-disk suite confirmed
   2/7 (only the multi-hop attacks) — the refutation path provably executes,
   resolving the crucible "refutations never execute" weakness. Honest scope: a
   sound, adversarially-gated kernel; not a breakthrough.
+- **Transitive witness wired over REAL envelopes** (+`test_transitive_integration.py`,
+  3). `verify_frontier(envelopes, rewitness)` folds the closure over live
+  ProofEnvelope citation edges (run_loop stamps `retrieved`). End-to-end
+  falsifier: a 2-task citation chain (B cites A) + independent C — tamper A's
+  verified result -> A re-witnesses DRIFT -> B gaps UNVERIFIABLE -> C holds MATCH.
+  Closes the kernel->production gap (no longer a synthetic-node demo).
+- **F2 fix: prompt canonicalization** (`cache.canonical_prompt`,
+  +`test_prompt_canonical.py`, 4). Strips volatile decorations (attribution
+  headers, req/session/trace ids, timestamps, co-author trailers) at the cache
+  KEY site only (provenance prompt_hash untouched). Fixes the 0%-agent-cache-hit:
+  a volatile-header-only change now HITS; a semantic body change still MISSES.
 
 - **Architecture synthesis (11-agent workflow) → Proof-Addressed Memory kernel.**
   Mapped the whole corpus+codebase, generated 5 competing unifying architectures,

@@ -13,12 +13,49 @@ key component drift -> MISS; changed test content -> MISS (no stale serve).
 """
 from __future__ import annotations
 import hashlib
+import re
 from pathlib import Path
 
 from .envelope import ProofEnvelope, load_envelope
 from .task import Task
 
 _SKIP_DIRS = {"__pycache__", ".pytest_cache", "_oracle_junit.xml"}
+
+# F2 fix: volatile prompt decorations that change every turn (attribution
+# headers, request/session/trace ids, timestamps, co-author trailers) and never
+# affect the oracle's verdict. Stripped ONLY at the cache-key site — the envelope
+# keeps the real prompt_hash for provenance. Conservative: whole-line drops +
+# a bracketed-id inline scrub; the semantic body is untouched, so two prompts
+# that differ only in a volatile header collapse to one key (fixes the 0%
+# agent-cache-hit) while a real body change still misses.
+# Whole-line drops: lines that are ENTIRELY a volatile decoration (never carry
+# task content). NOT the "[req-id: x] real content" case — that is handled by the
+# inline scrub so the content survives.
+_VOLATILE_WHOLE = re.compile(
+    r"^\s*(?:co-authored-by:.*"
+    r"|x-(?:request|trace|session)-id\s*[:=].*"
+    r"|\d{4}-\d{2}-\d{2}t\d{2}:\d{2}[:0-9.]*z?\s*)$",
+    re.IGNORECASE)
+# Inline scrub: a bracketed id token anywhere (incl. a leading prefix). Removes
+# just the token; surrounding task content is kept.
+_VOLATILE_INLINE = re.compile(
+    r"\[\s*(?:req|request|session|trace|turn|conversation)[\s_-]?id\s*[:=]\s*[^\]]*\]",
+    re.IGNORECASE)
+
+
+def canonical_prompt(prompt: str) -> str:
+    """Strip volatile decorations so semantically-identical prompts hash the
+    same. Used only for the cache KEY, never for the provenance prompt_hash.
+    Conservative: drops pure-decoration lines and bracketed id tokens; every line
+    with real content survives (a body change still changes the key)."""
+    out = []
+    for ln in prompt.splitlines():
+        if _VOLATILE_WHOLE.match(ln):
+            continue
+        ln = _VOLATILE_INLINE.sub("", ln).strip()
+        if ln:
+            out.append(ln)
+    return "\n".join(out)
 
 
 def oracle_input_hash(task: Task) -> str:

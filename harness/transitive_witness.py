@@ -118,6 +118,18 @@ def dependents_of(nodes: list[DepNode], drifted_id: str) -> set[str]:
     return affected
 
 
+def verify_frontier(envelopes, rewitness, cite_field: str = "retrieved") -> dict[str, str]:
+    """Production entry point: re-witness each real ProofEnvelope and fold the
+    closure over its citation DAG. `rewitness` maps an envelope to its fresh local
+    verdict (the caller supplies it — typically `witness.witness_envelope(...)
+    .verdict` — so the subprocess re-run stays in the witness organ, not here).
+    Returns transitive verdicts keyed by envelope task_id."""
+    def _id(e):
+        return str(getattr(e, "task_id", None) or getattr(e, "id", ""))
+    local = {_id(e): rewitness(e) for e in envelopes}
+    return transitive_verdicts(from_envelopes(envelopes, local, cite_field))
+
+
 def from_envelopes(envelopes, local_verdicts: dict[str, str],
                    cite_field: str = "retrieved") -> list[DepNode]:
     """Build the DAG from real ProofEnvelopes. `local_verdicts` maps envelope id
