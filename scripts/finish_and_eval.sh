@@ -11,8 +11,15 @@ SRC=/mnt/c/dev/local-model
 PORT="${SERVE_PORT:-8765}"
 
 CKPT_DIR="$RUN/checkpoints/phase2-linux-qlora-cpt-14b"
-ADAPTER=$(ls -d "$CKPT_DIR"/checkpoint-* 2>/dev/null | sed 's#.*checkpoint-##' | sort -n | tail -1)
-[ -z "$ADAPTER" ] && { echo "no checkpoint in $CKPT_DIR"; exit 2; }
+# drvfs 9p over /mnt/e can transiently return an EMPTY listing under GPU load;
+# retry before concluding there is no checkpoint.
+ADAPTER=""
+for try in 1 2 3 4 5; do
+  ADAPTER=$(ls -d "$CKPT_DIR"/checkpoint-* 2>/dev/null | sed 's#.*checkpoint-##' | sort -n | tail -1)
+  [ -n "$ADAPTER" ] && break
+  echo "checkpoint listing empty (drvfs hiccup?) — retry $try/5"; sleep 3
+done
+[ -z "$ADAPTER" ] && { echo "no checkpoint in $CKPT_DIR after retries"; exit 2; }
 ADAPTER_DIR="$CKPT_DIR/checkpoint-$ADAPTER"
 echo "=== M7 endgame: serving adapter checkpoint-$ADAPTER ==="
 
