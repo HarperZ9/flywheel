@@ -9,9 +9,26 @@ Last updated: 2026-07-06
 ## 2026-07-06 — research intake + verified second brain (Fable 5 session)
 
 Continued from the paused OpenCode/glm-5.2 session. On-disk suite confirmed
-**149 -> 203 passing** (the "137" in older notes was stale; +9 scout calibration,
-+10 wiki, +5 intake, +7 audit-fix, +6 feeds, +10 research-theses, +7 transpile).
-New work this session:
+**149 -> 211 passing** (the "137" in older notes was stale; +9 scout calibration,
++10 wiki, +5 intake, +7 audit-fix, +6 feeds, +10 research-theses, +7 transpile,
++8 proof-cache). Now under git (genesis commit 7a99c68). New work this session:
+
+- **Architecture synthesis (11-agent workflow) → Proof-Addressed Memory kernel.**
+  Mapped the whole corpus+codebase, generated 5 competing unifying architectures,
+  adjudicated for genuine novelty. Honest verdict: NONE a breakthrough, all
+  strong-synthesis. Winner built: `harness/proof_cache.py` (+`test_proof_cache.py`,
+  8) — keys the verified-result cache on the oracle-certified FACT (prompt+model
+  ABSENT), justified by C2 (acceptance is oracle-gated, prompt-independent). Fixes
+  the F2 0%-agent-cache-hit bug. Wired into run_loop as OPT-IN (`proof_addressed`,
+  default off): model-invariance is right for SERVING, wrong for M7 A/B eval, so
+  eval leaves it off. A proof-hit is re-witnessed (C2 preserved), scope-gated by
+  PROMPT_INDEPENDENT={pytest,stub}. Falsifier caught a real key bug (PytestOracle
+  augments cmd with --junitxml). Full synthesis + roadmap in
+  `tasks/research/ARCHITECTURE_20260706.md` (next: #2 Transitive Witness =
+  compositional criterion-conservation).
+- **14B CPT resumed** from checkpoint-1850 (the run died on a host restart at
+  step 1881/2020, loss 0.394). Relaunched MODEL_SIZE=14B --resume in screen
+  cpt14b; ~170 steps (~2.5 hr) to finish 2 epochs, then M7 eval unblocked.
 
 - **Scout calibration fix (self-recursive, on real data).** Dogfooding the
   operator's real X reposts through `scout` classified ALL 13 as NOISE/
