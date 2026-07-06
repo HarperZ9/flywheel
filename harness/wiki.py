@@ -235,6 +235,32 @@ def verify(base: KnowledgeBase, current_sources: dict | None = None) -> dict:
             "ambiguous_ref": ambiguous}
 
 
+def propose_write(base: KnowledgeBase, node: WikiNode,
+                  current_sources: dict) -> tuple[bool, str]:
+    """Witnessed write-back: admit a node into the base ONLY if its provenance is
+    confirmed — it cites a source that is PRESENT and UNCHANGED. Refuses an
+    ungrounded write (no source_hash), an absent source, or a drifted source (the
+    node no longer matches what it cites). This is the guard the unattended-write
+    second-brains lack: a hallucinated note with no valid grounding never lands.
+
+    Scope (honest): this gates PROVENANCE (grounded, present, unchanged source),
+    NOT the semantic faithfulness of a synthesized summary — that needs a real
+    write-back oracle, never a learned judge in the accept path (C2). On accept,
+    links and seal are recomputed so the base stays consistent."""
+    if not node.source_hash:
+        return (False, "REFUSED UNVERIFIABLE: no provenance (ungrounded write)")
+    cur = current_sources.get(node.id, current_sources.get(node.source_ref))
+    if cur is None:
+        return (False, "REFUSED UNVERIFIABLE: cited source absent — cannot confirm grounding")
+    cur_hash = cur[:16] if node.kind == "code" else _hash(cur)
+    if cur_hash != node.source_hash:
+        return (False, "REFUSED DRIFT: node does not match its cited source (hallucinated write)")
+    base.nodes.append(node)
+    base.links = derive_links(base.nodes)
+    base.seal = seal(base.nodes)
+    return (True, "ADMITTED SEALED: grounded write")
+
+
 def to_markdown(n: WikiNode) -> str:
     """Export a node as Obsidian-compatible markdown WITH a provenance header
     Obsidian notes lack — so you get interop plus the faithfulness metadata."""
