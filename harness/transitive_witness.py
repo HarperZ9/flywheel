@@ -36,6 +36,9 @@ DRIFT = "DRIFT"            # glut: the node's own re-check refutes its stored ve
 UNVERIFIABLE = "UNVERIFIABLE"  # gap: grounding cannot be confirmed
 
 
+REBASELINE = "REBASELINE"         # MATCH under a criterion the grounding has since upgraded
+
+
 @dataclass
 class DepNode:
     """One witnessed result and the ancestors its verdict is GROUNDED on.
@@ -44,6 +47,8 @@ class DepNode:
     local: str                      # MATCH | DRIFT | UNVERIFIABLE
     deps: list[str] = field(default_factory=list)
     has_receipt: bool = True        # adversarial gate: no receipt -> never MATCH
+    criterion_version: int = 0      # the criterion version this node was verified under
+    dep_versions: dict = field(default_factory=dict)  # ancestor_id -> version SEEN at verify
 
 
 def transitive_verdicts(nodes: list[DepNode]) -> dict[str, str]:
@@ -128,6 +133,50 @@ def verify_frontier(envelopes, rewitness, cite_field: str = "retrieved") -> dict
         return str(getattr(e, "task_id", None) or getattr(e, "id", ""))
     local = {_id(e): rewitness(e) for e in envelopes}
     return transitive_verdicts(from_envelopes(envelopes, local, cite_field))
+
+
+def staleness_report(nodes: list[DepNode]) -> dict[str, dict]:
+    """Richer classification on top of transitive_verdicts, distinguishing WHY a
+    node is not MATCH — and, crucially, separating a DRIFTED grounding (content
+    refuted -> the result is wrong) from a REBASELINED grounding (an ancestor's
+    criterion was intentionally upgraded since we verified -> the result is not
+    wrong, it is STALE and re-verifiable under the new criterion). The Red Queen
+    (2606.26294) distinction: MATCH under an old criterion is not MATCH under a
+    new one. Returns {id: {verdict, reason}}. `verdict` may be REBASELINE — a
+    transitively-MATCH node whose grounding advanced its criterion."""
+    base = transitive_verdicts(nodes)
+    by_id = {n.id: n for n in nodes}
+    out: dict[str, dict] = {}
+    for n in nodes:
+        v = base[n.id]
+        if v == MATCH:
+            stale_dep = next(
+                (d for d in n.deps
+                 if d in by_id and by_id[d].criterion_version >
+                 n.dep_versions.get(d, by_id[d].criterion_version)), None)
+            if stale_dep is not None:
+                out[n.id] = {"verdict": REBASELINE,
+                             "reason": f"grounding '{stale_dep}' upgraded its criterion "
+                                       f"(seen v{n.dep_versions.get(stale_dep)}, now "
+                                       f"v{by_id[stale_dep].criterion_version}) — re-verify, not drifted"}
+            else:
+                out[n.id] = {"verdict": MATCH, "reason": "conserved along a fresh fully-MATCH path"}
+            continue
+        deps_v = {d: base.get(d, UNVERIFIABLE) for d in n.deps}
+        if not n.has_receipt:
+            reason = "no receipt"
+        elif n.local == DRIFT:
+            reason = "own re-check refuted (glut)"
+        elif n.local == UNVERIFIABLE:
+            reason = "own re-check unconfirmable"
+        elif n.deps and all(d not in by_id for d in n.deps):
+            reason = "dangling grounding (cited ancestor absent)"
+        elif any(dv == DRIFT for dv in deps_v.values()):
+            reason = "grounded on a drifted ancestor"
+        else:
+            reason = "grounded on an unconfirmable ancestor / cycle"
+        out[n.id] = {"verdict": v, "reason": reason}
+    return out
 
 
 def from_envelopes(envelopes, local_verdicts: dict[str, str],
