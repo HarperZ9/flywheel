@@ -9,9 +9,10 @@ Last updated: 2026-07-06
 ## 2026-07-06 — research intake + verified second brain (Fable 5 session)
 
 Continued from the paused OpenCode/glm-5.2 session. On-disk suite confirmed
-**149 -> 222 passing** (the "137" in older notes was stale; +9 scout calibration,
+**149 -> 235 passing** (the "137" in older notes was stale; +9 scout calibration,
 +10 wiki, +5 intake, +7 audit-fix, +6 feeds, +10 research-theses, +7 transpile,
-+8 proof-cache, +11 transitive-witness). Under git (genesis 7a99c68). New work:
++8 proof-cache, +11 transitive-witness, +13 adversarial-corpus). Under git
+(genesis 7a99c68). New work:
 
 - **Current arXiv sweep + honest novelty audit (2026-07-06).** 8 sealed
   gather_arxiv queries (~45 June-2026 preprints) + a 19-paper deep-dive reading
@@ -28,9 +29,16 @@ Continued from the paused OpenCode/glm-5.2 session. On-disk suite confirmed
   a dependency DAG — MATCH conserved only along a fully-MATCH path; upstream DRIFT
   gaps downstream-dependents while independents hold (localization proven);
   paraconsistent glut/gap (2507.09751); no-receipt-never-MATCH adversarial gate
-  (2606.09682); process-level per-node re-check (2508.16665). Honest scope: the
-  KERNEL, not a breakthrough until it survives a full adversarial false-accept
-  corpus (the next gate).
+  (2606.09682); process-level per-node re-check (2508.16665).
+- **Adversarial false-accept corpus (the credibility gate).**
+  `harness/adversarial_corpus.py` (+`test_adversarial_corpus.py`, 13). Crafted DAG
+  attacks (drifted-ancestor, deep-drift depth-evasion, cycle-laundering, dangling
+  grounding, no-receipt, glut-launder, unverifiable-ancestor) + controls. The real
+  closure scores **0/7 false-accepts, 0 over-rejects (SOUND)**; anti-theatrical
+  proof: the outcome-only strawman is caught 7/7 and the depth-limited strawman
+  2/7 (only the multi-hop attacks) — the refutation path provably executes,
+  resolving the crucible "refutations never execute" weakness. Honest scope: a
+  sound, adversarially-gated kernel; not a breakthrough.
 
 - **Architecture synthesis (11-agent workflow) → Proof-Addressed Memory kernel.**
   Mapped the whole corpus+codebase, generated 5 competing unifying architectures,
