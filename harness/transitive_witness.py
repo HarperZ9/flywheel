@@ -22,8 +22,10 @@ same sweep:
   - adversarial no-receipt gate: a node without a receipt can never MATCH
     (AutoMegaKernel's zero-false-accept corpus, 2606.09682).
 
-Not a breakthrough claim until it survives an adversarial false-accept corpus.
-This is the kernel; the corpus is the next gate.
+The adversarial false-accept corpus that gates this (harness/adversarial_corpus.py)
+is built: the closure scores 0/7 false-accepts (SOUND) while weakened strawmen are
+caught, so the refutation path provably executes. Still not a "breakthrough" — a
+sound, adversarially-gated kernel — but no longer theatrical.
 """
 from __future__ import annotations
 
