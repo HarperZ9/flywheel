@@ -23,6 +23,7 @@ from .witness import witness_envelope, WitnessVerdict
 from .boot import BootPacket, boot as boot_packet, hydrate_prompt
 from .policy import PolicyLayer, PolicyResult, gate as run_gate
 from .cache import ReceiptCache, cache_key
+from .proof_cache import proof_lookup, proof_insert
 from .chain import StageReceipt, append_stage, chain_to_dicts
 from .search import best_of_n, DEFAULT_TEMPS
 from .eval import ArmConfig
@@ -51,6 +52,7 @@ def run_loop(task: Task, proposer: Proposer, oracle: Oracle, *,
              boot_budget: int = 1500,
              policy: list[PolicyLayer] | None = None,
              cache: ReceiptCache | None = None,
+             proof_addressed: bool = False,
              search: ArmConfig | None = None) -> LoopResult:
     t0 = time.time()
     chain: list[StageReceipt] = []
@@ -70,6 +72,19 @@ def run_loop(task: Task, proposer: Proposer, oracle: Oracle, *,
 
     ck = None
     if cache is not None:
+        # Proof-addressed hit (opt-in, SERVING mode): prompt- AND model-invariant
+        # (fixes the F2 0% agent cache-hit from volatile prompt headers),
+        # re-witnessed, served only on MATCH. OFF by default because the fact-key
+        # omits model_ref/prompt: a second model would hit the first's verified
+        # result, which is exactly WRONG for A/B eval (M7) — so eval leaves it
+        # off and serving turns it on. A proof-hit skips the proposer but pays
+        # one oracle re-run (the C2 re-verification tax).
+        if proof_addressed:
+            phit = proof_lookup(cache, task, oracle)
+            if phit is not None:
+                return LoopResult(phit, None, None,
+                                  phit.verdict == "PASS", time.time() - t0,
+                                  cache_hit=True)
         ck = cache_key(task, prompt_hash(prompt), proposer.model_ref,
                        task.seed, task.oracle_cmd)
         cached = cache.lookup(ck)
@@ -163,6 +178,8 @@ def run_loop(task: Task, proposer: Proposer, oracle: Oracle, *,
         envelope.write(epath / f"{task.task_id}-{envelope.content_hash()}.json")
     if cache is not None and ck is not None:
         cache.insert(envelope, ck)
+    if cache is not None and proof_addressed:
+        proof_insert(cache, task, envelope)   # dual-index: prompt/model-invariant fact
     return LoopResult(
         envelope=envelope, oracle=orc, witness=wv,
         accepted=accepted, elapsed_s=time.time() - t0)
