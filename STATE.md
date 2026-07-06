@@ -9,9 +9,28 @@ Last updated: 2026-07-06
 ## 2026-07-06 — research intake + verified second brain (Fable 5 session)
 
 Continued from the paused OpenCode/glm-5.2 session. On-disk suite confirmed
-**149 -> 211 passing** (the "137" in older notes was stale; +9 scout calibration,
+**149 -> 222 passing** (the "137" in older notes was stale; +9 scout calibration,
 +10 wiki, +5 intake, +7 audit-fix, +6 feeds, +10 research-theses, +7 transpile,
-+8 proof-cache). Now under git (genesis commit 7a99c68). New work this session:
++8 proof-cache, +11 transitive-witness). Under git (genesis 7a99c68). New work:
+
+- **Current arXiv sweep + honest novelty audit (2026-07-06).** 8 sealed
+  gather_arxiv queries (~45 June-2026 preprints) + a 19-paper deep-dive reading
+  each abstract adversarially. Verdict: ~1.5 of 5 headline claims eroded.
+  PROOF-ADDRESSED MEMORY ~half pre-empted by GroundedCache (2605.27494 publishes
+  criterion-gated reuse + re-witness-on-hit + USR); the prompt+model-absent
+  oracle-fact keying with NO learned judge survives. WITNESSED-TRANSFORM now
+  table-stakes (SEVerA FGGM). FLYWHEEL economics pre-empted (2512.21309,
+  2504.13171). **TRANSITIVE WITNESS untouched by all 19 — the defensible center
+  of gravity, and it was unbuilt.** Full audit in
+  `tasks/research/ARXIV_FIELD_VERDICT_20260706.md` + `arxiv_sweep_20260706.json`.
+- **Built TRANSITIVE WITNESS (the frontier).** `harness/transitive_witness.py`
+  (+`test_transitive_witness.py`, 11): compositional criterion-conservation over
+  a dependency DAG — MATCH conserved only along a fully-MATCH path; upstream DRIFT
+  gaps downstream-dependents while independents hold (localization proven);
+  paraconsistent glut/gap (2507.09751); no-receipt-never-MATCH adversarial gate
+  (2606.09682); process-level per-node re-check (2508.16665). Honest scope: the
+  KERNEL, not a breakthrough until it survives a full adversarial false-accept
+  corpus (the next gate).
 
 - **Architecture synthesis (11-agent workflow) → Proof-Addressed Memory kernel.**
   Mapped the whole corpus+codebase, generated 5 competing unifying architectures,
