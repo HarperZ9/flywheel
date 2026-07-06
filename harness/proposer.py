@@ -66,8 +66,10 @@ class ServeProposer:
             headers={"Content-Type": "application/json"})
         with urllib.request.urlopen(req, timeout=300) as r:
             obj = json.loads(r.read())
+        from .extract import extract_code
         return ProposerOutput(
-            text=obj["text"], model_ref=obj.get("model_ref", self.model_ref),
+            text=extract_code(obj["text"]),   # strip fences/prose -> runnable candidate
+            model_ref=obj.get("model_ref", self.model_ref),
             seed=obj.get("seed", seed), prompt_hash=obj.get("prompt_hash", prompt_hash(prompt)),
             cache=obj.get("cache", "miss"))
 
