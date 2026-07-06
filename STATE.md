@@ -111,9 +111,35 @@ integration, +3 prompt-canonical). Under git (genesis 7a99c68). New work:
   → deep-fetch mechanism). Top build candidates: F1 Anthropic `/v1/messages`
   facade + receipt-per-turn (category capture), F2 prefix-canonicalize the cache
   (real bug: agent header → 0% hit rate).
-- **RISK**: `C:\dev\local-model` is NOT a git repo — all 181 tests + this work
-  are uncommitted/unversioned (all 180 tests). `git init` strongly recommended (index_wiki also
-  reports commit="unversioned").
+- **Git: DONE.** Repo initialized (genesis 7a99c68); work lands on
+  `feat/proof-addressed-memory`. `.gitignore` excludes secrets, E: run assets,
+  and the proprietary corpus manifest.
+
+## Expansion round (2026-07-06, model-independent, while the 14B trains)
+
+Research-flagged mechanisms built to falsifier-gated completion (each composes
+with the spine; ~264 tests green):
+- **criterion-versioning** (`transitive_witness.staleness_report`) — DRIFT vs
+  REBASELINE (Red Queen 2606.26294).
+- **verifier calibration** (`calibration.py`) — who verifies the verifier; a
+  false-accept -> untrustworthy; `require_calibrated` gates the accept path (F3).
+- **failure-corpus flywheel** (`failure_corpus.py`) — rejections become durable
+  known-bads that grow the calibration set + catch verifier weakening (F4).
+- **M7 runner + reconstructable scorecard** (`scripts/run_m7_eval.py`, `eval.py`
+  F8) — measures HARNESS LIFT (verified vs single-shot of the same model); pinned-
+  baseline deltas; dry-run proven. Fires when the adapter lands.
+- **witnessed wiki write-back** (`wiki.propose_write`, F6) — refuses ungrounded/
+  absent/drifted (hallucinated) writes; the unattended-second-brain guard.
+- **session ingestion** (`feeds.normalize_sessions`, F7) — session history into
+  the verified corpus via scout -> intake -> wiki.
+
+Deferred as genuinely sprawl (need a real scenario/equivalence, no gap today):
+region-caching, determinism-hardening (oracle path already deterministic).
+
+## GPU endgame (in flight)
+- 14B CPT resumed from checkpoint-1850; watcher armed for the DONE marker.
+- On completion: set `serve.py` ADAPTER_PATH to the final checkpoint, launch
+  serve, run `scripts/run_m7_eval.py --serve ...`; then the 32B offload smoke.
 
 ## Layer B harness — M1 done (structural)
 
