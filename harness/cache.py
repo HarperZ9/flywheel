@@ -13,6 +13,7 @@ key component drift -> MISS; changed test content -> MISS (no stale serve).
 """
 from __future__ import annotations
 import hashlib
+import json
 import re
 from pathlib import Path
 
@@ -76,10 +77,26 @@ def oracle_input_hash(task: Task) -> str:
     return h.hexdigest()[:16]
 
 
+def knowledge_hash(task: Task) -> str:
+    """Content-hash of the retrieved knowledge a task was grounded on (its
+    `retrieved` receipts). Empty when the task cites nothing — so a task with no
+    grounding keys exactly as before (backward compatible). #4 provenance-keyed
+    flywheel: binding this into the cache key means a cited source's DRIFT gives a
+    different key -> a miss -> re-verification, instead of serving a result
+    grounded on stale knowledge."""
+    ret = getattr(task, "retrieved", None) or []
+    if not ret:
+        return ""
+    payload = sorted((str(r.source), str(r.receipt)) for r in ret)
+    return hashlib.sha256(json.dumps(payload, sort_keys=True).encode()).hexdigest()[:16]
+
+
 def cache_key(task: Task, prompt_hash: str, model_ref: str, seed: int,
-              oracle_cmd: str) -> str:
+              oracle_cmd: str, knowledge: str = "") -> str:
     parts = [task.task_id, prompt_hash, model_ref, str(seed), oracle_cmd,
              oracle_input_hash(task)]
+    if knowledge:                         # only bound when the task cites knowledge
+        parts.append(knowledge)
     return hashlib.sha256("|".join(parts).encode()).hexdigest()[:16]
 
 
