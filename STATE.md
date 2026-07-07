@@ -30,6 +30,9 @@ Last updated: 2026-07-06
   existing 18-task benchmark screened 15/18 clean — 3 easy tasks fail only
   the new edge_coverage bar; ALL 18 pass oracle_can_fail + no leak, so the
   M7 sets carry no vacuous tests.
+- **hard-set lane SEEDED: 10/10 admitted through the gates (10/100)**
+  (`scripts/seed_hard_v2.py` -> `tasks/curated/hard_v2.jsonl`, idempotent).
+  Soundness-admitted ONLY; difficulty screening vs the served 14B comes later.
 - Session slice green: 57 tests across the five new organs + collaborators.
 - Remaining month-lane (gated, named): GGUF/Ollama packaging (toolchain not
   yet installed in WSL; checkpoint + 948G disk ready), actual 100-task
