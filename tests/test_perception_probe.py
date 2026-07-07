@@ -46,6 +46,17 @@ def test_scene_query_has_ground_truth():
     assert "Which object" in q["prompt"] and "target:" in q["prompt"]
 
 
+def test_flexible_queries_are_well_formed_ground_truth():
+    from harness.perception_probe import flexible_queries
+    s = make_scene(5)
+    names = {o[0] for o in s.objects}
+    q = flexible_queries(s, conserving_encode(s))
+    assert set(q) == {"locate", "nearest", "count_left", "quadrant"}
+    assert q["nearest"]["answer"] in names and q["nearest"]["answer"] != "target"
+    assert 0 <= int(q["count_left"]["answer"]) <= len(s.objects)
+    assert q["quadrant"]["answer"] in {"top-left", "top-right", "bottom-left", "bottom-right"}
+
+
 def test_conservation_gap_witnesses_the_difference():
     g = conservation_gap(7)
     assert g["conserving"]["distinct"] is True
