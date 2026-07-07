@@ -41,6 +41,23 @@ def _norm(code: str) -> str:
     return re.sub(r"\s+", "", code)
 
 
+def _fn_name(solution: str) -> str | None:
+    m = re.search(r"^def\s+(\w+)\s*\(", solution, re.MULTILINE)
+    return m.group(1) if m else None
+
+
+def _fn_arity(solution: str) -> int | None:
+    """Positional-parameter count of the first top-level def (ast-exact)."""
+    import ast
+    try:
+        for node in ast.parse(solution).body:
+            if isinstance(node, ast.FunctionDef):
+                return len(node.args.args) + len(node.args.posonlyargs)
+    except SyntaxError:
+        pass
+    return None
+
+
 def _solution_hash(spec: TaskSpec) -> str:
     return hashlib.sha256(_norm(spec.solution).encode()).hexdigest()[:16]
 
@@ -69,6 +86,25 @@ def _run_with(spec: TaskSpec, work_root: Path, solution_text: str,
     r = subprocess.run(spec.oracle_cmd, cwd=task.workdir, shell=True,
                        capture_output=True, env=run_env(), timeout=30)
     return r.returncode == 0
+
+
+def _behavioral_dup(spec: TaskSpec, other: TaskSpec,
+                    work_root: str | Path) -> bool:
+    """Does `spec`'s solution pass `other`'s hidden tests once its entry
+    function is aliased to `other`'s expected name? True = same task in
+    different clothes. Un-parseable entry names -> not judged a dup here
+    (the stub gate already fails closed on unstubbable solutions)."""
+    mine, theirs = _fn_name(spec.solution), _fn_name(other.solution)
+    if mine is None or theirs is None:
+        return False
+    candidate = spec.solution
+    if mine != theirs:
+        candidate += f"\n{theirs} = {mine}\n"
+    shim = TaskSpec(f"{other.task_id}__semdup_probe", other.prompt,
+                    other.candidate_filename, other.solution,
+                    other.hidden_tests, other.difficulty,
+                    oracle_cmd=other.oracle_cmd)
+    return _run_with(shim, Path(work_root), candidate, f"sem-{spec.task_id}")
 
 
 def screen(spec: TaskSpec, work_root: str | Path,
@@ -100,7 +136,29 @@ def screen(spec: TaskSpec, work_root: str | Path,
     elif _solution_hash(spec) in hashes:
         gates["dedup"] = "FAIL: normalized solution duplicates an existing task"
     else:
+        # semantic layer, BEHAVIORAL by construction: two tasks are the same
+        # task iff each solution passes the OTHER's hidden tests (aliased to
+        # its name). Bidirectional matters: one-way pass is SUBSUMPTION, not
+        # identity — search_rotated degenerates to binary_search on unrotated
+        # input and passes its tests, but binary_search fails the rotated
+        # cases, so the generalization is admitted. Text similarity was
+        # measured and rejected as the trigger — a disguised rewrite scores
+        # 0.07 while a legitimate decode/encode neighbor scores 0.27, so no
+        # threshold separates. The only exact prefilter is ARITY (a
+        # different-arity pair fails on call shape in both directions
+        # anyway). Cost is pytest runs per same-arity existing task —
+        # offline admission can afford the runtime, not the hole.
         gates["dedup"] = "PASS"
+        arity = _fn_arity(spec.solution)
+        for other in existing:
+            if arity is not None and _fn_arity(other.solution) not in (arity, None):
+                continue
+            if (_behavioral_dup(spec, other, work_root)
+                    and _behavioral_dup(other, spec, work_root)):
+                gates["dedup"] = (f"FAIL: behaviorally equivalent to "
+                                  f"{other.task_id!r} (each passes the "
+                                  f"other's hidden tests)")
+                break
 
     gates["reference_passes"] = ("PASS" if validate_spec(spec, work_root)
                                  else "FAIL: reference solution fails its own tests")
@@ -162,6 +220,22 @@ def append_registry(specs: list[TaskSpec], registry_path: str | Path) -> int:
                 json.dumps(row, sort_keys=True).encode()).hexdigest()[:16]
             f.write(json.dumps(row, sort_keys=True) + "\n")
     return len(specs)
+
+
+def seed_batch(batch: list[TaskSpec], registry_path: str | Path) -> dict:
+    """One admission run: screen `batch` against the code registries AND the
+    persisted registry (idempotent re-runs), append the admitted, report."""
+    import tempfile
+    from .tasks_hard import HARD_REGISTRY
+    from .tasks_lib import REGISTRY
+    existing = list(REGISTRY) + list(HARD_REGISTRY)
+    if Path(registry_path).exists():
+        existing += load_registry(registry_path)
+    with tempfile.TemporaryDirectory() as wr:
+        out = curate(batch, wr, existing=existing)
+    append_registry(out["admitted"], registry_path)
+    out["registry_total"] = len(load_registry(registry_path))
+    return out
 
 
 def load_registry(registry_path: str | Path) -> list[TaskSpec]:
