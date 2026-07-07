@@ -171,7 +171,22 @@ region-caching, determinism-hardening (oracle path already deterministic).
   transformer-circuits workspace/J-space paper is the measurable INTERNAL analog
   of boot.py's EXTERNAL workspace; the transpiler delivers perception IFF the
   transpiled signal becomes workspace-loaded (flexible use) — behaviorally
-  testable here. The next falsifiable build.
+  testable here.
+- **Perception MEASURED (2026-07-06):** `perception_probe.py` (5 falsifiers) +
+  `run_perception_probe.py` on the trained 14B: **conserving encoding 100% locate
+  accuracy vs naive 80%, +20% lift, verdict PERCEPTION** (N=20). The model reads
+  the transpile carrier perfectly (perception is usable) AND criterion-conservation
+  is load-bearing (+20% over the lossy encoding). HONEST BOUND: partly by-
+  construction (naive was designed to lose the criterion) — a clean validation of
+  transpile-conservation, NOT a discovery. Scorecard committed.
+- **Functional-access-marker layer DESIGNED** (`workspace_signature_design_
+  20260706.md`): the honest consciousness-adjacent seam. Measures the workspace
+  paper's 5 behavioral markers as ACCESS/FUNCTIONAL correlates — never phenomenal
+  experience (Block's A/P split is the hard boundary; interpretation is framework-
+  relative: GWT/illusionism say yes, IIT/biological-naturalism say no). boot.py =
+  global broadcast; reconcile loop = higher-order monitor — two functional theories'
+  architectures already instantiated by engineering. NO composite "consciousness
+  score" (that would be theater). Next build: the flexible-generalization marker.
 - (history) 14B CPT resumed from checkpoint-1850; watcher caught the DONE marker.
 - M7 endgame: `bash scripts/finish_and_eval.sh` (done, above).
 - **32B QLoRA smoke PASSES on the single 4090 (2026-07-06): seq_len 256, peak
