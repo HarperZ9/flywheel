@@ -8,6 +8,19 @@ ranking synthesis. Maturity labels are honest and appear verbatim in any
 public copy. No category is called a flagship here; the honest labels are one
 tested-component, two demos, four kernels.
 
+## The mission this plan serves
+
+**Best tool in every single category entered, and integrative niches that had
+never existed.** Two prongs. First: feature-for-feature superiority against
+the current best in each category — features, UX, demos, speed, cost. A new
+competitor is assessed as a whole product before anything else; the
+accountability layer is the closing multiplier, never the lede, because it
+does not bring users in on its own. Second: where a category is crowded,
+create the adjacent category with no incumbent by composing organs nobody
+else has — the context lens (live budget-frontier replay), the workbench
+spine view (tool mutual-awareness rendered), proof-addressed memory
+(verified-result reuse, not billing-cache reuse).
+
 ## The rule this plan lives under
 
 Every capability sentence must name the falsifier that fired. If none fired,
