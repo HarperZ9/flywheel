@@ -10,6 +10,32 @@
 
 Last updated: 2026-07-06
 
+## 2026-07-07 (cont.) — week-lane increments #2/#4/#7-prereq shipped
+
+- **dataset receipt** (`dataset/receipt.py`): re-derivable corpus -> shards ->
+  checkpoint chain, privacy invariant held (paths as sha256 only, falsifier
+  asserts no leak). **REAL receipt derived for checkpoint-2020** (17,997 files
+  / 0 missing / 8 shards / adapter sealed, round-trip MATCH), written beside
+  the adapter on E: + committed copy in tasks/research/. Marked RETROACTIVE in
+  the receipt itself (pack+checkpoint seal what trained; corpus layer is
+  as-of-derivation — future runs seal at pack time).
+- **knowledge_monitor** (`harness/knowledge_monitor.py`): standing observation
+  over the verified base; subscriptions fire on verdict TRANSITIONS only
+  (drift twice fires once; recovery fires; steady state never re-fires);
+  read-only query API (concepts / kind / tier / last-verdict / neighbors).
+- **task_curator** (`harness/task_curator.py`): admission gates for the
+  N>=100 hard-set lane (reference_passes, oracle_can_fail via return-None
+  stub, deterministic, no_solution_leak, edge_coverage>=4, dedup); JSONL
+  registry with per-row hashes that refuse to load tampered. DOGFOOD: the
+  existing 18-task benchmark screened 15/18 clean — 3 easy tasks fail only
+  the new edge_coverage bar; ALL 18 pass oracle_can_fail + no leak, so the
+  M7 sets carry no vacuous tests.
+- Session slice green: 57 tests across the five new organs + collaborators.
+- Remaining month-lane (gated, named): GGUF/Ollama packaging (toolchain not
+  yet installed in WSL; checkpoint + 948G disk ready), actual 100-task
+  curation through the gates, N>=100 matched-budget ablation (decides the
+  uplift question; publish whatever it says, including zero).
+
 ## 2026-07-07 — GROUNDING CLOSURE SHIPPED (the ranked #1 increment)
 
 - **transitive-witness closure is ON the critical path** (`harness/grounding.py`
