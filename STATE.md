@@ -1,5 +1,9 @@
 # STATE — live cursor
 
+> **Canonical overview: [PROJECT.md](PROJECT.md).** This file is the running,
+> append-only work log (newest-first); PROJECT.md is the synthesized, honestly-
+> bounded picture of the whole project. Read PROJECT.md first.
+
 > The moving cursor for the local-model program. `ROADMAP.md` is the durable
 > backbone (the WHY and the phase plan); this file is where we are RIGHT NOW.
 > Update on every material step. If context is lost: read ROADMAP.md, then this.

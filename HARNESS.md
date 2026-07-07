@@ -1,5 +1,7 @@
 # HARNESS — Layer B: the verified-inference contribution
 
+> **Canonical overview: [PROJECT.md](PROJECT.md)** (§1–2 synthesize this). Original design/thesis doc, kept for depth.
+
 > This is the part worth publishing. The model (Layer A) is cheap and
 > replaceable; the harness is where frontier *output* is manufactured from
 > non-frontier *weights*. The claim: on any task with an oracle,

@@ -1,5 +1,7 @@
 # HANDOFF — local-model build (session continuation artifact)
 
+> **Superseded by [PROJECT.md](PROJECT.md) + [STATE.md](STATE.md).** Historical Phase-2 handoff; treat its "pending" items as done.
+
 > **Read this first.** Generated 2026-07-04 after a full session that
 > (a) corrected the Phase-2 training diagnosis, (b) pivoted to Layer B, and
 > (c) stood up M0 + prepared a vLLM/WSL2 spike that is gated on a REBOOT.

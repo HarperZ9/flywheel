@@ -1,5 +1,7 @@
 # local-model — verified-inference frontier-output program
 
+> **Canonical overview + roadmap: [PROJECT.md](PROJECT.md).** Original program framing, kept for history.
+
 > Durable program backbone. This file is the source of truth across sessions.
 > If context is lost, read this first, then `STATE.md` for the live cursor.
 
