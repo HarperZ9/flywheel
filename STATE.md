@@ -10,6 +10,46 @@
 
 Last updated: 2026-07-06
 
+## 2026-07-07 — GROUNDING CLOSURE SHIPPED (the ranked #1 increment)
+
+- **transitive-witness closure is ON the critical path** (`harness/grounding.py`
+  + `run_loop(grounding_recheck=True, grounding_workdirs=...)`): cited
+  grounding resolved transitively from the envelope store, each ancestor
+  re-witnessed in its own oracle environment, closure folded, acceptance gated
+  on the transitive verdict, grounding stage sealed into the chain.
+- **The 3-arm falsifier FIRED end-to-end on real envelopes**
+  (`tests/test_grounding_closure.py`, 7 tests): tampered A -> DRIFT; B citing
+  A -> UNVERIFIABLE (gap not glut), refused despite its own oracle passing,
+  never sealed into the store; independent C -> MATCH (localization). Positive
+  control: healthy grounding conserves MATCH. Fail-closed: missing envelope or
+  missing oracle environment -> UNVERIFIABLE (never assumed MATCH, never a
+  wrong-workdir fake re-run). Behavior-change proof: pre-wire path ACCEPTS the
+  same poisoned setup; wired path refuses. No capability claim beyond that.
+- **FLAGSHIP-PLAN.md added** (7-category ranked plan from the workflow sweep,
+  run wf_643cfd70-9cb): harness #1 (shipped above), then dataset receipt ->
+  knowledge monitor -> N>=100 curation lane -> packaging; compiler/creative
+  parked; uplift deliberately last. M7 +10% stays quarantined as UNEARNED.
+- Collaborator slice green (39 tests: grounding, m1, transitive, chain,
+  adversarial corpus).
+
+## 2026-07-06 (latest) — accountability benchmark category + flagship plan
+
+- **accountability_bench committed** (`harness/accountability_bench.py` + 5
+  falsifiers): a NEW benchmark CATEGORY scoring accountability, not capability.
+  7 dimensions, each an aggregation over an existing tested module
+  (re-checkability, externalization, adversarial soundness, no-regression,
+  invariant fidelity, null-space honesty, provenance). Credibility test:
+  strawman (unaccountable system) scores 0.0 vs harness 1.0 — the benchmark can
+  FAIL. The 1.0 is near-tautological (self-authored axes) and the receipt says
+  so; the value is scoring OTHER systems on axes they ignore. Deliberately NO
+  capability/uplift axis (the uplift is unearned).
+- **Flagship-establishment workflow** (7 categories): first run died mid-flight
+  after 5/7 assessments (saved to scratchpad `flagship_assessments_partial.json`);
+  resumed from journal `wf_643cfd70-9cb` for harness + compiler-pl + Rank.
+  Landed maturities (honest): second-brain=demo, creative=demo,
+  uplift-engine=demo, dataset-trainer=demo, local-models=kernel (no shipped
+  artifact yet; increment = GGUF-quantize the 14B adapter + Ollama Modelfile).
+
 ## 2026-07-06 (late) — superproject, cross-domain series, ABLATION NEGATIVE
 
 Branch at 58 commits (~390 tests). Since the M7 run:
