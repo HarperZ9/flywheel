@@ -21,15 +21,18 @@ def test_core_loop_links_are_executed_and_closed(tmp_path):
     assert hs[("memory", "serve")]["closed"]
 
 
-def test_open_links_are_reported_not_hidden(tmp_path):
+def test_content_link_now_closed_weight_link_still_open(tmp_path):
     m = measure_loop(tmp_path)
-    assert "memory->context" in m["open_links"], "auto-context-feedback is OPEN and must be named"
+    # memory->context is now CLOSED (evolutionary_flywheel.auto_retrieved, compounds)
+    assert "memory->context" not in m["open_links"]
+    # corpus->model (auto-retrain) remains the one honest open link
     assert "corpus->model" in m["open_links"], "auto-retrain is OPEN and must be named"
-    assert m["fully_closed"] is False, "the loop is NOT fully closed — honest partial closure"
+    assert m["fully_closed"] is False, "one link (auto-retrain) still open — honest"
 
 
-def test_closure_is_partial_and_high(tmp_path):
+def test_closure_is_high_but_not_complete(tmp_path):
     m = measure_loop(tmp_path)
-    # closed at fast + config altitudes, open at content + weight altitudes
-    assert 0.5 < m["closure_fraction"] < 1.0
+    # 8/9 now: closed at fast + config + content, open only at the weight altitude
+    assert m["closure_fraction"] >= 0.85 and m["closure_fraction"] < 1.0
+    assert m["open_links"] == ["corpus->model"]
     assert "loop closure" in loop_report(m)

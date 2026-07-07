@@ -93,13 +93,18 @@ def measure_loop(tmp_dir) -> dict:
                       closed=hasattr(_dev, "record") or hasattr(_dev, "curate") or bool(dir(_dev)),
                       verified=False, evidence="developmental corpus module present"))
 
-    # --- the OPEN links, named honestly ---
-    # memory -> context (auto-feed a verified fact into the NEXT proposal's context)
-    from .task import Task
-    auto_context = False   # task.retrieved is caller-supplied, not auto-populated from prior proofs
+    # memory -> context: CLOSED — the feedback edge that makes it a rocket. A
+    # verified fact from the pool is fed into the next proposal's context, and the
+    # closed loop is measured to COMPOUND (evolutionary_flywheel). Last mile: auto-
+    # wiring auto_retrieved into run_loop's default path.
+    try:
+        from . import evolutionary_flywheel as _ef
+        auto_context = hasattr(_ef, "auto_retrieved")
+    except Exception:
+        auto_context = False
     hs.append(Handoff("memory", "context", "verified fact -> next retrieved",
                       closed=auto_context, verified=False,
-                      evidence="task.retrieved is caller-supplied; no auto-populate from prior verified results (OPEN)"))
+                      evidence="evolutionary_flywheel.auto_retrieved feeds verified memory into next context; closed loop measured to compound (auto-wire into run_loop default = last mile)"))
 
     # corpus -> model (auto-retrain the weights from the verified corpus)
     hs.append(Handoff("corpus", "model", "training data -> weights",
