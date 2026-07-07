@@ -10,6 +10,30 @@
 
 Last updated: 2026-07-06
 
+## 2026-07-07 (session 2, cont.) — SHIPPABLE GGUF + provenance chain, index watch
+
+- **GGUF ARTIFACT SHIPPED & DETERMINISTIC.** telos-coder-14b-cpt2020-q4_k_m.gguf
+  (8.4G Q4_K_M from checkpoint-2020, train_loss 0.035). Loads, generates CORRECT
+  code (valid iterative Fibonacci), smoke MATCH (byte-identical at temp 0 seed 7).
+  The initial DRIFT was a FALSE alarm correctly diagnosed as the wrong invariant
+  (llama-cli conversation banner in stdout, not generation nondeterminism) — the
+  turbulence lesson applied live; fixed by switching to llama-completion (clean
+  token stream). This closes the "local-models: no shipped artifact" gap.
+- **Full provenance chain closed** (the invented niche): the ship manifest
+  (tasks/research/gguf_ship_manifest_checkpoint2020.json) chains corpus content
+  hash -> pack shards hash -> checkpoint adapter sha256 -> GGUF sha256, each
+  layer independently re-derivable. A pullable artifact whose receipt proves
+  what it was trained on — no competitor ships this.
+- **BATTLE-MAP.md**: whole-product sweep of 6 categories (live July-2026
+  research) with per-axis verdicts + beating increments + invented niche each.
+  The durable extension roadmap. Honest: we lead speed/cost/zero-dep + the
+  verifiable-artifact niches; trail on demo/community/benchmark-traction.
+- **index watch shipped** (in the index repo, feat/context-lens): live
+  auto-resync — the feature every codebase-map competitor has and index lacked;
+  composes the freshness machinery (holds the prior fingerprint) into a real
+  live FRESH/STALE verdict + re-checkable sync receipt; --regen rebuilds the
+  workbench/atlas on change. 6 falsifiers.
+
 ## 2026-07-07 (session 2) — providers, curator hardening, hard-set 38/100
 
 - **providers.py**: named registry (13 providers + BYO endpoint) over the
