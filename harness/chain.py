@@ -49,13 +49,31 @@ class ChainValidation:
     reason: str
 
 
-def validate_chain(stages: Iterable[StageReceipt | dict]) -> ChainValidation:
+def validate_chain(stages: Iterable[StageReceipt | dict],
+                   *, rewitness=None) -> ChainValidation:
+    """Validate the chain. Two levels of claim:
+
+    - STRUCTURAL (default, rewitness=None): every link is intact — each receipt's
+      prev_hash equals the recomputed hash of the prior stage. Proves the record
+      was not tampered after the fact. This is tamper-evidence, NOT verdict truth:
+      a chain of FORGED verdicts with intact links still passes structurally.
+
+    - RE-WITNESSED (rewitness supplied): additionally re-check each stage's stored
+      verdict by calling rewitness(stage_dict) -> fresh_verdict. MATCH requires
+      every stored verdict to REPRODUCE. If a stage's stored verdict disagrees with
+      its re-witnessed verdict, the chain is DRIFT — the record drifted from
+      reality. This closes the composition gap: MATCH now means criterion-
+      conservation along the whole chain (the linear analog of transitive_witness).
+      rewitness stays caller-supplied so the subprocess/oracle re-run lives in the
+      witness organ, not here."""
     stages = list(stages)
     if not stages:
         return ChainValidation("UNVERIFIABLE", None, None, "empty chain")
     prev = ""
+    dicts = []
     for i, s in enumerate(stages):
         sd = s if isinstance(s, dict) else asdict(s)
+        dicts.append(sd)
         rh = StageReceipt(
             stage=sd["stage"], inputs_hash=sd["inputs_hash"],
             outputs_hash=sd["outputs_hash"], verdict=sd["verdict"],
@@ -66,7 +84,21 @@ def validate_chain(stages: Iterable[StageReceipt | dict]) -> ChainValidation:
                 "UNVERIFIABLE", i, rh,
                 f"broken link at stage {i} ({sd['stage']}): prev_hash mismatch")
         prev = rh
-    return ChainValidation("MATCH", None, prev, "all links verified")
+    if rewitness is not None:
+        for i, sd in enumerate(dicts):
+            fresh = rewitness(sd)
+            if fresh is None:
+                return ChainValidation(
+                    "UNVERIFIABLE", i, prev,
+                    f"stage {i} ({sd['stage']}) could not be re-witnessed")
+            if fresh != sd["verdict"]:
+                return ChainValidation(
+                    "DRIFT", i, prev,
+                    f"stage {i} ({sd['stage']}) verdict drifted: stored "
+                    f"{sd['verdict']!r} != re-witnessed {fresh!r}")
+        return ChainValidation("MATCH", None, prev,
+                               "all links verified and every stage verdict re-witnessed")
+    return ChainValidation("MATCH", None, prev, "all links verified (structural)")
 
 
 def append_stage(chain: list[StageReceipt], stage: str, inputs_hash: str,
