@@ -28,14 +28,18 @@ from harness.oracle import PytestOracle
 from harness.proposer import ServeProposer, StubProposer
 from harness.tasks_lib import REGISTRY, materialize_all
 from harness.tasks_hard import HARD_REGISTRY
+from harness.tasks_expert import EXPERT_REGISTRY
 from harness.task import load_task
 
 ARMS = [SINGLE_SHOT, VERIFIED_INFERENCE, FLAT_N, NO_SEARCH]
 
 
-def build_task_set(workroot: Path, n: int, hard: bool = False):
-    reg = HARD_REGISTRY if hard else REGISTRY
-    dirs = materialize_all(reg[:n], workroot / "m7-tasks")
+def _registry(tier: str):
+    return {"expert": EXPERT_REGISTRY, "hard": HARD_REGISTRY}.get(tier, REGISTRY)
+
+
+def build_task_set(workroot: Path, n: int, tier: str = "easy"):
+    dirs = materialize_all(_registry(tier)[:n], workroot / "m7-tasks")
     return [load_task(d) for d in dirs]
 
 
@@ -44,18 +48,20 @@ def main() -> int:
     ap.add_argument("--serve", default="http://127.0.0.1:8765")
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--hard", action="store_true", help="use the harder held-out set")
+    ap.add_argument("--expert", action="store_true", help="use the EXPERT set (uplift headroom)")
     ap.add_argument("--n-tasks", type=int, default=0)
     ap.add_argument("--out", default="m7_scorecard.json")
     ap.add_argument("--pinned", default="")
     ap.add_argument("--workroot", default=str(Path(__file__).parent.parent / ".m7-run"))
     a = ap.parse_args()
 
-    n = a.n_tasks or (len(HARD_REGISTRY) if a.hard else len(REGISTRY))
+    tier = "expert" if a.expert else ("hard" if a.hard else "easy")
+    n = a.n_tasks or len(_registry(tier))
     workroot = Path(a.workroot)
-    task_set = build_task_set(workroot, n, hard=a.hard)
+    task_set = build_task_set(workroot, n, tier=tier)
 
     if a.dry_run:
-        ref = {s.task_id: s.solution for s in REGISTRY}
+        ref = {s.task_id: s.solution for s in _registry(tier)}
         def proposer_for(arm, task):
             return StubProposer(ref.get(task.task_id, "pass\n"), model_ref="dry-ref")
         model_ref = "dry-run(reference)"
