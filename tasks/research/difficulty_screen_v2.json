@@ -1,0 +1,99 @@
+{
+  "screen": "difficulty/single_shot_temp0",
+  "model_ref": "14b-cpt-adapter",
+  "registry": "hard_v2.jsonl",
+  "n_tasks": 17,
+  "single_shot_rate": 0.706,
+  "saturates_at_temp0": [
+    "edit_distance",
+    "interval_intersection",
+    "josephus",
+    "lis_length",
+    "matrix_rotate_inplace",
+    "next_permutation",
+    "parse_range_list",
+    "rle_decode",
+    "search_rotated",
+    "topo_sort",
+    "valid_ipv4",
+    "word_break"
+  ],
+  "headroom_at_temp0": [
+    "count_islands",
+    "evaluate_rpn",
+    "first_missing_positive",
+    "merge_sorted_streams",
+    "sliding_window_max"
+  ],
+  "per_task": [
+    {
+      "task_id": "interval_intersection",
+      "passed": true
+    },
+    {
+      "task_id": "search_rotated",
+      "passed": true
+    },
+    {
+      "task_id": "parse_range_list",
+      "passed": true
+    },
+    {
+      "task_id": "sliding_window_max",
+      "passed": false
+    },
+    {
+      "task_id": "topo_sort",
+      "passed": true
+    },
+    {
+      "task_id": "rle_decode",
+      "passed": true
+    },
+    {
+      "task_id": "matrix_rotate_inplace",
+      "passed": true
+    },
+    {
+      "task_id": "evaluate_rpn",
+      "passed": false
+    },
+    {
+      "task_id": "lis_length",
+      "passed": true
+    },
+    {
+      "task_id": "word_break",
+      "passed": true
+    },
+    {
+      "task_id": "edit_distance",
+      "passed": true
+    },
+    {
+      "task_id": "valid_ipv4",
+      "passed": true
+    },
+    {
+      "task_id": "josephus",
+      "passed": true
+    },
+    {
+      "task_id": "next_permutation",
+      "passed": true
+    },
+    {
+      "task_id": "merge_sorted_streams",
+      "passed": false
+    },
+    {
+      "task_id": "first_missing_positive",
+      "passed": false
+    },
+    {
+      "task_id": "count_islands",
+      "passed": false
+    }
+  ],
+  "note": "one temp-0 sample = the M7 single_shot arm, NOT pass@k; temp-0 failure does not certify hardness"
+}
