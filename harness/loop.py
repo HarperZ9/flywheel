@@ -27,6 +27,7 @@ from .proof_cache import proof_lookup, proof_insert
 from .chain import StageReceipt, append_stage, chain_to_dicts
 from .search import best_of_n, DEFAULT_TEMPS
 from .eval import ArmConfig
+from .grounding import recheck_grounding
 
 
 def _short_hash(text: str) -> str:
@@ -42,6 +43,7 @@ class LoopResult:
     elapsed_s: float
     policy: PolicyResult | None = None
     cache_hit: bool = False
+    grounding: dict | None = None
 
 
 def run_loop(task: Task, proposer: Proposer, oracle: Oracle, *,
@@ -53,7 +55,9 @@ def run_loop(task: Task, proposer: Proposer, oracle: Oracle, *,
              policy: list[PolicyLayer] | None = None,
              cache: ReceiptCache | None = None,
              proof_addressed: bool = False,
-             search: ArmConfig | None = None) -> LoopResult:
+             search: ArmConfig | None = None,
+             grounding_recheck: bool = False,
+             grounding_workdirs: dict | None = None) -> LoopResult:
     t0 = time.time()
     chain: list[StageReceipt] = []
     if boot_packet is None and boot_root is not None:
@@ -171,8 +175,22 @@ def run_loop(task: Task, proposer: Proposer, oracle: Oracle, *,
             envelope, workdir=task.workdir, candidate_path=task.candidate_path)
     append_stage(chain, "accept", orc.output_hash, wv.verdict, wv.verdict,
                  payload={"reason": wv.reason})
-    envelope.chain = chain_to_dicts(chain)
     accepted = (orc.passed and wv.verdict == "MATCH")
+    grounding = None
+    if grounding_recheck and retrieved:
+        # the closure on the critical path: a result is only as good as what it
+        # cites — a drifted or unconfirmable grounding gates acceptance (fail
+        # closed), while tasks that cite nothing are untouched (localization)
+        grounding = recheck_grounding(
+            envelope, wv.verdict, envelopes_dir=envelopes_dir,
+            workdirs=grounding_workdirs or {})
+        append_stage(chain, "grounding",
+                     _short_hash(str(sorted(grounding["verdicts"].items()))),
+                     grounding["verdict"], grounding["verdict"],
+                     payload={"verdicts": grounding["verdicts"],
+                              "reasons": grounding["reasons"]})
+        accepted = accepted and grounding["verdict"] == "MATCH"
+    envelope.chain = chain_to_dicts(chain)
     if accepted:
         epath = Path(envelopes_dir)
         epath.mkdir(parents=True, exist_ok=True)
@@ -183,4 +201,4 @@ def run_loop(task: Task, proposer: Proposer, oracle: Oracle, *,
         proof_insert(cache, task, envelope)   # dual-index: prompt/model-invariant fact
     return LoopResult(
         envelope=envelope, oracle=orc, witness=wv,
-        accepted=accepted, elapsed_s=time.time() - t0)
+        accepted=accepted, elapsed_s=time.time() - t0, grounding=grounding)
