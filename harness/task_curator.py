@@ -226,9 +226,10 @@ def seed_batch(batch: list[TaskSpec], registry_path: str | Path) -> dict:
     """One admission run: screen `batch` against the code registries AND the
     persisted registry (idempotent re-runs), append the admitted, report."""
     import tempfile
+    from .tasks_expert import EXPERT_REGISTRY
     from .tasks_hard import HARD_REGISTRY
     from .tasks_lib import REGISTRY
-    existing = list(REGISTRY) + list(HARD_REGISTRY)
+    existing = list(REGISTRY) + list(HARD_REGISTRY) + list(EXPERT_REGISTRY)
     if Path(registry_path).exists():
         existing += load_registry(registry_path)
     with tempfile.TemporaryDirectory() as wr:
