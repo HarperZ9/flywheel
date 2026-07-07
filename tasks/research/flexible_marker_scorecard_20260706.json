@@ -1,0 +1,12 @@
+{
+  "n": 20,
+  "per_function_acc": {
+    "locate": 1.0,
+    "nearest": 0.2,
+    "count_left": 0.1,
+    "quadrant": 0.05
+  },
+  "functions_handled": 1,
+  "marker": "flexible_generalization (functional-access, not phenomenal)",
+  "verdict": "COPY-ONLY"
+}

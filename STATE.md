@@ -187,6 +187,24 @@ region-caching, determinism-hardening (oracle path already deterministic).
   global broadcast; reconcile loop = higher-order monitor — two functional theories'
   architectures already instantiated by engineering. NO composite "consciousness
   score" (that would be theater). Next build: the flexible-generalization marker.
+- **Flexible-generalization marker: COPY-ONLY (2026-07-06) — the strong claim is
+  REFUTED.** One conserving encoding, four functions: locate **100%**, nearest
+  **20%**, count_left **10%**, quadrant **5%** -> 1/4 handled -> COPY-ONLY. The
+  model READS the transpiled carrier and does direct lookup perfectly, but CANNOT
+  reason flexibly over it (distance/count/region all fail). So the transpiled
+  signal is COPYABLE, NOT workspace-loaded — it fails the workspace paper's own
+  flexible-generalization marker. **The earlier +20% "PERCEPTION" was by-
+  construction (naive threw away the answer); the stronger, non-by-construction
+  marker shows the transpiler is a readable LOOKUP carrier, not a perception
+  engine.** No functional-access marker passes; the consciousness-adjacent thread
+  gets an honest NEGATIVE, not a breakthrough. Notably, the harness's OWN
+  measurement layer caught our overclaim — the thesis (verification refutes
+  inflated claims) working on our own work.
+- **Finding -> tooling seam:** COPY-ONLY exposes that the grid-label encoding is a
+  lookup format, not a reasoning-friendly one (the model can't compute over labels
+  without decoded coordinates). The real next build is a reasoning-friendly
+  transpile mode (expose decoded coords alongside labels) + re-run the marker —
+  turning the negative into the next capability. Scorecard committed.
 - (history) 14B CPT resumed from checkpoint-1850; watcher caught the DONE marker.
 - M7 endgame: `bash scripts/finish_and_eval.sh` (done, above).
 - **32B QLoRA smoke PASSES on the single 4090 (2026-07-06): seq_len 256, peak
