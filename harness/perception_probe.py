@@ -21,7 +21,7 @@ from __future__ import annotations
 import random
 from dataclasses import dataclass
 
-from .transpile import grid_label, grid_center, grid_cell_size, label_bits
+from .transpile import grid_label, grid_center, grid_cell_size, label_bits, grid_metric_form
 
 _COLS, _ROWS = 16, 9
 
@@ -113,12 +113,9 @@ def reasoning_encode(scene: Scene) -> str:
     """Reasoning-friendly: the conserving label PLUS its decoded coordinates (from
     grid_center, so still transpile-derived within the conservation tolerance).
     Tests whether the opaque-label FORMAT was the bottleneck for flexible use."""
-    lines = []
-    for nm, x, y in scene.objects:
-        lab = grid_label(x, y, scene.w, scene.h, cols=_COLS, rows=_ROWS, depth=2)
-        cx, cy = grid_center(lab, scene.w, scene.h, cols=_COLS, rows=_ROWS)
-        lines.append(f"{nm}: {lab} (x={int(cx)}, y={int(cy)})")
-    return "\n".join(lines)
+    return "\n".join(
+        f"{nm}: {grid_metric_form(x, y, scene.w, scene.h, cols=_COLS, rows=_ROWS)}"
+        for nm, x, y in scene.objects)
 
 
 def raw_encode(scene: Scene) -> str:

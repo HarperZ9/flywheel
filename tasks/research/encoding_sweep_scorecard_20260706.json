@@ -1,0 +1,29 @@
+{
+  "n": 20,
+  "per_encoding": {
+    "labels": {
+      "nearest": 0.25,
+      "count_left": 0.15,
+      "quadrant": 0.2,
+      "_mean": 0.2
+    },
+    "reasoning": {
+      "nearest": 0.3,
+      "count_left": 0.1,
+      "quadrant": 0.5,
+      "_mean": 0.3
+    },
+    "raw": {
+      "nearest": 0.3,
+      "count_left": 0.5,
+      "quadrant": 0.6,
+      "_mean": 0.467
+    }
+  },
+  "verdict": "INCONCLUSIVE",
+  "means": {
+    "labels": 0.2,
+    "reasoning": 0.3,
+    "raw": 0.467
+  }
+}

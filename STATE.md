@@ -204,6 +204,15 @@ region-caching, determinism-hardening (oracle path already deterministic).
   gets an honest NEGATIVE, not a breakthrough. Notably, the harness's OWN
   measurement layer caught our overclaim — the thesis (verification refutes
   inflated claims) working on our own work.
+- **Encoding sweep — the weak point DIAGNOSED + integrated (2026-07-06).** labels
+  **0.20** -> reasoning **0.30** -> raw coords **0.467** mean over 3 spatial-
+  reasoning functions (n=20). Two real things: the opaque grid-label FORMAT is a
+  major bottleneck (raw coords >2x labels) AND the model has a spatial-reasoning
+  ceiling (~0.47 even with ideal coords). **Native fix integrated:**
+  `transpile.grid_metric_form` (compact label + decoded metric coords) — the
+  reasoning-conserving form; principle refined to *conserve the criterion the
+  DOWNSTREAM TASK needs* (lookup->label, reasoning->metric). perception_probe now
+  composes onto it. Scorecard committed.
 - **Finding -> tooling seam:** COPY-ONLY exposes that the grid-label encoding is a
   lookup format, not a reasoning-friendly one (the model can't compute over labels
   without decoded coordinates). The real next build is a reasoning-friendly
