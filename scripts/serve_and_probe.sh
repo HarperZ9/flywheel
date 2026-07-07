@@ -31,6 +31,10 @@ done
 echo "=== perception probe (conserving vs naive locate accuracy) ==="
 "$PY" "$SRC/scripts/run_perception_probe.py" --serve http://127.0.0.1:8765 --n 20 \
   --out "$RUN/perception_scorecard.json"
+
+echo "=== flexible-generalization marker (one encoding, 4 functions) ==="
+"$PY" "$SRC/scripts/run_flexible_marker.py" --serve http://127.0.0.1:8765 --n 20 \
+  --out "$RUN/flexible_marker_scorecard.json"
 rc=$?
-echo "=== perception probe done rc=$rc ==="
+echo "=== probes done rc=$rc ==="
 exit $rc

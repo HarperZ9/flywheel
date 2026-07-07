@@ -109,6 +109,36 @@ def scene_query(scene: Scene, encoding: str) -> dict:
     return {"prompt": prompt, "answer": truth}
 
 
+def _quadrant(x: float, y: float, w: int, h: int) -> str:
+    return ("top" if y < h / 2 else "bottom") + "-" + ("left" if x < w / 2 else "right")
+
+
+def flexible_queries(scene: Scene, encoding: str) -> dict:
+    """The flexible-generalization marker: FOUR distinct functions over ONE
+    encoding. If the model handles the SET (not just locate), the representation
+    is workspace-loaded — usable across functions, not merely copyable. Each
+    answer is ground-truth from the true coords."""
+    w, h, objs = scene.w, scene.h, scene.objects
+    tgt = objs[0]
+    others = objs[1:]
+    nearest = min(others, key=lambda o: (o[1] - tgt[1]) ** 2 + (o[2] - tgt[2]) ** 2)[0]
+    left = sum(1 for _, x, _ in objs if x < w / 2)
+    quad = _quadrant(tgt[1], tgt[2], w, h)
+    header = (f"A {w}x{h} scene, objects at grid labels (cols A-P, rows 1-9, "
+              f"'.' = sub-cell):\n{encoding}\n\n")
+    loc = scene_query(scene, encoding)
+    return {
+        "locate": loc,
+        "nearest": {"prompt": header + "Which object is spatially nearest to "
+                    "'target'? Answer ONLY the object name.", "answer": nearest},
+        "count_left": {"prompt": header + "How many objects are in the LEFT half "
+                       "(columns A-H)? Answer ONLY a number.", "answer": str(left)},
+        "quadrant": {"prompt": header + "Which quadrant is 'target' in: top-left, "
+                     "top-right, bottom-left, or bottom-right? Answer ONLY the "
+                     "quadrant.", "answer": quad},
+    }
+
+
 def conservation_gap(seed: int) -> dict:
     """One scene's witness: conserving vs naive on distinctness + decode error."""
     s = make_scene(seed)
