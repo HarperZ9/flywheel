@@ -10,6 +10,32 @@
 
 Last updated: 2026-07-06
 
+## 2026-07-06 (late) — superproject, cross-domain series, ABLATION NEGATIVE
+
+Branch at 58 commits (~390 tests). Since the M7 run:
+- **ABLATION NEGATIVE (load-bearing).** The M7 hard-set +10% lift (single 80% ->
+  verified 90%) DID NOT REPRODUCE. `scripts/run_ablation.py`: single 80% /
+  verified-external 80% / verified-self 80% = **+0%**. The +10% was 1 task of 10, no
+  CI, inside noise. "Verification raises capability" is **UNEARNED** (single-shot
+  saturates at 80%; 7/10 model-written self-tests broke). Needs a harder set
+  (single < 80%), larger N, a CI. `verified_lift` relabeled 1.125x -> 1.0 in asymmetry.py.
+- **Superproject** (`superproject.py` + `SUPERPROJECT.md`): 11 flagships = 5 MCP-live
+  spine (gather/crucible/index/forum/telos, doctors MATCH) + 6 declared (emet,
+  accountable-surface, learn, proof-surface, coherence-membrane, studio-engine); +
+  build-* bricks. Organs <-> flagships as peers (MCP = optional edge); spine closed.
+- **Cross-domain mechanism series** (cross_domain, silhouette, inversion_flywheel,
+  fluid_router, valve_flywheel, backflow, turbulence): the reconcile primitive across
+  fields = REACH not law (self-labeled; audit retired the "unification" + the composed
+  "amplitude" as a defined score not a launch variable). turbulence: re-checkability
+  breaks at +Lyapunov, conserve the invariant not the trajectory. silhouette:
+  access/phenomenal = permanent null-space floor. No consciousness claim.
+- **asymmetry catalog** completed (4 amplifiers + 7 gates, 9 domains, grounded calls).
+- **externalization** earned for VERIFICATION (non-self-authored check catches cheats
+  self-authorship accepts; domain-general 5/5 + 7 fields), NOT for capability.
+- **Process:** committed a red fluid-router test once (caught + fixed in the open, gated
+  commits after). Two corrections landed from ground truth: flagship count (5 -> 11) and
+  the ablation negative — both against the project's own preferred story.
+
 ## 2026-07-06 — research intake + verified second brain (Fable 5 session)
 
 Continued from the paused OpenCode/glm-5.2 session. On-disk suite confirmed
