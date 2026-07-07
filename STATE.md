@@ -30,9 +30,21 @@ Last updated: 2026-07-06
   existing 18-task benchmark screened 15/18 clean — 3 easy tasks fail only
   the new edge_coverage bar; ALL 18 pass oracle_can_fail + no leak, so the
   M7 sets carry no vacuous tests.
-- **hard-set lane SEEDED: 10/10 admitted through the gates (10/100)**
-  (`scripts/seed_hard_v2.py` -> `tasks/curated/hard_v2.jsonl`, idempotent).
+- **hard-set lane: 17/100 admitted, registry verified dup-free.** Batch 1
+  (10) + batch 2 (9 of 10; the gates caught MY OWN count_islands test bug and
+  a flatten_nested id collision). The id+hash dedup then proved too weak (3
+  semantic dups admitted, culled): text similarity was measured and REJECTED
+  as a fix (disguised rewrite jaccard 0.07 < legit decode/encode 0.27); the
+  gate is now BEHAVIORAL and BIDIRECTIONAL (equivalent iff each solution
+  passes the other's hidden tests; one-way = subsumption, admitted —
+  search_rotated > binary_search is the noted case). Full sweep: 0 dups.
   Soundness-admitted ONLY; difficulty screening vs the served 14B comes later.
+- **GGUF/Ollama packaging BLOCKED on operator review**: the pipeline script is
+  ready (scratchpad ship_gguf.sh: llama.cpp clone/build, f16 convert,
+  streaming export-lora merge — 15GB RAM box, quantize Q4_K_M, deterministic
+  smoke, hash manifest) but the sandbox denied cloning/building an external
+  repo (llama.cpp) without operator approval. Needs a green light or a manual
+  run.
 - Session slice green: 57 tests across the five new organs + collaborators.
 - Remaining month-lane (gated, named): GGUF/Ollama packaging (toolchain not
   yet installed in WSL; checkpoint + 948G disk ready), actual 100-task
