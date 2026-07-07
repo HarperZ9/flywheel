@@ -10,6 +10,28 @@
 
 Last updated: 2026-07-06
 
+## 2026-07-07 (session 2) — providers, curator hardening, hard-set 38/100
+
+- **providers.py**: named registry (13 providers + BYO endpoint) over the
+  zero-dep OpenAI-compatible proposer; provider identity rides model_ref into
+  every envelope + cache key; falsifiers against a live local mock incl. the
+  end-to-end gated accept. Feature parity where it matters vs the clawcodex
+  class of 25-provider agents.
+- **task_curator hang fix**: a TimeoutExpired from one oracle run killed a
+  whole admission batch; hangs are now gate-FAILs (falsifier added). Behavioral
+  dedup extended to the EXPERT tier (3 batch-2 id collisions culled).
+- **hard-set lane at 38/100**: batch 3 (24 workflow-authored constraint-rich
+  tasks) admitted 21/24; the 3 leak-gate rejections were authors echoing
+  solution lines verbatim in prompts — prompts reworded to state contracts
+  without code echo, 3/3 re-admitted. Difficulty screen v2 (real 14B, temp 0):
+  12/17 of batch 1-2 saturate; the authoring principle (contract density over
+  textbook fame) drove batch 3.
+- **Doctrine saved in-repo** (FLAGSHIP-PLAN.md, SUPERPROJECT.md): best tool in
+  every category + invented integrative niches; whole-product competitor
+  assessment first, accountability as the closing multiplier.
+- GGUF pipeline relaunched in WSL (first run died with the host session
+  mid-smoke; toolchain survived). Battle-map sweep across 6 categories running.
+
 ## 2026-07-07 (cont.) — week-lane increments #2/#4/#7-prereq shipped
 
 - **dataset receipt** (`dataset/receipt.py`): re-derivable corpus -> shards ->
