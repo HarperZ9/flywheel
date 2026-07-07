@@ -38,7 +38,17 @@ def test_flow_routes_organically_around_the_obstacle():
 
 
 def test_spring_is_topology_bound_reload_restores_conservation():
-    # honest bound: blocking a cell invalidates the field; a reload restores conservation
-    g2 = Grid(6, 5, sink=(5, 2), blocked=WALL | {(4, 4)})   # block a cell on the detour
+    # honest bound: blocking a cell invalidates the field. Block a detour cell that
+    # still leaves a route (via the x=5 column); a RELOAD adapts and re-conserves,
+    # and the path changes — adaptation costs a reload, it is not free.
+    g2 = Grid(6, 5, sink=(5, 2), blocked=WALL | {(4, 3)})
     reloaded = springload(g2)
-    assert conservation(g2, reloaded, SOURCES)["conserved"]   # reload adapts organically
+    assert conservation(g2, reloaded, SOURCES)["conserved"]        # reload re-conserves
+    assert (4, 3) not in flow_path(g2, reloaded, (0, 2))["path"]   # rerouted around the block
+
+
+def test_sealed_region_correctly_reports_a_leak():
+    # the criterion is honest in the other direction too: if a block SEALS the only gap,
+    # conservation must report the leak, not fake a MATCH
+    sealed = Grid(6, 5, sink=(5, 2), blocked=WALL | {(4, 4)})      # seals the only crossing
+    assert not conservation(sealed, springload(sealed), SOURCES)["conserved"]
