@@ -83,6 +83,24 @@ def coord_bits(w: int, h: int) -> float:
     return math.log2(w) + math.log2(h)
 
 
+def grid_metric_form(x: float, y: float, w: int, h: int, *,
+                     cols: int = 16, rows: int = 9, depth: int = 2) -> str:
+    """The reasoning-conserving form: the compact label PLUS its decoded metric
+    coordinates, e.g. 'B2.D5 (x=108, y=105)'.
+
+    MEASURED (2026-07-06, trained 14B, n=20): a bare grid_label conserves the
+    LOCATE criterion (a reader can find the cell) but NOT the METRIC criterion —
+    a model cannot compute distances/counts/regions over opaque labels. Opaque
+    labels scored 0.20 mean on spatial-reasoning tasks vs 0.467 for raw coords;
+    this pair form is the honest fix. The principle refines: conserve the
+    criterion the DOWNSTREAM TASK needs — lookup wants the label, reasoning wants
+    the metric. (Model ceiling ~0.47 even with coords: format is a major factor,
+    not the whole story.)"""
+    lab = grid_label(x, y, w, h, cols=cols, rows=rows, depth=depth)
+    cx, cy = grid_center(lab, w, h, cols=cols, rows=rows)
+    return f"{lab} (x={int(cx)}, y={int(cy)})"
+
+
 def criterion_conserved(x: float, y: float, w: int, h: int, *,
                         cols: int = 16, rows: int = 9, depth: int = 1,
                         tol_frac: float = 0.5) -> bool:

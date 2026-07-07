@@ -29,6 +29,18 @@ def test_grid_roundtrip_conserves_targeting_within_half_cell():
         assert T.criterion_conserved(x, y, W, H, depth=2), f"{x},{y} not conserved"
 
 
+def test_grid_metric_form_carries_label_and_decoded_coords():
+    # the reasoning-conserving form: compact label + metric coords the model can
+    # compute over (the measured fix for the COPY-ONLY spatial-reasoning weakness)
+    import re
+    form = T.grid_metric_form(120.0, 90.0, W, H)
+    lab = T.grid_label(120.0, 90.0, W, H, depth=2)
+    assert form.startswith(lab + " (x=")
+    cx, cy = map(int, re.search(r"x=(\d+), y=(\d+)", form).groups())
+    gx, gy = T.grid_center(lab, W, H)
+    assert abs(cx - gx) <= 1 and abs(cy - gy) <= 1
+
+
 def test_deeper_recursion_is_strictly_tighter():
     x, y = 733, 421
     err = []
