@@ -131,4 +131,49 @@ def measure_project() -> dict:
                       1.0 - corpus["false_accept_rate"],
                       "adversarial_corpus.run_corpus(transitive_verdicts)"))
 
-    return ledger(asyms)
+    # --- the cross-domain mechanisms (grounded, real calls) ------------------
+    from .cross_domain import run_all as cross_run
+    from .inversion_flywheel import run_acceleration
+    from .fluid_router import Grid, springload, conservation, springload_amortization
+    from .valve_flywheel import run_stream
+    from .backflow import run_levels
+    from .turbulence import regime as turb_regime
+
+    # AMPLIFIERS
+    acc = run_acceleration()                            # active vs passive shadow ordering
+    asyms.append(amplifier("inversion_acceleration", "active-inference",
+                           acc["passive_to_floor"], acc["active_to_floor"],
+                           "inversion_flywheel.run_acceleration"))
+    _wall = frozenset({(3, 0), (3, 1), (3, 2), (3, 3)})
+    _g = Grid(6, 5, sink=(5, 2), blocked=_wall)
+    _src = [(0, 0), (0, 2), (0, 4), (1, 1), (2, 3)]
+    fa = springload_amortization(_g, _src)
+    asyms.append(amplifier("fluid_springload", "flow",
+                           fa["passive_cost"], fa["springloaded_cost"],
+                           "fluid_router.springload_amortization"))
+
+    # GATES (each ~1.0 because the suite holds it; a regression drops it)
+    asyms.append(gate("cross_domain_coverage", "cross-domain",
+                      cross_run()["coverage"], "cross_domain.run_all"))
+    asyms.append(gate("fluid_conservation", "flow",
+                      1.0 if conservation(_g, springload(_g), _src)["conserved"] else 0.0,
+                      "fluid_router.conservation(relaxed)"))
+    asyms.append(gate("valve_ratchet", "control",
+                      1.0 if run_stream(1.0, [5, 0.1, -3, 4, -8, 7])["monotone_no_regression"] else 0.0,
+                      "valve_flywheel.run_stream"))
+    asyms.append(gate("backflow_no_regression", "control",
+                      1.0 if run_levels([3, 5, 4, 6, 2, 9])["monotone"] else 0.0,
+                      "backflow.run_levels"))
+    asyms.append(gate("turbulence_invariant", "chaos",
+                      1.0 if turb_regime(3.9)["invariant_rechecks"] else 0.0,
+                      "turbulence.regime(3.9).invariant_rechecks"))
+
+    led = ledger(asyms)
+    led["disclaimer"] = ("this is a CATALOG of independently-grounded asymmetries, each "
+                         "with its own module and number. The composed 'amplitude' is a "
+                         "scoring composition we DEFINED (prod amplifiers * prod gates), "
+                         "NOT a discovered capacity or a launch variable — the adversarial "
+                         "audit retired that reading. The gates sit at ~1.0 because the "
+                         "green suite holds them; a regression drops a gate and collapses "
+                         "the amplitude. The amplifiers are the only real leverage.")
+    return led
