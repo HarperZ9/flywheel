@@ -1,5 +1,7 @@
 # HARNESS-ROADMAP — Layer B composition plan (durable)
 
+> **Canonical roadmap: [PROJECT.md](PROJECT.md) §6.** Original M0–M7 plan with per-milestone falsifiers, kept for detail.
+
 > Operationalizes the Layer-B (verified-inference harness) build. This extends
 > `HARNESS.md` (the loop, verifier registry, escalation, proof envelope, eval)
 > with the composition discipline the Conservation-of-Faithfulness law demands,

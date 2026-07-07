@@ -1,5 +1,7 @@
 # MEMORY SUBSTRATE — driving the marginal cost of verified inference toward ~0
 
+> **Canonical overview: [PROJECT.md](PROJECT.md).** Details the 6-layer memory/cache substrate.
+
 > Operator directive (2026-07-03): "memory management integration natively, at a
 > system level that reduces cost/bandwidth of compute to ~0." Taken literally,
 > zero is impossible — every novel token, unique prefix, and novel oracle run
