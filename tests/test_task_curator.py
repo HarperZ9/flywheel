@@ -88,6 +88,96 @@ def test_batch_dedup_catches_twins_within_one_batch(tmp_path):
     assert "dedup" in out["rejected"]["curator_add_twin"]
 
 
+def test_semantic_dup_in_different_clothes_is_caught(tmp_path):
+    # a rewrite of the existing hard task is_balanced: new id, new wording,
+    # new function name, different implementation style — same behavior.
+    from harness.tasks_hard import HARD_REGISTRY
+    disguised = TaskSpec(
+        "bracket_check",
+        "Write bracket_check(text) that reports whether every parenthesis, "
+        "square bracket and curly brace opens and closes properly, ignoring "
+        "all other characters in the input text.",
+        "solution.py",
+        "def bracket_check(text):\n"
+        "    need = {'(': ')', '[': ']', '{': '}'}\n"
+        "    want = []\n"
+        "    for ch in text:\n"
+        "        if ch in need:\n            want.append(need[ch])\n"
+        "        elif ch in need.values():\n"
+        "            if not want or want.pop() != ch:\n                return False\n"
+        "    return not want\n",
+        "from solution import bracket_check as f\n"
+        "def test_a():\n    assert f('([]{})') is True\n"
+        "def test_b():\n    assert f('([)]') is False\n"
+        "def test_c():\n    assert f('(') is False\n"
+        "def test_d():\n    assert f('x(y)z') is True\n",
+        "hard")
+    r = screen(disguised, tmp_path, existing=list(HARD_REGISTRY))
+    assert r["gates"]["dedup"].startswith("FAIL")
+    assert "is_balanced" in r["gates"]["dedup"]
+
+
+def test_complementary_neighbor_survives_semantic_gate(tmp_path):
+    # decode vs the existing run_length_encode: textually adjacent (this is
+    # the pair text-similarity alone would falsely kill), behaviorally distinct
+    from harness.tasks_hard import HARD_REGISTRY
+    decode = TaskSpec(
+        "rle_decode_probe",
+        "Implement rle_decode(s): decode a run-length encoded string of "
+        "<count><char> runs back to the original string, e.g. '3a2b' -> "
+        "'aaabb'. Counts may span multiple digits.",
+        "solution.py",
+        "def rle_decode(s):\n"
+        "    out, i = [], 0\n"
+        "    while i < len(s):\n"
+        "        j = i\n"
+        "        while j < len(s) and s[j].isdigit():\n            j += 1\n"
+        "        out.append(s[j] * int(s[i:j]))\n"
+        "        i = j + 1\n"
+        "    return ''.join(out)\n",
+        "from solution import rle_decode as f\n"
+        "def test_a():\n    assert f('3a2b') == 'aaabb'\n"
+        "def test_b():\n    assert f('') == ''\n"
+        "def test_c():\n    assert f('12a') == 'a'*12\n"
+        "def test_d():\n    assert f('1x1y') == 'xy'\n",
+        "hard")
+    r = screen(decode, tmp_path, existing=list(HARD_REGISTRY))
+    assert r["gates"]["dedup"] == "PASS", r["gates"]["dedup"]
+
+
+def test_generalization_is_subsumption_not_duplicate(tmp_path):
+    # rotated-array search passes plain binary_search's tests (it degenerates
+    # to it), but binary_search fails the rotated cases — one-way pass must
+    # ADMIT. The sweep that motivated this found exactly this pair.
+    from harness.tasks_hard import HARD_REGISTRY
+    rotated = TaskSpec(
+        "rotated_probe",
+        "Implement search_rot(nums, target): nums is a sorted list of distinct "
+        "integers rotated at an unknown pivot; return the index of target or "
+        "-1.",
+        "solution.py",
+        "def search_rot(nums, target):\n"
+        "    lo, hi = 0, len(nums) - 1\n"
+        "    while lo <= hi:\n"
+        "        mid = (lo + hi) // 2\n"
+        "        if nums[mid] == target:\n            return mid\n"
+        "        if nums[lo] <= nums[mid]:\n"
+        "            if nums[lo] <= target < nums[mid]:\n                hi = mid - 1\n"
+        "            else:\n                lo = mid + 1\n"
+        "        else:\n"
+        "            if nums[mid] < target <= nums[hi]:\n                lo = mid + 1\n"
+        "            else:\n                hi = mid - 1\n"
+        "    return -1\n",
+        "from solution import search_rot as f\n"
+        "def test_rot():\n    assert f([4,5,6,7,0,1,2], 0) == 4\n"
+        "def test_rot_miss():\n    assert f([4,5,6,7,0,1,2], 3) == -1\n"
+        "def test_plain():\n    assert f([1,2,3], 3) == 2\n"
+        "def test_empty():\n    assert f([], 1) == -1\n",
+        "hard")
+    r = screen(rotated, tmp_path, existing=list(HARD_REGISTRY))
+    assert r["gates"]["dedup"] == "PASS", r["gates"]["dedup"]
+
+
 def test_registry_roundtrip_and_tamper_detection(tmp_path):
     reg = tmp_path / "curated.jsonl"
     append_registry([GOOD], reg)
