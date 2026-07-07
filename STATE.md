@@ -157,6 +157,21 @@ region-caching, determinism-hardening (oracle path already deterministic).
   HEADROOM to measure verified_inference's LIFT (it costs 4x oracle calls for the
   same 100%). Measuring the lift the thesis predicts requires a HARDER held-out
   slice where single_shot < 100%. That is the honest next benchmark step.
+- **HARD M7 (10-task frontier set, `tasks_hard.py`) — THE LIFT IS REAL, measured
+  (2026-07-06):** single_shot **80% (8/10)** -> verified_inference **90% (9/10)**;
+  no_search 80% -> flat_n 90%. Oracle-gated best-of-N recovers a task greedy
+  fails. Scorecard `m7_hard_scorecard_20260706.json`, verdict MATCH.
+  **HONEST BOUNDS (no overclaim):** N=10 (tiny), the lift is ONE task (+10%), and
+  verified_inference == flat_n — so the gain is best-of-N sampling + oracle
+  SELECTION, NOT the escalation/search machinery (4x oracle cost, no measured
+  benefit over flat best-of-N here). Larger/harder set needed before conclusive;
+  but the direction is validated: verification-guided sampling lifts a capable-
+  but-inconsistent model above its own single-shot.
+- **Perception thread opened** (`workspace_perception_20260706.md`): the
+  transformer-circuits workspace/J-space paper is the measurable INTERNAL analog
+  of boot.py's EXTERNAL workspace; the transpiler delivers perception IFF the
+  transpiled signal becomes workspace-loaded (flexible use) — behaviorally
+  testable here. The next falsifiable build.
 - (history) 14B CPT resumed from checkpoint-1850; watcher caught the DONE marker.
 - M7 endgame: `bash scripts/finish_and_eval.sh` (done, above).
 - **32B QLoRA smoke PASSES on the single 4090 (2026-07-06): seq_len 256, peak
