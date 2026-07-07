@@ -1,0 +1,27 @@
+{
+  "allowlist": {
+    "hash": "8a49766849ead517b4d54a555b81e1b437c968ae86081aaef04947f6306ea1f8"
+  },
+  "checkpoint": {
+    "adapter_config.json": "8bbdda036b6ed20d178b2a8e2440848837239c5139f04d84e1a1890121273bb6",
+    "adapter_model.safetensors": "4de07c6ea342d1cc200d4a6e2b28a63f6ee37f34c5c0926c35d8c7db74d38d0f",
+    "trainer_state.json": "c71151b2c4cd1a98938fd6c899768c7a2a1edc333885f10be64cb877adb6b585"
+  },
+  "corpus": {
+    "bytes": 211358295,
+    "content_hash": "68345cdc6667f20d1678ac0a9139edc170348dfdebb9ae6045cde3d204f4fe62",
+    "files": 17997,
+    "files_missing": 0
+  },
+  "manifest": {
+    "hash": "bade489573eb4318a1a1c85af49384cb624d645cbf5fa7df5015c5b1b16b810c"
+  },
+  "note": "RETROACTIVE: derived 2026-07-07, after training. The pack and checkpoint layers seal exactly what trained; the corpus layer records the source bytes AS OF derivation, which is weaker than sealing at pack time. Future runs: build the receipt at pack time and extend it at checkpoint time.",
+  "pack": {
+    "marker_hash": "52b1b2231ede6b9d6db0b4edf0b9b9daaa6b85814ef6cca21d6abdfc39e67533",
+    "shards": 8,
+    "shards_hash": "018798dfce7d4c86f5a6ea502a383553220f2e76facfe76acbe52b1c278ae543"
+  },
+  "receipt": "dataset/v1",
+  "tokenizer_ref": "Qwen2.5-Coder-14B-Instruct"
+}
