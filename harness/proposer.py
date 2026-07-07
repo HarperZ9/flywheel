@@ -99,7 +99,8 @@ class EnterpriseProposer:
                      "Authorization": f"Bearer {key}"})
         with urllib.request.urlopen(req, timeout=300) as r:
             obj = json.loads(r.read())
-        text = obj["choices"][0]["message"]["content"]
+        from .extract import extract_code
+        text = extract_code(obj["choices"][0]["message"]["content"])  # enterprise models fence too
         return ProposerOutput(
-            text=text, model_ref=f"{self.model_ref}:{self.model}",
+            text=text, model_ref=self.model_ref,
             seed=seed, prompt_hash=prompt_hash(prompt), cache="miss")
