@@ -51,10 +51,29 @@ def test_flexible_queries_are_well_formed_ground_truth():
     s = make_scene(5)
     names = {o[0] for o in s.objects}
     q = flexible_queries(s, conserving_encode(s))
-    assert set(q) == {"locate", "nearest", "count_left", "quadrant"}
+    assert set(q) == {"nearest", "count_left", "quadrant"}   # 3 reasoning functions
     assert q["nearest"]["answer"] in names and q["nearest"]["answer"] != "target"
     assert 0 <= int(q["count_left"]["answer"]) <= len(s.objects)
     assert q["quadrant"]["answer"] in {"top-left", "top-right", "bottom-left", "bottom-right"}
+
+
+def test_reasoning_encode_coords_are_transpile_derived():
+    from harness.perception_probe import reasoning_encode, raw_encode
+    from harness.transpile import grid_label, grid_center
+    import re
+    s = make_scene(5)
+    enc = reasoning_encode(s)
+    # each decoded coord matches grid_center of the object's conserving label
+    for nm, x, y in s.objects:
+        line = next(l for l in enc.splitlines() if l.startswith(nm + ":"))
+        cx, cy = map(int, re.search(r"x=(\d+), y=(\d+)", line).groups())
+        lab = grid_label(x, y, s.w, s.h, cols=16, rows=9, depth=2)
+        gx, gy = grid_center(lab, s.w, s.h, cols=16, rows=9)
+        assert abs(cx - gx) <= 1 and abs(cy - gy) <= 1
+    # raw encode carries the true (int) coords
+    raw = raw_encode(s)
+    for nm, x, y in s.objects:
+        assert f"x={int(x)}, y={int(y)}" in raw
 
 
 def test_conservation_gap_witnesses_the_difference():

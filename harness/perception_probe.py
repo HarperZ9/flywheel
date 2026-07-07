@@ -109,6 +109,24 @@ def scene_query(scene: Scene, encoding: str) -> dict:
     return {"prompt": prompt, "answer": truth}
 
 
+def reasoning_encode(scene: Scene) -> str:
+    """Reasoning-friendly: the conserving label PLUS its decoded coordinates (from
+    grid_center, so still transpile-derived within the conservation tolerance).
+    Tests whether the opaque-label FORMAT was the bottleneck for flexible use."""
+    lines = []
+    for nm, x, y in scene.objects:
+        lab = grid_label(x, y, scene.w, scene.h, cols=_COLS, rows=_ROWS, depth=2)
+        cx, cy = grid_center(lab, scene.w, scene.h, cols=_COLS, rows=_ROWS)
+        lines.append(f"{nm}: {lab} (x={int(cx)}, y={int(cy)})")
+    return "\n".join(lines)
+
+
+def raw_encode(scene: Scene) -> str:
+    """Control: full-precision raw coordinates, no transpile. Isolates whether the
+    model can do the spatial reasoning AT ALL (format-independent)."""
+    return "\n".join(f"{nm}: (x={int(x)}, y={int(y)})" for nm, x, y in scene.objects)
+
+
 def _quadrant(x: float, y: float, w: int, h: int) -> str:
     return ("top" if y < h / 2 else "bottom") + "-" + ("left" if x < w / 2 else "right")
 
@@ -124,11 +142,9 @@ def flexible_queries(scene: Scene, encoding: str) -> dict:
     nearest = min(others, key=lambda o: (o[1] - tgt[1]) ** 2 + (o[2] - tgt[2]) ** 2)[0]
     left = sum(1 for _, x, _ in objs if x < w / 2)
     quad = _quadrant(tgt[1], tgt[2], w, h)
-    header = (f"A {w}x{h} scene, objects at grid labels (cols A-P, rows 1-9, "
-              f"'.' = sub-cell):\n{encoding}\n\n")
-    loc = scene_query(scene, encoding)
+    header = (f"A {w}x{h} scene (x: 0..{w}, y: 0..{h}), objects encoded as:\n"
+              f"{encoding}\n\n")
     return {
-        "locate": loc,
         "nearest": {"prompt": header + "Which object is spatially nearest to "
                     "'target'? Answer ONLY the object name.", "answer": nearest},
         "count_left": {"prompt": header + "How many objects are in the LEFT half "
