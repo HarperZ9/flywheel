@@ -4,6 +4,15 @@
 > ecosystem (flagship doctors verified MATCH). Machine-readable spine:
 > `harness/superproject.py`. This document is the human synthesis.
 
+## The mission
+
+Best tool in every single category entered, and integrative niches that had
+never existed. Category leadership is measured feature-for-feature against the
+current best (features, UX, demos, speed, cost); the receipt is the closing
+multiplier, never the pitch. Where a category is crowded, compose the organs
+into the adjacent category with no incumbent - the composition below is the
+factory for those niches.
+
 ## The one rule
 
 Everything here is one operation applied over and over: **perceive → transform under a
