@@ -14,12 +14,27 @@ springloads; gated one-way it ratchets; and every self-authored shortcut leaks e
 where the externalized criterion holds. That single discipline generated both the engine
 and its theory, which is why they compose without forcing.
 
+## The flagship roster
+
+There are **11 mission-tier flagships** (plus the build-* domain bricks), in two tiers:
+
+- **MCP spine (5, live — doctors verified MATCH this session):** gather, crucible, index,
+  forum, telos. These form the closed composition spine below.
+- **Extended (6, declared — present in `c:/dev/public`, not MCP-probed here):** emet
+  (faithfulness / re-derivability), accountable-surface (the perceive/gate/actuate
+  end-tool), learn (learning forge), proof-surface (agent-action proof packets),
+  coherence-membrane (the origin: externalize a mind's organs as a verified body),
+  studio-engine (creative-verification engine).
+
+Machine-readable: `superproject.roster()`. The count is honest about tier — live means a
+doctor answered MATCH; declared means the repo exists and was not probed from here.
+
 ## The modular spine (harness organs ↔ flagship peers)
 
 The local-model harness is the **engine** (native, zero-dependency, runs standalone). The
-five flagships are the **mature external peers** of the same organs. They compose through
-the shared action-envelope protocol; neither absorbs the other; **MCP is the lone optional
-edge**. The flagships' own `next_action` routes already form a closed spine.
+five MCP-spine flagships are the **mature external peers** of the same organs. They compose
+through the shared action-envelope protocol; neither absorbs the other; **MCP is the lone
+optional edge**. The flagships' own `next_action` routes already form a closed spine.
 
 | Organ | Flagship (live) | Role | Native harness modules |
 |---|---|---|---|
@@ -36,10 +51,14 @@ route is the five-tool golden workflow). Verified by `test_superproject.py`.
 
 - **14B QLoRA CPT** trained to completion (loss 2.18 → 0.035); **32B** QLoRA fits a single
   4090 at seq_len 256 (peak 21.24 GB).
-- **M7** on the trained model: hard held-out set, single-shot **80%** → verified-inference
-  **90%** (the lift; its *interpretation* as capability-not-filtering is under test by the
-  self-authored-criterion ablation).
-- **~66 falsifier test files, ~390 tests green.** The green suite *is* the gate array.
+- **M7 lift did NOT reproduce.** The earlier hard-set 80% → 90% (+10%) was one task of ten
+  with no interval. The self-authored-criterion ablation (2026-07-06) re-measured cleanly:
+  single-shot 80%, verified-external 80%, verified-self 80% — **+0%**. The +10% was inside
+  noise. The "verification raises capability" claim is **unearned** and has been relabeled
+  in the asymmetry catalog. It needs a harder set (single-shot < 80%), larger N, and a CI
+  before it can be claimed. This is the accountability discipline firing on the project's
+  own most-wanted result — which is the point.
+- **~67 falsifier test files, ~390 tests green.** The green suite *is* the gate array.
 
 ## The mechanism catalog (the theoretical spine)
 

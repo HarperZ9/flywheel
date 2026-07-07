@@ -35,3 +35,13 @@ def test_graceful_without_mcp_edge():
     assert p["all_live"] is None
     assert all(r["health"] == "declared" for r in p["organs"])
     assert "CLOSED" in compose_report()
+
+
+def test_roster_counts_spine_plus_extended():
+    from harness.superproject import roster
+    r = roster()
+    assert r["n_spine"] == 5                          # the MCP-live spine
+    assert r["n_extended"] >= 5                       # more than five flagships total
+    assert r["total_flagships"] > 5, "the roster is larger than the MCP spine"
+    # spine flagships are not double-counted in extended
+    assert not (set(r["spine_live"]) & set(r["extended_declared"]))

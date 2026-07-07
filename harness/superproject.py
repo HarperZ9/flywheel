@@ -49,6 +49,49 @@ MANIFEST: dict[str, Organ] = {
 }
 
 
+# The broader flagship roster beyond the MCP spine (verified present in c:/dev/public/
+# this session, but NOT MCP-probed here — marked 'declared', not 'live'). These are
+# mission-tier flagships, not the domain-application bricks (build-*, calibrate-pro).
+@dataclass
+class Flagship:
+    name: str
+    role: str
+    repo: str
+    tier: str = "declared"       # 'live' (MCP doctor MATCH) | 'declared' (in repo, not probed)
+
+
+EXTENDED: dict[str, Flagship] = {
+    "emet": Flagship("emet", "faithfulness / re-derivability verification (frozen vectors)",
+                     "public/emet"),
+    "accountable-surface": Flagship(
+        "accountable-surface", "the end-tool: perceive / gate / memory / 3-channel "
+        "actuation / grounding", "public/accountable-surface"),
+    "learn": Flagship("learn", "accountable learning forge (education flagship)",
+                      "public/learn"),
+    "proof-surface": Flagship("proof-surface", "agent-action proof packets",
+                              "public/proof-surface"),
+    "coherence-membrane": Flagship(
+        "coherence-membrane", "origin concept: externalize a stateless mind's organs as "
+        "a verified body", "public/coherence-membrane"),
+    "studio-engine": Flagship(
+        "studio-engine", "native creative-verification engine (perceive->generate->"
+        "critique->refine->witness)", "public/build-engine"),
+}
+
+
+def roster() -> dict:
+    """The full flagship roster: the 5-organ MCP SPINE (live, doctor-verified) plus the
+    EXTENDED mission-tier flagships (declared, present in repo, not MCP-probed here)."""
+    spine_flags = {o.flagship for o in MANIFEST.values()}
+    ext = {f.name: f.role for f in EXTENDED.values() if f.name not in spine_flags}
+    return {"spine_live": sorted(spine_flags), "n_spine": len(spine_flags),
+            "extended_declared": ext, "n_extended": len(ext),
+            "total_flagships": len(spine_flags) + len(ext),
+            "note": "spine = MCP-live (doctor MATCH this session); extended = declared in "
+                    "c:/dev/public, NOT MCP-probed here. Domain bricks (build-*, "
+                    "calibrate-pro) are not counted as mission flagships."}
+
+
 def spine() -> dict:
     """The composition spine: organs + the closed routing graph. `closed` is True iff
     every route target is itself an organ (the ecosystem composes without dangling edges)."""

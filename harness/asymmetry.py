@@ -117,9 +117,13 @@ def measure_project() -> dict:
     r = regime_cost(["a", "b", "c", "d", "e"] * 4)     # representative flywheel, r=0.75
     asyms.append(amplifier("amortization", "compute-economy", r.permission_cost,
                            r.accountability_cost, "authorization_cost.regime_cost"))
-    # verified lift, from the recorded M7 hard-set result (single_shot 0.80 -> verified 0.90)
-    asyms.append(amplifier("verified_lift", "capability", 0.90, 0.80,
-                           "m7_hard_scorecard_20260706 (verified/single_shot)"))
+    # verified lift: the +10% M7 hard-set lift did NOT reproduce under the ablation
+    # (2026-07-06: single 80% / ext 80% / self 80%, +0%). The earlier 80->90 was one
+    # task of ten, no CI, inside noise. Relabeled to leverage 1.0 (NO measured lift)
+    # rather than carry an unearned result. Needs a harder set (single_shot < 80%),
+    # larger N, and a confidence interval before this can be an amplifier again.
+    asyms.append(amplifier("verified_lift", "capability", 0.80, 0.80,
+                           "run_ablation 20260706: +10% M7 did NOT reproduce (within noise, N=10)"))
 
     # GATES (grounded)
     s = make_scene(7)
