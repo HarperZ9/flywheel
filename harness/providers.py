@@ -35,6 +35,7 @@ class ProviderSpec:
 # Known OpenAI-compatible endpoints. base_url/model are overridable per call;
 # keys ALWAYS come from the environment (never hardcoded, never logged).
 REGISTRY: dict[str, ProviderSpec] = {s.name: s for s in (
+    ProviderSpec("codex", "https://api.openai.com/v1", "OPENAI_API_KEY", "gpt-5.3-codex-spark"),
     ProviderSpec("openai", "https://api.openai.com/v1", "OPENAI_API_KEY", "gpt-4o-mini"),
     ProviderSpec("deepseek", "https://api.deepseek.com/v1", "DEEPSEEK_API_KEY", "deepseek-chat"),
     ProviderSpec("groq", "https://api.groq.com/openai/v1", "GROQ_API_KEY", "llama-3.3-70b-versatile"),
