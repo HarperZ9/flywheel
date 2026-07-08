@@ -219,6 +219,8 @@ def _one(pname: str, spec: dict, mode: str):
     up = pname.upper()
     if mode in ("plan", "max"):
         cli = spec.get("cli")
+        if cli is not None:
+            cli = ["codex.CMD", *cli[1:]] if cli and cli[0] == "codex" else cli
         return CliBackend(name=f"{pname}-{mode}", argv=cli) if cli else None
     if mode == "api":
         return _api_backend(pname, spec, spec["base"], spec["key"])

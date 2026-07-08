@@ -178,6 +178,19 @@ def test_generalization_is_subsumption_not_duplicate(tmp_path):
     assert r["gates"]["dedup"] == "PASS", r["gates"]["dedup"]
 
 
+def test_hanging_solution_is_rejected_not_a_crash(tmp_path, monkeypatch):
+    # learned from a real batch-3 crash: a TimeoutExpired from one oracle run
+    # killed the whole admission batch. A hang must be a gate FAIL.
+    import harness.task_curator as tc
+    monkeypatch.setattr(tc, "ORACLE_TIMEOUT", 3)
+    hang = _variant(task_id="hangs",
+                    solution="def add(a, b):\n"
+                             "    while True:\n        pass\n")
+    r = screen(hang, tmp_path)            # must RETURN, not raise
+    assert not r["admitted"]
+    assert r["gates"]["reference_passes"].startswith("FAIL")
+
+
 def test_registry_roundtrip_and_tamper_detection(tmp_path):
     reg = tmp_path / "curated.jsonl"
     append_registry([GOOD], reg)

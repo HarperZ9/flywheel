@@ -31,10 +31,11 @@ import json
 import re
 from pathlib import Path
 
-from .tasks_lib import TaskSpec, materialize, validate_spec
+from .tasks_lib import TaskSpec, materialize
 
 MIN_TESTS = 4
 MIN_LEAK_LINE = 16     # solution lines shorter than this are idiom, not leak
+ORACLE_TIMEOUT = 30    # per gate run; a hang is a FAIL, never a crash
 
 
 def _norm(code: str) -> str:
@@ -74,7 +75,10 @@ def _stub_solution(solution: str) -> str | None:
 
 def _run_with(spec: TaskSpec, work_root: Path, solution_text: str,
               tag: str) -> bool:
-    """Materialize the task and run its hidden tests against `solution_text`."""
+    """Materialize the task and run its hidden tests against `solution_text`.
+    A hang counts as NOT PASSING — a behavioral probe feeds a solution inputs
+    it never expected and can spin forever; that must reject the probe, not
+    kill the batch (learned from a batch-3 admission crash)."""
     import subprocess
     from .oracle import clear_bytecode, run_env
     from .task import load_task
@@ -83,8 +87,12 @@ def _run_with(spec: TaskSpec, work_root: Path, solution_text: str,
     task = load_task(work, workdir=work / "wd")
     task.candidate_full().write_text(solution_text, encoding="utf-8")
     clear_bytecode(Path(task.workdir))
-    r = subprocess.run(spec.oracle_cmd, cwd=task.workdir, shell=True,
-                       capture_output=True, env=run_env(), timeout=30)
+    try:
+        r = subprocess.run(spec.oracle_cmd, cwd=task.workdir, shell=True,
+                           capture_output=True, env=run_env(),
+                           timeout=ORACLE_TIMEOUT)
+    except subprocess.TimeoutExpired:
+        return False
     return r.returncode == 0
 
 
@@ -160,8 +168,10 @@ def screen(spec: TaskSpec, work_root: str | Path,
                                   f"other's hidden tests)")
                 break
 
-    gates["reference_passes"] = ("PASS" if validate_spec(spec, work_root)
-                                 else "FAIL: reference solution fails its own tests")
+    gates["reference_passes"] = ("PASS" if _run_with(spec, work_root,
+                                                     spec.solution, "ref")
+                                 else "FAIL: reference solution fails (or "
+                                      "hangs) its own tests")
 
     stub = _stub_solution(spec.solution)
     if stub is None:
