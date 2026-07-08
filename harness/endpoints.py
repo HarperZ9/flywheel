@@ -181,6 +181,8 @@ PROVIDERS = {
     "claude":   {"kind": "anthropic", "base": "https://api.anthropic.com",
                  "key": "ANTHROPIC_API_KEY", "model": "claude-sonnet-4-5",
                  "cli": ["claude", "-p", "{prompt}", "--output-format", "text"]},
+    "glm":      {"kind": "openai", "base": "https://open.bigmodel.cn/api/paas/v4",
+                 "key": "GLM_API_KEY", "model": "glm-4.6"},
     "gemini":   {"kind": "gemini", "base": "https://generativelanguage.googleapis.com/v1beta",
                  "key": "GEMINI_API_KEY", "model": "gemini-2.5-flash"},
     "deepseek": {"kind": "openai", "base": "https://api.deepseek.com/v1",
