@@ -105,7 +105,7 @@ def _run_agentic(args) -> int:
                             gate=ToolGate(allow_write=args.allow_write, allow_exec=args.allow_exec))
     ledger = SessionLedger()
     result = run_agent(agent, _context_preamble(args.file) + args.prompt, executor, ledger,
-                       max_steps=args.max_steps)
+                       max_steps=args.max_steps, test_cmd=args.test_cmd or None)
     print(result["final"])
     if args.save:
         ledger.save(args.save)
@@ -114,10 +114,11 @@ def _run_agentic(args) -> int:
         c = commit_run(args.root, args.prompt, result["checkpoint"])
         committed = (f" | committed {c['sha']}" if c.get("committed")
                      else f" | not committed ({c.get('reason')})")
+    tests = f" | tests_pass={result['tests_pass']}" if "tests_pass" in result else ""
     print(f"\n[agent | {result['steps']} step(s) | {result['entries']} ledger entries | "
-          f"verified={result['verified']} | checkpoint {result['checkpoint'][:16]}"
+          f"verified={result['verified']}{tests} | checkpoint {result['checkpoint'][:16]}"
           f"{' | saved ' + args.save if args.save else ''}{committed}]", file=sys.stderr)
-    return 0
+    return 1 if result.get("tests_pass") is False else 0
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -145,6 +146,8 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--save", default="", help="save the session ledger to this JSONL path")
     ap.add_argument("--auto-commit", action="store_true", dest="auto_commit",
                     help="git-commit the changes after an --agent run (existing repo only)")
+    ap.add_argument("--test-cmd", default="", dest="test_cmd",
+                    help="test command to gate on: the agent repairs until it passes (needs --allow-exec)")
     ap.add_argument("--stream", action="store_true", help="stream tokens as they arrive (one-shot)")
     ap.add_argument("--online", action="store_true",
                     help="add the online provider ladder (codex/claude/gemini/deepseek)")

@@ -16,9 +16,16 @@ from .local_tools import TOOLS_SYSTEM, ToolExecutor, parse_tool_calls
 
 
 def run_agent(agent, goal: str, executor: ToolExecutor,
-              ledger: "SessionLedger | None" = None, *, max_steps: int = 6) -> dict:
+              ledger: "SessionLedger | None" = None, *, max_steps: int = 6,
+              test_cmd: "str | None" = None) -> dict:
     """Run the goal to completion (or max_steps). Returns the final answer, the
-    step count, and the ledger checkpoint + verify verdict."""
+    step count, and the ledger checkpoint + verify verdict.
+
+    With `test_cmd`, the loop is a TEST-REPAIR loop: when the model believes it is
+    done, the test command is run and, if it fails, the failure is fed back and
+    the model keeps working until the tests pass (or steps run out). The result
+    then carries `tests_pass`, and the whole edit->test->repair trajectory is
+    witnessed in the ledger — a provable "made the tests green"."""
     ledger = ledger if ledger is not None else SessionLedger()
     if TOOLS_SYSTEM not in agent.system:
         agent.system = agent.system + "\n\n" + TOOLS_SYSTEM
@@ -34,7 +41,19 @@ def run_agent(agent, goal: str, executor: ToolExecutor,
 
         calls = parse_tool_calls(text)
         if not calls:
-            return _done(text, step, ledger)
+            if not test_cmd:
+                return _done(text, step, ledger)
+            res = executor.execute("run", {"cmd": test_cmd})
+            ledger.append("tool_call", f"run {json.dumps({'cmd': test_cmd}, sort_keys=True)}")
+            ledger.append("tool_result", res.output, {"tool": "run", "ok": res.ok, "gate": "test"})
+            if res.output.startswith("[gate]"):
+                return _done(text, step, ledger, tests_pass=False,
+                             note="test gate set but exec is disabled (pass --allow-exec)")
+            if res.ok:
+                return _done(text, step, ledger, tests_pass=True)
+            message = (f"The tests still FAIL:\n{res.output}\n\nFix the root cause and "
+                       "continue; do not give a final answer until the tests pass.")
+            continue
 
         observations = []
         for name, args in calls:
@@ -47,10 +66,16 @@ def run_agent(agent, goal: str, executor: ToolExecutor,
                    "\n\nContinue if you need more tools, otherwise give the final "
                    "answer with no TOOL line.")
 
-    return _done("[max_steps reached without a final answer]", max_steps, ledger)
+    return _done("[max_steps reached without a final answer]", max_steps, ledger,
+                 tests_pass=(False if test_cmd else None))
 
 
-def _done(final: str, steps: int, ledger: SessionLedger) -> dict:
-    return {"final": final, "steps": steps,
-            "checkpoint": ledger.checkpoint(), "verified": ledger.verify(),
-            "entries": len(ledger.entries), "ledger": ledger}
+def _done(final: str, steps: int, ledger: SessionLedger, *, tests_pass=None, note="") -> dict:
+    out = {"final": final, "steps": steps,
+           "checkpoint": ledger.checkpoint(), "verified": ledger.verify(),
+           "entries": len(ledger.entries), "ledger": ledger}
+    if tests_pass is not None:
+        out["tests_pass"] = tests_pass
+    if note:
+        out["note"] = note
+    return out
