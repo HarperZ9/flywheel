@@ -104,3 +104,12 @@ def test_build_endpoints_assembles_only_configured(monkeypatch):
 def test_build_endpoints_plan_mode_uses_cli():
     lad = build_endpoints(providers=["claude"], modes=("plan",), only_configured=False)
     assert lad and lad[0].name == "claude-plan" and isinstance(lad[0], CliBackend)
+
+
+def test_glm_provider_is_openai_compatible(monkeypatch):
+    monkeypatch.delenv("GLM_API_KEY", raising=False)
+    assert build_endpoints(providers=["glm"], modes=("api",)) == []      # no key -> absent
+    monkeypatch.setenv("GLM_API_KEY", "x")
+    lad = build_endpoints(providers=["glm"], modes=("api",))
+    assert len(lad) == 1 and lad[0].name == "glm"
+    assert "bigmodel" in lad[0].base_url and lad[0].model == "glm-4.6"
