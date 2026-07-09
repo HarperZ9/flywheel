@@ -10,7 +10,7 @@
 
 Last updated: 2026-07-09
 
-## 2026-07-09 (session 3, cont.) — market-entry sprint: hard bench, 32B TRAINING LIVE
+## 2026-07-09 (session 3, cont.) — market-entry sprint: hard bench, 32B RAM-gated, deliverables shipped
 
 - **GOAL (operator, /goal): flywheel enters the market as a COMPANION to every
   frontier model** (Codex app / Sol lineup / Mythos 5), not a competitor; both
@@ -28,21 +28,43 @@ Last updated: 2026-07-09
   reproducibility + pass parity + local cost. Scorecard:
   `artifacts/flywheel-local-coder-14b-benchmark-m7-hard-scorecard.json`.
   Readiness now shows 2 benchmark artifacts for the 14B.
-- **32B QLoRA CPT TRAINING IS LIVE** (WSL screen `train32b`, launched 18:51Z):
-  seq_len 256, epochs 0.25 (~2,019 steps, recipe parity with the 14B's
-  checkpoint-2020), save every 50 steps, ~32 s/step => ~18h. Supervisor
-  `scripts/run_phase2_32b_supervised.sh` auto-resumes on the known WSL
-  "device not ready" flake (12 attempts max); stop via
-  `touch /mnt/e/local-model-run/STOP_32B`. run_phase2_linux.sh now propagates
-  the trainer's exit code (was always 0). GPU: 23.3GB/62% util confirmed.
+- **32B TRAINING: launched, then STOPPED for a RESOURCE REALITY, now RAM-gated.**
+  This box is 32 GB RAM. Loading the 82 GB fp16 32B and quantizing to 4-bit
+  streams ~20 GB through CPU RAM; with only ~10 GB free it thrashed swap and
+  wedged WSL (could not even `pkill`). Operator-approved `wsl --terminate
+  Ubuntu-24.04` (surgical, NOT `wsl --shutdown`) freed it (VRAM 19.5 -> 1.6 GB).
+  No checkpoint existed, so nothing trained was lost. The 32B SMOKE proved the
+  path works (peak 21.24 GB VRAM, rc=0). Fix: `run_phase2_32b_supervised.sh`
+  now RAM-gates each launch (waits for ~22 GB MemAvailable, polls 2 min);
+  `scripts/launch_32b_training.ps1` is a one-command start; `TRAINING-32B.md`
+  is the runbook. STOP flag is SET so nothing auto-runs. RUN IT WHEN THE
+  MACHINE IS IDLE.
+- **DISK INCIDENT: C: hit 0 bytes** mid-session. Cause: a Q3_K_M quant wrote
+  inside the WSL VHD (which lives on C:); the VHD grew ~6 GB and cannot shrink
+  without `wsl --shutdown`. Freed ~22 GB via Run-dialog delete of `.pyinstaller`
+  + `.m7-run` + pip cache (computer-use, operator-approved). LESSON: future
+  quant output must target /mnt/e, never ~/gguf (recorded in TRAINING-32B.md).
 - **HF upload hard blocker: no HF token on this machine**
-  (LocalTokenNotFoundError). Only the operator can export one. Everything
-  else on the 14B is staged and waiting.
-- In flight (parallel agents): WALKTHROUGH.md + outside-observer benchmark
-  methodology (humanist voice), zero-dep demo recorder + first harness demo,
-  enterprise-parity gap audit (mneme/relay/plexus), market surface research
-  (Codex app / Sol / Mythos 5), research curation (ninja_maths post + arXiv
-  2603.23420 + domain sweep) into native tool improvements.
+  (LocalTokenNotFoundError). Only the operator can export one. Everything else
+  on the 14B is staged and waiting.
+- **SHIPPED this session (branch `fix/release-model-identity`, all pushed):**
+  WALKTHROUGH.md + BENCHMARK-METHODOLOGY-OUTSIDE-OBSERVER (a skeptic can rerun
+  it); zero-dep demo recorder (stdlib) + offline HTML player + first
+  harness-first-run demo with a live 14B generation (5 falsifiers);
+  MARKET-SURFACE-COMPANION-POSITIONING (Codex app / Sol=GPT-5.6 / Mythos 5,
+  grounded with citations); COMPANION.md (the humanist/wonder positioning,
+  receipts as one doorway not the frame); ENTERPRISE-PARITY-GAPS +
+  quick-win branches pushed to mneme/relay/plexus (docs drift fixed, gated
+  release workflows added; relay's `relay-agent` PyPI name is TAKEN, needs a
+  rename); RESEARCH-CURATION (arXiv 2603.23420 Bilevel Autoresearch curated,
+  its "5x" quarantined as n=3/underpowered; ninja_maths post UNRESOLVED, x.com
+  402 paywall, needs a direct URL); and the Bilevel outer-loop mechanism
+  INTEGRATED into `harness/evolve.py` as a gated-only proposal source (never
+  auto-applies, 5 falsifiers).
+- Enterprise-parity follow-ups for the operator: register PyPI trusted
+  publishers + set PYPI_ENABLED for mneme (ready), rename relay's distribution,
+  merge plexus feat/graph-run-compare (0.2.0 content is on the unmerged branch,
+  main is still 0.1.0).
 
 ## 2026-07-09 (session 3) — release identity corrected; 14B READY_TO_STAGE, 32B honestly gated
 
