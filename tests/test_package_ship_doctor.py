@@ -63,6 +63,9 @@ def test_package_ship_doctor_accepts_complete_metadata_bundle(tmp_path):
         "config/enterprise_readiness_report.local.json": {
             "schema": "harness.enterprise-readiness-report/v1",
         },
+        "docs/records/OBJECTIVE-EVIDENCE-MATRIX-2026-07-09.json": {
+            "requirements": [],
+        },
         "manifest/harness_executable_manifest.local.json": {
             "schema": "harness.executable-manifest/v1",
         },

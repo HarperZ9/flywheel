@@ -14,6 +14,7 @@ def test_architecture_report_stitches_generated_contracts(tmp_path):
     tools = tmp_path / "tools.json"
     tool_readiness = tmp_path / "tool_readiness.json"
     tool_hardening = tmp_path / "tool_hardening.json"
+    records = tmp_path / "records"
     runtime = tmp_path / "runtime.json"
     codex = tmp_path / "codex.json"
     enterprise = tmp_path / "enterprise.json"
@@ -93,6 +94,15 @@ def test_architecture_report_stitches_generated_contracts(tmp_path):
             "enterprise_ready_static": False,
         },
     }), encoding="utf-8")
+    records.mkdir()
+    for name in [
+        "ROADMAP-STATUS-2026-07-09.md",
+        "CAPABILITY-CATALOG-2026-07-09.md",
+        "OBJECTIVE-EVIDENCE-MATRIX-2026-07-09.md",
+        "OBJECTIVE-EVIDENCE-MATRIX-2026-07-09.json",
+        "NEXT-RECURSIVE-IMPROVEMENT-LOOP-2026-07-09.md",
+    ]:
+        (records / name).write_text("record\n", encoding="utf-8")
     runtime.write_text(json.dumps({
         "schema": "harness.runtime-activation-contract/v1",
         "summary": {"ready_for_package_inspection": True},
@@ -125,6 +135,7 @@ def test_architecture_report_stitches_generated_contracts(tmp_path):
         tool_contract_path=tools,
         tool_readiness_path=tool_readiness,
         tool_hardening_path=tool_hardening,
+        documentation_records_root=records,
         runtime_contract_path=runtime,
         codex_mcp_contract_path=codex,
         enterprise_readiness_path=enterprise,
@@ -139,6 +150,7 @@ def test_architecture_report_stitches_generated_contracts(tmp_path):
     assert report["summary"]["pubscan_profiled_entrypoints"] == 4
     assert report["summary"]["tool_readiness_enterprise_ready"] == 1
     assert report["summary"]["tool_hardening_actions"] == 2
+    assert report["summary"]["documentation_records_present"] == 5
     assert report["summary"]["tools"] == ["index"]
     assert report["release_gate"]["package_doctor_verdict"] == "SHIP_READY"
 
@@ -156,6 +168,7 @@ def test_architecture_report_markdown_includes_next_gates(tmp_path):
         tool_contract_path=missing,
         tool_readiness_path=missing,
         tool_hardening_path=missing,
+        documentation_records_root=tmp_path / "missing-records",
         runtime_contract_path=missing,
         codex_mcp_contract_path=missing,
         enterprise_readiness_path=missing,

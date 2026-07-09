@@ -15,6 +15,13 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_DIST = ROOT / "artifacts" / "exe"
 DEFAULT_PACKAGES = DEFAULT_DIST / "packages"
+DOCUMENTATION_RECORDS = [
+    "ROADMAP-STATUS-2026-07-09.md",
+    "CAPABILITY-CATALOG-2026-07-09.md",
+    "OBJECTIVE-EVIDENCE-MATRIX-2026-07-09.md",
+    "OBJECTIVE-EVIDENCE-MATRIX-2026-07-09.json",
+    "NEXT-RECURSIVE-IMPROVEMENT-LOOP-2026-07-09.md",
+]
 
 
 def sha256(path: Path) -> str:
@@ -85,6 +92,7 @@ It also includes `config\\tool_integration_contract.local.json` for the Flywheel
 `config\\pubscan_resource_profiles.local.json` and `docs\\pubscan_resource_profiles.local.md` provide zero-dependency pubscan, native-rendering, compute, and storage profiles.
 `config\\enterprise_readiness_report.local.json` summarizes mneme, relay, and plexus enterprise-readiness gates.
 `docs\\harness_architecture_report.local.md` summarizes the executable surface, local model endpoints, tool fabric, runtime activation, and release gates.
+`docs\\records\\` carries the current roadmap, capability catalog, objective evidence matrix, and next recursive improvement loop.
 
 - 14B serve endpoint: `http://127.0.0.1:8765`
 - 32B serve endpoint: `http://127.0.0.1:8768`
@@ -173,6 +181,13 @@ def build_bundle(
         copied = copy_file(src, dst)
         copied["relative_path"] = str(dst.relative_to(bundle_root)).replace("\\", "/")
         files.append(copied)
+    for record in DOCUMENTATION_RECORDS:
+        copied = copy_file(
+            ROOT / "project-docs" / "records" / record,
+            bundle_root / "docs" / "records" / record,
+        )
+        copied["relative_path"] = str((bundle_root / "docs" / "records" / record).relative_to(bundle_root)).replace("\\", "/")
+        files.append(copied)
 
     readme = write_text(bundle_root / "README.md", release_readme(package_name=package_name))
     readme["relative_path"] = "README.md"
@@ -190,6 +205,10 @@ def build_bundle(
             "hosted_services": "none required",
         },
         "secret_policy": "no .env files, credentials, tokens, private keys, model weights, caches, or benchmark outputs are included",
+        "documentation_pack": {
+            "records": DOCUMENTATION_RECORDS,
+            "record_count": len(DOCUMENTATION_RECORDS),
+        },
         "files": sorted(files, key=lambda item: str(item["relative_path"])),
     }
     manifest_path = bundle_root / "manifest" / "ship-manifest.json"

@@ -159,6 +159,8 @@ def test_architecture_report_command_targets_report_generator():
         "C:/tmp/tool_readiness.json",
         "--tool-hardening",
         "C:/tmp/tool_hardening.json",
+        "--documentation-records-root",
+        "C:/tmp/records",
         "--out",
         "C:/tmp/architecture.json",
     ])
@@ -177,6 +179,8 @@ def test_architecture_report_command_targets_report_generator():
     assert "C:/tmp/tool_readiness.json" in command
     assert "--tool-hardening" in command
     assert "C:/tmp/tool_hardening.json" in command
+    assert "--documentation-records-root" in command
+    assert "C:/tmp/records" in command
     assert "C:/tmp/architecture.json" in command
 
 
