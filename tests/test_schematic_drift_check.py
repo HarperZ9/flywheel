@@ -7,6 +7,9 @@ def _graph():
         "nodes": [
             {"id": "agentic_task_manifest_generator"},
             {"id": "cross_harness_manifest"},
+            {"id": "adapter_runtime_matrix"},
+            {"id": "forum_route_receipts"},
+            {"id": "mcp_tool_health"},
             {"id": "embodied_realtime_plan"},
             {"id": "benchmark_execution_matrix"},
             {"id": "closed_loop_seed"},
@@ -16,6 +19,9 @@ def _graph():
         "edges": [
             {"from": "agentic_task_manifest_generator", "to": "benchmark_execution_matrix"},
             {"from": "cross_harness_manifest", "to": "benchmark_execution_matrix"},
+            {"from": "adapter_runtime_matrix", "to": "benchmark_execution_matrix"},
+            {"from": "forum_route_receipts", "to": "closed_loop_seed"},
+            {"from": "mcp_tool_health", "to": "closed_loop_seed"},
             {"from": "embodied_realtime_plan", "to": "benchmark_execution_matrix"},
             {"from": "benchmark_execution_matrix", "to": "closed_loop_seed"},
             {"from": "closed_loop_seed", "to": "closed_loop_outcome"},

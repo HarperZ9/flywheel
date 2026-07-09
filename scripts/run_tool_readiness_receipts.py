@@ -19,7 +19,160 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from harness.file_backed_store import FileBackedHarnessStore  # noqa: E402
 
 
+DEFAULT_TOOL_SET = "index,forum,gather,crucible,telos,aleph,mneme,relay,plexus,pubscan"
+
+
 TOOL_PROFILES: dict[str, dict[str, list[str]]] = {
+    "index": {
+        "core": [
+            "pyproject.toml",
+            "README.md",
+            "src/index_graph",
+            "tests",
+        ],
+        "enterprise": [
+            "SECURITY.md",
+            "SUPPORT.md",
+            "CONTRIBUTING.md",
+            "CODE_OF_CONDUCT.md",
+            ".github/dependabot.yml",
+            ".github/CODEOWNERS",
+            ".pre-commit-config.yaml",
+            "src/index_graph/py.typed",
+        ],
+        "integration": [
+            ".github/workflows/ci.yml",
+            ".github/workflows/release.yml",
+            "CHANGELOG.md",
+            "USAGE.md",
+            "src/index_graph/mcp.py",
+            "src/index_graph/cli.py",
+        ],
+    },
+    "forum": {
+        "core": [
+            "pyproject.toml",
+            "README.md",
+            "src/forum",
+            "tests",
+        ],
+        "enterprise": [
+            "SECURITY.md",
+            "SUPPORT.md",
+            "CONTRIBUTING.md",
+            "CODE_OF_CONDUCT.md",
+            ".github/dependabot.yml",
+            ".github/CODEOWNERS",
+            ".pre-commit-config.yaml",
+            "src/forum/py.typed",
+        ],
+        "integration": [
+            ".github/workflows/ci.yml",
+            ".github/workflows/release.yml",
+            "CHANGELOG.md",
+            "USAGE.md",
+            "src/forum/cli.py",
+            "src/forum/bench_deep_verify.py",
+        ],
+    },
+    "gather": {
+        "core": [
+            "pyproject.toml",
+            "README.md",
+            "src/gather",
+            "tests",
+        ],
+        "enterprise": [
+            "SECURITY.md",
+            "SUPPORT.md",
+            "CONTRIBUTING.md",
+            "CODE_OF_CONDUCT.md",
+            ".github/dependabot.yml",
+            ".github/CODEOWNERS",
+            ".pre-commit-config.yaml",
+            "src/gather/py.typed",
+        ],
+        "integration": [
+            ".github/workflows/ci.yml",
+            ".github/workflows/release.yml",
+            "CHANGELOG.md",
+            "USAGE.md",
+            "src/gather/mcp.py",
+        ],
+    },
+    "crucible": {
+        "core": [
+            "pyproject.toml",
+            "README.md",
+            "src/crucible",
+            "tests",
+        ],
+        "enterprise": [
+            "SECURITY.md",
+            "SUPPORT.md",
+            "CONTRIBUTING.md",
+            "CODE_OF_CONDUCT.md",
+            ".github/dependabot.yml",
+            ".github/CODEOWNERS",
+            ".pre-commit-config.yaml",
+            "src/crucible/py.typed",
+        ],
+        "integration": [
+            ".github/workflows/ci.yml",
+            ".github/workflows/release.yml",
+            "CHANGELOG.md",
+            "USAGE.md",
+            "src/crucible/mcp.py",
+        ],
+    },
+    "telos": {
+        "core": [
+            "pyproject.toml",
+            "README.md",
+            "src/telos",
+            "tests",
+        ],
+        "enterprise": [
+            "SECURITY.md",
+            "SUPPORT.md",
+            "CONTRIBUTING.md",
+            "CODE_OF_CONDUCT.md",
+            ".github/dependabot.yml",
+            ".github/CODEOWNERS",
+            ".pre-commit-config.yaml",
+            "src/telos/py.typed",
+        ],
+        "integration": [
+            ".github/workflows/ci.yml",
+            ".github/workflows/release.yml",
+            "CHANGELOG.md",
+            "USAGE.md",
+            "src/telos/mcp.py",
+        ],
+    },
+    "aleph": {
+        "core": [
+            "pyproject.toml",
+            "README.md",
+            "src",
+            "tests",
+        ],
+        "enterprise": [
+            "SECURITY.md",
+            "SUPPORT.md",
+            "CONTRIBUTING.md",
+            "CODE_OF_CONDUCT.md",
+            ".github/dependabot.yml",
+            ".github/CODEOWNERS",
+            ".pre-commit-config.yaml",
+        ],
+        "integration": [
+            ".github/workflows/ci.yml",
+            ".github/workflows/release.yml",
+            "CHANGELOG.md",
+            "USAGE.md",
+        ],
+    },
     "mneme": {
         "core": [
             "pyproject.toml",
@@ -97,6 +250,30 @@ TOOL_PROFILES: dict[str, dict[str, list[str]]] = {
             "src/plexus/grounding.py",
             "src/plexus/benchmark.py",
             "docs/api.md",
+        ],
+    },
+    "pubscan": {
+        "core": [
+            "pyproject.toml",
+            "README.md",
+            "src",
+            "tests",
+        ],
+        "enterprise": [
+            "SECURITY.md",
+            "SUPPORT.md",
+            "CONTRIBUTING.md",
+            "CODE_OF_CONDUCT.md",
+            ".github/dependabot.yml",
+            ".github/CODEOWNERS",
+            ".pre-commit-config.yaml",
+        ],
+        "integration": [
+            ".github/workflows/ci.yml",
+            ".github/workflows/release.yml",
+            "CHANGELOG.md",
+            "USAGE.md",
+            "docs",
         ],
     },
 }
@@ -271,7 +448,7 @@ def _store_outputs(report: dict[str, Any], *, store_root: str, run_id: str, arti
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--tools", default="mneme,relay,plexus")
+    parser.add_argument("--tools", default=DEFAULT_TOOL_SET)
     parser.add_argument("--base-root", default="C:/dev/public")
     parser.add_argument("--tool-root", action="append", default=[], help="override a tool root as name=path")
     parser.add_argument("--out", default="")

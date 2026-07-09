@@ -50,6 +50,54 @@ def test_benchmarks_command_targets_profile_manifest():
     assert "C:/tmp" in command
 
 
+def test_forum_route_command_targets_route_receipt_generator():
+    args = parse([
+        "forum-route",
+        "--route",
+        "Route the closed-loop harness work.",
+        "--observed-confidence",
+        "0.5",
+        "--observed-needs-escalation",
+        "false",
+        "--observed-domain",
+        "model-foundry",
+        "--out",
+        "C:/tmp/forum_route_receipts.json",
+    ])
+    command = build_command(args, repo_root=Path("C:/dev/local-model"))
+
+    assert command[:2] == [args.python, "scripts/run_forum_route_receipts.py"]
+    assert "--route" in command
+    assert "Route the closed-loop harness work." in command
+    assert "--observed-confidence" in command
+    assert "0.5" in command
+    assert "--observed-needs-escalation" in command
+    assert "false" in command
+    assert "--observed-domain" in command
+    assert "model-foundry" in command
+    assert "C:/tmp/forum_route_receipts.json" in command
+
+
+def test_mcp_health_command_targets_tool_health_generator():
+    args = parse([
+        "mcp-health",
+        "--tools",
+        "index,forum,telos",
+        "--observation",
+        "index=TRANSPORT_CLOSED|transport_closed|Transport closed",
+        "--out",
+        "C:/tmp/mcp_tool_health.json",
+    ])
+    command = build_command(args, repo_root=Path("C:/dev/local-model"))
+
+    assert command[:2] == [args.python, "scripts/run_mcp_tool_health_receipts.py"]
+    assert "--tools" in command
+    assert "index,forum,telos" in command
+    assert "--observation" in command
+    assert "index=TRANSPORT_CLOSED|transport_closed|Transport closed" in command
+    assert "C:/tmp/mcp_tool_health.json" in command
+
+
 def test_benchmark_coverage_command_targets_profile_coverage_report():
     args = parse([
         "benchmark-coverage",
@@ -405,7 +453,7 @@ def test_manifest_lists_front_controller_commands_and_evidence_surfaces():
     assert manifest["schema"] == "harness.executable-manifest/v1"
     assert manifest["entrypoint"] == "harness.cmd"
     names = [row["name"] for row in manifest["commands"]]
-    assert names == ["manifest", "registry", "benchmarks", "benchmark-coverage", "comparison", "execution-matrix", "schematic-drift", "agentic-tasks", "cross-harness", "adapter-runtime", "embodied-realtime", "model-card-claims", "tool-hardening", "classifier-friction", "endpoint-gate", "model-publish", "plan", "seed", "outcome", "query", "readiness"]
+    assert names == ["manifest", "registry", "benchmarks", "forum-route", "mcp-health", "benchmark-coverage", "comparison", "execution-matrix", "schematic-drift", "agentic-tasks", "cross-harness", "adapter-runtime", "embodied-realtime", "model-card-claims", "tool-hardening", "classifier-friction", "endpoint-gate", "model-publish", "plan", "seed", "outcome", "query", "readiness"]
     readiness = [row for row in manifest["commands"] if row["name"] == "readiness"][0]
     assert "model-endpoints" in readiness["targets"]
     assert "model-release" in readiness["targets"]
@@ -468,6 +516,24 @@ def test_manifest_includes_schematic_drift_command():
     assert "harness.schematic-drift-check/v1" in drift["schemas"]
     assert drift["long_running_risk"] == "low"
     assert "scripts/run_schematic_drift_check.py" in drift["delegates_to"]
+
+
+def test_manifest_includes_forum_route_command():
+    manifest = build_manifest(store_root="C:/tmp/store")
+    route = [row for row in manifest["commands"] if row["name"] == "forum-route"][0]
+
+    assert "harness.forum-route-receipts/v1" in route["schemas"]
+    assert route["long_running_risk"] == "low"
+    assert "scripts/run_forum_route_receipts.py" in route["delegates_to"]
+
+
+def test_manifest_includes_mcp_health_command():
+    manifest = build_manifest(store_root="C:/tmp/store")
+    health = [row for row in manifest["commands"] if row["name"] == "mcp-health"][0]
+
+    assert "harness.mcp-tool-health/v1" in health["schemas"]
+    assert health["long_running_risk"] == "low"
+    assert "scripts/run_mcp_tool_health_receipts.py" in health["delegates_to"]
 
 
 def test_manifest_includes_cross_harness_command():

@@ -22,6 +22,13 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from harness.file_backed_store import FileBackedHarnessStore  # noqa: E402
 
 
+DEFAULT_FORUM_ROUTE_TEXTS = [
+    "Route the active Codex/Flywheel local-model closed-loop harness objective.",
+    "Route same-task Codex versus Flywheel versus Claude Code versus OpenCode benchmark comparison work.",
+    "Route local 14B and 32B endpoint-readiness and release-gate work.",
+]
+
+
 def utc_stamp() -> str:
     return datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
 
@@ -73,6 +80,58 @@ def build_steps(args, *, run_id: str, artifact_dir: Path) -> list[OrchestrationS
         timeout_seconds=args.preflight_timeout_seconds,
         expected_artifacts=[endpoint_json, endpoint_md],
     ))
+
+    forum_route_json = _path(artifact_dir, "forum_route_receipts.json")
+    forum_route_md = _path(artifact_dir, "forum_route_receipts.md")
+    if not args.skip_forum_route_receipts:
+        command = [
+            py,
+            "scripts/run_forum_route_receipts.py",
+            "--out",
+            forum_route_json,
+            "--markdown-out",
+            forum_route_md,
+            "--store-root",
+            store,
+            "--run-id",
+            run_id,
+        ]
+        for route_text in args.forum_route_text or DEFAULT_FORUM_ROUTE_TEXTS:
+            command.extend(["--route", route_text])
+        steps.append(OrchestrationStep(
+            step_id="forum_route_receipts",
+            purpose="Record Forum routing prompt hashes and optional route-frame observation metadata.",
+            command=command,
+            timeout_seconds=args.preflight_timeout_seconds,
+            expected_artifacts=[forum_route_json, forum_route_md],
+        ))
+
+    mcp_health_json = _path(artifact_dir, "mcp_tool_health.json")
+    mcp_health_md = _path(artifact_dir, "mcp_tool_health.md")
+    if not args.skip_mcp_tool_health:
+        command = [
+            py,
+            "scripts/run_mcp_tool_health_receipts.py",
+            "--tools",
+            args.mcp_tool_health_tools,
+            "--out",
+            mcp_health_json,
+            "--markdown-out",
+            mcp_health_md,
+            "--store-root",
+            store,
+            "--run-id",
+            run_id,
+        ]
+        for observation in args.mcp_tool_health_observation:
+            command.extend(["--observation", observation])
+        steps.append(OrchestrationStep(
+            step_id="mcp_tool_health",
+            purpose="Record configured MCP/tool roots and optional non-secret live tool observations.",
+            command=command,
+            timeout_seconds=args.preflight_timeout_seconds,
+            expected_artifacts=[mcp_health_json, mcp_health_md],
+        ))
 
     manifest_json = _path(artifact_dir, "harness_executable_manifest.json")
     manifest_md = _path(artifact_dir, "harness_executable_manifest.md")
@@ -372,6 +431,8 @@ def build_steps(args, *, run_id: str, artifact_dir: Path) -> list[OrchestrationS
             timeout_seconds=args.preflight_timeout_seconds,
             expected_artifacts=[tool_readiness_json, tool_readiness_md],
         ))
+        for tool_root in args.tool_readiness_tool_root:
+            steps[-1].command.extend(["--tool-root", tool_root])
 
     tool_hardening_json = _path(artifact_dir, "tool_hardening_plan.json")
     tool_hardening_md = _path(artifact_dir, "tool_hardening_plan.md")
@@ -908,6 +969,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--run-title", default="closed-loop benchmark seed")
     parser.add_argument("--dry-plan", action="store_true")
     parser.add_argument("--strict-exit", action="store_true")
+    parser.add_argument("--forum-route-text", action="append", default=[])
+    parser.add_argument("--mcp-tool-health-tools", default="index,forum,telos,gather,crucible,aleph,mneme,relay,plexus,pubscan,local-model")
+    parser.add_argument("--mcp-tool-health-observation", action="append", default=[])
     parser.add_argument("--preflight-timeout-seconds", type=float, default=120.0)
     parser.add_argument("--index-timeout-seconds", type=float, default=180.0)
     parser.add_argument("--benchmark-timeout-seconds", type=float, default=600.0)
@@ -926,8 +990,9 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument("--context-max-depth", type=int, default=3)
     parser.add_argument("--context-max-entries-per-root", type=int, default=500)
-    parser.add_argument("--tool-readiness-tools", default="mneme,relay,plexus")
+    parser.add_argument("--tool-readiness-tools", default="index,forum,gather,crucible,telos,aleph,mneme,relay,plexus,pubscan")
     parser.add_argument("--tool-readiness-base-root", default="C:/dev/public")
+    parser.add_argument("--tool-readiness-tool-root", action="append", default=["aleph=C:/dev/aleph"])
     parser.add_argument("--model-release-models", default="14B,32B")
     parser.add_argument("--model-release-base-root", default="E:/local-model-run")
     parser.add_argument("--model-release-artifact-roots", default="C:/dev/local-model/artifacts;C:/tmp")
@@ -977,6 +1042,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--classifier-friction-allow-online", action="store_true")
     parser.add_argument("--skip-harness-manifest", action="store_true")
     parser.add_argument("--skip-harness-registry", action="store_true")
+    parser.add_argument("--skip-forum-route-receipts", action="store_true")
+    parser.add_argument("--skip-mcp-tool-health", action="store_true")
     parser.add_argument("--skip-benchmark-execution-matrix", action="store_true")
     parser.add_argument("--skip-benchmark-profile", action="store_true")
     parser.add_argument("--skip-schematic-drift", action="store_true")

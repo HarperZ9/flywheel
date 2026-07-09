@@ -917,6 +917,61 @@ def _adapter_runtime_matrix_summary(data: dict[str, Any], path_text: str) -> dic
     }
 
 
+def _forum_route_receipts_summary(data: dict[str, Any], path_text: str) -> dict[str, Any]:
+    routes = data.get("routes") if isinstance(data.get("routes"), list) else []
+    return {
+        "path": path_text,
+        "schema": data.get("schema", ""),
+        "kind": "forum_route_receipts",
+        "summary": data.get("summary", {}) if isinstance(data.get("summary"), dict) else {},
+        "route_metrics": [
+            {
+                "route_id": row.get("route_id", ""),
+                "observation_status": row.get("observation_status", ""),
+                "observed": bool(row.get("observed")),
+                "observed_decided": row.get("observed_decided", ""),
+                "observed_confidence": _safe_float(row.get("observed_confidence"))
+                if row.get("observed_confidence") is not None else None,
+                "observed_needs_escalation": row.get("observed_needs_escalation"),
+                "observed_domain": row.get("observed_domain", ""),
+                "observed_intent": row.get("observed_intent", ""),
+                "observed_posture": row.get("observed_posture", ""),
+                "observed_proof_lane": row.get("observed_proof_lane", ""),
+                "observed_domain_lane": row.get("observed_domain_lane", ""),
+                "provider_execution_observed": bool(row.get("provider_execution_observed")),
+                "endpoint_probe_observed": bool(row.get("endpoint_probe_observed")),
+            }
+            for row in routes
+            if isinstance(row, dict)
+        ],
+    }
+
+
+def _mcp_tool_health_summary(data: dict[str, Any], path_text: str) -> dict[str, Any]:
+    tools = data.get("tools") if isinstance(data.get("tools"), list) else []
+    return {
+        "path": path_text,
+        "schema": data.get("schema", ""),
+        "kind": "mcp_tool_health",
+        "summary": data.get("summary", {}) if isinstance(data.get("summary"), dict) else {},
+        "tool_health_metrics": [
+            {
+                "tool": row.get("tool", ""),
+                "role": row.get("role", ""),
+                "root_exists": bool(row.get("root_exists")),
+                "observed": bool(row.get("observed")),
+                "observed_status": row.get("observed_status", ""),
+                "observed_error_code": row.get("observed_error_code", ""),
+                "verdict": row.get("verdict", ""),
+                "provider_execution_observed": bool(row.get("provider_execution_observed")),
+                "endpoint_probe_observed": bool(row.get("endpoint_probe_observed")),
+            }
+            for row in tools
+            if isinstance(row, dict)
+        ],
+    }
+
+
 def _harness_comparison_summary(data: dict[str, Any], path_text: str) -> dict[str, Any]:
     summary = data.get("summary") if isinstance(data.get("summary"), dict) else {}
     comparisons = data.get("comparisons") if isinstance(data.get("comparisons"), list) else []
@@ -968,6 +1023,10 @@ def _generic_child_summary(data: dict[str, Any], path_text: str) -> dict[str, An
         return _model_card_claim_table_summary(data, path_text)
     if schema == "harness.adapter-runtime-matrix/v1":
         return _adapter_runtime_matrix_summary(data, path_text)
+    if schema == "harness.forum-route-receipts/v1":
+        return _forum_route_receipts_summary(data, path_text)
+    if schema == "harness.mcp-tool-health/v1":
+        return _mcp_tool_health_summary(data, path_text)
     if schema == "harness.comparison-report/v1":
         return _harness_comparison_summary(data, path_text)
     if schema == "harness.context-inventory/v1":
@@ -1864,6 +1923,71 @@ def adapter_runtime_signal_summary(child_summaries: list[dict[str, Any]]) -> dic
     }
 
 
+def forum_route_signal_summary(child_summaries: list[dict[str, Any]]) -> dict[str, Any]:
+    artifacts = [
+        item
+        for item in child_summaries
+        if item.get("kind") == "forum_route_receipts"
+    ]
+    routes = [
+        metric
+        for item in artifacts
+        for metric in item.get("route_metrics", [])
+    ]
+    confidences = [
+        float(row["observed_confidence"])
+        for row in routes
+        if row.get("observed_confidence") is not None
+    ]
+    return {
+        "route_artifacts": len(artifacts),
+        "route_count": len(routes),
+        "observed_route_frames": sum(1 for row in routes if row.get("observed")),
+        "route_text_only": sum(1 for row in routes if not row.get("observed")),
+        "escalation_count": sum(1 for row in routes if row.get("observed_needs_escalation") is True),
+        "mean_observed_confidence": round(sum(confidences) / len(confidences), 4) if confidences else None,
+        "decided_agents": sorted({str(row.get("observed_decided", "")) for row in routes if row.get("observed_decided")}),
+        "domains": sorted({str(row.get("observed_domain", "")) for row in routes if row.get("observed_domain")}),
+        "intents": sorted({str(row.get("observed_intent", "")) for row in routes if row.get("observed_intent")}),
+        "proof_lanes": sorted({str(row.get("observed_proof_lane", "")) for row in routes if row.get("observed_proof_lane")}),
+        "provider_execution_observed": any(bool(row.get("provider_execution_observed")) for row in routes),
+        "endpoint_probe_observed": any(bool(row.get("endpoint_probe_observed")) for row in routes),
+    }
+
+
+def mcp_tool_health_signal_summary(child_summaries: list[dict[str, Any]]) -> dict[str, Any]:
+    artifacts = [
+        item
+        for item in child_summaries
+        if item.get("kind") == "mcp_tool_health"
+    ]
+    rows = [
+        metric
+        for item in artifacts
+        for metric in item.get("tool_health_metrics", [])
+    ]
+    verdict_counts: dict[str, int] = {}
+    for row in rows:
+        verdict = str(row.get("verdict", ""))
+        verdict_counts[verdict] = verdict_counts.get(verdict, 0) + 1
+    return {
+        "health_artifacts": len(artifacts),
+        "tools": len(rows),
+        "observed_tools": sum(1 for row in rows if row.get("observed")),
+        "roots_existing": sum(1 for row in rows if row.get("root_exists")),
+        "healthy_observed_tools": verdict_counts.get("OBSERVED_HEALTHY", 0),
+        "degraded_observed_tools": verdict_counts.get("OBSERVED_DEGRADED", 0),
+        "configured_unobserved_tools": verdict_counts.get("CONFIGURED_UNOBSERVED", 0),
+        "missing_roots": verdict_counts.get("MISSING_ROOT", 0),
+        "verdict_counts": verdict_counts,
+        "healthy_tools": sorted({str(row.get("tool", "")) for row in rows if row.get("verdict") == "OBSERVED_HEALTHY"}),
+        "degraded_tools": sorted({str(row.get("tool", "")) for row in rows if row.get("verdict") == "OBSERVED_DEGRADED"}),
+        "unobserved_tools": sorted({str(row.get("tool", "")) for row in rows if not row.get("observed")}),
+        "provider_execution_observed": any(bool(row.get("provider_execution_observed")) for row in rows),
+        "endpoint_probe_observed": any(bool(row.get("endpoint_probe_observed")) for row in rows),
+    }
+
+
 def conclusion(report: dict[str, Any]) -> dict[str, Any]:
     summary = report.get("summary") if isinstance(report.get("summary"), dict) else {}
     dry_plan = bool(report.get("dry_plan"))
@@ -1922,6 +2046,8 @@ def build_outcome(report: dict[str, Any], *, source_report_path: str) -> dict[st
             "agentic_task_manifest_signals": agentic_task_manifest_signal_summary(child_summaries),
             "cross_harness_manifest_signals": cross_harness_manifest_signal_summary(child_summaries),
             "adapter_runtime_signals": adapter_runtime_signal_summary(child_summaries),
+            "forum_route_signals": forum_route_signal_summary(child_summaries),
+            "mcp_tool_health_signals": mcp_tool_health_signal_summary(child_summaries),
             "forum_deep_verify_signals": forum_deep_verify_signal_summary(child_summaries),
             "embodied_realtime_signals": embodied_realtime_signal_summary(child_summaries),
             "model_card_claim_signals": model_card_claim_signal_summary(child_summaries),
@@ -1989,6 +2115,10 @@ def render_markdown(outcome: dict[str, Any]) -> str:
         f"- Planned agentic tasks: `{outcome['observations']['agentic_task_manifest_signals']['task_count']}`",
         f"- Adapter runtime matrix artifacts parsed: `{outcome['observations']['adapter_runtime_signals']['matrix_artifacts']}`",
         f"- Adapter runtime rows: `{outcome['observations']['adapter_runtime_signals']['runtime_rows']}`",
+        f"- Forum route receipt artifacts parsed: `{outcome['observations']['forum_route_signals']['route_artifacts']}`",
+        f"- Forum route frames observed: `{outcome['observations']['forum_route_signals']['observed_route_frames']}`",
+        f"- MCP tool health artifacts parsed: `{outcome['observations']['mcp_tool_health_signals']['health_artifacts']}`",
+        f"- MCP degraded observed tools: `{outcome['observations']['mcp_tool_health_signals']['degraded_observed_tools']}`",
         f"- Forum deep-verify artifacts parsed: `{outcome['observations']['forum_deep_verify_signals']['benchmark_artifacts']}`",
         f"- Forum deep-verify cases: `{outcome['observations']['forum_deep_verify_signals']['case_count']}`",
         f"- Embodied realtime plan artifacts parsed: `{outcome['observations']['embodied_realtime_signals']['plan_artifacts']}`",
@@ -2187,6 +2317,46 @@ def render_markdown(outcome: dict[str, Any]) -> str:
             f"- Endpoint probe observed: `{str(adapter_runtime_signals.get('endpoint_probe_observed', False)).lower()}`",
             f"- Model weight read observed: `{str(adapter_runtime_signals.get('model_weight_read_observed', False)).lower()}`",
             f"- Token store read observed: `{str(adapter_runtime_signals.get('token_store_read_observed', False)).lower()}`",
+            "",
+        ])
+    forum_route_signals = outcome["observations"].get("forum_route_signals", {})
+    if forum_route_signals.get("route_artifacts"):
+        lines.extend([
+            "## Forum route signals",
+            "",
+            f"- Route artifacts: `{forum_route_signals.get('route_artifacts', 0)}`",
+            f"- Routes: `{forum_route_signals.get('route_count', 0)}`",
+            f"- Observed route frames: `{forum_route_signals.get('observed_route_frames', 0)}`",
+            f"- Route-text-only rows: `{forum_route_signals.get('route_text_only', 0)}`",
+            f"- Escalations: `{forum_route_signals.get('escalation_count', 0)}`",
+            f"- Mean observed confidence: `{forum_route_signals.get('mean_observed_confidence')}`",
+            f"- Decided agents: `{', '.join(forum_route_signals.get('decided_agents', []))}`",
+            f"- Domains: `{', '.join(forum_route_signals.get('domains', []))}`",
+            f"- Intents: `{', '.join(forum_route_signals.get('intents', []))}`",
+            f"- Proof lanes: `{', '.join(forum_route_signals.get('proof_lanes', []))}`",
+            f"- Provider execution observed: `{str(forum_route_signals.get('provider_execution_observed', False)).lower()}`",
+            f"- Endpoint probe observed: `{str(forum_route_signals.get('endpoint_probe_observed', False)).lower()}`",
+            "",
+        ])
+    mcp_health_signals = outcome["observations"].get("mcp_tool_health_signals", {})
+    if mcp_health_signals.get("health_artifacts"):
+        lines.extend([
+            "## MCP tool health signals",
+            "",
+            f"- Health artifacts: `{mcp_health_signals.get('health_artifacts', 0)}`",
+            f"- Tools: `{mcp_health_signals.get('tools', 0)}`",
+            f"- Observed tools: `{mcp_health_signals.get('observed_tools', 0)}`",
+            f"- Existing roots: `{mcp_health_signals.get('roots_existing', 0)}`",
+            f"- Healthy observed tools: `{mcp_health_signals.get('healthy_observed_tools', 0)}`",
+            f"- Degraded observed tools: `{mcp_health_signals.get('degraded_observed_tools', 0)}`",
+            f"- Configured unobserved tools: `{mcp_health_signals.get('configured_unobserved_tools', 0)}`",
+            f"- Missing roots: `{mcp_health_signals.get('missing_roots', 0)}`",
+            f"- Healthy tools: `{', '.join(mcp_health_signals.get('healthy_tools', []))}`",
+            f"- Degraded tools: `{', '.join(mcp_health_signals.get('degraded_tools', []))}`",
+            f"- Unobserved tools: `{', '.join(mcp_health_signals.get('unobserved_tools', []))}`",
+            f"- Verdict counts: `{json.dumps(mcp_health_signals.get('verdict_counts', {}), sort_keys=True)}`",
+            f"- Provider execution observed: `{str(mcp_health_signals.get('provider_execution_observed', False)).lower()}`",
+            f"- Endpoint probe observed: `{str(mcp_health_signals.get('endpoint_probe_observed', False)).lower()}`",
             "",
         ])
     forum_deep_signals = outcome["observations"].get("forum_deep_verify_signals", {})

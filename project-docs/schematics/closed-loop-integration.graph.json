@@ -24,6 +24,12 @@
       "signal": "index_context_envelope",
       "status": "degraded",
       "detail": "index.index_context_envelope returned Transport closed for C:/dev in this update."
+    },
+    {
+      "component": "telos",
+      "signal": "telos_room",
+      "status": "available",
+      "detail": "telos_room returned MATCH with 5 of 5 flagship tools ready in this update."
     }
   ],
   "nodes": [
@@ -37,6 +43,8 @@
     {"id": "index_mcp", "kind": "context_tool", "status": "degraded", "role": "Preferred workspace context map and context-envelope provider."},
     {"id": "index_fallback_receipt", "kind": "context_tool", "status": "scaffolded", "role": "Local fallback receipt path when Index MCP transport fails."},
     {"id": "forum_route", "kind": "routing_tool", "status": "available", "role": "Routes ambiguous/cross-domain work and records communication/proof lanes."},
+    {"id": "forum_route_receipts", "kind": "metadata_preflight", "status": "implemented_not_run", "role": "Records route prompt hashes and optional observed Forum route-frame metadata."},
+    {"id": "mcp_tool_health", "kind": "metadata_preflight", "status": "implemented_not_run", "role": "Records configured tool roots plus optional non-secret MCP/tool status observations."},
     {"id": "gather", "kind": "source_intake_tool", "status": "readiness_path_exists", "role": "Source intake and corpus receipt path."},
     {"id": "crucible", "kind": "verification_tool", "status": "integration_surface_identified", "role": "Verifier/checking seam for outcome validation."},
     {"id": "telos", "kind": "coordination_tool", "status": "integration_surface_identified", "role": "Flagship room/context coordination surface."},
@@ -73,6 +81,12 @@
   "edges": [
     {"from": "operator", "to": "closed_loop_seed", "meaning": "Execution policy and approval gates control whether metadata, validation, endpoint, or provider lanes run."},
     {"from": "forum_route", "to": "closed_loop_seed", "meaning": "Forum routes ambiguous/cross-domain work into proof/domain lanes."},
+    {"from": "forum_route", "to": "forum_route_receipts", "meaning": "Observed Forum routing metadata can be converted into durable route receipts."},
+    {"from": "forum_route_receipts", "to": "closed_loop_seed", "meaning": "Closed-loop seed records route receipts before benchmark planning and execution."},
+    {"from": "index_mcp", "to": "mcp_tool_health", "meaning": "Index MCP health observations become structured tool-health metadata."},
+    {"from": "forum_route", "to": "mcp_tool_health", "meaning": "Forum callability observations become structured tool-health metadata."},
+    {"from": "telos", "to": "mcp_tool_health", "meaning": "Telos room status becomes structured tool-health metadata."},
+    {"from": "mcp_tool_health", "to": "closed_loop_seed", "meaning": "Closed-loop seed records tool health before benchmark planning and execution."},
     {"from": "index_mcp", "to": "context_inventory", "meaning": "Preferred context envelope source when transport is healthy."},
     {"from": "index_fallback_receipt", "to": "context_inventory", "meaning": "Fallback context receipt path when MCP transport is degraded."},
     {"from": "context_inventory", "to": "benchmark_profile", "meaning": "Context roots and artifact inventory inform benchmark profile coverage."},
@@ -105,6 +119,8 @@
   ],
   "promotion_gates": [
     {"id": "gate_index_transport", "status": "open", "required_evidence": "Healthy index.index_context_envelope or explicit degraded fallback receipt with stale/fresh status."},
+    {"id": "gate_mcp_tool_health", "status": "open", "required_evidence": "Executed harness.mcp-tool-health/v1 receipt showing configured, observed, healthy, degraded, and missing-root posture for flagship tools."},
+    {"id": "gate_forum_route_receipts", "status": "open", "required_evidence": "Executed harness.forum-route-receipts/v1 receipt showing route prompt hashes and observed route-frame metadata when available."},
     {"id": "gate_metadata_preflight", "status": "open", "required_evidence": "Executed metadata-only command deck artifacts with JSON/Markdown receipts."},
     {"id": "gate_agentic_manifest", "status": "open", "required_evidence": "Implemented non-executing agentic task manifest generator and targeted validation after approval."},
     {"id": "gate_cross_harness_adapter", "status": "open", "required_evidence": "Provider-specific adapter discovery and manifest/scorecard rows for Codex, Flywheel, Claude Code, OpenCode, local_14b, local_32b, and dry roles."},

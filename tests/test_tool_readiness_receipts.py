@@ -1,8 +1,23 @@
-from scripts.run_tool_readiness_receipts import build_report, profile_tool, split_names
+from scripts.run_tool_readiness_receipts import DEFAULT_TOOL_SET, build_report, profile_tool, split_names
 
 
 def test_split_names_trims_empty_items():
     assert split_names("mneme, relay,,plexus ") == ["mneme", "relay", "plexus"]
+
+
+def test_default_tool_set_covers_flagship_and_pubscan_tools():
+    assert split_names(DEFAULT_TOOL_SET) == [
+        "index",
+        "forum",
+        "gather",
+        "crucible",
+        "telos",
+        "aleph",
+        "mneme",
+        "relay",
+        "plexus",
+        "pubscan",
+    ]
 
 
 def test_profile_tool_counts_static_surfaces_without_reading_contents(tmp_path):
