@@ -108,6 +108,7 @@ The package includes `config\\model_endpoint_profiles.local.json`.
 It includes `config\\model_release_readiness.local.json` and `config\\model_publish_plan.local.json` for the 14B/32B release track.
 It also includes `config\\tool_integration_contract.local.json` for the Flywheel/Codex sidecar tool contract.
 `config\\tool_readiness.local.json` and `config\\tool_hardening_plan.local.json` provide static readiness and hardening gates for the flagship tool fabric.
+`docs\\tool_operator_guide.local.md` gives concise operator instructions for each packaged tool surface.
 `config\\runtime_activation_contract.local.json` describes storage, env knobs, and activation boundaries.
 `config\\codex_mcp_launch_contract.local.json` describes Codex MCP launch profiles, stale-transport reload boundaries, and direct CLI fallbacks.
 `config\\context_inventory.local.json` and `docs\\context_inventory.local.md` provide the metadata-only workspace context map.
@@ -151,6 +152,8 @@ def build_bundle(
     tool_readiness_md = dist / "tool_readiness.local.md"
     tool_hardening = dist / "tool_hardening_plan.local.json"
     tool_hardening_md = dist / "tool_hardening_plan.local.md"
+    tool_operator_guide = dist / "tool_operator_guide.local.json"
+    tool_operator_guide_md = dist / "tool_operator_guide.local.md"
     runtime_contract = dist / "runtime_activation_contract.local.json"
     runtime_contract_md = dist / "runtime_activation_contract.local.md"
     codex_mcp_contract = dist / "codex_mcp_launch_contract.local.json"
@@ -182,6 +185,8 @@ def build_bundle(
         (tool_readiness_md, bundle_root / "docs" / "tool_readiness.local.md"),
         (tool_hardening, bundle_root / "config" / "tool_hardening_plan.local.json"),
         (tool_hardening_md, bundle_root / "docs" / "tool_hardening_plan.local.md"),
+        (tool_operator_guide, bundle_root / "config" / "tool_operator_guide.local.json"),
+        (tool_operator_guide_md, bundle_root / "docs" / "tool_operator_guide.local.md"),
         (runtime_contract, bundle_root / "config" / "runtime_activation_contract.local.json"),
         (runtime_contract_md, bundle_root / "config" / "runtime_activation_contract.local.md"),
         (codex_mcp_contract, bundle_root / "config" / "codex_mcp_launch_contract.local.json"),

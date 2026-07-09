@@ -14,6 +14,7 @@ def test_architecture_report_stitches_generated_contracts(tmp_path):
     tools = tmp_path / "tools.json"
     tool_readiness = tmp_path / "tool_readiness.json"
     tool_hardening = tmp_path / "tool_hardening.json"
+    tool_operator_guide = tmp_path / "tool_operator_guide.json"
     records = tmp_path / "records"
     reports = tmp_path / "reports"
     releases = tmp_path / "releases"
@@ -96,6 +97,11 @@ def test_architecture_report_stitches_generated_contracts(tmp_path):
             "enterprise_ready_static": False,
         },
     }), encoding="utf-8")
+    tool_operator_guide.write_text(json.dumps({
+        "schema": "harness.tool-operator-guide/v1",
+        "summary": {"tools": 2, "roots_existing": 2, "enterprise_ready": 1},
+        "tools": [{"tool": "index"}, {"tool": "mneme"}],
+    }), encoding="utf-8")
     records.mkdir()
     for name in [
         "ROADMAP-STATUS-2026-07-09.md",
@@ -149,6 +155,7 @@ def test_architecture_report_stitches_generated_contracts(tmp_path):
         tool_contract_path=tools,
         tool_readiness_path=tool_readiness,
         tool_hardening_path=tool_hardening,
+        tool_operator_guide_path=tool_operator_guide,
         documentation_records_root=records,
         documentation_reports_root=reports,
         model_release_docs_root=releases,
@@ -166,6 +173,7 @@ def test_architecture_report_stitches_generated_contracts(tmp_path):
     assert report["summary"]["pubscan_profiled_entrypoints"] == 4
     assert report["summary"]["tool_readiness_enterprise_ready"] == 1
     assert report["summary"]["tool_hardening_actions"] == 2
+    assert report["summary"]["tool_operator_guided_tools"] == 2
     assert report["summary"]["documentation_records_present"] == 5
     assert report["summary"]["documentation_reports_present"] == 4
     assert report["summary"]["model_release_documents_present"] == 14
@@ -186,6 +194,7 @@ def test_architecture_report_markdown_includes_next_gates(tmp_path):
         tool_contract_path=missing,
         tool_readiness_path=missing,
         tool_hardening_path=missing,
+        tool_operator_guide_path=missing,
         documentation_records_root=tmp_path / "missing-records",
         documentation_reports_root=tmp_path / "missing-reports",
         model_release_docs_root=tmp_path / "missing-releases",

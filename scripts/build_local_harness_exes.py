@@ -310,6 +310,26 @@ def _emit_tool_contract(args: argparse.Namespace) -> Path:
     return path
 
 
+def _emit_tool_operator_guide(*, tool_contract_path: Path) -> Path:
+    path = DIST / "tool_operator_guide.local.json"
+    markdown = DIST / "tool_operator_guide.local.md"
+    command = [
+        sys.executable,
+        "scripts/run_tool_operator_guide.py",
+        "--tool-contract",
+        str(tool_contract_path),
+        "--out",
+        str(path),
+        "--markdown-out",
+        str(markdown),
+    ]
+    print(f"[tool-guide] {' '.join(command)}")
+    proc = subprocess.run(command, cwd=ROOT)
+    if proc.returncode != 0:
+        raise RuntimeError(f"tool operator guide generation failed ({proc.returncode})")
+    return path
+
+
 def _emit_runtime_contract(args: argparse.Namespace) -> Path:
     path = DIST / "runtime_activation_contract.local.json"
     markdown = DIST / "runtime_activation_contract.local.md"
@@ -452,6 +472,10 @@ def _write_release_manifest(args: argparse.Namespace, *, profiles_path: Path, bu
         "tool_hardening_plan": {
             "json": str(DIST / "tool_hardening_plan.local.json"),
             "markdown": str(DIST / "tool_hardening_plan.local.md"),
+        },
+        "tool_operator_guide": {
+            "json": str(DIST / "tool_operator_guide.local.json"),
+            "markdown": str(DIST / "tool_operator_guide.local.md"),
         },
         "executable_manifest": {
             "json": str(DIST / "harness_executable_manifest.local.json"),
@@ -600,7 +624,8 @@ def main() -> int:
     profiles_path = _emit_endpoint_profiles(args)
     release_readiness_path = _emit_model_release_readiness(args, profiles_path=profiles_path)
     _emit_model_publish_plan(args, release_readiness_path=release_readiness_path)
-    _emit_tool_contract(args)
+    tool_contract_path = _emit_tool_contract(args)
+    _emit_tool_operator_guide(tool_contract_path=tool_contract_path)
     _emit_runtime_contract(args)
     _emit_codex_mcp_contract(args)
     _emit_enterprise_readiness_report(args)
