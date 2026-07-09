@@ -126,6 +126,22 @@ def _owner_kind(owner: dict[str, Any]) -> str:
     return "unknown"
 
 
+def _suggest_alternate_port(host: str, port: int, port_probe: PortProbe) -> int:
+    for candidate in range(port + 1, port + 21):
+        if not port_probe(host, candidate, 0.5):
+            return candidate
+    return 0
+
+
+def _rewrite_launch_port(command: str, old_port: int, new_port: int) -> str:
+    if not command or not new_port:
+        return ""
+    return command.replace(f"SERVE_PORT={old_port}", f"SERVE_PORT={new_port}").replace(
+        f"--port {old_port}",
+        f"--port {new_port}",
+    )
+
+
 def _row_readiness(
     profile: dict[str, Any],
     *,
@@ -153,6 +169,23 @@ def _row_readiness(
     else:
         readiness = "port_conflict_wrong_service"
 
+    suggested_port = 0
+    suggested_endpoint_url = ""
+    suggested_launch_command = ""
+    suggested_profile_override = ""
+    if backend == "serve" and readiness == "port_conflict_wrong_service":
+        suggested_port = _suggest_alternate_port(host, port, port_probe)
+        if suggested_port:
+            suggested_endpoint_url = f"http://{host}:{suggested_port}"
+            suggested_launch_command = _rewrite_launch_port(
+                str(profile.get("launch_command_template", "")),
+                port,
+                suggested_port,
+            )
+            model_key = str(profile.get("model_key", "")).lower()
+            if model_key:
+                suggested_profile_override = f"--serve-url-{model_key} {suggested_endpoint_url}"
+
     return {
         "schema": "harness.local-model-launch-readiness.row/v1",
         "profile_id": profile.get("profile_id", ""),
@@ -173,6 +206,10 @@ def _row_readiness(
         "owner_command_line": owner.get("command_line", "") if owner else "",
         "readiness": readiness,
         "can_launch_without_displacing": readiness == "ready_to_launch",
+        "suggested_port": suggested_port,
+        "suggested_endpoint_url": suggested_endpoint_url,
+        "suggested_profile_override": suggested_profile_override,
+        "suggested_launch_command": suggested_launch_command,
         "launch_command_template": profile.get("launch_command_template", ""),
     }
 
@@ -230,12 +267,12 @@ def render_markdown(report: dict[str, Any]) -> str:
         f"- Port conflicts: `{summary['port_conflict_rows']}`",
         f"- Blocking rows: `{summary['blocking_rows']}`",
         "",
-        "| Model | Backend | Endpoint | Root | Listening | Owner kind | Readiness |",
-        "|---|---|---|---:|---:|---|---|",
+        "| Model | Backend | Endpoint | Root | Listening | Owner kind | Readiness | Suggested endpoint |",
+        "|---|---|---|---:|---:|---|---|---|",
     ]
     for row in report["rows"]:
         lines.append(
-            "| {model} | {backend} | {endpoint} | {root} | {listening} | {owner} | {readiness} |".format(
+            "| {model} | {backend} | {endpoint} | {root} | {listening} | {owner} | {readiness} | {suggested} |".format(
                 model=row.get("model", ""),
                 backend=row.get("backend", ""),
                 endpoint=row.get("endpoint_url", ""),
@@ -243,6 +280,7 @@ def render_markdown(report: dict[str, Any]) -> str:
                 listening=str(row.get("port_listening", False)).lower(),
                 owner=row.get("owner_kind", ""),
                 readiness=row.get("readiness", ""),
+                suggested=row.get("suggested_endpoint_url", ""),
             )
         )
     return "\n".join(lines) + "\n"
