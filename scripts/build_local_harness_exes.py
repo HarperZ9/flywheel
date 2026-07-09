@@ -143,6 +143,34 @@ def _emit_tool_contract(args: argparse.Namespace) -> Path:
     return path
 
 
+def _emit_runtime_contract(args: argparse.Namespace) -> Path:
+    path = DIST / "runtime_activation_contract.local.json"
+    markdown = DIST / "runtime_activation_contract.local.md"
+    command = [
+        sys.executable,
+        "scripts/run_runtime_activation_contract.py",
+        "--package-root",
+        str(DIST),
+        "--repo-root",
+        str(ROOT),
+        "--store-root",
+        args.store_root,
+        "--model-run-root",
+        args.model_run_root,
+        "--log-root",
+        args.log_root,
+        "--out",
+        str(path),
+        "--markdown-out",
+        str(markdown),
+    ]
+    print(f"[runtime] {' '.join(command)}")
+    proc = subprocess.run(command, cwd=ROOT)
+    if proc.returncode != 0:
+        raise RuntimeError(f"runtime activation contract generation failed ({proc.returncode})")
+    return path
+
+
 def _write_release_manifest(args: argparse.Namespace, *, profiles_path: Path, built: list[str], skipped: list[str]) -> Path:
     manifest = {
         "schema": "harness.local-executable-release/v1",
@@ -177,6 +205,12 @@ def _write_release_manifest(args: argparse.Namespace, *, profiles_path: Path, bu
             "base_root": args.tool_base_root,
             "root_overrides": args.tool_root,
         },
+        "runtime_activation": {
+            "contract": str(DIST / "runtime_activation_contract.local.json"),
+            "store_root": args.store_root,
+            "model_run_root": args.model_run_root,
+            "log_root": args.log_root,
+        },
         "operator_notes": [
             "Run local-harness.cmd manifest to inspect the packaged command surface.",
             "Set LOCAL_HARNESS_REPO if the artifacts/exe folder is moved away from the repo checkout.",
@@ -204,6 +238,9 @@ def main() -> int:
     ap.add_argument("--tools", default=DEFAULT_TOOLS)
     ap.add_argument("--tool-base-root", default="C:/dev/public")
     ap.add_argument("--tool-root", action="append", default=["aleph=C:/dev/aleph", "local-model=C:/dev/local-model"])
+    ap.add_argument("--store-root", default="C:/tmp/harness_file_store")
+    ap.add_argument("--model-run-root", default="E:/local-model-run")
+    ap.add_argument("--log-root", default="C:/tmp/local_model_serve_logs")
     ap.add_argument("--package", action="store_true",
                     help="assemble a local release bundle after building")
     ap.add_argument("--package-version", default=datetime.now(UTC).strftime("%Y%m%d-%H%M%S"))
@@ -249,6 +286,7 @@ def main() -> int:
 
     profiles_path = _emit_endpoint_profiles(args)
     _emit_tool_contract(args)
+    _emit_runtime_contract(args)
     manifest_path = _write_release_manifest(args, profiles_path=profiles_path, built=built, skipped=skipped)
     print(f"[ok] executables in {DIST}")
     print(f"[ok] release manifest {manifest_path}")

@@ -126,6 +126,34 @@ def test_tool_contract_command_targets_contract_generator():
     assert "C:/tmp/tool_contract.json" in command
 
 
+def test_runtime_contract_command_targets_runtime_contract_generator():
+    args = parse([
+        "runtime-contract",
+        "--package-root",
+        "C:/dev/local-model/artifacts/exe",
+        "--repo-root",
+        "C:/dev/local-model",
+        "--store-root",
+        "C:/tmp/store",
+        "--model-run-root",
+        "E:/local-model-run",
+        "--out",
+        "C:/tmp/runtime_contract.json",
+    ])
+    command = build_command(args, repo_root=Path("C:/dev/local-model"))
+
+    assert command[:2] == [args.python, "scripts/run_runtime_activation_contract.py"]
+    assert "--package-root" in command
+    assert "C:/dev/local-model/artifacts/exe" in command
+    assert "--repo-root" in command
+    assert "C:/dev/local-model" in command
+    assert "--store-root" in command
+    assert "C:/tmp/store" in command
+    assert "--model-run-root" in command
+    assert "E:/local-model-run" in command
+    assert "C:/tmp/runtime_contract.json" in command
+
+
 def test_benchmark_coverage_command_targets_profile_coverage_report():
     args = parse([
         "benchmark-coverage",
@@ -506,7 +534,7 @@ def test_manifest_lists_front_controller_commands_and_evidence_surfaces():
     assert manifest["schema"] == "harness.executable-manifest/v1"
     assert manifest["entrypoint"] == "harness.cmd"
     names = [row["name"] for row in manifest["commands"]]
-    assert names == ["manifest", "registry", "benchmarks", "forum-route", "mcp-health", "tool-contract", "benchmark-coverage", "comparison", "execution-matrix", "schematic-drift", "agentic-tasks", "cross-harness", "adapter-runtime", "embodied-realtime", "model-card-claims", "tool-hardening", "classifier-friction", "endpoint-gate", "endpoint-launch-readiness", "serve-launch", "serve-resource", "model-publish", "plan", "seed", "outcome", "query", "readiness"]
+    assert names == ["manifest", "registry", "benchmarks", "forum-route", "mcp-health", "tool-contract", "runtime-contract", "benchmark-coverage", "comparison", "execution-matrix", "schematic-drift", "agentic-tasks", "cross-harness", "adapter-runtime", "embodied-realtime", "model-card-claims", "tool-hardening", "classifier-friction", "endpoint-gate", "endpoint-launch-readiness", "serve-launch", "serve-resource", "model-publish", "plan", "seed", "outcome", "query", "readiness"]
     readiness = [row for row in manifest["commands"] if row["name"] == "readiness"][0]
     assert "model-endpoints" in readiness["targets"]
     assert "model-release" in readiness["targets"]
@@ -596,6 +624,15 @@ def test_manifest_includes_tool_contract_command():
     assert "harness.tool-integration-contract/v1" in contract["schemas"]
     assert contract["long_running_risk"] == "low"
     assert "scripts/run_tool_integration_contract.py" in contract["delegates_to"]
+
+
+def test_manifest_includes_runtime_contract_command():
+    manifest = build_manifest(store_root="C:/tmp/store")
+    contract = [row for row in manifest["commands"] if row["name"] == "runtime-contract"][0]
+
+    assert "harness.runtime-activation-contract/v1" in contract["schemas"]
+    assert contract["long_running_risk"] == "low"
+    assert "scripts/run_runtime_activation_contract.py" in contract["delegates_to"]
 
 
 def test_manifest_includes_cross_harness_command():
