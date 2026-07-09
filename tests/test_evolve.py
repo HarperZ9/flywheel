@@ -88,3 +88,62 @@ def test_classify_logic():
     assert _classify("reduce N candidates threshold", True) == "auto-config"
     assert _classify("add a new neural oracle module", True) == "gated-capability"
     assert _classify("intelligence is entropy", False) == "surface-only"
+
+
+# --- Outer-loop source (Bilevel Autoresearch, arXiv 2603.23420) ---
+# The mechanism: introspect the search machinery's own bottleneck signals and
+# PROPOSE a new search mechanism. We adopt the proposal half only; a synthesized
+# mechanism is a structural change and must NEVER auto-apply.
+
+OUTER_LOOP_FEED = {
+    "bottleneck_signals": [
+        {"proposed_mechanism": "MCTS UCB1 exploration constant is imbalanced on "
+                               "deep tasks: increase exploration via a tuned-c strategy",
+         "bottleneck_metric": "avg_oracle_calls", "leverage": 0.7, "ease": 0.3},
+        {"proposed_mechanism": "MAP-Elites archive coverage stagnated 3 cycles: "
+                               "widen niche granularity and swap the mutation operator",
+         "bottleneck_metric": "archive_coverage", "leverage": 0.6, "ease": 0.2},
+    ],
+}
+
+
+def test_outer_loop_candidates_are_collected_with_source():
+    cands = collect_candidates(RESEARCH_FEED, EFFICIENCY_FEED, OUTER_LOOP_FEED)
+    outer = [c for c in cands if c.source == "outer_loop"]
+    assert len(outer) == 2
+    assert all(c.validation for c in outer)
+
+
+def test_outer_loop_never_auto_applies_even_with_config_words():
+    # The first signal literally contains "increase" (a CONFIG_HINT) and the
+    # second contains "widen" and "swap". A telemetry candidate with those words
+    # would classify auto-config. An outer-loop MECHANISM proposal must not: it
+    # is a structural change and stays gated. This is the load-bearing property
+    # from the research do-not-integrate list (never auto-apply synthesized code).
+    cands = collect_candidates(RESEARCH_FEED, EFFICIENCY_FEED, OUTER_LOOP_FEED)
+    outer = [c for c in cands if c.source == "outer_loop"]
+    assert outer, "expected outer-loop candidates"
+    assert all(c.application == "gated-capability" for c in outer)
+    assert not any(c.application == "auto-config" for c in outer)
+
+
+def test_outer_loop_flows_into_gated_lane_of_meta_cycle():
+    out = meta_cycle(RESEARCH_FEED, EFFICIENCY_FEED, outer_loop_feed=OUTER_LOOP_FEED)
+    gated_descs = " ".join(g["description"] for g in out["gated"])
+    assert "UCB1" in gated_descs or "MAP-Elites" in gated_descs
+    # every gated entry still carries a falsifier
+    assert all(g["validation"] for g in out["gated"])
+
+
+def test_meta_cycle_backward_compatible_without_outer_loop():
+    # Omitting outer_loop_feed must reproduce the prior behavior exactly.
+    before = meta_cycle(RESEARCH_FEED, EFFICIENCY_FEED)
+    after = meta_cycle(RESEARCH_FEED, EFFICIENCY_FEED, outer_loop_feed=None)
+    assert before == after
+    assert not any("UCB1" in d for d in after["surface_only"])
+
+
+def test_outer_loop_blank_proposal_is_skipped():
+    feed = {"bottleneck_signals": [{"bottleneck_metric": "x"}, {"proposed_mechanism": "  "}]}
+    cands = collect_candidates(RESEARCH_FEED, EFFICIENCY_FEED, feed)
+    assert not [c for c in cands if c.source == "outer_loop"]
