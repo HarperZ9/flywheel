@@ -323,6 +323,14 @@ Serve launcher command:
 
 By default this is plan-only and does not start a model process. Add `--start --wait-seconds <seconds>` to start `harness/serve.py` in a background process, write combined stdout/stderr to the recorded log path, and poll `/health` for bounded startup evidence.
 
+Serve resource preflight command:
+
+```powershell
+.\harness.cmd serve-resource --profile-artifact C:/tmp/model_endpoint_profiles_32b_override_8768_20260709.json --models 32B --out C:/tmp/local_model_resource_preflight_32b_8768_20260709.json --markdown-out C:/tmp/local_model_resource_preflight_32b_8768_20260709.md --store-root C:/tmp/harness_file_store
+```
+
+This command is non-destructive. It records observed GPU memory from `nvidia-smi`, applies the calibrated `harness.membudget` 14B/32B fit model, and blocks launch attempts that require offload or a smaller runtime before a long-running serve process is started.
+
 Executable endpoint gate command:
 
 ```powershell
