@@ -56,6 +56,48 @@ def _backend_for_profile(profile: dict[str, Any], *, timeout_seconds: float, tra
     return None
 
 
+def _health_probe(profile: dict[str, Any], backend: Any) -> tuple[bool, str, dict[str, Any]]:
+    backend_name = str(profile.get("backend", "")).lower()
+    endpoint = str(profile.get("endpoint_url", "")).rstrip("/")
+    if backend_name == "serve":
+        url = f"{endpoint}/health"
+    elif backend_name == "ollama":
+        url = f"{endpoint}/api/tags"
+    else:
+        return False, "unsupported_backend", {"health_status": 0}
+    try:
+        status, obj = backend.transport("GET", url, None, 5.0)
+    except (OSError, ConnectionError):
+        return False, "endpoint_unavailable", {"health_status": 0}
+    except Exception as exc:
+        return False, "health_probe_error", {
+            "health_status": 0,
+            "error_type": type(exc).__name__,
+        }
+    detail: dict[str, Any] = {"health_status": status}
+    if isinstance(obj, dict) and obj.get("model_ref"):
+        detail["health_model_ref"] = str(obj.get("model_ref"))
+    if backend_name == "serve":
+        if status == 200 and isinstance(obj, dict) and obj.get("ok"):
+            expected = str(profile.get("model_ref", ""))
+            observed = str(obj.get("model_ref", ""))
+            if expected and observed and expected != observed:
+                return True, "health_model_ref_mismatch", detail
+            return True, "", detail
+        if status == 404:
+            return False, "wrong_service_or_path", detail
+        if status == 200:
+            return False, "wrong_service_or_schema", detail
+        return False, "health_http_error", detail
+    if status == 200 and isinstance(obj, dict) and obj.get("models"):
+        return True, "", detail
+    if status == 404:
+        return False, "wrong_service_or_path", detail
+    if status == 200:
+        return False, "wrong_service_or_schema", detail
+    return False, "health_http_error", detail
+
+
 def _stable_row_receipt(row: dict[str, Any]) -> str:
     body = {
         key: value
@@ -100,6 +142,8 @@ def probe_profile(
         "response_chars": 0,
         "expected_model_ref": str(profile.get("model_ref", "")),
         "model_ref": "",
+        "health_status": 0,
+        "health_model_ref": "",
     }
     backend = _backend_for_profile(profile, timeout_seconds=timeout_seconds, transport=transport)
     if backend is None:
@@ -107,9 +151,19 @@ def probe_profile(
         row["latency_ms"] = round((time.perf_counter() - started) * 1000, 3)
         return _finalize_row(row)
     try:
-        row["health_ok"] = bool(backend.health())
+        health_ok, health_failure, health_detail = _health_probe(profile, backend)
+        row["health_ok"] = health_ok
+        row["health_status"] = health_detail.get("health_status", 0)
+        row["health_model_ref"] = health_detail.get("health_model_ref", "")
+        if health_detail.get("error_type"):
+            row["error_type"] = health_detail["error_type"]
+        if health_failure == "health_model_ref_mismatch":
+            row["failure_class"] = health_failure
+            row["model_ref"] = row["health_model_ref"]
+            row["latency_ms"] = round((time.perf_counter() - started) * 1000, 3)
+            return _finalize_row(row)
         if not row["health_ok"]:
-            row["failure_class"] = "endpoint_unavailable"
+            row["failure_class"] = health_failure or "endpoint_unavailable"
             row["latency_ms"] = round((time.perf_counter() - started) * 1000, 3)
             return _finalize_row(row)
         row["generation_attempted"] = True
@@ -199,16 +253,18 @@ def render_markdown(report: dict[str, Any]) -> str:
         f"- Generation OK rows: `{summary['generation_ok_rows']}`",
         f"- Failed rows: `{summary['failed_rows']}`",
         "",
-        "| Model | Backend | Role | Health | Generation | Failure | Latency ms |",
-        "|---|---|---|---:|---:|---|---:|",
+        "| Model | Backend | Role | Health | Status | Health ref | Generation | Failure | Latency ms |",
+        "|---|---|---|---:|---:|---|---:|---|---:|",
     ]
     for row in report["rows"]:
         lines.append(
-            "| {model} | {backend} | {role} | {health} | {generation} | {failure} | {latency} |".format(
+            "| {model} | {backend} | {role} | {health} | {status} | {health_ref} | {generation} | {failure} | {latency} |".format(
                 model=row.get("model", ""),
                 backend=row.get("backend", ""),
                 role=row.get("provider_role", ""),
                 health=str(row.get("health_ok", False)).lower(),
+                status=row.get("health_status", 0),
+                health_ref=row.get("health_model_ref", ""),
                 generation=str(row.get("generation_ok", False)).lower(),
                 failure=row.get("failure_class", ""),
                 latency=row.get("latency_ms", 0),

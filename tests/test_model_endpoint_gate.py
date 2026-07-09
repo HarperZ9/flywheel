@@ -38,6 +38,20 @@ def fake_transport(method, url, body, timeout):
     return 404, {"error": "not found"}
 
 
+def fake_wrong_service_transport(method, url, body, timeout):
+    if url.endswith("/health"):
+        return 404, {"error": "not found"}
+    return 404, {"error": "not found"}
+
+
+def fake_health_model_ref_mismatch(method, url, body, timeout):
+    if url.endswith("/health"):
+        return 200, {"ok": True, "model_ref": "serve:14b"}
+    if url.endswith("/generate"):
+        return 200, {"text": "should not be needed", "model_ref": "serve:14b", "seed": 0}
+    return 404, {"error": "not found"}
+
+
 def test_model_endpoint_gate_probes_profile_rows_with_injected_transport(tmp_path):
     profiles = tmp_path / "profiles.json"
     profiles.write_text(json.dumps({
@@ -111,6 +125,71 @@ def test_model_endpoint_gate_fails_model_ref_mismatch(tmp_path):
     assert row["failure_class"] == "model_ref_mismatch"
     assert row["model_ref"] == "serve:test"
     assert row["expected_model_ref"] == "serve:expected-32b"
+    assert row["quality_score"] == 0.0
+
+
+def test_model_endpoint_gate_classifies_wrong_service_on_serve_health(tmp_path):
+    profiles = tmp_path / "profiles.json"
+    profiles.write_text(json.dumps({
+        "schema": "harness.model-endpoint-profiles/v1",
+        "profiles": [
+            {
+                "profile_id": "serve-32b",
+                "model": "32B",
+                "model_key": "32b",
+                "model_ref": "serve:expected-32b",
+                "backend": "serve",
+                "provider_role": "flywheel",
+                "endpoint_url": "http://127.0.0.1:8767",
+            },
+        ],
+    }), encoding="utf-8")
+
+    report = build_report(
+        profile_artifact=str(profiles),
+        models=["32B"],
+        backends=[],
+        transport=fake_wrong_service_transport,
+    )
+
+    row = report["rows"][0]
+    assert row["health_ok"] is False
+    assert row["generation_attempted"] is False
+    assert row["failure_class"] == "wrong_service_or_path"
+    assert row["health_status"] == 404
+    assert row["quality_score"] == 0.0
+
+
+def test_model_endpoint_gate_stops_on_health_model_ref_mismatch(tmp_path):
+    profiles = tmp_path / "profiles.json"
+    profiles.write_text(json.dumps({
+        "schema": "harness.model-endpoint-profiles/v1",
+        "profiles": [
+            {
+                "profile_id": "serve-32b",
+                "model": "32B",
+                "model_key": "32b",
+                "model_ref": "serve:expected-32b",
+                "backend": "serve",
+                "provider_role": "flywheel",
+                "endpoint_url": "http://127.0.0.1:8767",
+            },
+        ],
+    }), encoding="utf-8")
+
+    report = build_report(
+        profile_artifact=str(profiles),
+        models=["32B"],
+        backends=[],
+        transport=fake_health_model_ref_mismatch,
+    )
+
+    row = report["rows"][0]
+    assert row["health_ok"] is True
+    assert row["generation_attempted"] is False
+    assert row["failure_class"] == "health_model_ref_mismatch"
+    assert row["health_model_ref"] == "serve:14b"
+    assert row["model_ref"] == "serve:14b"
     assert row["quality_score"] == 0.0
 
 

@@ -1046,6 +1046,7 @@ What changed:
 - Fixes local model root discovery to recognize the actual `E:\local-model-run\models\Qwen2.5-Coder-14B-Instruct` and `E:\local-model-run\models\Qwen2.5-Coder-32B-Instruct` layout.
 - Hardens live endpoint gate rows with expected-vs-observed `model_ref` checks so a 14B serve process cannot satisfy a 32B release gate.
 - Updates serve launch templates to include `SERVE_MODEL_ALIAS`, `SERVE_MODEL_REF`, and `SERVE_PORT`, including the 32B reference string `Qwen2.5-Coder-32B-Instruct (base, nf4)`.
+- Adds endpoint health diagnostics for wrong local services and health-level model-reference mismatches before generation is attempted.
 
 ### `classifier_friction_accountability_receipts`
 
