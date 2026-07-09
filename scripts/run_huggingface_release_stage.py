@@ -340,7 +340,7 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--release-readiness-artifact", required=True)
     parser.add_argument("--publish-plan-artifact", required=True)
-    parser.add_argument("--namespace", default="HarperZ9")
+    parser.add_argument("--namespace", default="zaindanaharper")
     parser.add_argument("--private", action="store_true")
     parser.add_argument("--operator-upload-approved", action="store_true")
     parser.add_argument("--out", default="")

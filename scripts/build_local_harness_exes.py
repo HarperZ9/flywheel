@@ -627,7 +627,7 @@ def main() -> int:
     ap.add_argument("--model-release-max-entries", type=int, default=200)
     ap.add_argument("--model-publish-name-prefix", default="Flywheel-Local-Coder")
     ap.add_argument("--model-repo-docs-root", default="C:/dev/local-model/project-docs/releases")
-    ap.add_argument("--huggingface-namespace", default="HarperZ9")
+    ap.add_argument("--huggingface-namespace", default="zaindanaharper")
     ap.add_argument("--huggingface-private", action="store_true")
     ap.add_argument(
         "--context-roots",
