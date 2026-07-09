@@ -20,7 +20,7 @@ from dataclasses import dataclass, field
 
 @dataclass
 class ImprovementCandidate:
-    source: str          # "scout" | "telemetry"
+    source: str          # "scout" | "telemetry" | "outer_loop"
     description: str
     leverage: float      # 0..1 estimated impact
     ease: float          # 0..1 (config=high, code=low)
@@ -59,7 +59,14 @@ def _validation_for(description: str) -> str:
     return "re-run M7 eval; the relevant metric must improve without pass_rate regression"
 
 
-def collect_candidates(research_feed: dict, efficiency_feed: dict) -> list[ImprovementCandidate]:
+def _outer_loop_validation(signal: dict) -> str:
+    metric = str(signal.get("bottleneck_metric", "the targeted bottleneck metric")).strip()
+    return (f"re-run M7 eval with the proposed mechanism; {metric} must improve "
+            "AND pass_rate must not decrease at matched budget")
+
+
+def collect_candidates(research_feed: dict, efficiency_feed: dict,
+                       outer_loop_feed: dict | None = None) -> list[ImprovementCandidate]:
     out: list[ImprovementCandidate] = []
     for t in research_feed.get("actionable_threads", []):
         desc = t.get("suggested_extension") or t.get("title", "")
@@ -74,6 +81,25 @@ def collect_candidates(research_feed: dict, efficiency_feed: dict) -> list[Impro
             leverage=0.8, ease=0.7, falsifiable=True,
             application=_classify(ins, True),
             validation=_validation_for(ins)))
+    # Outer-loop source (Bilevel Autoresearch, arXiv 2603.23420): introspect the
+    # search machinery's own bottleneck signals (MCTS UCB1 imbalance, MAP-Elites
+    # archive stagnation) and PROPOSE a new search mechanism. We adopt the
+    # proposal half only. A synthesized mechanism is a structural/code change, so
+    # it is ALWAYS gated-capability and can never fall into the auto-apply lane,
+    # no matter what words its description contains. That is the load-bearing
+    # safety property: the paper's outer loop self-injects code; ours never does.
+    for signal in (outer_loop_feed or {}).get("bottleneck_signals", []):
+        desc = str(signal.get("proposed_mechanism") or signal.get("description", "")).strip()
+        if not desc:
+            continue
+        out.append(ImprovementCandidate(
+            source="outer_loop",
+            description=desc,
+            leverage=float(signal.get("leverage", 0.5)),
+            ease=float(signal.get("ease", 0.2)),
+            falsifiable=True,
+            application="gated-capability",
+            validation=_outer_loop_validation(signal)))
     for t in research_feed.get("inspiration_threads", []):
         out.append(ImprovementCandidate(
             source="scout", description=t.get("title", ""),
@@ -87,13 +113,18 @@ def rank_candidates(cands: list[ImprovementCandidate]) -> list[ImprovementCandid
 
 
 def meta_cycle(research_feed: dict, efficiency_feed: dict,
-               *, baseline: dict | None = None) -> dict:
+               *, baseline: dict | None = None,
+               outer_loop_feed: dict | None = None) -> dict:
     """One turn of the acceleration loop. Returns the ranked pipeline:
     auto-config candidates (self-tunable, falsifier-gated), gated-capability
     candidates (need admission), and surface-only (inspiration). The caller
     applies auto-config ones (after their validator passes), re-measures via
-    telemetry, and feeds the new baseline into the next meta_cycle."""
-    cands = rank_candidates(collect_candidates(research_feed, efficiency_feed))
+    telemetry, and feeds the new baseline into the next meta_cycle.
+
+    outer_loop_feed is optional (Bilevel Autoresearch): bottleneck signals from
+    introspecting the search machinery become gated-capability mechanism
+    proposals, never auto-applied."""
+    cands = rank_candidates(collect_candidates(research_feed, efficiency_feed, outer_loop_feed))
     auto = [c for c in cands if c.application == "auto-config"]
     gated = [c for c in cands if c.application == "gated-capability"]
     surface = [c for c in cands if c.application == "surface-only"]
