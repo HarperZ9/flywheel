@@ -51,6 +51,9 @@ class EvalReport:
     avg_oracle_calls: float
     avg_candidates: float
     receipt_reproducibility: float
+    # Per-task outcomes enable paired statistics (bootstrap CIs on arm
+    # differences). Optional so pre-existing constructions stay valid.
+    per_task: list = field(default_factory=list)
 
     def summary(self) -> str:
         return (f"{self.arm_name}: pass={self.pass_rate:.0%} "
@@ -106,7 +109,9 @@ def _aggregate(name: str, rs: list[ArmResult]) -> EvalReport:
         name, n, passed / n,
         sum(r.oracle_calls for r in rs) / n,
         sum(r.candidates_generated for r in rs) / n,
-        sum(1 for r in rs if r.receipt_reproducible) / n)
+        sum(1 for r in rs if r.receipt_reproducible) / n,
+        per_task=[{"task_id": r.task_id, "passed": bool(r.passed),
+                   "oracle_calls": r.oracle_calls} for r in rs])
 
 
 # F8: metric declarations {min, max, good-direction} so a scorecard reads without
@@ -128,7 +133,8 @@ def scorecard(reports: dict[str, EvalReport], *, meta: dict | None = None) -> di
         "arms": {name: {"n_tasks": r.n_tasks, "pass_rate": r.pass_rate,
                         "avg_oracle_calls": r.avg_oracle_calls,
                         "avg_candidates": r.avg_candidates,
-                        "receipt_reproducibility": r.receipt_reproducibility}
+                        "receipt_reproducibility": r.receipt_reproducibility,
+                        **({"per_task": r.per_task} if r.per_task else {})}
                  for name, r in reports.items()},
         "meta": meta or {},
     }
