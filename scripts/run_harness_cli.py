@@ -142,6 +142,19 @@ def build_manifest(*, store_root: str = DEFAULT_STORE_ROOT) -> dict:
                 "recommended_validation_slice": "python -m pytest tests/test_codex_mcp_launch_contract.py tests/test_harness_cli.py -q",
             },
             {
+                "name": "package-doctor",
+                "delegates_to": "scripts/run_package_ship_doctor.py",
+                "purpose": "Verify a packaged local harness bundle summary, required files, contract schemas, zip hash, model profile coverage, and no-secret posture.",
+                "schemas": ["harness.package-ship-doctor/v1"],
+                "evidence_surface": "package summary, bundled metadata files, required release contents, and text secret scan",
+                "default_artifacts": [
+                    "C:/tmp/package_ship_doctor.json",
+                    "C:/tmp/package_ship_doctor.md",
+                ],
+                "long_running_risk": "low",
+                "recommended_validation_slice": "python -m pytest tests/test_package_ship_doctor.py tests/test_harness_cli.py -q",
+            },
+            {
                 "name": "tool-contract",
                 "delegates_to": "scripts/run_tool_integration_contract.py",
                 "purpose": "Emit the packaged sidecar integration contract for index, forum, gather, crucible, telos, aleph, mneme, relay, plexus, pubscan, and local-model.",
@@ -758,6 +771,12 @@ def build_parser() -> argparse.ArgumentParser:
     codex_mcp.add_argument("--tools", default="index,forum,gather,crucible,telos")
     codex_mcp.add_argument("--observation", action="append", default=[])
 
+    package_doctor = subparsers.add_parser("package-doctor", help="emit package release doctor")
+    _add_common_io(package_doctor)
+    package_doctor.add_argument("--package-summary", default="C:/dev/local-model/artifacts/exe/packages/local-harness-dev-local.package.json")
+    package_doctor.add_argument("--repo-root", default="C:/dev/local-model")
+    package_doctor.add_argument("--strict-exit", action="store_true")
+
     tool_contract = subparsers.add_parser("tool-contract", help="emit packaged sidecar tool integration contract")
     _add_common_io(tool_contract)
     tool_contract.add_argument("--tools", default="index,forum,gather,crucible,telos,aleph,mneme,relay,plexus,pubscan,local-model")
@@ -1041,6 +1060,19 @@ def build_command(args, *, repo_root: Path) -> list[str]:
         ]
         for observation in args.observation:
             command.extend(["--observation", observation])
+        _common_outputs(command, args)
+        return command
+    if args.command_name == "package-doctor":
+        command = [
+            py,
+            "scripts/run_package_ship_doctor.py",
+            "--package-summary",
+            args.package_summary,
+            "--repo-root",
+            args.repo_root,
+        ]
+        if args.strict_exit:
+            command.append("--strict-exit")
         _common_outputs(command, args)
         return command
     if args.command_name == "tool-contract":
