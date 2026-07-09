@@ -85,6 +85,7 @@ Primary artifacts:
 - `C:\tmp\model_endpoint_gate_refcheck_20260709.json`
 - `C:\tmp\model_endpoint_profiles_32b_integrated_20260709.json`
 - `C:\tmp\model_endpoint_gate_32b_integrated_20260709.json`
+- `C:\tmp\local_model_launch_readiness_32b_integrated_20260709.json`
 
 What improved:
 
@@ -117,6 +118,7 @@ Local endpoint gate:
 - `serve` backend reported health and generation ok for the `14B` profile.
 - `serve` backend rejected the `32B` profile with `model_ref_mismatch`: expected `Qwen2.5-Coder-32B-Instruct (base, nf4)`, observed `Qwen2.5-Coder-14B-Instruct (base, nf4)`.
 - Follow-up 32B-integrated profiles assign `32B` to `http://127.0.0.1:8767`; the live gate now classifies that endpoint as `wrong_service_or_path` with health status `404`, meaning the 32B profile is correct but the live process on that port is not a `harness/serve.py` model endpoint.
+- Launch readiness classifies `14B` as `candidate_running_gate_required` on `8765` and `32B` as `port_conflict_wrong_service` on `8767`; observed 32B owner kind is `generic_http_server`.
 - `ollama` backend was unavailable for both `14B` and `32B`.
 - The corrected endpoint gate blocks any `32B` readiness or publication claim until the serve process/profile mapping is corrected and rerun.
 

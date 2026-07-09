@@ -301,6 +301,14 @@ The endpoint gate validates expected-vs-observed `model_ref`; a 14B process cann
 
 Health probes distinguish unavailable endpoints from wrong local services. For serve profiles, `/health` returning `404` is recorded as `wrong_service_or_path`; `/health` returning `200` without the expected serve schema is recorded as `wrong_service_or_schema`; `/health` returning a different `model_ref` is recorded as `health_model_ref_mismatch` before generation.
 
+Endpoint launch readiness command:
+
+```powershell
+.\harness.cmd endpoint-launch-readiness --profile-artifact C:/tmp/model_endpoint_profiles_20260709.json --models 14B,32B --out C:/tmp/local_model_launch_readiness_20260709.json --markdown-out C:/tmp/local_model_launch_readiness_20260709.md --store-root C:/tmp/harness_file_store
+```
+
+This command is non-destructive. It reads endpoint profiles, checks model root presence, inspects local serve-port ownership, redacts process command lines, and classifies each serve row as `ready_to_launch`, `candidate_running_gate_required`, `port_conflict_wrong_service`, or `model_root_missing`.
+
 Executable endpoint gate command:
 
 ```powershell
