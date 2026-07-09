@@ -299,6 +299,8 @@ By default, endpoint gate failures are recorded as partial evidence and the comm
 
 The endpoint gate validates expected-vs-observed `model_ref`; a 14B process cannot satisfy the 32B release gate even if it is reachable and generating.
 
+Health probes distinguish unavailable endpoints from wrong local services. For serve profiles, `/health` returning `404` is recorded as `wrong_service_or_path`; `/health` returning `200` without the expected serve schema is recorded as `wrong_service_or_schema`; `/health` returning a different `model_ref` is recorded as `health_model_ref_mismatch` before generation.
+
 Executable endpoint gate command:
 
 ```powershell
