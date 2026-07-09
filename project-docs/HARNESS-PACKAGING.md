@@ -38,6 +38,8 @@ python scripts/build_local_harness_exes.py --skip-serve --package --package-vers
 - `artifacts/exe/packages/local-harness-<version>.architecture.json`: post-package architecture report including release doctor status.
 - `artifacts/exe/packages/local-harness-<version>.architecture.md`: human-readable post-package architecture report.
 - `artifacts/exe/packages/local-harness-<version>/docs/records/`: packaged roadmap, capability catalog, objective evidence matrix, and next recursive improvement loop.
+- `artifacts/exe/packages/local-harness-<version>/docs/reports/`: packaged benchmark methodology, experimental outcome, pubscan integration, and public context boundary reports.
+- `artifacts/exe/packages/local-harness-<version>/docs/releases/`: packaged 14B/32B model-card, endpoint, usage, benchmark, accountability, and release-checklist scaffolds.
 - `artifacts/exe/packages/local-harness-<version>/manifest/ship-manifest.json`: file hashes, source commit, dependency posture, and secret policy.
 
 ## Local model wiring

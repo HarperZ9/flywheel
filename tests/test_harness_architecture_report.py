@@ -15,6 +15,8 @@ def test_architecture_report_stitches_generated_contracts(tmp_path):
     tool_readiness = tmp_path / "tool_readiness.json"
     tool_hardening = tmp_path / "tool_hardening.json"
     records = tmp_path / "records"
+    reports = tmp_path / "reports"
+    releases = tmp_path / "releases"
     runtime = tmp_path / "runtime.json"
     codex = tmp_path / "codex.json"
     enterprise = tmp_path / "enterprise.json"
@@ -103,6 +105,18 @@ def test_architecture_report_stitches_generated_contracts(tmp_path):
         "NEXT-RECURSIVE-IMPROVEMENT-LOOP-2026-07-09.md",
     ]:
         (records / name).write_text("record\n", encoding="utf-8")
+    reports.mkdir()
+    (records / "BENCHMARK-METHODOLOGY-2026-07-09.md").write_text("methodology\n", encoding="utf-8")
+    for name in [
+        "EXPERIMENTAL-OUTCOME-CODEX-FLYWHEEL-LOCAL-ENGINE-2026-07-09.md",
+        "PUBSCAN-ZERO-DEPENDENCY-INTEGRATION-2026-07-09.md",
+        "PUBLIC-REDTEAM-CONTEXT-BOUNDARY-2026-07-09.md",
+    ]:
+        (reports / name).write_text("report\n", encoding="utf-8")
+    for model in ["14B", "32B"]:
+        (releases / model).mkdir(parents=True)
+        for name in ["README.md", "MODEL_CARD.md", "BENCHMARKS.md", "ENDPOINTS.md", "USAGE.md", "SAFETY-ACCOUNTABILITY.md", "RELEASE-CHECKLIST.md"]:
+            (releases / model / name).write_text("release\n", encoding="utf-8")
     runtime.write_text(json.dumps({
         "schema": "harness.runtime-activation-contract/v1",
         "summary": {"ready_for_package_inspection": True},
@@ -136,6 +150,8 @@ def test_architecture_report_stitches_generated_contracts(tmp_path):
         tool_readiness_path=tool_readiness,
         tool_hardening_path=tool_hardening,
         documentation_records_root=records,
+        documentation_reports_root=reports,
+        model_release_docs_root=releases,
         runtime_contract_path=runtime,
         codex_mcp_contract_path=codex,
         enterprise_readiness_path=enterprise,
@@ -151,6 +167,8 @@ def test_architecture_report_stitches_generated_contracts(tmp_path):
     assert report["summary"]["tool_readiness_enterprise_ready"] == 1
     assert report["summary"]["tool_hardening_actions"] == 2
     assert report["summary"]["documentation_records_present"] == 5
+    assert report["summary"]["documentation_reports_present"] == 4
+    assert report["summary"]["model_release_documents_present"] == 14
     assert report["summary"]["tools"] == ["index"]
     assert report["release_gate"]["package_doctor_verdict"] == "SHIP_READY"
 
@@ -169,6 +187,8 @@ def test_architecture_report_markdown_includes_next_gates(tmp_path):
         tool_readiness_path=missing,
         tool_hardening_path=missing,
         documentation_records_root=tmp_path / "missing-records",
+        documentation_reports_root=tmp_path / "missing-reports",
+        model_release_docs_root=tmp_path / "missing-releases",
         runtime_contract_path=missing,
         codex_mcp_contract_path=missing,
         enterprise_readiness_path=missing,

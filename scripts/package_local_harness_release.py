@@ -22,6 +22,28 @@ DOCUMENTATION_RECORDS = [
     "OBJECTIVE-EVIDENCE-MATRIX-2026-07-09.json",
     "NEXT-RECURSIVE-IMPROVEMENT-LOOP-2026-07-09.md",
 ]
+REPORT_DOCUMENTS = [
+    "BENCHMARK-METHODOLOGY-2026-07-09.md",
+    "EXPERIMENTAL-OUTCOME-CODEX-FLYWHEEL-LOCAL-ENGINE-2026-07-09.md",
+    "PUBSCAN-ZERO-DEPENDENCY-INTEGRATION-2026-07-09.md",
+    "PUBLIC-REDTEAM-CONTEXT-BOUNDARY-2026-07-09.md",
+]
+MODEL_RELEASE_DOCUMENTS = [
+    "14B/README.md",
+    "14B/MODEL_CARD.md",
+    "14B/BENCHMARKS.md",
+    "14B/ENDPOINTS.md",
+    "14B/USAGE.md",
+    "14B/SAFETY-ACCOUNTABILITY.md",
+    "14B/RELEASE-CHECKLIST.md",
+    "32B/README.md",
+    "32B/MODEL_CARD.md",
+    "32B/BENCHMARKS.md",
+    "32B/ENDPOINTS.md",
+    "32B/USAGE.md",
+    "32B/SAFETY-ACCOUNTABILITY.md",
+    "32B/RELEASE-CHECKLIST.md",
+]
 
 
 def sha256(path: Path) -> str:
@@ -93,6 +115,7 @@ It also includes `config\\tool_integration_contract.local.json` for the Flywheel
 `config\\enterprise_readiness_report.local.json` summarizes mneme, relay, and plexus enterprise-readiness gates.
 `docs\\harness_architecture_report.local.md` summarizes the executable surface, local model endpoints, tool fabric, runtime activation, and release gates.
 `docs\\records\\` carries the current roadmap, capability catalog, objective evidence matrix, and next recursive improvement loop.
+`docs\\reports\\` and `docs\\releases\\` carry the benchmark methodology, experimental/reporting documents, and 14B/32B publication scaffolds.
 
 - 14B serve endpoint: `http://127.0.0.1:8765`
 - 32B serve endpoint: `http://127.0.0.1:8768`
@@ -188,6 +211,21 @@ def build_bundle(
         )
         copied["relative_path"] = str((bundle_root / "docs" / "records" / record).relative_to(bundle_root)).replace("\\", "/")
         files.append(copied)
+    for report in REPORT_DOCUMENTS:
+        source_root = ROOT / "project-docs" / ("records" if report.startswith("BENCHMARK-METHODOLOGY") else "reports")
+        copied = copy_file(
+            source_root / report,
+            bundle_root / "docs" / "reports" / report,
+        )
+        copied["relative_path"] = str((bundle_root / "docs" / "reports" / report).relative_to(bundle_root)).replace("\\", "/")
+        files.append(copied)
+    for release_doc in MODEL_RELEASE_DOCUMENTS:
+        copied = copy_file(
+            ROOT / "project-docs" / "releases" / release_doc,
+            bundle_root / "docs" / "releases" / release_doc,
+        )
+        copied["relative_path"] = str((bundle_root / "docs" / "releases" / release_doc).relative_to(bundle_root)).replace("\\", "/")
+        files.append(copied)
 
     readme = write_text(bundle_root / "README.md", release_readme(package_name=package_name))
     readme["relative_path"] = "README.md"
@@ -207,7 +245,11 @@ def build_bundle(
         "secret_policy": "no .env files, credentials, tokens, private keys, model weights, caches, or benchmark outputs are included",
         "documentation_pack": {
             "records": DOCUMENTATION_RECORDS,
+            "reports": REPORT_DOCUMENTS,
+            "model_release_documents": MODEL_RELEASE_DOCUMENTS,
             "record_count": len(DOCUMENTATION_RECORDS),
+            "report_count": len(REPORT_DOCUMENTS),
+            "model_release_document_count": len(MODEL_RELEASE_DOCUMENTS),
         },
         "files": sorted(files, key=lambda item: str(item["relative_path"])),
     }
