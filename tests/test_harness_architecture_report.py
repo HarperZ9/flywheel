@@ -9,6 +9,7 @@ def test_architecture_report_stitches_generated_contracts(tmp_path):
     endpoints = tmp_path / "endpoints.json"
     release_readiness = tmp_path / "model_release.json"
     publish_plan = tmp_path / "model_publish.json"
+    huggingface_stage = tmp_path / "huggingface.json"
     context = tmp_path / "context.json"
     pubscan = tmp_path / "pubscan.json"
     tools = tmp_path / "tools.json"
@@ -18,6 +19,7 @@ def test_architecture_report_stitches_generated_contracts(tmp_path):
     records = tmp_path / "records"
     reports = tmp_path / "reports"
     releases = tmp_path / "releases"
+    flagship = tmp_path / "flagship"
     runtime = tmp_path / "runtime.json"
     codex = tmp_path / "codex.json"
     enterprise = tmp_path / "enterprise.json"
@@ -46,6 +48,18 @@ def test_architecture_report_stitches_generated_contracts(tmp_path):
         "schema": "harness.model-publish-plan/v1",
         "summary": {"status": "DO_NOT_PUBLISH"},
         "models": [{"candidate_name": "Flywheel-Local-Coder-14B"}],
+    }), encoding="utf-8")
+    huggingface_stage.write_text(json.dumps({
+        "schema": "harness.huggingface-release-stage/v1",
+        "upload_mode": "dry_run_metadata_only",
+        "namespace": "HarperZ9",
+        "summary": {
+            "models": 2,
+            "ready_to_upload_models": 0,
+            "waiting_for_operator_upload_approval": 0,
+            "do_not_upload_models": 2,
+            "repo_ids": ["HarperZ9/flywheel-local-coder-14b"],
+        },
     }), encoding="utf-8")
     context.write_text(json.dumps({
         "schema": "harness.context-inventory/v1",
@@ -123,6 +137,11 @@ def test_architecture_report_stitches_generated_contracts(tmp_path):
         (releases / model).mkdir(parents=True)
         for name in ["README.md", "MODEL_CARD.md", "BENCHMARKS.md", "ENDPOINTS.md", "USAGE.md", "SAFETY-ACCOUNTABILITY.md", "RELEASE-CHECKLIST.md"]:
             (releases / model / name).write_text("release\n", encoding="utf-8")
+    flagship.mkdir()
+    for name in ["README.md", "DEMOS.md", "WALKTHROUGH.md", "EXTERNAL-DOCS-SYNC.md", "EXTERNAL-CONTEXT-SOURCES.md"]:
+        (flagship / name).write_text("flagship\n", encoding="utf-8")
+    (flagship / "assets").mkdir()
+    (flagship / "assets" / "flywheel-flagship-mark.svg").write_text("<svg />\n", encoding="utf-8")
     runtime.write_text(json.dumps({
         "schema": "harness.runtime-activation-contract/v1",
         "summary": {"ready_for_package_inspection": True},
@@ -152,6 +171,7 @@ def test_architecture_report_stitches_generated_contracts(tmp_path):
         endpoint_profiles_path=endpoints,
         model_release_path=release_readiness,
         model_publish_path=publish_plan,
+        huggingface_stage_path=huggingface_stage,
         tool_contract_path=tools,
         tool_readiness_path=tool_readiness,
         tool_hardening_path=tool_hardening,
@@ -159,6 +179,7 @@ def test_architecture_report_stitches_generated_contracts(tmp_path):
         documentation_records_root=records,
         documentation_reports_root=reports,
         model_release_docs_root=releases,
+        flagship_docs_root=flagship,
         runtime_contract_path=runtime,
         codex_mcp_contract_path=codex,
         enterprise_readiness_path=enterprise,
@@ -177,6 +198,8 @@ def test_architecture_report_stitches_generated_contracts(tmp_path):
     assert report["summary"]["documentation_records_present"] == 5
     assert report["summary"]["documentation_reports_present"] == 4
     assert report["summary"]["model_release_documents_present"] == 14
+    assert report["summary"]["flagship_documents_present"] == 6
+    assert report["summary"]["huggingface_do_not_upload"] == 2
     assert report["summary"]["tools"] == ["index"]
     assert report["release_gate"]["package_doctor_verdict"] == "SHIP_READY"
 
@@ -191,6 +214,7 @@ def test_architecture_report_markdown_includes_next_gates(tmp_path):
         endpoint_profiles_path=missing,
         model_release_path=missing,
         model_publish_path=missing,
+        huggingface_stage_path=missing,
         tool_contract_path=missing,
         tool_readiness_path=missing,
         tool_hardening_path=missing,
@@ -198,6 +222,7 @@ def test_architecture_report_markdown_includes_next_gates(tmp_path):
         documentation_records_root=tmp_path / "missing-records",
         documentation_reports_root=tmp_path / "missing-reports",
         model_release_docs_root=tmp_path / "missing-releases",
+        flagship_docs_root=tmp_path / "missing-flagship",
         runtime_contract_path=missing,
         codex_mcp_contract_path=missing,
         enterprise_readiness_path=missing,

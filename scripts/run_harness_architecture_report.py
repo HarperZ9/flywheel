@@ -44,6 +44,14 @@ DEFAULT_MODEL_RELEASE_DOCUMENTS = [
     "32B/SAFETY-ACCOUNTABILITY.md",
     "32B/RELEASE-CHECKLIST.md",
 ]
+DEFAULT_FLAGSHIP_DOCUMENTS = [
+    "README.md",
+    "DEMOS.md",
+    "WALKTHROUGH.md",
+    "EXTERNAL-DOCS-SYNC.md",
+    "EXTERNAL-CONTEXT-SOURCES.md",
+    "assets/flywheel-flagship-mark.svg",
+]
 
 
 def _now() -> str:
@@ -165,7 +173,7 @@ def _tool_operator_guide_summary(tool_operator_guide: dict[str, Any]) -> dict[st
     }
 
 
-def _documentation_summary(records_root: Path, reports_root: Path, releases_root: Path) -> dict[str, Any]:
+def _documentation_summary(records_root: Path, reports_root: Path, releases_root: Path, flagship_root: Path) -> dict[str, Any]:
     record_rows = [{"name": name, **_file_artifact(records_root / name)} for name in DEFAULT_DOCUMENTATION_RECORDS]
     report_rows = [
         {
@@ -175,25 +183,45 @@ def _documentation_summary(records_root: Path, reports_root: Path, releases_root
         for name in DEFAULT_REPORT_DOCUMENTS
     ]
     release_rows = [{"name": name, **_file_artifact(releases_root / name)} for name in DEFAULT_MODEL_RELEASE_DOCUMENTS]
-    rows = record_rows + report_rows + release_rows
+    flagship_rows = [{"name": name, **_file_artifact(flagship_root / name)} for name in DEFAULT_FLAGSHIP_DOCUMENTS]
+    rows = record_rows + report_rows + release_rows + flagship_rows
     return {
         "schema": "harness.architecture-report.documentation-pack/v1",
         "records_root": str(records_root),
         "reports_root": str(reports_root),
         "releases_root": str(releases_root),
+        "flagship_root": str(flagship_root),
         "records": record_rows,
         "reports": report_rows,
         "model_release_documents": release_rows,
+        "flagship_documents": flagship_rows,
         "record_count": len(record_rows),
         "report_count": len(report_rows),
         "model_release_document_count": len(release_rows),
+        "flagship_document_count": len(flagship_rows),
         "records_present": sum(1 for row in record_rows if row["exists"]),
         "reports_present": sum(1 for row in report_rows if row["exists"]),
         "model_release_documents_present": sum(1 for row in release_rows if row["exists"]),
+        "flagship_documents_present": sum(1 for row in flagship_rows if row["exists"]),
         "total_documents": len(rows),
         "total_documents_present": sum(1 for row in rows if row["exists"]),
         "missing_records": [row["name"] for row in rows if not row["exists"]],
         "total_bytes": sum(int(row["bytes"]) for row in rows),
+    }
+
+
+def _huggingface_stage_summary(stage: dict[str, Any]) -> dict[str, Any]:
+    summary = stage.get("summary") or {}
+    return {
+        "schema": "harness.architecture-report.huggingface-stage/v1",
+        "present": bool(stage),
+        "upload_mode": stage.get("upload_mode", ""),
+        "namespace": stage.get("namespace", ""),
+        "models": summary.get("models", 0),
+        "ready_to_upload_models": summary.get("ready_to_upload_models", 0),
+        "waiting_for_operator_upload_approval": summary.get("waiting_for_operator_upload_approval", 0),
+        "do_not_upload_models": summary.get("do_not_upload_models", 0),
+        "repo_ids": summary.get("repo_ids", []),
     }
 
 
@@ -272,6 +300,7 @@ def build_report(
     endpoint_profiles_path: Path,
     model_release_path: Path,
     model_publish_path: Path,
+    huggingface_stage_path: Path,
     tool_contract_path: Path,
     tool_readiness_path: Path,
     tool_hardening_path: Path,
@@ -279,6 +308,7 @@ def build_report(
     documentation_records_root: Path,
     documentation_reports_root: Path,
     model_release_docs_root: Path,
+    flagship_docs_root: Path,
     runtime_contract_path: Path,
     codex_mcp_contract_path: Path,
     enterprise_readiness_path: Path,
@@ -291,6 +321,7 @@ def build_report(
     endpoint_profiles = _load(endpoint_profiles_path)
     model_release = _load(model_release_path)
     model_publish = _load(model_publish_path)
+    huggingface_stage = _load(huggingface_stage_path)
     tool_contract = _load(tool_contract_path)
     tool_readiness = _load(tool_readiness_path)
     tool_hardening = _load(tool_hardening_path)
@@ -307,6 +338,7 @@ def build_report(
         "endpoint_profiles": _artifact(endpoint_profiles_path, "harness.model-endpoint-profiles/v1"),
         "model_release_readiness": _artifact(model_release_path, "harness.model-release-readiness/v1"),
         "model_publish_plan": _artifact(model_publish_path, "harness.model-publish-plan/v1"),
+        "huggingface_release_stage": _artifact(huggingface_stage_path, "harness.huggingface-release-stage/v1"),
         "tool_contract": _artifact(tool_contract_path, "harness.tool-integration-contract/v1"),
         "tool_readiness": _artifact(tool_readiness_path, "harness.tool-readiness/v1"),
         "tool_hardening_plan": _artifact(tool_hardening_path, "harness.tool-hardening-plan/v1"),
@@ -330,6 +362,10 @@ def build_report(
         verified_facts.append("14B/32B naming and publication plan is represented by the model publish plan artifact.")
     else:
         assumptions.append("Model publish plan was not present when this report was generated.")
+    if huggingface_stage:
+        verified_facts.append("14B/32B Hugging Face release staging is represented by the dry-run upload staging artifact.")
+    else:
+        assumptions.append("Hugging Face release staging was not present when this report was generated.")
     if context_inventory:
         verified_facts.append("Scratch, temp, session, and benchmark context surfaces are represented by the metadata-only context inventory.")
     else:
@@ -354,7 +390,7 @@ def build_report(
         verified_facts.append("Concise operator instructions for each tool are represented by the packaged tool operator guide.")
     else:
         assumptions.append("Tool operator guide was absent when this report was generated.")
-    documentation_pack = _documentation_summary(documentation_records_root, documentation_reports_root, model_release_docs_root)
+    documentation_pack = _documentation_summary(documentation_records_root, documentation_reports_root, model_release_docs_root, flagship_docs_root)
     if documentation_pack["total_documents_present"] == documentation_pack["total_documents"]:
         verified_facts.append("Roadmap, capability catalog, objective evidence matrix, next-loop, methodology, report, and 14B/32B release documents are present in the documentation pack.")
     else:
@@ -384,6 +420,7 @@ def build_report(
         "pubscan_profiles": _pubscan_summary(pubscan_profiles),
         "local_models": _endpoint_summary(endpoint_profiles),
         "model_release": _model_release_summary(model_release, model_publish),
+        "huggingface_release_stage": _huggingface_stage_summary(huggingface_stage),
         "tool_fabric": _tool_summary(tool_contract),
         "tool_readiness": _tool_readiness_summary(tool_readiness),
         "tool_hardening": _tool_hardening_summary(tool_hardening),
@@ -434,7 +471,10 @@ def build_report(
             "documentation_records_present": documentation_pack["records_present"],
             "documentation_reports_present": documentation_pack["reports_present"],
             "model_release_documents_present": documentation_pack["model_release_documents_present"],
+            "flagship_documents_present": documentation_pack["flagship_documents_present"],
             "documentation_total_present": documentation_pack["total_documents_present"],
+            "huggingface_ready_to_upload": _huggingface_stage_summary(huggingface_stage)["ready_to_upload_models"],
+            "huggingface_do_not_upload": _huggingface_stage_summary(huggingface_stage)["do_not_upload_models"],
             "tools": _tool_summary(tool_contract)["tools"],
         },
     }
@@ -460,6 +500,8 @@ def render_markdown(report: dict[str, Any]) -> str:
         f"- Documentation records: {report['summary']['documentation_records_present']}",
         f"- Documentation reports: {report['summary']['documentation_reports_present']}",
         f"- Model release docs: {report['summary']['model_release_documents_present']}",
+        f"- Flagship docs/art: {report['summary']['flagship_documents_present']}",
+        f"- Hugging Face ready/do-not-upload: {report['summary']['huggingface_ready_to_upload']} / {report['summary']['huggingface_do_not_upload']}",
         f"- Tools: {', '.join(report['summary']['tools']) or 'none'}",
         f"- Package doctor: {report['release_gate']['package_doctor_verdict'] or 'not present in this report'}",
         "",
@@ -513,9 +555,19 @@ def render_markdown(report: dict[str, Any]) -> str:
         f"- Records present: {report['documentation_pack']['records_present']} / {report['documentation_pack']['record_count']}",
         f"- Reports present: {report['documentation_pack']['reports_present']} / {report['documentation_pack']['report_count']}",
         f"- Model release documents present: {report['documentation_pack']['model_release_documents_present']} / {report['documentation_pack']['model_release_document_count']}",
+        f"- Flagship documents present: {report['documentation_pack']['flagship_documents_present']} / {report['documentation_pack']['flagship_document_count']}",
         f"- Total documents present: {report['documentation_pack']['total_documents_present']} / {report['documentation_pack']['total_documents']}",
         f"- Total bytes: {report['documentation_pack']['total_bytes']}",
         f"- Missing records: {', '.join(report['documentation_pack']['missing_records']) or 'none'}",
+        "",
+        "## Hugging Face staging",
+        "",
+        f"- Present: {str(report['huggingface_release_stage']['present']).lower()}",
+        f"- Upload mode: {report['huggingface_release_stage']['upload_mode'] or 'none'}",
+        f"- Namespace: {report['huggingface_release_stage']['namespace'] or 'none'}",
+        f"- Ready to upload: {report['huggingface_release_stage']['ready_to_upload_models']}",
+        f"- Do not upload: {report['huggingface_release_stage']['do_not_upload_models']}",
+        f"- Repo IDs: {', '.join(report['huggingface_release_stage']['repo_ids']) or 'none'}",
         "",
         "## Verified facts",
         "",
@@ -555,6 +607,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--endpoint-profiles", default="")
     parser.add_argument("--model-release", default="")
     parser.add_argument("--model-publish", default="")
+    parser.add_argument("--huggingface-stage", default="")
     parser.add_argument("--tool-contract", default="")
     parser.add_argument("--tool-readiness", default="")
     parser.add_argument("--tool-hardening", default="")
@@ -562,6 +615,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--documentation-records-root", default="C:/dev/local-model/project-docs/records")
     parser.add_argument("--documentation-reports-root", default="C:/dev/local-model/project-docs/reports")
     parser.add_argument("--model-release-docs-root", default="C:/dev/local-model/project-docs/releases")
+    parser.add_argument("--flagship-docs-root", default="C:/dev/local-model/project-docs/flagship")
     parser.add_argument("--runtime-contract", default="")
     parser.add_argument("--codex-mcp-contract", default="")
     parser.add_argument("--enterprise-readiness", default="")
@@ -581,6 +635,7 @@ def main(argv: list[str] | None = None) -> int:
         endpoint_profiles_path=Path(args.endpoint_profiles) if args.endpoint_profiles else dist / "model_endpoint_profiles.local.json",
         model_release_path=Path(args.model_release) if args.model_release else dist / "model_release_readiness.local.json",
         model_publish_path=Path(args.model_publish) if args.model_publish else dist / "model_publish_plan.local.json",
+        huggingface_stage_path=Path(args.huggingface_stage) if args.huggingface_stage else dist / "huggingface_release_stage.local.json",
         tool_contract_path=Path(args.tool_contract) if args.tool_contract else dist / "tool_integration_contract.local.json",
         tool_readiness_path=Path(args.tool_readiness) if args.tool_readiness else dist / "tool_readiness.local.json",
         tool_hardening_path=Path(args.tool_hardening) if args.tool_hardening else dist / "tool_hardening_plan.local.json",
@@ -588,6 +643,7 @@ def main(argv: list[str] | None = None) -> int:
         documentation_records_root=Path(args.documentation_records_root),
         documentation_reports_root=Path(args.documentation_reports_root),
         model_release_docs_root=Path(args.model_release_docs_root),
+        flagship_docs_root=Path(args.flagship_docs_root),
         runtime_contract_path=Path(args.runtime_contract) if args.runtime_contract else dist / "runtime_activation_contract.local.json",
         codex_mcp_contract_path=Path(args.codex_mcp_contract) if args.codex_mcp_contract else dist / "codex_mcp_launch_contract.local.json",
         enterprise_readiness_path=Path(args.enterprise_readiness) if args.enterprise_readiness else dist / "enterprise_readiness_report.local.json",

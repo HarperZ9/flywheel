@@ -167,6 +167,37 @@ def _emit_model_publish_plan(args: argparse.Namespace, *, release_readiness_path
     return path
 
 
+def _emit_huggingface_release_stage(
+    args: argparse.Namespace,
+    *,
+    release_readiness_path: Path,
+    publish_plan_path: Path,
+) -> Path:
+    path = DIST / "huggingface_release_stage.local.json"
+    markdown = DIST / "huggingface_release_stage.local.md"
+    command = [
+        sys.executable,
+        "scripts/run_huggingface_release_stage.py",
+        "--release-readiness-artifact",
+        str(release_readiness_path),
+        "--publish-plan-artifact",
+        str(publish_plan_path),
+        "--namespace",
+        args.huggingface_namespace,
+        "--out",
+        str(path),
+        "--markdown-out",
+        str(markdown),
+    ]
+    if args.huggingface_private:
+        command.append("--private")
+    print(f"[huggingface] {' '.join(command)}")
+    proc = subprocess.run(command, cwd=ROOT)
+    if proc.returncode != 0:
+        raise RuntimeError(f"Hugging Face release stage generation failed ({proc.returncode})")
+    return path
+
+
 def _emit_executable_manifest(args: argparse.Namespace) -> Path:
     path = DIST / "harness_executable_manifest.local.json"
     markdown = DIST / "harness_executable_manifest.local.md"
@@ -457,6 +488,9 @@ def _write_release_manifest(args: argparse.Namespace, *, profiles_path: Path, bu
             "offload_runtime": args.serve_runtime_32b == "cpu-offload",
             "release_readiness": str(DIST / "model_release_readiness.local.json"),
             "publish_plan": str(DIST / "model_publish_plan.local.json"),
+            "huggingface_release_stage": str(DIST / "huggingface_release_stage.local.json"),
+            "huggingface_namespace": args.huggingface_namespace,
+            "huggingface_private": args.huggingface_private,
             "publish_name_prefix": args.model_publish_name_prefix,
         },
         "tool_integration": {
@@ -554,6 +588,8 @@ def main() -> int:
     ap.add_argument("--model-release-artifact-roots", default="C:/dev/local-model/artifacts;C:/tmp")
     ap.add_argument("--model-release-max-entries", type=int, default=200)
     ap.add_argument("--model-publish-name-prefix", default="Flywheel-Local-Coder")
+    ap.add_argument("--huggingface-namespace", default="HarperZ9")
+    ap.add_argument("--huggingface-private", action="store_true")
     ap.add_argument(
         "--context-roots",
         default=(
@@ -623,7 +659,12 @@ def main() -> int:
     _emit_tool_hardening_plan(args, readiness_path=tool_readiness_path)
     profiles_path = _emit_endpoint_profiles(args)
     release_readiness_path = _emit_model_release_readiness(args, profiles_path=profiles_path)
-    _emit_model_publish_plan(args, release_readiness_path=release_readiness_path)
+    publish_plan_path = _emit_model_publish_plan(args, release_readiness_path=release_readiness_path)
+    _emit_huggingface_release_stage(
+        args,
+        release_readiness_path=release_readiness_path,
+        publish_plan_path=publish_plan_path,
+    )
     tool_contract_path = _emit_tool_contract(args)
     _emit_tool_operator_guide(tool_contract_path=tool_contract_path)
     _emit_runtime_contract(args)

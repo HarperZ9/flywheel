@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-labelledby="title desc">
+  <title id="title">Flywheel Local Flagship Mark</title>
+  <desc id="desc">A zero-dependency vector mark for the local AI harness flagship package.</desc>
+  <rect width="1200" height="630" fill="#08110f"/>
+  <path d="M0 0h1200v630H0z" fill="url(#bg)"/>
+  <circle cx="600" cy="315" r="196" fill="none" stroke="#d9ffb8" stroke-width="18" stroke-dasharray="66 32"/>
+  <circle cx="600" cy="315" r="124" fill="none" stroke="#6ee7c8" stroke-width="10"/>
+  <path d="M600 146l58 118 130 19-94 92 22 130-116-61-116 61 22-130-94-92 130-19z" fill="#f4ffcf"/>
+  <path d="M220 488c94-136 205-205 333-207M980 142C884 276 772 344 645 346" fill="none" stroke="#ffb86b" stroke-width="14" stroke-linecap="round"/>
+  <text x="80" y="104" fill="#f4ffcf" font-family="Georgia, 'Times New Roman', serif" font-size="54" font-weight="700">Flywheel Local</text>
+  <text x="82" y="158" fill="#9bd9c9" font-family="Consolas, monospace" font-size="24">receipts over guardrails / local models over rented dependency</text>
+  <text x="80" y="548" fill="#f4ffcf" font-family="Consolas, monospace" font-size="30">zero-dependency harness • accountable engine • 14B / 32B release track</text>
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="50%" r="65%">
+      <stop offset="0%" stop-color="#12332c"/>
+      <stop offset="55%" stop-color="#0d1c19"/>
+      <stop offset="100%" stop-color="#050807"/>
+    </radialGradient>
+  </defs>
+</svg>

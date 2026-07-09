@@ -32,6 +32,10 @@ def test_package_ship_doctor_accepts_complete_metadata_bundle(tmp_path):
             "schema": "harness.model-publish-plan/v1",
             "summary": {"status": "DO_NOT_PUBLISH"},
         },
+        "config/huggingface_release_stage.local.json": {
+            "schema": "harness.huggingface-release-stage/v1",
+            "summary": {"do_not_upload_models": 2, "ready_to_upload_models": 0},
+        },
         "config/tool_integration_contract.local.json": {
             "schema": "harness.tool-integration-contract/v1",
         },
