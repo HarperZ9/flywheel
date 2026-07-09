@@ -79,6 +79,7 @@ The package includes `config\\model_endpoint_profiles.local.json`.
 It also includes `config\\tool_integration_contract.local.json` for the Flywheel/Codex sidecar tool contract.
 `config\\runtime_activation_contract.local.json` describes storage, env knobs, and activation boundaries.
 `config\\codex_mcp_launch_contract.local.json` describes Codex MCP launch profiles, stale-transport reload boundaries, and direct CLI fallbacks.
+`docs\\harness_architecture_report.local.md` summarizes the executable surface, local model endpoints, tool fabric, runtime activation, and release gates.
 
 - 14B serve endpoint: `http://127.0.0.1:8765`
 - 32B serve endpoint: `http://127.0.0.1:8768`
@@ -110,6 +111,10 @@ def build_bundle(
     runtime_contract_md = dist / "runtime_activation_contract.local.md"
     codex_mcp_contract = dist / "codex_mcp_launch_contract.local.json"
     codex_mcp_contract_md = dist / "codex_mcp_launch_contract.local.md"
+    executable_manifest = dist / "harness_executable_manifest.local.json"
+    executable_manifest_md = dist / "harness_executable_manifest.local.md"
+    architecture_report = dist / "harness_architecture_report.local.json"
+    architecture_report_md = dist / "harness_architecture_report.local.md"
     inputs = [
         (dist / "local-harness.exe", bundle_root / "bin" / "local-harness.exe"),
         (dist / "local-harness.cmd", bundle_root / "bin" / "local-harness.cmd"),
@@ -123,6 +128,10 @@ def build_bundle(
         (runtime_contract_md, bundle_root / "config" / "runtime_activation_contract.local.md"),
         (codex_mcp_contract, bundle_root / "config" / "codex_mcp_launch_contract.local.json"),
         (codex_mcp_contract_md, bundle_root / "config" / "codex_mcp_launch_contract.local.md"),
+        (executable_manifest, bundle_root / "manifest" / "harness_executable_manifest.local.json"),
+        (executable_manifest_md, bundle_root / "manifest" / "harness_executable_manifest.local.md"),
+        (architecture_report, bundle_root / "config" / "harness_architecture_report.local.json"),
+        (architecture_report_md, bundle_root / "docs" / "harness_architecture_report.local.md"),
         (ROOT / "project-docs" / "HARNESS-PACKAGING.md", bundle_root / "docs" / "HARNESS-PACKAGING.md"),
     ]
     if include_serve:
@@ -200,8 +209,7 @@ def build_bundle(
     summary_path.write_text(json.dumps(package_summary, indent=2, sort_keys=True), encoding="utf-8")
     package_summary["package_summary"] = {
         "path": str(summary_path),
-        "bytes": summary_path.stat().st_size,
-        "sha256": sha256(summary_path),
+        "self_integrity": "omitted to avoid circular hash/size claim",
     }
     doctor_json = out_root / f"{package_name}.doctor.json"
     doctor_md = out_root / f"{package_name}.doctor.md"
@@ -233,6 +241,36 @@ def build_bundle(
             "sha256": sha256(doctor_md),
         },
     }
+    architecture_json = out_root / f"{package_name}.architecture.json"
+    architecture_md = out_root / f"{package_name}.architecture.md"
+    architecture_command = [
+        sys.executable,
+        "scripts/run_harness_architecture_report.py",
+        "--dist",
+        str(dist),
+        "--package-doctor",
+        str(doctor_json),
+        "--out",
+        str(architecture_json),
+        "--markdown-out",
+        str(architecture_md),
+    ]
+    proc = subprocess.run(architecture_command, cwd=ROOT)
+    if proc.returncode != 0:
+        raise RuntimeError(f"post-package architecture report failed ({proc.returncode})")
+    package_summary["package_architecture_report"] = {
+        "json": {
+            "path": str(architecture_json),
+            "bytes": architecture_json.stat().st_size,
+            "sha256": sha256(architecture_json),
+        },
+        "markdown": {
+            "path": str(architecture_md),
+            "bytes": architecture_md.stat().st_size,
+            "sha256": sha256(architecture_md),
+        },
+    }
+    summary_path.write_text(json.dumps(package_summary, indent=2, sort_keys=True), encoding="utf-8")
     return package_summary
 
 

@@ -155,6 +155,19 @@ def build_manifest(*, store_root: str = DEFAULT_STORE_ROOT) -> dict:
                 "recommended_validation_slice": "python -m pytest tests/test_package_ship_doctor.py tests/test_harness_cli.py -q",
             },
             {
+                "name": "architecture-report",
+                "delegates_to": "scripts/run_harness_architecture_report.py",
+                "purpose": "Emit the harness architecture and endpoint report by stitching generated executable, endpoint, tool, runtime, Codex MCP, and release-gate artifacts.",
+                "schemas": ["harness.architecture-report/v1"],
+                "evidence_surface": "generated manifests and contracts, verified facts, assumptions, local model endpoint summaries, and next gates",
+                "default_artifacts": [
+                    "C:/tmp/harness_architecture_report.json",
+                    "C:/tmp/harness_architecture_report.md",
+                ],
+                "long_running_risk": "low",
+                "recommended_validation_slice": "python -m pytest tests/test_harness_architecture_report.py tests/test_harness_cli.py -q",
+            },
+            {
                 "name": "tool-contract",
                 "delegates_to": "scripts/run_tool_integration_contract.py",
                 "purpose": "Emit the packaged sidecar integration contract for index, forum, gather, crucible, telos, aleph, mneme, relay, plexus, pubscan, and local-model.",
@@ -777,6 +790,17 @@ def build_parser() -> argparse.ArgumentParser:
     package_doctor.add_argument("--repo-root", default="C:/dev/local-model")
     package_doctor.add_argument("--strict-exit", action="store_true")
 
+    architecture = subparsers.add_parser("architecture-report", help="emit harness architecture and endpoint report")
+    _add_common_io(architecture)
+    architecture.add_argument("--dist", default="C:/dev/local-model/artifacts/exe")
+    architecture.add_argument("--release-manifest", default="")
+    architecture.add_argument("--executable-manifest", default="")
+    architecture.add_argument("--endpoint-profiles", default="")
+    architecture.add_argument("--tool-contract", default="")
+    architecture.add_argument("--runtime-contract", default="")
+    architecture.add_argument("--codex-mcp-contract", default="")
+    architecture.add_argument("--package-doctor", default="")
+
     tool_contract = subparsers.add_parser("tool-contract", help="emit packaged sidecar tool integration contract")
     _add_common_io(tool_contract)
     tool_contract.add_argument("--tools", default="index,forum,gather,crucible,telos,aleph,mneme,relay,plexus,pubscan,local-model")
@@ -1073,6 +1097,22 @@ def build_command(args, *, repo_root: Path) -> list[str]:
         ]
         if args.strict_exit:
             command.append("--strict-exit")
+        _common_outputs(command, args)
+        return command
+    if args.command_name == "architecture-report":
+        command = [
+            py,
+            "scripts/run_harness_architecture_report.py",
+            "--dist",
+            args.dist,
+        ]
+        _append_if(command, "--release-manifest", args.release_manifest)
+        _append_if(command, "--executable-manifest", args.executable_manifest)
+        _append_if(command, "--endpoint-profiles", args.endpoint_profiles)
+        _append_if(command, "--tool-contract", args.tool_contract)
+        _append_if(command, "--runtime-contract", args.runtime_contract)
+        _append_if(command, "--codex-mcp-contract", args.codex_mcp_contract)
+        _append_if(command, "--package-doctor", args.package_doctor)
         _common_outputs(command, args)
         return command
     if args.command_name == "tool-contract":

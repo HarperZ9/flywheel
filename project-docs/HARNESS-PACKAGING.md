@@ -19,11 +19,15 @@ python scripts/build_local_harness_exes.py --skip-serve --package --package-vers
 - `artifacts/exe/tool_integration_contract.local.json`: packaged tool sidecar contract for index, forum, gather, crucible, telos, aleph, mneme, relay, plexus, pubscan, and local-model.
 - `artifacts/exe/runtime_activation_contract.local.json`: packaged runtime activation contract for storage, env knobs, sidecars, and launch boundaries.
 - `artifacts/exe/codex_mcp_launch_contract.local.json`: Codex MCP launch, stale-transport reload, and direct CLI fallback contract.
+- `artifacts/exe/harness_executable_manifest.local.json`: packaged command-surface manifest.
+- `artifacts/exe/harness_architecture_report.local.json`: harness architecture and endpoint report stitched from generated contracts.
 - `artifacts/exe/local-harness-release.json`: release manifest for the local executable package.
 - `artifacts/exe/packages/local-harness-<version>.zip`: shippable release bundle.
 - `artifacts/exe/packages/local-harness-<version>.package.json`: sidecar package summary with outer zip hash.
 - `artifacts/exe/packages/local-harness-<version>.doctor.json`: release doctor verdict for required files, schemas, zip hash, local model profile coverage, and no-secret posture.
 - `artifacts/exe/packages/local-harness-<version>.doctor.md`: human-readable release doctor summary.
+- `artifacts/exe/packages/local-harness-<version>.architecture.json`: post-package architecture report including release doctor status.
+- `artifacts/exe/packages/local-harness-<version>.architecture.md`: human-readable post-package architecture report.
 - `artifacts/exe/packages/local-harness-<version>/manifest/ship-manifest.json`: file hashes, source commit, dependency posture, and secret policy.
 
 ## Local model wiring
@@ -52,6 +56,10 @@ The release bundle includes:
 - `config/runtime_activation_contract.local.md`
 - `config/codex_mcp_launch_contract.local.json`
 - `config/codex_mcp_launch_contract.local.md`
+- `config/harness_architecture_report.local.json`
+- `docs/harness_architecture_report.local.md`
+- `manifest/harness_executable_manifest.local.json`
+- `manifest/harness_executable_manifest.local.md`
 - `docs/HARNESS-PACKAGING.md`
 - `manifest/local-harness-release.json`
 - `manifest/ship-manifest.json`

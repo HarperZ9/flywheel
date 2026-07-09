@@ -33,6 +33,12 @@ def test_package_ship_doctor_accepts_complete_metadata_bundle(tmp_path):
         "config/codex_mcp_launch_contract.local.json": {
             "schema": "harness.codex-mcp-launch-contract/v1",
         },
+        "config/harness_architecture_report.local.json": {
+            "schema": "harness.architecture-report/v1",
+        },
+        "manifest/harness_executable_manifest.local.json": {
+            "schema": "harness.executable-manifest/v1",
+        },
     }
     for rel in REQUIRED_BUNDLE_FILES:
         path = bundle / rel
