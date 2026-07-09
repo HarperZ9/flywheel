@@ -1,0 +1,252 @@
+106 INFO: PyInstaller: 6.19.0, contrib hooks: 2026.4
+133 INFO: Python: 3.12.10
+160 INFO: Platform: Windows-11-10.0.26220-SP0
+172 INFO: Python environment: C:\Users\Zain\AppData\Local\Programs\Python\Python312
+182 INFO: wrote C:\dev\local-model\local-agent.spec
+203 INFO: Removing temporary files and cleaning cache in C:\Users\Zain\AppData\Local\pyinstaller
+213 INFO: Module search paths (PYTHONPATH):
+['C:\\dev\\local-model',
+ 'C:\\Users\\Zain\\AppData\\Local\\Programs\\Python\\Python312\\python312.zip',
+ 'C:\\Users\\Zain\\AppData\\Local\\Programs\\Python\\Python312\\DLLs',
+ 'C:\\Users\\Zain\\AppData\\Local\\Programs\\Python\\Python312\\Lib',
+ 'C:\\Users\\Zain\\AppData\\Local\\Programs\\Python\\Python312',
+ 'C:\\Users\\Zain\\AppData\\Roaming\\Python\\Python312\\site-packages',
+ 'C:\\Users\\Zain\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages',
+ 'C:\\dev\\public\\agent-audit\\src',
+ 'C:\\dev\\public\\agent-routing-kit\\src',
+ '__editable__.calibrate_pro-1.0.0.finder.__path_hook__',
+ 'C:\\dev\\public\\consulting-template-kit\\src',
+ 'C:\\dev\\public\\crucible\\src',
+ 'C:\\dev\\public\\engine-revival\\src',
+ 'C:\\dev\\public\\forum\\src',
+ 'C:\\dev\\public\\gather\\src',
+ 'C:\\Users\\Zain\\io-guardrails\\src',
+ 'C:\\dev\\state\\orca\\src',
+ 'C:\\dev\\public\\plexus\\src',
+ 'C:\\dev\\public\\relay\\src',
+ 'C:\\dev\\public\\release-surface-scanner\\src',
+ 'C:\\dev\\public\\secret-redact-io\\src',
+ '__editable__.sofer-1.0.0.finder.__path_hook__',
+ 'C:\\Users\\Zain\\warden-agent-audit\\src',
+ '__editable__.warden_engraver-0.1.0.finder.__path_hook__',
+ '__editable__.warden_pso-0.1.0.finder.__path_hook__',
+ 'C:\\Users\\Zain\\warden-release-assurance\\src',
+ '__editable__.warden_shell-1.0.0.finder.__path_hook__',
+ '__editable__.warden_zerodayforge-0.1.0.finder.__path_hook__',
+ 'C:\\dev\\public\\accountable-surface\\src',
+ 'C:\\dev\\public\\agent-hook-pack\\src',
+ 'C:\\dev\\state\\behavior-transform.io',
+ 'C:\\dev\\public\\coherence-membrane\\src',
+ 'C:\\dev\\public\\context-curator-lite\\src',
+ 'C:\\dev\\public\\gpu-trace-validator\\src',
+ 'C:\\dev\\public\\index\\src',
+ 'C:\\dev\\public\\model-provenance-validator\\src',
+ 'C:\\dev\\public\\proof-surface\\src',
+ 'C:\\dev\\public\\rewardspy',
+ 'C:\\Users\\Zain\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\win32',
+ 'C:\\Users\\Zain\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\win32\\lib',
+ 'C:\\Users\\Zain\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\Pythonwin',
+ 'C:\\dev\\local-model\\scripts']
+885 INFO: checking Analysis
+886 INFO: Building Analysis because Analysis-00.toc is non existent
+888 INFO: Looking for Python shared library...
+890 INFO: Using Python shared library: C:\Users\Zain\AppData\Local\Programs\Python\Python312\python312.dll
+892 INFO: Running Analysis Analysis-00.toc
+894 INFO: Target bytecode optimization level: 0
+897 INFO: Initializing module dependency graph...
+900 INFO: Initializing module graph hook caches...
+912 INFO: Analyzing modules for base_library.zip ...
+2100 INFO: Processing standard module hook 'hook-encodings.py' from 'C:\\Users\\Zain\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\PyInstaller\\hooks'
+2565 INFO: Processing standard module hook 'hook-heapq.py' from 'C:\\Users\\Zain\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\PyInstaller\\hooks'
+3251 INFO: Processing standard module hook 'hook-pickle.py' from 'C:\\Users\\Zain\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\PyInstaller\\hooks'
+4604 INFO: Caching module dependency graph...
+4676 INFO: Analyzing C:\dev\local-model\scripts\local_agent_entry.py
+5035 INFO: Processing module hooks (post-graph stage)...
+5042 INFO: Performing binary vs. data reclassification (1 entries)
+5044 INFO: Looking for ctypes DLLs
+5050 INFO: Analyzing run-time hooks ...
+5053 INFO: Including run-time hook 'pyi_rth_inspect.py' from 'C:\\Users\\Zain\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\PyInstaller\\hooks\\rthooks'
+5060 INFO: Creating base_library.zip...
+5084 INFO: Looking for dynamic libraries
+5281 INFO: Extra DLL search directories (AddDllDirectory): []
+5283 INFO: Extra DLL search directories (PATH): []
+5614 INFO: Warnings written to C:\dev\local-model\artifacts\.pyinstaller\local-agent\local-agent\warn-local-agent.txt
+5636 INFO: Graph cross-reference written to C:\dev\local-model\artifacts\.pyinstaller\local-agent\local-agent\xref-local-agent.html
+5659 INFO: checking PYZ
+5659 INFO: Building PYZ because PYZ-00.toc is non existent
+5661 INFO: Building PYZ (ZlibArchive) C:\dev\local-model\artifacts\.pyinstaller\local-agent\local-agent\PYZ-00.pyz
+5826 INFO: Building PYZ (ZlibArchive) C:\dev\local-model\artifacts\.pyinstaller\local-agent\local-agent\PYZ-00.pyz completed successfully.
+5837 INFO: checking PKG
+5838 INFO: Building PKG because PKG-00.toc is non existent
+5839 INFO: Building PKG (CArchive) local-agent.pkg
+8156 INFO: Building PKG (CArchive) local-agent.pkg completed successfully.
+8162 INFO: Bootloader C:\Users\Zain\AppData\Local\Programs\Python\Python312\Lib\site-packages\PyInstaller\bootloader\Windows-64bit-intel\run.exe
+8164 INFO: checking EXE
+8165 INFO: Building EXE because EXE-00.toc is non existent
+8168 INFO: Building EXE from EXE-00.toc
+8172 INFO: Copying bootloader EXE to C:\dev\local-model\artifacts\exe\local-agent.exe
+8231 INFO: Copying icon to EXE
+8281 INFO: Copying 0 resources to EXE
+8285 INFO: Embedding manifest in EXE
+8337 INFO: Appending PKG archive to EXE
+8406 INFO: Fixing EXE headers
+8690 INFO: Building EXE from EXE-00.toc completed successfully.
+8695 INFO: Build complete! The results are available in: C:\dev\local-model\artifacts\exe
+91 INFO: PyInstaller: 6.21.0, contrib hooks: 2026.6
+91 INFO: Python: 3.12.10
+113 INFO: Platform: Windows-11-10.0.26220-SP0
+113 INFO: Python environment: E:\local-model-run\venv
+113 INFO: wrote C:\dev\local-model\local-serve.spec
+115 INFO: Removing temporary files and cleaning cache in C:\Users\Zain\AppData\Local\pyinstaller
+350 INFO: Module search paths (PYTHONPATH):
+['C:\\dev\\local-model',
+ 'C:\\Users\\Zain\\AppData\\Local\\Programs\\Python\\Python312\\python312.zip',
+ 'C:\\Users\\Zain\\AppData\\Local\\Programs\\Python\\Python312\\DLLs',
+ 'C:\\Users\\Zain\\AppData\\Local\\Programs\\Python\\Python312\\Lib',
+ 'C:\\Users\\Zain\\AppData\\Local\\Programs\\Python\\Python312',
+ 'E:\\local-model-run\\venv',
+ 'E:\\local-model-run\\venv\\Lib\\site-packages',
+ 'C:\\dev\\local-model\\scripts']
+614 INFO: checking Analysis
+615 INFO: Building Analysis because Analysis-00.toc is non existent
+615 INFO: Looking for Python shared library...
+615 INFO: Using Python shared library: C:\Users\Zain\AppData\Local\Programs\Python\Python312\python312.dll
+615 INFO: Running Analysis Analysis-00.toc
+615 INFO: Target bytecode optimization level: 0
+615 INFO: Initializing module dependency graph...
+616 INFO: Initializing module graph hook caches...
+625 INFO: Analyzing modules for base_library.zip ...
+1392 INFO: Processing standard module hook 'hook-encodings.py' from 'E:\\local-model-run\\venv\\Lib\\site-packages\\PyInstaller\\hooks'
+2208 INFO: Processing standard module hook 'hook-math.py' from 'E:\\local-model-run\\venv\\Lib\\site-packages\\PyInstaller\\hooks'
+2315 INFO: Processing standard module hook 'hook-pickle.py' from 'E:\\local-model-run\\venv\\Lib\\site-packages\\PyInstaller\\hooks'
+3007 INFO: Processing standard module hook 'hook-heapq.py' from 'E:\\local-model-run\\venv\\Lib\\site-packages\\PyInstaller\\hooks'
+3368 INFO: Caching module dependency graph...
+3411 INFO: Analyzing C:\dev\local-model\scripts\local_serve_entry.py
+3703 INFO: Processing standard module hook 'hook-torch.py' from 'E:\\local-model-run\\venv\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+1188 WARNING: Failed to collect submodules for 'torch.utils.tensorboard' because importing 'torch.utils.tensorboard' raised: ModuleNotFoundError: No module named 'tensorboard'
+W0708 11:16:14.410000 14760 Lib\site-packages\torch\distributed\elastic\multiprocessing\redirects.py:29] NOTE: Redirects are currently not supported in Windows or MacOs.
+E:\local-model-run\venv\Lib\site-packages\PyInstaller\utils\hooks\__init__.py:665: DeprecationWarning: `torch.distributed._sharding_spec` will be deprecated, use `torch.distributed._shard.sharding_spec` instead
+  __import__(name)
+E:\local-model-run\venv\Lib\site-packages\PyInstaller\utils\hooks\__init__.py:665: DeprecationWarning: `torch.distributed._sharded_tensor` will be deprecated, use `torch.distributed._shard.sharded_tensor` instead
+  __import__(name)
+E:\local-model-run\venv\Lib\site-packages\PyInstaller\utils\hooks\__init__.py:665: DeprecationWarning: `torch.distributed._shard.checkpoint` will be deprecated, use `torch.distributed.checkpoint` instead
+  __import__(name)
+15184 INFO: hook-torch: this torch build does not depend on MKL...
+15208 INFO: Processing standard module hook 'hook-_ctypes.py' from 'E:\\local-model-run\\venv\\Lib\\site-packages\\PyInstaller\\hooks'
+15260 INFO: Processing standard module hook 'hook-platform.py' from 'E:\\local-model-run\\venv\\Lib\\site-packages\\PyInstaller\\hooks'
+15264 INFO: Processing pre-safe-import-module hook 'hook-typing_extensions.py' from 'E:\\local-model-run\\venv\\Lib\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+15265 INFO: SetuptoolsInfo: initializing cached setuptools info...
+15848 INFO: Processing standard module hook 'hook-multiprocessing.util.py' from 'E:\\local-model-run\\venv\\Lib\\site-packages\\PyInstaller\\hooks'
+15936 INFO: Processing standard module hook 'hook-xml.py' from 'E:\\local-model-run\\venv\\Lib\\site-packages\\PyInstaller\\hooks'
+16841 INFO: Processing standard module hook 'hook-numpy.py' from 'E:\\local-model-run\\venv\\Lib\\site-packages\\PyInstaller\\hooks'
+17340 INFO: Processing standard module hook 'hook-difflib.py' from 'E:\\local-model-run\\venv\\Lib\\site-packages\\PyInstaller\\hooks'
+17908 INFO: Processing standard module hook 'hook-sysconfig.py' from 'E:\\local-model-run\\venv\\Lib\\site-packages\\PyInstaller\\hooks'
+18374 INFO: Processing standard module hook 'hook-webbrowser.py' from 'E:\\local-model-run\\venv\\Lib\\site-packages\\PyInstaller\\hooks'
+18431 INFO: Processing standard module hook 'hook-psutil.py' from 'E:\\local-model-run\\venv\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+20084 INFO: Processing standard module hook 'hook-charset_normalizer.py' from 'E:\\local-model-run\\venv\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+29217 INFO: Processing standard module hook 'hook-PIL.py' from 'E:\\local-model-run\\venv\\Lib\\site-packages\\PyInstaller\\hooks'
+29320 INFO: Processing standard module hook 'hook-PIL.Image.py' from 'E:\\local-model-run\\venv\\Lib\\site-packages\\PyInstaller\\hooks'
+29632 INFO: Processing standard module hook 'hook-xml.etree.cElementTree.py' from 'E:\\local-model-run\\venv\\Lib\\site-packages\\PyInstaller\\hooks'
+29772 INFO: Processing standard module hook 'hook-PIL.ImageFilter.py' from 'E:\\local-model-run\\venv\\Lib\\site-packages\\PyInstaller\\hooks'
+32485 INFO: Processing standard module hook 'hook-xml.dom.domreg.py' from 'E:\\local-model-run\\venv\\Lib\\site-packages\\PyInstaller\\hooks'
+38010 INFO: Processing standard module hook 'hook-pandas.py' from 'E:\\local-model-run\\venv\\Lib\\site-packages\\PyInstaller\\hooks'
+39064 INFO: Processing standard module hook 'hook-zoneinfo.py' from 'E:\\local-model-run\\venv\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+40280 INFO: Processing standard module hook 'hook-pandas.io.formats.style.py' from 'E:\\local-model-run\\venv\\Lib\\site-packages\\PyInstaller\\hooks'
+41528 INFO: Processing standard module hook 'hook-pyarrow.py' from 'E:\\local-model-run\\venv\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+42386 INFO: Processing standard module hook 'hook-urllib3.py' from 'E:\\local-model-run\\venv\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+42882 INFO: Processing pre-safe-import-module hook 'hook-backports.py' from 'E:\\local-model-run\\venv\\Lib\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+42882 INFO: Setuptools: 'backports' appears to be a full setuptools-vendored copy - creating alias to 'setuptools._vendor.backports'!
+42888 INFO: Processing standard module hook 'hook-setuptools.py' from 'E:\\local-model-run\\venv\\Lib\\site-packages\\PyInstaller\\hooks'
+42900 INFO: Processing pre-safe-import-module hook 'hook-distutils.py' from 'E:\\local-model-run\\venv\\Lib\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+42929 INFO: Processing pre-safe-import-module hook 'hook-jaraco.py' from 'E:\\local-model-run\\venv\\Lib\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+42930 INFO: Setuptools: 'jaraco' appears to be a full setuptools-vendored copy - creating alias to 'setuptools._vendor.jaraco'!
+42938 INFO: Processing pre-safe-import-module hook 'hook-more_itertools.py' from 'E:\\local-model-run\\venv\\Lib\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+43135 INFO: Processing pre-safe-import-module hook 'hook-packaging.py' from 'E:\\local-model-run\\venv\\Lib\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+43315 INFO: Processing standard module hook 'hook-setuptools._vendor.jaraco.text.py' from 'E:\\local-model-run\\venv\\Lib\\site-packages\\PyInstaller\\hooks'
+43318 INFO: Processing pre-safe-import-module hook 'hook-importlib_resources.py' from 'E:\\local-model-run\\venv\\Lib\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+43469 INFO: Processing pre-safe-import-module hook 'hook-importlib_metadata.py' from 'E:\\local-model-run\\venv\\Lib\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+43470 INFO: Setuptools: 'importlib_metadata' appears to be a setuptools-vendored copy - creating alias to 'setuptools._vendor.importlib_metadata'!
+43484 INFO: Processing standard module hook 'hook-setuptools._vendor.importlib_metadata.py' from 'E:\\local-model-run\\venv\\Lib\\site-packages\\PyInstaller\\hooks'
+43496 INFO: Processing pre-safe-import-module hook 'hook-zipp.py' from 'E:\\local-model-run\\venv\\Lib\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+43497 INFO: Setuptools: 'zipp' appears to be a setuptools-vendored copy - creating alias to 'setuptools._vendor.zipp'!
+43673 INFO: Processing pre-safe-import-module hook 'hook-tomli.py' from 'E:\\local-model-run\\venv\\Lib\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+43674 INFO: Setuptools: 'tomli' appears to be a setuptools-vendored copy - creating alias to 'setuptools._vendor.tomli'!
+44113 INFO: Processing pre-safe-import-module hook 'hook-wheel.py' from 'E:\\local-model-run\\venv\\Lib\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+44492 INFO: Processing standard module hook 'hook-certifi.py' from 'E:\\local-model-run\\venv\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+44587 INFO: Processing standard module hook 'hook-fsspec.py' from 'E:\\local-model-run\\venv\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+45303 INFO: Processing standard module hook 'hook-numba.py' from 'E:\\local-model-run\\venv\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+45322 INFO: Processing standard module hook 'hook-llvmlite.py' from 'E:\\local-model-run\\venv\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+45815 INFO: Processing standard module hook 'hook-pygments.py' from 'E:\\local-model-run\\venv\\Lib\\site-packages\\PyInstaller\\hooks'
+48703 INFO: Processing standard module hook 'hook-jinja2.py' from 'E:\\local-model-run\\venv\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+51127 INFO: Processing pre-safe-import-module hook 'hook-win32com.py' from 'E:\\local-model-run\\venv\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\pre_safe_import_module'
+53079 INFO: Processing standard module hook 'hook-pandas.plotting.py' from 'E:\\local-model-run\\venv\\Lib\\site-packages\\PyInstaller\\hooks'
+53572 INFO: Processing standard module hook 'hook-dateutil.py' from 'E:\\local-model-run\\venv\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+53711 INFO: Processing pre-safe-import-module hook 'hook-six.moves.py' from 'E:\\local-model-run\\venv\\Lib\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+54873 INFO: Processing standard module hook 'hook-sqlite3.py' from 'E:\\local-model-run\\venv\\Lib\\site-packages\\PyInstaller\\hooks'
+55128 INFO: Processing standard module hook 'hook-pandas.io.clipboard.py' from 'E:\\local-model-run\\venv\\Lib\\site-packages\\PyInstaller\\hooks'
+57090 INFO: Processing standard module hook 'hook-shelve.py' from 'E:\\local-model-run\\venv\\Lib\\site-packages\\PyInstaller\\hooks'
+60768 INFO: Processing standard module hook 'hook-transformers.py' from 'E:\\local-model-run\\venv\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+62063 INFO: Processing standard module hook 'hook-regex.py' from 'E:\\local-model-run\\venv\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+62566 INFO: Processing standard module hook 'hook-anyio.py' from 'E:\\local-model-run\\venv\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+64029 INFO: Processing standard module hook 'hook-rich.py' from 'E:\\local-model-run\\venv\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+78913 INFO: Processing standard module hook 'hook-bitsandbytes.py' from 'E:\\local-model-run\\venv\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+79844 INFO: Processing standard module hook 'hook-datasets.py' from 'E:\\local-model-run\\venv\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+80111 INFO: Processing pre-find-module-path hook 'hook-tkinter.py' from 'E:\\local-model-run\\venv\\Lib\\site-packages\\PyInstaller\\hooks\\pre_find_module_path'
+80113 INFO: TclTkInfo: initializing cached Tcl/Tk info...
+85260 INFO: Processing standard module hook 'hook-_tkinter.py' from 'E:\\local-model-run\\venv\\Lib\\site-packages\\PyInstaller\\hooks'
+86631 INFO: Processing pre-safe-import-module hook 'hook-tensorflow.py' from 'E:\\local-model-run\\venv\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\pre_safe_import_module'
+118456 INFO: Processing module hooks (post-graph stage)...
+125442 INFO: Processing standard module hook 'hook-PIL.SpiderImagePlugin.py' from 'E:\\local-model-run\\venv\\Lib\\site-packages\\PyInstaller\\hooks'
+127503 INFO: Processing standard module hook 'hook-_tkinter.py' from 'E:\\local-model-run\\venv\\Lib\\site-packages\\PyInstaller\\hooks'
+127506 INFO: Processing standard module hook 'hook-tzdata.py' from 'E:\\local-model-run\\venv\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+128141 INFO: Performing binary vs. data reclassification (2393 entries)
+128509 INFO: Looking for ctypes DLLs
+128873 WARNING: Ignoring /usr/lib64/libgomp.so.1 imported from E:\local-model-run\venv\Lib\site-packages\torch\_inductor\codecache.py - only basenames are supported with ctypes imports!
+129105 INFO: Analyzing run-time hooks ...
+129144 INFO: Including run-time hook 'pyi_rth_inspect.py' from 'E:\\local-model-run\\venv\\Lib\\site-packages\\PyInstaller\\hooks\\rthooks'
+129147 INFO: Including run-time hook 'pyi_rth_pkgutil.py' from 'E:\\local-model-run\\venv\\Lib\\site-packages\\PyInstaller\\hooks\\rthooks'
+129148 INFO: Including run-time hook 'pyi_rth_setuptools.py' from 'E:\\local-model-run\\venv\\Lib\\site-packages\\PyInstaller\\hooks\\rthooks'
+129149 INFO: Including run-time hook 'pyi_rth_multiprocessing.py' from 'E:\\local-model-run\\venv\\Lib\\site-packages\\PyInstaller\\hooks\\rthooks'
+129152 INFO: Including run-time hook 'pyi_rth__tkinter.py' from 'E:\\local-model-run\\venv\\Lib\\site-packages\\PyInstaller\\hooks\\rthooks'
+129372 INFO: Creating base_library.zip...
+129401 INFO: Looking for dynamic libraries
+W0708 11:18:19.087000 32968 Lib\site-packages\torch\distributed\elastic\multiprocessing\redirects.py:29] NOTE: Redirects are currently not supported in Windows or MacOs.
+E:\local-model-run\venv\Lib\site-packages\PyInstaller\building\build_main.py:227: DeprecationWarning: `torch.distributed._sharding_spec` will be deprecated, use `torch.distributed._shard.sharding_spec` instead
+  __import__(package)
+E:\local-model-run\venv\Lib\site-packages\PyInstaller\building\build_main.py:227: DeprecationWarning: `torch.distributed._sharded_tensor` will be deprecated, use `torch.distributed._shard.sharded_tensor` instead
+  __import__(package)
+E:\local-model-run\venv\Lib\site-packages\PyInstaller\building\build_main.py:227: DeprecationWarning: `torch.distributed._shard.checkpoint` will be deprecated, use `torch.distributed.checkpoint` instead
+  __import__(package)
+sys:1: DeprecationWarning: builtin type swigvarlink has no __module__ attribute
+140584 INFO: Extra DLL search directories (AddDllDirectory): ['E:\\local-model-run\\venv\\Lib\\site-packages\\numpy.libs', 'E:\\local-model-run\\venv\\Lib\\site-packages\\torch\\lib', 'E:\\local-model-run\\venv\\Lib\\site-packages\\pandas.libs', 'E:\\local-model-run\\venv\\Lib\\site-packages\\pyarrow.libs', 'E:\\local-model-run\\venv\\Lib\\site-packages\\llvmlite.libs']
+140585 INFO: Extra DLL search directories (PATH): []
+144265 WARNING: Library not found: could not resolve 'cublasLt64_13.dll', dependency of 'E:\\local-model-run\\venv\\Lib\\site-packages\\bitsandbytes\\libbitsandbytes_cuda130.dll'.
+144266 WARNING: Library not found: could not resolve 'cublas64_13.dll', dependency of 'E:\\local-model-run\\venv\\Lib\\site-packages\\bitsandbytes\\libbitsandbytes_cuda130.dll'.
+144266 WARNING: Library not found: could not resolve 'cudart64_110.dll', dependency of 'E:\\local-model-run\\venv\\Lib\\site-packages\\bitsandbytes\\libbitsandbytes_cuda118.dll'.
+144267 WARNING: Library not found: could not resolve 'cublasLt64_11.dll', dependency of 'E:\\local-model-run\\venv\\Lib\\site-packages\\bitsandbytes\\libbitsandbytes_cuda118.dll'.
+144267 WARNING: Library not found: could not resolve 'cublas64_11.dll', dependency of 'E:\\local-model-run\\venv\\Lib\\site-packages\\bitsandbytes\\libbitsandbytes_cuda118.dll'.
+144268 WARNING: Library not found: could not resolve 'cusparse64_11.dll', dependency of 'E:\\local-model-run\\venv\\Lib\\site-packages\\bitsandbytes\\libbitsandbytes_cuda118.dll'.
+144269 WARNING: Library not found: could not resolve 'sycl8.dll', dependency of 'E:\\local-model-run\\venv\\Lib\\site-packages\\bitsandbytes\\libbitsandbytes_xpu.dll'.
+144269 WARNING: Library not found: could not resolve 'tbb12.dll', dependency of 'E:\\local-model-run\\venv\\Lib\\site-packages\\numba\\np\\ufunc\\tbbpool.cp312-win_amd64.pyd'.
+144671 INFO: Warnings written to C:\dev\local-model\artifacts\.pyinstaller\local-serve\local-serve\warn-local-serve.txt
+145587 INFO: Graph cross-reference written to C:\dev\local-model\artifacts\.pyinstaller\local-serve\local-serve\xref-local-serve.html
+145904 INFO: checking PYZ
+145905 INFO: Building PYZ because PYZ-00.toc is non existent
+145905 INFO: Building PYZ (ZlibArchive) C:\dev\local-model\artifacts\.pyinstaller\local-serve\local-serve\PYZ-00.pyz
+152285 INFO: Building PYZ (ZlibArchive) C:\dev\local-model\artifacts\.pyinstaller\local-serve\local-serve\PYZ-00.pyz completed successfully.
+152751 INFO: checking PKG
+152752 INFO: Building PKG because PKG-00.toc is non existent
+152752 INFO: Building PKG (CArchive) local-serve.pkg
+526180 INFO: Building PKG (CArchive) local-serve.pkg completed successfully.
+526251 INFO: Bootloader E:\local-model-run\venv\Lib\site-packages\PyInstaller\bootloader\Windows-64bit-intel\run.exe
+526251 INFO: checking EXE
+526327 INFO: Building because toc changed
+526327 INFO: Building EXE from EXE-00.toc
+526526 INFO: Copying bootloader EXE to C:\dev\local-model\artifacts\exe\local-serve.exe
+526567 INFO: Copying icon to EXE
+526596 INFO: Copying 0 resources to EXE
+526596 INFO: Embedding manifest in EXE
+526650 INFO: Appending PKG archive to EXE
+532090 INFO: Fixing EXE headers
+551657 INFO: Building EXE from EXE-00.toc completed successfully.
+551737 INFO: Build complete! The results are available in: C:\dev\local-model\artifacts\exe

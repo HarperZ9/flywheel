@@ -1,0 +1,44 @@
+{
+  "jobs": [
+    {
+      "source": "discord",
+      "target": "1346756824233148527",
+      "max_messages": 100,
+      "page_size": 100
+    },
+    {
+      "source": "discord",
+      "target": "1105891499641684019",
+      "max_messages": 100,
+      "page_size": 100
+    },
+    {
+      "source": "discord",
+      "target": "1081121447960915989",
+      "max_messages": 100,
+      "page_size": 100
+    },
+    {
+      "source": "discord",
+      "target": "1072196207201501266",
+      "max_messages": 100,
+      "page_size": 100
+    },
+    {
+      "source": "discord",
+      "target": "1514609250222080072",
+      "max_messages": 100,
+      "page_size": 100
+    }
+  ],
+  "store": "C:/tmp/gather_discord_redteam_context_corpus",
+  "scope": [
+    "red team",
+    "jailbreak",
+    "prompt injection",
+    "local model",
+    "benchmark",
+    "receipt",
+    "witness"
+  ]
+}

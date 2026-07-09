@@ -1,0 +1,160 @@
+{
+  "schema": "harness.dry-run-preflight-command-deck/v1",
+  "deck_id": "codex_flywheel_local_model_dry_run_preflight_20260709",
+  "status": "planned_not_executed",
+  "created_at": "2026-07-09",
+  "purpose": "Exact command deck for turning the current Codex/Flywheel local-model roadmap into metadata receipts and later benchmark evidence.",
+  "common_paths": {
+    "workspace": "C:/dev/local-model",
+    "store_root": "C:/tmp/harness_file_store",
+    "artifact_dir": "C:/tmp/harness_closed_loop_seed_20260709",
+    "run_label": "20260709",
+    "task_set": "C:/dev/local-model/benchmarks/agentic-task-set-v1.json",
+    "task_set_adapter": "C:/dev/local-model/benchmarks/agentic-task-set-adapter-v1.json",
+    "task_set_implementation_plan": "C:/dev/local-model/benchmarks/agentic-task-set-implementation-plan-v1.json",
+    "cross_harness_contract": "C:/dev/local-model/benchmarks/cross-harness-adapter-contract-v1.json",
+    "embodied_realtime_contract": "C:/dev/local-model/benchmarks/embodied-realtime-multimodal-v1.json"
+  },
+  "guards": [
+    "Commands in metadata_only may generate local JSON/Markdown artifacts but must not call model providers.",
+    "Commands in metadata_only must not probe live endpoints.",
+    "Commands in metadata_only must not read model weights.",
+    "Commands in requires_validation_approval need explicit approval before running tests or validation.",
+    "Commands in requires_provider_endpoint_approval need explicit approval before calling providers, local endpoints, Claude Code, OpenCode, Codex Pro, or frontier APIs.",
+    "No command may print secrets, .env values, tokens, credentials, private keys, or sensitive payload bodies."
+  ],
+  "commands": [
+    {
+      "id": "deck-001-harness-command-print",
+      "tier": "metadata_only",
+      "purpose": "Print the delegated dry-plan command without executing the closed-loop seed.",
+      "command": ".\\harness.cmd --print-command plan --out C:/tmp/harness_closed_loop_seed_plan_20260709.json"
+    },
+    {
+      "id": "deck-002-closed-loop-dry-plan",
+      "tier": "metadata_only",
+      "purpose": "Generate the closed-loop command plan without executing child benchmark/provider steps.",
+      "command": "python scripts/run_closed_loop_benchmark_seed.py --dry-plan --artifact-dir C:/tmp/harness_closed_loop_seed_20260709 --out C:/tmp/harness_closed_loop_seed_plan_20260709.json"
+    },
+    {
+      "id": "deck-002a-endpoint-auth-status",
+      "tier": "metadata_only",
+      "purpose": "Record non-secret Claude/Codex account lane posture without signing in or reading token stores.",
+      "command": "python scripts/run_endpoint_auth_status.py --out C:/tmp/endpoint_auth_status_20260709.json --markdown-out C:/tmp/endpoint_auth_status_20260709.md --store-root C:/tmp/harness_file_store"
+    },
+    {
+      "id": "deck-003-benchmark-execution-matrix",
+      "tier": "metadata_only",
+      "purpose": "Generate the non-executing dry/focused/full benchmark matrix.",
+      "command": "python scripts/run_benchmark_execution_matrix.py --providers serve,codex,ollama,claude,opencode,dry --run-id benchmark_matrix_20260709 --artifact-dir C:/tmp/harness_benchmark_matrix_20260709 --out C:/tmp/benchmark_execution_matrix_20260709.json --markdown-out C:/tmp/benchmark_execution_matrix_20260709.md --store-root C:/tmp/harness_file_store"
+    },
+    {
+      "id": "deck-003a-schematic-drift-check",
+      "tier": "metadata_only",
+      "purpose": "Check closed-loop schematic graph/report drift without running tests, benchmarks, endpoints, or providers.",
+      "command": "python scripts/run_schematic_drift_check.py --graph C:/dev/local-model/project-docs/schematics/closed-loop-integration.graph.json --report C:/dev/local-model/project-docs/records/CLOSED-LOOP-INTEGRATION-SCHEMATIC-2026-07-09.md --out C:/tmp/schematic_drift_check_20260709.json --markdown-out C:/tmp/schematic_drift_check_20260709.md --store-root C:/tmp/harness_file_store"
+    },
+    {
+      "id": "deck-004-benchmark-profile",
+      "tier": "metadata_only",
+      "purpose": "Generate the benchmark contract, provider roles, metric weights, dataset lanes, and existing artifact inventory.",
+      "command": "python scripts/run_benchmark_profile_manifest.py --providers serve,codex,ollama,claude,opencode,dry --artifact-roots \"C:/tmp;C:/dev/local-model/artifacts\" --out C:/tmp/benchmark_profile_manifest_20260709.json --markdown-out C:/tmp/benchmark_profile_manifest_20260709.md --store-root C:/tmp/harness_file_store"
+    },
+    {
+      "id": "deck-005-context-inventory",
+      "tier": "metadata_only",
+      "purpose": "Inventory configured context roots without reading secrets into model context.",
+      "command": "python scripts/run_context_inventory.py --out C:/tmp/context_inventory_20260709.json --markdown-out C:/tmp/context_inventory_20260709.md --store-root C:/tmp/harness_file_store"
+    },
+    {
+      "id": "deck-006-tool-readiness",
+      "tier": "metadata_only",
+      "purpose": "Generate static readiness receipts for mneme, relay, and plexus.",
+      "command": "python scripts/run_tool_readiness_receipts.py --tools mneme,relay,plexus --base-root C:/dev/public --out C:/tmp/tool_readiness_20260709.json --markdown-out C:/tmp/tool_readiness_20260709.md --store-root C:/tmp/harness_file_store"
+    },
+    {
+      "id": "deck-007-tool-hardening",
+      "tier": "metadata_only",
+      "purpose": "Turn tool readiness into a hardening plan.",
+      "command": "python scripts/run_tool_hardening_plan.py --readiness-artifact C:/tmp/tool_readiness_20260709.json --out C:/tmp/tool_hardening_plan_20260709.json --markdown-out C:/tmp/tool_hardening_plan_20260709.md --store-root C:/tmp/harness_file_store"
+    },
+    {
+      "id": "deck-008-model-endpoint-profiles",
+      "tier": "metadata_only",
+      "purpose": "Profile local model endpoint configuration without probing generation or reading weights.",
+      "command": "python scripts/run_model_endpoint_profiles.py --models 14B,32B --base-root E:/local-model-run --out C:/tmp/model_endpoint_profiles_20260709.json --markdown-out C:/tmp/model_endpoint_profiles_20260709.md --store-root C:/tmp/harness_file_store"
+    },
+    {
+      "id": "deck-008a-adapter-runtime-matrix",
+      "tier": "metadata_only",
+      "purpose": "Join cross-harness adapter roles with endpoint profile metadata without provider calls or endpoint probes.",
+      "command": "python scripts/run_adapter_runtime_matrix.py --contract C:/dev/local-model/benchmarks/cross-harness-adapter-contract-v1.json --endpoint-profiles C:/tmp/model_endpoint_profiles_20260709.json --endpoint-auth-status C:/tmp/endpoint_auth_status_20260709.json --out C:/tmp/adapter_runtime_matrix_20260709.json --markdown-out C:/tmp/adapter_runtime_matrix_20260709.md --store-root C:/tmp/harness_file_store"
+    },
+    {
+      "id": "deck-009-gather-readiness",
+      "tier": "metadata_only",
+      "purpose": "Generate static gather/source-intake readiness receipts.",
+      "command": "python scripts/run_gather_readiness.py --gather-root C:/dev/public/gather --config-roots C:/dev/local-model/configs --config-pattern \"gather-*.json\" --credential-vars GATHER_DISCORD_BOT_TOKEN,DISCORD_TOKEN --out C:/tmp/gather_readiness_20260709.json --markdown-out C:/tmp/gather_readiness_20260709.md --store-root C:/tmp/harness_file_store"
+    },
+    {
+      "id": "deck-010-index-fallback-receipt",
+      "tier": "metadata_only",
+      "purpose": "Use the local Index fallback receipt while MCP index.context.envelope is unavailable.",
+      "command": "python scripts/run_index_receipt.py --lane context-envelope --root C:/dev --index-root C:/dev/public/index --budget 12000 --focus \"local-model harness benchmark task set endpoint tools\" --hops 2 --artifact-out C:/tmp/index_context_envelope_fallback_20260709.json --out C:/tmp/index_context_envelope_fallback_receipt_20260709.json --store-root C:/tmp/harness_file_store"
+    },
+    {
+      "id": "deck-011-agentic-task-manifest",
+      "tier": "metadata_only",
+      "purpose": "Generate the non-executing custom agentic task manifest with prompt hashes, planned artifacts, and dry/null scorecard rows.",
+      "command": "python scripts/run_agentic_task_set_manifest.py --task-set C:/dev/local-model/benchmarks/agentic-task-set-v1.json --adapter C:/dev/local-model/benchmarks/agentic-task-set-adapter-v1.json --out C:/tmp/agentic_task_manifest_20260709.json --markdown-out C:/tmp/agentic_task_manifest_20260709.md --store-root C:/tmp/harness_file_store"
+    },
+    {
+      "id": "deck-012-cross-harness-manifest",
+      "tier": "metadata_only",
+      "purpose": "Generate the non-executing cross-harness manifest with same-task prompt hashes and provider-role receipt plans.",
+      "command": "python scripts/run_cross_harness_manifest.py --task-set C:/dev/local-model/benchmarks/agentic-task-set-v1.json --contract C:/dev/local-model/benchmarks/cross-harness-adapter-contract-v1.json --provider-roles codex_harness,flywheel_harness,claude_code,opencode,local_14b,local_32b,dry --out C:/tmp/cross_harness_manifest_20260709.json --markdown-out C:/tmp/cross_harness_manifest_20260709.md --store-root C:/tmp/harness_file_store"
+    },
+    {
+      "id": "deck-013-embodied-realtime-plan",
+      "tier": "metadata_only",
+      "purpose": "Generate the non-executing embodied realtime multimodal plan with planned probes and dry scorecard rows.",
+      "command": "python scripts/run_embodied_realtime_multimodal_plan.py --contract C:/dev/local-model/benchmarks/embodied-realtime-multimodal-v1.json --providers dry --latency-budgets-ms 250,500,1000 --out C:/tmp/embodied_realtime_multimodal_plan_20260709.json --markdown-out C:/tmp/embodied_realtime_multimodal_plan_20260709.md --store-root C:/tmp/harness_file_store"
+    },
+    {
+      "id": "deck-013a-model-card-claim-table",
+      "tier": "metadata_only",
+      "purpose": "Generate the non-executing model-card claim table for embodied realtime model leads before any result claims.",
+      "command": "python scripts/run_model_card_claim_table.py --contract C:/dev/local-model/benchmarks/embodied-realtime-multimodal-v1.json --out C:/tmp/model_card_claim_table_20260709.json --markdown-out C:/tmp/model_card_claim_table_20260709.md --store-root C:/tmp/harness_file_store"
+    },
+    {
+      "id": "deck-014-targeted-adapter-tests",
+      "tier": "requires_validation_approval",
+      "purpose": "Targeted validation slice for metadata-only manifest and closed-loop wiring.",
+      "command": "pytest tests/test_agentic_task_set_manifest.py tests/test_cross_harness_manifest.py tests/test_adapter_runtime_matrix.py tests/test_embodied_realtime_multimodal_plan.py tests/test_model_card_claim_table.py tests/test_schematic_drift_check.py tests/test_harness_cli.py tests/test_closed_loop_benchmark_seed.py tests/test_benchmark_execution_matrix.py tests/test_benchmark_profile_coverage.py tests/test_closed_loop_outcome_report.py"
+    },
+    {
+      "id": "deck-015-endpoint-gate-nonstrict",
+      "tier": "requires_provider_endpoint_approval",
+      "purpose": "Probe local 14B/32B endpoint health and one fixed generation in non-strict mode.",
+      "command": "python scripts/run_model_endpoint_gate.py --profile-artifact C:/tmp/model_endpoint_profiles_20260709.json --models 14B,32B --out C:/tmp/model_endpoint_gate_20260709.json --markdown-out C:/tmp/model_endpoint_gate_20260709.md --store-root C:/tmp/harness_file_store"
+    },
+    {
+      "id": "deck-016-focused-closed-loop-seed",
+      "tier": "requires_provider_endpoint_approval",
+      "purpose": "Run the focused closed-loop seed after metadata preflights and endpoint policy are approved.",
+      "command": "python scripts/run_closed_loop_benchmark_seed.py --store-root C:/tmp/harness_file_store --artifact-dir C:/tmp/harness_closed_loop_seed_20260709 --out C:/tmp/harness_closed_loop_seed_20260709.json --unisonai-repair-json"
+    },
+    {
+      "id": "deck-017-outcome-synthesis",
+      "tier": "requires_provider_endpoint_approval",
+      "purpose": "Generate outcome synthesis from the focused closed-loop seed artifacts.",
+      "command": "python scripts/run_closed_loop_outcome_report.py --input C:/tmp/harness_closed_loop_seed_20260709.json --out C:/tmp/harness_closed_loop_outcome_20260709.json --markdown-out C:/tmp/harness_closed_loop_outcome_20260709.md --store-root C:/tmp/harness_file_store"
+    }
+  ],
+  "known_risks": [
+    "index.index_context_envelope currently fails with Transport closed in the MCP surface.",
+    "metadata preflight commands are implemented but not executed by this deck record.",
+    "metadata preflights are not benchmark results and do not prove model quality.",
+    "endpoint and provider commands require separate approval before execution."
+  ]
+}

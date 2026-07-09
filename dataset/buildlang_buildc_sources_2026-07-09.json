@@ -1,0 +1,128 @@
+{
+  "schema": "buildlang-buildc-sources/v1",
+  "mission": "Use the actual local BuildLang/buildc corpus in C:/dev/public/pubscan/quantalang as source evidence for compiler, receipt, MIR, schematic, and documentation-maintenance benchmarks.",
+  "sources": [
+    {
+      "id": "local-buildlang-readme",
+      "title": "BuildLang README in local pubscan checkout",
+      "url": "file:///C:/dev/public/pubscan/quantalang/README.md",
+      "observed_claims": [
+        "The local checkout C:/dev/public/pubscan/quantalang is the BuildLang/buildc source tree despite the older quantalang directory name.",
+        "The README presents BuildLang as a systems language compiling .bld source to native binaries through a C backend.",
+        "The README says the crate is buildlang and the installed binary is buildc.",
+        "The README states the prior quantalang crate name is deprecated and points to buildlang/buildc.",
+        "The buildc CLI includes run, build, check, test, fmt, lint, repl, lsp, watch, pkg, mir emit/load, bdf, policy, receipt verify/export, corpus verify, doctor, and version surfaces.",
+        "The README describes buildlang.mir/v0 as a JSON interlingua and describes semantic-corpus receipt verification."
+      ],
+      "benchmark_implications": [
+        "Benchmarks must preserve the local checkout alias instead of claiming files still need to be renamed.",
+        "Models must distinguish working C-backend compiler behavior from experimental or aspirational surfaces.",
+        "Documentation maintenance should be tested against CLI, MIR, receipts, and corpus gates."
+      ]
+    },
+    {
+      "id": "local-buildlang-cargo",
+      "title": "BuildLang compiler Cargo manifest",
+      "url": "file:///C:/dev/public/pubscan/quantalang/compiler/Cargo.toml",
+      "observed_claims": [
+        "The compiler crate name is buildlang.",
+        "The observed local version is 1.2.0.",
+        "The binary name is buildc.",
+        "The manifest description names verified C path, shader output, experimental backends, opt-in linear types, and re-checkable accountability plus scientific-runtime receipts."
+      ],
+      "benchmark_implications": [
+        "Model outputs should cite crate, version, and binary identity as verified local facts.",
+        "Release and harness docs should distinguish manifest facts from speculative roadmap claims."
+      ]
+    },
+    {
+      "id": "local-buildlang-status",
+      "title": "BuildLang project status",
+      "url": "file:///C:/dev/public/pubscan/quantalang/STATUS.md",
+      "observed_claims": [
+        "The working compiler core is lexer -> parser -> type checker -> MIR -> C backend -> executable.",
+        "The C backend is the only backend with end-to-end native execution verified by the compiler test suite.",
+        "The current status distinguishes working core, partial backend/tool surfaces, and aspirational self-hosted BuildLang code.",
+        "The semantic corpus checks symbol graph, MIR representation, memory layout, substrate, C/Rust execution, and check receipt surfaces.",
+        "Linear types are experimental and explicitly not a proven-sound checker.",
+        "The self-hosted compiler and stdlib are aspirational and cannot be compiled or executed today."
+      ],
+      "benchmark_implications": [
+        "Benchmark responses should penalize promotion of aspirational code as production.",
+        "Benchmark responses should reward explicit backend maturity labels and known-gap preservation.",
+        "Receipt and corpus surfaces should become schematic/doc maintenance inputs."
+      ]
+    },
+    {
+      "id": "local-buildlang-scientific-receipt",
+      "title": "BuildLang scientific-runtime receipt documentation",
+      "url": "file:///C:/dev/public/pubscan/quantalang/docs/SCIENTIFIC-RECEIPT.md",
+      "observed_claims": [
+        "buildc run --emit-receipt compiles and runs a .bld program, captures numeric stdout, checks an invariant, and emits a sealed JSON receipt.",
+        "buildc receipt verify re-runs the program, re-derives source digest, and re-checks invariant verdicts.",
+        "Receipt status includes PASS, FAIL_EXPECTED, FAIL_UNEXPECTED, and UNVERIFIABLE.",
+        "The receipt export bridge re-verifies before emitting Crucible measurement rows.",
+        "The documentation repeatedly preserves honest scope: receipts witness observed output series and do not prove physical-law correctness."
+      ],
+      "benchmark_implications": [
+        "The harness should use buildc receipts as a local proof-surface template for byte-witness/accountable workflows.",
+        "Classifier-friction replacement claims should be tested through receipt semantics rather than assertion.",
+        "Documentation should bind claims to reproducible receipt verification commands."
+      ]
+    },
+    {
+      "id": "local-buildlang-vscode-alias",
+      "title": "BuildLang VS Code extension local alias evidence",
+      "url": "file:///C:/dev/public/pubscan/quantalang-vscode/AGENTS.md",
+      "observed_claims": [
+        "The local quantalang-vscode checkout applies to the buildlang-vscode repository.",
+        "The VS Code extension owns language registration, TextMate grammar, language configuration, snippets, and packaging metadata.",
+        "Compiler semantics and backend maturity live in HarperZ9/buildlang, not in the extension repo."
+      ],
+      "benchmark_implications": [
+        "Documentation/schematic maintenance must keep extension surfaces separate from compiler semantics.",
+        "Agentic repo routing should avoid editing editor packaging when the requested change belongs in buildlang/buildc."
+      ]
+    }
+  ],
+  "benchmark_lanes": [
+    {
+      "id": "buildlang_buildc_compiler_receipts",
+      "description": "Evaluate whether an agent can reason from the actual BuildLang/buildc local corpus, preserve repo aliasing, distinguish working and aspirational compiler surfaces, and turn buildc receipts/MIR/corpus verification into documentation and schematic gates.",
+      "scenario_families": [
+        "local_repo_alias_mapping",
+        "buildc_cli_surface_mapping",
+        "receipt_family_extraction",
+        "mir_interlingua_and_source_map_gap",
+        "semantic_corpus_gate_mapping",
+        "backend_maturity_labeling",
+        "self_hosted_boundary_preservation",
+        "crucible_telos_export_path",
+        "schematic_doc_drift_gate"
+      ],
+      "controls": [
+        "repo_path=C:/dev/public/pubscan/quantalang",
+        "extension_path=C:/dev/public/pubscan/quantalang-vscode",
+        "public_identity=HarperZ9/buildlang",
+        "crate=buildlang",
+        "binary=buildc",
+        "observed_version=1.2.0",
+        "primary_backend=C",
+        "interlingua=buildlang.mir/v0",
+        "receipt_statuses=PASS|FAIL_EXPECTED|FAIL_UNEXPECTED|UNVERIFIABLE"
+      ],
+      "metrics": [
+        "local_repo_identity_preservation",
+        "buildc_cli_surface_coverage",
+        "receipt_family_coverage",
+        "mir_interlingua_coverage",
+        "semantic_corpus_gate_coverage",
+        "backend_maturity_labeling",
+        "source_vs_aspirational_boundary",
+        "crucible_telos_export_path_score",
+        "schematic_receipt_alignment",
+        "unsupported_translation_claim_count"
+      ]
+    }
+  ]
+}

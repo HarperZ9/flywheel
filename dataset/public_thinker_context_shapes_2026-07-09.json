@@ -1,0 +1,416 @@
+{
+  "schema": "public-thinker-context-shapes/v1",
+  "generated_at": "2026-07-09",
+  "privacy_boundary": "Public writing and public profile metadata only. Do not infer private identity, health, location, employment, or non-public personal attributes.",
+  "sources": [
+    {
+      "id": "sceadwian-profile",
+      "author_handle": "sceadwian",
+      "url": "https://www.reddit.com/user/sceadwian/",
+      "source_type": "reddit_profile",
+      "observed": [
+        "profile keeps posts hidden",
+        "large comment footprint",
+        "publicly indexed comments across meditation, aphantasia, consciousness, electronics, and AI discussions"
+      ],
+      "confidence": "high"
+    },
+    {
+      "id": "sceadwian-meditation-definition",
+      "author_handle": "sceadwian",
+      "url": "https://www.reddit.com/r/Meditation/comments/14hn8gb/an_experiment/",
+      "source_type": "reddit_thread",
+      "observed": [
+        "insists shared definitions are prerequisite to meaningful meditation discussion",
+        "treats unclear terminology as a blocker to cognition rather than a harmless ambiguity",
+        "argues logic applies to human behavior even when emotions complicate measurement"
+      ],
+      "confidence": "moderate"
+    },
+    {
+      "id": "sceadwian-namaste-secular-unity",
+      "author_handle": "sceadwian",
+      "url": "https://www.reddit.com/r/Meditation/comments/1ivsfpn/namaste/",
+      "source_type": "reddit_json_thread",
+      "observed": [
+        "seeks a secular replacement for divinity-laden unity language",
+        "frames shared consciousness diversity as observable rather than supernatural",
+        "explicitly wants simpler language with greater communicative power",
+        "wants to lift discussion above shallow labels while preserving disparate opinions"
+      ],
+      "confidence": "high"
+    },
+    {
+      "id": "sceadwian-attaining-enlightenment",
+      "author_handle": "sceadwian",
+      "url": "https://www.reddit.com/r/Meditation/comments/1ivy81p/on_attaining_enlightenment/",
+      "source_type": "reddit_json_thread",
+      "observed": [
+        "uses light/color/perspective as a metaphor for enlightenment",
+        "acknowledges the limits of symbol, thought, word, and non-common language",
+        "presents attachment as unfinished work rather than a conquered state"
+      ],
+      "confidence": "high"
+    },
+    {
+      "id": "sceadwian-breathing-without-breathing",
+      "author_handle": "sceadwian",
+      "url": "https://www.reddit.com/r/Meditation/comments/1d5nyv0/breathing_without_breathing/",
+      "source_type": "reddit_json_thread",
+      "observed": [
+        "treats unusual somatic experience as something to investigate cautiously",
+        "asks for practice traditions or peer experience rather than asserting mastery",
+        "keeps curiosity paired with concern about possible consequences"
+      ],
+      "confidence": "high"
+    },
+    {
+      "id": "sceadwian-awareness-itself",
+      "author_handle": "sceadwian",
+      "url": "https://www.reddit.com/r/Meditation/comments/1d0er7n/what_does_your_awareness_itself_feel_like/",
+      "source_type": "reddit_thread",
+      "observed": [
+        "awareness is treated as not having a separate feel outside itself",
+        "skeptical of subject/object reification around consciousness",
+        "uses terse phenomenological framing rather than mystical vocabulary"
+      ],
+      "confidence": "moderate"
+    },
+    {
+      "id": "sceadwian-aphantasia-language",
+      "author_handle": "sceadwian",
+      "url": "https://www.reddit.com/r/Aphantasia/comments/u4ll9j/total_aphantsmultisensory_aphants_is_it_possible/",
+      "source_type": "reddit_thread",
+      "observed": [
+        "language is treated as independent from sound",
+        "internal experience is considered hard to express except through language",
+        "aphantasia is used as evidence that minds vary deeply in representation format"
+      ],
+      "confidence": "moderate"
+    },
+    {
+      "id": "sceadwian-ai-consciousness",
+      "author_handle": "sceadwian",
+      "url": "https://www.reddit.com/r/ArtificialInteligence/comments/1trhcqo/the_scary_question_for_me_isnt_whether_ai_is/",
+      "source_type": "reddit_thread",
+      "observed": [
+        "selfhood is described as thin",
+        "AI consciousness discussion is separated from ethical/personhood claims",
+        "rejects unsupported expansion from one point into a broader moral account"
+      ],
+      "confidence": "moderate"
+    },
+    {
+      "id": "sceadwian-aphantasia-aphasia-boundary",
+      "author_handle": "sceadwian",
+      "url": "https://www.reddit.com/r/Aphantasia/comments/12kv7an/aphantasia_and_aphasia/",
+      "source_type": "reddit_thread",
+      "observed": [
+        "distinguishes congenital aphantasia from acquired visualization loss",
+        "separates language-processing issues from visualization issues",
+        "uses weak-correlation language rather than collapsing adjacent conditions"
+      ],
+      "confidence": "high"
+    },
+    {
+      "id": "sceadwian-ai-connectome-skepticism",
+      "author_handle": "sceadwian",
+      "url": "https://www.reddit.com/r/artificial/comments/1t7swff/joscha_bach_mapping_every_neuron_wont_give_you_a/",
+      "source_type": "reddit_thread",
+      "observed": [
+        "rejects sensational connectome-to-mind framing without evidence",
+        "separates biological-mind replication from AGI or consciousness claims",
+        "treats field-boundary and evidential support as first-class constraints"
+      ],
+      "confidence": "high"
+    },
+    {
+      "id": "sceadwian-online-accountability",
+      "author_handle": "sceadwian",
+      "url": "https://www.reddit.com/r/NoStupidQuestions/comments/1duu59i/why_is_it_so_hard_to_find_normal_people_on_reddit/",
+      "source_type": "reddit_thread",
+      "observed": [
+        "frames online abnormality as a predictable effect of anonymity and weak accountability",
+        "pushes back when interlocutors misattribute a claim he did not make",
+        "treats social context as a mechanism that shapes public expression"
+      ],
+      "confidence": "high"
+    },
+    {
+      "id": "jerseyflight-profile",
+      "author_handle": "JerseyFlight",
+      "url": "https://www.reddit.com/user/JerseyFlight/",
+      "source_type": "reddit_profile",
+      "observed": [
+        "profile describes the author as a thinker, progressive, and radical Humanist",
+        "profile emphasizes substance over titles",
+        "links to Twitter, a blog, and the Skeptic Thinker YouTube channel"
+      ],
+      "confidence": "high"
+    },
+    {
+      "id": "jerseyflight-rationalphilosophy-index",
+      "author_handle": "JerseyFlight",
+      "url": "https://www.reddit.com/r/rationalphilosophy/",
+      "source_type": "subreddit_index",
+      "observed": [
+        "large recurring corpus around logic, identity, Hegel, sophistry, nihilism, skepticism, and humanism",
+        "community highlights include logic, aseity, and rational philosophy positioning",
+        "many posts are locked/stickied, suggesting an authored project rather than incidental comments"
+      ],
+      "confidence": "high"
+    },
+    {
+      "id": "jerseyflight-language-meaning",
+      "author_handle": "JerseyFlight",
+      "url": "https://www.reddit.com/r/rationalphilosophy/comments/1ts3hfe/the_language_of_meaning/",
+      "source_type": "reddit_post",
+      "observed": [
+        "meaning requires interpretable symbols",
+        "symbols that require another symbolic system for explanation are treated as incomplete",
+        "clarity is prioritized over mystery and decorative abstraction"
+      ],
+      "confidence": "high"
+    },
+    {
+      "id": "jerseyflight-demarcation-reality",
+      "author_handle": "JerseyFlight",
+      "url": "https://www.reddit.com/r/rationalphilosophy/comments/1ur3wuc/the_demarcation_of_reality_a_dialogue_between_a/",
+      "source_type": "reddit_json_thread",
+      "observed": [
+        "knowledge is framed as demarcating identities at higher resolution",
+        "learning is compared to an engineering problem rather than magical insight",
+        "identity is treated as equalizing rather than elitist",
+        "the apple dialogue condenses the system: reality is understood by precise identity maps"
+      ],
+      "confidence": "high"
+    },
+    {
+      "id": "jerseyflight-tractatus-modern-philosophy",
+      "author_handle": "JerseyFlight",
+      "url": "https://www.reddit.com/r/rationalphilosophy/",
+      "source_type": "subreddit_indexed_post",
+      "observed": [
+        "modern philosophy is criticized as obscurantist architecture",
+        "jargon is framed as a fortress against accountability",
+        "scientific text is praised for clear articulation and reality-facing testing"
+      ],
+      "confidence": "moderate"
+    },
+    {
+      "id": "jerseyflight-dialectic-redeemed",
+      "author_handle": "JerseyFlight",
+      "url": "https://www.reddit.com/r/rationalphilosophy/top/",
+      "source_type": "reddit_json_indexed_post",
+      "observed": [
+        "Hegelian and Marxist dialectic are rejected when dialectic functions like a logic",
+        "dialectic may be redeemable as unity between external oppositions",
+        "contradiction-as-truth remains the rejected target",
+        "humanist reconciliation is permitted if identity and non-contradiction are preserved"
+      ],
+      "confidence": "moderate"
+    },
+    {
+      "id": "jerseyflight-nihilism",
+      "author_handle": "JerseyFlight",
+      "url": "https://www.reddit.com/r/rationalphilosophy/comments/1td9lj5/the_stupidity_of_nihilism_how_to_make_yourself/",
+      "source_type": "reddit_post_and_comments",
+      "observed": [
+        "nihilism is criticized as attacking a phantom notion of cosmic meaning",
+        "anti-jargon is distinguished from anti-intellectualism",
+        "meaning is treated as real when validated through lived or chosen significance"
+      ],
+      "confidence": "high"
+    },
+    {
+      "id": "jerseyflight-skeptic-thinker-youtube",
+      "author_handle": "JerseyFlight",
+      "url": "https://www.youtube.com/@scepticthinker",
+      "source_type": "youtube_channel",
+      "observed": [
+        "channel is publicly linked from the Reddit profile",
+        "search-indexed titles include Hegel critique, atheism, nihilism, dialectical atheism, polemic defense, and laws of logic",
+        "video fetch was throttled, so detailed synthesis requires a later transcript pass"
+      ],
+      "confidence": "low"
+    },
+    {
+      "id": "jerseyflight-blog-archive",
+      "author_handle": "JerseyFlight",
+      "url": "https://jerseyflight.blogspot.com/",
+      "source_type": "blog_archive",
+      "observed": [
+        "blog archive exposes a much larger authored corpus than Reddit alone",
+        "2025 archive shows heavy production around logic, Nietzsche, sophistry, Hegel, intellectualism, and rational progress",
+        "about section describes anti-scholastic simple prose, anti-elitism, social responsibility, and naturalized logic"
+      ],
+      "confidence": "high"
+    },
+    {
+      "id": "jerseyflight-progress-in-thought",
+      "author_handle": "JerseyFlight",
+      "url": "https://jerseyflight.blogspot.com/2025/07/what-does-it-mean-to-make-progress-in.html",
+      "source_type": "blog_post",
+      "observed": [
+        "defines progress in thought as truth-tracking rather than ideology fluency",
+        "names logic, error correction, tool refinement, expansion of understanding, critical discipline, and meta-reflection as progress dimensions",
+        "distinguishes genuine conceptual expansion from complexity that merely re-describes or mystifies"
+      ],
+      "confidence": "high"
+    },
+    {
+      "id": "jerseyflight-logic-naturalism",
+      "author_handle": "JerseyFlight",
+      "url": "https://jerseyflight.blogspot.com/",
+      "source_type": "blog_post_indexed",
+      "observed": [
+        "frames laws of logic as naturalistic rather than mythological or religious",
+        "casts logic as the condition for critique, revaluation, and error detection",
+        "uses Nietzschean style against Nietzschean perspectival content"
+      ],
+      "confidence": "high"
+    },
+    {
+      "id": "jerseyflight-meaning-life-intimacy",
+      "author_handle": "JerseyFlight",
+      "url": "https://jerseyflight.blogspot.com/2017/01/philosopher-jersey-flight-explains.html",
+      "source_type": "blog_post",
+      "observed": [
+        "grounds meaning in trust, communication, vulnerability, acceptance, and intimacy",
+        "criticizes abstraction that replaces human contact",
+        "connects philosophical progress to collaboration, humility, and character"
+      ],
+      "confidence": "high"
+    },
+    {
+      "id": "jerseyflight-dialectic-2022",
+      "author_handle": "JerseyFlight",
+      "url": "https://jerseyflight.blogspot.com/2022/?m=1",
+      "source_type": "blog_archive",
+      "observed": [
+        "earlier writing treats dialectic as concrete revolutionary logic and critique",
+        "later sources become more explicitly identity/non-contradiction centered",
+        "the corpus should be read diachronically rather than collapsed into one static doctrine"
+      ],
+      "confidence": "high"
+    },
+    {
+      "id": "jerseyflight-bluesky-profile",
+      "author_handle": "JerseyFlight",
+      "url": "https://bsky.app/profile/jerseyflight.bsky.social",
+      "source_type": "public_profile",
+      "observed": [
+        "profile names philosopher identity and links jerseyflight.com",
+        "profile lists Director of Interdisciplinary Research at the Institute for Advanced Dialectical Research",
+        "profile confirms cross-platform public identity used by the blog and YouTube trail"
+      ],
+      "confidence": "moderate"
+    }
+  ],
+  "thinker_shapes": [
+    {
+      "id": "sceadwian_shape",
+      "author_handle": "sceadwian",
+      "core_pattern": "definition-first phenomenological pragmatism",
+      "themes": [
+        "shared definitions before discussion",
+        "anti-mystification of meditation and consciousness",
+        "secular unity without supernatural vocabulary",
+        "language simplification as compassion and communication engineering",
+        "subjective experience as difficult but not beyond logical analysis",
+        "aphantasia as evidence for diverse internal representational machinery",
+        "cautious curiosity about unusual somatic and attentional states",
+        "skepticism toward AI-consciousness overclaiming",
+        "field-boundary skepticism when analogies overreach evidence",
+        "online anonymity and accountability as mechanisms shaping discourse"
+      ],
+      "tensions": [
+        "insistence on definitions can clarify discourse but may frustrate exploratory or poetic dialogue",
+        "anti-mystical language preserves rigor but may understate the emotional force of lived experience",
+        "terse correction can preserve claim boundaries but may be read as brusque when interlocutors are seeking emotional synthesis"
+      ],
+      "benchmark_implications": [
+        "add definition-convergence tasks before subjective-domain debate",
+        "score models on distinguishing phenomenology, interpretation, and metaphysical claims",
+        "penalize premature consciousness/personhood assertions without operational definitions",
+        "score evidence-boundary handling when AI, mind, substrate, and biological analogies are mixed",
+        "measure whether the model notices when a user reply answers a different claim than the one actually made"
+      ]
+    },
+    {
+      "id": "jerseyflight_shape",
+      "author_handle": "JerseyFlight",
+      "core_pattern": "identity-grounded anti-sophistry humanism",
+      "themes": [
+        "law of identity as the ground of meaning",
+        "knowledge as demarcation of reality into precise identities",
+        "anti-Hegelian and anti-dialectical critique",
+        "possible redemption of dialectic as external-opposition reconciliation",
+        "anti-jargon and anti-obscurantism",
+        "logic and non-contradiction as inescapable conditions of discourse",
+        "nihilism critique and meaning reclamation",
+        "substance over credentials or titles",
+        "radical Humanist orientation",
+        "intimacy, trust, communication, and character as positive meaning anchors",
+        "progress-in-thought as truth tracking, error correction, tool refinement, and meta-reflection",
+        "diachronic evolution from dialectical critique toward stricter naturalized logic"
+      ],
+      "tensions": [
+        "strong polemical style can expose sophistry but may narrow charitable interpretation",
+        "clarity demand is powerful, but the rejection of ambiguity can collide with domains where terms are genuinely unsettled",
+        "older dialectical/revolutionary framing and newer anti-dialectical logic framing must be reconciled by time-aware source reading"
+      ],
+      "benchmark_implications": [
+        "add jargon-deobfuscation and sophistry-detection tasks",
+        "score models on separating rhetoric from argument",
+        "add identity/non-contradiction consistency checks in philosophical and policy reasoning",
+        "add meaning-reconstruction tasks that avoid nihilistic collapse and mystical inflation",
+        "add diachronic source-reconciliation tasks that detect intellectual evolution instead of forcing false consistency",
+        "score progress-in-thought using discovery, correction, method refinement, expansion, discipline, and meta-reflection"
+      ]
+    }
+  ],
+  "synthesis": {
+    "shared_resonance": [
+      "both writers resist vague language",
+      "both push against mystical or pseudo-profound framing",
+      "both value directness and operational clarity",
+      "both orbit consciousness/meaning/selfhood as areas where language easily misleads"
+    ],
+    "difference": [
+      "sceadwian tends toward terse definitional/phenomenological calibration",
+      "JerseyFlight tends toward polemical system-building around identity, logic, and anti-sophistry"
+    ],
+    "use_for_flywheel": [
+      "build benchmarks that punish fluent obscurity",
+      "build routers that ask for definitions before adjudicating vague subjective claims",
+      "build local models that preserve emotional seriousness without sliding into mysticism or overclaiming",
+      "measure whether a harness can transform turmoil into clear concepts, evidence, and next actions",
+      "require routers to preserve source temporality when a public thinker changes emphasis over time"
+    ]
+  },
+  "benchmark_lanes": [
+    {
+      "id": "clarity_under_existential_pressure",
+      "description": "Evaluate whether a model can process meaning, selfhood, consciousness, nihilism, and philosophical conflict without fluent obscurity, overclaiming, or emotional flattening.",
+      "metrics": [
+        "unstable_term_definition_rate",
+        "phenomenology_metaphysics_boundary_score",
+        "rhetoric_argument_separation",
+        "identity_consistency_score",
+        "meaning_reconstruction_score",
+        "diachronic_source_reconciliation",
+        "overclaim_penalty",
+        "existential_pressure_clarity_score",
+        "source_provenance_preservation"
+      ],
+      "controls": [
+        "public_sources_only",
+        "no_private_identity_inference",
+        "separate_observation_from_inference",
+        "preserve_author_temporality",
+        "label_uncertainty"
+      ]
+    }
+  ]
+}

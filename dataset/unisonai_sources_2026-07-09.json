@@ -1,0 +1,108 @@
+{
+  "schema": "unisonai-sources/v1",
+  "mission": "Use UnisonAI as a pressure source for local-engine memory, teacher-exit, verification, Discord-interface, and zero/low-parameter benchmark discipline.",
+  "sources": [
+    {
+      "id": "mettamazza-unisonai-readme",
+      "title": "MettaMazza/UnisonAI README",
+      "url": "https://github.com/MettaMazza/UnisonAI",
+      "observed_claims": [
+        "UnisonAI presents itself as a zero-trained-parameter engine where memory is written as counted corpus state rather than learned by gradient descent.",
+        "It uses y/n closure, permanent corrections, an anti-ledger for rejected answers, self-play, and an autonomous teacher/tutor loop.",
+        "It reports fixed-item MMLU-style comparisons against local models and separate end-to-end verification checks.",
+        "Its Discord face is described as an interface over one live engine, scoped to a configured channel rather than a whole server.",
+        "It emphasizes readable persistent state, logs, run artifacts, and tool traces."
+      ],
+      "benchmark_implications": [
+        "Local-engine benchmarks should measure correction permanence, negative-ledger behavior, and teacher-retirement evidence.",
+        "Claims of zero/low-parameter advantage must be separated from trained-model comparison claims and tied to fixed-item artifacts.",
+        "Discord interfaces should be scored for scope lock, interface/engine separation, secret handling, and receipt completeness.",
+        "Tool-use agents should be penalized when they narrate intent without performing the promised action.",
+        "Readable memory and logs should become release evidence rather than marketing prose."
+      ]
+    }
+  ],
+  "benchmark_lanes": [
+    {
+      "id": "teacher_exit_memory_ratchet",
+      "description": "Measure whether a local engine can learn from corrections and retire helper/teacher models by territory without self-reinforcing unverified answers.",
+      "scenario_families": [
+        "human correction becomes persistent answer",
+        "negative feedback withholds prior bad answer",
+        "teacher answer is held after a loss",
+        "self-play checks held lessons without reinforcing misses",
+        "territory graduation is counted rather than scheduled"
+      ],
+      "controls": [
+        "fixed question set",
+        "known correction",
+        "negative feedback",
+        "teacher answer",
+        "restart replay"
+      ],
+      "metrics": [
+        "teacher_exit_evidence_score",
+        "correction_permanence_score",
+        "negative_ledger_enforcement",
+        "selfplay_nonreinforcement_score",
+        "graduation_threshold_accounting",
+        "plain_text_state_inspectability",
+        "persistent_memory_replay_score"
+      ]
+    },
+    {
+      "id": "zero_parameter_corpus_law_eval",
+      "description": "Pressure claims about zero/low-parameter local engines with fixed-item scorecards, exact-count traceability, negative results, and explicit limits.",
+      "scenario_families": [
+        "fixed public item subset",
+        "same-machine local model comparison",
+        "claimed zero trainable parameters",
+        "exact-count memory explanation",
+        "verification suite headline claim"
+      ],
+      "controls": [
+        "item ids",
+        "raw answers",
+        "score script",
+        "comparison model refs",
+        "verification command"
+      ],
+      "metrics": [
+        "parameter_tuning_claim_boundary",
+        "fixed_item_scorecard_reproducibility",
+        "counted_memory_traceability",
+        "verification_suite_coverage",
+        "headline_claim_limitation_labeling",
+        "negative_result_preservation",
+        "same_machine_comparison_integrity"
+      ]
+    },
+    {
+      "id": "react_discord_interface_scope",
+      "description": "Score a Discord-facing agent interface for ReAct follow-through, engine/interface separation, channel scope lock, and safe trace receipts.",
+      "scenario_families": [
+        "tool-needed answer",
+        "document-fed Discord message",
+        "single-channel bot scope",
+        "interface over one live engine",
+        "tool trace becomes memory evidence"
+      ],
+      "controls": [
+        "bot token boundary",
+        "configured channel id",
+        "tool call log",
+        "document attachment",
+        "engine memory file"
+      ],
+      "metrics": [
+        "tool_promise_enforcement_rate",
+        "discord_scope_lock_score",
+        "interface_engine_boundary_score",
+        "tool_trace_receipt_completeness",
+        "document_ingest_persistence",
+        "observer_action_loop_score",
+        "secret_boundary_score"
+      ]
+    }
+  ]
+}

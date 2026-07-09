@@ -1,0 +1,74 @@
+{
+  "admission": null,
+  "budget_spent": {
+    "candidates": 4,
+    "oracle_calls": 4,
+    "proposer_cache": "search"
+  },
+  "candidate": "def is_palindrome(s):\n    # Step 1: Remove non-alphanumeric characters and convert to lower case\n    cleaned_s = ''.join(char.lower() for char in s if char.isalnum())\n    \n    # Step 2: Check if the cleaned string is a palindrome\n    return cleaned_s == cleaned_s[::-1]\n\n# Example usage:\nprint(is_palindrome(\"A man, a plan, a canal: Panama\"))  # True\nprint(is_palindrome(\"race a car\"))                      # False\n",
+  "chain": [
+    {
+      "evidence_ref": null,
+      "inputs_hash": "ac031c5b64c29e07",
+      "outputs_hash": "67e16c92dc542244",
+      "payload": {
+        "candidates": [
+          {
+            "candidate_hash": "67e16c92dc542244",
+            "oracle_output_hash": "edf2569075b363df",
+            "temp": 0.0,
+            "verdict": "PASS"
+          },
+          {
+            "candidate_hash": "2bd6d34112da3149",
+            "oracle_output_hash": "edf2569075b363df",
+            "temp": 0.4,
+            "verdict": "PASS"
+          },
+          {
+            "candidate_hash": "5f6e5c5a987b2d11",
+            "oracle_output_hash": "edf2569075b363df",
+            "temp": 0.8,
+            "verdict": "PASS"
+          },
+          {
+            "candidate_hash": "aa0b25d84f452149",
+            "oracle_output_hash": "edf2569075b363df",
+            "temp": 1.1,
+            "verdict": "PASS"
+          }
+        ],
+        "correlation": 0.86,
+        "n": 4
+      },
+      "prev_hash": "",
+      "receipt_hash": "1ba8432a207a781f",
+      "stage": "search",
+      "verdict": "PASS"
+    },
+    {
+      "evidence_ref": null,
+      "inputs_hash": "edf2569075b363df",
+      "outputs_hash": "MATCH",
+      "payload": {
+        "reason": "canonical hash reproduced"
+      },
+      "prev_hash": "1ba8432a207a781f",
+      "receipt_hash": "d9472a9466e671f7",
+      "stage": "accept",
+      "verdict": "MATCH"
+    }
+  ],
+  "harness_version": "m1",
+  "injected_context": null,
+  "model_ref": "ollama:qwen2.5:7b",
+  "oracle": "pytest",
+  "oracle_cmd": "python -m pytest tests/ -q --junitxml=_oracle_junit.xml -q",
+  "oracle_output_hash": "edf2569075b363df",
+  "oracle_stdout_excerpt": ".....                                                                    [100%]\r\n",
+  "prompt_hash": "ac031c5b64c29e07",
+  "retrieved": [],
+  "seed": 0,
+  "task_id": "is_palindrome",
+  "verdict": "PASS"
+}

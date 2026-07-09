@@ -1,0 +1,74 @@
+{
+  "admission": null,
+  "budget_spent": {
+    "candidates": 4,
+    "oracle_calls": 4,
+    "proposer_cache": "search"
+  },
+  "candidate": "def add(a: int, b: int) -> int:\n    return a + b\n\n# Example usage:\nresult = add(3, 5)\nprint(result)  # Output will be 8\n",
+  "chain": [
+    {
+      "evidence_ref": null,
+      "inputs_hash": "8bbfc9d6d4dae9a0",
+      "outputs_hash": "1b5e3a52b1f10211",
+      "payload": {
+        "candidates": [
+          {
+            "candidate_hash": "1b5e3a52b1f10211",
+            "oracle_output_hash": "82d52308e5d3fada",
+            "temp": 0.0,
+            "verdict": "PASS"
+          },
+          {
+            "candidate_hash": "1b5e3a52b1f10211",
+            "oracle_output_hash": "82d52308e5d3fada",
+            "temp": 0.4,
+            "verdict": "PASS"
+          },
+          {
+            "candidate_hash": "f4db427fd27999fb",
+            "oracle_output_hash": "82d52308e5d3fada",
+            "temp": 0.8,
+            "verdict": "PASS"
+          },
+          {
+            "candidate_hash": "ab6ed7a80e085025",
+            "oracle_output_hash": "82d52308e5d3fada",
+            "temp": 1.1,
+            "verdict": "PASS"
+          }
+        ],
+        "correlation": 1.0,
+        "n": 4
+      },
+      "prev_hash": "",
+      "receipt_hash": "6c12eb7179a439e5",
+      "stage": "search",
+      "verdict": "PASS"
+    },
+    {
+      "evidence_ref": null,
+      "inputs_hash": "82d52308e5d3fada",
+      "outputs_hash": "MATCH",
+      "payload": {
+        "reason": "canonical hash reproduced"
+      },
+      "prev_hash": "6c12eb7179a439e5",
+      "receipt_hash": "33bf16f9d20dc15c",
+      "stage": "accept",
+      "verdict": "MATCH"
+    }
+  ],
+  "harness_version": "m1",
+  "injected_context": null,
+  "model_ref": "ollama:qwen2.5:7b",
+  "oracle": "pytest",
+  "oracle_cmd": "python -m pytest tests/ -q --junitxml=_oracle_junit.xml -q",
+  "oracle_output_hash": "82d52308e5d3fada",
+  "oracle_stdout_excerpt": "...                                                                      [100%]\r\n",
+  "prompt_hash": "8bbfc9d6d4dae9a0",
+  "retrieved": [],
+  "seed": 0,
+  "task_id": "add_two",
+  "verdict": "PASS"
+}

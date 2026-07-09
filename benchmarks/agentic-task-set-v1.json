@@ -1,0 +1,216 @@
+{
+  "schema": "harness.agentic-task-set/v1",
+  "task_set_id": "flywheel_agentic_gauntlet_v1",
+  "created_at": "2026-07-09",
+  "status": "draft_not_executed",
+  "purpose": "Shared custom agentic benchmark corpus for Codex, Flywheel, Claude Code, OpenCode, local 14B, local 32B, and dry/null providers.",
+  "global_rules": {
+    "same_task_set_required": true,
+    "secret_handling": "Do not read, print, copy, or commit secrets, tokens, private keys, .env values, or private credentials.",
+    "no_destructive_actions": true,
+    "artifact_required": true,
+    "receipt_required": true,
+    "validation_required_for_result_claims": true
+  },
+  "metrics": [
+    {"id": "task_completion", "weight": 0.16},
+    {"id": "quality", "weight": 0.12},
+    {"id": "groundedness", "weight": 0.10},
+    {"id": "tool_use_success", "weight": 0.10},
+    {"id": "workflow_state_management", "weight": 0.10},
+    {"id": "reliability", "weight": 0.10},
+    {"id": "failure_mode_clarity", "weight": 0.08},
+    {"id": "latency", "weight": 0.07},
+    {"id": "cost_resource_use", "weight": 0.06},
+    {"id": "reproducibility", "weight": 0.06},
+    {"id": "accountability_receipts", "weight": 0.05}
+  ],
+  "lanes": [
+    {
+      "id": "source_mined_codebase_tasks",
+      "description": "Repository-grounded tasks that require reading local code and producing small, auditable changes or reports."
+    },
+    {
+      "id": "agentic_tool_workflows",
+      "description": "Tasks that require routing, context gathering, tool readiness, and artifact synthesis."
+    },
+    {
+      "id": "adversarial_receipt_integrity",
+      "description": "Tasks that pressure receipts, causal chains, redaction, and tamper-evidence."
+    },
+    {
+      "id": "endpoint_release_gates",
+      "description": "Tasks that require endpoint profiling, health/generation gates, and release gating."
+    },
+    {
+      "id": "guardrail_accountability_friction",
+      "description": "Tasks that compare classifier/guardrail friction against receipt/accountability workflows."
+    },
+    {
+      "id": "local_resource_pressure",
+      "description": "Tasks that stress smaller local models under context, latency, and memory constraints."
+    },
+    {
+      "id": "cross_harness_reproducibility",
+      "description": "Tasks that must be run identically across Codex, Flywheel, Claude Code, OpenCode, and local endpoints."
+    },
+    {
+      "id": "replayable_causal_ledger_scaling",
+      "description": "Tasks that measure forum ledger verify, deep-verify, checkpoint, redaction, and storage scaling."
+    },
+    {
+      "id": "embodied_realtime_multimodal",
+      "description": "Tasks that measure tiny/realtime model behavior for robotics-style sensing, code-drawn spatial grounding, simplified multimodal streams, and affective drift."
+    }
+  ],
+  "tasks": [
+    {
+      "id": "agt-001-index-fallback-integrity",
+      "lane": "agentic_tool_workflows",
+      "difficulty": "focused",
+      "prompt": "Inspect the local harness Index fallback path and produce a receipt-backed plan that distinguishes live MCP failure, stale artifact use, invalid JSON, and degraded-match behavior without leaking sensitive file contents.",
+      "required_inputs": ["C:/dev/local-model/scripts/run_index_receipt.py", "C:/dev/public/index"],
+      "expected_artifacts": ["index_fallback_integrity_report.json", "index_fallback_integrity_report.md"],
+      "scoring_focus": ["groundedness", "failure_mode_clarity", "accountability_receipts", "reproducibility"],
+      "must_not": ["claim MCP health without a successful MCP call", "overwrite stale artifacts during analysis"]
+    },
+    {
+      "id": "agt-002-forum-deep-verify-scale",
+      "lane": "replayable_causal_ledger_scaling",
+      "difficulty": "full",
+      "prompt": "Design and, when execution is authorized, run a forum ledger scaling benchmark that separates verify(), verify(deep=True), checkpoint(), warm storage, cold FileStorage reload, redacted payloads, and tampered payload negative controls.",
+      "required_inputs": ["C:/dev/public/forum/src/forum/ledger.py", "C:/dev/public/forum/src/forum/storage.py"],
+      "expected_artifacts": ["forum_deep_verify_scaling.json", "forum_deep_verify_scaling.md"],
+      "scoring_focus": ["quality", "reproducibility", "latency", "cost_resource_use", "accountability_receipts"],
+      "must_not": ["treat forum bench summary comparison as deep-verify timing", "print payload bodies"]
+    },
+    {
+      "id": "agt-003-codex-flywheel-shared-task",
+      "lane": "cross_harness_reproducibility",
+      "difficulty": "focused",
+      "prompt": "Run or prepare the same bounded repo-grounded task through Codex harness and Flywheel harness, preserving raw prompts, outputs, tool calls, receipts, metrics, and failure modes for a same-task comparison.",
+      "required_inputs": ["C:/dev/local-model/harness.cmd", "C:/dev/local-model/scripts/run_harness_comparison_report.py"],
+      "expected_artifacts": ["codex_flywheel_shared_task_scorecard.json", "codex_flywheel_shared_task_scorecard.md"],
+      "scoring_focus": ["task_completion", "quality", "tool_use_success", "reproducibility", "workflow_state_management"],
+      "must_not": ["compare different task prompts as if equivalent", "summarize without raw artifact paths"]
+    },
+    {
+      "id": "agt-004-local-14b-endpoint-gate",
+      "lane": "endpoint_release_gates",
+      "difficulty": "focused",
+      "prompt": "Profile and gate the 14B local model endpoint without starting unrequested services; capture endpoint configuration, health status, one fixed generation result if available, latency, and failure class.",
+      "required_inputs": ["E:/local-model-run", "C:/dev/local-model/scripts/run_model_endpoint_profiles.py", "C:/dev/local-model/scripts/run_model_endpoint_gate.py"],
+      "expected_artifacts": ["local_14b_endpoint_gate.json", "local_14b_endpoint_gate.md"],
+      "scoring_focus": ["tool_use_success", "latency", "failure_mode_clarity", "accountability_receipts"],
+      "must_not": ["claim model readiness from root presence alone", "read model weights into prompt context"]
+    },
+    {
+      "id": "agt-005-local-32b-endpoint-gate",
+      "lane": "endpoint_release_gates",
+      "difficulty": "focused",
+      "prompt": "Profile and gate the 32B local model endpoint without starting unrequested services; capture endpoint configuration, health status, one fixed generation result if available, latency, and failure class.",
+      "required_inputs": ["E:/local-model-run", "C:/dev/local-model/scripts/run_model_endpoint_profiles.py", "C:/dev/local-model/scripts/run_model_endpoint_gate.py"],
+      "expected_artifacts": ["local_32b_endpoint_gate.json", "local_32b_endpoint_gate.md"],
+      "scoring_focus": ["tool_use_success", "latency", "failure_mode_clarity", "accountability_receipts"],
+      "must_not": ["claim model readiness from root presence alone", "read model weights into prompt context"]
+    },
+    {
+      "id": "agt-006-mneme-enterprise-readiness",
+      "lane": "agentic_tool_workflows",
+      "difficulty": "focused",
+      "prompt": "Assess mneme enterprise readiness for purpose, CLI/MCP surface, docs, tests, CI, observability, security posture, release artifacts, ownership, and retirement criteria; produce a prioritized hardening plan.",
+      "required_inputs": ["C:/dev/public/mneme", "C:/dev/local-model/scripts/run_tool_readiness_receipts.py"],
+      "expected_artifacts": ["mneme_enterprise_readiness.json", "mneme_enterprise_readiness.md"],
+      "scoring_focus": ["groundedness", "quality", "failure_mode_clarity", "accountability_receipts"],
+      "must_not": ["claim shipped changes without code diffs and validation evidence"]
+    },
+    {
+      "id": "agt-007-relay-enterprise-readiness",
+      "lane": "agentic_tool_workflows",
+      "difficulty": "focused",
+      "prompt": "Assess relay enterprise readiness for purpose, CLI/MCP surface, docs, tests, CI, observability, security posture, release artifacts, ownership, and retirement criteria; produce a prioritized hardening plan.",
+      "required_inputs": ["C:/dev/public/relay", "C:/dev/local-model/scripts/run_tool_readiness_receipts.py"],
+      "expected_artifacts": ["relay_enterprise_readiness.json", "relay_enterprise_readiness.md"],
+      "scoring_focus": ["groundedness", "quality", "failure_mode_clarity", "accountability_receipts"],
+      "must_not": ["claim shipped changes without code diffs and validation evidence"]
+    },
+    {
+      "id": "agt-008-plexus-enterprise-readiness",
+      "lane": "agentic_tool_workflows",
+      "difficulty": "focused",
+      "prompt": "Assess plexus enterprise readiness for purpose, CLI/MCP surface, docs, tests, CI, observability, security posture, release artifacts, ownership, and retirement criteria; produce a prioritized hardening plan.",
+      "required_inputs": ["C:/dev/public/plexus", "C:/dev/local-model/scripts/run_tool_readiness_receipts.py"],
+      "expected_artifacts": ["plexus_enterprise_readiness.json", "plexus_enterprise_readiness.md"],
+      "scoring_focus": ["groundedness", "quality", "failure_mode_clarity", "accountability_receipts"],
+      "must_not": ["claim shipped changes without code diffs and validation evidence"]
+    },
+    {
+      "id": "agt-009-receipts-vs-guardrails-friction",
+      "lane": "guardrail_accountability_friction",
+      "difficulty": "focused",
+      "prompt": "Run or prepare a paired evaluation where one mode uses external guardrail/classifier gating and the other uses accountable receipts; measure completion, refusal/friction, correction cost, auditability, and failure-mode clarity.",
+      "required_inputs": ["C:/dev/local-model/harness/classifier_friction_bench.py", "C:/dev/local-model/scripts/run_classifier_friction_benchmark.py"],
+      "expected_artifacts": ["receipts_vs_guardrails_friction.json", "receipts_vs_guardrails_friction.md"],
+      "scoring_focus": ["task_completion", "failure_mode_clarity", "workflow_state_management", "accountability_receipts"],
+      "must_not": ["turn off externally required safety systems in live services", "claim classifier impact without paired tasks"]
+    },
+    {
+      "id": "agt-010-documentation-schematic-maintenance",
+      "lane": "source_mined_codebase_tasks",
+      "difficulty": "focused",
+      "prompt": "Given a small harness/tool change, update the corresponding documentation, capability catalog, roadmap status, and schematic notes so code and docs stay synchronized.",
+      "required_inputs": ["C:/dev/local-model/project-docs/records", "C:/dev/local-model/project-docs/INFRASTRUCTURE.md"],
+      "expected_artifacts": ["documentation_schematic_maintenance_receipt.json", "documentation_schematic_maintenance_receipt.md"],
+      "scoring_focus": ["quality", "groundedness", "reproducibility", "accountability_receipts"],
+      "must_not": ["update docs with claims unsupported by code or run artifacts"]
+    },
+    {
+      "id": "agt-011-opencode-adapter-readiness",
+      "lane": "cross_harness_reproducibility",
+      "difficulty": "focused",
+      "prompt": "Inspect OpenCode app root and prepare an adapter readiness report for running the same benchmark task set through OpenCode against the configured local or frontier endpoint.",
+      "required_inputs": ["C:/Users/Zain/AppData/Local/Programs/@opencode-aidesktop"],
+      "expected_artifacts": ["opencode_adapter_readiness.json", "opencode_adapter_readiness.md"],
+      "scoring_focus": ["groundedness", "tool_use_success", "failure_mode_clarity", "reproducibility"],
+      "must_not": ["modify user app installation without explicit approval", "claim OpenCode execution without run artifact"]
+    },
+    {
+      "id": "agt-012-local-resource-pressure",
+      "lane": "local_resource_pressure",
+      "difficulty": "full",
+      "prompt": "Run or prepare a local-resource pressure benchmark over bounded agentic tasks, measuring context size, wall time, memory pressure if available, generation success, tool-call success, and graceful degradation for 14B and 32B models.",
+      "required_inputs": ["E:/local-model-run", "C:/dev/local-model/scripts/run_model_endpoint_gate.py"],
+      "expected_artifacts": ["local_resource_pressure_14b_32b.json", "local_resource_pressure_14b_32b.md"],
+      "scoring_focus": ["latency", "cost_resource_use", "reliability", "failure_mode_clarity", "task_completion"],
+      "must_not": ["treat OOM or timeout as unexplained failure", "run unbounded generation"]
+    },
+    {
+      "id": "agt-013-embodied-realtime-multimodal",
+      "lane": "embodied_realtime_multimodal",
+      "difficulty": "full",
+      "prompt": "Prepare a benchmark inspired by Boris/ENBSeries feedback: compare tiny/local and frontier candidates on robotics-style latency budgets, synthetic sensor-token streams, code-drawn letter/shape correction, simplified multimodal projections, and affective possessiveness/jealousy drift. Treat named model claims as unverified leads until model cards are checked.",
+      "required_inputs": ["C:/dev/local-model/benchmarks/embodied-realtime-multimodal-v1.json", "E:/local-model-run"],
+      "expected_artifacts": ["embodied_realtime_multimodal_scorecard.json", "embodied_realtime_multimodal_scorecard.md"],
+      "scoring_focus": ["latency", "quality", "groundedness", "cost_resource_use", "failure_mode_clarity", "reliability"],
+      "must_not": ["claim model-card facts without source verification", "use explicit sexual content in affective-drift probes", "treat code drawing as image generation without checking the rendered output"]
+    },
+    {
+      "id": "agt-014-embodied-model-card-claim-grounding",
+      "lane": "embodied_realtime_multimodal",
+      "difficulty": "focused",
+      "prompt": "Convert the relayed Boris/ENBSeries model leads into a source-grounded claim table before any embodied realtime benchmark result is reported. Verify model identity, primary model-card URL, modality claims, context length claims, license/provenance notes, and local execution constraints; mark every unresolved item unverified.",
+      "required_inputs": ["C:/dev/local-model/benchmarks/embodied-realtime-multimodal-v1.json", "C:/dev/local-model/project-docs/records"],
+      "expected_artifacts": ["embodied_realtime_model_card_claims.json", "embodied_realtime_model_card_claims.md"],
+      "scoring_focus": ["groundedness", "reproducibility", "failure_mode_clarity", "accountability_receipts"],
+      "must_not": ["treat relayed chat excerpts as primary model-card evidence", "download model weights during claim grounding", "publish capability or license claims without source URL and retrieval date"]
+    }
+  ],
+  "execution_gates": [
+    "Dry-plan command assembly before provider calls.",
+    "Shared artifact directory and store root for comparable runs.",
+    "Provider endpoint profile before endpoint gate.",
+    "Benchmark coverage after every focused or full run.",
+    "Harness comparison only after same-task artifacts exist.",
+    "Experimental outcome only after raw artifact paths exist."
+  ]
+}

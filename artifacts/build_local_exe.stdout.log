@@ -1,0 +1,4 @@
+[build] C:\Users\Zain\AppData\Local\Programs\Python\Python312\python.exe -m PyInstaller --onefile --noconfirm --clean --distpath C:\dev\local-model\artifacts\exe --workpath C:\dev\local-model\artifacts\.pyinstaller\local-agent --name local-agent C:\dev\local-model\scripts\local_agent_entry.py
+[build] E:\local-model-run\venv\Scripts\python.exe -m PyInstaller --onefile --noconfirm --clean --distpath C:\dev\local-model\artifacts\exe --workpath C:\dev\local-model\artifacts\.pyinstaller\local-serve --name local-serve C:\dev\local-model\scripts\local_serve_entry.py --hidden-import transformers --hidden-import bitsandbytes --hidden-import torch --hidden-import peft
+[ok] executables in C:\dev\local-model\artifacts\exe
+[note] local-serve bundle is intentionally heavy because it includes torch/transformers

@@ -1,0 +1,98 @@
+{
+  "schema": "public-research-context-shapes/v1",
+  "generated_at": "2026-07-08",
+  "source": {
+    "id": "reddit-user-nolabeljustme",
+    "url": "https://www.reddit.com/user/NoLabelJustMe/",
+    "public_only": true,
+    "privacy_boundary": "Use public posts as idea-context only. Do not infer private identity, health, location, employment, or non-public attributes."
+  },
+  "observed_public_context": [
+    {
+      "id": "platform-is-a-mirror",
+      "url": "https://www.reddit.com/r/LessWrong/comments/1u3852u/the_platform_is_a_mirror_reddit_thinks_its/",
+      "themes": [
+        "scoreboards can measure conformity rather than truth",
+        "engagement metrics can create rage-bait incentives",
+        "non-engagement can be a strategic response to provocation",
+        "platform feedback can penalize original or nonconforming thought"
+      ],
+      "benchmark_implications": [
+        "Add anti-scoreboard metrics: models should optimize for task truth and user value, not reward-proxy mimicry.",
+        "Add provocation-resistance tasks: do not overreact to bait, attacks, or irrelevant social pressure.",
+        "Add conformity-bias probes: preserve dissenting but well-supported reasoning when majority signals conflict with evidence.",
+        "Separate popularity/engagement score from correctness and usefulness."
+      ]
+    },
+    {
+      "id": "systemillogic",
+      "url": "https://www.reddit.com/user/NoLabelJustMe/",
+      "themes": [
+        "systems can appear orderly while internal rules contradict observed truth",
+        "labels and formal logic can hide broken architecture",
+        "negative-space analysis can reveal what a system cannot represent"
+      ],
+      "benchmark_implications": [
+        "Add contradiction-detection tasks over tool outputs, policies, configs, and benchmark claims.",
+        "Add negative-space checks: identify missing assumptions, absent evidence, and hidden failure modes.",
+        "Score models on mechanism-level explanation rather than fluent compliance with a broken premise."
+      ]
+    },
+    {
+      "id": "words-are-not-wisdom",
+      "url": "https://www.reddit.com/user/NoLabelJustMe/",
+      "themes": [
+        "verbal performance is not the same as embodied competence",
+        "learned vocabulary can mimic understanding",
+        "observed behavior should outrank self-report"
+      ],
+      "benchmark_implications": [
+        "Prefer executable tasks and artifact inspection over self-rated confidence.",
+        "Add self-report calibration: compare claimed completion with actual file, test, and tool evidence.",
+        "Penalize elegant prose that is not backed by measurable outcomes."
+      ]
+    }
+  ],
+  "new_benchmark_lanes": [
+    {
+      "id": "anti_scoreboard_truthfulness",
+      "description": "Tasks where public popularity or majority-signaled answers conflict with evidence. The model must follow evidence.",
+      "metrics": [
+        "evidence_adherence_rate",
+        "popularity_proxy_resistance",
+        "citation_precision",
+        "unsupported_claim_count"
+      ]
+    },
+    {
+      "id": "provocation_resistance",
+      "description": "Agent is exposed to hostile, mocking, or baiting context while completing a concrete task.",
+      "metrics": [
+        "task_focus_retention",
+        "bait_response_rate",
+        "tone_stability",
+        "unnecessary_escalation_count"
+      ]
+    },
+    {
+      "id": "systemillogic_detection",
+      "description": "Agent audits internally contradictory task specs, hidden-test mismatches, broken configs, or inconsistent tool outputs.",
+      "metrics": [
+        "contradiction_detection_rate",
+        "missing_assumption_count",
+        "benchmark_flaw_label_accuracy",
+        "repair_plan_specificity"
+      ]
+    },
+    {
+      "id": "embodied_competence",
+      "description": "Agent must produce a runnable artifact and evidence, then calibrate claims to what was actually done.",
+      "metrics": [
+        "artifact_correctness",
+        "claim_evidence_alignment",
+        "overclaim_rate",
+        "self_correction_rate"
+      ]
+    }
+  ]
+}

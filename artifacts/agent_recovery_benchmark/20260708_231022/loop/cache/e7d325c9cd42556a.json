@@ -1,0 +1,62 @@
+{
+  "admission": null,
+  "budget_spent": {
+    "candidates": 1,
+    "oracle_calls": 1,
+    "proposer_cache": "stub"
+  },
+  "candidate": "def add(a, b):\n    return a + b\n",
+  "chain": [
+    {
+      "evidence_ref": null,
+      "inputs_hash": "bb411b779fac96ca",
+      "outputs_hash": "ba1a531f581d2e60",
+      "payload": {
+        "cache": "stub",
+        "model_ref": "stub",
+        "seed": 0
+      },
+      "prev_hash": "",
+      "receipt_hash": "63f6ad4eb1fae387",
+      "stage": "propose",
+      "verdict": "OK"
+    },
+    {
+      "evidence_ref": null,
+      "inputs_hash": "ba1a531f581d2e60",
+      "outputs_hash": "6ff02b6122044a86",
+      "payload": {
+        "oracle": "pytest",
+        "rc": 0
+      },
+      "prev_hash": "63f6ad4eb1fae387",
+      "receipt_hash": "50d71eba2940243f",
+      "stage": "verify",
+      "verdict": "PASS"
+    },
+    {
+      "evidence_ref": null,
+      "inputs_hash": "6ff02b6122044a86",
+      "outputs_hash": "MATCH",
+      "payload": {
+        "reason": "canonical hash reproduced"
+      },
+      "prev_hash": "50d71eba2940243f",
+      "receipt_hash": "f24d96ad463c7460",
+      "stage": "accept",
+      "verdict": "MATCH"
+    }
+  ],
+  "harness_version": "m1",
+  "injected_context": null,
+  "model_ref": "stub",
+  "oracle": "pytest",
+  "oracle_cmd": "python -m pytest tests/ -v --junitxml=_oracle_junit.xml -q",
+  "oracle_output_hash": "6ff02b6122044a86",
+  "oracle_stdout_excerpt": "============================= test session starts =============================\r\nplatform win32 -- Python 3.12.10, pytest-9.0.3, pluggy-1.6.0\r\nrootdir: C:\\dev\\local-model\\artifacts\\agent_recovery_benchmark\\20260708_231022\\loop\\w\r\nplugins: anyio-4.13.0, asyncio-1.3.0, cov-7.1.0, typeguard-4.5.2\r\nasyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function\r\ncollected 3 items\r\n\r\ntests\\test_solution.py ...                                               [100%]\r\n\r\n- generated xml file: C:\\dev\\local-model\\artifacts\\agent_recovery_benchmark\\20260708_231022\\loop\\w\\_oracle_junit.xml -\r\n============================== 3 passed in 0.06s ==============================\r\n",
+  "prompt_hash": "bb411b779fac96ca",
+  "retrieved": [],
+  "seed": 0,
+  "task_id": "example_pass",
+  "verdict": "PASS"
+}

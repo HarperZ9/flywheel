@@ -13,11 +13,13 @@ the work -> externalization earns it. Honest either way; the oracle is the arbit
 """
 from __future__ import annotations
 
+import argparse
+import os
 import subprocess
 import sys
 from pathlib import Path
 
-sys.path.insert(0, "/mnt/c/dev/local-model")
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from harness.proposer import ServeProposer
 from harness.extract import extract_code
@@ -27,8 +29,9 @@ from harness.tasks_hard import HARD_REGISTRY
 from harness.task import load_task
 
 TEMPS = [0.0, 0.4, 0.8, 1.1]
-SERVE = sys.argv[1] if len(sys.argv) > 1 else "http://127.0.0.1:8765"
-WORK = Path("/mnt/e/local-model-run/tmp/ablation")
+DEFAULT_SERVE = "http://127.0.0.1:8765"
+DEFAULT_WORK = Path(os.environ.get("LOCAL_MODEL_RUN_ROOT", "C:/local-model-run")).expanduser()
+WORK = (DEFAULT_WORK / "tmp" / "ablation").resolve()
 
 
 def run_pytest(workdir: Path, candidate: str, test_src: str) -> bool:
@@ -43,15 +46,27 @@ def run_pytest(workdir: Path, candidate: str, test_src: str) -> bool:
 
 
 def main() -> int:
-    prop = ServeProposer(base_url=SERVE, model_ref="14b-cpt")
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--serve", default=DEFAULT_SERVE, help="local model serve URL")
+    ap.add_argument("--workroot", default=str(WORK), help="ablation scratch directory")
+    ap.add_argument("--local-model", default="14b-cpt", help="model_ref for local proposer")
+    ap.add_argument("--n-tasks", type=int, default=0, help="override number of hard tasks (0=all)")
+    args = ap.parse_args()
+
+    work_root = Path(args.workroot).expanduser().resolve()
+    work_root.mkdir(parents=True, exist_ok=True)
+    prop = ServeProposer(base_url=args.serve, model_ref=args.local_model)
     oracle = PytestOracle()
-    dirs = materialize_all(HARD_REGISTRY, WORK / "tasks")
+    task_registry = HARD_REGISTRY
+    if args.n_tasks and args.n_tasks > 0:
+        task_registry = HARD_REGISTRY[:args.n_tasks]
+    dirs = materialize_all(task_registry, work_root / "tasks")
     tasks = [load_task(d) for d in dirs]
 
     n_single = n_ext = n_self = 0
     self_test_broken = 0
     rows = []
-    for i, (task, spec) in enumerate(zip(tasks, HARD_REGISTRY)):
+    for i, (task, spec) in enumerate(zip(tasks, task_registry)):
         # 1. generate the candidate pool (fixed generation for all arms)
         cands = []
         for t in TEMPS:
@@ -72,7 +87,7 @@ def main() -> int:
             f"`solution`. Output ONLY the test code.\n\nTask: {task.prompt}",
             seed=0, temperature=0.0, max_new_tokens=200)
         self_test = extract_code(tgen.text)
-        wd = WORK / f"t{i}"
+        wd = work_root / f"t{i}"
         # is the self-authored test even runnable on the reference solution?
         if not run_pytest(wd / "ref", spec.solution, self_test):
             self_test_broken += 1
@@ -86,7 +101,7 @@ def main() -> int:
         rows.append(f"  {spec.task_id:16} single={int(single)} ext={int(ext)} self={int(self_)}")
 
     n = len(tasks)
-    print("=== self-authored-criterion ablation (14b-cpt, hard set) ===")
+    print(f"=== self-authored-criterion ablation ({args.local_model}, hard set) ===")
     print("\n".join(rows))
     print(f"\n  single_shot        pass = {n_single}/{n} = {n_single/n:.0%}")
     print(f"  verified_external  pass = {n_ext}/{n} = {n_ext/n:.0%}  (lift +{(n_ext-n_single)/n:.0%})")

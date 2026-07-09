@@ -1,0 +1,8 @@
+{
+  "task_id": "tilde_unescape",
+  "prompt": "Write a Python function untilde(s) that decodes a tilde-escaped string and returns the decoded str.\n\nScan s left to right. \"~\" introduces an escape sequence (case-sensitive):\n- \"~~\" decodes to a literal \"~\"\n- \"~n\" decodes to a newline (U+000A)\n- \"~t\" decodes to a tab (U+0009)\n- \"~xHH\" decodes to the character with code point 0xHH, where HH is exactly two hex digits (0-9, a-f, A-F; either case). Exactly two characters are consumed after \"~x\", so \"~x123\" decodes to chr(0x12) followed by the literal \"3\".\n\nErrors (ValueError with exactly these messages). The scan proceeds left to right and the FIRST error encountered by position wins:\n- \"~\" as the last character with nothing after it -> ValueError(\"dangling escape\")\n- \"~\" followed by any character other than \"~\", \"n\", \"t\", \"x\" -> ValueError(\"bad escape\"). Uppercase \"~N\", \"~T\", \"~X\" are bad escapes.\n- \"~x\" followed by fewer than two remaining characters, or where either of the next two characters is not a hex digit -> ValueError(\"bad hex\")\n- any literal (unescaped) character in the input with code point < 32 -> ValueError(\"raw control\"). Escape sequences may still PRODUCE such characters in the output (\"~x00\" and \"~n\" are fine); only raw occurrences in the input are forbidden.\n\nSo an input consisting of \"a\", a real newline, then \"~\" raises \"raw control\" (the newline at position 1 precedes the dangling \"~\"), while \"~q\" followed by a real newline raises \"bad escape\". The empty string decodes to \"\".\n\nOutput ONLY the function definition.",
+  "oracle": "pytest",
+  "oracle_cmd": "python -m pytest tests/ -q",
+  "candidate_path": "solution.py",
+  "max_new_tokens": 768
+}

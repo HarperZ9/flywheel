@@ -1,0 +1,8 @@
+{
+  "task_id": "splice_pure",
+  "prompt": "Write a Python function `splice(items, start, stop, replacement)` that performs a pure (non-mutating) version of Python's slice assignment `items[start:stop] = replacement`.\n\nContract:\n1. `start` and `stop` must be `int`s; a `bool` for either raises `ValueError` (bools are rejected even though `bool` subclasses `int`). `replacement` must be a `list`; anything else \u2014 including tuples and strings, which real slice assignment would accept \u2014 raises `TypeError`.\n2. Index semantics match Python slicing: a negative index has `len(items)` added to it once, then the result is clamped into the range `[0, len(items)]` \u2014 never raise for out-of-range index values. If, after normalization and clamping, `start` is greater than `stop`, no elements are removed and `replacement` is inserted at position `start`.\n3. Return a NEW list consisting of the elements of `items` before `start`, then the elements of `replacement`, then the elements of `items` from `stop` onward. The elements of `replacement` must appear in the result as the same objects (identity preserved).\n4. Neither `items` nor `replacement` may be mutated, and the returned list must never be the `items` object itself. An empty `replacement` performs a pure deletion.\n\nOutput ONLY the function definition.",
+  "oracle": "pytest",
+  "oracle_cmd": "python -m pytest tests/ -q",
+  "candidate_path": "solution.py",
+  "max_new_tokens": 768
+}

@@ -1,0 +1,1441 @@
+{
+  "timestamp_utc": "2026-07-08T23:09:59.485716Z",
+  "out_root": "artifacts\\agent_recovery_benchmark\\20260708_230923",
+  "spin": {
+    "schema": "flywheel.spin/integration/v1",
+    "n_tasks": 4,
+    "turns": 1,
+    "first_turn": {
+      "turn": 0,
+      "pass_rate": 0.0,
+      "cache_hit_rate": 0.0,
+      "avg_oracle_calls": 4.0
+    },
+    "last_turn": {
+      "turn": 0,
+      "pass_rate": 0.0,
+      "cache_hit_rate": 0.0,
+      "avg_oracle_calls": 4.0
+    },
+    "deltas": {
+      "pass_rate": 0.0,
+      "cache_hit_rate": 0.0,
+      "avg_oracle_calls": 0.0
+    },
+    "auto_apply_candidates": 3,
+    "cycle_summary": "3 auto-config (self-tunable, falsifier-gated), 0 gated-capability, 0 surface-only"
+  },
+  "core": {
+    "schema": "flywheel.core/integration/v1",
+    "evolutionary": {
+      "open": {
+        "solved": 1,
+        "n": 4,
+        "final_baseline": 1,
+        "baseline_history": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "monotone_rising": false,
+        "trace": [
+          {
+            "key": "seed",
+            "passed": true,
+            "baseline": 1,
+            "had_context": true
+          },
+          {
+            "key": "step_1",
+            "passed": false,
+            "baseline": 1,
+            "had_context": false
+          },
+          {
+            "key": "step_2",
+            "passed": false,
+            "baseline": 1,
+            "had_context": false
+          },
+          {
+            "key": "step_3",
+            "passed": false,
+            "baseline": 1,
+            "had_context": false
+          }
+        ]
+      },
+      "closed": {
+        "solved": 4,
+        "n": 4,
+        "final_baseline": 4,
+        "baseline_history": [
+          1,
+          2,
+          3,
+          4
+        ],
+        "monotone_rising": true,
+        "trace": [
+          {
+            "key": "seed",
+            "passed": true,
+            "baseline": 1,
+            "had_context": true
+          },
+          {
+            "key": "step_1",
+            "passed": true,
+            "baseline": 2,
+            "had_context": true
+          },
+          {
+            "key": "step_2",
+            "passed": true,
+            "baseline": 3,
+            "had_context": true
+          },
+          {
+            "key": "step_3",
+            "passed": true,
+            "baseline": 4,
+            "had_context": true
+          }
+        ]
+      }
+    },
+    "inversion": {
+      "active_curve": [
+        8,
+        4,
+        2,
+        1,
+        1
+      ],
+      "passive_curve": [
+        8,
+        4,
+        4,
+        2,
+        1
+      ],
+      "active_to_floor": 3,
+      "passive_to_floor": 4,
+      "accelerated": true,
+      "same_floor": true
+    },
+    "floor_preservation": {
+      "n": 7,
+      "all_floors_preserved": true,
+      "all_faster_or_equal": true,
+      "per_domain": [
+        {
+          "name": "transit",
+          "field": "astronomy",
+          "active_floor": 2,
+          "passive_floor": 2,
+          "floor_preserved": true,
+          "active_faster_or_equal": true
+        },
+        {
+          "name": "visual_hull",
+          "field": "3d-rendering",
+          "active_floor": 35,
+          "passive_floor": 35,
+          "floor_preserved": true,
+          "active_faster_or_equal": true
+        },
+        {
+          "name": "trace_recovery",
+          "field": "reverse-engineering",
+          "active_floor": 1,
+          "passive_floor": 1,
+          "floor_preserved": true,
+          "active_faster_or_equal": true
+        },
+        {
+          "name": "orthographic",
+          "field": "geometry",
+          "active_floor": 1,
+          "passive_floor": 1,
+          "floor_preserved": true,
+          "active_faster_or_equal": true
+        },
+        {
+          "name": "black_box_id",
+          "field": "systems",
+          "active_floor": 1,
+          "passive_floor": 1,
+          "floor_preserved": true,
+          "active_faster_or_equal": true
+        },
+        {
+          "name": "manifest_latent",
+          "field": "dream-state",
+          "active_floor": 4,
+          "passive_floor": 4,
+          "floor_preserved": true,
+          "active_faster_or_equal": true
+        },
+        {
+          "name": "access_vs_phenomenal",
+          "field": "consciousness",
+          "active_floor": 2,
+          "passive_floor": 2,
+          "floor_preserved": true,
+          "active_faster_or_equal": true
+        }
+      ],
+      "note": "floor-preservation is structural (reorder can't change the full intersection) \u2014 the flywheel accelerates recovery but reaches no coordinate the measurement set never observes"
+    },
+    "valve": {
+      "externalized": {
+        "threshold": 4.0,
+        "self_authored": false,
+        "stored": 26.0,
+        "admitted": 4,
+        "blocked_backflow": 1,
+        "blocked_subthreshold": 1,
+        "monotone_no_regression": true,
+        "final_curve": [
+          0.0,
+          5.0,
+          5.0,
+          14.0,
+          18.0,
+          26.0
+        ]
+      },
+      "self_authored": {
+        "threshold": 4.0,
+        "self_authored": true,
+        "stored": 28.0,
+        "admitted": 6,
+        "blocked_backflow": 0,
+        "blocked_subthreshold": 0,
+        "monotone_no_regression": false,
+        "final_curve": [
+          3.0,
+          8.0,
+          7.0,
+          16.0,
+          20.0,
+          28.0
+        ]
+      },
+      "ratchet_holds_only_when_externalized": true
+    },
+    "frontier_backflow": {
+      "final_head": 0.7,
+      "admitted": 3,
+      "backpressure_blocked": 2,
+      "backsiphonage_blocked": 0,
+      "separated": true,
+      "monotone": false,
+      "verdicts": [
+        "ADMITTED",
+        "BLOCKED_BACKPRESSURE",
+        "ADMITTED",
+        "ADMITTED",
+        "BLOCKED_BACKPRESSURE"
+      ],
+      "head_curve": [
+        0.4,
+        0.2,
+        0.8,
+        1.0,
+        0.7
+      ]
+    },
+    "externalization_ablation": {
+      "n_domains": 5,
+      "caught": 0,
+      "coverage": 0.0,
+      "all_refutations_executed": true,
+      "per_domain": [
+        {
+          "domain": "arithmetic",
+          "self_authored_verdict": "FAIL",
+          "external_verdict": "FAIL",
+          "externalization_caught_cheat": false,
+          "refutation_executed": true
+        },
+        {
+          "domain": "selection",
+          "self_authored_verdict": "FAIL",
+          "external_verdict": "FAIL",
+          "externalization_caught_cheat": false,
+          "refutation_executed": true
+        },
+        {
+          "domain": "predicate",
+          "self_authored_verdict": "FAIL",
+          "external_verdict": "FAIL",
+          "externalization_caught_cheat": false,
+          "refutation_executed": true
+        },
+        {
+          "domain": "transform",
+          "self_authored_verdict": "FAIL",
+          "external_verdict": "FAIL",
+          "externalization_caught_cheat": false,
+          "refutation_executed": true
+        },
+        {
+          "domain": "counting",
+          "self_authored_verdict": "FAIL",
+          "external_verdict": "FAIL",
+          "externalization_caught_cheat": false,
+          "refutation_executed": true
+        }
+      ]
+    },
+    "accountability": {
+      "benchmark": "accountability/v1",
+      "n_dimensions": 7,
+      "overall": 1.0,
+      "dimensions": [
+        {
+          "name": "re_checkability",
+          "score": 1.0,
+          "grounded_in": "adversarial_corpus (controls conserved)",
+          "detail": "clean receipts re-check to MATCH"
+        },
+        {
+          "name": "externalization",
+          "score": 1.0,
+          "grounded_in": "externalization_ablation.run_all_domains",
+          "detail": "non-self-authored check catches cheats self-authorship accepts"
+        },
+        {
+          "name": "adversarial_soundness",
+          "score": 1.0,
+          "grounded_in": "adversarial_corpus.run_corpus",
+          "detail": "0 false-accepts over the attack corpus"
+        },
+        {
+          "name": "no_regression",
+          "score": 1.0,
+          "grounded_in": "backflow.run_levels (frontier valve)",
+          "detail": "banked verified progress is monotone (ratchet)"
+        },
+        {
+          "name": "invariant_fidelity",
+          "score": 1.0,
+          "grounded_in": "turbulence.false_drift_from_wrong_invariant",
+          "detail": "in chaos, conserve the statistical invariant not the trajectory"
+        },
+        {
+          "name": "null_space_honesty",
+          "score": 1.0,
+          "grounded_in": "silhouette.run_all",
+          "detail": "reports what it cannot recover instead of faking it"
+        },
+        {
+          "name": "provenance",
+          "score": 1.0,
+          "grounded_in": "adversarial_corpus (no_receipt attack)",
+          "detail": "no accepted result without bound grounding"
+        }
+      ],
+      "non_goal": "measures accountability, NOT capability \u2014 pair with a capability bench",
+      "self_authored_caveat": "the harness scoring ~1.0 is EXPECTED and near-tautological: each dimension is backed by a module the harness was built to hold, so this measures 'does the harness do what the harness does', not 'is the harness good'. The real value is scoring OTHER systems (capability-first agents like SWE-agent / Hermes X-search) on the accountability axes they ignore \u2014 that is where differentiation shows. And the benchmark DELIBERATELY excludes a capability/uplift axis, because the uplift is unearned. Next credibility step: have the dimension set audited/authored externally, and score external systems."
+    },
+    "accountability_strawman": {
+      "benchmark": "accountability/v1 (STRAWMAN)",
+      "overall": 0.0,
+      "dimensions": {
+        "re_checkability": 0.0,
+        "externalization": 0.0,
+        "adversarial_soundness": 0.0,
+        "no_regression": 0.0,
+        "invariant_fidelity": 0.0,
+        "null_space_honesty": 0.0,
+        "provenance": 0.0
+      },
+      "credibility": true,
+      "note": "unaccountable system scores near 0 -> the benchmark measures something real"
+    },
+    "loop_closure": {
+      "handoffs": [
+        {
+          "frm": "perceive",
+          "to": "propose",
+          "carries": "context",
+          "closed": true,
+          "verified": false,
+          "evidence": "boot.boot/hydrate_prompt present"
+        },
+        {
+          "frm": "propose",
+          "to": "verify",
+          "carries": "candidate",
+          "closed": true,
+          "verified": true,
+          "evidence": "oracle ran on candidate -> PASS"
+        },
+        {
+          "frm": "verify",
+          "to": "memory",
+          "carries": "receipt",
+          "closed": true,
+          "verified": true,
+          "evidence": "accepted envelope inserted + looked up"
+        },
+        {
+          "frm": "memory",
+          "to": "serve",
+          "carries": "verified result",
+          "closed": true,
+          "verified": true,
+          "evidence": "repeat query hits the receipt cache (proof-addressed)"
+        },
+        {
+          "frm": "verify",
+          "to": "evolve",
+          "carries": "run signals -> config candidates",
+          "closed": true,
+          "verified": false,
+          "evidence": "flywheel.spin threads research_feed into meta_cycle"
+        },
+        {
+          "frm": "evolve",
+          "to": "propose",
+          "carries": "improved config",
+          "closed": true,
+          "verified": false,
+          "evidence": "next spin starts from evolve's auto-config baseline"
+        },
+        {
+          "frm": "verify",
+          "to": "corpus",
+          "carries": "verified experience",
+          "closed": true,
+          "verified": false,
+          "evidence": "developmental corpus module present"
+        },
+        {
+          "frm": "memory",
+          "to": "context",
+          "carries": "verified fact -> next retrieved",
+          "closed": true,
+          "verified": false,
+          "evidence": "evolutionary_flywheel.auto_retrieved feeds verified memory into next context; closed loop measured to compound (auto-wire into run_loop default = last mile)"
+        },
+        {
+          "frm": "corpus",
+          "to": "model",
+          "carries": "training data -> weights",
+          "closed": false,
+          "verified": false,
+          "evidence": "CPT is a manual run; no auto-retrain trigger (OPEN)"
+        }
+      ],
+      "n_handoffs": 9,
+      "n_closed": 8,
+      "closure_fraction": 0.889,
+      "fully_closed": false,
+      "open_links": [
+        "corpus->model"
+      ],
+      "executed_links": [
+        "propose->verify",
+        "verify->memory",
+        "memory->serve"
+      ]
+    },
+    "data_flywheel": {
+      "criterion_conservation": {
+        "schema": "data-flywheel.criterion-conservation/1",
+        "tasks": 2,
+        "artifact_tokens": 6,
+        "criterion_tokens": 2,
+        "solution_tokens": 2,
+        "kept_if_regenerating_solutions": 4,
+        "solution_share": 0.3333,
+        "conservation_ratio": 1.5,
+        "reading": "store prompt+oracle (the gradable invariant), regenerate the solution -> keep the criterion at 1/conservation_ratio of the artifact tokens, with the verdict still re-checkable",
+        "token_estimator": "word+punct (ratio is estimator-robust)",
+        "per_task": [
+          {
+            "task": "d1",
+            "artifact_tokens": 3,
+            "criterion_tokens": 1,
+            "solution_tokens": 1
+          },
+          {
+            "task": "d2",
+            "artifact_tokens": 3,
+            "criterion_tokens": 1,
+            "solution_tokens": 1
+          }
+        ]
+      },
+      "manufactured_yield": {
+        "schema": "data-flywheel.manufactured-yield/1",
+        "gradable_triples": 2,
+        "witnessed": true,
+        "oracle_calls": 2,
+        "vs_scraped": "scraped tokens carry no verdict; these carry a re-checkable oracle -> gradable by construction, not by later labeling",
+        "amortization_ceiling": "1/(1-r), bounded by reuse fraction r; NO compounding on novel coverage (asymmetry.py). Recirculation amortizes collection, it does not replace it."
+      }
+    },
+    "adversarial_corpus_naive": {
+      "false_accepts": 7,
+      "false_accept_names": [
+        "drifted_ancestor",
+        "deep_drift_depth_evasion",
+        "cycle_laundering",
+        "dangling_grounding",
+        "no_receipt",
+        "glut_launder",
+        "unverifiable_ancestor"
+      ],
+      "over_rejects": 0,
+      "over_reject_names": [],
+      "n_false_accept_attacks": 7,
+      "false_accept_rate": 1.0,
+      "per_attack": {
+        "drifted_ancestor": {
+          "kind": "false-accept",
+          "target_verdict": "MATCH",
+          "caught": true
+        },
+        "deep_drift_depth_evasion": {
+          "kind": "false-accept",
+          "target_verdict": "MATCH",
+          "caught": true
+        },
+        "cycle_laundering": {
+          "kind": "false-accept",
+          "target_verdict": "MATCH",
+          "caught": true
+        },
+        "dangling_grounding": {
+          "kind": "false-accept",
+          "target_verdict": "MATCH",
+          "caught": true
+        },
+        "no_receipt": {
+          "kind": "false-accept",
+          "target_verdict": "MATCH",
+          "caught": true
+        },
+        "glut_launder": {
+          "kind": "false-accept",
+          "target_verdict": "MATCH",
+          "caught": true
+        },
+        "unverifiable_ancestor": {
+          "kind": "false-accept",
+          "target_verdict": "MATCH",
+          "caught": true
+        },
+        "clean_chain": {
+          "kind": "control",
+          "target_verdict": "MATCH",
+          "caught": false
+        },
+        "clean_diamond": {
+          "kind": "control",
+          "target_verdict": "MATCH",
+          "caught": false
+        }
+      }
+    }
+  },
+  "forum": {
+    "schema": "forum.context-shape/integration/v1",
+    "dataset": "C:\\dev\\local-model\\dataset\\forum_context_shapes_2026-07-08.json",
+    "artifact": "artifacts\\agent_recovery_benchmark\\20260708_230923\\forum_benchmark_cases.json",
+    "sources": 4,
+    "source_ids": [
+      "reddit-accelerate",
+      "reddit-artificialinteligence",
+      "reddit-artificialntelligence",
+      "reddit-processing"
+    ],
+    "cases": 5,
+    "ready_cases": 5,
+    "case_quality": [
+      {
+        "case_id": "forum_high_signal_curation_v1",
+        "ready": true,
+        "missing": [],
+        "counts": {
+          "oracle_checks": 4,
+          "metrics": 4,
+          "source_ids": 1,
+          "tool_implications": 2
+        },
+        "metrics": [
+          "curation_precision",
+          "missing_context_recall",
+          "mechanism_preservation",
+          "false_evidence_rate"
+        ]
+      },
+      {
+        "case_id": "forum_processing_repro_debug_v1",
+        "ready": true,
+        "missing": [],
+        "counts": {
+          "oracle_checks": 4,
+          "metrics": 4,
+          "source_ids": 1,
+          "tool_implications": 3
+        },
+        "metrics": [
+          "grounding_score",
+          "missing_evidence_detection",
+          "visual_expectation_specificity",
+          "overcompletion_penalty"
+        ]
+      },
+      {
+        "case_id": "forum_agent_recovery_faults_v1",
+        "ready": true,
+        "missing": [],
+        "counts": {
+          "oracle_checks": 5,
+          "metrics": 6,
+          "source_ids": 1,
+          "tool_implications": 3
+        },
+        "metrics": [
+          "recovery_success_rate",
+          "silent_failure_rate",
+          "retry_budget_compliance",
+          "fallback_quality",
+          "receipt_completeness",
+          "p95_recovery_latency"
+        ]
+      },
+      {
+        "case_id": "forum_trend_evidence_gate_v1",
+        "ready": true,
+        "missing": [],
+        "counts": {
+          "oracle_checks": 4,
+          "metrics": 4,
+          "source_ids": 2,
+          "tool_implications": 3
+        },
+        "metrics": [
+          "evidence_tier_accuracy",
+          "overclaim_rate",
+          "source_type_preservation",
+          "useful_signal_retention"
+        ]
+      },
+      {
+        "case_id": "forum_signal_preservation_v1",
+        "ready": true,
+        "missing": [],
+        "counts": {
+          "oracle_checks": 4,
+          "metrics": 4,
+          "source_ids": 3,
+          "tool_implications": 3
+        },
+        "metrics": [
+          "source_traceability",
+          "observation_inference_separation",
+          "uncertainty_preservation",
+          "fabricated_metric_rate"
+        ]
+      }
+    ],
+    "metric_count": 22,
+    "metrics": [
+      "curation_precision",
+      "evidence_tier_accuracy",
+      "fabricated_metric_rate",
+      "fallback_quality",
+      "false_evidence_rate",
+      "grounding_score",
+      "mechanism_preservation",
+      "missing_context_recall",
+      "missing_evidence_detection",
+      "observation_inference_separation",
+      "overclaim_rate",
+      "overcompletion_penalty",
+      "p95_recovery_latency",
+      "receipt_completeness",
+      "recovery_success_rate",
+      "retry_budget_compliance",
+      "silent_failure_rate",
+      "source_traceability",
+      "source_type_preservation",
+      "uncertainty_preservation",
+      "useful_signal_retention",
+      "visual_expectation_specificity"
+    ],
+    "agent_recovery_case_present": true,
+    "agent_recovery_metrics": [
+      "recovery_success_rate",
+      "silent_failure_rate",
+      "retry_budget_compliance",
+      "fallback_quality",
+      "receipt_completeness",
+      "p95_recovery_latency"
+    ],
+    "closed_loop_role": "forum context -> benchmark cases -> harness measurements -> model/router/tool uplift backlog -> smaller local model release evidence"
+  },
+  "agent_recovery": {
+    "schema": "agent.recovery-benchmark/v1",
+    "policy": {
+      "retry_budget": 2,
+      "fallback_enabled": true,
+      "stale_recompute_enabled": true,
+      "typed_escalation_enabled": true
+    },
+    "scenario_count": 6,
+    "metrics": {
+      "recovery_success_rate": 1.0,
+      "silent_failure_rate": 0.0,
+      "retry_budget_compliance": 1.0,
+      "fallback_quality": 0.958,
+      "receipt_completeness": 1.0,
+      "p95_recovery_latency": 1745
+    },
+    "results": [
+      {
+        "scenario_id": "clean_path",
+        "objective": "complete the tool task when no fault occurs",
+        "faults": [],
+        "attempts": 1,
+        "retries": 0,
+        "used_fallback": false,
+        "typed_escalation": false,
+        "silent_failure": false,
+        "retry_budget_compliant": true,
+        "receipt_complete": true,
+        "task_correct": true,
+        "passed": true,
+        "fallback_quality": 1.0,
+        "resolution": "primary_success",
+        "latency_ms": 220,
+        "events": [
+          {
+            "seq": 0,
+            "scenario_id": "clean_path",
+            "action": "primary_tool",
+            "status": "ok",
+            "detail": "primary tool returned valid result",
+            "latency_ms": 220,
+            "receipt": "2224eaacf3db06b2"
+          }
+        ]
+      },
+      {
+        "scenario_id": "timeout_retry_success",
+        "objective": "recover from a timeout with bounded retry",
+        "faults": [
+          "timeout"
+        ],
+        "attempts": 2,
+        "retries": 1,
+        "used_fallback": false,
+        "typed_escalation": false,
+        "silent_failure": false,
+        "retry_budget_compliant": true,
+        "receipt_complete": true,
+        "task_correct": true,
+        "passed": true,
+        "fallback_quality": 1.0,
+        "resolution": "retry_success",
+        "latency_ms": 1745,
+        "events": [
+          {
+            "seq": 0,
+            "scenario_id": "timeout_retry_success",
+            "action": "primary_tool",
+            "status": "timeout",
+            "detail": "primary tool timed out",
+            "latency_ms": 1500,
+            "receipt": "c5fb0d4758c88a5b"
+          },
+          {
+            "seq": 1,
+            "scenario_id": "timeout_retry_success",
+            "action": "recovery_decision",
+            "status": "retry",
+            "detail": "retry 1/2 after timeout",
+            "latency_ms": 25,
+            "receipt": "e5b988035b9d1bbf"
+          },
+          {
+            "seq": 2,
+            "scenario_id": "timeout_retry_success",
+            "action": "primary_tool",
+            "status": "ok",
+            "detail": "primary tool returned valid result",
+            "latency_ms": 220,
+            "receipt": "ac8da404087d90b6"
+          }
+        ]
+      },
+      {
+        "scenario_id": "rate_limit_backoff_success",
+        "objective": "recover from a rate limit with bounded retry/backoff",
+        "faults": [
+          "rate_limit"
+        ],
+        "attempts": 2,
+        "retries": 1,
+        "used_fallback": false,
+        "typed_escalation": false,
+        "silent_failure": false,
+        "retry_budget_compliant": true,
+        "receipt_complete": true,
+        "task_correct": true,
+        "passed": true,
+        "fallback_quality": 1.0,
+        "resolution": "retry_success",
+        "latency_ms": 895,
+        "events": [
+          {
+            "seq": 0,
+            "scenario_id": "rate_limit_backoff_success",
+            "action": "primary_tool",
+            "status": "429",
+            "detail": "rate limit from primary tool",
+            "latency_ms": 650,
+            "receipt": "efd64f31617a7241"
+          },
+          {
+            "seq": 1,
+            "scenario_id": "rate_limit_backoff_success",
+            "action": "recovery_decision",
+            "status": "retry",
+            "detail": "retry 1/2 after rate_limit",
+            "latency_ms": 25,
+            "receipt": "d63c7f3337f2040e"
+          },
+          {
+            "seq": 2,
+            "scenario_id": "rate_limit_backoff_success",
+            "action": "primary_tool",
+            "status": "ok",
+            "detail": "primary tool returned valid result",
+            "latency_ms": 220,
+            "receipt": "58078238e26329f3"
+          }
+        ]
+      },
+      {
+        "scenario_id": "malformed_json_fallback_success",
+        "objective": "recover from malformed JSON using an alternate route",
+        "faults": [
+          "malformed_json"
+        ],
+        "attempts": 1,
+        "retries": 0,
+        "used_fallback": true,
+        "typed_escalation": false,
+        "silent_failure": false,
+        "retry_budget_compliant": true,
+        "receipt_complete": true,
+        "task_correct": true,
+        "passed": true,
+        "fallback_quality": 1.0,
+        "resolution": "fallback_success",
+        "latency_ms": 800,
+        "events": [
+          {
+            "seq": 0,
+            "scenario_id": "malformed_json_fallback_success",
+            "action": "primary_tool",
+            "status": "200",
+            "detail": "invalid JSON body",
+            "latency_ms": 300,
+            "receipt": "90a9517a73f989b8"
+          },
+          {
+            "seq": 1,
+            "scenario_id": "malformed_json_fallback_success",
+            "action": "fallback_tool",
+            "status": "ok",
+            "detail": "alternate route returned valid result",
+            "latency_ms": 500,
+            "receipt": "1d4c8526f2aa573a"
+          }
+        ]
+      },
+      {
+        "scenario_id": "stale_cache_recompute_success",
+        "objective": "recover from stale cache by recomputing",
+        "faults": [
+          "stale_cache"
+        ],
+        "attempts": 2,
+        "retries": 1,
+        "used_fallback": false,
+        "typed_escalation": false,
+        "silent_failure": false,
+        "retry_budget_compliant": true,
+        "receipt_complete": true,
+        "task_correct": true,
+        "passed": true,
+        "fallback_quality": 1.0,
+        "resolution": "retry_success",
+        "latency_ms": 440,
+        "events": [
+          {
+            "seq": 0,
+            "scenario_id": "stale_cache_recompute_success",
+            "action": "primary_tool",
+            "status": "stale",
+            "detail": "cache receipt predates input",
+            "latency_ms": 180,
+            "receipt": "47f2161dd5945243"
+          },
+          {
+            "seq": 1,
+            "scenario_id": "stale_cache_recompute_success",
+            "action": "recovery_decision",
+            "status": "recompute",
+            "detail": "discard stale cache and recompute",
+            "latency_ms": 40,
+            "receipt": "38ab607b25671c56"
+          },
+          {
+            "seq": 2,
+            "scenario_id": "stale_cache_recompute_success",
+            "action": "primary_tool",
+            "status": "ok",
+            "detail": "primary tool returned valid result",
+            "latency_ms": 220,
+            "receipt": "283796ec87e687aa"
+          }
+        ]
+      },
+      {
+        "scenario_id": "partial_result_typed_escalation",
+        "objective": "surface a typed partial-result failure when recovery is impossible",
+        "faults": [
+          "partial_result"
+        ],
+        "attempts": 1,
+        "retries": 0,
+        "used_fallback": false,
+        "typed_escalation": true,
+        "silent_failure": false,
+        "retry_budget_compliant": true,
+        "receipt_complete": true,
+        "task_correct": false,
+        "passed": true,
+        "fallback_quality": 0.75,
+        "resolution": "typed_escalation",
+        "latency_ms": 440,
+        "events": [
+          {
+            "seq": 0,
+            "scenario_id": "partial_result_typed_escalation",
+            "action": "primary_tool",
+            "status": "partial",
+            "detail": "required field missing",
+            "latency_ms": 420,
+            "receipt": "5f346c4acc6cde45"
+          },
+          {
+            "seq": 1,
+            "scenario_id": "partial_result_typed_escalation",
+            "action": "typed_escalation",
+            "status": "failed",
+            "detail": "unrecoverable partial_result",
+            "latency_ms": 20,
+            "receipt": "84733459f45f7b2e"
+          }
+        ]
+      }
+    ]
+  },
+  "backend_recovery": {
+    "schema": "agent.backend-recovery-benchmark/v1",
+    "adapter": "chat-backend",
+    "scenario_count": 6,
+    "metrics": {
+      "recovery_success_rate": 1.0,
+      "silent_failure_rate": 0.0,
+      "retry_budget_compliance": 1.0,
+      "fallback_quality": 0.958,
+      "receipt_completeness": 1.0,
+      "p95_recovery_latency": 1745
+    },
+    "results": [
+      {
+        "scenario_id": "clean_path",
+        "objective": "complete the tool task when no fault occurs",
+        "faults": [],
+        "backend": "clean_path:primary",
+        "fallback_backend": "",
+        "response_ref": "dry:primary",
+        "attempts": 1,
+        "retries": 0,
+        "used_fallback": false,
+        "typed_escalation": false,
+        "silent_failure": false,
+        "retry_budget_compliant": true,
+        "receipt_complete": true,
+        "task_correct": true,
+        "passed": true,
+        "fallback_quality": 1.0,
+        "resolution": "primary_success",
+        "latency_ms": 220,
+        "events": [
+          {
+            "seq": 0,
+            "scenario_id": "clean_path",
+            "action": "primary_backend",
+            "status": "ok",
+            "detail": "primary returned dry:primary",
+            "latency_ms": 220,
+            "receipt": "74000b57979ea6c7"
+          }
+        ]
+      },
+      {
+        "scenario_id": "timeout_retry_success",
+        "objective": "recover from a timeout with bounded retry",
+        "faults": [
+          "timeout"
+        ],
+        "backend": "timeout_retry_success:primary",
+        "fallback_backend": "",
+        "response_ref": "dry:primary",
+        "attempts": 2,
+        "retries": 1,
+        "used_fallback": false,
+        "typed_escalation": false,
+        "silent_failure": false,
+        "retry_budget_compliant": true,
+        "receipt_complete": true,
+        "task_correct": true,
+        "passed": true,
+        "fallback_quality": 1.0,
+        "resolution": "retry_success",
+        "latency_ms": 1745,
+        "events": [
+          {
+            "seq": 0,
+            "scenario_id": "timeout_retry_success",
+            "action": "primary_backend",
+            "status": "timeout",
+            "detail": "injected timeout: primary tool timed out",
+            "latency_ms": 1500,
+            "receipt": "3e23db092d2e0c5d"
+          },
+          {
+            "seq": 1,
+            "scenario_id": "timeout_retry_success",
+            "action": "recovery_decision",
+            "status": "retry",
+            "detail": "retry 1/2 after timeout",
+            "latency_ms": 25,
+            "receipt": "e5b988035b9d1bbf"
+          },
+          {
+            "seq": 2,
+            "scenario_id": "timeout_retry_success",
+            "action": "primary_backend",
+            "status": "ok",
+            "detail": "primary returned dry:primary",
+            "latency_ms": 220,
+            "receipt": "0d3d8383a2de607d"
+          }
+        ]
+      },
+      {
+        "scenario_id": "rate_limit_backoff_success",
+        "objective": "recover from a rate limit with bounded retry/backoff",
+        "faults": [
+          "rate_limit"
+        ],
+        "backend": "rate_limit_backoff_success:primary",
+        "fallback_backend": "",
+        "response_ref": "dry:primary",
+        "attempts": 2,
+        "retries": 1,
+        "used_fallback": false,
+        "typed_escalation": false,
+        "silent_failure": false,
+        "retry_budget_compliant": true,
+        "receipt_complete": true,
+        "task_correct": true,
+        "passed": true,
+        "fallback_quality": 1.0,
+        "resolution": "retry_success",
+        "latency_ms": 895,
+        "events": [
+          {
+            "seq": 0,
+            "scenario_id": "rate_limit_backoff_success",
+            "action": "primary_backend",
+            "status": "429",
+            "detail": "injected rate_limit: rate limit from primary tool",
+            "latency_ms": 650,
+            "receipt": "c9296d0b5f6d1105"
+          },
+          {
+            "seq": 1,
+            "scenario_id": "rate_limit_backoff_success",
+            "action": "recovery_decision",
+            "status": "retry",
+            "detail": "retry 1/2 after rate_limit",
+            "latency_ms": 25,
+            "receipt": "d63c7f3337f2040e"
+          },
+          {
+            "seq": 2,
+            "scenario_id": "rate_limit_backoff_success",
+            "action": "primary_backend",
+            "status": "ok",
+            "detail": "primary returned dry:primary",
+            "latency_ms": 220,
+            "receipt": "137b726242dd4f2f"
+          }
+        ]
+      },
+      {
+        "scenario_id": "malformed_json_fallback_success",
+        "objective": "recover from malformed JSON using an alternate route",
+        "faults": [
+          "malformed_json"
+        ],
+        "backend": "malformed_json_fallback_success:primary",
+        "fallback_backend": "dry-fallback",
+        "response_ref": "dry:fallback",
+        "attempts": 1,
+        "retries": 0,
+        "used_fallback": true,
+        "typed_escalation": false,
+        "silent_failure": false,
+        "retry_budget_compliant": true,
+        "receipt_complete": true,
+        "task_correct": true,
+        "passed": true,
+        "fallback_quality": 1.0,
+        "resolution": "fallback_success",
+        "latency_ms": 800,
+        "events": [
+          {
+            "seq": 0,
+            "scenario_id": "malformed_json_fallback_success",
+            "action": "primary_backend",
+            "status": "200",
+            "detail": "injected malformed_json: invalid JSON body",
+            "latency_ms": 300,
+            "receipt": "7c9c642e5acc3594"
+          },
+          {
+            "seq": 1,
+            "scenario_id": "malformed_json_fallback_success",
+            "action": "fallback_backend",
+            "status": "ok",
+            "detail": "fallback returned dry:fallback",
+            "latency_ms": 500,
+            "receipt": "e0c7b42576aa620b"
+          }
+        ]
+      },
+      {
+        "scenario_id": "stale_cache_recompute_success",
+        "objective": "recover from stale cache by recomputing",
+        "faults": [
+          "stale_cache"
+        ],
+        "backend": "stale_cache_recompute_success:primary",
+        "fallback_backend": "",
+        "response_ref": "dry:primary",
+        "attempts": 2,
+        "retries": 1,
+        "used_fallback": false,
+        "typed_escalation": false,
+        "silent_failure": false,
+        "retry_budget_compliant": true,
+        "receipt_complete": true,
+        "task_correct": true,
+        "passed": true,
+        "fallback_quality": 1.0,
+        "resolution": "retry_success",
+        "latency_ms": 440,
+        "events": [
+          {
+            "seq": 0,
+            "scenario_id": "stale_cache_recompute_success",
+            "action": "primary_backend",
+            "status": "stale",
+            "detail": "injected stale_cache: cache receipt predates input",
+            "latency_ms": 180,
+            "receipt": "18b86021864ed999"
+          },
+          {
+            "seq": 1,
+            "scenario_id": "stale_cache_recompute_success",
+            "action": "recovery_decision",
+            "status": "recompute",
+            "detail": "discard stale result and request fresh backend output",
+            "latency_ms": 40,
+            "receipt": "e210a0c631358a04"
+          },
+          {
+            "seq": 2,
+            "scenario_id": "stale_cache_recompute_success",
+            "action": "primary_backend",
+            "status": "ok",
+            "detail": "primary returned dry:primary",
+            "latency_ms": 220,
+            "receipt": "cf2d2cd5c7e31e73"
+          }
+        ]
+      },
+      {
+        "scenario_id": "partial_result_typed_escalation",
+        "objective": "surface a typed partial-result failure when recovery is impossible",
+        "faults": [
+          "partial_result"
+        ],
+        "backend": "partial_result_typed_escalation:primary",
+        "fallback_backend": "",
+        "response_ref": "",
+        "attempts": 1,
+        "retries": 0,
+        "used_fallback": false,
+        "typed_escalation": true,
+        "silent_failure": false,
+        "retry_budget_compliant": true,
+        "receipt_complete": true,
+        "task_correct": false,
+        "passed": true,
+        "fallback_quality": 0.75,
+        "resolution": "typed_escalation",
+        "latency_ms": 440,
+        "events": [
+          {
+            "seq": 0,
+            "scenario_id": "partial_result_typed_escalation",
+            "action": "primary_backend",
+            "status": "partial",
+            "detail": "injected partial_result: required field missing",
+            "latency_ms": 420,
+            "receipt": "4035fcb9a78c9eb4"
+          },
+          {
+            "seq": 1,
+            "scenario_id": "partial_result_typed_escalation",
+            "action": "typed_escalation",
+            "status": "failed",
+            "detail": "unrecoverable partial_result",
+            "latency_ms": 20,
+            "receipt": "84733459f45f7b2e"
+          }
+        ]
+      }
+    ],
+    "provider": "dry",
+    "live": false,
+    "operational": true,
+    "skipped": false,
+    "backend_name": "dry-echo"
+  },
+  "m7": {
+    "summary": {
+      "new": {
+        "codex": {
+          "kind": "new_codex",
+          "frontier_or_single": "frontier_single_shot",
+          "frontier_pass_rate": 1.0,
+          "verified_inference": 1.0,
+          "single_shot": 1.0,
+          "verified_vs_single": 0.0,
+          "n_tasks": 1
+        },
+        "flywheel": {
+          "kind": "new_flywheel",
+          "frontier_or_single": "single_shot",
+          "frontier_pass_rate": 1.0,
+          "verified_inference": 1.0,
+          "single_shot": 1.0,
+          "verified_vs_single": 0.0,
+          "n_tasks": 1
+        }
+      },
+      "existing": {
+        "codex": {
+          "kind": "existing_codex",
+          "frontier_or_single": "frontier_claude-api",
+          "frontier_pass_rate": 1.0,
+          "verified_inference": 1.0,
+          "single_shot": 1.0,
+          "verified_vs_single": 0.0,
+          "n_tasks": 1
+        },
+        "flywheel": {
+          "kind": "existing_flywheel",
+          "frontier_or_single": "single_shot",
+          "frontier_pass_rate": 1.0,
+          "verified_inference": 1.0,
+          "single_shot": 1.0,
+          "verified_vs_single": 0.0,
+          "n_tasks": 1
+        }
+      },
+      "delta": {
+        "codex_frontier_pass": 0.0,
+        "flywheel_verified_pass": 0.0,
+        "flywheel_vs_single_delta": 0.0
+      }
+    },
+    "raw": {
+      "codex": {
+        "out": "artifacts\\agent_recovery_benchmark\\20260708_230923\\m7_frontier_codex_dry.json",
+        "result": {
+          "arms": {
+            "flat_n": {
+              "avg_candidates": 4.0,
+              "avg_oracle_calls": 4.0,
+              "n_tasks": 1,
+              "pass_rate": 1.0,
+              "receipt_reproducibility": 1.0
+            },
+            "frontier_single_shot": {
+              "avg_candidates": 1.0,
+              "avg_oracle_calls": 1.0,
+              "n_tasks": 1,
+              "pass_rate": 1.0,
+              "receipt_reproducibility": 1.0
+            },
+            "no_search": {
+              "avg_candidates": 1.0,
+              "avg_oracle_calls": 1.0,
+              "n_tasks": 1,
+              "pass_rate": 1.0,
+              "receipt_reproducibility": 1.0
+            },
+            "single_shot": {
+              "avg_candidates": 1.0,
+              "avg_oracle_calls": 1.0,
+              "n_tasks": 1,
+              "pass_rate": 1.0,
+              "receipt_reproducibility": 1.0
+            },
+            "verified_inference": {
+              "avg_candidates": 4.0,
+              "avg_oracle_calls": 4.0,
+              "n_tasks": 1,
+              "pass_rate": 1.0,
+              "receipt_reproducibility": 1.0
+            }
+          },
+          "meta": {
+            "frontier_arms": [
+              "frontier_single_shot"
+            ],
+            "frontier_mode": "single",
+            "frontier_model_ref": "codex:gpt-5.3-codex-spark",
+            "frontier_model_refs": {
+              "frontier_single_shot": "codex:gpt-5.3-codex-spark"
+            },
+            "frontier_provider": "codex",
+            "model_ref": "dry-run(reference)",
+            "n_tasks": 1,
+            "note": "frontier single-shot baseline comparison"
+          },
+          "metrics": {
+            "avg_oracle_calls": {
+              "good": "lower",
+              "max": null,
+              "min": 0.0
+            },
+            "pass_rate": {
+              "good": "higher",
+              "max": 1.0,
+              "min": 0.0
+            },
+            "receipt_reproducibility": {
+              "good": "higher",
+              "max": 1.0,
+              "min": 0.0
+            }
+          },
+          "schema": "m7-scorecard/v1"
+        }
+      },
+      "flywheel": {
+        "out": "artifacts\\agent_recovery_benchmark\\20260708_230923\\m7_flywheel_local_dry.json",
+        "result": {
+          "arms": {
+            "flat_n": {
+              "avg_candidates": 4.0,
+              "avg_oracle_calls": 4.0,
+              "n_tasks": 1,
+              "pass_rate": 1.0,
+              "receipt_reproducibility": 1.0
+            },
+            "local_serve": {
+              "avg_candidates": 1.0,
+              "avg_oracle_calls": 1.0,
+              "n_tasks": 1,
+              "pass_rate": 0.0,
+              "receipt_reproducibility": 1.0
+            },
+            "no_search": {
+              "avg_candidates": 1.0,
+              "avg_oracle_calls": 1.0,
+              "n_tasks": 1,
+              "pass_rate": 1.0,
+              "receipt_reproducibility": 1.0
+            },
+            "single_shot": {
+              "avg_candidates": 1.0,
+              "avg_oracle_calls": 1.0,
+              "n_tasks": 1,
+              "pass_rate": 1.0,
+              "receipt_reproducibility": 1.0
+            },
+            "verified_inference": {
+              "avg_candidates": 4.0,
+              "avg_oracle_calls": 4.0,
+              "n_tasks": 1,
+              "pass_rate": 1.0,
+              "receipt_reproducibility": 1.0
+            }
+          },
+          "meta": {
+            "local_arms": [
+              "local_serve"
+            ],
+            "local_mode": "sweep",
+            "local_model_refs": {
+              "local_serve": "serve:14b-cpt-adapter"
+            },
+            "model_ref": "dry-run(reference)",
+            "n_tasks": 1,
+            "note": "harness lift vs single-shot of the SAME model"
+          },
+          "metrics": {
+            "avg_oracle_calls": {
+              "good": "lower",
+              "max": null,
+              "min": 0.0
+            },
+            "pass_rate": {
+              "good": "higher",
+              "max": 1.0,
+              "min": 0.0
+            },
+            "receipt_reproducibility": {
+              "good": "higher",
+              "max": 1.0,
+              "min": 0.0
+            }
+          },
+          "schema": "m7-scorecard/v1"
+        }
+      }
+    }
+  }
+}

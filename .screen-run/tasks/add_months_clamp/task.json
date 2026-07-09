@@ -1,0 +1,8 @@
+{
+  "task_id": "add_months_clamp",
+  "prompt": "Write a Python function add_months(year, month, day, n) that adds n calendar months to a proleptic Gregorian date and returns a tuple (year, month, day).\n\nContract:\n- All four arguments must be ints and must NOT be bools; otherwise raise ValueError.\n- The input date must be valid, else raise ValueError: year >= 1, 1 <= month <= 12, and 1 <= day <= number of days in that month of that year.\n- Leap-year rule (applied to ALL years, proleptic Gregorian): divisible by 4, except years divisible by 100, unless also divisible by 400.\n- n may be negative, zero, or large; month arithmetic carries into the year in both directions.\n- Day clamping: if the original day-of-month does not exist in the target month, clamp DOWN to the last day of the target month (e.g. January 31 plus 1 month lands on February 28 or 29). Never overflow into the following month.\n- If the resulting year would be < 1, raise ValueError.\n- Must work for years far beyond 9999 (e.g. year 999999), so the datetime module's year range is insufficient.\n\nOutput ONLY the function definition.",
+  "oracle": "pytest",
+  "oracle_cmd": "python -m pytest tests/ -q",
+  "candidate_path": "solution.py",
+  "max_new_tokens": 768
+}

@@ -1,0 +1,8 @@
+{
+  "task_id": "div_round_half_away",
+  "prompt": "Write a Python function div_round_half_away(num, den) that returns the integer nearest to the exact rational value num/den, with ties rounded away from zero.\n\nContract:\n- Both arguments must be ints and must NOT be bools; otherwise raise ValueError.\n- If den == 0, raise ValueError.\n- Rounding: return the nearest integer to num/den. When num/den is exactly halfway between two integers, round AWAY from zero (e.g. 7/2 -> 4, -7/2 -> -4).\n- The sign of the result follows the mathematical sign of num/den; den may be negative (7 over -2 -> -4).\n- The result must be EXACT for arbitrarily large integers (magnitudes around 10**30 are tested); converting to float loses precision at that scale, so the computation must stay in integer arithmetic.\n\nOutput ONLY the function definition.",
+  "oracle": "pytest",
+  "oracle_cmd": "python -m pytest tests/ -q",
+  "candidate_path": "solution.py",
+  "max_new_tokens": 768
+}

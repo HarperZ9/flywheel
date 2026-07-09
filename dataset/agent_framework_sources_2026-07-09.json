@@ -1,0 +1,309 @@
+{
+  "schema": "agent-framework-sources/v1",
+  "mission": "Convert production multimodal research, current Chinese/open-weight model pressure, and governed self-improving agent architecture feedback into benchmark variables for the Codex/flywheel local-model engine.",
+  "source_policy": {
+    "scope": "Seed corpus from verified public pages plus user-provided public feedback text.",
+    "confidence": "moderate",
+    "note": "The Chinese-source lane is not exhaustive; it captures the first source set needed for benchmark scaffolding."
+  },
+  "sources": [
+    {
+      "id": "ltx-model-page-2026",
+      "title": "LTX multimodal video generation model",
+      "publisher": "LTX / Lightricks",
+      "url": "https://ltx.io/model",
+      "observed_claims": [
+        "LTX presents the model as production-grade and deployable via API, on-prem, or open weights.",
+        "LTX-2.3 is described as a 22B asymmetric dual-stream diffusion transformer with 14B video and 5B audio streams.",
+        "The page emphasizes open weights, local desktop execution, API integration, trainer tooling, predictable workflow control, and production use."
+      ],
+      "benchmark_implications": [
+        "Add production multimodal workflow variables beyond text-only agent scoring.",
+        "Measure modality synchronization, workflow integration, local/on-prem deployability, and trainer or adapter paths.",
+        "Track license/deployment boundaries and cost-quality-latency tradeoffs."
+      ]
+    },
+    {
+      "id": "ltx-2-3-huggingface-card-2026",
+      "title": "Lightricks/LTX-2.3 model card",
+      "publisher": "Lightricks on Hugging Face",
+      "url": "https://huggingface.co/Lightricks/LTX-2.3",
+      "observed_claims": [
+        "The card describes LTX-2.3 as a diffusion-based audio-video foundation model with open weights and practical local execution focus.",
+        "The model card lists full, distilled, LoRA, and upscaler checkpoints.",
+        "The limitations section says the model is not intended for factual information and may miss prompts, amplify bias, or generate inappropriate content."
+      ],
+      "benchmark_implications": [
+        "Separate factual-reasoning models from generative-world or media models.",
+        "Score model-card limitation labeling as part of deployment readiness.",
+        "Track checkpoint family, adapter path, upscaler path, and local runtime constraints."
+      ]
+    },
+    {
+      "id": "just-dub-it-2026",
+      "title": "JUST-DUB-IT: Video Dubbing via Joint Audio-Visual Diffusion",
+      "publisher": "Lightricks / Tel Aviv University project page",
+      "url": "https://justdubit.github.io/",
+      "observed_claims": [
+        "The project frames a single joint audio-visual model as sufficient for video dubbing.",
+        "The method uses synthetic multilingual paired data, counterfactual inpainting, latent-aware masking, and in-context LoRA training.",
+        "Reported evaluation focuses on speaker identity, lip synchronization, naturalness, and robustness to complex motion."
+      ],
+      "benchmark_implications": [
+        "Measure cross-modal synchronization and identity/style preservation as first-class metrics.",
+        "Score synthetic-data and counterfactual-generation pipelines by provenance and reproducibility.",
+        "Add adapter-training workflow evidence to model-improvement loops."
+      ]
+    },
+    {
+      "id": "qwen3-6-35b-a3b-2026",
+      "title": "Qwen3.6-35B-A3B model card",
+      "publisher": "Qwen on Hugging Face",
+      "url": "https://huggingface.co/Qwen/Qwen3.6-35B-A3B",
+      "observed_claims": [
+        "Qwen3.6-35B-A3B is an open-weight multimodal model with 35B total and 3B activated parameters.",
+        "The card emphasizes agentic coding, thinking preservation, long context, OpenAI-compatible serving, tool-call parser support, and benchmark rows for coding/general agent tasks.",
+        "The model supports vLLM, SGLang, KTransformers, Transformers serving, and Docker-style local app paths."
+      ],
+      "benchmark_implications": [
+        "Track active parameters separately from total parameters.",
+        "Add thinking-preservation and tool-call-parser variables.",
+        "Measure serving framework compatibility as part of local model readiness."
+      ]
+    },
+    {
+      "id": "deepseek-v3-2-2026",
+      "title": "DeepSeek-V3.2: Efficient Reasoning & Agentic AI",
+      "publisher": "DeepSeek on Hugging Face",
+      "url": "https://huggingface.co/deepseek-ai/DeepSeek-V3.2",
+      "observed_claims": [
+        "DeepSeek-V3.2 presents sparse attention, scalable reinforcement learning, and large-scale agentic task synthesis as key methods.",
+        "The model card emphasizes efficient long-context reasoning and agent performance.",
+        "The card exposes local serving paths through vLLM, SGLang, Docker Model Runner, and quantization browsing."
+      ],
+      "benchmark_implications": [
+        "Add long-context efficiency and agentic data-synthesis variables.",
+        "Measure whether claims are reproducible from public artifacts or remain vendor-reported.",
+        "Track sparse-attention/runtime assumptions separately from final benchmark scores."
+      ]
+    },
+    {
+      "id": "kimi-k2-6-docs-2026",
+      "title": "Kimi K2.6 quickstart",
+      "publisher": "Moonshot / Kimi API Platform",
+      "url": "https://platform.kimi.ai/docs/guide/kimi-k2-6-quickstart",
+      "observed_claims": [
+        "Kimi K2.6 is described as multimodal with stronger long-horizon coding, instruction compliance, self-correction, and agent execution.",
+        "The docs list text, image, and video input, thinking and non-thinking modes, dialogue and agent tasks, and multi-step tool invocation.",
+        "The docs include integration pages for Codex, Claude Code, OpenClaw, Hermes Agent, Cline, and RooCode."
+      ],
+      "benchmark_implications": [
+        "Add harness-portability variables for Codex, Claude Code, OpenCode/OpenClaw, and Hermes-like agents.",
+        "Measure thinking/non-thinking mode selection and self-correction loops.",
+        "Track long-horizon coding stability and multimodal tool-use paths."
+      ]
+    },
+    {
+      "id": "glm-5-2-2026",
+      "title": "GLM-5.2 model card",
+      "publisher": "Z.ai on Hugging Face",
+      "url": "https://huggingface.co/zai-org/GLM-5.2",
+      "observed_claims": [
+        "GLM-5.2 is positioned for long-horizon tasks with solid 1M-token context.",
+        "The card emphasizes flexible coding effort levels, IndexShare sparse-attention efficiency, MTP speculative decoding, and an MIT license.",
+        "The card provides vLLM, SGLang, Docker Model Runner, and quantization paths."
+      ],
+      "benchmark_implications": [
+        "Add 1M-context stability and effort-level curves to model pressure tests.",
+        "Measure index/sparse-attention claims as runtime efficiency variables.",
+        "Track license openness and regional/deployment limitations explicitly."
+      ]
+    },
+    {
+      "id": "minimax-m2-5-2026",
+      "title": "MiniMax-M2.5 model card",
+      "publisher": "MiniMaxAI on Hugging Face",
+      "url": "https://huggingface.co/MiniMaxAI/MiniMax-M2.5",
+      "observed_claims": [
+        "MiniMax describes M2.5 as trained with reinforcement learning in complex real-world environments.",
+        "The model card emphasizes coding, agentic tool use, search, office work, speed, and cost effectiveness.",
+        "The card includes sections for Forge agent-native RL, reward design, MiniMax Agent, local deployment, tool calling, and ModelScope."
+      ],
+      "benchmark_implications": [
+        "Add cost-per-agent-hour and speed-under-agent-task variables.",
+        "Track RL environment diversity and reward-design claims as source-mined variables.",
+        "Add office-work and professional-employee task lanes."
+      ]
+    },
+    {
+      "id": "tencent-hunyuan-a13b-2026",
+      "title": "Hunyuan-A13B-Instruct model card",
+      "publisher": "Tencent on Hugging Face",
+      "url": "https://huggingface.co/tencent/Hunyuan-A13B-Instruct",
+      "observed_claims": [
+        "Hunyuan-A13B is an open-source fine-grained MoE model designed for efficient reasoning and general-purpose use.",
+        "The card reports competitive math, science, coding, instruction, and agent benchmark results.",
+        "The card documents thinking-mode controls through enable_thinking and /think or /no_think prompting."
+      ],
+      "benchmark_implications": [
+        "Add small-active-parameter reasoning variables for local deployment.",
+        "Measure thinking-mode controls consistently across Chinese open-weight families.",
+        "Track agent benchmark coverage beyond SWE-style coding."
+      ]
+    },
+    {
+      "id": "vitabench-2026",
+      "title": "VitaBench real-world interactive agent benchmark",
+      "publisher": "Meituan LongCat Team",
+      "url": "https://vitabench.github.io/",
+      "observed_claims": [
+        "VitaBench evaluates agents on real-world interactive tasks that require temporal/spatial reasoning, tool use, clarification, and shifting user-intent tracking.",
+        "The construction pipeline abstracts real-life scenarios into API tool graphs with preconditions, postconditions, and dependencies.",
+        "The benchmark reports a large gap between single-scenario and cross-scenario success rates."
+      ],
+      "benchmark_implications": [
+        "Add dynamic user-intent and cross-domain composition variables.",
+        "Represent tools as typed graphs with preconditions and postconditions.",
+        "Use sliding-window rubrics for multi-path stochastic agent evaluation."
+      ]
+    },
+    {
+      "id": "wbench-2026",
+      "title": "WBench multi-turn interactive video world model benchmark",
+      "publisher": "Meituan LongCat Team",
+      "url": "https://huggingface.co/papers/2605.25874",
+      "observed_claims": [
+        "WBench is a multi-turn benchmark for interactive video world model evaluation.",
+        "The paper page says evaluation uses 22 automatic sub-metrics combining specialist vision models and large multimodal models, validated against human judgments.",
+        "The reported conclusion is that no single model is strong across all evaluated dimensions."
+      ],
+      "benchmark_implications": [
+        "Use multiple diagnostic sub-metrics instead of one multimodal score.",
+        "Validate automatic metrics against human judgments where practical.",
+        "Expose model weakness profiles rather than only ranking."
+      ]
+    },
+    {
+      "id": "hermes-vs-atom-public-feedback-2026-07-09",
+      "title": "Personal AI Agents vs. Business Automation Agents: Hermes vs. Atom architecture feedback",
+      "publisher": "User-provided public feedback text",
+      "url": "user-provided-public-feedback:hermes-vs-atom",
+      "observed_claims": [
+        "Personal agents optimize for experiential memory, local freedom, procedural skill authoring, and developer-oriented terminal workflows.",
+        "Business automation agents require SQL or event state as source of truth, vector stores as acceleration layers, maturity gates, HITL, deterministic state machines, audit trails, and sandboxed skill evolution.",
+        "Skill evolution should be gated by maturity, unit tests, isolated sandboxes, and fitness scores across latency, token usage, and accuracy.",
+        "Canvas or UI state should be visible to the agent so human and agent can resolve errors from the same state."
+      ],
+      "benchmark_implications": [
+        "Add source-of-truth versus retrieval-acceleration separation to memory benchmarks.",
+        "Add maturity-gated autonomy and HITL promotion variables.",
+        "Add sandboxed skill mutation and AlphaEvolver-style fitness scoring.",
+        "Add UI-state grounding and shared human-agent observability variables."
+      ]
+    }
+  ],
+  "benchmark_lanes": [
+    {
+      "id": "production_multimodal_workflow",
+      "description": "Evaluate whether the engine can reason about production multimodal workflows where text, image, audio, video, local deployment, adapter training, workflow integration, and deployment boundaries matter more than demo output alone.",
+      "scenario_families": [
+        "text-image-audio-video workflow planning",
+        "local desktop versus API versus on-prem deployment",
+        "adapter or LoRA training loop",
+        "cross-modal synchronization and identity preservation",
+        "production limitation and license review",
+        "cost-latency-quality tradeoff selection"
+      ],
+      "controls": [
+        "modality_set",
+        "deployment_target",
+        "checkpoint_family",
+        "adapter_training_available",
+        "workflow_integration_surface",
+        "license_boundary",
+        "latency_budget",
+        "quality_target"
+      ],
+      "metrics": [
+        "multimodal_io_coverage",
+        "workflow_integration_score",
+        "local_or_onprem_deployability",
+        "training_or_adapter_path_score",
+        "production_constraint_labeling",
+        "modality_sync_evidence",
+        "license_deployment_boundary_labeled",
+        "cost_latency_quality_tradeoff_score"
+      ]
+    },
+    {
+      "id": "chinese_agentic_model_pressure",
+      "description": "Evaluate whether local-model routing and benchmarks account for the current Chinese/open-weight model ecosystem, including agentic coding, long-context, thinking-mode, serving-framework, cost, and reproducibility variables.",
+      "scenario_families": [
+        "open-weight model registry normalization",
+        "agentic coding benchmark matrix",
+        "long-context and thinking-mode comparison",
+        "serving framework compatibility",
+        "cost and latency pressure test",
+        "cross-locale and Chinese-source coverage",
+        "vendor-claim reproducibility audit"
+      ],
+      "controls": [
+        "model_family",
+        "total_parameters",
+        "active_parameters",
+        "context_length",
+        "thinking_mode",
+        "serving_framework",
+        "tool_parser",
+        "license",
+        "benchmark_harness",
+        "source_locale"
+      ],
+      "metrics": [
+        "open_weight_model_coverage",
+        "agent_benchmark_coverage",
+        "long_context_coverage",
+        "serving_framework_coverage",
+        "cost_latency_pressure_score",
+        "thinking_mode_variable_coverage",
+        "cross_locale_or_cn_source_coverage",
+        "reproducibility_gap_labeled"
+      ]
+    },
+    {
+      "id": "governed_skill_evolution",
+      "description": "Evaluate whether a self-improving agent can combine personal-agent freedom with business-grade determinism: SQL/event source-of-truth state, vector acceleration, maturity gates, HITL, sandboxed skill evolution, fitness scoring, UI-state grounding, and auditable receipts.",
+      "scenario_families": [
+        "source-of-truth memory versus vector recall",
+        "maturity promotion from read-only to autonomous",
+        "human-in-the-loop approval path",
+        "memento skill creation after repeated failure",
+        "AlphaEvolver-style mutation and sandbox fitness",
+        "canvas or UI-state shared observation",
+        "receipt-backed autonomy promotion"
+      ],
+      "controls": [
+        "memory_backend",
+        "retrieval_backend",
+        "agent_maturity_tier",
+        "hitl_required",
+        "sandbox_runtime",
+        "fitness_metric_set",
+        "ui_state_channel",
+        "receipt_required",
+        "promotion_threshold"
+      ],
+      "metrics": [
+        "source_of_truth_score",
+        "vector_acceleration_boundary",
+        "maturity_gate_score",
+        "hitl_gate_score",
+        "sandboxed_skill_mutation_score",
+        "fitness_metric_coverage",
+        "ui_state_grounding_score",
+        "receipt_auditability_score",
+        "autonomy_promotion_evidence_score"
+      ]
+    }
+  ]
+}

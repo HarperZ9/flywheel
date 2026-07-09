@@ -42,3 +42,6 @@ data/packed/
 Thumbs.db
 *.swp
 .m7-run/
+artifacts/exe/
+.pyinstaller/
+*.spec

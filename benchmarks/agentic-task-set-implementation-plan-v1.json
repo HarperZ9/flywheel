@@ -1,0 +1,143 @@
+{
+  "schema": "harness.agentic-task-set-implementation-plan/v1",
+  "plan_id": "agentic_task_set_manifest_adapter_implementation_v1",
+  "status": "implemented_not_validated",
+  "source_task_set": "C:/dev/local-model/benchmarks/agentic-task-set-v1.json",
+  "adapter_contract": "C:/dev/local-model/benchmarks/agentic-task-set-adapter-v1.json",
+  "target_files": [
+    "C:/dev/local-model/scripts/run_agentic_task_set_manifest.py",
+    "C:/dev/local-model/tests/test_agentic_task_set_manifest.py",
+    "C:/dev/local-model/scripts/run_benchmark_profile_manifest.py",
+    "C:/dev/local-model/scripts/run_benchmark_profile_coverage.py",
+    "C:/dev/local-model/scripts/run_closed_loop_benchmark_seed.py",
+    "C:/dev/local-model/scripts/run_closed_loop_outcome_report.py",
+    "C:/dev/local-model/scripts/run_harness_cli.py",
+    "C:/dev/local-model/tests/test_benchmark_profile_manifest.py",
+    "C:/dev/local-model/tests/test_benchmark_profile_coverage.py",
+    "C:/dev/local-model/tests/test_closed_loop_benchmark_seed.py",
+    "C:/dev/local-model/tests/test_closed_loop_outcome_report.py",
+    "C:/dev/local-model/tests/test_harness_cli.py"
+  ],
+  "new_command": {
+    "script": "scripts/run_agentic_task_set_manifest.py",
+    "harness_subcommand": "agentic-tasks",
+    "schema": "harness.agentic-task-manifest/v1",
+    "kind": "agentic_task_manifest",
+    "provider_execution": false,
+    "endpoint_probe": false,
+    "model_weight_read": false
+  },
+  "cli_contract": {
+    "required_args": [],
+    "optional_args": [
+      "--task-set",
+      "--adapter",
+      "--out",
+      "--markdown-out",
+      "--store-root",
+      "--run-id"
+    ],
+    "defaults": {
+      "task_set": "C:/dev/local-model/benchmarks/agentic-task-set-v1.json",
+      "adapter": "C:/dev/local-model/benchmarks/agentic-task-set-adapter-v1.json",
+      "out": "C:/tmp/agentic_task_manifest.json",
+      "markdown_out": "C:/tmp/agentic_task_manifest.md"
+    }
+  },
+  "manifest_shape": {
+    "schema": "harness.agentic-task-manifest/v1",
+    "required_top_level_fields": [
+      "schema",
+      "task_set_id",
+      "adapter_id",
+      "status",
+      "task_count",
+      "benchmark_ids",
+      "dataset_lanes",
+      "coverage_units",
+      "metric_weights",
+      "task_rows",
+      "non_execution_guards",
+      "summary"
+    ],
+    "required_task_row_fields": [
+      "task_id",
+      "benchmark_id",
+      "dataset_lane",
+      "coverage_unit",
+      "difficulty",
+      "expected_artifacts",
+      "scoring_focus",
+      "must_not"
+    ]
+  },
+  "tests_first_plan": [
+    {
+      "test_name": "test_manifest_expands_all_task_rows_without_execution",
+      "assertions": [
+        "schema is harness.agentic-task-manifest/v1",
+        "task_count equals task-set task length",
+        "every task id appears exactly once as a coverage unit",
+        "no provider execution fields claim live execution"
+      ]
+    },
+    {
+      "test_name": "test_manifest_maps_tasks_to_benchmark_ids_from_adapter",
+      "assertions": [
+        "agt-002-forum-deep-verify-scale maps to forum_ledger_deep_verify_scaling",
+        "agt-003-codex-flywheel-shared-task maps to cross_harness_reproducibility_matrix",
+        "agt-004-local-14b-endpoint-gate maps to local_resource_pressure_14b_32b"
+      ]
+    },
+    {
+      "test_name": "test_manifest_rejects_missing_required_task_fields",
+      "assertions": [
+        "missing task id fails",
+        "missing lane fails",
+        "missing expected_artifacts fails"
+      ]
+    },
+    {
+      "test_name": "test_benchmark_coverage_recognizes_agentic_task_scorecard_schema",
+      "assertions": [
+        "harness.agentic-task-scorecard/v1 maps rows to benchmark ids",
+        "task_id becomes coverage_unit",
+        "provider_role participates in provider-by-unit coverage"
+      ]
+    },
+    {
+      "test_name": "test_closed_loop_seed_includes_agentic_task_manifest_preflight",
+      "assertions": [
+        "agentic_task_manifest appears after benchmark_profile and before coverage",
+        "skip flag removes the step",
+        "step expected artifacts include agentic_task_manifest.json and agentic_task_manifest.md"
+      ]
+    },
+    {
+      "test_name": "test_outcome_summarizes_manifest_as_planned_not_executed",
+      "assertions": [
+        "manifest-only artifacts do not count as benchmark scorecards",
+        "outcome reports task_count and planned coverage units",
+        "outcome states no provider results exist"
+      ]
+    }
+  ],
+  "implementation_order": [
+    "Add failing tests for manifest generation only.",
+    "Implement scripts/run_agentic_task_set_manifest.py with JSON and Markdown output.",
+    "Add harness.cmd agentic-tasks delegation.",
+    "Wire closed-loop seed metadata-only preflight with --skip-agentic-task-manifest.",
+    "Teach benchmark profile/coverage about the manifest and future scorecard schemas.",
+    "Teach outcome synthesis to summarize manifest-only artifacts as planned-not-executed.",
+    "Update infrastructure docs and capability catalog."
+  ],
+  "non_execution_guards": [
+    "Do not call model providers.",
+    "Do not probe local endpoints.",
+    "Do not run benchmarks.",
+    "Do not read model weights.",
+    "Do not claim task success from manifest generation.",
+    "Do not print secrets, .env values, credentials, private keys, or payload bodies."
+  ],
+  "authorized_execution_gate": "Before implementation, run the tests-first workflow. Before validation, get explicit permission to run tests or benchmark/probe commands under the current session rules."
+}

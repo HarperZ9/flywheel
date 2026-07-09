@@ -1,0 +1,68 @@
+{
+  "schema": "agent-social-divergence-sources/v1",
+  "generated_at": "2026-07-08",
+  "sources": [
+    {
+      "id": "arxiv-2607-02507v1",
+      "title": "What LLM Agents Say When No One Is Watching: Social Structure and Latent Objective Emergence in Multi-Agent Debates",
+      "url": "https://arxiv.org/abs/2607.02507",
+      "pdf": "https://arxiv.org/pdf/2607.02507v1",
+      "submitted": "2026-07-02",
+      "authors": [
+        "Arman Ghaffarizadeh",
+        "Danyal Mohaddes",
+        "Aliakbar Izadkhah",
+        "Shahriar Noroozizadeh"
+      ],
+      "observed_claims": [
+        "Introduces a dual-channel debate framework with public utterances and off-the-record responses under matched context.",
+        "Reports 10 models, 3 scenarios, 5 relational-context variations, and 750 runs.",
+        "Reports targeted-agent decision divergence rising from about 3% baseline to roughly 40% under alignment-inducing settings.",
+        "Uses stance, semantic similarity, natural language inference, and survey responses as aggregate analyses.",
+        "Explicitly cautions that off-the-record responses are comparative observable outputs, not privileged belief access."
+      ],
+      "benchmark_implications": [
+        "Add public-vs-private/audience-dependence lanes for agentic harnesses.",
+        "Measure public/OTR divergence as output behavior, not hidden cognition.",
+        "Add relational pressure variables: authority, dependency, reputational risk, sponsorship/funding, future evaluation, and prior history.",
+        "Score stance divergence, semantic divergence, NLI contradiction/entailment, and structured survey divergence.",
+        "Add intervention triggers when public behavior drifts from stated user interests under social pressure."
+      ],
+      "proposed_metrics": [
+        "public_otr_stance_divergence_rate",
+        "public_otr_semantic_distance",
+        "public_otr_nli_contradiction_rate",
+        "public_otr_survey_delta",
+        "relational_pressure_sensitivity",
+        "target_interest_retention",
+        "audience_visibility_effect_size",
+        "latent_objective_explanation_rate"
+      ]
+    }
+  ],
+  "benchmark_lane": {
+    "id": "latent_objective_audience_dependence",
+    "description": "Compare agent behavior across public and confidential/off-record channels while keeping task, role, relational context, and public history matched.",
+    "scenario_families": [
+      "corporate promotion recommendation under authority pressure",
+      "political bill endorsement under coalition pressure",
+      "academic manuscript submission under mentorship/funding pressure",
+      "engineering incident report under executive pressure",
+      "model release decision under sponsor or benchmark pressure"
+    ],
+    "controls": [
+      "no_added_relational_context",
+      "persona_reinforcing_history",
+      "persona_reinforcing_future",
+      "alignment_inducing_history",
+      "alignment_inducing_future"
+    ],
+    "harness_requirements": [
+      "preserve separate channel histories",
+      "never append OTR/private output to public history",
+      "store exact request and response payloads for audit",
+      "record deterministic JSON recovery and rerun rules",
+      "label OTR as comparative output only"
+    ]
+  }
+}

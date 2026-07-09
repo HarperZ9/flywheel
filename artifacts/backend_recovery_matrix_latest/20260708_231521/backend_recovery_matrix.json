@@ -1,0 +1,1285 @@
+{
+  "schema": "agent.backend-recovery-matrix/v1",
+  "timestamp_utc": "2026-07-08T23:15:25.244271Z",
+  "providers_requested": [
+    "dry",
+    "serve",
+    "ollama",
+    "codex",
+    "claude",
+    "opencode"
+  ],
+  "modes": [
+    "plan",
+    "api",
+    "provider",
+    "cloud"
+  ],
+  "allow_online": false,
+  "max_scenarios": 6,
+  "policy": {
+    "retry_budget": 2,
+    "fallback_enabled": true,
+    "stale_recompute_enabled": true,
+    "typed_escalation_enabled": true
+  },
+  "rows": [
+    {
+      "schema": "agent.backend-recovery-benchmark/v1",
+      "adapter": "chat-backend",
+      "scenario_count": 6,
+      "policy": {
+        "retry_budget": 2,
+        "fallback_enabled": true,
+        "stale_recompute_enabled": true,
+        "typed_escalation_enabled": true
+      },
+      "metrics": {
+        "recovery_success_rate": 1.0,
+        "silent_failure_rate": 0.0,
+        "retry_budget_compliance": 1.0,
+        "fallback_quality": 0.958,
+        "receipt_completeness": 1.0,
+        "p95_recovery_latency": 1745,
+        "mean_recovery_latency": 756.667,
+        "max_recovery_latency": 1745,
+        "task_correct_rate": 0.833,
+        "typed_escalation_rate": 0.167,
+        "fallback_use_rate": 0.167,
+        "retry_use_rate": 0.5,
+        "avg_attempts": 1.5,
+        "avg_retries": 0.5,
+        "scenario_pass_count": 6,
+        "scenario_fail_count": 0,
+        "outcome_counts": {
+          "fallback_success": 1,
+          "primary_success": 1,
+          "retry_success": 3,
+          "typed_escalation": 1
+        },
+        "fault_coverage": [
+          "malformed_json",
+          "none",
+          "partial_result",
+          "rate_limit",
+          "stale_cache",
+          "timeout"
+        ],
+        "per_fault": {
+          "malformed_json": {
+            "scenarios": 1,
+            "pass_rate": 1.0,
+            "task_correct_rate": 1.0,
+            "silent_failure_rate": 0.0,
+            "retry_use_rate": 0.0,
+            "fallback_use_rate": 1.0,
+            "typed_escalation_rate": 0.0,
+            "avg_attempts": 1,
+            "avg_retries": 0,
+            "p95_latency_ms": 800
+          },
+          "none": {
+            "scenarios": 1,
+            "pass_rate": 1.0,
+            "task_correct_rate": 1.0,
+            "silent_failure_rate": 0.0,
+            "retry_use_rate": 0.0,
+            "fallback_use_rate": 0.0,
+            "typed_escalation_rate": 0.0,
+            "avg_attempts": 1,
+            "avg_retries": 0,
+            "p95_latency_ms": 220
+          },
+          "partial_result": {
+            "scenarios": 1,
+            "pass_rate": 1.0,
+            "task_correct_rate": 0.0,
+            "silent_failure_rate": 0.0,
+            "retry_use_rate": 0.0,
+            "fallback_use_rate": 0.0,
+            "typed_escalation_rate": 1.0,
+            "avg_attempts": 1,
+            "avg_retries": 0,
+            "p95_latency_ms": 440
+          },
+          "rate_limit": {
+            "scenarios": 1,
+            "pass_rate": 1.0,
+            "task_correct_rate": 1.0,
+            "silent_failure_rate": 0.0,
+            "retry_use_rate": 1.0,
+            "fallback_use_rate": 0.0,
+            "typed_escalation_rate": 0.0,
+            "avg_attempts": 2,
+            "avg_retries": 1,
+            "p95_latency_ms": 895
+          },
+          "stale_cache": {
+            "scenarios": 1,
+            "pass_rate": 1.0,
+            "task_correct_rate": 1.0,
+            "silent_failure_rate": 0.0,
+            "retry_use_rate": 1.0,
+            "fallback_use_rate": 0.0,
+            "typed_escalation_rate": 0.0,
+            "avg_attempts": 2,
+            "avg_retries": 1,
+            "p95_latency_ms": 440
+          },
+          "timeout": {
+            "scenarios": 1,
+            "pass_rate": 1.0,
+            "task_correct_rate": 1.0,
+            "silent_failure_rate": 0.0,
+            "retry_use_rate": 1.0,
+            "fallback_use_rate": 0.0,
+            "typed_escalation_rate": 0.0,
+            "avg_attempts": 2,
+            "avg_retries": 1,
+            "p95_latency_ms": 1745
+          }
+        }
+      },
+      "results": [
+        {
+          "scenario_id": "clean_path",
+          "objective": "complete the tool task when no fault occurs",
+          "faults": [],
+          "backend": "clean_path:primary",
+          "fallback_backend": "",
+          "response_ref": "dry:primary",
+          "attempts": 1,
+          "retries": 0,
+          "used_fallback": false,
+          "typed_escalation": false,
+          "silent_failure": false,
+          "retry_budget_compliant": true,
+          "receipt_complete": true,
+          "task_correct": true,
+          "passed": true,
+          "fallback_quality": 1.0,
+          "resolution": "primary_success",
+          "latency_ms": 220,
+          "events": [
+            {
+              "seq": 0,
+              "scenario_id": "clean_path",
+              "action": "primary_backend",
+              "status": "ok",
+              "detail": "primary returned dry:primary",
+              "latency_ms": 220,
+              "receipt": "74000b57979ea6c7"
+            }
+          ]
+        },
+        {
+          "scenario_id": "timeout_retry_success",
+          "objective": "recover from a timeout with bounded retry",
+          "faults": [
+            "timeout"
+          ],
+          "backend": "timeout_retry_success:primary",
+          "fallback_backend": "",
+          "response_ref": "dry:primary",
+          "attempts": 2,
+          "retries": 1,
+          "used_fallback": false,
+          "typed_escalation": false,
+          "silent_failure": false,
+          "retry_budget_compliant": true,
+          "receipt_complete": true,
+          "task_correct": true,
+          "passed": true,
+          "fallback_quality": 1.0,
+          "resolution": "retry_success",
+          "latency_ms": 1745,
+          "events": [
+            {
+              "seq": 0,
+              "scenario_id": "timeout_retry_success",
+              "action": "primary_backend",
+              "status": "timeout",
+              "detail": "injected timeout: primary tool timed out",
+              "latency_ms": 1500,
+              "receipt": "3e23db092d2e0c5d"
+            },
+            {
+              "seq": 1,
+              "scenario_id": "timeout_retry_success",
+              "action": "recovery_decision",
+              "status": "retry",
+              "detail": "retry 1/2 after timeout",
+              "latency_ms": 25,
+              "receipt": "e5b988035b9d1bbf"
+            },
+            {
+              "seq": 2,
+              "scenario_id": "timeout_retry_success",
+              "action": "primary_backend",
+              "status": "ok",
+              "detail": "primary returned dry:primary",
+              "latency_ms": 220,
+              "receipt": "0d3d8383a2de607d"
+            }
+          ]
+        },
+        {
+          "scenario_id": "rate_limit_backoff_success",
+          "objective": "recover from a rate limit with bounded retry/backoff",
+          "faults": [
+            "rate_limit"
+          ],
+          "backend": "rate_limit_backoff_success:primary",
+          "fallback_backend": "",
+          "response_ref": "dry:primary",
+          "attempts": 2,
+          "retries": 1,
+          "used_fallback": false,
+          "typed_escalation": false,
+          "silent_failure": false,
+          "retry_budget_compliant": true,
+          "receipt_complete": true,
+          "task_correct": true,
+          "passed": true,
+          "fallback_quality": 1.0,
+          "resolution": "retry_success",
+          "latency_ms": 895,
+          "events": [
+            {
+              "seq": 0,
+              "scenario_id": "rate_limit_backoff_success",
+              "action": "primary_backend",
+              "status": "429",
+              "detail": "injected rate_limit: rate limit from primary tool",
+              "latency_ms": 650,
+              "receipt": "c9296d0b5f6d1105"
+            },
+            {
+              "seq": 1,
+              "scenario_id": "rate_limit_backoff_success",
+              "action": "recovery_decision",
+              "status": "retry",
+              "detail": "retry 1/2 after rate_limit",
+              "latency_ms": 25,
+              "receipt": "d63c7f3337f2040e"
+            },
+            {
+              "seq": 2,
+              "scenario_id": "rate_limit_backoff_success",
+              "action": "primary_backend",
+              "status": "ok",
+              "detail": "primary returned dry:primary",
+              "latency_ms": 220,
+              "receipt": "137b726242dd4f2f"
+            }
+          ]
+        },
+        {
+          "scenario_id": "malformed_json_fallback_success",
+          "objective": "recover from malformed JSON using an alternate route",
+          "faults": [
+            "malformed_json"
+          ],
+          "backend": "malformed_json_fallback_success:primary",
+          "fallback_backend": "dry-fallback",
+          "response_ref": "dry:fallback",
+          "attempts": 1,
+          "retries": 0,
+          "used_fallback": true,
+          "typed_escalation": false,
+          "silent_failure": false,
+          "retry_budget_compliant": true,
+          "receipt_complete": true,
+          "task_correct": true,
+          "passed": true,
+          "fallback_quality": 1.0,
+          "resolution": "fallback_success",
+          "latency_ms": 800,
+          "events": [
+            {
+              "seq": 0,
+              "scenario_id": "malformed_json_fallback_success",
+              "action": "primary_backend",
+              "status": "200",
+              "detail": "injected malformed_json: invalid JSON body",
+              "latency_ms": 300,
+              "receipt": "7c9c642e5acc3594"
+            },
+            {
+              "seq": 1,
+              "scenario_id": "malformed_json_fallback_success",
+              "action": "fallback_backend",
+              "status": "ok",
+              "detail": "fallback returned dry:fallback",
+              "latency_ms": 500,
+              "receipt": "e0c7b42576aa620b"
+            }
+          ]
+        },
+        {
+          "scenario_id": "stale_cache_recompute_success",
+          "objective": "recover from stale cache by recomputing",
+          "faults": [
+            "stale_cache"
+          ],
+          "backend": "stale_cache_recompute_success:primary",
+          "fallback_backend": "",
+          "response_ref": "dry:primary",
+          "attempts": 2,
+          "retries": 1,
+          "used_fallback": false,
+          "typed_escalation": false,
+          "silent_failure": false,
+          "retry_budget_compliant": true,
+          "receipt_complete": true,
+          "task_correct": true,
+          "passed": true,
+          "fallback_quality": 1.0,
+          "resolution": "retry_success",
+          "latency_ms": 440,
+          "events": [
+            {
+              "seq": 0,
+              "scenario_id": "stale_cache_recompute_success",
+              "action": "primary_backend",
+              "status": "stale",
+              "detail": "injected stale_cache: cache receipt predates input",
+              "latency_ms": 180,
+              "receipt": "18b86021864ed999"
+            },
+            {
+              "seq": 1,
+              "scenario_id": "stale_cache_recompute_success",
+              "action": "recovery_decision",
+              "status": "recompute",
+              "detail": "discard stale result and request fresh backend output",
+              "latency_ms": 40,
+              "receipt": "e210a0c631358a04"
+            },
+            {
+              "seq": 2,
+              "scenario_id": "stale_cache_recompute_success",
+              "action": "primary_backend",
+              "status": "ok",
+              "detail": "primary returned dry:primary",
+              "latency_ms": 220,
+              "receipt": "cf2d2cd5c7e31e73"
+            }
+          ]
+        },
+        {
+          "scenario_id": "partial_result_typed_escalation",
+          "objective": "surface a typed partial-result failure when recovery is impossible",
+          "faults": [
+            "partial_result"
+          ],
+          "backend": "partial_result_typed_escalation:primary",
+          "fallback_backend": "",
+          "response_ref": "",
+          "attempts": 1,
+          "retries": 0,
+          "used_fallback": false,
+          "typed_escalation": true,
+          "silent_failure": false,
+          "retry_budget_compliant": true,
+          "receipt_complete": true,
+          "task_correct": false,
+          "passed": true,
+          "fallback_quality": 0.75,
+          "resolution": "typed_escalation",
+          "latency_ms": 440,
+          "events": [
+            {
+              "seq": 0,
+              "scenario_id": "partial_result_typed_escalation",
+              "action": "primary_backend",
+              "status": "partial",
+              "detail": "injected partial_result: required field missing",
+              "latency_ms": 420,
+              "receipt": "4035fcb9a78c9eb4"
+            },
+            {
+              "seq": 1,
+              "scenario_id": "partial_result_typed_escalation",
+              "action": "typed_escalation",
+              "status": "failed",
+              "detail": "unrecoverable partial_result",
+              "latency_ms": 20,
+              "receipt": "84733459f45f7b2e"
+            }
+          ]
+        }
+      ],
+      "provider": "dry",
+      "live": false,
+      "operational": true,
+      "skipped": false,
+      "backend_name": "dry-echo"
+    },
+    {
+      "schema": "agent.backend-recovery-benchmark/v1",
+      "adapter": "chat-backend",
+      "scenario_count": 6,
+      "policy": {
+        "retry_budget": 2,
+        "fallback_enabled": true,
+        "stale_recompute_enabled": true,
+        "typed_escalation_enabled": true
+      },
+      "metrics": {
+        "recovery_success_rate": 1.0,
+        "silent_failure_rate": 0.0,
+        "retry_budget_compliance": 1.0,
+        "fallback_quality": 0.958,
+        "receipt_completeness": 1.0,
+        "p95_recovery_latency": 1745,
+        "mean_recovery_latency": 756.667,
+        "max_recovery_latency": 1745,
+        "task_correct_rate": 0.833,
+        "typed_escalation_rate": 0.167,
+        "fallback_use_rate": 0.167,
+        "retry_use_rate": 0.5,
+        "avg_attempts": 1.5,
+        "avg_retries": 0.5,
+        "scenario_pass_count": 6,
+        "scenario_fail_count": 0,
+        "outcome_counts": {
+          "fallback_success": 1,
+          "primary_success": 1,
+          "retry_success": 3,
+          "typed_escalation": 1
+        },
+        "fault_coverage": [
+          "malformed_json",
+          "none",
+          "partial_result",
+          "rate_limit",
+          "stale_cache",
+          "timeout"
+        ],
+        "per_fault": {
+          "malformed_json": {
+            "scenarios": 1,
+            "pass_rate": 1.0,
+            "task_correct_rate": 1.0,
+            "silent_failure_rate": 0.0,
+            "retry_use_rate": 0.0,
+            "fallback_use_rate": 1.0,
+            "typed_escalation_rate": 0.0,
+            "avg_attempts": 1,
+            "avg_retries": 0,
+            "p95_latency_ms": 800
+          },
+          "none": {
+            "scenarios": 1,
+            "pass_rate": 1.0,
+            "task_correct_rate": 1.0,
+            "silent_failure_rate": 0.0,
+            "retry_use_rate": 0.0,
+            "fallback_use_rate": 0.0,
+            "typed_escalation_rate": 0.0,
+            "avg_attempts": 1,
+            "avg_retries": 0,
+            "p95_latency_ms": 220
+          },
+          "partial_result": {
+            "scenarios": 1,
+            "pass_rate": 1.0,
+            "task_correct_rate": 0.0,
+            "silent_failure_rate": 0.0,
+            "retry_use_rate": 0.0,
+            "fallback_use_rate": 0.0,
+            "typed_escalation_rate": 1.0,
+            "avg_attempts": 1,
+            "avg_retries": 0,
+            "p95_latency_ms": 440
+          },
+          "rate_limit": {
+            "scenarios": 1,
+            "pass_rate": 1.0,
+            "task_correct_rate": 1.0,
+            "silent_failure_rate": 0.0,
+            "retry_use_rate": 1.0,
+            "fallback_use_rate": 0.0,
+            "typed_escalation_rate": 0.0,
+            "avg_attempts": 2,
+            "avg_retries": 1,
+            "p95_latency_ms": 895
+          },
+          "stale_cache": {
+            "scenarios": 1,
+            "pass_rate": 1.0,
+            "task_correct_rate": 1.0,
+            "silent_failure_rate": 0.0,
+            "retry_use_rate": 1.0,
+            "fallback_use_rate": 0.0,
+            "typed_escalation_rate": 0.0,
+            "avg_attempts": 2,
+            "avg_retries": 1,
+            "p95_latency_ms": 440
+          },
+          "timeout": {
+            "scenarios": 1,
+            "pass_rate": 1.0,
+            "task_correct_rate": 1.0,
+            "silent_failure_rate": 0.0,
+            "retry_use_rate": 1.0,
+            "fallback_use_rate": 0.0,
+            "typed_escalation_rate": 0.0,
+            "avg_attempts": 2,
+            "avg_retries": 1,
+            "p95_latency_ms": 1745
+          }
+        }
+      },
+      "results": [
+        {
+          "scenario_id": "clean_path",
+          "objective": "complete the tool task when no fault occurs",
+          "faults": [],
+          "backend": "clean_path:primary",
+          "fallback_backend": "",
+          "response_ref": "Qwen2.5-Coder-14B-Instruct (base, nf4)",
+          "attempts": 1,
+          "retries": 0,
+          "used_fallback": false,
+          "typed_escalation": false,
+          "silent_failure": false,
+          "retry_budget_compliant": true,
+          "receipt_complete": true,
+          "task_correct": true,
+          "passed": true,
+          "fallback_quality": 1.0,
+          "resolution": "primary_success",
+          "latency_ms": 220,
+          "events": [
+            {
+              "seq": 0,
+              "scenario_id": "clean_path",
+              "action": "primary_backend",
+              "status": "ok",
+              "detail": "primary returned Qwen2.5-Coder-14B-Instruct (base, nf4)",
+              "latency_ms": 220,
+              "receipt": "d0ee4a0ba63a22af"
+            }
+          ]
+        },
+        {
+          "scenario_id": "timeout_retry_success",
+          "objective": "recover from a timeout with bounded retry",
+          "faults": [
+            "timeout"
+          ],
+          "backend": "timeout_retry_success:primary",
+          "fallback_backend": "",
+          "response_ref": "Qwen2.5-Coder-14B-Instruct (base, nf4)",
+          "attempts": 2,
+          "retries": 1,
+          "used_fallback": false,
+          "typed_escalation": false,
+          "silent_failure": false,
+          "retry_budget_compliant": true,
+          "receipt_complete": true,
+          "task_correct": true,
+          "passed": true,
+          "fallback_quality": 1.0,
+          "resolution": "retry_success",
+          "latency_ms": 1745,
+          "events": [
+            {
+              "seq": 0,
+              "scenario_id": "timeout_retry_success",
+              "action": "primary_backend",
+              "status": "timeout",
+              "detail": "injected timeout: primary tool timed out",
+              "latency_ms": 1500,
+              "receipt": "3e23db092d2e0c5d"
+            },
+            {
+              "seq": 1,
+              "scenario_id": "timeout_retry_success",
+              "action": "recovery_decision",
+              "status": "retry",
+              "detail": "retry 1/2 after timeout",
+              "latency_ms": 25,
+              "receipt": "e5b988035b9d1bbf"
+            },
+            {
+              "seq": 2,
+              "scenario_id": "timeout_retry_success",
+              "action": "primary_backend",
+              "status": "ok",
+              "detail": "primary returned Qwen2.5-Coder-14B-Instruct (base, nf4)",
+              "latency_ms": 220,
+              "receipt": "4d2a557cf31fff7d"
+            }
+          ]
+        },
+        {
+          "scenario_id": "rate_limit_backoff_success",
+          "objective": "recover from a rate limit with bounded retry/backoff",
+          "faults": [
+            "rate_limit"
+          ],
+          "backend": "rate_limit_backoff_success:primary",
+          "fallback_backend": "",
+          "response_ref": "Qwen2.5-Coder-14B-Instruct (base, nf4)",
+          "attempts": 2,
+          "retries": 1,
+          "used_fallback": false,
+          "typed_escalation": false,
+          "silent_failure": false,
+          "retry_budget_compliant": true,
+          "receipt_complete": true,
+          "task_correct": true,
+          "passed": true,
+          "fallback_quality": 1.0,
+          "resolution": "retry_success",
+          "latency_ms": 895,
+          "events": [
+            {
+              "seq": 0,
+              "scenario_id": "rate_limit_backoff_success",
+              "action": "primary_backend",
+              "status": "429",
+              "detail": "injected rate_limit: rate limit from primary tool",
+              "latency_ms": 650,
+              "receipt": "c9296d0b5f6d1105"
+            },
+            {
+              "seq": 1,
+              "scenario_id": "rate_limit_backoff_success",
+              "action": "recovery_decision",
+              "status": "retry",
+              "detail": "retry 1/2 after rate_limit",
+              "latency_ms": 25,
+              "receipt": "d63c7f3337f2040e"
+            },
+            {
+              "seq": 2,
+              "scenario_id": "rate_limit_backoff_success",
+              "action": "primary_backend",
+              "status": "ok",
+              "detail": "primary returned Qwen2.5-Coder-14B-Instruct (base, nf4)",
+              "latency_ms": 220,
+              "receipt": "600edc18981a87fc"
+            }
+          ]
+        },
+        {
+          "scenario_id": "malformed_json_fallback_success",
+          "objective": "recover from malformed JSON using an alternate route",
+          "faults": [
+            "malformed_json"
+          ],
+          "backend": "malformed_json_fallback_success:primary",
+          "fallback_backend": "serve-fallback",
+          "response_ref": "Qwen2.5-Coder-14B-Instruct (base, nf4)",
+          "attempts": 1,
+          "retries": 0,
+          "used_fallback": true,
+          "typed_escalation": false,
+          "silent_failure": false,
+          "retry_budget_compliant": true,
+          "receipt_complete": true,
+          "task_correct": true,
+          "passed": true,
+          "fallback_quality": 1.0,
+          "resolution": "fallback_success",
+          "latency_ms": 800,
+          "events": [
+            {
+              "seq": 0,
+              "scenario_id": "malformed_json_fallback_success",
+              "action": "primary_backend",
+              "status": "200",
+              "detail": "injected malformed_json: invalid JSON body",
+              "latency_ms": 300,
+              "receipt": "7c9c642e5acc3594"
+            },
+            {
+              "seq": 1,
+              "scenario_id": "malformed_json_fallback_success",
+              "action": "fallback_backend",
+              "status": "ok",
+              "detail": "fallback returned Qwen2.5-Coder-14B-Instruct (base, nf4)",
+              "latency_ms": 500,
+              "receipt": "87a9a9d3aa41f394"
+            }
+          ]
+        },
+        {
+          "scenario_id": "stale_cache_recompute_success",
+          "objective": "recover from stale cache by recomputing",
+          "faults": [
+            "stale_cache"
+          ],
+          "backend": "stale_cache_recompute_success:primary",
+          "fallback_backend": "",
+          "response_ref": "Qwen2.5-Coder-14B-Instruct (base, nf4)",
+          "attempts": 2,
+          "retries": 1,
+          "used_fallback": false,
+          "typed_escalation": false,
+          "silent_failure": false,
+          "retry_budget_compliant": true,
+          "receipt_complete": true,
+          "task_correct": true,
+          "passed": true,
+          "fallback_quality": 1.0,
+          "resolution": "retry_success",
+          "latency_ms": 440,
+          "events": [
+            {
+              "seq": 0,
+              "scenario_id": "stale_cache_recompute_success",
+              "action": "primary_backend",
+              "status": "stale",
+              "detail": "injected stale_cache: cache receipt predates input",
+              "latency_ms": 180,
+              "receipt": "18b86021864ed999"
+            },
+            {
+              "seq": 1,
+              "scenario_id": "stale_cache_recompute_success",
+              "action": "recovery_decision",
+              "status": "recompute",
+              "detail": "discard stale result and request fresh backend output",
+              "latency_ms": 40,
+              "receipt": "e210a0c631358a04"
+            },
+            {
+              "seq": 2,
+              "scenario_id": "stale_cache_recompute_success",
+              "action": "primary_backend",
+              "status": "ok",
+              "detail": "primary returned Qwen2.5-Coder-14B-Instruct (base, nf4)",
+              "latency_ms": 220,
+              "receipt": "f569ba4e55819cff"
+            }
+          ]
+        },
+        {
+          "scenario_id": "partial_result_typed_escalation",
+          "objective": "surface a typed partial-result failure when recovery is impossible",
+          "faults": [
+            "partial_result"
+          ],
+          "backend": "partial_result_typed_escalation:primary",
+          "fallback_backend": "",
+          "response_ref": "",
+          "attempts": 1,
+          "retries": 0,
+          "used_fallback": false,
+          "typed_escalation": true,
+          "silent_failure": false,
+          "retry_budget_compliant": true,
+          "receipt_complete": true,
+          "task_correct": false,
+          "passed": true,
+          "fallback_quality": 0.75,
+          "resolution": "typed_escalation",
+          "latency_ms": 440,
+          "events": [
+            {
+              "seq": 0,
+              "scenario_id": "partial_result_typed_escalation",
+              "action": "primary_backend",
+              "status": "partial",
+              "detail": "injected partial_result: required field missing",
+              "latency_ms": 420,
+              "receipt": "4035fcb9a78c9eb4"
+            },
+            {
+              "seq": 1,
+              "scenario_id": "partial_result_typed_escalation",
+              "action": "typed_escalation",
+              "status": "failed",
+              "detail": "unrecoverable partial_result",
+              "latency_ms": 20,
+              "receipt": "84733459f45f7b2e"
+            }
+          ]
+        }
+      ],
+      "provider": "serve",
+      "live": true,
+      "operational": true,
+      "skipped": false,
+      "backend_name": "serve"
+    },
+    {
+      "schema": "agent.backend-recovery-benchmark/v1",
+      "adapter": "chat-backend",
+      "scenario_count": 6,
+      "policy": {
+        "retry_budget": 2,
+        "fallback_enabled": true,
+        "stale_recompute_enabled": true,
+        "typed_escalation_enabled": true
+      },
+      "metrics": {
+        "recovery_success_rate": 1.0,
+        "silent_failure_rate": 0.0,
+        "retry_budget_compliance": 1.0,
+        "fallback_quality": 0.958,
+        "receipt_completeness": 1.0,
+        "p95_recovery_latency": 1745,
+        "mean_recovery_latency": 756.667,
+        "max_recovery_latency": 1745,
+        "task_correct_rate": 0.833,
+        "typed_escalation_rate": 0.167,
+        "fallback_use_rate": 0.167,
+        "retry_use_rate": 0.5,
+        "avg_attempts": 1.5,
+        "avg_retries": 0.5,
+        "scenario_pass_count": 6,
+        "scenario_fail_count": 0,
+        "outcome_counts": {
+          "fallback_success": 1,
+          "primary_success": 1,
+          "retry_success": 3,
+          "typed_escalation": 1
+        },
+        "fault_coverage": [
+          "malformed_json",
+          "none",
+          "partial_result",
+          "rate_limit",
+          "stale_cache",
+          "timeout"
+        ],
+        "per_fault": {
+          "malformed_json": {
+            "scenarios": 1,
+            "pass_rate": 1.0,
+            "task_correct_rate": 1.0,
+            "silent_failure_rate": 0.0,
+            "retry_use_rate": 0.0,
+            "fallback_use_rate": 1.0,
+            "typed_escalation_rate": 0.0,
+            "avg_attempts": 1,
+            "avg_retries": 0,
+            "p95_latency_ms": 800
+          },
+          "none": {
+            "scenarios": 1,
+            "pass_rate": 1.0,
+            "task_correct_rate": 1.0,
+            "silent_failure_rate": 0.0,
+            "retry_use_rate": 0.0,
+            "fallback_use_rate": 0.0,
+            "typed_escalation_rate": 0.0,
+            "avg_attempts": 1,
+            "avg_retries": 0,
+            "p95_latency_ms": 220
+          },
+          "partial_result": {
+            "scenarios": 1,
+            "pass_rate": 1.0,
+            "task_correct_rate": 0.0,
+            "silent_failure_rate": 0.0,
+            "retry_use_rate": 0.0,
+            "fallback_use_rate": 0.0,
+            "typed_escalation_rate": 1.0,
+            "avg_attempts": 1,
+            "avg_retries": 0,
+            "p95_latency_ms": 440
+          },
+          "rate_limit": {
+            "scenarios": 1,
+            "pass_rate": 1.0,
+            "task_correct_rate": 1.0,
+            "silent_failure_rate": 0.0,
+            "retry_use_rate": 1.0,
+            "fallback_use_rate": 0.0,
+            "typed_escalation_rate": 0.0,
+            "avg_attempts": 2,
+            "avg_retries": 1,
+            "p95_latency_ms": 895
+          },
+          "stale_cache": {
+            "scenarios": 1,
+            "pass_rate": 1.0,
+            "task_correct_rate": 1.0,
+            "silent_failure_rate": 0.0,
+            "retry_use_rate": 1.0,
+            "fallback_use_rate": 0.0,
+            "typed_escalation_rate": 0.0,
+            "avg_attempts": 2,
+            "avg_retries": 1,
+            "p95_latency_ms": 440
+          },
+          "timeout": {
+            "scenarios": 1,
+            "pass_rate": 1.0,
+            "task_correct_rate": 1.0,
+            "silent_failure_rate": 0.0,
+            "retry_use_rate": 1.0,
+            "fallback_use_rate": 0.0,
+            "typed_escalation_rate": 0.0,
+            "avg_attempts": 2,
+            "avg_retries": 1,
+            "p95_latency_ms": 1745
+          }
+        }
+      },
+      "results": [
+        {
+          "scenario_id": "clean_path",
+          "objective": "complete the tool task when no fault occurs",
+          "faults": [],
+          "backend": "clean_path:primary",
+          "fallback_backend": "",
+          "response_ref": "ollama:qwen2.5:7b",
+          "attempts": 1,
+          "retries": 0,
+          "used_fallback": false,
+          "typed_escalation": false,
+          "silent_failure": false,
+          "retry_budget_compliant": true,
+          "receipt_complete": true,
+          "task_correct": true,
+          "passed": true,
+          "fallback_quality": 1.0,
+          "resolution": "primary_success",
+          "latency_ms": 220,
+          "events": [
+            {
+              "seq": 0,
+              "scenario_id": "clean_path",
+              "action": "primary_backend",
+              "status": "ok",
+              "detail": "primary returned ollama:qwen2.5:7b",
+              "latency_ms": 220,
+              "receipt": "82372bd5195dd350"
+            }
+          ]
+        },
+        {
+          "scenario_id": "timeout_retry_success",
+          "objective": "recover from a timeout with bounded retry",
+          "faults": [
+            "timeout"
+          ],
+          "backend": "timeout_retry_success:primary",
+          "fallback_backend": "",
+          "response_ref": "ollama:qwen2.5:7b",
+          "attempts": 2,
+          "retries": 1,
+          "used_fallback": false,
+          "typed_escalation": false,
+          "silent_failure": false,
+          "retry_budget_compliant": true,
+          "receipt_complete": true,
+          "task_correct": true,
+          "passed": true,
+          "fallback_quality": 1.0,
+          "resolution": "retry_success",
+          "latency_ms": 1745,
+          "events": [
+            {
+              "seq": 0,
+              "scenario_id": "timeout_retry_success",
+              "action": "primary_backend",
+              "status": "timeout",
+              "detail": "injected timeout: primary tool timed out",
+              "latency_ms": 1500,
+              "receipt": "3e23db092d2e0c5d"
+            },
+            {
+              "seq": 1,
+              "scenario_id": "timeout_retry_success",
+              "action": "recovery_decision",
+              "status": "retry",
+              "detail": "retry 1/2 after timeout",
+              "latency_ms": 25,
+              "receipt": "e5b988035b9d1bbf"
+            },
+            {
+              "seq": 2,
+              "scenario_id": "timeout_retry_success",
+              "action": "primary_backend",
+              "status": "ok",
+              "detail": "primary returned ollama:qwen2.5:7b",
+              "latency_ms": 220,
+              "receipt": "b91a2d4f81184fa6"
+            }
+          ]
+        },
+        {
+          "scenario_id": "rate_limit_backoff_success",
+          "objective": "recover from a rate limit with bounded retry/backoff",
+          "faults": [
+            "rate_limit"
+          ],
+          "backend": "rate_limit_backoff_success:primary",
+          "fallback_backend": "",
+          "response_ref": "ollama:qwen2.5:7b",
+          "attempts": 2,
+          "retries": 1,
+          "used_fallback": false,
+          "typed_escalation": false,
+          "silent_failure": false,
+          "retry_budget_compliant": true,
+          "receipt_complete": true,
+          "task_correct": true,
+          "passed": true,
+          "fallback_quality": 1.0,
+          "resolution": "retry_success",
+          "latency_ms": 895,
+          "events": [
+            {
+              "seq": 0,
+              "scenario_id": "rate_limit_backoff_success",
+              "action": "primary_backend",
+              "status": "429",
+              "detail": "injected rate_limit: rate limit from primary tool",
+              "latency_ms": 650,
+              "receipt": "c9296d0b5f6d1105"
+            },
+            {
+              "seq": 1,
+              "scenario_id": "rate_limit_backoff_success",
+              "action": "recovery_decision",
+              "status": "retry",
+              "detail": "retry 1/2 after rate_limit",
+              "latency_ms": 25,
+              "receipt": "d63c7f3337f2040e"
+            },
+            {
+              "seq": 2,
+              "scenario_id": "rate_limit_backoff_success",
+              "action": "primary_backend",
+              "status": "ok",
+              "detail": "primary returned ollama:qwen2.5:7b",
+              "latency_ms": 220,
+              "receipt": "947b0ffa2a985d51"
+            }
+          ]
+        },
+        {
+          "scenario_id": "malformed_json_fallback_success",
+          "objective": "recover from malformed JSON using an alternate route",
+          "faults": [
+            "malformed_json"
+          ],
+          "backend": "malformed_json_fallback_success:primary",
+          "fallback_backend": "ollama-fallback",
+          "response_ref": "ollama:qwen2.5:7b",
+          "attempts": 1,
+          "retries": 0,
+          "used_fallback": true,
+          "typed_escalation": false,
+          "silent_failure": false,
+          "retry_budget_compliant": true,
+          "receipt_complete": true,
+          "task_correct": true,
+          "passed": true,
+          "fallback_quality": 1.0,
+          "resolution": "fallback_success",
+          "latency_ms": 800,
+          "events": [
+            {
+              "seq": 0,
+              "scenario_id": "malformed_json_fallback_success",
+              "action": "primary_backend",
+              "status": "200",
+              "detail": "injected malformed_json: invalid JSON body",
+              "latency_ms": 300,
+              "receipt": "7c9c642e5acc3594"
+            },
+            {
+              "seq": 1,
+              "scenario_id": "malformed_json_fallback_success",
+              "action": "fallback_backend",
+              "status": "ok",
+              "detail": "fallback returned ollama:qwen2.5:7b",
+              "latency_ms": 500,
+              "receipt": "9258f671a0bf4e53"
+            }
+          ]
+        },
+        {
+          "scenario_id": "stale_cache_recompute_success",
+          "objective": "recover from stale cache by recomputing",
+          "faults": [
+            "stale_cache"
+          ],
+          "backend": "stale_cache_recompute_success:primary",
+          "fallback_backend": "",
+          "response_ref": "ollama:qwen2.5:7b",
+          "attempts": 2,
+          "retries": 1,
+          "used_fallback": false,
+          "typed_escalation": false,
+          "silent_failure": false,
+          "retry_budget_compliant": true,
+          "receipt_complete": true,
+          "task_correct": true,
+          "passed": true,
+          "fallback_quality": 1.0,
+          "resolution": "retry_success",
+          "latency_ms": 440,
+          "events": [
+            {
+              "seq": 0,
+              "scenario_id": "stale_cache_recompute_success",
+              "action": "primary_backend",
+              "status": "stale",
+              "detail": "injected stale_cache: cache receipt predates input",
+              "latency_ms": 180,
+              "receipt": "18b86021864ed999"
+            },
+            {
+              "seq": 1,
+              "scenario_id": "stale_cache_recompute_success",
+              "action": "recovery_decision",
+              "status": "recompute",
+              "detail": "discard stale result and request fresh backend output",
+              "latency_ms": 40,
+              "receipt": "e210a0c631358a04"
+            },
+            {
+              "seq": 2,
+              "scenario_id": "stale_cache_recompute_success",
+              "action": "primary_backend",
+              "status": "ok",
+              "detail": "primary returned ollama:qwen2.5:7b",
+              "latency_ms": 220,
+              "receipt": "e889de33c4a0506e"
+            }
+          ]
+        },
+        {
+          "scenario_id": "partial_result_typed_escalation",
+          "objective": "surface a typed partial-result failure when recovery is impossible",
+          "faults": [
+            "partial_result"
+          ],
+          "backend": "partial_result_typed_escalation:primary",
+          "fallback_backend": "",
+          "response_ref": "",
+          "attempts": 1,
+          "retries": 0,
+          "used_fallback": false,
+          "typed_escalation": true,
+          "silent_failure": false,
+          "retry_budget_compliant": true,
+          "receipt_complete": true,
+          "task_correct": false,
+          "passed": true,
+          "fallback_quality": 0.75,
+          "resolution": "typed_escalation",
+          "latency_ms": 440,
+          "events": [
+            {
+              "seq": 0,
+              "scenario_id": "partial_result_typed_escalation",
+              "action": "primary_backend",
+              "status": "partial",
+              "detail": "injected partial_result: required field missing",
+              "latency_ms": 420,
+              "receipt": "4035fcb9a78c9eb4"
+            },
+            {
+              "seq": 1,
+              "scenario_id": "partial_result_typed_escalation",
+              "action": "typed_escalation",
+              "status": "failed",
+              "detail": "unrecoverable partial_result",
+              "latency_ms": 20,
+              "receipt": "84733459f45f7b2e"
+            }
+          ]
+        }
+      ],
+      "provider": "ollama",
+      "live": true,
+      "operational": true,
+      "skipped": false,
+      "backend_name": "ollama:qwen2.5:7b"
+    },
+    {
+      "schema": "agent.backend-recovery-benchmark/v1",
+      "adapter": "chat-backend",
+      "provider": "codex",
+      "live": false,
+      "operational": false,
+      "skipped": true,
+      "skip_reason": "online provider skipped; pass --allow-online to run CLI/API backends",
+      "backend_name": "",
+      "scenario_count": 0,
+      "metrics": {
+        "recovery_success_rate": 0.0,
+        "silent_failure_rate": 0.0,
+        "retry_budget_compliance": 0.0,
+        "fallback_quality": 0.0,
+        "receipt_completeness": 0.0,
+        "p95_recovery_latency": 0
+      },
+      "results": []
+    },
+    {
+      "schema": "agent.backend-recovery-benchmark/v1",
+      "adapter": "chat-backend",
+      "provider": "claude",
+      "live": false,
+      "operational": false,
+      "skipped": true,
+      "skip_reason": "online provider skipped; pass --allow-online to run CLI/API backends",
+      "backend_name": "",
+      "scenario_count": 0,
+      "metrics": {
+        "recovery_success_rate": 0.0,
+        "silent_failure_rate": 0.0,
+        "retry_budget_compliance": 0.0,
+        "fallback_quality": 0.0,
+        "receipt_completeness": 0.0,
+        "p95_recovery_latency": 0
+      },
+      "results": []
+    },
+    {
+      "schema": "agent.backend-recovery-benchmark/v1",
+      "adapter": "chat-backend",
+      "provider": "opencode",
+      "live": false,
+      "operational": false,
+      "skipped": true,
+      "skip_reason": "online provider skipped; pass --allow-online to run CLI/API backends",
+      "backend_name": "",
+      "scenario_count": 0,
+      "metrics": {
+        "recovery_success_rate": 0.0,
+        "silent_failure_rate": 0.0,
+        "retry_budget_compliance": 0.0,
+        "fallback_quality": 0.0,
+        "receipt_completeness": 0.0,
+        "p95_recovery_latency": 0
+      },
+      "results": []
+    }
+  ],
+  "summary": {
+    "providers": 6,
+    "runnable": 3,
+    "live": 2,
+    "operational": 3,
+    "skipped": 3,
+    "total_scenarios": 18,
+    "total_failures": 0,
+    "fault_coverage": [
+      "malformed_json",
+      "none",
+      "partial_result",
+      "rate_limit",
+      "stale_cache",
+      "timeout"
+    ],
+    "mean_recovery_success_rate": 1.0,
+    "mean_receipt_completeness": 1.0,
+    "silent_failure_rows": 0
+  },
+  "out_root": "artifacts\\backend_recovery_matrix_latest\\20260708_231521"
+}

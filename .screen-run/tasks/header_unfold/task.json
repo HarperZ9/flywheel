@@ -1,0 +1,8 @@
+{
+  "task_id": "header_unfold",
+  "prompt": "Write a Python function unfold_headers(lines: list[str]) -> list[tuple[str, str]] that parses email/HTTP-style header lines (each list element is one physical line WITHOUT newline characters) into an ordered list of (name, value) tuples.\n\nRules:\n1. A physical line that begins with a space or a tab is a CONTINUATION of the previous logical header line. If the very first line is a continuation, raise ValueError.\n2. Every logical header line must contain a colon. The name is everything before the FIRST colon; the raw value is everything after it. A logical line with no colon (including an empty line \"\") raises ValueError.\n3. The name must be non-empty and consist only of ASCII letters, digits, and the hyphen '-'. Anything else (spaces before the colon, underscores, an empty name) raises ValueError.\n4. Names are case-insensitive: lowercase the name in the output. Duplicate names are allowed and must ALL be kept, in input order.\n5. Value assembly: strip leading and trailing whitespace from the after-colon text; strip each continuation line's content likewise; join all the non-empty pieces with a single space. A header whose pieces are all empty has value \"\" (e.g. the single line \"A:\" gives (\"a\", \"\")).\n6. A continuation line whose content is entirely whitespace raises ValueError.\n7. The input list must NOT be mutated.\n8. An empty input list returns [].\n\nOutput ONLY the function definition.",
+  "oracle": "pytest",
+  "oracle_cmd": "python -m pytest tests/ -q",
+  "candidate_path": "solution.py",
+  "max_new_tokens": 768
+}

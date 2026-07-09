@@ -1,0 +1,8 @@
+{
+  "task_id": "template_fields",
+  "prompt": "Write a Python function parse_template_fields(s: str) -> list[tuple[str, str]] that tokenizes a template string into a list of ('text', chunk) and ('field', name) tuples.\n\nRules:\n1. The two-character sequences '{{' and '}}' are escapes that produce a literal '{' or '}' inside text.\n2. '{name}' produces ('field', name). The name must be non-empty, start with an ASCII letter or underscore, and continue with only ASCII letters, digits, or underscores. Otherwise raise ValueError (so '{}', '{1a}', '{a-b}', '{a b}' are all invalid).\n3. A '{' that is not part of '{{' and has no matching '}' before the end of the string raises ValueError (unterminated field). Field names cannot contain '{' or '}', so there is no nesting.\n4. A '}' that is not part of '}}' and does not terminate a field raises ValueError (stray brace). Note this means a lone '}' immediately after a completed field is invalid: '{a}}' raises ValueError, while '{a}}}' parses as ('field','a') followed by ('text','}').\n5. Text chunks must be MAXIMAL: consecutive literal characters, including the characters produced by brace escapes, merge into a single ('text', ...) tuple, and an empty text tuple is never emitted. '{x}{y}' gives [('field','x'), ('field','y')] and 'a{{b}}c' gives [('text','a{b}c')].\n6. Empty input returns [].\n\nOutput ONLY the function definition.",
+  "oracle": "pytest",
+  "oracle_cmd": "python -m pytest tests/ -q",
+  "candidate_path": "solution.py",
+  "max_new_tokens": 768
+}

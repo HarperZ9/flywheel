@@ -1,0 +1,11 @@
+{
+  "task_id": "fw_pass_a",
+  "prompt": "[route:PASS_A] Implement function add(a, b) so it behaves like + for integers. Return only executable code.",
+  "oracle": "pytest",
+  "oracle_cmd": "python -m pytest tests/ -q",
+  "candidate_path": "solution.py",
+  "system": "",
+  "max_new_tokens": 64,
+  "temperature": 0.0,
+  "seed": 0
+}

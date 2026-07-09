@@ -1,0 +1,8 @@
+{
+  "task_id": "interval_intersection",
+  "prompt": "Implement interval_intersection(a, b): given two lists of [start, end] closed integer intervals, EACH list already sorted and internally disjoint, return the sorted list of their intersections as [start, end] lists. Touching endpoints intersect (e.g. [1,3] and [3,5] -> [3,3]). Output ONLY the function definition.",
+  "oracle": "pytest",
+  "oracle_cmd": "python -m pytest tests/ -q",
+  "candidate_path": "solution.py",
+  "max_new_tokens": 512
+}
