@@ -18,6 +18,8 @@ python scripts/build_local_harness_exes.py --skip-serve --package --package-vers
 - `artifacts/exe/model_endpoint_profiles.local.json`: generated 14B/32B endpoint profile artifact.
 - `artifacts/exe/model_release_readiness.local.json`: 14B/32B static model release-readiness receipt.
 - `artifacts/exe/model_publish_plan.local.json`: 14B/32B naming and publication plan.
+- `artifacts/exe/huggingface_release_stage.local.json`: dry-run Hugging Face release staging receipt with repo IDs, upload command templates, and upload blockers.
+- `artifacts/exe/huggingface_release_stage.local.md`: human-readable Hugging Face staging plan.
 - `artifacts/exe/tool_integration_contract.local.json`: packaged tool sidecar contract for index, forum, gather, crucible, telos, aleph, mneme, relay, plexus, pubscan, and local-model.
 - `artifacts/exe/tool_readiness.local.json`: metadata-only static readiness receipt for flagship and sidecar tools.
 - `artifacts/exe/tool_hardening_plan.local.json`: enterprise hardening action and release-gate plan generated from tool readiness.
@@ -41,6 +43,7 @@ python scripts/build_local_harness_exes.py --skip-serve --package --package-vers
 - `artifacts/exe/packages/local-harness-<version>/docs/records/`: packaged roadmap, capability catalog, objective evidence matrix, and next recursive improvement loop.
 - `artifacts/exe/packages/local-harness-<version>/docs/reports/`: packaged benchmark methodology, experimental outcome, pubscan integration, and public context boundary reports.
 - `artifacts/exe/packages/local-harness-<version>/docs/releases/`: packaged 14B/32B model-card, endpoint, usage, benchmark, accountability, and release-checklist scaffolds.
+- `artifacts/exe/packages/local-harness-<version>/docs/flagship/`: packaged flagship art, demos, walkthrough, external-doc sync plan, and external context source register.
 - `artifacts/exe/packages/local-harness-<version>/manifest/ship-manifest.json`: file hashes, source commit, dependency posture, and secret policy.
 
 ## Local model wiring
@@ -67,6 +70,8 @@ The release bundle includes:
 - `docs/model_release_readiness.local.md`
 - `config/model_publish_plan.local.json`
 - `docs/model_publish_plan.local.md`
+- `config/huggingface_release_stage.local.json`
+- `docs/huggingface_release_stage.local.md`
 - `config/tool_integration_contract.local.json`
 - `config/tool_integration_contract.local.md`
 - `config/runtime_activation_contract.local.json`
@@ -80,6 +85,7 @@ The release bundle includes:
 - `manifest/harness_executable_manifest.local.json`
 - `manifest/harness_executable_manifest.local.md`
 - `docs/HARNESS-PACKAGING.md`
+- `docs/flagship/`
 - `manifest/local-harness-release.json`
 - `manifest/ship-manifest.json`
 - `SHA256SUMS.txt`

@@ -44,6 +44,14 @@ MODEL_RELEASE_DOCUMENTS = [
     "32B/SAFETY-ACCOUNTABILITY.md",
     "32B/RELEASE-CHECKLIST.md",
 ]
+FLAGSHIP_DOCUMENTS = [
+    "README.md",
+    "DEMOS.md",
+    "WALKTHROUGH.md",
+    "EXTERNAL-DOCS-SYNC.md",
+    "EXTERNAL-CONTEXT-SOURCES.md",
+    "assets/flywheel-flagship-mark.svg",
+]
 
 
 def sha256(path: Path) -> str:
@@ -106,6 +114,7 @@ If the package is moved away from the source checkout, set `LOCAL_HARNESS_REPO` 
 
 The package includes `config\\model_endpoint_profiles.local.json`.
 It includes `config\\model_release_readiness.local.json` and `config\\model_publish_plan.local.json` for the 14B/32B release track.
+`config\\huggingface_release_stage.local.json` gives dry-run Hugging Face repo IDs, upload command templates, and model upload blockers.
 It also includes `config\\tool_integration_contract.local.json` for the Flywheel/Codex sidecar tool contract.
 `config\\tool_readiness.local.json` and `config\\tool_hardening_plan.local.json` provide static readiness and hardening gates for the flagship tool fabric.
 `docs\\tool_operator_guide.local.md` gives concise operator instructions for each packaged tool surface.
@@ -117,6 +126,7 @@ It also includes `config\\tool_integration_contract.local.json` for the Flywheel
 `docs\\harness_architecture_report.local.md` summarizes the executable surface, local model endpoints, tool fabric, runtime activation, and release gates.
 `docs\\records\\` carries the current roadmap, capability catalog, objective evidence matrix, and next recursive improvement loop.
 `docs\\reports\\` and `docs\\releases\\` carry the benchmark methodology, experimental/reporting documents, and 14B/32B publication scaffolds.
+`docs\\flagship\\` carries the public-facing art, demos, walkthrough, source context register, and external docs sync plan.
 
 - 14B serve endpoint: `http://127.0.0.1:8765`
 - 32B serve endpoint: `http://127.0.0.1:8768`
@@ -146,6 +156,8 @@ def build_bundle(
     model_release_md = dist / "model_release_readiness.local.md"
     model_publish = dist / "model_publish_plan.local.json"
     model_publish_md = dist / "model_publish_plan.local.md"
+    huggingface_stage = dist / "huggingface_release_stage.local.json"
+    huggingface_stage_md = dist / "huggingface_release_stage.local.md"
     tool_contract = dist / "tool_integration_contract.local.json"
     tool_contract_md = dist / "tool_integration_contract.local.md"
     tool_readiness = dist / "tool_readiness.local.json"
@@ -179,6 +191,8 @@ def build_bundle(
         (model_release_md, bundle_root / "docs" / "model_release_readiness.local.md"),
         (model_publish, bundle_root / "config" / "model_publish_plan.local.json"),
         (model_publish_md, bundle_root / "docs" / "model_publish_plan.local.md"),
+        (huggingface_stage, bundle_root / "config" / "huggingface_release_stage.local.json"),
+        (huggingface_stage_md, bundle_root / "docs" / "huggingface_release_stage.local.md"),
         (tool_contract, bundle_root / "config" / "tool_integration_contract.local.json"),
         (tool_contract_md, bundle_root / "config" / "tool_integration_contract.local.md"),
         (tool_readiness, bundle_root / "config" / "tool_readiness.local.json"),
@@ -231,6 +245,13 @@ def build_bundle(
         )
         copied["relative_path"] = str((bundle_root / "docs" / "releases" / release_doc).relative_to(bundle_root)).replace("\\", "/")
         files.append(copied)
+    for flagship_doc in FLAGSHIP_DOCUMENTS:
+        copied = copy_file(
+            ROOT / "project-docs" / "flagship" / flagship_doc,
+            bundle_root / "docs" / "flagship" / flagship_doc,
+        )
+        copied["relative_path"] = str((bundle_root / "docs" / "flagship" / flagship_doc).relative_to(bundle_root)).replace("\\", "/")
+        files.append(copied)
 
     readme = write_text(bundle_root / "README.md", release_readme(package_name=package_name))
     readme["relative_path"] = "README.md"
@@ -252,9 +273,11 @@ def build_bundle(
             "records": DOCUMENTATION_RECORDS,
             "reports": REPORT_DOCUMENTS,
             "model_release_documents": MODEL_RELEASE_DOCUMENTS,
+            "flagship_documents": FLAGSHIP_DOCUMENTS,
             "record_count": len(DOCUMENTATION_RECORDS),
             "report_count": len(REPORT_DOCUMENTS),
             "model_release_document_count": len(MODEL_RELEASE_DOCUMENTS),
+            "flagship_document_count": len(FLAGSHIP_DOCUMENTS),
         },
         "files": sorted(files, key=lambda item: str(item["relative_path"])),
     }
