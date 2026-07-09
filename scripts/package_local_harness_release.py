@@ -183,8 +183,15 @@ def build_bundle(
         "zip": {
         "path": str(zip_path),
         "bytes": zip_path.stat().st_size,
-        "sha256": sha256(zip_path),
+            "sha256": sha256(zip_path),
         },
+    }
+    summary_path = out_root / f"{package_name}.package.json"
+    summary_path.write_text(json.dumps(package_summary, indent=2, sort_keys=True), encoding="utf-8")
+    package_summary["package_summary"] = {
+        "path": str(summary_path),
+        "bytes": summary_path.stat().st_size,
+        "sha256": sha256(summary_path),
     }
     return package_summary
 
