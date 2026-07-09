@@ -15,6 +15,13 @@ from harness.file_backed_store import FileBackedHarnessStore
 
 SCHEMA = "harness.architecture-report/v1"
 DEFAULT_DIST = Path("C:/dev/local-model/artifacts/exe")
+DEFAULT_DOCUMENTATION_RECORDS = [
+    "ROADMAP-STATUS-2026-07-09.md",
+    "CAPABILITY-CATALOG-2026-07-09.md",
+    "OBJECTIVE-EVIDENCE-MATRIX-2026-07-09.md",
+    "OBJECTIVE-EVIDENCE-MATRIX-2026-07-09.json",
+    "NEXT-RECURSIVE-IMPROVEMENT-LOOP-2026-07-09.md",
+]
 
 
 def _now() -> str:
@@ -35,6 +42,14 @@ def _artifact(path: Path, schema: str = "") -> dict[str, Any]:
         "expected_schema": schema,
         "observed_schema": payload.get("schema") if payload else None,
         "schema_matches": bool(payload) and (not schema or payload.get("schema") == schema),
+    }
+
+
+def _file_artifact(path: Path) -> dict[str, Any]:
+    return {
+        "path": str(path),
+        "exists": path.exists(),
+        "bytes": path.stat().st_size if path.exists() else 0,
     }
 
 
@@ -112,6 +127,22 @@ def _tool_hardening_summary(tool_hardening: dict[str, Any]) -> dict[str, Any]:
         "passed_release_gates": summary.get("passed_release_gates", 0),
         "owner_counts": summary.get("owner_counts", {}),
         "priority_counts": summary.get("priority_counts", {}),
+    }
+
+
+def _documentation_summary(records_root: Path) -> dict[str, Any]:
+    rows = [
+        {"name": name, **_file_artifact(records_root / name)}
+        for name in DEFAULT_DOCUMENTATION_RECORDS
+    ]
+    return {
+        "schema": "harness.architecture-report.documentation-pack/v1",
+        "records_root": str(records_root),
+        "records": rows,
+        "record_count": len(rows),
+        "records_present": sum(1 for row in rows if row["exists"]),
+        "missing_records": [row["name"] for row in rows if not row["exists"]],
+        "total_bytes": sum(int(row["bytes"]) for row in rows),
     }
 
 
@@ -193,6 +224,7 @@ def build_report(
     tool_contract_path: Path,
     tool_readiness_path: Path,
     tool_hardening_path: Path,
+    documentation_records_root: Path,
     runtime_contract_path: Path,
     codex_mcp_contract_path: Path,
     enterprise_readiness_path: Path,
@@ -262,6 +294,11 @@ def build_report(
         verified_facts.append("Tool hardening gates and action counts are represented by the packaged hardening plan.")
     else:
         assumptions.append("Tool hardening plan was absent when this report was generated.")
+    documentation_pack = _documentation_summary(documentation_records_root)
+    if documentation_pack["records_present"] == documentation_pack["record_count"]:
+        verified_facts.append("Roadmap, capability catalog, objective evidence matrix, and next-loop records are present in the documentation pack.")
+    else:
+        assumptions.append("One or more documentation-pack records were absent when this report was generated.")
     if codex_mcp:
         verified_facts.append("Codex MCP launch and fallback profiles are represented by the Codex MCP contract.")
     else:
@@ -290,6 +327,7 @@ def build_report(
         "tool_fabric": _tool_summary(tool_contract),
         "tool_readiness": _tool_readiness_summary(tool_readiness),
         "tool_hardening": _tool_hardening_summary(tool_hardening),
+        "documentation_pack": documentation_pack,
         "runtime_activation": {
             "schema": "harness.architecture-report.runtime/v1",
             "summary": runtime_contract.get("summary", {}),
@@ -331,6 +369,7 @@ def build_report(
             "pubscan_profiled_entrypoints": _pubscan_summary(pubscan_profiles)["profiled_entrypoints"],
             "tool_readiness_enterprise_ready": _tool_readiness_summary(tool_readiness)["enterprise_ready_tools"],
             "tool_hardening_actions": _tool_hardening_summary(tool_hardening)["actions"],
+            "documentation_records_present": documentation_pack["records_present"],
             "tools": _tool_summary(tool_contract)["tools"],
         },
     }
@@ -352,6 +391,7 @@ def render_markdown(report: dict[str, Any]) -> str:
         f"- Pubscan profiled entrypoints: {report['summary']['pubscan_profiled_entrypoints']}",
         f"- Tool readiness enterprise-ready: {report['summary']['tool_readiness_enterprise_ready']}",
         f"- Tool hardening actions: {report['summary']['tool_hardening_actions']}",
+        f"- Documentation records: {report['summary']['documentation_records_present']}",
         f"- Tools: {', '.join(report['summary']['tools']) or 'none'}",
         f"- Package doctor: {report['release_gate']['package_doctor_verdict'] or 'not present in this report'}",
         "",
@@ -399,6 +439,12 @@ def render_markdown(report: dict[str, Any]) -> str:
         f"- P0/P1 actions: {report['tool_hardening']['p0_actions']} / {report['tool_hardening']['p1_actions']}",
         f"- Release gates passed: {report['tool_hardening']['passed_release_gates']} / {report['tool_hardening']['release_gates']}",
         "",
+        "## Documentation pack",
+        "",
+        f"- Records present: {report['documentation_pack']['records_present']} / {report['documentation_pack']['record_count']}",
+        f"- Total bytes: {report['documentation_pack']['total_bytes']}",
+        f"- Missing records: {', '.join(report['documentation_pack']['missing_records']) or 'none'}",
+        "",
         "## Verified facts",
         "",
     ]
@@ -440,6 +486,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--tool-contract", default="")
     parser.add_argument("--tool-readiness", default="")
     parser.add_argument("--tool-hardening", default="")
+    parser.add_argument("--documentation-records-root", default="C:/dev/local-model/project-docs/records")
     parser.add_argument("--runtime-contract", default="")
     parser.add_argument("--codex-mcp-contract", default="")
     parser.add_argument("--enterprise-readiness", default="")
@@ -462,6 +509,7 @@ def main(argv: list[str] | None = None) -> int:
         tool_contract_path=Path(args.tool_contract) if args.tool_contract else dist / "tool_integration_contract.local.json",
         tool_readiness_path=Path(args.tool_readiness) if args.tool_readiness else dist / "tool_readiness.local.json",
         tool_hardening_path=Path(args.tool_hardening) if args.tool_hardening else dist / "tool_hardening_plan.local.json",
+        documentation_records_root=Path(args.documentation_records_root),
         runtime_contract_path=Path(args.runtime_contract) if args.runtime_contract else dist / "runtime_activation_contract.local.json",
         codex_mcp_contract_path=Path(args.codex_mcp_contract) if args.codex_mcp_contract else dist / "codex_mcp_launch_contract.local.json",
         enterprise_readiness_path=Path(args.enterprise_readiness) if args.enterprise_readiness else dist / "enterprise_readiness_report.local.json",
