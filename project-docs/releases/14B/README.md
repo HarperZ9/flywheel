@@ -1,6 +1,19 @@
+---
+license: apache-2.0
+base_model: Qwen/Qwen2.5-Coder-14B-Instruct
+tags:
+  - code
+  - gguf
+  - qlora
+  - local-first
+  - verified-inference
+pipeline_tag: text-generation
+library_name: gguf
+---
+
 # Flywheel-Local-Coder-14B Release README
 
-Status: draft, not publish-ready. Trained artifact exists; benchmark evidence and gate history are still missing.
+Status: staged, awaiting operator upload approval. Trained artifact, endpoint gate evidence, and first benchmark evidence exist.
 
 ## What this release is
 

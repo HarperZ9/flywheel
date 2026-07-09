@@ -10,6 +10,40 @@
 
 Last updated: 2026-07-09
 
+## 2026-07-09 (session 3, cont.) — market-entry sprint: hard bench, 32B TRAINING LIVE
+
+- **GOAL (operator, /goal): flywheel enters the market as a COMPANION to every
+  frontier model** (Codex app / Sol lineup / Mythos 5), not a competitor; both
+  local models pushed to HF with generous walkthrough + benchmarks measurable
+  to an outside observer (publication gated on that); demos for every flagship;
+  enterprise parity for mneme/relay/plexus; humanist/wonder voice (integration
+  and benefit, not fear-lead) with receipts as empowerment, one doorway line.
+- **Hard-set benchmark (10 tasks, ollama:flywheel-local-coder-14b)**:
+  single_shot 80% (8/10), verified_inference 90% (9/10), flat_n 90%,
+  no_search 80%, receipts 100% everywhere, verdict MATCH. **HONEST BOUNDS:
+  the +10% is ONE task of ten, inside noise, and flat_n equals it (best-of-4
+  sampling, not verification) — the M7 quarantine rule stands, NO uplift
+  claim.** The outside-observer instrument is still the 100-task lane
+  (curation was at 38/100). The defensible measurable claims: 100% receipt
+  reproducibility + pass parity + local cost. Scorecard:
+  `artifacts/flywheel-local-coder-14b-benchmark-m7-hard-scorecard.json`.
+  Readiness now shows 2 benchmark artifacts for the 14B.
+- **32B QLoRA CPT TRAINING IS LIVE** (WSL screen `train32b`, launched 18:51Z):
+  seq_len 256, epochs 0.25 (~2,019 steps, recipe parity with the 14B's
+  checkpoint-2020), save every 50 steps, ~32 s/step => ~18h. Supervisor
+  `scripts/run_phase2_32b_supervised.sh` auto-resumes on the known WSL
+  "device not ready" flake (12 attempts max); stop via
+  `touch /mnt/e/local-model-run/STOP_32B`. run_phase2_linux.sh now propagates
+  the trainer's exit code (was always 0). GPU: 23.3GB/62% util confirmed.
+- **HF upload hard blocker: no HF token on this machine**
+  (LocalTokenNotFoundError). Only the operator can export one. Everything
+  else on the 14B is staged and waiting.
+- In flight (parallel agents): WALKTHROUGH.md + outside-observer benchmark
+  methodology (humanist voice), zero-dep demo recorder + first harness demo,
+  enterprise-parity gap audit (mneme/relay/plexus), market surface research
+  (Codex app / Sol / Mythos 5), research curation (ninja_maths post + arXiv
+  2603.23420 + domain sweep) into native tool improvements.
+
 ## 2026-07-09 (session 3) — release identity corrected; 14B READY_TO_STAGE, 32B honestly gated
 
 - **CRITICAL FIX: the staged HF release candidates pointed at the BASE Qwen
