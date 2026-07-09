@@ -171,6 +171,30 @@ def _emit_runtime_contract(args: argparse.Namespace) -> Path:
     return path
 
 
+def _emit_codex_mcp_contract(args: argparse.Namespace) -> Path:
+    path = DIST / "codex_mcp_launch_contract.local.json"
+    markdown = DIST / "codex_mcp_launch_contract.local.md"
+    command = [
+        sys.executable,
+        "scripts/run_codex_mcp_launch_contract.py",
+        "--codex-config",
+        args.codex_config,
+        "--tools",
+        args.codex_mcp_tools,
+        "--observation",
+        "index=TRANSPORT_CLOSED|active Codex MCP wrapper may require host reload after source/config repair",
+        "--out",
+        str(path),
+        "--markdown-out",
+        str(markdown),
+    ]
+    print(f"[codex-mcp] {' '.join(command)}")
+    proc = subprocess.run(command, cwd=ROOT)
+    if proc.returncode != 0:
+        raise RuntimeError(f"Codex MCP launch contract generation failed ({proc.returncode})")
+    return path
+
+
 def _write_release_manifest(args: argparse.Namespace, *, profiles_path: Path, built: list[str], skipped: list[str]) -> Path:
     manifest = {
         "schema": "harness.local-executable-release/v1",
@@ -205,6 +229,11 @@ def _write_release_manifest(args: argparse.Namespace, *, profiles_path: Path, bu
             "base_root": args.tool_base_root,
             "root_overrides": args.tool_root,
         },
+        "codex_mcp": {
+            "contract": str(DIST / "codex_mcp_launch_contract.local.json"),
+            "tools": args.codex_mcp_tools,
+            "codex_config": args.codex_config,
+        },
         "runtime_activation": {
             "contract": str(DIST / "runtime_activation_contract.local.json"),
             "store_root": args.store_root,
@@ -238,6 +267,8 @@ def main() -> int:
     ap.add_argument("--tools", default=DEFAULT_TOOLS)
     ap.add_argument("--tool-base-root", default="C:/dev/public")
     ap.add_argument("--tool-root", action="append", default=["aleph=C:/dev/aleph", "local-model=C:/dev/local-model"])
+    ap.add_argument("--codex-config", default="C:/Users/Zain/.codex/config.toml")
+    ap.add_argument("--codex-mcp-tools", default="index,forum,gather,crucible,telos")
     ap.add_argument("--store-root", default="C:/tmp/harness_file_store")
     ap.add_argument("--model-run-root", default="E:/local-model-run")
     ap.add_argument("--log-root", default="C:/tmp/local_model_serve_logs")
@@ -287,6 +318,7 @@ def main() -> int:
     profiles_path = _emit_endpoint_profiles(args)
     _emit_tool_contract(args)
     _emit_runtime_contract(args)
+    _emit_codex_mcp_contract(args)
     manifest_path = _write_release_manifest(args, profiles_path=profiles_path, built=built, skipped=skipped)
     print(f"[ok] executables in {DIST}")
     print(f"[ok] release manifest {manifest_path}")
