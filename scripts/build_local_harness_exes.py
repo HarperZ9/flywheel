@@ -13,6 +13,7 @@ ROOT = Path(__file__).resolve().parent.parent
 DIST = ROOT / "artifacts" / "exe"
 WORK = ROOT / "artifacts" / ".pyinstaller"
 DEFAULT_SERVE_PYTHON = "E:/local-model-run/venv/Scripts/python.exe"
+DEFAULT_TOOLS = "index,forum,gather,crucible,telos,aleph,mneme,relay,plexus,pubscan,local-model"
 
 
 def _build(name: str, entry: str, *, python: str, hidden: list[str] | None = None) -> None:
@@ -116,6 +117,32 @@ def _emit_endpoint_profiles(args: argparse.Namespace) -> Path:
     return path
 
 
+def _emit_tool_contract(args: argparse.Namespace) -> Path:
+    path = DIST / "tool_integration_contract.local.json"
+    markdown = DIST / "tool_integration_contract.local.md"
+    command = [
+        sys.executable,
+        "scripts/run_tool_integration_contract.py",
+        "--tools",
+        args.tools,
+        "--base-root",
+        args.tool_base_root,
+        "--package-root",
+        str(DIST),
+        "--out",
+        str(path),
+        "--markdown-out",
+        str(markdown),
+    ]
+    for tool_root in args.tool_root:
+        command.extend(["--tool-root", tool_root])
+    print(f"[tools] {' '.join(command)}")
+    proc = subprocess.run(command, cwd=ROOT)
+    if proc.returncode != 0:
+        raise RuntimeError(f"tool integration contract generation failed ({proc.returncode})")
+    return path
+
+
 def _write_release_manifest(args: argparse.Namespace, *, profiles_path: Path, built: list[str], skipped: list[str]) -> Path:
     manifest = {
         "schema": "harness.local-executable-release/v1",
@@ -144,6 +171,12 @@ def _write_release_manifest(args: argparse.Namespace, *, profiles_path: Path, bu
             "serve_runtime_32b": args.serve_runtime_32b,
             "offload_runtime": args.serve_runtime_32b == "cpu-offload",
         },
+        "tool_integration": {
+            "contract": str(DIST / "tool_integration_contract.local.json"),
+            "tools": args.tools,
+            "base_root": args.tool_base_root,
+            "root_overrides": args.tool_root,
+        },
         "operator_notes": [
             "Run local-harness.cmd manifest to inspect the packaged command surface.",
             "Set LOCAL_HARNESS_REPO if the artifacts/exe folder is moved away from the repo checkout.",
@@ -168,6 +201,9 @@ def main() -> int:
     ap.add_argument("--serve-url-14b", default="http://127.0.0.1:8765")
     ap.add_argument("--serve-url-32b", default="http://127.0.0.1:8768")
     ap.add_argument("--serve-runtime-32b", default="cpu-offload")
+    ap.add_argument("--tools", default=DEFAULT_TOOLS)
+    ap.add_argument("--tool-base-root", default="C:/dev/public")
+    ap.add_argument("--tool-root", action="append", default=["aleph=C:/dev/aleph", "local-model=C:/dev/local-model"])
     ap.add_argument("--package", action="store_true",
                     help="assemble a local release bundle after building")
     ap.add_argument("--package-version", default=datetime.now(UTC).strftime("%Y%m%d-%H%M%S"))
@@ -212,6 +248,7 @@ def main() -> int:
         skipped.append("local-serve")
 
     profiles_path = _emit_endpoint_profiles(args)
+    _emit_tool_contract(args)
     manifest_path = _write_release_manifest(args, profiles_path=profiles_path, built=built, skipped=skipped)
     print(f"[ok] executables in {DIST}")
     print(f"[ok] release manifest {manifest_path}")

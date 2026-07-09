@@ -16,6 +16,7 @@ python scripts/build_local_harness_exes.py --skip-serve --package --package-vers
 - `artifacts/exe/local-harness.cmd`: wrapper that sets `LOCAL_HARNESS_REPO` when the artifact remains under the checkout.
 - `artifacts/exe/local-agent.exe`: offline/local agent entrypoint.
 - `artifacts/exe/model_endpoint_profiles.local.json`: generated 14B/32B endpoint profile artifact.
+- `artifacts/exe/tool_integration_contract.local.json`: packaged tool sidecar contract for index, forum, gather, crucible, telos, aleph, mneme, relay, plexus, pubscan, and local-model.
 - `artifacts/exe/local-harness-release.json`: release manifest for the local executable package.
 - `artifacts/exe/packages/local-harness-<version>.zip`: shippable release bundle.
 - `artifacts/exe/packages/local-harness-<version>/manifest/ship-manifest.json`: file hashes, source commit, dependency posture, and secret policy.
@@ -40,6 +41,8 @@ The release bundle includes:
 - `bin/local-agent.exe`
 - `config/model_endpoint_profiles.local.json`
 - `config/model_endpoint_profiles.local.md`
+- `config/tool_integration_contract.local.json`
+- `config/tool_integration_contract.local.md`
 - `docs/HARNESS-PACKAGING.md`
 - `manifest/local-harness-release.json`
 - `manifest/ship-manifest.json`
