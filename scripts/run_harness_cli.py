@@ -129,6 +129,19 @@ def build_manifest(*, store_root: str = DEFAULT_STORE_ROOT) -> dict:
                 "recommended_validation_slice": "python -m pytest tests/test_mcp_tool_health_receipts.py tests/test_harness_cli.py -q",
             },
             {
+                "name": "codex-mcp-contract",
+                "delegates_to": "scripts/run_codex_mcp_launch_contract.py",
+                "purpose": "Emit the Codex MCP launch, stale-transport reload, and direct CLI fallback contract for the core tool fabric.",
+                "schemas": ["harness.codex-mcp-launch-contract/v1"],
+                "evidence_surface": "Codex MCP config posture, source-checkout launch profiles, reload boundary, and fallback commands",
+                "default_artifacts": [
+                    "C:/tmp/codex_mcp_launch_contract.json",
+                    "C:/tmp/codex_mcp_launch_contract.md",
+                ],
+                "long_running_risk": "low",
+                "recommended_validation_slice": "python -m pytest tests/test_codex_mcp_launch_contract.py tests/test_harness_cli.py -q",
+            },
+            {
                 "name": "tool-contract",
                 "delegates_to": "scripts/run_tool_integration_contract.py",
                 "purpose": "Emit the packaged sidecar integration contract for index, forum, gather, crucible, telos, aleph, mneme, relay, plexus, pubscan, and local-model.",
@@ -739,6 +752,12 @@ def build_parser() -> argparse.ArgumentParser:
     mcp_health.add_argument("--tools", default="index,forum,telos,gather,crucible,aleph,mneme,relay,plexus,pubscan,local-model")
     mcp_health.add_argument("--observation", action="append", default=[])
 
+    codex_mcp = subparsers.add_parser("codex-mcp-contract", help="emit Codex MCP launch and fallback contract")
+    _add_common_io(codex_mcp)
+    codex_mcp.add_argument("--codex-config", default="C:/Users/Zain/.codex/config.toml")
+    codex_mcp.add_argument("--tools", default="index,forum,gather,crucible,telos")
+    codex_mcp.add_argument("--observation", action="append", default=[])
+
     tool_contract = subparsers.add_parser("tool-contract", help="emit packaged sidecar tool integration contract")
     _add_common_io(tool_contract)
     tool_contract.add_argument("--tools", default="index,forum,gather,crucible,telos,aleph,mneme,relay,plexus,pubscan,local-model")
@@ -1004,6 +1023,19 @@ def build_command(args, *, repo_root: Path) -> list[str]:
         command = [
             py,
             "scripts/run_mcp_tool_health_receipts.py",
+            "--tools",
+            args.tools,
+        ]
+        for observation in args.observation:
+            command.extend(["--observation", observation])
+        _common_outputs(command, args)
+        return command
+    if args.command_name == "codex-mcp-contract":
+        command = [
+            py,
+            "scripts/run_codex_mcp_launch_contract.py",
+            "--codex-config",
+            args.codex_config,
             "--tools",
             args.tools,
         ]

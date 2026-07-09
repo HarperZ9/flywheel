@@ -78,6 +78,7 @@ If the package is moved away from the source checkout, set `LOCAL_HARNESS_REPO` 
 The package includes `config\\model_endpoint_profiles.local.json`.
 It also includes `config\\tool_integration_contract.local.json` for the Flywheel/Codex sidecar tool contract.
 `config\\runtime_activation_contract.local.json` describes storage, env knobs, and activation boundaries.
+`config\\codex_mcp_launch_contract.local.json` describes Codex MCP launch profiles, stale-transport reload boundaries, and direct CLI fallbacks.
 
 - 14B serve endpoint: `http://127.0.0.1:8765`
 - 32B serve endpoint: `http://127.0.0.1:8768`
@@ -107,6 +108,8 @@ def build_bundle(
     tool_contract_md = dist / "tool_integration_contract.local.md"
     runtime_contract = dist / "runtime_activation_contract.local.json"
     runtime_contract_md = dist / "runtime_activation_contract.local.md"
+    codex_mcp_contract = dist / "codex_mcp_launch_contract.local.json"
+    codex_mcp_contract_md = dist / "codex_mcp_launch_contract.local.md"
     inputs = [
         (dist / "local-harness.exe", bundle_root / "bin" / "local-harness.exe"),
         (dist / "local-harness.cmd", bundle_root / "bin" / "local-harness.cmd"),
@@ -118,6 +121,8 @@ def build_bundle(
         (tool_contract_md, bundle_root / "config" / "tool_integration_contract.local.md"),
         (runtime_contract, bundle_root / "config" / "runtime_activation_contract.local.json"),
         (runtime_contract_md, bundle_root / "config" / "runtime_activation_contract.local.md"),
+        (codex_mcp_contract, bundle_root / "config" / "codex_mcp_launch_contract.local.json"),
+        (codex_mcp_contract_md, bundle_root / "config" / "codex_mcp_launch_contract.local.md"),
         (ROOT / "project-docs" / "HARNESS-PACKAGING.md", bundle_root / "docs" / "HARNESS-PACKAGING.md"),
     ]
     if include_serve:
