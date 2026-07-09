@@ -9,6 +9,7 @@ def test_architecture_report_stitches_generated_contracts(tmp_path):
     endpoints = tmp_path / "endpoints.json"
     release_readiness = tmp_path / "model_release.json"
     publish_plan = tmp_path / "model_publish.json"
+    model_repo_stage = tmp_path / "model_repo_stage.json"
     huggingface_stage = tmp_path / "huggingface.json"
     context = tmp_path / "context.json"
     pubscan = tmp_path / "pubscan.json"
@@ -48,6 +49,18 @@ def test_architecture_report_stitches_generated_contracts(tmp_path):
         "schema": "harness.model-publish-plan/v1",
         "summary": {"status": "DO_NOT_PUBLISH"},
         "models": [{"candidate_name": "Flywheel-Local-Coder-14B"}],
+    }), encoding="utf-8")
+    model_repo_stage.write_text(json.dumps({
+        "schema": "harness.model-repo-stage/v1",
+        "stage_root": "C:/tmp/model_repositories",
+        "summary": {
+            "models": 2,
+            "required_files": 20,
+            "required_files_present": 20,
+            "required_files_missing": 0,
+            "synced_files": 0,
+            "repo_ids": ["HarperZ9/flywheel-local-coder-14b"],
+        },
     }), encoding="utf-8")
     huggingface_stage.write_text(json.dumps({
         "schema": "harness.huggingface-release-stage/v1",
@@ -171,6 +184,7 @@ def test_architecture_report_stitches_generated_contracts(tmp_path):
         endpoint_profiles_path=endpoints,
         model_release_path=release_readiness,
         model_publish_path=publish_plan,
+        model_repo_stage_path=model_repo_stage,
         huggingface_stage_path=huggingface_stage,
         tool_contract_path=tools,
         tool_readiness_path=tool_readiness,
@@ -199,6 +213,7 @@ def test_architecture_report_stitches_generated_contracts(tmp_path):
     assert report["summary"]["documentation_reports_present"] == 4
     assert report["summary"]["model_release_documents_present"] == 14
     assert report["summary"]["flagship_documents_present"] == 6
+    assert report["summary"]["model_repo_stage_required_present"] == 20
     assert report["summary"]["huggingface_do_not_upload"] == 2
     assert report["summary"]["tools"] == ["index"]
     assert report["release_gate"]["package_doctor_verdict"] == "SHIP_READY"
@@ -214,6 +229,7 @@ def test_architecture_report_markdown_includes_next_gates(tmp_path):
         endpoint_profiles_path=missing,
         model_release_path=missing,
         model_publish_path=missing,
+        model_repo_stage_path=missing,
         huggingface_stage_path=missing,
         tool_contract_path=missing,
         tool_readiness_path=missing,

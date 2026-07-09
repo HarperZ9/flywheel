@@ -225,6 +225,21 @@ def _huggingface_stage_summary(stage: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _model_repo_stage_summary(stage: dict[str, Any]) -> dict[str, Any]:
+    summary = stage.get("summary") or {}
+    return {
+        "schema": "harness.architecture-report.model-repo-stage/v1",
+        "present": bool(stage),
+        "stage_root": stage.get("stage_root", ""),
+        "models": summary.get("models", 0),
+        "required_files": summary.get("required_files", 0),
+        "required_files_present": summary.get("required_files_present", 0),
+        "required_files_missing": summary.get("required_files_missing", 0),
+        "synced_files": summary.get("synced_files", 0),
+        "repo_ids": summary.get("repo_ids", []),
+    }
+
+
 def _model_release_summary(readiness: dict[str, Any], publish: dict[str, Any]) -> dict[str, Any]:
     release_summary = readiness.get("summary") or {}
     publish_summary = publish.get("summary") or {}
@@ -300,6 +315,7 @@ def build_report(
     endpoint_profiles_path: Path,
     model_release_path: Path,
     model_publish_path: Path,
+    model_repo_stage_path: Path,
     huggingface_stage_path: Path,
     tool_contract_path: Path,
     tool_readiness_path: Path,
@@ -321,6 +337,7 @@ def build_report(
     endpoint_profiles = _load(endpoint_profiles_path)
     model_release = _load(model_release_path)
     model_publish = _load(model_publish_path)
+    model_repo_stage = _load(model_repo_stage_path)
     huggingface_stage = _load(huggingface_stage_path)
     tool_contract = _load(tool_contract_path)
     tool_readiness = _load(tool_readiness_path)
@@ -338,6 +355,7 @@ def build_report(
         "endpoint_profiles": _artifact(endpoint_profiles_path, "harness.model-endpoint-profiles/v1"),
         "model_release_readiness": _artifact(model_release_path, "harness.model-release-readiness/v1"),
         "model_publish_plan": _artifact(model_publish_path, "harness.model-publish-plan/v1"),
+        "model_repo_stage": _artifact(model_repo_stage_path, "harness.model-repo-stage/v1"),
         "huggingface_release_stage": _artifact(huggingface_stage_path, "harness.huggingface-release-stage/v1"),
         "tool_contract": _artifact(tool_contract_path, "harness.tool-integration-contract/v1"),
         "tool_readiness": _artifact(tool_readiness_path, "harness.tool-readiness/v1"),
@@ -362,6 +380,10 @@ def build_report(
         verified_facts.append("14B/32B naming and publication plan is represented by the model publish plan artifact.")
     else:
         assumptions.append("Model publish plan was not present when this report was generated.")
+    if model_repo_stage:
+        verified_facts.append("14B/32B metadata-only model repository staging folders are represented by the model repo stage artifact.")
+    else:
+        assumptions.append("Model repository staging was not present when this report was generated.")
     if huggingface_stage:
         verified_facts.append("14B/32B Hugging Face release staging is represented by the dry-run upload staging artifact.")
     else:
@@ -420,6 +442,7 @@ def build_report(
         "pubscan_profiles": _pubscan_summary(pubscan_profiles),
         "local_models": _endpoint_summary(endpoint_profiles),
         "model_release": _model_release_summary(model_release, model_publish),
+        "model_repo_stage": _model_repo_stage_summary(model_repo_stage),
         "huggingface_release_stage": _huggingface_stage_summary(huggingface_stage),
         "tool_fabric": _tool_summary(tool_contract),
         "tool_readiness": _tool_readiness_summary(tool_readiness),
@@ -462,6 +485,8 @@ def build_report(
             "schema_mismatches": [name for name, row in artifacts.items() if row["exists"] and not row["schema_matches"]],
             "models": _endpoint_summary(endpoint_profiles)["models"],
             "model_candidate_names": _model_release_summary(model_release, model_publish)["candidate_names"],
+            "model_repo_stage_required_present": _model_repo_stage_summary(model_repo_stage)["required_files_present"],
+            "model_repo_stage_required": _model_repo_stage_summary(model_repo_stage)["required_files"],
             "context_entries": _context_summary(context_inventory)["entries"],
             "pubscan_repositories": _pubscan_summary(pubscan_profiles)["repo_count"],
             "pubscan_profiled_entrypoints": _pubscan_summary(pubscan_profiles)["profiled_entrypoints"],
@@ -501,6 +526,7 @@ def render_markdown(report: dict[str, Any]) -> str:
         f"- Documentation reports: {report['summary']['documentation_reports_present']}",
         f"- Model release docs: {report['summary']['model_release_documents_present']}",
         f"- Flagship docs/art: {report['summary']['flagship_documents_present']}",
+        f"- Model repo staged files: {report['summary']['model_repo_stage_required_present']} / {report['summary']['model_repo_stage_required']}",
         f"- Hugging Face ready/do-not-upload: {report['summary']['huggingface_ready_to_upload']} / {report['summary']['huggingface_do_not_upload']}",
         f"- Tools: {', '.join(report['summary']['tools']) or 'none'}",
         f"- Package doctor: {report['release_gate']['package_doctor_verdict'] or 'not present in this report'}",
@@ -560,6 +586,15 @@ def render_markdown(report: dict[str, Any]) -> str:
         f"- Total bytes: {report['documentation_pack']['total_bytes']}",
         f"- Missing records: {', '.join(report['documentation_pack']['missing_records']) or 'none'}",
         "",
+        "## Model repository staging",
+        "",
+        f"- Present: {str(report['model_repo_stage']['present']).lower()}",
+        f"- Stage root: {report['model_repo_stage']['stage_root'] or 'none'}",
+        f"- Required files present: {report['model_repo_stage']['required_files_present']} / {report['model_repo_stage']['required_files']}",
+        f"- Required files missing: {report['model_repo_stage']['required_files_missing']}",
+        f"- Synced files: {report['model_repo_stage']['synced_files']}",
+        f"- Repo IDs: {', '.join(report['model_repo_stage']['repo_ids']) or 'none'}",
+        "",
         "## Hugging Face staging",
         "",
         f"- Present: {str(report['huggingface_release_stage']['present']).lower()}",
@@ -607,6 +642,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--endpoint-profiles", default="")
     parser.add_argument("--model-release", default="")
     parser.add_argument("--model-publish", default="")
+    parser.add_argument("--model-repo-stage", default="")
     parser.add_argument("--huggingface-stage", default="")
     parser.add_argument("--tool-contract", default="")
     parser.add_argument("--tool-readiness", default="")
@@ -635,6 +671,7 @@ def main(argv: list[str] | None = None) -> int:
         endpoint_profiles_path=Path(args.endpoint_profiles) if args.endpoint_profiles else dist / "model_endpoint_profiles.local.json",
         model_release_path=Path(args.model_release) if args.model_release else dist / "model_release_readiness.local.json",
         model_publish_path=Path(args.model_publish) if args.model_publish else dist / "model_publish_plan.local.json",
+        model_repo_stage_path=Path(args.model_repo_stage) if args.model_repo_stage else dist / "model_repo_stage.local.json",
         huggingface_stage_path=Path(args.huggingface_stage) if args.huggingface_stage else dist / "huggingface_release_stage.local.json",
         tool_contract_path=Path(args.tool_contract) if args.tool_contract else dist / "tool_integration_contract.local.json",
         tool_readiness_path=Path(args.tool_readiness) if args.tool_readiness else dist / "tool_readiness.local.json",
