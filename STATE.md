@@ -12,7 +12,15 @@ Last updated: 2026-07-09
 
 ## 2026-07-09 (session 3, cont.2) — HF PUBLISH IN PROGRESS + market surfaces
 
-- **14B UPLOADING TO HUGGING FACE.** Operator supplied a token and lifted the
+- **14B UPLOADED TO HUGGING FACE (private).** `zaindanaharper/flywheel-local-coder-14b`
+  is live private: 13 files, 8.99 GB, GGUF intact, model card + LICENSE +
+  provenance + receipts. Operator flips it PUBLIC themselves (Settings ->
+  Change visibility; I hold sharing-permission changes). The 9 GB xet upload
+  stalled twice on the connection tail via upload_folder; FIX that worked =
+  TWO-STEP: upload metadata first (ignore_patterns=['*.gguf'], fast commit),
+  then the GGUF alone via upload_file (xet deduped to ~134 MB new data, landed).
+  Lane at 86/100. Benchmark lane, market surfaces, guarded publisher all shipped.
+- **14B UPLOAD context.** Operator supplied a token and lifted the
   benchmark gate (acknowledged the honest null). Key correction: the HF account
   is **papacr0w** (org **zaindanaharper**, the operator's real name), NOT
   HarperZ9 (that is the GitHub handle; the pipeline default was wrong and is now
