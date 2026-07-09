@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import html
 import json
+import os
 import subprocess
 import sys
 from datetime import UTC, datetime
@@ -17,6 +18,16 @@ from harness.file_backed_store import FileBackedHarnessStore
 
 DEFAULT_STORE_ROOT = "C:/tmp/harness_file_store"
 DEFAULT_SEED_DIR = "C:/tmp/harness_closed_loop_seed"
+LOCAL_MODEL_VENV_PYTHON = "E:/local-model-run/venv/Scripts/python.exe"
+
+
+def _default_serve_python() -> str:
+    explicit = os.environ.get("LOCAL_SERVE_PYTHON", "").strip()
+    if explicit:
+        return explicit
+    if Path(LOCAL_MODEL_VENV_PYTHON).exists():
+        return LOCAL_MODEL_VENV_PYTHON
+    return sys.executable
 
 
 def _repo_root() -> Path:
@@ -795,10 +806,11 @@ def build_parser() -> argparse.ArgumentParser:
     _add_common_io(serve_launch)
     serve_launch.add_argument("--profile-artifact", default="C:/tmp/model_endpoint_profiles_20260709.json")
     serve_launch.add_argument("--models", default="")
-    serve_launch.add_argument("--serve-python", default=sys.executable)
+    serve_launch.add_argument("--serve-python", default=_default_serve_python())
     serve_launch.add_argument("--start", action="store_true")
     serve_launch.add_argument("--wait-seconds", type=float, default=0.0)
     serve_launch.add_argument("--log-dir", default="C:/tmp/local_model_serve_logs")
+    serve_launch.add_argument("--terminate-on-timeout", action="store_true")
     serve_launch.add_argument("--strict-exit", action="store_true")
 
     serve_resource = subparsers.add_parser("serve-resource", help="emit GPU resource preflight before local serve launch")
@@ -1155,6 +1167,8 @@ def build_command(args, *, repo_root: Path) -> list[str]:
         _append_if(command, "--models", args.models)
         if args.start:
             command.append("--start")
+        if args.terminate_on_timeout:
+            command.append("--terminate-on-timeout")
         if args.strict_exit:
             command.append("--strict-exit")
         _common_outputs(command, args)
