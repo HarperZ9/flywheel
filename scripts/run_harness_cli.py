@@ -129,6 +129,19 @@ def build_manifest(*, store_root: str = DEFAULT_STORE_ROOT) -> dict:
                 "recommended_validation_slice": "python -m pytest tests/test_mcp_tool_health_receipts.py tests/test_harness_cli.py -q",
             },
             {
+                "name": "tool-contract",
+                "delegates_to": "scripts/run_tool_integration_contract.py",
+                "purpose": "Emit the packaged sidecar integration contract for index, forum, gather, crucible, telos, aleph, mneme, relay, plexus, pubscan, and local-model.",
+                "schemas": ["harness.tool-integration-contract/v1"],
+                "evidence_surface": "tool roots, roles, packaged modes, harness commands, state contracts, and static readiness summaries",
+                "default_artifacts": [
+                    "C:/tmp/tool_integration_contract.json",
+                    "C:/tmp/tool_integration_contract.md",
+                ],
+                "long_running_risk": "low",
+                "recommended_validation_slice": "python -m pytest tests/test_tool_integration_contract.py tests/test_harness_cli.py -q",
+            },
+            {
                 "name": "benchmark-coverage",
                 "delegates_to": "scripts/run_benchmark_profile_coverage.py",
                 "purpose": "Compare the weighted benchmark profile against observed scorecard artifacts and flag missing coverage.",
@@ -713,6 +726,13 @@ def build_parser() -> argparse.ArgumentParser:
     mcp_health.add_argument("--tools", default="index,forum,telos,gather,crucible,aleph,mneme,relay,plexus,pubscan,local-model")
     mcp_health.add_argument("--observation", action="append", default=[])
 
+    tool_contract = subparsers.add_parser("tool-contract", help="emit packaged sidecar tool integration contract")
+    _add_common_io(tool_contract)
+    tool_contract.add_argument("--tools", default="index,forum,gather,crucible,telos,aleph,mneme,relay,plexus,pubscan,local-model")
+    tool_contract.add_argument("--base-root", default="C:/dev/public")
+    tool_contract.add_argument("--tool-root", action="append", default=["aleph=C:/dev/aleph", "local-model=C:/dev/local-model"])
+    tool_contract.add_argument("--package-root", default="C:/dev/local-model/artifacts/exe")
+
     coverage = subparsers.add_parser("benchmark-coverage", help="compare benchmark profile against scorecards")
     _add_common_io(coverage)
     coverage.add_argument("--profile", required=True)
@@ -968,6 +988,21 @@ def build_command(args, *, repo_root: Path) -> list[str]:
         ]
         for observation in args.observation:
             command.extend(["--observation", observation])
+        _common_outputs(command, args)
+        return command
+    if args.command_name == "tool-contract":
+        command = [
+            py,
+            "scripts/run_tool_integration_contract.py",
+            "--tools",
+            args.tools,
+            "--base-root",
+            args.base_root,
+            "--package-root",
+            args.package_root,
+        ]
+        for tool_root in args.tool_root:
+            command.extend(["--tool-root", tool_root])
         _common_outputs(command, args)
         return command
     if args.command_name == "benchmark-coverage":

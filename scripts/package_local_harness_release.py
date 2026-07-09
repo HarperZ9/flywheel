@@ -76,6 +76,7 @@ If the package is moved away from the source checkout, set `LOCAL_HARNESS_REPO` 
 ## Local models
 
 The package includes `config\\model_endpoint_profiles.local.json`.
+It also includes `config\\tool_integration_contract.local.json` for the Flywheel/Codex sidecar tool contract.
 
 - 14B serve endpoint: `http://127.0.0.1:8765`
 - 32B serve endpoint: `http://127.0.0.1:8768`
@@ -101,6 +102,8 @@ def build_bundle(
     release_manifest = dist / "local-harness-release.json"
     endpoint_profiles = dist / "model_endpoint_profiles.local.json"
     endpoint_profiles_md = dist / "model_endpoint_profiles.local.md"
+    tool_contract = dist / "tool_integration_contract.local.json"
+    tool_contract_md = dist / "tool_integration_contract.local.md"
     inputs = [
         (dist / "local-harness.exe", bundle_root / "bin" / "local-harness.exe"),
         (dist / "local-harness.cmd", bundle_root / "bin" / "local-harness.cmd"),
@@ -108,6 +111,8 @@ def build_bundle(
         (release_manifest, bundle_root / "manifest" / "local-harness-release.json"),
         (endpoint_profiles, bundle_root / "config" / "model_endpoint_profiles.local.json"),
         (endpoint_profiles_md, bundle_root / "config" / "model_endpoint_profiles.local.md"),
+        (tool_contract, bundle_root / "config" / "tool_integration_contract.local.json"),
+        (tool_contract_md, bundle_root / "config" / "tool_integration_contract.local.md"),
         (ROOT / "project-docs" / "HARNESS-PACKAGING.md", bundle_root / "docs" / "HARNESS-PACKAGING.md"),
     ]
     if include_serve:
