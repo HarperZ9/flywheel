@@ -287,6 +287,19 @@ def build_manifest(*, store_root: str = DEFAULT_STORE_ROOT) -> dict:
                 "recommended_validation_slice": "python -m pytest tests/test_local_model_launch_readiness.py tests/test_harness_cli.py -q",
             },
             {
+                "name": "serve-launch",
+                "delegates_to": "scripts/run_local_model_serve_launcher.py",
+                "purpose": "Plan or start local harness/serve.py processes from endpoint profiles with receipt-backed PID, log, and health status.",
+                "schemas": ["harness.local-model-serve-launch/v1"],
+                "evidence_surface": "serve launch commands, optional process IDs, log paths, and bounded health-poll status",
+                "default_artifacts": [
+                    "C:/tmp/local_model_serve_launch_20260709.json",
+                    "C:/tmp/local_model_serve_launch_20260709.md",
+                ],
+                "long_running_risk": "medium",
+                "recommended_validation_slice": "python -m pytest tests/test_local_model_serve_launcher.py tests/test_harness_cli.py -q",
+            },
+            {
                 "name": "model-publish",
                 "delegates_to": "scripts/run_model_publish_plan.py",
                 "purpose": "Generate 14B/32B candidate names and publication blockers from release-readiness evidence.",
@@ -765,6 +778,16 @@ def build_parser() -> argparse.ArgumentParser:
     launch_readiness.add_argument("--backends", default="serve")
     launch_readiness.add_argument("--strict-exit", action="store_true")
 
+    serve_launch = subparsers.add_parser("serve-launch", help="plan or start local harness/serve.py from endpoint profiles")
+    _add_common_io(serve_launch)
+    serve_launch.add_argument("--profile-artifact", default="C:/tmp/model_endpoint_profiles_20260709.json")
+    serve_launch.add_argument("--models", default="")
+    serve_launch.add_argument("--serve-python", default=sys.executable)
+    serve_launch.add_argument("--start", action="store_true")
+    serve_launch.add_argument("--wait-seconds", type=float, default=0.0)
+    serve_launch.add_argument("--log-dir", default="C:/tmp/local_model_serve_logs")
+    serve_launch.add_argument("--strict-exit", action="store_true")
+
     model_publish = subparsers.add_parser("model-publish", help="generate 14B/32B model naming and publish plan")
     _add_common_io(model_publish)
     model_publish.add_argument("--release-readiness-artifact", required=True)
@@ -1089,6 +1112,26 @@ def build_command(args, *, repo_root: Path) -> list[str]:
         ]
         _append_if(command, "--models", args.models)
         _append_if(command, "--backends", args.backends)
+        if args.strict_exit:
+            command.append("--strict-exit")
+        _common_outputs(command, args)
+        return command
+    if args.command_name == "serve-launch":
+        command = [
+            py,
+            "scripts/run_local_model_serve_launcher.py",
+            "--profile-artifact",
+            args.profile_artifact,
+            "--serve-python",
+            args.serve_python,
+            "--wait-seconds",
+            str(args.wait_seconds),
+            "--log-dir",
+            args.log_dir,
+        ]
+        _append_if(command, "--models", args.models)
+        if args.start:
+            command.append("--start")
         if args.strict_exit:
             command.append("--strict-exit")
         _common_outputs(command, args)

@@ -90,6 +90,7 @@ Primary artifacts:
 - `C:\tmp\model_endpoint_profiles_32b_override_8768_20260709.json`
 - `C:\tmp\local_model_launch_readiness_32b_override_8768_20260709.json`
 - `C:\tmp\model_endpoint_gate_32b_override_8768_20260709.json`
+- `C:\tmp\local_model_serve_launch_32b_plan_8768_20260709.json`
 
 What improved:
 
@@ -124,6 +125,7 @@ Local endpoint gate:
 - Follow-up 32B-integrated profiles assign `32B` to `http://127.0.0.1:8767`; the live gate now classifies that endpoint as `wrong_service_or_path` with health status `404`, meaning the 32B profile is correct but the live process on that port is not a `harness/serve.py` model endpoint.
 - Launch readiness classifies `14B` as `candidate_running_gate_required` on `8765` and `32B` as `port_conflict_wrong_service` on `8767`; observed 32B owner kind is `generic_http_server`.
 - Launch readiness suggests the non-destructive override `--serve-url-32b http://127.0.0.1:8768`; the override profile classifies `32B` as `ready_to_launch` on `8768`, and the override gate classifies it as `endpoint_unavailable` until the real 32B process starts.
+- Serve launcher planning records the exact 32B `harness/serve.py` command vector for `8768` and a log path without starting a resource-heavy process.
 - `ollama` backend was unavailable for both `14B` and `32B`.
 - The corrected endpoint gate blocks any `32B` readiness or publication claim until the serve process/profile mapping is corrected and rerun.
 

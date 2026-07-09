@@ -1050,6 +1050,7 @@ What changed:
 - Adds `endpoint-launch-readiness` as a harness command and receipt schema for non-destructive local serve launch diagnostics, including model root checks, port ownership, wrong-service conflicts, and launch templates.
 - Extends launch readiness with alternate-port suggestions and executable profile override arguments, allowing 32B to move from a conflicted default port to a free local port without terminating unrelated processes.
 - Extends `harness.cmd readiness model-endpoints` with model and serve URL override flags so endpoint profiles can be regenerated through the executable surface.
+- Adds `serve-launch` as a harness command and receipt schema for plan-only or managed `harness/serve.py` startup from endpoint profiles, with command vector, log path, optional PID, and bounded health-poll evidence.
 
 ### `classifier_friction_accountability_receipts`
 

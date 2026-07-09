@@ -315,6 +315,14 @@ When a serve profile is blocked by a wrong local service, launch readiness also 
 .\harness.cmd readiness model-endpoints --models 14B,32B --base-root E:/local-model-run --serve-url-32b http://127.0.0.1:8768 --out C:/tmp/model_endpoint_profiles_32b_override_8768_20260709.json --markdown-out C:/tmp/model_endpoint_profiles_32b_override_8768_20260709.md --store-root C:/tmp/harness_file_store
 ```
 
+Serve launcher command:
+
+```powershell
+.\harness.cmd serve-launch --profile-artifact C:/tmp/model_endpoint_profiles_32b_override_8768_20260709.json --models 32B --serve-python C:/Users/Zain/AppData/Local/Programs/Python/Python312/python.exe --out C:/tmp/local_model_serve_launch_32b_plan_8768_20260709.json --markdown-out C:/tmp/local_model_serve_launch_32b_plan_8768_20260709.md --store-root C:/tmp/harness_file_store
+```
+
+By default this is plan-only and does not start a model process. Add `--start --wait-seconds <seconds>` to start `harness/serve.py` in a background process, write combined stdout/stderr to the recorded log path, and poll `/health` for bounded startup evidence.
+
 Executable endpoint gate command:
 
 ```powershell
