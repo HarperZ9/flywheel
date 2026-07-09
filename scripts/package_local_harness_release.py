@@ -80,6 +80,7 @@ It includes `config\\model_release_readiness.local.json` and `config\\model_publ
 It also includes `config\\tool_integration_contract.local.json` for the Flywheel/Codex sidecar tool contract.
 `config\\runtime_activation_contract.local.json` describes storage, env knobs, and activation boundaries.
 `config\\codex_mcp_launch_contract.local.json` describes Codex MCP launch profiles, stale-transport reload boundaries, and direct CLI fallbacks.
+`config\\context_inventory.local.json` and `docs\\context_inventory.local.md` provide the metadata-only workspace context map.
 `config\\enterprise_readiness_report.local.json` summarizes mneme, relay, and plexus enterprise-readiness gates.
 `docs\\harness_architecture_report.local.md` summarizes the executable surface, local model endpoints, tool fabric, runtime activation, and release gates.
 
@@ -117,6 +118,8 @@ def build_bundle(
     runtime_contract_md = dist / "runtime_activation_contract.local.md"
     codex_mcp_contract = dist / "codex_mcp_launch_contract.local.json"
     codex_mcp_contract_md = dist / "codex_mcp_launch_contract.local.md"
+    context_inventory = dist / "context_inventory.local.json"
+    context_inventory_md = dist / "context_inventory.local.md"
     executable_manifest = dist / "harness_executable_manifest.local.json"
     executable_manifest_md = dist / "harness_executable_manifest.local.md"
     architecture_report = dist / "harness_architecture_report.local.json"
@@ -140,6 +143,8 @@ def build_bundle(
         (runtime_contract_md, bundle_root / "config" / "runtime_activation_contract.local.md"),
         (codex_mcp_contract, bundle_root / "config" / "codex_mcp_launch_contract.local.json"),
         (codex_mcp_contract_md, bundle_root / "config" / "codex_mcp_launch_contract.local.md"),
+        (context_inventory, bundle_root / "config" / "context_inventory.local.json"),
+        (context_inventory_md, bundle_root / "docs" / "context_inventory.local.md"),
         (executable_manifest, bundle_root / "manifest" / "harness_executable_manifest.local.json"),
         (executable_manifest_md, bundle_root / "manifest" / "harness_executable_manifest.local.md"),
         (architecture_report, bundle_root / "config" / "harness_architecture_report.local.json"),

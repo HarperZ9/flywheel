@@ -9,6 +9,7 @@ def test_architecture_report_stitches_generated_contracts(tmp_path):
     endpoints = tmp_path / "endpoints.json"
     release_readiness = tmp_path / "model_release.json"
     publish_plan = tmp_path / "model_publish.json"
+    context = tmp_path / "context.json"
     tools = tmp_path / "tools.json"
     runtime = tmp_path / "runtime.json"
     codex = tmp_path / "codex.json"
@@ -39,6 +40,12 @@ def test_architecture_report_stitches_generated_contracts(tmp_path):
         "summary": {"status": "DO_NOT_PUBLISH"},
         "models": [{"candidate_name": "Flywheel-Local-Coder-14B"}],
     }), encoding="utf-8")
+    context.write_text(json.dumps({
+        "schema": "harness.context-inventory/v1",
+        "roots_requested": ["C:/tmp"],
+        "roots": [{"root": "C:/tmp", "exists": True, "truncated": False}],
+        "summary": {"roots": 1, "existing_roots": 1, "entries": 2, "sensitive_name_entries": 0},
+    }), encoding="utf-8")
     tools.write_text(json.dumps({
         "schema": "harness.tool-integration-contract/v1",
         "summary": {"roots_missing": 0, "enterprise_ready_static": 1},
@@ -68,6 +75,7 @@ def test_architecture_report_stitches_generated_contracts(tmp_path):
     report = build_report(
         release_manifest_path=release,
         executable_manifest_path=executable,
+        context_inventory_path=context,
         endpoint_profiles_path=endpoints,
         model_release_path=release_readiness,
         model_publish_path=publish_plan,
@@ -81,6 +89,7 @@ def test_architecture_report_stitches_generated_contracts(tmp_path):
     assert report["schema"] == "harness.architecture-report/v1"
     assert report["summary"]["models"] == ["14B", "32B"]
     assert report["summary"]["model_candidate_names"] == ["Flywheel-Local-Coder-14B"]
+    assert report["summary"]["context_entries"] == 2
     assert report["summary"]["tools"] == ["index"]
     assert report["release_gate"]["package_doctor_verdict"] == "SHIP_READY"
 
@@ -90,6 +99,7 @@ def test_architecture_report_markdown_includes_next_gates(tmp_path):
     report = build_report(
         release_manifest_path=missing,
         executable_manifest_path=missing,
+        context_inventory_path=missing,
         endpoint_profiles_path=missing,
         model_release_path=missing,
         model_publish_path=missing,

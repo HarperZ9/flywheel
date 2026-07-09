@@ -41,6 +41,10 @@ def test_package_ship_doctor_accepts_complete_metadata_bundle(tmp_path):
         "config/codex_mcp_launch_contract.local.json": {
             "schema": "harness.codex-mcp-launch-contract/v1",
         },
+        "config/context_inventory.local.json": {
+            "schema": "harness.context-inventory/v1",
+            "summary": {"entries": 3, "existing_roots": 1, "roots": 1},
+        },
         "config/harness_architecture_report.local.json": {
             "schema": "harness.architecture-report/v1",
         },

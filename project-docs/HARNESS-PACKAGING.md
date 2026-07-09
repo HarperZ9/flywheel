@@ -21,6 +21,8 @@ python scripts/build_local_harness_exes.py --skip-serve --package --package-vers
 - `artifacts/exe/tool_integration_contract.local.json`: packaged tool sidecar contract for index, forum, gather, crucible, telos, aleph, mneme, relay, plexus, pubscan, and local-model.
 - `artifacts/exe/runtime_activation_contract.local.json`: packaged runtime activation contract for storage, env knobs, sidecars, and launch boundaries.
 - `artifacts/exe/codex_mcp_launch_contract.local.json`: Codex MCP launch, stale-transport reload, and direct CLI fallback contract.
+- `artifacts/exe/context_inventory.local.json`: metadata-only workspace context map for scratch, temp, session, and benchmark surfaces.
+- `artifacts/exe/context_inventory.local.md`: human-readable workspace context inventory.
 - `artifacts/exe/harness_executable_manifest.local.json`: packaged command-surface manifest.
 - `artifacts/exe/harness_architecture_report.local.json`: harness architecture and endpoint report stitched from generated contracts.
 - `artifacts/exe/enterprise_readiness_report.local.json`: mneme, relay, and plexus enterprise-readiness gates derived from the tool contract.
