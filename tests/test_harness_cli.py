@@ -151,6 +151,31 @@ def test_tool_hardening_command_targets_hardening_plan():
     assert "C:/tmp/tool_hardening_plan.json" in command
 
 
+def test_readiness_tools_command_passes_full_tool_set_and_tool_roots():
+    args = parse([
+        "readiness",
+        "tools",
+        "--tools",
+        "index,forum,gather,crucible,telos,aleph,mneme,relay,plexus,pubscan",
+        "--base-root",
+        "C:/dev/public",
+        "--tool-root",
+        "aleph=C:/dev/aleph",
+        "--out",
+        "C:/tmp/tool_readiness.json",
+    ])
+    command = build_command(args, repo_root=Path("C:/dev/local-model"))
+
+    assert command[:2] == [args.python, "scripts/run_tool_readiness_receipts.py"]
+    assert "--tools" in command
+    assert "index,forum,gather,crucible,telos,aleph,mneme,relay,plexus,pubscan" in command
+    assert "--base-root" in command
+    assert "C:/dev/public" in command
+    assert "--tool-root" in command
+    assert "aleph=C:/dev/aleph" in command
+    assert "C:/tmp/tool_readiness.json" in command
+
+
 def test_endpoint_gate_command_targets_model_endpoint_gate():
     args = parse([
         "endpoint-gate",

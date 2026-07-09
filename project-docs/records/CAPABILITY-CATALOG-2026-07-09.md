@@ -572,7 +572,7 @@ Completed in this loop:
 - Closed-loop benchmark seed orchestrator now plans and runs the current context/profile/preflight/index/benchmark receipt sequence under one shared run id.
 - Closed-loop outcome synthesizer now converts a seed run report into a Markdown/JSON experimental outcome draft with explicit observations, inferences, unknowns, and next checks.
 - Context inventory command now records metadata-only scratch/temp/session/artifact context shapes into the file-backed store.
-- Tool readiness command now records metadata-only mneme/relay/plexus enterprise-readiness posture into the file-backed store.
+- Tool readiness command now records metadata-only flagship/pubscan enterprise-readiness posture into the file-backed store.
 - Model release readiness command now records metadata-only 14B/32B publication-gate posture into the file-backed store.
 - Gather readiness command now records metadata-only gather/source-intake posture into the file-backed store.
 - Harness executable front-controller now exposes the current local-core receipt loop through `harness.cmd` and can emit a self-describing executable manifest receipt plus a static local HTML command registry.
@@ -679,7 +679,7 @@ Known gaps:
 - No lock file or concurrent-writer strategy exists yet.
 - The store has not yet been wired as the default sink for M7, UnisonAI, gather, or OpenCode benchmark outputs.
 - Pubscan/resource profiles, endpoint-auth status, M7, and UnisonAI now have direct store-sink flags, but those commands have not been run in this update.
-- Tool readiness receipts now provide a static, store-backed preflight for mneme, relay, and plexus without running tool tests or reading source bodies.
+- Tool readiness receipts now provide a static, store-backed preflight for index, forum, gather, crucible, telos, aleph, mneme, relay, plexus, and pubscan without running tool tests or reading source bodies.
 - Model release readiness receipts now provide a static, store-backed preflight for the 14B and 32B publication tracks without hashing or copying large model files.
 - Gather readiness receipts now provide a static, store-backed preflight for source intake without live capture or credential exposure.
 - Harness executable front-controller now provides one Windows-friendly entrypoint for manifest, registry, plan, seed, outcome, query, and readiness commands.
@@ -803,13 +803,13 @@ Primary files:
 
 What exists:
 
-- One command builds the current closed-loop seed plan for endpoint auth, executable manifest, command registry, benchmark execution matrix, benchmark profile, context inventory, tool readiness, tool hardening, local model endpoint/readiness/publish preflights, gather readiness, pubscan/resource profiles, Index CLI fallback, classifier-friction, M7 source-mined, M7 governed-agent, and UnisonAI stateful provider matrix.
+- One command builds the current closed-loop seed plan for endpoint auth, executable manifest, command registry, Forum route receipts, MCP tool health receipts, benchmark execution matrix, benchmark profile, context inventory, expanded tool readiness, tool hardening, local model endpoint/readiness/publish preflights, gather readiness, pubscan/resource profiles, Index CLI fallback, classifier-friction, M7 source-mined, M7 governed-agent, and UnisonAI stateful provider matrix.
 - Normal execution creates a single file-backed run id and passes the same `--store-root` and `--run-id` into every child command.
 - `--dry-plan` emits the exact planned commands without executing benchmarks or touching provider endpoints.
 - Context inventory runs by default as a metadata-only preflight and can be disabled with `--skip-context-inventory`.
 - Command registry generation runs by default as a metadata-only preflight and can be disabled with `--skip-harness-registry`.
 - Benchmark execution matrix generation runs by default as a metadata-only preflight and can be disabled with `--skip-benchmark-execution-matrix`.
-- Tool readiness runs by default as a metadata-only preflight and can be disabled with `--skip-tool-readiness`.
+- Expanded tool readiness runs by default as a metadata-only preflight and can be disabled with `--skip-tool-readiness`.
 - Model release readiness runs by default as a metadata-only preflight and can be disabled with `--skip-model-release-readiness`.
 - Gather readiness runs by default as a metadata-only preflight and can be disabled with `--skip-gather-readiness`.
 - Each executed step records start and finish events in the file-backed store.

@@ -439,7 +439,7 @@ def build_steps(args, *, run_id: str, artifact_dir: Path) -> list[OrchestrationS
     if not args.skip_tool_hardening_plan:
         steps.append(OrchestrationStep(
             step_id="tool_hardening_plan",
-            purpose="Convert mneme/relay/plexus readiness gaps into prioritized enterprise hardening actions.",
+            purpose="Convert flagship tool readiness gaps into prioritized enterprise hardening actions.",
             command=[
                 py,
                 "scripts/run_tool_hardening_plan.py",
