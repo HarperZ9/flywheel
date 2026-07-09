@@ -18,6 +18,8 @@ The schematic maps the target closed loop as an integration graph rather than a 
 flowchart TD
     operator["Operator approval and scope gates"]
     forum["forum.route"]
+    forumReceipts["Forum route receipts"]
+    mcpHealth["MCP tool health"]
     index["index MCP context envelope"]
     indexFallback["Index fallback receipt"]
     inventory["Context inventory"]
@@ -43,6 +45,11 @@ flowchart TD
 
     operator --> seed
     forum --> seed
+    forum --> forumReceipts
+    forumReceipts --> seed
+    forum --> mcpHealth
+    index --> mcpHealth
+    mcpHealth --> seed
     index --> inventory
     indexFallback --> inventory
     inventory --> matrix
@@ -75,6 +82,7 @@ Verified or observed in this update:
 - The objective file was read from `C:\Users\Zain\.codex\attachments\7a657b2a-776e-435b-bd23-750af5d91e7b\pasted-text-1.txt`.
 - `forum.route` is callable and returned a model-foundry validation architecture frame for this work.
 - `index.index_context_envelope` is callable but degraded; it returned `Transport closed`.
+- `telos_room` is callable and returned `MATCH` with 5 / 5 flagship tools ready for the five-tool room summary.
 - Existing roadmap and catalog records live under `C:\dev\local-model\project-docs\records`.
 - Existing benchmark contracts live under `C:\dev\local-model\benchmarks`.
 - The agentic task manifest generator now exists at `C:\dev\local-model\scripts\run_agentic_task_set_manifest.py`.
@@ -82,6 +90,8 @@ Verified or observed in this update:
 - The adapter runtime matrix generator now exists at `C:\dev\local-model\scripts\run_adapter_runtime_matrix.py`.
 - The embodied realtime plan generator now exists at `C:\dev\local-model\scripts\run_embodied_realtime_multimodal_plan.py`.
 - The schematic drift checker now exists at `C:\dev\local-model\scripts\run_schematic_drift_check.py`.
+- The Forum route receipt command now exists at `C:\dev\local-model\scripts\run_forum_route_receipts.py`.
+- The MCP tool health receipt command now exists at `C:\dev\local-model\scripts\run_mcp_tool_health_receipts.py`.
 
 Not verified in this update:
 
@@ -97,6 +107,8 @@ Not verified in this update:
 | Gate | Status | Required evidence |
 | --- | --- | --- |
 | Index transport | Open | Healthy live Index MCP envelope or fresh degraded fallback receipt with freshness marker. |
+| MCP tool health | Open | Executed `harness.mcp-tool-health/v1` receipt with observed healthy/degraded/configured/missing-root tool posture. |
+| Forum route receipts | Open | Executed `harness.forum-route-receipts/v1` receipt with route prompt hashes and observed route-frame metadata when available. |
 | Metadata preflight | Open | Executed metadata-only command deck artifacts. |
 | Agentic manifest | Open | Non-executing manifest generator and targeted validation after approval. |
 | Cross-harness adapter | Open | Adapter discovery and comparable scorecard rows for Codex, Flywheel, Claude Code, OpenCode, local 14B, local 32B, and dry roles. |

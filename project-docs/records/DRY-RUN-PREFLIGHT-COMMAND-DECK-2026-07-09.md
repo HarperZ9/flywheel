@@ -51,7 +51,7 @@ python scripts/run_context_inventory.py --out C:/tmp/context_inventory_20260709.
 ```
 
 ```powershell
-python scripts/run_tool_readiness_receipts.py --tools mneme,relay,plexus --base-root C:/dev/public --out C:/tmp/tool_readiness_20260709.json --markdown-out C:/tmp/tool_readiness_20260709.md --store-root C:/tmp/harness_file_store
+python scripts/run_tool_readiness_receipts.py --tools index,forum,gather,crucible,telos,aleph,mneme,relay,plexus,pubscan --base-root C:/dev/public --tool-root aleph=C:/dev/aleph --out C:/tmp/tool_readiness_20260709.json --markdown-out C:/tmp/tool_readiness_20260709.md --store-root C:/tmp/harness_file_store
 ```
 
 ```powershell
@@ -71,7 +71,7 @@ python scripts/run_gather_readiness.py --gather-root C:/dev/public/gather --conf
 ```
 
 ```powershell
-python scripts/run_index_receipt.py --lane context-envelope --root C:/dev --index-root C:/dev/public/index --budget 12000 --focus "local-model harness benchmark task set endpoint tools" --hops 2 --artifact-out C:/tmp/index_context_envelope_fallback_20260709.json --out C:/tmp/index_context_envelope_fallback_receipt_20260709.json --store-root C:/tmp/harness_file_store
+python scripts/run_index_receipt.py --lane context-envelope --root C:/dev --index-root C:/dev/public/index --budget 12000 --focus "local-model harness benchmark task set endpoint tools" --hops 2 --mcp-tool index_context_envelope --mcp-status transport_closed --mcp-error-code transport_closed --mcp-error-summary "Transport closed" --artifact-out C:/tmp/index_context_envelope_fallback_20260709.json --out C:/tmp/index_context_envelope_fallback_receipt_20260709.json --store-root C:/tmp/harness_file_store
 ```
 
 ```powershell
@@ -95,7 +95,7 @@ python scripts/run_model_card_claim_table.py --contract C:/dev/local-model/bench
 These commands are not authorized by this deck. They are listed so the next execution step is explicit.
 
 ```powershell
-pytest tests/test_agentic_task_set_manifest.py tests/test_cross_harness_manifest.py tests/test_adapter_runtime_matrix.py tests/test_embodied_realtime_multimodal_plan.py tests/test_model_card_claim_table.py tests/test_schematic_drift_check.py tests/test_harness_cli.py tests/test_closed_loop_benchmark_seed.py tests/test_benchmark_execution_matrix.py tests/test_benchmark_profile_coverage.py tests/test_closed_loop_outcome_report.py
+pytest tests/test_forum_route_receipts.py tests/test_mcp_tool_health_receipts.py tests/test_agentic_task_set_manifest.py tests/test_cross_harness_manifest.py tests/test_adapter_runtime_matrix.py tests/test_embodied_realtime_multimodal_plan.py tests/test_model_card_claim_table.py tests/test_schematic_drift_check.py tests/test_harness_cli.py tests/test_closed_loop_benchmark_seed.py tests/test_benchmark_execution_matrix.py tests/test_benchmark_profile_coverage.py tests/test_closed_loop_outcome_report.py
 ```
 
 ## Future endpoint/provider commands
@@ -112,6 +112,25 @@ python scripts/run_closed_loop_benchmark_seed.py --store-root C:/tmp/harness_fil
 
 ```powershell
 python scripts/run_closed_loop_outcome_report.py --input C:/tmp/harness_closed_loop_seed_20260709.json --out C:/tmp/harness_closed_loop_outcome_20260709.json --markdown-out C:/tmp/harness_closed_loop_outcome_20260709.md --store-root C:/tmp/harness_file_store
+```
+
+## Added metadata preflight: Forum route receipts
+
+```powershell
+python scripts/run_forum_route_receipts.py --route "Design the next closed-loop harness slice: convert live forum routing decisions into metadata-only stored receipts so Codex/Flywheel benchmark runs can measure route confidence, escalation state, decided lane, communication contract, and failure modes without making provider calls." --observed-confidence 0.1459 --observed-needs-escalation true --observed-domain operator-platform --observed-intent coordinate --observed-posture operator --observed-proof-lane synthesize --observed-domain-lane frontier-foundry --observed-human-contract "Answer as an operator: name the platform move, the tradeoff, the owner, and the next coordinated action." --out C:/tmp/forum_route_receipts_20260709.json --markdown-out C:/tmp/forum_route_receipts_20260709.md --store-root C:/tmp/harness_file_store
+```
+
+## Added metadata preflight: MCP tool health
+
+```powershell
+python scripts/run_mcp_tool_health_receipts.py --tools index,forum,telos,gather,crucible,aleph,mneme,relay,plexus,pubscan,local-model --observation "index=TRANSPORT_CLOSED|transport_closed|index_context_envelope returned Transport closed" --observation "forum=MATCH||forum.route returned project-telos validation frame" --observation "telos=MATCH||telos_room returned 5 of 5 flagship tools ready" --out C:/tmp/mcp_tool_health_20260709.json --markdown-out C:/tmp/mcp_tool_health_20260709.md --store-root C:/tmp/harness_file_store
+```
+
+## Added executable print preflights: route and MCP health
+
+```powershell
+.\harness.cmd --print-command forum-route --route "Route the active Codex/Flywheel local-model closed-loop harness objective." --out C:/tmp/forum_route_receipts_20260709.json --markdown-out C:/tmp/forum_route_receipts_20260709.md --store-root C:/tmp/harness_file_store
+.\harness.cmd --print-command mcp-health --tools index,forum,telos,gather,crucible,aleph,mneme,relay,plexus,pubscan,local-model --observation "index=TRANSPORT_CLOSED|transport_closed|index_context_envelope returned Transport closed" --out C:/tmp/mcp_tool_health_20260709.json --markdown-out C:/tmp/mcp_tool_health_20260709.md --store-root C:/tmp/harness_file_store
 ```
 
 ## Current risks

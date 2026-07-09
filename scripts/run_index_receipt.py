@@ -147,6 +147,10 @@ def summarize_result(
     dry_run: bool = False,
     stale_stdout: str = "",
     stale_artifact_path: str = "",
+    mcp_tool: str = "index_context_envelope",
+    mcp_status: str = "unobserved",
+    mcp_error_code: str = "",
+    mcp_error_summary: str = "",
 ) -> dict:
     expects_json = lane in JSON_LANES
     live_verdict, live_failure_code = classify_live_result(
@@ -200,6 +204,13 @@ def summarize_result(
         "artifact_write_policy": "preserve_stale_on_degraded" if stale_artifact_used else "write_live_stdout",
         "dependency_posture": "zero-mandatory",
         "mcp_fallback_reason": "index MCP transport unavailable or degraded",
+        "mcp_observation": {
+            "tool": mcp_tool,
+            "status": mcp_status,
+            "error_code": mcp_error_code,
+            "error_summary": mcp_error_summary,
+            "observed": bool(mcp_status and mcp_status != "unobserved"),
+        },
     }
 
 
@@ -230,6 +241,10 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--store-root", default="")
     parser.add_argument("--run-id", default="")
     parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument("--mcp-tool", default="index_context_envelope")
+    parser.add_argument("--mcp-status", default="unobserved")
+    parser.add_argument("--mcp-error-code", default="")
+    parser.add_argument("--mcp-error-summary", default="")
     args = parser.parse_args(argv)
 
     index_root = Path(args.index_root).resolve()
@@ -287,6 +302,10 @@ def main(argv: list[str] | None = None) -> int:
         dry_run=args.dry_run,
         stale_stdout=stale_stdout,
         stale_artifact_path=stale_artifact_path,
+        mcp_tool=args.mcp_tool,
+        mcp_status=args.mcp_status,
+        mcp_error_code=args.mcp_error_code,
+        mcp_error_summary=args.mcp_error_summary,
     )
     if args.artifact_out and not receipt["stale_artifact_used"]:
         write_text(args.artifact_out, stdout)

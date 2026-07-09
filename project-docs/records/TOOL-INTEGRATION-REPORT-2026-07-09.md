@@ -42,16 +42,19 @@ Observed MCP/tool state in this session:
 - `forum.route` is callable. It routed narrower evidence/status work to project-telos, and escalated the broader integration-report request across multiple lanes.
 - `index.index_context_envelope` is callable but currently fails with `Transport closed`.
 - The Index fallback command path exists through `C:\dev\local-model\scripts\run_index_receipt.py`.
+- The Index fallback receipt now carries an explicit `mcp_observation` block so MCP status and error class can be measured alongside CLI fallback output instead of living only in prose.
+- The Forum route receipt command exists through `C:\dev\local-model\scripts\run_forum_route_receipts.py`; it stores route prompt hashes and optional route-frame metadata without calling Forum, providers, endpoints, or token stores.
+- The MCP tool health receipt command exists through `C:\dev\local-model\scripts\run_mcp_tool_health_receipts.py`; it stores configured root posture and injected non-secret live observations for index, forum, telos, gather, crucible, aleph, mneme, relay, plexus, and local-model.
 
 ## Tool integration matrix
 
 | Tool or surface | Local root observed | Codex/MCP status | Harness integration status | Next gate |
 | --- | --- | --- | --- | --- |
-| `index` | Yes: `C:\dev\public\index` | MCP context envelope currently fails with `Transport closed`. | Local fallback receipt script exists and closed-loop docs include Index fallback receipts. | Fix or stabilize MCP transport, then compare MCP output against fallback receipt output. |
-| `forum` | Yes: `C:\dev\public\forum` | `forum.route` callable. | Used for routing/report framing; not yet a stored closed-loop evidence row by default. | Store forum route frames as first-class receipts in closed-loop runs. |
+| `index` | Yes: `C:\dev\public\index` | MCP context envelope currently fails with `Transport closed`. | Local fallback receipt script exists and now records MCP observation status/error fields alongside CLI fallback output. | Fix or stabilize MCP transport, then compare MCP output against fallback receipt output. |
+| `forum` | Yes: `C:\dev\public\forum` | `forum.route` callable. | Route prompt hashes and optional observed route-frame metadata are now stored by the closed-loop seed through `forum_route_receipts`. | Execute the metadata receipt and compare future route confidence/escalation drift across runs. |
+| `telos` | Yes: `C:\dev\public\telos` | `telos_room` returned `MATCH` with 5 / 5 flagship tools ready in this slice. | MCP health receipts can store Telos room status alongside index/forum observations. | Execute MCP health receipt and compare Telos room readiness drift across runs. |
 | `gather` | Yes: `C:\dev\public\gather` | Not live-tested in this slice. | `run_gather_readiness.py` exists and is wired into closed-loop seed. | Execute gather readiness and add source-specific intake receipts. |
 | `crucible` | Yes: `C:\dev\public\crucible` | Not live-tested in this slice. | Local root is observed; direct harness command linkage is not proven in this report. | Add or verify crucible-specific readiness and benchmark intake receipts. |
-| `telos` | Yes: `C:\dev\public\telos` | Not live-tested in this slice. | Local root is observed; direct harness command linkage is not proven in this report. | Add telos room/status evidence as a closed-loop context source. |
 | `aleph` | Yes: `C:\dev\aleph` | Not live-tested in this slice. | Local root is observed; direct harness command linkage is not proven in this report. | Decide whether aleph belongs in readiness, benchmark, or release lanes, then add receipts. |
 | `mneme` | Yes: `C:\dev\public\mneme` | Not live-tested in this slice. | Covered by tool readiness and hardening-plan commands for mneme/relay/plexus. | Execute readiness, implement hardening items, and record shipped changes. |
 | `relay` | Yes: `C:\dev\public\relay` | Not live-tested in this slice. | Covered by tool readiness and hardening-plan commands for mneme/relay/plexus. | Execute readiness, implement hardening items, and record shipped changes. |
@@ -69,7 +72,6 @@ The weakest current integration is live tool execution evidence. Several roots e
 
 1. Run closed-loop dry plan and inspect command assembly.
 2. Run context inventory, tool readiness, gather readiness, benchmark profile, and benchmark execution matrix preflights.
-3. Add `forum` route-frame receipts to the closed-loop seed so routing decisions become auditable artifacts.
-4. Stabilize `index` MCP transport or make the fallback wrapper the explicit default until the transport is fixed.
-5. Add direct readiness receipts for `crucible`, `telos`, `aleph`, and `pubscan` if they are required in the final loop.
-
+3. Execute `forum` route-frame receipts through the closed-loop seed so routing decisions become auditable artifacts.
+4. Execute MCP tool health receipts so callable/degraded/unobserved/missing-root posture becomes auditable across flagship tools.
+5. Stabilize `index` MCP transport or make the fallback wrapper the explicit default until the transport is fixed.

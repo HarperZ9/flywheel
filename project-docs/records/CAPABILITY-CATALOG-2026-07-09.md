@@ -945,7 +945,7 @@ Current-state evidence:
 Example commands:
 
 ```powershell
-python scripts/run_index_receipt.py --lane context-envelope --root C:/dev --index-root C:/dev/public/index --budget 12000 --focus "local-model harness file-backed store pubscan endpoint benchmarks" --hops 2 --artifact-out C:/tmp/index_context_envelope_fallback_20260709.json --out C:/tmp/index_context_envelope_fallback_receipt_20260709.json --store-root C:/tmp/harness_file_store
+python scripts/run_index_receipt.py --lane context-envelope --root C:/dev --index-root C:/dev/public/index --budget 12000 --focus "local-model harness file-backed store pubscan endpoint benchmarks" --hops 2 --mcp-tool index_context_envelope --mcp-status transport_closed --mcp-error-code transport_closed --mcp-error-summary "Transport closed" --artifact-out C:/tmp/index_context_envelope_fallback_20260709.json --out C:/tmp/index_context_envelope_fallback_receipt_20260709.json --store-root C:/tmp/harness_file_store
 ```
 
 ```powershell
@@ -1822,4 +1822,33 @@ Next promotion step:
 - Benchmark coverage recognizes adapter runtime matrices as planned-only cross-harness evidence.
 - Closed-loop outcome exposes adapter readiness under `adapter_runtime_signals`, including manifest-ready roles, focused-run-ready roles, endpoint-profile-ready roles, auth-ready roles, and blocking gate counts.
 - The closed-loop schematic graph and schematic drift checker now treat `adapter_runtime_matrix` as a required node.
+- Evidence status: implementation only. Tests, metadata artifact generation, endpoint probes, provider calls, token-store reads, model-weight reads, and benchmark runs were not executed in this update.
+
+## Capability: Forum route receipt observability
+
+Capability id: `forum_route_receipts`
+
+- New command: `C:/dev/local-model/scripts/run_forum_route_receipts.py`.
+- New executable wrapper: `harness.cmd forum-route`.
+- New tests: `C:/dev/local-model/tests/test_forum_route_receipts.py`.
+- Output schema: `harness.forum-route-receipts/v1`.
+- Purpose: turn `forum.route` decisions into auditable closed-loop metadata by storing route prompt hashes, optional observed route-frame confidence, escalation status, domain, intent, posture, proof lane, domain lane, and human contract.
+- Closed-loop seed now includes `forum_route_receipts` by default immediately after endpoint/account-lane posture, with `--skip-forum-route-receipts` and repeatable `--forum-route-text`.
+- Closed-loop outcome exposes route observability under `forum_route_signals`, including route count, observed route frames, route-text-only rows, escalation count, mean observed confidence, decided agents, domains, intents, and proof lanes.
+- The dry-run command deck includes a metadata-only route receipt command for the observed low-confidence `forum.route` call in this slice.
+- Evidence status: implementation only. Tests, metadata artifact generation, provider calls, endpoint probes, and benchmark runs were not executed in this update.
+
+## Capability: MCP tool health receipts
+
+Capability id: `mcp_tool_health_receipts`
+
+- New command: `C:/dev/local-model/scripts/run_mcp_tool_health_receipts.py`.
+- New executable wrapper: `harness.cmd mcp-health`.
+- New tests: `C:/dev/local-model/tests/test_mcp_tool_health_receipts.py`.
+- Output schema: `harness.mcp-tool-health/v1`.
+- Purpose: record configured flagship tool roots and injected non-secret status observations for `index`, `forum`, `telos`, `gather`, `crucible`, `aleph`, `mneme`, `relay`, `plexus`, and `local-model`.
+- Closed-loop seed now includes `mcp_tool_health` by default immediately after Forum route receipts, with `--skip-mcp-tool-health`, `--mcp-tool-health-tools`, and repeatable `--mcp-tool-health-observation`.
+- Closed-loop outcome exposes tool health under `mcp_tool_health_signals`, including observed tools, existing roots, healthy observed tools, degraded observed tools, configured-unobserved tools, missing roots, verdict counts, healthy tools, degraded tools, and unobserved tools.
+- The dry-run command deck includes metadata-only observations from this slice: `index=TRANSPORT_CLOSED`, `forum=MATCH`, and `telos=MATCH`.
+- The closed-loop integration schematic and schematic drift checker now require `forum_route_receipts` and `mcp_tool_health` nodes and edges into `closed_loop_seed`.
 - Evidence status: implementation only. Tests, metadata artifact generation, endpoint probes, provider calls, token-store reads, model-weight reads, and benchmark runs were not executed in this update.

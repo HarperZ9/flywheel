@@ -12,8 +12,9 @@ class Args:
     context_roots = "C:/tmp;C:/dev/local-model/.scratch"
     context_max_depth = 3
     context_max_entries_per_root = 500
-    tool_readiness_tools = "mneme,relay,plexus"
+    tool_readiness_tools = "index,forum,gather,crucible,telos,aleph,mneme,relay,plexus,pubscan"
     tool_readiness_base_root = "C:/dev/public"
+    tool_readiness_tool_root = ["aleph=C:/dev/aleph"]
     model_release_models = "14B,32B"
     model_release_base_root = "E:/local-model-run"
     model_release_artifact_roots = "C:/dev/local-model/artifacts;C:/tmp"
@@ -63,6 +64,9 @@ class Args:
     classifier_friction_timeout_seconds = 120
     classifier_friction_max_tokens = 500
     classifier_friction_allow_online = False
+    forum_route_text = []
+    mcp_tool_health_tools = "index,forum,telos,gather,crucible,aleph,mneme,relay,plexus,pubscan,local-model"
+    mcp_tool_health_observation = []
     skip_harness_manifest = False
     skip_context_inventory = False
     skip_tool_readiness = False
@@ -84,6 +88,8 @@ class Args:
     skip_m7_governed = False
     skip_unisonai = False
     skip_harness_comparison = False
+    skip_forum_route_receipts = False
+    skip_mcp_tool_health = False
 
 
 def test_build_steps_thread_same_store_and_run_id_through_commands(tmp_path):
@@ -91,6 +97,8 @@ def test_build_steps_thread_same_store_and_run_id_through_commands(tmp_path):
 
     assert [step.step_id for step in steps] == [
         "endpoint_auth_status",
+        "forum_route_receipts",
+        "mcp_tool_health",
         "harness_executable_manifest",
         "harness_command_registry",
         "benchmark_execution_matrix",
@@ -154,24 +162,48 @@ def test_build_report_dry_plan_preserves_planned_commands(tmp_path):
     assert report["dry_plan"] is True
     assert report["summary"]["steps"] == len(steps)
     assert report["planned_steps"][0]["step_id"] == "endpoint_auth_status"
-    assert report["planned_steps"][1]["step_id"] == "harness_executable_manifest"
-    assert report["planned_steps"][2]["step_id"] == "harness_command_registry"
-    assert report["planned_steps"][3]["step_id"] == "benchmark_execution_matrix"
-    assert report["planned_steps"][4]["step_id"] == "benchmark_profile"
-    assert report["planned_steps"][5]["step_id"] == "schematic_drift_check"
-    assert report["planned_steps"][6]["step_id"] == "agentic_task_manifest"
-    assert report["planned_steps"][7]["step_id"] == "cross_harness_manifest"
-    assert report["planned_steps"][8]["step_id"] == "embodied_realtime_multimodal_plan"
-    assert report["planned_steps"][9]["step_id"] == "model_card_claim_table"
-    assert report["planned_steps"][10]["step_id"] == "context_inventory"
-    assert report["planned_steps"][11]["step_id"] == "tool_readiness"
-    assert report["planned_steps"][12]["step_id"] == "tool_hardening_plan"
-    assert report["planned_steps"][13]["step_id"] == "model_endpoint_profiles"
-    assert report["planned_steps"][14]["step_id"] == "adapter_runtime_matrix"
-    assert report["planned_steps"][15]["step_id"] == "model_endpoint_gate"
-    assert report["planned_steps"][16]["step_id"] == "model_release_readiness"
-    assert report["planned_steps"][17]["step_id"] == "model_publish_plan"
-    assert report["planned_steps"][18]["step_id"] == "gather_readiness"
+    assert report["planned_steps"][1]["step_id"] == "forum_route_receipts"
+    assert report["planned_steps"][2]["step_id"] == "mcp_tool_health"
+    assert report["planned_steps"][3]["step_id"] == "harness_executable_manifest"
+    assert report["planned_steps"][4]["step_id"] == "harness_command_registry"
+    assert report["planned_steps"][5]["step_id"] == "benchmark_execution_matrix"
+    assert report["planned_steps"][6]["step_id"] == "benchmark_profile"
+    assert report["planned_steps"][7]["step_id"] == "schematic_drift_check"
+    assert report["planned_steps"][8]["step_id"] == "agentic_task_manifest"
+    assert report["planned_steps"][9]["step_id"] == "cross_harness_manifest"
+    assert report["planned_steps"][10]["step_id"] == "embodied_realtime_multimodal_plan"
+    assert report["planned_steps"][11]["step_id"] == "model_card_claim_table"
+    assert report["planned_steps"][12]["step_id"] == "context_inventory"
+    assert report["planned_steps"][13]["step_id"] == "tool_readiness"
+    assert report["planned_steps"][14]["step_id"] == "tool_hardening_plan"
+    assert report["planned_steps"][15]["step_id"] == "model_endpoint_profiles"
+    assert report["planned_steps"][16]["step_id"] == "adapter_runtime_matrix"
+    assert report["planned_steps"][17]["step_id"] == "model_endpoint_gate"
+    assert report["planned_steps"][18]["step_id"] == "model_release_readiness"
+    assert report["planned_steps"][19]["step_id"] == "model_publish_plan"
+    assert report["planned_steps"][20]["step_id"] == "gather_readiness"
+
+
+def test_forum_route_receipts_step_records_route_text_without_calling_forum(tmp_path):
+    steps = build_steps(Args(), run_id="run_123", artifact_dir=tmp_path)
+    forum = [step for step in steps if step.step_id == "forum_route_receipts"][0]
+
+    assert "scripts/run_forum_route_receipts.py" in forum.command
+    assert "--route" in forum.command
+    assert "Route the active Codex/Flywheel local-model closed-loop harness objective." in forum.command
+    assert str(tmp_path / "forum_route_receipts.json") in forum.expected_artifacts
+    assert str(tmp_path / "forum_route_receipts.md") in forum.expected_artifacts
+
+
+def test_mcp_tool_health_step_records_tool_observation_metadata(tmp_path):
+    steps = build_steps(Args(), run_id="run_123", artifact_dir=tmp_path)
+    health = [step for step in steps if step.step_id == "mcp_tool_health"][0]
+
+    assert "scripts/run_mcp_tool_health_receipts.py" in health.command
+    assert "--tools" in health.command
+    assert "index,forum,telos,gather,crucible,aleph,mneme,relay,plexus,pubscan,local-model" in health.command
+    assert str(tmp_path / "mcp_tool_health.json") in health.expected_artifacts
+    assert str(tmp_path / "mcp_tool_health.md") in health.expected_artifacts
 
 
 def test_benchmark_execution_matrix_step_records_run_plan_without_running_providers(tmp_path):
@@ -195,6 +227,17 @@ def test_tool_hardening_plan_step_consumes_tool_readiness_artifact(tmp_path):
     assert "--readiness-artifact" in hardening.command
     assert str(tmp_path / "tool_readiness.json") in hardening.command
     assert str(tmp_path / "tool_hardening_plan.json") in hardening.expected_artifacts
+
+
+def test_tool_readiness_step_covers_flagship_tools_and_aleph_root(tmp_path):
+    steps = build_steps(Args(), run_id="run_123", artifact_dir=tmp_path)
+    readiness = [step for step in steps if step.step_id == "tool_readiness"][0]
+
+    assert "scripts/run_tool_readiness_receipts.py" in readiness.command
+    assert "--tools" in readiness.command
+    assert "index,forum,gather,crucible,telos,aleph,mneme,relay,plexus,pubscan" in readiness.command
+    assert "--tool-root" in readiness.command
+    assert "aleph=C:/dev/aleph" in readiness.command
 
 
 def test_classifier_friction_step_writes_deterministic_artifacts(tmp_path):

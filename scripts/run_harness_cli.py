@@ -92,6 +92,32 @@ def build_manifest(*, store_root: str = DEFAULT_STORE_ROOT) -> dict:
                 "recommended_validation_slice": "python -m pytest tests/test_benchmark_profile_manifest.py tests/test_harness_cli.py -q",
             },
             {
+                "name": "forum-route",
+                "delegates_to": "scripts/run_forum_route_receipts.py",
+                "purpose": "Emit metadata-only Forum route prompt hashes and optional observed route-frame metadata.",
+                "schemas": ["harness.forum-route-receipts/v1"],
+                "evidence_surface": "route prompt hashes, observed route confidence, escalation state, domain, intent, posture, and proof lane",
+                "default_artifacts": [
+                    "C:/tmp/forum_route_receipts.json",
+                    "C:/tmp/forum_route_receipts.md",
+                ],
+                "long_running_risk": "low",
+                "recommended_validation_slice": "python -m pytest tests/test_forum_route_receipts.py tests/test_harness_cli.py -q",
+            },
+            {
+                "name": "mcp-health",
+                "delegates_to": "scripts/run_mcp_tool_health_receipts.py",
+                "purpose": "Emit metadata-only MCP/tool root posture and optional non-secret live status observations.",
+                "schemas": ["harness.mcp-tool-health/v1"],
+                "evidence_surface": "configured tool roots plus observed healthy/degraded/unobserved/missing-root posture",
+                "default_artifacts": [
+                    "C:/tmp/mcp_tool_health.json",
+                    "C:/tmp/mcp_tool_health.md",
+                ],
+                "long_running_risk": "low",
+                "recommended_validation_slice": "python -m pytest tests/test_mcp_tool_health_receipts.py tests/test_harness_cli.py -q",
+            },
+            {
                 "name": "benchmark-coverage",
                 "delegates_to": "scripts/run_benchmark_profile_coverage.py",
                 "purpose": "Compare the weighted benchmark profile against observed scorecard artifacts and flag missing coverage.",
@@ -618,6 +644,25 @@ def build_parser() -> argparse.ArgumentParser:
     benchmarks.add_argument("--artifact-roots", default="C:/tmp;C:/dev/local-model/artifacts")
     benchmarks.add_argument("--max-artifacts", type=int, default=200)
 
+    forum_route = subparsers.add_parser("forum-route", help="emit metadata-only Forum route receipts")
+    _add_common_io(forum_route)
+    forum_route.add_argument("--route", action="append", default=[])
+    forum_route.add_argument("--observed-decided", default="")
+    forum_route.add_argument("--observed-confidence", default="")
+    forum_route.add_argument("--observed-needs-escalation", default="")
+    forum_route.add_argument("--observed-domain", default="")
+    forum_route.add_argument("--observed-intent", default="")
+    forum_route.add_argument("--observed-posture", default="")
+    forum_route.add_argument("--observed-proof-lane", default="")
+    forum_route.add_argument("--observed-domain-lane", default="")
+    forum_route.add_argument("--observed-human-contract", default="")
+    forum_route.add_argument("--observed-source", default="forum.route")
+
+    mcp_health = subparsers.add_parser("mcp-health", help="emit metadata-only MCP/tool health receipts")
+    _add_common_io(mcp_health)
+    mcp_health.add_argument("--tools", default="index,forum,telos,gather,crucible,aleph,mneme,relay,plexus,pubscan,local-model")
+    mcp_health.add_argument("--observation", action="append", default=[])
+
     coverage = subparsers.add_parser("benchmark-coverage", help="compare benchmark profile against scorecards")
     _add_common_io(coverage)
     coverage.add_argument("--profile", required=True)
@@ -730,6 +775,8 @@ def build_parser() -> argparse.ArgumentParser:
     )
     _add_common_io(readiness)
     readiness.add_argument("--roots", default="")
+    readiness.add_argument("--tools", default="")
+    readiness.add_argument("--tool-root", action="append", default=[])
     readiness.add_argument("--base-root", default="")
     readiness.add_argument("--artifact-roots", default="")
     readiness.add_argument("--gather-root", default="")
@@ -759,7 +806,10 @@ def _readiness_command(args) -> list[str]:
         return command
     if args.target == "tools":
         command = [py, "scripts/run_tool_readiness_receipts.py"]
+        _append_if(command, "--tools", args.tools)
         _append_if(command, "--base-root", args.base_root)
+        for tool_root in args.tool_root:
+            command.extend(["--tool-root", tool_root])
         _common_outputs(command, args)
         return command
     if args.target == "model-endpoints":
@@ -803,6 +853,33 @@ def build_command(args, *, repo_root: Path) -> list[str]:
             "--max-artifacts",
             str(args.max_artifacts),
         ]
+        _common_outputs(command, args)
+        return command
+    if args.command_name == "forum-route":
+        command = [py, "scripts/run_forum_route_receipts.py"]
+        for route_text in args.route:
+            command.extend(["--route", route_text])
+        _append_if(command, "--observed-decided", args.observed_decided)
+        _append_if(command, "--observed-confidence", args.observed_confidence)
+        _append_if(command, "--observed-needs-escalation", args.observed_needs_escalation)
+        _append_if(command, "--observed-domain", args.observed_domain)
+        _append_if(command, "--observed-intent", args.observed_intent)
+        _append_if(command, "--observed-posture", args.observed_posture)
+        _append_if(command, "--observed-proof-lane", args.observed_proof_lane)
+        _append_if(command, "--observed-domain-lane", args.observed_domain_lane)
+        _append_if(command, "--observed-human-contract", args.observed_human_contract)
+        _append_if(command, "--observed-source", args.observed_source)
+        _common_outputs(command, args)
+        return command
+    if args.command_name == "mcp-health":
+        command = [
+            py,
+            "scripts/run_mcp_tool_health_receipts.py",
+            "--tools",
+            args.tools,
+        ]
+        for observation in args.observation:
+            command.extend(["--observation", observation])
         _common_outputs(command, args)
         return command
     if args.command_name == "benchmark-coverage":

@@ -43,6 +43,30 @@
       "command": "python scripts/run_endpoint_auth_status.py --out C:/tmp/endpoint_auth_status_20260709.json --markdown-out C:/tmp/endpoint_auth_status_20260709.md --store-root C:/tmp/harness_file_store"
     },
     {
+      "id": "deck-002b-forum-route-receipts",
+      "tier": "metadata_only",
+      "purpose": "Record Forum route prompt hashes and optional observed route-frame metadata without calling providers or reading secrets.",
+      "command": "python scripts/run_forum_route_receipts.py --route \"Design the next closed-loop harness slice: convert live forum routing decisions into metadata-only stored receipts so Codex/Flywheel benchmark runs can measure route confidence, escalation state, decided lane, communication contract, and failure modes without making provider calls.\" --observed-confidence 0.1459 --observed-needs-escalation true --observed-domain operator-platform --observed-intent coordinate --observed-posture operator --observed-proof-lane synthesize --observed-domain-lane frontier-foundry --observed-human-contract \"Answer as an operator: name the platform move, the tradeoff, the owner, and the next coordinated action.\" --out C:/tmp/forum_route_receipts_20260709.json --markdown-out C:/tmp/forum_route_receipts_20260709.md --store-root C:/tmp/harness_file_store"
+    },
+    {
+      "id": "deck-002c-mcp-tool-health",
+      "tier": "metadata_only",
+      "purpose": "Record configured flagship tool roots plus observed Index/Forum/Telos MCP status without calling providers, endpoints, token stores, or model weights.",
+      "command": "python scripts/run_mcp_tool_health_receipts.py --tools index,forum,telos,gather,crucible,aleph,mneme,relay,plexus,pubscan,local-model --observation \"index=TRANSPORT_CLOSED|transport_closed|index_context_envelope returned Transport closed\" --observation \"forum=MATCH||forum.route returned project-telos validation frame\" --observation \"telos=MATCH||telos_room returned 5 of 5 flagship tools ready\" --out C:/tmp/mcp_tool_health_20260709.json --markdown-out C:/tmp/mcp_tool_health_20260709.md --store-root C:/tmp/harness_file_store"
+    },
+    {
+      "id": "deck-002d-harness-forum-route-print",
+      "tier": "metadata_only",
+      "purpose": "Verify the executable front-controller can assemble the Forum route receipt command without executing it.",
+      "command": ".\\harness.cmd --print-command forum-route --route \"Route the active Codex/Flywheel local-model closed-loop harness objective.\" --out C:/tmp/forum_route_receipts_20260709.json --markdown-out C:/tmp/forum_route_receipts_20260709.md --store-root C:/tmp/harness_file_store"
+    },
+    {
+      "id": "deck-002e-harness-mcp-health-print",
+      "tier": "metadata_only",
+      "purpose": "Verify the executable front-controller can assemble the MCP tool health command without executing it.",
+      "command": ".\\harness.cmd --print-command mcp-health --tools index,forum,telos,gather,crucible,aleph,mneme,relay,plexus,pubscan,local-model --observation \"index=TRANSPORT_CLOSED|transport_closed|index_context_envelope returned Transport closed\" --out C:/tmp/mcp_tool_health_20260709.json --markdown-out C:/tmp/mcp_tool_health_20260709.md --store-root C:/tmp/harness_file_store"
+    },
+    {
       "id": "deck-003-benchmark-execution-matrix",
       "tier": "metadata_only",
       "purpose": "Generate the non-executing dry/focused/full benchmark matrix.",
@@ -70,7 +94,7 @@
       "id": "deck-006-tool-readiness",
       "tier": "metadata_only",
       "purpose": "Generate static readiness receipts for mneme, relay, and plexus.",
-      "command": "python scripts/run_tool_readiness_receipts.py --tools mneme,relay,plexus --base-root C:/dev/public --out C:/tmp/tool_readiness_20260709.json --markdown-out C:/tmp/tool_readiness_20260709.md --store-root C:/tmp/harness_file_store"
+      "command": "python scripts/run_tool_readiness_receipts.py --tools index,forum,gather,crucible,telos,aleph,mneme,relay,plexus,pubscan --base-root C:/dev/public --tool-root aleph=C:/dev/aleph --out C:/tmp/tool_readiness_20260709.json --markdown-out C:/tmp/tool_readiness_20260709.md --store-root C:/tmp/harness_file_store"
     },
     {
       "id": "deck-007-tool-hardening",
@@ -100,7 +124,7 @@
       "id": "deck-010-index-fallback-receipt",
       "tier": "metadata_only",
       "purpose": "Use the local Index fallback receipt while MCP index.context.envelope is unavailable.",
-      "command": "python scripts/run_index_receipt.py --lane context-envelope --root C:/dev --index-root C:/dev/public/index --budget 12000 --focus \"local-model harness benchmark task set endpoint tools\" --hops 2 --artifact-out C:/tmp/index_context_envelope_fallback_20260709.json --out C:/tmp/index_context_envelope_fallback_receipt_20260709.json --store-root C:/tmp/harness_file_store"
+      "command": "python scripts/run_index_receipt.py --lane context-envelope --root C:/dev --index-root C:/dev/public/index --budget 12000 --focus \"local-model harness benchmark task set endpoint tools\" --hops 2 --mcp-tool index_context_envelope --mcp-status transport_closed --mcp-error-code transport_closed --mcp-error-summary \"Transport closed\" --artifact-out C:/tmp/index_context_envelope_fallback_20260709.json --out C:/tmp/index_context_envelope_fallback_receipt_20260709.json --store-root C:/tmp/harness_file_store"
     },
     {
       "id": "deck-011-agentic-task-manifest",
@@ -130,7 +154,7 @@
       "id": "deck-014-targeted-adapter-tests",
       "tier": "requires_validation_approval",
       "purpose": "Targeted validation slice for metadata-only manifest and closed-loop wiring.",
-      "command": "pytest tests/test_agentic_task_set_manifest.py tests/test_cross_harness_manifest.py tests/test_adapter_runtime_matrix.py tests/test_embodied_realtime_multimodal_plan.py tests/test_model_card_claim_table.py tests/test_schematic_drift_check.py tests/test_harness_cli.py tests/test_closed_loop_benchmark_seed.py tests/test_benchmark_execution_matrix.py tests/test_benchmark_profile_coverage.py tests/test_closed_loop_outcome_report.py"
+      "command": "pytest tests/test_forum_route_receipts.py tests/test_mcp_tool_health_receipts.py tests/test_agentic_task_set_manifest.py tests/test_cross_harness_manifest.py tests/test_adapter_runtime_matrix.py tests/test_embodied_realtime_multimodal_plan.py tests/test_model_card_claim_table.py tests/test_schematic_drift_check.py tests/test_harness_cli.py tests/test_closed_loop_benchmark_seed.py tests/test_benchmark_execution_matrix.py tests/test_benchmark_profile_coverage.py tests/test_closed_loop_outcome_report.py"
     },
     {
       "id": "deck-015-endpoint-gate-nonstrict",

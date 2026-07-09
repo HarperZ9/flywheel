@@ -360,6 +360,140 @@ def test_build_outcome_includes_adapter_runtime_signals(tmp_path):
     assert "## Adapter runtime signals" in markdown
 
 
+def test_build_outcome_includes_forum_route_signals(tmp_path):
+    routes = tmp_path / "forum_route_receipts.json"
+    routes.write_text(json.dumps({
+        "schema": "harness.forum-route-receipts/v1",
+        "summary": {
+            "route_count": 1,
+            "observed_route_frames": 1,
+            "route_text_only": 0,
+            "escalation_count": 1,
+            "mean_observed_confidence": 0.1459,
+        },
+        "routes": [
+            {
+                "route_id": "route-001",
+                "observation_status": "observed_route_frame",
+                "observed": True,
+                "observed_decided": "",
+                "observed_confidence": 0.1459,
+                "observed_needs_escalation": True,
+                "observed_domain": "operator-platform",
+                "observed_intent": "coordinate",
+                "observed_posture": "operator",
+                "observed_proof_lane": "synthesize",
+                "observed_domain_lane": "frontier-foundry",
+                "provider_execution_observed": False,
+                "endpoint_probe_observed": False,
+            }
+        ],
+    }), encoding="utf-8")
+    report = {
+        "schema": "harness.closed-loop-benchmark-seed/v1",
+        "run_id": "run_forum_routes",
+        "dry_plan": False,
+        "results": [
+            {
+                "step_id": "forum_route_receipts",
+                "status": "ok",
+                "expected_artifacts": [str(routes)],
+            }
+        ],
+        "summary": {"failed_steps": 0, "timeout_steps": 0},
+    }
+
+    outcome = build_outcome(report, source_report_path="seed.json")
+
+    signals = outcome["observations"]["forum_route_signals"]
+    assert signals["route_artifacts"] == 1
+    assert signals["route_count"] == 1
+    assert signals["observed_route_frames"] == 1
+    assert signals["escalation_count"] == 1
+    assert signals["mean_observed_confidence"] == 0.1459
+    assert signals["domains"] == ["operator-platform"]
+    assert signals["proof_lanes"] == ["synthesize"]
+    markdown = render_markdown(outcome)
+    assert "## Forum route signals" in markdown
+
+
+def test_build_outcome_includes_mcp_tool_health_signals(tmp_path):
+    health = tmp_path / "mcp_tool_health.json"
+    health.write_text(json.dumps({
+        "schema": "harness.mcp-tool-health/v1",
+        "summary": {
+            "tools": 3,
+            "roots_existing": 3,
+            "observed_tools": 3,
+            "healthy_observed_tools": 2,
+            "degraded_observed_tools": 1,
+            "configured_unobserved_tools": 0,
+            "missing_roots": 0,
+            "verdict_counts": {"OBSERVED_HEALTHY": 2, "OBSERVED_DEGRADED": 1},
+        },
+        "tools": [
+            {
+                "tool": "index",
+                "role": "structure-context",
+                "root_exists": True,
+                "observed": True,
+                "observed_status": "TRANSPORT_CLOSED",
+                "observed_error_code": "transport_closed",
+                "verdict": "OBSERVED_DEGRADED",
+                "provider_execution_observed": False,
+                "endpoint_probe_observed": False,
+            },
+            {
+                "tool": "forum",
+                "role": "orchestration-routing",
+                "root_exists": True,
+                "observed": True,
+                "observed_status": "MATCH",
+                "observed_error_code": "",
+                "verdict": "OBSERVED_HEALTHY",
+                "provider_execution_observed": False,
+                "endpoint_probe_observed": False,
+            },
+            {
+                "tool": "telos",
+                "role": "shared-room-reconciliation",
+                "root_exists": True,
+                "observed": True,
+                "observed_status": "MATCH",
+                "observed_error_code": "",
+                "verdict": "OBSERVED_HEALTHY",
+                "provider_execution_observed": False,
+                "endpoint_probe_observed": False,
+            },
+        ],
+    }), encoding="utf-8")
+    report = {
+        "schema": "harness.closed-loop-benchmark-seed/v1",
+        "run_id": "run_mcp_health",
+        "dry_plan": False,
+        "results": [
+            {
+                "step_id": "mcp_tool_health",
+                "status": "ok",
+                "expected_artifacts": [str(health)],
+            }
+        ],
+        "summary": {"failed_steps": 0, "timeout_steps": 0},
+    }
+
+    outcome = build_outcome(report, source_report_path="seed.json")
+
+    signals = outcome["observations"]["mcp_tool_health_signals"]
+    assert signals["health_artifacts"] == 1
+    assert signals["tools"] == 3
+    assert signals["healthy_observed_tools"] == 2
+    assert signals["degraded_observed_tools"] == 1
+    assert signals["healthy_tools"] == ["forum", "telos"]
+    assert signals["degraded_tools"] == ["index"]
+    markdown = render_markdown(outcome)
+    assert "## MCP tool health signals" in markdown
+
+
 def test_build_outcome_includes_schematic_drift_signals(tmp_path):
     drift = tmp_path / "schematic_drift_check.json"
     drift.write_text(json.dumps({

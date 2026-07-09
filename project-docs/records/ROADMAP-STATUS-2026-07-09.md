@@ -146,3 +146,31 @@ This is a planning estimate, not a performance metric.
 - Added `scripts/run_adapter_runtime_matrix.py`, `harness.cmd adapter-runtime`, closed-loop seed step `adapter_runtime_matrix`, dry-tier execution-matrix step `adapter_runtime_matrix`, benchmark coverage planned-only ingestion, and outcome `adapter_runtime_signals`.
 - Updated the closed-loop schematic graph, schematic report, and schematic drift requirements so `adapter_runtime_matrix` is a required node with a required path into the benchmark execution matrix.
 - Status: implemented, not validated, not run. Roadmap estimate moves to `25 / 32` units, approximately `78%`; cross-harness adapter readiness is more explicit, but provider calls, endpoint probes, metadata artifacts, tests, and benchmark execution remain unrun.
+
+## 2026-07-09 update: Index fallback MCP observation metadata
+
+- Added explicit MCP observation fields to `scripts/run_index_receipt.py` so Index fallback receipts can record the observed MCP tool, status, error code, and error summary before CLI fallback is used.
+- Updated the dry-run command deck so the current `index_context_envelope` transport failure is represented as structured receipt metadata: `mcp_status=transport_closed`, `mcp_error_code=transport_closed`, and `mcp_error_summary="Transport closed"`.
+- Status: implemented, not validated, not run. Roadmap estimate remains `25 / 32` units, approximately `78%`; observability improved, but Index MCP is still degraded until a live MCP call returns a healthy envelope or a structured tool-error payload.
+
+## 2026-07-09 update: Forum route receipt surface
+
+- Added `scripts/run_forum_route_receipts.py`, a metadata-only route evidence command that records route prompt hashes plus optional observed `forum.route` metadata such as confidence, escalation, domain, intent, posture, proof lane, and human contract.
+- Wired `forum_route_receipts` into the default closed-loop seed immediately after endpoint/account-lane posture, with `--skip-forum-route-receipts` and repeatable `--forum-route-text` overrides.
+- Updated the dry-run command deck and tool integration report so Forum route decisions can become auditable artifacts instead of chat-only routing context.
+- Status: implemented, not validated, not run. Roadmap estimate moves to `25.25 / 32` units, approximately `79%`; route observability improved, but actual run-to-run route confidence drift remains unmeasured until metadata preflights execute.
+
+## 2026-07-09 update: MCP tool health receipt surface
+
+- Added `scripts/run_mcp_tool_health_receipts.py`, a metadata-only tool health command that records configured root posture plus optional non-secret live observations for `index`, `forum`, `telos`, `gather`, `crucible`, `aleph`, `mneme`, `relay`, `plexus`, and `local-model`.
+- Wired `mcp_tool_health` into the default closed-loop seed after Forum route receipts, with `--skip-mcp-tool-health`, `--mcp-tool-health-tools`, and repeatable `--mcp-tool-health-observation`.
+- Added outcome synthesis under `mcp_tool_health_signals`, including observed tools, healthy tools, degraded tools, configured-unobserved tools, missing roots, and verdict counts.
+- Current observed metadata from this slice: `index=TRANSPORT_CLOSED`, `forum=MATCH`, and `telos=MATCH`.
+- Status: implemented, not validated, not run. Roadmap estimate moves to `25.5 / 32` units, approximately `80%`; tool health observability improved, but no metadata artifact or validation run has been executed yet.
+
+## 2026-07-09 update: executable route and MCP health preflights
+
+- Added `harness.cmd forum-route` to the executable front controller and manifest/registry surface. It delegates to `scripts/run_forum_route_receipts.py`.
+- Added `harness.cmd mcp-health` to the executable front controller and manifest/registry surface. It delegates to `scripts/run_mcp_tool_health_receipts.py`.
+- Updated `tests/test_harness_cli.py` so command delegation and manifest listing cover both new metadata-only preflights.
+- Status: implemented, not validated, not run. Roadmap estimate moves to `25.75 / 32` units, approximately `80%`; executable packaging coverage improved, but the harness manifest command and targeted tests have not been executed.

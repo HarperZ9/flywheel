@@ -51,6 +51,8 @@ def test_summarize_result_marks_valid_json_as_match():
     assert receipt["output_json_valid"] is True
     assert receipt["output_schema"] == "index.context-envelope/v1"
     assert receipt["failure_code"] == ""
+    assert receipt["mcp_observation"]["status"] == "unobserved"
+    assert receipt["mcp_observation"]["observed"] is False
 
 
 def test_summarize_result_fails_closed_on_invalid_json():
@@ -137,3 +139,31 @@ def test_summarize_result_rejects_invalid_stale_artifact():
     assert receipt["effective_output_source"] == "live_stdout"
     assert receipt["stale_artifact_used"] is False
     assert receipt["stale_artifact_valid"] is False
+
+
+def test_summarize_result_records_mcp_transport_observation():
+    receipt = summarize_result(
+        lane="context-envelope",
+        root="C:/dev",
+        index_root="C:/dev/public/index",
+        command=["python"],
+        returncode=None,
+        elapsed_ms=7,
+        stdout="",
+        stderr="",
+        artifact_path="C:/tmp/index.json",
+        timed_out=True,
+        mcp_tool="index_context_envelope",
+        mcp_status="transport_closed",
+        mcp_error_code="transport_closed",
+        mcp_error_summary="Transport closed",
+    )
+
+    assert receipt["verdict"] == "UNVERIFIABLE"
+    assert receipt["mcp_observation"] == {
+        "tool": "index_context_envelope",
+        "status": "transport_closed",
+        "error_code": "transport_closed",
+        "error_summary": "Transport closed",
+        "observed": True,
+    }
