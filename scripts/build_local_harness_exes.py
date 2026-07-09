@@ -3,13 +3,16 @@
 from __future__ import annotations
 
 import argparse
+import json
 import subprocess
 import sys
+from datetime import UTC, datetime
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 DIST = ROOT / "artifacts" / "exe"
 WORK = ROOT / "artifacts" / ".pyinstaller"
+DEFAULT_SERVE_PYTHON = "E:/local-model-run/venv/Scripts/python.exe"
 
 
 def _build(name: str, entry: str, *, python: str, hidden: list[str] | None = None) -> None:
@@ -69,24 +72,130 @@ def _has_pyinstaller(python: str) -> bool:
     return True
 
 
+def _write_cmd_wrapper(name: str) -> Path:
+    path = DIST / f"{name}.cmd"
+    path.write_text(
+        "\n".join(
+            [
+                "@echo off",
+                "setlocal",
+                'if not defined LOCAL_HARNESS_REPO set "LOCAL_HARNESS_REPO=%~dp0..\\.."',
+                f'"%~dp0{name}.exe" %*',
+                "exit /b %ERRORLEVEL%",
+                "",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    return path
+
+
+def _emit_endpoint_profiles(args: argparse.Namespace) -> Path:
+    path = DIST / "model_endpoint_profiles.local.json"
+    markdown = DIST / "model_endpoint_profiles.local.md"
+    command = [
+        sys.executable,
+        "scripts/run_model_endpoint_profiles.py",
+        "--models",
+        "14B,32B",
+        "--serve-url-14b",
+        args.serve_url_14b,
+        "--serve-url-32b",
+        args.serve_url_32b,
+        "--serve-runtime-32b",
+        args.serve_runtime_32b,
+        "--out",
+        str(path),
+        "--markdown-out",
+        str(markdown),
+    ]
+    print(f"[profiles] {' '.join(command)}")
+    proc = subprocess.run(command, cwd=ROOT)
+    if proc.returncode != 0:
+        raise RuntimeError(f"endpoint profile generation failed ({proc.returncode})")
+    return path
+
+
+def _write_release_manifest(args: argparse.Namespace, *, profiles_path: Path, built: list[str], skipped: list[str]) -> Path:
+    manifest = {
+        "schema": "harness.local-executable-release/v1",
+        "created_utc": datetime.now(UTC).isoformat().replace("+00:00", "Z"),
+        "repo_root": str(ROOT),
+        "dist_root": str(DIST),
+        "dependency_posture": {
+            "runtime": "zero mandatory hosted services; local model serving uses configured local Python/runtime",
+            "build": "PyInstaller is a build-time dependency only",
+        },
+        "executables": [
+            {
+                "name": name,
+                "path": str(DIST / f"{name}.exe"),
+                "cmd_wrapper": str(DIST / f"{name}.cmd") if name == "local-harness" else "",
+                "exists": (DIST / f"{name}.exe").exists(),
+            }
+            for name in built
+        ],
+        "skipped": skipped,
+        "local_models": {
+            "endpoint_profiles": str(profiles_path),
+            "serve_python": args.serve_python,
+            "serve_url_14b": args.serve_url_14b,
+            "serve_url_32b": args.serve_url_32b,
+            "serve_runtime_32b": args.serve_runtime_32b,
+            "offload_runtime": args.serve_runtime_32b == "cpu-offload",
+        },
+        "operator_notes": [
+            "Run local-harness.cmd manifest to inspect the packaged command surface.",
+            "Set LOCAL_HARNESS_REPO if the artifacts/exe folder is moved away from the repo checkout.",
+            "Use local-harness.cmd readiness model-endpoints with the emitted profile settings before starting local serve.",
+        ],
+    }
+    path = DIST / "local-harness-release.json"
+    path.write_text(json.dumps(manifest, indent=2, sort_keys=True), encoding="utf-8")
+    return path
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
+    ap.add_argument("--skip-harness", action="store_true",
+                    help="skip the full local-harness executable")
+    ap.add_argument("--skip-agent", action="store_true",
+                    help="skip the local-agent executable")
     ap.add_argument("--skip-serve", action="store_true",
-                    help="build only the local-agent executable")
-    ap.add_argument("--serve-python", default="E:/local-model-run/venv/Scripts/python.exe",
+                    help="skip the optional heavy local-serve executable")
+    ap.add_argument("--serve-python", default=DEFAULT_SERVE_PYTHON,
                     help="python interpreter used for the torch-backed serve executable")
+    ap.add_argument("--serve-url-14b", default="http://127.0.0.1:8765")
+    ap.add_argument("--serve-url-32b", default="http://127.0.0.1:8768")
+    ap.add_argument("--serve-runtime-32b", default="cpu-offload")
     args = ap.parse_args()
 
     DIST.mkdir(parents=True, exist_ok=True)
     WORK.mkdir(parents=True, exist_ok=True)
     serve_python = _py_path(args.serve_python)
+    built: list[str] = []
+    skipped: list[str] = []
 
-    _build("local-agent", str(ROOT / "scripts" / "local_agent_entry.py"), python=sys.executable)
+    if not _has_pyinstaller(sys.executable):
+        raise RuntimeError(f"PyInstaller unavailable via {sys.executable}")
+    if not args.skip_harness:
+        _build("local-harness", str(ROOT / "scripts" / "local_harness_entry.py"), python=sys.executable)
+        _write_cmd_wrapper("local-harness")
+        built.append("local-harness")
+    else:
+        skipped.append("local-harness")
+    if not args.skip_agent:
+        _build("local-agent", str(ROOT / "scripts" / "local_agent_entry.py"), python=sys.executable)
+        built.append("local-agent")
+    else:
+        skipped.append("local-agent")
     if not args.skip_serve:
         if not _has_pyinstaller(serve_python):
             print("[warn] serve skipped: PyInstaller unavailable for serve-python interpreter")
+            skipped.append("local-serve:missing_pyinstaller")
         elif not _has_modules(serve_python):
             print("[warn] serve skipped: required serve stack not available in that interpreter")
+            skipped.append("local-serve:missing_modules")
         else:
             _build("local-serve", str(ROOT / "scripts" / "local_serve_entry.py"),
                    python=serve_python, hidden=[
@@ -95,8 +204,14 @@ def main() -> int:
                        "torch",
                        "peft",
                    ])
+            built.append("local-serve")
+    else:
+        skipped.append("local-serve")
 
+    profiles_path = _emit_endpoint_profiles(args)
+    manifest_path = _write_release_manifest(args, profiles_path=profiles_path, built=built, skipped=skipped)
     print(f"[ok] executables in {DIST}")
+    print(f"[ok] release manifest {manifest_path}")
     if not args.skip_serve:
         print("[note] local-serve bundle is intentionally heavy because it includes torch/transformers")
     return 0
