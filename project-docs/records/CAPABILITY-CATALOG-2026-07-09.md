@@ -1047,6 +1047,7 @@ What changed:
 - Hardens live endpoint gate rows with expected-vs-observed `model_ref` checks so a 14B serve process cannot satisfy a 32B release gate.
 - Updates serve launch templates to include `SERVE_MODEL_ALIAS`, `SERVE_MODEL_REF`, and `SERVE_PORT`, including the 32B reference string `Qwen2.5-Coder-32B-Instruct (base, nf4)`.
 - Adds endpoint health diagnostics for wrong local services and health-level model-reference mismatches before generation is attempted.
+- Adds `endpoint-launch-readiness` as a harness command and receipt schema for non-destructive local serve launch diagnostics, including model root checks, port ownership, wrong-service conflicts, and launch templates.
 
 ### `classifier_friction_accountability_receipts`
 

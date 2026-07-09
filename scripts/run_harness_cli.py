@@ -274,6 +274,19 @@ def build_manifest(*, store_root: str = DEFAULT_STORE_ROOT) -> dict:
                 "recommended_validation_slice": "python -m pytest tests/test_model_endpoint_gate.py tests/test_harness_cli.py -q",
             },
             {
+                "name": "endpoint-launch-readiness",
+                "delegates_to": "scripts/run_local_model_launch_readiness.py",
+                "purpose": "Emit non-destructive local model serve launch readiness and port-owner diagnostics from endpoint profiles.",
+                "schemas": ["harness.local-model-launch-readiness/v1"],
+                "evidence_surface": "model root presence, endpoint port ownership, wrong-service conflicts, and launch command templates",
+                "default_artifacts": [
+                    "C:/tmp/local_model_launch_readiness_20260709.json",
+                    "C:/tmp/local_model_launch_readiness_20260709.md",
+                ],
+                "long_running_risk": "low",
+                "recommended_validation_slice": "python -m pytest tests/test_local_model_launch_readiness.py tests/test_harness_cli.py -q",
+            },
+            {
                 "name": "model-publish",
                 "delegates_to": "scripts/run_model_publish_plan.py",
                 "purpose": "Generate 14B/32B candidate names and publication blockers from release-readiness evidence.",
@@ -745,6 +758,13 @@ def build_parser() -> argparse.ArgumentParser:
     endpoint_gate.add_argument("--max-tokens", type=int, default=64)
     endpoint_gate.add_argument("--strict-exit", action="store_true")
 
+    launch_readiness = subparsers.add_parser("endpoint-launch-readiness", help="emit local model serve launch readiness and port-owner diagnostics")
+    _add_common_io(launch_readiness)
+    launch_readiness.add_argument("--profile-artifact", default="C:/tmp/model_endpoint_profiles_20260709.json")
+    launch_readiness.add_argument("--models", default="")
+    launch_readiness.add_argument("--backends", default="serve")
+    launch_readiness.add_argument("--strict-exit", action="store_true")
+
     model_publish = subparsers.add_parser("model-publish", help="generate 14B/32B model naming and publish plan")
     _add_common_io(model_publish)
     model_publish.add_argument("--release-readiness-artifact", required=True)
@@ -1043,6 +1063,19 @@ def build_command(args, *, repo_root: Path) -> list[str]:
             str(args.timeout_seconds),
             "--max-tokens",
             str(args.max_tokens),
+        ]
+        _append_if(command, "--models", args.models)
+        _append_if(command, "--backends", args.backends)
+        if args.strict_exit:
+            command.append("--strict-exit")
+        _common_outputs(command, args)
+        return command
+    if args.command_name == "endpoint-launch-readiness":
+        command = [
+            py,
+            "scripts/run_local_model_launch_readiness.py",
+            "--profile-artifact",
+            args.profile_artifact,
         ]
         _append_if(command, "--models", args.models)
         _append_if(command, "--backends", args.backends)
