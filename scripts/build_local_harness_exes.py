@@ -168,6 +168,9 @@ def main() -> int:
     ap.add_argument("--serve-url-14b", default="http://127.0.0.1:8765")
     ap.add_argument("--serve-url-32b", default="http://127.0.0.1:8768")
     ap.add_argument("--serve-runtime-32b", default="cpu-offload")
+    ap.add_argument("--package", action="store_true",
+                    help="assemble a local release bundle after building")
+    ap.add_argument("--package-version", default=datetime.now(UTC).strftime("%Y%m%d-%H%M%S"))
     args = ap.parse_args()
 
     DIST.mkdir(parents=True, exist_ok=True)
@@ -212,6 +215,19 @@ def main() -> int:
     manifest_path = _write_release_manifest(args, profiles_path=profiles_path, built=built, skipped=skipped)
     print(f"[ok] executables in {DIST}")
     print(f"[ok] release manifest {manifest_path}")
+    if args.package:
+        package_command = [
+            sys.executable,
+            "scripts/package_local_harness_release.py",
+            "--version",
+            args.package_version,
+        ]
+        if not args.skip_serve and "local-serve" in built:
+            package_command.append("--include-serve")
+        print(f"[package] {' '.join(package_command)}")
+        proc = subprocess.run(package_command, cwd=ROOT)
+        if proc.returncode != 0:
+            raise RuntimeError(f"release package assembly failed ({proc.returncode})")
     if not args.skip_serve:
         print("[note] local-serve bundle is intentionally heavy because it includes torch/transformers")
     return 0
