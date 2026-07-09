@@ -235,7 +235,45 @@ def run_unisonai_stateful_benchmark(state_root: Path) -> dict[str, Any]:
     return result
 
 
+def _render_provider_matrix_markdown(result: dict[str, Any]) -> str:
+    summary = result.get("summary", {})
+    lines = [
+        "# UnisonAI Stateful Provider Matrix",
+        "",
+        f"- schema: `{result.get('schema', '')}`",
+        f"- providers_requested: `{', '.join(result.get('providers_requested', []))}`",
+        f"- provider_roles_requested: `{', '.join(result.get('provider_roles_requested', []))}`",
+        f"- rows: `{summary.get('rows', 0)}`",
+        f"- operational_rows: `{summary.get('operational_rows', 0)}`",
+        f"- failed_rows: `{summary.get('failed_rows', 0)}`",
+        f"- mean_pass_rate: `{summary.get('mean_pass_rate', 0.0)}`",
+        f"- repair_success_rate: `{summary.get('repair_success_rate', 0.0)}`",
+        "",
+        "## Rows",
+        "",
+        "| Provider | Role | Live | Operational | Passed | Pass rate | Failure | Actions |",
+        "|---|---|---:|---:|---:|---:|---|---:|",
+    ]
+    for row in result.get("rows", []):
+        lines.append(
+            "| {provider} | {role} | {live} | {operational} | {passed} | {pass_rate} | {failure} | {actions} |".format(
+                provider=row.get("provider", ""),
+                role=row.get("provider_role", ""),
+                live=str(row.get("live", False)).lower(),
+                operational=str(row.get("operational", False)).lower(),
+                passed=str(row.get("passed", False)).lower(),
+                pass_rate=row.get("pass_rate", 0.0),
+                failure=row.get("failure_class", ""),
+                actions=row.get("action_count", 0),
+            )
+        )
+    return "\n".join(lines) + "\n"
+
+
 def render_markdown(result: dict[str, Any]) -> str:
+    if result.get("schema") == "unisonai.stateful-provider-matrix/v1":
+        return _render_provider_matrix_markdown(result)
+
     lines = [
         "# UnisonAI Stateful Benchmark",
         "",

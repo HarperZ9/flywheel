@@ -448,7 +448,7 @@ Outcome synthesis behavior:
 Index MCP fallback receipt command:
 
 ```powershell
-python scripts/run_index_receipt.py --lane context-envelope --root C:/dev --index-root C:/dev/public/index --budget 12000 --focus "local-model harness file-backed store pubscan endpoint benchmarks" --hops 2 --mcp-tool index_context_envelope --mcp-status transport_closed --mcp-error-code transport_closed --mcp-error-summary "Transport closed" --artifact-out C:/tmp/index_context_envelope_fallback_20260709.json --out C:/tmp/index_context_envelope_fallback_receipt_20260709.json --store-root C:/tmp/harness_file_store
+python scripts/run_index_receipt.py --lane context-envelope --root C:/dev/local-model --index-root C:/dev/public/index --budget 12000 --focus local-model --hops 2 --mcp-tool index_context_envelope --mcp-status transport_closed --mcp-error-code transport_closed --mcp-error-summary "Transport closed" --artifact-out C:/tmp/index_context_envelope_fallback_20260709.json --out C:/tmp/index_context_envelope_fallback_receipt_20260709.json --store-root C:/tmp/harness_file_store
 ```
 
 Index fallback health behavior:

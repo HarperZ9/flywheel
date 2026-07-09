@@ -81,6 +81,39 @@ def test_model_endpoint_gate_probes_profile_rows_with_injected_transport(tmp_pat
     assert all(row["receipt_hash"] for row in report["rows"])
 
 
+def test_model_endpoint_gate_fails_model_ref_mismatch(tmp_path):
+    profiles = tmp_path / "profiles.json"
+    profiles.write_text(json.dumps({
+        "schema": "harness.model-endpoint-profiles/v1",
+        "profiles": [
+            {
+                "profile_id": "serve-32b",
+                "model": "32B",
+                "model_key": "32b",
+                "model_ref": "serve:expected-32b",
+                "backend": "serve",
+                "provider_role": "flywheel",
+                "endpoint_url": "http://127.0.0.1:8765",
+            },
+        ],
+    }), encoding="utf-8")
+
+    report = build_report(
+        profile_artifact=str(profiles),
+        models=["32B"],
+        backends=[],
+        transport=fake_transport,
+    )
+
+    row = report["rows"][0]
+    assert row["health_ok"] is True
+    assert row["generation_ok"] is False
+    assert row["failure_class"] == "model_ref_mismatch"
+    assert row["model_ref"] == "serve:test"
+    assert row["expected_model_ref"] == "serve:expected-32b"
+    assert row["quality_score"] == 0.0
+
+
 def test_endpoint_gate_main_folds_unavailable_endpoints_without_strict_exit(tmp_path):
     profiles = tmp_path / "profiles.json"
     out = tmp_path / "gate.json"

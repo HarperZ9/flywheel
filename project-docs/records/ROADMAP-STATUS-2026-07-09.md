@@ -18,6 +18,7 @@ Observed evidence used for this status:
 - `C:\dev\local-model\project-docs\records\OBJECTIVE-EVIDENCE-MATRIX-2026-07-09.md` now tracks the active objective requirement-by-requirement against evidence, missing proof, and next gates.
 - `C:\dev\local-model\scripts\run_agentic_task_set_manifest.py` now implements the non-executing custom agentic task manifest generator with prompt hashes, planned artifact paths, and manifest-only dry scorecard rows.
 - `C:\tmp\forum_route_receipts_20260709_current.json`, `C:\tmp\mcp_tool_health_20260709_current.json`, `C:\tmp\tool_readiness_20260709_current.json`, and `C:\tmp\harness_closed_loop_seed_plan_20260709_current.json` were produced through `C:\dev\local-model\harness.cmd` as metadata preflight artifacts.
+- Focused seed `run_20260709T150956_4b913c32efa2` produced `C:\tmp\harness_closed_loop_seed_focused_postfix_20260709.json`; follow-up classifier retry produced `C:\tmp\classifier_friction_postfix_retry_20260709.json`; coverage and comparison refreshes produced `C:\tmp\benchmark_profile_coverage_postfix_retry_20260709.json` and `C:\tmp\harness_comparison_report_postfix_retry_20260709.json`.
 
 ## Roadmap progress estimate
 
@@ -36,12 +37,12 @@ This is a planning estimate, not a performance metric.
 | Workstream | Stage | Status | Evidence | Missing gate |
 | --- | ---: | --- | --- | --- |
 | Tool and infrastructure integration | 2.5 / 4 | Preflight-integrated, live execution incomplete | Closed-loop seed includes Forum route receipts, MCP tool health receipts, context inventory, expanded tool readiness, hardening, gather readiness, Index fallback, and comparison steps. Current preflight artifacts show 11 configured roots, 0 missing roots, `forum`/`telos` healthy, and `index` degraded with `transport_closed`. | Stable `index` MCP transport, live tool-specific connectivity proof, and full seed receipts. |
-| Harness comparison and benchmark evidence | 2.75 / 4 | Methodology, matrix, custom task corpus, task-set adapter contract, cross-harness adapter contract, implementation runbook, dry command deck, and non-executing manifest generator exist | Benchmark profile, coverage, execution matrix, custom agentic task set, task-set adapter contract, manifest generator, cross-harness adapter contract, adapter implementation runbook, dry-run/preflight command deck, forum deep-verify scaling plan, harness comparison, and outcome commands are documented. | Execute metadata preflights, validate manifest/adapter generator, then run real Codex/Flywheel/Claude Code/OpenCode/local tasks, forum ledger scaling, and shared-task comparison artifacts. |
-| Local model endpoint and agentic workflow support | 2 / 4 | Endpoint profile and gate path exists | Endpoint profile, endpoint gate, model release readiness, and model publish plan commands are documented and wired into closed-loop seed. | Live 14B/32B endpoint checks, generation probes, and agentic workflow benchmark results. |
+| Harness comparison and benchmark evidence | 3 / 4 | Focused Codex/local seed artifacts exist, full comparison incomplete | Focused seed, classifier retry, coverage, and comparison artifacts exist. Classifier retry shows `accountability_first` outperforming guardrail modes for Codex on one task. Comparison remains insufficient because no same-key Codex/Flywheel rows exist. | Run same-key Codex/Flywheel rows, Claude Code/OpenCode rows, forum ledger scaling, and broader task battery. |
+| Local model endpoint and agentic workflow support | 2.5 / 4 | Serve endpoint gate passes 14B and blocks 32B on model-ref mismatch | Refcheck endpoint gate reports serve health/generation ok for `14B`; `32B` fails with `model_ref_mismatch` because the endpoint returned the 14B model ref. Ollama unavailable. | Correct 32B endpoint/profile mapping, then rerun endpoint gate and agentic local benchmark rows. |
 | Executable harness packaging | 2.5 / 4 | CLI/front-controller path produced preflight artifacts | Infrastructure and catalog records include executable harness commands and schema/report surfaces; `harness.cmd` produced route, MCP health, tool readiness, and dry plan artifacts. | Full packaged executable release, install verification, and local model configuration proof. |
 | mneme, relay, and plexus enterprise readiness | 2 / 4 | Readiness and hardening plan path exists | Tool readiness and tool hardening commands are documented and wired into closed-loop seed. | Shipped tool changes, CI/package/docs readiness, and competitive feature proof. |
 | 14B and 32B release track | 2 / 4 | Release-readiness and publish-plan path exists | Model release readiness and model publish plan commands are documented and wired into closed-loop seed. | Model names, model cards, checksums, benchmark evidence, provenance/licensing notes, and publish approval. |
-| Experimental outcome and recursive loop | 2 / 4 | Outcome synthesis path exists | Closed-loop outcome command is documented and accepts seed/store inputs. | Actual outcome document from executed benchmark artifacts with limitations and next actions. |
+| Experimental outcome and recursive loop | 2.75 / 4 | Partial outcome exists from focused seed | `OUTCOME_PARTIAL` and classifier retry artifacts exist, with limitations and next actions recorded. | Produce complete same-key comparison outcome from Codex/Flywheel/Claude Code/OpenCode/local rows. |
 | Capability catalog and documentation | 3.25 / 4 | Catalog is actively maintained and now has an integration schematic plus objective evidence matrix | Capability catalog records the benchmark execution matrix, closed-loop seed, outcome synthesis, endpoint/readiness/publish, fallback capabilities, closed-loop schematic, and objective evidence matrix. | Validation pass, generated artifacts, schematic drift check, and final release documentation pack. |
 
 ## Required final outputs audit
@@ -71,12 +72,12 @@ This is a planning estimate, not a performance metric.
 
 ## Immediate next gates
 
-1. Run the focused benchmark seed only after the dry plan artifacts look coherent.
-2. Generate the closed-loop outcome from the focused seed artifacts.
-3. Run endpoint profiles and gates for 14B/32B only after local endpoint configuration is confirmed.
+1. Correct the `32B` serve endpoint/profile mapping; current gate reports a 14B model ref for the 32B profile.
+2. Run same-key Codex-vs-Flywheel rows so `COMPARISON_INSUFFICIENT` can become a real delta.
+3. Add Claude Code and OpenCode executable rows after adapter discovery gates are satisfied.
 4. Run hardening preflights and implement one bounded mneme/relay/plexus enterprise slice.
 5. Add and run the forum replayable-ledger deep-verify scaling benchmark before making public performance claims about large content-addressed ledgers.
-6. Run Codex-vs-Flywheel/Claude Code/OpenCode/local same-task rows and synthesize comparison deltas.
+6. Rerun the focused seed with the classifier timeout aligned to observed Codex latency, or keep classifier as a separate long-running artifact.
 7. Run endpoint profiles and gates for 14B/32B only after local endpoint configuration is confirmed.
 8. Generate the closed-loop outcome from the shared run store.
 9. Add and run the forum replayable-ledger deep-verify scaling benchmark before making public performance claims about large content-addressed ledgers.

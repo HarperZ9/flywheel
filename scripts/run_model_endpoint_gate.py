@@ -98,6 +98,7 @@ def probe_profile(
         "receipt_hash": "",
         "response_sha256": "",
         "response_chars": 0,
+        "expected_model_ref": str(profile.get("model_ref", "")),
         "model_ref": "",
     }
     backend = _backend_for_profile(profile, timeout_seconds=timeout_seconds, transport=transport)
@@ -125,6 +126,10 @@ def probe_profile(
         row["response_sha256"] = hashlib.sha256(text.encode("utf-8")).hexdigest() if text else ""
         row["response_chars"] = len(text)
         row["model_ref"] = str(result.get("model_ref", ""))
+        expected_model_ref = str(row.get("expected_model_ref", ""))
+        if row["generation_ok"] and expected_model_ref and row["model_ref"] != expected_model_ref:
+            row["generation_ok"] = False
+            row["failure_class"] = "model_ref_mismatch"
     except BackendError as exc:
         row["failure_class"] = "endpoint_error"
         row["error_type"] = type(exc).__name__

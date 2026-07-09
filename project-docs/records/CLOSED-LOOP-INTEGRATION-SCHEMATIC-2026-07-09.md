@@ -68,6 +68,7 @@ flowchart TD
     embodied --> matrix
     drift --> seed
     matrix --> seed
+    seed --> outcome
     seed --> store
     store --> outcome
     compare --> outcome

@@ -46,6 +46,7 @@ class Args:
     skip_benchmark_coverage = False
     workspace_root = "C:/dev"
     index_root = "C:/dev/public/index"
+    index_context_root = "C:/dev/local-model"
     index_budget = 12000
     index_focus = "local-model harness"
     index_hops = 2
@@ -238,6 +239,17 @@ def test_tool_readiness_step_covers_flagship_tools_and_aleph_root(tmp_path):
     assert "index,forum,gather,crucible,telos,aleph,mneme,relay,plexus,pubscan" in readiness.command
     assert "--tool-root" in readiness.command
     assert "aleph=C:/dev/aleph" in readiness.command
+
+
+def test_index_context_step_uses_bounded_context_root(tmp_path):
+    steps = build_steps(Args(), run_id="run_123", artifact_dir=tmp_path)
+    index = [step for step in steps if step.step_id == "index_context_envelope"][0]
+
+    assert "scripts/run_index_receipt.py" in index.command
+    root_pos = index.command.index("--root")
+    assert index.command[root_pos + 1] == "C:/dev/local-model"
+    assert "--focus" in index.command
+    assert "local-model harness" in index.command
 
 
 def test_classifier_friction_step_writes_deterministic_artifacts(tmp_path):

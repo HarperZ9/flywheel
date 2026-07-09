@@ -335,6 +335,7 @@ def test_stateful_runner_accepts_scripted_backend_actions(tmp_path):
 
 def test_stateful_runner_builds_dry_provider_matrix(tmp_path):
     out_path = tmp_path / "matrix.json"
+    markdown_path = tmp_path / "matrix.md"
 
     assert main([
         "--providers",
@@ -343,6 +344,8 @@ def test_stateful_runner_builds_dry_provider_matrix(tmp_path):
         str(tmp_path / "state"),
         "--out",
         str(out_path),
+        "--markdown-out",
+        str(markdown_path),
     ]) == 0
 
     result = json.loads(out_path.read_text(encoding="utf-8"))
@@ -356,3 +359,6 @@ def test_stateful_runner_builds_dry_provider_matrix(tmp_path):
     assert result["rows"][0]["provider_role"] == "dry_fixture"
     assert result["rows"][0]["passed"] is True
     assert result["rows"][0]["pass_rate"] == 1.0
+    markdown = markdown_path.read_text(encoding="utf-8")
+    assert "# UnisonAI Stateful Provider Matrix" in markdown
+    assert "| dry | dry_fixture | false | true | true | 1.0 | none | 8 |" in markdown
