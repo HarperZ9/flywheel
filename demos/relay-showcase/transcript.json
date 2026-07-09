@@ -1,0 +1,50 @@
+{
+  "schema": "harness.demo-transcript/v1",
+  "name": "relay-showcase",
+  "timestamp_utc": "2026-07-09T19:35:05.154290Z",
+  "dry_run": false,
+  "step_count": 3,
+  "total_duration_ms": 577,
+  "steps": [
+    {
+      "index": 0,
+      "title": "What Relay is",
+      "narration": "Relay is a coding agent that lives on your machine. It talks to your local model tiers first and falls over gracefully if one is asleep, and it stamps every turn with a receipt id so even offline work is witnessed.",
+      "command": "echo relay - a local-first coding agent with automatic failover and per-turn receipts",
+      "mode": "live",
+      "exit_code": 0,
+      "duration_ms": 19,
+      "stdout": "relay - a local-first coding agent with automatic failover and per-turn receipts\n",
+      "stderr": "",
+      "output": "relay - a local-first coding agent with automatic failover and per-turn receipts\n",
+      "output_sha256": "e1810420a11f02a608b826521d570a6c3f1f1c5658e8d07970a3575f3652e255"
+    },
+    {
+      "index": 1,
+      "title": "The capability surface",
+      "narration": "One CLI, a REPL or a one-shot prompt, an optional gated tool loop for reading and editing files, and MCP on the side. No hosted account is ever touched. This is autonomy that stays on your desk.",
+      "command": "python -m relay --help",
+      "mode": "live",
+      "exit_code": 0,
+      "duration_ms": 265,
+      "stdout": "usage: relay [-h] [--health] [--backend BACKEND] [--model MODEL] [--file FILE]\n             [--system SYSTEM] [--max-tokens MAX_TOKENS]\n             [--temperature TEMPERATURE] [--seed SEED] [--serve-url SERVE_URL]\n             [--ollama-url OLLAMA_URL] [--json] [--agent] [--root ROOT]\n             [--allow-write] [--allow-exec] [--max-steps MAX_STEPS]\n             [--save SAVE] [--auto-commit] [--test-cmd TEST_CMD] [--stream]\n             [--online] [--providers PROVIDERS] [--mcp]\n             [prompt]\n\nlocal_agent_cli.py \u2014 CLI/REPL for the standalone local agent (offline tier).\npython -m relay.local_agent_cli --health # which local tiers are live? python\n-m relay.local_agent_cli \"explain this fn\" --file foo.py python -m\nrelay.local_agent_cli # interactive REPL Runs entirely on local models\n(serve.py's trained 14B/32B, or Ollama), with automatic failover. Prints a\nper-turn receipt id so even offline turns are witnessed. No hosted account is\ntouched.\n\npositional arguments:\n  prompt                one-shot prompt; omit for a REPL\n\noptions:\n  -h, --help            show this help message and exit\n  --health              report live local tiers and exit\n  --backend BACKEND     force a backend by name (auto|serve|ollama|<provider-\n                        mode>)\n  --model MODEL         force an Ollama model name\n  --file FILE           inject a file as context (repeatable)\n  --system SYSTEM       override the system prompt\n  --max-tokens MAX_TOKENS\n  --temperature TEMPERATURE\n  --seed SEED\n  --serve-url SERVE_URL\n  --ollama-url OLLAMA_URL\n  --json                print the full response dict\n  --agent               run the prompt as an agentic task with gated tools + a\n                        witnessed ledger\n  --root ROOT           sandbox root for file/exec tools (--agent)\n  --allow-write\n  --allow-exec\n  --max-steps MAX_STEPS\n  --save SAVE           save the session ledger to this JSONL path\n  --auto-commit         git-commit the changes after an --agent run (existing\n                        repo only)\n  --test-cmd TEST_CMD   test command to gate on: the agent repairs until it\n                        passes (needs --allow-exec)\n  --stream              stream tokens as they arrive (one-shot)\n  --online              add the online provider ladder\n                        (codex/claude/gemini/deepseek)\n  --providers PROVIDERS\n                        comma list to restrict online providers (default: all\n                        configured)\n  --mcp                 run as a stdio MCP server\n",
+      "stderr": "",
+      "output": "usage: relay [-h] [--health] [--backend BACKEND] [--model MODEL] [--file FILE]\n             [--system SYSTEM] [--max-tokens MAX_TOKENS]\n             [--temperature TEMPERATURE] [--seed SEED] [--serve-url SERVE_URL]\n             [--ollama-url OLLAMA_URL] [--json] [--agent] [--root ROOT]\n             [--allow-write] [--allow-exec] [--max-steps MAX_STEPS]\n             [--save SAVE] [--auto-commit] [--test-cmd TEST_CMD] [--stream]\n             [--online] [--providers PROVIDERS] [--mcp]\n             [prompt]\n\nlocal_agent_cli.py \u2014 CLI/REPL for the standalone local agent (offline tier).\npython -m relay.local_agent_cli --health # which local tiers are live? python\n-m relay.local_agent_cli \"explain this fn\" --file foo.py python -m\nrelay.local_agent_cli # interactive REPL Runs entirely on local models\n(serve.py's trained 14B/32B, or Ollama), with automatic failover. Prints a\nper-turn receipt id so even offline turns are witnessed. No hosted account is\ntouched.\n\npositional arguments:\n  prompt                one-shot prompt; omit for a REPL\n\noptions:\n  -h, --help            show this help message and exit\n  --health              report live local tiers and exit\n  --backend BACKEND     force a backend by name (auto|serve|ollama|<provider-\n                        mode>)\n  --model MODEL         force an Ollama model name\n  --file FILE           inject a file as context (repeatable)\n  --system SYSTEM       override the system prompt\n  --max-tokens MAX_TOKENS\n  --temperature TEMPERATURE\n  --seed SEED\n  --serve-url SERVE_URL\n  --ollama-url OLLAMA_URL\n  --json                print the full response dict\n  --agent               run the prompt as an agentic task with gated tools + a\n                        witnessed ledger\n  --root ROOT           sandbox root for file/exec tools (--agent)\n  --allow-write\n  --allow-exec\n  --max-steps MAX_STEPS\n  --save SAVE           save the session ledger to this JSONL path\n  --auto-commit         git-commit the changes after an --agent run (existing\n                        repo only)\n  --test-cmd TEST_CMD   test command to gate on: the agent repairs until it\n                        passes (needs --allow-exec)\n  --stream              stream tokens as they arrive (one-shot)\n  --online              add the online provider ladder\n                        (codex/claude/gemini/deepseek)\n  --providers PROVIDERS\n                        comma list to restrict online providers (default: all\n                        configured)\n  --mcp                 run as a stdio MCP server\n",
+      "output_sha256": "985d781ee72d80a19a195e54dcb1ebe61366652663f2357742340ad461ba2254"
+    },
+    {
+      "index": 2,
+      "title": "Which local tiers are live",
+      "narration": "This is the reachability check, and it loads nothing. It simply reports which local tiers are up, the trained serve endpoint and the Ollama fallback, so Relay always knows where it can route next.",
+      "command": "python -m relay --health",
+      "mode": "live",
+      "exit_code": 0,
+      "duration_ms": 293,
+      "stdout": "{\n  \"any_live\": true,\n  \"tiers\": [\n    {\n      \"backend\": \"serve\",\n      \"healthy\": true,\n      \"detail\": \"http://127.0.0.1:8765\"\n    },\n    {\n      \"backend\": \"ollama\",\n      \"healthy\": true,\n      \"detail\": \"flywheel-local-coder-14b:latest\"\n    }\n  ]\n}\n",
+      "stderr": "",
+      "output": "{\n  \"any_live\": true,\n  \"tiers\": [\n    {\n      \"backend\": \"serve\",\n      \"healthy\": true,\n      \"detail\": \"http://127.0.0.1:8765\"\n    },\n    {\n      \"backend\": \"ollama\",\n      \"healthy\": true,\n      \"detail\": \"flywheel-local-coder-14b:latest\"\n    }\n  ]\n}\n",
+      "output_sha256": "16a0ab9677cb216b3dfffafdabb1a4de3874cdfcfebc224076fe8689bb7eb2f3"
+    }
+  ],
+  "receipt_sha256": "13f27a74d643d152e8f5351b9898c4ff30c52719e9f2fad7fd73e9f068166178"
+}

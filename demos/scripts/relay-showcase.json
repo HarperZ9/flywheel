@@ -1,0 +1,21 @@
+{
+  "name": "relay-showcase",
+  "description": "Relay: a zero-dependency coding agent that reaches local model tiers with automatic failover and a per-turn receipt.",
+  "steps": [
+    {
+      "title": "What Relay is",
+      "command": "echo relay - a local-first coding agent with automatic failover and per-turn receipts",
+      "narration": "Relay is a coding agent that lives on your machine. It talks to your local model tiers first and falls over gracefully if one is asleep, and it stamps every turn with a receipt id so even offline work is witnessed."
+    },
+    {
+      "title": "The capability surface",
+      "command": "python -m relay --help",
+      "narration": "One CLI, a REPL or a one-shot prompt, an optional gated tool loop for reading and editing files, and MCP on the side. No hosted account is ever touched. This is autonomy that stays on your desk."
+    },
+    {
+      "title": "Which local tiers are live",
+      "command": "python -m relay --health",
+      "narration": "This is the reachability check, and it loads nothing. It simply reports which local tiers are up, the trained serve endpoint and the Ollama fallback, so Relay always knows where it can route next."
+    }
+  ]
+}

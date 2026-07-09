@@ -1,0 +1,21 @@
+{
+  "name": "crucible-showcase",
+  "description": "Crucible: accountable judgment of ideas that registers a thesis, tests it, and witnesses MATCH, DRIFT, or UNVERIFIABLE.",
+  "steps": [
+    {
+      "title": "What Crucible is",
+      "command": "echo crucible - accountable judgment of ideas with witnessed verdicts",
+      "narration": "Crucible is the judgment organ. You register a claim with the way it could be proven wrong, and Crucible measures it and records a verdict you can re-check."
+    },
+    {
+      "title": "The capability surface",
+      "command": "python -m crucible --help",
+      "narration": "The loop is all here: register a thesis, steelman the test that would settle it, measure against a substrate, then witness the outcome as MATCH, DRIFT, or an honest UNVERIFIABLE. It is a discipline for turning opinions into verdicts."
+    },
+    {
+      "title": "A status receipt",
+      "command": "python -m crucible status",
+      "narration": "Crucible reports its own readiness as a receipt. A tool built to judge ideas fairly has to start by being transparent about itself, and that is the seal on everything it measures."
+    }
+  ]
+}

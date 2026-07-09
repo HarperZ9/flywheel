@@ -1,0 +1,50 @@
+{
+  "schema": "harness.demo-transcript/v1",
+  "name": "forum-showcase",
+  "timestamp_utc": "2026-07-09T19:34:06.965707Z",
+  "dry_run": false,
+  "step_count": 3,
+  "total_duration_ms": 604,
+  "steps": [
+    {
+      "index": 0,
+      "title": "What Forum is",
+      "narration": "Forum is where many agents work together and every move is written down. It routes a request to the right lane and keeps a causal ledger of what actually happened.",
+      "command": "echo forum - accountable multi-agent orchestration with a replayable ledger",
+      "mode": "live",
+      "exit_code": 0,
+      "duration_ms": 19,
+      "stdout": "forum - accountable multi-agent orchestration with a replayable ledger\n",
+      "stderr": "",
+      "output": "forum - accountable multi-agent orchestration with a replayable ledger\n",
+      "output_sha256": "c8f0febee8d8c0c3ba5f373e14d8227d1069cae6cc55ac10f702eb1a6580767e"
+    },
+    {
+      "index": 1,
+      "title": "The capability surface",
+      "narration": "Look at the range: route work, import an external agent trace into a verifiable ledger, grade a run with checks that can actually fail, and mine a session into gradable data. It is a flight recorder for agent teams.",
+      "command": "python -m forum --help",
+      "mode": "live",
+      "exit_code": 0,
+      "duration_ms": 286,
+      "stdout": "usage: forum [-h] [--version]\n             {status,doctor,demo,humanize,route,import-trace,grade,export-gradable,mine,submit,serve,mcp,context,runtime,ledger,gate,campaign,bench,bench-deep-verify}\n             ...\n\nForum: accountable multi-agent orchestration.\n\npositional arguments:\n  {status,doctor,demo,humanize,route,import-trace,grade,export-gradable,mine,submit,serve,mcp,context,runtime,ledger,gate,campaign,bench,bench-deep-verify}\n    status              emit Forum's Project Telos operator-spine status\n    doctor              check Forum's operator-spine readiness\n    demo                show Forum's operator-spine demo command\n    humanize            clarify model or agent prose without adding facts\n    route               route a request to a capability lane (no model needed)\n    import-trace        fold an external agent trace\n                        (LangSmith/OTel/AgentOps/generic JSON) into a\n                        verifiable, replayable ledger \u2014 a flight recorder that\n                        refutes its own tampering\n    grade               grade a run's ledger \u2014 an outcome signal that CAN fail\n                        and counts only independent checks (a producer cannot\n                        grade itself)\n    export-gradable     export a run's ledger as one forum.gradable-\n                        trajectory/1 datum (prompt + trajectory + a can-fail\n                        grade + off-forum re-derivation inputs)\n    mine                one command: fold ANY framework's trace into a\n                        verifiable ledger, grade it, and append it as\n                        witnessed gradable RL data\n    submit              plan and answer a request, witnessed\n    serve               run the HTTP daemon\n    mcp                 run the MCP (stdio) server\n    context             inspect and preflight context pressure\n    runtime             inspect runtime executor policy\n    ledger              inspect the ledger\n    gate                list and resolve human-in-the-loop approval gates\n    campaign            declare, inspect, and run a witnessed multi-project\n                        campaign\n    bench               compare two ledgers (A/B) by their summaries\n    bench-deep-verify   measure ledger verify(deep=True) scaling across\n                        payload and storage variables\n\noptions:\n  -h, --help            show this help message and exit\n  --version             show program's version number and exit\n",
+      "stderr": "",
+      "output": "usage: forum [-h] [--version]\n             {status,doctor,demo,humanize,route,import-trace,grade,export-gradable,mine,submit,serve,mcp,context,runtime,ledger,gate,campaign,bench,bench-deep-verify}\n             ...\n\nForum: accountable multi-agent orchestration.\n\npositional arguments:\n  {status,doctor,demo,humanize,route,import-trace,grade,export-gradable,mine,submit,serve,mcp,context,runtime,ledger,gate,campaign,bench,bench-deep-verify}\n    status              emit Forum's Project Telos operator-spine status\n    doctor              check Forum's operator-spine readiness\n    demo                show Forum's operator-spine demo command\n    humanize            clarify model or agent prose without adding facts\n    route               route a request to a capability lane (no model needed)\n    import-trace        fold an external agent trace\n                        (LangSmith/OTel/AgentOps/generic JSON) into a\n                        verifiable, replayable ledger \u2014 a flight recorder that\n                        refutes its own tampering\n    grade               grade a run's ledger \u2014 an outcome signal that CAN fail\n                        and counts only independent checks (a producer cannot\n                        grade itself)\n    export-gradable     export a run's ledger as one forum.gradable-\n                        trajectory/1 datum (prompt + trajectory + a can-fail\n                        grade + off-forum re-derivation inputs)\n    mine                one command: fold ANY framework's trace into a\n                        verifiable ledger, grade it, and append it as\n                        witnessed gradable RL data\n    submit              plan and answer a request, witnessed\n    serve               run the HTTP daemon\n    mcp                 run the MCP (stdio) server\n    context             inspect and preflight context pressure\n    runtime             inspect runtime executor policy\n    ledger              inspect the ledger\n    gate                list and resolve human-in-the-loop approval gates\n    campaign            declare, inspect, and run a witnessed multi-project\n                        campaign\n    bench               compare two ledgers (A/B) by their summaries\n    bench-deep-verify   measure ledger verify(deep=True) scaling across\n                        payload and storage variables\n\noptions:\n  -h, --help            show this help message and exit\n  --version             show program's version number and exit\n",
+      "output_sha256": "9a0b081b9b68faddcca6d64fc9d2d81329369452d7da57a7b2e08a66e628ce65"
+    },
+    {
+      "index": 2,
+      "title": "A status receipt",
+      "narration": "Forum reports its own readiness as a receipt. The orchestrator that grades everyone else is honest enough to grade itself first, and that is exactly the property you want at the center of a swarm.",
+      "command": "python -m forum status",
+      "mode": "live",
+      "exit_code": 0,
+      "duration_ms": 299,
+      "stdout": "status=MATCH tool=forum command=status\nnext: crucible assess - verify the routed claim before public use\n",
+      "stderr": "",
+      "output": "status=MATCH tool=forum command=status\nnext: crucible assess - verify the routed claim before public use\n",
+      "output_sha256": "8f2ac4947b1786f025f60e9045902618670de33cd1d3c52259e4f85f6cdb5e2c"
+    }
+  ],
+  "receipt_sha256": "4e4a80bd99d8ab9adbeefc6b6f214247afa0a9d24e30a128eddf78c2e54735fa"
+}

@@ -1,0 +1,21 @@
+{
+  "name": "forum-showcase",
+  "description": "Forum: accountable multi-agent orchestration with a witnessed causal ledger you can replay.",
+  "steps": [
+    {
+      "title": "What Forum is",
+      "command": "echo forum - accountable multi-agent orchestration with a replayable ledger",
+      "narration": "Forum is where many agents work together and every move is written down. It routes a request to the right lane and keeps a causal ledger of what actually happened."
+    },
+    {
+      "title": "The capability surface",
+      "command": "python -m forum --help",
+      "narration": "Look at the range: route work, import an external agent trace into a verifiable ledger, grade a run with checks that can actually fail, and mine a session into gradable data. It is a flight recorder for agent teams."
+    },
+    {
+      "title": "A status receipt",
+      "command": "python -m forum status",
+      "narration": "Forum reports its own readiness as a receipt. The orchestrator that grades everyone else is honest enough to grade itself first, and that is exactly the property you want at the center of a swarm."
+    }
+  ]
+}
