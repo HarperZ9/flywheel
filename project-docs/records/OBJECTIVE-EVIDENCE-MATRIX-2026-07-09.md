@@ -52,6 +52,15 @@ The program has a stronger evidence boundary now, but it is still not complete. 
 - REQ-009 executable harness: `harness.cmd plan` produced `C:\tmp\harness_closed_loop_seed_plan_20260709_current.json`. Result: 29 planned steps, 0 executed benchmark rows, 0 endpoint probes, 0 provider/model calls.
 - Evidence status: metadata preflights executed; tests, endpoint probes, provider calls, model-weight reads, and benchmark workloads were not executed in this step.
 
+## 2026-07-09 update: focused benchmark seed and post-fix artifacts
+
+- REQ-001 Index fallback: broad `C:\dev` context-envelope still times out, but bounded `C:\dev\local-model` fallback with focus `local-model` returned `MATCH` in the post-fix seed. Artifact: `C:\tmp\harness_closed_loop_seed_focused_postfix_20260709\index_context_envelope_receipt.json`.
+- REQ-005 / REQ-007 benchmark evidence: focused seed `run_20260709T150956_4b913c32efa2` produced `28` ok steps, `0` failed steps, and `1` timeout at the classifier-friction outer step cap. Artifact: `C:\tmp\harness_closed_loop_seed_focused_postfix_20260709.json`.
+- REQ-007 classifier-friction retry: completed classifier artifact `C:\tmp\classifier_friction_postfix_retry_20260709.json` shows Codex `accountability_first` quality `0.775` at `69857 ms`, `guardrail_off` quality `0.512` at `88214 ms`, and `guardrail_on` quality `0.371` at `166436 ms`.
+- REQ-008 local endpoints: `C:\tmp\model_endpoint_gate_refcheck_20260709.json` shows serve backend generation ok for `14B`; `32B` is blocked with `model_ref_mismatch` because the serve endpoint returned `Qwen2.5-Coder-14B-Instruct (base, nf4)` when the profile expected `Qwen2.5-Coder-32B-Instruct (base, nf4)`. Ollama is unavailable for both.
+- REQ-012 outcome: `C:\tmp\harness_closed_loop_outcome_focused_postfix_20260709.json` records `OUTCOME_PARTIAL`; `C:\tmp\harness_comparison_report_postfix_retry_20260709.json` records `COMPARISON_INSUFFICIENT` because no same-key Codex/Flywheel comparison rows exist yet.
+- Evidence status: focused benchmark and endpoint gate artifacts exist; full benchmark battery, Claude Code/OpenCode rows, same-key Codex-vs-Flywheel rows, and model release proof remain incomplete.
+
 ## 2026-07-09 update: REQ-006 / REQ-009
 
 - REQ-006 benchmark rigor: agentic task manifests are now ingested as planned-only coverage in coverage and outcome reports, preventing benchmark-credit inflation while preserving planned coverage shape.

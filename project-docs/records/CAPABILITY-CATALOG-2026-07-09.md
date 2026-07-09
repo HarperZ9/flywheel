@@ -945,7 +945,7 @@ Current-state evidence:
 Example commands:
 
 ```powershell
-python scripts/run_index_receipt.py --lane context-envelope --root C:/dev --index-root C:/dev/public/index --budget 12000 --focus "local-model harness file-backed store pubscan endpoint benchmarks" --hops 2 --mcp-tool index_context_envelope --mcp-status transport_closed --mcp-error-code transport_closed --mcp-error-summary "Transport closed" --artifact-out C:/tmp/index_context_envelope_fallback_20260709.json --out C:/tmp/index_context_envelope_fallback_receipt_20260709.json --store-root C:/tmp/harness_file_store
+python scripts/run_index_receipt.py --lane context-envelope --root C:/dev/local-model --index-root C:/dev/public/index --budget 12000 --focus local-model --hops 2 --mcp-tool index_context_envelope --mcp-status transport_closed --mcp-error-code transport_closed --mcp-error-summary "Transport closed" --artifact-out C:/tmp/index_context_envelope_fallback_20260709.json --out C:/tmp/index_context_envelope_fallback_receipt_20260709.json --store-root C:/tmp/harness_file_store
 ```
 
 ```powershell
@@ -1043,6 +1043,7 @@ What changed:
 - Model release readiness now ingests `harness.model-endpoint-gate/v1` artifacts and records endpoint-gate row counts and generation-OK counts per model.
 - Hardens endpoint gate backend construction so default local backend transports remain owned by `ServeBackend` and `OllamaBackend`; injected transports are used only by tests or explicit callers.
 - Fixes local model root discovery to recognize the actual `E:\local-model-run\models\Qwen2.5-Coder-14B-Instruct` and `E:\local-model-run\models\Qwen2.5-Coder-32B-Instruct` layout.
+- Hardens live endpoint gate rows with expected-vs-observed `model_ref` checks so a 14B serve process cannot satisfy a 32B release gate.
 
 ### `classifier_friction_accountability_receipts`
 
@@ -1372,7 +1373,7 @@ What exists:
 - Does not execute providers, endpoints, or benchmarks.
 - Defines dry, focused, and full run tiers with exact command arrays and shell-ready command text.
 - Records providers, normalized provider roles, aliases, expected artifact paths, expected output schemas, evidence gates, and operator-approval requirements.
-- Includes the Index CLI fallback context receipt, local 14B/32B endpoint profiles, closed-loop dry plan, focused closed-loop seed, classifier-friction matrix, local 14B/32B endpoint gate, benchmark coverage, harness comparison, outcome synthesis, and full-provider matrix promotion command.
+- Includes the Index CLI fallback context receipt, local 14B/32B endpoint profiles, closed-loop dry plan, focused closed-loop seed, classifier-friction matrix, local 14B/32B endpoint gate with model-ref validation, benchmark coverage, harness comparison, outcome synthesis, and full-provider matrix promotion command.
 - Exposes the generator through `harness.cmd execution-matrix`.
 - Closed-loop seed orchestration records the matrix by default as a metadata-only preflight and can disable it with `--skip-benchmark-execution-matrix`.
 - Closed-loop outcome synthesis parses matrix artifacts and surfaces benchmark execution matrix signals in Markdown experimental outcomes.

@@ -107,6 +107,7 @@
     {"from": "endpoint_profiles", "to": "endpoint_gates", "meaning": "Static endpoint profiles precede live endpoint health/generation probes."},
     {"from": "endpoint_gates", "to": "local_14b", "meaning": "14B agentic workflow readiness requires live endpoint gate evidence."},
     {"from": "endpoint_gates", "to": "local_32b", "meaning": "32B agentic workflow readiness requires live endpoint gate evidence."},
+    {"from": "closed_loop_seed", "to": "closed_loop_outcome", "meaning": "Focused seed artifacts can be synthesized directly into the experimental outcome report."},
     {"from": "closed_loop_seed", "to": "file_backed_store", "meaning": "Seed receipts and child artifacts are persisted for later outcome synthesis."},
     {"from": "file_backed_store", "to": "closed_loop_outcome", "meaning": "Outcome synthesis reads the receipt store and seed artifacts."},
     {"from": "benchmark_coverage", "to": "harness_comparison", "meaning": "Coverage determines which provider comparisons are valid."},

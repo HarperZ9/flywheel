@@ -411,7 +411,7 @@ def build_steps(args, *, run_id: str, artifact_dir: Path) -> list[OrchestrationS
     if not args.skip_tool_readiness:
         steps.append(OrchestrationStep(
             step_id="tool_readiness",
-            purpose="Record static enterprise-readiness posture for mneme, relay, and plexus.",
+            purpose="Record static enterprise-readiness posture for the flagship/pubscan tool set.",
             command=[
                 py,
                 "scripts/run_tool_readiness_receipts.py",
@@ -658,16 +658,17 @@ def build_steps(args, *, run_id: str, artifact_dir: Path) -> list[OrchestrationS
 
     index_json = _path(artifact_dir, "index_context_envelope.json")
     index_receipt = _path(artifact_dir, "index_context_envelope_receipt.json")
+    index_context_root = args.index_context_root or args.workspace_root
     steps.append(OrchestrationStep(
         step_id="index_context_envelope",
-        purpose="Capture C:/dev context through the Index CLI fallback receipt lane.",
+        purpose="Capture bounded repository context through the Index CLI fallback receipt lane.",
         command=[
             py,
             "scripts/run_index_receipt.py",
             "--lane",
             "context-envelope",
             "--root",
-            args.workspace_root,
+            index_context_root,
             "--index-root",
             args.index_root,
             "--budget",
@@ -964,6 +965,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--artifact-dir", default="")
     parser.add_argument("--workspace-root", default="C:/dev")
     parser.add_argument("--index-root", default="C:/dev/public/index")
+    parser.add_argument("--index-context-root", default="C:/dev/local-model")
     parser.add_argument("--python", default=sys.executable)
     parser.add_argument("--out", default="")
     parser.add_argument("--run-title", default="closed-loop benchmark seed")
@@ -1022,7 +1024,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--index-budget", type=int, default=12000)
     parser.add_argument(
         "--index-focus",
-        default="local-model harness file-backed store pubscan endpoint benchmarks",
+        default="local-model",
     )
     parser.add_argument("--index-hops", type=int, default=2)
     parser.add_argument("--source-mined-providers", default="serve,codex")
@@ -1088,6 +1090,7 @@ def main(argv: list[str] | None = None) -> int:
                 "embodied_realtime": not args.skip_embodied_realtime,
                 "model_card_claims": not args.skip_model_card_claims,
                 "tool_readiness_tools": args.tool_readiness_tools,
+                "index_context_root": args.index_context_root,
                 "tool_hardening_plan": not args.skip_tool_hardening_plan,
                 "model_release_models": args.model_release_models,
                 "model_endpoint_profiles": not args.skip_model_endpoint_profiles,
