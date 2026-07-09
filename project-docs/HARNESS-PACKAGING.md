@@ -5,7 +5,7 @@ This package path makes the full local harness executable before benchmark compa
 ## Build
 
 ```powershell
-python scripts/build_local_harness_exes.py --skip-serve
+python scripts/build_local_harness_exes.py --skip-serve --package --package-version dev-local
 ```
 
 `--skip-serve` keeps the packaged harness light. Local model serving remains wired through the configured local Python runtime and endpoint profiles.
@@ -17,6 +17,8 @@ python scripts/build_local_harness_exes.py --skip-serve
 - `artifacts/exe/local-agent.exe`: offline/local agent entrypoint.
 - `artifacts/exe/model_endpoint_profiles.local.json`: generated 14B/32B endpoint profile artifact.
 - `artifacts/exe/local-harness-release.json`: release manifest for the local executable package.
+- `artifacts/exe/packages/local-harness-<version>.zip`: shippable release bundle.
+- `artifacts/exe/packages/local-harness-<version>/manifest/ship-manifest.json`: file hashes, source commit, dependency posture, and secret policy.
 
 ## Local model wiring
 
@@ -28,3 +30,19 @@ The package emits default local endpoint profiles:
 - serve Python: `E:/local-model-run/venv/Scripts/python.exe`
 
 The full harness executable still delegates long-running local model serving to the local runtime instead of embedding model weights or the Torch stack into the core harness executable.
+
+## Ship bundle contents
+
+The release bundle includes:
+
+- `bin/local-harness.exe`
+- `bin/local-harness.cmd`
+- `bin/local-agent.exe`
+- `config/model_endpoint_profiles.local.json`
+- `config/model_endpoint_profiles.local.md`
+- `docs/HARNESS-PACKAGING.md`
+- `manifest/local-harness-release.json`
+- `manifest/ship-manifest.json`
+- `SHA256SUMS.txt`
+
+The bundle excludes model weights, `.env` files, credentials, tokens, private keys, caches, benchmark outputs, and user corpora.
