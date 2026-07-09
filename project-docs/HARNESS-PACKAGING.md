@@ -23,6 +23,8 @@ python scripts/build_local_harness_exes.py --skip-serve --package --package-vers
 - `artifacts/exe/codex_mcp_launch_contract.local.json`: Codex MCP launch, stale-transport reload, and direct CLI fallback contract.
 - `artifacts/exe/context_inventory.local.json`: metadata-only workspace context map for scratch, temp, session, and benchmark surfaces.
 - `artifacts/exe/context_inventory.local.md`: human-readable workspace context inventory.
+- `artifacts/exe/pubscan_resource_profiles.local.json`: zero-dependency pubscan, native-rendering, compute, and storage capability profiles.
+- `artifacts/exe/pubscan_resource_profiles.local.md`: human-readable pubscan/resource profile report.
 - `artifacts/exe/harness_executable_manifest.local.json`: packaged command-surface manifest.
 - `artifacts/exe/harness_architecture_report.local.json`: harness architecture and endpoint report stitched from generated contracts.
 - `artifacts/exe/enterprise_readiness_report.local.json`: mneme, relay, and plexus enterprise-readiness gates derived from the tool contract.

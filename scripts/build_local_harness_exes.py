@@ -212,6 +212,34 @@ def _emit_context_inventory(args: argparse.Namespace) -> Path:
     return path
 
 
+def _emit_pubscan_resource_profiles(args: argparse.Namespace) -> Path:
+    path = DIST / "pubscan_resource_profiles.local.json"
+    markdown = DIST / "pubscan_resource_profiles.local.md"
+    command = [
+        sys.executable,
+        "scripts/run_pubscan_resource_profiles.py",
+        "--pubscan-root",
+        args.pubscan_root,
+        "--render-roots",
+        args.pubscan_render_roots,
+        "--storage-roots",
+        args.pubscan_storage_roots,
+        "--max-depth",
+        str(args.pubscan_max_depth),
+        "--max-entries",
+        str(args.pubscan_max_entries),
+        "--out",
+        str(path),
+        "--markdown-out",
+        str(markdown),
+    ]
+    print(f"[pubscan] {' '.join(command)}")
+    proc = subprocess.run(command, cwd=ROOT)
+    if proc.returncode != 0:
+        raise RuntimeError(f"pubscan resource profile generation failed ({proc.returncode})")
+    return path
+
+
 def _emit_tool_contract(args: argparse.Namespace) -> Path:
     path = DIST / "tool_integration_contract.local.json"
     markdown = DIST / "tool_integration_contract.local.md"
@@ -384,6 +412,15 @@ def _write_release_manifest(args: argparse.Namespace, *, profiles_path: Path, bu
             "max_depth": args.context_max_depth,
             "max_entries_per_root": args.context_max_entries_per_root,
         },
+        "pubscan_resource_profiles": {
+            "json": str(DIST / "pubscan_resource_profiles.local.json"),
+            "markdown": str(DIST / "pubscan_resource_profiles.local.md"),
+            "pubscan_root": args.pubscan_root,
+            "render_roots": args.pubscan_render_roots,
+            "storage_roots": args.pubscan_storage_roots,
+            "max_depth": args.pubscan_max_depth,
+            "max_entries": args.pubscan_max_entries,
+        },
         "architecture_report": {
             "json": str(DIST / "harness_architecture_report.local.json"),
             "markdown": str(DIST / "harness_architecture_report.local.md"),
@@ -455,6 +492,11 @@ def main() -> int:
     )
     ap.add_argument("--context-max-depth", type=int, default=3)
     ap.add_argument("--context-max-entries-per-root", type=int, default=500)
+    ap.add_argument("--pubscan-root", default="C:/dev/public/pubscan")
+    ap.add_argument("--pubscan-render-roots", default="C:/dev/public;C:/dev/tools;C:/dev/local-model")
+    ap.add_argument("--pubscan-storage-roots", default="C:/tmp;C:/dev;E:/local-model-run")
+    ap.add_argument("--pubscan-max-depth", type=int, default=3)
+    ap.add_argument("--pubscan-max-entries", type=int, default=2000)
     ap.add_argument("--package", action="store_true",
                     help="assemble a local release bundle after building")
     ap.add_argument("--package-version", default=datetime.now(UTC).strftime("%Y%m%d-%H%M%S"))
@@ -500,6 +542,7 @@ def main() -> int:
 
     _emit_executable_manifest(args)
     _emit_context_inventory(args)
+    _emit_pubscan_resource_profiles(args)
     profiles_path = _emit_endpoint_profiles(args)
     release_readiness_path = _emit_model_release_readiness(args, profiles_path=profiles_path)
     _emit_model_publish_plan(args, release_readiness_path=release_readiness_path)

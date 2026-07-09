@@ -113,11 +113,38 @@ def _context_summary(context_inventory: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _pubscan_summary(pubscan_profiles: dict[str, Any]) -> dict[str, Any]:
+    pubscan = pubscan_profiles.get("pubscan") or {}
+    pubscan_summary = pubscan.get("summary") or {}
+    native = pubscan_profiles.get("native_rendering") or {}
+    native_summary = native.get("summary") or {}
+    compute = pubscan_profiles.get("compute") or {}
+    storage = pubscan_profiles.get("storage") or {}
+    storage_summary = storage.get("summary") or {}
+    return {
+        "schema": "harness.architecture-report.pubscan/v1",
+        "present": bool(pubscan_profiles),
+        "root": pubscan.get("root", ""),
+        "root_exists": pubscan.get("exists", False),
+        "repo_count": pubscan.get("count", 0),
+        "profiled_entrypoints": pubscan_summary.get("profiled_entrypoints", 0),
+        "source_only": pubscan_summary.get("source_only", 0),
+        "unverified": pubscan_summary.get("unverified", 0),
+        "native_rendering_candidates": pubscan_summary.get("native_rendering_candidates", 0),
+        "native_candidate_matches": native_summary.get("candidate_matches", 0),
+        "local_cpu_cores": (compute.get("local_cpu") or {}).get("logical_cores", 0),
+        "local_gpu_status": (compute.get("local_gpu") or {}).get("status", "unknown"),
+        "storage_available_roots": storage_summary.get("available_roots", 0),
+        "zero_dependency_policy": pubscan_profiles.get("zero_dependency_policy", {}),
+    }
+
+
 def build_report(
     *,
     release_manifest_path: Path,
     executable_manifest_path: Path,
     context_inventory_path: Path,
+    pubscan_profiles_path: Path,
     endpoint_profiles_path: Path,
     model_release_path: Path,
     model_publish_path: Path,
@@ -130,6 +157,7 @@ def build_report(
     release_manifest = _load(release_manifest_path)
     executable_manifest = _load(executable_manifest_path)
     context_inventory = _load(context_inventory_path)
+    pubscan_profiles = _load(pubscan_profiles_path)
     endpoint_profiles = _load(endpoint_profiles_path)
     model_release = _load(model_release_path)
     model_publish = _load(model_publish_path)
@@ -142,6 +170,7 @@ def build_report(
         "release_manifest": _artifact(release_manifest_path, "harness.local-executable-release/v1"),
         "executable_manifest": _artifact(executable_manifest_path, "harness.executable-manifest/v1"),
         "context_inventory": _artifact(context_inventory_path, "harness.context-inventory/v1"),
+        "pubscan_profiles": _artifact(pubscan_profiles_path, "harness.pubscan-resource-profiles/v1"),
         "endpoint_profiles": _artifact(endpoint_profiles_path, "harness.model-endpoint-profiles/v1"),
         "model_release_readiness": _artifact(model_release_path, "harness.model-release-readiness/v1"),
         "model_publish_plan": _artifact(model_publish_path, "harness.model-publish-plan/v1"),
@@ -169,6 +198,10 @@ def build_report(
         verified_facts.append("Scratch, temp, session, and benchmark context surfaces are represented by the metadata-only context inventory.")
     else:
         assumptions.append("Context inventory was not present when this report was generated.")
+    if pubscan_profiles:
+        verified_facts.append("Pubscan repositories, native rendering candidates, local compute, and storage surfaces are represented by the pubscan resource profile artifact.")
+    else:
+        assumptions.append("Pubscan resource profiles were not present when this report was generated.")
     if tool_contract:
         verified_facts.append("Tool roots and sidecar readiness are represented by the tool integration contract.")
     else:
@@ -195,6 +228,7 @@ def build_report(
             "commands": _command_names(executable_manifest),
         },
         "context_inventory": _context_summary(context_inventory),
+        "pubscan_profiles": _pubscan_summary(pubscan_profiles),
         "local_models": _endpoint_summary(endpoint_profiles),
         "model_release": _model_release_summary(model_release, model_publish),
         "tool_fabric": _tool_summary(tool_contract),
@@ -235,6 +269,8 @@ def build_report(
             "models": _endpoint_summary(endpoint_profiles)["models"],
             "model_candidate_names": _model_release_summary(model_release, model_publish)["candidate_names"],
             "context_entries": _context_summary(context_inventory)["entries"],
+            "pubscan_repositories": _pubscan_summary(pubscan_profiles)["repo_count"],
+            "pubscan_profiled_entrypoints": _pubscan_summary(pubscan_profiles)["profiled_entrypoints"],
             "tools": _tool_summary(tool_contract)["tools"],
         },
     }
@@ -252,6 +288,8 @@ def render_markdown(report: dict[str, Any]) -> str:
         f"- Models: {', '.join(report['summary']['models']) or 'none'}",
         f"- Model candidate names: {', '.join(report['summary']['model_candidate_names']) or 'none'}",
         f"- Context entries: {report['summary']['context_entries']}",
+        f"- Pubscan repositories: {report['summary']['pubscan_repositories']}",
+        f"- Pubscan profiled entrypoints: {report['summary']['pubscan_profiled_entrypoints']}",
         f"- Tools: {', '.join(report['summary']['tools']) or 'none'}",
         f"- Package doctor: {report['release_gate']['package_doctor_verdict'] or 'not present in this report'}",
         "",
@@ -266,6 +304,17 @@ def render_markdown(report: dict[str, Any]) -> str:
         f"- Entries: {report['context_inventory']['entries']}",
         f"- Sensitive-name entries: {report['context_inventory']['sensitive_name_entries']}",
         f"- Truncated roots: {report['context_inventory']['truncated_roots']}",
+        "",
+        "## Pubscan resources",
+        "",
+        f"- Root exists: {str(report['pubscan_profiles']['root_exists']).lower()}",
+        f"- Repositories: {report['pubscan_profiles']['repo_count']}",
+        f"- Profiled entrypoints: {report['pubscan_profiles']['profiled_entrypoints']}",
+        f"- Native-rendering candidates: {report['pubscan_profiles']['native_rendering_candidates']}",
+        f"- Native candidate matches: {report['pubscan_profiles']['native_candidate_matches']}",
+        f"- Local CPU cores: {report['pubscan_profiles']['local_cpu_cores']}",
+        f"- Local GPU status: {report['pubscan_profiles']['local_gpu_status']}",
+        f"- Storage roots available: {report['pubscan_profiles']['storage_available_roots']}",
         "",
         "## Endpoint profiles",
         "",
@@ -312,6 +361,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--release-manifest", default="")
     parser.add_argument("--executable-manifest", default="")
     parser.add_argument("--context-inventory", default="")
+    parser.add_argument("--pubscan-profiles", default="")
     parser.add_argument("--endpoint-profiles", default="")
     parser.add_argument("--model-release", default="")
     parser.add_argument("--model-publish", default="")
@@ -331,6 +381,7 @@ def main(argv: list[str] | None = None) -> int:
         release_manifest_path=Path(args.release_manifest) if args.release_manifest else dist / "local-harness-release.json",
         executable_manifest_path=Path(args.executable_manifest) if args.executable_manifest else dist / "harness_executable_manifest.local.json",
         context_inventory_path=Path(args.context_inventory) if args.context_inventory else dist / "context_inventory.local.json",
+        pubscan_profiles_path=Path(args.pubscan_profiles) if args.pubscan_profiles else dist / "pubscan_resource_profiles.local.json",
         endpoint_profiles_path=Path(args.endpoint_profiles) if args.endpoint_profiles else dist / "model_endpoint_profiles.local.json",
         model_release_path=Path(args.model_release) if args.model_release else dist / "model_release_readiness.local.json",
         model_publish_path=Path(args.model_publish) if args.model_publish else dist / "model_publish_plan.local.json",
