@@ -240,6 +240,50 @@ def _emit_pubscan_resource_profiles(args: argparse.Namespace) -> Path:
     return path
 
 
+def _emit_tool_readiness_receipt(args: argparse.Namespace) -> Path:
+    path = DIST / "tool_readiness.local.json"
+    markdown = DIST / "tool_readiness.local.md"
+    command = [
+        sys.executable,
+        "scripts/run_tool_readiness_receipts.py",
+        "--tools",
+        args.tools,
+        "--base-root",
+        args.tool_base_root,
+        "--out",
+        str(path),
+        "--markdown-out",
+        str(markdown),
+    ]
+    for tool_root in args.tool_root:
+        command.extend(["--tool-root", tool_root])
+    print(f"[tool-readiness] {' '.join(command)}")
+    proc = subprocess.run(command, cwd=ROOT)
+    if proc.returncode != 0:
+        raise RuntimeError(f"tool readiness receipt generation failed ({proc.returncode})")
+    return path
+
+
+def _emit_tool_hardening_plan(args: argparse.Namespace, *, readiness_path: Path) -> Path:
+    path = DIST / "tool_hardening_plan.local.json"
+    markdown = DIST / "tool_hardening_plan.local.md"
+    command = [
+        sys.executable,
+        "scripts/run_tool_hardening_plan.py",
+        "--readiness-artifact",
+        str(readiness_path),
+        "--out",
+        str(path),
+        "--markdown-out",
+        str(markdown),
+    ]
+    print(f"[tool-hardening] {' '.join(command)}")
+    proc = subprocess.run(command, cwd=ROOT)
+    if proc.returncode != 0:
+        raise RuntimeError(f"tool hardening plan generation failed ({proc.returncode})")
+    return path
+
+
 def _emit_tool_contract(args: argparse.Namespace) -> Path:
     path = DIST / "tool_integration_contract.local.json"
     markdown = DIST / "tool_integration_contract.local.md"
@@ -401,6 +445,14 @@ def _write_release_manifest(args: argparse.Namespace, *, profiles_path: Path, bu
             "base_root": args.tool_base_root,
             "root_overrides": args.tool_root,
         },
+        "tool_readiness": {
+            "json": str(DIST / "tool_readiness.local.json"),
+            "markdown": str(DIST / "tool_readiness.local.md"),
+        },
+        "tool_hardening_plan": {
+            "json": str(DIST / "tool_hardening_plan.local.json"),
+            "markdown": str(DIST / "tool_hardening_plan.local.md"),
+        },
         "executable_manifest": {
             "json": str(DIST / "harness_executable_manifest.local.json"),
             "markdown": str(DIST / "harness_executable_manifest.local.md"),
@@ -543,6 +595,8 @@ def main() -> int:
     _emit_executable_manifest(args)
     _emit_context_inventory(args)
     _emit_pubscan_resource_profiles(args)
+    tool_readiness_path = _emit_tool_readiness_receipt(args)
+    _emit_tool_hardening_plan(args, readiness_path=tool_readiness_path)
     profiles_path = _emit_endpoint_profiles(args)
     release_readiness_path = _emit_model_release_readiness(args, profiles_path=profiles_path)
     _emit_model_publish_plan(args, release_readiness_path=release_readiness_path)

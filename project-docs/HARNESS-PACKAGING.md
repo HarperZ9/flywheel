@@ -19,6 +19,8 @@ python scripts/build_local_harness_exes.py --skip-serve --package --package-vers
 - `artifacts/exe/model_release_readiness.local.json`: 14B/32B static model release-readiness receipt.
 - `artifacts/exe/model_publish_plan.local.json`: 14B/32B naming and publication plan.
 - `artifacts/exe/tool_integration_contract.local.json`: packaged tool sidecar contract for index, forum, gather, crucible, telos, aleph, mneme, relay, plexus, pubscan, and local-model.
+- `artifacts/exe/tool_readiness.local.json`: metadata-only static readiness receipt for flagship and sidecar tools.
+- `artifacts/exe/tool_hardening_plan.local.json`: enterprise hardening action and release-gate plan generated from tool readiness.
 - `artifacts/exe/runtime_activation_contract.local.json`: packaged runtime activation contract for storage, env knobs, sidecars, and launch boundaries.
 - `artifacts/exe/codex_mcp_launch_contract.local.json`: Codex MCP launch, stale-transport reload, and direct CLI fallback contract.
 - `artifacts/exe/context_inventory.local.json`: metadata-only workspace context map for scratch, temp, session, and benchmark surfaces.
