@@ -35,6 +35,14 @@ def test_package_ship_doctor_accepts_complete_metadata_bundle(tmp_path):
         "config/tool_integration_contract.local.json": {
             "schema": "harness.tool-integration-contract/v1",
         },
+        "config/tool_readiness.local.json": {
+            "schema": "harness.tool-readiness/v1",
+            "summary": {"enterprise_ready_tools": 1, "tools": 3},
+        },
+        "config/tool_hardening_plan.local.json": {
+            "schema": "harness.tool-hardening-plan/v1",
+            "summary": {"actions": 2, "source_loaded": True},
+        },
         "config/runtime_activation_contract.local.json": {
             "schema": "harness.runtime-activation-contract/v1",
         },

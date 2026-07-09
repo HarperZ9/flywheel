@@ -155,6 +155,10 @@ def test_architecture_report_command_targets_report_generator():
         "C:/tmp/context.json",
         "--pubscan-profiles",
         "C:/tmp/pubscan.json",
+        "--tool-readiness",
+        "C:/tmp/tool_readiness.json",
+        "--tool-hardening",
+        "C:/tmp/tool_hardening.json",
         "--out",
         "C:/tmp/architecture.json",
     ])
@@ -169,6 +173,10 @@ def test_architecture_report_command_targets_report_generator():
     assert "C:/tmp/context.json" in command
     assert "--pubscan-profiles" in command
     assert "C:/tmp/pubscan.json" in command
+    assert "--tool-readiness" in command
+    assert "C:/tmp/tool_readiness.json" in command
+    assert "--tool-hardening" in command
+    assert "C:/tmp/tool_hardening.json" in command
     assert "C:/tmp/architecture.json" in command
 
 

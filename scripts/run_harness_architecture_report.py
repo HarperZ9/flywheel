@@ -73,6 +73,48 @@ def _tool_summary(tool_contract: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _tool_readiness_summary(tool_readiness: dict[str, Any]) -> dict[str, Any]:
+    summary = tool_readiness.get("summary") or {}
+    tools = tool_readiness.get("tools") or []
+    focus = {}
+    for row in tools:
+        if isinstance(row, dict) and row.get("tool") in {"mneme", "relay", "plexus"}:
+            focus[str(row.get("tool"))] = {
+                "verdict": row.get("verdict"),
+                "score": row.get("score"),
+                "enterprise_ready": row.get("enterprise_ready"),
+            }
+    return {
+        "schema": "harness.architecture-report.tool-readiness/v1",
+        "present": bool(tool_readiness),
+        "tools": summary.get("tools", len(tools)),
+        "existing_tools": summary.get("existing_tools", 0),
+        "enterprise_ready_tools": summary.get("enterprise_ready_tools", 0),
+        "prototype_with_gaps": summary.get("prototype_with_gaps", 0),
+        "mean_score": summary.get("mean_score", 0.0),
+        "verdict_counts": summary.get("verdict_counts", {}),
+        "mneme_relay_plexus": focus,
+    }
+
+
+def _tool_hardening_summary(tool_hardening: dict[str, Any]) -> dict[str, Any]:
+    summary = tool_hardening.get("summary") or {}
+    return {
+        "schema": "harness.architecture-report.tool-hardening/v1",
+        "present": bool(tool_hardening),
+        "source_loaded": summary.get("source_loaded", False),
+        "enterprise_ready_static": summary.get("enterprise_ready_static", False),
+        "tools": summary.get("tools", len(tool_hardening.get("tools") or [])),
+        "actions": summary.get("actions", 0),
+        "p0_actions": summary.get("p0_actions", 0),
+        "p1_actions": summary.get("p1_actions", 0),
+        "release_gates": summary.get("release_gates", 0),
+        "passed_release_gates": summary.get("passed_release_gates", 0),
+        "owner_counts": summary.get("owner_counts", {}),
+        "priority_counts": summary.get("priority_counts", {}),
+    }
+
+
 def _model_release_summary(readiness: dict[str, Any], publish: dict[str, Any]) -> dict[str, Any]:
     release_summary = readiness.get("summary") or {}
     publish_summary = publish.get("summary") or {}
@@ -149,6 +191,8 @@ def build_report(
     model_release_path: Path,
     model_publish_path: Path,
     tool_contract_path: Path,
+    tool_readiness_path: Path,
+    tool_hardening_path: Path,
     runtime_contract_path: Path,
     codex_mcp_contract_path: Path,
     enterprise_readiness_path: Path,
@@ -162,6 +206,8 @@ def build_report(
     model_release = _load(model_release_path)
     model_publish = _load(model_publish_path)
     tool_contract = _load(tool_contract_path)
+    tool_readiness = _load(tool_readiness_path)
+    tool_hardening = _load(tool_hardening_path)
     runtime_contract = _load(runtime_contract_path)
     codex_mcp = _load(codex_mcp_contract_path)
     enterprise_readiness = _load(enterprise_readiness_path)
@@ -175,6 +221,8 @@ def build_report(
         "model_release_readiness": _artifact(model_release_path, "harness.model-release-readiness/v1"),
         "model_publish_plan": _artifact(model_publish_path, "harness.model-publish-plan/v1"),
         "tool_contract": _artifact(tool_contract_path, "harness.tool-integration-contract/v1"),
+        "tool_readiness": _artifact(tool_readiness_path, "harness.tool-readiness/v1"),
+        "tool_hardening_plan": _artifact(tool_hardening_path, "harness.tool-hardening-plan/v1"),
         "runtime_contract": _artifact(runtime_contract_path, "harness.runtime-activation-contract/v1"),
         "codex_mcp_contract": _artifact(codex_mcp_contract_path, "harness.codex-mcp-launch-contract/v1"),
         "enterprise_readiness": _artifact(enterprise_readiness_path, "harness.enterprise-readiness-report/v1"),
@@ -206,6 +254,14 @@ def build_report(
         verified_facts.append("Tool roots and sidecar readiness are represented by the tool integration contract.")
     else:
         assumptions.append("Tool integration contract was absent when this report was generated.")
+    if tool_readiness:
+        verified_facts.append("Static tool readiness is represented by the packaged tool readiness receipt.")
+    else:
+        assumptions.append("Tool readiness receipt was absent when this report was generated.")
+    if tool_hardening:
+        verified_facts.append("Tool hardening gates and action counts are represented by the packaged hardening plan.")
+    else:
+        assumptions.append("Tool hardening plan was absent when this report was generated.")
     if codex_mcp:
         verified_facts.append("Codex MCP launch and fallback profiles are represented by the Codex MCP contract.")
     else:
@@ -232,6 +288,8 @@ def build_report(
         "local_models": _endpoint_summary(endpoint_profiles),
         "model_release": _model_release_summary(model_release, model_publish),
         "tool_fabric": _tool_summary(tool_contract),
+        "tool_readiness": _tool_readiness_summary(tool_readiness),
+        "tool_hardening": _tool_hardening_summary(tool_hardening),
         "runtime_activation": {
             "schema": "harness.architecture-report.runtime/v1",
             "summary": runtime_contract.get("summary", {}),
@@ -271,6 +329,8 @@ def build_report(
             "context_entries": _context_summary(context_inventory)["entries"],
             "pubscan_repositories": _pubscan_summary(pubscan_profiles)["repo_count"],
             "pubscan_profiled_entrypoints": _pubscan_summary(pubscan_profiles)["profiled_entrypoints"],
+            "tool_readiness_enterprise_ready": _tool_readiness_summary(tool_readiness)["enterprise_ready_tools"],
+            "tool_hardening_actions": _tool_hardening_summary(tool_hardening)["actions"],
             "tools": _tool_summary(tool_contract)["tools"],
         },
     }
@@ -290,6 +350,8 @@ def render_markdown(report: dict[str, Any]) -> str:
         f"- Context entries: {report['summary']['context_entries']}",
         f"- Pubscan repositories: {report['summary']['pubscan_repositories']}",
         f"- Pubscan profiled entrypoints: {report['summary']['pubscan_profiled_entrypoints']}",
+        f"- Tool readiness enterprise-ready: {report['summary']['tool_readiness_enterprise_ready']}",
+        f"- Tool hardening actions: {report['summary']['tool_hardening_actions']}",
         f"- Tools: {', '.join(report['summary']['tools']) or 'none'}",
         f"- Package doctor: {report['release_gate']['package_doctor_verdict'] or 'not present in this report'}",
         "",
@@ -326,6 +388,16 @@ def render_markdown(report: dict[str, Any]) -> str:
         "",
         f"- Tool count: {report['tool_fabric']['tool_count']}",
         f"- Missing roots: {report['tool_fabric']['roots_missing']}",
+        "",
+        "## Tool readiness and hardening",
+        "",
+        f"- Existing tools: {report['tool_readiness']['existing_tools']} / {report['tool_readiness']['tools']}",
+        f"- Enterprise-ready static tools: {report['tool_readiness']['enterprise_ready_tools']}",
+        f"- Prototype-with-gaps tools: {report['tool_readiness']['prototype_with_gaps']}",
+        f"- Hardening source loaded: {str(report['tool_hardening']['source_loaded']).lower()}",
+        f"- Hardening actions: {report['tool_hardening']['actions']}",
+        f"- P0/P1 actions: {report['tool_hardening']['p0_actions']} / {report['tool_hardening']['p1_actions']}",
+        f"- Release gates passed: {report['tool_hardening']['passed_release_gates']} / {report['tool_hardening']['release_gates']}",
         "",
         "## Verified facts",
         "",
@@ -366,6 +438,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--model-release", default="")
     parser.add_argument("--model-publish", default="")
     parser.add_argument("--tool-contract", default="")
+    parser.add_argument("--tool-readiness", default="")
+    parser.add_argument("--tool-hardening", default="")
     parser.add_argument("--runtime-contract", default="")
     parser.add_argument("--codex-mcp-contract", default="")
     parser.add_argument("--enterprise-readiness", default="")
@@ -386,6 +460,8 @@ def main(argv: list[str] | None = None) -> int:
         model_release_path=Path(args.model_release) if args.model_release else dist / "model_release_readiness.local.json",
         model_publish_path=Path(args.model_publish) if args.model_publish else dist / "model_publish_plan.local.json",
         tool_contract_path=Path(args.tool_contract) if args.tool_contract else dist / "tool_integration_contract.local.json",
+        tool_readiness_path=Path(args.tool_readiness) if args.tool_readiness else dist / "tool_readiness.local.json",
+        tool_hardening_path=Path(args.tool_hardening) if args.tool_hardening else dist / "tool_hardening_plan.local.json",
         runtime_contract_path=Path(args.runtime_contract) if args.runtime_contract else dist / "runtime_activation_contract.local.json",
         codex_mcp_contract_path=Path(args.codex_mcp_contract) if args.codex_mcp_contract else dist / "codex_mcp_launch_contract.local.json",
         enterprise_readiness_path=Path(args.enterprise_readiness) if args.enterprise_readiness else dist / "enterprise_readiness_report.local.json",

@@ -12,6 +12,8 @@ def test_architecture_report_stitches_generated_contracts(tmp_path):
     context = tmp_path / "context.json"
     pubscan = tmp_path / "pubscan.json"
     tools = tmp_path / "tools.json"
+    tool_readiness = tmp_path / "tool_readiness.json"
+    tool_hardening = tmp_path / "tool_hardening.json"
     runtime = tmp_path / "runtime.json"
     codex = tmp_path / "codex.json"
     enterprise = tmp_path / "enterprise.json"
@@ -70,6 +72,27 @@ def test_architecture_report_stitches_generated_contracts(tmp_path):
         "summary": {"roots_missing": 0, "enterprise_ready_static": 1},
         "tools": [{"tool": "index", "readiness": {"verdict": "PROTOTYPE_WITH_GAPS"}}],
     }), encoding="utf-8")
+    tool_readiness.write_text(json.dumps({
+        "schema": "harness.tool-readiness/v1",
+        "summary": {"tools": 3, "existing_tools": 3, "enterprise_ready_tools": 1, "prototype_with_gaps": 2, "mean_score": 0.8},
+        "tools": [
+            {"tool": "mneme", "verdict": "ENTERPRISE_READY_STATIC", "score": 1.0, "enterprise_ready": True},
+            {"tool": "relay", "verdict": "PROTOTYPE_WITH_GAPS", "score": 0.7, "enterprise_ready": False},
+        ],
+    }), encoding="utf-8")
+    tool_hardening.write_text(json.dumps({
+        "schema": "harness.tool-hardening-plan/v1",
+        "summary": {
+            "tools": 3,
+            "actions": 2,
+            "p0_actions": 0,
+            "p1_actions": 1,
+            "release_gates": 9,
+            "passed_release_gates": 7,
+            "source_loaded": True,
+            "enterprise_ready_static": False,
+        },
+    }), encoding="utf-8")
     runtime.write_text(json.dumps({
         "schema": "harness.runtime-activation-contract/v1",
         "summary": {"ready_for_package_inspection": True},
@@ -100,6 +123,8 @@ def test_architecture_report_stitches_generated_contracts(tmp_path):
         model_release_path=release_readiness,
         model_publish_path=publish_plan,
         tool_contract_path=tools,
+        tool_readiness_path=tool_readiness,
+        tool_hardening_path=tool_hardening,
         runtime_contract_path=runtime,
         codex_mcp_contract_path=codex,
         enterprise_readiness_path=enterprise,
@@ -112,6 +137,8 @@ def test_architecture_report_stitches_generated_contracts(tmp_path):
     assert report["summary"]["context_entries"] == 2
     assert report["summary"]["pubscan_repositories"] == 13
     assert report["summary"]["pubscan_profiled_entrypoints"] == 4
+    assert report["summary"]["tool_readiness_enterprise_ready"] == 1
+    assert report["summary"]["tool_hardening_actions"] == 2
     assert report["summary"]["tools"] == ["index"]
     assert report["release_gate"]["package_doctor_verdict"] == "SHIP_READY"
 
@@ -127,6 +154,8 @@ def test_architecture_report_markdown_includes_next_gates(tmp_path):
         model_release_path=missing,
         model_publish_path=missing,
         tool_contract_path=missing,
+        tool_readiness_path=missing,
+        tool_hardening_path=missing,
         runtime_contract_path=missing,
         codex_mcp_contract_path=missing,
         enterprise_readiness_path=missing,
