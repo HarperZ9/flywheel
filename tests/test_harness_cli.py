@@ -151,6 +151,10 @@ def test_architecture_report_command_targets_report_generator():
         "C:/tmp/dist",
         "--package-doctor",
         "C:/tmp/package_doctor.json",
+        "--context-inventory",
+        "C:/tmp/context.json",
+        "--pubscan-profiles",
+        "C:/tmp/pubscan.json",
         "--out",
         "C:/tmp/architecture.json",
     ])
@@ -161,6 +165,10 @@ def test_architecture_report_command_targets_report_generator():
     assert "C:/tmp/dist" in command
     assert "--package-doctor" in command
     assert "C:/tmp/package_doctor.json" in command
+    assert "--context-inventory" in command
+    assert "C:/tmp/context.json" in command
+    assert "--pubscan-profiles" in command
+    assert "C:/tmp/pubscan.json" in command
     assert "C:/tmp/architecture.json" in command
 
 

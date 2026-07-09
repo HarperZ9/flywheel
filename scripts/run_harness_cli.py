@@ -808,6 +808,8 @@ def build_parser() -> argparse.ArgumentParser:
     architecture.add_argument("--dist", default="C:/dev/local-model/artifacts/exe")
     architecture.add_argument("--release-manifest", default="")
     architecture.add_argument("--executable-manifest", default="")
+    architecture.add_argument("--context-inventory", default="")
+    architecture.add_argument("--pubscan-profiles", default="")
     architecture.add_argument("--endpoint-profiles", default="")
     architecture.add_argument("--model-release", default="")
     architecture.add_argument("--model-publish", default="")
@@ -1129,6 +1131,8 @@ def build_command(args, *, repo_root: Path) -> list[str]:
         ]
         _append_if(command, "--release-manifest", args.release_manifest)
         _append_if(command, "--executable-manifest", args.executable_manifest)
+        _append_if(command, "--context-inventory", args.context_inventory)
+        _append_if(command, "--pubscan-profiles", args.pubscan_profiles)
         _append_if(command, "--endpoint-profiles", args.endpoint_profiles)
         _append_if(command, "--model-release", args.model_release)
         _append_if(command, "--model-publish", args.model_publish)

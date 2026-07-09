@@ -45,6 +45,10 @@ def test_package_ship_doctor_accepts_complete_metadata_bundle(tmp_path):
             "schema": "harness.context-inventory/v1",
             "summary": {"entries": 3, "existing_roots": 1, "roots": 1},
         },
+        "config/pubscan_resource_profiles.local.json": {
+            "schema": "harness.pubscan-resource-profiles/v1",
+            "pubscan": {"summary": {"profiled_entrypoints": 1}, "count": 1},
+        },
         "config/harness_architecture_report.local.json": {
             "schema": "harness.architecture-report/v1",
         },

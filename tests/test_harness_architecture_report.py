@@ -10,6 +10,7 @@ def test_architecture_report_stitches_generated_contracts(tmp_path):
     release_readiness = tmp_path / "model_release.json"
     publish_plan = tmp_path / "model_publish.json"
     context = tmp_path / "context.json"
+    pubscan = tmp_path / "pubscan.json"
     tools = tmp_path / "tools.json"
     runtime = tmp_path / "runtime.json"
     codex = tmp_path / "codex.json"
@@ -46,6 +47,24 @@ def test_architecture_report_stitches_generated_contracts(tmp_path):
         "roots": [{"root": "C:/tmp", "exists": True, "truncated": False}],
         "summary": {"roots": 1, "existing_roots": 1, "entries": 2, "sensitive_name_entries": 0},
     }), encoding="utf-8")
+    pubscan.write_text(json.dumps({
+        "schema": "harness.pubscan-resource-profiles/v1",
+        "zero_dependency_policy": {"mandatory_external_services": 0},
+        "pubscan": {
+            "root": "C:/dev/public/pubscan",
+            "exists": True,
+            "count": 13,
+            "summary": {
+                "profiled_entrypoints": 4,
+                "source_only": 8,
+                "unverified": 1,
+                "native_rendering_candidates": 3,
+            },
+        },
+        "native_rendering": {"summary": {"candidate_matches": 5}},
+        "compute": {"local_cpu": {"logical_cores": 16}, "local_gpu": {"status": "unknown"}},
+        "storage": {"summary": {"available_roots": 2}},
+    }), encoding="utf-8")
     tools.write_text(json.dumps({
         "schema": "harness.tool-integration-contract/v1",
         "summary": {"roots_missing": 0, "enterprise_ready_static": 1},
@@ -76,6 +95,7 @@ def test_architecture_report_stitches_generated_contracts(tmp_path):
         release_manifest_path=release,
         executable_manifest_path=executable,
         context_inventory_path=context,
+        pubscan_profiles_path=pubscan,
         endpoint_profiles_path=endpoints,
         model_release_path=release_readiness,
         model_publish_path=publish_plan,
@@ -90,6 +110,8 @@ def test_architecture_report_stitches_generated_contracts(tmp_path):
     assert report["summary"]["models"] == ["14B", "32B"]
     assert report["summary"]["model_candidate_names"] == ["Flywheel-Local-Coder-14B"]
     assert report["summary"]["context_entries"] == 2
+    assert report["summary"]["pubscan_repositories"] == 13
+    assert report["summary"]["pubscan_profiled_entrypoints"] == 4
     assert report["summary"]["tools"] == ["index"]
     assert report["release_gate"]["package_doctor_verdict"] == "SHIP_READY"
 
@@ -100,6 +122,7 @@ def test_architecture_report_markdown_includes_next_gates(tmp_path):
         release_manifest_path=missing,
         executable_manifest_path=missing,
         context_inventory_path=missing,
+        pubscan_profiles_path=missing,
         endpoint_profiles_path=missing,
         model_release_path=missing,
         model_publish_path=missing,
