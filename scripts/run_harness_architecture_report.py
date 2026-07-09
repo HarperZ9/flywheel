@@ -152,6 +152,19 @@ def _tool_hardening_summary(tool_hardening: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _tool_operator_guide_summary(tool_operator_guide: dict[str, Any]) -> dict[str, Any]:
+    summary = tool_operator_guide.get("summary") or {}
+    tools = tool_operator_guide.get("tools") or []
+    return {
+        "schema": "harness.architecture-report.tool-operator-guide/v1",
+        "present": bool(tool_operator_guide),
+        "tools": summary.get("tools", len(tools)),
+        "roots_existing": summary.get("roots_existing", 0),
+        "enterprise_ready": summary.get("enterprise_ready", 0),
+        "guided_tools": [str(row.get("tool")) for row in tools if isinstance(row, dict)],
+    }
+
+
 def _documentation_summary(records_root: Path, reports_root: Path, releases_root: Path) -> dict[str, Any]:
     record_rows = [{"name": name, **_file_artifact(records_root / name)} for name in DEFAULT_DOCUMENTATION_RECORDS]
     report_rows = [
@@ -262,6 +275,7 @@ def build_report(
     tool_contract_path: Path,
     tool_readiness_path: Path,
     tool_hardening_path: Path,
+    tool_operator_guide_path: Path,
     documentation_records_root: Path,
     documentation_reports_root: Path,
     model_release_docs_root: Path,
@@ -280,6 +294,7 @@ def build_report(
     tool_contract = _load(tool_contract_path)
     tool_readiness = _load(tool_readiness_path)
     tool_hardening = _load(tool_hardening_path)
+    tool_operator_guide = _load(tool_operator_guide_path)
     runtime_contract = _load(runtime_contract_path)
     codex_mcp = _load(codex_mcp_contract_path)
     enterprise_readiness = _load(enterprise_readiness_path)
@@ -295,6 +310,7 @@ def build_report(
         "tool_contract": _artifact(tool_contract_path, "harness.tool-integration-contract/v1"),
         "tool_readiness": _artifact(tool_readiness_path, "harness.tool-readiness/v1"),
         "tool_hardening_plan": _artifact(tool_hardening_path, "harness.tool-hardening-plan/v1"),
+        "tool_operator_guide": _artifact(tool_operator_guide_path, "harness.tool-operator-guide/v1"),
         "runtime_contract": _artifact(runtime_contract_path, "harness.runtime-activation-contract/v1"),
         "codex_mcp_contract": _artifact(codex_mcp_contract_path, "harness.codex-mcp-launch-contract/v1"),
         "enterprise_readiness": _artifact(enterprise_readiness_path, "harness.enterprise-readiness-report/v1"),
@@ -334,6 +350,10 @@ def build_report(
         verified_facts.append("Tool hardening gates and action counts are represented by the packaged hardening plan.")
     else:
         assumptions.append("Tool hardening plan was absent when this report was generated.")
+    if tool_operator_guide:
+        verified_facts.append("Concise operator instructions for each tool are represented by the packaged tool operator guide.")
+    else:
+        assumptions.append("Tool operator guide was absent when this report was generated.")
     documentation_pack = _documentation_summary(documentation_records_root, documentation_reports_root, model_release_docs_root)
     if documentation_pack["total_documents_present"] == documentation_pack["total_documents"]:
         verified_facts.append("Roadmap, capability catalog, objective evidence matrix, next-loop, methodology, report, and 14B/32B release documents are present in the documentation pack.")
@@ -367,6 +387,7 @@ def build_report(
         "tool_fabric": _tool_summary(tool_contract),
         "tool_readiness": _tool_readiness_summary(tool_readiness),
         "tool_hardening": _tool_hardening_summary(tool_hardening),
+        "tool_operator_guide": _tool_operator_guide_summary(tool_operator_guide),
         "documentation_pack": documentation_pack,
         "runtime_activation": {
             "schema": "harness.architecture-report.runtime/v1",
@@ -409,6 +430,7 @@ def build_report(
             "pubscan_profiled_entrypoints": _pubscan_summary(pubscan_profiles)["profiled_entrypoints"],
             "tool_readiness_enterprise_ready": _tool_readiness_summary(tool_readiness)["enterprise_ready_tools"],
             "tool_hardening_actions": _tool_hardening_summary(tool_hardening)["actions"],
+            "tool_operator_guided_tools": _tool_operator_guide_summary(tool_operator_guide)["tools"],
             "documentation_records_present": documentation_pack["records_present"],
             "documentation_reports_present": documentation_pack["reports_present"],
             "model_release_documents_present": documentation_pack["model_release_documents_present"],
@@ -434,6 +456,7 @@ def render_markdown(report: dict[str, Any]) -> str:
         f"- Pubscan profiled entrypoints: {report['summary']['pubscan_profiled_entrypoints']}",
         f"- Tool readiness enterprise-ready: {report['summary']['tool_readiness_enterprise_ready']}",
         f"- Tool hardening actions: {report['summary']['tool_hardening_actions']}",
+        f"- Tool operator guided tools: {report['summary']['tool_operator_guided_tools']}",
         f"- Documentation records: {report['summary']['documentation_records_present']}",
         f"- Documentation reports: {report['summary']['documentation_reports_present']}",
         f"- Model release docs: {report['summary']['model_release_documents_present']}",
@@ -483,6 +506,7 @@ def render_markdown(report: dict[str, Any]) -> str:
         f"- Hardening actions: {report['tool_hardening']['actions']}",
         f"- P0/P1 actions: {report['tool_hardening']['p0_actions']} / {report['tool_hardening']['p1_actions']}",
         f"- Release gates passed: {report['tool_hardening']['passed_release_gates']} / {report['tool_hardening']['release_gates']}",
+        f"- Operator guide tools: {report['tool_operator_guide']['tools']}",
         "",
         "## Documentation pack",
         "",
@@ -534,6 +558,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--tool-contract", default="")
     parser.add_argument("--tool-readiness", default="")
     parser.add_argument("--tool-hardening", default="")
+    parser.add_argument("--tool-operator-guide", default="")
     parser.add_argument("--documentation-records-root", default="C:/dev/local-model/project-docs/records")
     parser.add_argument("--documentation-reports-root", default="C:/dev/local-model/project-docs/reports")
     parser.add_argument("--model-release-docs-root", default="C:/dev/local-model/project-docs/releases")
@@ -559,6 +584,7 @@ def main(argv: list[str] | None = None) -> int:
         tool_contract_path=Path(args.tool_contract) if args.tool_contract else dist / "tool_integration_contract.local.json",
         tool_readiness_path=Path(args.tool_readiness) if args.tool_readiness else dist / "tool_readiness.local.json",
         tool_hardening_path=Path(args.tool_hardening) if args.tool_hardening else dist / "tool_hardening_plan.local.json",
+        tool_operator_guide_path=Path(args.tool_operator_guide) if args.tool_operator_guide else dist / "tool_operator_guide.local.json",
         documentation_records_root=Path(args.documentation_records_root),
         documentation_reports_root=Path(args.documentation_reports_root),
         model_release_docs_root=Path(args.model_release_docs_root),
