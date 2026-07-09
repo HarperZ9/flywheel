@@ -114,6 +114,7 @@ If the package is moved away from the source checkout, set `LOCAL_HARNESS_REPO` 
 
 The package includes `config\\model_endpoint_profiles.local.json`.
 It includes `config\\model_release_readiness.local.json` and `config\\model_publish_plan.local.json` for the 14B/32B release track.
+`config\\model_repo_stage.local.json` gives staged Hugging Face repository metadata folders for the 14B/32B candidates.
 `config\\huggingface_release_stage.local.json` gives dry-run Hugging Face repo IDs, upload command templates, and model upload blockers.
 It also includes `config\\tool_integration_contract.local.json` for the Flywheel/Codex sidecar tool contract.
 `config\\tool_readiness.local.json` and `config\\tool_hardening_plan.local.json` provide static readiness and hardening gates for the flagship tool fabric.
@@ -127,6 +128,7 @@ It also includes `config\\tool_integration_contract.local.json` for the Flywheel
 `docs\\records\\` carries the current roadmap, capability catalog, objective evidence matrix, and next recursive improvement loop.
 `docs\\reports\\` and `docs\\releases\\` carry the benchmark methodology, experimental/reporting documents, and 14B/32B publication scaffolds.
 `docs\\flagship\\` carries the public-facing art, demos, walkthrough, source context register, and external docs sync plan.
+`docs\\model_repositories\\` carries HF-style metadata-only repository staging folders for the 14B/32B candidates.
 
 - 14B serve endpoint: `http://127.0.0.1:8765`
 - 32B serve endpoint: `http://127.0.0.1:8768`
@@ -156,6 +158,8 @@ def build_bundle(
     model_release_md = dist / "model_release_readiness.local.md"
     model_publish = dist / "model_publish_plan.local.json"
     model_publish_md = dist / "model_publish_plan.local.md"
+    model_repo_stage = dist / "model_repo_stage.local.json"
+    model_repo_stage_md = dist / "model_repo_stage.local.md"
     huggingface_stage = dist / "huggingface_release_stage.local.json"
     huggingface_stage_md = dist / "huggingface_release_stage.local.md"
     tool_contract = dist / "tool_integration_contract.local.json"
@@ -191,6 +195,8 @@ def build_bundle(
         (model_release_md, bundle_root / "docs" / "model_release_readiness.local.md"),
         (model_publish, bundle_root / "config" / "model_publish_plan.local.json"),
         (model_publish_md, bundle_root / "docs" / "model_publish_plan.local.md"),
+        (model_repo_stage, bundle_root / "config" / "model_repo_stage.local.json"),
+        (model_repo_stage_md, bundle_root / "docs" / "model_repo_stage.local.md"),
         (huggingface_stage, bundle_root / "config" / "huggingface_release_stage.local.json"),
         (huggingface_stage_md, bundle_root / "docs" / "huggingface_release_stage.local.md"),
         (tool_contract, bundle_root / "config" / "tool_integration_contract.local.json"),
@@ -252,6 +258,21 @@ def build_bundle(
         )
         copied["relative_path"] = str((bundle_root / "docs" / "flagship" / flagship_doc).relative_to(bundle_root)).replace("\\", "/")
         files.append(copied)
+    stage_payload = json.loads(model_repo_stage.read_text(encoding="utf-8"))
+    for model_stage in stage_payload.get("models", []):
+        if not isinstance(model_stage, dict):
+            continue
+        source_stage_root = Path(str(model_stage.get("stage_root", "")))
+        candidate_slug = str(model_stage.get("candidate_slug", source_stage_root.name))
+        if not source_stage_root.exists():
+            continue
+        for source in sorted(source_stage_root.iterdir(), key=lambda item: item.name.lower()):
+            if not source.is_file():
+                continue
+            target = bundle_root / "docs" / "model_repositories" / candidate_slug / source.name
+            copied = copy_file(source, target)
+            copied["relative_path"] = str(target.relative_to(bundle_root)).replace("\\", "/")
+            files.append(copied)
 
     readme = write_text(bundle_root / "README.md", release_readme(package_name=package_name))
     readme["relative_path"] = "README.md"
@@ -274,10 +295,18 @@ def build_bundle(
             "reports": REPORT_DOCUMENTS,
             "model_release_documents": MODEL_RELEASE_DOCUMENTS,
             "flagship_documents": FLAGSHIP_DOCUMENTS,
+            "model_repository_stage_files": [
+                str(row["relative_path"])
+                for row in files
+                if str(row["relative_path"]).startswith("docs/model_repositories/")
+            ],
             "record_count": len(DOCUMENTATION_RECORDS),
             "report_count": len(REPORT_DOCUMENTS),
             "model_release_document_count": len(MODEL_RELEASE_DOCUMENTS),
             "flagship_document_count": len(FLAGSHIP_DOCUMENTS),
+            "model_repository_stage_file_count": sum(
+                1 for row in files if str(row["relative_path"]).startswith("docs/model_repositories/")
+            ),
         },
         "files": sorted(files, key=lambda item: str(item["relative_path"])),
     }
