@@ -331,6 +331,14 @@ Serve resource preflight command:
 
 This command is non-destructive. It records observed GPU memory from `nvidia-smi`, applies the calibrated `harness.membudget` 14B/32B fit model, and blocks launch attempts that require offload or a smaller runtime before a long-running serve process is started.
 
+32B CPU-offload profile command:
+
+```powershell
+.\harness.cmd readiness model-endpoints --models 14B,32B --base-root E:/local-model-run --serve-url-32b http://127.0.0.1:8768 --serve-runtime-32b cpu-offload --out C:/tmp/model_endpoint_profiles_32b_offload_8768_20260709.json --markdown-out C:/tmp/model_endpoint_profiles_32b_offload_8768_20260709.md --store-root C:/tmp/harness_file_store
+```
+
+The `cpu-offload` runtime strategy currently records `--device-map auto --max-memory-gpu 20GiB --max-memory-cpu 96GiB --offload-folder E:/local-model-run/offload/32b` on the 32B serve profile. This is an unverified runtime path until a managed `serve-launch --start` run and endpoint gate pass.
+
 Executable endpoint gate command:
 
 ```powershell

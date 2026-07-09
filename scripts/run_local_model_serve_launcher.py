@@ -50,7 +50,7 @@ def _profile_alias(profile: dict[str, Any]) -> str:
 
 def _command_for_profile(profile: dict[str, Any], *, serve_python: str) -> list[str]:
     port = _endpoint_port(str(profile.get("endpoint_url", "")))
-    return [
+    command = [
         serve_python,
         str(_repo_root() / "harness" / "serve.py"),
         "--model-profile",
@@ -60,6 +60,9 @@ def _command_for_profile(profile: dict[str, Any], *, serve_python: str) -> list[
         "--port",
         str(port),
     ]
+    serve_args = profile.get("serve_args") if isinstance(profile.get("serve_args"), list) else []
+    command.extend(str(arg) for arg in serve_args)
+    return command
 
 
 def _health_url(profile: dict[str, Any]) -> str:

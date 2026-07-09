@@ -59,3 +59,26 @@ def test_resource_preflight_records_gpu_unobserved(tmp_path):
 
     assert report["rows"][0]["verdict"] == "gpu_unobserved"
     assert report["summary"]["blocking_rows"] == 1
+
+
+def test_resource_preflight_accepts_unverified_offload_path(tmp_path):
+    profiles = tmp_path / "profiles.json"
+    _write_profiles(profiles)
+    data = json.loads(profiles.read_text(encoding="utf-8"))
+    data["profiles"][0]["runtime"] = {"strategy": "cpu-offload", "requires_offload": True}
+    profiles.write_text(json.dumps(data), encoding="utf-8")
+
+    report = build_report(
+        profile_artifact=str(profiles),
+        models=["32B"],
+        gpu_probe=lambda: [{
+            "name": "RTX 4090",
+            "memory_total_gb": 23.988,
+            "memory_used_gb": 13.0,
+            "memory_free_gb": 10.9,
+            "utilization_gpu_pct": 10.0,
+        }],
+    )
+
+    assert report["rows"][0]["verdict"] == "offload_runtime_path_available_unverified"
+    assert report["summary"]["blocking_rows"] == 0

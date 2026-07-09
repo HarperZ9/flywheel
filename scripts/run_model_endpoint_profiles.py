@@ -22,6 +22,15 @@ DEFAULT_SERVE_URLS = {
     "32b": "http://127.0.0.1:8767",
 }
 
+RUNTIME_STRATEGIES = {
+    "cpu-offload": {
+        "device_map": "auto",
+        "max_memory_gpu": "20GiB",
+        "max_memory_cpu": "96GiB",
+        "offload_folder_template": "E:/local-model-run/offload/{model_key}",
+    },
+}
+
 
 def now_utc() -> str:
     return datetime.now(UTC).isoformat().replace("+00:00", "Z")
@@ -55,7 +64,35 @@ def _endpoint_port(endpoint_url: str, fallback: int = 8765) -> int:
     return int(parsed.port or fallback)
 
 
-def _serve_profile(model: str, *, base_root: Path, serve_url: str) -> dict[str, Any]:
+def _runtime_config(model: str, strategy: str) -> dict[str, Any]:
+    name = strategy.strip().lower()
+    if not name:
+        return {"strategy": "gpu-single", "serve_args": [], "requires_offload": False}
+    spec = RUNTIME_STRATEGIES.get(name, {})
+    if not spec:
+        return {"strategy": name, "serve_args": [], "requires_offload": False}
+    folder = spec["offload_folder_template"].format(model_key=model_key(model))
+    serve_args = [
+        "--device-map",
+        spec["device_map"],
+        "--max-memory-gpu",
+        spec["max_memory_gpu"],
+        "--max-memory-cpu",
+        spec["max_memory_cpu"],
+        "--offload-folder",
+        folder,
+    ]
+    return {
+        "strategy": name,
+        "serve_args": serve_args,
+        "requires_offload": True,
+        "offload_folder": folder,
+        "max_memory_gpu": spec["max_memory_gpu"],
+        "max_memory_cpu": spec["max_memory_cpu"],
+    }
+
+
+def _serve_profile(model: str, *, base_root: Path, serve_url: str, runtime_strategy: str = "") -> dict[str, Any]:
     profile = model_profile(model)
     root, candidates = _pick_root(model, base_root)
     aliases = list(profile.get("serve_aliases", [])) or [model_key(model)]
@@ -63,6 +100,9 @@ def _serve_profile(model: str, *, base_root: Path, serve_url: str) -> dict[str, 
     model_ref = str(profile.get("model_ref", model))
     endpoint_url = serve_url.rstrip("/")
     port = _endpoint_port(endpoint_url)
+    runtime = _runtime_config(model, runtime_strategy)
+    runtime_args = " ".join(f'"{arg}"' if " " in arg else arg for arg in runtime["serve_args"])
+    runtime_suffix = f" {runtime_args}" if runtime_args else ""
     return {
         "schema": "harness.model-endpoint-profile/v1",
         "profile_id": f"serve-{model_key(model)}",
@@ -82,7 +122,7 @@ def _serve_profile(model: str, *, base_root: Path, serve_url: str) -> dict[str, 
             f'set "SERVE_MODEL_ALIAS={alias}" && '
             f'set "SERVE_MODEL_REF={model_ref}" && '
             f'set "SERVE_PORT={port}" && '
-            f'python harness/serve.py --model-profile {alias} --model-ref "{model_ref}" --port {port}'
+            f'python harness/serve.py --model-profile {alias} --model-ref "{model_ref}" --port {port}{runtime_suffix}'
         ),
         "required_env": ["SERVE_MODEL_ALIAS", "SERVE_MODEL_PATH", "SERVE_MODEL_REF", "SERVE_ADAPTER_PATH", "SERVE_PORT"],
         "env_presence": {
@@ -90,6 +130,8 @@ def _serve_profile(model: str, *, base_root: Path, serve_url: str) -> dict[str, 
             for name in ["SERVE_MODEL_ALIAS", "SERVE_MODEL_PATH", "SERVE_MODEL_REF", "SERVE_ADAPTER_PATH", "SERVE_PORT"]
         },
         "aliases": aliases,
+        "runtime": runtime,
+        "serve_args": runtime["serve_args"],
         "content_read": False,
         "live_probed": False,
         "supports_agentic_workflow": True,
@@ -131,15 +173,18 @@ def build_report(
     base_root: Path,
     serve_url: str,
     serve_urls: dict[str, str] | None = None,
+    runtime_strategies: dict[str, str] | None = None,
     ollama_url: str,
 ) -> dict[str, Any]:
     profiles: list[dict[str, Any]] = []
     serve_urls = serve_urls or {}
+    runtime_strategies = runtime_strategies or {}
     for model in models:
         profiles.append(_serve_profile(
             model,
             base_root=base_root,
             serve_url=_serve_url_for_model(model, serve_url=serve_url, serve_urls=serve_urls),
+            runtime_strategy=runtime_strategies.get(model_key(model), ""),
         ))
         profiles.append(_ollama_profile(model, base_root=base_root, ollama_url=ollama_url))
     return {
@@ -224,6 +269,8 @@ def main(argv: list[str] | None = None) -> int:
                         help="shared serve URL; omitted uses per-model defaults 14B=8765, 32B=8767")
     parser.add_argument("--serve-url-14b", default="")
     parser.add_argument("--serve-url-32b", default="")
+    parser.add_argument("--serve-runtime-14b", default="")
+    parser.add_argument("--serve-runtime-32b", default="")
     parser.add_argument("--ollama-url", default="http://127.0.0.1:11434")
     parser.add_argument("--out", default="")
     parser.add_argument("--markdown-out", default="")
@@ -238,6 +285,10 @@ def main(argv: list[str] | None = None) -> int:
         serve_urls={
             "14b": args.serve_url_14b,
             "32b": args.serve_url_32b,
+        },
+        runtime_strategies={
+            "14b": args.serve_runtime_14b,
+            "32b": args.serve_runtime_32b,
         },
         ollama_url=args.ollama_url,
     )
