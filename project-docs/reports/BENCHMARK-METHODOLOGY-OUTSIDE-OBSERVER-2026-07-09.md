@@ -2,7 +2,8 @@
 
 Date: 2026-07-09
 Subject: `Flywheel-Local-Coder-14B` (`telos-coder-14b-cpt2020-q4_k_m.gguf`)
-Status: easy-set results final; hard-set run in flight, results pending
+Status: easy-set results final; first hard-set run landed (Section 6.1, with
+confidence intervals); the 100-task curated lane is the remaining instrument
 
 This document is written for a skeptical outside observer. It describes
 what was measured, how the task set was built, what the arms and metrics
@@ -161,6 +162,41 @@ Consequences we hold ourselves to:
   format, whatever they show. MATCH and DRIFT are both publishable
   outcomes; the framework exists to report the data, not to flatter the
   harness.
+
+### 6.1 Hard-set results (landed 2026-07-09) with confidence intervals
+
+The first hard-set run used the 10-task held-out hard registry (the larger
+curated lane is still being assembled; see Section 3.2). Same artifact, same
+arms, same controls.
+
+| Arm | Passed | Wilson 95% CI |
+|---|---|---|
+| single_shot | 8/10 (80%) | [0.490, 0.943] |
+| verified_inference | 9/10 (90%) | [0.596, 0.982] |
+| flat_n | 9/10 (90%) | [0.596, 0.982] |
+| no_search | 8/10 (80%) | [0.490, 0.943] |
+
+Receipt reproducibility was 100% in every arm. Verdict: MATCH
+(verified_inference is not worse than single_shot).
+
+The difference that matters, stated with an interval instead of an
+adjective: verified_inference minus single_shot is +0.100 with a 95%
+interval of [-0.236, +0.420] (Newcombe score interval; the run predates
+per-task vectors in the scorecard schema, so this is the unpaired
+approximation, which is typically conservative). The interval includes
+zero. On top of that, flat_n (best-of-4 with no verification escalation)
+ties verified_inference exactly, so even the point difference is explained
+by sampling more candidates, not by verification. No uplift is claimed.
+
+Intervals were produced by `scripts/run_benchmark_ci.py` (stdlib, Wilson
+and Newcombe score intervals, paired bootstrap when per-task vectors
+exist). Full output: `artifacts/flywheel-local-coder-14b-benchmark-ci.json`
+and `.md`. Scorecards written after 2026-07-09 carry per-task outcome
+vectors, so future runs get the paired bootstrap automatically.
+
+For calibration: at this effect size, excluding zero would need roughly
+n around 100, which is exactly why the curated hard lane targets 100
+tasks before any efficiency claim is put in front of an outside observer.
 
 ## 7. Determinism controls
 
