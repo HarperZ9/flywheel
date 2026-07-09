@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Flywheel: a companion for every model</title>
+<style>
+:root{
+  --bg:#faf7f2; --ink:#1c1a17; --muted:#5c574f; --line:#e4ddd2;
+  --card:#fffdf9; --accent:#5b57d1; --accent-soft:#ecebfb; --warm:#c8781f;
+  --ok:#2f7d4f; --shadow:0 1px 2px rgba(28,26,23,.06),0 8px 30px rgba(28,26,23,.05);
+}
+@media (prefers-color-scheme:dark){
+  :root{ --bg:#131211; --ink:#f0ece4; --muted:#a29b8f; --line:#2c2925;
+    --card:#1b1917; --accent:#a6a2f5; --accent-soft:#211f36; --warm:#e3a44f;
+    --ok:#6fd39a; --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 34px rgba(0,0,0,.35);}
+}
+:root[data-theme="dark"]{ --bg:#131211; --ink:#f0ece4; --muted:#a29b8f; --line:#2c2925;
+  --card:#1b1917; --accent:#a6a2f5; --accent-soft:#211f36; --warm:#e3a44f; --ok:#6fd39a;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 34px rgba(0,0,0,.35);}
+:root[data-theme="light"]{ --bg:#faf7f2; --ink:#1c1a17; --muted:#5c574f; --line:#e4ddd2;
+  --card:#fffdf9; --accent:#5b57d1; --accent-soft:#ecebfb; --warm:#c8781f; --ok:#2f7d4f;
+  --shadow:0 1px 2px rgba(28,26,23,.06),0 8px 30px rgba(28,26,23,.05);}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font:16px/1.65 ui-serif,Georgia,"Iowan Old Style",Palatino,serif;
+  -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+.wrap{max-width:960px;margin:0 auto;padding:0 24px}
+h1,h2,h3{font-family:ui-sans-serif,-apple-system,"Segoe UI",Inter,system-ui,sans-serif;
+  line-height:1.15;letter-spacing:-.015em;font-weight:650}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+.eyebrow{font-family:ui-sans-serif,system-ui,sans-serif;text-transform:uppercase;
+  letter-spacing:.16em;font-size:12px;font-weight:640;color:var(--warm)}
+header.top{display:flex;justify-content:space-between;align-items:center;
+  padding:22px 0;border-bottom:1px solid var(--line)}
+.brand{font-family:ui-sans-serif,system-ui,sans-serif;font-weight:700;letter-spacing:-.02em;font-size:18px}
+.brand .dot{color:var(--accent)}
+.theme{cursor:pointer;border:1px solid var(--line);background:var(--card);color:var(--muted);
+  border-radius:999px;padding:6px 14px;font:inherit;font-size:13px;font-family:ui-sans-serif,system-ui,sans-serif}
+.hero{padding:76px 0 40px}
+.hero h1{font-size:clamp(34px,6vw,58px);margin:.2em 0 .3em;max-width:15ch}
+.lede{font-size:clamp(18px,2.3vw,22px);color:var(--muted);max-width:60ch;margin:0 0 1.6em}
+.oneline{font-family:ui-sans-serif,system-ui,sans-serif;font-weight:600;color:var(--ink);
+  border-left:3px solid var(--warm);padding:2px 0 2px 16px;margin:0 0 2em;max-width:56ch}
+.cta{display:inline-flex;gap:10px;align-items:center;background:var(--accent);color:#fff;
+  font-family:ui-sans-serif,system-ui,sans-serif;font-weight:600;font-size:15px;
+  padding:12px 22px;border-radius:12px;box-shadow:var(--shadow)}
+.cta.ghost{background:var(--card);color:var(--ink);border:1px solid var(--line)}
+.ctarow{display:flex;gap:12px;flex-wrap:wrap}
+section{padding:52px 0;border-top:1px solid var(--line)}
+section h2{font-size:clamp(24px,3.4vw,34px);margin:0 0 .5em}
+.sub{color:var(--muted);max-width:62ch;margin:0 0 1.6em}
+.seam{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+@media(max-width:680px){.seam{grid-template-columns:1fr}}
+.seam .item{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px 22px;box-shadow:var(--shadow)}
+.seam .item h3{font-size:17px;margin:0 0 .35em}
+.seam .item p{margin:0;color:var(--muted);font-size:15px}
+.gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:16px}
+.tile{display:block;background:var(--card);border:1px solid var(--line);border-radius:16px;
+  padding:18px 18px 16px;box-shadow:var(--shadow);transition:transform .12s ease,border-color .12s ease}
+.tile:hover{transform:translateY(-3px);border-color:var(--accent);text-decoration:none}
+.tile .name{font-family:ui-sans-serif,system-ui,sans-serif;font-weight:660;font-size:16px;color:var(--ink);margin:0 0 2px}
+.tile .role{font-size:13.5px;color:var(--muted);margin:0 0 12px;min-height:2.6em}
+.tile .play{font-family:ui-sans-serif,system-ui,sans-serif;font-size:13px;font-weight:600;color:var(--accent);display:inline-flex;gap:6px;align-items:center}
+.badge{display:inline-block;font-family:ui-sans-serif,system-ui,sans-serif;font-size:11px;font-weight:640;
+  letter-spacing:.04em;padding:3px 9px;border-radius:999px;background:var(--accent-soft);color:var(--accent)}
+.bench{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:8px 22px 4px;box-shadow:var(--shadow);overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:14.5px;font-family:ui-sans-serif,system-ui,sans-serif}
+th,td{text-align:left;padding:11px 12px;border-bottom:1px solid var(--line);white-space:nowrap}
+th{color:var(--muted);font-weight:600;font-size:12.5px;text-transform:uppercase;letter-spacing:.05em}
+td.n{font-variant-numeric:tabular-nums}
+.note{background:var(--accent-soft);border-radius:12px;padding:14px 18px;color:var(--ink);font-size:14.5px;margin-top:18px}
+.note b{color:var(--accent)}
+pre{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 18px;overflow-x:auto;
+  font:13.5px/1.6 ui-monospace,"SF Mono",Menlo,Consolas,monospace;color:var(--ink)}
+.status{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px}
+.status .s{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 18px}
+.status .s .k{font-family:ui-sans-serif,system-ui,sans-serif;font-size:12.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.status .s .v{font-family:ui-sans-serif,system-ui,sans-serif;font-weight:660;font-size:15px;margin-top:4px}
+.dotok{color:var(--ok)} .dotwarm{color:var(--warm)}
+footer{padding:44px 0 70px;color:var(--muted);font-size:14px;font-family:ui-sans-serif,system-ui,sans-serif}
+footer .rule{color:var(--muted);max-width:66ch}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand">flywheel<span class="dot">.</span></div>
+    <button class="theme" id="themeToggle" aria-label="Toggle theme">theme</button>
+  </header>
+
+  <div class="hero">
+    <div class="eyebrow">a companion, not a competitor</div>
+    <h1>A companion for every model.</h1>
+    <p class="lede">Bring whatever model you like, local or frontier. Flywheel stands beside it,
+      helps it do its best work, and hands you a record you can keep and check yourself.</p>
+    <p class="oneline">Lead with wonder, earn trust by trying to break things, and show your work.</p>
+    <div class="ctarow">
+      <a class="cta" href="../demos/harness-first-run/player.html">Watch the harness run</a>
+      <a class="cta ghost" href="#gallery">See every tool</a>
+    </div>
+  </div>
+
+  <section id="seam">
+    <div class="eyebrow">the seam</div>
+    <h2>The small tear we are closing</h2>
+    <p class="sub">The frontier is remarkable, and the strongest reasoning today lives in hosted
+      models. We are not here to out-reason them. We are here to make the model in front of you,
+      whichever one it is, more efficient and more accountable to you.</p>
+    <div class="seam">
+      <div class="item"><h3>Availability you control</h3>
+        <p>Frontier models come and go on a schedule set by export policy and approval lists.
+          A model on weights you hold is here when you need it, on an airplane, when the network is down.</p></div>
+      <div class="item"><h3>A record you can keep</h3>
+        <p>Every accepted answer carries a receipt: the inputs, the check that passed, and hashes
+          anyone can re-run offline. You never have to take it on faith.</p></div>
+      <div class="item"><h3>Efficiency, not replacement</h3>
+        <p>Flywheel can sit underneath any harness, cache what it has already verified, and route
+          only the genuinely hard part of a task to the expensive tier.</p></div>
+      <div class="item"><h3>Smaller and smaller hardware</h3>
+        <p>A capable coder in a single file just under 9 GB runs on an ordinary machine today.
+          The work ahead is keeping more capability in less space.</p></div>
+    </div>
+  </section>
+
+  <section id="gallery">
+    <div class="eyebrow">the whole application</div>
+    <h2>Ten tools, one spine</h2>
+    <p class="sub">Each of these is a real recording, captured by a zero-dependency recorder that
+      runs the tool and writes a self-contained player plus a receipt with a hash over every step.
+      Open any one. It plays offline, no network, no dependencies.</p>
+    <div class="gallery">
+      <a class="tile" href="../demos/harness-first-run/player.html"><span class="badge">the engine</span>
+        <p class="name" style="margin-top:12px">local-model harness</p>
+        <p class="role">Propose, verify against an oracle, witness a re-checkable receipt.</p>
+        <span class="play">Play the shot &rsaquo;</span></a>
+      <a class="tile" href="../demos/telos-showcase/player.html"><span class="badge">primary engine</span>
+        <p class="name" style="margin-top:12px">telos</p>
+        <p class="role">The reconciler that takes the stage: perceive, check, carry proof.</p>
+        <span class="play">Play the shot &rsaquo;</span></a>
+      <a class="tile" href="../demos/index-showcase/player.html">
+        <p class="name">index</p>
+        <p class="role">A faithful map of a codebase, with a verified-wiki you can trust.</p>
+        <span class="play">Play the shot &rsaquo;</span></a>
+      <a class="tile" href="../demos/forum-showcase/player.html">
+        <p class="name">forum</p>
+        <p class="role">Accountable multi-agent orchestration over a replayable causal ledger.</p>
+        <span class="play">Play the shot &rsaquo;</span></a>
+      <a class="tile" href="../demos/gather-showcase/player.html">
+        <p class="name">gather</p>
+        <p class="role">Research intake with a source receipt and a re-verifiable corpus.</p>
+        <span class="play">Play the shot &rsaquo;</span></a>
+      <a class="tile" href="../demos/crucible-showcase/player.html">
+        <p class="name">crucible</p>
+        <p class="role">A judgment organ: register, steelman, measure, refine, witness.</p>
+        <span class="play">Play the shot &rsaquo;</span></a>
+      <a class="tile" href="../demos/mneme-showcase/player.html">
+        <p class="name">mneme</p>
+        <p class="role">Accountable agent memory: remember, recall, and prove provenance.</p>
+        <span class="play">Play the shot &rsaquo;</span></a>
+      <a class="tile" href="../demos/relay-showcase/player.html">
+        <p class="name">relay</p>
+        <p class="role">A zero-dependency agent that reaches local and frontier endpoints with failover.</p>
+        <span class="play">Play the shot &rsaquo;</span></a>
+      <a class="tile" href="../demos/plexus-showcase/player.html">
+        <p class="name">plexus</p>
+        <p class="role">Cross-tool capability discovery and auto-wiring, so the spine composes.</p>
+        <span class="play">Play the shot &rsaquo;</span></a>
+      <a class="tile" href="../demos/local-model-showcase/player.html">
+        <p class="name">local-model CLI</p>
+        <p class="role">The harness command line and its receipts, end to end.</p>
+        <span class="play">Play the shot &rsaquo;</span></a>
+    </div>
+  </section>
+
+  <section id="benchmarks">
+    <div class="eyebrow">honest measurement</div>
+    <h2>What we can prove today, and what we cannot yet</h2>
+    <p class="sub">The model is Flywheel-Local-Coder-14B, a trained artifact with a full provenance
+      chain. We hold ourselves to what an outside observer can check. Here is the first hard-set
+      run, with confidence intervals, not adjectives.</p>
+    <div class="bench">
+      <table>
+        <thead><tr><th>Arm</th><th>Hard set (10 tasks)</th><th>Wilson 95% CI</th><th>Receipts</th></tr></thead>
+        <tbody>
+          <tr><td>single-shot</td><td class="n">8 / 10 (80%)</td><td class="n">[0.490, 0.943]</td><td class="n">100%</td></tr>
+          <tr><td>verified inference</td><td class="n">9 / 10 (90%)</td><td class="n">[0.596, 0.982]</td><td class="n">100%</td></tr>
+          <tr><td>best-of-4</td><td class="n">9 / 10 (90%)</td><td class="n">[0.596, 0.982]</td><td class="n">100%</td></tr>
+          <tr><td>single + oracle</td><td class="n">8 / 10 (80%)</td><td class="n">[0.490, 0.943]</td><td class="n">100%</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="note"><b>We do not claim a capability uplift.</b> Verified inference beats single-shot
+      by +0.100 here, but the 95% interval is [-0.236, +0.420], which includes zero, and plain
+      best-of-4 sampling ties it. So the honest, measurable claims today are 100% receipt
+      reproducibility, pass parity, and local cost. A real effect at this size would need roughly a
+      hundred tasks to separate from noise, which is exactly what the curated hard lane is building
+      toward. The number moves the day the evidence does, not before.</div>
+  </section>
+
+  <section id="run">
+    <div class="eyebrow">local first</div>
+    <h2>Run it on your own machine</h2>
+    <p class="sub">One file, just under 9 GB. A GPU helps but is not required. Your prompts and your
+      code never leave your disk.</p>
+    <pre>ollama create flywheel-local-coder-14b -f Modelfile
+ollama run flywheel-local-coder-14b</pre>
+    <p class="sub" style="margin-top:16px">The full walkthrough assumes nothing and takes you from zero
+      to verified inference, including how to check the model's provenance chain yourself with a
+      single hash command.</p>
+  </section>
+
+  <section id="status">
+    <div class="eyebrow">where things stand</div>
+    <h2>Honest status</h2>
+    <div class="status">
+      <div class="s"><div class="k">14B model</div><div class="v"><span class="dotok">&#9679;</span> trained, staged, gated on approval</div></div>
+      <div class="s"><div class="k">32B model</div><div class="v"><span class="dotwarm">&#9679;</span> training path proven, runs when idle</div></div>
+      <div class="s"><div class="k">Benchmark lane</div><div class="v">50 of 100 tasks curated</div></div>
+      <div class="s"><div class="k">Publication</div><div class="v">gated on outside-observer evidence</div></div>
+      <div class="s"><div class="k">Receipts</div><div class="v"><span class="dotok">&#9679;</span> 100% reproducible</div></div>
+      <div class="s"><div class="k">Voice</div><div class="v">wonder, integration, honesty</div></div>
+    </div>
+  </section>
+
+  <footer>
+    <p class="rule">Flywheel is a companion layer for local and frontier models. The model is the
+      replaceable half; the verification harness is the durable half. Nothing on this page claims a
+      result the receipts do not support, and this page keeps pace with the evidence rather than
+      getting ahead of it.</p>
+  </footer>
+</div>
+
+<script>
+(function(){
+  var root=document.documentElement, btn=document.getElementById('themeToggle');
+  function apply(t){ root.setAttribute('data-theme',t); try{localStorage.setItem('fw-theme',t);}catch(e){} }
+  var saved; try{saved=localStorage.getItem('fw-theme');}catch(e){}
+  if(saved) apply(saved);
+  btn.addEventListener('click',function(){
+    var cur=root.getAttribute('data-theme');
+    if(!cur){ cur = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark':'light'; }
+    apply(cur==='dark'?'light':'dark');
+  });
+})();
+</script>
+</body>
+</html>
