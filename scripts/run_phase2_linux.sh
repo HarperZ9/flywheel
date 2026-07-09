@@ -50,3 +50,4 @@ COMMON_ARGS=(
     rc=$?
     echo "=== $(date -u '+%Y-%m-%dT%H:%M:%SZ') phase2-linux ($TAG) DONE rc=$rc ==="
 } >> "$LOG" 2>&1
+exit "$rc"

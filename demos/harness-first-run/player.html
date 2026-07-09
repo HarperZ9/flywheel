@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>harness-first-run-take2 | demo player</title>
+<style>
+  :root {
+    --bg: #0b0f14; --panel: #10161d; --edge: #1f2a35; --ink: #d7e0e8;
+    --dim: #7b8a97; --green: #4ec9a4; --amber: #e0af68; --red: #e06c75;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font-family: "Cascadia Mono", "Consolas", "Courier New", monospace;
+  }
+  main { width: min(960px, calc(100vw - 24px)); margin: 0 auto; padding: 28px 0 60px; }
+  header { display: flex; flex-wrap: wrap; gap: 8px 18px; align-items: baseline; margin-bottom: 14px; }
+  h1 { margin: 0; font-size: 1.15rem; letter-spacing: 0.04em; color: var(--green); }
+  .meta { color: var(--dim); font-size: 0.78rem; }
+  .terminal {
+    background: var(--panel); border: 1px solid var(--edge); border-radius: 8px;
+    min-height: 340px; padding: 16px 18px; white-space: pre-wrap; overflow-wrap: anywhere;
+    font-size: 0.84rem; line-height: 1.5;
+  }
+  .titlebar { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--edge); }
+  .dot.r { background: var(--red); } .dot.a { background: var(--amber); } .dot.g { background: var(--green); }
+  .stepname { color: var(--dim); font-size: 0.78rem; margin-left: 8px; }
+  .cmd { color: var(--amber); }
+  .out { color: var(--ink); }
+  .fail { color: var(--red); }
+  .cursor { display: inline-block; width: 0.55em; height: 1em; background: var(--green);
+            vertical-align: text-bottom; animation: blink 0.9s steps(1) infinite; }
+  @keyframes blink { 50% { opacity: 0; } }
+  .caption {
+    margin-top: 12px; padding: 10px 14px; border-left: 3px solid var(--green);
+    background: rgba(78, 201, 164, 0.07); color: var(--ink);
+    font-size: 0.86rem; line-height: 1.55; min-height: 2.6em;
+  }
+  .controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 14px; }
+  button {
+    background: var(--panel); color: var(--ink); border: 1px solid var(--edge);
+    border-radius: 6px; padding: 7px 14px; font: inherit; font-size: 0.8rem; cursor: pointer;
+  }
+  button:hover { border-color: var(--green); color: var(--green); }
+  .status { color: var(--dim); font-size: 0.78rem; margin-left: auto; }
+  .exit-ok { color: var(--green); } .exit-bad { color: var(--red); }
+  progress { width: 100%; height: 4px; margin-top: 10px; accent-color: var(--green); }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>harness-first-run-take2</h1>
+    <span class="meta">recorded 2026-07-09T19:04:54.103218Z</span>
+    <span class="meta">4 steps, total runtime 1 min 6 s</span>
+    <span class="meta">receipt sha256:dc3d054e922eafcf</span>
+  </header>
+  <div class="titlebar">
+    <span class="dot r"></span><span class="dot a"></span><span class="dot g"></span>
+    <span class="stepname" id="stepname"></span>
+  </div>
+  <div class="terminal" id="terminal"></div>
+  <div class="caption" id="caption"></div>
+  <progress id="bar" max="1" value="0"></progress>
+  <div class="controls">
+    <button id="play">Play</button>
+    <button id="prev">Prev step</button>
+    <button id="next">Next step</button>
+    <button id="restart">Restart</button>
+    <span class="status" id="status"></span>
+  </div>
+</main>
+<script id="transcript-data" type="application/json">{"schema": "harness.demo-transcript/v1", "name": "harness-first-run-take2", "timestamp_utc": "2026-07-09T19:04:54.103218Z", "dry_run": false, "step_count": 4, "total_duration_ms": 65718, "steps": [{"index": 0, "title": "Meet the harness", "narration": "This is the whole front door. One zero-dependency dispatcher on a home machine, and every readiness check, receipt, and benchmark in the flywheel starts right here.", "command": "python scripts/run_harness_cli.py --help", "mode": "live", "exit_code": 0, "duration_ms": 296, "stdout": "usage: run_harness_cli.py [-h] [--python PYTHON] [--print-command]\n                          {manifest,registry,benchmarks,forum-route,mcp-health,codex-mcp-contract,package-doctor,architecture-report,enterprise-readiness,tool-contract,runtime-contract,benchmark-coverage,comparison,execution-matrix,schematic-drift,agentic-tasks,cross-harness,adapter-runtime,embodied-realtime,model-card-claims,tool-hardening,classifier-friction,endpoint-gate,endpoint-launch-readiness,serve-launch,serve-resource,model-publish,plan,seed,outcome,query,readiness}\n                          ...\n\nZero-dependency front controller for the local Codex/Flywheel harness.\n\npositional arguments:\n  {manifest,registry,benchmarks,forum-route,mcp-health,codex-mcp-contract,package-doctor,architecture-report,enterprise-readiness,tool-contract,runtime-contract,benchmark-coverage,comparison,execution-matrix,schematic-drift,agentic-tasks,cross-harness,adapter-runtime,embodied-realtime,model-card-claims,tool-hardening,classifier-friction,endpoint-gate,endpoint-launch-readiness,serve-launch,serve-resource,model-publish,plan,seed,outcome,query,readiness}\n    manifest            emit executable surface manifest\n    registry            emit static local HTML command registry\n    benchmarks          emit weighted benchmark profile manifest\n    forum-route         emit metadata-only Forum route receipts\n    mcp-health          emit metadata-only MCP/tool health receipts\n    codex-mcp-contract  emit Codex MCP launch and fallback contract\n    package-doctor      emit package release doctor\n    architecture-report\n                        emit harness architecture and endpoint report\n    enterprise-readiness\n                        emit mneme/relay/plexus enterprise readiness report\n    tool-contract       emit packaged sidecar tool integration contract\n    runtime-contract    emit packaged runtime activation contract\n    benchmark-coverage  compare benchmark profile against scorecards\n    comparison          synthesize Codex-vs-Flywheel comparison report\n    execution-matrix    emit benchmark execution matrix without running\n                        benchmarks\n    schematic-drift     check closed-loop schematic drift without running\n                        benchmarks\n    agentic-tasks       emit non-executing agentic task manifest\n    cross-harness       emit non-executing cross-harness manifest\n    adapter-runtime     emit metadata-only adapter/runtime compatibility\n                        matrix\n    embodied-realtime   emit non-executing embodied realtime multimodal\n                        benchmark plan\n    model-card-claims   emit non-executing model-card claim table\n    tool-hardening      generate enterprise hardening plan from tool readiness\n    classifier-friction\n                        run guardrail/accountability friction benchmark\n    endpoint-gate       run bounded local model endpoint health/generation\n                        gate\n    endpoint-launch-readiness\n                        emit local model serve launch readiness and port-owner\n                        diagnostics\n    serve-launch        plan or start local harness/serve.py from endpoint\n                        profiles\n    serve-resource      emit GPU resource preflight before local serve launch\n    model-publish       generate 14B/32B model naming and publish plan\n    plan                emit closed-loop seed dry plan\n    seed                execute the closed-loop seed run\n    outcome             synthesize closed-loop outcome\n    query               query the file-backed harness store\n    readiness           run one metadata-only readiness receipt\n\noptions:\n  -h, --help            show this help message and exit\n  --python PYTHON\n  --print-command       print the target command without executing it\n", "stderr": "", "output": "usage: run_harness_cli.py [-h] [--python PYTHON] [--print-command]\n                          {manifest,registry,benchmarks,forum-route,mcp-health,codex-mcp-contract,package-doctor,architecture-report,enterprise-readiness,tool-contract,runtime-contract,benchmark-coverage,comparison,execution-matrix,schematic-drift,agentic-tasks,cross-harness,adapter-runtime,embodied-realtime,model-card-claims,tool-hardening,classifier-friction,endpoint-gate,endpoint-launch-readiness,serve-launch,serve-resource,model-publish,plan,seed,outcome,query,readiness}\n                          ...\n\nZero-dependency front controller for the local Codex/Flywheel harness.\n\npositional arguments:\n  {manifest,registry,benchmarks,forum-route,mcp-health,codex-mcp-contract,package-doctor,architecture-report,enterprise-readiness,tool-contract,runtime-contract,benchmark-coverage,comparison,execution-matrix,schematic-drift,agentic-tasks,cross-harness,adapter-runtime,embodied-realtime,model-card-claims,tool-hardening,classifier-friction,endpoint-gate,endpoint-launch-readiness,serve-launch,serve-resource,model-publish,plan,seed,outcome,query,readiness}\n    manifest            emit executable surface manifest\n    registry            emit static local HTML command registry\n    benchmarks          emit weighted benchmark profile manifest\n    forum-route         emit metadata-only Forum route receipts\n    mcp-health          emit metadata-only MCP/tool health receipts\n    codex-mcp-contract  emit Codex MCP launch and fallback contract\n    package-doctor      emit package release doctor\n    architecture-report\n                        emit harness architecture and endpoint report\n    enterprise-readiness\n                        emit mneme/relay/plexus enterprise readiness report\n    tool-contract       emit packaged sidecar tool integration contract\n    runtime-contract    emit packaged runtime activation contract\n    benchmark-coverage  compare benchmark profile against scorecards\n    comparison          synthesize Codex-vs-Flywheel comparison report\n    execution-matrix    emit benchmark execution matrix without running\n                        benchmarks\n    schematic-drift     check closed-loop schematic drift without running\n                        benchmarks\n    agentic-tasks       emit non-executing agentic task manifest\n    cross-harness       emit non-executing cross-harness manifest\n    adapter-runtime     emit metadata-only adapter/runtime compatibility\n                        matrix\n    embodied-realtime   emit non-executing embodied realtime multimodal\n                        benchmark plan\n    model-card-claims   emit non-executing model-card claim table\n    tool-hardening      generate enterprise hardening plan from tool readiness\n    classifier-friction\n                        run guardrail/accountability friction benchmark\n    endpoint-gate       run bounded local model endpoint health/generation\n                        gate\n    endpoint-launch-readiness\n                        emit local model serve launch readiness and port-owner\n                        diagnostics\n    serve-launch        plan or start local harness/serve.py from endpoint\n                        profiles\n    serve-resource      emit GPU resource preflight before local serve launch\n    model-publish       generate 14B/32B model naming and publish plan\n    plan                emit closed-loop seed dry plan\n    seed                execute the closed-loop seed run\n    outcome             synthesize closed-loop outcome\n    query               query the file-backed harness store\n    readiness           run one metadata-only readiness receipt\n\noptions:\n  -h, --help            show this help message and exit\n  --python PYTHON\n  --print-command       print the target command without executing it\n", "output_sha256": "f5041819c6c471452cd98e236a655584acc34e58c1bb60672ccc259fa7a09d1f"}, {"index": 1, "title": "Release readiness receipt", "narration": "Before anything ships, the harness writes itself a readiness receipt. This is the actual artifact from disk, not a slide. It says plainly what is ready and what still gates the release.", "command": "type artifacts\\exe\\model_release_readiness.local.md", "mode": "live", "exit_code": 0, "duration_ms": 18, "stdout": "# Model release readiness receipt\n\n- Schema: `harness.model-release-readiness/v1`\n- Timestamp UTC: `2026-07-09T18:51:50.331379Z`\n- Secret policy: metadata-only; model file bodies are not read; large model files are not hashed or copied\n- Existing models: `2` / `2`\n- Trained models: `1` / `2`\n- Trained artifacts present: `1`\n- Models with weights: `2`\n- Release-ready static models: `1`\n- Endpoint profile matches: `5`\n- Endpoint gate rows: `2`\n- Endpoint gate generation OK: `1`\n- Benchmark artifact matches: `2`\n\n| Model | Verdict | Trained | Root exists | Weights | Doc score | Endpoint profiles | Endpoint gate OK | Benchmark artifacts |\n|---|---|---:|---:|---:|---:|---:|---:|---:|\n| 14B | MODEL_RELEASE_READY_STATIC | true | true | 1 | 1.0 | 3 | 1 | 2 |\n| 32B | MODEL_NO_TRAINED_ARTIFACT | false | true | 14 | 0.3846 | 2 | 0 | 0 |\n", "stderr": "", "output": "# Model release readiness receipt\n\n- Schema: `harness.model-release-readiness/v1`\n- Timestamp UTC: `2026-07-09T18:51:50.331379Z`\n- Secret policy: metadata-only; model file bodies are not read; large model files are not hashed or copied\n- Existing models: `2` / `2`\n- Trained models: `1` / `2`\n- Trained artifacts present: `1`\n- Models with weights: `2`\n- Release-ready static models: `1`\n- Endpoint profile matches: `5`\n- Endpoint gate rows: `2`\n- Endpoint gate generation OK: `1`\n- Benchmark artifact matches: `2`\n\n| Model | Verdict | Trained | Root exists | Weights | Doc score | Endpoint profiles | Endpoint gate OK | Benchmark artifacts |\n|---|---|---:|---:|---:|---:|---:|---:|---:|\n| 14B | MODEL_RELEASE_READY_STATIC | true | true | 1 | 1.0 | 3 | 1 | 2 |\n| 32B | MODEL_NO_TRAINED_ARTIFACT | false | true | 14 | 0.3846 | 2 | 0 | 0 |\n", "output_sha256": "99db7477cc48feeee41546f120680716dfdcbbeb4a04b3a8e84910e2bd788e81"}, {"index": 2, "title": "Endpoint gate receipt", "narration": "The endpoint gate is the health check for the local model servers. Same idea: a small, honest file that records what was actually observed when the gate last ran.", "command": "type artifacts\\exe\\model_endpoint_gate.local.md", "mode": "live", "exit_code": 0, "duration_ms": 17, "stdout": "# Model endpoint gate\n\n- Schema: `harness.model-endpoint-gate/v1`\n- Profiles selected: `2` / `5`\n- Health OK rows: `2`\n- Generation OK rows: `1`\n- Failed rows: `1`\n\n| Model | Backend | Role | Health | Status | Health ref | Generation | Failure | Latency ms |\n|---|---|---|---:|---:|---|---:|---|---:|\n| 14B | ollama | ollama_local | true | 200 |  | false | endpoint_error | 48.37 |\n| 14B | ollama | ollama_local | true | 200 |  | true |  | 523.991 |\n", "stderr": "", "output": "# Model endpoint gate\n\n- Schema: `harness.model-endpoint-gate/v1`\n- Profiles selected: `2` / `5`\n- Health OK rows: `2`\n- Generation OK rows: `1`\n- Failed rows: `1`\n\n| Model | Backend | Role | Health | Status | Health ref | Generation | Failure | Latency ms |\n|---|---|---|---:|---:|---|---:|---|---:|\n| 14B | ollama | ollama_local | true | 200 |  | false | endpoint_error | 48.37 |\n| 14B | ollama | ollama_local | true | 200 |  | true |  | 523.991 |\n", "output_sha256": "c4dc479d4558bb9313f1b9dea02be19fab95bb735373396a84e4d77fde836aee"}, {"index": 3, "title": "Live local generation", "narration": "Now the fun part. We ask the 14B coder living on this box to continue a function, no cloud involved. If the endpoint is asleep the step says SKIPPED honestly and the recording stays truthful.", "command": "python scripts/demo_ollama_step.py --url http://127.0.0.1:11434 --model flywheel-local-coder-14b --prompt \"def fibonacci(n):\" --num-predict 48 --timeout-seconds 240", "mode": "live", "exit_code": 0, "duration_ms": 65387, "stdout": "endpoint: http://127.0.0.1:11434 (ollama 0.31.1)\nmodel:    flywheel-local-coder-14b\nprompt:   'def fibonacci(n):'  (num_predict=48, temperature=0)\ngenerated in 64918 ms\n--- completion ---\ndef fibonacci(n):Sure! Here's a simple implementation of the Fibonacci sequence in Python:\n\n```python\ndef fibonacci(n):\n    if n <= 0:\n        return \"Input should be a positive integer\"\n    elif n == 1:\n        return \n--- end completion ---\ntokens: 48 (0.7 tok/s)\n", "stderr": "", "output": "endpoint: http://127.0.0.1:11434 (ollama 0.31.1)\nmodel:    flywheel-local-coder-14b\nprompt:   'def fibonacci(n):'  (num_predict=48, temperature=0)\ngenerated in 64918 ms\n--- completion ---\ndef fibonacci(n):Sure! Here's a simple implementation of the Fibonacci sequence in Python:\n\n```python\ndef fibonacci(n):\n    if n <= 0:\n        return \"Input should be a positive integer\"\n    elif n == 1:\n        return \n--- end completion ---\ntokens: 48 (0.7 tok/s)\n", "output_sha256": "77b3a507f143d7e6edf3cfc4f70a202ee1dd3a712d31dedb8aea86ec298e9701"}], "receipt_sha256": "dc3d054e922eafcf8da744122dd0af109b1ce198f4d29dba0807b9c1a405d012"}</script>
+<script>
+(function () {
+  "use strict";
+  var transcript = JSON.parse(document.getElementById("transcript-data").textContent);
+  var steps = transcript.steps || [];
+  var term = document.getElementById("terminal");
+  var caption = document.getElementById("caption");
+  var stepname = document.getElementById("stepname");
+  var statusEl = document.getElementById("status");
+  var bar = document.getElementById("bar");
+  var playBtn = document.getElementById("play");
+  var CHARS_PER_TICK = 6, TICK_MS = 12, REVEAL_PAUSE_MS = 1400;
+  var stepIndex = 0, charIndex = 0, playing = false, timer = null;
+
+  function fullText(step) {
+    return "$ " + step.command + "\n" + (step.output || "") +
+      "\n[exit " + step.exit_code + " in " + step.duration_ms + " ms]";
+  }
+  function paint(partial) {
+    var step = steps[stepIndex];
+    if (!step) { return; }
+    var text = fullText(step);
+    var shown = partial ? text.slice(0, charIndex) : text;
+    term.textContent = "";
+    var cmdEnd = ("$ " + step.command).length;
+    var cmdSpan = document.createElement("span");
+    cmdSpan.className = "cmd";
+    cmdSpan.textContent = shown.slice(0, cmdEnd);
+    var outSpan = document.createElement("span");
+    outSpan.className = step.exit_code === 0 ? "out" : "out fail";
+    outSpan.textContent = shown.slice(cmdEnd);
+    term.appendChild(cmdSpan);
+    term.appendChild(outSpan);
+    if (partial && shown.length < text.length) {
+      var cur = document.createElement("span");
+      cur.className = "cursor";
+      term.appendChild(cur);
+    }
+    stepname.textContent = "step " + (stepIndex + 1) + "/" + steps.length + ": " + step.title;
+    caption.textContent = step.narration;
+    var exitCls = step.exit_code === 0 ? "exit-ok" : "exit-bad";
+    statusEl.innerHTML = "";
+    var tag = document.createElement("span");
+    tag.className = exitCls;
+    tag.textContent = "exit " + step.exit_code;
+    statusEl.appendChild(document.createTextNode(step.mode + " | " + step.duration_ms + " ms | "));
+    statusEl.appendChild(tag);
+    bar.value = steps.length ? (stepIndex + (partial ? shown.length / Math.max(text.length, 1) : 1)) / steps.length : 0;
+  }
+  function tick() {
+    var step = steps[stepIndex];
+    if (!step) { stop(); return; }
+    var total = fullText(step).length;
+    if (charIndex < total) {
+      charIndex = Math.min(total, charIndex + CHARS_PER_TICK);
+      paint(true);
+      timer = setTimeout(tick, TICK_MS);
+    } else if (stepIndex < steps.length - 1) {
+      timer = setTimeout(function () { stepIndex += 1; charIndex = 0; tick(); }, REVEAL_PAUSE_MS);
+    } else {
+      stop();
+      paint(false);
+    }
+  }
+  function stop() {
+    playing = false;
+    if (timer) { clearTimeout(timer); timer = null; }
+    playBtn.textContent = "Play";
+  }
+  function start() {
+    if (!steps.length) { return; }
+    playing = true;
+    playBtn.textContent = "Pause";
+    tick();
+  }
+  playBtn.addEventListener("click", function () { playing ? stop() : start(); });
+  document.getElementById("next").addEventListener("click", function () {
+    stop(); stepIndex = Math.min(steps.length - 1, stepIndex + 1); charIndex = 0; paint(false);
+  });
+  document.getElementById("prev").addEventListener("click", function () {
+    stop(); stepIndex = Math.max(0, stepIndex - 1); charIndex = 0; paint(false);
+  });
+  document.getElementById("restart").addEventListener("click", function () {
+    stop(); stepIndex = 0; charIndex = 0; paint(true); start();
+  });
+  if (steps.length) { charIndex = 0; paint(true); }
+})();
+</script>
+</body>
+</html>
