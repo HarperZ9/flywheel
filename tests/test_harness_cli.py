@@ -122,6 +122,28 @@ def test_codex_mcp_contract_command_targets_launch_contract_generator():
     assert "C:/tmp/codex_mcp.json" in command
 
 
+def test_package_doctor_command_targets_ship_doctor():
+    args = parse([
+        "package-doctor",
+        "--package-summary",
+        "C:/tmp/local-harness.package.json",
+        "--repo-root",
+        "C:/dev/local-model",
+        "--strict-exit",
+        "--out",
+        "C:/tmp/package_doctor.json",
+    ])
+    command = build_command(args, repo_root=Path("C:/dev/local-model"))
+
+    assert command[:2] == [args.python, "scripts/run_package_ship_doctor.py"]
+    assert "--package-summary" in command
+    assert "C:/tmp/local-harness.package.json" in command
+    assert "--repo-root" in command
+    assert "C:/dev/local-model" in command
+    assert "--strict-exit" in command
+    assert "C:/tmp/package_doctor.json" in command
+
+
 def test_tool_contract_command_targets_contract_generator():
     args = parse([
         "tool-contract",
@@ -558,7 +580,7 @@ def test_manifest_lists_front_controller_commands_and_evidence_surfaces():
     assert manifest["schema"] == "harness.executable-manifest/v1"
     assert manifest["entrypoint"] == "harness.cmd"
     names = [row["name"] for row in manifest["commands"]]
-    assert names == ["manifest", "registry", "benchmarks", "forum-route", "mcp-health", "codex-mcp-contract", "tool-contract", "runtime-contract", "benchmark-coverage", "comparison", "execution-matrix", "schematic-drift", "agentic-tasks", "cross-harness", "adapter-runtime", "embodied-realtime", "model-card-claims", "tool-hardening", "classifier-friction", "endpoint-gate", "endpoint-launch-readiness", "serve-launch", "serve-resource", "model-publish", "plan", "seed", "outcome", "query", "readiness"]
+    assert names == ["manifest", "registry", "benchmarks", "forum-route", "mcp-health", "codex-mcp-contract", "package-doctor", "tool-contract", "runtime-contract", "benchmark-coverage", "comparison", "execution-matrix", "schematic-drift", "agentic-tasks", "cross-harness", "adapter-runtime", "embodied-realtime", "model-card-claims", "tool-hardening", "classifier-friction", "endpoint-gate", "endpoint-launch-readiness", "serve-launch", "serve-resource", "model-publish", "plan", "seed", "outcome", "query", "readiness"]
     readiness = [row for row in manifest["commands"] if row["name"] == "readiness"][0]
     assert "model-endpoints" in readiness["targets"]
     assert "model-release" in readiness["targets"]
@@ -648,6 +670,15 @@ def test_manifest_includes_codex_mcp_contract_command():
     assert "harness.codex-mcp-launch-contract/v1" in contract["schemas"]
     assert contract["long_running_risk"] == "low"
     assert "scripts/run_codex_mcp_launch_contract.py" in contract["delegates_to"]
+
+
+def test_manifest_includes_package_doctor_command():
+    manifest = build_manifest(store_root="C:/tmp/store")
+    doctor = [row for row in manifest["commands"] if row["name"] == "package-doctor"][0]
+
+    assert "harness.package-ship-doctor/v1" in doctor["schemas"]
+    assert doctor["long_running_risk"] == "low"
+    assert "scripts/run_package_ship_doctor.py" in doctor["delegates_to"]
 
 
 def test_manifest_includes_tool_contract_command():

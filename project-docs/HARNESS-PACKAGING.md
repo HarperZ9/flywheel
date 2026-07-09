@@ -22,6 +22,8 @@ python scripts/build_local_harness_exes.py --skip-serve --package --package-vers
 - `artifacts/exe/local-harness-release.json`: release manifest for the local executable package.
 - `artifacts/exe/packages/local-harness-<version>.zip`: shippable release bundle.
 - `artifacts/exe/packages/local-harness-<version>.package.json`: sidecar package summary with outer zip hash.
+- `artifacts/exe/packages/local-harness-<version>.doctor.json`: release doctor verdict for required files, schemas, zip hash, local model profile coverage, and no-secret posture.
+- `artifacts/exe/packages/local-harness-<version>.doctor.md`: human-readable release doctor summary.
 - `artifacts/exe/packages/local-harness-<version>/manifest/ship-manifest.json`: file hashes, source commit, dependency posture, and secret policy.
 
 ## Local model wiring

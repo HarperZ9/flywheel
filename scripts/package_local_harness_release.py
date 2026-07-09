@@ -203,6 +203,36 @@ def build_bundle(
         "bytes": summary_path.stat().st_size,
         "sha256": sha256(summary_path),
     }
+    doctor_json = out_root / f"{package_name}.doctor.json"
+    doctor_md = out_root / f"{package_name}.doctor.md"
+    doctor_command = [
+        sys.executable,
+        "scripts/run_package_ship_doctor.py",
+        "--package-summary",
+        str(summary_path),
+        "--repo-root",
+        str(ROOT),
+        "--out",
+        str(doctor_json),
+        "--markdown-out",
+        str(doctor_md),
+        "--strict-exit",
+    ]
+    proc = subprocess.run(doctor_command, cwd=ROOT)
+    if proc.returncode != 0:
+        raise RuntimeError(f"package ship doctor failed ({proc.returncode})")
+    package_summary["package_doctor"] = {
+        "json": {
+            "path": str(doctor_json),
+            "bytes": doctor_json.stat().st_size,
+            "sha256": sha256(doctor_json),
+        },
+        "markdown": {
+            "path": str(doctor_md),
+            "bytes": doctor_md.stat().st_size,
+            "sha256": sha256(doctor_md),
+        },
+    }
     return package_summary
 
 
