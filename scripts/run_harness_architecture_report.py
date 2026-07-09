@@ -73,11 +73,37 @@ def _tool_summary(tool_contract: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _model_release_summary(readiness: dict[str, Any], publish: dict[str, Any]) -> dict[str, Any]:
+    release_summary = readiness.get("summary") or {}
+    publish_summary = publish.get("summary") or {}
+    candidates = publish.get("models") or publish.get("model_plans") or []
+    candidate_names = []
+    if isinstance(candidates, list):
+        for row in candidates:
+            if isinstance(row, dict):
+                name = row.get("candidate_name") or row.get("name") or row.get("slug")
+                if name:
+                    candidate_names.append(str(name))
+    return {
+        "schema": "harness.architecture-report.model-release/v1",
+        "release_readiness_present": bool(readiness),
+        "publish_plan_present": bool(publish),
+        "release_summary": release_summary,
+        "publish_summary": publish_summary,
+        "candidate_names": candidate_names,
+        "publish_status": publish_summary.get("status") or publish_summary.get("verdict"),
+        "release_ready_models": release_summary.get("release_ready_models"),
+        "models_with_weights": release_summary.get("models_with_weights"),
+    }
+
+
 def build_report(
     *,
     release_manifest_path: Path,
     executable_manifest_path: Path,
     endpoint_profiles_path: Path,
+    model_release_path: Path,
+    model_publish_path: Path,
     tool_contract_path: Path,
     runtime_contract_path: Path,
     codex_mcp_contract_path: Path,
@@ -87,6 +113,8 @@ def build_report(
     release_manifest = _load(release_manifest_path)
     executable_manifest = _load(executable_manifest_path)
     endpoint_profiles = _load(endpoint_profiles_path)
+    model_release = _load(model_release_path)
+    model_publish = _load(model_publish_path)
     tool_contract = _load(tool_contract_path)
     runtime_contract = _load(runtime_contract_path)
     codex_mcp = _load(codex_mcp_contract_path)
@@ -96,6 +124,8 @@ def build_report(
         "release_manifest": _artifact(release_manifest_path, "harness.local-executable-release/v1"),
         "executable_manifest": _artifact(executable_manifest_path, "harness.executable-manifest/v1"),
         "endpoint_profiles": _artifact(endpoint_profiles_path, "harness.model-endpoint-profiles/v1"),
+        "model_release_readiness": _artifact(model_release_path, "harness.model-release-readiness/v1"),
+        "model_publish_plan": _artifact(model_publish_path, "harness.model-publish-plan/v1"),
         "tool_contract": _artifact(tool_contract_path, "harness.tool-integration-contract/v1"),
         "runtime_contract": _artifact(runtime_contract_path, "harness.runtime-activation-contract/v1"),
         "codex_mcp_contract": _artifact(codex_mcp_contract_path, "harness.codex-mcp-launch-contract/v1"),
@@ -108,6 +138,14 @@ def build_report(
         verified_facts.append("14B/32B endpoint profiles are represented by the endpoint profile artifact.")
     else:
         assumptions.append("Endpoint profiles were not present when this report was generated.")
+    if model_release:
+        verified_facts.append("14B/32B model release readiness is represented by the model release readiness artifact.")
+    else:
+        assumptions.append("Model release readiness was not present when this report was generated.")
+    if model_publish:
+        verified_facts.append("14B/32B naming and publication plan is represented by the model publish plan artifact.")
+    else:
+        assumptions.append("Model publish plan was not present when this report was generated.")
     if tool_contract:
         verified_facts.append("Tool roots and sidecar readiness are represented by the tool integration contract.")
     else:
@@ -134,6 +172,7 @@ def build_report(
             "commands": _command_names(executable_manifest),
         },
         "local_models": _endpoint_summary(endpoint_profiles),
+        "model_release": _model_release_summary(model_release, model_publish),
         "tool_fabric": _tool_summary(tool_contract),
         "runtime_activation": {
             "schema": "harness.architecture-report.runtime/v1",
@@ -170,6 +209,7 @@ def build_report(
             "artifacts_present": sum(1 for row in artifacts.values() if row["exists"]),
             "schema_mismatches": [name for name, row in artifacts.items() if row["exists"] and not row["schema_matches"]],
             "models": _endpoint_summary(endpoint_profiles)["models"],
+            "model_candidate_names": _model_release_summary(model_release, model_publish)["candidate_names"],
             "tools": _tool_summary(tool_contract)["tools"],
         },
     }
@@ -185,6 +225,7 @@ def render_markdown(report: dict[str, Any]) -> str:
         "",
         f"- Artifacts present: {report['summary']['artifacts_present']} / {report['summary']['artifact_count']}",
         f"- Models: {', '.join(report['summary']['models']) or 'none'}",
+        f"- Model candidate names: {', '.join(report['summary']['model_candidate_names']) or 'none'}",
         f"- Tools: {', '.join(report['summary']['tools']) or 'none'}",
         f"- Package doctor: {report['release_gate']['package_doctor_verdict'] or 'not present in this report'}",
         "",
@@ -238,6 +279,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--release-manifest", default="")
     parser.add_argument("--executable-manifest", default="")
     parser.add_argument("--endpoint-profiles", default="")
+    parser.add_argument("--model-release", default="")
+    parser.add_argument("--model-publish", default="")
     parser.add_argument("--tool-contract", default="")
     parser.add_argument("--runtime-contract", default="")
     parser.add_argument("--codex-mcp-contract", default="")
@@ -254,6 +297,8 @@ def main(argv: list[str] | None = None) -> int:
         release_manifest_path=Path(args.release_manifest) if args.release_manifest else dist / "local-harness-release.json",
         executable_manifest_path=Path(args.executable_manifest) if args.executable_manifest else dist / "harness_executable_manifest.local.json",
         endpoint_profiles_path=Path(args.endpoint_profiles) if args.endpoint_profiles else dist / "model_endpoint_profiles.local.json",
+        model_release_path=Path(args.model_release) if args.model_release else dist / "model_release_readiness.local.json",
+        model_publish_path=Path(args.model_publish) if args.model_publish else dist / "model_publish_plan.local.json",
         tool_contract_path=Path(args.tool_contract) if args.tool_contract else dist / "tool_integration_contract.local.json",
         runtime_contract_path=Path(args.runtime_contract) if args.runtime_contract else dist / "runtime_activation_contract.local.json",
         codex_mcp_contract_path=Path(args.codex_mcp_contract) if args.codex_mcp_contract else dist / "codex_mcp_launch_contract.local.json",

@@ -24,6 +24,14 @@ def test_package_ship_doctor_accepts_complete_metadata_bundle(tmp_path):
                 {"model": "32B", "backend": "ollama"},
             ],
         },
+        "config/model_release_readiness.local.json": {
+            "schema": "harness.model-release-readiness/v1",
+            "summary": {"release_ready_models": 0},
+        },
+        "config/model_publish_plan.local.json": {
+            "schema": "harness.model-publish-plan/v1",
+            "summary": {"status": "DO_NOT_PUBLISH"},
+        },
         "config/tool_integration_contract.local.json": {
             "schema": "harness.tool-integration-contract/v1",
         },

@@ -7,6 +7,8 @@ def test_architecture_report_stitches_generated_contracts(tmp_path):
     release = tmp_path / "release.json"
     executable = tmp_path / "manifest.json"
     endpoints = tmp_path / "endpoints.json"
+    release_readiness = tmp_path / "model_release.json"
+    publish_plan = tmp_path / "model_publish.json"
     tools = tmp_path / "tools.json"
     runtime = tmp_path / "runtime.json"
     codex = tmp_path / "codex.json"
@@ -27,6 +29,15 @@ def test_architecture_report_stitches_generated_contracts(tmp_path):
             {"model": "14B", "backend": "serve", "supports_agentic_workflow": True},
             {"model": "32B", "backend": "ollama", "supports_agentic_workflow": True},
         ],
+    }), encoding="utf-8")
+    release_readiness.write_text(json.dumps({
+        "schema": "harness.model-release-readiness/v1",
+        "summary": {"release_ready_models": 0, "models_with_weights": 2},
+    }), encoding="utf-8")
+    publish_plan.write_text(json.dumps({
+        "schema": "harness.model-publish-plan/v1",
+        "summary": {"status": "DO_NOT_PUBLISH"},
+        "models": [{"candidate_name": "Flywheel-Local-Coder-14B"}],
     }), encoding="utf-8")
     tools.write_text(json.dumps({
         "schema": "harness.tool-integration-contract/v1",
@@ -58,6 +69,8 @@ def test_architecture_report_stitches_generated_contracts(tmp_path):
         release_manifest_path=release,
         executable_manifest_path=executable,
         endpoint_profiles_path=endpoints,
+        model_release_path=release_readiness,
+        model_publish_path=publish_plan,
         tool_contract_path=tools,
         runtime_contract_path=runtime,
         codex_mcp_contract_path=codex,
@@ -67,6 +80,7 @@ def test_architecture_report_stitches_generated_contracts(tmp_path):
 
     assert report["schema"] == "harness.architecture-report/v1"
     assert report["summary"]["models"] == ["14B", "32B"]
+    assert report["summary"]["model_candidate_names"] == ["Flywheel-Local-Coder-14B"]
     assert report["summary"]["tools"] == ["index"]
     assert report["release_gate"]["package_doctor_verdict"] == "SHIP_READY"
 
@@ -77,6 +91,8 @@ def test_architecture_report_markdown_includes_next_gates(tmp_path):
         release_manifest_path=missing,
         executable_manifest_path=missing,
         endpoint_profiles_path=missing,
+        model_release_path=missing,
+        model_publish_path=missing,
         tool_contract_path=missing,
         runtime_contract_path=missing,
         codex_mcp_contract_path=missing,

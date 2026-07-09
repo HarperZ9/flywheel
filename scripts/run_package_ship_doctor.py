@@ -24,6 +24,10 @@ REQUIRED_BUNDLE_FILES = [
     "bin/local-agent.exe",
     "config/model_endpoint_profiles.local.json",
     "config/model_endpoint_profiles.local.md",
+    "config/model_release_readiness.local.json",
+    "docs/model_release_readiness.local.md",
+    "config/model_publish_plan.local.json",
+    "docs/model_publish_plan.local.md",
     "config/tool_integration_contract.local.json",
     "config/tool_integration_contract.local.md",
     "config/runtime_activation_contract.local.json",
@@ -165,6 +169,8 @@ def _check_text_secrets(summary: dict[str, Any]) -> dict[str, Any]:
 def _check_contract_schemas(summary: dict[str, Any]) -> dict[str, Any]:
     expected = {
         "config/model_endpoint_profiles.local.json": "harness.model-endpoint-profiles/v1",
+        "config/model_release_readiness.local.json": "harness.model-release-readiness/v1",
+        "config/model_publish_plan.local.json": "harness.model-publish-plan/v1",
         "config/tool_integration_contract.local.json": "harness.tool-integration-contract/v1",
         "config/runtime_activation_contract.local.json": "harness.runtime-activation-contract/v1",
         "config/codex_mcp_launch_contract.local.json": "harness.codex-mcp-launch-contract/v1",

@@ -76,6 +76,7 @@ If the package is moved away from the source checkout, set `LOCAL_HARNESS_REPO` 
 ## Local models
 
 The package includes `config\\model_endpoint_profiles.local.json`.
+It includes `config\\model_release_readiness.local.json` and `config\\model_publish_plan.local.json` for the 14B/32B release track.
 It also includes `config\\tool_integration_contract.local.json` for the Flywheel/Codex sidecar tool contract.
 `config\\runtime_activation_contract.local.json` describes storage, env knobs, and activation boundaries.
 `config\\codex_mcp_launch_contract.local.json` describes Codex MCP launch profiles, stale-transport reload boundaries, and direct CLI fallbacks.
@@ -106,6 +107,10 @@ def build_bundle(
     release_manifest = dist / "local-harness-release.json"
     endpoint_profiles = dist / "model_endpoint_profiles.local.json"
     endpoint_profiles_md = dist / "model_endpoint_profiles.local.md"
+    model_release = dist / "model_release_readiness.local.json"
+    model_release_md = dist / "model_release_readiness.local.md"
+    model_publish = dist / "model_publish_plan.local.json"
+    model_publish_md = dist / "model_publish_plan.local.md"
     tool_contract = dist / "tool_integration_contract.local.json"
     tool_contract_md = dist / "tool_integration_contract.local.md"
     runtime_contract = dist / "runtime_activation_contract.local.json"
@@ -125,6 +130,10 @@ def build_bundle(
         (release_manifest, bundle_root / "manifest" / "local-harness-release.json"),
         (endpoint_profiles, bundle_root / "config" / "model_endpoint_profiles.local.json"),
         (endpoint_profiles_md, bundle_root / "config" / "model_endpoint_profiles.local.md"),
+        (model_release, bundle_root / "config" / "model_release_readiness.local.json"),
+        (model_release_md, bundle_root / "docs" / "model_release_readiness.local.md"),
+        (model_publish, bundle_root / "config" / "model_publish_plan.local.json"),
+        (model_publish_md, bundle_root / "docs" / "model_publish_plan.local.md"),
         (tool_contract, bundle_root / "config" / "tool_integration_contract.local.json"),
         (tool_contract_md, bundle_root / "config" / "tool_integration_contract.local.md"),
         (runtime_contract, bundle_root / "config" / "runtime_activation_contract.local.json"),
