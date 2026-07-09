@@ -19,6 +19,7 @@ python scripts/build_local_harness_exes.py --skip-serve --package --package-vers
 - `artifacts/exe/tool_integration_contract.local.json`: packaged tool sidecar contract for index, forum, gather, crucible, telos, aleph, mneme, relay, plexus, pubscan, and local-model.
 - `artifacts/exe/local-harness-release.json`: release manifest for the local executable package.
 - `artifacts/exe/packages/local-harness-<version>.zip`: shippable release bundle.
+- `artifacts/exe/packages/local-harness-<version>.package.json`: sidecar package summary with outer zip hash.
 - `artifacts/exe/packages/local-harness-<version>/manifest/ship-manifest.json`: file hashes, source commit, dependency posture, and secret policy.
 
 ## Local model wiring
