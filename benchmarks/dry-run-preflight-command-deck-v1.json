@@ -93,7 +93,7 @@
     {
       "id": "deck-006-tool-readiness",
       "tier": "metadata_only",
-      "purpose": "Generate static readiness receipts for mneme, relay, and plexus.",
+      "purpose": "Generate static readiness receipts for the flagship/pubscan tool set.",
       "command": "python scripts/run_tool_readiness_receipts.py --tools index,forum,gather,crucible,telos,aleph,mneme,relay,plexus,pubscan --base-root C:/dev/public --tool-root aleph=C:/dev/aleph --out C:/tmp/tool_readiness_20260709.json --markdown-out C:/tmp/tool_readiness_20260709.md --store-root C:/tmp/harness_file_store"
     },
     {
