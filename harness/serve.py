@@ -23,6 +23,7 @@ import os
 import threading
 import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from pathlib import Path
 
 os.environ.setdefault("HF_HOME", r"E:\local-model-run\hf-cache")
 os.environ.setdefault("PIP_CACHE_DIR", r"E:\local-model-run\pip-cache")
@@ -46,6 +47,10 @@ ADAPTER_PATH = os.environ.get("SERVE_ADAPTER_PATH", "")  # trained LoRA adapter 
 MODEL_REF = "Qwen2.5-Coder-14B-Instruct (base, nf4)"
 PORT = int(os.environ.get("SERVE_PORT", "8765"))
 QUANT_4BIT = True
+SERVE_DEVICE_MAP = os.environ.get("SERVE_DEVICE_MAP", "cuda").strip().lower()
+SERVE_MAX_MEMORY_GPU = os.environ.get("SERVE_MAX_MEMORY_GPU", "").strip()
+SERVE_MAX_MEMORY_CPU = os.environ.get("SERVE_MAX_MEMORY_CPU", "").strip()
+SERVE_OFFLOAD_FOLDER = os.environ.get("SERVE_OFFLOAD_FOLDER", "").strip()
 MODEL_CATALOG = {
     "14b": {
         "path": r"E:\local-model-run\models\Qwen2.5-Coder-14B-Instruct",
@@ -137,6 +142,27 @@ def _torch():
     return torch
 
 
+def _device_map_config():
+    if SERVE_DEVICE_MAP in {"cuda", "gpu", "single-gpu"}:
+        return {"": 0}, {}
+    if SERVE_DEVICE_MAP == "auto":
+        max_memory = {}
+        if SERVE_MAX_MEMORY_GPU:
+            max_memory[0] = SERVE_MAX_MEMORY_GPU
+        if SERVE_MAX_MEMORY_CPU:
+            max_memory["cpu"] = SERVE_MAX_MEMORY_CPU
+        extra = {}
+        if max_memory:
+            extra["max_memory"] = max_memory
+        if SERVE_OFFLOAD_FOLDER:
+            Path(SERVE_OFFLOAD_FOLDER).mkdir(parents=True, exist_ok=True)
+            extra["offload_folder"] = SERVE_OFFLOAD_FOLDER
+        return "auto", extra
+    if SERVE_DEVICE_MAP == "cpu":
+        return {"": "cpu"}, {}
+    return {"": 0}, {}
+
+
 def load() -> None:
     global _tok, _model
     torch_mod = _torch()
@@ -149,8 +175,10 @@ def load() -> None:
             bnb_4bit_use_double_quant=True,
             bnb_4bit_compute_dtype=torch_mod.bfloat16,
         )
+    device_map, dispatch_kw = _device_map_config()
+    kw.update(dispatch_kw)
     _tok = AutoTokenizer.from_pretrained(MODEL_PATH)
-    _model = AutoModelForCausalLM.from_pretrained(MODEL_PATH, device_map={"": 0}, **kw)
+    _model = AutoModelForCausalLM.from_pretrained(MODEL_PATH, device_map=device_map, **kw)
     if ADAPTER_PATH:
         from peft import PeftModel
         _model = PeftModel.from_pretrained(_model, ADAPTER_PATH)
@@ -315,7 +343,7 @@ class _H(BaseHTTPRequestHandler):
 
 
 def main(argv: list[str] | None = None) -> int:
-    global MODEL_PATH, MODEL_REF, PORT
+    global MODEL_PATH, MODEL_REF, PORT, SERVE_DEVICE_MAP, SERVE_MAX_MEMORY_GPU, SERVE_MAX_MEMORY_CPU, SERVE_OFFLOAD_FOLDER
     ap = argparse.ArgumentParser(description="local harness serve executable")
     ap.add_argument("--model-profile", default=os.environ.get("SERVE_MODEL_ALIAS", "14b"),
                     help="14b | 32b | custom")
@@ -324,13 +352,25 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--model-ref", default=os.environ.get("SERVE_MODEL_REF", ""),
                     help="override receipt model_ref string")
     ap.add_argument("--port", default=str(PORT), type=int, help="listen port")
+    ap.add_argument("--device-map", default=SERVE_DEVICE_MAP,
+                    help="cuda | auto | cpu; auto enables max-memory/offload options")
+    ap.add_argument("--max-memory-gpu", default=SERVE_MAX_MEMORY_GPU,
+                    help="GPU memory cap for transformers auto device_map, e.g. 20GiB")
+    ap.add_argument("--max-memory-cpu", default=SERVE_MAX_MEMORY_CPU,
+                    help="CPU memory cap for transformers auto device_map, e.g. 48GiB")
+    ap.add_argument("--offload-folder", default=SERVE_OFFLOAD_FOLDER,
+                    help="folder for accelerate/transformers offload state")
     args = ap.parse_args(argv)
 
     MODEL_PATH, MODEL_REF = apply_model_profile(args.model_profile, args.model_path, args.model_ref)
     PORT = args.port
+    SERVE_DEVICE_MAP = args.device_map.strip().lower()
+    SERVE_MAX_MEMORY_GPU = args.max_memory_gpu.strip()
+    SERVE_MAX_MEMORY_CPU = args.max_memory_cpu.strip()
+    SERVE_OFFLOAD_FOLDER = args.offload_folder.strip()
 
     load()
-    print(f"[serve] {MODEL_REF} listening on 127.0.0.1:{PORT}", flush=True)
+    print(f"[serve] {MODEL_REF} device_map={SERVE_DEVICE_MAP} listening on 127.0.0.1:{PORT}", flush=True)
     ThreadingHTTPServer(("127.0.0.1", PORT), _H).serve_forever()
     return 0
 

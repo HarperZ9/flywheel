@@ -113,6 +113,8 @@ def _row_for_profile(profile: dict[str, Any], gpu: dict[str, Any] | None) -> dic
         "estimated_required_gb": 0.0,
         "estimated_full_card_fits": False,
         "current_free_fits": False,
+        "runtime_strategy": (profile.get("runtime") or {}).get("strategy", "gpu-single") if isinstance(profile.get("runtime"), dict) else "gpu-single",
+        "runtime_requires_offload": bool((profile.get("runtime") or {}).get("requires_offload", False)) if isinstance(profile.get("runtime"), dict) else False,
         "verdict": "unsupported_model",
         "recommendation": "",
     }
@@ -149,6 +151,9 @@ def _row_for_profile(profile: dict[str, Any], gpu: dict[str, Any] | None) -> dic
     elif row["estimated_full_card_fits"]:
         row["verdict"] = "blocked_by_current_gpu_pressure"
         row["recommendation"] = "free GPU memory or stop another local model before launching"
+    elif row["runtime_requires_offload"]:
+        row["verdict"] = "offload_runtime_path_available_unverified"
+        row["recommendation"] = "start only through managed serve-launch with bounded wait, then verify endpoint gate"
     else:
         row["verdict"] = "requires_offload_or_smaller_runtime"
         row["recommendation"] = fit_rec.offload_strategy

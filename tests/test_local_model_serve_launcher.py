@@ -22,6 +22,7 @@ def test_serve_launcher_builds_plan_without_starting(tmp_path):
                 "model_root": "E:/local-model-run/models/Qwen2.5-Coder-32B-Instruct",
                 "root_exists": True,
                 "aliases": ["32b", "qwen2.5-coder-32b"],
+                "serve_args": ["--device-map", "auto", "--max-memory-gpu", "20GiB"],
             }
         ],
     }), encoding="utf-8")
@@ -39,6 +40,8 @@ def test_serve_launcher_builds_plan_without_starting(tmp_path):
     assert row["command"][-2:] == ["--port", "8768"]
     assert "--model-profile" in row["command"]
     assert "32b" in row["command"]
+    assert "--device-map" in row["command"]
+    assert "20GiB" in row["command"]
     assert row["failure_class"] == ""
 
 

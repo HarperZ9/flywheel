@@ -92,6 +92,9 @@ Primary artifacts:
 - `C:\tmp\model_endpoint_gate_32b_override_8768_20260709.json`
 - `C:\tmp\local_model_serve_launch_32b_plan_8768_20260709.json`
 - `C:\tmp\local_model_resource_preflight_32b_8768_20260709.json`
+- `C:\tmp\model_endpoint_profiles_32b_offload_8768_20260709.json`
+- `C:\tmp\local_model_resource_preflight_32b_offload_8768_20260709.json`
+- `C:\tmp\local_model_serve_launch_32b_offload_plan_8768_20260709.json`
 
 What improved:
 
@@ -128,6 +131,7 @@ Local endpoint gate:
 - Launch readiness suggests the non-destructive override `--serve-url-32b http://127.0.0.1:8768`; the override profile classifies `32B` as `ready_to_launch` on `8768`, and the override gate classifies it as `endpoint_unavailable` until the real 32B process starts.
 - Serve launcher planning records the exact 32B `harness/serve.py` command vector for `8768` and a log path without starting a resource-heavy process.
 - Resource preflight records observed RTX 4090 memory (`10.707 GB` free at capture time), estimated 32B requirement (`32.868 GB`), and verdict `requires_offload_or_smaller_runtime`; this blocks a naive 32B start while 14B/current GPU pressure is present.
+- The 32B offload profile records a concrete but unverified CPU-offload runtime path. Resource preflight now returns `offload_runtime_path_available_unverified`, and launcher planning includes `--device-map auto --max-memory-gpu 20GiB --max-memory-cpu 96GiB --offload-folder E:/local-model-run/offload/32b`.
 - `ollama` backend was unavailable for both `14B` and `32B`.
 - The corrected endpoint gate blocks any `32B` readiness or publication claim until the serve process/profile mapping is corrected and rerun.
 

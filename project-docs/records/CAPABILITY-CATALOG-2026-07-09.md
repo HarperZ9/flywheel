@@ -1052,6 +1052,7 @@ What changed:
 - Extends `harness.cmd readiness model-endpoints` with model and serve URL override flags so endpoint profiles can be regenerated through the executable surface.
 - Adds `serve-launch` as a harness command and receipt schema for plan-only or managed `harness/serve.py` startup from endpoint profiles, with command vector, log path, optional PID, and bounded health-poll evidence.
 - Adds `serve-resource` as a harness command and receipt schema for GPU resource preflight using live `nvidia-smi` telemetry plus the calibrated `harness.membudget` 14B/32B fit model.
+- Adds a 32B `cpu-offload` endpoint profile strategy with `serve.py --device-map auto`, GPU/CPU memory caps, and an offload folder, plus launcher propagation of profile `serve_args`.
 
 ### `classifier_friction_accountability_receipts`
 

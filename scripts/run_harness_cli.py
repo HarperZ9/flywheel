@@ -843,6 +843,8 @@ def build_parser() -> argparse.ArgumentParser:
     readiness.add_argument("--serve-url", default="")
     readiness.add_argument("--serve-url-14b", default="")
     readiness.add_argument("--serve-url-32b", default="")
+    readiness.add_argument("--serve-runtime-14b", default="")
+    readiness.add_argument("--serve-runtime-32b", default="")
     readiness.add_argument("--ollama-url", default="")
     readiness.add_argument("--base-root", default="")
     readiness.add_argument("--artifact-roots", default="")
@@ -886,6 +888,8 @@ def _readiness_command(args) -> list[str]:
         _append_if(command, "--serve-url", args.serve_url)
         _append_if(command, "--serve-url-14b", args.serve_url_14b)
         _append_if(command, "--serve-url-32b", args.serve_url_32b)
+        _append_if(command, "--serve-runtime-14b", args.serve_runtime_14b)
+        _append_if(command, "--serve-runtime-32b", args.serve_runtime_32b)
         _append_if(command, "--ollama-url", args.ollama_url)
         _common_outputs(command, args)
         return command
