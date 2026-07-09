@@ -117,6 +117,56 @@ def _emit_endpoint_profiles(args: argparse.Namespace) -> Path:
     return path
 
 
+def _emit_model_release_readiness(args: argparse.Namespace, *, profiles_path: Path) -> Path:
+    path = DIST / "model_release_readiness.local.json"
+    markdown = DIST / "model_release_readiness.local.md"
+    command = [
+        sys.executable,
+        "scripts/run_model_release_readiness.py",
+        "--models",
+        args.model_release_models,
+        "--base-root",
+        args.model_run_root,
+        "--artifact-roots",
+        args.model_release_artifact_roots,
+        "--endpoint-profile-artifacts",
+        str(profiles_path),
+        "--max-entries",
+        str(args.model_release_max_entries),
+        "--out",
+        str(path),
+        "--markdown-out",
+        str(markdown),
+    ]
+    print(f"[model-release] {' '.join(command)}")
+    proc = subprocess.run(command, cwd=ROOT)
+    if proc.returncode != 0:
+        raise RuntimeError(f"model release readiness generation failed ({proc.returncode})")
+    return path
+
+
+def _emit_model_publish_plan(args: argparse.Namespace, *, release_readiness_path: Path) -> Path:
+    path = DIST / "model_publish_plan.local.json"
+    markdown = DIST / "model_publish_plan.local.md"
+    command = [
+        sys.executable,
+        "scripts/run_model_publish_plan.py",
+        "--release-readiness-artifact",
+        str(release_readiness_path),
+        "--name-prefix",
+        args.model_publish_name_prefix,
+        "--out",
+        str(path),
+        "--markdown-out",
+        str(markdown),
+    ]
+    print(f"[model-publish] {' '.join(command)}")
+    proc = subprocess.run(command, cwd=ROOT)
+    if proc.returncode != 0:
+        raise RuntimeError(f"model publish plan generation failed ({proc.returncode})")
+    return path
+
+
 def _emit_executable_manifest(args: argparse.Namespace) -> Path:
     path = DIST / "harness_executable_manifest.local.json"
     markdown = DIST / "harness_executable_manifest.local.md"
@@ -289,6 +339,9 @@ def _write_release_manifest(args: argparse.Namespace, *, profiles_path: Path, bu
             "serve_url_32b": args.serve_url_32b,
             "serve_runtime_32b": args.serve_runtime_32b,
             "offload_runtime": args.serve_runtime_32b == "cpu-offload",
+            "release_readiness": str(DIST / "model_release_readiness.local.json"),
+            "publish_plan": str(DIST / "model_publish_plan.local.json"),
+            "publish_name_prefix": args.model_publish_name_prefix,
         },
         "tool_integration": {
             "contract": str(DIST / "tool_integration_contract.local.json"),
@@ -353,6 +406,10 @@ def main() -> int:
     ap.add_argument("--store-root", default="C:/tmp/harness_file_store")
     ap.add_argument("--model-run-root", default="E:/local-model-run")
     ap.add_argument("--log-root", default="C:/tmp/local_model_serve_logs")
+    ap.add_argument("--model-release-models", default="14B,32B")
+    ap.add_argument("--model-release-artifact-roots", default="C:/dev/local-model/artifacts;C:/tmp")
+    ap.add_argument("--model-release-max-entries", type=int, default=200)
+    ap.add_argument("--model-publish-name-prefix", default="Flywheel-Local-Coder")
     ap.add_argument("--package", action="store_true",
                     help="assemble a local release bundle after building")
     ap.add_argument("--package-version", default=datetime.now(UTC).strftime("%Y%m%d-%H%M%S"))
@@ -398,6 +455,8 @@ def main() -> int:
 
     _emit_executable_manifest(args)
     profiles_path = _emit_endpoint_profiles(args)
+    release_readiness_path = _emit_model_release_readiness(args, profiles_path=profiles_path)
+    _emit_model_publish_plan(args, release_readiness_path=release_readiness_path)
     _emit_tool_contract(args)
     _emit_runtime_contract(args)
     _emit_codex_mcp_contract(args)
