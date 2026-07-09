@@ -17,6 +17,7 @@ Observed evidence used for this status:
 - `C:\dev\local-model\project-docs\schematics\closed-loop-integration.graph.json` now maps the closed-loop integration graph with explicit observed, scaffolded, degraded, and missing-evidence nodes.
 - `C:\dev\local-model\project-docs\records\OBJECTIVE-EVIDENCE-MATRIX-2026-07-09.md` now tracks the active objective requirement-by-requirement against evidence, missing proof, and next gates.
 - `C:\dev\local-model\scripts\run_agentic_task_set_manifest.py` now implements the non-executing custom agentic task manifest generator with prompt hashes, planned artifact paths, and manifest-only dry scorecard rows.
+- `C:\tmp\forum_route_receipts_20260709_current.json`, `C:\tmp\mcp_tool_health_20260709_current.json`, `C:\tmp\tool_readiness_20260709_current.json`, and `C:\tmp\harness_closed_loop_seed_plan_20260709_current.json` were produced through `C:\dev\local-model\harness.cmd` as metadata preflight artifacts.
 
 ## Roadmap progress estimate
 
@@ -34,10 +35,10 @@ This is a planning estimate, not a performance metric.
 
 | Workstream | Stage | Status | Evidence | Missing gate |
 | --- | ---: | --- | --- | --- |
-| Tool and infrastructure integration | 2 / 4 | Scaffolded and partially integrated | Closed-loop seed includes Forum route receipts, MCP tool health receipts, context inventory, expanded tool readiness, hardening, gather readiness, Index fallback, and comparison steps. | Stable `index` MCP transport, full tool connectivity proof, and end-to-end receipts. |
+| Tool and infrastructure integration | 2.5 / 4 | Preflight-integrated, live execution incomplete | Closed-loop seed includes Forum route receipts, MCP tool health receipts, context inventory, expanded tool readiness, hardening, gather readiness, Index fallback, and comparison steps. Current preflight artifacts show 11 configured roots, 0 missing roots, `forum`/`telos` healthy, and `index` degraded with `transport_closed`. | Stable `index` MCP transport, live tool-specific connectivity proof, and full seed receipts. |
 | Harness comparison and benchmark evidence | 2.75 / 4 | Methodology, matrix, custom task corpus, task-set adapter contract, cross-harness adapter contract, implementation runbook, dry command deck, and non-executing manifest generator exist | Benchmark profile, coverage, execution matrix, custom agentic task set, task-set adapter contract, manifest generator, cross-harness adapter contract, adapter implementation runbook, dry-run/preflight command deck, forum deep-verify scaling plan, harness comparison, and outcome commands are documented. | Execute metadata preflights, validate manifest/adapter generator, then run real Codex/Flywheel/Claude Code/OpenCode/local tasks, forum ledger scaling, and shared-task comparison artifacts. |
 | Local model endpoint and agentic workflow support | 2 / 4 | Endpoint profile and gate path exists | Endpoint profile, endpoint gate, model release readiness, and model publish plan commands are documented and wired into closed-loop seed. | Live 14B/32B endpoint checks, generation probes, and agentic workflow benchmark results. |
-| Executable harness packaging | 2 / 4 | CLI/front-controller path exists in the capability set | Infrastructure and catalog records include executable harness commands and schema/report surfaces. | Full packaged executable release, install verification, and local model configuration proof. |
+| Executable harness packaging | 2.5 / 4 | CLI/front-controller path produced preflight artifacts | Infrastructure and catalog records include executable harness commands and schema/report surfaces; `harness.cmd` produced route, MCP health, tool readiness, and dry plan artifacts. | Full packaged executable release, install verification, and local model configuration proof. |
 | mneme, relay, and plexus enterprise readiness | 2 / 4 | Readiness and hardening plan path exists | Tool readiness and tool hardening commands are documented and wired into closed-loop seed. | Shipped tool changes, CI/package/docs readiness, and competitive feature proof. |
 | 14B and 32B release track | 2 / 4 | Release-readiness and publish-plan path exists | Model release readiness and model publish plan commands are documented and wired into closed-loop seed. | Model names, model cards, checksums, benchmark evidence, provenance/licensing notes, and publish approval. |
 | Experimental outcome and recursive loop | 2 / 4 | Outcome synthesis path exists | Closed-loop outcome command is documented and accepts seed/store inputs. | Actual outcome document from executed benchmark artifacts with limitations and next actions. |
@@ -70,12 +71,12 @@ This is a planning estimate, not a performance metric.
 
 ## Immediate next gates
 
-1. Run a metadata-only closed-loop dry plan to verify command assembly without touching model endpoints.
-2. Use `C:\dev\local-model\project-docs\records\DRY-RUN-PREFLIGHT-COMMAND-DECK-2026-07-09.md` to run metadata-only preflights when execution is authorized.
-3. Run the non-executing `harness.agentic-task-manifest/v1` adapter and targeted validation when approval is granted.
-4. Implement a non-executing cross-harness manifest generator from `C:\dev\local-model\benchmarks\cross-harness-adapter-contract-v1.json`.
-5. Run the context inventory, tool readiness, benchmark profile, and benchmark execution matrix preflights.
-6. Run the focused benchmark seed only after the dry plan artifacts look coherent.
+1. Run the focused benchmark seed only after the dry plan artifacts look coherent.
+2. Generate the closed-loop outcome from the focused seed artifacts.
+3. Run endpoint profiles and gates for 14B/32B only after local endpoint configuration is confirmed.
+4. Run hardening preflights and implement one bounded mneme/relay/plexus enterprise slice.
+5. Add and run the forum replayable-ledger deep-verify scaling benchmark before making public performance claims about large content-addressed ledgers.
+6. Run Codex-vs-Flywheel/Claude Code/OpenCode/local same-task rows and synthesize comparison deltas.
 7. Run endpoint profiles and gates for 14B/32B only after local endpoint configuration is confirmed.
 8. Generate the closed-loop outcome from the shared run store.
 9. Add and run the forum replayable-ledger deep-verify scaling benchmark before making public performance claims about large content-addressed ledgers.
