@@ -188,6 +188,30 @@ def _emit_executable_manifest(args: argparse.Namespace) -> Path:
     return path
 
 
+def _emit_context_inventory(args: argparse.Namespace) -> Path:
+    path = DIST / "context_inventory.local.json"
+    markdown = DIST / "context_inventory.local.md"
+    command = [
+        sys.executable,
+        "scripts/run_context_inventory.py",
+        "--roots",
+        args.context_roots,
+        "--max-depth",
+        str(args.context_max_depth),
+        "--max-entries-per-root",
+        str(args.context_max_entries_per_root),
+        "--out",
+        str(path),
+        "--markdown-out",
+        str(markdown),
+    ]
+    print(f"[context] {' '.join(command)}")
+    proc = subprocess.run(command, cwd=ROOT)
+    if proc.returncode != 0:
+        raise RuntimeError(f"context inventory generation failed ({proc.returncode})")
+    return path
+
+
 def _emit_tool_contract(args: argparse.Namespace) -> Path:
     path = DIST / "tool_integration_contract.local.json"
     markdown = DIST / "tool_integration_contract.local.md"
@@ -353,6 +377,13 @@ def _write_release_manifest(args: argparse.Namespace, *, profiles_path: Path, bu
             "json": str(DIST / "harness_executable_manifest.local.json"),
             "markdown": str(DIST / "harness_executable_manifest.local.md"),
         },
+        "context_inventory": {
+            "json": str(DIST / "context_inventory.local.json"),
+            "markdown": str(DIST / "context_inventory.local.md"),
+            "roots": args.context_roots,
+            "max_depth": args.context_max_depth,
+            "max_entries_per_root": args.context_max_entries_per_root,
+        },
         "architecture_report": {
             "json": str(DIST / "harness_architecture_report.local.json"),
             "markdown": str(DIST / "harness_architecture_report.local.md"),
@@ -410,6 +441,20 @@ def main() -> int:
     ap.add_argument("--model-release-artifact-roots", default="C:/dev/local-model/artifacts;C:/tmp")
     ap.add_argument("--model-release-max-entries", type=int, default=200)
     ap.add_argument("--model-publish-name-prefix", default="Flywheel-Local-Coder")
+    ap.add_argument(
+        "--context-roots",
+        default=(
+            "C:/dev/local-model/.scratch;"
+            "C:/dev/local-model/scratch;"
+            "C:/dev/local-model/artifacts;"
+            "C:/tmp;"
+            "C:/Users/Zain/.codex;"
+            "C:/Users/Zain/.claude;"
+            "C:/Users/Zain/AppData/Roaming/opencode"
+        ),
+    )
+    ap.add_argument("--context-max-depth", type=int, default=3)
+    ap.add_argument("--context-max-entries-per-root", type=int, default=500)
     ap.add_argument("--package", action="store_true",
                     help="assemble a local release bundle after building")
     ap.add_argument("--package-version", default=datetime.now(UTC).strftime("%Y%m%d-%H%M%S"))
@@ -454,6 +499,7 @@ def main() -> int:
         skipped.append("local-serve")
 
     _emit_executable_manifest(args)
+    _emit_context_inventory(args)
     profiles_path = _emit_endpoint_profiles(args)
     release_readiness_path = _emit_model_release_readiness(args, profiles_path=profiles_path)
     _emit_model_publish_plan(args, release_readiness_path=release_readiness_path)

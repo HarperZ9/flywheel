@@ -97,10 +97,27 @@ def _model_release_summary(readiness: dict[str, Any], publish: dict[str, Any]) -
     }
 
 
+def _context_summary(context_inventory: dict[str, Any]) -> dict[str, Any]:
+    summary = context_inventory.get("summary") or {}
+    roots = context_inventory.get("roots") or []
+    return {
+        "schema": "harness.architecture-report.context-inventory/v1",
+        "present": bool(context_inventory),
+        "roots_requested": len(context_inventory.get("roots_requested") or []),
+        "existing_roots": summary.get("existing_roots", 0),
+        "root_count": summary.get("roots", len(roots)),
+        "entries": summary.get("entries", 0),
+        "sensitive_name_entries": summary.get("sensitive_name_entries", 0),
+        "label_counts": summary.get("label_counts", {}),
+        "truncated_roots": sum(1 for row in roots if isinstance(row, dict) and row.get("truncated")),
+    }
+
+
 def build_report(
     *,
     release_manifest_path: Path,
     executable_manifest_path: Path,
+    context_inventory_path: Path,
     endpoint_profiles_path: Path,
     model_release_path: Path,
     model_publish_path: Path,
@@ -112,6 +129,7 @@ def build_report(
 ) -> dict[str, Any]:
     release_manifest = _load(release_manifest_path)
     executable_manifest = _load(executable_manifest_path)
+    context_inventory = _load(context_inventory_path)
     endpoint_profiles = _load(endpoint_profiles_path)
     model_release = _load(model_release_path)
     model_publish = _load(model_publish_path)
@@ -123,6 +141,7 @@ def build_report(
     artifacts = {
         "release_manifest": _artifact(release_manifest_path, "harness.local-executable-release/v1"),
         "executable_manifest": _artifact(executable_manifest_path, "harness.executable-manifest/v1"),
+        "context_inventory": _artifact(context_inventory_path, "harness.context-inventory/v1"),
         "endpoint_profiles": _artifact(endpoint_profiles_path, "harness.model-endpoint-profiles/v1"),
         "model_release_readiness": _artifact(model_release_path, "harness.model-release-readiness/v1"),
         "model_publish_plan": _artifact(model_publish_path, "harness.model-publish-plan/v1"),
@@ -146,6 +165,10 @@ def build_report(
         verified_facts.append("14B/32B naming and publication plan is represented by the model publish plan artifact.")
     else:
         assumptions.append("Model publish plan was not present when this report was generated.")
+    if context_inventory:
+        verified_facts.append("Scratch, temp, session, and benchmark context surfaces are represented by the metadata-only context inventory.")
+    else:
+        assumptions.append("Context inventory was not present when this report was generated.")
     if tool_contract:
         verified_facts.append("Tool roots and sidecar readiness are represented by the tool integration contract.")
     else:
@@ -171,6 +194,7 @@ def build_report(
             "command_count": len(_command_names(executable_manifest)),
             "commands": _command_names(executable_manifest),
         },
+        "context_inventory": _context_summary(context_inventory),
         "local_models": _endpoint_summary(endpoint_profiles),
         "model_release": _model_release_summary(model_release, model_publish),
         "tool_fabric": _tool_summary(tool_contract),
@@ -210,6 +234,7 @@ def build_report(
             "schema_mismatches": [name for name, row in artifacts.items() if row["exists"] and not row["schema_matches"]],
             "models": _endpoint_summary(endpoint_profiles)["models"],
             "model_candidate_names": _model_release_summary(model_release, model_publish)["candidate_names"],
+            "context_entries": _context_summary(context_inventory)["entries"],
             "tools": _tool_summary(tool_contract)["tools"],
         },
     }
@@ -226,6 +251,7 @@ def render_markdown(report: dict[str, Any]) -> str:
         f"- Artifacts present: {report['summary']['artifacts_present']} / {report['summary']['artifact_count']}",
         f"- Models: {', '.join(report['summary']['models']) or 'none'}",
         f"- Model candidate names: {', '.join(report['summary']['model_candidate_names']) or 'none'}",
+        f"- Context entries: {report['summary']['context_entries']}",
         f"- Tools: {', '.join(report['summary']['tools']) or 'none'}",
         f"- Package doctor: {report['release_gate']['package_doctor_verdict'] or 'not present in this report'}",
         "",
@@ -233,6 +259,13 @@ def render_markdown(report: dict[str, Any]) -> str:
         "",
         f"- Commands: {report['executable_surface']['command_count']}",
         f"- Skipped executables: {', '.join(report['executable_surface']['skipped']) or 'none'}",
+        "",
+        "## Context inventory",
+        "",
+        f"- Existing roots: {report['context_inventory']['existing_roots']} / {report['context_inventory']['root_count']}",
+        f"- Entries: {report['context_inventory']['entries']}",
+        f"- Sensitive-name entries: {report['context_inventory']['sensitive_name_entries']}",
+        f"- Truncated roots: {report['context_inventory']['truncated_roots']}",
         "",
         "## Endpoint profiles",
         "",
@@ -278,6 +311,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--dist", default=str(DEFAULT_DIST))
     parser.add_argument("--release-manifest", default="")
     parser.add_argument("--executable-manifest", default="")
+    parser.add_argument("--context-inventory", default="")
     parser.add_argument("--endpoint-profiles", default="")
     parser.add_argument("--model-release", default="")
     parser.add_argument("--model-publish", default="")
@@ -296,6 +330,7 @@ def main(argv: list[str] | None = None) -> int:
     report = build_report(
         release_manifest_path=Path(args.release_manifest) if args.release_manifest else dist / "local-harness-release.json",
         executable_manifest_path=Path(args.executable_manifest) if args.executable_manifest else dist / "harness_executable_manifest.local.json",
+        context_inventory_path=Path(args.context_inventory) if args.context_inventory else dist / "context_inventory.local.json",
         endpoint_profiles_path=Path(args.endpoint_profiles) if args.endpoint_profiles else dist / "model_endpoint_profiles.local.json",
         model_release_path=Path(args.model_release) if args.model_release else dist / "model_release_readiness.local.json",
         model_publish_path=Path(args.model_publish) if args.model_publish else dist / "model_publish_plan.local.json",
