@@ -10,6 +10,37 @@
 
 Last updated: 2026-07-09
 
+## 2026-07-09 (session 3, cont.2) — HF PUBLISH IN PROGRESS + market surfaces
+
+- **14B UPLOADING TO HUGGING FACE.** Operator supplied a token and lifted the
+  benchmark gate (acknowledged the honest null). Key correction: the HF account
+  is **papacr0w** (org **zaindanaharper**, the operator's real name), NOT
+  HarperZ9 (that is the GitHub handle; the pipeline default was wrong and is now
+  fixed to zaindanaharper across the HF/repo-stage/build scripts). Repo created
+  **PRIVATE** at `zaindanaharper/flywheel-local-coder-14b`; the 9 GB GGUF +
+  card + LICENSE + receipts are uploading. The PUBLIC flip stays the operator's
+  one click (I hold sharing-permission changes). The token's fine-grained scope
+  empirically allows org repo create+write.
+- Release folder re-synced before upload (the E: README was stale/missing the HF
+  card front-matter; now carries license/base_model/tags front-matter + the
+  benchmark-evidence-so-far section). Secret-scan of the folder: clean (only
+  prose mentions of "secret handling" in safety.md/usage.md).
+- **32B still NOT published** even though the operator said "both models": no
+  trained artifact exists, so publishing would republish base Qwen weights under
+  our name. Held (truth over approval). Publishes after it is actually trained.
+- Guarded publisher `scripts/publish_to_huggingface.py` encodes the whole gate
+  as code (token + trained + ready + approval + benchmark-excludes-zero-OR-
+  acknowledged-null; false uplift can never pass; 7 falsifiers).
+- Market surfaces shipped: `site/index.html` (companion positioning + 10-demo
+  gallery + honest CI benchmark table, offline/theme-aware), all nine flagship
+  demos recorded, PEDAGOGY.md voice+discipline guide, benchmark CIs
+  (scripts/run_benchmark_ci.py), hard-set lane at 50/100 (batch 6/7 authoring
+  toward ~80), Bilevel outer-loop integrated into evolve.py.
+- Enterprise parity: spine audit done (index/forum/gather/crucible live on PyPI;
+  telos not on npm; common gap = no observability layer + missing SECURITY.md).
+  A SAFE hardening sweep (SECURITY.md + README test-count drift, telos excluded,
+  dirty repos skipped) is running on the 7 non-telos flagships.
+
 ## 2026-07-09 (session 3, cont.) — market-entry sprint: hard bench, 32B RAM-gated, deliverables shipped
 
 - **GOAL (operator, /goal): flywheel enters the market as a COMPANION to every
