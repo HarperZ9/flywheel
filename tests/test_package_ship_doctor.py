@@ -36,6 +36,9 @@ def test_package_ship_doctor_accepts_complete_metadata_bundle(tmp_path):
         "config/harness_architecture_report.local.json": {
             "schema": "harness.architecture-report/v1",
         },
+        "config/enterprise_readiness_report.local.json": {
+            "schema": "harness.enterprise-readiness-report/v1",
+        },
         "manifest/harness_executable_manifest.local.json": {
             "schema": "harness.executable-manifest/v1",
         },

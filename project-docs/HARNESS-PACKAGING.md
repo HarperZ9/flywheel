@@ -21,6 +21,7 @@ python scripts/build_local_harness_exes.py --skip-serve --package --package-vers
 - `artifacts/exe/codex_mcp_launch_contract.local.json`: Codex MCP launch, stale-transport reload, and direct CLI fallback contract.
 - `artifacts/exe/harness_executable_manifest.local.json`: packaged command-surface manifest.
 - `artifacts/exe/harness_architecture_report.local.json`: harness architecture and endpoint report stitched from generated contracts.
+- `artifacts/exe/enterprise_readiness_report.local.json`: mneme, relay, and plexus enterprise-readiness gates derived from the tool contract.
 - `artifacts/exe/local-harness-release.json`: release manifest for the local executable package.
 - `artifacts/exe/packages/local-harness-<version>.zip`: shippable release bundle.
 - `artifacts/exe/packages/local-harness-<version>.package.json`: sidecar package summary with outer zip hash.
@@ -57,7 +58,9 @@ The release bundle includes:
 - `config/codex_mcp_launch_contract.local.json`
 - `config/codex_mcp_launch_contract.local.md`
 - `config/harness_architecture_report.local.json`
+- `config/enterprise_readiness_report.local.json`
 - `docs/harness_architecture_report.local.md`
+- `docs/enterprise_readiness_report.local.md`
 - `manifest/harness_executable_manifest.local.json`
 - `manifest/harness_executable_manifest.local.md`
 - `docs/HARNESS-PACKAGING.md`

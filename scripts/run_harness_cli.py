@@ -168,6 +168,19 @@ def build_manifest(*, store_root: str = DEFAULT_STORE_ROOT) -> dict:
                 "recommended_validation_slice": "python -m pytest tests/test_harness_architecture_report.py tests/test_harness_cli.py -q",
             },
             {
+                "name": "enterprise-readiness",
+                "delegates_to": "scripts/run_enterprise_readiness_report.py",
+                "purpose": "Emit mneme, relay, and plexus enterprise-readiness reports from the packaged tool integration contract.",
+                "schemas": ["harness.enterprise-readiness-report/v1"],
+                "evidence_surface": "tool contract readiness scores, entrypoints, state contracts, verified facts, and release gates",
+                "default_artifacts": [
+                    "C:/tmp/enterprise_readiness_report.json",
+                    "C:/tmp/enterprise_readiness_report.md",
+                ],
+                "long_running_risk": "low",
+                "recommended_validation_slice": "python -m pytest tests/test_enterprise_readiness_report.py tests/test_harness_cli.py -q",
+            },
+            {
                 "name": "tool-contract",
                 "delegates_to": "scripts/run_tool_integration_contract.py",
                 "purpose": "Emit the packaged sidecar integration contract for index, forum, gather, crucible, telos, aleph, mneme, relay, plexus, pubscan, and local-model.",
@@ -799,7 +812,13 @@ def build_parser() -> argparse.ArgumentParser:
     architecture.add_argument("--tool-contract", default="")
     architecture.add_argument("--runtime-contract", default="")
     architecture.add_argument("--codex-mcp-contract", default="")
+    architecture.add_argument("--enterprise-readiness", default="")
     architecture.add_argument("--package-doctor", default="")
+
+    enterprise = subparsers.add_parser("enterprise-readiness", help="emit mneme/relay/plexus enterprise readiness report")
+    _add_common_io(enterprise)
+    enterprise.add_argument("--tool-contract", default="C:/dev/local-model/artifacts/exe/tool_integration_contract.local.json")
+    enterprise.add_argument("--tools", default="mneme,relay,plexus")
 
     tool_contract = subparsers.add_parser("tool-contract", help="emit packaged sidecar tool integration contract")
     _add_common_io(tool_contract)
@@ -1112,7 +1131,19 @@ def build_command(args, *, repo_root: Path) -> list[str]:
         _append_if(command, "--tool-contract", args.tool_contract)
         _append_if(command, "--runtime-contract", args.runtime_contract)
         _append_if(command, "--codex-mcp-contract", args.codex_mcp_contract)
+        _append_if(command, "--enterprise-readiness", args.enterprise_readiness)
         _append_if(command, "--package-doctor", args.package_doctor)
+        _common_outputs(command, args)
+        return command
+    if args.command_name == "enterprise-readiness":
+        command = [
+            py,
+            "scripts/run_enterprise_readiness_report.py",
+            "--tool-contract",
+            args.tool_contract,
+            "--tools",
+            args.tools,
+        ]
         _common_outputs(command, args)
         return command
     if args.command_name == "tool-contract":

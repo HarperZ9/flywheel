@@ -79,6 +79,7 @@ The package includes `config\\model_endpoint_profiles.local.json`.
 It also includes `config\\tool_integration_contract.local.json` for the Flywheel/Codex sidecar tool contract.
 `config\\runtime_activation_contract.local.json` describes storage, env knobs, and activation boundaries.
 `config\\codex_mcp_launch_contract.local.json` describes Codex MCP launch profiles, stale-transport reload boundaries, and direct CLI fallbacks.
+`config\\enterprise_readiness_report.local.json` summarizes mneme, relay, and plexus enterprise-readiness gates.
 `docs\\harness_architecture_report.local.md` summarizes the executable surface, local model endpoints, tool fabric, runtime activation, and release gates.
 
 - 14B serve endpoint: `http://127.0.0.1:8765`
@@ -115,6 +116,8 @@ def build_bundle(
     executable_manifest_md = dist / "harness_executable_manifest.local.md"
     architecture_report = dist / "harness_architecture_report.local.json"
     architecture_report_md = dist / "harness_architecture_report.local.md"
+    enterprise_readiness = dist / "enterprise_readiness_report.local.json"
+    enterprise_readiness_md = dist / "enterprise_readiness_report.local.md"
     inputs = [
         (dist / "local-harness.exe", bundle_root / "bin" / "local-harness.exe"),
         (dist / "local-harness.cmd", bundle_root / "bin" / "local-harness.cmd"),
@@ -132,6 +135,8 @@ def build_bundle(
         (executable_manifest_md, bundle_root / "manifest" / "harness_executable_manifest.local.md"),
         (architecture_report, bundle_root / "config" / "harness_architecture_report.local.json"),
         (architecture_report_md, bundle_root / "docs" / "harness_architecture_report.local.md"),
+        (enterprise_readiness, bundle_root / "config" / "enterprise_readiness_report.local.json"),
+        (enterprise_readiness_md, bundle_root / "docs" / "enterprise_readiness_report.local.md"),
         (ROOT / "project-docs" / "HARNESS-PACKAGING.md", bundle_root / "docs" / "HARNESS-PACKAGING.md"),
     ]
     if include_serve:

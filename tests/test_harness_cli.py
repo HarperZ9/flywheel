@@ -164,6 +164,26 @@ def test_architecture_report_command_targets_report_generator():
     assert "C:/tmp/architecture.json" in command
 
 
+def test_enterprise_readiness_command_targets_report_generator():
+    args = parse([
+        "enterprise-readiness",
+        "--tool-contract",
+        "C:/tmp/tool_contract.json",
+        "--tools",
+        "mneme,relay,plexus",
+        "--out",
+        "C:/tmp/enterprise.json",
+    ])
+    command = build_command(args, repo_root=Path("C:/dev/local-model"))
+
+    assert command[:2] == [args.python, "scripts/run_enterprise_readiness_report.py"]
+    assert "--tool-contract" in command
+    assert "C:/tmp/tool_contract.json" in command
+    assert "--tools" in command
+    assert "mneme,relay,plexus" in command
+    assert "C:/tmp/enterprise.json" in command
+
+
 def test_tool_contract_command_targets_contract_generator():
     args = parse([
         "tool-contract",
@@ -600,7 +620,7 @@ def test_manifest_lists_front_controller_commands_and_evidence_surfaces():
     assert manifest["schema"] == "harness.executable-manifest/v1"
     assert manifest["entrypoint"] == "harness.cmd"
     names = [row["name"] for row in manifest["commands"]]
-    assert names == ["manifest", "registry", "benchmarks", "forum-route", "mcp-health", "codex-mcp-contract", "package-doctor", "architecture-report", "tool-contract", "runtime-contract", "benchmark-coverage", "comparison", "execution-matrix", "schematic-drift", "agentic-tasks", "cross-harness", "adapter-runtime", "embodied-realtime", "model-card-claims", "tool-hardening", "classifier-friction", "endpoint-gate", "endpoint-launch-readiness", "serve-launch", "serve-resource", "model-publish", "plan", "seed", "outcome", "query", "readiness"]
+    assert names == ["manifest", "registry", "benchmarks", "forum-route", "mcp-health", "codex-mcp-contract", "package-doctor", "architecture-report", "enterprise-readiness", "tool-contract", "runtime-contract", "benchmark-coverage", "comparison", "execution-matrix", "schematic-drift", "agentic-tasks", "cross-harness", "adapter-runtime", "embodied-realtime", "model-card-claims", "tool-hardening", "classifier-friction", "endpoint-gate", "endpoint-launch-readiness", "serve-launch", "serve-resource", "model-publish", "plan", "seed", "outcome", "query", "readiness"]
     readiness = [row for row in manifest["commands"] if row["name"] == "readiness"][0]
     assert "model-endpoints" in readiness["targets"]
     assert "model-release" in readiness["targets"]
@@ -708,6 +728,15 @@ def test_manifest_includes_architecture_report_command():
     assert "harness.architecture-report/v1" in report["schemas"]
     assert report["long_running_risk"] == "low"
     assert "scripts/run_harness_architecture_report.py" in report["delegates_to"]
+
+
+def test_manifest_includes_enterprise_readiness_command():
+    manifest = build_manifest(store_root="C:/tmp/store")
+    report = [row for row in manifest["commands"] if row["name"] == "enterprise-readiness"][0]
+
+    assert "harness.enterprise-readiness-report/v1" in report["schemas"]
+    assert report["long_running_risk"] == "low"
+    assert "scripts/run_enterprise_readiness_report.py" in report["delegates_to"]
 
 
 def test_manifest_includes_tool_contract_command():

@@ -81,6 +81,7 @@ def build_report(
     tool_contract_path: Path,
     runtime_contract_path: Path,
     codex_mcp_contract_path: Path,
+    enterprise_readiness_path: Path,
     package_doctor_path: Path,
 ) -> dict[str, Any]:
     release_manifest = _load(release_manifest_path)
@@ -89,6 +90,7 @@ def build_report(
     tool_contract = _load(tool_contract_path)
     runtime_contract = _load(runtime_contract_path)
     codex_mcp = _load(codex_mcp_contract_path)
+    enterprise_readiness = _load(enterprise_readiness_path)
     package_doctor = _load(package_doctor_path)
     artifacts = {
         "release_manifest": _artifact(release_manifest_path, "harness.local-executable-release/v1"),
@@ -97,6 +99,7 @@ def build_report(
         "tool_contract": _artifact(tool_contract_path, "harness.tool-integration-contract/v1"),
         "runtime_contract": _artifact(runtime_contract_path, "harness.runtime-activation-contract/v1"),
         "codex_mcp_contract": _artifact(codex_mcp_contract_path, "harness.codex-mcp-launch-contract/v1"),
+        "enterprise_readiness": _artifact(enterprise_readiness_path, "harness.enterprise-readiness-report/v1"),
         "package_doctor": _artifact(package_doctor_path, "harness.package-ship-doctor/v1"),
     }
     verified_facts = []
@@ -148,6 +151,12 @@ def build_report(
             "package_doctor_present": bool(package_doctor),
             "package_doctor_verdict": (package_doctor.get("summary") or {}).get("verdict") if package_doctor else None,
             "package_doctor_hard_failures": (package_doctor.get("summary") or {}).get("hard_failures") if package_doctor else None,
+        },
+        "enterprise_readiness": {
+            "schema": "harness.architecture-report.enterprise-readiness/v1",
+            "summary": enterprise_readiness.get("summary", {}),
+            "tools": [row.get("tool") for row in enterprise_readiness.get("tools", []) if isinstance(row, dict)],
+            "report_present": bool(enterprise_readiness),
         },
         "verified_facts": verified_facts,
         "assumptions": assumptions,
@@ -232,6 +241,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--tool-contract", default="")
     parser.add_argument("--runtime-contract", default="")
     parser.add_argument("--codex-mcp-contract", default="")
+    parser.add_argument("--enterprise-readiness", default="")
     parser.add_argument("--package-doctor", default="")
     parser.add_argument("--store-root", default="C:/tmp/harness_file_store")
     parser.add_argument("--out", default="")
@@ -247,6 +257,7 @@ def main(argv: list[str] | None = None) -> int:
         tool_contract_path=Path(args.tool_contract) if args.tool_contract else dist / "tool_integration_contract.local.json",
         runtime_contract_path=Path(args.runtime_contract) if args.runtime_contract else dist / "runtime_activation_contract.local.json",
         codex_mcp_contract_path=Path(args.codex_mcp_contract) if args.codex_mcp_contract else dist / "codex_mcp_launch_contract.local.json",
+        enterprise_readiness_path=Path(args.enterprise_readiness) if args.enterprise_readiness else dist / "enterprise_readiness_report.local.json",
         package_doctor_path=Path(args.package_doctor) if args.package_doctor else dist / "packages" / "local-harness-dev-local.doctor.json",
     )
     markdown = render_markdown(report)

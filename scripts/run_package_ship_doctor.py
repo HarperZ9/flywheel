@@ -31,7 +31,9 @@ REQUIRED_BUNDLE_FILES = [
     "config/codex_mcp_launch_contract.local.json",
     "config/codex_mcp_launch_contract.local.md",
     "config/harness_architecture_report.local.json",
+    "config/enterprise_readiness_report.local.json",
     "docs/harness_architecture_report.local.md",
+    "docs/enterprise_readiness_report.local.md",
     "manifest/harness_executable_manifest.local.json",
     "manifest/harness_executable_manifest.local.md",
     "docs/HARNESS-PACKAGING.md",
@@ -167,6 +169,7 @@ def _check_contract_schemas(summary: dict[str, Any]) -> dict[str, Any]:
         "config/runtime_activation_contract.local.json": "harness.runtime-activation-contract/v1",
         "config/codex_mcp_launch_contract.local.json": "harness.codex-mcp-launch-contract/v1",
         "config/harness_architecture_report.local.json": "harness.architecture-report/v1",
+        "config/enterprise_readiness_report.local.json": "harness.enterprise-readiness-report/v1",
         "manifest/harness_executable_manifest.local.json": "harness.executable-manifest/v1",
     }
     rows = []
