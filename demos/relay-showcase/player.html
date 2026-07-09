@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>relay-showcase | demo player</title>
+<style>
+  :root {
+    --bg: #0b0f14; --panel: #10161d; --edge: #1f2a35; --ink: #d7e0e8;
+    --dim: #7b8a97; --green: #4ec9a4; --amber: #e0af68; --red: #e06c75;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font-family: "Cascadia Mono", "Consolas", "Courier New", monospace;
+  }
+  main { width: min(960px, calc(100vw - 24px)); margin: 0 auto; padding: 28px 0 60px; }
+  header { display: flex; flex-wrap: wrap; gap: 8px 18px; align-items: baseline; margin-bottom: 14px; }
+  h1 { margin: 0; font-size: 1.15rem; letter-spacing: 0.04em; color: var(--green); }
+  .meta { color: var(--dim); font-size: 0.78rem; }
+  .terminal {
+    background: var(--panel); border: 1px solid var(--edge); border-radius: 8px;
+    min-height: 340px; padding: 16px 18px; white-space: pre-wrap; overflow-wrap: anywhere;
+    font-size: 0.84rem; line-height: 1.5;
+  }
+  .titlebar { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--edge); }
+  .dot.r { background: var(--red); } .dot.a { background: var(--amber); } .dot.g { background: var(--green); }
+  .stepname { color: var(--dim); font-size: 0.78rem; margin-left: 8px; }
+  .cmd { color: var(--amber); }
+  .out { color: var(--ink); }
+  .fail { color: var(--red); }
+  .cursor { display: inline-block; width: 0.55em; height: 1em; background: var(--green);
+            vertical-align: text-bottom; animation: blink 0.9s steps(1) infinite; }
+  @keyframes blink { 50% { opacity: 0; } }
+  .caption {
+    margin-top: 12px; padding: 10px 14px; border-left: 3px solid var(--green);
+    background: rgba(78, 201, 164, 0.07); color: var(--ink);
+    font-size: 0.86rem; line-height: 1.55; min-height: 2.6em;
+  }
+  .controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 14px; }
+  button {
+    background: var(--panel); color: var(--ink); border: 1px solid var(--edge);
+    border-radius: 6px; padding: 7px 14px; font: inherit; font-size: 0.8rem; cursor: pointer;
+  }
+  button:hover { border-color: var(--green); color: var(--green); }
+  .status { color: var(--dim); font-size: 0.78rem; margin-left: auto; }
+  .exit-ok { color: var(--green); } .exit-bad { color: var(--red); }
+  progress { width: 100%; height: 4px; margin-top: 10px; accent-color: var(--green); }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>relay-showcase</h1>
+    <span class="meta">recorded 2026-07-09T19:35:05.154290Z</span>
+    <span class="meta">3 steps, total runtime 577 ms</span>
+    <span class="meta">receipt sha256:13f27a74d643d152</span>
+  </header>
+  <div class="titlebar">
+    <span class="dot r"></span><span class="dot a"></span><span class="dot g"></span>
+    <span class="stepname" id="stepname"></span>
+  </div>
+  <div class="terminal" id="terminal"></div>
+  <div class="caption" id="caption"></div>
+  <progress id="bar" max="1" value="0"></progress>
+  <div class="controls">
+    <button id="play">Play</button>
+    <button id="prev">Prev step</button>
+    <button id="next">Next step</button>
+    <button id="restart">Restart</button>
+    <span class="status" id="status"></span>
+  </div>
+</main>
+<script id="transcript-data" type="application/json">{"schema": "harness.demo-transcript/v1", "name": "relay-showcase", "timestamp_utc": "2026-07-09T19:35:05.154290Z", "dry_run": false, "step_count": 3, "total_duration_ms": 577, "steps": [{"index": 0, "title": "What Relay is", "narration": "Relay is a coding agent that lives on your machine. It talks to your local model tiers first and falls over gracefully if one is asleep, and it stamps every turn with a receipt id so even offline work is witnessed.", "command": "echo relay - a local-first coding agent with automatic failover and per-turn receipts", "mode": "live", "exit_code": 0, "duration_ms": 19, "stdout": "relay - a local-first coding agent with automatic failover and per-turn receipts\n", "stderr": "", "output": "relay - a local-first coding agent with automatic failover and per-turn receipts\n", "output_sha256": "e1810420a11f02a608b826521d570a6c3f1f1c5658e8d07970a3575f3652e255"}, {"index": 1, "title": "The capability surface", "narration": "One CLI, a REPL or a one-shot prompt, an optional gated tool loop for reading and editing files, and MCP on the side. No hosted account is ever touched. This is autonomy that stays on your desk.", "command": "python -m relay --help", "mode": "live", "exit_code": 0, "duration_ms": 265, "stdout": "usage: relay [-h] [--health] [--backend BACKEND] [--model MODEL] [--file FILE]\n             [--system SYSTEM] [--max-tokens MAX_TOKENS]\n             [--temperature TEMPERATURE] [--seed SEED] [--serve-url SERVE_URL]\n             [--ollama-url OLLAMA_URL] [--json] [--agent] [--root ROOT]\n             [--allow-write] [--allow-exec] [--max-steps MAX_STEPS]\n             [--save SAVE] [--auto-commit] [--test-cmd TEST_CMD] [--stream]\n             [--online] [--providers PROVIDERS] [--mcp]\n             [prompt]\n\nlocal_agent_cli.py \u2014 CLI/REPL for the standalone local agent (offline tier).\npython -m relay.local_agent_cli --health # which local tiers are live? python\n-m relay.local_agent_cli \"explain this fn\" --file foo.py python -m\nrelay.local_agent_cli # interactive REPL Runs entirely on local models\n(serve.py's trained 14B/32B, or Ollama), with automatic failover. Prints a\nper-turn receipt id so even offline turns are witnessed. No hosted account is\ntouched.\n\npositional arguments:\n  prompt                one-shot prompt; omit for a REPL\n\noptions:\n  -h, --help            show this help message and exit\n  --health              report live local tiers and exit\n  --backend BACKEND     force a backend by name (auto|serve|ollama|<provider-\n                        mode>)\n  --model MODEL         force an Ollama model name\n  --file FILE           inject a file as context (repeatable)\n  --system SYSTEM       override the system prompt\n  --max-tokens MAX_TOKENS\n  --temperature TEMPERATURE\n  --seed SEED\n  --serve-url SERVE_URL\n  --ollama-url OLLAMA_URL\n  --json                print the full response dict\n  --agent               run the prompt as an agentic task with gated tools + a\n                        witnessed ledger\n  --root ROOT           sandbox root for file/exec tools (--agent)\n  --allow-write\n  --allow-exec\n  --max-steps MAX_STEPS\n  --save SAVE           save the session ledger to this JSONL path\n  --auto-commit         git-commit the changes after an --agent run (existing\n                        repo only)\n  --test-cmd TEST_CMD   test command to gate on: the agent repairs until it\n                        passes (needs --allow-exec)\n  --stream              stream tokens as they arrive (one-shot)\n  --online              add the online provider ladder\n                        (codex/claude/gemini/deepseek)\n  --providers PROVIDERS\n                        comma list to restrict online providers (default: all\n                        configured)\n  --mcp                 run as a stdio MCP server\n", "stderr": "", "output": "usage: relay [-h] [--health] [--backend BACKEND] [--model MODEL] [--file FILE]\n             [--system SYSTEM] [--max-tokens MAX_TOKENS]\n             [--temperature TEMPERATURE] [--seed SEED] [--serve-url SERVE_URL]\n             [--ollama-url OLLAMA_URL] [--json] [--agent] [--root ROOT]\n             [--allow-write] [--allow-exec] [--max-steps MAX_STEPS]\n             [--save SAVE] [--auto-commit] [--test-cmd TEST_CMD] [--stream]\n             [--online] [--providers PROVIDERS] [--mcp]\n             [prompt]\n\nlocal_agent_cli.py \u2014 CLI/REPL for the standalone local agent (offline tier).\npython -m relay.local_agent_cli --health # which local tiers are live? python\n-m relay.local_agent_cli \"explain this fn\" --file foo.py python -m\nrelay.local_agent_cli # interactive REPL Runs entirely on local models\n(serve.py's trained 14B/32B, or Ollama), with automatic failover. Prints a\nper-turn receipt id so even offline turns are witnessed. No hosted account is\ntouched.\n\npositional arguments:\n  prompt                one-shot prompt; omit for a REPL\n\noptions:\n  -h, --help            show this help message and exit\n  --health              report live local tiers and exit\n  --backend BACKEND     force a backend by name (auto|serve|ollama|<provider-\n                        mode>)\n  --model MODEL         force an Ollama model name\n  --file FILE           inject a file as context (repeatable)\n  --system SYSTEM       override the system prompt\n  --max-tokens MAX_TOKENS\n  --temperature TEMPERATURE\n  --seed SEED\n  --serve-url SERVE_URL\n  --ollama-url OLLAMA_URL\n  --json                print the full response dict\n  --agent               run the prompt as an agentic task with gated tools + a\n                        witnessed ledger\n  --root ROOT           sandbox root for file/exec tools (--agent)\n  --allow-write\n  --allow-exec\n  --max-steps MAX_STEPS\n  --save SAVE           save the session ledger to this JSONL path\n  --auto-commit         git-commit the changes after an --agent run (existing\n                        repo only)\n  --test-cmd TEST_CMD   test command to gate on: the agent repairs until it\n                        passes (needs --allow-exec)\n  --stream              stream tokens as they arrive (one-shot)\n  --online              add the online provider ladder\n                        (codex/claude/gemini/deepseek)\n  --providers PROVIDERS\n                        comma list to restrict online providers (default: all\n                        configured)\n  --mcp                 run as a stdio MCP server\n", "output_sha256": "985d781ee72d80a19a195e54dcb1ebe61366652663f2357742340ad461ba2254"}, {"index": 2, "title": "Which local tiers are live", "narration": "This is the reachability check, and it loads nothing. It simply reports which local tiers are up, the trained serve endpoint and the Ollama fallback, so Relay always knows where it can route next.", "command": "python -m relay --health", "mode": "live", "exit_code": 0, "duration_ms": 293, "stdout": "{\n  \"any_live\": true,\n  \"tiers\": [\n    {\n      \"backend\": \"serve\",\n      \"healthy\": true,\n      \"detail\": \"http://127.0.0.1:8765\"\n    },\n    {\n      \"backend\": \"ollama\",\n      \"healthy\": true,\n      \"detail\": \"flywheel-local-coder-14b:latest\"\n    }\n  ]\n}\n", "stderr": "", "output": "{\n  \"any_live\": true,\n  \"tiers\": [\n    {\n      \"backend\": \"serve\",\n      \"healthy\": true,\n      \"detail\": \"http://127.0.0.1:8765\"\n    },\n    {\n      \"backend\": \"ollama\",\n      \"healthy\": true,\n      \"detail\": \"flywheel-local-coder-14b:latest\"\n    }\n  ]\n}\n", "output_sha256": "16a0ab9677cb216b3dfffafdabb1a4de3874cdfcfebc224076fe8689bb7eb2f3"}], "receipt_sha256": "13f27a74d643d152e8f5351b9898c4ff30c52719e9f2fad7fd73e9f068166178"}</script>
+<script>
+(function () {
+  "use strict";
+  var transcript = JSON.parse(document.getElementById("transcript-data").textContent);
+  var steps = transcript.steps || [];
+  var term = document.getElementById("terminal");
+  var caption = document.getElementById("caption");
+  var stepname = document.getElementById("stepname");
+  var statusEl = document.getElementById("status");
+  var bar = document.getElementById("bar");
+  var playBtn = document.getElementById("play");
+  var CHARS_PER_TICK = 6, TICK_MS = 12, REVEAL_PAUSE_MS = 1400;
+  var stepIndex = 0, charIndex = 0, playing = false, timer = null;
+
+  function fullText(step) {
+    return "$ " + step.command + "\n" + (step.output || "") +
+      "\n[exit " + step.exit_code + " in " + step.duration_ms + " ms]";
+  }
+  function paint(partial) {
+    var step = steps[stepIndex];
+    if (!step) { return; }
+    var text = fullText(step);
+    var shown = partial ? text.slice(0, charIndex) : text;
+    term.textContent = "";
+    var cmdEnd = ("$ " + step.command).length;
+    var cmdSpan = document.createElement("span");
+    cmdSpan.className = "cmd";
+    cmdSpan.textContent = shown.slice(0, cmdEnd);
+    var outSpan = document.createElement("span");
+    outSpan.className = step.exit_code === 0 ? "out" : "out fail";
+    outSpan.textContent = shown.slice(cmdEnd);
+    term.appendChild(cmdSpan);
+    term.appendChild(outSpan);
+    if (partial && shown.length < text.length) {
+      var cur = document.createElement("span");
+      cur.className = "cursor";
+      term.appendChild(cur);
+    }
+    stepname.textContent = "step " + (stepIndex + 1) + "/" + steps.length + ": " + step.title;
+    caption.textContent = step.narration;
+    var exitCls = step.exit_code === 0 ? "exit-ok" : "exit-bad";
+    statusEl.innerHTML = "";
+    var tag = document.createElement("span");
+    tag.className = exitCls;
+    tag.textContent = "exit " + step.exit_code;
+    statusEl.appendChild(document.createTextNode(step.mode + " | " + step.duration_ms + " ms | "));
+    statusEl.appendChild(tag);
+    bar.value = steps.length ? (stepIndex + (partial ? shown.length / Math.max(text.length, 1) : 1)) / steps.length : 0;
+  }
+  function tick() {
+    var step = steps[stepIndex];
+    if (!step) { stop(); return; }
+    var total = fullText(step).length;
+    if (charIndex < total) {
+      charIndex = Math.min(total, charIndex + CHARS_PER_TICK);
+      paint(true);
+      timer = setTimeout(tick, TICK_MS);
+    } else if (stepIndex < steps.length - 1) {
+      timer = setTimeout(function () { stepIndex += 1; charIndex = 0; tick(); }, REVEAL_PAUSE_MS);
+    } else {
+      stop();
+      paint(false);
+    }
+  }
+  function stop() {
+    playing = false;
+    if (timer) { clearTimeout(timer); timer = null; }
+    playBtn.textContent = "Play";
+  }
+  function start() {
+    if (!steps.length) { return; }
+    playing = true;
+    playBtn.textContent = "Pause";
+    tick();
+  }
+  playBtn.addEventListener("click", function () { playing ? stop() : start(); });
+  document.getElementById("next").addEventListener("click", function () {
+    stop(); stepIndex = Math.min(steps.length - 1, stepIndex + 1); charIndex = 0; paint(false);
+  });
+  document.getElementById("prev").addEventListener("click", function () {
+    stop(); stepIndex = Math.max(0, stepIndex - 1); charIndex = 0; paint(false);
+  });
+  document.getElementById("restart").addEventListener("click", function () {
+    stop(); stepIndex = 0; charIndex = 0; paint(true); start();
+  });
+  if (steps.length) { charIndex = 0; paint(true); }
+})();
+</script>
+</body>
+</html>

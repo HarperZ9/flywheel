@@ -1,0 +1,50 @@
+{
+  "schema": "harness.demo-transcript/v1",
+  "name": "plexus-showcase",
+  "timestamp_utc": "2026-07-09T19:35:05.813941Z",
+  "dry_run": false,
+  "step_count": 3,
+  "total_duration_ms": 450,
+  "steps": [
+    {
+      "index": 0,
+      "title": "What Plexus is",
+      "narration": "Plexus is the connective tissue. It looks across the flagships, finds which one produces a capability another one needs, and draws the wiring between them.",
+      "command": "echo plexus - a cross-flagship interop mesh that finds and wires real capability edges",
+      "mode": "live",
+      "exit_code": 0,
+      "duration_ms": 24,
+      "stdout": "plexus - a cross-flagship interop mesh that finds and wires real capability edges\n",
+      "stderr": "",
+      "output": "plexus - a cross-flagship interop mesh that finds and wires real capability edges\n",
+      "output_sha256": "1450b25515256faa9864918e75c765d7fc42196f95825a25e44843a862509b7b"
+    },
+    {
+      "index": 1,
+      "title": "The capability surface",
+      "narration": "Discover the mesh, list producer and consumer pairs, plan the upstream pipeline that feeds an organ, or route a path from one tool to another. It turns a pile of separate tools into a graph you can reason about.",
+      "command": "python -m plexus --help",
+      "mode": "live",
+      "exit_code": 0,
+      "duration_ms": 213,
+      "stdout": "usage: plexus [-h] [--version]\n              {discover,wiring,validate,plan,route,graph,run,export,mcp} ...\n\ncli.py \u2014 plexus command line. plexus discover [--builtin] [--dir DIR] # the\nmesh: organs, edges, orphans plexus wiring [...] # capability -> (producer,\nconsumer) pairs plexus plan --goal ORGAN [...] # upstream pipeline that feeds\nORGAN plexus route --from A --to B [...] # capability path from A to B plexus\nvalidate [...] # manifest problems (exit 1 if any)\n\npositional arguments:\n  {discover,wiring,validate,plan,route,graph,run,export,mcp}\n\noptions:\n  -h, --help            show this help message and exit\n  --version             show program's version number and exit\n",
+      "stderr": "",
+      "output": "usage: plexus [-h] [--version]\n              {discover,wiring,validate,plan,route,graph,run,export,mcp} ...\n\ncli.py \u2014 plexus command line. plexus discover [--builtin] [--dir DIR] # the\nmesh: organs, edges, orphans plexus wiring [...] # capability -> (producer,\nconsumer) pairs plexus plan --goal ORGAN [...] # upstream pipeline that feeds\nORGAN plexus route --from A --to B [...] # capability path from A to B plexus\nvalidate [...] # manifest problems (exit 1 if any)\n\npositional arguments:\n  {discover,wiring,validate,plan,route,graph,run,export,mcp}\n\noptions:\n  -h, --help            show this help message and exit\n  --version             show program's version number and exit\n",
+      "output_sha256": "1a1cd336e1d1cba0cca96839e0f1db2a77be5f0c6f1aefc1e87f2b41132ae6f2"
+    },
+    {
+      "index": 2,
+      "title": "The live mesh",
+      "narration": "And here is the mesh itself: the organs, and the real edges between them, each one pointing at the exact function that carries the capability across. Mneme feeding a thesis into Crucible, Gather feeding a digest. The whole spine, discovered rather than declared.",
+      "command": "python -m plexus discover --builtin",
+      "mode": "live",
+      "exit_code": 0,
+      "duration_ms": 213,
+      "stdout": "{\n  \"organs\": [\n    \"crucible\",\n    \"forum\",\n    \"gather\",\n    \"index\",\n    \"mneme\"\n  ],\n  \"edges\": [\n    {\n      \"producer\": \"mneme\",\n      \"consumer\": \"crucible\",\n      \"capability\": \"crucible.thesis/1\",\n      \"self_loop\": false,\n      \"via\": \"src/mneme/compose.py:to_crucible_thesis\"\n    },\n    {\n      \"producer\": \"gather\",\n      \"consumer\": \"crucible\",\n      \"capability\": \"gather.digest/1\",\n      \"self_loop\": false,\n      \"via\": \"src/gather/digest.py:Digest.to_json\"\n    },\n    {\n      \"producer\": \"gather\",\n      \"consumer\": \"mneme\",\n      \"capability\": \"gather.items/1\",\n      \"self_loop\": false,\n      \"via\": \"src/gather/digest.py:_receipt\"\n    },\n    {\n      \"producer\": \"index\",\n      \"consumer\": \"index\",\n      \"capability\": \"index.invalidation-pin/1\",\n      \"self_loop\": true,\n      \"via\": \"src/index_graph/freshness/invalidate.py:mint_pin\"\n    },\n    {\n      \"producer\": \"index\",\n      \"consumer\": \"crucible\",\n      \"capability\": \"index.verification/1\",\n      \"self_loop\": false,\n      \"via\": \"src/index_graph/verify.py:build_verification\"\n    },\n    {\n      \"producer\": \"index\",\n      \"consumer\": \"index\",\n      \"capability\": \"index.wiki/1\",\n      \"self_loop\": true,\n      \"via\": \"src/index_graph/wiki/pack.py:build_wiki_pack\"\n    },\n    {\n      \"producer\": \"crucible\",\n      \"consumer\": \"index\",\n      \"capability\": \"project-telos.flagship-action/v1\",\n      \"self_loop\": false,\n      \"via\": \"src/crucible/flagship.py:envelope\"\n    },\n    {\n      \"producer\": \"forum\",\n      \"consumer\": \"index\",\n      \"capability\": \"project-telos.flagship-action/v1\",\n      \"self_loop\": false,\n      \"via\": \"src/forum/flagship.py:envelope\"\n    },\n    {\n      \"producer\": \"gather\",\n      \"consumer\": \"index\",\n      \"capability\": \"project-telos.flagship-action/v1\",\n      \"self_loop\": false,\n      \"via\": \"src/gather/flagship.py:envelope\"\n    },\n    {\n      \"producer\": \"index\",\n      \"consumer\": \"index\",\n      \"capability\": \"project-telos.flagship-action/v1\",\n      \"self_loop\": true,\n      \"via\": \"src/index_graph/flagship.py:envelope\"\n    }\n  ],\n  \"orphans\": {\n    \"unmet_inputs\": [\n      \"conversation-turns/1\",\n      \"crucible.measurements/1\",\n      \"external-agent-trace/1\",\n      \"gather.run-config/1\",\n      \"provenance.verdict/1\"\n    ],\n    \"unconsumed_outputs\": [\n      \"crucible.assessment/1\",\n      \"crucible.thesis-export/1\",\n      \"forum.context-capsule/v1\",\n      \"forum.flight-recorder/1\",\n      \"gather.catalog-digest/1\",\n      \"mneme.crucible-export/1\",\n      \"mneme.drift-report/1\",\n      \"mneme.provenance-chain/1\",\n      \"mneme.recall/1\",\n      \"project-telos.action-receipt/v1\",\n      \"project-telos.context-envelope/v1\",\n      \"project-telos.crucible.measurement-gate/v1\"\n    ]\n  }\n}\n",
+      "stderr": "",
+      "output": "{\n  \"organs\": [\n    \"crucible\",\n    \"forum\",\n    \"gather\",\n    \"index\",\n    \"mneme\"\n  ],\n  \"edges\": [\n    {\n      \"producer\": \"mneme\",\n      \"consumer\": \"crucible\",\n      \"capability\": \"crucible.thesis/1\",\n      \"self_loop\": false,\n      \"via\": \"src/mneme/compose.py:to_crucible_thesis\"\n    },\n    {\n      \"producer\": \"gather\",\n      \"consumer\": \"crucible\",\n      \"capability\": \"gather.digest/1\",\n      \"self_loop\": false,\n      \"via\": \"src/gather/digest.py:Digest.to_json\"\n    },\n    {\n      \"producer\": \"gather\",\n      \"consumer\": \"mneme\",\n      \"capability\": \"gather.items/1\",\n      \"self_loop\": false,\n      \"via\": \"src/gather/digest.py:_receipt\"\n    },\n    {\n      \"producer\": \"index\",\n      \"consumer\": \"index\",\n      \"capability\": \"index.invalidation-pin/1\",\n      \"self_loop\": true,\n      \"via\": \"src/index_graph/freshness/invalidate.py:mint_pin\"\n    },\n    {\n      \"producer\": \"index\",\n      \"consumer\": \"crucible\",\n      \"capability\": \"index.verification/1\",\n      \"self_loop\": false,\n      \"via\": \"src/index_graph/verify.py:build_verification\"\n    },\n    {\n      \"producer\": \"index\",\n      \"consumer\": \"index\",\n      \"capability\": \"index.wiki/1\",\n      \"self_loop\": true,\n      \"via\": \"src/index_graph/wiki/pack.py:build_wiki_pack\"\n    },\n    {\n      \"producer\": \"crucible\",\n      \"consumer\": \"index\",\n      \"capability\": \"project-telos.flagship-action/v1\",\n      \"self_loop\": false,\n      \"via\": \"src/crucible/flagship.py:envelope\"\n    },\n    {\n      \"producer\": \"forum\",\n      \"consumer\": \"index\",\n      \"capability\": \"project-telos.flagship-action/v1\",\n      \"self_loop\": false,\n      \"via\": \"src/forum/flagship.py:envelope\"\n    },\n    {\n      \"producer\": \"gather\",\n      \"consumer\": \"index\",\n      \"capability\": \"project-telos.flagship-action/v1\",\n      \"self_loop\": false,\n      \"via\": \"src/gather/flagship.py:envelope\"\n    },\n    {\n      \"producer\": \"index\",\n      \"consumer\": \"index\",\n      \"capability\": \"project-telos.flagship-action/v1\",\n      \"self_loop\": true,\n      \"via\": \"src/index_graph/flagship.py:envelope\"\n    }\n  ],\n  \"orphans\": {\n    \"unmet_inputs\": [\n      \"conversation-turns/1\",\n      \"crucible.measurements/1\",\n      \"external-agent-trace/1\",\n      \"gather.run-config/1\",\n      \"provenance.verdict/1\"\n    ],\n    \"unconsumed_outputs\": [\n      \"crucible.assessment/1\",\n      \"crucible.thesis-export/1\",\n      \"forum.context-capsule/v1\",\n      \"forum.flight-recorder/1\",\n      \"gather.catalog-digest/1\",\n      \"mneme.crucible-export/1\",\n      \"mneme.drift-report/1\",\n      \"mneme.provenance-chain/1\",\n      \"mneme.recall/1\",\n      \"project-telos.action-receipt/v1\",\n      \"project-telos.context-envelope/v1\",\n      \"project-telos.crucible.measurement-gate/v1\"\n    ]\n  }\n}\n",
+      "output_sha256": "bcfb800ff221d6bd48071adefbf3a85baefe61c8dc01779ba0fb4a4fa727e1ad"
+    }
+  ],
+  "receipt_sha256": "2c27951cd1ef6a93727cfc3c7534a21572ef1095fe990ef50492cbfdab224a03"
+}

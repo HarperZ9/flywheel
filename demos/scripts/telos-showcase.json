@@ -1,0 +1,26 @@
+{
+  "name": "telos-showcase",
+  "description": "Telos: the local-first MCP workbench that gathers every flagship's receipts, manifests, and verification packets into one engine.",
+  "steps": [
+    {
+      "title": "What Telos is",
+      "command": "echo telos - local-first MCP workbench that unifies every flagship into one engine",
+      "narration": "Telos is the primary engine that takes the stage. It is a local-first workbench that speaks MCP and brings every other flagship together under one roof."
+    },
+    {
+      "title": "The full capability map",
+      "command": "node C:/dev/public/telos/demo/catalog.mjs --summary",
+      "narration": "Here is the wonder of it: sixty-nine tools across gather, index, forum, crucible, and telos itself, all reachable through one stdio server on your own machine. This is the whole spine, gathered into a single surface."
+    },
+    {
+      "title": "A readiness check",
+      "command": "node C:/dev/public/telos/demo/telos.mjs doctor",
+      "narration": "Telos runs its own doctor and reports each check as a verdict. The engine that hosts everyone else keeps a live readiness score on itself, right down to the certificate demo and the honest unverifiable path."
+    },
+    {
+      "title": "A status receipt",
+      "command": "node C:/dev/public/telos/demo/telos.mjs status",
+      "narration": "And it emits its state as a structured receipt with a schema and a verdict. Not a screenshot of health, but a record you can re-read and re-check whenever you want."
+    }
+  ]
+}

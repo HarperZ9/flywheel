@@ -1,0 +1,21 @@
+{
+  "name": "plexus-showcase",
+  "description": "Plexus: an interop mesh that discovers the capabilities each flagship produces and consumes, then wires them together.",
+  "steps": [
+    {
+      "title": "What Plexus is",
+      "command": "echo plexus - a cross-flagship interop mesh that finds and wires real capability edges",
+      "narration": "Plexus is the connective tissue. It looks across the flagships, finds which one produces a capability another one needs, and draws the wiring between them."
+    },
+    {
+      "title": "The capability surface",
+      "command": "python -m plexus --help",
+      "narration": "Discover the mesh, list producer and consumer pairs, plan the upstream pipeline that feeds an organ, or route a path from one tool to another. It turns a pile of separate tools into a graph you can reason about."
+    },
+    {
+      "title": "The live mesh",
+      "command": "python -m plexus discover --builtin",
+      "narration": "And here is the mesh itself: the organs, and the real edges between them, each one pointing at the exact function that carries the capability across. Mneme feeding a thesis into Crucible, Gather feeding a digest. The whole spine, discovered rather than declared."
+    }
+  ]
+}

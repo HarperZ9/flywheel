@@ -1,0 +1,50 @@
+{
+  "schema": "harness.demo-transcript/v1",
+  "name": "crucible-showcase",
+  "timestamp_utc": "2026-07-09T19:34:08.481166Z",
+  "dry_run": false,
+  "step_count": 3,
+  "total_duration_ms": 582,
+  "steps": [
+    {
+      "index": 0,
+      "title": "What Crucible is",
+      "narration": "Crucible is the judgment organ. You register a claim with the way it could be proven wrong, and Crucible measures it and records a verdict you can re-check.",
+      "command": "echo crucible - accountable judgment of ideas with witnessed verdicts",
+      "mode": "live",
+      "exit_code": 0,
+      "duration_ms": 20,
+      "stdout": "crucible - accountable judgment of ideas with witnessed verdicts\n",
+      "stderr": "",
+      "output": "crucible - accountable judgment of ideas with witnessed verdicts\n",
+      "output_sha256": "22ae95ae7972db6069de593ace2bf60f93405ce305d2344e61aa72970ac41dd2"
+    },
+    {
+      "index": 1,
+      "title": "The capability surface",
+      "narration": "The loop is all here: register a thesis, steelman the test that would settle it, measure against a substrate, then witness the outcome as MATCH, DRIFT, or an honest UNVERIFIABLE. It is a discipline for turning opinions into verdicts.",
+      "command": "python -m crucible --help",
+      "mode": "live",
+      "exit_code": 0,
+      "duration_ms": 288,
+      "stdout": "usage: crucible [-h] [--version]\n                {status,doctor,demo,register,export,assess,steelman,measure,run,measurement-gate,refine,registry,verdicts,recheck,review,report,batch,drift,ci,mcp}\n                ...\n\ncrucible: accountable judgment of ideas.\n\npositional arguments:\n  {status,doctor,demo,register,export,assess,steelman,measure,run,measurement-gate,refine,registry,verdicts,recheck,review,report,batch,drift,ci,mcp}\n    status              emit Crucible's Project Telos operator-spine status\n    doctor              check Crucible's operator-spine readiness\n    demo                show Crucible's operator-spine demo command\n    register            register a thesis (claims + falsification) into a\n                        registry\n    export              publication-gated export of a thesis contract\n    assess              compute and witness a verdict per claim\n                        (MATCH/DRIFT/UNVERIFIABLE)\n    steelman            propose the test that would settle each claim (the\n                        null default restates the claim's own falsification;\n                        custom edges plug in through the API)\n    measure             measure each claim against a substrate oracle, then\n                        witness the verdicts\n    run                 run a complete steelman, measurement, witnessed\n                        assessment, and optional report\n    measurement-gate    verify a Telos creative measurement packet\n    refine              refine over rounds of substrate until the thesis is\n                        cohesively verified, or report the weakest claim\n    registry            inspect a stored registry: list, verify, stats,\n                        search, or prune\n    verdicts            list or re-check witnessed assessments in a registry\n    recheck             inspect or replay oracle-level measurement descriptors\n    review              validate a cleanroom review bundle before verifier\n                        handoff\n    report              render a Markdown report for a witnessed assessment\n    batch               assess a manifest of thesis jobs into a registry\n    drift               compare the latest two witnessed assessments in a\n                        registry\n    ci                  CI regression gate: compare a registry's verdicts\n                        against a baseline, fail on regression, emit a PR-\n                        comment Markdown summary\n    mcp                 serve Crucible tools over MCP stdio\n\noptions:\n  -h, --help            show this help message and exit\n  --version             show program's version number and exit\n",
+      "stderr": "",
+      "output": "usage: crucible [-h] [--version]\n                {status,doctor,demo,register,export,assess,steelman,measure,run,measurement-gate,refine,registry,verdicts,recheck,review,report,batch,drift,ci,mcp}\n                ...\n\ncrucible: accountable judgment of ideas.\n\npositional arguments:\n  {status,doctor,demo,register,export,assess,steelman,measure,run,measurement-gate,refine,registry,verdicts,recheck,review,report,batch,drift,ci,mcp}\n    status              emit Crucible's Project Telos operator-spine status\n    doctor              check Crucible's operator-spine readiness\n    demo                show Crucible's operator-spine demo command\n    register            register a thesis (claims + falsification) into a\n                        registry\n    export              publication-gated export of a thesis contract\n    assess              compute and witness a verdict per claim\n                        (MATCH/DRIFT/UNVERIFIABLE)\n    steelman            propose the test that would settle each claim (the\n                        null default restates the claim's own falsification;\n                        custom edges plug in through the API)\n    measure             measure each claim against a substrate oracle, then\n                        witness the verdicts\n    run                 run a complete steelman, measurement, witnessed\n                        assessment, and optional report\n    measurement-gate    verify a Telos creative measurement packet\n    refine              refine over rounds of substrate until the thesis is\n                        cohesively verified, or report the weakest claim\n    registry            inspect a stored registry: list, verify, stats,\n                        search, or prune\n    verdicts            list or re-check witnessed assessments in a registry\n    recheck             inspect or replay oracle-level measurement descriptors\n    review              validate a cleanroom review bundle before verifier\n                        handoff\n    report              render a Markdown report for a witnessed assessment\n    batch               assess a manifest of thesis jobs into a registry\n    drift               compare the latest two witnessed assessments in a\n                        registry\n    ci                  CI regression gate: compare a registry's verdicts\n                        against a baseline, fail on regression, emit a PR-\n                        comment Markdown summary\n    mcp                 serve Crucible tools over MCP stdio\n\noptions:\n  -h, --help            show this help message and exit\n  --version             show program's version number and exit\n",
+      "output_sha256": "e11969dbf2482a93b387baa0e8e7706f146eec0f32dafc3093d69e9bdd5abcb3"
+    },
+    {
+      "index": 2,
+      "title": "A status receipt",
+      "narration": "Crucible reports its own readiness as a receipt. A tool built to judge ideas fairly has to start by being transparent about itself, and that is the seal on everything it measures.",
+      "command": "python -m crucible status",
+      "mode": "live",
+      "exit_code": 0,
+      "duration_ms": 274,
+      "stdout": "status=MATCH tool=crucible command=status\nnext: telos workflow - carry verified claims into the shared room\n",
+      "stderr": "",
+      "output": "status=MATCH tool=crucible command=status\nnext: telos workflow - carry verified claims into the shared room\n",
+      "output_sha256": "6f6eb1243a17ee0425c6b30cd1bc31400fdd53ccaba0915ce95f4cdc98415baf"
+    }
+  ],
+  "receipt_sha256": "9889bf169613299aa6282ed769e207f227d0c2075c85982fb2a2465c01adbaa2"
+}

@@ -1,0 +1,50 @@
+{
+  "schema": "harness.demo-transcript/v1",
+  "name": "gather-showcase",
+  "timestamp_utc": "2026-07-09T19:34:07.697966Z",
+  "dry_run": false,
+  "step_count": 3,
+  "total_duration_ms": 507,
+  "steps": [
+    {
+      "index": 0,
+      "title": "What Gather is",
+      "narration": "Gather is the front door for evidence. It pulls in web pages, feeds, papers, videos, and local docs, and it keeps a receipt for every source so the corpus can be checked again later.",
+      "command": "echo gather - accountable research intake with source receipts and a re-verifiable corpus",
+      "mode": "live",
+      "exit_code": 0,
+      "duration_ms": 17,
+      "stdout": "gather - accountable research intake with source receipts and a re-verifiable corpus\n",
+      "stderr": "",
+      "output": "gather - accountable research intake with source receipts and a re-verifiable corpus\n",
+      "output_sha256": "64f7e00919ad99d4b59761e08a9cc6b57365b7a203c533efe14924dab0c14205"
+    },
+    {
+      "index": 1,
+      "title": "The capability surface",
+      "narration": "One CLI reaches arXiv, RSS and Atom feeds, static web pages, PDFs, transcripts, and whole directories, all offline-friendly. Curiosity gets a well-organized intake pipe instead of a pile of open tabs.",
+      "command": "python -m gather --help",
+      "mode": "live",
+      "exit_code": 0,
+      "duration_ms": 239,
+      "stdout": "usage: gather [-h] [--version]\n              {status,doctor,demo,parse,video,web,feed,docs,arxiv,scholar,pdf,api,browser,ocr,transcribe,run,corpus,federation,caps,extract,markdown,crawl,mcp}\n              ...\n\nGather: accountable research intake.\n\npositional arguments:\n  {status,doctor,demo,parse,video,web,feed,docs,arxiv,scholar,pdf,api,browser,ocr,transcribe,run,corpus,federation,caps,extract,markdown,crawl,mcp}\n    status              emit Gather's Project Telos operator-spine status\n    doctor              check Gather's operator-spine readiness\n    demo                show Gather's operator-spine demo command\n    parse               parse a saved yt-dlp info.json (+ optional .vtt),\n                        offline, no network\n    video               fetch a video via yt-dlp (needs yt-dlp on PATH and\n                        network)\n    web                 fetch a static web page via http(s) and extract\n                        readable text\n    feed                fetch an RSS or Atom feed via http(s)\n    docs                read a local text file or a directory of them, offline\n    arxiv               fetch papers from the arXiv API by id or free-text\n                        query\n    scholar             federate OpenAlex + Semantic Scholar + Crossref, dedup\n                        by DOI, capture citation edges\n    pdf                 extract text from a local PDF (needs pdftotext on\n                        PATH)\n    api                 fetch a JSON API with a bearer token from the\n                        environment\n    browser             fetch a JS-rendered page via a headless browser (needs\n                        chromium on PATH)\n    ocr                 recognize text in a local image via tesseract (needs\n                        tesseract on PATH)\n    transcribe          transcribe a local audio file via whisper (needs\n                        whisper on PATH)\n    run                 run a multi-source gather session from a JSON config\n    corpus              inspect a stored corpus: list/verify/digest/runs/searc\n                        h/stats/prune/availability\n    federation          validate a registry, compile capture plans, or audit a\n                        policy/entity receipt\n    caps                report the web-data capabilities this install can\n                        actually use\n    extract             extract Markdown + a per-block provenance receipt from\n                        a URL or local HTML file\n    markdown            print structured Markdown for a URL or local HTML file\n    crawl               crawl a site and emit a witnessed, hash-chained crawl\n                        ledger as JSON\n    mcp                 serve Gather tools over MCP stdio\n\noptions:\n  -h, --help            show this help message and exit\n  --version             show program's version number and exit\n",
+      "stderr": "",
+      "output": "usage: gather [-h] [--version]\n              {status,doctor,demo,parse,video,web,feed,docs,arxiv,scholar,pdf,api,browser,ocr,transcribe,run,corpus,federation,caps,extract,markdown,crawl,mcp}\n              ...\n\nGather: accountable research intake.\n\npositional arguments:\n  {status,doctor,demo,parse,video,web,feed,docs,arxiv,scholar,pdf,api,browser,ocr,transcribe,run,corpus,federation,caps,extract,markdown,crawl,mcp}\n    status              emit Gather's Project Telos operator-spine status\n    doctor              check Gather's operator-spine readiness\n    demo                show Gather's operator-spine demo command\n    parse               parse a saved yt-dlp info.json (+ optional .vtt),\n                        offline, no network\n    video               fetch a video via yt-dlp (needs yt-dlp on PATH and\n                        network)\n    web                 fetch a static web page via http(s) and extract\n                        readable text\n    feed                fetch an RSS or Atom feed via http(s)\n    docs                read a local text file or a directory of them, offline\n    arxiv               fetch papers from the arXiv API by id or free-text\n                        query\n    scholar             federate OpenAlex + Semantic Scholar + Crossref, dedup\n                        by DOI, capture citation edges\n    pdf                 extract text from a local PDF (needs pdftotext on\n                        PATH)\n    api                 fetch a JSON API with a bearer token from the\n                        environment\n    browser             fetch a JS-rendered page via a headless browser (needs\n                        chromium on PATH)\n    ocr                 recognize text in a local image via tesseract (needs\n                        tesseract on PATH)\n    transcribe          transcribe a local audio file via whisper (needs\n                        whisper on PATH)\n    run                 run a multi-source gather session from a JSON config\n    corpus              inspect a stored corpus: list/verify/digest/runs/searc\n                        h/stats/prune/availability\n    federation          validate a registry, compile capture plans, or audit a\n                        policy/entity receipt\n    caps                report the web-data capabilities this install can\n                        actually use\n    extract             extract Markdown + a per-block provenance receipt from\n                        a URL or local HTML file\n    markdown            print structured Markdown for a URL or local HTML file\n    crawl               crawl a site and emit a witnessed, hash-chained crawl\n                        ledger as JSON\n    mcp                 serve Gather tools over MCP stdio\n\noptions:\n  -h, --help            show this help message and exit\n  --version             show program's version number and exit\n",
+      "output_sha256": "73865c6afb86f756ee996145b9f4b969614dde2b664f409a29d1b63ed5de4ce9"
+    },
+    {
+      "index": 2,
+      "title": "A status receipt",
+      "narration": "Gather reports its own state as a receipt. When your research rests on what a tool fetched, having the tool tell you plainly what it did is the difference between a claim and a footnote you can follow.",
+      "command": "python -m gather status",
+      "mode": "live",
+      "exit_code": 0,
+      "duration_ms": 251,
+      "stdout": "status=MATCH tool=gather command=status\nnext: index map - map workspace context for gathered sources\n",
+      "stderr": "",
+      "output": "status=MATCH tool=gather command=status\nnext: index map - map workspace context for gathered sources\n",
+      "output_sha256": "3e32f3ed87af92f28914b9289e0acd2f0ac9f65391fcfb0fc394c3cf4666af23"
+    }
+  ],
+  "receipt_sha256": "c6338a8c1eeb176acb32731eff8971f444ef6468b6a48cea77f58187ccdc083c"
+}

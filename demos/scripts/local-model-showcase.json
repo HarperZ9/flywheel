@@ -1,0 +1,26 @@
+{
+  "name": "local-model-showcase",
+  "description": "Local-model: the zero-dependency flywheel harness that gates every release with honest, re-readable receipts, all on a home machine.",
+  "steps": [
+    {
+      "title": "What the harness is",
+      "command": "echo local-model - the zero-dependency flywheel harness and its release receipts",
+      "narration": "This is the workshop the models are built in. A single front controller, running on a home machine, that turns readiness checks and benchmarks into receipts you can read on disk."
+    },
+    {
+      "title": "The front controller",
+      "command": "python scripts/run_harness_cli.py --help",
+      "narration": "One dispatcher, and every lane of the flywheel opens from it: the executable manifest, the command registry, endpoint gates, package doctors, and the model publish path. No dependencies, no cloud, just the whole surface in one place."
+    },
+    {
+      "title": "The release readiness receipt",
+      "command": "type artifacts\\exe\\model_release_readiness.local.md",
+      "narration": "Before anything ships, the harness writes itself this readiness receipt. This is the real artifact from disk, not a slide. It states plainly what is ready and what still stands between the model and release."
+    },
+    {
+      "title": "The endpoint gate receipt",
+      "command": "type artifacts\\exe\\model_endpoint_gate.local.md",
+      "narration": "And the endpoint gate is the health check for the local model servers, recorded the same honest way. A small file that remembers exactly what was observed the last time the gate ran."
+    }
+  ]
+}

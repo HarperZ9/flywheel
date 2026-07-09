@@ -1,0 +1,21 @@
+{
+  "name": "gather-showcase",
+  "description": "Gather: accountable research intake that turns sources into a re-verifiable corpus with receipts.",
+  "steps": [
+    {
+      "title": "What Gather is",
+      "command": "echo gather - accountable research intake with source receipts and a re-verifiable corpus",
+      "narration": "Gather is the front door for evidence. It pulls in web pages, feeds, papers, videos, and local docs, and it keeps a receipt for every source so the corpus can be checked again later."
+    },
+    {
+      "title": "The capability surface",
+      "command": "python -m gather --help",
+      "narration": "One CLI reaches arXiv, RSS and Atom feeds, static web pages, PDFs, transcripts, and whole directories, all offline-friendly. Curiosity gets a well-organized intake pipe instead of a pile of open tabs."
+    },
+    {
+      "title": "A status receipt",
+      "command": "python -m gather status",
+      "narration": "Gather reports its own state as a receipt. When your research rests on what a tool fetched, having the tool tell you plainly what it did is the difference between a claim and a footnote you can follow."
+    }
+  ]
+}
