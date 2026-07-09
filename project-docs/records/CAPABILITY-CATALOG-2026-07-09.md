@@ -1027,6 +1027,7 @@ Implemented files:
 What changed:
 
 - Adds metadata-only endpoint profile receipts for the 14B and 32B local model tracks.
+- Integrates a distinct 32B serve reference path by defaulting 32B profiles to `http://127.0.0.1:8767` while keeping 14B on `http://127.0.0.1:8765`; both can be overridden explicitly.
 - Emits `harness.model-endpoint-profiles/v1` with `serve` and `ollama` rows for each model.
 - Records endpoint URLs, health/generate paths, launch command templates, provider roles, root existence, and agentic backend class names without probing endpoints or reading model file bodies.
 - Extends model release readiness so endpoint profile artifacts can be attached to each 14B/32B release row.
@@ -1044,6 +1045,7 @@ What changed:
 - Hardens endpoint gate backend construction so default local backend transports remain owned by `ServeBackend` and `OllamaBackend`; injected transports are used only by tests or explicit callers.
 - Fixes local model root discovery to recognize the actual `E:\local-model-run\models\Qwen2.5-Coder-14B-Instruct` and `E:\local-model-run\models\Qwen2.5-Coder-32B-Instruct` layout.
 - Hardens live endpoint gate rows with expected-vs-observed `model_ref` checks so a 14B serve process cannot satisfy a 32B release gate.
+- Updates serve launch templates to include `SERVE_MODEL_ALIAS`, `SERVE_MODEL_REF`, and `SERVE_PORT`, including the 32B reference string `Qwen2.5-Coder-32B-Instruct (base, nf4)`.
 
 ### `classifier_friction_accountability_receipts`
 

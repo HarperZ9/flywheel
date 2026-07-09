@@ -287,6 +287,8 @@ Model endpoint profile store-sink command:
 python scripts/run_model_endpoint_profiles.py --models 14B,32B --base-root E:/local-model-run --out C:/tmp/model_endpoint_profiles_20260709.json --markdown-out C:/tmp/model_endpoint_profiles_20260709.md --store-root C:/tmp/harness_file_store
 ```
 
+When no shared `--serve-url` is passed, endpoint profiles use distinct local serve defaults: `14B` maps to `http://127.0.0.1:8765` and `32B` maps to `http://127.0.0.1:8767`. Override with `--serve-url-14b` or `--serve-url-32b` when a different launcher owns those ports.
+
 Model endpoint gate command:
 
 ```powershell
@@ -294,6 +296,8 @@ python scripts/run_model_endpoint_gate.py --profile-artifact C:/tmp/model_endpoi
 ```
 
 By default, endpoint gate failures are recorded as partial evidence and the command exits `0` so the closed-loop seed can continue when local endpoints are offline. Add `--strict-exit` for release gates that must fail the process on unavailable health or generation rows.
+
+The endpoint gate validates expected-vs-observed `model_ref`; a 14B process cannot satisfy the 32B release gate even if it is reachable and generating.
 
 Executable endpoint gate command:
 

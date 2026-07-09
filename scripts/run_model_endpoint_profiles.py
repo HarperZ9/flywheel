@@ -9,12 +9,18 @@ import sys
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlparse
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from harness.file_backed_store import FileBackedHarnessStore  # noqa: E402
 from harness.model_profiles import candidate_model_roots, model_key, model_profile  # noqa: E402
 from harness.provider_roles import provider_role  # noqa: E402
+
+DEFAULT_SERVE_URLS = {
+    "14b": "http://127.0.0.1:8765",
+    "32b": "http://127.0.0.1:8767",
+}
 
 
 def now_utc() -> str:
@@ -33,11 +39,30 @@ def _pick_root(model: str, base_root: Path) -> tuple[Path, list[str]]:
     return candidates[0], [str(item) for item in candidates]
 
 
+def _serve_url_for_model(model: str, *, serve_url: str, serve_urls: dict[str, str]) -> str:
+    key = model_key(model)
+    explicit = serve_urls.get(key, "").strip()
+    if explicit:
+        return explicit.rstrip("/")
+    shared = serve_url.strip()
+    if shared:
+        return shared.rstrip("/")
+    return DEFAULT_SERVE_URLS.get(key, DEFAULT_SERVE_URLS["14b"])
+
+
+def _endpoint_port(endpoint_url: str, fallback: int = 8765) -> int:
+    parsed = urlparse(endpoint_url)
+    return int(parsed.port or fallback)
+
+
 def _serve_profile(model: str, *, base_root: Path, serve_url: str) -> dict[str, Any]:
     profile = model_profile(model)
     root, candidates = _pick_root(model, base_root)
     aliases = list(profile.get("serve_aliases", [])) or [model_key(model)]
     alias = aliases[0]
+    model_ref = str(profile.get("model_ref", model))
+    endpoint_url = serve_url.rstrip("/")
+    port = _endpoint_port(endpoint_url)
     return {
         "schema": "harness.model-endpoint-profile/v1",
         "profile_id": f"serve-{model_key(model)}",
@@ -45,17 +70,25 @@ def _serve_profile(model: str, *, base_root: Path, serve_url: str) -> dict[str, 
         "model_key": model_key(model),
         "backend": "serve",
         "provider_role": provider_role("serve"),
-        "model_ref": profile.get("model_ref", model),
+        "model_ref": model_ref,
         "model_root": str(root),
         "candidate_roots": candidates,
         "root_exists": root.exists(),
-        "endpoint_url": serve_url.rstrip("/"),
-        "health_url": f"{serve_url.rstrip('/')}/health",
-        "generate_url": f"{serve_url.rstrip('/')}/generate",
+        "endpoint_url": endpoint_url,
+        "health_url": f"{endpoint_url}/health",
+        "generate_url": f"{endpoint_url}/generate",
         "agentic_backend": "harness.local_agent.ServeBackend",
-        "launch_command_template": f"set SERVE_MODEL_ALIAS={alias} && python harness/serve.py",
+        "launch_command_template": (
+            f'set "SERVE_MODEL_ALIAS={alias}" && '
+            f'set "SERVE_MODEL_REF={model_ref}" && '
+            f'set "SERVE_PORT={port}" && '
+            f'python harness/serve.py --model-profile {alias} --model-ref "{model_ref}" --port {port}'
+        ),
         "required_env": ["SERVE_MODEL_ALIAS", "SERVE_MODEL_PATH", "SERVE_MODEL_REF", "SERVE_ADAPTER_PATH", "SERVE_PORT"],
-        "env_presence": {name: bool(os.environ.get(name)) for name in ["SERVE_MODEL_PATH", "SERVE_ADAPTER_PATH", "SERVE_PORT"]},
+        "env_presence": {
+            name: bool(os.environ.get(name))
+            for name in ["SERVE_MODEL_ALIAS", "SERVE_MODEL_PATH", "SERVE_MODEL_REF", "SERVE_ADAPTER_PATH", "SERVE_PORT"]
+        },
         "aliases": aliases,
         "content_read": False,
         "live_probed": False,
@@ -97,11 +130,17 @@ def build_report(
     models: list[str],
     base_root: Path,
     serve_url: str,
+    serve_urls: dict[str, str] | None = None,
     ollama_url: str,
 ) -> dict[str, Any]:
     profiles: list[dict[str, Any]] = []
+    serve_urls = serve_urls or {}
     for model in models:
-        profiles.append(_serve_profile(model, base_root=base_root, serve_url=serve_url))
+        profiles.append(_serve_profile(
+            model,
+            base_root=base_root,
+            serve_url=_serve_url_for_model(model, serve_url=serve_url, serve_urls=serve_urls),
+        ))
         profiles.append(_ollama_profile(model, base_root=base_root, ollama_url=ollama_url))
     return {
         "schema": "harness.model-endpoint-profiles/v1",
@@ -181,7 +220,10 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--models", default="14B,32B")
     parser.add_argument("--base-root", default="E:/local-model-run")
-    parser.add_argument("--serve-url", default="http://127.0.0.1:8765")
+    parser.add_argument("--serve-url", default="",
+                        help="shared serve URL; omitted uses per-model defaults 14B=8765, 32B=8767")
+    parser.add_argument("--serve-url-14b", default="")
+    parser.add_argument("--serve-url-32b", default="")
     parser.add_argument("--ollama-url", default="http://127.0.0.1:11434")
     parser.add_argument("--out", default="")
     parser.add_argument("--markdown-out", default="")
@@ -193,6 +235,10 @@ def main(argv: list[str] | None = None) -> int:
         models=split_names(args.models),
         base_root=Path(args.base_root),
         serve_url=args.serve_url,
+        serve_urls={
+            "14b": args.serve_url_14b,
+            "32b": args.serve_url_32b,
+        },
         ollama_url=args.ollama_url,
     )
     json_text = json.dumps(report, indent=2, sort_keys=True)

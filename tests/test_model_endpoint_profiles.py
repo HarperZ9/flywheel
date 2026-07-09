@@ -28,3 +28,26 @@ def test_endpoint_profiles_cover_serve_and_ollama_without_probing(tmp_path):
     assert ollama["provider_role"] == "ollama_local"
     assert ollama["generate_url"].endswith("/api/chat")
     assert "SERVE_MODEL_PATH" in serve["env_presence"]
+
+
+def test_endpoint_profiles_default_to_separate_serve_urls_for_14b_and_32b(tmp_path):
+    (tmp_path / "models" / "Qwen2.5-Coder-14B-Instruct").mkdir(parents=True)
+    (tmp_path / "models" / "Qwen2.5-Coder-32B-Instruct").mkdir(parents=True)
+
+    report = build_report(
+        models=["14B", "32B"],
+        base_root=tmp_path,
+        serve_url="",
+        ollama_url="http://127.0.0.1:11434",
+    )
+
+    serve = {
+        row["model"]: row
+        for row in report["profiles"]
+        if row["backend"] == "serve"
+    }
+    assert serve["14B"]["endpoint_url"] == "http://127.0.0.1:8765"
+    assert serve["32B"]["endpoint_url"] == "http://127.0.0.1:8767"
+    assert serve["32B"]["model_ref"] == "Qwen2.5-Coder-32B-Instruct (base, nf4)"
+    assert "--model-profile 32b" in serve["32B"]["launch_command_template"]
+    assert "SERVE_PORT=8767" in serve["32B"]["launch_command_template"]
