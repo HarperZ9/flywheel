@@ -142,6 +142,19 @@ def build_manifest(*, store_root: str = DEFAULT_STORE_ROOT) -> dict:
                 "recommended_validation_slice": "python -m pytest tests/test_tool_integration_contract.py tests/test_harness_cli.py -q",
             },
             {
+                "name": "runtime-contract",
+                "delegates_to": "scripts/run_runtime_activation_contract.py",
+                "purpose": "Emit the packaged runtime activation contract for storage, env knobs, local model runtime roots, sidecars, and launch boundaries.",
+                "schemas": ["harness.runtime-activation-contract/v1"],
+                "evidence_surface": "package paths, storage paths, env-var presence booleans, activation steps, and runtime boundaries",
+                "default_artifacts": [
+                    "C:/tmp/runtime_activation_contract.json",
+                    "C:/tmp/runtime_activation_contract.md",
+                ],
+                "long_running_risk": "low",
+                "recommended_validation_slice": "python -m pytest tests/test_runtime_activation_contract.py tests/test_harness_cli.py -q",
+            },
+            {
                 "name": "benchmark-coverage",
                 "delegates_to": "scripts/run_benchmark_profile_coverage.py",
                 "purpose": "Compare the weighted benchmark profile against observed scorecard artifacts and flag missing coverage.",
@@ -733,6 +746,14 @@ def build_parser() -> argparse.ArgumentParser:
     tool_contract.add_argument("--tool-root", action="append", default=["aleph=C:/dev/aleph", "local-model=C:/dev/local-model"])
     tool_contract.add_argument("--package-root", default="C:/dev/local-model/artifacts/exe")
 
+    runtime_contract = subparsers.add_parser("runtime-contract", help="emit packaged runtime activation contract")
+    _add_common_io(runtime_contract)
+    runtime_contract.add_argument("--package-root", default="C:/dev/local-model/artifacts/exe")
+    runtime_contract.add_argument("--repo-root", default="C:/dev/local-model")
+    runtime_contract.add_argument("--model-run-root", default="E:/local-model-run")
+    runtime_contract.add_argument("--log-root", default="C:/tmp/local_model_serve_logs")
+    runtime_contract.add_argument("--env-vars", default="")
+
     coverage = subparsers.add_parser("benchmark-coverage", help="compare benchmark profile against scorecards")
     _add_common_io(coverage)
     coverage.add_argument("--profile", required=True)
@@ -1003,6 +1024,22 @@ def build_command(args, *, repo_root: Path) -> list[str]:
         ]
         for tool_root in args.tool_root:
             command.extend(["--tool-root", tool_root])
+        _common_outputs(command, args)
+        return command
+    if args.command_name == "runtime-contract":
+        command = [
+            py,
+            "scripts/run_runtime_activation_contract.py",
+            "--package-root",
+            args.package_root,
+            "--repo-root",
+            args.repo_root,
+            "--model-run-root",
+            args.model_run_root,
+            "--log-root",
+            args.log_root,
+        ]
+        _append_if(command, "--env-vars", args.env_vars)
         _common_outputs(command, args)
         return command
     if args.command_name == "benchmark-coverage":
