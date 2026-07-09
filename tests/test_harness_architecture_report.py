@@ -10,6 +10,7 @@ def test_architecture_report_stitches_generated_contracts(tmp_path):
     tools = tmp_path / "tools.json"
     runtime = tmp_path / "runtime.json"
     codex = tmp_path / "codex.json"
+    enterprise = tmp_path / "enterprise.json"
     doctor = tmp_path / "doctor.json"
     release.write_text(json.dumps({
         "schema": "harness.local-executable-release/v1",
@@ -43,6 +44,11 @@ def test_architecture_report_stitches_generated_contracts(tmp_path):
         "servers": [],
         "session_reload_boundary": {"code_or_config_fix_requires_host_reload": True},
     }), encoding="utf-8")
+    enterprise.write_text(json.dumps({
+        "schema": "harness.enterprise-readiness-report/v1",
+        "summary": {"verdict": "HARDENING_REQUIRED"},
+        "tools": [{"tool": "mneme"}],
+    }), encoding="utf-8")
     doctor.write_text(json.dumps({
         "schema": "harness.package-ship-doctor/v1",
         "summary": {"verdict": "SHIP_READY", "hard_failures": 0},
@@ -55,6 +61,7 @@ def test_architecture_report_stitches_generated_contracts(tmp_path):
         tool_contract_path=tools,
         runtime_contract_path=runtime,
         codex_mcp_contract_path=codex,
+        enterprise_readiness_path=enterprise,
         package_doctor_path=doctor,
     )
 
@@ -73,6 +80,7 @@ def test_architecture_report_markdown_includes_next_gates(tmp_path):
         tool_contract_path=missing,
         runtime_contract_path=missing,
         codex_mcp_contract_path=missing,
+        enterprise_readiness_path=missing,
         package_doctor_path=missing,
     )
     markdown = render_markdown(report)

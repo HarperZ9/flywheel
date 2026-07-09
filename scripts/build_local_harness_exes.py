@@ -216,6 +216,28 @@ def _emit_codex_mcp_contract(args: argparse.Namespace) -> Path:
     return path
 
 
+def _emit_enterprise_readiness_report(args: argparse.Namespace) -> Path:
+    path = DIST / "enterprise_readiness_report.local.json"
+    markdown = DIST / "enterprise_readiness_report.local.md"
+    command = [
+        sys.executable,
+        "scripts/run_enterprise_readiness_report.py",
+        "--tool-contract",
+        str(DIST / "tool_integration_contract.local.json"),
+        "--tools",
+        args.enterprise_tools,
+        "--out",
+        str(path),
+        "--markdown-out",
+        str(markdown),
+    ]
+    print(f"[enterprise] {' '.join(command)}")
+    proc = subprocess.run(command, cwd=ROOT)
+    if proc.returncode != 0:
+        raise RuntimeError(f"enterprise readiness report generation failed ({proc.returncode})")
+    return path
+
+
 def _emit_architecture_report(args: argparse.Namespace, *, release_manifest_path: Path) -> Path:
     path = DIST / "harness_architecture_report.local.json"
     markdown = DIST / "harness_architecture_report.local.md"
@@ -282,6 +304,11 @@ def _write_release_manifest(args: argparse.Namespace, *, profiles_path: Path, bu
             "json": str(DIST / "harness_architecture_report.local.json"),
             "markdown": str(DIST / "harness_architecture_report.local.md"),
         },
+        "enterprise_readiness": {
+            "json": str(DIST / "enterprise_readiness_report.local.json"),
+            "markdown": str(DIST / "enterprise_readiness_report.local.md"),
+            "tools": args.enterprise_tools,
+        },
         "codex_mcp": {
             "contract": str(DIST / "codex_mcp_launch_contract.local.json"),
             "tools": args.codex_mcp_tools,
@@ -322,6 +349,7 @@ def main() -> int:
     ap.add_argument("--tool-root", action="append", default=["aleph=C:/dev/aleph", "local-model=C:/dev/local-model"])
     ap.add_argument("--codex-config", default="C:/Users/Zain/.codex/config.toml")
     ap.add_argument("--codex-mcp-tools", default="index,forum,gather,crucible,telos")
+    ap.add_argument("--enterprise-tools", default="mneme,relay,plexus")
     ap.add_argument("--store-root", default="C:/tmp/harness_file_store")
     ap.add_argument("--model-run-root", default="E:/local-model-run")
     ap.add_argument("--log-root", default="C:/tmp/local_model_serve_logs")
@@ -373,6 +401,7 @@ def main() -> int:
     _emit_tool_contract(args)
     _emit_runtime_contract(args)
     _emit_codex_mcp_contract(args)
+    _emit_enterprise_readiness_report(args)
     manifest_path = _write_release_manifest(args, profiles_path=profiles_path, built=built, skipped=skipped)
     _emit_architecture_report(args, release_manifest_path=manifest_path)
     print(f"[ok] executables in {DIST}")
