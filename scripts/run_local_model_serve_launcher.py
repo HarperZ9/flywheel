@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import subprocess
 import sys
 import time
@@ -16,6 +17,17 @@ from urllib.request import urlopen
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from harness.benchmark_receipts import store_benchmark_outputs  # noqa: E402
+
+LOCAL_MODEL_VENV_PYTHON = Path("E:/local-model-run/venv/Scripts/python.exe")
+
+
+def default_serve_python() -> str:
+    explicit = os.environ.get("LOCAL_SERVE_PYTHON", "").strip()
+    if explicit:
+        return explicit
+    if LOCAL_MODEL_VENV_PYTHON.exists():
+        return str(LOCAL_MODEL_VENV_PYTHON)
+    return sys.executable
 
 
 def now_utc() -> str:
@@ -88,7 +100,7 @@ def _poll_health(profile: dict[str, Any], *, wait_seconds: float) -> tuple[bool,
     return False, last_error
 
 
-def _start_process(command: list[str], *, log_path: Path) -> int:
+def _start_process(command: list[str], *, log_path: Path) -> subprocess.Popen:
     log_path.parent.mkdir(parents=True, exist_ok=True)
     log = log_path.open("ab")
     process = subprocess.Popen(
@@ -100,7 +112,51 @@ def _start_process(command: list[str], *, log_path: Path) -> int:
         creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
     )
     log.close()
-    return int(process.pid)
+    return process
+
+
+def _terminate_process(process: subprocess.Popen, *, timeout_seconds: float = 10.0) -> str:
+    if process.poll() is not None:
+        return f"already_exited:{process.returncode}"
+    process.terminate()
+    try:
+        process.wait(timeout=timeout_seconds)
+        return f"terminated:{process.returncode}"
+    except subprocess.TimeoutExpired:
+        process.kill()
+        process.wait(timeout=timeout_seconds)
+        return f"killed:{process.returncode}"
+
+
+def _tail_log(path: Path, *, max_chars: int = 6000) -> str:
+    if not path.exists():
+        return ""
+    text = path.read_text(encoding="utf-8", errors="replace")
+    return text[-max_chars:]
+
+
+def _classify_start_failure(fallback: str, log_path: Path) -> str:
+    log = _tail_log(log_path)
+    lower_log = log.lower()
+    if "ModuleNotFoundError: No module named 'torch'" in log:
+        return "missing_dependency_torch"
+    if "ModuleNotFoundError: No module named 'transformers'" in log:
+        return "missing_dependency_transformers"
+    if "No module named 'bitsandbytes'" in log:
+        return "missing_dependency_bitsandbytes"
+    if "CUDA out of memory" in log or "OutOfMemoryError" in log:
+        return "cuda_out_of_memory"
+    if "ValueError:" in log and "offload" in lower_log:
+        return "offload_configuration_error"
+    if (
+        "Loading weights:" in log
+        and fallback in {"URLError", "health_timeout"}
+        and "traceback" not in lower_log
+        and "error" not in lower_log
+        and "exception" not in lower_log
+    ):
+        return "startup_timeout_loading_weights"
+    return fallback
 
 
 def _select_profiles(profiles: list[dict[str, Any]], *, models: list[str]) -> list[dict[str, Any]]:
@@ -121,6 +177,7 @@ def build_report(
     start: bool = False,
     wait_seconds: float = 0.0,
     log_dir: str = "C:/tmp/local_model_serve_logs",
+    terminate_on_timeout: bool = False,
 ) -> dict[str, Any]:
     profiles = _load_profiles(profile_artifact)
     selected = _select_profiles(profiles, models=models)
@@ -145,17 +202,27 @@ def build_report(
             "health_ok": False,
             "health_model_ref": "",
             "failure_class": "",
+            "terminate_on_timeout": terminate_on_timeout,
+            "terminated_on_timeout": False,
+            "termination_status": "",
+            "process_exit_code": None,
         }
         if not row["root_exists"]:
             row["failure_class"] = "model_root_missing"
         elif start:
-            row["pid"] = _start_process(command, log_path=log_path)
+            process = _start_process(command, log_path=log_path)
+            row["pid"] = int(process.pid)
             health_ok, health_detail = _poll_health(profile, wait_seconds=wait_seconds)
             row["health_ok"] = health_ok
             if health_ok:
                 row["health_model_ref"] = health_detail
             else:
                 row["failure_class"] = health_detail or "health_timeout"
+                if terminate_on_timeout:
+                    row["termination_status"] = _terminate_process(process)
+                    row["terminated_on_timeout"] = row["termination_status"].startswith(("terminated:", "killed:"))
+                row["process_exit_code"] = process.poll()
+                row["failure_class"] = _classify_start_failure(row["failure_class"], log_path)
         rows.append(row)
     return {
         "schema": "harness.local-model-serve-launch/v1",
@@ -219,10 +286,11 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--profile-artifact", required=True)
     parser.add_argument("--models", default="")
-    parser.add_argument("--serve-python", default=sys.executable)
+    parser.add_argument("--serve-python", default=default_serve_python())
     parser.add_argument("--start", action="store_true")
     parser.add_argument("--wait-seconds", type=float, default=0.0)
     parser.add_argument("--log-dir", default="C:/tmp/local_model_serve_logs")
+    parser.add_argument("--terminate-on-timeout", action="store_true")
     parser.add_argument("--out", default="")
     parser.add_argument("--markdown-out", default="")
     parser.add_argument("--store-root", default="")
@@ -237,6 +305,7 @@ def main(argv: list[str] | None = None) -> int:
         start=args.start,
         wait_seconds=args.wait_seconds,
         log_dir=args.log_dir,
+        terminate_on_timeout=args.terminate_on_timeout,
     )
     json_text = json.dumps(report, indent=2, sort_keys=True)
     md_text = render_markdown(report)
