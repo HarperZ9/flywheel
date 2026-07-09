@@ -13,6 +13,7 @@ This matrix turns the active objective into explicit proof gates. It is not a be
 - Endpoint probes run: none.
 - Provider/model calls run: none.
 - Model weights read: none.
+- Metadata preflight artifacts run through `harness.cmd`: forum route receipts, MCP/tool health receipts, expanded tool readiness receipts, and dry closed-loop seed plan.
 - Completion claim: none.
 
 ## Live tool signals
@@ -25,14 +26,14 @@ This matrix turns the active objective into explicit proof gates. It is not a be
 | ID | Requirement | Current status | Evidence | Missing proof | Next gate |
 | --- | --- | --- | --- | --- | --- |
 | REQ-001 | Use Index to scan/map `C:\dev` before architectural assumptions. | Partial, degraded | `C:\dev\local-model\project-docs\records\ROADMAP-STATUS-2026-07-09.md` records the Index risk and fallback path. | Healthy live Index MCP envelope or fresh degraded fallback receipt. | Repair/run Index MCP, or generate a fresh fallback receipt with freshness status. |
-| REQ-002 | Use Forum to route ambiguous/cross-domain work. | Partial, observed | Live `forum.route` output in this update; `C:\dev\local-model\project-docs\schematics\closed-loop-integration.graph.json`. | Persistent forum route receipt in harness store. | Record forum route decisions as receipts in future closed-loop runs. |
+| REQ-002 | Use Forum to route ambiguous/cross-domain work. | Receipted preflight | Live `forum.route` output in this update; `C:\tmp\forum_route_receipts_20260709_current.json`; `C:\dev\local-model\project-docs\schematics\closed-loop-integration.graph.json`. | Route receipts inside a full shared-run benchmark seed. | Carry forum route receipts into the focused seed run. |
 | REQ-003 | Gather scratch/temp/mid-flight/Claude/Codex/OpenCode/prior benchmark context. | Scaffolded, not executed | `C:\dev\local-model\project-docs\records\WORKSPACE-CONTEXT-MAP-2026-07-09.md`; `C:\dev\local-model\benchmarks\dry-run-preflight-command-deck-v1.json`. | Fresh context inventory artifact covering all specified sources. | Run metadata-only context inventory after approval. |
-| REQ-004 | Integrate existing tools before inventing replacements. | Partial | `C:\dev\local-model\project-docs\records\TOOL-INTEGRATION-REPORT-2026-07-09.md`; capability catalog. | End-to-end receipts showing tool invocation through harness. | Run tool readiness and hardening preflights. |
+| REQ-004 | Integrate existing tools before inventing replacements. | Preflight receipts produced | `C:\dev\local-model\project-docs\records\TOOL-INTEGRATION-REPORT-2026-07-09.md`; `C:\tmp\mcp_tool_health_20260709_current.json`; `C:\tmp\tool_readiness_20260709_current.json`; capability catalog. | End-to-end receipts from a full seed run and live tool-specific execution where safe. | Run focused seed and then hardening preflights. |
 | REQ-005 | Benchmark `5.3-Codex-Spark` in Codex and Flywheel harnesses and compare. | Contract only | `C:\dev\local-model\benchmarks\cross-harness-adapter-contract-v1.json`. | Same-task executed scorecards for both harnesses. | Implement manifest/adapter generator, run dry rows, then focused provider rows after approval. |
 | REQ-006 | Build serious custom agentic benchmarks. | Manifest generator implemented, not run | `C:\dev\local-model\benchmarks\agentic-task-set-v1.json`; adapter and cross-harness contracts; `C:\dev\local-model\scripts\run_agentic_task_set_manifest.py`. | Manifest execution artifact, scorecards, coverage, executed provider artifacts. | Run non-executing manifest generation and targeted validation after approval. |
 | REQ-007 | Measure quality, completion, latency, cost/resource use, reliability, tool use, failure modes, reproducibility. | Metric contract only | `C:\dev\local-model\project-docs\records\BENCHMARK-METHODOLOGY-2026-07-09.md`. | Executed rows with metric values. | Run focused benchmark seed and coverage after metadata preflights. |
 | REQ-008 | Verify local endpoints for 14B, 32B, and other local models. | Profile path only | Local model and endpoint reports. | Fresh endpoint profile and live endpoint gate artifacts. | Run endpoint profiles metadata-only, then endpoint gate after approval. |
-| REQ-009 | Compile harness into full executable format and plug in local models. | Scaffolded | `C:\dev\local-model\harness.cmd`; architecture/endpoint report. | Packaged executable, install/run proof, local model config proof. | Run metadata dry plan through `harness.cmd`, then package validation after approval. |
+| REQ-009 | Compile harness into full executable format and plug in local models. | Executable preflight proven | `C:\dev\local-model\harness.cmd`; `C:\tmp\harness_closed_loop_seed_plan_20260709_current.json`; architecture/endpoint report. | Packaged executable, install/run proof, local model config proof, and live endpoint gate artifacts. | Run focused seed through `harness.cmd`, then package validation after approval. |
 | REQ-010 | Make mneme, relay, plexus enterprise-ready and shipped. | Readiness drafts only | Readiness reports for each tool. | Shipped code changes and validation evidence. | Run readiness receipts, implement one hardening slice per tool, validate after approval. |
 | REQ-011 | Name and prepare 14B/32B for publication without publishing early. | Release scaffold only | Model naming plan and release scaffolds. | Weights inventory, checksums, provenance/licensing, benchmark results, publish approval. | Run model release readiness after endpoint and benchmark evidence exist. |
 | REQ-012 | Produce required final outputs. | Draft pack exists | Roadmap status and capability catalog list the durable outputs. | Executed benchmark data and shipped-change evidence for draft outputs. | Drive closure from this matrix, not from chat-only status. |
@@ -41,7 +42,15 @@ This matrix turns the active objective into explicit proof gates. It is not a be
 
 ## Current conclusion
 
-The program has a stronger evidence boundary now, but it is still not complete. The main missing proof is execution evidence: metadata preflight artifacts, adapter-generated manifests, endpoint gates, same-task provider scorecards, Forum deep-verify scaling artifacts, mneme/relay/plexus shipped changes, and a closed-loop experimental outcome synthesized from real artifacts.
+The program has a stronger evidence boundary now, but it is still not complete. The main missing proof is execution evidence: focused benchmark seed artifacts, endpoint gates, same-task provider scorecards, Forum deep-verify scaling artifacts, mneme/relay/plexus shipped changes, and a closed-loop experimental outcome synthesized from real benchmark artifacts.
+
+## 2026-07-09 update: executable preflight receipts
+
+- REQ-002 Forum routing: `harness.cmd forum-route` produced `C:\tmp\forum_route_receipts_20260709_current.json` and stored route receipt artifacts under `C:\tmp\harness_file_store_current`.
+- REQ-004 tool integration: `harness.cmd mcp-health` produced `C:\tmp\mcp_tool_health_20260709_current.json`. Result: 11 roots configured, 0 missing roots, `forum` and `telos` observed healthy, `index` observed degraded with `transport_closed`, 8 configured tools unobserved.
+- REQ-004 tool readiness: `harness.cmd readiness tools` produced `C:\tmp\tool_readiness_20260709_current.json`. Result: 10 tools observed by static profile, 0 missing roots, 0 enterprise-ready tools, mean static score `0.459`, verdicts `7` prototype-with-gaps and `3` incomplete-static.
+- REQ-009 executable harness: `harness.cmd plan` produced `C:\tmp\harness_closed_loop_seed_plan_20260709_current.json`. Result: 29 planned steps, 0 executed benchmark rows, 0 endpoint probes, 0 provider/model calls.
+- Evidence status: metadata preflights executed; tests, endpoint probes, provider calls, model-weight reads, and benchmark workloads were not executed in this step.
 
 ## 2026-07-09 update: REQ-006 / REQ-009
 
