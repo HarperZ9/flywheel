@@ -1,0 +1,8 @@
+{
+  "task_id": "partition_three_inplace",
+  "prompt": "Write a Python function `partition_three(items, pivot)` that reorders a list of integers in place around a pivot.\n\nContract:\n1. `items` is a list; `pivot` must be an `int` and so must every element of `items`. `bool` values are NOT acceptable even though `bool` subclasses `int`. If `pivot` or any element violates this, raise `ValueError`. All validation must complete before any mutation: when `ValueError` is raised, `items` must be left exactly as it was.\n2. Reorder `items` IN PLACE so that all elements strictly less than `pivot` come first, then all elements equal to `pivot`, then all elements strictly greater. The relative order of elements within each of the three groups must be preserved (stable partition).\n3. The function must mutate the very list object passed in (a caller holding another reference to it must observe the change) and must return that same list object, never a copy.\n4. An empty list is valid input and returns the same empty list object.\n\nOutput ONLY the function definition.",
+  "oracle": "pytest",
+  "oracle_cmd": "python -m pytest tests/ -q",
+  "candidate_path": "solution.py",
+  "max_new_tokens": 768
+}

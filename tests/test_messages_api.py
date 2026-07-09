@@ -5,11 +5,15 @@ shape; every turn carries a content-addressed receipt binding request+response;
 frontier tier names alias to the served model (never 404); errors are typed
 (never 200-empty).
 """
+import io
+import json
+
 import pytest
 
 from harness.messages_api import (
     translate_request, translate_response, make_receipt, resolve_model,
     error_response)
+from harness import serve
 
 REQ = {
     "model": "claude-fable-5",
@@ -63,3 +67,71 @@ def test_frontier_tier_names_alias_to_served_model():
 def test_error_is_typed_not_empty():
     e = error_response("bad request")
     assert e["type"] == "error" and e["error"]["message"] == "bad request"
+
+
+def test_serve_messages_route_translates_and_sets_receipt(monkeypatch):
+    class Handler(serve._H):
+        def __init__(self):
+            self.path = "/v1/messages"
+            self.headers = {"Content-Length": str(len(body))}
+            self.rfile = io.BytesIO(body)
+            self.wfile = io.BytesIO()
+            self.status = None
+            self.sent_headers = {}
+
+        def send_response(self, code, message=None):
+            self.status = code
+
+        def send_header(self, key, value):
+            self.sent_headers[key] = value
+
+        def end_headers(self):
+            pass
+
+    def fake_generate(prompt, max_new_tokens, temperature, top_p, seed, system):
+        assert "Implement add" in prompt
+        assert system == "You are a code generator."
+        return GEN
+
+    monkeypatch.setattr(serve, "MODEL_REF", "14b-adapter")
+    monkeypatch.setattr(serve, "generate", fake_generate)
+    body = json.dumps(REQ).encode()
+
+    h = Handler()
+    h.do_POST()
+
+    assert h.status == 200
+    payload = json.loads(h.wfile.getvalue())
+    assert payload["type"] == "message"
+    assert payload["model"] == "claude-fable-5"
+    assert payload["x_receipt"]["model_ref"] == "14b-adapter"
+    assert h.sent_headers["X-Receipt-Id"] == payload["x_receipt"]["receipt_id"]
+
+
+def test_serve_messages_route_returns_typed_error_for_bad_request():
+    class Handler(serve._H):
+        def __init__(self):
+            self.path = "/v1/messages"
+            self.headers = {"Content-Length": str(len(body))}
+            self.rfile = io.BytesIO(body)
+            self.wfile = io.BytesIO()
+            self.status = None
+
+        def send_response(self, code, message=None):
+            self.status = code
+
+        def send_header(self, key, value):
+            pass
+
+        def end_headers(self):
+            pass
+
+    body = json.dumps({"messages": []}).encode()
+
+    h = Handler()
+    h.do_POST()
+
+    assert h.status == 400
+    payload = json.loads(h.wfile.getvalue())
+    assert payload["type"] == "error"
+    assert payload["error"]["type"] == "invalid_request_error"

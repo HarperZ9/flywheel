@@ -1,0 +1,808 @@
+{
+  "schema": "source-mined.backend-matrix/v1",
+  "timestamp_utc": "2026-07-09T02:09:18.840214Z",
+  "out_root": "C:\\dev\\local-model\\artifacts\\source_mined_backend_matrix_user\\latest_run\\20260709_020905",
+  "providers_requested": [
+    "dry",
+    "serve",
+    "ollama",
+    "codex",
+    "claude",
+    "opencode"
+  ],
+  "allow_online": false,
+  "max_cases": 2,
+  "backend_timeout_seconds": 120,
+  "rows": [
+    {
+      "schema": "source-mined.backend-benchmark/v1",
+      "provider": "dry",
+      "backend_name": "source-mined-dry",
+      "case_count": 2,
+      "passed_cases": 1,
+      "failed_cases": 1,
+      "pass_rate": 0.5,
+      "response_present_rate": 1.0,
+      "receipt_completeness": 1.0,
+      "mean_latency_ms": 0,
+      "max_latency_ms": 0,
+      "metric_count": 28,
+      "aggregate_metrics": {
+        "mean_quality_score": 0.435,
+        "mean_reliability_score": 1.0,
+        "mean_metric_mention_rate": 0.25,
+        "mean_task_focus_score": 0.258,
+        "timeout_rate": 0.0,
+        "error_rate": 0.0,
+        "failure_class_counts": {
+          "none": 2
+        },
+        "category_summary": {
+          "model_card_runtime": {
+            "cases": 1,
+            "passed": 1,
+            "pass_rate": 1.0,
+            "mean_quality_score": 0.513,
+            "mean_latency_ms": 0
+          },
+          "benchmark_quality": {
+            "cases": 1,
+            "passed": 0,
+            "pass_rate": 0.0,
+            "mean_quality_score": 0.358,
+            "mean_latency_ms": 0
+          }
+        }
+      },
+      "results": [
+        {
+          "case_id": "model_card_runtime_variable_matrix_v1",
+          "category": "model_card_runtime",
+          "model_ref": "dry:source-mined",
+          "passed": true,
+          "error": "",
+          "failure_class": "none",
+          "latency_ms": 0,
+          "response_chars": 84,
+          "terms": [
+            "model",
+            "runtime",
+            "variable",
+            "matrix",
+            "frontier/local",
+            "extraction",
+            "coverage",
+            "source",
+            "attribution",
+            "unknown",
+            "labeled",
+            "single"
+          ],
+          "term_hits": 4,
+          "metrics": [
+            {
+              "case_id": "model_card_runtime_variable_matrix_v1",
+              "metric": "response_present",
+              "value": true
+            },
+            {
+              "case_id": "model_card_runtime_variable_matrix_v1",
+              "metric": "task_focus_score",
+              "value": 0.333
+            },
+            {
+              "case_id": "model_card_runtime_variable_matrix_v1",
+              "metric": "metric_mention_rate",
+              "value": 0.5
+            },
+            {
+              "case_id": "model_card_runtime_variable_matrix_v1",
+              "metric": "evidence_plan_score",
+              "value": 0.143
+            },
+            {
+              "case_id": "model_card_runtime_variable_matrix_v1",
+              "metric": "quality_score",
+              "value": 0.513
+            },
+            {
+              "case_id": "model_card_runtime_variable_matrix_v1",
+              "metric": "reliability_score",
+              "value": 1.0
+            },
+            {
+              "case_id": "model_card_runtime_variable_matrix_v1",
+              "metric": "failure_class",
+              "value": "none"
+            },
+            {
+              "case_id": "model_card_runtime_variable_matrix_v1",
+              "metric": "error_present",
+              "value": false
+            },
+            {
+              "case_id": "model_card_runtime_variable_matrix_v1",
+              "metric": "timeout_hit",
+              "value": false
+            },
+            {
+              "case_id": "model_card_runtime_variable_matrix_v1",
+              "metric": "uncertainty_labeled",
+              "value": false
+            },
+            {
+              "case_id": "model_card_runtime_variable_matrix_v1",
+              "metric": "unsupported_success_claim",
+              "value": false
+            },
+            {
+              "case_id": "model_card_runtime_variable_matrix_v1",
+              "metric": "latency_ms",
+              "value": 0
+            },
+            {
+              "case_id": "model_card_runtime_variable_matrix_v1",
+              "metric": "response_chars",
+              "value": 84
+            },
+            {
+              "case_id": "model_card_runtime_variable_matrix_v1",
+              "metric": "receipt_complete",
+              "value": true
+            }
+          ],
+          "receipt": "21849e52ea302586"
+        },
+        {
+          "case_id": "benchmark_task_quality_audit_v1",
+          "category": "benchmark_quality",
+          "model_ref": "dry:source-mined",
+          "passed": false,
+          "error": "",
+          "failure_class": "none",
+          "latency_ms": 0,
+          "response_chars": 84,
+          "terms": [
+            "benchmark",
+            "quality",
+            "audit",
+            "coding",
+            "label",
+            "accuracy",
+            "broken",
+            "detection",
+            "false",
+            "adjusted",
+            "score"
+          ],
+          "term_hits": 2,
+          "metrics": [
+            {
+              "case_id": "benchmark_task_quality_audit_v1",
+              "metric": "response_present",
+              "value": true
+            },
+            {
+              "case_id": "benchmark_task_quality_audit_v1",
+              "metric": "task_focus_score",
+              "value": 0.182
+            },
+            {
+              "case_id": "benchmark_task_quality_audit_v1",
+              "metric": "metric_mention_rate",
+              "value": 0.0
+            },
+            {
+              "case_id": "benchmark_task_quality_audit_v1",
+              "metric": "evidence_plan_score",
+              "value": 0.143
+            },
+            {
+              "case_id": "benchmark_task_quality_audit_v1",
+              "metric": "quality_score",
+              "value": 0.358
+            },
+            {
+              "case_id": "benchmark_task_quality_audit_v1",
+              "metric": "reliability_score",
+              "value": 1.0
+            },
+            {
+              "case_id": "benchmark_task_quality_audit_v1",
+              "metric": "failure_class",
+              "value": "none"
+            },
+            {
+              "case_id": "benchmark_task_quality_audit_v1",
+              "metric": "error_present",
+              "value": false
+            },
+            {
+              "case_id": "benchmark_task_quality_audit_v1",
+              "metric": "timeout_hit",
+              "value": false
+            },
+            {
+              "case_id": "benchmark_task_quality_audit_v1",
+              "metric": "uncertainty_labeled",
+              "value": false
+            },
+            {
+              "case_id": "benchmark_task_quality_audit_v1",
+              "metric": "unsupported_success_claim",
+              "value": false
+            },
+            {
+              "case_id": "benchmark_task_quality_audit_v1",
+              "metric": "latency_ms",
+              "value": 0
+            },
+            {
+              "case_id": "benchmark_task_quality_audit_v1",
+              "metric": "response_chars",
+              "value": 84
+            },
+            {
+              "case_id": "benchmark_task_quality_audit_v1",
+              "metric": "receipt_complete",
+              "value": true
+            }
+          ],
+          "receipt": "319006893b50812f"
+        }
+      ],
+      "live": false,
+      "operational": true,
+      "skipped": false
+    },
+    {
+      "schema": "source-mined.backend-benchmark/v1",
+      "provider": "serve",
+      "backend_name": "source-mined-serve",
+      "case_count": 2,
+      "passed_cases": 2,
+      "failed_cases": 0,
+      "pass_rate": 1.0,
+      "response_present_rate": 1.0,
+      "receipt_completeness": 1.0,
+      "mean_latency_ms": 6.5,
+      "max_latency_ms": 12,
+      "metric_count": 28,
+      "aggregate_metrics": {
+        "mean_quality_score": 0.879,
+        "mean_reliability_score": 1.0,
+        "mean_metric_mention_rate": 1.0,
+        "mean_task_focus_score": 0.825,
+        "timeout_rate": 0.0,
+        "error_rate": 0.0,
+        "failure_class_counts": {
+          "none": 2
+        },
+        "category_summary": {
+          "model_card_runtime": {
+            "cases": 1,
+            "passed": 1,
+            "pass_rate": 1.0,
+            "mean_quality_score": 0.902,
+            "mean_latency_ms": 12
+          },
+          "benchmark_quality": {
+            "cases": 1,
+            "passed": 1,
+            "pass_rate": 1.0,
+            "mean_quality_score": 0.857,
+            "mean_latency_ms": 1
+          }
+        }
+      },
+      "results": [
+        {
+          "case_id": "model_card_runtime_variable_matrix_v1",
+          "category": "model_card_runtime",
+          "model_ref": "Qwen2.5-Coder-14B-Instruct (base, nf4)",
+          "passed": true,
+          "error": "",
+          "failure_class": "none",
+          "latency_ms": 12,
+          "response_chars": 1275,
+          "terms": [
+            "model",
+            "runtime",
+            "variable",
+            "matrix",
+            "frontier/local",
+            "extraction",
+            "coverage",
+            "source",
+            "attribution",
+            "unknown",
+            "labeled",
+            "single"
+          ],
+          "term_hits": 10,
+          "metrics": [
+            {
+              "case_id": "model_card_runtime_variable_matrix_v1",
+              "metric": "response_present",
+              "value": true
+            },
+            {
+              "case_id": "model_card_runtime_variable_matrix_v1",
+              "metric": "task_focus_score",
+              "value": 0.833
+            },
+            {
+              "case_id": "model_card_runtime_variable_matrix_v1",
+              "metric": "metric_mention_rate",
+              "value": 1.0
+            },
+            {
+              "case_id": "model_card_runtime_variable_matrix_v1",
+              "metric": "evidence_plan_score",
+              "value": 0.571
+            },
+            {
+              "case_id": "model_card_runtime_variable_matrix_v1",
+              "metric": "quality_score",
+              "value": 0.902
+            },
+            {
+              "case_id": "model_card_runtime_variable_matrix_v1",
+              "metric": "reliability_score",
+              "value": 1.0
+            },
+            {
+              "case_id": "model_card_runtime_variable_matrix_v1",
+              "metric": "failure_class",
+              "value": "none"
+            },
+            {
+              "case_id": "model_card_runtime_variable_matrix_v1",
+              "metric": "error_present",
+              "value": false
+            },
+            {
+              "case_id": "model_card_runtime_variable_matrix_v1",
+              "metric": "timeout_hit",
+              "value": false
+            },
+            {
+              "case_id": "model_card_runtime_variable_matrix_v1",
+              "metric": "uncertainty_labeled",
+              "value": true
+            },
+            {
+              "case_id": "model_card_runtime_variable_matrix_v1",
+              "metric": "unsupported_success_claim",
+              "value": false
+            },
+            {
+              "case_id": "model_card_runtime_variable_matrix_v1",
+              "metric": "latency_ms",
+              "value": 12
+            },
+            {
+              "case_id": "model_card_runtime_variable_matrix_v1",
+              "metric": "response_chars",
+              "value": 1275
+            },
+            {
+              "case_id": "model_card_runtime_variable_matrix_v1",
+              "metric": "receipt_complete",
+              "value": true
+            }
+          ],
+          "receipt": "2d79d5f56620c34a"
+        },
+        {
+          "case_id": "benchmark_task_quality_audit_v1",
+          "category": "benchmark_quality",
+          "model_ref": "Qwen2.5-Coder-14B-Instruct (base, nf4)",
+          "passed": true,
+          "error": "",
+          "failure_class": "none",
+          "latency_ms": 1,
+          "response_chars": 820,
+          "terms": [
+            "benchmark",
+            "quality",
+            "audit",
+            "coding",
+            "label",
+            "accuracy",
+            "broken",
+            "detection",
+            "false",
+            "adjusted",
+            "score"
+          ],
+          "term_hits": 9,
+          "metrics": [
+            {
+              "case_id": "benchmark_task_quality_audit_v1",
+              "metric": "response_present",
+              "value": true
+            },
+            {
+              "case_id": "benchmark_task_quality_audit_v1",
+              "metric": "task_focus_score",
+              "value": 0.818
+            },
+            {
+              "case_id": "benchmark_task_quality_audit_v1",
+              "metric": "metric_mention_rate",
+              "value": 1.0
+            },
+            {
+              "case_id": "benchmark_task_quality_audit_v1",
+              "metric": "evidence_plan_score",
+              "value": 0.286
+            },
+            {
+              "case_id": "benchmark_task_quality_audit_v1",
+              "metric": "quality_score",
+              "value": 0.857
+            },
+            {
+              "case_id": "benchmark_task_quality_audit_v1",
+              "metric": "reliability_score",
+              "value": 1.0
+            },
+            {
+              "case_id": "benchmark_task_quality_audit_v1",
+              "metric": "failure_class",
+              "value": "none"
+            },
+            {
+              "case_id": "benchmark_task_quality_audit_v1",
+              "metric": "error_present",
+              "value": false
+            },
+            {
+              "case_id": "benchmark_task_quality_audit_v1",
+              "metric": "timeout_hit",
+              "value": false
+            },
+            {
+              "case_id": "benchmark_task_quality_audit_v1",
+              "metric": "uncertainty_labeled",
+              "value": true
+            },
+            {
+              "case_id": "benchmark_task_quality_audit_v1",
+              "metric": "unsupported_success_claim",
+              "value": false
+            },
+            {
+              "case_id": "benchmark_task_quality_audit_v1",
+              "metric": "latency_ms",
+              "value": 1
+            },
+            {
+              "case_id": "benchmark_task_quality_audit_v1",
+              "metric": "response_chars",
+              "value": 820
+            },
+            {
+              "case_id": "benchmark_task_quality_audit_v1",
+              "metric": "receipt_complete",
+              "value": true
+            }
+          ],
+          "receipt": "73ecc2daba190b42"
+        }
+      ],
+      "live": true,
+      "operational": true,
+      "skipped": false
+    },
+    {
+      "schema": "source-mined.backend-benchmark/v1",
+      "provider": "ollama",
+      "backend_name": "source-mined-ollama:qwen2.5:7b",
+      "case_count": 2,
+      "passed_cases": 2,
+      "failed_cases": 0,
+      "pass_rate": 1.0,
+      "response_present_rate": 1.0,
+      "receipt_completeness": 1.0,
+      "mean_latency_ms": 6829,
+      "max_latency_ms": 12884,
+      "metric_count": 28,
+      "aggregate_metrics": {
+        "mean_quality_score": 0.869,
+        "mean_reliability_score": 1.0,
+        "mean_metric_mention_rate": 1.0,
+        "mean_task_focus_score": 0.825,
+        "timeout_rate": 0.0,
+        "error_rate": 0.0,
+        "failure_class_counts": {
+          "none": 2
+        },
+        "category_summary": {
+          "model_card_runtime": {
+            "cases": 1,
+            "passed": 1,
+            "pass_rate": 1.0,
+            "mean_quality_score": 0.881,
+            "mean_latency_ms": 12884
+          },
+          "benchmark_quality": {
+            "cases": 1,
+            "passed": 1,
+            "pass_rate": 1.0,
+            "mean_quality_score": 0.857,
+            "mean_latency_ms": 774
+          }
+        }
+      },
+      "results": [
+        {
+          "case_id": "model_card_runtime_variable_matrix_v1",
+          "category": "model_card_runtime",
+          "model_ref": "ollama:qwen2.5:7b",
+          "passed": true,
+          "error": "",
+          "failure_class": "none",
+          "latency_ms": 12884,
+          "response_chars": 584,
+          "terms": [
+            "model",
+            "runtime",
+            "variable",
+            "matrix",
+            "frontier/local",
+            "extraction",
+            "coverage",
+            "source",
+            "attribution",
+            "unknown",
+            "labeled",
+            "single"
+          ],
+          "term_hits": 10,
+          "metrics": [
+            {
+              "case_id": "model_card_runtime_variable_matrix_v1",
+              "metric": "response_present",
+              "value": true
+            },
+            {
+              "case_id": "model_card_runtime_variable_matrix_v1",
+              "metric": "task_focus_score",
+              "value": 0.833
+            },
+            {
+              "case_id": "model_card_runtime_variable_matrix_v1",
+              "metric": "metric_mention_rate",
+              "value": 1.0
+            },
+            {
+              "case_id": "model_card_runtime_variable_matrix_v1",
+              "metric": "evidence_plan_score",
+              "value": 0.429
+            },
+            {
+              "case_id": "model_card_runtime_variable_matrix_v1",
+              "metric": "quality_score",
+              "value": 0.881
+            },
+            {
+              "case_id": "model_card_runtime_variable_matrix_v1",
+              "metric": "reliability_score",
+              "value": 1.0
+            },
+            {
+              "case_id": "model_card_runtime_variable_matrix_v1",
+              "metric": "failure_class",
+              "value": "none"
+            },
+            {
+              "case_id": "model_card_runtime_variable_matrix_v1",
+              "metric": "error_present",
+              "value": false
+            },
+            {
+              "case_id": "model_card_runtime_variable_matrix_v1",
+              "metric": "timeout_hit",
+              "value": false
+            },
+            {
+              "case_id": "model_card_runtime_variable_matrix_v1",
+              "metric": "uncertainty_labeled",
+              "value": true
+            },
+            {
+              "case_id": "model_card_runtime_variable_matrix_v1",
+              "metric": "unsupported_success_claim",
+              "value": false
+            },
+            {
+              "case_id": "model_card_runtime_variable_matrix_v1",
+              "metric": "latency_ms",
+              "value": 12884
+            },
+            {
+              "case_id": "model_card_runtime_variable_matrix_v1",
+              "metric": "response_chars",
+              "value": 584
+            },
+            {
+              "case_id": "model_card_runtime_variable_matrix_v1",
+              "metric": "receipt_complete",
+              "value": true
+            }
+          ],
+          "receipt": "c34c281fab2382a7"
+        },
+        {
+          "case_id": "benchmark_task_quality_audit_v1",
+          "category": "benchmark_quality",
+          "model_ref": "ollama:qwen2.5:7b",
+          "passed": true,
+          "error": "",
+          "failure_class": "none",
+          "latency_ms": 774,
+          "response_chars": 398,
+          "terms": [
+            "benchmark",
+            "quality",
+            "audit",
+            "coding",
+            "label",
+            "accuracy",
+            "broken",
+            "detection",
+            "false",
+            "adjusted",
+            "score"
+          ],
+          "term_hits": 9,
+          "metrics": [
+            {
+              "case_id": "benchmark_task_quality_audit_v1",
+              "metric": "response_present",
+              "value": true
+            },
+            {
+              "case_id": "benchmark_task_quality_audit_v1",
+              "metric": "task_focus_score",
+              "value": 0.818
+            },
+            {
+              "case_id": "benchmark_task_quality_audit_v1",
+              "metric": "metric_mention_rate",
+              "value": 1.0
+            },
+            {
+              "case_id": "benchmark_task_quality_audit_v1",
+              "metric": "evidence_plan_score",
+              "value": 0.286
+            },
+            {
+              "case_id": "benchmark_task_quality_audit_v1",
+              "metric": "quality_score",
+              "value": 0.857
+            },
+            {
+              "case_id": "benchmark_task_quality_audit_v1",
+              "metric": "reliability_score",
+              "value": 1.0
+            },
+            {
+              "case_id": "benchmark_task_quality_audit_v1",
+              "metric": "failure_class",
+              "value": "none"
+            },
+            {
+              "case_id": "benchmark_task_quality_audit_v1",
+              "metric": "error_present",
+              "value": false
+            },
+            {
+              "case_id": "benchmark_task_quality_audit_v1",
+              "metric": "timeout_hit",
+              "value": false
+            },
+            {
+              "case_id": "benchmark_task_quality_audit_v1",
+              "metric": "uncertainty_labeled",
+              "value": true
+            },
+            {
+              "case_id": "benchmark_task_quality_audit_v1",
+              "metric": "unsupported_success_claim",
+              "value": false
+            },
+            {
+              "case_id": "benchmark_task_quality_audit_v1",
+              "metric": "latency_ms",
+              "value": 774
+            },
+            {
+              "case_id": "benchmark_task_quality_audit_v1",
+              "metric": "response_chars",
+              "value": 398
+            },
+            {
+              "case_id": "benchmark_task_quality_audit_v1",
+              "metric": "receipt_complete",
+              "value": true
+            }
+          ],
+          "receipt": "6549f75bfce61b8d"
+        }
+      ],
+      "live": true,
+      "operational": true,
+      "skipped": false
+    },
+    {
+      "schema": "source-mined.backend-benchmark/v1",
+      "provider": "codex",
+      "backend_name": "",
+      "live": false,
+      "operational": false,
+      "skipped": true,
+      "skip_reason": "online provider skipped; pass --allow-online to run",
+      "case_count": 0,
+      "passed_cases": 0,
+      "failed_cases": 0,
+      "pass_rate": 0.0,
+      "response_present_rate": 0.0,
+      "receipt_completeness": 0.0,
+      "mean_latency_ms": 0.0,
+      "max_latency_ms": 0,
+      "metric_count": 0,
+      "results": []
+    },
+    {
+      "schema": "source-mined.backend-benchmark/v1",
+      "provider": "claude",
+      "backend_name": "",
+      "live": false,
+      "operational": false,
+      "skipped": true,
+      "skip_reason": "online provider skipped; pass --allow-online to run",
+      "case_count": 0,
+      "passed_cases": 0,
+      "failed_cases": 0,
+      "pass_rate": 0.0,
+      "response_present_rate": 0.0,
+      "receipt_completeness": 0.0,
+      "mean_latency_ms": 0.0,
+      "max_latency_ms": 0,
+      "metric_count": 0,
+      "results": []
+    },
+    {
+      "schema": "source-mined.backend-benchmark/v1",
+      "provider": "opencode",
+      "backend_name": "",
+      "live": false,
+      "operational": false,
+      "skipped": true,
+      "skip_reason": "online provider skipped; pass --allow-online to run",
+      "case_count": 0,
+      "passed_cases": 0,
+      "failed_cases": 0,
+      "pass_rate": 0.0,
+      "response_present_rate": 0.0,
+      "receipt_completeness": 0.0,
+      "mean_latency_ms": 0.0,
+      "max_latency_ms": 0,
+      "metric_count": 0,
+      "results": []
+    }
+  ],
+  "summary": {
+    "operational_rows": 3,
+    "skipped_rows": 3,
+    "live_rows": 2,
+    "mean_pass_rate": 0.833,
+    "mean_quality_score": 0.728,
+    "mean_reliability_score": 1.0,
+    "mean_error_rate": 0.0,
+    "mean_timeout_rate": 0.0
+  }
+}

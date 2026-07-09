@@ -1,0 +1,74 @@
+{
+  "admission": null,
+  "budget_spent": {
+    "candidates": 4,
+    "oracle_calls": 4,
+    "proposer_cache": "search"
+  },
+  "candidate": "def second_largest(nums):\n    # Remove duplicates by converting to a set\n    unique_nums = set(nums)\n    \n    # If there are fewer than 2 unique numbers, return None\n    if len(unique_nums) < 2:\n        return None\n    \n    # Convert the set back to a list and sort it in descending order\n    sorted_unique_nums = sorted(unique_nums, reverse=True)\n    \n    # Return the second-largest value\n    return sorted_unique_nums[1]\n\n# Example usage:\nprint(second_largest([7, 5, 3, 8, 6]))  # Output: 7\nprint(second_largest([4, 4, 4, 4]))     # Output: None\nprint(second_largest([9, 9]))           # Output: None\n",
+  "chain": [
+    {
+      "evidence_ref": null,
+      "inputs_hash": "0f50c862a7ab3b9b",
+      "outputs_hash": "15f00359df16ec05",
+      "payload": {
+        "candidates": [
+          {
+            "candidate_hash": "15f00359df16ec05",
+            "oracle_output_hash": "cd81bf8721f42421",
+            "temp": 0.0,
+            "verdict": "PASS"
+          },
+          {
+            "candidate_hash": "0165680a96741248",
+            "oracle_output_hash": "cd81bf8721f42421",
+            "temp": 0.4,
+            "verdict": "PASS"
+          },
+          {
+            "candidate_hash": "7cf3a3ca946e0cc4",
+            "oracle_output_hash": "cd81bf8721f42421",
+            "temp": 0.8,
+            "verdict": "PASS"
+          },
+          {
+            "candidate_hash": "4be79773511b164e",
+            "oracle_output_hash": "cd81bf8721f42421",
+            "temp": 1.1,
+            "verdict": "PASS"
+          }
+        ],
+        "correlation": 0.597,
+        "n": 4
+      },
+      "prev_hash": "",
+      "receipt_hash": "ddece8b4b4795b4f",
+      "stage": "search",
+      "verdict": "PASS"
+    },
+    {
+      "evidence_ref": null,
+      "inputs_hash": "cd81bf8721f42421",
+      "outputs_hash": "MATCH",
+      "payload": {
+        "reason": "canonical hash reproduced"
+      },
+      "prev_hash": "ddece8b4b4795b4f",
+      "receipt_hash": "a68ae9537f3164c3",
+      "stage": "accept",
+      "verdict": "MATCH"
+    }
+  ],
+  "harness_version": "m1",
+  "injected_context": null,
+  "model_ref": "ollama:qwen2.5:7b",
+  "oracle": "pytest",
+  "oracle_cmd": "python -m pytest tests/ -q --junitxml=_oracle_junit.xml -q",
+  "oracle_output_hash": "cd81bf8721f42421",
+  "oracle_stdout_excerpt": ".....                                                                    [100%]\r\n",
+  "prompt_hash": "0f50c862a7ab3b9b",
+  "retrieved": [],
+  "seed": 0,
+  "task_id": "second_largest",
+  "verdict": "PASS"
+}

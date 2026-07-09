@@ -1,0 +1,8 @@
+{
+  "task_id": "duration_hms_strict",
+  "prompt": "Write a Python function parse_duration_strict(s: str) -> int that parses a duration string into a total number of seconds.\n\nFormat: one or more components concatenated with no separators, each component being a decimal integer immediately followed by a unit letter. The unit is exactly one of lowercase 'h' (hours), 'm' (minutes), 's' (seconds).\n\nRules:\n1. Units must appear in strictly descending order h, then m, then s, each unit at most once. \"5m1h\" and \"1h2h\" raise ValueError.\n2. Numbers are plain ASCII digits only: no sign, no spaces, no decimal point. A number must not have leading zeros unless it is exactly \"0\" (\"05m\" and \"00s\" raise ValueError; \"0s\" is valid and equals 0).\n3. Range rule: the FIRST (leftmost) component may have any nonnegative value (\"90m\" is valid and equals 5400; \"120s\" equals 120). Every component AFTER the first whose unit is 'm' or 's' must be at most 59, otherwise raise ValueError (\"1h60m\" and \"1m60s\" are invalid).\n4. Raise ValueError for: an empty string, a unit letter with no digits before it, digits with no unit after them (\"5m3\"), and any character other than ASCII digits and the three lowercase unit letters (uppercase units like \"5M\" are invalid, as is any whitespace anywhere).\n5. Return the total h*3600 + m*60 + s as an int.\n\nOutput ONLY the function definition.",
+  "oracle": "pytest",
+  "oracle_cmd": "python -m pytest tests/ -q",
+  "candidate_path": "solution.py",
+  "max_new_tokens": 768
+}

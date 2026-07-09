@@ -107,8 +107,39 @@ def _provenance() -> Dimension:
                      "no accepted result without bound grounding")
 
 
+def _buildc_receipt_bridge() -> Dimension:
+    from pathlib import Path
+    import json
+    import tempfile
+
+    from .buildc_receipt_bridge import bridge_buildc_receipt
+
+    sample = {
+        "schema": "buildlang-scientific-runtime-receipt/v0",
+        "compiler": "buildc",
+        "compiler_version": "1.2.0",
+        "language_version": "buildlang",
+        "source": {"path": "examples/heat_equation_energy.bld", "sha256": "0" * 64},
+        "invariant": {"name": "conservation", "status": "PASS"},
+        "receipt_status": "PASS",
+        "seal": {"algorithm": "sha256", "hex": "1" * 64},
+    }
+    with tempfile.TemporaryDirectory() as tmp:
+        path = Path(tmp) / "receipt.json"
+        path.write_text(json.dumps(sample, indent=2), encoding="utf-8")
+        packet = bridge_buildc_receipt(path)
+    no_false_match = packet["flywheel"]["verdict"] == "UNVERIFIABLE"
+    witness_complete = bool(packet["witness"]["receipt_complete"])
+    source_bound = bool(packet["witness"]["source_digest_present"])
+    seal_bound = bool(packet["witness"]["seal_present"])
+    score = 1.0 if no_false_match and witness_complete and source_bound and seal_bound else 0.0
+    return Dimension("buildc_receipt_bridge", score,
+                     "buildc_receipt_bridge.bridge_buildc_receipt",
+                     "imports buildc receipts as byte witnesses without promoting to MATCH absent verification")
+
+
 _DIMS = [_recheckability, _externalization, _adversarial_soundness, _no_regression,
-         _invariant_fidelity, _null_space_honesty, _provenance]
+         _invariant_fidelity, _null_space_honesty, _provenance, _buildc_receipt_bridge]
 
 
 def score_harness() -> dict:

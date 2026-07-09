@@ -1,0 +1,8 @@
+{
+  "task_id": "kv_event_fold",
+  "prompt": "Write a Python function fold_events(events) that folds a list of key-value store events into the final state dict.\n\nEach event is a tuple: (\"set\", ts, key, value) with exactly 4 elements, or (\"del\", ts, key) with exactly 3 elements. ts is an integer timestamp >= 0; key is a str; value may be anything. Events may appear in the list in any timestamp order.\n\nFirst validate every event; raise ValueError if any event is malformed:\n- an event that is not a tuple;\n- first element not \"set\" or \"del\" (including an empty tuple);\n- wrong number of elements for its op;\n- ts not an int, or ts < 0; booleans are NOT acceptable timestamps (True/False must raise even though bool is a subclass of int);\n- key not a str.\n\nThen fold: events apply in ascending timestamp order. For events sharing the same timestamp: all \"set\" events at that timestamp apply first, in input-list order (so for the same key the set appearing later in the list wins), then all \"del\" events at that timestamp apply (so a del beats every set at the same timestamp for the same key, regardless of input order). A del for an absent key is a silent no-op. A set at a strictly later timestamp than a del re-creates the key.\n\nThe input list and its tuples must not be mutated. Return a dict mapping each surviving key to its final value; return {} for an empty event list.\n\nOutput ONLY the function definition.",
+  "oracle": "pytest",
+  "oracle_cmd": "python -m pytest tests/ -q",
+  "candidate_path": "solution.py",
+  "max_new_tokens": 768
+}

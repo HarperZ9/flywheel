@@ -1,0 +1,290 @@
+{
+  "schema": "harness.architecture-graph/v1",
+  "status": "target-architecture-zero-mandatory-dependencies",
+  "generated_utc": "2026-07-09T00:00:00Z",
+  "authority": [
+    "C:\\dev\\local-model\\project-docs\\ARCHITECTURE.md",
+    "C:\\dev\\local-model\\project-docs\\INFRASTRUCTURE.md"
+  ],
+  "nodes": [
+    {
+      "id": "operator",
+      "kind": "actor",
+      "label": "Operator / Team",
+      "responsibility": "Starts runs, reviews receipts, configures endpoints, approves releases."
+    },
+    {
+      "id": "harness_ui",
+      "kind": "frontend",
+      "label": "Enterprise Harness UI",
+      "responsibility": "Mission Control, runs, benchmarks, models, tools, receipts, schematics, settings.",
+      "stack": ["React", "TypeScript", "Vite", "CSS variables"]
+    },
+    {
+      "id": "control_plane_api",
+      "kind": "backend",
+      "label": "Control Plane API",
+      "responsibility": "Typed API for runs, tools, models, receipts, artifacts, auth status, and schematics.",
+      "stack": ["Python", "FastAPI"],
+      "proposed_port": 8780
+    },
+    {
+      "id": "worker_runtime",
+      "kind": "backend",
+      "label": "Worker Runtime",
+      "responsibility": "Runs benchmarks, endpoint probes, model release checks, tool health checks, and receipt jobs."
+    },
+    {
+      "id": "agent_runtime",
+      "kind": "runtime",
+      "label": "Agent Runtime",
+      "responsibility": "Executes routed agent workflows with explicit model/tool choices and receipts."
+    },
+    {
+      "id": "benchmark_runtime",
+      "kind": "runtime",
+      "label": "Benchmark Runtime",
+      "responsibility": "Runs M7, adversarial, source-mined, stateful, and provider matrices."
+    },
+    {
+      "id": "model_foundry",
+      "kind": "runtime",
+      "label": "Model Foundry",
+      "responsibility": "Manages local/frontier model profiles, 14B/32B release gates, model cards, and checksums."
+    },
+    {
+      "id": "tool_registry",
+      "kind": "runtime",
+      "label": "Tool Registry",
+      "responsibility": "Tracks flagship tools, endpoints, health, owner, version, and retirement criteria."
+    },
+    {
+      "id": "receipt_ledger",
+      "kind": "runtime",
+      "label": "Receipt Ledger",
+      "responsibility": "Stores byte-witness packets, hashes, verdicts, artifact pointers, and benchmark evidence."
+    },
+    {
+      "id": "docs_schematics",
+      "kind": "runtime",
+      "label": "Docs and Schematic Engine",
+      "responsibility": "Maintains architecture docs, graph artifacts, model cards, reports, and drift checks."
+    },
+    {
+      "id": "index",
+      "kind": "flagship",
+      "label": "index",
+      "responsibility": "Workspace graph and context map."
+    },
+    {
+      "id": "forum",
+      "kind": "flagship",
+      "label": "forum",
+      "responsibility": "Routing and communication contracts."
+    },
+    {
+      "id": "gather",
+      "kind": "flagship",
+      "label": "gather",
+      "responsibility": "Source intake and corpus capture."
+    },
+    {
+      "id": "crucible",
+      "kind": "flagship",
+      "label": "crucible",
+      "responsibility": "Adversarial evaluation and pressure testing."
+    },
+    {
+      "id": "telos",
+      "kind": "flagship",
+      "label": "telos",
+      "responsibility": "Context envelopes and control-plane conventions."
+    },
+    {
+      "id": "mneme",
+      "kind": "flagship",
+      "label": "mneme",
+      "responsibility": "Memory, provenance, and recall."
+    },
+    {
+      "id": "relay",
+      "kind": "flagship",
+      "label": "relay",
+      "responsibility": "Event bus and message transport."
+    },
+    {
+      "id": "plexus",
+      "kind": "flagship",
+      "label": "plexus",
+      "responsibility": "Graph planning and dependency orchestration."
+    },
+    {
+      "id": "local_model",
+      "kind": "flagship",
+      "label": "local-model",
+      "responsibility": "Model endpoints, M7, benchmark harness, model cards, and release gates."
+    },
+    {
+      "id": "pubscan",
+      "kind": "tool_universe",
+      "label": "pubscan public tools",
+      "responsibility": "Top-level public repositories and tools under C:\\dev\\public\\pubscan.",
+      "path": "C:\\dev\\public\\pubscan",
+      "inventory": [
+        "calibrate-pro",
+        "emet",
+        "HarperZ9",
+        "HarperZ9.github.io",
+        "linguist",
+        "linguist-add-quantalang",
+        "quanta-color",
+        "quantalang",
+        "quantalang-tmLanguage",
+        "quantalang-vscode",
+        "quanta-universe",
+        "quanta-universe-fix-codegen-prefixing",
+        "wol-pi"
+      ]
+    },
+    {
+      "id": "native_rendering",
+      "kind": "native_tooling",
+      "label": "Native rendering engine/tooling",
+      "responsibility": "Local rendering, visual artifacts, schematics, screenshots, previews, and UI-native output receipts.",
+      "profile_status": "needs_tool_profile_receipt"
+    },
+    {
+      "id": "compute_profiles",
+      "kind": "resource",
+      "label": "Compute Profiles",
+      "responsibility": "Local CPU/GPU, remote GPU, lab cluster, rented compute, dry fixture, and queue capacity accounting.",
+      "profile_status": "needed"
+    },
+    {
+      "id": "storage_profiles",
+      "kind": "resource",
+      "label": "Storage Profiles",
+      "responsibility": "Local artifact roots, content-addressed store, optional object storage, retention policy, and capacity accounting.",
+      "profile_status": "needed"
+    },
+    {
+      "id": "core_file_store",
+      "kind": "storage",
+      "label": "Zero-dependency file store",
+      "responsibility": "Local JSONL/SQLite/filesystem run, event, receipt, and artifact storage."
+    },
+    {
+      "id": "postgres",
+      "kind": "database",
+      "label": "PostgreSQL adapter",
+      "responsibility": "Optional source-of-truth adapter for runs, tools, models, receipts, auth status, datasets, and schematics.",
+      "proposed_port": 5432
+    },
+    {
+      "id": "object_store",
+      "kind": "storage",
+      "label": "Object Store adapter",
+      "responsibility": "Optional storage for JSON artifacts, reports, logs, receipts, model cards, and screenshots."
+    },
+    {
+      "id": "vector_search",
+      "kind": "search",
+      "label": "Vector/Search adapter",
+      "responsibility": "Optional acceleration over docs, code, memory, and receipt summaries. Not source of truth."
+    },
+    {
+      "id": "event_stream",
+      "kind": "queue",
+      "label": "Relay / Redis / NATS Event Stream adapter",
+      "responsibility": "Optional durable run, tool, model, health, and receipt events."
+    },
+    {
+      "id": "observability",
+      "kind": "infra",
+      "label": "Observability adapter",
+      "responsibility": "Optional traces, metrics, logs, and service health."
+    }
+  ],
+  "edges": [
+    {"from": "operator", "to": "harness_ui", "relation": "operates"},
+    {"from": "harness_ui", "to": "control_plane_api", "relation": "calls"},
+    {"from": "control_plane_api", "to": "postgres", "relation": "persists"},
+    {"from": "control_plane_api", "to": "event_stream", "relation": "publishes"},
+    {"from": "event_stream", "to": "worker_runtime", "relation": "dispatches"},
+    {"from": "worker_runtime", "to": "agent_runtime", "relation": "executes"},
+    {"from": "worker_runtime", "to": "benchmark_runtime", "relation": "executes"},
+    {"from": "worker_runtime", "to": "model_foundry", "relation": "executes"},
+    {"from": "worker_runtime", "to": "tool_registry", "relation": "checks"},
+    {"from": "worker_runtime", "to": "receipt_ledger", "relation": "writes"},
+    {"from": "worker_runtime", "to": "docs_schematics", "relation": "updates"},
+    {"from": "agent_runtime", "to": "forum", "relation": "routes via"},
+    {"from": "agent_runtime", "to": "index", "relation": "requests context from"},
+    {"from": "agent_runtime", "to": "mneme", "relation": "requests memory from"},
+    {"from": "agent_runtime", "to": "local_model", "relation": "calls models through"},
+    {"from": "benchmark_runtime", "to": "crucible", "relation": "uses pressure lanes from"},
+    {"from": "benchmark_runtime", "to": "local_model", "relation": "runs harnesses from"},
+    {"from": "tool_registry", "to": "index", "relation": "tracks"},
+    {"from": "tool_registry", "to": "forum", "relation": "tracks"},
+    {"from": "tool_registry", "to": "gather", "relation": "tracks"},
+    {"from": "tool_registry", "to": "crucible", "relation": "tracks"},
+    {"from": "tool_registry", "to": "telos", "relation": "tracks"},
+    {"from": "tool_registry", "to": "mneme", "relation": "tracks"},
+    {"from": "tool_registry", "to": "relay", "relation": "tracks"},
+    {"from": "tool_registry", "to": "plexus", "relation": "tracks"},
+    {"from": "tool_registry", "to": "pubscan", "relation": "tracks"},
+    {"from": "tool_registry", "to": "native_rendering", "relation": "tracks"},
+    {"from": "model_foundry", "to": "compute_profiles", "relation": "requires"},
+    {"from": "receipt_ledger", "to": "storage_profiles", "relation": "requires"},
+    {"from": "pubscan", "to": "local_model", "relation": "feeds source-mined benchmarks and local tools into"},
+    {"from": "native_rendering", "to": "docs_schematics", "relation": "renders visual artifacts for"},
+    {"from": "docs_schematics", "to": "plexus", "relation": "delegates graph planning to"},
+    {"from": "receipt_ledger", "to": "core_file_store", "relation": "stores core receipts in"},
+    {"from": "docs_schematics", "to": "object_store", "relation": "stores artifacts in"},
+    {"from": "receipt_ledger", "to": "object_store", "relation": "stores receipt bodies in"},
+    {"from": "receipt_ledger", "to": "postgres", "relation": "indexes metadata in"},
+    {"from": "receipt_ledger", "to": "vector_search", "relation": "indexes summaries in"},
+    {"from": "control_plane_api", "to": "observability", "relation": "emits telemetry to"},
+    {"from": "worker_runtime", "to": "observability", "relation": "emits telemetry to"}
+  ],
+  "boundaries": [
+    {
+      "id": "no_monolith_merge",
+      "rule": "Flagships are operated through the control plane and typed adapters, not physically merged into one monolithic package."
+    },
+    {
+      "id": "sql_source_of_truth",
+      "rule": "The zero-dependency local store, optional PostgreSQL adapter, and content-addressed receipts are authoritative; vector/search stores are acceleration only."
+    },
+    {
+      "id": "zero_mandatory_dependencies",
+      "rule": "Core harness operation must work with local files, local executables, native rendering/tooling, and local model endpoints; middleware and rich UI are optional adapters."
+    },
+    {
+      "id": "pubscan_first_class",
+      "rule": "Every top-level C:\\dev\\public\\pubscan repository should become a harness.tool-profile/v1 row before full tool coverage is claimed."
+    },
+    {
+      "id": "compute_storage_are_scarce",
+      "rule": "Rendering/native tooling is treated as existing capability; compute and durable storage require explicit resource profiles and capacity receipts."
+    },
+    {
+      "id": "secret_boundary",
+      "rule": "Receipts may record secret presence booleans and safe metadata only; credential values never enter artifacts."
+    },
+    {
+      "id": "failure_first",
+      "rule": "Provider errors, malformed action output, repair failures, missing receipts, and stale schematics are first-class outcomes."
+    }
+  ],
+  "next_slices": [
+    "Create shared harness schemas for run, event, receipt, model profile, tool profile, pubscan profile, compute profile, storage profile, benchmark result, and architecture graph.",
+    "Create a pubscan tool-profile generator for C:\\dev\\public\\pubscan.",
+    "Create native rendering/tool profile and receipt adapter.",
+    "Create compute and storage profile receipts.",
+    "Build zero-dependency file-backed run/event/receipt store.",
+    "Build optional FastAPI control-plane skeleton with local SQLite/PostgreSQL adapter.",
+    "Build optional rich UI shell with Dashboard, Runs, Benchmarks, Models, Tools, Receipts, Schematics, and Settings.",
+    "Wrap existing benchmark scripts and auth-status receipts as worker jobs.",
+    "Integrate Relay as the event stream and Plexus as schematic graph maintainer."
+  ]
+}

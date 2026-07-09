@@ -1,0 +1,74 @@
+{
+  "admission": null,
+  "budget_spent": {
+    "candidates": 4,
+    "oracle_calls": 4,
+    "proposer_cache": "search"
+  },
+  "candidate": "def fizzbuzz(n):\n    result = []\n    for i in range(1, n + 1):\n        if i % 3 == 0 and i % 5 == 0:\n            result.append('FizzBuzz')\n        elif i % 3 == 0:\n            result.append('Fizz')\n        elif i % 5 == 0:\n            result.append('Buzz')\n        else:\n            result.append(str(i))\n    return result\n\n# Example usage\nn = 16\nprint(fizzbuzz(n))\n",
+  "chain": [
+    {
+      "evidence_ref": null,
+      "inputs_hash": "bac1e760102513b0",
+      "outputs_hash": "7863656918c13a60",
+      "payload": {
+        "candidates": [
+          {
+            "candidate_hash": "7863656918c13a60",
+            "oracle_output_hash": "789e5a23e42b4fa0",
+            "temp": 0.0,
+            "verdict": "PASS"
+          },
+          {
+            "candidate_hash": "7863656918c13a60",
+            "oracle_output_hash": "789e5a23e42b4fa0",
+            "temp": 0.4,
+            "verdict": "PASS"
+          },
+          {
+            "candidate_hash": "7fa4fa14c78968e1",
+            "oracle_output_hash": "789e5a23e42b4fa0",
+            "temp": 0.8,
+            "verdict": "PASS"
+          },
+          {
+            "candidate_hash": "de92ca085e1e936d",
+            "oracle_output_hash": "789e5a23e42b4fa0",
+            "temp": 1.1,
+            "verdict": "PASS"
+          }
+        ],
+        "correlation": 1.0,
+        "n": 4
+      },
+      "prev_hash": "",
+      "receipt_hash": "22db082ebaf106de",
+      "stage": "search",
+      "verdict": "PASS"
+    },
+    {
+      "evidence_ref": null,
+      "inputs_hash": "789e5a23e42b4fa0",
+      "outputs_hash": "MATCH",
+      "payload": {
+        "reason": "canonical hash reproduced"
+      },
+      "prev_hash": "22db082ebaf106de",
+      "receipt_hash": "8c6d281d4f30e4cb",
+      "stage": "accept",
+      "verdict": "MATCH"
+    }
+  ],
+  "harness_version": "m1",
+  "injected_context": null,
+  "model_ref": "ollama:qwen2.5:7b",
+  "oracle": "pytest",
+  "oracle_cmd": "python -m pytest tests/ -q --junitxml=_oracle_junit.xml -q",
+  "oracle_output_hash": "789e5a23e42b4fa0",
+  "oracle_stdout_excerpt": "...                                                                      [100%]\r\n",
+  "prompt_hash": "bac1e760102513b0",
+  "retrieved": [],
+  "seed": 0,
+  "task_id": "fizzbuzz",
+  "verdict": "PASS"
+}

@@ -1,0 +1,8 @@
+{
+  "task_id": "group_pairs",
+  "prompt": "Write a Python function `group_pairs(pairs)` that groups (key, value) pairs into a dict.\n\nContract:\n1. `pairs` is a list. Every element must be EXACTLY of type `tuple` (instances of tuple subclasses are rejected) with length exactly 2. If any element violates this \u2014 a list of length 2, a 1- or 3-tuple, a tuple subclass instance \u2014 raise `ValueError`.\n2. Return a NEW dict mapping each key to the list of its values. Keys appear in the result in order of their FIRST occurrence in `pairs`; each key's values appear in encounter order. Duplicate (key, value) pairs are all kept.\n3. The value objects must be placed into the result lists as-is: the exact same objects (identity preserved), never copied or converted.\n4. The input list must not be mutated. An empty input returns an empty dict.\n\nOutput ONLY the function definition.",
+  "oracle": "pytest",
+  "oracle_cmd": "python -m pytest tests/ -q",
+  "candidate_path": "solution.py",
+  "max_new_tokens": 768
+}

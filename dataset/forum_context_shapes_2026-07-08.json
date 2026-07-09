@@ -1,0 +1,337 @@
+{
+  "schema": "forum-context-shapes/v1",
+  "generated_at": "2026-07-08",
+  "purpose": "Curated source-shape signals from selected Reddit forums for local-model, flywheel, and Codex-harness benchmark expansion.",
+  "sources": [
+    {
+      "id": "reddit-artificialinteligence",
+      "name": "r/ArtificialInteligence",
+      "url": "https://www.reddit.com/r/ArtificialInteligence/",
+      "observed_surfaces": [
+        "subreddit about JSON",
+        "hot listing",
+        "pinned high-signal announcement"
+      ],
+      "context_shape": "high-signal AI curation and builder/research discussion",
+      "signals": [
+        "flair-gated posting norms",
+        "research, project/build, tutorial, model/tool, analysis, and news lanes",
+        "explicit pressure against low-context hype, doom, and tool spam",
+        "tool-recommendation traffic redirected away from the main discussion lane"
+      ],
+      "tool_relevance": [
+        "benchmark source triage should reject marketing-only posts",
+        "curation agents should require context, evidence, and technical mechanism",
+        "builder-post summarization should preserve repo/demo, method, result, and lesson fields"
+      ],
+      "risks": [
+        "misspelled subreddit name can cause duplicate-source confusion",
+        "hot listings are volatile and should not be treated as stable benchmark evidence"
+      ],
+      "confidence": "high"
+    },
+    {
+      "id": "reddit-processing",
+      "name": "r/processing",
+      "url": "https://www.reddit.com/r/processing/",
+      "observed_surfaces": [
+        "subreddit about JSON",
+        "hot listing",
+        "community posting rules"
+      ],
+      "context_shape": "creative-code help forum with reproducible snippets and visual outputs",
+      "signals": [
+        "help posts are expected to include code and clear titles",
+        "questions frequently involve p5.js, Processing syntax, save/export behavior, runtime errors, and visual simulation",
+        "project posts mix creative output with implementation details",
+        "compatibility and transpiler edge cases are valuable because users bring real-world sketches"
+      ],
+      "tool_relevance": [
+        "agentic code-help benchmarks should require exact-code grounding",
+        "debugging agents should ask for missing snippets rather than inventing a fix",
+        "visual-code tasks need output-state expectations, not only text answers"
+      ],
+      "risks": [
+        "novice help context can tempt models to over-complete schoolwork",
+        "visual correctness may require an image or browser oracle instead of pure text grading"
+      ],
+      "confidence": "high"
+    },
+    {
+      "id": "reddit-accelerate",
+      "name": "r/accelerate",
+      "url": "https://www.reddit.com/r/accelerate/",
+      "observed_surfaces": [
+        "subreddit about JSON",
+        "hot listing"
+      ],
+      "context_shape": "accelerationist trend radar and pro-AI narrative stream",
+      "signals": [
+        "strong pro-technology and anti-deceleration framing",
+        "news, memes, policy, AI-video, chip-investment, robotics, BCI, and benchmark-discourse posts",
+        "high adoption-signal value but inconsistent evidence density"
+      ],
+      "tool_relevance": [
+        "trend monitors should classify claims by evidence quality before feeding benchmarks",
+        "model-evaluation reports should separate zeitgeist pressure from measured capability",
+        "publish-prep should preserve narrative fit without letting ideology replace evidence"
+      ],
+      "risks": [
+        "ideological forum shape can amplify unsupported claims",
+        "meme-heavy posts are useful context but weak benchmark ground truth"
+      ],
+      "confidence": "high"
+    },
+    {
+      "id": "reddit-artificialntelligence",
+      "name": "r/ArtificialNtelligence",
+      "url": "https://www.reddit.com/r/ArtificialNtelligence/",
+      "observed_surfaces": [
+        "subreddit listing",
+        "search-visible community rule",
+        "hot listing"
+      ],
+      "context_shape": "broad AI discussion with practical agent-reliability threads",
+      "signals": [
+        "broad AI relevance rule rather than a narrow research-only lane",
+        "agent-production posts raise timeout, recovery, and evaluation questions",
+        "practical workflow discussions emphasize traces, retries, fallbacks, and ambiguous acceptable recoveries"
+      ],
+      "tool_relevance": [
+        "agent benchmarks should inject controlled tool failures",
+        "oracles should reward valid recovery paths, not only one exact final trace",
+        "harnesses need step-level receipts for timeout, retry, fallback, and escalation behavior"
+      ],
+      "risks": [
+        "misspelled subreddit name can be confused with larger AI subreddits",
+        "broad-topic feed needs stronger filtering before use as training or evaluation data"
+      ],
+      "confidence": "moderate"
+    }
+  ],
+  "context_shapes": [
+    {
+      "id": "high_signal_builder_curator",
+      "source_ids": [
+        "reddit-artificialinteligence"
+      ],
+      "pattern": "A useful AI forum submission must declare lane, mechanism, evidence, and discussion value.",
+      "signals": [
+        "flairs and verified roles encode intended audience",
+        "project/build posts need substance beyond a product link",
+        "news and opinion posts need context and evidence"
+      ],
+      "tool_implications": [
+        "add curation scoring fields: lane, mechanism, evidence, artifact, reproducibility, discussion_value",
+        "reject or down-rank bare tool drops and claims without method"
+      ],
+      "benchmark_case": {
+        "id": "forum_high_signal_curation_v1",
+        "objective": "Score whether an AI-builder source is benchmark-worthy or should be rejected as low-signal.",
+        "task_prompt": "Given a mixed list of AI forum submissions, classify each as benchmark-worthy, trend-only, needs-more-context, or reject. Preserve the mechanism and required missing evidence.",
+        "oracle_checks": [
+          "classifies marketing-only posts as reject or needs-more-context",
+          "preserves technical method and artifact links when present",
+          "does not treat popularity or novelty as evidence",
+          "routes tool-recommendation requests outside the main benchmark lane"
+        ],
+        "metrics": [
+          "curation_precision",
+          "missing_context_recall",
+          "mechanism_preservation",
+          "false_evidence_rate"
+        ],
+        "tags": [
+          "curation",
+          "source-quality",
+          "benchmark-ingest"
+        ]
+      }
+    },
+    {
+      "id": "creative_code_repro_debug",
+      "source_ids": [
+        "reddit-processing"
+      ],
+      "pattern": "Creative-code help requires concrete code, expected visual behavior, actual failure mode, and small reproducible examples.",
+      "signals": [
+        "questions often hinge on one runtime state or drawing-loop assumption",
+        "visual artifacts make pure text grading incomplete",
+        "community norms favor showing code before receiving code-level help"
+      ],
+      "tool_implications": [
+        "agentic coding benchmarks should include incomplete-snippet traps",
+        "debugging graders should reward requests for missing code when required",
+        "visual-sketch benchmarks should record expected frame/state assertions"
+      ],
+      "benchmark_case": {
+        "id": "forum_processing_repro_debug_v1",
+        "objective": "Evaluate whether an agent can debug a creative-code task without hallucinating unseen code.",
+        "task_prompt": "A user reports a p5.js/Processing sketch bug with partial context. Identify the missing evidence, propose the smallest reproducible check, and only patch code that is actually provided.",
+        "oracle_checks": [
+          "asks for code when the prompt lacks the failing snippet",
+          "grounds fixes in provided code and error text",
+          "states expected visual or frame-level behavior",
+          "avoids doing full schoolwork-style implementation when the task is educational help"
+        ],
+        "metrics": [
+          "grounding_score",
+          "missing_evidence_detection",
+          "visual_expectation_specificity",
+          "overcompletion_penalty"
+        ],
+        "tags": [
+          "creative-code",
+          "debugging",
+          "grounding"
+        ]
+      }
+    },
+    {
+      "id": "agent_recovery_fault_injection",
+      "source_ids": [
+        "reddit-artificialntelligence"
+      ],
+      "pattern": "Production agent evaluation must measure recovery under controlled tool failure, not only clean-path completion.",
+      "signals": [
+        "timeouts and intermittent tool failures are realistic production conditions",
+        "multiple recovery paths can be acceptable",
+        "step-level traces are needed to distinguish retry, fallback, escalation, and silent failure"
+      ],
+      "tool_implications": [
+        "extend flywheel and Codex harness comparisons with controlled timeout, 429, malformed JSON, and stale-result injections",
+        "score recovery actions separately from final-answer correctness",
+        "store receipt chains for each tool attempt and recovery branch"
+      ],
+      "benchmark_case": {
+        "id": "forum_agent_recovery_faults_v1",
+        "objective": "Measure agent reliability when tools fail at controlled rates.",
+        "task_prompt": "Complete a multi-step local task while the harness injects intermittent tool timeout, 429, malformed response, and stale-cache events. Recover or escalate with a traceable reason.",
+        "oracle_checks": [
+          "does not silently ignore failed tool calls",
+          "uses bounded retry or alternate route where appropriate",
+          "surfaces typed failure when recovery is impossible",
+          "preserves final-task correctness when failures are recoverable",
+          "emits step-level receipts for failure and recovery events"
+        ],
+        "metrics": [
+          "recovery_success_rate",
+          "silent_failure_rate",
+          "retry_budget_compliance",
+          "fallback_quality",
+          "receipt_completeness",
+          "p95_recovery_latency"
+        ],
+        "tags": [
+          "agentic",
+          "fault-injection",
+          "tool-recovery",
+          "production-readiness"
+        ]
+      }
+    },
+    {
+      "id": "trend_claim_evidence_gate",
+      "source_ids": [
+        "reddit-accelerate",
+        "reddit-artificialinteligence"
+      ],
+      "pattern": "AI trend sources can be useful as context, but benchmark claims must be evidence-gated before entering reports.",
+      "signals": [
+        "trend forums surface early narratives and adoption pressure",
+        "high-signal forums demand context and evidence",
+        "model-performance and policy claims often require independent primary-source validation"
+      ],
+      "tool_implications": [
+        "add evidence-tier labels before using forum claims in benchmark docs",
+        "separate narrative synthesis from measured outcome tables",
+        "require source-type and verification-status fields in benchmark reports"
+      ],
+      "benchmark_case": {
+        "id": "forum_trend_evidence_gate_v1",
+        "objective": "Evaluate whether an agent can convert forum trend signals into evidence-tiered research notes without overclaiming.",
+        "task_prompt": "Given trend-heavy AI forum claims and high-signal technical posts, produce a benchmark planning note that separates measured evidence, plausible hypothesis, and narrative-only signal.",
+        "oracle_checks": [
+          "labels forum-only claims as unverified context",
+          "requires primary-source validation for benchmark or release claims",
+          "keeps narrative positioning out of measured result fields",
+          "retains useful adoption and user-pain signals"
+        ],
+        "metrics": [
+          "evidence_tier_accuracy",
+          "overclaim_rate",
+          "source_type_preservation",
+          "useful_signal_retention"
+        ],
+        "tags": [
+          "research-synthesis",
+          "evidence-gating",
+          "publish-prep"
+        ]
+      }
+    },
+    {
+      "id": "signal_preserving_transform",
+      "source_ids": [
+        "reddit-artificialntelligence",
+        "reddit-processing",
+        "reddit-artificialinteligence"
+      ],
+      "pattern": "A strong transformation preserves user intent, constraints, uncertainty, evidence, and authority boundaries across summaries, plans, and executable cases.",
+      "signals": [
+        "forum curation needs source context preserved through downstream use",
+        "debugging help needs uncertainty preserved when code is missing",
+        "agent-recovery evaluation needs trace evidence preserved from event to score"
+      ],
+      "tool_implications": [
+        "benchmark case generation should carry source_ids, risks, oracle checks, and metrics",
+        "harness reports should expose what was inferred versus verified",
+        "local-model training/eval artifacts should avoid flattening uncertainty away"
+      ],
+      "benchmark_case": {
+        "id": "forum_signal_preservation_v1",
+        "objective": "Measure whether a model preserves constraints and uncertainty while converting forum context into executable benchmark tasks.",
+        "task_prompt": "Transform a source-shape note into a benchmark case. Preserve source identity, verified observations, inferred implications, risks, oracle checks, and metrics.",
+        "oracle_checks": [
+          "keeps source_ids attached to generated cases",
+          "separates observation from inference",
+          "preserves uncertainty labels",
+          "does not invent measurements not present in the source note"
+        ],
+        "metrics": [
+          "source_traceability",
+          "observation_inference_separation",
+          "uncertainty_preservation",
+          "fabricated_metric_rate"
+        ],
+        "tags": [
+          "transformation",
+          "anti-hallucination",
+          "benchmark-generation"
+        ]
+      }
+    }
+  ],
+  "tool_actions": [
+    {
+      "id": "emit_benchmark_cases",
+      "target": "scripts/forum_context_shapes.py",
+      "action": "Load this dataset and emit benchmark-case JSON that can seed flywheel, Codex, and local-model harness comparisons."
+    },
+    {
+      "id": "add_fault_injection_lane",
+      "target": "flywheel and Codex harness benchmark configs",
+      "action": "Add controlled timeout, 429, malformed-response, and stale-cache injections with recovery-specific metrics."
+    },
+    {
+      "id": "add_evidence_tiers",
+      "target": "benchmark reports and publish-prep docs",
+      "action": "Separate measured results, primary-source evidence, forum-observed signal, and narrative-only context."
+    },
+    {
+      "id": "add_visual_code_oracles",
+      "target": "local creative-code benchmark fixtures",
+      "action": "Represent Processing/p5.js tasks with code snippet, expected visual state, runtime error, and missing-context traps."
+    }
+  ]
+}

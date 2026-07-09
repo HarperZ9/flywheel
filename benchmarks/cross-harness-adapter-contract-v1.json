@@ -1,0 +1,143 @@
+{
+  "schema": "harness.cross-harness-adapter-contract/v1",
+  "contract_id": "cross_harness_adapter_contract_v1",
+  "status": "draft_not_executed",
+  "created_at": "2026-07-09",
+  "source_task_set": "C:/dev/local-model/benchmarks/agentic-task-set-v1.json",
+  "purpose": "Standardize how Codex, Flywheel, Claude Code, OpenCode, local model endpoints, and dry/null providers consume identical tasks and emit comparable receipts.",
+  "global_invariants": [
+    "Each provider receives the same task_id and task prompt bytes for comparable runs.",
+    "Each provider records raw prompt hash, raw output hash, artifact paths, receipt path, run id, provider role, harness id, model id, and failure class.",
+    "Provider secrets, endpoint credentials, .env values, tokens, private keys, and private payload bodies must never be copied into scorecards.",
+    "A prepared adapter is not an executed benchmark.",
+    "A skipped provider is evidence of coverage gap, not model failure.",
+    "A provider result is comparable only when task_id, task_set_id, metric schema, and execution policy match."
+  ],
+  "planned_scorecard_schema": "harness.cross-harness-task-scorecard/v1",
+  "planned_run_receipt_schema": "harness.cross-harness-run-receipt/v1",
+  "provider_roles": [
+    {
+      "provider_role": "codex_harness",
+      "harness_id": "codex",
+      "target_model": "5.3-Codex-Spark",
+      "current_evidence": ["C:/dev/local-model/harness.cmd exists"],
+      "adapter_state": "contract_only",
+      "allowed_modes": ["manifest_only", "dry_plan", "focused_run_after_approval"],
+      "required_receipts": ["raw_prompt", "raw_output", "tool_trace", "harness_receipt", "metric_row"]
+    },
+    {
+      "provider_role": "flywheel_harness",
+      "harness_id": "flywheel",
+      "target_model": "5.3-Codex-Spark",
+      "current_evidence": ["C:/dev/local-model closed-loop scripts exist"],
+      "adapter_state": "contract_only",
+      "allowed_modes": ["manifest_only", "dry_plan", "focused_run_after_approval"],
+      "required_receipts": ["raw_prompt", "raw_output", "tool_trace", "harness_receipt", "metric_row"]
+    },
+    {
+      "provider_role": "claude_code",
+      "harness_id": "claude_code",
+      "target_model": "configured_by_operator",
+      "current_evidence": ["no local execution evidence recorded in this contract"],
+      "adapter_state": "needs_discovery",
+      "allowed_modes": ["manifest_only", "focused_run_after_approval"],
+      "required_receipts": ["raw_prompt", "raw_output", "tool_trace_if_available", "harness_receipt", "metric_row"]
+    },
+    {
+      "provider_role": "opencode",
+      "harness_id": "opencode",
+      "target_model": "configured_by_operator",
+      "current_evidence": ["C:/Users/Zain/AppData/Local/Programs/@opencode-aidesktop exists"],
+      "adapter_state": "needs_adapter",
+      "allowed_modes": ["manifest_only", "focused_run_after_approval"],
+      "required_receipts": ["raw_prompt", "raw_output", "tool_trace_if_available", "harness_receipt", "metric_row"]
+    },
+    {
+      "provider_role": "local_14b",
+      "harness_id": "local_endpoint",
+      "target_model": "14B",
+      "current_evidence": ["E:/local-model-run exists"],
+      "adapter_state": "needs_endpoint_profile_and_gate",
+      "allowed_modes": ["manifest_only", "endpoint_profile", "endpoint_gate_after_approval", "focused_run_after_approval"],
+      "required_receipts": ["endpoint_profile", "endpoint_gate", "raw_prompt", "raw_output", "metric_row"]
+    },
+    {
+      "provider_role": "local_32b",
+      "harness_id": "local_endpoint",
+      "target_model": "32B",
+      "current_evidence": ["E:/local-model-run exists"],
+      "adapter_state": "needs_endpoint_profile_and_gate",
+      "allowed_modes": ["manifest_only", "endpoint_profile", "endpoint_gate_after_approval", "focused_run_after_approval"],
+      "required_receipts": ["endpoint_profile", "endpoint_gate", "raw_prompt", "raw_output", "metric_row"]
+    },
+    {
+      "provider_role": "dry",
+      "harness_id": "dry_null",
+      "target_model": "none",
+      "current_evidence": ["dry/null role is declared for command and receipt verification"],
+      "adapter_state": "contract_only",
+      "allowed_modes": ["manifest_only", "dry_plan"],
+      "required_receipts": ["raw_prompt_hash", "planned_artifacts", "no_execution_receipt"]
+    }
+  ],
+  "scorecard_row_contract": {
+    "required_fields": [
+      "task_set_id",
+      "task_id",
+      "benchmark_id",
+      "coverage_unit",
+      "provider_role",
+      "harness_id",
+      "model_id",
+      "execution_mode",
+      "status",
+      "failure_class",
+      "raw_prompt_sha256",
+      "raw_output_sha256",
+      "raw_prompt_path",
+      "raw_output_path",
+      "receipt_path",
+      "tool_trace_path",
+      "metrics",
+      "limitations"
+    ],
+    "required_metrics": [
+      "task_completion",
+      "quality",
+      "groundedness",
+      "tool_use_success",
+      "workflow_state_management",
+      "reliability",
+      "failure_mode_clarity",
+      "latency",
+      "cost_resource_use",
+      "reproducibility",
+      "accountability_receipts"
+    ],
+    "allowed_statuses": ["planned", "executed", "skipped", "failed", "invalid"],
+    "allowed_execution_modes": ["manifest_only", "dry_plan", "endpoint_profile", "endpoint_gate", "focused_run", "full_run"]
+  },
+  "comparability_checks": [
+    "same task_set_id",
+    "same task_id",
+    "same raw_prompt_sha256",
+    "same metric schema",
+    "same execution_mode class for compared rows",
+    "provider_role present and normalized",
+    "receipt_path present for executed rows",
+    "raw_output_sha256 present for executed rows",
+    "limitations present for skipped or failed rows"
+  ],
+  "artifact_layout": {
+    "base": "C:/tmp/cross_harness_runs/<run_id>/<provider_role>/<task_id>/",
+    "files": ["prompt.txt", "output.txt", "tool_trace.json", "receipt.json", "metrics.json", "limitations.md"]
+  },
+  "next_steps": [
+    "Implement a non-executing cross-harness manifest generator.",
+    "Add provider-specific adapter discovery reports for Claude Code and OpenCode.",
+    "Add endpoint profile/gate linkage for local_14b and local_32b.",
+    "Teach benchmark coverage to recognize harness.cross-harness-task-scorecard/v1.",
+    "Run dry/null rows before any provider execution.",
+    "Only run focused provider rows after explicit approval."
+  ]
+}

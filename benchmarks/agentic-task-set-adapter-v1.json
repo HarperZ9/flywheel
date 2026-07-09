@@ -1,0 +1,128 @@
+﻿{
+    "schema":  "harness.agentic-task-set-adapter/v1",
+    "adapter_id":  "agentic_task_set_adapter_v1",
+    "source_task_set":  "C:/dev/local-model/benchmarks/agentic-task-set-v1.json",
+    "planned_manifest_schema":  "harness.agentic-task-manifest/v1",
+    "planned_scorecard_schema":  "harness.agentic-task-scorecard/v1",
+    "purpose":  "Non-executing adapter contract for turning the custom agentic task corpus into benchmark profile, coverage, closed-loop seed, comparison, and outcome artifacts.",
+    "ingest_contract":  {
+                            "required_fields":  [
+                                                    "schema",
+                                                    "task_set_id",
+                                                    "metrics",
+                                                    "lanes",
+                                                    "tasks"
+                                                ],
+                            "task_required_fields":  [
+                                                         "id",
+                                                         "lane",
+                                                         "difficulty",
+                                                         "prompt",
+                                                         "required_inputs",
+                                                         "expected_artifacts",
+                                                         "scoring_focus",
+                                                         "must_not"
+                                                     ],
+                            "normalization":  {
+                                                  "task_id":  "tasks[].id",
+                                                  "benchmark_id":  "task_benchmark_map[task_id]",
+                                                  "dataset_lane":  "tasks[].lane",
+                                                  "coverage_unit":  "tasks[].id",
+                                                  "difficulty":  "tasks[].difficulty",
+                                                  "expected_artifacts":  "tasks[].expected_artifacts"
+                                              }
+                        },
+    "task_benchmark_map":  {
+                               "agt-001-index-fallback-integrity":  "toolchain_failure_recovery_matrix",
+                               "agt-002-forum-deep-verify-scale":  "forum_ledger_deep_verify_scaling",
+                               "agt-003-codex-flywheel-shared-task":  "cross_harness_reproducibility_matrix",
+                               "agt-004-local-14b-endpoint-gate":  "local_resource_pressure_14b_32b",
+                               "agt-005-local-32b-endpoint-gate":  "local_resource_pressure_14b_32b",
+                               "agt-006-mneme-enterprise-readiness":  "tool_enterprise_readiness_matrix",
+                               "agt-007-relay-enterprise-readiness":  "tool_enterprise_readiness_matrix",
+                               "agt-008-plexus-enterprise-readiness":  "tool_enterprise_readiness_matrix",
+                               "agt-009-receipts-vs-guardrails-friction":  "guardrail_accountability_friction",
+                               "agt-010-documentation-schematic-maintenance":  "closed_loop_agentic_gauntlet",
+                               "agt-011-opencode-adapter-readiness":  "cross_harness_reproducibility_matrix",
+                               "agt-012-local-resource-pressure":  "local_resource_pressure_14b_32b",
+                               "agt-013-embodied-realtime-multimodal":  "embodied_realtime_multimodal_pressure",
+                               "agt-014-embodied-model-card-claim-grounding":  "embodied_realtime_multimodal_pressure"
+                           },
+    "profile_manifest_projection":  {
+                                        "new_or_existing_benchmark_ids":  [
+                                                                              "closed_loop_agentic_gauntlet",
+                                                                              "cross_harness_reproducibility_matrix",
+                                                                              "forum_ledger_deep_verify_scaling",
+                                                                              "guardrail_accountability_friction",
+                                                                              "local_resource_pressure_14b_32b",
+                                                                              "embodied_realtime_multimodal_pressure",
+                                                                              "tool_enterprise_readiness_matrix",
+                                                                              "toolchain_failure_recovery_matrix"
+                                                                          ],
+                                        "coverage_units_from":  "tasks[].id",
+                                        "dataset_lanes_from":  "tasks[].lane",
+                                        "metric_weights_from":  "metrics"
+                                    },
+    "coverage_projection":  {
+                                "artifact_schema":  "harness.agentic-task-scorecard/v1",
+                                "observed_rows_path":  "rows",
+                                "provider_field":  "provider_role",
+                                "task_id_field":  "task_id",
+                                "benchmark_id_field":  "benchmark_id",
+                                "unit_id_field":  "coverage_unit",
+                                "metric_fields":  [
+                                                      "task_completion",
+                                                      "quality",
+                                                      "groundedness",
+                                                      "tool_use_success",
+                                                      "workflow_state_management",
+                                                      "reliability",
+                                                      "failure_mode_clarity",
+                                                      "latency",
+                                                      "cost_resource_use",
+                                                      "reproducibility",
+                                                      "accountability_receipts"
+                                                  ]
+                            },
+    "closed_loop_seed_projection":  {
+                                        "dry_step":  {
+                                                         "step_id":  "agentic_task_manifest",
+                                                         "purpose":  "Expand the custom task set into a non-executing benchmark manifest.",
+                                                         "expected_artifacts":  [
+                                                                                    "agentic_task_manifest.json",
+                                                                                    "agentic_task_manifest.md"
+                                                                                ]
+                                                     },
+                                        "focused_step":  {
+                                                             "step_id":  "agentic_task_focused_scorecard",
+                                                             "purpose":  "Run or import focused custom agentic benchmark rows after operator approval.",
+                                                             "expected_artifacts":  [
+                                                                                        "agentic_task_scorecard.json",
+                                                                                        "agentic_task_scorecard.md"
+                                                                                    ]
+                                                         }
+                                    },
+    "outcome_projection":  {
+                               "summary_kind":  "agentic_task_scorecard",
+                               "required_summary_fields":  [
+                                                               "task_count",
+                                                               "provider_roles",
+                                                               "benchmark_ids",
+                                                               "dataset_lanes",
+                                                               "coverage_units",
+                                                               "pass_rate",
+                                                               "failure_classes",
+                                                               "artifact_paths"
+                                                           ]
+                           },
+    "non_execution_guards":  [
+                                 "The adapter manifest must not call providers.",
+                                 "The adapter manifest must not probe endpoints.",
+                                 "The adapter manifest must not read model weights.",
+                                 "The adapter manifest must not infer benchmark success from task definitions.",
+                                 "The adapter manifest must not print secrets or payload bodies."
+                             ],
+    "next_code_step":  "Run targeted validation for scripts/run_agentic_task_set_manifest.py, generate the embodied model-card claim table, and use the manifest output in dry/null coverage before provider execution.",
+    "status":  "implemented_not_validated",
+    "next_step":  "Run targeted validation, generate a harness.agentic-task-manifest/v1 artifact, confirm coverage/outcome ingestion preserves planned-only semantics, then execute the agentic task set for scorecard evidence."
+}

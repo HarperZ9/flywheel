@@ -1,0 +1,8 @@
+{
+  "task_id": "csv_field_split",
+  "prompt": "Write a Python function split_csv_line(line: str) -> list[str] that splits ONE CSV record (a single line, no newline characters) into its fields.\n\nRules:\n1. Fields are separated by commas. The empty string is a record with exactly one empty field: return [\"\"]. A trailing comma means a final empty field (\"a,\" -> [\"a\", \"\"]) and a leading comma means an initial empty field (\",a\" -> [\"\", \"a\"]).\n2. A field may be quoted: it must then begin with a double quote as the VERY FIRST character of the field (immediately after the start of the line or a comma). Inside a quoted field, commas are literal, and the two-character sequence of two double quotes represents ONE literal double quote. The quoted section ends at the next double quote that is not part of such a pair.\n3. After the closing quote of a quoted field, the next character must be a comma or the end of the string; anything else raises ValueError.\n4. A double quote appearing anywhere inside an UNQUOTED field (i.e., not as the first character of the field) raises ValueError. This includes a quote preceded by spaces: the input consisting of a space then \"a\" in quotes is invalid, because that field starts with a space, not a quote.\n5. A quoted field with no closing quote raises ValueError. Note that doubled-quote pairs are consumed as escapes first, so a quoted field ending in a doubled quote with no separate closing quote is unterminated.\n6. Do not strip or normalize whitespace anywhere; spaces are ordinary field characters and must be preserved exactly.\n\nOutput ONLY the function definition.",
+  "oracle": "pytest",
+  "oracle_cmd": "python -m pytest tests/ -q",
+  "candidate_path": "solution.py",
+  "max_new_tokens": 768
+}

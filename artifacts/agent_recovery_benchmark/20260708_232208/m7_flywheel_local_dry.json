@@ -1,0 +1,69 @@
+{
+  "arms": {
+    "flat_n": {
+      "avg_candidates": 4.0,
+      "avg_oracle_calls": 4.0,
+      "n_tasks": 2,
+      "pass_rate": 1.0,
+      "receipt_reproducibility": 1.0
+    },
+    "local_serve": {
+      "avg_candidates": 1.0,
+      "avg_oracle_calls": 1.0,
+      "n_tasks": 2,
+      "pass_rate": 0.0,
+      "receipt_reproducibility": 1.0
+    },
+    "no_search": {
+      "avg_candidates": 1.0,
+      "avg_oracle_calls": 1.0,
+      "n_tasks": 2,
+      "pass_rate": 1.0,
+      "receipt_reproducibility": 1.0
+    },
+    "single_shot": {
+      "avg_candidates": 1.0,
+      "avg_oracle_calls": 1.0,
+      "n_tasks": 2,
+      "pass_rate": 1.0,
+      "receipt_reproducibility": 1.0
+    },
+    "verified_inference": {
+      "avg_candidates": 4.0,
+      "avg_oracle_calls": 4.0,
+      "n_tasks": 2,
+      "pass_rate": 1.0,
+      "receipt_reproducibility": 1.0
+    }
+  },
+  "meta": {
+    "local_arms": [
+      "local_serve"
+    ],
+    "local_mode": "sweep",
+    "local_model_refs": {
+      "local_serve": "serve:14b-cpt-adapter"
+    },
+    "model_ref": "dry-run(reference)",
+    "n_tasks": 2,
+    "note": "harness lift vs single-shot of the SAME model"
+  },
+  "metrics": {
+    "avg_oracle_calls": {
+      "good": "lower",
+      "max": null,
+      "min": 0.0
+    },
+    "pass_rate": {
+      "good": "higher",
+      "max": 1.0,
+      "min": 0.0
+    },
+    "receipt_reproducibility": {
+      "good": "higher",
+      "max": 1.0,
+      "min": 0.0
+    }
+  },
+  "schema": "m7-scorecard/v1"
+}

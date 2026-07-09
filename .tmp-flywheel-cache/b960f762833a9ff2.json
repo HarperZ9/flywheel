@@ -1,0 +1,74 @@
+{
+  "admission": null,
+  "budget_spent": {
+    "candidates": 4,
+    "oracle_calls": 4,
+    "proposer_cache": "search"
+  },
+  "candidate": "def dedupe(items):\n    seen = set()\n    result = []\n    \n    for item in items:\n        if item not in seen:\n            seen.add(item)\n            result.append(item)\n            \n    return result\n\n# Example usage:\nitems = [1, 2, 3, 4, 5, 2, 6, 7, 8, 9, 10, 1, 3]\nprint(dedupe(items))  # Output: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]\n",
+  "chain": [
+    {
+      "evidence_ref": null,
+      "inputs_hash": "630a62c2fd0d88f4",
+      "outputs_hash": "1c46474f628b70c3",
+      "payload": {
+        "candidates": [
+          {
+            "candidate_hash": "1c46474f628b70c3",
+            "oracle_output_hash": "ddd76c463e5531f2",
+            "temp": 0.0,
+            "verdict": "PASS"
+          },
+          {
+            "candidate_hash": "76e212614d147fbe",
+            "oracle_output_hash": "ddd76c463e5531f2",
+            "temp": 0.4,
+            "verdict": "PASS"
+          },
+          {
+            "candidate_hash": "2a5aeab4da52f1d4",
+            "oracle_output_hash": "ddd76c463e5531f2",
+            "temp": 0.8,
+            "verdict": "PASS"
+          },
+          {
+            "candidate_hash": "e990aa73f8190e6d",
+            "oracle_output_hash": "ddd76c463e5531f2",
+            "temp": 1.1,
+            "verdict": "PASS"
+          }
+        ],
+        "correlation": 0.7,
+        "n": 4
+      },
+      "prev_hash": "",
+      "receipt_hash": "a46ebedf8e0da221",
+      "stage": "search",
+      "verdict": "PASS"
+    },
+    {
+      "evidence_ref": null,
+      "inputs_hash": "ddd76c463e5531f2",
+      "outputs_hash": "MATCH",
+      "payload": {
+        "reason": "canonical hash reproduced"
+      },
+      "prev_hash": "a46ebedf8e0da221",
+      "receipt_hash": "72602fdc66f377ca",
+      "stage": "accept",
+      "verdict": "MATCH"
+    }
+  ],
+  "harness_version": "m1",
+  "injected_context": null,
+  "model_ref": "ollama:qwen2.5:7b",
+  "oracle": "pytest",
+  "oracle_cmd": "python -m pytest tests/ -q --junitxml=_oracle_junit.xml -q",
+  "oracle_output_hash": "ddd76c463e5531f2",
+  "oracle_stdout_excerpt": "....                                                                     [100%]\r\n",
+  "prompt_hash": "630a62c2fd0d88f4",
+  "retrieved": [],
+  "seed": 0,
+  "task_id": "dedupe_order",
+  "verdict": "PASS"
+}

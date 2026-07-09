@@ -1,0 +1,240 @@
+{
+  "arms": {
+    "flat_n": {
+      "avg_candidates": 4.0,
+      "avg_oracle_calls": 4.0,
+      "n_tasks": 8,
+      "pass_rate": 1.0,
+      "receipt_reproducibility": 1.0
+    },
+    "frontier_claude-api": {
+      "avg_candidates": 1.0,
+      "avg_oracle_calls": 1.0,
+      "n_tasks": 8,
+      "pass_rate": 1.0,
+      "receipt_reproducibility": 1.0
+    },
+    "frontier_claude-cloud": {
+      "avg_candidates": 1.0,
+      "avg_oracle_calls": 1.0,
+      "n_tasks": 8,
+      "pass_rate": 0.875,
+      "receipt_reproducibility": 1.0
+    },
+    "frontier_claude-plan": {
+      "avg_candidates": 1.0,
+      "avg_oracle_calls": 1.0,
+      "n_tasks": 8,
+      "pass_rate": 1.0,
+      "receipt_reproducibility": 1.0
+    },
+    "frontier_claude-provider": {
+      "avg_candidates": 1.0,
+      "avg_oracle_calls": 1.0,
+      "n_tasks": 8,
+      "pass_rate": 1.0,
+      "receipt_reproducibility": 1.0
+    },
+    "frontier_codex-api": {
+      "avg_candidates": 1.0,
+      "avg_oracle_calls": 1.0,
+      "n_tasks": 8,
+      "pass_rate": 1.0,
+      "receipt_reproducibility": 1.0
+    },
+    "frontier_codex-cloud": {
+      "avg_candidates": 1.0,
+      "avg_oracle_calls": 1.0,
+      "n_tasks": 8,
+      "pass_rate": 1.0,
+      "receipt_reproducibility": 1.0
+    },
+    "frontier_codex-plan": {
+      "avg_candidates": 1.0,
+      "avg_oracle_calls": 1.0,
+      "n_tasks": 8,
+      "pass_rate": 0.875,
+      "receipt_reproducibility": 1.0
+    },
+    "frontier_codex-provider": {
+      "avg_candidates": 1.0,
+      "avg_oracle_calls": 1.0,
+      "n_tasks": 8,
+      "pass_rate": 1.0,
+      "receipt_reproducibility": 1.0
+    },
+    "frontier_deepseek-api": {
+      "avg_candidates": 1.0,
+      "avg_oracle_calls": 1.0,
+      "n_tasks": 8,
+      "pass_rate": 1.0,
+      "receipt_reproducibility": 1.0
+    },
+    "frontier_deepseek-cloud": {
+      "avg_candidates": 1.0,
+      "avg_oracle_calls": 1.0,
+      "n_tasks": 8,
+      "pass_rate": 1.0,
+      "receipt_reproducibility": 1.0
+    },
+    "frontier_deepseek-plan": {
+      "avg_candidates": 1.0,
+      "avg_oracle_calls": 1.0,
+      "n_tasks": 8,
+      "pass_rate": 1.0,
+      "receipt_reproducibility": 1.0
+    },
+    "frontier_deepseek-provider": {
+      "avg_candidates": 1.0,
+      "avg_oracle_calls": 1.0,
+      "n_tasks": 8,
+      "pass_rate": 1.0,
+      "receipt_reproducibility": 1.0
+    },
+    "frontier_gemini-api": {
+      "avg_candidates": 1.0,
+      "avg_oracle_calls": 1.0,
+      "n_tasks": 8,
+      "pass_rate": 1.0,
+      "receipt_reproducibility": 1.0
+    },
+    "frontier_gemini-cloud": {
+      "avg_candidates": 1.0,
+      "avg_oracle_calls": 1.0,
+      "n_tasks": 8,
+      "pass_rate": 1.0,
+      "receipt_reproducibility": 1.0
+    },
+    "frontier_gemini-plan": {
+      "avg_candidates": 1.0,
+      "avg_oracle_calls": 1.0,
+      "n_tasks": 8,
+      "pass_rate": 1.0,
+      "receipt_reproducibility": 1.0
+    },
+    "frontier_gemini-provider": {
+      "avg_candidates": 1.0,
+      "avg_oracle_calls": 1.0,
+      "n_tasks": 8,
+      "pass_rate": 1.0,
+      "receipt_reproducibility": 1.0
+    },
+    "frontier_glm-api": {
+      "avg_candidates": 1.0,
+      "avg_oracle_calls": 1.0,
+      "n_tasks": 8,
+      "pass_rate": 1.0,
+      "receipt_reproducibility": 1.0
+    },
+    "frontier_glm-cloud": {
+      "avg_candidates": 1.0,
+      "avg_oracle_calls": 1.0,
+      "n_tasks": 8,
+      "pass_rate": 1.0,
+      "receipt_reproducibility": 1.0
+    },
+    "frontier_glm-plan": {
+      "avg_candidates": 1.0,
+      "avg_oracle_calls": 1.0,
+      "n_tasks": 8,
+      "pass_rate": 1.0,
+      "receipt_reproducibility": 1.0
+    },
+    "frontier_glm-provider": {
+      "avg_candidates": 1.0,
+      "avg_oracle_calls": 1.0,
+      "n_tasks": 8,
+      "pass_rate": 1.0,
+      "receipt_reproducibility": 1.0
+    },
+    "no_search": {
+      "avg_candidates": 1.0,
+      "avg_oracle_calls": 1.0,
+      "n_tasks": 8,
+      "pass_rate": 0.875,
+      "receipt_reproducibility": 1.0
+    },
+    "single_shot": {
+      "avg_candidates": 1.0,
+      "avg_oracle_calls": 1.0,
+      "n_tasks": 8,
+      "pass_rate": 0.875,
+      "receipt_reproducibility": 1.0
+    },
+    "verified_inference": {
+      "avg_candidates": 4.0,
+      "avg_oracle_calls": 4.0,
+      "n_tasks": 8,
+      "pass_rate": 1.0,
+      "receipt_reproducibility": 1.0
+    }
+  },
+  "meta": {
+    "frontier_arms": [
+      "frontier_codex-plan",
+      "frontier_codex-api",
+      "frontier_codex-provider",
+      "frontier_codex-cloud",
+      "frontier_claude-plan",
+      "frontier_claude-api",
+      "frontier_claude-provider",
+      "frontier_claude-cloud",
+      "frontier_glm-plan",
+      "frontier_glm-api",
+      "frontier_glm-provider",
+      "frontier_glm-cloud",
+      "frontier_gemini-plan",
+      "frontier_gemini-api",
+      "frontier_gemini-provider",
+      "frontier_gemini-cloud",
+      "frontier_deepseek-plan",
+      "frontier_deepseek-api",
+      "frontier_deepseek-provider",
+      "frontier_deepseek-cloud"
+    ],
+    "frontier_mode": "multi-endpoint",
+    "frontier_model_refs": {
+      "frontier_claude-api": "claude:gpt-5.3-codex-spark",
+      "frontier_claude-cloud": "claude:gpt-5.3-codex-spark",
+      "frontier_claude-plan": "claude:gpt-5.3-codex-spark",
+      "frontier_claude-provider": "claude:gpt-5.3-codex-spark",
+      "frontier_codex-api": "codex:gpt-5.3-codex-spark",
+      "frontier_codex-cloud": "codex:gpt-5.3-codex-spark",
+      "frontier_codex-plan": "codex:gpt-5.3-codex-spark",
+      "frontier_codex-provider": "codex:gpt-5.3-codex-spark",
+      "frontier_deepseek-api": "deepseek:gpt-5.3-codex-spark",
+      "frontier_deepseek-cloud": "deepseek:gpt-5.3-codex-spark",
+      "frontier_deepseek-plan": "deepseek:gpt-5.3-codex-spark",
+      "frontier_deepseek-provider": "deepseek:gpt-5.3-codex-spark",
+      "frontier_gemini-api": "gemini:gpt-5.3-codex-spark",
+      "frontier_gemini-cloud": "gemini:gpt-5.3-codex-spark",
+      "frontier_gemini-plan": "gemini:gpt-5.3-codex-spark",
+      "frontier_gemini-provider": "gemini:gpt-5.3-codex-spark",
+      "frontier_glm-api": "glm:gpt-5.3-codex-spark",
+      "frontier_glm-cloud": "glm:gpt-5.3-codex-spark",
+      "frontier_glm-plan": "glm:gpt-5.3-codex-spark",
+      "frontier_glm-provider": "glm:gpt-5.3-codex-spark"
+    },
+    "model_ref": "dry-run(reference)",
+    "n_tasks": 8,
+    "note": "frontier single-shot baseline comparison"
+  },
+  "metrics": {
+    "avg_oracle_calls": {
+      "good": "lower",
+      "max": null,
+      "min": 0.0
+    },
+    "pass_rate": {
+      "good": "higher",
+      "max": 1.0,
+      "min": 0.0
+    },
+    "receipt_reproducibility": {
+      "good": "higher",
+      "max": 1.0,
+      "min": 0.0
+    }
+  },
+  "schema": "m7-scorecard/v1"
+}

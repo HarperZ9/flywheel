@@ -1,0 +1,71 @@
+{
+  "arms": {
+    "flat_n": {
+      "avg_candidates": 4.0,
+      "avg_oracle_calls": 4.0,
+      "n_tasks": 8,
+      "pass_rate": 1.0,
+      "receipt_reproducibility": 1.0
+    },
+    "frontier_single_shot": {
+      "avg_candidates": 1.0,
+      "avg_oracle_calls": 1.0,
+      "n_tasks": 8,
+      "pass_rate": 1.0,
+      "receipt_reproducibility": 1.0
+    },
+    "no_search": {
+      "avg_candidates": 1.0,
+      "avg_oracle_calls": 1.0,
+      "n_tasks": 8,
+      "pass_rate": 0.875,
+      "receipt_reproducibility": 1.0
+    },
+    "single_shot": {
+      "avg_candidates": 1.0,
+      "avg_oracle_calls": 1.0,
+      "n_tasks": 8,
+      "pass_rate": 1.0,
+      "receipt_reproducibility": 1.0
+    },
+    "verified_inference": {
+      "avg_candidates": 4.0,
+      "avg_oracle_calls": 4.0,
+      "n_tasks": 8,
+      "pass_rate": 1.0,
+      "receipt_reproducibility": 1.0
+    }
+  },
+  "meta": {
+    "frontier_arms": [
+      "frontier_single_shot"
+    ],
+    "frontier_mode": "single",
+    "frontier_model_ref": "codex:gpt-5.3-codex-spark",
+    "frontier_model_refs": {
+      "frontier_single_shot": "codex:gpt-5.3-codex-spark"
+    },
+    "frontier_provider": "codex",
+    "model_ref": "dry-run(reference)",
+    "n_tasks": 8,
+    "note": "frontier single-shot baseline comparison"
+  },
+  "metrics": {
+    "avg_oracle_calls": {
+      "good": "lower",
+      "max": null,
+      "min": 0.0
+    },
+    "pass_rate": {
+      "good": "higher",
+      "max": 1.0,
+      "min": 0.0
+    },
+    "receipt_reproducibility": {
+      "good": "higher",
+      "max": 1.0,
+      "min": 0.0
+    }
+  },
+  "schema": "m7-scorecard/v1"
+}

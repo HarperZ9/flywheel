@@ -1,0 +1,8 @@
+{
+  "task_id": "merge_sorted_streams",
+  "prompt": "Implement merge_sorted(lists): given a list of already-sorted integer lists (possibly empty lists, possibly an empty outer list), return one sorted merged list, stable across duplicates. Do not use sorted() or .sort() on the combined data \u2014 merge. The hidden tests check the result, not the method, but a correct k-way merge also passes the large interleaved case. Output ONLY the function definition.",
+  "oracle": "pytest",
+  "oracle_cmd": "python -m pytest tests/ -q",
+  "candidate_path": "solution.py",
+  "max_new_tokens": 512
+}

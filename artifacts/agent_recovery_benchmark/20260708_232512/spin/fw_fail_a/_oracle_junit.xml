@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="3" skipped="0" tests="3" time="0.086" timestamp="2026-07-08T16:25:20.944723-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="tests.test_solution" name="test_add_positives" time="0.001"><failure message="assert 0 == 5&#10; +  where 0 = add(2, 3)">def test_add_positives():
+&gt;       assert add(2, 3) == 5
+E       assert 0 == 5
+E        +  where 0 = add(2, 3)
+
+tests\test_solution.py:4: AssertionError</failure></testcase><testcase classname="tests.test_solution" name="test_add_negatives" time="0.000"><failure message="assert 0 == -2&#10; +  where 0 = add(-1, -1)">def test_add_negatives():
+&gt;       assert add(-1, -1) == -2
+E       assert 0 == -2
+E        +  where 0 = add(-1, -1)
+
+tests\test_solution.py:7: AssertionError</failure></testcase><testcase classname="tests.test_solution" name="test_add_zero" time="0.000"><failure message="assert 0 == 5&#10; +  where 0 = add(0, 5)">def test_add_zero():
+&gt;       assert add(0, 5) == 5
+E       assert 0 == 5
+E        +  where 0 = add(0, 5)
+
+tests\test_solution.py:10: AssertionError</failure></testcase></testsuite></testsuites>

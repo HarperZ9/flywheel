@@ -1,0 +1,6 @@
+# Flywheel-Local-Coder-32B checksums
+# Status: missing evidence.
+# Add one line per release artifact after checksums are computed.
+#
+# sha256  relative/path/to/artifact
+

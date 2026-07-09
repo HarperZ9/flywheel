@@ -1,0 +1,74 @@
+{
+  "admission": null,
+  "budget_spent": {
+    "candidates": 4,
+    "oracle_calls": 4,
+    "proposer_cache": "search"
+  },
+  "candidate": "def flatten_one(items):\n    flattened_list = []\n    for item in items:\n        if isinstance(item, list):  # Check if the item is a list\n            flattened_list.extend(item)  # Extend the result with the elements of the list\n        else:\n            flattened_list.append(item)  # Append non-list items directly to the result\n    return flattened_list\n\n# Example usage:\nexample_list = [1, [2, 3], 4, [5, 6], 7]\nprint(flatten_one(example_list))  # Output: [1, 2, 3, 4, 5, 6, 7]\n",
+  "chain": [
+    {
+      "evidence_ref": null,
+      "inputs_hash": "70b96e8d7bf96bc8",
+      "outputs_hash": "d417ce92fb61a278",
+      "payload": {
+        "candidates": [
+          {
+            "candidate_hash": "d417ce92fb61a278",
+            "oracle_output_hash": "7e3488b068e0ee0c",
+            "temp": 0.0,
+            "verdict": "PASS"
+          },
+          {
+            "candidate_hash": "187f07aa036cf91a",
+            "oracle_output_hash": "7e3488b068e0ee0c",
+            "temp": 0.4,
+            "verdict": "PASS"
+          },
+          {
+            "candidate_hash": "ded90d9a560888ad",
+            "oracle_output_hash": "7e3488b068e0ee0c",
+            "temp": 0.8,
+            "verdict": "PASS"
+          },
+          {
+            "candidate_hash": "1542cae6f6f11d5e",
+            "oracle_output_hash": "7e3488b068e0ee0c",
+            "temp": 1.1,
+            "verdict": "PASS"
+          }
+        ],
+        "correlation": 0.727,
+        "n": 4
+      },
+      "prev_hash": "",
+      "receipt_hash": "d7bd3f99e5390127",
+      "stage": "search",
+      "verdict": "PASS"
+    },
+    {
+      "evidence_ref": null,
+      "inputs_hash": "7e3488b068e0ee0c",
+      "outputs_hash": "MATCH",
+      "payload": {
+        "reason": "canonical hash reproduced"
+      },
+      "prev_hash": "d7bd3f99e5390127",
+      "receipt_hash": "ef6dbfd7c6781ba0",
+      "stage": "accept",
+      "verdict": "MATCH"
+    }
+  ],
+  "harness_version": "m1",
+  "injected_context": null,
+  "model_ref": "ollama:qwen2.5:7b",
+  "oracle": "pytest",
+  "oracle_cmd": "python -m pytest tests/ -q --junitxml=_oracle_junit.xml -q",
+  "oracle_output_hash": "7e3488b068e0ee0c",
+  "oracle_stdout_excerpt": "....                                                                     [100%]\r\n",
+  "prompt_hash": "70b96e8d7bf96bc8",
+  "retrieved": [],
+  "seed": 0,
+  "task_id": "flatten_one",
+  "verdict": "PASS"
+}

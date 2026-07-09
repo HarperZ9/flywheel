@@ -1,0 +1,8 @@
+{
+  "task_id": "edit_distance",
+  "prompt": "Implement edit_distance(a, b): return the Levenshtein distance between strings a and b (minimum single-character insertions, deletions, substitutions). Either may be empty. Output ONLY the function definition.",
+  "oracle": "pytest",
+  "oracle_cmd": "python -m pytest tests/ -q",
+  "candidate_path": "solution.py",
+  "max_new_tokens": 512
+}

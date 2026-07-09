@@ -1,0 +1,74 @@
+{
+  "admission": null,
+  "budget_spent": {
+    "candidates": 4,
+    "oracle_calls": 4,
+    "proposer_cache": "search"
+  },
+  "candidate": "def max_of_three(a, b, c):\n    if a >= b and a >= c:\n        return a\n    elif b >= a and b >= c:\n        return b\n    else:\n        return c\n\n# Example usage:\nprint(max_of_three(10, 20, 30))  # Output: 30\nprint(max_of_three(-5, -10, -3))  # Output: -3\n",
+  "chain": [
+    {
+      "evidence_ref": null,
+      "inputs_hash": "2937071921654b83",
+      "outputs_hash": "731f986049882a36",
+      "payload": {
+        "candidates": [
+          {
+            "candidate_hash": "731f986049882a36",
+            "oracle_output_hash": "e6ecd0eef8c3cd3d",
+            "temp": 0.0,
+            "verdict": "PASS"
+          },
+          {
+            "candidate_hash": "731f986049882a36",
+            "oracle_output_hash": "e6ecd0eef8c3cd3d",
+            "temp": 0.4,
+            "verdict": "PASS"
+          },
+          {
+            "candidate_hash": "4344e420cc386a38",
+            "oracle_output_hash": "e6ecd0eef8c3cd3d",
+            "temp": 0.8,
+            "verdict": "PASS"
+          },
+          {
+            "candidate_hash": "cd7d58e5952feb52",
+            "oracle_output_hash": "e6ecd0eef8c3cd3d",
+            "temp": 1.1,
+            "verdict": "PASS"
+          }
+        ],
+        "correlation": 1.0,
+        "n": 4
+      },
+      "prev_hash": "",
+      "receipt_hash": "4ce06337c6d9dd99",
+      "stage": "search",
+      "verdict": "PASS"
+    },
+    {
+      "evidence_ref": null,
+      "inputs_hash": "e6ecd0eef8c3cd3d",
+      "outputs_hash": "MATCH",
+      "payload": {
+        "reason": "canonical hash reproduced"
+      },
+      "prev_hash": "4ce06337c6d9dd99",
+      "receipt_hash": "dd9829529d26838d",
+      "stage": "accept",
+      "verdict": "MATCH"
+    }
+  ],
+  "harness_version": "m1",
+  "injected_context": null,
+  "model_ref": "ollama:qwen2.5:7b",
+  "oracle": "pytest",
+  "oracle_cmd": "python -m pytest tests/ -q --junitxml=_oracle_junit.xml -q",
+  "oracle_output_hash": "e6ecd0eef8c3cd3d",
+  "oracle_stdout_excerpt": "...                                                                      [100%]\r\n",
+  "prompt_hash": "2937071921654b83",
+  "retrieved": [],
+  "seed": 0,
+  "task_id": "max_of_three",
+  "verdict": "PASS"
+}

@@ -1,0 +1,8 @@
+{
+  "task_id": "sat_add_nbit",
+  "prompt": "Write a Python function sat_add(a, b, bits) implementing saturating signed two's-complement addition.\n\nContract:\n- bits defines the representable range [-(2**(bits-1)), 2**(bits-1) - 1].\n- All three arguments must be ints and must NOT be bools (note: isinstance(True, int) is True in Python; bools must still be rejected). If any argument is a bool or not an int, raise ValueError.\n- If bits < 1, raise ValueError.\n- If a or b is itself outside the representable range for bits, raise ValueError (the inputs must already be representable; only the SUM saturates).\n- Otherwise return a + b clamped (saturated) into the representable range.\n- bits == 1 is valid: the representable range is [-1, 0].\n\nOutput ONLY the function definition.",
+  "oracle": "pytest",
+  "oracle_cmd": "python -m pytest tests/ -q",
+  "candidate_path": "solution.py",
+  "max_new_tokens": 768
+}

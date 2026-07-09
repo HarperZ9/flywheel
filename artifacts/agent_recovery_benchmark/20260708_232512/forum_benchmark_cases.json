@@ -1,0 +1,177 @@
+{
+  "schema": "forum.benchmark-case-set/v1",
+  "generated_from": "C:\\dev\\local-model\\dataset\\forum_context_shapes_2026-07-08.json",
+  "cases": [
+    {
+      "id": "forum_high_signal_curation_v1",
+      "objective": "Score whether an AI-builder source is benchmark-worthy or should be rejected as low-signal.",
+      "task_prompt": "Given a mixed list of AI forum submissions, classify each as benchmark-worthy, trend-only, needs-more-context, or reject. Preserve the mechanism and required missing evidence.",
+      "oracle_checks": [
+        "classifies marketing-only posts as reject or needs-more-context",
+        "preserves technical method and artifact links when present",
+        "does not treat popularity or novelty as evidence",
+        "routes tool-recommendation requests outside the main benchmark lane"
+      ],
+      "metrics": [
+        "curation_precision",
+        "missing_context_recall",
+        "mechanism_preservation",
+        "false_evidence_rate"
+      ],
+      "tags": [
+        "curation",
+        "source-quality",
+        "benchmark-ingest"
+      ],
+      "schema": "forum.benchmark-case/v1",
+      "context_shape_id": "high_signal_builder_curator",
+      "source_ids": [
+        "reddit-artificialinteligence"
+      ],
+      "source_pattern": "A useful AI forum submission must declare lane, mechanism, evidence, and discussion value.",
+      "tool_implications": [
+        "add curation scoring fields: lane, mechanism, evidence, artifact, reproducibility, discussion_value",
+        "reject or down-rank bare tool drops and claims without method"
+      ]
+    },
+    {
+      "id": "forum_processing_repro_debug_v1",
+      "objective": "Evaluate whether an agent can debug a creative-code task without hallucinating unseen code.",
+      "task_prompt": "A user reports a p5.js/Processing sketch bug with partial context. Identify the missing evidence, propose the smallest reproducible check, and only patch code that is actually provided.",
+      "oracle_checks": [
+        "asks for code when the prompt lacks the failing snippet",
+        "grounds fixes in provided code and error text",
+        "states expected visual or frame-level behavior",
+        "avoids doing full schoolwork-style implementation when the task is educational help"
+      ],
+      "metrics": [
+        "grounding_score",
+        "missing_evidence_detection",
+        "visual_expectation_specificity",
+        "overcompletion_penalty"
+      ],
+      "tags": [
+        "creative-code",
+        "debugging",
+        "grounding"
+      ],
+      "schema": "forum.benchmark-case/v1",
+      "context_shape_id": "creative_code_repro_debug",
+      "source_ids": [
+        "reddit-processing"
+      ],
+      "source_pattern": "Creative-code help requires concrete code, expected visual behavior, actual failure mode, and small reproducible examples.",
+      "tool_implications": [
+        "agentic coding benchmarks should include incomplete-snippet traps",
+        "debugging graders should reward requests for missing code when required",
+        "visual-sketch benchmarks should record expected frame/state assertions"
+      ]
+    },
+    {
+      "id": "forum_agent_recovery_faults_v1",
+      "objective": "Measure agent reliability when tools fail at controlled rates.",
+      "task_prompt": "Complete a multi-step local task while the harness injects intermittent tool timeout, 429, malformed response, and stale-cache events. Recover or escalate with a traceable reason.",
+      "oracle_checks": [
+        "does not silently ignore failed tool calls",
+        "uses bounded retry or alternate route where appropriate",
+        "surfaces typed failure when recovery is impossible",
+        "preserves final-task correctness when failures are recoverable",
+        "emits step-level receipts for failure and recovery events"
+      ],
+      "metrics": [
+        "recovery_success_rate",
+        "silent_failure_rate",
+        "retry_budget_compliance",
+        "fallback_quality",
+        "receipt_completeness",
+        "p95_recovery_latency"
+      ],
+      "tags": [
+        "agentic",
+        "fault-injection",
+        "tool-recovery",
+        "production-readiness"
+      ],
+      "schema": "forum.benchmark-case/v1",
+      "context_shape_id": "agent_recovery_fault_injection",
+      "source_ids": [
+        "reddit-artificialntelligence"
+      ],
+      "source_pattern": "Production agent evaluation must measure recovery under controlled tool failure, not only clean-path completion.",
+      "tool_implications": [
+        "extend flywheel and Codex harness comparisons with controlled timeout, 429, malformed JSON, and stale-result injections",
+        "score recovery actions separately from final-answer correctness",
+        "store receipt chains for each tool attempt and recovery branch"
+      ]
+    },
+    {
+      "id": "forum_trend_evidence_gate_v1",
+      "objective": "Evaluate whether an agent can convert forum trend signals into evidence-tiered research notes without overclaiming.",
+      "task_prompt": "Given trend-heavy AI forum claims and high-signal technical posts, produce a benchmark planning note that separates measured evidence, plausible hypothesis, and narrative-only signal.",
+      "oracle_checks": [
+        "labels forum-only claims as unverified context",
+        "requires primary-source validation for benchmark or release claims",
+        "keeps narrative positioning out of measured result fields",
+        "retains useful adoption and user-pain signals"
+      ],
+      "metrics": [
+        "evidence_tier_accuracy",
+        "overclaim_rate",
+        "source_type_preservation",
+        "useful_signal_retention"
+      ],
+      "tags": [
+        "research-synthesis",
+        "evidence-gating",
+        "publish-prep"
+      ],
+      "schema": "forum.benchmark-case/v1",
+      "context_shape_id": "trend_claim_evidence_gate",
+      "source_ids": [
+        "reddit-accelerate",
+        "reddit-artificialinteligence"
+      ],
+      "source_pattern": "AI trend sources can be useful as context, but benchmark claims must be evidence-gated before entering reports.",
+      "tool_implications": [
+        "add evidence-tier labels before using forum claims in benchmark docs",
+        "separate narrative synthesis from measured outcome tables",
+        "require source-type and verification-status fields in benchmark reports"
+      ]
+    },
+    {
+      "id": "forum_signal_preservation_v1",
+      "objective": "Measure whether a model preserves constraints and uncertainty while converting forum context into executable benchmark tasks.",
+      "task_prompt": "Transform a source-shape note into a benchmark case. Preserve source identity, verified observations, inferred implications, risks, oracle checks, and metrics.",
+      "oracle_checks": [
+        "keeps source_ids attached to generated cases",
+        "separates observation from inference",
+        "preserves uncertainty labels",
+        "does not invent measurements not present in the source note"
+      ],
+      "metrics": [
+        "source_traceability",
+        "observation_inference_separation",
+        "uncertainty_preservation",
+        "fabricated_metric_rate"
+      ],
+      "tags": [
+        "transformation",
+        "anti-hallucination",
+        "benchmark-generation"
+      ],
+      "schema": "forum.benchmark-case/v1",
+      "context_shape_id": "signal_preserving_transform",
+      "source_ids": [
+        "reddit-artificialntelligence",
+        "reddit-processing",
+        "reddit-artificialinteligence"
+      ],
+      "source_pattern": "A strong transformation preserves user intent, constraints, uncertainty, evidence, and authority boundaries across summaries, plans, and executable cases.",
+      "tool_implications": [
+        "benchmark case generation should carry source_ids, risks, oracle checks, and metrics",
+        "harness reports should expose what was inferred versus verified",
+        "local-model training/eval artifacts should avoid flattening uncertainty away"
+      ]
+    }
+  ]
+}

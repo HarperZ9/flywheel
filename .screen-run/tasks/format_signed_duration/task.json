@@ -1,0 +1,8 @@
+{
+  "task_id": "format_signed_duration",
+  "prompt": "Write a Python function format_duration(seconds) that formats a signed integer number of seconds as a clock-style string.\n\nContract:\n- seconds must be an int and must NOT be a bool; otherwise raise ValueError.\n- Let the magnitude of seconds. All time components are computed from a (truncation toward zero; components are never negative).\n- If a < 3600, the format is \"M:SS\": total minutes a // 60 WITHOUT zero-padding (may be a bare 0), then seconds zero-padded to exactly 2 digits.\n- If a >= 3600, the format is \"H:MM:SS\": hours WITHOUT zero-padding (no upper bound; hours may have any number of digits), then minutes and seconds each zero-padded to exactly 2 digits.\n- The threshold is exact: a == 3600 must use the \"H:MM:SS\" form.\n- If seconds < 0, prefix a single \"-\" before the formatted value.\n\nOutput ONLY the function definition.",
+  "oracle": "pytest",
+  "oracle_cmd": "python -m pytest tests/ -q",
+  "candidate_path": "solution.py",
+  "max_new_tokens": 768
+}

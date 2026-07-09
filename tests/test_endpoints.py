@@ -14,6 +14,7 @@ from harness.endpoints import (
     CliBackend,
     GeminiBackend,
     OpenAICompatBackend,
+    OpenCodeBackend,
     build_endpoints,
 )
 from harness.local_agent import BackendError
@@ -113,3 +114,26 @@ def test_glm_provider_is_openai_compatible(monkeypatch):
     lad = build_endpoints(providers=["glm"], modes=("api",))
     assert len(lad) == 1 and lad[0].name == "glm"
     assert "bigmodel" in lad[0].base_url and lad[0].model == "glm-4.6"
+
+
+def test_opencode_plan_uses_desktop_server_env_aliases(monkeypatch):
+    for name in (
+        "OPENCODE_BASE_URL",
+        "OPENCODE_PASSWORD",
+        "OPENCODE_USERNAME",
+        "OPENCODE_PORT",
+        "OPENCODE_SERVER_PASSWORD",
+        "OPENCODE_SERVER_USERNAME",
+    ):
+        monkeypatch.delenv(name, raising=False)
+
+    monkeypatch.setenv("OPENCODE_PORT", "4096")
+    monkeypatch.setenv("OPENCODE_SERVER_USERNAME", "opencode")
+    monkeypatch.setenv("OPENCODE_SERVER_PASSWORD", "sidecar-secret")
+    lad = build_endpoints(providers=["opencode"], modes=("plan",))
+
+    assert len(lad) == 1
+    assert isinstance(lad[0], OpenCodeBackend)
+    assert lad[0].base_url == "http://127.0.0.1:4096"
+    assert lad[0].health() is True
+    assert "Authorization" in lad[0]._headers()

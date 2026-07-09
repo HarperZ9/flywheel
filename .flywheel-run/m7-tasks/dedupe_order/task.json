@@ -1,0 +1,8 @@
+{
+  "task_id": "dedupe_order",
+  "prompt": "Implement dedupe(items) removing duplicates from a list while preserving first-occurrence order.",
+  "oracle": "pytest",
+  "oracle_cmd": "python -m pytest tests/ -q",
+  "candidate_path": "solution.py",
+  "max_new_tokens": 256
+}

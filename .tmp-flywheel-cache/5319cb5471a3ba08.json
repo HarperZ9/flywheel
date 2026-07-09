@@ -1,0 +1,74 @@
+{
+  "admission": null,
+  "budget_spent": {
+    "candidates": 4,
+    "oracle_calls": 4,
+    "proposer_cache": "search"
+  },
+  "candidate": "def count_vowels(s):\n    # Convert the input string to lowercase to make the search case-insensitive\n    s = s.lower()\n    \n    # Define the set of vowels\n    vowels = 'aeiou'\n    \n    # Initialize a counter for the number of vowels\n    vowel_count = 0\n    \n    # Iterate through each character in the string and count if it is a vowel\n    for char in s:\n        if char in vowels:\n            vowel_count += 1\n            \n    return vowel_count\n\n# Example usage:\nprint(count_vowels(\"Hello World\"))  # Output: 3\nprint(count_vowels(\"AEIOUaeiou\"))   # Output: 10\n",
+  "chain": [
+    {
+      "evidence_ref": null,
+      "inputs_hash": "eaef73ecf2db8858",
+      "outputs_hash": "9a403d624f9bff5d",
+      "payload": {
+        "candidates": [
+          {
+            "candidate_hash": "9a403d624f9bff5d",
+            "oracle_output_hash": "c3a461cb8a31685a",
+            "temp": 0.0,
+            "verdict": "PASS"
+          },
+          {
+            "candidate_hash": "8ddaa4426d3cfb46",
+            "oracle_output_hash": "c3a461cb8a31685a",
+            "temp": 0.4,
+            "verdict": "PASS"
+          },
+          {
+            "candidate_hash": "c72ce72ce617d40e",
+            "oracle_output_hash": "c3a461cb8a31685a",
+            "temp": 0.8,
+            "verdict": "PASS"
+          },
+          {
+            "candidate_hash": "7a231580065f31e0",
+            "oracle_output_hash": "c3a461cb8a31685a",
+            "temp": 1.1,
+            "verdict": "PASS"
+          }
+        ],
+        "correlation": 0.8,
+        "n": 4
+      },
+      "prev_hash": "",
+      "receipt_hash": "ecd716a658670370",
+      "stage": "search",
+      "verdict": "PASS"
+    },
+    {
+      "evidence_ref": null,
+      "inputs_hash": "c3a461cb8a31685a",
+      "outputs_hash": "MATCH",
+      "payload": {
+        "reason": "canonical hash reproduced"
+      },
+      "prev_hash": "ecd716a658670370",
+      "receipt_hash": "5b93e932b91b9b7d",
+      "stage": "accept",
+      "verdict": "MATCH"
+    }
+  ],
+  "harness_version": "m1",
+  "injected_context": null,
+  "model_ref": "ollama:qwen2.5:7b",
+  "oracle": "pytest",
+  "oracle_cmd": "python -m pytest tests/ -q --junitxml=_oracle_junit.xml -q",
+  "oracle_output_hash": "c3a461cb8a31685a",
+  "oracle_stdout_excerpt": "....                                                                     [100%]\r\n",
+  "prompt_hash": "eaef73ecf2db8858",
+  "retrieved": [],
+  "seed": 0,
+  "task_id": "count_vowels",
+  "verdict": "PASS"
+}

@@ -1,0 +1,8 @@
+{
+  "task_id": "bucket_histogram_mixed",
+  "prompt": "Write a Python function bucket_counts(values, edges) that histograms integer values into buckets defined by an edge list, with mixed boundary semantics.\n\nContract:\n- edges must be a list of at least 2 non-bool ints in strictly increasing order; otherwise raise ValueError. values must be a list of non-bool ints; otherwise raise ValueError.\n- n edges define n-1 buckets. For every bucket EXCEPT the last, bucket i covers the half-open range [edges[i], edges[i+1]). The LAST bucket is closed on BOTH ends: [edges[-2], edges[-1]].\n- Consequence: a value equal to an interior edge counts in the bucket to its RIGHT; a value equal to edges[-1] counts in the last bucket.\n- Any value < edges[0] or > edges[-1] raises ValueError.\n- Return a list of counts of length len(edges) - 1. An empty values list yields all zeros.\n- Neither input list may be mutated (in particular, do not sort values in place).\n\nOutput ONLY the function definition.",
+  "oracle": "pytest",
+  "oracle_cmd": "python -m pytest tests/ -q",
+  "candidate_path": "solution.py",
+  "max_new_tokens": 768
+}

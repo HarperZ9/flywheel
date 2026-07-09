@@ -1,0 +1,109 @@
+{
+  "schema": "alignment-capability-control-sources/v1",
+  "mission": "Turn current alignment research on structural dual-use capability control into benchmark variables for local-model and harness evaluation.",
+  "sources": [
+    {
+      "id": "anthropic-off-switch-dual-use-2026-07-08",
+      "title": "An off switch for dual use knowledge in AI models",
+      "publisher": "Anthropic",
+      "url": "https://www.anthropic.com/research/off-switch-dual-use",
+      "date": "2026-07-08",
+      "observed_claims": [
+        "GRAM is presented as preliminary research for removable compartments of dual-use knowledge.",
+        "The method is not applied to production Claude models.",
+        "Experiments cover synthetic topics, realistic dual-use data, and scaling from 50M to 5B parameters.",
+        "The reported goal is surgical access control without degrading unrelated general performance."
+      ],
+      "benchmark_implications": [
+        "Benchmark dual-use control as capability routing, not only refusal behavior.",
+        "Separate retained capability, removed capability, general capability, and adversarial elicitation metrics.",
+        "Track whether downstream-task limitations are explicitly labeled."
+      ]
+    },
+    {
+      "id": "anthropic-alignment-modular-pretraining-2026-07-08",
+      "title": "Modular Pretraining Enables Access Control",
+      "publisher": "Anthropic Alignment Science Blog",
+      "url": "https://alignment.anthropic.com/2026/modular-pretraining/",
+      "date": "2026-07-08",
+      "observed_claims": [
+        "Gradient-Routed Auxiliary Modules isolate categories of dual-use data into auxiliary modules.",
+        "The realistic experiment used virology, cybersecurity, nuclear physics, and specialized code domains.",
+        "GRAM and LoRA approximated data-filtered models while using one training run instead of multiple filtered runs.",
+        "GRAM showed advantages for capability composability and imperfect labeling in the reported experiments."
+      ],
+      "benchmark_implications": [
+        "Add on/off capability configuration matrices to benchmark plans.",
+        "Measure composability when multiple capability modules are enabled together.",
+        "Measure robustness when labels are sparse or partially missing."
+      ]
+    },
+    {
+      "id": "ae-studio-alignment-2026-03",
+      "title": "AE Studio AI Alignment Research",
+      "publisher": "AE Studio",
+      "url": "https://ae.studio/alignment",
+      "date": "2026-03",
+      "observed_claims": [
+        "AE frames alignment as a scientific R&D problem rather than a solved product guardrail problem.",
+        "The agenda emphasizes neglected approaches, human agency, BCI history, self-other overlap, deception reduction, and consciousness-related research.",
+        "AE reports collaboration with organizations and individuals including Anthropic, Redwood Research, Princeton-related work, and Goodfire.ai."
+      ],
+      "benchmark_implications": [
+        "Benchmark structural alignment mechanisms separately from prompt-layer or refusal-layer behavior.",
+        "Include agency-preservation and deception-resistance variables in harness evaluation.",
+        "Track whether research claims are translated into testable artifacts rather than mission-language only."
+      ]
+    },
+    {
+      "id": "ae-studio-research-index-2026",
+      "title": "AE Studio AI Alignment Research Index",
+      "publisher": "AE Studio",
+      "url": "https://ae.studio/research",
+      "date": "2026",
+      "observed_claims": [
+        "The public research index lists GRAM, self-interpretation, endogenous steering resistance, subjective experience reports, self-other overlap, self-modeling, harmless refusals, and prompt injection work.",
+        "The index positions GRAM as localizing dual-use capabilities into removable modules during pretraining."
+      ],
+      "benchmark_implications": [
+        "Treat GRAM as one lane in a broader alignment-mechanism benchmark family.",
+        "Add source provenance and mechanism classification to each alignment-derived benchmark case."
+      ]
+    }
+  ],
+  "benchmark_lanes": [
+    {
+      "id": "modular_dual_use_access_control",
+      "description": "Evaluate whether a model or harness can represent, test, and report structural dual-use capability control with removable or routeable capability modules, while preserving general task performance and labeling unresolved downstream limitations.",
+      "scenario_families": [
+        "capability module on/off matrix",
+        "trusted deployment versus restricted deployment",
+        "adversarial elicitation after removal",
+        "partial or noisy capability labels",
+        "multiple capability modules enabled together",
+        "downstream task validation gap"
+      ],
+      "controls": [
+        "module_state_per_domain",
+        "capability_domain",
+        "trusted_user_profile",
+        "label_coverage_fraction",
+        "adversarial_elicitation_budget",
+        "general_task_suite",
+        "downstream_task_suite",
+        "configuration_count"
+      ],
+      "metrics": [
+        "capability_isolation_score",
+        "retained_capability_score",
+        "general_performance_preservation",
+        "adversarial_elicitation_resistance",
+        "configuration_composability",
+        "partial_label_robustness",
+        "downstream_task_limitation_labeled",
+        "access_control_receipt_completeness",
+        "entanglement_risk_labeling"
+      ]
+    }
+  ]
+}

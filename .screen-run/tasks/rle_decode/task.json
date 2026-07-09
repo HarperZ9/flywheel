@@ -1,0 +1,8 @@
+{
+  "task_id": "rle_decode",
+  "prompt": "Implement rle_decode(s): decode a run-length-encoded string where each run is <count><char> with count a positive integer that may span multiple digits (e.g. '12a2b' -> 'a'*12 + 'bb'). The empty string decodes to ''. Raise ValueError if the string is malformed (a run without a count, a count without a char, count of 0). Output ONLY the function definition.",
+  "oracle": "pytest",
+  "oracle_cmd": "python -m pytest tests/ -q",
+  "candidate_path": "solution.py",
+  "max_new_tokens": 512
+}

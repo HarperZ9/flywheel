@@ -1,0 +1,61 @@
+{
+  "schema": "harness.benchmark-contract/v1",
+  "benchmark_id": "forum_ledger_deep_verify_scaling",
+  "status": "planned_not_run",
+  "owner": "forum",
+  "source_feedback": {
+    "surface": "forum",
+    "theme": "verify(deep=True) scaling bottleneck",
+    "question": "How does deep verification behave once the replayable causal ledger gets large?"
+  },
+  "hypothesis": "Deep verification should scale linearly with present payload bytes and entry count, while redacted content-addressed payloads should keep the hash chain verifiable without rehashing absent bodies.",
+  "dataset_lanes": [
+    "adversarial_receipt_integrity",
+    "agentic_tool_workflows"
+  ],
+  "pressure_variables": [
+    "entry-count-scale",
+    "payload-byte-scale",
+    "redaction-ratio",
+    "crash-torn-final-write",
+    "parent-chain-depth",
+    "checkpoint-interval"
+  ],
+  "scale_points": [
+    1000,
+    10000,
+    100000,
+    1000000
+  ],
+  "measurement_fields": [
+    "verify_shallow_ms",
+    "verify_deep_ms",
+    "entries_per_second_deep",
+    "payload_bytes_per_second_deep",
+    "peak_rss_mb",
+    "jsonl_size_mb",
+    "checkpoint_ms",
+    "causal_chain_ms_p50",
+    "causal_chain_ms_p95",
+    "redacted_payload_count",
+    "present_payload_count",
+    "tamper_detection_index",
+    "crash_recovery_verdict"
+  ],
+  "success_criteria": [
+    "verify(deep=False) verifies hash-chain structure without payload access.",
+    "verify(deep=True) rehashes every present payload and reports missing/redacted payloads without invalidating the chain proof.",
+    "Tamper, drop, reorder, and body-substitution mutations identify the first invalid sequence or content hash.",
+    "Crash-torn final JSONL writes are ignored or quarantined without corrupting the prior valid prefix.",
+    "Checkpoint Merkle roots remain stable under replay and avoid duplicate-leaf ambiguity."
+  ],
+  "artifact_schema": "forum.deep-verify-benchmark/v1",
+  "implementation_surface": [
+    "C:/dev/public/forum/src/forum/bench_deep_verify.py",
+    "C:/dev/public/forum/src/forum/cli.py"
+  ],
+  "notes": [
+    "This contract records the requested scaling benchmark only. It does not claim execution evidence until a benchmark artifact is produced.",
+    "Large scale points may require operator approval before execution because 1,000,000-entry deep verification can be long-running."
+  ]
+}

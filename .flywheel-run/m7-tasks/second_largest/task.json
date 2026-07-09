@@ -1,0 +1,8 @@
+{
+  "task_id": "second_largest",
+  "prompt": "Implement second_largest(nums) returning the second-largest unique value. Return None for lists with fewer than 2 unique values.",
+  "oracle": "pytest",
+  "oracle_cmd": "python -m pytest tests/ -q",
+  "candidate_path": "solution.py",
+  "max_new_tokens": 256
+}

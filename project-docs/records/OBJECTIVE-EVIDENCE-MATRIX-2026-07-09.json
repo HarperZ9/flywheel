@@ -1,0 +1,316 @@
+﻿{
+    "schema":  "harness.objective-evidence-matrix/v1",
+    "matrix_id":  "codex_flywheel_objective_evidence_20260709",
+    "created_at":  "2026-07-09",
+    "status":  "partial_evidence_no_completion_claim",
+    "tests_run_in_this_update":  false,
+    "benchmarks_run_in_this_update":  false,
+    "endpoint_probes_run_in_this_update":  false,
+    "provider_calls_run_in_this_update":  false,
+    "objective_source":  "C:/Users/Zain/.codex/attachments/7a657b2a-776e-435b-bd23-750af5d91e7b/pasted-text-1.txt",
+    "live_tool_signals":  [
+                              {
+                                  "tool":  "forum.route",
+                                  "status":  "available",
+                                  "evidence":  "Returned a model-foundry validation architecture frame for this schematic/evidence task."
+                              },
+                              {
+                                  "tool":  "index.index_context_envelope",
+                                  "status":  "degraded",
+                                  "evidence":  "Returned Transport closed for C:/dev in this update."
+                              }
+                          ],
+    "requirements":  [
+                         {
+                             "id":  "REQ-001",
+                             "requirement":  "Use index to scan and map C:/dev before architectural assumptions.",
+                             "status":  "partial_degraded",
+                             "evidence_artifacts":  [
+                                                        "C:/dev/local-model/project-docs/records/ROADMAP-STATUS-2026-07-09.md"
+                                                    ],
+                             "missing_evidence":  "Live Index MCP context envelope remains degraded; fallback receipts need fresh execution artifacts.",
+                             "next_gate":  "Run or repair Index MCP; otherwise generate a fresh degraded fallback receipt and mark freshness explicitly."
+                         },
+                         {
+                             "id":  "REQ-002",
+                             "requirement":  "Use forum to route ambiguous or cross-domain work.",
+                             "status":  "partial_observed",
+                             "evidence_artifacts":  [
+                                                        "forum.route live output in this update",
+                                                        "C:/dev/local-model/project-docs/schematics/closed-loop-integration.graph.json"
+                                                    ],
+                             "missing_evidence":  "No persistent forum route receipt was written to the harness store in this update.",
+                             "next_gate":  "Record forum route decisions as receipt artifacts in future closed-loop seed runs."
+                         },
+                         {
+                             "id":  "REQ-003",
+                             "requirement":  "Gather context from scratch, temp, mid-flight, Claude/Codex/OpenCode state, and prior benchmark outputs.",
+                             "status":  "scaffolded_not_executed",
+                             "evidence_artifacts":  [
+                                                        "C:/dev/local-model/project-docs/records/WORKSPACE-CONTEXT-MAP-2026-07-09.md",
+                                                        "C:/dev/local-model/benchmarks/dry-run-preflight-command-deck-v1.json"
+                                                    ],
+                             "missing_evidence":  "Fresh context inventory artifact covering all specified sources.",
+                             "next_gate":  "Run metadata-only context inventory after approval."
+                         },
+                         {
+                             "id":  "REQ-004",
+                             "requirement":  "Integrate existing tools before inventing replacements.",
+                             "status":  "partial",
+                             "evidence_artifacts":  [
+                                                        "C:/dev/local-model/project-docs/records/TOOL-INTEGRATION-REPORT-2026-07-09.md",
+                                                        "C:/dev/local-model/project-docs/records/CAPABILITY-CATALOG-2026-07-09.md"
+                                                    ],
+                             "missing_evidence":  "End-to-end receipts showing each existing tool invoked through the harness.",
+                             "next_gate":  "Run tool readiness and hardening metadata preflights."
+                         },
+                         {
+                             "id":  "REQ-005",
+                             "requirement":  "Benchmark 5.3-Codex-Spark in Codex harness and Flywheel harness, then compare.",
+                             "status":  "contract_only",
+                             "evidence_artifacts":  [
+                                                        "C:/dev/local-model/benchmarks/cross-harness-adapter-contract-v1.json",
+                                                        "C:/dev/local-model/project-docs/records/CODEX-FLYWHEEL-BENCHMARK-COMPARISON-2026-07-09.md"
+                                                    ],
+                             "missing_evidence":  "Executed same-task Codex and Flywheel scorecards for 5.3-Codex-Spark.",
+                             "next_gate":  "Implement manifest/adapter generator, run dry rows, then execute focused provider rows after approval."
+                         },
+                         {
+                             "id":  "REQ-006",
+                             "requirement":  "Design serious custom benchmarks for agentic workflows.",
+                             "status":  "manifest_generator_implemented_not_run",
+                             "evidence_artifacts":  [
+                                                        "C:/dev/local-model/benchmarks/agentic-task-set-v1.json",
+                                                        "C:/dev/local-model/benchmarks/agentic-task-set-adapter-v1.json",
+                                                        "C:/dev/local-model/benchmarks/cross-harness-adapter-contract-v1.json",
+                                                        "C:/dev/local-model/scripts/run_agentic_task_set_manifest.py"
+                                                    ],
+                             "missing_evidence":  "Manifest execution artifact, scorecards, coverage report, and executed benchmark artifacts.",
+                             "next_gate":  "Run non-executing manifest generation and targeted validation after approval."
+                         },
+                         {
+                             "id":  "REQ-007",
+                             "requirement":  "Measure quality, task completion, latency, cost/resource use, reliability, tool-use success, failure modes, and reproducibility.",
+                             "status":  "metric_contract_only",
+                             "evidence_artifacts":  [
+                                                        "C:/dev/local-model/project-docs/records/BENCHMARK-METHODOLOGY-2026-07-09.md",
+                                                        "C:/dev/local-model/benchmarks/cross-harness-adapter-contract-v1.json"
+                                                    ],
+                             "missing_evidence":  "Executed rows with metric values for all required dimensions.",
+                             "next_gate":  "Run focused benchmark seed and coverage after metadata preflights."
+                         },
+                         {
+                             "id":  "REQ-008",
+                             "requirement":  "Establish or verify local endpoints for 14B, 32B, and other local models.",
+                             "status":  "profile_path_only",
+                             "evidence_artifacts":  [
+                                                        "C:/dev/local-model/project-docs/records/LOCAL-MODEL-BENCHMARK-SUMMARY-2026-07-09.md",
+                                                        "C:/dev/local-model/project-docs/records/HARNESS-ARCHITECTURE-ENDPOINT-REPORT-2026-07-09.md"
+                                                    ],
+                             "missing_evidence":  "Fresh endpoint profile and live endpoint gate artifacts.",
+                             "next_gate":  "Run endpoint profiles metadata-only, then endpoint gate after approval."
+                         },
+                         {
+                             "id":  "REQ-009",
+                             "requirement":  "Compile the harness into full executable format and plug in local models.",
+                             "status":  "scaffolded",
+                             "evidence_artifacts":  [
+                                                        "C:/dev/local-model/harness.cmd",
+                                                        "C:/dev/local-model/project-docs/records/HARNESS-ARCHITECTURE-ENDPOINT-REPORT-2026-07-09.md"
+                                                    ],
+                             "missing_evidence":  "Packaged executable artifact, install/run verification, and local model configuration proof.",
+                             "next_gate":  "Run metadata dry plan through harness.cmd, then package/validation after approval."
+                         },
+                         {
+                             "id":  "REQ-010",
+                             "requirement":  "Make mneme, relay, and plexus enterprise-ready, shipped, feature-complete, and differentiated.",
+                             "status":  "readiness_drafts_only",
+                             "evidence_artifacts":  [
+                                                        "C:/dev/local-model/project-docs/records/MNEME-READINESS-REPORT-2026-07-09.md",
+                                                        "C:/dev/local-model/project-docs/records/RELAY-READINESS-REPORT-2026-07-09.md",
+                                                        "C:/dev/local-model/project-docs/records/PLEXUS-READINESS-REPORT-2026-07-09.md"
+                                                    ],
+                             "missing_evidence":  "Shipped code changes, package/docs/tests/CI proof, and competitive feature receipts.",
+                             "next_gate":  "Run readiness receipts, select one hardening slice per tool, and validate after approval."
+                         },
+                         {
+                             "id":  "REQ-011",
+                             "requirement":  "Name and prepare 14B/32B models for publication, but do not publish until criteria pass.",
+                             "status":  "release_scaffold_only",
+                             "evidence_artifacts":  [
+                                                        "C:/dev/local-model/project-docs/records/MODEL-NAMING-PUBLISHING-PLAN-14B-32B-2026-07-09.md",
+                                                        "C:/dev/local-model/project-docs/releases/14B",
+                                                        "C:/dev/local-model/project-docs/releases/32B"
+                                                    ],
+                             "missing_evidence":  "Weights inventory, checksums, provenance/licensing, benchmark results, endpoint instructions, release checklist pass, and publish approval.",
+                             "next_gate":  "Run model release readiness after endpoint and benchmark evidence exist."
+                         },
+                         {
+                             "id":  "REQ-012",
+                             "requirement":  "Produce required final outputs: context map, tool integration report, architecture/endpoint report, methodology, comparisons, local model summary, readiness reports, model plan, outcome, catalog, next loop.",
+                             "status":  "draft_pack_exists",
+                             "evidence_artifacts":  [
+                                                        "C:/dev/local-model/project-docs/records/ROADMAP-STATUS-2026-07-09.md",
+                                                        "C:/dev/local-model/project-docs/records/CAPABILITY-CATALOG-2026-07-09.md"
+                                                    ],
+                             "missing_evidence":  "Executed benchmark data and shipped-change evidence for outputs that currently remain drafts.",
+                             "next_gate":  "Use this matrix to drive requirement-by-requirement closure rather than chat-only status."
+                         },
+                         {
+                             "id":  "REQ-013",
+                             "requirement":  "Improve forum replayable causal ledger benchmarks and answer scaling feedback honestly.",
+                             "status":  "implemented_not_run",
+                             "evidence_artifacts":  [
+                                                        "C:/dev/public/forum/src/forum/bench_deep_verify.py",
+                                                        "C:/dev/public/forum/src/forum/cli.py",
+                                                        "C:/dev/public/forum/README.md"
+                                                    ],
+                             "missing_evidence":  "Actual forum.deep-verify-benchmark/v1 run artifacts across large profiles.",
+                             "next_gate":  "Run bench-deep-verify profiles after validation/benchmark execution approval."
+                         },
+                         {
+                             "id":  "REQ-014",
+                             "requirement":  "Maintain schematics organically as the system is built.",
+                             "status":  "schematic_created",
+                             "evidence_artifacts":  [
+                                                        "C:/dev/local-model/project-docs/schematics/closed-loop-integration.graph.json",
+                                                        "C:/dev/local-model/project-docs/records/CLOSED-LOOP-INTEGRATION-SCHEMATIC-2026-07-09.md"
+                                                    ],
+                             "missing_evidence":  "Generator/drift check that keeps graph artifacts synchronized with code and benchmark receipts.",
+                             "next_gate":  "Add schema/generator and CI-style drift check after the manifest adapter exists."
+                         }
+                     ],
+    "updates":  [
+                    {
+                        "timestamp_utc":  "2026-07-09T00:00:00Z",
+                        "requirement_ids":  [
+                                                "REQ-006",
+                                                "REQ-009"
+                                            ],
+                        "status":  "implemented_not_validated",
+                        "evidence":  [
+                                         "C:/dev/local-model/scripts/run_benchmark_profile_coverage.py planned-only harness.agentic-task-manifest/v1 ingestion",
+                                         "C:/dev/local-model/scripts/run_closed_loop_outcome_report.py agentic_task_manifest_signals",
+                                         "C:/dev/local-model/benchmarks/forum-ledger-deep-verify-scaling-v1.json"
+                                     ],
+                        "limitation":  "No tests, validation, or benchmark execution run in this step; planned manifests do not count as executed scorecard evidence.",
+                        "next_gate":  "Run targeted tests, generate an agentic task manifest artifact, then execute forum deep-verify scale points under operator-approved time/resource limits."
+                    },
+                    {
+                        "timestamp_utc":  "2026-07-09T00:00:00Z",
+                        "requirement_ids":  [
+                                                "REQ-001",
+                                                "REQ-006",
+                                                "REQ-009",
+                                                "REQ-012"
+                                            ],
+                        "status":  "implemented_not_validated",
+                        "evidence":  [
+                                         "C:/dev/public/index/src/index_graph/mcp.py typed index.mcp-tool-error/v1 failure payloads",
+                                         "C:/dev/public/index/src/index_graph/scan.py os.walk onerror and Unicode-safe warnings",
+                                         "C:/dev/local-model/scripts/run_benchmark_profile_manifest.py forum and embodied benchmark rows",
+                                         "C:/dev/local-model/scripts/run_benchmark_profile_coverage.py forum and embodied schema mappings",
+                                         "C:/dev/local-model/scripts/run_closed_loop_outcome_report.py forum deep-verify outcome signals",
+                                         "C:/dev/local-model/benchmarks/forum-ledger-deep-verify-scaling-v1.json",
+                                         "C:/dev/local-model/benchmarks/embodied-realtime-multimodal-v1.json"
+                                     ],
+                        "limitation":  "No tests, Index MCP retest, model-card verification, or benchmark execution run in this step.",
+                        "next_gate":  "Run targeted Index MCP tests, regenerate benchmark profile, generate agentic task manifest, verify model-card leads, then execute bounded forum and embodied realtime benchmark slices."
+                    },
+                    {
+                        "timestamp_utc":  "2026-07-09T00:00:00Z",
+                        "requirement_ids":  [
+                                                "REQ-006",
+                                                "REQ-012"
+                                            ],
+                        "status":  "implemented_not_validated",
+                        "evidence":  [
+                                         "C:/dev/local-model/scripts/run_embodied_realtime_multimodal_plan.py metadata-only embodied realtime benchmark plan command",
+                                         "C:/dev/local-model/scripts/run_harness_cli.py embodied-realtime front-controller command",
+                                         "C:/dev/local-model/scripts/run_benchmark_profile_coverage.py planned-only embodied realtime coverage ingestion",
+                                         "C:/dev/local-model/scripts/run_closed_loop_outcome_report.py embodied_realtime_signals outcome extraction",
+                                         "C:/dev/local-model/tests/test_embodied_realtime_multimodal_plan.py planned tests not run"
+                                     ],
+                        "limitation":  "No tests, model-card verification, rendering checks, endpoint calls, or benchmark execution run in this step. Dry rows are planned-only and not executed benchmark evidence.",
+                        "next_gate":  "Run targeted tests, generate an embodied realtime plan artifact, verify named model cards, then execute a bounded dry/focused slice with rendered code-drawing assertions."
+                    },
+                    {
+                        "timestamp_utc":  "2026-07-09T00:00:00Z",
+                        "requirement_ids":  [
+                                                "REQ-006",
+                                                "REQ-007",
+                                                "REQ-012"
+                                            ],
+                        "status":  "implemented_not_validated",
+                        "evidence":  [
+                                         "C:/dev/local-model/scripts/run_closed_loop_benchmark_seed.py embodied_realtime_multimodal_plan default metadata preflight",
+                                         "C:/dev/local-model/scripts/run_benchmark_execution_matrix.py dry-tier embodied_realtime_plan step",
+                                         "C:/dev/local-model/tests/test_closed_loop_benchmark_seed.py planned embodied seed assertions not run",
+                                         "C:/dev/local-model/tests/test_benchmark_execution_matrix.py planned embodied matrix assertions not run",
+                                         "C:/dev/local-model/project-docs/INFRASTRUCTURE.md closed-loop embodied wiring note"
+                                     ],
+                        "limitation":  "No tests, seed dry plan execution, model-card verification, rendering checks, endpoint calls, or benchmark execution run in this step. Live Index MCP still returned Transport closed; Forum route was available but low-confidence/escalated.",
+                        "next_gate":  "Run targeted tests, generate a closed-loop dry plan, generate an embodied realtime plan artifact, verify named model cards, then execute bounded focused provider rows with rendered assertions."
+                    },
+                    {
+                        "timestamp_utc":  "2026-07-09T00:00:00Z",
+                        "requirement_ids":  [
+                                                "REQ-005",
+                                                "REQ-006",
+                                                "REQ-007",
+                                                "REQ-012"
+                                            ],
+                        "status":  "implemented_not_validated",
+                        "evidence":  [
+                                         "C:/dev/local-model/harness/cross_harness_manifest.py",
+                                         "C:/dev/local-model/scripts/run_cross_harness_manifest.py",
+                                         "C:/dev/local-model/scripts/run_harness_cli.py cross-harness command",
+                                         "C:/dev/local-model/scripts/run_closed_loop_benchmark_seed.py cross_harness_manifest preflight",
+                                         "C:/dev/local-model/scripts/run_benchmark_execution_matrix.py dry-tier cross_harness_manifest step",
+                                         "C:/dev/local-model/scripts/run_benchmark_profile_coverage.py planned-only cross-harness ingestion",
+                                         "C:/dev/local-model/scripts/run_closed_loop_outcome_report.py cross_harness_manifest_signals"
+                                     ],
+                        "limitation":  "No tests, dry-plan generation, provider calls, endpoint calls, or benchmark execution run in this step. Live Index MCP still returned Transport closed; Forum route was available but low-confidence/escalated.",
+                        "next_gate":  "Run targeted tests, generate a cross-harness manifest artifact, generate a closed-loop dry plan, then execute same-task provider rows only after operator-approved benchmark execution."
+                    },
+                    {
+                        "timestamp_utc":  "2026-07-09T00:00:00Z",
+                        "requirement_ids":  [
+                                                "REQ-003",
+                                                "REQ-005",
+                                                "REQ-006",
+                                                "REQ-009",
+                                                "REQ-012"
+                                            ],
+                        "status":  "implemented_not_validated",
+                        "evidence":  [
+                                         "C:/dev/local-model/benchmarks/dry-run-preflight-command-deck-v1.json updated current metadata-only commands",
+                                         "C:/dev/local-model/project-docs/records/DRY-RUN-PREFLIGHT-COMMAND-DECK-2026-07-09.md updated current metadata-only commands",
+                                         "C:/dev/local-model/tests/test_harness_cli.py executable manifest expected command list includes cross-harness"
+                                     ],
+                        "limitation":  "No command deck execution, tests, metadata artifact generation, provider calls, endpoint calls, or benchmark execution run in this step. Live Index MCP still returned Transport closed; Forum route was available but low-confidence/escalated.",
+                        "next_gate":  "Run targeted tests when approved, then generate metadata-only preflight artifacts from the deck before provider or endpoint execution."
+                    },
+                    {
+                        "timestamp_utc":  "2026-07-09T00:00:00Z",
+                        "requirement_ids":  [
+                                                "REQ-014",
+                                                "REQ-009",
+                                                "REQ-012"
+                                            ],
+                        "status":  "implemented_not_validated",
+                        "evidence":  [
+                                         "C:/dev/local-model/harness/schematic_drift.py",
+                                         "C:/dev/local-model/scripts/run_schematic_drift_check.py",
+                                         "C:/dev/local-model/scripts/run_harness_cli.py schematic-drift command",
+                                         "C:/dev/local-model/scripts/run_closed_loop_benchmark_seed.py schematic_drift_check preflight",
+                                         "C:/dev/local-model/scripts/run_benchmark_execution_matrix.py dry-tier schematic_drift_check step",
+                                         "C:/dev/local-model/scripts/run_closed_loop_outcome_report.py schematic_drift_signals",
+                                         "C:/dev/local-model/project-docs/schematics/closed-loop-integration.graph.json updated current nodes",
+                                         "C:/dev/local-model/project-docs/records/CLOSED-LOOP-INTEGRATION-SCHEMATIC-2026-07-09.md updated stale next implication"
+                                     ],
+                        "limitation":  "No tests, schematic drift command execution, metadata artifact generation, provider calls, endpoint calls, or benchmark execution run in this step. Live Index MCP still returned Transport closed; Forum route was available but low-confidence/escalated.",
+                        "next_gate":  "Run targeted tests when approved, then generate a harness.schematic-drift-check/v1 artifact and use it as the schematic maintenance gate before provider execution."
+                    }
+                ]
+}
