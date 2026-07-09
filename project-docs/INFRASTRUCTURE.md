@@ -309,6 +309,12 @@ Endpoint launch readiness command:
 
 This command is non-destructive. It reads endpoint profiles, checks model root presence, inspects local serve-port ownership, redacts process command lines, and classifies each serve row as `ready_to_launch`, `candidate_running_gate_required`, `port_conflict_wrong_service`, or `model_root_missing`.
 
+When a serve profile is blocked by a wrong local service, launch readiness also emits a suggested local override such as `--serve-url-32b http://127.0.0.1:8768` and rewrites the profile's launch command for the suggested free port. Generate an override profile through the executable surface:
+
+```powershell
+.\harness.cmd readiness model-endpoints --models 14B,32B --base-root E:/local-model-run --serve-url-32b http://127.0.0.1:8768 --out C:/tmp/model_endpoint_profiles_32b_override_8768_20260709.json --markdown-out C:/tmp/model_endpoint_profiles_32b_override_8768_20260709.md --store-root C:/tmp/harness_file_store
+```
+
 Executable endpoint gate command:
 
 ```powershell

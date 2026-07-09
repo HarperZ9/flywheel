@@ -71,13 +71,17 @@ def test_launch_readiness_detects_wrong_service_port_conflict(tmp_path):
             "process_name": "python.exe",
             "command_line": "python -m http.server 8767",
         }],
-        port_probe=lambda host, port, timeout: True,
+        port_probe=lambda host, port, timeout: port == 8767,
     )
 
     row = report["rows"][0]
     assert row["readiness"] == "port_conflict_wrong_service"
     assert row["owner_kind"] == "generic_http_server"
     assert row["can_launch_without_displacing"] is False
+    assert row["suggested_port"] == 8768
+    assert row["suggested_endpoint_url"] == "http://127.0.0.1:8768"
+    assert row["suggested_profile_override"] == "--serve-url-32b http://127.0.0.1:8768"
+    assert "--port 8768" in row["suggested_launch_command"]
     assert report["summary"]["port_conflict_rows"] == 1
     assert report["summary"]["blocking_rows"] == 1
 

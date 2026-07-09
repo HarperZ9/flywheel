@@ -1048,6 +1048,8 @@ What changed:
 - Updates serve launch templates to include `SERVE_MODEL_ALIAS`, `SERVE_MODEL_REF`, and `SERVE_PORT`, including the 32B reference string `Qwen2.5-Coder-32B-Instruct (base, nf4)`.
 - Adds endpoint health diagnostics for wrong local services and health-level model-reference mismatches before generation is attempted.
 - Adds `endpoint-launch-readiness` as a harness command and receipt schema for non-destructive local serve launch diagnostics, including model root checks, port ownership, wrong-service conflicts, and launch templates.
+- Extends launch readiness with alternate-port suggestions and executable profile override arguments, allowing 32B to move from a conflicted default port to a free local port without terminating unrelated processes.
+- Extends `harness.cmd readiness model-endpoints` with model and serve URL override flags so endpoint profiles can be regenerated through the executable surface.
 
 ### `classifier_friction_accountability_receipts`
 
