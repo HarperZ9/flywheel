@@ -24,11 +24,39 @@ STOP_FILE="$RUN/STOP_32B"
 MAX_ATTEMPTS=12
 SEQ_LEN=256
 EPOCHS=0.25
+# RAM gate. Loading the 82 GB fp16 32B and quantizing to 4-bit streams roughly
+# 20 GB through CPU RAM. On a 32 GB box the load only completes without swap
+# thrashing when the machine is close to idle. Wait for this much MemAvailable
+# (KB) before each launch so the run is patient instead of destructive.
+MIN_AVAIL_KB=$((22 * 1024 * 1024))
+RAM_POLL_SECONDS=120
+RAM_WAIT_MAX_MINUTES=1440   # give up waiting for RAM after 24h
 
 log() { echo "[$(date -u '+%Y-%m-%dT%H:%M:%SZ')] $*" >> "$SUP_LOG"; }
 
+avail_kb() { awk '/MemAvailable/ {print $2}' /proc/meminfo; }
+
+wait_for_ram() {
+    local waited=0 avail
+    while :; do
+        [ -f "$STOP_FILE" ] && return 1
+        avail=$(avail_kb)
+        if [ -n "$avail" ] && [ "$avail" -ge "$MIN_AVAIL_KB" ]; then
+            log "RAM gate open: MemAvailable $((avail/1024/1024)) GB >= $((MIN_AVAIL_KB/1024/1024)) GB"
+            return 0
+        fi
+        if [ "$waited" -ge $((RAM_WAIT_MAX_MINUTES * 60)) ]; then
+            log "RAM gate timeout after ${RAM_WAIT_MAX_MINUTES}m (MemAvailable $((avail/1024/1024)) GB); giving up"
+            return 2
+        fi
+        log "RAM gate waiting: MemAvailable $((avail/1024/1024)) GB < $((MIN_AVAIL_KB/1024/1024)) GB; sleeping ${RAM_POLL_SECONDS}s"
+        sleep "$RAM_POLL_SECONDS"
+        waited=$((waited + RAM_POLL_SECONDS))
+    done
+}
+
 mkdir -p "$RUN/logs"
-log "supervisor start: MODEL_SIZE=32B seq_len=$SEQ_LEN epochs=$EPOCHS max_attempts=$MAX_ATTEMPTS"
+log "supervisor start: MODEL_SIZE=32B seq_len=$SEQ_LEN epochs=$EPOCHS max_attempts=$MAX_ATTEMPTS ram_gate=$((MIN_AVAIL_KB/1024/1024))GB"
 
 attempt=0
 resume_flag=""
@@ -43,6 +71,11 @@ while [ "$attempt" -lt "$MAX_ATTEMPTS" ]; do
         log "stop file present; exiting cleanly"
         exit 0
     fi
+    wait_for_ram
+    case "$?" in
+        1) log "stop file appeared while waiting for RAM; exiting cleanly"; exit 0 ;;
+        2) log "aborting: RAM never freed"; exit 1 ;;
+    esac
     attempt=$((attempt + 1))
     log "attempt $attempt/$MAX_ATTEMPTS (resume_flag='$resume_flag')"
     MODEL_SIZE=32B bash /mnt/c/dev/local-model/scripts/run_phase2_linux.sh \
