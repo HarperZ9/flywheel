@@ -117,6 +117,27 @@ def _emit_endpoint_profiles(args: argparse.Namespace) -> Path:
     return path
 
 
+def _emit_executable_manifest(args: argparse.Namespace) -> Path:
+    path = DIST / "harness_executable_manifest.local.json"
+    markdown = DIST / "harness_executable_manifest.local.md"
+    command = [
+        sys.executable,
+        "scripts/run_harness_cli.py",
+        "manifest",
+        "--store-root",
+        args.store_root,
+        "--out",
+        str(path),
+        "--markdown-out",
+        str(markdown),
+    ]
+    print(f"[manifest] {' '.join(command)}")
+    proc = subprocess.run(command, cwd=ROOT)
+    if proc.returncode != 0:
+        raise RuntimeError(f"executable manifest generation failed ({proc.returncode})")
+    return path
+
+
 def _emit_tool_contract(args: argparse.Namespace) -> Path:
     path = DIST / "tool_integration_contract.local.json"
     markdown = DIST / "tool_integration_contract.local.md"
@@ -195,6 +216,30 @@ def _emit_codex_mcp_contract(args: argparse.Namespace) -> Path:
     return path
 
 
+def _emit_architecture_report(args: argparse.Namespace, *, release_manifest_path: Path) -> Path:
+    path = DIST / "harness_architecture_report.local.json"
+    markdown = DIST / "harness_architecture_report.local.md"
+    command = [
+        sys.executable,
+        "scripts/run_harness_architecture_report.py",
+        "--dist",
+        str(DIST),
+        "--release-manifest",
+        str(release_manifest_path),
+        "--package-doctor",
+        str(DIST / "package-doctor-generated-after-bundle.json"),
+        "--out",
+        str(path),
+        "--markdown-out",
+        str(markdown),
+    ]
+    print(f"[architecture] {' '.join(command)}")
+    proc = subprocess.run(command, cwd=ROOT)
+    if proc.returncode != 0:
+        raise RuntimeError(f"harness architecture report generation failed ({proc.returncode})")
+    return path
+
+
 def _write_release_manifest(args: argparse.Namespace, *, profiles_path: Path, built: list[str], skipped: list[str]) -> Path:
     manifest = {
         "schema": "harness.local-executable-release/v1",
@@ -228,6 +273,14 @@ def _write_release_manifest(args: argparse.Namespace, *, profiles_path: Path, bu
             "tools": args.tools,
             "base_root": args.tool_base_root,
             "root_overrides": args.tool_root,
+        },
+        "executable_manifest": {
+            "json": str(DIST / "harness_executable_manifest.local.json"),
+            "markdown": str(DIST / "harness_executable_manifest.local.md"),
+        },
+        "architecture_report": {
+            "json": str(DIST / "harness_architecture_report.local.json"),
+            "markdown": str(DIST / "harness_architecture_report.local.md"),
         },
         "codex_mcp": {
             "contract": str(DIST / "codex_mcp_launch_contract.local.json"),
@@ -315,11 +368,13 @@ def main() -> int:
     else:
         skipped.append("local-serve")
 
+    _emit_executable_manifest(args)
     profiles_path = _emit_endpoint_profiles(args)
     _emit_tool_contract(args)
     _emit_runtime_contract(args)
     _emit_codex_mcp_contract(args)
     manifest_path = _write_release_manifest(args, profiles_path=profiles_path, built=built, skipped=skipped)
+    _emit_architecture_report(args, release_manifest_path=manifest_path)
     print(f"[ok] executables in {DIST}")
     print(f"[ok] release manifest {manifest_path}")
     if args.package:
