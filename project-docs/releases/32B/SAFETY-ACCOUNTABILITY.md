@@ -1,20 +1,16 @@
 # Flywheel-Local-Coder-32B Safety and Accountability Notes
 
-Status: draft, not verified.
+Status: NO_TRAINED_ARTIFACT.
 
 ## Accountability posture
 
-The model release must use receipts, raw artifact hashes, endpoint gates, and limitations records instead of unsupported capability claims.
+No trained 32B artifact exists, so no receipts, no capability claims, and no release notes can exist for this track. Stating anything else would be fabrication.
 
-## Required release notes
+## What exists
 
-- Known failure modes.
-- Refusal/friction behavior if measured.
-- Receipt completeness.
-- Secret-handling boundary.
-- Local deployment limitations.
+- Base `Qwen2.5-Coder-32B-Instruct` weights downloaded locally.
+- A checkpoint-2 training smoke only (Phase-2 QLoRA hit the 24GB VRAM wall).
 
-## Current state
+## Rule
 
-No safety/accountability benchmark evidence is recorded here.
-
+The base weights must not be republished under a Flywheel name. Safety and accountability notes will be written from receipts once a real trained artifact and provenance chain exist.

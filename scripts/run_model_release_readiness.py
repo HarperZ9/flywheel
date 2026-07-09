@@ -18,7 +18,7 @@ from typing import Any
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from harness.file_backed_store import FileBackedHarnessStore  # noqa: E402
-from harness.model_profiles import candidate_model_roots, model_key  # noqa: E402
+from harness.model_profiles import candidate_model_roots, model_key, release_profile, release_root  # noqa: E402
 
 
 WEIGHT_SUFFIXES = {".gguf", ".safetensors", ".bin", ".pt", ".pth", ".onnx", ".mlmodel"}
@@ -49,6 +49,36 @@ GATE_FILES = {
     ],
 }
 
+# GGUF artifacts embed config and tokenizer metadata in the file header, so a
+# GGUF release root is not required to carry the HF-transformers sidecar files.
+GATE_FILES_GGUF = {
+    "identity": [
+        "MODEL_CARD.md",
+        "README.md",
+        "LICENSE",
+    ],
+    "integrity": [
+        "checksums.sha256",
+        "provenance.json",
+    ],
+    "serving": [
+        "endpoint.json",
+        "usage.md",
+    ],
+    "evaluation": [
+        "benchmark-summary.json",
+        "safety.md",
+        "release-checklist.md",
+    ],
+}
+
+
+def _gate_files_for(release: dict[str, Any]) -> dict[str, list[str]]:
+    kind = str(release.get("artifact_kind", "")).strip().lower()
+    if kind.startswith("gguf"):
+        return GATE_FILES_GGUF
+    return GATE_FILES
+
 
 def now_utc() -> str:
     return datetime.now(UTC).isoformat().replace("+00:00", "Z")
@@ -73,7 +103,8 @@ def _candidate_roots(model: str, base_root: Path) -> list[Path]:
 def _pick_root(model: str, base_root: Path, explicit_root: Path | None) -> tuple[Path, list[str]]:
     if explicit_root is not None:
         return explicit_root, [str(explicit_root)]
-    candidates = _candidate_roots(model, base_root)
+    release = release_root(model, base_root)
+    candidates = ([release] if release is not None else []) + _candidate_roots(model, base_root)
     for path in candidates:
         if path.exists():
             return path, [str(item) for item in candidates]
@@ -214,6 +245,8 @@ def _endpoint_gate_rows_for_model(model: str, gate_rows: list[dict[str, Any]]) -
 
 def _verdict(
     *,
+    trained: bool,
+    trained_artifact_present: bool,
     root_exists: bool,
     weight_count: int,
     gates: dict[str, dict[str, Any]],
@@ -221,8 +254,12 @@ def _verdict(
     endpoint_profile_count: int,
     endpoint_gate_generation_ok_count: int,
 ) -> str:
+    if not trained:
+        return "MODEL_NO_TRAINED_ARTIFACT"
     if not root_exists:
         return "MODEL_RELEASE_MISSING"
+    if not trained_artifact_present:
+        return "MODEL_TRAINED_ARTIFACT_MISSING"
     if weight_count <= 0:
         return "MODEL_ROOT_WITHOUT_WEIGHTS"
     all_docs_ready = all(float(gate["score"]) >= 1.0 for gate in gates.values())
@@ -254,6 +291,7 @@ def profile_model(
         for path in files
         if path.suffix.lower() in WEIGHT_SUFFIXES
     ]
+    release = release_profile(model)
     gates = {
         name: _gate(root, required)
         if root_exists
@@ -265,13 +303,32 @@ def profile_model(
             "present_files": [],
             "missing_files": required,
         }
-        for name, required in GATE_FILES.items()
+        for name, required in _gate_files_for(release).items()
     }
     artifacts = _artifact_matches(model, artifact_roots, max_entries=max_entries)
     endpoint_rows = _endpoint_profiles_for_model(model, endpoint_profiles or [])
     gate_rows = _endpoint_gate_rows_for_model(model, endpoint_gate_rows or [])
     gate_generation_ok = sum(1 for row in gate_rows if row.get("generation_ok"))
+    trained = bool(release.get("trained"))
+    artifact_name = str(release.get("artifact_name", "")).strip()
+    trained_artifact_present = bool(
+        trained and root_exists and artifact_name and (root / artifact_name).is_file()
+    )
+    release_identity = {
+        "trained": trained,
+        "public_name": release.get("public_name", ""),
+        "artifact_kind": release.get("artifact_kind", ""),
+        "artifact_name": artifact_name,
+        "base_model": release.get("base_model", ""),
+        "base_license": release.get("base_license", ""),
+        "adapter": release.get("adapter", ""),
+        "declared_artifact_sha256": release.get("artifact_sha256", ""),
+        "ship_manifest": release.get("ship_manifest", ""),
+        "no_artifact_reason": release.get("no_artifact_reason", ""),
+    }
     verdict = _verdict(
+        trained=trained,
+        trained_artifact_present=trained_artifact_present,
         root_exists=root_exists,
         weight_count=len(weight_files),
         gates=gates,
@@ -288,6 +345,9 @@ def profile_model(
         "root": str(root),
         "candidate_roots": candidates,
         "root_exists": root_exists,
+        "trained": trained,
+        "trained_artifact_present": trained_artifact_present,
+        "release_identity": release_identity,
         "content_read": False,
         "weight_file_count": len(weight_files),
         "weight_total_size_bytes": sum(int(row["size_bytes"]) for row in weight_files),
@@ -351,6 +411,8 @@ def build_report(
             "models": len(rows),
             "existing_models": sum(1 for row in rows if row["root_exists"]),
             "missing_models": sum(1 for row in rows if not row["root_exists"]),
+            "trained_models": sum(1 for row in rows if row["trained"]),
+            "trained_artifacts_present": sum(1 for row in rows if row["trained_artifact_present"]),
             "models_with_weights": sum(1 for row in rows if row["weight_file_count"] > 0),
             "release_ready_models": sum(1 for row in rows if row["enterprise_release_ready"]),
             "endpoint_profile_matches": sum(int(row["endpoint_profile_count"]) for row in rows),
@@ -372,6 +434,8 @@ def render_markdown(report: dict[str, Any]) -> str:
         f"- Timestamp UTC: `{report['timestamp_utc']}`",
         f"- Secret policy: {report['secret_policy']}",
         f"- Existing models: `{summary['existing_models']}` / `{summary['models']}`",
+        f"- Trained models: `{summary['trained_models']}` / `{summary['models']}`",
+        f"- Trained artifacts present: `{summary['trained_artifacts_present']}`",
         f"- Models with weights: `{summary['models_with_weights']}`",
         f"- Release-ready static models: `{summary['release_ready_models']}`",
         f"- Endpoint profile matches: `{summary['endpoint_profile_matches']}`",
@@ -379,14 +443,15 @@ def render_markdown(report: dict[str, Any]) -> str:
         f"- Endpoint gate generation OK: `{summary['endpoint_gate_generation_ok']}`",
         f"- Benchmark artifact matches: `{summary['benchmark_artifact_matches']}`",
         "",
-        "| Model | Verdict | Root exists | Weights | Doc score | Endpoint profiles | Endpoint gate OK | Benchmark artifacts |",
-        "|---|---|---:|---:|---:|---:|---:|---:|",
+        "| Model | Verdict | Trained | Root exists | Weights | Doc score | Endpoint profiles | Endpoint gate OK | Benchmark artifacts |",
+        "|---|---|---:|---:|---:|---:|---:|---:|---:|",
     ]
     for row in report["models"]:
         lines.append(
-            "| {model} | {verdict} | {exists} | {weights} | {score} | {endpoints} | {gate_ok} | {artifacts} |".format(
+            "| {model} | {verdict} | {trained} | {exists} | {weights} | {score} | {endpoints} | {gate_ok} | {artifacts} |".format(
                 model=row["model"],
                 verdict=row["verdict"],
+                trained=str(row["trained"]).lower(),
                 exists=str(row["root_exists"]).lower(),
                 weights=row["weight_file_count"],
                 score=row["release_doc_score"],

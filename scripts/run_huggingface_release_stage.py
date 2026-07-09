@@ -80,7 +80,13 @@ def _stage_gate(gate_id: str, passed: bool, evidence: str, blocker: str) -> dict
     }
 
 
-def _upload_templates(repo_id: str, model_root: str) -> dict[str, str]:
+def _upload_templates(repo_id: str, model_root: str, *, trained_artifact_present: bool) -> dict[str, str]:
+    if not trained_artifact_present:
+        marker = (
+            "# DO NOT UPLOAD: no trained artifact exists for this track; "
+            "base weights must not be republished under a Flywheel name."
+        )
+        return {"cli": marker, "python": marker}
     folder = model_root or "<local_model_dir>"
     return {
         "cli": f"hf upload {repo_id} {folder} --repo-type model",
@@ -112,7 +118,16 @@ def stage_model(
     blockers = [str(item) for item in plan_row.get("blockers", []) if item]
     publish_ready = plan_row.get("publish_status") == "READY_TO_STAGE" and not blockers
     release_gate_complete = bool(release_gates) and all(bool(gate.get("passed")) for gate in release_gates)
+    trained_artifact_present = bool(
+        plan_row.get("trained_artifact_present") or readiness_row.get("trained_artifact_present")
+    )
     stage_gates = [
+        _stage_gate(
+            "trained_artifact_present",
+            trained_artifact_present,
+            "harness.model-release-readiness/v1",
+            "No trained model artifact exists for this track; base weights must not be republished under a Flywheel name.",
+        ),
         _stage_gate(
             "publish_plan_ready_to_stage",
             publish_ready,
@@ -176,8 +191,10 @@ def stage_model(
         "upload_status": upload_status,
         "release_ready_without_operator_approval": release_ready,
         "stage_gates": stage_gates,
+        "trained_artifact_present": trained_artifact_present,
+        "release_identity": plan_row.get("release_identity", readiness_row.get("release_identity", {})),
         "blockers": sorted(set(blockers + [gate["blocker"] for gate in stage_gates if gate["blocker"]])),
-        "upload_templates": _upload_templates(repo_id, model_root),
+        "upload_templates": _upload_templates(repo_id, model_root, trained_artifact_present=trained_artifact_present),
     }
 
 

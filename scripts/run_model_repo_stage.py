@@ -145,6 +145,11 @@ def _provenance_payload(model: str, readiness_row: dict[str, Any], publish_row: 
         "repo_id": repo_id,
         "generated_utc": now_utc(),
         "source_model_root": readiness_row.get("root", publish_row.get("root", "")),
+        "trained": bool(readiness_row.get("trained", publish_row.get("trained"))),
+        "trained_artifact_present": bool(
+            readiness_row.get("trained_artifact_present", publish_row.get("trained_artifact_present"))
+        ),
+        "release_identity": readiness_row.get("release_identity", publish_row.get("release_identity", {})),
         "source_verdict": publish_row.get("source_verdict", ""),
         "weight_file_count": readiness_row.get("weight_file_count", 0),
         "weight_total_size_bytes": readiness_row.get("weight_total_size_bytes", 0),
@@ -190,7 +195,38 @@ def _write_generated_files(*, model: str, stage_root: Path, readiness_row: dict[
         ]),
     )
     generated.append("WEIGHT-CHECKSUMS-PENDING.md")
+    trained = bool(readiness_row.get("trained", publish_row.get("trained")))
+    if not trained:
+        identity = readiness_row.get("release_identity", publish_row.get("release_identity", {})) or {}
+        reason = str(identity.get("no_artifact_reason", "")) or "No trained model artifact exists for this track."
+        _write(
+            stage_root / "DO-NOT-PUBLISH.md",
+            "\n".join([
+                "# DO NOT PUBLISH",
+                "",
+                reason,
+                "",
+                "This staged repository is metadata-only and must never be uploaded",
+                "until a trained artifact with a re-checkable provenance chain exists.",
+                "",
+            ]),
+        )
+        generated.append("DO-NOT-PUBLISH.md")
     return generated
+
+
+def _merge_checksums(staged: Path, target: Path) -> None:
+    """Union staged checksum lines with existing target lines (weight hashes win)."""
+    rows: dict[str, str] = {}
+    for source in (staged, target):
+        if not source.exists():
+            continue
+        for line in source.read_text(encoding="utf-8").splitlines():
+            parts = line.split(None, 1)
+            if len(parts) == 2:
+                rows[parts[1].strip()] = parts[0].strip()
+    text = "\n".join(f"{digest}  {name}" for name, digest in sorted(rows.items())) + "\n"
+    target.write_text(text, encoding="utf-8")
 
 
 def _write_checksums(stage_root: Path) -> list[dict[str, Any]]:
@@ -242,11 +278,19 @@ def stage_model(
     present = [name for name in REQUIRED_REPO_FILES if (stage_root / name).exists()]
     missing = [name for name in REQUIRED_REPO_FILES if name not in present]
     sync_targets: list[str] = []
+    trained = bool(readiness_row.get("trained", publish_row.get("trained")))
     if sync_to_model_root:
         model_root = Path(str(readiness_row.get("root", publish_row.get("root", ""))))
-        if model_root.exists():
+        if not trained:
+            # Never write staged docs into an untrained track's root: that root
+            # is the base model directory and must not be overwritten.
+            pass
+        elif model_root.exists():
             for name in REQUIRED_REPO_FILES:
-                shutil.copy2(stage_root / name, model_root / name)
+                if name == "checksums.sha256":
+                    _merge_checksums(stage_root / name, model_root / name)
+                else:
+                    shutil.copy2(stage_root / name, model_root / name)
                 sync_targets.append(str(model_root / name))
     upload_ready = not missing and publish_row.get("publish_status") == "READY_TO_STAGE"
     return {

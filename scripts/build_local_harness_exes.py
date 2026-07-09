@@ -138,6 +138,9 @@ def _emit_model_release_readiness(args: argparse.Namespace, *, profiles_path: Pa
         "--markdown-out",
         str(markdown),
     ]
+    endpoint_gate_path = DIST / "model_endpoint_gate.local.json"
+    if endpoint_gate_path.exists():
+        command.extend(["--endpoint-gate-artifacts", str(endpoint_gate_path)])
     print(f"[model-release] {' '.join(command)}")
     proc = subprocess.run(command, cwd=ROOT)
     if proc.returncode != 0:

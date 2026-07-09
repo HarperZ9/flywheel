@@ -1,36 +1,14 @@
 # Flywheel-Local-Coder-32B Model Card
 
-Status: draft, not publish-ready.
+Status: NO_TRAINED_ARTIFACT. There is no model to describe.
 
 ## Model identity
 
-- Working name: `Flywheel-Local-Coder-32B`
-- Size track: `32B`
-- Release status: `blocked_missing_evidence`
-- Local root evidence: `E:\local-model-run` exists, but model-specific files and checksums are not verified in this document.
+- Track name: `Flywheel-Local-Coder-32B`
+- Trained artifact: none. No adapter, no merge, no quantized artifact exists.
+- Base weights on disk: `Qwen2.5-Coder-32B-Instruct` (Alibaba Cloud / Qwen team, Apache-2.0) at `E:\local-model-run\models\Qwen2.5-Coder-32B-Instruct`.
+- Training evidence: a checkpoint-2 training smoke only. Phase-2 QLoRA on the 32B hit the 24GB VRAM wall.
 
-## Intended use
+## Publication verdict
 
-This model track is intended for local-first agentic coding and workflow tasks inside the Codex/Flywheel harness, with accountable receipts, endpoint gates, and benchmark evidence required before publication.
-
-## Evidence required before release
-
-- Endpoint profile artifact.
-- Endpoint gate artifact.
-- Focused agentic benchmark scorecard.
-- Local-resource pressure scorecard.
-- Cross-harness comparison row.
-- Checksum manifest.
-- Provenance and license notes.
-- Safety/accountability notes.
-- Usage examples.
-- Known limitations.
-
-## Current benchmark status
-
-No valid performance conclusion is recorded here. The model has not been benchmarked in this release artifact.
-
-## Current publication verdict
-
-Do not publish.
-
+Do not publish. The base weights must not be republished under a Flywheel name. This card becomes a real model card only after a 32B adapter is trained and a provenance chain exists.
