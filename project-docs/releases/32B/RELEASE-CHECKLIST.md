@@ -1,20 +1,18 @@
 # Flywheel-Local-Coder-32B Release Checklist
 
-Status: blocked.
+Status: blocked. Track status NO_TRAINED_ARTIFACT.
 
-| Gate | Status | Evidence required |
+Gate ids match `scripts/run_model_publish_plan.py` and `scripts/run_model_release_readiness.py`.
+
+| Gate id | Status | Evidence |
 | --- | --- | --- |
-| Model artifact inventory | missing_evidence | File inventory with artifact paths. |
-| Checksums | missing_evidence | `CHECKSUMS.txt` with SHA-256 rows. |
-| Provenance | missing_evidence | `PROVENANCE.md` completed with source and license notes. |
-| License | missing_evidence | License file or license reference. |
-| Endpoint profile | missing_evidence | `harness.model-endpoint-profiles/v1` artifact. |
-| Endpoint gate | missing_evidence | `harness.model-endpoint-gate/v1` artifact. |
-| Benchmark summary | missing_evidence | Executed agentic benchmark scorecard. |
-| Cross-harness comparison | missing_evidence | Comparable provider row using the cross-harness contract. |
-| Safety/accountability notes | missing_evidence | Receipt-backed limitations and failure modes. |
-| Usage examples | missing_evidence | Verified examples tied to endpoint mode. |
-| Publish approval | missing_evidence | Explicit operator approval after all gates pass. |
+| `trained_artifact_present` | FAILED | No trained 32B artifact exists. Only a checkpoint-2 training smoke (Phase-2 QLoRA hit the 24GB VRAM wall). Base weights must not be republished under a Flywheel name. |
+| `root_exists` | DONE | `E:\local-model-run` exists; base weights at `E:\local-model-run\models\Qwen2.5-Coder-32B-Instruct`. |
+| `weights_present` | blocked | Only base weights exist. A Flywheel release requires a trained artifact, not the base weights. |
+| `endpoint_profiles_present` | pending | Blocked behind a trained artifact. |
+| `endpoint_generation_ok` | pending | Blocked behind a trained artifact. |
+| `benchmark_evidence_present` | pending | Blocked behind a trained artifact. |
+| `release_docs_complete` | pending | Docs state NO_TRAINED_ARTIFACT until training completes. |
+| Operator upload approval | pending, NEVER auto-approved | Not applicable until all prior gates pass. |
 
-Verdict: do not publish.
-
+Verdict: do not publish. Unblock path: train a 32B adapter, build the provenance chain, re-enter the release pipeline.

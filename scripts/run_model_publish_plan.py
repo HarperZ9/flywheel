@@ -81,6 +81,15 @@ def release_gates_for_model(row: dict[str, Any]) -> list[dict[str, Any]]:
     present_files = set(_present_from_gates(row))
     gates = [
         _gate(
+            "trained_artifact_present",
+            passed=bool(row.get("trained_artifact_present")),
+            evidence="harness.model-release-readiness/v1",
+            blocker=(
+                "No trained model artifact exists for this track; "
+                "base weights must not be republished under a Flywheel name."
+            ),
+        ),
+        _gate(
             "root_exists",
             passed=bool(row.get("root_exists")),
             evidence="harness.model-release-readiness/v1",
@@ -147,7 +156,7 @@ def actions_for_model(row: dict[str, Any], gates: list[dict[str, Any]]) -> list[
         actions.append({
             "schema": "harness.model-publish-plan.action/v1",
             "model": model,
-            "priority": "P0" if gate["gate_id"] in {"root_exists", "weights_present"} else "P1",
+            "priority": "P0" if gate["gate_id"] in {"trained_artifact_present", "root_exists", "weights_present"} else "P1",
             "owner": "model-foundry",
             "action": str(gate.get("blocker", "")),
             "acceptance_gate": f"`{gate['gate_id']}` passes in the next publish plan.",
@@ -169,6 +178,9 @@ def publish_row(row: dict[str, Any], *, name_prefix: str) -> dict[str, Any]:
         "candidate_name": candidate_name,
         "candidate_slug": candidate_slug,
         "root": row.get("root", ""),
+        "trained": bool(row.get("trained")),
+        "trained_artifact_present": bool(row.get("trained_artifact_present")),
+        "release_identity": row.get("release_identity", {}),
         "source_verdict": row.get("verdict", ""),
         "publish_status": "READY_TO_STAGE" if ready else "DO_NOT_PUBLISH",
         "release_gates": gates,

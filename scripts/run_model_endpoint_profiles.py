@@ -14,7 +14,7 @@ from urllib.parse import urlparse
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from harness.file_backed_store import FileBackedHarnessStore  # noqa: E402
-from harness.model_profiles import candidate_model_roots, model_key, model_profile  # noqa: E402
+from harness.model_profiles import candidate_model_roots, model_key, model_profile, release_profile, release_root  # noqa: E402
 from harness.provider_roles import provider_role  # noqa: E402
 
 DEFAULT_SERVE_URLS = {
@@ -167,6 +167,41 @@ def _ollama_profile(model: str, *, base_root: Path, ollama_url: str) -> dict[str
     }
 
 
+def _release_ollama_profile(model: str, *, base_root: Path, ollama_url: str) -> dict[str, Any] | None:
+    release = release_profile(model)
+    ollama_name = str(release.get("ollama_model_name", "")).strip()
+    if not (release.get("trained") and ollama_name):
+        return None
+    root = release_root(model, base_root)
+    artifact_name = str(release.get("artifact_name", "")).strip()
+    artifact_present = bool(root is not None and artifact_name and (root / artifact_name).is_file())
+    return {
+        "schema": "harness.model-endpoint-profile/v1",
+        "profile_id": f"ollama-release-{model_key(model)}",
+        "model": model,
+        "model_key": model_key(model),
+        "backend": "ollama",
+        "provider_role": provider_role("ollama"),
+        "model_ref": f"ollama:{ollama_name}",
+        "model_root": str(root) if root is not None else "",
+        "candidate_roots": [str(root)] if root is not None else [],
+        "root_exists": artifact_present,
+        "release_artifact": artifact_name,
+        "release_public_name": release.get("public_name", ""),
+        "endpoint_url": ollama_url.rstrip("/"),
+        "health_url": f"{ollama_url.rstrip('/')}/api/tags",
+        "generate_url": f"{ollama_url.rstrip('/')}/api/chat",
+        "agentic_backend": "harness.local_agent.OllamaBackend",
+        "launch_command_template": f"ollama run {ollama_name}",
+        "required_env": ["OLLAMA_HOST"],
+        "env_presence": {"OLLAMA_HOST": bool(os.environ.get("OLLAMA_HOST"))},
+        "selectors": [ollama_name],
+        "content_read": False,
+        "live_probed": False,
+        "supports_agentic_workflow": True,
+    }
+
+
 def build_report(
     *,
     models: list[str],
@@ -187,6 +222,9 @@ def build_report(
             runtime_strategy=runtime_strategies.get(model_key(model), ""),
         ))
         profiles.append(_ollama_profile(model, base_root=base_root, ollama_url=ollama_url))
+        release_row = _release_ollama_profile(model, base_root=base_root, ollama_url=ollama_url)
+        if release_row is not None:
+            profiles.append(release_row)
     return {
         "schema": "harness.model-endpoint-profiles/v1",
         "timestamp_utc": now_utc(),

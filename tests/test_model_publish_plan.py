@@ -9,6 +9,8 @@ def ready_model_row():
         "model_key": "14b",
         "root": "E:/local-model-run/models/Qwen2.5-Coder-14B-Instruct",
         "root_exists": True,
+        "trained": True,
+        "trained_artifact_present": True,
         "weight_file_count": 1,
         "release_doc_score": 1.0,
         "endpoint_profile_count": 1,
@@ -45,8 +47,34 @@ def test_build_plan_marks_ready_models_ready_to_stage_only():
 
     assert plan["schema"] == "harness.model-publish-plan/v1"
     assert plan["models"][0]["publish_status"] == "READY_TO_STAGE"
+    assert len(plan["models"][0]["release_gates"]) == 17
+    assert plan["models"][0]["release_gates"][0]["gate_id"] == "trained_artifact_present"
+    assert plan["models"][0]["release_gates"][0]["passed"] is True
     assert plan["summary"]["ready_to_stage_models"] == 1
     assert "No model is published" in plan["publish_policy"]
+
+
+def test_publish_row_blocks_untrained_track_with_no_republish_blocker():
+    row = ready_model_row()
+    row["model"] = "32B"
+    row["trained"] = False
+    row["trained_artifact_present"] = False
+
+    plan_row = publish_row(row, name_prefix="Flywheel-Local-Coder")
+
+    first_gate = plan_row["release_gates"][0]
+    assert first_gate["gate_id"] == "trained_artifact_present"
+    assert first_gate["passed"] is False
+    assert plan_row["publish_status"] == "DO_NOT_PUBLISH"
+    assert (
+        "No trained model artifact exists for this track; "
+        "base weights must not be republished under a Flywheel name."
+    ) in plan_row["blockers"]
+    p0_actions = [action for action in plan_row["actions"] if action["priority"] == "P0"]
+    assert any(
+        action["acceptance_gate"] == "`trained_artifact_present` passes in the next publish plan."
+        for action in p0_actions
+    )
 
 
 def test_build_plan_missing_readiness_artifact_is_unverifiable():

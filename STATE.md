@@ -8,7 +8,41 @@
 > backbone (the WHY and the phase plan); this file is where we are RIGHT NOW.
 > Update on every material step. If context is lost: read ROADMAP.md, then this.
 
-Last updated: 2026-07-06
+Last updated: 2026-07-09
+
+## 2026-07-09 (session 3) — release identity corrected; 14B READY_TO_STAGE, 32B honestly gated
+
+- **CRITICAL FIX: the staged HF release candidates pointed at the BASE Qwen
+  weights, not our artifacts.** The prior staging would have republished
+  unmodified Qwen2.5-Coder weights under the Flywheel name (the 32B has NO
+  trained artifact at all; only a checkpoint-2 smoke exists). Release identity
+  now lives in `harness/model_profiles.py` (`release` block per model) and a
+  `trained_artifact_present` gate runs FIRST in readiness -> publish plan ->
+  repo stage -> HF stage. 32B verdict: `MODEL_NO_TRAINED_ARTIFACT`,
+  DO_NOT_PUBLISH, upload templates replaced by a DO-NOT-UPLOAD marker.
+- **14B release root built and fully evidenced**:
+  `E:\local-model-run\release\flywheel-local-coder-14b\` = the trained GGUF
+  (telos-coder-14b-cpt2020-q4_k_m.gguf, sha256 613db240... verified on copy
+  from WSL) + Modelfile + LICENSE (Apache-2.0 + attribution) + all 10 release
+  docs (truth-passed) + merged checksums (GGUF line preserved).
+- **Live endpoint gate PASSES on the real artifact**: Ollama model
+  `flywheel-local-coder-14b` created from the GGUF (blob store on E:, C: is at
+  97%); `ollama-release-14b` profile health+generation OK (524ms). The base
+  `ollama-14b` row honestly FAILS (base model not in store). Gate artifact now
+  rides the package and the ship doctor requires it.
+- **Benchmark evidence attached**: fresh M7 run of `ollama:flywheel-local-coder-14b`
+  (4 arms x 8 held-out tasks): pass 8/8 in ALL arms, receipts 100%, verdict
+  MATCH. No uplift claimed (the easy set saturates; hard-set run is the
+  discriminating follow-up). Scorecard:
+  `artifacts/flywheel-local-coder-14b-benchmark-m7-scorecard.json`.
+- **End state: 14B = MODEL_RELEASE_READY_STATIC -> READY_TO_STAGE (17/17
+  gates) -> WAITING_FOR_OPERATOR_UPLOAD_APPROVAL** (sole blocker = operator
+  approval, never auto-granted). 32B = DO_NOT_PUBLISH until a real 32B
+  adapter is trained. GGUF gate-file set is artifact-kind aware (GGUF embeds
+  tokenizer/config; HF sidecar files not required).
+- Guards added: repo-stage sync refuses to write staged docs into an untrained
+  track's root (would overwrite the base model dir); checksum sync merges
+  instead of clobbering weight hashes. Test slice 32 passed (was 24).
 
 ## 2026-07-07 (session 2, cont.) — SHIPPABLE GGUF + provenance chain, index watch
 

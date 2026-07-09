@@ -154,6 +154,8 @@ def build_bundle(
     release_manifest = dist / "local-harness-release.json"
     endpoint_profiles = dist / "model_endpoint_profiles.local.json"
     endpoint_profiles_md = dist / "model_endpoint_profiles.local.md"
+    endpoint_gate = dist / "model_endpoint_gate.local.json"
+    endpoint_gate_md = dist / "model_endpoint_gate.local.md"
     model_release = dist / "model_release_readiness.local.json"
     model_release_md = dist / "model_release_readiness.local.md"
     model_publish = dist / "model_publish_plan.local.json"
@@ -191,6 +193,8 @@ def build_bundle(
         (release_manifest, bundle_root / "manifest" / "local-harness-release.json"),
         (endpoint_profiles, bundle_root / "config" / "model_endpoint_profiles.local.json"),
         (endpoint_profiles_md, bundle_root / "config" / "model_endpoint_profiles.local.md"),
+        (endpoint_gate, bundle_root / "config" / "model_endpoint_gate.local.json"),
+        (endpoint_gate_md, bundle_root / "docs" / "model_endpoint_gate.local.md"),
         (model_release, bundle_root / "config" / "model_release_readiness.local.json"),
         (model_release_md, bundle_root / "docs" / "model_release_readiness.local.md"),
         (model_publish, bundle_root / "config" / "model_publish_plan.local.json"),
