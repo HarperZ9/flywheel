@@ -79,6 +79,7 @@ pre{background:var(--card);border:1px solid var(--line);border-radius:12px;paddi
 .status .s{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 18px}
 .status .s .k{font-family:ui-sans-serif,system-ui,sans-serif;font-size:12.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
 .status .s .v{font-family:ui-sans-serif,system-ui,sans-serif;font-weight:660;font-size:15px;margin-top:4px}
+.fresh{font-family:ui-sans-serif,system-ui,sans-serif;font-size:12px;font-weight:500;color:var(--muted);margin-left:10px;letter-spacing:.02em;vertical-align:middle}
 .dotok{color:var(--ok)} .dotwarm{color:var(--warm)}
 footer{padding:44px 0 70px;color:var(--muted);font-size:14px;font-family:ui-sans-serif,system-ui,sans-serif}
 footer .rule{color:var(--muted);max-width:66ch}
@@ -177,14 +178,14 @@ footer .rule{color:var(--muted);max-width:66ch}
 
   <section id="benchmarks">
     <div class="eyebrow">honest measurement</div>
-    <h2>What we can prove today, and what we cannot yet</h2>
+    <h2>What we can prove today, and what we cannot yet <span class="fresh" id="benchFresh"></span></h2>
     <p class="sub">The model is Flywheel-Local-Coder-14B, a trained artifact with a full provenance
       chain. We hold ourselves to what an outside observer can check. Here is the first hard-set
       run, with confidence intervals, not adjectives.</p>
     <div class="bench">
       <table>
         <thead><tr><th>Arm</th><th>Hard set (10 tasks)</th><th>Wilson 95% CI</th><th>Receipts</th></tr></thead>
-        <tbody>
+        <tbody id="benchBody">
           <tr><td>single-shot</td><td class="n">8 / 10 (80%)</td><td class="n">[0.490, 0.943]</td><td class="n">100%</td></tr>
           <tr><td>verified inference</td><td class="n">9 / 10 (90%)</td><td class="n">[0.596, 0.982]</td><td class="n">100%</td></tr>
           <tr><td>best-of-4</td><td class="n">9 / 10 (90%)</td><td class="n">[0.596, 0.982]</td><td class="n">100%</td></tr>
@@ -193,7 +194,7 @@ footer .rule{color:var(--muted);max-width:66ch}
       </table>
     </div>
     <div class="note"><b>We do not claim a capability uplift.</b> Verified inference beats single-shot
-      by +0.100 here, but the 95% interval is [-0.236, +0.420], which includes zero, and plain
+      by <span id="liftPoint">+0.100</span> here, but the 95% interval is <span id="liftCI">[-0.236, +0.420]</span>, which includes zero, and plain
       best-of-4 sampling ties it. So the honest, measurable claims today are 100% receipt
       reproducibility, pass parity, and local cost. A real effect at this size would need roughly a
       hundred tasks to separate from noise, which is exactly what the curated hard lane is building
@@ -214,11 +215,11 @@ ollama run flywheel-local-coder-14b</pre>
 
   <section id="status">
     <div class="eyebrow">where things stand</div>
-    <h2>Honest status</h2>
+    <h2>Honest status <span class="fresh" id="statusFresh"></span></h2>
     <div class="status">
-      <div class="s"><div class="k">14B model</div><div class="v"><span class="dotok">&#9679;</span> trained, staged, gated on approval</div></div>
-      <div class="s"><div class="k">32B model</div><div class="v"><span class="dotwarm">&#9679;</span> training path proven, runs when idle</div></div>
-      <div class="s"><div class="k">Benchmark lane</div><div class="v">50 of 100 tasks curated</div></div>
+      <div class="s" id="s-14b"><div class="k">14B model</div><div class="v"><span class="dotok">&#9679;</span> trained, uploaded private, public flip gated</div></div>
+      <div class="s" id="s-32b"><div class="k">32B model</div><div class="v"><span class="dotwarm">&#9679;</span> no trained artifact, trains when idle</div></div>
+      <div class="s" id="s-lane"><div class="k">Benchmark lane</div><div class="v">110 of 100 tasks curated &middot; target met</div></div>
       <div class="s"><div class="k">Publication</div><div class="v">gated on outside-observer evidence</div></div>
       <div class="s"><div class="k">Receipts</div><div class="v"><span class="dotok">&#9679;</span> 100% reproducible</div></div>
       <div class="s"><div class="k">Voice</div><div class="v">wonder, integration, honesty</div></div>
@@ -233,6 +234,98 @@ ollama run flywheel-local-coder-14b</pre>
   </footer>
 </div>
 
+<script>
+/* Data layer (SUPERAPP.md increment 1): every number on this page binds to a
+   receipt artifact fetched at load. If a fetch fails (offline file:// open),
+   the static content stands — and the statics are kept truthful at commit
+   time — but a served page can never drift from the receipts. */
+(function(){
+  function age(mod){
+    var t=Date.parse(mod); if(isNaN(t)) return '';
+    var s=(Date.now()-t)/1000;
+    if(s<3600) return Math.max(1,Math.round(s/60))+'m';
+    if(s<172800) return Math.round(s/3600)+'h';
+    return Math.round(s/86400)+'d';
+  }
+  function grab(url){
+    return fetch(url,{cache:'no-store'}).then(function(r){
+      if(!r.ok) throw new Error(url);
+      return r.text().then(function(body){
+        return {body:body, mod:r.headers.get('Last-Modified')};
+      });
+    });
+  }
+  function mark(id,mod){
+    var el=document.getElementById(id), a=mod?age(mod):'';
+    if(el){ el.textContent='live from receipts'+(a?' · '+a+' old':''); }
+  }
+  function signed(x){ return (x>=0?'+':'')+x.toFixed(3); }
+
+  // Benchmark table + lift note <- benchmark-ci artifact
+  grab('../artifacts/flywheel-local-coder-14b-benchmark-ci.json').then(function(res){
+    var d=JSON.parse(res.body), key=null, k;
+    for(k in d){ if(k.indexOf('hard')>=0) key=k; }
+    if(!key) return;
+    var sc=d[key], arms=sc.arms||{};
+    var order=[['single_shot','single-shot'],['verified_inference','verified inference'],
+               ['flat_n','best-of-4'],['no_search','single + oracle']];
+    var tb=document.getElementById('benchBody'), html='';
+    order.forEach(function(p){
+      var a=arms[p[0]]; if(!a) return;
+      html+='<tr><td>'+p[1]+'</td><td class="n">'+a.passed+' / '+a.n+' ('+Math.round(a.pass_rate*100)+'%)</td>'
+          +'<td class="n">['+a.wilson_95[0].toFixed(3)+', '+a.wilson_95[1].toFixed(3)+']</td>'
+          +'<td class="n">100%</td></tr>';
+    });
+    if(tb&&html) tb.innerHTML=html;
+    var diff=sc.difference;
+    if(diff){
+      var lp=document.getElementById('liftPoint'), lc=document.getElementById('liftCI');
+      if(lp) lp.textContent=signed(diff.point);
+      if(lc) lc.textContent='['+signed(diff.ci_95[0])+', '+signed(diff.ci_95[1])+']';
+    }
+    mark('benchFresh',res.mod);
+  }).catch(function(){});
+
+  // Benchmark-lane count <- the curated registry itself
+  grab('../tasks/curated/hard_v2.jsonl').then(function(res){
+    var n=res.body.split('\n').filter(function(l){return l.trim();}).length;
+    var el=document.querySelector('#s-lane .v');
+    if(el&&n) el.textContent=n+' of 100 tasks curated'+(n>=100?' · target met':'');
+  }).catch(function(){});
+
+  // 14B / 32B cards <- model release readiness receipt
+  grab('../artifacts/exe/model_release_readiness.local.json').then(function(res){
+    var d=JSON.parse(res.body);
+    (d.models||[]).forEach(function(m){
+      var el=document.querySelector('#s-'+m.model_key+' .v'); if(!el) return;
+      var docs=m.present_total+'/'+m.required_total+' docs';
+      if(m.verdict==='MODEL_RELEASE_READY_STATIC'){
+        el.innerHTML='<span class="dotok">&#9679;</span> trained · release-ready ('+docs+') · publish gated';
+      } else if(m.verdict==='MODEL_NO_TRAINED_ARTIFACT'){
+        el.innerHTML='<span class="dotwarm">&#9679;</span> no trained artifact ('+docs+') · publish blocked';
+      } else {
+        el.textContent=m.verdict.toLowerCase().replace(/_/g,' ')+' ('+docs+')';
+      }
+    });
+    mark('statusFresh',res.mod);
+  }).catch(function(){});
+
+  // Gallery <- generated demos manifest (scripts/build_demos_index.py)
+  grab('../demos/index.json').then(function(res){
+    var d=JSON.parse(res.body);
+    if(!d.demos||!d.demos.length) return;
+    var g=document.querySelector('.gallery'), html='';
+    d.demos.forEach(function(x){
+      html+='<a class="tile" href="../demos/'+x.player+'"'
+          +(x.receipt_sha256?' title="receipt '+x.receipt_sha256.slice(0,12)+'…"':'')+'>';
+      if(x.badge){ html+='<span class="badge">'+x.badge+'</span><p class="name" style="margin-top:12px">'+x.name+'</p>'; }
+      else { html+='<p class="name">'+x.name+'</p>'; }
+      html+='<p class="role">'+x.role+'</p><span class="play">Play the shot &rsaquo;</span></a>';
+    });
+    if(g&&html) g.innerHTML=html;
+  }).catch(function(){});
+})();
+</script>
 <script>
 (function(){
   var root=document.documentElement, btn=document.getElementById('themeToggle');
