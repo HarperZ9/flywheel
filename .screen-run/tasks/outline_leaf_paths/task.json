@@ -1,8 +1,0 @@
-{
-  "task_id": "outline_leaf_paths",
-  "prompt": "Write a Python function outline_paths(lines) that converts an indentation-based outline into the list of leaf paths.\n\nlines is a list of strings. Lines that are empty or contain only whitespace (spaces and/or tabs) are skipped entirely and never participate in validation or level tracking. For every other line: the leading whitespace determines the node's level, and the rest of the line, with trailing whitespace stripped, is the node's name (interior spaces in names are preserved).\n\nRules, checked per line in this exact order, processing lines top to bottom and raising on the first violation:\n1. If the leading whitespace contains a tab character -> ValueError(\"tab in indent\").\n2. If the number of leading spaces is not a multiple of 2 -> ValueError(\"odd indent\"). Level = leading spaces / 2.\n3. The first non-blank line must be at level 0, and each non-blank line may be at most one level deeper than the previous non-blank line (any decrease is fine). Violations -> ValueError(\"indent jump\"). Note this means an indented first line raises \"indent jump\".\n4. If the name contains \"/\" -> ValueError(\"slash in name\").\n\nA node at level L is a child of the nearest preceding node at level L-1. Multiple level-0 roots are allowed (the outline is a forest). A leaf is a node with no children. Return the leaf paths (names joined with \"/\", from root to leaf) in the order the leaves appear in the input. Return [] for an empty or all-blank input. The input list must not be mutated.\n\nOutput ONLY the function definition.",
-  "oracle": "pytest",
-  "oracle_cmd": "python -m pytest tests/ -q",
-  "candidate_path": "solution.py",
-  "max_new_tokens": 768
-}

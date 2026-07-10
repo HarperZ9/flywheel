@@ -1,8 +1,0 @@
-{
-  "task_id": "canonical_decimal",
-  "prompt": "Write a Python function canonical_decimal(s: str) -> str that validates a decimal-number literal and returns its canonical string form.\n\nInput grammar: an optional single leading sign '+' or '-', then an integer part, then optionally a dot '.' followed by a fraction part. The integer part and the fraction part are each a possibly-empty run of ASCII digits with optional underscore separators, BUT at least one digit must be present somewhere (so '.5', '5.', '5', and '5.5' are valid shapes; '', '+', '-', '.', and '+.' are not and raise ValueError).\n\nUnderscore rules: every underscore must have a digit immediately on BOTH sides. Underscores may not begin or end a part, may not be doubled, and may not touch the dot or the sign ('_1', '1_', '1__2', '1_.5', '1._5', '+_1' all raise ValueError).\n\nAny other character anywhere (whitespace, letters, a second dot, a second sign) raises ValueError. Raise ValueError for every malformed input.\n\nCanonical output:\n1. Remove all underscores.\n2. Strip leading zeros from the integer part, keeping at least one digit; an empty integer part becomes '0' ('.5' -> '0.5', '007' -> '7').\n3. Strip trailing zeros from the fraction part; if the fraction becomes empty, omit the dot entirely ('3.1400' -> '3.14', '5.' -> '5', '2.000' -> '2').\n4. If the value is zero (all digits are 0), return exactly '0' with no sign, regardless of the input sign ('-0.000' -> '0').\n5. Otherwise keep '-' for negative values and drop '+' ('+12' -> '12', '-12.30' -> '-12.3').\n\nOutput ONLY the function definition.",
-  "oracle": "pytest",
-  "oracle_cmd": "python -m pytest tests/ -q",
-  "candidate_path": "solution.py",
-  "max_new_tokens": 768
-}

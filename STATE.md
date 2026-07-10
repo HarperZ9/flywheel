@@ -10,6 +10,39 @@
 
 Last updated: 2026-07-09
 
+## 2026-07-09 (session 4) — lane 110/100, difficulty screen DONE (44%), oracle tree-kill fix
+
+- **Hard-set lane COMPLETE at 110/100** (batch 8: 24/24 admitted through curator
+  gates, authors self-verified with reference-pass + return-None falsifiers;
+  commit 75d25fe). Registry hash-verified, unique ids.
+- **Difficulty screen executed over all 110** against the honest identity
+  `ollama:flywheel-local-coder-14b` (serve.py held the BASE model; screening
+  through it would have misattributed — new --ollama route, commit 7e5ce00).
+  **Result: single_shot@temp0 = 44% (49 saturate / 61 headroom).** The old
+  10-task M7 saturated at 80% with no headroom; this is the frontier-zone
+  instrument the matched-budget ablation needs. Artifact:
+  E:\local-model-run\difficulty_screen_hard_v2_110.json (+ .partial.jsonl).
+- **Oracle liveness bug FOUND LIVE + FIXED (c0e7273):** a generated candidate
+  with an infinite loop wedged the screen 10+ min — subprocess.run(shell=True,
+  timeout=) on Windows kills only cmd.exe; the pytest grandchild survives
+  holding stdout and the post-kill drain blocks forever. PytestOracle now
+  Popen + taskkill /T + bounded drain; falsifier
+  tests/test_oracle_hostile_candidate.py hangs on the old code. Screen gained
+  <out>.partial.jsonl checkpointing + --resume (resumed at 37/110, zero waste).
+- 14B HF repo: shipped Modelfile fixed to portable relative FROM (operator-
+  approved upload, HF commit 1d45b509, re-download verified). Public flip +
+  token rotation remain the operator's actions.
+- ROADMAP-STATUS synced to executed evidence (cab4988): 27/32 (~84%).
+- **SUPERAPP.md landed** (root): the one-surface unification spec (showcase
+  shell + packaged app + companion routing + training lane + projected world),
+  from a six-reader grounded survey; increment ladder inside. Operator vision:
+  one large interoperable surface, local+enterprise models, all endpoints,
+  trains models, projects the shared world.
+- Session-memory bridge now LIVE globally (project-docs/tools/
+  session_memory_bridge.py + ~/.claude hooks): every session's spoken context
+  auto-compresses to project-docs/wiki/sessions/ + mneme; SessionStart injects
+  the digest tail. The cold-start archaeology that opened this session is gone.
+
 ## 2026-07-09 (session 3, cont.2) — HF PUBLISH IN PROGRESS + market surfaces
 
 - **14B UPLOADED TO HUGGING FACE (private).** `zaindanaharper/flywheel-local-coder-14b`

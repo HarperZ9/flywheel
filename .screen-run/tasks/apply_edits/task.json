@@ -1,8 +1,0 @@
-{
-  "task_id": "apply_edits",
-  "prompt": "Write a Python function `apply_edits(items, ops)` that applies a sequence of edit operations to a list purely.\n\nContract:\n1. Return a NEW list obtained by applying each operation of `ops`, in order, to a working copy. The input `items` must never be mutated \u2014 not even when an error is raised partway through the operations.\n2. Each valid operation is a tuple: `(\"insert\", i, value)` inserts `value` at index `i`; `(\"delete\", i)` removes the element at index `i`; `(\"replace\", i, value)` overwrites the element at index `i`. Indices are evaluated against the CURRENT working list, whose length changes as operations apply.\n3. Negative indices have the current length added to them once. After that normalization, an insert index must satisfy `0 <= i <= n` (inserting at exactly `n` appends); a delete/replace index must satisfy `0 <= i <= n-1`. Any index outside its allowed range raises `IndexError` \u2014 do NOT clamp out-of-range insert indices the way `list.insert` silently does.\n4. An operation that is not a tuple (e.g., a list), or has an unknown operation name, or has the wrong number of elements for its name, raises `ValueError`.\n\nOutput ONLY the function definition.",
-  "oracle": "pytest",
-  "oracle_cmd": "python -m pytest tests/ -q",
-  "candidate_path": "solution.py",
-  "max_new_tokens": 768
-}

@@ -1,8 +1,0 @@
-{
-  "task_id": "purge_in_place",
-  "prompt": "Write a Python function `purge_in_place(items, targets)` that removes values from a list in place with type-strict matching.\n\nContract:\n1. If `items` and `targets` are the very same object, raise `ValueError` before doing anything else; `items` must be left unchanged.\n2. Remove from `items` every element that matches some element of `targets`, where a match requires BOTH the exact same type (an exact `type(...) is type(...)` check, not `isinstance`) AND equality. This is type-strict: with `targets == [1]`, the elements `True` and `1.0` are NOT removed; with `targets == [True]`, the integer `1` is NOT removed.\n3. The removal must happen IN PLACE on the same list object: any other reference to `items` must observe the change. Surviving elements keep their original relative order.\n4. Return the number of elements removed (an int). Do NOT return the list.\n5. `targets` must not be mutated. An empty `targets` removes nothing and returns 0.\n\nOutput ONLY the function definition.",
-  "oracle": "pytest",
-  "oracle_cmd": "python -m pytest tests/ -q",
-  "candidate_path": "solution.py",
-  "max_new_tokens": 768
-}

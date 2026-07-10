@@ -1,8 +1,0 @@
-{
-  "task_id": "count_islands",
-  "prompt": "Implement count_islands(grid): given a 2D list of 0/1 integers, return the number of islands of 1s connected 4-directionally (no diagonals). Empty grid returns 0. The input grid must NOT be modified. Output ONLY the function definition.",
-  "oracle": "pytest",
-  "oracle_cmd": "python -m pytest tests/ -q",
-  "candidate_path": "solution.py",
-  "max_new_tokens": 512
-}

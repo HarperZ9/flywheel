@@ -45,3 +45,6 @@ Thumbs.db
 artifacts/exe/
 .pyinstaller/
 *.spec
+
+# --- benchmark/screen scratch (never commit) ---
+.screen-run/
