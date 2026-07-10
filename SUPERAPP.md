@@ -215,6 +215,17 @@ What the superapp is NOT, and the gates that stay closed:
   not replicated; the health roster reports env-presence booleans, never
   values; receipts and ledgers never contain secrets. `.env` never ships (the
   package secret-scan doctor already enforces this; keep it in the gate).
+- **Every shipped surface passes the publish gate.** `harness/publish_lint.py`
+  (zero-dep) is the pre-publish check on the shipped-posture flip: it fails on
+  secrets and build-machine paths leaking into a product doc, and warns on
+  developer-register language ("Status: staged", operator-gate speak) and stale
+  claims. It is the scan-and-report mechanism copied from behavior-transform.io's
+  pressure_scan and re-based on a product ruleset — the WARDEN red-team
+  vocabulary is deliberately NOT imported. Verifier-can-fail: `--selftest` fires
+  a falsifier (a dirty doc must raise every category, a clean doc none). The 14B
+  HF page and the site both pass it clean today; internal docs (STATE.md, the
+  records tree) correctly fail it, which is why they never become product
+  surfaces.
 - **No capability-uplift claims.** The M7 +10% lift did not reproduce and is
   unearned. The surface markets what is real: receipts, pass parity,
   availability on the operator's schedule, and local cost. The showcase's
