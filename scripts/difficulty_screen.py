@@ -28,7 +28,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from harness.eval import SINGLE_SHOT, run_arm
 from harness.oracle import PytestOracle
-from harness.proposer import ServeProposer, StubProposer
+from harness.proposer import EnterpriseProposer, ServeProposer, StubProposer
 from harness.task import load_task
 from harness.task_curator import load_registry
 from harness.tasks_lib import materialize_all
@@ -39,6 +39,11 @@ DEFAULT_REGISTRY = Path(__file__).parent.parent / "tasks" / "curated" / "hard_v2
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--serve", default="http://127.0.0.1:8765")
+    ap.add_argument("--ollama-model", default="",
+                    help="route via Ollama's OpenAI-compatible /v1 instead of "
+                         "serve.py (e.g. flywheel-local-coder-14b); the "
+                         "model_ref records the honest ollama:<model> identity")
+    ap.add_argument("--ollama-url", default="http://127.0.0.1:11434/v1")
     ap.add_argument("--registry", default=str(DEFAULT_REGISTRY))
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--out", default="difficulty_screen.json")
@@ -51,11 +56,23 @@ def main() -> int:
     tasks = [load_task(d) for d in dirs]
     ref = {s.task_id: s.solution for s in specs}
 
+    if a.dry_run:
+        live_ref = "dry-run(reference)"
+    elif a.ollama_model:
+        live_ref = f"ollama:{a.ollama_model}"
+    else:
+        live_ref = "14b-cpt-adapter"
+
     rows = []
     for task in tasks:
-        proposer = (StubProposer(ref[task.task_id], model_ref="dry-ref")
-                    if a.dry_run else
-                    ServeProposer(base_url=a.serve, model_ref="14b-cpt-adapter"))
+        if a.dry_run:
+            proposer = StubProposer(ref[task.task_id], model_ref="dry-ref")
+        elif a.ollama_model:
+            proposer = EnterpriseProposer(
+                base_url=a.ollama_url, model=a.ollama_model,
+                api_key_env="OLLAMA_API_KEY", model_ref="ollama")
+        else:
+            proposer = ServeProposer(base_url=a.serve, model_ref="14b-cpt-adapter")
         r = run_arm(SINGLE_SHOT, task, proposer, PytestOracle())
         rows.append({"task_id": task.task_id, "passed": bool(r.passed)})
         print(f"  {task.task_id:28s} {'PASS (cull candidate)' if r.passed else 'FAIL (headroom)'}",
@@ -65,7 +82,7 @@ def main() -> int:
     saturated = sorted(x["task_id"] for x in rows if x["passed"])
     report = {
         "screen": "difficulty/single_shot_temp0",
-        "model_ref": "dry-run(reference)" if a.dry_run else "14b-cpt-adapter",
+        "model_ref": live_ref,
         "registry": Path(a.registry).name,
         "n_tasks": n,
         "single_shot_rate": round(sum(x["passed"] for x in rows) / max(n, 1), 3),
