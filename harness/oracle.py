@@ -34,6 +34,20 @@ def run_env() -> dict:
     return {**os.environ, "PYTHONDONTWRITEBYTECODE": "1"}
 
 
+def _kill_tree(proc: subprocess.Popen) -> None:
+    """Kill a process AND its descendants. proc.kill() alone is insufficient
+    for shell=True on Windows: it terminates cmd.exe while the real workload
+    (pytest running a hostile candidate) survives and holds the output pipes."""
+    if os.name == "nt":
+        subprocess.run(f"taskkill /T /F /PID {proc.pid}", shell=True,
+                       capture_output=True, timeout=15)
+    else:
+        try:
+            os.killpg(os.getpgid(proc.pid), 9)
+        except Exception:
+            proc.kill()
+
+
 @dataclass
 class OracleResult:
     passed: bool
@@ -96,16 +110,24 @@ class PytestOracle:
         cpath.write_text(candidate, encoding="utf-8")
         clear_bytecode(Path(task.workdir))
         cmd = self._cmd(task)
+        # Popen + tree-kill, NOT subprocess.run(timeout=): with shell=True on
+        # Windows, run() kills only cmd.exe on timeout — the pytest grandchild
+        # (e.g. a candidate with an infinite loop) survives holding the stdout
+        # pipe, and run()'s post-kill drain blocks forever. A hostile candidate
+        # must cost one timeout, never a wedged harness.
         out: bytes = b""
-        rc = 0
+        proc = subprocess.Popen(
+            cmd, cwd=task.workdir, shell=True, env=run_env(),
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         try:
-            p = subprocess.run(
-                cmd, cwd=task.workdir, shell=True, env=run_env(),
-                capture_output=True, timeout=self.timeout)
-            out = p.stdout
-            rc = p.returncode
-        except subprocess.TimeoutExpired as e:
-            out = (e.stdout or b"") if isinstance(e.stdout, bytes) else b""
+            out, _ = proc.communicate(timeout=self.timeout)
+            rc = proc.returncode
+        except subprocess.TimeoutExpired:
+            _kill_tree(proc)
+            try:
+                out, _ = proc.communicate(timeout=10)
+            except Exception:
+                out = b""
             rc = 124
         return OracleResult(
             passed=rc == 0, cmd=cmd,

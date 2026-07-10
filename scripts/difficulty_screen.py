@@ -46,6 +46,9 @@ def main() -> int:
     ap.add_argument("--ollama-url", default="http://127.0.0.1:11434/v1")
     ap.add_argument("--registry", default=str(DEFAULT_REGISTRY))
     ap.add_argument("--dry-run", action="store_true")
+    ap.add_argument("--resume", action="store_true",
+                    help="skip tasks already recorded in <out>.partial.jsonl "
+                         "(written incrementally by every live run)")
     ap.add_argument("--out", default="difficulty_screen.json")
     ap.add_argument("--workroot",
                     default=str(Path(__file__).parent.parent / ".screen-run"))
@@ -63,8 +66,20 @@ def main() -> int:
     else:
         live_ref = "14b-cpt-adapter"
 
+    partial = Path(str(a.out) + ".partial.jsonl")
+    done: dict[str, bool] = {}
+    if a.resume and partial.exists():
+        for line in partial.read_text(encoding="utf-8").splitlines():
+            if line.strip():
+                row = json.loads(line)
+                done[row["task_id"]] = bool(row["passed"])
+        print(f"resume: {len(done)} rows preloaded from {partial}", flush=True)
+
     rows = []
     for task in tasks:
+        if task.task_id in done:
+            rows.append({"task_id": task.task_id, "passed": done[task.task_id]})
+            continue
         if a.dry_run:
             proposer = StubProposer(ref[task.task_id], model_ref="dry-ref")
         elif a.ollama_model:
@@ -74,7 +89,11 @@ def main() -> int:
         else:
             proposer = ServeProposer(base_url=a.serve, model_ref="14b-cpt-adapter")
         r = run_arm(SINGLE_SHOT, task, proposer, PytestOracle())
-        rows.append({"task_id": task.task_id, "passed": bool(r.passed)})
+        row = {"task_id": task.task_id, "passed": bool(r.passed)}
+        rows.append(row)
+        if not a.dry_run:
+            with partial.open("a", encoding="utf-8") as f:
+                f.write(json.dumps(row) + "\n")
         print(f"  {task.task_id:28s} {'PASS (cull candidate)' if r.passed else 'FAIL (headroom)'}",
               flush=True)
 
