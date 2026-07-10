@@ -760,6 +760,12 @@ def build_parser() -> argparse.ArgumentParser:
     manifest = subparsers.add_parser("manifest", help="emit executable surface manifest")
     _add_common_io(manifest)
 
+    app = subparsers.add_parser("app", help="serve the superapp gateway (one origin: shell + /api/world + endpoint health)")
+    app.add_argument("--port", type=int, default=8799)
+    app.add_argument("--root", default=".")
+    app.add_argument("--serve-url", default="http://127.0.0.1:8765")
+    app.add_argument("--ollama-url", default="http://127.0.0.1:11434")
+
     registry = subparsers.add_parser("registry", help="emit static local HTML command registry")
     registry.add_argument("--store-root", default=DEFAULT_STORE_ROOT)
     registry.add_argument("--out", default="C:/tmp/harness_command_registry.html")
@@ -1467,6 +1473,11 @@ def build_command(args, *, repo_root: Path) -> list[str]:
         return command
     if args.command_name == "readiness":
         return _readiness_command(args)
+    if args.command_name == "app":
+        command = [py, "harness/gateway.py", "--port", str(args.port),
+                   "--root", args.root, "--serve-url", args.serve_url,
+                   "--ollama-url", args.ollama_url]
+        return command
     raise ValueError(f"unknown command: {args.command_name}")
 
 

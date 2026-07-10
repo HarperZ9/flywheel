@@ -156,13 +156,19 @@ and reload; if the page still shows the old hand-typed number, increment 1 is
 broken. Drop a new `demos/<name>/transcript.json` and regenerate; if the
 gallery does not show it, broken.
 
-**Increment 2: one gateway, one origin, one entry point.** `harness/gateway.py`
-plus the `app` subcommand in `run_harness_cli.py`: static serving, proxy to
-serve.py:8765, `/api/endpoints/health` (unified roster via
-`endpoint_registry.py`), `/api/world` v0 (spine roster + receipt catalog with
-root hash). *Falsifier:* kill serve.py; if the Endpoints view still shows the
-14B tier healthy on next refresh, broken. Touch one byte of a cataloged
-receipt file; if `/api/world` returns the same root_hash, broken.
+**Increment 2: one gateway, one origin, one entry point. SHIPPED 2026-07-10.**
+`harness/gateway.py` (zero-dep stdlib server) plus the `app` subcommand in
+`run_harness_cli.py` (`harness app --port 8799`): same-origin static serving of
+the shell/demos/artifacts, proxy of `/v1/*` + `/generate` + `/health` to
+serve.py:8765, `/api/endpoints/health` (local tiers get a live probe;
+enterprise providers report a credential-present BOOLEAN from `endpoints.py`'s
+`PROVIDERS`, never a value), and `/api/world` v0 (spine roster + receipt catalog
+with a sha256 root hash over the cataloged files). Both falsifiers hold: a down
+local endpoint reads unhealthy (probe fails closed), and touching a cataloged
+receipt moves the root hash (6 gateway tests + the two falsifiers, live-smoked:
+serve+ollama healthy, no key value leaked, shell served 200). *Original
+falsifier spec:* kill serve.py -> the 14B tier must flip unhealthy; tamper a
+receipt byte -> root_hash must change.
 
 **Increment 3: receipts uniform across every endpoint.** Mint receipts on
 `/chat/completions` and `/generate`; bind `artifact_sha256` from
