@@ -181,3 +181,40 @@ This is a planning estimate, not a performance metric.
 - Added `harness.cmd mcp-health` to the executable front controller and manifest/registry surface. It delegates to `scripts/run_mcp_tool_health_receipts.py`.
 - Updated `tests/test_harness_cli.py` so command delegation and manifest listing cover both new metadata-only preflights.
 - Status: implemented, not validated, not run. Roadmap estimate moves to `25.75 / 32` units, approximately `80%`; executable packaging coverage improved, but the harness manifest command and targeted tests have not been executed.
+
+## 2026-07-09 update (evening): executed-evidence sync — 14B release track and benchmark corpus
+
+This update records EXECUTED evidence (not scaffolding) landed after the 80%
+entry above, and moves only the units that evidence supports.
+
+- **14B release track executed.** `zaindanaharper/flywheel-local-coder-14b` is
+  live on Hugging Face (private): 13 files, 8.99 GB, model card with HF
+  front-matter, Apache-2.0 + attribution LICENSE, provenance chain, checksums,
+  endpoint gate and benchmark receipts. Upload was operator-approved; the
+  public visibility flip remains the operator's action. The shipped `Modelfile`
+  was corrected from a build-machine absolute path to a portable relative
+  `FROM ./telos-coder-14b-cpt2020-q4_k_m.gguf` (HF commit `1d45b509`), verified
+  by re-download. 32B remains DO_NOT_PUBLISH (no trained artifact; publishing
+  would republish base weights). Workstream "14B and 32B release track" moves
+  `2 -> 3` (+1 unit): executed with durable artifacts; stage 4 needs the public
+  flip and a trained 32B.
+- **Hard-set benchmark corpus executed to target.** The curated lane crossed
+  its N>=100 threshold: `tasks/curated/hard_v2.jsonl` now holds 110
+  hash-verified tasks, all admitted through `task_curator` gates (batch 8 =
+  24/24 admitted; each candidate self-verified with a pytest reference pass and
+  a return-None falsifier before screening). Commits `75d25fe`, `7e5ce00`.
+  The difficulty screen's dry-run falsifier passed (110/110 reference
+  solutions score 100%). Workstream "Harness comparison and benchmark
+  evidence" moves `3 -> 3.25` (+0.25 unit): the instrument exists and is
+  validated; the missing gate is still same-key comparison rows.
+- **In flight, not claimed:** the live difficulty screen (trained 14B via
+  `ollama:flywheel-local-coder-14b`, honest model_ref recorded) is running over
+  all 110 tasks; its report lands at
+  `E:\local-model-run\difficulty_screen_hard_v2_110.json`. No unit moves until
+  the artifact exists.
+- Roadmap estimate moves to `27 / 32` units, approximately `84%`. This remains
+  a planning estimate, not a performance metric. The remaining ~16% is
+  concentrated in execution gates: same-key Codex/Flywheel comparison rows,
+  32B offload serve launch (idle-window only on this 32 GB box), packaged
+  executable release with install verification, and mneme/relay/plexus shipped
+  changes.
