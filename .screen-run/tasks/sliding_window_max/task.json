@@ -1,8 +1,0 @@
-{
-  "task_id": "sliding_window_max",
-  "prompt": "Implement sliding_window_max(nums, k): return the list of maxima of every contiguous window of size k. If k <= 0 raise ValueError; if k > len(nums) return []. Must handle duplicates and strictly decreasing input. Output ONLY the function definition.",
-  "oracle": "pytest",
-  "oracle_cmd": "python -m pytest tests/ -q",
-  "candidate_path": "solution.py",
-  "max_new_tokens": 512
-}

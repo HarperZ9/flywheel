@@ -1,8 +1,0 @@
-{
-  "task_id": "largest_remainder_apportion",
-  "prompt": "Write a Python function apportion(weights, total) that splits an integer total into integer shares proportional to weights, using the largest-remainder method.\n\nContract:\n- weights must be a non-empty list of non-bool ints, each >= 0, with at least one positive entry; total must be a non-bool int >= 0. Any violation raises ValueError.\n- Let the total of all weights. Entry i's exact quota is weights[i] * total / s. Each share starts at the floor of its quota, computed EXACTLY with integer arithmetic as (weights[i] * total) // s (no floats).\n- Let r = total minus the sum of those floors. Give exactly one extra unit to each of the r entries with the LARGEST remainder (weights[i] * total) % s. Break remainder ties by LOWER index first.\n- The returned list must sum to exactly total and have the same length as weights.\n- The input list must NOT be mutated.\n\nOutput ONLY the function definition.",
-  "oracle": "pytest",
-  "oracle_cmd": "python -m pytest tests/ -q",
-  "candidate_path": "solution.py",
-  "max_new_tokens": 768
-}

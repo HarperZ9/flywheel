@@ -218,3 +218,21 @@ entry above, and moves only the units that evidence supports.
   32B offload serve launch (idle-window only on this 32 GB box), packaged
   executable release with install verification, and mneme/relay/plexus shipped
   changes.
+
+## 2026-07-09 update (evening 2): difficulty screen executed; oracle liveness fix
+
+- The difficulty screen ran to completion over all 110 curated tasks against
+  `ollama:flywheel-local-coder-14b`: single_shot@temp0 = 44% (49 saturate,
+  61 headroom). Durable artifacts:
+  `E:\local-model-run\difficulty_screen_hard_v2_110.json` and its
+  `.partial.jsonl` checkpoint. This is executed benchmark evidence, not
+  scaffolding: the instrument now has 61 tasks of measurable headroom for the
+  matched-budget ablation.
+- A liveness defect in the accept path was found live and fixed with a fired
+  falsifier: PytestOracle's shell=True timeout left a hostile candidate's
+  pytest grandchild alive on Windows and wedged the harness; now tree-killed
+  with a bounded drain (`tests/test_oracle_hostile_candidate.py`).
+- Workstream "Harness comparison and benchmark evidence" moves `3.25 -> 3.5`
+  (+0.25 unit): the corpus AND its difficulty evidence are executed with
+  durable artifacts; the missing gate remains same-key comparison rows.
+- Roadmap estimate moves to `27.25 / 32` units, approximately `85%`.

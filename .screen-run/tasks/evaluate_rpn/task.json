@@ -1,8 +1,0 @@
-{
-  "task_id": "evaluate_rpn",
-  "prompt": "Implement evaluate_rpn(tokens): evaluate a reverse-Polish-notation expression given as a list of string tokens. Operators are + - * / on integers; division truncates TOWARD ZERO (so -7/2 is -3). Raise ValueError on malformed input (too few operands, leftover operands, unknown token, division by zero). Output ONLY the function definition.",
-  "oracle": "pytest",
-  "oracle_cmd": "python -m pytest tests/ -q",
-  "candidate_path": "solution.py",
-  "max_new_tokens": 512
-}

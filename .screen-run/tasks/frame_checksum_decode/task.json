@@ -1,8 +1,0 @@
-{
-  "task_id": "frame_checksum_decode",
-  "prompt": "Write a Python function decode_frame(frame) that validates and decodes a hex-encoded protocol frame and returns the payload as a list of ints.\n\nframe is a string of hex characters (case-insensitive), encoding a byte sequence two characters per byte: a header byte, a length byte N, N payload bytes, and a final checksum byte. A frame is valid when:\n- the header byte equals 0xA5;\n- the total number of bytes is exactly 3 + N;\n- (header + N + sum(payload bytes) + checksum) is divisible by 256.\n\nValidation must be performed in exactly this order, raising ValueError with exactly these messages; only the first applicable error is raised:\n1. the string has an odd number of characters -> ValueError(\"odd length\")\n2. any character is not a hex digit (0-9, a-f, A-F) -> ValueError(\"not hex\")\n3. the string has fewer than 6 characters -> ValueError(\"truncated\")\n4. the header byte is not 0xA5 -> ValueError(\"bad header\")\n5. the total byte count differs from 3 + N (too short OR too long) -> ValueError(\"length mismatch\")\n6. the checksum equation fails -> ValueError(\"bad checksum\")\n\nSo a string that is both odd-length and contains non-hex characters must raise \"odd length\", and a 2-character non-hex string must raise \"not hex\", not \"truncated\". An empty payload (N = 0) is legal: the minimum valid frame is 6 characters. Return the payload byte values as a list of ints (empty list for N = 0).\n\nOutput ONLY the function definition.",
-  "oracle": "pytest",
-  "oracle_cmd": "python -m pytest tests/ -q",
-  "candidate_path": "solution.py",
-  "max_new_tokens": 768
-}
