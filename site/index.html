@@ -226,6 +226,17 @@ ollama run flywheel-local-coder-14b</pre>
     </div>
   </section>
 
+  <section id="live" hidden>
+    <div class="eyebrow">the projected world</div>
+    <h2>Live spine <span class="fresh" id="worldFresh"></span></h2>
+    <p class="sub">Served through the gateway, this reads the same state the model does: the flagship
+      spine, a live endpoint roster, and a receipt catalog sealed under one root hash. Tamper any
+      cataloged receipt and the hash below moves.</p>
+    <div class="status" id="liveEndpoints"></div>
+    <div class="note" style="margin-top:14px">Spine: <span id="spineList"></span><br>
+      World root hash: <code id="worldHash" style="font-size:12px"></code></div>
+  </section>
+
   <footer>
     <p class="rule">Flywheel is a companion layer for local and frontier models. The model is the
       replaceable half; the verification harness is the durable half. Nothing on this page claims a
@@ -323,6 +334,39 @@ ollama run flywheel-local-coder-14b</pre>
       html+='<p class="role">'+x.role+'</p><span class="play">Play the shot &rsaquo;</span></a>';
     });
     if(g&&html) g.innerHTML=html;
+  }).catch(function(){});
+
+  // Live spine <- the gateway (increment 2). Same-origin only; when the page
+  // is opened as a static file these fetch 404/CORS-fail and the panel stays
+  // hidden. When served through `harness app`, the projected world appears.
+  Promise.all([
+    fetch('/api/world',{cache:'no-store'}).then(function(r){return r.ok?r.json():null;}).catch(function(){return null;}),
+    fetch('/api/endpoints/health',{cache:'no-store'}).then(function(r){return r.ok?r.json():null;}).catch(function(){return null;})
+  ]).then(function(res){
+    var world=res[0], health=res[1];
+    if(!world && !health) return;                 // static open: leave hidden
+    var sec=document.getElementById('live');
+    if(world){
+      var sp=document.getElementById('spineList');
+      if(sp) sp.textContent=(world.spine||[]).join(' · ');
+      var wh=document.getElementById('worldHash');
+      if(wh) wh.textContent=(world.root_hash||'').slice(0,24)+'…';
+      var pr=world.present_count, tot=world.receipt_count;
+      var wf=document.getElementById('worldFresh');
+      if(wf) wf.textContent=pr+' of '+tot+' receipts present';
+    }
+    if(health){
+      var box=document.getElementById('liveEndpoints'), html='';
+      (health.local||[]).forEach(function(e){
+        var dot=e.healthy?'dotok':'dotwarm';
+        html+='<div class="s"><div class="k">'+e.name+'</div><div class="v"><span class="'+dot+'">&#9679;</span> '
+             +(e.healthy?'healthy':'unreachable')+(e.model_ref?' &middot; '+e.model_ref:'')+'</div></div>';
+      });
+      html+='<div class="s"><div class="k">enterprise endpoints</div><div class="v">'
+           +health.enterprise_configured+' of '+(health.enterprise||[]).length+' credentialed</div></div>';
+      if(box) box.innerHTML=html;
+    }
+    if(sec) sec.hidden=false;                      // reveal only when live
   }).catch(function(){});
 })();
 </script>
