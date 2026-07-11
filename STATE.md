@@ -10,6 +10,43 @@
 
 Last updated: 2026-07-11
 
+## 2026-07-11 (session 8) -- superapp increments 3/4/5 to launch-ready
+
+Drove the superapp toward launch-readiness. Every module ships with its
+falsifier; committed in five commits (493a22e..this). 117 passed across the
+changed-module slice.
+
+- **Increment 5 (companion seat) SHIPPED end to end.** `harness/companion.py`
+  (9/9) is the routing seat over AdaptiveSelector: cache hit -> local-verified
+  (oracle PASS) -> local-consensus (agreement, flagged not-verified) -> escalate
+  (budget exhausted; frontier tier NAMED, never called inline). Only oracle-
+  verified PASS is cached. Wired behind the gateway at `POST /api/companion` with
+  ONE lifetime seat so cache + ledger accumulate; 3 gateway falsifiers; live-
+  smoked over the wire (serve down -> honest escalate, no crash). Both SUPERAPP
+  increment-5 falsifiers hold.
+- **subsystem c (projected world) built.** `harness/world.py` (7/7):
+  `project_world()` composes roster + findings + STATE cursor into one root-
+  hashed `flywheel.projected-world/v1`; `verify_world()` -> MATCH/DRIFT/
+  UNVERIFIABLE. `/api/world` upgraded from the v0 catalog to it.
+- **Increment 4 (training lane) STATUS HALF shipped.** `harness/training_lane.py`
+  (19/19) read-only status: parses the supervisor's own log markers into a state
+  machine + screen liveness (the SOLE liveness claim, so it can never disagree
+  with `wsl screen -ls`; a log/screen divergence sets reconciled=False) +
+  checkpoint progress. `would_double_launch` guard is pure + fail-safe. `GET
+  /api/training/status`. Start/stop ACTIONS deliberately deferred as a separately
+  confirmed surface -- status-only first, per the ordering rationale.
+- **Increment 3 two more parts done.** Gemini key moved out of the URL query
+  string into the `x-goog-api-key` header (canary never in the URL).
+  `LedgeredProposer` chains EVERY endpoint call into one tamper-evident
+  SessionLedger (commitments only -- no prompt/response text, no key); flip a
+  byte -> verify() fails. Serve-side receipt minting still needs the live model.
+- **Launch-readiness:** `QUICKSTART.md` (user-register, run-it-now) passes
+  publish_lint --strict clean; the shell passes clean; publish_lint --selftest
+  PASSES. Entry point: `run_harness_cli.py app` (now forwards --run-root).
+  REMAINING to public launch (the flip itself is not automated): serve-side
+  receipt minting (needs GPU), the training action-half, and the shell views for
+  the new routes.
+
 ## 2026-07-11 (session 7) -- universal router, prompt forge, pipeline, disk
 
 - **SUPERAPP vision clarified (operator): NOT a 14B wrapper -- a universal
