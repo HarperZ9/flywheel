@@ -31,11 +31,17 @@ import argparse
 import hashlib
 import json
 import os
+import sys
 import urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
+# Ensure `from harness.X import ...` resolves even when run as `python
+# harness/gateway.py` (script mode puts harness/ on the path, not the repo root),
+# so the on-demand endpoint_registry / context_forge imports work in both modes.
+if str(REPO) not in sys.path:
+    sys.path.insert(0, str(REPO))
 
 # Receipt catalog: in-repo, re-checkable artifacts that define the world state.
 # Relative to the served root. Missing files are reported honestly as absent.
@@ -124,6 +130,32 @@ def world_state(root: Path, catalog=RECEIPT_CATALOG) -> dict:
             "root_hash": root_hash}
 
 
+def _unified_roster() -> dict:
+    """The full universal-router roster (endpoint_registry): every provider,
+    credential-presence only. Graceful if the module is unavailable."""
+    try:
+        from harness.endpoint_registry import unified_roster
+    except Exception:
+        try:
+            from endpoint_registry import unified_roster  # standalone run
+        except Exception as e:
+            return {"error": f"endpoint_registry unavailable: {e}"}
+    return unified_roster()
+
+
+def _forge(goal: str, **kw) -> dict:
+    """Goal -> a verified PRP (context_forge): criterion-bearing spec + validation
+    gates + confidence grounded in external-checkability. The studio front door."""
+    try:
+        from harness.context_forge import forge_prp
+    except Exception:
+        try:
+            from context_forge import forge_prp
+        except Exception as e:
+            return {"error": f"context_forge unavailable: {e}"}
+    return forge_prp(goal, **kw).to_dict()
+
+
 class _Handler(BaseHTTPRequestHandler):
     root = REPO
     serve_url = "http://127.0.0.1:8765"
@@ -181,6 +213,8 @@ class _Handler(BaseHTTPRequestHandler):
         p = self.path.split("?", 1)[0]
         if p == "/api/endpoints/health":
             return self._json(endpoint_roster(self.serve_url, self.ollama_url))
+        if p == "/api/endpoints":
+            return self._json(_unified_roster())     # full universal-router roster
         if p == "/api/world":
             return self._json(world_state(self.root))
         if p.startswith("/v1/") or p == "/generate" or p == "/health":
@@ -191,6 +225,18 @@ class _Handler(BaseHTTPRequestHandler):
         p = self.path.split("?", 1)[0]
         if p.startswith("/v1/") or p == "/generate":
             return self._proxy(self.serve_url.rstrip("/") + p)
+        if p == "/api/forge":                        # goal -> verified PRP (the studio)
+            length = int(self.headers.get("Content-Length", 0))
+            try:
+                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
+            except Exception:
+                req = {}
+            goal = (req.get("goal") or "").strip()
+            if not goal:
+                return self._json({"error": "provide a non-empty 'goal'"}, 400)
+            return self._json(_forge(goal, examples=req.get("examples"),
+                                     documentation=req.get("documentation"),
+                                     context=req.get("context", "")))
         return self._json({"error": "not found"}, 404)
 
 
@@ -206,9 +252,11 @@ def main(argv=None) -> int:
     _Handler.ollama_url = a.ollama_url
     httpd = ThreadingHTTPServer(("127.0.0.1", a.port), _Handler)
     print(f"flywheel gateway: http://127.0.0.1:{a.port}  root={_Handler.root}")
-    print(f"  shell   http://127.0.0.1:{a.port}/site/index.html")
-    print(f"  world   http://127.0.0.1:{a.port}/api/world")
-    print(f"  health  http://127.0.0.1:{a.port}/api/endpoints/health")
+    print(f"  shell     http://127.0.0.1:{a.port}/site/index.html")
+    print(f"  world     http://127.0.0.1:{a.port}/api/world")
+    print(f"  health    http://127.0.0.1:{a.port}/api/endpoints/health")
+    print(f"  router    http://127.0.0.1:{a.port}/api/endpoints    (all providers)")
+    print(f"  studio    POST /api/forge {{'goal': ...}}            (goal -> verified PRP)")
     try:
         httpd.serve_forever()
     except KeyboardInterrupt:
