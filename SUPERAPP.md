@@ -147,7 +147,21 @@ NEW
 Each increment ships alone, behind nothing, and states the observation that
 would prove it broken.
 
-**Increment 1: the shell goes live on receipts it already has** (one session).
+**Increment 1: the shell goes live on receipts it already has. SHIPPED, extended
+2026-07-11.** Beyond the receipt-bound benchmark/gallery/status views, the shell
+now renders the whole surface when served through the gateway: the universal
+router roster (`/api/endpoints`, 20 endpoints with presence-only credentials), a
+32B training-status card (`/api/training/status`), the projected-world spine +
+root hash (`/api/world`), and two live try-it panels -- the companion (`POST
+/api/companion`) and the studio/forge (`POST /api/forge`). All new panels are
+hidden on a static `file://` open and revealed only when the gateway answers, so
+the page never shows dead controls offline. Verified live at the DOM level: 20
+roster rows, spine `crucible · forum · gather · index · telos`, training `stopped`,
+companion escalates honestly (serve down -> "Route to: anthropic, named not
+called"), forge returns confidence 6/10 with real gates. Passes publish_lint
+--strict clean. (This work surfaced + fixed a regression: the `/api/world`
+upgrade to `project_world` changed `spine` from a list to a `{organs, flagships,
+routes}` dict, which had silently broken the `#live` render.)
 Build `demos/index.json` generation, add the shell data layer fetching
 `artifacts/flywheel-local-coder-14b-benchmark-ci.json` and
 `artifacts/exe/model_release_readiness.local.json` /
