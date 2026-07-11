@@ -79,7 +79,9 @@ NEW
 - Receipt uniformity in `serve.py`: mint the same `make_receipt` on `/chat/completions` and `/generate` (today only `/v1/messages` has it), and bind `model_profiles.artifact_sha256` into the receipt so a receipt proves WHICH weights served it.
 - Ledger-everything: append every endpoint call, including EnterpriseProposer calls, into a `SessionLedger` chain (today only agent turns chain).
 - Gemini key fix in `harness/endpoints.py` (~line 149): move the API key from the URL query string to the `x-goog-api-key` header.
-- `harness/companion.py`: the companion seat (see increment 5): proof-cache hit → local oracle-checked attempt → escalate to frontier only on oracle failure. Escalation is oracle-outcome-driven, not a learned difficulty predictor; no learned authority enters the accept path.
+- `harness/selector.py` + `harness/adaptive_select.py` (BUILT 2026-07-10): the selection+escalation CORE the seat mounts on. `select()` prefers the external oracle (highest trust, the measured 23% arm), falls back to deterministic behavioral consensus with an honest confidence gate, and emits a re-checkable `SelectionReceipt`. `AdaptiveSelector` implements the measured lever: generate → select → RAISE N (double the candidate budget) → escalate only when budget is exhausted below confidence. Escalation is a pure confidence threshold, not a learned difficulty predictor; no learned authority enters the accept path.
+- `harness/companion.py` (remaining): the thin wrapper that adds the proof-cache lookup and the chained-ledger routing record around the selection core above. Proof-cache hit → answer locally; miss → `AdaptiveSelector.select()`; its ESCALATE verdict (not a guess) is what routes to the frontier tier.
+- `harness/findings.py` (BUILT 2026-07-10): the receipt-bound findings composer -- scans run artifacts, binds every metric to a source hash, emits a root-hashed `flywheel.findings/v1` doc with honest "pending" for incomplete runs. The seat and shell render it; `verify_findings` detects staleness.
 
 ### (b) Training lane: safe operable wrapper honoring RAM gates and STOP flags
 
@@ -170,7 +172,14 @@ serve+ollama healthy, no key value leaked, shell served 200). *Original
 falsifier spec:* kill serve.py -> the 14B tier must flip unhealthy; tamper a
 receipt byte -> root_hash must change.
 
-**Increment 3: receipts uniform across every endpoint.** Mint receipts on
+**Increment 3: receipts uniform across every endpoint.** The ROSTER + BRIDGE half
+is BUILT (`harness/endpoint_registry.py`, 2026-07-11, 7/7 tests): `unified_roster()`
+enumerates all 20 endpoints (14 OpenAI-compat providers + local serve/ollama/vllm/
+sglang/lmstudio/llamacpp + native Anthropic/Gemini + claude/codex CLI tiers) with
+credential-PRESENCE booleans (never a value), and `BackendProposer` bridges any
+native backend into a verified Proposer so EVERY endpoint feeds the same oracle+
+witness+receipt path -- provider provenance rides `model_ref` into the receipt.
+Remaining: mint receipts on
 `/chat/completions` and `/generate`; bind `artifact_sha256` from
 `model_profiles.py` into serve receipts; move the Gemini key to the header;
 chain every endpoint call (including enterprise proposer calls) into a
@@ -190,16 +199,22 @@ does not record the stop, broken. If the status endpoint ever disagrees with
 the 22 GB gate or alter seq_len/epochs, broken by design review, reject the
 patch.
 
-**Increment 5: the companion seat.** `harness/companion.py` behind the
-gateway's OpenAI-compatible route (and as an MCP tool, the lone optional
-edge): proof-cache hit answers locally at ~0 cost with the stored receipt;
-cache miss goes to the local 14B first with the oracle check; only an
-oracle-failed local attempt escalates to the frontier tier; every routing
-decision lands in the chained ledger with the failed attempt's receipt
-attached. *Falsifier:* submit a task whose fact is already proof-cached; if
-any frontier call appears in the ledger, broken. Submit a task the local model
-fails; if escalation occurs without a ledgered failed-local receipt preceding
-it, broken.
+**Increment 5: the companion seat.** The selection+escalation CORE is now built
+and measured (`harness/selector.py`, `harness/adaptive_select.py`, 2026-07-10):
+`select()` = oracle-first, consensus-fallback, receipt-emitting; `AdaptiveSelector`
+= generate → select → raise N → escalate-on-budget-exhaustion. What remains is
+`harness/companion.py` behind the gateway's OpenAI-compatible route (and as an MCP
+tool, the lone optional edge): proof-cache hit answers locally at ~0 cost with the
+stored receipt; cache miss goes to `AdaptiveSelector.select()` with the local 14B
+first; only its ESCALATE verdict routes to the frontier tier; every routing
+decision lands in the chained ledger with the SelectionReceipt attached. The
+measurements set the seat's defaults honestly: the oracle-free path recovers ~9%
+of the external oracle's lift at N=4, so the seat raises N before escalating, and
+escalates when the confidence gate stays unmet -- the "answer locally vs pay the
+expensive tier" decision made on evidence. *Falsifier:* submit a task whose fact
+is already proof-cached; if any frontier call appears in the ledger, broken.
+Submit a task the local model fails; if escalation occurs without a ledgered
+failed-local SelectionReceipt preceding it, broken.
 
 Ordering rationale: 1 needs no new backend and makes drift impossible on day
 one; 2 creates the entry point everything else mounts on; 3 makes the receipt

@@ -8,9 +8,244 @@
 > backbone (the WHY and the phase plan); this file is where we are RIGHT NOW.
 > Update on every material step. If context is lost: read ROADMAP.md, then this.
 
-Last updated: 2026-07-09
+Last updated: 2026-07-11
 
-## 2026-07-09 (session 4) — lane 110/100, difficulty screen DONE (44%), oracle tree-kill fix
+## 2026-07-11 (session 7) -- universal router, prompt forge, pipeline, disk
+
+- **SUPERAPP vision clarified (operator): NOT a 14B wrapper -- a universal
+  router+harness with full operability across ALL providers, more feature-rich +
+  seamless than existing platforms; as a NATIVE app the web-studio limits (deps,
+  CSP, no local-model access) fall away.** The differentiator vs OpenRouter/
+  LiteLLM/etc.: they route, ours routes AND verifies (receipts, oracle-gating).
+- **Increment 3 roster+bridge BUILT: `harness/endpoint_registry.py` (7/7).**
+  `unified_roster()` = 20 endpoints (14 OpenAI-compat providers + local serve/
+  ollama/vllm/sglang/lmstudio/llamacpp + native Anthropic/Gemini + claude/codex
+  CLI tiers) with credential-PRESENCE booleans (never a value; test asserts no
+  secret leaks). `BackendProposer` bridges any `.chat` backend into a verified
+  Proposer -> every endpoint feeds the same accept path, provenance in model_ref.
+  Remaining for increment 3: mint receipts on serve endpoints + ledger chaining.
+- **prompt forge BUILT: `harness/prompt_forge.py` (8/8)** -- the cisya-Studio front
+  door: goal -> classified, constraint-sniffed, criterion-FORCED task spec; flags
+  honestly when a goal admits no checkable criterion. On-thesis (the prompt IS the
+  pre-decided world). Next: wire into the gateway as /api/forge + a shell view.
+- Superapp status: increments 1-2 shipped, #3 roster+bridge built (receipts
+  remaining), #5 selection core built (this session), #4 + world.py + companion.py
+  still pending.
+
+### colibri-inspired gen/verify pipeline + disk redirect
+
+- **Colibri architecture mined for TECHNIQUE (operator: inspiration, not model
+  adoption).** GLM-5.2-colibri (744B MoE on ~25GB RAM via NVMe expert-streaming)
+  is real but 0.05-1 tok/s -> non-viable as our proposer. The borrowable move:
+  async-prefetch = overlap I/O with compute. Built `harness/pipeline.py`
+  (`pipelined_run`): generation (one model server, I/O-bound, serial) overlaps
+  with verification (subprocess oracle, CPU-bound, worker pool) since both release
+  the GIL. Pure scheduling -- byte-identical results to serial, strictly faster,
+  never on the accept path. 6/6 tests (identical-results + strictly-faster
+  falsifier + error isolation). Runners can adopt it for the N=64 lane; primitive
+  proven, wiring is a follow-up (didn't refactor a working runner mid-flight).
+  Other colibri borrows: learned generation-param pinning (C2-clean, propose-side)
+  = INSPIRATION-with-a-thread; disk-streaming residency = NOISE (our thesis avoids
+  needing huge models).
+- **DISK: C: at 99% (15G free / 931G). Fixed OUR contribution:** run_ablation.py +
+  run_passn_curve.py defaulted scratch to C:/local-model-run -> redirected both to
+  E:/local-model-run/work; cleaned leaked sel_cons_/pytest/pycache scratch. Big C:
+  consumers found (operator decisions, NOT touched): WSL vhdx 74G (compactable,
+  needs wsl shutdown -- approval-gated), C:/dev/protected+aleph+opsec ~56G
+  (sensitive/operator-owned), HF cache 13G (movable to E:), Temp 14G. The
+  flywheel's work no longer feeds C:; the remaining pressure is WSL + sensitive
+  dev dirs + caches, awaiting operator direction.
+- selector-capture-at-N=32 run stopped at 30/61 (session teardown); resumable via
+  --resume. Early rows confirm the confound: raw consensus_select picks
+  confident-WRONG clusters (matrix_shape_strict cc=2 cons=F conf=0.97), validating
+  why the gated select() demotes them.
+
+Last updated (prior): 2026-07-10
+
+## 2026-07-10 (session 6) -- frontier sweep + matmul oracle + closure-2 fixes
+
+- **pass@N N=32 run COMPLETED + adjudicated (61 tasks).** consensus-reachable
+  6.6%(N4)->12->24->36->49.2%(N32), ~12%/doubling, NOT plateaued; pass@32 = 60.7%.
+  Pre-registration adjudicated HONESTLY: my ~32% estimate was too conservative
+  (over-corrected the n=4 model's 59% as overshoot); truth 49.2% sat between,
+  model closer. Beta-Binomial calibrates from n>=16 (held-out err 3.1%). Findings
+  composer auto-flipped passn_curve pending->measured on the artifact (ingestion
+  architecture verified end-to-end). PROJECT.md 4 + PASSN-PREREGISTRATION updated.
+- **selector.py split at the 300-line gate:** selector.py (policy, 300) +
+  selector_probe.py (battery/clustering, 293), behavior-identical via re-exports,
+  98-test surface green. Test hygiene: test_no_learned_model_in_path now uses
+  tmp_path (no repo scratch dirs). PROJECT.md module map + count (48) synced.
+- **Regression status:** my changes are regression-free -- 108/108 on the complete
+  reverse-import surface (selector/adaptive_select/findings/workspace_lens/
+  matmul_oracle/discovery_flywheel + calibration/consensus/typed_battery/passn).
+  Full suite = 910 passed / 9 failed (with test_task_curator + test_local_agentic
+  excluded -- the former has a PRE-EXISTING subprocess hang at ~84%, the latter
+  needs ollama). The 9 failures are ALL pre-existing, in foreign subsystems that
+  do NOT import my modules, and characterized as environment/platform quirks:
+  test_gather_readiness (Windows backslash vs forward-slash assertion, + a
+  static-surface read), test_benchmark_profile_coverage (list ordering; invalid
+  metric-shape), test_closed_loop_benchmark_seed (missing scorecard artifacts),
+  test_accountability_bench (self-axis score), test_local_model_serve_launcher
+  (serve config), test_package_ship_doctor (empty/malformed JSON artifact). Not
+  regressions, not this session's scope; fixing foreign-subsystem tests without
+  their contracts would risk breakage. Documented, not chased.
+
+- **Discovery flywheel BUILT (harness/discovery_flywheel.py, 10/10 tests).** The
+  operator's "oracle that senses discoveries and adapts course" -- reframed
+  honestly: sensing is a PROPOSER (a learned discovery-judge on the accept path
+  would be a C2 violation), so this composes the existing machinery (evolve.py
+  gated meta-loop + knowledge_monitor transition discipline) and adds the two
+  missing pieces: (1) a falsifier-ENFORCING intake gate (an ACTIONABLE discovery
+  with no runnable falsifier is demoted, never adoptable), (2) a transition-fired
+  COURSE-DRIFT signal (recommends re-prioritizing when a domain outside the course
+  accumulates >=K adoptable threads; fires once, never auto-changes course). ML is
+  on the propose side only; nothing auto-applies code; a falsifier is the only
+  thing that lands a change. Ran on the REAL frontier sweep: matmul + J-lens ->
+  gated admission, VSA/Clifford -> inspiration, monotiles NOISE dropped, course
+  holds. The matmul oracle was one completed turn (sensed -> falsifier -> admitted).
+  Dogfooded on the operator's GLM-5.2/colibri/winlibs batch (all REAL engineering,
+  not word-salad): winlibs (native Windows GCC/MinGW -- fixes the documented WSL
+  quant-toolchain pain) + GLM-5.2-colibri-as-slow-escalation-tier -> needs_admission
+  with falsifiers; colibri-as-PRIMARY-proposer -> INSPIRATION (0.05-1 tok/s kills
+  best-of-N -- 744B MoE on ~25GB RAM via NVMe expert-streaming is real but far too
+  slow for the propose loop; NOT a drop-in engine). Dogfooding EXPOSED a real wiring
+  flaw and I fixed it: evolve's CONFIG_HINTS keyword matcher had routed a code+setup
+  discovery ("wire colibri behind escalation.py") into the AUTO-CONFIG lane because
+  "escalation" is a hint word. External discoveries are capabilities to ADMIT, never
+  runtime knobs -- so discovery_cycle now folds both evolve lanes into one
+  needs_admission list; no external discovery can ever reach auto-apply. Stronger
+  falsifier added; 10/10.
+
+- **Frontier sweep (21-agent workflow, live web).** Operator supplied a batch of
+  terms/links + a fused "method" sentence. Verdict: every individual token maps to
+  REAL 2023-2026 work (Clifford/GATr, AlphaTensor/AlphaEvolve, grid-cell torus,
+  twistor/amplituhedron, Penrose/monotile QEC, INR/SeedLM, J-lens); the FUSED
+  compounds ("golden strassen clifford toroidal field", "torsional twistor markov
+  pump") are word-salad with zero literature hits; and the clause "infinite
+  tessellation without data loss + compression" is forbidden by Shannon/Kolmogorov
+  (a theorem, not a training gap -- neural fields are resolution-independent but
+  LOSSY). Report: tasks/research/FRONTIER-SWEEP-20260710.md.
+- **ACTIONABLE #1 SHIPPED -- matmul bilinear-scheme oracle** (harness/matmul_oracle.py,
+  8/8 tests). The AlphaTensor thesis made runnable: search proposes a rank-R
+  decomposition, an EXACT symbolic tensor identity disposes, proposer off the
+  accept path (C2-clean). Accepts a scheme only if it reproduces the exact n*m*p
+  tensor over the rationals; Strassen-7 + naive pass, perturbed/rank-dropped
+  rejected; calibrates zero-false-accept through calibration.py. The harness's
+  first hard-symbolic ring-parameterized oracle. Provenance note in PROJECT.md 5.
+- **ACTIONABLE #2 -- J-lens sourcing corrected + code-model path.** Festyve (the
+  operator's link) = deepseek-coder-1.3b lens (real); solarkyle/jspace-lenses =
+  broader registry with code-model lenses (gpt-oss-20b, Qwen3.6-27B) + hallucination
+  router weights, transfers across quant. workspace_lens demote-only advisory
+  already built+tested last pass. Next empirical step (needs GPU+fit): run a code
+  lens over the 61 headroom tasks with the pre-falsifier (heatmap must differ on
+  solved vs never-solved). Memo: tasks/research/JSPACE-INTEGRATION-20260710.md.
+- **NOISE kept explicit:** aperiodic monotiles (QEC = tamper-tolerance, the OPPOSITE
+  of our fail-closed tamper-evidence); GATr-as-proposer, SeedLM-for-32B, twistor
+  geometry all rejected for stated reasons.
+- **Closure review #2 fixes applied** (the 12 confirmed seams in the hardened
+  engine): _safe_parse(None/non-str) degrade not crash; _signature mkdir wrapped +
+  backstop sized to dominate per-slot sum + WORKER_DIED sentinel out of EXC:
+  namespace; verify_selection enforces method/verifier consistency; select()
+  validates confidence_threshold bounds + None candidates; findings.py nested
+  non-dict guard + n_tasks=0 preserved + no raw-JSON dump; entry_point resolver for
+  helper-first solutions. Full engine slice 89 green + matmul 8 + workspace 4.
+
+## 2026-07-10 (session 5, cont.) -- findings promoted to accept-path components
+
+- **The selection findings are now load-bearing components, not experiment scripts.**
+  Three new harness modules, 48-test falsifier slice green:
+  - `harness/selector.py` -- `select()` policy (oracle-first / consensus-fallback
+    / confidence gate / re-checkable SelectionReceipt); `oracle_select`,
+    `consensus_select`, the typed battery + type inference (moved here from
+    run_ablation.py, which now re-exports for back-compat -- de-dup, not a copy).
+  - `harness/adaptive_select.py` -- `AdaptiveSelector`: generate → select → RAISE
+    N (double budget) → escalate-on-budget-exhaustion; `budget_schedule` (unique
+    index-stable temp/seed grid). This is the companion seat's selection core.
+  - `harness/findings.py` -- receipt-bound findings composer: scans run artifacts,
+    binds every metric to a source hash, root-hashed `flywheel.findings/v1` doc,
+    honest "pending" for incomplete runs, `verify_findings` staleness check.
+- **pass@N raise LAUNCHED at N=32** (unique-grid diversity, extension-on-resume).
+  Early: 13 of first 26 headroom tasks are consensus-reachable at N=32 vs ~5/61
+  at N=4; pattern is bimodal (wake up substantially OR stay 0 -- the single-
+  correct "oracle-only limbo" collapses). Pre-registered prediction recorded
+  (model-from-n4 says consensus@32~59%, my independent estimate ~32%); the run
+  adjudicates. New instruments: `scripts/passn_model.py` (exact hypergeometric
+  pass@k/consensus@k, brute-force verified, Beta-Binomial extrapolation),
+  `scripts/run_passn_curve.py`, `scripts/analyze_selectors.py`.
+- SUPERAPP.md increment-5 companion seat + PROJECT.md module map synced to the
+  built components. Adversarial review workflow run over the three components.
+- **Adversarial review (24 agents, 5 risk dimensions): 12 confirmed / 7 plausible
+  / 0 refuted. Confirmed defects FIXED, 59-test slice green:**
+  - CRITICAL confidence-confound: `consensus_select` could emit verdict=PASS,
+    confidence=1.0 for a WRONG-but-agreeing majority (4 byte-identical buggy
+    candidates cluster perfectly). The fix wires the already-present
+    `max_correlation` wrong-attractor gate onto the consensus PASS path (it was
+    dead there) + a tie gate (runner-up == winner) + honest reason strings
+    ("AGREEMENT not oracle-verified correctness"). Textually near-identical
+    candidates (corr >= 0.85) and 2-2 ties now route to LOW_CONFIDENCE -> the
+    adaptive loop raises N / escalates instead of a confident-wrong local accept.
+  - CRITICAL receipt gaps: SelectionReceipt now carries task_id + fn/arity/
+    param_types so a third party can actually regenerate the battery and
+    re-cluster; added `verify_selection()` (MATCH/DRIFT/UNVERIFIABLE) delivering
+    the re-check the docstring promised.
+  - CRITICAL findings fabrication: `project_findings` emitted "single None/None"
+    for present-but-malformed artifacts; now validates keys and emits honest
+    pending; single-read `_load_and_hash` closes a TOCTOU gap.
+  - MAJOR determinism: `_signature` subprocess now pins PYTHONHASHSEED=0 so
+    set/dict repr order (and thus clustering) is stable across processes.
+  - MAJOR budget cap: `budget_schedule`/`AdaptiveSelector` refuse n > 73 (past
+    capacity the temp/seed grid would repeat and add no diversity).
+  Note: the corr/tie gates make the DEPLOYED consensus path more conservative
+  than the raw agreement-capture the ablation measured -- it trades some local
+  accepts for never-confident-wrong, the correct default for the companion seat.
+- **Total-closure hardening pass (operator: "a flywheel engine cannot have any
+  edge cases; every gap, seam, thread, surface traced and solidified").** Closed
+  the 7 plausible review findings + edge cases the review didn't reach, 72-test
+  slice green:
+  - per-input timeout in `_signature` (threaded daemon + join per battery input,
+    whole-probe backstop) so machine load can't flip a candidate's cluster;
+  - `select()` fails loud on oracle-without-task; coerces None/non-string
+    candidates (`_as_text`); requires >=2 candidates for a consensus PASS (one
+    is single-shot, not agreement); cleans its scratch dir every call (no leak);
+  - `oracle_select` treats a THROWING oracle as no-pass, never crashes;
+  - `AdaptiveSelector` tolerates a raising/empty proposer (escalates, no crash);
+    ESCALATE now carries text=None with the attempt in `best_effort_text`;
+  - `findings.py` single-read `_load_and_hash` (no TOCTOU), key validation
+    (malformed artifact -> honest pending, never fabricated), glob-based pass@N
+    artifact selection (largest max_n wins, any future filename picked up);
+  - `verify_selection` returns MATCH/DRIFT/UNVERIFIABLE (the re-check the receipt
+    promised). Second adversarial closure review run to confirm no seam moved.
+
+## 2026-07-10 (session 5) -- consensus arm measured, type-aware battery, pass@N curve
+
+- **Consensus arm COMPLETE on all 61 headroom tasks (2026-07-10).** Oracle-free
+  behavioral-consensus (MBR-exec) selector: 4/61 (7%), +2pts over single,
+  recovering 9% of external oracle's lift. McNemar p=1.0 vs single (not
+  significant), p=0.004 vs external (SIGNIFICANT gap). The structural picture:
+  at N=4, 77% have zero correct candidates, 15% have exactly one, 6.6% have
+  two-or-more (the consensus ceiling). 8/11 external rescues are single-correct
+  (structurally unreachable by any oracle-free method).
+  Artifact: E:\local-model-run\selector_consensus_headroom.json.
+- **Type-aware battery improvement BUILT + TESTED.** The old mixed-type probe
+  pool sent wrong-typed inputs (ints to list params, etc.), causing all
+  candidates to crash identically and erasing behavioral signal. Fix: infer
+  per-parameter types from function signatures, generate typed battery inputs.
+  Verified fix on sliding_window_max (FIXED from FAIL to PASS). Root cause
+  analysis on splice_pure and matrix_transpose: candidates genuinely behave
+  identically on battery inputs but differ on hidden edge cases -- a structural
+  limit of behavioral consensus, not a selector bug. Offset bug fixed (per-param
+  offset dropped when rewriting for typed pools). INT_POOL rebalanced toward
+  typical list lengths.
+- **pass@N budget curve runner BUILT** (scripts/run_passn_curve.py). Generates
+  N candidates at distinct (temperature, seed) pairs, counts correct_count at
+  each budget level. Early probe on 10 tasks at N=8 shows search_rotated moving
+  from oracle-only (1/4 correct) to consensus-reachable (2/8 correct). Full
+  61-task run pending.
+- **Analysis tooling BUILT** (scripts/analyze_selectors.py). Structural
+  breakdown of oracle-free feasibility: correct_count distribution, cluster
+  diagnosis, McNemar tests, Wilson CIs, actionable recommendations.
+
+## 2026-07-09 (session 4) -- lane 110/100, difficulty screen DONE (44%), oracle tree-kill fix
 
 - **Hard-set lane COMPLETE at 110/100** (batch 8: 24/24 admitted through curator
   gates, authors self-verified with reference-pass + return-None falsifiers;
