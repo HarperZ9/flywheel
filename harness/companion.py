@@ -79,7 +79,7 @@ class CompanionSeat:
                 hit = self.cache.get(_task_key(task, solution_sig))
             except Exception:
                 hit = None
-            if hit:
+            if hit and self._cache_hit_valid(task, hit):
                 return self._record(CompanionResult(
                     CACHE, hit.get("text"), hit.get("receipt", {})))
 
@@ -100,6 +100,21 @@ class CompanionSeat:
             ESCALATE, None, res.receipt.to_dict(),
             escalate_to=self.escalation_endpoint,
             best_effort_text=res.best_effort_text))
+
+    def _cache_hit_valid(self, task, hit) -> bool:
+        """A proof-cache hit is served ONLY if it still re-checks NOW -- mirroring
+        proof_cache.proof_lookup ('never blind-trusted, never stale'). With an
+        oracle present, re-run it on the cached text; a hit that no longer passes
+        (external state drifted) is discarded and the seat does a fresh verified
+        selection. With no oracle to re-check, a stored answer is NOT trusted as a
+        verified fact -- the hit is ignored. The cache is a memo of a re-checkable
+        verdict, never a bypass of the check (C2)."""
+        if self.oracle is None:
+            return False
+        try:
+            return bool(self.oracle.verify(hit.get("text", ""), task).passed)
+        except Exception:
+            return False
 
     def _maybe_cache(self, task, solution_sig, out: CompanionResult) -> None:
         if self.cache is not None and out.text is not None:

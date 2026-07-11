@@ -133,8 +133,20 @@ def screen_alive(name: str = SCREEN_NAME, *, timeout: float = 5.0) -> bool | Non
                              text=True, timeout=timeout)
     except Exception:
         return None
-    blob = (out.stdout or "") + (out.stderr or "")
-    return bool(re.search(rf"\b\d+\.{re.escape(name)}\b", blob))
+    return _screen_alive_from_blob((out.stdout or "") + (out.stderr or ""), name)
+
+
+def _screen_alive_from_blob(blob: str, name: str = SCREEN_NAME) -> bool:
+    """Pure `screen -ls` parser (testable without wsl). A session line is
+    `<pid>.<name>\\t(Attached|Detached|Dead ???)`. `screen -ls` keeps a crashed
+    session listed as `(Dead ???)` until `screen -wipe`, so a bare token match would
+    report a dead socket as ALIVE -- the SOLE liveness source must not do that. A
+    line is live only if it matches the name AND is not Dead-marked."""
+    sess = re.compile(rf"\b\d+\.{re.escape(name)}\b")
+    for line in blob.splitlines():
+        if sess.search(line) and "(Dead" not in line:
+            return True
+    return False
 
 
 def would_double_launch(*, screen_is_alive: bool | None, lock_present: bool) -> bool:
@@ -148,9 +160,10 @@ def _reconcile(state: str, alive: bool | None) -> tuple[bool | None, str]:
     """Does the log-derived state agree with screen liveness? None if unprobed."""
     if alive is None:
         return None, "liveness unprobed (wsl screen -ls did not run)"
-    if state == "training" and not alive:
-        return False, ("log's last event is an in-flight attempt but no train32b "
-                       "screen is alive -- the supervisor died without a terminal line")
+    if state in ("training", "waiting-for-RAM") and not alive:
+        return False, ("log's last event is an in-flight live-process state but no "
+                       "train32b screen is alive -- the supervisor died without a "
+                       "terminal line (it was mid-attempt or mid RAM-gate wait)")
     if state in ("completed", "stopped", "gave-up") and alive:
         return False, (f"log shows terminal state '{state}' but a train32b screen "
                        f"is still alive -- stale screen, inspect it")

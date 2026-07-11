@@ -63,6 +63,24 @@ def test_weights_sha_absent_when_unset(monkeypatch):
     assert "weights_sha256" not in r                   # honest absence, not a fake value
 
 
+def test_weights_sha_is_folded_into_receipt_id(monkeypatch):
+    # The fingerprint must be RE-CHECKABLE, not a write-only field: two weight files
+    # that share a MODEL_REF but differ in artifact hash must get DISTINCT receipt_ids,
+    # and tampering the stored fingerprint must break the recompute.
+    p = _payload(ref="same-ref (nf4)")
+    monkeypatch.setattr(serve, "ARTIFACT_SHA256", "weightsAAAA")
+    a = _MINT("p", "s", 128, 0.0, 0, p)
+    monkeypatch.setattr(serve, "ARTIFACT_SHA256", "weightsBBBB")
+    b = _MINT("p", "s", 128, 0.0, 0, p)
+    assert a["receipt_id"] != b["receipt_id"]          # different weights -> different id
+    # tamper: editing weights_sha256 must change the recomputed id (make_receipt is the re-check)
+    recompute = make_receipt(
+        {"prompt": "p", "system": "s", "max_new_tokens": 128, "temperature": 0.0, "seed": 0},
+        p, p["model_ref"], "weightsBBBB")
+    assert recompute["receipt_id"] == b["receipt_id"]  # honest recompute matches
+    assert recompute["receipt_id"] != a["receipt_id"]  # a forged fingerprint would not
+
+
 def test_idempotent_same_turn_same_id():
     p = _payload()
     a = _MINT("p", "s", 128, 0.0, 0, p)

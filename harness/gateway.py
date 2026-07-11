@@ -140,7 +140,10 @@ def _unified_roster() -> dict:
             from endpoint_registry import unified_roster  # standalone run
         except Exception as e:
             return {"error": f"endpoint_registry unavailable: {e}"}
-    return unified_roster()
+    try:
+        return unified_roster()
+    except Exception as e:                    # a runtime failure must degrade, not crash the handler
+        return {"error": f"unified_roster failed: {e}"}
 
 
 def _projected_world(root: Path) -> dict:
@@ -163,7 +166,10 @@ def _training_status(run_root: str) -> dict:
             from training_lane import training_status  # standalone run
         except Exception as e:
             return {"error": f"training_lane unavailable: {e}"}
-    return training_status(run_root)
+    try:
+        return training_status(run_root)
+    except Exception as e:                    # e.g. an unreadable/locked log -> honest error, no crash
+        return {"error": f"training_status failed: {e}"}
 
 
 def _forge(goal: str, **kw) -> dict:
@@ -176,7 +182,10 @@ def _forge(goal: str, **kw) -> dict:
             from context_forge import forge_prp
         except Exception as e:
             return {"error": f"context_forge unavailable: {e}"}
-    return forge_prp(goal, **kw).to_dict()
+    try:
+        return forge_prp(goal, **kw).to_dict()
+    except Exception as e:                    # a malformed goal must not crash the handler
+        return {"error": f"forge failed: {e}"}
 
 
 class _MemoryProofCache:
@@ -250,8 +259,20 @@ class _Handler(BaseHTTPRequestHandler):
     ollama_url = "http://127.0.0.1:11434"
     run_root = "E:/local-model-run"
 
+    MAX_BODY = 32 * 1024 * 1024               # 32 MiB ceiling on any request body
+
     def log_message(self, *a):  # quiet
         pass
+
+    def _content_length(self):
+        """Parse Content-Length defensively: a non-numeric, negative, or oversized
+        value returns None so the caller answers 400 instead of the handler thread
+        dying on an uncaught ValueError or reading unbounded bytes into memory."""
+        try:
+            n = int(self.headers.get("Content-Length", 0))
+        except (TypeError, ValueError):
+            return None
+        return None if n < 0 or n > self.MAX_BODY else n
 
     def _json(self, obj, code=200):
         body = json.dumps(obj).encode()
@@ -262,7 +283,9 @@ class _Handler(BaseHTTPRequestHandler):
         self.wfile.write(body)
 
     def _proxy(self, target: str):
-        length = int(self.headers.get("Content-Length", 0))
+        length = self._content_length()
+        if length is None:
+            return self._json({"error": "invalid or oversized Content-Length"}, 400)
         data = self.rfile.read(length) if length else None
         req = urllib.request.Request(target, data=data, method=self.command,
                                      headers={"Content-Type": "application/json"})
@@ -317,7 +340,9 @@ class _Handler(BaseHTTPRequestHandler):
         if p.startswith("/v1/") or p == "/generate":
             return self._proxy(self.serve_url.rstrip("/") + p)
         if p == "/api/forge":                        # goal -> verified PRP (the studio)
-            length = int(self.headers.get("Content-Length", 0))
+            length = self._content_length()
+            if length is None:
+                return self._json({"error": "invalid or oversized Content-Length"}, 400)
             try:
                 req = json.loads(self.rfile.read(length) or b"{}") if length else {}
             except Exception:
@@ -329,7 +354,9 @@ class _Handler(BaseHTTPRequestHandler):
                                      documentation=req.get("documentation"),
                                      context=req.get("context", "")))
         if p == "/api/companion":                     # the seat: answer local, escalate the hard slice
-            length = int(self.headers.get("Content-Length", 0))
+            length = self._content_length()
+            if length is None:
+                return self._json({"error": "invalid or oversized Content-Length"}, 400)
             try:
                 req = json.loads(self.rfile.read(length) or b"{}") if length else {}
             except Exception:

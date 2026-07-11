@@ -141,6 +141,30 @@ def test_status_flags_training_but_dead_screen(tmp_path):
     assert s["reconciled"] is False
 
 
+def test_status_flags_waiting_for_ram_but_dead_screen(tmp_path):
+    # Falsifier: the supervisor can die DURING the RAM-gate wait (OOM), leaving the
+    # log's last line 'RAM gate waiting: ...' (an in-flight live-process state) with
+    # a dead screen. That divergence must surface as reconciled=False, not a false
+    # 'agree' -- waiting-for-RAM is in-flight, just like an attempt.
+    (tmp_path / "logs").mkdir()
+    (tmp_path / "logs" / "phase2-32b-supervisor.log").write_text(
+        "\n".join([START, WAIT]), encoding="utf-8")
+    s = T.training_status(str(tmp_path), screen_probe=lambda: False)
+    assert s["state"] == "waiting-for-RAM"
+    assert s["screen_alive"] is False
+    assert s["reconciled"] is False
+
+
+def test_screen_parser_excludes_dead_sessions():
+    live = "\t31183.train32b\t(Detached)\n"
+    dead = "\t31183.train32b\t(Dead ???)\n"
+    assert T._screen_alive_from_blob(live, "train32b") is True
+    assert T._screen_alive_from_blob(dead, "train32b") is False   # dead socket != alive
+    assert T._screen_alive_from_blob("", "train32b") is False
+    # a live session coexisting with a stale dead one still reads alive
+    assert T._screen_alive_from_blob(dead + "\t999.train32b\t(Attached)\n", "train32b") is True
+
+
 def test_status_flags_stale_screen_on_terminal_state(tmp_path):
     (tmp_path / "logs").mkdir()
     (tmp_path / "logs" / "phase2-32b-supervisor.log").write_text(

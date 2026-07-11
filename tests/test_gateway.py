@@ -153,3 +153,37 @@ def test_training_status_route_reports_stopped_when_no_run(tmp_path, monkeypatch
     assert s["schema"] == "flywheel.training-status/v1"
     assert s["state"] == "stopped"
     assert s["screen_alive"] is False
+
+
+def test_training_status_route_degrades_on_runtime_error(monkeypatch):
+    # A runtime failure INSIDE the present module (not an import failure) must return
+    # an honest error dict, never crash the handler thread with a traceback.
+    import harness.training_lane as T
+    def boom(*a, **k):
+        raise PermissionError("log locked")
+    monkeypatch.setattr(T, "training_status", boom)
+    out = gateway._training_status("whatever")
+    assert "error" in out and "training_status failed" in out["error"]
+
+
+class _FakeHeaders:
+    def __init__(self, cl):
+        self._cl = cl
+
+    def get(self, key, default=None):
+        return self._cl if key == "Content-Length" else default
+
+
+def _content_length(cl):
+    h = gateway._Handler.__new__(gateway._Handler)   # no socket, just the method
+    h.headers = _FakeHeaders(cl)
+    return h._content_length()
+
+
+def test_content_length_guard_rejects_garbage_and_oversize():
+    assert _content_length("42") == 42                 # valid
+    assert _content_length("0") == 0
+    assert _content_length("x") is None                # non-numeric -> 400, not a crash
+    assert _content_length("") is None                 # present-but-empty
+    assert _content_length("-5") is None               # negative
+    assert _content_length(str(gateway._Handler.MAX_BODY + 1)) is None   # oversized
