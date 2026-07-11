@@ -32,9 +32,11 @@ os.environ.setdefault("TEMP", r"E:\local-model-run\tmp")
 os.environ.setdefault("BITSANDBYTES_NOWELCOME", "1")
 
 try:
-    from .messages_api import error_response, resolve_model, translate_request, translate_response
+    from .messages_api import (error_response, make_receipt, resolve_model,
+                               translate_request, translate_response)
 except ImportError:  # pragma: no cover - supports `python harness/serve.py`
-    from messages_api import error_response, resolve_model, translate_request, translate_response
+    from messages_api import (error_response, make_receipt, resolve_model,
+                              translate_request, translate_response)
 
 torch = None
 
@@ -45,6 +47,10 @@ MODEL_PATH = os.environ.get(
     "SERVE_MODEL_PATH", r"E:\local-model-run\models\Qwen2.5-Coder-14B-Instruct")
 ADAPTER_PATH = os.environ.get("SERVE_ADAPTER_PATH", "")  # trained LoRA adapter dir
 MODEL_REF = "Qwen2.5-Coder-14B-Instruct (base, nf4)"
+# Optional weights fingerprint bound into every receipt so a receipt proves WHICH
+# weights served it. Set to the artifact_sha256 from model_profiles.py when serving
+# a hashed GGUF; empty falls back to model_ref for provenance (still receipt-bound).
+ARTIFACT_SHA256 = os.environ.get("SERVE_ARTIFACT_SHA256", "").strip()
 PORT = int(os.environ.get("SERVE_PORT", "8765"))
 QUANT_4BIT = True
 SERVE_DEVICE_MAP = os.environ.get("SERVE_DEVICE_MAP", "cuda").strip().lower()
@@ -263,6 +269,21 @@ class _H(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(b)
 
+    @staticmethod
+    def _mint_receipt(prompt, system, max_new_tokens, temperature, seed, payload):
+        """Per-turn receipt for /chat/completions and /generate (parity with
+        /v1/messages, which already mints one). Content-addressed: recompute the
+        receipt_id from the recorded parts and it must match; change the response
+        and it moves. Binds the served MODEL_REF, plus the weights fingerprint
+        when one is configured, so a receipt proves which weights served it."""
+        req_params = {"prompt": prompt, "system": system,
+                      "max_new_tokens": max_new_tokens, "temperature": temperature,
+                      "seed": seed}
+        receipt = make_receipt(req_params, payload, payload.get("model_ref", MODEL_REF))
+        if ARTIFACT_SHA256:
+            receipt["weights_sha256"] = ARTIFACT_SHA256
+        return receipt
+
     def do_POST(self):
         if self.path not in ("/generate", "/chat/completions", "/v1/messages"):
             self._send(404, {"error": "not found"})
@@ -303,8 +324,10 @@ class _H(BaseHTTPRequestHandler):
                     seed,
                     req_system or system,
                 )
+                receipt = self._mint_receipt(
+                    prompt, req_system or system, max_new_tokens, temperature, seed, payload)
                 reply = {
-                    "id": "chatcmpl-local",
+                    "id": f"chatcmpl-{receipt['receipt_id']}",
                     "object": "chat.completion",
                     "created": int(time.time()),
                     "model": payload["model_ref"],
@@ -316,18 +339,25 @@ class _H(BaseHTTPRequestHandler):
                         },
                     ],
                     "usage": {},
+                    "x_receipt": receipt,
                 }
-                self._send(200, reply)
+                self._send(200, reply, {"X-Receipt-Id": receipt["receipt_id"]})
             else:
+                gen_seed = int(req.get("seed", 0))
+                gen_max = int(req.get("max_new_tokens", 128))
+                gen_temp = float(req.get("temperature", 0.0))
                 r = generate(
                     req["prompt"],
-                    int(req.get("max_new_tokens", 128)),
-                    float(req.get("temperature", 0.0)),
+                    gen_max,
+                    gen_temp,
                     float(req.get("top_p", 0.9)),
-                    int(req.get("seed", 0)),
+                    gen_seed,
                     req.get("system", ""),
                 )
-                self._send(200, r)
+                receipt = self._mint_receipt(
+                    req["prompt"], req.get("system", ""), gen_max, gen_temp, gen_seed, r)
+                r["x_receipt"] = receipt
+                self._send(200, r, {"X-Receipt-Id": receipt["receipt_id"]})
         except Exception as e:
             self._send(500, error_response(repr(e), etype="api_error"))
 

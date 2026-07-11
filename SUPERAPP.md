@@ -203,12 +203,18 @@ Anthropic/Gemini, CLI, or the enterprise bridge -- into one tamper-evident
 response_sha)`, never the prompt/response TEXT and never a key; `make_endpoint_
 proposer(..., ledger=...)` opts any endpoint into it. Falsifiers hold: flip one
 byte of a recorded entry and `verify()` fails; a prompt canary never appears in
-the serialized ledger. STILL DEFERRED (needs the live model to verify end to
-end): mint `make_receipt` on serve's `/chat/completions` and `/generate` and bind
-`artifact_sha256` from `model_profiles.py` into those receipts. *Deferred-part
-falsifier:* recompute a `/chat/completions` receipt_id from its recorded parts;
-mismatch means broken. Serve a different GGUF; if the receipt's weights hash does
-not change, broken.
+the serialized ledger. Third part DONE 2026-07-11: (c) serve's `/chat/completions` and
+`/generate` now MINT the same content-addressed `make_receipt` that `/v1/messages`
+already did -- an `X-Receipt-Id` header plus an `x_receipt` body block -- and bind
+an optional weights fingerprint (`SERVE_ARTIFACT_SHA256`, the `artifact_sha256`
+from `model_profiles.py`) so a receipt proves which weights served it; the served
+`MODEL_REF` is already in the receipt_id, so a different GGUF moves the id even
+without the fingerprint. 7 falsifier tests (no GPU: the receipt is a pure function
+of request parts + response + weights ref) prove the id recomputes from its parts,
+moves when the response or weights ref changes, and the fingerprint binds when
+configured / is honestly absent when not. ONLY the live end-to-end round-trip
+(serve.py running the 14B, a real POST returning the header) remains -- that needs
+the model on GPU; the minting logic and its falsifier are shipped.
 
 **Increment 4: the training lane in the shell, safety intact. STATUS HALF SHIPPED
 2026-07-11.** `harness/training_lane.py` (read-only) + `GET /api/training/status`
