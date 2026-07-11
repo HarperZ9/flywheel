@@ -140,3 +140,16 @@ def test_companion_answer_never_calls_frontier_inline():
                          cache=gateway._MemoryProofCache(), max_n=8)
     out = gateway.companion_answer(seat, "anything")
     assert isinstance(out["escalate_to"], str) and out["text"] is None
+
+
+# --- training status route (read-only) -----------------------------------------
+
+def test_training_status_route_reports_stopped_when_no_run(tmp_path, monkeypatch):
+    # Route is read-only and honest with no run present. Inject a dead-screen probe
+    # so the test never shells wsl.
+    import harness.training_lane as T
+    monkeypatch.setattr(T, "screen_alive", lambda *a, **k: False)
+    s = gateway._training_status(str(tmp_path))
+    assert s["schema"] == "flywheel.training-status/v1"
+    assert s["state"] == "stopped"
+    assert s["screen_alive"] is False
