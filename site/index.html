@@ -109,11 +109,12 @@ td.cred{font-family:ui-sans-serif,system-ui,sans-serif;font-size:12px}
   </header>
 
   <div class="hero">
-    <div class="eyebrow">a companion, not a competitor</div>
+    <div class="eyebrow">one surface. every provider. verified.</div>
     <h1>A companion for every model.</h1>
-    <p class="lede">Bring whatever model you like, local or frontier. Flywheel stands beside it,
-      helps it do its best work, and hands you a record you can keep and check yourself.</p>
-    <p class="oneline">Lead with wonder, earn trust by trying to break things, and show your work.</p>
+    <p class="lede">Route to any model, local or hosted, online or offline. Flywheel answers what it
+      can verify, escalates only the hard part, and hands you a receipt you can re-run yourself. It
+      does what every router and runner does, plus the one thing none of them do: it checks the work.</p>
+    <p class="oneline">The router that also verifies. Bring your keys, or bring your weights.</p>
     <div class="ctarow">
       <a class="cta" href="../demos/harness-first-run/player.html">Watch the harness run</a>
       <a class="cta ghost" href="#gallery">See every tool</a>
@@ -121,24 +122,24 @@ td.cred{font-family:ui-sans-serif,system-ui,sans-serif;font-size:12px}
   </div>
 
   <section id="seam">
-    <div class="eyebrow">the seam</div>
-    <h2>The small tear we are closing</h2>
-    <p class="sub">The frontier is remarkable, and the strongest reasoning today lives in hosted
-      models. We are not here to out-reason them. We are here to make the model in front of you,
-      whichever one it is, more efficient and more accountable to you.</p>
+    <div class="eyebrow">why flywheel</div>
+    <h2>The one thing every other tool leaves out</h2>
+    <p class="sub">Routers route. Local runners run. Agent harnesses orchestrate. Not one of them
+      checks whether the answer is right and hands you proof. Flywheel does all of their jobs on one
+      surface, and adds the verify layer none of them have.</p>
     <div class="seam">
-      <div class="item"><h3>Availability you control</h3>
-        <p>Frontier models come and go on a schedule set by export policy and approval lists.
-          A model on weights you hold is here when you need it, on an airplane, when the network is down.</p></div>
+      <div class="item"><h3>Every provider, one surface</h3>
+        <p>Local weights, a local server, or any hosted provider you hold a key for. One roster,
+          one verified path behind all of them, credentials shown as presence only.</p></div>
       <div class="item"><h3>A record you can keep</h3>
         <p>Every accepted answer carries a receipt: the inputs, the check that passed, and hashes
-          anyone can re-run offline. You never have to take it on faith.</p></div>
-      <div class="item"><h3>Efficiency, not replacement</h3>
-        <p>Flywheel can sit underneath any harness, cache what it has already verified, and route
-          only the genuinely hard part of a task to the expensive tier.</p></div>
-      <div class="item"><h3>Smaller and smaller hardware</h3>
-        <p>A capable coder in a single file just under 9 GB runs on an ordinary machine today.
-          The work ahead is keeping more capability in less space.</p></div>
+          anyone can re-run offline. This is the layer no other router has.</p></div>
+      <div class="item"><h3>Answer local, escalate the hard part</h3>
+        <p>Flywheel answers what it can verify locally for near-zero cost, and routes only the
+          genuinely hard slice to a stronger tier, on evidence, not a guess.</p></div>
+      <div class="item"><h3>Yours when the network is not</h3>
+        <p>Bring your keys and it routes online. Bring your weights and a capable coder in a single
+          file just under 9 GB runs offline, on a plane, when the network is down.</p></div>
     </div>
   </section>
 
@@ -256,7 +257,7 @@ ollama run flywheel-local-coder-14b</pre>
   <section id="router" hidden>
     <div class="eyebrow">every provider, one roster</div>
     <h2>The universal router <span class="fresh" id="routerFresh"></span></h2>
-    <p class="sub">Local weights, a local server, or any hosted provider you hold a key for — one list,
+    <p class="sub">Local weights, a local server, or any hosted provider you hold a key for, one list,
       one verified path behind all of them. Credentials show as presence only; no key value ever
       appears here or leaves your machine. Every other router routes; this one routes and checks.</p>
     <div class="bench"><table>
@@ -264,6 +265,15 @@ ollama run flywheel-local-coder-14b</pre>
       <tbody id="routerBody"></tbody>
     </table></div>
     <div class="note" id="routerNote"></div>
+    <div class="panel" style="margin-top:16px">
+      <h3>Route a prompt to any provider</h3>
+      <input id="rPrompt" class="field" placeholder="say hello in one sentence">
+      <select id="rEndpoint" class="field" style="margin-top:8px"></select>
+      <button class="btn" id="rGo">Route + receipt</button>
+      <div class="out" id="rOut">Pick a usable provider and route. The reply carries the answer, the
+        true model that produced it, and a receipt you can recompute. A provider with no key present
+        is refused honestly, never answered by a different model.</div>
+    </div>
   </section>
 
   <section id="studio" hidden>
@@ -278,7 +288,7 @@ ollama run flywheel-local-coder-14b</pre>
         <input id="cPrompt" class="field" placeholder="write a function that returns a + 1">
         <button class="btn" id="cGo">Answer</button>
         <div class="out" id="cOut">Ask for something checkable. The reply shows where the answer came
-          from — a local verified check, local agreement, or an escalation to a stronger tier.</div>
+          from a local verified check, local agreement, or an escalation to a stronger tier.</div>
       </div>
       <div class="panel">
         <h3>Studio</h3>
@@ -301,8 +311,8 @@ ollama run flywheel-local-coder-14b</pre>
 <script>
 /* Data layer (SUPERAPP.md increment 1): every number on this page binds to a
    receipt artifact fetched at load. If a fetch fails (offline file:// open),
-   the static content stands — and the statics are kept truthful at commit
-   time — but a served page can never drift from the receipts. */
+   the static content stands, and the statics are kept truthful at commit
+   time, but a served page can never drift from the receipts. */
 (function(){
   function age(mod){
     var t=Date.parse(mod); if(isNaN(t)) return '';
@@ -445,6 +455,8 @@ ollama run flywheel-local-coder-14b</pre>
            +'</b> usable right now. Credential is presence only, never a value.';
       var rf=document.getElementById('routerFresh');
       if(rf) rf.textContent=roster.n_usable+' of '+roster.n_endpoints+' usable';
+      var sel=document.getElementById('rEndpoint');
+      if(sel) sel.innerHTML=(roster.usable_names||[]).map(function(n){return '<option>'+esc(n)+'</option>';}).join('');
       document.getElementById('router').hidden=false;
       document.getElementById('studio').hidden=false;   // the gateway is up -> try-it works
     }
@@ -470,6 +482,19 @@ ollama run flywheel-local-coder-14b</pre>
       else { body+='No local answer met the check. Route to: '+esc(d.escalate_to)
            +'\n(the stronger tier is named, not called for you)'; }
       out.innerHTML=body;
+    }).catch(function(e){ out.textContent='error: '+e; }).then(done);
+  });
+  wire('rGo', function(done){
+    var out=document.getElementById('rOut');
+    var prompt=(document.getElementById('rPrompt').value||'').trim();
+    var endpoint=(document.getElementById('rEndpoint').value||'').trim();
+    if(!prompt||!endpoint){ out.textContent='Enter a prompt and pick a provider.'; done(); return; }
+    out.textContent='routing to '+endpoint+'…';
+    fetch('/api/route',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({prompt:prompt,endpoint:endpoint})}).then(function(r){return r.json();}).then(function(d){
+      if(d.error){ out.innerHTML='<span class="pill warn">'+esc(d.error)+'</span>'; return; }
+      var rid=((d.receipt&&d.receipt.receipt_id)||'').slice(0,16);
+      out.innerHTML='<span class="pill ok">'+esc(d.model_ref)+'</span>  receipt '+esc(rid)+'\n\n'+esc(d.text||'');
     }).catch(function(e){ out.textContent='error: '+e; }).then(done);
   });
   wire('fGo', function(done){

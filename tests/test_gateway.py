@@ -144,6 +144,55 @@ def test_companion_answer_never_calls_frontier_inline():
 
 # --- training status route (read-only) -----------------------------------------
 
+def test_route_answer_mints_recheckable_receipt_with_provenance():
+    # The universal router's differentiator: every routed call carries a receipt
+    # that recomputes from its parts, and the provider provenance rides model_ref.
+    out = gateway.route_answer("hi there", "some-provider", _OneProposer("routed reply"),
+                               credential="present")
+    assert out["schema"] == "flywheel.route-result/v1"
+    assert out["endpoint"] == "some-provider"
+    assert out["text"] == "routed reply"
+    assert out["model_ref"] == "stub"
+    from harness.messages_api import make_receipt
+    expect = make_receipt(
+        {"prompt": "hi there", "system": "", "max_new_tokens": 512, "temperature": 0.0, "seed": 0},
+        {"text": "routed reply", "seed": 0, "prompt_hash": "h"}, "stub")
+    assert out["receipt"]["receipt_id"] == expect["receipt_id"]   # third party re-derives it
+
+
+def test_route_request_refuses_unknown_endpoint(monkeypatch):
+    monkeypatch.setattr(gateway, "_unified_roster",
+                        lambda: {"endpoints": [{"name": "real", "credential": "present"}],
+                                 "usable_names": ["real"]})
+    body, code = gateway.route_request("hi", "no-such-provider")
+    assert code == 404 and "unknown endpoint" in body["error"]
+
+
+def test_route_request_gates_on_credential_presence(monkeypatch):
+    # A hosted endpoint with no key present is refused honestly, never silently
+    # falling back to a local model (which would forge provenance).
+    monkeypatch.setattr(gateway, "_unified_roster",
+                        lambda: {"endpoints": [{"name": "openai", "credential": "absent"}],
+                                 "usable_names": []})
+    body, code = gateway.route_request("hi", "openai")
+    assert code == 400 and body["credential"] == "absent"
+
+
+def test_route_request_success_routes_and_receipts(monkeypatch):
+    monkeypatch.setattr(gateway, "_unified_roster",
+                        lambda: {"endpoints": [{"name": "local-x", "credential": "local-none"}],
+                                 "usable_names": ["local-x"]})
+    import harness.endpoint_registry as er
+    monkeypatch.setattr(er, "make_endpoint_proposer",
+                        lambda name, ledger=None: _OneProposer("routed answer"))
+    body, code = gateway.route_request("hi", "local-x")
+    assert code == 200
+    assert body["schema"] == "flywheel.route-result/v1"
+    assert body["text"] == "routed answer"
+    assert body["receipt"]["receipt_id"]
+    assert body["endpoint"] == "local-x"
+
+
 def test_training_status_route_reports_stopped_when_no_run(tmp_path, monkeypatch):
     # Route is read-only and honest with no run present. Inject a dead-screen probe
     # so the test never shells wsl.

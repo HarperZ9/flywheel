@@ -4,6 +4,20 @@ Everything needed to build the Flywheel marketing site so it reads as one produc
 with the running app. Self-contained: you should not need the codebase to work
 from this bundle.
 
+## The live product
+
+Flywheel is public and runnable now: **https://github.com/HarperZ9/flywheel**.
+Its README is the canonical short pitch and the source of truth for the current
+positioning. Point the site's primary call to action and code links there.
+
+**Positioning, current (use this register):** Flywheel is the router and harness
+that verifies. It does what every router, local runner, and agent harness does,
+on one surface, and adds the verify layer none of them have. It routes to any
+provider online with your keys and runs fully offline against local weights. Lead
+best-in-class and confident on the product; keep the honest null on the model's
+measured capability (see BENCHMARKS.md). This is the operator's largest flagship
+and the front door to the whole spine, so present the vision in full.
+
 ## What is in here
 
 | File | Use it for |
