@@ -118,6 +118,13 @@ the day the evidence does, not before.
 
 ---
 
+## License
+
+Flywheel is released under the **Functional Source License, Version 1.1, MIT
+Future License (FSL-1.1-MIT)**. You may use, modify, and redistribute it for any
+purpose other than building a competing product, and it converts to the MIT
+license two years after each version's release. See [LICENSE](LICENSE).
+
 ## Honest boundaries
 
 - The verifier can fail, everywhere. Every surface ships with the tamper check
