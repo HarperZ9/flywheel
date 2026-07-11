@@ -44,31 +44,42 @@ component, part, service). These belong in internal docs, never on a product pag
 
 ## Color language
 
-- **Indigo (`--accent`)** is the trust and verify color. Use it for the verified
-  path, passed checks framed as accents, and primary calls to action.
-- **Warm amber (`--warm`)** is the honest-caution color. Use it for escalation,
-  honest nulls, and "what we cannot prove yet". It signals candor, not error.
-- **Green (`--ok`)** is a passed external check. Use it sparingly, only where
-  something genuinely passed.
+This is the Project Telos design system: a cool near-black glass ground, cool-white
+ink, silver to cyan to blue accents. No warm hue except one caution signal.
 
-Full tokens, light and dark, are in `assets/palette.css`, lifted verbatim from the
-shipping shell so the site can match it exactly.
+- **Cyan (`--cyan`)** is the verify and trust signal. Use it for kickers, passed
+  checks, focus rings, and small accent marks. On light it darkens to a deep teal
+  so small text clears WCAG AA.
+- **Blue (`--blue`, `--blue-deep`)** carries links and the single emphatic action
+  (a chrome-to-blue solid button). Not decoration.
+- **Silver (`--silver`)** is chrome highlight and secondary text.
+- **Warm amber (`--warn`)** is the ONLY warm color, and the honest-caution signal:
+  escalation, honest nulls, "what we cannot prove yet". Use it sparingly. It reads
+  as candor, not error.
+- The **glass** primitive (a cool low-opacity fill with a top gloss wash and a
+  backdrop blur) carries depth over the ground. Panels, cards, and inputs are glass.
+
+Full tokens, light and dark, are in `assets/palette.css`. Source of truth is
+`portfolio-site/system/telos.css`, owned by the parallel design session.
 
 ## Type
 
-- Body is a warm serif (ui-serif, Georgia, Palatino). It carries the human,
-  written-by-a-person feel.
-- Headings are a tight sans (ui-sans-serif, Segoe UI, Inter, system-ui), weight
-  650, slightly negative letter-spacing.
-- Eyebrows are uppercase, wide letter-spacing, small, in warm amber.
+- **Display: Archivo** (700 to 800), tight negative letter-spacing, for headings.
+- **Body: Manrope**, for lede and prose.
+- **Mono: JetBrains Mono**, for kickers, labels, table headers, receipts, and code.
+  This is heavy, on purpose: the mono labels are a core part of the telos identity.
+- All three carry system fallbacks so the surface holds before the webfonts load.
+- Kickers are mono, uppercase, wide-tracked, small, in cyan, with a short cyan rule.
 
 ## Theme
 
-The app defaults to the reader's OS theme and offers a toggle that stamps
-`data-theme` on the root, which wins in both directions. The site should do the
-same, so a reader who prefers dark gets dark on both surfaces.
+Dark is native to telos. The app defaults to dark, honors a saved choice, then the
+reader's OS preference. The toggle stamps `data-theme` on the root and wins in both
+directions. The site should do the same, so a reader gets the same theme on both
+surfaces. Both themes are verified to hit WCAG AA contrast.
 
 ## The reference implementation
 
-The shipping shell (`site/index.html` in the repo) is the canonical look. When in
-doubt, match it. The two schematics in `assets/` already use these exact tokens.
+The shipping shell (`site/index.html` in the repo) is the canonical look, rendered
+in this exact telos system with both themes. When in doubt, match it. The two
+schematics in `assets/` use the same cool tokens.
