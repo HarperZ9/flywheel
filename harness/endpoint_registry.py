@@ -100,11 +100,52 @@ def unified_roster() -> dict:
                     "SAME verified accept path -- the oracle disposes, the provider proposes"}
 
 
+class LedgeredProposer:
+    """Wrap ANY Proposer -- serve, OpenAI-compat, native Anthropic/Gemini, CLI, or
+    the enterprise bridge -- so every generate() appends a tamper-evident entry to a
+    SessionLedger. This is the increment-3 'chain every endpoint call' mechanism:
+    ONE chain over calls to every endpoint, in order, provably un-reordered.
+
+    The entry records provenance and content COMMITMENTS only -- the prompt hash,
+    the model_ref (provider:model, the provenance that rides into the receipt), the
+    seed, and the response hash. Never the prompt or response TEXT (a ledger is not
+    a transcript store), and never a key (model_ref is not a secret). Flip one byte
+    of a stored entry and `ledger.verify()` fails -- the falsifier has teeth."""
+
+    def __init__(self, inner: Proposer, ledger, *, endpoint: str | None = None):
+        self.inner = inner
+        self.ledger = ledger
+        self.model_ref = getattr(inner, "model_ref", endpoint or "endpoint")
+        self.endpoint = endpoint or self.model_ref
+
+    def generate(self, prompt: str, *, seed: int, temperature: float,
+                 max_new_tokens: int, system: str = "") -> ProposerOutput:
+        out = self.inner.generate(prompt, seed=seed, temperature=temperature,
+                                  max_new_tokens=max_new_tokens, system=system)
+        resp_sha = prompt_hash(out.text if isinstance(out.text, str) else str(out.text))
+        self.ledger.append("endpoint_call", resp_sha, {
+            "endpoint": self.endpoint,
+            "model_ref": out.model_ref,        # provider provenance, not a secret
+            "seed": out.seed,
+            "prompt_sha": prompt_hash(prompt),
+            "response_sha": resp_sha,
+        })
+        return out
+
+
 def make_endpoint_proposer(name: str, *, model: str | None = None,
-                           base_url: str | None = None, extract: bool = True) -> Proposer:
+                           base_url: str | None = None, extract: bool = True,
+                           ledger=None) -> Proposer:
     """A verified Proposer for ANY endpoint. OpenAI-shaped + serve/stub go through
     providers.make_proposer; native Anthropic/Gemini are constructed and bridged;
-    CLI/OpenCode come from the endpoints ladder (their own construction)."""
+    CLI/OpenCode come from the endpoints ladder (their own construction). When a
+    `ledger` is given, the proposer is wrapped so every call chains into it."""
+    prop = _build_endpoint_proposer(name, model=model, base_url=base_url, extract=extract)
+    return LedgeredProposer(prop, ledger, endpoint=name) if ledger is not None else prop
+
+
+def _build_endpoint_proposer(name: str, *, model: str | None, base_url: str | None,
+                             extract: bool) -> Proposer:
     if name in providers.REGISTRY or name in ("serve", "stub"):
         return providers.make_proposer(name, model=model, base_url=base_url)
     from . import endpoints

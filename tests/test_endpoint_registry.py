@@ -12,9 +12,10 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from harness.endpoint_registry import (
-    unified_roster, make_endpoint_proposer, BackendProposer, _NATIVE,
+    unified_roster, make_endpoint_proposer, BackendProposer, LedgeredProposer, _NATIVE,
 )
 from harness import providers
+from harness.local_session import SessionLedger
 from harness.proposer import ProposerOutput
 
 
@@ -84,3 +85,56 @@ def test_unknown_endpoint_raises():
     import pytest
     with pytest.raises(ValueError):
         make_endpoint_proposer("no-such-provider-xyz")
+
+
+# --- LedgeredProposer: chain every endpoint call (increment 3) ------------------
+
+class _StubProposer:
+    model_ref = "prov:m9"
+
+    def __init__(self):
+        self.calls = 0
+
+    def generate(self, prompt, *, seed, temperature, max_new_tokens, system=""):
+        self.calls += 1
+        return ProposerOutput(f"def f(): return {self.calls}\n", self.model_ref, seed,
+                              "ph", "miss")
+
+
+def test_ledgered_proposer_chains_every_call_verifiably():
+    led = SessionLedger()
+    p = LedgeredProposer(_StubProposer(), led, endpoint="prov")
+    for i in range(3):
+        p.generate("secret prompt text", seed=i, temperature=0.0, max_new_tokens=8)
+    assert len(led.entries) == 3
+    assert led.verify() is True                 # a clean chain re-derives
+    assert all(e.kind == "endpoint_call" for e in led.entries)
+    assert led.entries[0].meta["model_ref"] == "prov:m9"   # provenance chained
+
+
+def test_ledger_tamper_is_detected():
+    led = SessionLedger()
+    p = LedgeredProposer(_StubProposer(), led, endpoint="prov")
+    p.generate("x", seed=0, temperature=0.0, max_new_tokens=8)
+    p.generate("y", seed=1, temperature=0.0, max_new_tokens=8)
+    led.entries[0].meta["model_ref"] = "attacker:swapped"   # flip a recorded byte
+    assert led.verify() is False, "a tampered endpoint-call entry passed verify -- broken"
+
+
+def test_ledger_stores_no_prompt_text_and_no_secret():
+    led = SessionLedger()
+    p = LedgeredProposer(_StubProposer(), led, endpoint="prov")
+    p.generate("SENSITIVE-PROMPT-CANARY", seed=0, temperature=0.0, max_new_tokens=8)
+    blob = led.to_jsonl()
+    assert "SENSITIVE-PROMPT-CANARY" not in blob   # commitments only, never the text
+    assert "response_sha" in blob and "prompt_sha" in blob
+
+
+def test_make_endpoint_proposer_wraps_when_ledger_given():
+    led = SessionLedger()
+    p = make_endpoint_proposer("stub", ledger=led)
+    assert isinstance(p, LedgeredProposer)
+    p.generate("x", seed=0, temperature=0, max_new_tokens=4)
+    assert len(led.entries) == 1 and led.verify()
+    # without a ledger, no wrapping (unchanged surface)
+    assert not isinstance(make_endpoint_proposer("stub"), LedgeredProposer)

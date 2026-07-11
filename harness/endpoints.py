@@ -128,7 +128,10 @@ class AnthropicBackend:
 
 @dataclass
 class GeminiBackend:
-    """Google Gemini :generateContent (api key in the query string, per the API)."""
+    """Google Gemini :generateContent. The API key travels in the x-goog-api-key
+    HEADER, never the URL query string -- a query-string key leaks into access
+    logs, proxy logs, and browser history; the header does not. (Gemini accepts
+    both; the header is the non-leaking form.)"""
     name: str
     base_url: str
     model: str
@@ -146,8 +149,9 @@ class GeminiBackend:
                    "generationConfig": {"temperature": temperature, "maxOutputTokens": max_tokens}}
         if system:
             payload["systemInstruction"] = {"parts": [{"text": system}]}
-        url = f"{self.base_url}/models/{self.model}:generateContent?key={_k(self.key_env)}"
-        status, obj = _guard(self.transport, "POST", url, {"Content-Type": "application/json"},
+        url = f"{self.base_url}/models/{self.model}:generateContent"
+        headers = {"Content-Type": "application/json", "x-goog-api-key": _k(self.key_env)}
+        status, obj = _guard(self.transport, "POST", url, headers,
                              json.dumps(payload).encode(), self.timeout, self.name)
         try:
             text = "".join(p.get("text", "") for p in obj["candidates"][0]["content"]["parts"])
