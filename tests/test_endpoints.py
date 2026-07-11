@@ -55,6 +55,19 @@ def test_gemini_parses_candidates():
     assert out["text"] == "gm"
 
 
+def test_gemini_key_in_header_never_in_url(monkeypatch):
+    # Falsifier: a query-string key leaks into access/proxy logs and history. The
+    # key must ride the x-goog-api-key HEADER and NEVER appear in the request URL.
+    monkeypatch.setenv("GEMINI_API_KEY", "AIza-canary-secret-value")
+    sink = {}
+    b = GeminiBackend("gemini", "https://x/v1beta", "gemini-2.5-flash", key_env="GEMINI_API_KEY",
+                      transport=_tx(200, {"candidates": [{"content": {"parts": [{"text": "gm"}]}}]}, sink))
+    b.chat(_MSG, system="", max_tokens=10, temperature=0, seed=0)
+    assert sink["headers"]["x-goog-api-key"] == "AIza-canary-secret-value"
+    assert "AIza-canary-secret-value" not in sink["url"], "key leaked into the URL"
+    assert "?key=" not in sink["url"] and "key=" not in sink["url"]
+
+
 def test_error_response_is_typed_backend_error():
     b = OpenAICompatBackend("codex", "https://api.openai.com/v1", "gpt-4o",
                             key_env="OPENAI_API_KEY",

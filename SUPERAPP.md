@@ -179,14 +179,22 @@ sglang/lmstudio/llamacpp + native Anthropic/Gemini + claude/codex CLI tiers) wit
 credential-PRESENCE booleans (never a value), and `BackendProposer` bridges any
 native backend into a verified Proposer so EVERY endpoint feeds the same oracle+
 witness+receipt path -- provider provenance rides `model_ref` into the receipt.
-Remaining: mint receipts on
-`/chat/completions` and `/generate`; bind `artifact_sha256` from
-`model_profiles.py` into serve receipts; move the Gemini key to the header;
-chain every endpoint call (including enterprise proposer calls) into a
-`SessionLedger`. *Falsifier:* recompute a `/chat/completions` receipt_id from
-its recorded parts; mismatch means broken. Flip one byte in a stored ledger
-entry; if `verify()` still passes, broken. Serve a different GGUF; if the
-receipt's weights hash does not change, broken.
+Two more parts DONE 2026-07-11: (a) the Gemini key moved OUT of the URL query
+string into the `x-goog-api-key` HEADER (a query-string key leaks into access
+logs / proxy logs / history; a falsifier asserts a canary key value never appears
+in the request URL and does appear in the header). (b) `LedgeredProposer` in
+`endpoint_registry.py` chains EVERY endpoint call -- serve, OpenAI-compat, native
+Anthropic/Gemini, CLI, or the enterprise bridge -- into one tamper-evident
+`SessionLedger`: each entry commits to `(endpoint, model_ref, seed, prompt_sha,
+response_sha)`, never the prompt/response TEXT and never a key; `make_endpoint_
+proposer(..., ledger=...)` opts any endpoint into it. Falsifiers hold: flip one
+byte of a recorded entry and `verify()` fails; a prompt canary never appears in
+the serialized ledger. STILL DEFERRED (needs the live model to verify end to
+end): mint `make_receipt` on serve's `/chat/completions` and `/generate` and bind
+`artifact_sha256` from `model_profiles.py` into those receipts. *Deferred-part
+falsifier:* recompute a `/chat/completions` receipt_id from its recorded parts;
+mismatch means broken. Serve a different GGUF; if the receipt's weights hash does
+not change, broken.
 
 **Increment 4: the training lane in the shell, safety intact. STATUS HALF SHIPPED
 2026-07-11.** `harness/training_lane.py` (read-only) + `GET /api/training/status`
