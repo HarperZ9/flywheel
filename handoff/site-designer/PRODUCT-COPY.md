@@ -1,27 +1,32 @@
 # Flywheel: Product Copy
 
-Ready-to-place copy in the product voice. Take these verbatim or trim them. The
-one rule: do not add a claim the receipts do not support (see BENCHMARKS.md), and
-keep the honest nulls where they are.
+Ready-to-place copy in the product voice. Take these verbatim or trim them. Two
+rules: do not add a claim the receipts do not support (see BENCHMARKS.md), and
+keep the honest null where it is. It is what makes the strong claims believable.
+
+**Live source of truth:** the public repository is
+**https://github.com/HarperZ9/flywheel**. Its README is the canonical short pitch;
+this file expands it for the site.
 
 ---
 
 ## Name and one-liner
 
-**Flywheel** — a companion for every model.
+**Flywheel**: the router and harness that verifies.
 
 Alternate one-liners (pick per placement):
-- Route to any model. Verify what you can. Escalate the rest.
-- The router that also checks its work.
-- Bring your own model. Keep the receipts.
+- Route to any model. Verify every answer. Keep the receipt.
+- Does what every router does, plus the one thing none of them do.
+- Bring your keys, or bring your weights.
 
 ## Hero
 
 **Headline:** A companion for every model.
 
-**Subhead:** Bring whatever model you like, local or hosted. Flywheel routes to
-it, answers what it can verify locally for near-zero cost, escalates only the
-genuinely hard part, and hands you a receipt you can re-check yourself.
+**Subhead:** Route to any model, local or hosted, online or offline. Flywheel
+answers what it can verify, escalates only the hard part, and hands you a receipt
+you can re-run yourself. It does what every router and runner does, plus the one
+thing none of them do: it checks the work.
 
 **Primary call to action:** Watch the harness run
 **Secondary call to action:** See every tool
@@ -30,44 +35,50 @@ genuinely hard part, and hands you a receipt you can re-check yourself.
 
 Every number on every page is a fetch of a receipt file you can re-check offline.
 
-## The seam (why it exists)
+## Why Flywheel (the wedge)
 
-The frontier is remarkable, and the strongest reasoning today lives in hosted
-models. Flywheel is not here to out-reason them. It is here to make the model in
-front of you, whichever one it is, more efficient and more accountable to you.
+Routers route. Local runners run. Agent harnesses orchestrate. Not one of them
+checks whether the answer is right and hands you proof. Flywheel does all of their
+jobs on one surface, and adds the verify layer none of them have. The authority
+that accepts an answer is an external check, never a model grading its own work.
 
 Four supporting blurbs:
 
-- **Availability you control.** Hosted models come and go on a schedule set by
-  export policy and approval lists. A model on weights you hold is here when you
-  need it, on a plane, when the network is down.
+- **Every provider, one surface.** Local weights, a local server, or any hosted
+  provider you hold a key for. One roster, one verified path behind all of them,
+  credentials shown as presence only, never a value.
 - **A record you can keep.** Every accepted answer carries a receipt: the inputs,
-  the check that passed, and hashes anyone can re-run offline. You never take it
-  on faith.
-- **Efficiency, not replacement.** Flywheel sits underneath any harness, caches
-  what it has already verified, and routes only the genuinely hard part of a task
-  to the expensive tier.
-- **Smaller and smaller hardware.** A capable coder in a single file just under
-  9 GB runs on an ordinary machine today. The work ahead is keeping more
-  capability in less space.
+  the check that passed, and hashes anyone can re-run offline. This is the layer no
+  other router has.
+- **Answer local, escalate the hard part.** Flywheel answers what it can verify
+  locally for near-zero cost, and routes only the genuinely hard slice to a
+  stronger tier, on evidence, not a guess.
+- **Yours when the network is not.** Bring your keys and it routes online. Bring
+  your weights and a capable coder in a single file just under 9 GB runs offline,
+  on a plane, when the network is down.
 
-## What makes it different (the wedge)
+## How it compares (build this as a comparison table)
 
-Every other router routes. This one routes and verifies. The authority that
-accepts an answer is an external check, never a model grading its own work. Point
-it at your local model, a local server, or any hosted provider you hold a key for,
-and the same verified path runs behind all of them.
+| | Ordinary router | Local runner | Agent harness | Flywheel |
+|---|---|---|---|---|
+| Routes to many providers | Yes | No | Some | Yes |
+| Runs a local model | No | Yes | Some | Yes |
+| Works offline | No | Yes | No | Yes |
+| Accepts on an external check | No | No | No | Yes |
+| Re-checkable receipt per answer | No | No | No | Yes |
+| Answers local, escalates the hard part | No | No | No | Yes |
+| One root-hashed shared state | No | No | No | Yes |
+| Zero dependencies, one file to run | Varies | Varies | No | Yes |
 
 ## Feature blurbs (for a features grid)
 
 - **The universal router.** Every provider in one roster, local weights to hosted
-  APIs, with one verified path behind them all. Credentials show as presence only.
-  No key value ever appears or leaves your machine.
+  APIs, with one verified path behind them all. Route to any of them and get a
+  receipt with the answer.
 - **The companion seat.** Answers locally when it can verify the result, and
   escalates only the hard slice. The stronger tier is named, never called for you.
 - **The studio.** Turn a plain goal into a structured prompt whose success a
-  machine can check. Confidence is grounded in what an outside check can confirm,
-  not in how the goal is worded.
+  machine can check. Confidence is grounded in what an outside check can confirm.
 - **The projected world.** One document you and the model both read, sealed under
   a root hash. Change one byte and the hash moves.
 - **Receipts everywhere.** Content-addressed and re-checkable. Tamper with one and
@@ -79,13 +90,27 @@ and the same verified path runs behind all of them.
 python scripts/run_harness_cli.py app --port 8799
 ```
 
-Then open the surface in a browser. Zero dependencies, fully offline.
+Then open the surface in a browser. Zero dependencies. Route online with your
+keys, or run fully offline against local weights.
+
+## The vision (a manifesto block, present it in full)
+
+Flywheel is the front surface of a verified-inference flywheel: propose with a
+cheap local model, dispose with an external check, keep the re-checkable receipt,
+and let what passes accumulate. The model is the replaceable half; the
+verification harness is the durable half. The same discipline, an external check
+that can fail plus a receipt anyone can re-run, scales from routing a single call
+to composing a whole spine of accountable tools. This is the largest of those
+tools, and the front door to all of them.
 
 ## Honest status (keep this, do not soften it)
 
-We do not claim a capability uplift. The honest, measurable claims today are 100%
-receipt reproducibility, pass parity with the models we route to, availability on
-your own schedule, and local cost. The numbers move the day the evidence does.
+Flywheel's advantages are in the product, and they are real: it routes to more
+places, verifies where nothing else does, runs offline, and reproduces every
+receipt. On the separate question of whether verified inference makes the model
+itself measurably smarter, it does not overclaim: the measured lift is within
+noise today, and it says so. A tool that refuses to overclaim is a tool whose
+other claims you can trust.
 
 ## Footer line
 

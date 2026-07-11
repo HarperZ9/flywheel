@@ -253,6 +253,71 @@ def companion_answer(seat, prompt: str, solution_sig: str = "") -> dict:
     return out
 
 
+# One ledger for the gateway's lifetime so every routed call across every provider
+# chains into ONE tamper-evident record (the audit trail no other router keeps).
+_ROUTER_LEDGER = None
+
+
+def _router_ledger():
+    global _ROUTER_LEDGER
+    if _ROUTER_LEDGER is None:
+        try:
+            from harness.local_session import SessionLedger
+        except Exception:
+            try:
+                from local_session import SessionLedger
+            except Exception:
+                return None
+        _ROUTER_LEDGER = SessionLedger()
+    return _ROUTER_LEDGER
+
+
+def route_answer(prompt: str, endpoint: str, proposer, *, credential: str = "local-none") -> dict:
+    """Send ONE prompt to a chosen provider's proposer and mint a re-checkable
+    receipt binding the response to the endpoint and its model_ref. This is the
+    universal router other routers are, plus the verify layer they are not: the
+    receipt_id recomputes from (request, prompt, model_ref, response), and provider
+    provenance rides the receipt. Same call shape for a local model or any hosted
+    provider -- one path behind all of them."""
+    from harness.messages_api import make_receipt
+    out = proposer.generate(prompt, seed=0, temperature=0.0, max_new_tokens=512, system="")
+    gen = {"text": out.text, "seed": getattr(out, "seed", 0),
+           "prompt_hash": getattr(out, "prompt_hash", "")}
+    receipt = make_receipt(
+        {"prompt": prompt, "system": "", "max_new_tokens": 512, "temperature": 0.0, "seed": 0},
+        gen, out.model_ref)
+    return {"schema": "flywheel.route-result/v1", "endpoint": endpoint,
+            "model_ref": out.model_ref, "text": out.text, "receipt": receipt,
+            "credential": credential}
+
+
+def route_request(prompt: str, endpoint: str) -> tuple[dict, int]:
+    """Validate + route a request to a named endpoint. Returns (body, http_code).
+    Credential PRESENCE gate: an endpoint with no key present is refused honestly
+    (never a silent local fallback), and no key value is ever read or returned."""
+    roster = _unified_roster()
+    entry = next((e for e in roster.get("endpoints", []) if e["name"] == endpoint), None)
+    if entry is None:
+        usable = roster.get("usable_names", [])
+        return {"error": f"unknown endpoint {endpoint!r}", "usable": usable}, 404
+    if entry.get("credential") == "absent":
+        return {"error": f"endpoint {endpoint!r} has no credential present; set its API "
+                f"key in the environment (presence only, never read here)",
+                "credential": "absent"}, 400
+    try:
+        from harness.endpoint_registry import make_endpoint_proposer
+    except Exception:
+        from endpoint_registry import make_endpoint_proposer
+    try:
+        prop = make_endpoint_proposer(endpoint, ledger=_router_ledger())
+    except Exception as e:
+        return {"error": f"cannot build a proposer for {endpoint!r}: {e}"}, 502
+    try:
+        return route_answer(prompt, endpoint, prop, credential=entry.get("credential", "")), 200
+    except Exception as e:
+        return {"error": f"provider call failed: {e}"}, 502
+
+
 class _Handler(BaseHTTPRequestHandler):
     root = REPO
     serve_url = "http://127.0.0.1:8765"
@@ -353,6 +418,20 @@ class _Handler(BaseHTTPRequestHandler):
             return self._json(_forge(goal, examples=req.get("examples"),
                                      documentation=req.get("documentation"),
                                      context=req.get("context", "")))
+        if p == "/api/route":                         # universal router: send to ANY provider, with a receipt
+            length = self._content_length()
+            if length is None:
+                return self._json({"error": "invalid or oversized Content-Length"}, 400)
+            try:
+                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
+            except Exception:
+                req = {}
+            prompt = (req.get("prompt") or "").strip()
+            endpoint = (req.get("endpoint") or "").strip()
+            if not prompt or not endpoint:
+                return self._json({"error": "provide non-empty 'prompt' and 'endpoint'"}, 400)
+            body, code = route_request(prompt, endpoint)
+            return self._json(body, code)
         if p == "/api/companion":                     # the seat: answer local, escalate the hard slice
             length = self._content_length()
             if length is None:
@@ -390,6 +469,7 @@ def main(argv=None) -> int:
     print(f"  health    http://127.0.0.1:{a.port}/api/endpoints/health")
     print(f"  router    http://127.0.0.1:{a.port}/api/endpoints    (all providers)")
     print(f"  studio    POST /api/forge {{'goal': ...}}            (goal -> verified PRP)")
+    print(f"  route     POST /api/route {{'prompt':...,'endpoint':...}} (any provider + a receipt)")
     print(f"  companion POST /api/companion {{'prompt': ...}}      (answer local, escalate hard)")
     print(f"  training  http://127.0.0.1:{a.port}/api/training/status  (read-only supervisor status)")
     try:

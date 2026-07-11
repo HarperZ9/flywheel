@@ -10,6 +10,31 @@
 
 Last updated: 2026-07-11
 
+## 2026-07-11 (session 9) -- public launch, universal routing, reposition
+
+- **Flywheel is PUBLIC:** curated clean release shipped as a NEW repo
+  github.com/HarperZ9/flywheel (PUBLIC, FSL-1.1-MIT, fresh history so no
+  DO-NOT-PUBLISH commits). The private local-model repo STAYS private and must
+  never be flipped (its tree + history carry DO-NOT-PUBLISH + internal trees).
+  Triple-certified + fresh-clone verified (clean + runs). Sanitized two real
+  source leaks first (run_harness_cli --codex-config C:/Users/Zain/... -> ~, and
+  publish_lint fixture build path).
+- **/api/route (universal routing, honest):** the surface now ROUTES to any of the
+  20 providers (not just local), via make_endpoint_proposer, minting a re-checkable
+  receipt binding response to endpoint+model_ref, credential-presence gated (no key
+  -> honest 400, never a silent local fallback). This makes "full operability with
+  all providers" true end to end. Shell gained a live route panel (provider dropdown
+  + Route button). 4 falsifiers + live-smoked.
+- **Repositioned (operator: not offline-only; better than all existing apps/
+  harnesses):** README/QUICKSTART/WALKTHROUGH/shell now lead feature-first best-in-
+  class ("the router and harness that verifies"; online AND offline; a how-it-
+  compares table). Dropped "companion, not a competitor" + offline-only framing.
+  KEPT the honest null on MODEL capability (product superiority is the true axis;
+  model-smarter claim stays within intervals). All em-dashes removed (voice rule).
+- **Handoff refreshed:** handoff/site-designer/* (PRODUCT-COPY/SPEC-SHEET/BRAND-
+  VOICE/README) repositioned + references github.com/HarperZ9/flywheel + the full
+  vision; both zips rebuilt. Designer package = flywheel-site-designer-handoff.zip.
+
 ## 2026-07-11 (session 8) -- superapp increments 3/4/5 to launch-ready
 
 Drove the superapp toward launch-readiness. Every module ships with its

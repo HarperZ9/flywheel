@@ -16,7 +16,7 @@ every accepted answer. One browser surface shows all of it.
 | | |
 |---|---|
 | Dependencies | None. Python standard library only. |
-| Network | Fully offline for the local path. Hosted providers are opt-in. |
+| Network | Your choice per call: route online with hosted-provider keys, or run fully offline against local weights. |
 | Entry point | `python scripts/run_harness_cli.py app --port 8799` |
 | Surface | One origin, one browser page, same-origin JSON routes |
 | Local model | Flywheel-Local-Coder-14B, ~9 GB 4-bit, GPU optional |
@@ -30,6 +30,7 @@ every accepted answer. One browser surface shows all of it.
 | `/site/index.html` | GET | The shell: router, world, companion, studio, demos, receipts |
 | `/api/endpoints` | GET | The universal router roster, credential presence only |
 | `/api/endpoints/health` | GET | Live probe of local tiers; hosted tiers report configured-or-not |
+| `/api/route` | POST | Route to any provider and get a receipt with the answer |
 | `/api/companion` | POST | Answer locally, escalate the hard slice |
 | `/api/forge` | POST | Goal into a checkable structured prompt |
 | `/api/world` | GET | Root-hashed projected state |

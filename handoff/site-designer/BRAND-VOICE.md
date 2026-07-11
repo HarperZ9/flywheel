@@ -4,8 +4,9 @@ The one-paragraph brief, then the rules. This exists so the marketing site and t
 running app read as one product made by one hand.
 
 Flywheel leads with wonder, earns trust by trying to break its own claims, and
-shows its work. The tone is calm and human. It is a companion standing beside the
-reader's model, not a competitor to the frontier.
+shows its work. The tone is calm and human, and confident. It works with any model
+the reader brings, and it is unapologetically the best tool for the job: the router
+and harness that also verifies. Calm confidence, not hype.
 
 ---
 
@@ -25,8 +26,15 @@ reader's model, not a competitor to the frontier.
 - **No dead ends.** Do not tease a feature that is not live, and keep internal
   status labels off any public page. If it is not real yet, it does not go on the
   surface.
-- **Companion framing.** "A companion for every model." Not a challenger, not a
-  replacement. The model is the replaceable half; the harness is the durable half.
+- **Confident register.** "A companion for every model" means it works with any
+  model, not that it is timid. Lead with what makes it the best option: it routes to
+  everything and verifies where nothing else does. It does what the other routers,
+  runners, and harnesses do, plus the one thing none of them do. The model is the
+  replaceable half; the harness is the durable half.
+- **Best-in-class, honestly.** Claim product superiority plainly, because it is
+  true and specific (route plus verify, receipts, one surface, offline capable).
+  Never dress up the model's measured capability beyond what the intervals show.
+  The two are different axes; be bold on the first, exact on the second.
 
 ## Words to avoid on the site
 
