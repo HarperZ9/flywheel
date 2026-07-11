@@ -143,6 +143,16 @@ def _unified_roster() -> dict:
     return unified_roster()
 
 
+def _projected_world(root: Path) -> dict:
+    """The full projected world (world.py: roster + findings + cursor, root-hashed).
+    Falls back to the inline v0 receipt catalog if world.py is unavailable."""
+    try:
+        from harness.world import project_world
+        return project_world(repo_root=root)
+    except Exception:
+        return world_state(root)
+
+
 def _forge(goal: str, **kw) -> dict:
     """Goal -> a verified PRP (context_forge): criterion-bearing spec + validation
     gates + confidence grounded in external-checkability. The studio front door."""
@@ -216,7 +226,7 @@ class _Handler(BaseHTTPRequestHandler):
         if p == "/api/endpoints":
             return self._json(_unified_roster())     # full universal-router roster
         if p == "/api/world":
-            return self._json(world_state(self.root))
+            return self._json(_projected_world(self.root))
         if p.startswith("/v1/") or p == "/generate" or p == "/health":
             return self._proxy(self.serve_url.rstrip("/") + p)
         return self._static(p)
