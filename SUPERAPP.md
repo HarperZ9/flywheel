@@ -4,7 +4,9 @@
 > (showcase, packaged-app, companion, endpoints, training, projected-world).
 > Spec only. Nothing here is committed, published, or launched by this document.
 
-Last updated: 2026-07-09. Source commit context: ff8b781 (packaged), af5feda (showcase).
+Last updated: 2026-07-11 (session 8: increments 3/4/5 + subsystem c + shell views
+shipped; adversarial closure review closed 7 findings). Source commit context:
+ff8b781 (packaged), af5feda (showcase).
 
 ---
 
