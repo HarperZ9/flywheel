@@ -144,7 +144,7 @@ def _iter_files(paths: list[str]):
 # ---- Selftest falsifier: the linter must be able to catch AND to pass -------
 _DIRTY = (
     "Status: staged\n"
-    "Download from C:\\dev\\local-model and set token hf_ABCDEFGHIJKLMNOPQRSTUV.\n"
+    "Download from C:\\Users\\you\\project and set token hf_ABCDEFGHIJKLMNOPQRSTUV.\n"
     "No benchmark has been run yet.\n"
 )
 _CLEAN = (

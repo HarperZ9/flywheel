@@ -800,7 +800,8 @@ def build_parser() -> argparse.ArgumentParser:
 
     codex_mcp = subparsers.add_parser("codex-mcp-contract", help="emit Codex MCP launch and fallback contract")
     _add_common_io(codex_mcp)
-    codex_mcp.add_argument("--codex-config", default="C:/Users/Zain/.codex/config.toml")
+    codex_mcp.add_argument("--codex-config",
+                           default=os.path.join(os.path.expanduser("~"), ".codex", "config.toml"))
     codex_mcp.add_argument("--tools", default="index,forum,gather,crucible,telos")
     codex_mcp.add_argument("--observation", action="append", default=[])
 
