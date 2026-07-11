@@ -39,7 +39,7 @@ from harness.task import load_task
 
 TEMPS = [0.0, 0.4, 0.8, 1.1]
 DEFAULT_SERVE = "http://127.0.0.1:8765"
-DEFAULT_WORK = Path(os.environ.get("LOCAL_MODEL_RUN_ROOT", "C:/local-model-run")).expanduser()
+DEFAULT_WORK = Path(os.environ.get("LOCAL_MODEL_RUN_ROOT", "E:/local-model-run/work")).expanduser()
 WORK = (DEFAULT_WORK / "tmp" / "ablation").resolve()
 
 
@@ -66,89 +66,20 @@ def run_pytest(workdir: Path, candidate: str, test_src: str, timeout: int = 30) 
         return False
 
 
-# --- verified_consensus: an oracle-INDEPENDENT selector (MBR-exec) -----------
-# The model authors nothing. Candidates are executed on a battery of inputs the
-# operating surface decides in advance; the candidate in the largest behavioral
-# cluster is selected. This is exactly the "world decided in advance" thesis as
-# a filter, and it dodges verified_self's 70%-malformed failure (no self-test).
-_PROBE_POOL = [0, 1, -1, 7, 2, [], [1], [3, 1, 2], [1, 1, 2, 3],
-               "", "a", "abba", "hello", [0], [5, 5]]
-
-
-def _battery(arity: int, n: int = 12) -> list[tuple]:
-    """Pre-decided typed input tuples for the given arity. Rotations over a
-    fixed mixed-type pool so different-behaving candidates diverge."""
-    if not arity or arity < 1:
-        arity = 1
-    out = []
-    for i in range(n):
-        out.append(tuple(_PROBE_POOL[(i + j) % len(_PROBE_POOL)] for j in range(arity)))
-    return out
-
-
-def _signature(candidate: str, fn: str, battery: list[tuple], workdir: Path,
-               idx: int, timeout: int = 20):
-    """Behavioral fingerprint: run fn on each battery input, record repr or
-    exception type. Unrunnable candidates get a unique signature (never cluster)."""
-    workdir.mkdir(parents=True, exist_ok=True)
-    (workdir / "solution.py").write_text(candidate, encoding="utf-8")
-    driver = (
-        "import json, solution\n"
-        f"B={battery!r}\n"
-        "out=[]\n"
-        "for a in B:\n"
-        "    try:\n"
-        f"        r=solution.{fn}(*a)\n"
-        "        out.append(repr(r)[:200])\n"
-        "    except Exception as e:\n"
-        "        out.append('EXC:'+type(e).__name__)\n"
-        "print(json.dumps(out))\n")
-    (workdir / "driver.py").write_text(driver, encoding="utf-8")
-    proc = subprocess.Popen(
-        [sys.executable, "driver.py"], cwd=workdir,
-        stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-        env={**os.environ, "PYTHONDONTWRITEBYTECODE": "1"})
-    try:
-        out, _ = proc.communicate(timeout=timeout)
-        if proc.returncode != 0:
-            return ("UNRUNNABLE", idx)
-        return tuple(json.loads(out.decode("utf-8", "replace").strip().splitlines()[-1]))
-    except subprocess.TimeoutExpired:
-        _kill_tree(proc)
-        try:
-            proc.communicate(timeout=5)
-        except Exception:
-            pass
-        return ("TIMEOUT", idx)
-    except Exception:
-        return ("UNRUNNABLE", idx)
-
-
-def consensus_select(candidates: list[str], fn: str, arity: int, workdir: Path) -> int:
-    """Return the index of a candidate in the largest behavioral cluster;
-    tie-break to the lowest index (candidate[0] = the temp-0 single-shot passer,
-    so the single-shot solves are never lost to a wrong plurality)."""
-    if not fn:
-        return 0
-    battery = _battery(arity)
-    sigs = [_signature(c, fn, battery, workdir / f"c{j}", j) for j, c in enumerate(candidates)]
-    clusters: dict = {}
-    for j, s in enumerate(sigs):
-        clusters.setdefault(s, []).append(j)
-
-    def _productive(sig) -> bool:
-        # A candidate that raises on every input (or won't run) is not
-        # "agreeing" — shared failure is not productive consensus. Only a
-        # signature with at least one real return value counts.
-        if not isinstance(sig, tuple) or (sig and sig[0] in ("UNRUNNABLE", "TIMEOUT")):
-            return False
-        return any(isinstance(x, str) and not x.startswith("EXC:") for x in sig)
-
-    # prefer productive clusters; then largest; then the one holding index 0
-    # (protecting the temp-0 single-shot passer). Fall back to candidate[0].
-    best = max(clusters.values(),
-               key=lambda m: (_productive(sigs[m[0]]), len(m), -min(m)))
-    return min(best) if _productive(sigs[best[0]]) else 0
+# --- verified_consensus: the oracle-INDEPENDENT selector (MBR-exec) ----------
+# PROMOTED 2026-07-10 to the harness component `harness/selector.py` (the model
+# authors nothing; candidates run on a pre-decided typed battery and the largest
+# behavioral cluster is selected -- the "world decided in advance" thesis as a
+# filter). Re-exported here under this script's historical names so existing
+# callers and tests keep working against one canonical implementation.
+from harness.selector import (  # noqa: E402
+    battery as _battery,
+    infer_param_types as _infer_param_types,
+    consensus_select,
+    _signature,
+    _INT_POOL, _STR_POOL, _LIST_INT_POOL, _LIST_STR_POOL,
+    _BOOL_POOL, _DICT_POOL, _MATRIX_POOL, _MIXED_POOL, _TYPE_POOLS,
+)
 
 
 def main() -> int:
@@ -239,7 +170,8 @@ def main() -> int:
             # verified_consensus: oracle-independent behavioral selection.
             fn = _fn_name(spec.solution)
             arity = _fn_arity(spec.solution) or 1
-            cidx = consensus_select(cands, fn, arity, wd / "cons")
+            ptypes = _infer_param_types(spec.solution)
+            cidx, cconf = consensus_select(cands, fn, arity, wd / "cons", param_types=ptypes)
             cons = oracle.verify(cands[cidx], task).passed
             ver_dt = time.monotonic() - t_ver
 

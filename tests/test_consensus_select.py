@@ -26,25 +26,28 @@ BROKEN = "def f(a):\n    return undefined_name\n"  # raises on every input
 
 def test_majority_behavior_wins(tmp_path):
     # 3 agree (GOOD/GOOD2/GOOD2), 1 disagrees (WRONG) -> pick from the majority
-    idx = ra.consensus_select([WRONG, GOOD, GOOD2, GOOD2], "f", 1, tmp_path)
+    idx, conf = ra.consensus_select([WRONG, GOOD, GOOD2, GOOD2], "f", 1, tmp_path)
     assert idx in (1, 2, 3)  # a member of the 3-candidate GOOD cluster
+    assert conf == 0.75      # 3 of 4 candidates in the winning cluster
 
 
 def test_tie_breaks_to_index_zero(tmp_path):
     # two clusters of equal size (GOOD,GOOD2) vs (WRONG,WRONG2); the cluster
     # containing index 0 must win, protecting the single-shot passer at [0]
     WRONG2 = "def f(a):\n    return a - 1  # dup\n"
-    idx = ra.consensus_select([GOOD, WRONG, GOOD2, WRONG2], "f", 1, tmp_path)
+    idx, conf = ra.consensus_select([GOOD, WRONG, GOOD2, WRONG2], "f", 1, tmp_path)
     assert idx == 0
+    assert conf == 0.5       # tie: winning cluster holds 2 of 4
 
 
 def test_broken_candidate_never_forms_majority(tmp_path):
     # one real answer + broken siblings that each fail to run -> the runnable
     # one is its own cluster; broken ones get unique signatures, never cluster
-    idx = ra.consensus_select([GOOD, BROKEN, BROKEN], "f", 1, tmp_path)
+    idx, conf = ra.consensus_select([GOOD, BROKEN, BROKEN], "f", 1, tmp_path)
     # GOOD is a singleton cluster (size 1); the two BROKEN are unique singletons
     # too -> tie among size-1 clusters, tie-break to lowest index = 0 (GOOD)
     assert idx == 0
+    assert conf > 0.0        # a productive (runnable) cluster was selected
 
 
 def test_battery_matches_arity():
