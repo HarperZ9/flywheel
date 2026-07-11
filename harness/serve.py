@@ -279,10 +279,10 @@ class _H(BaseHTTPRequestHandler):
         req_params = {"prompt": prompt, "system": system,
                       "max_new_tokens": max_new_tokens, "temperature": temperature,
                       "seed": seed}
-        receipt = make_receipt(req_params, payload, payload.get("model_ref", MODEL_REF))
-        if ARTIFACT_SHA256:
-            receipt["weights_sha256"] = ARTIFACT_SHA256
-        return receipt
+        # Pass the weights fingerprint INTO make_receipt so it is folded into the
+        # content-addressed receipt_id (re-checkable), not appended after the fact.
+        return make_receipt(req_params, payload, payload.get("model_ref", MODEL_REF),
+                            ARTIFACT_SHA256)
 
     def do_POST(self):
         if self.path not in ("/generate", "/chat/completions", "/v1/messages"):
@@ -297,7 +297,6 @@ class _H(BaseHTTPRequestHandler):
                 except ValueError as e:
                     self._send(400, error_response(str(e)))
                     return
-                served_ref = resolve_model(params.get("requested_model", ""), MODEL_REF)
                 payload = generate(
                     params["prompt"],
                     int(params.get("max_new_tokens", 512)),
@@ -306,6 +305,12 @@ class _H(BaseHTTPRequestHandler):
                     int(params.get("seed", 0)),
                     params.get("system", ""),
                 )
+                # The receipt records the TRUE served model (provenance), not the
+                # client-supplied name -- an unrecognized model string passes
+                # resolve_model through verbatim, so keying the receipt on it would
+                # let a client forge which model produced the answer. The response
+                # 'model' field still echoes the requested name (client contract).
+                served_ref = payload.get("model_ref", MODEL_REF)
                 reply = translate_response(payload, params, served_ref)
                 receipt_id = reply.get("x_receipt", {}).get("receipt_id")
                 self._send(200, reply, {"X-Receipt-Id": receipt_id})

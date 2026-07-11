@@ -109,14 +109,41 @@ GOOD = "def f(a):\n    return a + 1\n"
 # --- 1. cache hit --------------------------------------------------------------
 
 def test_cache_hit_answers_without_running_selector():
+    # A cache hit is served only if it STILL re-checks now, so the cached text must
+    # be one the oracle accepts (here GOOD contains "+ 1").
     cache = DictCache()
-    cache.store[_task_key(TASK, SIG)] = {"text": "cached answer", "receipt": {"v": 1}}
+    cache.store[_task_key(TASK, SIG)] = {"text": GOOD, "receipt": {"v": 1}}
     prop = OneCandidateProposer(GOOD)          # would generate if reached
     seat = CompanionSeat(prop, oracle=FakeOracle("+ 1"), cache=cache)
     res = seat.answer(TASK, solution_sig=SIG)
     assert res.source == CACHE
-    assert res.text == "cached answer"
-    assert prop.calls == 0                     # selector never ran -- ~0 cost
+    assert res.text == GOOD
+    assert prop.calls == 0                     # selector never ran -- no re-generation
+
+
+def test_stale_cache_hit_is_reverified_not_served_blindly():
+    # C2 / 'never stale': a cached answer that NO LONGER passes the oracle (external
+    # state drifted) must NOT be served as a verified CACHE hit -- the seat re-checks
+    # and falls through to a fresh verified selection instead.
+    cache = DictCache()
+    cache.store[_task_key(TASK, SIG)] = {"text": "def f(a):\n    return a - 1\n",
+                                         "receipt": {"v": 1}}   # would NOT pass now
+    prop = OneCandidateProposer(GOOD)
+    seat = CompanionSeat(prop, oracle=FakeOracle("+ 1"), cache=cache)
+    res = seat.answer(TASK, solution_sig=SIG)
+    assert res.source == LOCAL_VERIFIED        # stale hit discarded -> fresh verified run
+    assert res.text == GOOD
+    assert prop.calls > 0                      # the seat did re-generate + re-verify
+
+
+def test_cache_hit_without_oracle_is_not_trusted():
+    # With no oracle to re-check, a stored answer is not a verified fact -> ignored.
+    cache = DictCache()
+    cache.store[_task_key(TASK, SIG)] = {"text": GOOD, "receipt": {"v": 1}}
+    prop = DiverseCorrectProposer()
+    seat = CompanionSeat(prop, oracle=None, cache=cache)
+    res = seat.answer(TASK, solution_sig=SIG)
+    assert res.source != CACHE                  # no oracle -> hit not trusted as verified
 
 
 # --- 2. local verified (oracle PASS) + cache round-trip ------------------------

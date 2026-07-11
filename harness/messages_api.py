@@ -68,19 +68,33 @@ def translate_request(body: dict) -> dict:
     }
 
 
-def make_receipt(req_params: dict, gen: dict, served_ref: str) -> dict:
-    """A per-turn receipt binding request ⊕ prompt ⊕ model ⊕ response. The
-    receipt_id is content-addressed, so identical turns share an id (idempotent),
-    and any change to request or response changes it."""
+def make_receipt(req_params: dict, gen: dict, served_ref: str,
+                 weights_sha256: str = "") -> dict:
+    """A per-turn receipt binding request ⊕ prompt ⊕ model ⊕ response (⊕ weights).
+    The receipt_id is content-addressed, so identical turns share an id
+    (idempotent), and any change to request or response changes it.
+
+    When a weights fingerprint is supplied it is folded into the receipt_id
+    PREIMAGE (not merely stored alongside), so tampering with it breaks the
+    recompute and two weight files that share a coarse model_ref but differ in
+    artifact hash yield DISTINCT receipt_ids -- the provenance field is genuinely
+    re-checkable, never a write-only claim. Omitted (default) -> byte-identical to
+    the prior no-fingerprint receipt."""
     request_hash = _h(json.dumps(
         {k: req_params.get(k) for k in ("prompt", "system", "max_new_tokens",
                                         "temperature", "seed")}, sort_keys=True))[:16]
     response_hash = _h(gen.get("text", ""))[:16]
     prompt_hash = gen.get("prompt_hash", _h(req_params.get("prompt", ""))[:16])
-    receipt_id = _h("|".join([request_hash, prompt_hash, served_ref, response_hash]))[:20]
-    return {"receipt_id": receipt_id, "request_hash": request_hash,
-            "response_hash": response_hash, "prompt_hash": prompt_hash,
-            "model_ref": served_ref, "seed": gen.get("seed", req_params.get("seed", 0))}
+    parts = [request_hash, prompt_hash, served_ref, response_hash]
+    if weights_sha256:
+        parts.append(weights_sha256)
+    receipt_id = _h("|".join(parts))[:20]
+    receipt = {"receipt_id": receipt_id, "request_hash": request_hash,
+               "response_hash": response_hash, "prompt_hash": prompt_hash,
+               "model_ref": served_ref, "seed": gen.get("seed", req_params.get("seed", 0))}
+    if weights_sha256:
+        receipt["weights_sha256"] = weights_sha256
+    return receipt
 
 
 def translate_response(gen: dict, req_params: dict, served_ref: str) -> dict:
