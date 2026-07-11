@@ -49,6 +49,15 @@ changed-module slice.
   static open, revealed only when the gateway answers. Verified live at the DOM
   level; publish_lint --strict clean. (Fixed a regression: the /api/world upgrade
   had changed `spine` list->dict, silently breaking the #live render.)
+- **Adversarial closure review + fixes.** Ran a read-only multi-agent review over
+  the whole session's diff (finder per failure-class -> independent refuter per
+  finding). 7 confirmed defects, all breaking load-bearing falsifiers, now fixed
+  with new falsifier tests (commit bd6f37d): the reconcile missed waiting-for-RAM;
+  the weights fingerprint was write-only (now in the receipt_id preimage); the
+  companion cache served stale hits (now re-verifies); gateway Content-Length +
+  call-guards crashed the handler (now 400 / honest error); screen_alive matched
+  Dead sessions; /v1/messages receipt keyed on the client model name. 1 finding
+  refuted (the seat-singleton race is harmless at oracle=None). 139 passed.
 - **Launch-readiness:** `QUICKSTART.md` (user-register, run-it-now) passes
   publish_lint --strict clean; the shell passes clean; publish_lint --selftest
   PASSES. Entry point: `run_harness_cli.py app` (forwards --run-root).
