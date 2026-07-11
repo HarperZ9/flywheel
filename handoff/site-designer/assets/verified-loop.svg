@@ -1,0 +1,74 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 520" font-family="ui-sans-serif, system-ui, Segoe UI, sans-serif">
+  <style>
+    :root{ --bg:#faf7f2; --ink:#1c1a17; --muted:#5c574f; --line:#e4ddd2; --card:#fffdf9;
+      --accent:#5b57d1; --accent-soft:#ecebfb; --warm:#c8781f; --ok:#2f7d4f; }
+    @media (prefers-color-scheme: dark){
+      :root{ --bg:#131211; --ink:#f0ece4; --muted:#a29b8f; --line:#2c2925; --card:#1b1917;
+        --accent:#a6a2f5; --accent-soft:#211f36; --warm:#e3a44f; --ok:#6fd39a; } }
+    .bg{ fill:var(--bg); }
+    .card{ fill:var(--card); stroke:var(--line); stroke-width:1.5; }
+    .accentbox{ fill:var(--accent-soft); stroke:var(--accent); stroke-width:1.5; }
+    .t{ fill:var(--ink); font-size:15px; font-weight:650; }
+    .s{ fill:var(--muted); font-size:11.5px; }
+    .cap{ fill:var(--warm); font-size:11px; font-weight:700; letter-spacing:.12em; }
+    .title{ fill:var(--ink); font-size:20px; font-weight:700; }
+    .loop{ stroke:var(--accent); stroke-width:2.4; fill:none; }
+    .back{ stroke:var(--warm); stroke-width:2; fill:none; stroke-dasharray:5 4; }
+    .ok{ fill:var(--ok); font-size:13px; font-weight:700; }
+  </style>
+  <rect class="bg" x="0" y="0" width="880" height="520"/>
+  <marker id="la" markerWidth="10" markerHeight="10" refX="7" refY="3" orient="auto">
+    <path d="M0,0 L7,3 L0,6 Z" fill="var(--accent)"/></marker>
+  <marker id="lw" markerWidth="10" markerHeight="10" refX="7" refY="3" orient="auto">
+    <path d="M0,0 L7,3 L0,6 Z" fill="var(--warm)"/></marker>
+
+  <text class="cap" x="40" y="40">THE VERIFIED-INFERENCE LOOP</text>
+  <text class="title" x="40" y="66">Propose cheap. Dispose external. Carry a re-checkable receipt.</text>
+
+  <!-- 1 PROPOSE -->
+  <rect class="card" x="60" y="150" width="220" height="88" rx="14"/>
+  <text class="cap" x="82" y="178">1  ·  PROPOSE</text>
+  <text class="t" x="82" y="200">Local model</text>
+  <text class="s" x="82" y="219">cheap, replaceable; raise N</text>
+  <text class="s" x="82" y="233">to widen the candidate pool</text>
+
+  <!-- 2 DISPOSE -->
+  <rect class="accentbox" x="330" y="150" width="220" height="88" rx="14"/>
+  <text class="cap" x="352" y="178">2  ·  DISPOSE</text>
+  <text class="t" x="352" y="200">External oracle</text>
+  <text class="s" x="352" y="219">the only thing that accepts;</text>
+  <text class="s" x="352" y="233">no learned model here (C2)</text>
+
+  <!-- 3 RECEIPT -->
+  <rect class="card" x="600" y="150" width="220" height="88" rx="14" stroke="var(--ok)"/>
+  <text class="cap" x="622" y="178" fill="var(--ok)">3  ·  RECEIPT</text>
+  <text class="t" x="622" y="200">Content-addressed</text>
+  <text class="s" x="622" y="219">re-derive it offline; tamper</text>
+  <text class="s" x="622" y="233">one byte and the check fails</text>
+
+  <path class="loop" d="M280,194 L330,194" marker-end="url(#la)"/>
+  <text class="s" x="288" y="186">candidates</text>
+  <path class="loop" d="M550,194 L600,194" marker-end="url(#la)"/>
+  <text class="ok" x="556" y="186">PASS</text>
+
+  <!-- receipt feeds cache -->
+  <rect class="card" x="600" y="300" width="220" height="66" rx="14"/>
+  <text class="t" x="622" y="326">Proof cache</text>
+  <text class="s" x="622" y="345">the next identical ask is free,</text>
+  <text class="s" x="622" y="358">re-checked before it is served</text>
+  <path class="loop" d="M710,238 L710,300" marker-end="url(#la)"/>
+
+  <!-- fail / raise N back edge -->
+  <path class="back" d="M440,238 C440,300 240,300 175,300" marker-end="url(#lw)"/>
+  <text class="cap" x="300" y="292" fill="var(--warm)">NO PASS  ·  RAISE N</text>
+  <path class="back" d="M160,300 L160,238" marker-end="url(#lw)"/>
+
+  <!-- escalate -->
+  <rect class="card" x="60" y="330" width="380" height="60" rx="14" stroke="var(--warm)"/>
+  <text class="t" x="82" y="356" fill="var(--warm)">Budget spent below confidence  →  Escalate</text>
+  <text class="s" x="82" y="374">route to a stronger tier; it is named, never called for you</text>
+  <path class="back" d="M160,300 C160,318 200,322 230,330" marker-end="url(#lw)"/>
+
+  <text class="s" x="40" y="470">Measured: an external oracle earns capability the model cannot self-select. Self-test earned +0; the external check is the lever.</text>
+  <text class="s" x="40" y="492">Every accepted answer, cached or fresh, carries the same receipt. The verifier can fail, which is what makes the pass mean something.</text>
+</svg>
