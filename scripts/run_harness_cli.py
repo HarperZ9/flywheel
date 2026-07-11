@@ -765,6 +765,7 @@ def build_parser() -> argparse.ArgumentParser:
     app.add_argument("--root", default=".")
     app.add_argument("--serve-url", default="http://127.0.0.1:8765")
     app.add_argument("--ollama-url", default="http://127.0.0.1:11434")
+    app.add_argument("--run-root", default="E:/local-model-run")
 
     registry = subparsers.add_parser("registry", help="emit static local HTML command registry")
     registry.add_argument("--store-root", default=DEFAULT_STORE_ROOT)
@@ -1476,7 +1477,7 @@ def build_command(args, *, repo_root: Path) -> list[str]:
     if args.command_name == "app":
         command = [py, "harness/gateway.py", "--port", str(args.port),
                    "--root", args.root, "--serve-url", args.serve_url,
-                   "--ollama-url", args.ollama_url]
+                   "--ollama-url", args.ollama_url, "--run-root", args.run_root]
         return command
     raise ValueError(f"unknown command: {args.command_name}")
 
