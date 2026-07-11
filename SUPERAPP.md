@@ -188,16 +188,26 @@ its recorded parts; mismatch means broken. Flip one byte in a stored ledger
 entry; if `verify()` still passes, broken. Serve a different GGUF; if the
 receipt's weights hash does not change, broken.
 
-**Increment 4: the training lane in the shell, safety intact.**
-`harness/training_lane.py` status + `/api/training/status` + gated
-start/graceful-stop actions with typed operator confirmation, double-launch
-guard, post-training receipt action wired to `dataset/receipt.py`.
-*Falsifier:* issue start twice; if a second `train32b` supervisor spawns,
-broken. Create STOP_32B via the shell during a RAM-wait; if the supervisor log
-does not record the stop, broken. If the status endpoint ever disagrees with
-`wsl screen -ls` about liveness, broken. If any exposed parameter can lower
-the 22 GB gate or alter seq_len/epochs, broken by design review, reject the
-patch.
+**Increment 4: the training lane in the shell, safety intact. STATUS HALF SHIPPED
+2026-07-11.** `harness/training_lane.py` (read-only) + `GET /api/training/status`
+are built and live: the status doc composes the log-derived `state`
+(stopped|waiting-for-RAM|training|completed|gave-up|unknown, parsed from the
+supervisor's own regex-stable lines), the screen-liveness probe, and checkpoint
+progress vs the 2,019-step target. The subsystem falsifier holds BY CONSTRUCTION:
+liveness is the `wsl screen -ls` probe and ONLY that probe (`screen_alive`), so the
+status can never disagree with screen about whether the run is alive; the
+log-derived `state` is a separate descriptor and a divergence sets `reconciled=
+False` (e.g. an in-flight attempt with a dead screen -> crashed without a terminal
+line). The `would_double_launch` guard is built and pure (refuses when a screen is
+alive OR unprobed OR the lock exists -- fail safe). 19 falsifier tests + 1 gateway
+route test; live-smoked (no run -> honest `stopped`, no crash). DELIBERATELY
+DEFERRED as an operator-gated surface, NOT built here: the start / graceful-stop /
+hard-stop ACTIONS and the post-training receipt action. Building status-only first
+honors the ordering rationale -- the most dangerous subsystem exposes read-only
+truth before any control. *Action-half falsifiers (when built):* issue start twice
+-> a second `train32b` supervisor must be refused; create STOP_32B via the shell
+during a RAM-wait -> the supervisor log must record the stop; any exposed parameter
+that can lower the 22 GB gate or alter seq_len/epochs is broken by design review.
 
 **Increment 5: the companion seat. SHIPPED 2026-07-11.** The selection+escalation
 CORE was built and measured (`harness/selector.py`, `harness/adaptive_select.py`,

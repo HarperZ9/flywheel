@@ -153,6 +153,19 @@ def _projected_world(root: Path) -> dict:
         return world_state(root)
 
 
+def _training_status(run_root: str) -> dict:
+    """Read-only 32B supervisor status (training_lane): log-derived state +
+    screen liveness + checkpoint progress. Graceful if the module is unavailable."""
+    try:
+        from harness.training_lane import training_status
+    except Exception:
+        try:
+            from training_lane import training_status  # standalone run
+        except Exception as e:
+            return {"error": f"training_lane unavailable: {e}"}
+    return training_status(run_root)
+
+
 def _forge(goal: str, **kw) -> dict:
     """Goal -> a verified PRP (context_forge): criterion-bearing spec + validation
     gates + confidence grounded in external-checkability. The studio front door."""
@@ -235,6 +248,7 @@ class _Handler(BaseHTTPRequestHandler):
     root = REPO
     serve_url = "http://127.0.0.1:8765"
     ollama_url = "http://127.0.0.1:11434"
+    run_root = "E:/local-model-run"
 
     def log_message(self, *a):  # quiet
         pass
@@ -292,6 +306,8 @@ class _Handler(BaseHTTPRequestHandler):
             return self._json(_unified_roster())     # full universal-router roster
         if p == "/api/world":
             return self._json(_projected_world(self.root))
+        if p == "/api/training/status":
+            return self._json(_training_status(self.run_root))
         if p.startswith("/v1/") or p == "/generate" or p == "/health":
             return self._proxy(self.serve_url.rstrip("/") + p)
         return self._static(p)
@@ -334,10 +350,12 @@ def main(argv=None) -> int:
     ap.add_argument("--root", default=str(REPO))
     ap.add_argument("--serve-url", default="http://127.0.0.1:8765")
     ap.add_argument("--ollama-url", default="http://127.0.0.1:11434")
+    ap.add_argument("--run-root", default="E:/local-model-run")
     a = ap.parse_args(argv)
     _Handler.root = Path(a.root).resolve()
     _Handler.serve_url = a.serve_url
     _Handler.ollama_url = a.ollama_url
+    _Handler.run_root = a.run_root
     httpd = ThreadingHTTPServer(("127.0.0.1", a.port), _Handler)
     print(f"flywheel gateway: http://127.0.0.1:{a.port}  root={_Handler.root}")
     print(f"  shell     http://127.0.0.1:{a.port}/site/index.html")
@@ -346,6 +364,7 @@ def main(argv=None) -> int:
     print(f"  router    http://127.0.0.1:{a.port}/api/endpoints    (all providers)")
     print(f"  studio    POST /api/forge {{'goal': ...}}            (goal -> verified PRP)")
     print(f"  companion POST /api/companion {{'prompt': ...}}      (answer local, escalate hard)")
+    print(f"  training  http://127.0.0.1:{a.port}/api/training/status  (read-only supervisor status)")
     try:
         httpd.serve_forever()
     except KeyboardInterrupt:
