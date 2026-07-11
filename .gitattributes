@@ -1,0 +1,8 @@
+# Shell scripts must stay LF: git autocrlf was rewriting them to CRLF on checkout,
+# which makes WSL bash die with `syntax error near unexpected token $'{\r''`.
+*.sh text eol=lf
+
+# Windows scripts stay CRLF.
+*.ps1 text eol=crlf
+*.cmd text eol=crlf
+*.bat text eol=crlf
