@@ -166,6 +166,71 @@ def _forge(goal: str, **kw) -> dict:
     return forge_prp(goal, **kw).to_dict()
 
 
+class _MemoryProofCache:
+    """The seat's verified-result cache for the gateway's lifetime: duck-typed
+    .get(key)/.put(key, value). ONLY oracle-verified (LOCAL_VERIFIED) answers are
+    ever written here (the seat's _maybe_cache gate) -- a consensus or escalate
+    result is never cached as if it were verified. In-process by design: nothing
+    is persisted to disk without the config-driven store the packaging increment
+    introduces (SUPERAPP storage discipline)."""
+
+    def __init__(self):
+        self.store: dict = {}
+
+    def get(self, key):
+        return self.store.get(key)
+
+    def put(self, key, value):
+        self.store[key] = value
+
+
+# One seat for the gateway's lifetime, so the proof cache and the routing ledger
+# ACCUMULATE across requests (the cache-hit falsifier needs a repeated ask to hit).
+_COMPANION_SEAT = None
+
+
+def _companion_task(prompt: str, solution_sig: str = ""):
+    """A duck-typed Task the seat/selector consume: they read .task_id/.prompt
+    (routing + key) and .max_new_tokens/.system (generation). Content-addressed
+    id so the same prompt keys the same cache slot."""
+    from types import SimpleNamespace
+    tid = hashlib.sha256(f"{prompt}|{solution_sig}".encode()).hexdigest()[:16]
+    return SimpleNamespace(task_id=tid, prompt=prompt, max_new_tokens=512, system="")
+
+
+def get_companion_seat(serve_url: str):
+    """Lazily build the gateway's single CompanionSeat over the local 14B (serve).
+    No oracle on this generic route: without something to verify against, the seat
+    can only reach consensus or escalate -- it never manufactures a PASS. A caller
+    with a real oracle uses the seat directly. Graceful: returns None if the seat
+    cannot be constructed (the route then reports the reason honestly)."""
+    global _COMPANION_SEAT
+    if _COMPANION_SEAT is not None:
+        return _COMPANION_SEAT
+    try:
+        from harness.companion import CompanionSeat
+        from harness.proposer import ServeProposer
+    except Exception:
+        return None
+    _COMPANION_SEAT = CompanionSeat(
+        ServeProposer(base_url=serve_url), oracle=None, cache=_MemoryProofCache(),
+        escalation_endpoint="anthropic", initial_n=4, max_n=16)
+    return _COMPANION_SEAT
+
+
+def companion_answer(seat, prompt: str, solution_sig: str = "") -> dict:
+    """Route one task through the seat and shape a JSON response. The frontier tier
+    is only NAMED on escalate (escalate_to); it is never called from here -- routing
+    to it is the caller's gated action, so a cache hit provably triggers no frontier
+    call (SUPERAPP increment-5 falsifier)."""
+    res = seat.answer(_companion_task(prompt, solution_sig), solution_sig=solution_sig)
+    out = res.to_dict()
+    out["text"] = res.text
+    out["best_effort_text"] = res.best_effort_text
+    out["ledger_len"] = len(seat.ledger)
+    return out
+
+
 class _Handler(BaseHTTPRequestHandler):
     root = REPO
     serve_url = "http://127.0.0.1:8765"
@@ -247,6 +312,19 @@ class _Handler(BaseHTTPRequestHandler):
             return self._json(_forge(goal, examples=req.get("examples"),
                                      documentation=req.get("documentation"),
                                      context=req.get("context", "")))
+        if p == "/api/companion":                     # the seat: answer local, escalate the hard slice
+            length = int(self.headers.get("Content-Length", 0))
+            try:
+                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
+            except Exception:
+                req = {}
+            prompt = (req.get("prompt") or "").strip()
+            if not prompt:
+                return self._json({"error": "provide a non-empty 'prompt'"}, 400)
+            seat = get_companion_seat(self.serve_url)
+            if seat is None:
+                return self._json({"error": "companion seat unavailable"}, 503)
+            return self._json(companion_answer(seat, prompt, req.get("solution_sig", "")))
         return self._json({"error": "not found"}, 404)
 
 
@@ -267,6 +345,7 @@ def main(argv=None) -> int:
     print(f"  health    http://127.0.0.1:{a.port}/api/endpoints/health")
     print(f"  router    http://127.0.0.1:{a.port}/api/endpoints    (all providers)")
     print(f"  studio    POST /api/forge {{'goal': ...}}            (goal -> verified PRP)")
+    print(f"  companion POST /api/companion {{'prompt': ...}}      (answer local, escalate hard)")
     try:
         httpd.serve_forever()
     except KeyboardInterrupt:
