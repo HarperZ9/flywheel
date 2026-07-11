@@ -199,22 +199,27 @@ does not record the stop, broken. If the status endpoint ever disagrees with
 the 22 GB gate or alter seq_len/epochs, broken by design review, reject the
 patch.
 
-**Increment 5: the companion seat.** The selection+escalation CORE is now built
-and measured (`harness/selector.py`, `harness/adaptive_select.py`, 2026-07-10):
-`select()` = oracle-first, consensus-fallback, receipt-emitting; `AdaptiveSelector`
-= generate → select → raise N → escalate-on-budget-exhaustion. What remains is
-`harness/companion.py` behind the gateway's OpenAI-compatible route (and as an MCP
-tool, the lone optional edge): proof-cache hit answers locally at ~0 cost with the
-stored receipt; cache miss goes to `AdaptiveSelector.select()` with the local 14B
-first; only its ESCALATE verdict routes to the frontier tier; every routing
-decision lands in the chained ledger with the SelectionReceipt attached. The
-measurements set the seat's defaults honestly: the oracle-free path recovers ~9%
-of the external oracle's lift at N=4, so the seat raises N before escalating, and
-escalates when the confidence gate stays unmet -- the "answer locally vs pay the
-expensive tier" decision made on evidence. *Falsifier:* submit a task whose fact
-is already proof-cached; if any frontier call appears in the ledger, broken.
-Submit a task the local model fails; if escalation occurs without a ledgered
-failed-local SelectionReceipt preceding it, broken.
+**Increment 5: the companion seat. SHIPPED 2026-07-11.** The selection+escalation
+CORE was built and measured (`harness/selector.py`, `harness/adaptive_select.py`,
+2026-07-10); `harness/companion.py` (2026-07-11) is the routing seat on top of it,
+and it is wired behind the gateway at `POST /api/companion`. Cheapest-first: a
+proof-cache hit answers at ~0 cost with the stored receipt; a miss goes to
+`AdaptiveSelector.select()` over the local 14B (`ServeProposer`); only an ESCALATE
+verdict (budget exhausted below confidence -- a threshold, not a learned guess)
+NAMES the frontier tier in `escalate_to`, never calling it inline. Only an
+oracle-verified `PASS` (`local-verified`) is written to the cache; a
+`CONSENSUS_PASS` (`local-consensus`) is flagged as agreement, not verification, and
+never cached. The gateway holds ONE seat for its lifetime so the cache and routing
+ledger accumulate across requests. *Falsifiers, both live:* a cached fact answers
+`source=cache` with no `escalate` row in the ledger (no frontier call); a local
+failure escalates with `text=None`, `escalate_to` named, `best_effort_text`
+preserved, and the ledgered failed-local `SelectionReceipt` (`verdict=ESCALATE`,
+`candidates_used>0`) as the evidence preceding it. 9/9 companion falsifiers + 3
+gateway companion falsifiers; live-smoked over the wire (serve down -> honest
+escalate, no crash; `/api/world` root-hashed; `/api/endpoints` 20/9). What remains
+is the OPTIONAL MCP-tool edge and, from increment 3, per-endpoint receipt minting
+on the serve routes (so a `local-verified` cache entry carries a weights-bound
+receipt end to end).
 
 Ordering rationale: 1 needs no new backend and makes drift impossible on day
 one; 2 creates the entry point everything else mounts on; 3 makes the receipt
