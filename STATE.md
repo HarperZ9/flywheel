@@ -35,17 +35,27 @@ changed-module slice.
   checkpoint progress. `would_double_launch` guard is pure + fail-safe. `GET
   /api/training/status`. Start/stop ACTIONS deliberately deferred as a separately
   confirmed surface -- status-only first, per the ordering rationale.
-- **Increment 3 two more parts done.** Gemini key moved out of the URL query
-  string into the `x-goog-api-key` header (canary never in the URL).
-  `LedgeredProposer` chains EVERY endpoint call into one tamper-evident
-  SessionLedger (commitments only -- no prompt/response text, no key); flip a
-  byte -> verify() fails. Serve-side receipt minting still needs the live model.
+- **Increment 3 COMPLETE in code.** Gemini key moved out of the URL query string
+  into the `x-goog-api-key` header (canary never in the URL). `LedgeredProposer`
+  chains EVERY endpoint call into one tamper-evident SessionLedger (commitments
+  only -- no prompt/response text, no key); flip a byte -> verify() fails. Serve's
+  `/chat/completions` + `/generate` now mint the same content-addressed receipt as
+  `/v1/messages` (X-Receipt-Id header + x_receipt body) and bind an optional
+  weights fingerprint (SERVE_ARTIFACT_SHA256); 7 falsifiers, no GPU. Only the live
+  round-trip (serve running the 14B) remains.
+- **Shell live views shipped.** The shell now renders the whole surface when
+  served: universal router roster (20 endpoints), companion + studio try-it
+  panels, training-status card, projected-world spine + root hash. Hidden on a
+  static open, revealed only when the gateway answers. Verified live at the DOM
+  level; publish_lint --strict clean. (Fixed a regression: the /api/world upgrade
+  had changed `spine` list->dict, silently breaking the #live render.)
 - **Launch-readiness:** `QUICKSTART.md` (user-register, run-it-now) passes
   publish_lint --strict clean; the shell passes clean; publish_lint --selftest
-  PASSES. Entry point: `run_harness_cli.py app` (now forwards --run-root).
-  REMAINING to public launch (the flip itself is not automated): serve-side
-  receipt minting (needs GPU), the training action-half, and the shell views for
-  the new routes.
+  PASSES. Entry point: `run_harness_cli.py app` (forwards --run-root).
+  REMAINING to public launch (none of these are code-blocked -- they are GPU- or
+  operator-gated): the serve-side receipt live round-trip (needs the 14B on GPU),
+  the training start/stop ACTION-half (operator-confirmed dangerous surface), and
+  the public flip itself (the operator's action, never automated).
 
 ## 2026-07-11 (session 7) -- universal router, prompt forge, pipeline, disk
 
