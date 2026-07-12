@@ -102,6 +102,7 @@ receipt file you can re-check offline.
 | Re-checkable receipt per answer | No | No | No | **Yes** |
 | Answers local, escalates the hard part | No | No | No | **Yes** |
 | Witnessed tool loop, re-checkable per step | No | No | No | **Yes** |
+| Refuses a reward-hacked (tampered) pass | No | No | No | **Yes** |
 | Goal into a checkable prompt (studio) | No | No | No | **Yes** |
 | One root-hashed shared state | No | No | No | **Yes** |
 | Zero dependencies, one file to run | Varies | Varies | No | **Yes** |
