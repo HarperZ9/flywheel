@@ -93,6 +93,27 @@ def test_routed_loop_clean_run_reports_clean_integrity(tmp_path):
     assert out["integrity"]["clean"] is True
 
 
+def test_router_agent_calls_external_tool_when_allowed(tmp_path):
+    seen = []
+    external = {"lookup": {"description": "look something up",
+                           "fn": lambda a: (seen.append(a) or (True, "ok:" + a.get("q", "")))}}
+    stub = _StubProposer(['TOOL lookup {"q": "widgets"}', "done"])
+    out = run_router_agent("look it up", endpoint="e", root=str(tmp_path), proposer=stub,
+                           external=external, allow_mcp=True)
+    assert out["final"] == "done"
+    assert seen and seen[0]["q"] == "widgets"          # the external tool actually ran
+
+
+def test_router_agent_gates_external_tool_by_default(tmp_path):
+    seen = []
+    external = {"lookup": {"description": "x",
+                           "fn": lambda a: (seen.append(a) or (True, "ok"))}}
+    stub = _StubProposer(['TOOL lookup {"q": "x"}', "done"])
+    run_router_agent("x", endpoint="e", root=str(tmp_path), proposer=stub,
+                     external=external)                 # allow_mcp defaults False
+    assert seen == []                                    # gated: the tool never ran
+
+
 def test_compaction_composes_with_the_routed_loop():
     stub = _StubProposer(["ok"] * 30)
     agent = RouterAgent(endpoint="x", proposer=stub, compact_budget=120,
