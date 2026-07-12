@@ -42,44 +42,52 @@ Build-machine paths, internal gate or lane language, "operator", draft or staged
 status lines, biological metaphors for software (no organ, membrane, anatomy; use
 component, part, service). These belong in internal docs, never on a product page.
 
-## Color language
+## Color language: it only ever means a verdict
 
-This is the Project Telos design system: a cool near-black glass ground, cool-white
-ink, silver to cyan to blue accents. No warm hue except one caution signal.
+The rule is absolute: color signals a verdict, never decoration, never an
+accent-per-item. The palette is three verdicts plus ink, and nothing else. At most
+one hot mark per view.
 
-- **Cyan (`--cyan`)** is the verify and trust signal. Use it for kickers, passed
-  checks, focus rings, and small accent marks. On light it darkens to a deep teal
-  so small text clears WCAG AA.
-- **Blue (`--blue`, `--blue-deep`)** carries links and the single emphatic action
-  (a chrome-to-blue solid button). Not decoration.
-- **Silver (`--silver`)** is chrome highlight and secondary text.
-- **Warm amber (`--warn`)** is the ONLY warm color, and the honest-caution signal:
-  escalation, honest nulls, "what we cannot prove yet". Use it sparingly. It reads
-  as candor, not error.
-- The **glass** primitive (a cool low-opacity fill with a top gloss wash and a
-  backdrop blur) carries depth over the ground. Panels, cards, and inputs are glass.
+- **Verified (`--verified`, a green)** marks the accept path and passes: a routed
+  answer, a passed check, a receipt, a "yes" cell.
+- **Drift (`--drift`, an iris)** is caution, honest nulls, and escalation, and it is
+  the single restrained accent. Kickers, links, and the primary action use it. This
+  is where the honest null lives, in the eye line.
+- **Unverifiable (`--unverifiable`)** is the third, muted state.
+- **Ink on a calm ceramic ground** carries all ordinary text.
+
+No gradient text, no rainbow, no accent-per-item. The full spectrum lives only in
+generative art, where the art is the subject, never in UI or emphasis.
 
 Full tokens, light and dark, are in `assets/palette.css`. Source of truth is
-`portfolio-site/system/telos.css`, owned by the parallel design session.
+`portfolio-site/system/system.css`, owned by the parallel design session.
 
-## Type
+## Type: two faces, no more
 
-- **Display: Archivo** (700 to 800), tight negative letter-spacing, for headings.
-- **Body: Manrope**, for lede and prose.
-- **Mono: JetBrains Mono**, for kickers, labels, table headers, receipts, and code.
-  This is heavy, on purpose: the mono labels are a core part of the telos identity.
-- All three carry system fallbacks so the surface holds before the webfonts load.
-- Kickers are mono, uppercase, wide-tracked, small, in cyan, with a short cyan rule.
+- **Hanken Grotesk** carries every text role, from hero display to caption.
+  Hierarchy comes from weight and size, never from switching typefaces.
+- **Conso** carries data, labels, table headers, receipts, and code.
+- Both are self-hosted woff2 (see `site/assets/fonts`), so the type is faithful
+  offline, with system fallbacks before they load.
+- If a surface needs a third face to feel distinct, the layout is failing, not the
+  type.
+
+## Figure-ground and material
+
+- Text always sits on a calm, near-solid ceramic ground. Cards are ground tints
+  with a hairline. No glass, no backdrop-blur, no drop-shadow stacks.
+- Kickers are mono, uppercase, wide-tracked, small, in the drift color.
 
 ## Theme
 
-Dark is native to telos. The app defaults to dark, honors a saved choice, then the
-reader's OS preference. The toggle stamps `data-theme` on the root and wins in both
-directions. The site should do the same, so a reader gets the same theme on both
-surfaces. Both themes are verified to hit WCAG AA contrast.
+The canon reference is the ceramic light ground; that is the default. A near-black
+dark counterpart carries the same verdict semantics. The app honors a saved choice,
+then the reader's OS preference; the toggle stamps `data-theme` and wins in both
+directions. The site should do the same. Both themes are verified to hit WCAG AA.
 
 ## The reference implementation
 
-The shipping shell (`site/index.html` in the repo) is the canonical look, rendered
-in this exact telos system with both themes. When in doubt, match it. The two
-schematics in `assets/` use the same cool tokens.
+The shipping shell (`site/index.html` in the repo) and `harperz9.github.io` are the
+canonical look. When in doubt, match them. The two schematics in `assets/` use the
+same verdict tokens (verified green for the accept path, drift iris for the failure
+edges).

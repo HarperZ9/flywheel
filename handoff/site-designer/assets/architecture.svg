@@ -1,17 +1,19 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 600" font-family="ui-sans-serif, system-ui, Segoe UI, sans-serif">
   <style>
-    /* telos cool palette, dark-native with a light counterpart */
-    :root{ --bg:#0a0e16; --ink:#eef2f8; --muted:#98a1b4; --line:#2c3648; --card:#12192a;
-      --accent:#5fd0e6; --accent-soft:#12203a; --warm:#e3a44f; --ok:#6fd39a; }
-    @media (prefers-color-scheme: light){
-      :root{ --bg:#e7ecf3; --ink:#0c1220; --muted:#4f5869; --line:#c4cede; --card:#ffffff;
-        --accent:#0a6a7d; --accent-soft:#e2edf6; --warm:#a95f16; --ok:#0a6a7d; } }
+    /* Design and Voice Canon: color only as a verdict. Accept path = verified
+       green, caution/escalate + kickers = drift iris. Ceramic ground, dark ink;
+       a near-black dark counterpart. */
+    :root{ --bg:#f4f3ef; --ink:#0b0c0e; --muted:#43474e; --line:rgba(11,12,14,.14); --card:rgba(255,255,255,.62);
+      --accent:#1f7a52; --accent-soft:color-mix(in oklab,#1f7a52 12%,transparent); --warm:#3a2bd6; --ok:#1f7a52; }
+    @media (prefers-color-scheme: dark){
+      :root{ --bg:#0b0e0f; --ink:#eef1ee; --muted:#9aa39c; --line:rgba(238,241,238,.16); --card:rgba(255,255,255,.05);
+        --accent:#5fae93; --accent-soft:color-mix(in oklab,#5fae93 15%,transparent); --warm:#a99cf5; --ok:#5fae93; } }
     .bg{ fill:var(--bg); }
     .card{ fill:var(--card); stroke:var(--line); stroke-width:1.5; }
     .accentbox{ fill:var(--accent-soft); stroke:var(--accent); stroke-width:1.5; }
     .t{ fill:var(--ink); font-size:14px; font-weight:600; }
     .s{ fill:var(--muted); font-size:11.5px; }
-    .cap{ fill:var(--accent); font-size:11px; font-weight:700; letter-spacing:.12em; }
+    .cap{ fill:var(--warm); font-size:11px; font-weight:700; letter-spacing:.12em; }
     .title{ fill:var(--ink); font-size:20px; font-weight:700; }
     .flow{ stroke:var(--muted); stroke-width:1.6; fill:none; }
     .flowa{ stroke:var(--accent); stroke-width:2; fill:none; }
