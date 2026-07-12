@@ -20,6 +20,7 @@ import os
 import re
 import subprocess
 from dataclasses import dataclass, field
+from pathlib import Path
 
 _TOOL_LINE = re.compile(r"^\s*TOOL\s+(\w+)\s+(\{.*\})\s*$")
 
@@ -47,7 +48,7 @@ class ToolGate:
     allow_mcp: bool = False        # outbound calls to external MCP tool servers
 
     def check(self, name: str, args: dict) -> "str | None":
-        if name in ("write_file", "edit_file") and not self.allow_write:
+        if name in ("write_file", "edit_file", "apply_patch") and not self.allow_write:
             return "write disabled (pass --allow-write)"
         if name in ("run",):
             if not self.allow_exec:
@@ -81,6 +82,91 @@ def _safe_path(root: str, path: str) -> "str | None":
     if target == root_abs or target.startswith(root_abs + os.sep):
         return target
     return None
+
+
+def _strip_ab(path: str) -> str:
+    return path[2:] if path[:2] in ("a/", "b/") else path
+
+
+def _apply_hunks(old_lines: list, body: list) -> "tuple[bool, list | str]":
+    """Apply one file's hunks strictly. Every context/removed line must match."""
+    new_lines, cursor, i = [], 0, 0
+    while i < len(body):
+        if not body[i].startswith("@@"):
+            i += 1
+            continue
+        m = re.match(r"@@ -(\d+)(?:,\d+)? \+\d+(?:,\d+)? @@", body[i])
+        if not m:
+            return False, f"bad hunk header: {body[i][:40]}"
+        start = int(m.group(1)) - 1
+        start = max(start, 0)
+        if start < cursor or start > len(old_lines):
+            return False, f"hunk at {start + 1} out of range"
+        new_lines.extend(old_lines[cursor:start])
+        cursor = start
+        i += 1
+        while i < len(body) and not body[i].startswith("@@"):
+            h = body[i]
+            i += 1
+            if h == "" or h.startswith("\\"):        # split artifact / "no newline" marker
+                continue
+            tag, text = h[0], h[1:]
+            if tag == " ":
+                if cursor >= len(old_lines) or old_lines[cursor] != text:
+                    return False, f"context mismatch at line {cursor + 1}"
+                new_lines.append(old_lines[cursor])
+                cursor += 1
+            elif tag == "-":
+                if cursor >= len(old_lines) or old_lines[cursor] != text:
+                    return False, f"removed-line mismatch at line {cursor + 1}"
+                cursor += 1
+            elif tag == "+":
+                new_lines.append(text)
+    new_lines.extend(old_lines[cursor:])
+    return True, new_lines
+
+
+def _apply_unified_diff(root: str, patch: str) -> "tuple[bool, str]":
+    """Apply a unified diff (LF, one or more file sections) strictly under root. On
+    ANY hunk mismatch the whole patch is refused (verified before a byte is written),
+    so a stale diff never corrupts a file. New files (--- /dev/null) are created."""
+    lines = patch.replace("\r\n", "\n").split("\n")
+    i, sections = 0, []
+    while i < len(lines):
+        if (lines[i].startswith("--- ") and i + 1 < len(lines)
+                and lines[i + 1].startswith("+++ ")):
+            old_hdr, new_hdr, j, body = lines[i], lines[i + 1], i + 2, []
+            while j < len(lines) and not (lines[j].startswith("--- ") and j + 1 < len(lines)
+                                          and lines[j + 1].startswith("+++ ")):
+                body.append(lines[j])
+                j += 1
+            sections.append((old_hdr, new_hdr, body))
+            i = j
+        else:
+            i += 1
+    if not sections:
+        return False, "no file sections in patch"
+    writes, names = [], []
+    for old_hdr, new_hdr, body in sections:
+        rel = _strip_ab(new_hdr[4:].strip())
+        target = _safe_path(root, rel)
+        if target is None:
+            return False, f"path escapes root: {rel}"
+        is_new = "/dev/null" in old_hdr
+        try:
+            old_lines = [] if is_new else Path(target).read_text(encoding="utf-8").split("\n")
+        except OSError:
+            old_lines = []
+        ok, result = _apply_hunks(old_lines, body)
+        if not ok:
+            return False, f"{rel}: {result}"
+        writes.append((target, "\n".join(result)))
+        names.append(rel)
+    for target, content in writes:                  # only after every hunk verified
+        os.makedirs(os.path.dirname(target) or ".", exist_ok=True)
+        with open(target, "w", encoding="utf-8") as f:
+            f.write(content)
+    return True, f"applied {len(writes)} file(s): " + ", ".join(names)
 
 
 @dataclass
@@ -182,6 +268,52 @@ class ToolExecutor:
         out = (proc.stdout or "") + (proc.stderr or "")
         return proc.returncode == 0, f"[exit {proc.returncode}]\n{out}"
 
+    def _t_grep(self, args) -> "tuple[bool, str]":
+        pattern = args.get("pattern", "")
+        if not pattern:
+            return False, "[error] grep needs a 'pattern'"
+        try:
+            rx = re.compile(pattern)
+        except re.error as e:
+            return False, f"[error] bad regex: {e}"
+        base = _safe_path(self.root, args.get("path", "."))
+        if base is None:
+            return False, "[error] path escapes root"
+        root_abs = os.path.realpath(self.root)
+        p = Path(base)
+        files = [p] if p.is_file() else p.rglob(args.get("glob", "*"))
+        hits = []
+        for f in files:
+            if not f.is_file():
+                continue
+            try:
+                text = f.read_text(encoding="utf-8", errors="replace")
+            except OSError:
+                continue
+            for n, line in enumerate(text.splitlines(), 1):
+                if rx.search(line):
+                    rel = os.path.relpath(str(f), root_abs).replace("\\", "/")
+                    hits.append(f"{rel}:{n}:{line[:200]}")
+                    if len(hits) >= 200:
+                        return True, "\n".join(hits) + "\n... (truncated at 200 matches)"
+        return True, "\n".join(hits) if hits else "(no matches)"
+
+    def _t_glob(self, args) -> "tuple[bool, str]":
+        root_abs = os.path.realpath(self.root)
+        matches = []
+        for f in Path(root_abs).rglob(args.get("pattern", "*")):
+            matches.append(os.path.relpath(str(f), root_abs).replace("\\", "/"))
+            if len(matches) >= 500:
+                break
+        return True, "\n".join(sorted(matches)) if matches else "(no matches)"
+
+    def _t_apply_patch(self, args) -> "tuple[bool, str]":
+        patch = args.get("patch") or args.get("diff") or ""
+        if not patch.strip():
+            return False, "[error] apply_patch needs a unified diff in 'patch'"
+        ok, msg = _apply_unified_diff(self.root, patch)
+        return ok, msg if ok else f"[error] {msg}"
+
 
 TOOLS_SYSTEM = (
     "You can use tools by emitting lines in this exact format (one per line):\n"
@@ -191,6 +323,9 @@ TOOLS_SYSTEM = (
     'TOOL edit_file {"path": "<path>", "old": "<exact text>", "new": "<replacement>"}\n'
     'TOOL write_file {"path": "<path>", "content": "<text>"}\n'
     'TOOL run {"cmd": "<shell command>"}\n'
+    'TOOL grep {"pattern": "<regex>", "path": "<dir>", "glob": "*.py"}\n'
+    'TOOL glob {"pattern": "**/*.py"}\n'
+    'TOOL apply_patch {"patch": "<unified diff>"}\n'
     "Prefer repo_map then read_file to locate code, and edit_file (the 'old' text "
     "must be unique) over write_file for changes. After you receive the tool "
     "results, continue. When you have the final answer and need no more tools, "
