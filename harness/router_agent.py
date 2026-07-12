@@ -87,7 +87,7 @@ def run_router_agent(goal: str, endpoint: str = "serve", *, root: str = ".",
                      max_steps: int = 6, test_cmd: "str | None" = None,
                      model: "str | None" = None, base_url: "str | None" = None,
                      max_tokens: int = 1024, temperature: float = 0.0, seed: int = 0,
-                     compact_budget: int = 0, proposer=None) -> dict:
+                     compact_budget: int = 0, proposer=None, on_event=None) -> dict:
     """Run the gated agentic loop over `endpoint` to complete `goal`. Returns a
     JSON-able dict: the final answer, step count, the witnessed ledger checkpoint
     and verify verdict, the endpoint used, and any compaction receipt. The ledger
@@ -99,7 +99,8 @@ def run_router_agent(goal: str, endpoint: str = "serve", *, root: str = ".",
     executor = ToolExecutor(root=root, external=external or {},
                             gate=ToolGate(allow_write=allow_write, allow_exec=allow_exec,
                                           allow_mcp=allow_mcp))
-    result = run_agent(agent, goal, executor, ledger, max_steps=max_steps, test_cmd=test_cmd)
+    result = run_agent(agent, goal, executor, ledger, max_steps=max_steps,
+                       test_cmd=test_cmd, on_event=on_event)
     out = {k: v for k, v in result.items() if k != "ledger"}
     out["endpoint"] = endpoint
     out["last_compaction"] = agent.last_compaction

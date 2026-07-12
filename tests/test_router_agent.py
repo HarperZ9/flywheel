@@ -87,6 +87,16 @@ def test_routed_loop_surfaces_integrity_flags(tmp_path):
     assert any(f["kind"] == "edited_protected_file" for f in out["integrity"]["flags"])
 
 
+def test_routed_loop_streams_events(tmp_path):
+    events = []
+    stub = _StubProposer(['TOOL list_dir {"path": "."}', "final answer"])
+    run_router_agent("look", endpoint="e", root=str(tmp_path), proposer=stub,
+                     on_event=events.append)
+    types = [e["type"] for e in events]
+    assert "assistant" in types and "tool_call" in types and "tool_result" in types
+    assert any(e.get("name") == "list_dir" for e in events if e["type"] == "tool_call")
+
+
 def test_routed_loop_clean_run_reports_clean_integrity(tmp_path):
     stub = _StubProposer(["nothing to change, final answer"])
     out = run_router_agent("noop", endpoint="e", root=str(tmp_path), proposer=stub)

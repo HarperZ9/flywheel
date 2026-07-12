@@ -561,6 +561,47 @@ class _Handler(BaseHTTPRequestHandler):
         except Exception:
             pass                                   # client hung up mid-stream; nothing to do
 
+    def _sse_agent(self, req: dict, goal: str, endpoint: str):
+        """Stream the agentic tool loop as Server-Sent Events: each assistant turn,
+        tool call, and tool result is emitted as it happens, then a final `done`
+        event carries the witnessed result (verdict + integrity)."""
+        try:
+            max_steps = max(1, min(int(req.get("max_steps", 6)), 12))
+        except (TypeError, ValueError):
+            max_steps = 6
+        self.send_response(200)
+        self.send_header("Content-Type", "text/event-stream")
+        self.send_header("Cache-Control", "no-cache")
+        self.send_header("Connection", "keep-alive")
+        self._cors()
+        self.end_headers()
+
+        def emit(evt):
+            try:
+                self.wfile.write(("data: " + json.dumps(evt) + "\n\n").encode())
+                self.wfile.flush()
+            except Exception:
+                pass
+
+        from harness.router_agent import run_router_agent
+        try:
+            result = run_router_agent(
+                goal, endpoint, root=str(self.root),
+                allow_write=bool(req.get("allow_write", False)),
+                allow_exec=bool(req.get("allow_exec", False)),
+                max_steps=max_steps, test_cmd=(req.get("test_cmd") or None),
+                model=(req.get("model") or None),
+                compact_budget=int(req.get("compact_budget", 0) or 0), on_event=emit)
+            emit({"type": "done", "final": result.get("final"), "steps": result.get("steps"),
+                  "verified": result.get("verified"), "integrity": result.get("integrity")})
+        except Exception as e:
+            emit({"type": "error", "error": f"{type(e).__name__}: {e}"})
+        try:
+            self.wfile.write(b"data: [DONE]\n\n")
+            self.wfile.flush()
+        except Exception:
+            pass
+
     def _proxy(self, target: str):
         length = self._content_length()
         if length is None:
@@ -712,6 +753,8 @@ class _Handler(BaseHTTPRequestHandler):
             endpoint = (req.get("endpoint") or "").strip()
             if not goal or not endpoint:
                 return self._json({"error": "provide non-empty 'goal' and 'endpoint'"}, 400)
+            if req.get("stream"):
+                return self._sse_agent(req, goal, endpoint)
             try:
                 max_steps = max(1, min(int(req.get("max_steps", 6)), 12))
             except (TypeError, ValueError):
