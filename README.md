@@ -84,6 +84,7 @@ Every route is same-origin JSON you can also `curl`:
 | `POST /api/companion` | Answer locally, escalate only the hard slice |
 | `POST /api/forge` | Turn a plain goal into a structured prompt with checkable success gates |
 | `GET /api/world` | The projected state (roster, findings, cursor) under one root hash |
+| `GET /api/router/stats` | Observed per-provider success rate, latency, and cost score |
 | `GET /api/training/status` | Read-only status of the local training run |
 
 One line for the whole surface: every number on every page is a fetch of a

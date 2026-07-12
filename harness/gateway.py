@@ -391,6 +391,20 @@ def _chat_receipt(prompt, system, max_tokens, temperature, seed, out):
                          "temperature": temperature, "seed": seed}, gen, out.model_ref)
 
 
+_ROUTER_STATS = None
+
+
+def get_router_stats():
+    """Lazily-loaded persisted router stats (under the run root). Read-only callers
+    use snapshot(); the failover path records outcomes when adaptive routing is on."""
+    global _ROUTER_STATS
+    if _ROUTER_STATS is None:
+        from harness.router_stats import RouterStats
+        from harness.run_paths import run_root_default
+        _ROUTER_STATS = RouterStats(Path(run_root_default()) / "router_stats.json")
+    return _ROUTER_STATS
+
+
 def openai_chat(req: dict, serve_url: str):
     """Core of POST /v1/chat/completions (non-stream). Returns (body, code, receipt,
     text, model_ref). On error, receipt/text/model_ref are None.
@@ -408,12 +422,21 @@ def openai_chat(req: dict, serve_url: str):
     max_tokens = int(req.get("max_tokens", 512))
     seed = int(req.get("seed", 0))
     candidates = [m.strip() for m in str(req.get("model", "")).split(",") if m.strip()] or [""]
+    # Opt-in adaptive routing: reorder the failover chain best-first by observed
+    # success/cost and record each outcome. Off by default, so an explicit order is
+    # honored. Routing only -- the oracle still decides what is accepted.
+    adaptive = bool(req.get("adaptive"))
+    if adaptive:
+        candidates = get_router_stats().order(candidates)
     tried, last_err, last_code = [], "no provider resolved", 502
     for cand in candidates:
+        t0 = time.time()
         proposer, err, code = _resolve_proposer(cand, serve_url)
         if err is not None:
             last_err, last_code = err, code
             tried.append((cand or "flywheel") + ": unavailable")
+            if adaptive:
+                get_router_stats().record(cand or "flywheel", False, time.time() - t0)
             continue
         try:
             out = proposer.generate(prompt, seed=seed, temperature=temperature,
@@ -421,7 +444,11 @@ def openai_chat(req: dict, serve_url: str):
         except Exception as e:
             last_err, last_code = f"provider call failed: {e}", 502
             tried.append((cand or "flywheel") + ": error")
+            if adaptive:
+                get_router_stats().record(cand or "flywheel", False, time.time() - t0)
             continue
+        if adaptive:
+            get_router_stats().record(cand or "flywheel", True, time.time() - t0)
         receipt = _chat_receipt(prompt, system, max_tokens, temperature, seed, out)
         receipt["routed_via"] = cand or "flywheel"
         if tried:
@@ -605,6 +632,8 @@ class _Handler(BaseHTTPRequestHandler):
             return self._json(_projected_world(self.root))
         if p == "/api/training/status":
             return self._json(_training_status(self.run_root))
+        if p == "/api/router/stats":                 # observed per-provider success/cost
+            return self._json(get_router_stats().snapshot())
         if p == "/v1/models":                        # OpenAI-compatible model list (the roster)
             return self._json(openai_models())
         if p.startswith("/v1/") or p == "/generate" or p == "/health":
@@ -728,6 +757,7 @@ def main(argv=None) -> int:
     print(f"  companion POST /api/companion {{'prompt': ...}}      (answer local, escalate hard)")
     print(f"  agent     POST /api/agent {{'goal':...,'endpoint':...}} (gated tool loop over ANY provider, witnessed)")
     print(f"  training  http://127.0.0.1:{a.port}/api/training/status  (read-only supervisor status)")
+    print(f"  stats     http://127.0.0.1:{a.port}/api/router/stats  (adaptive-routing scoreboard)")
     print(f"  openai    POST /v1/chat/completions  +  GET /v1/models  (drop-in, model=any provider, stream ok)")
     try:
         httpd.serve_forever()
