@@ -132,6 +132,42 @@ def test_compact_default_now_uses_lexrank_and_still_rechecks():
     assert verify_compaction(msgs, res)["verdict"] == "MATCH"
 
 
+def _with_middle(extra):
+    return ([{"role": "user", "content": "TASK do the thing " + "word " * 40}]
+            + [{"role": "assistant", "content": f"turn {i} " + "word " * 40} for i in range(1, 6)]
+            + [extra]
+            + [{"role": "assistant", "content": f"turn {i} " + "word " * 40} for i in range(6, 12)])
+
+
+def test_compaction_pins_policy_text_and_rechecks():
+    policy = {"role": "system", "content": "POLICY: never write outside /workspace."}
+    msgs = _with_middle(policy)
+    res = compact(msgs, token_budget=200, keep_recent=3, keep_head=1)
+    assert res.compacted is True
+    assert policy in res.messages                         # policy survived the fold verbatim
+    assert res.receipt["pinned_kept"] == 1
+    assert verify_compaction(msgs, res)["verdict"] == "MATCH"
+
+
+def test_compaction_pins_flagged_message():
+    pinned = {"role": "user", "content": "remember: api key is in env only", "pinned": True}
+    res = compact(_with_middle(pinned), token_budget=200, keep_recent=3)
+    assert res.compacted is True and pinned in res.messages
+
+
+def test_verify_detects_tampering_of_a_pinned_message():
+    policy = {"role": "system", "content": "POLICY: never delete the audit log."}
+    msgs = _with_middle(policy)
+    res = compact(msgs, token_budget=200, keep_recent=3)
+    tampered = CompactionResult([dict(m) for m in res.messages], res.compacted, res.receipt)
+    # find and weaken the pinned policy message in the compacted output
+    for m in tampered.messages:
+        if m.get("content", "").startswith("POLICY:"):
+            m["content"] = "POLICY: anything goes"
+    v = verify_compaction(msgs, tampered)
+    assert v["verdict"] == "DRIFT" and v["checks"]["pinned_preserved"] is False
+
+
 def test_localagent_no_compaction_when_budget_unset():
     agent = LocalAgent(backends=[_FakeBackend()])          # compact_budget defaults 0
     for i in range(8):

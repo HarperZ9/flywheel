@@ -122,8 +122,14 @@ class CompactionResult:
     receipt: dict
 
 
+def _is_pinned(m: dict, pin_roles) -> bool:
+    """A message is pinned (never folded away) if it is flagged, or its role is a
+    pinned role (policy / gate / tool-permission text lives in these)."""
+    return bool(m.get("pinned")) or m.get("role") in pin_roles
+
+
 def _receipt(before, after, budget, keep_head, keep_recent, folded,
-             span_hash, summary_hash, method) -> dict:
+             span_hash, summary_hash, method, pinned_kept=0, pin_roles=None) -> dict:
     return {
         "schema": SCHEMA,
         "method": method,
@@ -132,6 +138,8 @@ def _receipt(before, after, budget, keep_head, keep_recent, folded,
         "tokens_after": after,
         "kept_head": keep_head,
         "kept_recent": keep_recent,
+        "pinned_kept": pinned_kept,
+        "pin_roles": list(pin_roles) if pin_roles else [],
         "folded_turns": folded,
         "summarized_span_sha256": span_hash,
         "summary_sha256": summary_hash,
@@ -141,37 +149,45 @@ def _receipt(before, after, budget, keep_head, keep_recent, folded,
 def compact(messages: list, *, token_budget: int, keep_recent: int = 6,
             keep_head: int = 1, summarize: Callable = lexrank_summary,
             count_tokens: Callable = approx_tokens,
-            summary_role: str = "system") -> CompactionResult:
+            summary_role: str = "system", pin_roles=("system",)) -> CompactionResult:
     """Fold the middle of `messages` into one summary turn if the transcript
     exceeds `token_budget`. Keeps the first `keep_head` turns (the task anchor)
-    and the last `keep_recent` turns verbatim. Returns the (possibly unchanged)
-    messages, whether it compacted, and a re-checkable receipt.
+    and the last `keep_recent` turns verbatim. PINNED messages in the middle
+    (role in `pin_roles`, or flagged `pinned`) are kept verbatim too and never
+    folded away: policy / gate / tool-permission text must survive compaction
+    (compaction otherwise raises policy-violation rate sharply). Returns the
+    (possibly unchanged) messages, whether it compacted, and a re-checkable receipt.
 
-    A no-op (already within budget, or too few turns to fold) returns the input
+    A no-op (within budget, too few turns, or nothing foldable) returns the input
     unchanged with a method="noop" receipt.
     """
     msgs = list(messages)
     before = total_tokens(msgs, count_tokens)
+    pins = list(pin_roles)
     if before <= token_budget or len(msgs) <= keep_head + keep_recent + 1:
         return CompactionResult(msgs, False, _receipt(
-            before, before, token_budget, keep_head, keep_recent, 0, None, None, "noop"))
+            before, before, token_budget, keep_head, keep_recent, 0, None, None, "noop",
+            0, pins))
 
     head = msgs[:keep_head]
     tail = msgs[len(msgs) - keep_recent:] if keep_recent else []
     middle = msgs[keep_head: len(msgs) - keep_recent] if keep_recent else msgs[keep_head:]
-    if not middle:
+    pinned = [m for m in middle if _is_pinned(m, pins)]
+    foldable = [m for m in middle if not _is_pinned(m, pins)]
+    if not foldable:                                # nothing to fold (all pinned / empty)
         return CompactionResult(msgs, False, _receipt(
-            before, before, token_budget, keep_head, keep_recent, 0, None, None, "noop"))
+            before, before, token_budget, keep_head, keep_recent, 0, None, None, "noop",
+            len(pinned), pins))
 
-    span_hash = _sha_messages(middle)
-    summary_content = (f"[compacted: {len(middle)} earlier turns folded to fit context]\n"
-                       + summarize(middle))
+    span_hash = _sha_messages(foldable)
+    summary_content = (f"[compacted: {len(foldable)} earlier turns folded to fit context]\n"
+                       + summarize(foldable))
     summary_msg = {"role": summary_role, "content": summary_content}
-    new_msgs = head + [summary_msg] + tail
+    new_msgs = head + pinned + [summary_msg] + tail
     after = total_tokens(new_msgs, count_tokens)
     return CompactionResult(new_msgs, True, _receipt(
-        before, after, token_budget, keep_head, keep_recent, len(middle),
-        span_hash, _sha_text(summary_content), "middle-fold"))
+        before, after, token_budget, keep_head, keep_recent, len(foldable),
+        span_hash, _sha_text(summary_content), "middle-fold", len(pinned), pins))
 
 
 def verify_compaction(original_messages: list, result: CompactionResult) -> dict:
@@ -186,14 +202,20 @@ def verify_compaction(original_messages: list, result: CompactionResult) -> dict
 
     orig = list(original_messages)
     kh, kr = r["kept_head"], r["kept_recent"]
+    pins = r.get("pin_roles", [])
+    pc = r.get("pinned_kept", 0)
     head = orig[:kh]
     tail = orig[len(orig) - kr:] if kr else []
     middle = orig[kh: len(orig) - kr] if kr else orig[kh:]
+    pinned = [m for m in middle if _is_pinned(m, pins)]
+    foldable = [m for m in middle if not _is_pinned(m, pins)]
+    res = result.messages
 
     checks = {
-        "head_preserved": result.messages[:kh] == head,
-        "tail_preserved": (result.messages[len(result.messages) - kr:] == tail) if kr else True,
-        "span_hash": _sha_messages(middle) == r["summarized_span_sha256"],
-        "summary_hash": _sha_text(result.messages[kh].get("content", "")) == r["summary_sha256"],
+        "head_preserved": res[:kh] == head,
+        "pinned_preserved": res[kh:kh + pc] == pinned,     # policy text kept verbatim, in order
+        "tail_preserved": (res[len(res) - kr:] == tail) if kr else True,
+        "span_hash": _sha_messages(foldable) == r["summarized_span_sha256"],
+        "summary_hash": _sha_text(res[kh + pc].get("content", "")) == r["summary_sha256"],
     }
     return {"verdict": "MATCH" if all(checks.values()) else "DRIFT", "checks": checks}
