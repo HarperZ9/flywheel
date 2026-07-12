@@ -24,6 +24,7 @@ import urllib.request
 from dataclasses import dataclass, field
 from typing import Callable, Optional, Protocol
 
+from . import compaction
 from .messages_api import make_receipt, translate_response
 
 # A transport is (method, url, body_bytes_or_none, timeout) -> (status, parsed_json).
@@ -221,9 +222,28 @@ class LocalAgent:
     temperature: float = 0.0
     seed: int = 0
     history: list[dict] = field(default_factory=list)
+    compact_budget: int = 0                       # 0 = off; token budget that triggers a fold
+    compact_keep_recent: int = 6
+    summarize: Optional[Callable] = None          # inject a model summarizer; None = extractive
+    last_compaction: Optional[dict] = None
 
     def live_backend(self) -> Optional[Backend]:
         return select_backend(self.backends, self.prefer)
+
+    def _maybe_compact(self) -> None:
+        """Opt-in context compaction: when compact_budget is set, fold the middle
+        of the history to fit the budget before prompting. A no-op when the budget
+        is 0, so behaviour is unchanged unless a caller asks for it. Records the
+        re-checkable receipt on last_compaction."""
+        if not self.compact_budget or len(self.history) <= 1:
+            return
+        res = compaction.compact(
+            self.history, token_budget=self.compact_budget,
+            keep_recent=self.compact_keep_recent,
+            summarize=self.summarize or compaction.extractive_summary)
+        if res.compacted:
+            self.history = res.messages
+            self.last_compaction = res.receipt
 
     def _healthy(self) -> list:
         return [b for b in self.backends
@@ -244,6 +264,7 @@ class LocalAgent:
         """One turn. Tries healthy backends in order; the first that returns a
         completion wins. Raises BackendError only if every backend fails."""
         self.history.append({"role": "user", "content": user_text})
+        self._maybe_compact()
         healthy = self._healthy()
         if not healthy:
             raise BackendError("no local backend is healthy (start serve.py or ollama)")
@@ -263,6 +284,7 @@ class LocalAgent:
         first healthy backend that supports streaming; falls back to send() (whole
         answer as one chunk) if none does. Same receipt as send()."""
         self.history.append({"role": "user", "content": user_text})
+        self._maybe_compact()
         for b in self._healthy():
             stream_fn = getattr(b, "chat_stream", None)
             if stream_fn is None:
