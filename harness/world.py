@@ -21,8 +21,10 @@ import hashlib
 import json
 from pathlib import Path
 
+from .run_paths import run_root_default
+
 REPO = Path(__file__).resolve().parent.parent
-DEFAULT_RUN_ROOT = Path("E:/local-model-run")
+DEFAULT_RUN_ROOT = Path(run_root_default())
 
 MATCH = "MATCH"
 DRIFT = "DRIFT"

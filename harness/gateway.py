@@ -43,6 +43,8 @@ REPO = Path(__file__).resolve().parent.parent
 if str(REPO) not in sys.path:
     sys.path.insert(0, str(REPO))
 
+from harness.run_paths import run_root_default
+
 # Receipt catalog: in-repo, re-checkable artifacts that define the world state.
 # Relative to the served root. Missing files are reported honestly as absent.
 RECEIPT_CATALOG = (
@@ -453,7 +455,7 @@ class _Handler(BaseHTTPRequestHandler):
     root = REPO
     serve_url = "http://127.0.0.1:8765"
     ollama_url = "http://127.0.0.1:11434"
-    run_root = "E:/local-model-run"
+    run_root = run_root_default()
 
     MAX_BODY = 32 * 1024 * 1024               # 32 MiB ceiling on any request body
     cors = False                              # opt-in (--cors) so browser OpenAI clients can call in
@@ -706,7 +708,7 @@ def main(argv=None) -> int:
     ap.add_argument("--root", default=str(REPO))
     ap.add_argument("--serve-url", default="http://127.0.0.1:8765")
     ap.add_argument("--ollama-url", default="http://127.0.0.1:11434")
-    ap.add_argument("--run-root", default="E:/local-model-run")
+    ap.add_argument("--run-root", default=run_root_default())
     ap.add_argument("--cors", action="store_true",
                     help="allow cross-origin browser clients (off by default; the gateway is local)")
     a = ap.parse_args(argv)

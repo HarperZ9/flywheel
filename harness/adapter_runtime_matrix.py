@@ -10,7 +10,9 @@ from typing import Any
 
 
 SCHEMA = "harness.adapter-runtime-matrix/v1"
-DEFAULT_CONTRACT = "C:/dev/local-model/benchmarks/cross-harness-adapter-contract-v1.json"
+# Repo-relative so the shipped source carries no build-machine path.
+DEFAULT_CONTRACT = str(Path(__file__).resolve().parent.parent
+                       / "benchmarks" / "cross-harness-adapter-contract-v1.json")
 
 
 def now_utc() -> str:
