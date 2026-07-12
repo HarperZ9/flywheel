@@ -24,11 +24,11 @@ benchmark encoding** for the hard lane (learned-model dependency on task admissi
 | # | Win | Effort | Status | Grounding |
 |---|---|---|---|---|
 | 1 | **Reward-hacking integrity guard** (refuse a tampered pass; ledger trajectory flags) | S-M | **SHIPPED 2026-07-11** `harness/integrity.py` | RLVR reward-hacking; SpecBench [swept] |
-| 2 | Non-learned verifier ensembling (consensus over test + property + metamorphic) | M | next | Weaver / FUSE / BoN-MAV [swept] |
+| 2 | Non-learned verifier ensembling (consensus over test + property + metamorphic) | M | **SHIPPED 2026-07-11** `harness/consensus.py` (ConsensusOracle + RepeatConsistencyOracle) | Weaver / FUSE / BoN-MAV [swept] |
 | 3 | Sample-agreement escalation gate (k-sample agreement before escalating) | S | next | Semantic Agreement, EMNLP 2025, 2509.21837 [swept] |
-| 4 | Held-out / adversarial oracle tier (accept needs a check the model never saw) | M | | SpecBench [swept]; UTBoost weak-test finding [swept] |
-| 5 | Constraint-pinning in compaction (never fold gate/policy text away) | S | | Governance-Decay [swept] |
-| 6 | Deterministic LexRank compaction fallback (replace "first line, truncated") | S | | LexRank, 1109.2128 [real] |
+| 4 | Held-out / adversarial oracle tier (accept needs a check the model never saw) | M | next | SpecBench [swept]; UTBoost weak-test finding [swept] |
+| 5 | Constraint-pinning in compaction (never fold gate/policy text away) | S | next (needs verify_compaction rework) | Governance-Decay [swept] |
+| 6 | Deterministic LexRank compaction fallback (replace "first line, truncated") | S | **SHIPPED 2026-07-11** `harness/compaction.py` (default fold) | LexRank, 1109.2128 [real] |
 | 7 | in-toto/DSSE receipt shape + full-length hashes (drop 64-bit truncation) | S | | SLSA / in-toto / Sigstore / C2PA [real] |
 | 8 | Zero-dep MCP client so /api/agent calls OUT to the MCP ecosystem | M | | MCP now table-stakes across all incumbents |
 | 9 | Cost/success-rate-ordered failover chain (stdlib frequency-table bandit) | M | | Cascade Routing, 2410.10347 [swept] |
