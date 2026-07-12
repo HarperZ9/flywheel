@@ -571,7 +571,29 @@ class _Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
+    def _safe_500(self, e):
+        """Any uncaught handler error becomes a clean 500, never a dropped
+        connection or a stderr traceback. Only the exception TYPE is surfaced, so a
+        stack path never leaks to the client."""
+        try:
+            self._json({"error": {"message": f"internal error: {type(e).__name__}",
+                                  "type": "api_error"}}, 500)
+        except Exception:
+            pass                                   # headers already partly sent; nothing safe to do
+
     def do_GET(self):
+        try:
+            self._get()
+        except Exception as e:
+            self._safe_500(e)
+
+    def do_POST(self):
+        try:
+            self._post()
+        except Exception as e:
+            self._safe_500(e)
+
+    def _get(self):
         p = self.path.split("?", 1)[0]
         if p == "/api/endpoints/health":
             return self._json(endpoint_roster(self.serve_url, self.ollama_url))
@@ -587,7 +609,7 @@ class _Handler(BaseHTTPRequestHandler):
             return self._proxy(self.serve_url.rstrip("/") + p)
         return self._static(p)
 
-    def do_POST(self):
+    def _post(self):
         p = self.path.split("?", 1)[0]
         if p == "/v1/chat/completions":              # OpenAI-compatible, routes to ANY provider
             length = self._content_length()
