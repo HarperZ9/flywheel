@@ -11,7 +11,7 @@ import pytest
 
 from harness.local_loop import run_agent
 from harness.local_tools import ToolExecutor, ToolGate
-from harness.mcp_client import MCPClient, MCPError, as_external_tools
+from harness.mcp_client import MCPAllowlist, MCPClient, MCPError, as_external_tools, open_mcp
 
 
 def _echo_server(req):
@@ -105,6 +105,20 @@ def test_executor_gates_mcp_tools_until_allowed():
     assert not gated.ok and "[gate]" in gated.output
     allowed = ToolExecutor(external=ext, gate=ToolGate(allow_mcp=True)).execute("echo", {"msg": "hi"})
     assert allowed.ok and "echo: hi" in allowed.output
+
+
+def test_allowlist_permits_prefix_and_denies_others():
+    al = MCPAllowlist([["python", "-m", "myserver"]])
+    assert al.permits(["python", "-m", "myserver", "--flag"])   # prefix match
+    assert not al.permits(["python", "-m", "evil"])
+    assert not al.permits(["rm", "-rf", "/"])
+    assert not MCPAllowlist([]).permits(["python"])             # empty denies all
+
+
+def test_open_mcp_refuses_non_allowlisted_before_spawning():
+    al = MCPAllowlist([["python", "-m", "safe"]])
+    with pytest.raises(MCPError):
+        open_mcp(["python", "-m", "danger"], allowlist=al)      # raises without spawning
 
 
 class _StubAgent:
