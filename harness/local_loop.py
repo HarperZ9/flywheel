@@ -27,7 +27,8 @@ def _result_meta(name, res, sign_key, extra=None) -> dict:
 
 def run_agent(agent, goal: str, executor: ToolExecutor,
               ledger: "SessionLedger | None" = None, *, max_steps: int = 6,
-              test_cmd: "str | None" = None, sign_key: "bytes | None" = None) -> dict:
+              test_cmd: "str | None" = None, sign_key: "bytes | None" = None,
+              on_event=None) -> dict:
     """Run the goal to completion (or max_steps). Returns the final answer, the
     step count, and the ledger checkpoint + verify verdict.
 
@@ -37,6 +38,14 @@ def run_agent(agent, goal: str, executor: ToolExecutor,
     then carries `tests_pass`, and the whole edit->test->repair trajectory is
     witnessed in the ledger — a provable "made the tests green"."""
     ledger = ledger if ledger is not None else SessionLedger()
+
+    def _emit(**e):                                  # stream loop progress; never let it break the loop
+        if on_event is not None:
+            try:
+                on_event(e)
+            except Exception:
+                pass
+
     if TOOLS_SYSTEM not in agent.system:
         agent.system = agent.system + "\n\n" + TOOLS_SYSTEM
     ext_sys = executor.external_tools_system() if hasattr(executor, "external_tools_system") else ""
@@ -51,6 +60,7 @@ def run_agent(agent, goal: str, executor: ToolExecutor,
         ledger.append("assistant", text, {
             "backend": resp.get("backend"),
             "receipt": resp.get("x_receipt", {}).get("receipt_id")})
+        _emit(type="assistant", step=step, text=text)
 
         calls = parse_tool_calls(text)
         if not calls:
@@ -59,6 +69,7 @@ def run_agent(agent, goal: str, executor: ToolExecutor,
             res = executor.execute("run", {"cmd": test_cmd})
             ledger.append("tool_call", f"run {json.dumps({'cmd': test_cmd}, sort_keys=True)}")
             ledger.append("tool_result", res.output, _result_meta("run", res, sign_key, {"gate": "test"}))
+            _emit(type="tool_result", name="run", ok=res.ok, output=res.output[:500])
             if res.output.startswith("[gate]"):
                 return _done(text, step, ledger, tests_pass=False,
                              note="test gate set but exec is disabled (pass --allow-exec)")
@@ -73,6 +84,8 @@ def run_agent(agent, goal: str, executor: ToolExecutor,
             res = executor.execute(name, args)
             ledger.append("tool_call", f"{name} {json.dumps(args, sort_keys=True)}")
             ledger.append("tool_result", res.output, _result_meta(name, res, sign_key))
+            _emit(type="tool_call", name=name, args=args)
+            _emit(type="tool_result", name=name, ok=res.ok, output=res.output[:500])
             observations.append(f"TOOL {name} -> {'ok' if res.ok else 'FAIL'}:\n{res.output}")
 
         message = ("TOOL RESULTS:\n" + "\n\n".join(observations) +

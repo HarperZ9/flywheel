@@ -442,6 +442,31 @@ def _agent_post(body: dict, root):
     return sent
 
 
+def test_sse_agent_streams_events(monkeypatch):
+    import io
+    import harness.router_agent as RA
+
+    def fake_run(goal, endpoint, **kw):
+        oe = kw["on_event"]
+        oe({"type": "assistant", "step": 1, "text": "working"})
+        oe({"type": "tool_result", "name": "list_dir", "ok": True, "output": "a\nb"})
+        return {"final": "done", "steps": 1, "verified": True, "integrity": {"clean": True}}
+
+    monkeypatch.setattr(RA, "run_router_agent", fake_run)
+    h = gateway._Handler.__new__(gateway._Handler)
+    h.root = "."
+    h.wfile = io.BytesIO()
+    h.send_response = lambda *a, **k: None
+    h.send_header = lambda *a, **k: None
+    h.end_headers = lambda *a, **k: None
+    h._cors = lambda: None
+    h._sse_agent({"stream": True}, "the goal", "endpoint")
+    out = h.wfile.getvalue().decode()
+    assert "assistant" in out and "tool_result" in out
+    assert '"type": "done"' in out
+    assert out.rstrip().endswith("data: [DONE]")
+
+
 def test_router_stats_endpoint(monkeypatch):
     from harness.router_stats import RouterStats
     rs = RouterStats()
