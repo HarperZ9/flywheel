@@ -81,6 +81,7 @@ Every route is same-origin JSON you can also `curl`:
 | `POST /api/agent` | Run a gated, witnessed tool loop (read/edit/run) over any provider |
 | `POST /v1/chat/completions` | Drop-in OpenAI-compatible; `model` names any provider; streams |
 | `GET /v1/models` | OpenAI-compatible model list (the roster) |
+| `POST /v1/embeddings` | OpenAI-compatible embeddings, routed to a provider by name |
 | `POST /api/companion` | Answer locally, escalate only the hard slice |
 | `POST /api/forge` | Turn a plain goal into a structured prompt with checkable success gates |
 | `GET /api/world` | The projected state (roster, findings, cursor) under one root hash |

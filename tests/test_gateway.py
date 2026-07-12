@@ -442,6 +442,57 @@ def _agent_post(body: dict, root):
     return sent
 
 
+def _fake_spec(base_url="https://api.x.com/v1", api_key_env="X_KEY"):
+    s = type("Spec", (), {})()
+    s.base_url, s.api_key_env, s.local, s.default_model = base_url, api_key_env, False, "e"
+    return s
+
+
+def test_embeddings_unknown_provider_400():
+    body, code = gateway.openai_embeddings({"model": "no-such", "input": "hi"})
+    assert code == 400 and "no hosted embeddings provider" in body["error"]["message"]
+
+
+def test_embeddings_missing_credential_400(monkeypatch):
+    from harness import providers
+    monkeypatch.setitem(providers.REGISTRY, "xprov", _fake_spec())
+    monkeypatch.delenv("X_KEY", raising=False)
+    body, code = gateway.openai_embeddings({"model": "xprov", "input": "hi"})
+    assert code == 400 and "missing credential" in body["error"]["message"]
+
+
+def test_embeddings_forwards_to_provider(monkeypatch):
+    from harness import providers
+    monkeypatch.setitem(providers.REGISTRY, "xprov", _fake_spec())
+    monkeypatch.setenv("X_KEY", "secret")
+    captured = {}
+
+    class _Resp:
+        status = 200
+
+        def read(self):
+            return b'{"data":[{"embedding":[0.1,0.2]}]}'
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *a):
+            return False
+
+    def fake_urlopen(request, timeout=60):
+        captured["url"] = request.full_url
+        captured["headers"] = list(request.header_items())
+        captured["body"] = json.loads(request.data)
+        return _Resp()
+
+    monkeypatch.setattr(gateway.urllib.request, "urlopen", fake_urlopen)
+    body, code = gateway.openai_embeddings({"model": "xprov:embed-3", "input": "hi", "adaptive": True})
+    assert code == 200 and body["data"][0]["embedding"] == [0.1, 0.2]
+    assert captured["url"] == "https://api.x.com/v1/embeddings"
+    assert any("Bearer secret" in str(v) for _, v in captured["headers"])   # key forwarded
+    assert captured["body"]["model"] == "embed-3" and "adaptive" not in captured["body"]
+
+
 def test_sse_agent_streams_events(monkeypatch):
     import io
     import harness.router_agent as RA
