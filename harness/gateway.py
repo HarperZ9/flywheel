@@ -318,6 +318,111 @@ def route_request(prompt: str, endpoint: str) -> tuple[dict, int]:
         return {"error": f"provider call failed: {e}"}, 502
 
 
+# --- OpenAI-compatible surface: /v1/chat/completions + /v1/models ---------------
+# Any OpenAI SDK or client can point its base_url at this gateway and route to ANY
+# provider by naming it in `model` ("anthropic", "openai:gpt-4o", or a local name),
+# getting back a standard ChatCompletion PLUS an `x_receipt` extension OpenAI clients
+# ignore. This is the drop-in compatibility that makes Flywheel a better router: the
+# same wire protocol every tool already speaks, plus the verify layer none of them have.
+
+def _flatten_messages(messages) -> tuple[str, str]:
+    """OpenAI messages -> (system, prompt). System turns concatenate; the last
+    user/assistant/tool turn is the prompt. Content may be a string or the
+    OpenAI content-parts array."""
+    system, parts = "", []
+    for m in messages or []:
+        role = m.get("role", "")
+        content = m.get("content", "")
+        if isinstance(content, list):
+            content = "".join(p.get("text", "") for p in content if isinstance(p, dict))
+        content = content or ""
+        if role == "system":
+            system = (system + "\n" + content).strip() if system else content
+        elif role in ("user", "assistant", "tool"):
+            parts.append(content)
+    return system, (parts[-1] if parts else "")
+
+
+def _resolve_proposer(model: str, serve_url: str):
+    """Pick the proposer for an OpenAI `model` string. Returns
+    (proposer, error, code). Empty / a local alias -> the local serve model; a
+    roster endpoint name or `name:model` -> that provider (credential-gated,
+    honest error if absent); anything else -> 404."""
+    m = (model or "").strip()
+    if m in ("", "flywheel", "flywheel-serve", "serve", "default", "local", "auto"):
+        try:
+            from harness.proposer import ServeProposer
+        except Exception:
+            from proposer import ServeProposer
+        return ServeProposer(base_url=serve_url), None, 200
+    name = m.split(":", 1)[0]
+    sub = m.split(":", 1)[1] if ":" in m else None
+    roster = _unified_roster()
+    entry = next((e for e in roster.get("endpoints", []) if e["name"] == name), None)
+    if entry is None:
+        return None, f"unknown model {m!r}; see GET /v1/models", 404
+    if entry.get("credential") == "absent":
+        return None, f"model {name!r} has no credential present; set its API key in the environment", 400
+    try:
+        from harness.endpoint_registry import make_endpoint_proposer
+    except Exception:
+        from endpoint_registry import make_endpoint_proposer
+    try:
+        return make_endpoint_proposer(name, model=sub, ledger=_router_ledger()), None, 200
+    except Exception as e:
+        return None, f"cannot build proposer for {name!r}: {e}", 502
+
+
+def _chat_receipt(prompt, system, max_tokens, temperature, seed, out):
+    from harness.messages_api import make_receipt
+    gen = {"text": out.text, "seed": getattr(out, "seed", seed),
+           "prompt_hash": getattr(out, "prompt_hash", "")}
+    return make_receipt({"prompt": prompt, "system": system, "max_new_tokens": max_tokens,
+                         "temperature": temperature, "seed": seed}, gen, out.model_ref)
+
+
+def openai_chat(req: dict, serve_url: str):
+    """Core of POST /v1/chat/completions (non-stream). Returns (body, code, receipt,
+    text, model_ref). On error, receipt/text/model_ref are None."""
+    import time
+    messages = req.get("messages", [])
+    system, prompt = _flatten_messages(messages)
+    if not prompt:
+        return {"error": {"message": "messages must include a user turn", "type": "invalid_request_error"}}, 400, None, None, None
+    temperature = float(req.get("temperature", 0.0))
+    max_tokens = int(req.get("max_tokens", 512))
+    seed = int(req.get("seed", 0))
+    proposer, err, code = _resolve_proposer(req.get("model", ""), serve_url)
+    if err is not None:
+        return {"error": {"message": err, "type": "invalid_request_error"}}, code, None, None, None
+    try:
+        out = proposer.generate(prompt, seed=seed, temperature=temperature,
+                                max_new_tokens=max_tokens, system=system)
+    except Exception as e:
+        return {"error": {"message": f"provider call failed: {e}", "type": "api_error"}}, 502, None, None, None
+    receipt = _chat_receipt(prompt, system, max_tokens, temperature, seed, out)
+    body = {"id": "chatcmpl-" + receipt["receipt_id"], "object": "chat.completion",
+            "created": int(time.time()), "model": out.model_ref,
+            "choices": [{"index": 0, "message": {"role": "assistant", "content": out.text},
+                         "finish_reason": "stop"}],
+            "usage": {"prompt_tokens": len(prompt.split()),
+                      "completion_tokens": len(str(out.text).split()),
+                      "total_tokens": len(prompt.split()) + len(str(out.text).split())},
+            "x_receipt": receipt}
+    return body, 200, receipt, out.text, out.model_ref
+
+
+def openai_models() -> dict:
+    """GET /v1/models: the roster as OpenAI model objects, so a client's model
+    picker lists every provider it can route to. `flywheel` is the verified local seat."""
+    roster = _unified_roster()
+    data = [{"id": "flywheel", "object": "model", "created": 0, "owned_by": "flywheel"}]
+    for e in roster.get("endpoints", []):
+        data.append({"id": e["name"], "object": "model", "created": 0,
+                     "owned_by": e.get("source", "flywheel")})
+    return {"object": "list", "data": data}
+
+
 class _Handler(BaseHTTPRequestHandler):
     root = REPO
     serve_url = "http://127.0.0.1:8765"
@@ -346,6 +451,42 @@ class _Handler(BaseHTTPRequestHandler):
         self.send_header("Content-Length", str(len(body)))
         self.end_headers()
         self.wfile.write(body)
+
+    def _sse_chat(self, req: dict):
+        """Stream a chat completion as OpenAI Server-Sent Events. The verified or
+        routed answer is produced whole (a receipt is a hash over the FULL response,
+        so we stand behind what we stream), then delivered as chat.completion.chunk
+        deltas ending with [DONE]. Any OpenAI streaming client consumes it as-is."""
+        import time
+        body, code, receipt, text, model_ref = openai_chat(req, self.serve_url)
+        if code != 200:
+            return self._json(body, code)          # errors are plain JSON, not a stream
+        cid = "chatcmpl-" + receipt["receipt_id"]
+        created = int(time.time())
+        self.send_response(200)
+        self.send_header("Content-Type", "text/event-stream")
+        self.send_header("Cache-Control", "no-cache")
+        self.send_header("Connection", "keep-alive")
+        self.end_headers()
+
+        def emit(choice, extra=None):
+            obj = {"id": cid, "object": "chat.completion.chunk", "created": created,
+                   "model": model_ref, "choices": [choice]}
+            if extra:
+                obj.update(extra)
+            self.wfile.write(("data: " + json.dumps(obj) + "\n\n").encode())
+            self.wfile.flush()
+
+        try:
+            emit({"index": 0, "delta": {"role": "assistant"}, "finish_reason": None})
+            import re
+            for piece in (re.findall(r"\S+\s*", str(text)) or [str(text)]):
+                emit({"index": 0, "delta": {"content": piece}, "finish_reason": None})
+            emit({"index": 0, "delta": {}, "finish_reason": "stop"}, {"x_receipt": receipt})
+            self.wfile.write(b"data: [DONE]\n\n")
+            self.wfile.flush()
+        except Exception:
+            pass                                   # client hung up mid-stream; nothing to do
 
     def _proxy(self, target: str):
         length = self._content_length()
@@ -396,12 +537,27 @@ class _Handler(BaseHTTPRequestHandler):
             return self._json(_projected_world(self.root))
         if p == "/api/training/status":
             return self._json(_training_status(self.run_root))
+        if p == "/v1/models":                        # OpenAI-compatible model list (the roster)
+            return self._json(openai_models())
         if p.startswith("/v1/") or p == "/generate" or p == "/health":
             return self._proxy(self.serve_url.rstrip("/") + p)
         return self._static(p)
 
     def do_POST(self):
         p = self.path.split("?", 1)[0]
+        if p == "/v1/chat/completions":              # OpenAI-compatible, routes to ANY provider
+            length = self._content_length()
+            if length is None:
+                return self._json({"error": {"message": "invalid or oversized Content-Length",
+                                             "type": "invalid_request_error"}}, 400)
+            try:
+                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
+            except Exception:
+                req = {}
+            if req.get("stream"):
+                return self._sse_chat(req)
+            body, code, _r, _t, _m = openai_chat(req, self.serve_url)
+            return self._json(body, code)
         if p.startswith("/v1/") or p == "/generate":
             return self._proxy(self.serve_url.rstrip("/") + p)
         if p == "/api/forge":                        # goal -> verified PRP (the studio)
@@ -472,6 +628,7 @@ def main(argv=None) -> int:
     print(f"  route     POST /api/route {{'prompt':...,'endpoint':...}} (any provider + a receipt)")
     print(f"  companion POST /api/companion {{'prompt': ...}}      (answer local, escalate hard)")
     print(f"  training  http://127.0.0.1:{a.port}/api/training/status  (read-only supervisor status)")
+    print(f"  openai    POST /v1/chat/completions  +  GET /v1/models  (drop-in, model=any provider, stream ok)")
     try:
         httpd.serve_forever()
     except KeyboardInterrupt:

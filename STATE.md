@@ -10,6 +10,27 @@
 
 Last updated: 2026-07-11
 
+## 2026-07-11 (session 10) -- OpenAI-compat parity + design canon correction + 32B
+
+- **OpenAI-compatible surface (compatibility parity):** `POST /v1/chat/completions`
+  (routes to ANY provider by `model` name, local or hosted, credential-gated, honest
+  errors, mints an x_receipt extension) + `GET /v1/models` (roster as OpenAI model
+  objects) + SSE streaming (`stream:true` -> chat.completion.chunk deltas + [DONE];
+  the answer is produced whole so the receipt covers it, then chunked). Any OpenAI
+  SDK/client now points base_url at the gateway and works. 9 falsifiers; live-smoked
+  (/v1/models = 21 models; credential-gated 400; serve-down 502). 25 gateway tests.
+- **Design system CORRECTED to the canon.** The cyan/blue "Apple glass" telos.css was
+  a STALE Jul-9 artifact; operator rejected it. Rebuilt the shell to the ecosystem
+  DESIGN-VOICE-CANON (telos-v2/project-docs + portfolio-site/system/system.css, parallel
+  session owns them): two faces only (Hanken Grotesk + Conso, self-hosted woff2 bundled
+  in site/assets/fonts), color ONLY as a verdict (verified green / drift iris), ceramic
+  ground, ground-tint cards NOT glass, ceramic-light default + dark counterpart, both AA
+  >7:1. Schematics + handoff palette + BRAND-VOICE all to the canon. Memory corrected.
+- **32B training healthy on E: (parallel):** step ~180/2019, checkpoints 50 + 150 landed
+  on E:/local-model-run/checkpoints/phase2-linux-qlora-cpt-32b; RAM-gated supervisor in a
+  WSL screen (train32b), anchored by a backgrounded tail. Fixed the CRLF that broke the
+  .sh scripts (.gitattributes pins *.sh eol=lf).
+
 ## 2026-07-11 (session 9) -- public launch, universal routing, reposition
 
 - **Flywheel is PUBLIC:** curated clean release shipped as a NEW repo
