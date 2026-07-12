@@ -240,7 +240,7 @@ class LocalAgent:
         res = compaction.compact(
             self.history, token_budget=self.compact_budget,
             keep_recent=self.compact_keep_recent,
-            summarize=self.summarize or compaction.extractive_summary)
+            summarize=self.summarize or compaction.lexrank_summary)
         if res.compacted:
             self.history = res.messages
             self.last_compaction = res.receipt
