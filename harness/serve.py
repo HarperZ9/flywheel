@@ -25,10 +25,16 @@ import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
-os.environ.setdefault("HF_HOME", r"E:\local-model-run\hf-cache")
-os.environ.setdefault("PIP_CACHE_DIR", r"E:\local-model-run\pip-cache")
-os.environ.setdefault("TMP", r"E:\local-model-run\tmp")
-os.environ.setdefault("TEMP", r"E:\local-model-run\tmp")
+try:
+    from .run_paths import run_root_default
+except ImportError:  # pragma: no cover - supports `python harness/serve.py`
+    from run_paths import run_root_default
+
+_RUN = run_root_default()
+os.environ.setdefault("HF_HOME", str(Path(_RUN) / "hf-cache"))
+os.environ.setdefault("PIP_CACHE_DIR", str(Path(_RUN) / "pip-cache"))
+os.environ.setdefault("TMP", str(Path(_RUN) / "tmp"))
+os.environ.setdefault("TEMP", str(Path(_RUN) / "tmp"))
 os.environ.setdefault("BITSANDBYTES_NOWELCOME", "1")
 
 try:
@@ -44,7 +50,7 @@ torch = None
 # (/mnt/e/...) — the working GPU stack is WSL, so the endgame sets these to
 # Linux paths without editing this file.
 MODEL_PATH = os.environ.get(
-    "SERVE_MODEL_PATH", r"E:\local-model-run\models\Qwen2.5-Coder-14B-Instruct")
+    "SERVE_MODEL_PATH", str(Path(_RUN) / "models" / "Qwen2.5-Coder-14B-Instruct"))
 ADAPTER_PATH = os.environ.get("SERVE_ADAPTER_PATH", "")  # trained LoRA adapter dir
 MODEL_REF = "Qwen2.5-Coder-14B-Instruct (base, nf4)"
 # Optional weights fingerprint bound into every receipt so a receipt proves WHICH
@@ -59,12 +65,12 @@ SERVE_MAX_MEMORY_CPU = os.environ.get("SERVE_MAX_MEMORY_CPU", "").strip()
 SERVE_OFFLOAD_FOLDER = os.environ.get("SERVE_OFFLOAD_FOLDER", "").strip()
 MODEL_CATALOG = {
     "14b": {
-        "path": r"E:\local-model-run\models\Qwen2.5-Coder-14B-Instruct",
+        "path": str(Path(_RUN) / "models" / "Qwen2.5-Coder-14B-Instruct"),
         "ref": "Qwen2.5-Coder-14B-Instruct (base, nf4)",
         "aliases": ("14b", "14b-base", "qwen2.5-coder-14b"),
     },
     "32b": {
-        "path": r"E:\local-model-run\models\Qwen2.5-Coder-32B-Instruct",
+        "path": str(Path(_RUN) / "models" / "Qwen2.5-Coder-32B-Instruct"),
         "ref": "Qwen2.5-Coder-32B-Instruct (base, nf4)",
         "aliases": ("32b", "32b-base", "qwen2.5-coder-32b"),
     },

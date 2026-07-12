@@ -10,6 +10,9 @@ from typing import Any
 
 SCHEMA = "harness.schematic-drift-check/v1"
 
+# Repo root, so the shipped source carries no build-machine absolute path.
+_REPO = Path(__file__).resolve().parent.parent
+
 DEFAULT_REQUIRED_NODES = [
     "agentic_task_manifest_generator",
     "cross_harness_manifest",
@@ -34,16 +37,17 @@ DEFAULT_REQUIRED_EDGES = [
     ("closed_loop_seed", "closed_loop_outcome"),
 ]
 
+# Repo-relative script paths; resolved against _REPO where they are checked.
 DEFAULT_REQUIRED_FILES = {
-    "agentic_task_manifest_generator": "C:/dev/local-model/scripts/run_agentic_task_set_manifest.py",
-    "cross_harness_manifest": "C:/dev/local-model/scripts/run_cross_harness_manifest.py",
-    "adapter_runtime_matrix": "C:/dev/local-model/scripts/run_adapter_runtime_matrix.py",
-    "forum_route_receipts": "C:/dev/local-model/scripts/run_forum_route_receipts.py",
-    "mcp_tool_health": "C:/dev/local-model/scripts/run_mcp_tool_health_receipts.py",
-    "embodied_realtime_plan": "C:/dev/local-model/scripts/run_embodied_realtime_multimodal_plan.py",
-    "benchmark_execution_matrix": "C:/dev/local-model/scripts/run_benchmark_execution_matrix.py",
-    "closed_loop_seed": "C:/dev/local-model/scripts/run_closed_loop_benchmark_seed.py",
-    "closed_loop_outcome": "C:/dev/local-model/scripts/run_closed_loop_outcome_report.py",
+    "agentic_task_manifest_generator": "scripts/run_agentic_task_set_manifest.py",
+    "cross_harness_manifest": "scripts/run_cross_harness_manifest.py",
+    "adapter_runtime_matrix": "scripts/run_adapter_runtime_matrix.py",
+    "forum_route_receipts": "scripts/run_forum_route_receipts.py",
+    "mcp_tool_health": "scripts/run_mcp_tool_health_receipts.py",
+    "embodied_realtime_plan": "scripts/run_embodied_realtime_multimodal_plan.py",
+    "benchmark_execution_matrix": "scripts/run_benchmark_execution_matrix.py",
+    "closed_loop_seed": "scripts/run_closed_loop_benchmark_seed.py",
+    "closed_loop_outcome": "scripts/run_closed_loop_outcome_report.py",
 }
 
 STALE_PHRASES = [
@@ -94,7 +98,7 @@ def build_drift_report(
         {
             "id": key,
             "path": path_text,
-            "exists": Path(path_text).exists(),
+            "exists": (_REPO / path_text).exists(),   # relative resolves against repo; absolute passes through
         }
         for key, path_text in sorted(required_files.items())
     ]

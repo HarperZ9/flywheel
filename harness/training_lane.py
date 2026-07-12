@@ -30,7 +30,9 @@ import subprocess
 from pathlib import PurePosixPath, PureWindowsPath
 
 SCHEMA = "flywheel.training-status/v1"
-RUN_ROOT = "E:/local-model-run"
+from .run_paths import run_root_default
+
+RUN_ROOT = run_root_default()
 SUP_LOG_REL = "logs/phase2-32b-supervisor.log"
 CKPT_REL = "checkpoints/phase2-linux-qlora-cpt-32b"
 STOP_REL = "STOP_32B"

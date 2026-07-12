@@ -18,7 +18,9 @@ import json
 from dataclasses import dataclass, field
 from pathlib import Path
 
-DEFAULT_RUN_ROOT = Path("E:/local-model-run")
+from .run_paths import run_root_default
+
+DEFAULT_RUN_ROOT = Path(run_root_default())
 
 
 def _load_and_hash(p: Path) -> tuple[object, str | None]:
