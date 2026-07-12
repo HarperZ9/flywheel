@@ -204,6 +204,19 @@ def test_flatten_messages():
     assert p2 == "hi"                              # OpenAI content-parts array flattens
 
 
+def test_flatten_messages_multi_turn_keeps_history():
+    sys_, prompt = gateway._flatten_messages([
+        {"role": "system", "content": "be brief"},
+        {"role": "user", "content": "what is 2+2?"},
+        {"role": "assistant", "content": "4"},
+        {"role": "user", "content": "and times 3?"}])
+    assert sys_ == "be brief"
+    # the whole conversation is present, not just the last line
+    assert "what is 2+2?" in prompt and "4" in prompt and "and times 3?" in prompt
+    assert prompt.rstrip().endswith("Assistant:")   # primes the next turn
+    assert "User:" in prompt and "Assistant:" in prompt
+
+
 def test_openai_models_lists_flywheel_and_roster():
     m = gateway.openai_models()
     assert m["object"] == "list"
@@ -229,6 +242,54 @@ def test_openai_chat_returns_openai_shape_with_receipt(monkeypatch):
                            "temperature": 0.0, "seed": 0},
                           {"text": "hi from the model", "seed": 0, "prompt_hash": "h"}, "stub")
     assert body["x_receipt"]["receipt_id"] == expect["receipt_id"]
+
+
+class _Raiser:
+    model_ref = "down-provider"
+    def generate(self, *a, **k):
+        raise RuntimeError("provider down")
+
+
+def test_openai_chat_failover_tries_next_on_error(monkeypatch):
+    def resolver(model, serve_url):
+        if model == "p1": return _Raiser(), None, 200
+        if model == "p2": return _OneProposer("answer from p2"), None, 200
+        return None, "unknown", 404
+    monkeypatch.setattr(gateway, "_resolve_proposer", resolver)
+    body, code, receipt, text, mref = gateway.openai_chat(
+        {"model": "p1,p2", "messages": [{"role": "user", "content": "hi"}]}, "http://x")
+    assert code == 200 and text == "answer from p2"
+    assert receipt["routed_via"] == "p2"                       # the one that actually answered
+    assert any("p1" in t for t in receipt["failover_from"])    # records the skipped primary
+
+
+def test_openai_chat_failover_skips_absent_credential(monkeypatch):
+    def resolver(model, serve_url):
+        if model == "openai": return None, "no credential present", 400
+        if model == "serve": return _OneProposer("local answer"), None, 200
+        return None, "unknown", 404
+    monkeypatch.setattr(gateway, "_resolve_proposer", resolver)
+    body, code, receipt, text, mref = gateway.openai_chat(
+        {"model": "openai,serve", "messages": [{"role": "user", "content": "hi"}]}, "http://x")
+    assert code == 200 and receipt["routed_via"] == "serve"
+
+
+def test_openai_chat_all_providers_fail(monkeypatch):
+    monkeypatch.setattr(gateway, "_resolve_proposer",
+                        lambda m, s: (None, "no credential present", 400))
+    body, code, *_ = gateway.openai_chat(
+        {"model": "a,b", "messages": [{"role": "user", "content": "hi"}]}, "http://x")
+    assert code == 400 and "all providers failed" in body["error"]["message"]
+    assert len(body["failover_from"]) == 2                     # both attempts recorded
+
+
+def test_openai_chat_single_model_clean_receipt(monkeypatch):
+    monkeypatch.setattr(gateway, "_resolve_proposer",
+                        lambda m, s: (_OneProposer("ok"), None, 200))
+    body, code, receipt, *_ = gateway.openai_chat(
+        {"model": "solo", "messages": [{"role": "user", "content": "hi"}]}, "http://x")
+    assert code == 200 and receipt["routed_via"] == "solo"
+    assert "failover_from" not in receipt                      # no fallback tried, no noise
 
 
 def test_openai_chat_no_user_turn_is_400():

@@ -326,10 +326,13 @@ def route_request(prompt: str, endpoint: str) -> tuple[dict, int]:
 # same wire protocol every tool already speaks, plus the verify layer none of them have.
 
 def _flatten_messages(messages) -> tuple[str, str]:
-    """OpenAI messages -> (system, prompt). System turns concatenate; the last
-    user/assistant/tool turn is the prompt. Content may be a string or the
-    OpenAI content-parts array."""
-    system, parts = "", []
+    """OpenAI messages -> (system, prompt). System turns concatenate. A single user
+    turn passes through as the bare prompt (unchanged). A multi-turn conversation is
+    rendered as a labelled transcript ending with an open `Assistant:` turn, so the
+    model sees the history instead of only the last line. Content may be a string or
+    the OpenAI content-parts array. (Structured passthrough to a provider's own chat
+    template is a future refinement; the proposer seam is single-prompt today.)"""
+    system, convo = "", []
     for m in messages or []:
         role = m.get("role", "")
         content = m.get("content", "")
@@ -339,8 +342,13 @@ def _flatten_messages(messages) -> tuple[str, str]:
         if role == "system":
             system = (system + "\n" + content).strip() if system else content
         elif role in ("user", "assistant", "tool"):
-            parts.append(content)
-    return system, (parts[-1] if parts else "")
+            convo.append((role, content))
+    if len(convo) <= 1:
+        return system, (convo[0][1] if convo else "")
+    label = {"user": "User", "assistant": "Assistant", "tool": "Tool"}
+    lines = [f"{label.get(r, 'User')}: {c}" for r, c in convo]
+    lines.append("Assistant:")
+    return system, "\n\n".join(lines)
 
 
 def _resolve_proposer(model: str, serve_url: str):
@@ -383,33 +391,51 @@ def _chat_receipt(prompt, system, max_tokens, temperature, seed, out):
 
 def openai_chat(req: dict, serve_url: str):
     """Core of POST /v1/chat/completions (non-stream). Returns (body, code, receipt,
-    text, model_ref). On error, receipt/text/model_ref are None."""
+    text, model_ref). On error, receipt/text/model_ref are None.
+
+    Failover: a comma-separated `model` ("openai,anthropic,serve") is a fallback
+    chain, tried in order until one succeeds. The winning provider and any skipped
+    ones are recorded on the receipt (routed_via / failover_from), so the record
+    stays honest about which model actually answered. The reliability layer other
+    routers charge for, in the open."""
     import time
-    messages = req.get("messages", [])
-    system, prompt = _flatten_messages(messages)
+    system, prompt = _flatten_messages(req.get("messages", []))
     if not prompt:
         return {"error": {"message": "messages must include a user turn", "type": "invalid_request_error"}}, 400, None, None, None
     temperature = float(req.get("temperature", 0.0))
     max_tokens = int(req.get("max_tokens", 512))
     seed = int(req.get("seed", 0))
-    proposer, err, code = _resolve_proposer(req.get("model", ""), serve_url)
-    if err is not None:
-        return {"error": {"message": err, "type": "invalid_request_error"}}, code, None, None, None
-    try:
-        out = proposer.generate(prompt, seed=seed, temperature=temperature,
-                                max_new_tokens=max_tokens, system=system)
-    except Exception as e:
-        return {"error": {"message": f"provider call failed: {e}", "type": "api_error"}}, 502, None, None, None
-    receipt = _chat_receipt(prompt, system, max_tokens, temperature, seed, out)
-    body = {"id": "chatcmpl-" + receipt["receipt_id"], "object": "chat.completion",
-            "created": int(time.time()), "model": out.model_ref,
-            "choices": [{"index": 0, "message": {"role": "assistant", "content": out.text},
-                         "finish_reason": "stop"}],
-            "usage": {"prompt_tokens": len(prompt.split()),
-                      "completion_tokens": len(str(out.text).split()),
-                      "total_tokens": len(prompt.split()) + len(str(out.text).split())},
-            "x_receipt": receipt}
-    return body, 200, receipt, out.text, out.model_ref
+    candidates = [m.strip() for m in str(req.get("model", "")).split(",") if m.strip()] or [""]
+    tried, last_err, last_code = [], "no provider resolved", 502
+    for cand in candidates:
+        proposer, err, code = _resolve_proposer(cand, serve_url)
+        if err is not None:
+            last_err, last_code = err, code
+            tried.append((cand or "flywheel") + ": unavailable")
+            continue
+        try:
+            out = proposer.generate(prompt, seed=seed, temperature=temperature,
+                                    max_new_tokens=max_tokens, system=system)
+        except Exception as e:
+            last_err, last_code = f"provider call failed: {e}", 502
+            tried.append((cand or "flywheel") + ": error")
+            continue
+        receipt = _chat_receipt(prompt, system, max_tokens, temperature, seed, out)
+        receipt["routed_via"] = cand or "flywheel"
+        if tried:
+            receipt["failover_from"] = tried       # honest: which providers were skipped, and why
+        body = {"id": "chatcmpl-" + receipt["receipt_id"], "object": "chat.completion",
+                "created": int(time.time()), "model": out.model_ref,
+                "choices": [{"index": 0, "message": {"role": "assistant", "content": out.text},
+                             "finish_reason": "stop"}],
+                "usage": {"prompt_tokens": len(prompt.split()),
+                          "completion_tokens": len(str(out.text).split()),
+                          "total_tokens": len(prompt.split()) + len(str(out.text).split())},
+                "x_receipt": receipt}
+        return body, 200, receipt, out.text, out.model_ref
+    detail = "; ".join(tried) if tried else last_err
+    return {"error": {"message": f"all providers failed ({detail})", "type": "api_error"},
+            "failover_from": tried}, last_code, None, None, None
 
 
 def openai_models() -> dict:
