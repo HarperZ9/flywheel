@@ -391,6 +391,46 @@ def _chat_receipt(prompt, system, max_tokens, temperature, seed, out):
                          "temperature": temperature, "seed": seed}, gen, out.model_ref)
 
 
+def openai_embeddings(req: dict):
+    """POST /v1/embeddings, routed to an embeddings-capable provider named by the
+    `model` field ("openai" or "openai:text-embedding-3-small"). Flywheel forwards
+    the request with the provider's key (present-only, from the env, never stored or
+    logged), so any OpenAI embeddings client works through the same surface. Flywheel
+    is zero-dep and computes no embeddings itself; it routes. Returns (body, code)."""
+    import urllib.error
+
+    from harness import providers
+    model = str(req.get("model", ""))
+    name = model.split(":", 1)[0] or "openai"
+    spec = providers.REGISTRY.get(name)
+    if spec is None or getattr(spec, "local", False):
+        return {"error": {"message": f"no hosted embeddings provider '{name}'; "
+                          "name one from GET /api/endpoints", "type": "invalid_request_error"}}, 400
+    key = os.environ.get(spec.api_key_env or "", "")
+    if spec.api_key_env and not key:
+        return {"error": {"message": f"missing credential for '{name}'",
+                          "type": "invalid_request_error"}}, 400
+    fwd = dict(req)
+    fwd.pop("adaptive", None)
+    if ":" in model:
+        fwd["model"] = model.split(":", 1)[1]
+    headers = {"Content-Type": "application/json"}
+    if key:
+        headers["Authorization"] = f"Bearer {key}"
+    request = urllib.request.Request(spec.base_url.rstrip("/") + "/embeddings",
+                                     data=json.dumps(fwd).encode(), method="POST", headers=headers)
+    try:
+        with urllib.request.urlopen(request, timeout=60) as r:
+            return json.loads(r.read() or b"{}"), r.status
+    except urllib.error.HTTPError as e:
+        try:
+            return json.loads(e.read() or b"{}"), e.code
+        except Exception:
+            return {"error": {"message": f"provider returned {e.code}"}}, e.code
+    except Exception as e:
+        return {"error": {"message": f"embeddings upstream unreachable: {type(e).__name__}"}}, 502
+
+
 _ROUTER_STATS = None
 
 
@@ -695,6 +735,17 @@ class _Handler(BaseHTTPRequestHandler):
             if req.get("stream"):
                 return self._sse_chat(req)
             body, code, _r, _t, _m = openai_chat(req, self.serve_url)
+            return self._json(body, code)
+        if p == "/v1/embeddings":                    # OpenAI-compatible, routed to a provider
+            length = self._content_length()
+            if length is None:
+                return self._json({"error": {"message": "invalid or oversized Content-Length",
+                                             "type": "invalid_request_error"}}, 400)
+            try:
+                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
+            except Exception:
+                req = {}
+            body, code = openai_embeddings(req)
             return self._json(body, code)
         if p.startswith("/v1/") or p == "/generate":
             return self._proxy(self.serve_url.rstrip("/") + p)
