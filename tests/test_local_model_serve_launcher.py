@@ -37,11 +37,17 @@ def test_serve_launcher_builds_plan_without_starting(tmp_path):
     row = report["rows"][0]
     assert report["summary"]["planned_rows"] == 1
     assert report["summary"]["started_rows"] == 0
-    assert row["command"][-2:] == ["--port", "8768"]
+    # --port is paired with the port derived from the profile endpoint. It is not
+    # required to be last: profile serve_args (device-map, max-memory) are appended
+    # after the core args, and argparse is order-independent.
+    port_idx = row["command"].index("--port")
+    assert row["command"][port_idx + 1] == "8768"
     assert "--model-profile" in row["command"]
     assert "32b" in row["command"]
     assert "--device-map" in row["command"]
     assert "20GiB" in row["command"]
+    # the profile's serve_args are appended after the core command
+    assert row["command"][-4:] == ["--device-map", "auto", "--max-memory-gpu", "20GiB"]
     assert row["failure_class"] == ""
     assert row["terminate_on_timeout"] is False
     assert row["terminated_on_timeout"] is False
