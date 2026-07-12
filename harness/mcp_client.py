@@ -145,6 +145,31 @@ class MCPClient:
         self.close()
 
 
+class MCPAllowlist:
+    """Only permit spawning MCP servers whose command matches an allowlisted argv
+    prefix. A web route must never launch an arbitrary subprocess; this is the gate
+    the HTTP surface consults before open_mcp(). An empty allowlist denies all."""
+
+    def __init__(self, allowed: "list | None" = None):
+        self.allowed = [list(entry) for entry in (allowed or []) if entry]
+
+    def permits(self, command: list) -> bool:
+        cmd = list(command)
+        return any(cmd[:len(entry)] == entry for entry in self.allowed)
+
+    def check(self, command: list) -> None:
+        if not self.permits(command):
+            raise MCPError(f"MCP server not allowlisted: {list(command)[:3]}")
+
+
+def open_mcp(command: list, *, allowlist: MCPAllowlist, timeout: float = 30.0,
+             client_name: str = "flywheel") -> MCPClient:
+    """The ONLY sanctioned way to spawn an MCP server from an untrusted caller:
+    the command is checked against the allowlist before any subprocess starts."""
+    allowlist.check(command)
+    return MCPClient(command, timeout=timeout, client_name=client_name).start()
+
+
 def as_external_tools(client: MCPClient, *, prefix: str = "") -> dict:
     """Turn an MCPClient's discovered tools into ToolExecutor `external` entries.
     Each entry is {fn, description}; fn(args) -> (ok, text). The executor gates
