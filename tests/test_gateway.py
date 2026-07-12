@@ -426,3 +426,41 @@ def test_content_length_guard_rejects_garbage_and_oversize():
     assert _content_length("") is None                 # present-but-empty
     assert _content_length("-5") is None               # negative
     assert _content_length(str(gateway._Handler.MAX_BODY + 1)) is None   # oversized
+
+
+def _agent_post(body: dict, root):
+    import io
+    raw = json.dumps(body).encode()
+    h = gateway._Handler.__new__(gateway._Handler)
+    h.path = "/api/agent"
+    h.root = root
+    h.headers = _FakeHeaders(str(len(raw)))
+    h.rfile = io.BytesIO(raw)
+    sent = {}
+    h._json = lambda b, code=200: sent.update(body=b, code=code)
+    h._post()
+    return sent
+
+
+def test_agent_route_validates_goal_and_endpoint(tmp_path):
+    sent = _agent_post({"goal": "", "endpoint": ""}, tmp_path)
+    assert sent["code"] == 400 and "goal" in sent["body"]["error"]
+
+
+def test_agent_route_dispatches_gated_and_caps_steps(tmp_path, monkeypatch):
+    import harness.router_agent as RA
+    seen = {}
+
+    def fake_run(goal, endpoint, **kw):
+        seen.update(goal=goal, endpoint=endpoint, kw=kw)
+        return {"final": "done", "steps": 1, "verified": True,
+                "checkpoint": "abc", "endpoint": endpoint}
+
+    monkeypatch.setattr(RA, "run_router_agent", fake_run)
+    sent = _agent_post({"goal": "fix the bug", "endpoint": "anthropic",
+                        "max_steps": 99}, tmp_path)
+    assert sent["code"] == 200 and sent["body"]["final"] == "done"
+    assert seen["goal"] == "fix the bug" and seen["endpoint"] == "anthropic"
+    assert seen["kw"]["max_steps"] == 12               # capped, no runaway loop
+    assert seen["kw"]["allow_write"] is False          # default-deny survives the HTTP hop
+    assert seen["kw"]["allow_exec"] is False
