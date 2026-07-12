@@ -35,7 +35,17 @@ benchmark encoding** for the hard lane (learned-model dependency on task admissi
 | 10 | Curated ~100-task hard lane + contamination freshness gate | S-M | **GATE SHIPPED 2026-07-12** `harness/hard_lane.py` (freshness/admit mechanism); dataset fetch to ~100 tasks remains ongoing curation | Terminal-Bench 2.0, LiveCodeBench, SWE-bench-Live [swept]; SWE-bench Verified now deprecated for eval |
 | + | Signed per-tool-call receipts (HMAC authenticity in the loop) | S | **SHIPPED 2026-07-12** `harness/tool_receipts.py` + run_agent sign_key | verification axis [swept] |
 | + | MCP-server allowlist for the HTTP surface | S | **SHIPPED 2026-07-12** `harness/mcp_client.py` MCPAllowlist + open_mcp | harness-landscape [swept] |
-| 11 | Merkle-tree world root with inclusion/consistency proofs | M | | RFC 9162 [real] |
+| 11 | Merkle-tree world root with inclusion/consistency proofs | M | **PRIMITIVE SHIPPED 2026-07-12** `harness/merkle.py` (root/proof/verify, RFC 6962); wiring into world.py root pending | RFC 9162 [real] |
+
+## 2026-07-12 functionality-extension batch (beyond the numbered roadmap)
+
+Public flywheel `16e623f`. Six capabilities, all stdlib + tested + thesis-preserving:
+adaptive routing (`router_stats.py`), agent tools grep/glob/apply_patch
+(`local_tools.py`), Merkle receipts (`merkle.py`), `flywheel verify` receipt re-check
+(`verify_receipt.py`), oracle-gated sub-agent fan-out (`fan_out.py`), agent-loop SSE
+streaming (`on_event` + `POST /api/agent` stream), and OpenAI-compatible
+`/v1/embeddings` (routed to a provider). Remaining lower-priority: wire Merkle into
+the world root, content-addressed fold-index recall, hard-lane dataset curation.
 | 12 | Content-addressed fold index for exact-text recall (mem0-class, no vectors) | M | | Context-Folding, 2510.11967 [swept] |
 
 ## Key sources by axis
