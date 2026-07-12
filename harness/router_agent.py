@@ -83,6 +83,7 @@ class RouterAgent:
 
 def run_router_agent(goal: str, endpoint: str = "serve", *, root: str = ".",
                      allow_write: bool = False, allow_exec: bool = False,
+                     allow_mcp: bool = False, external: "dict | None" = None,
                      max_steps: int = 6, test_cmd: "str | None" = None,
                      model: "str | None" = None, base_url: "str | None" = None,
                      max_tokens: int = 1024, temperature: float = 0.0, seed: int = 0,
@@ -95,8 +96,9 @@ def run_router_agent(goal: str, endpoint: str = "serve", *, root: str = ".",
     agent = RouterAgent(endpoint, model=model, base_url=base_url, proposer=proposer,
                         max_tokens=max_tokens, temperature=temperature, seed=seed,
                         compact_budget=compact_budget)
-    executor = ToolExecutor(root=root, gate=ToolGate(allow_write=allow_write,
-                                                     allow_exec=allow_exec))
+    executor = ToolExecutor(root=root, external=external or {},
+                            gate=ToolGate(allow_write=allow_write, allow_exec=allow_exec,
+                                          allow_mcp=allow_mcp))
     result = run_agent(agent, goal, executor, ledger, max_steps=max_steps, test_cmd=test_cmd)
     out = {k: v for k, v in result.items() if k != "ledger"}
     out["endpoint"] = endpoint

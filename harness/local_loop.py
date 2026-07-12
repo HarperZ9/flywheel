@@ -30,6 +30,9 @@ def run_agent(agent, goal: str, executor: ToolExecutor,
     ledger = ledger if ledger is not None else SessionLedger()
     if TOOLS_SYSTEM not in agent.system:
         agent.system = agent.system + "\n\n" + TOOLS_SYSTEM
+    ext_sys = executor.external_tools_system() if hasattr(executor, "external_tools_system") else ""
+    if ext_sys and ext_sys not in agent.system:
+        agent.system = agent.system + "\n\n" + ext_sys
 
     ledger.append("user", goal)
     message = goal

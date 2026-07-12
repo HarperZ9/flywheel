@@ -44,6 +44,7 @@ class ToolGate:
     """Default-deny for anything that writes or executes."""
     allow_write: bool = False
     allow_exec: bool = False
+    allow_mcp: bool = False        # outbound calls to external MCP tool servers
 
     def check(self, name: str, args: dict) -> "str | None":
         if name in ("write_file", "edit_file") and not self.allow_write:
@@ -88,8 +89,29 @@ class ToolExecutor:
     gate: ToolGate = field(default_factory=ToolGate)
     max_output: int = 4000
     runner: "callable" = None      # inject for tests; default = subprocess
+    external: dict = field(default_factory=dict)   # name -> {"fn": args->(ok,str), "description": str}
+
+    def external_tools_system(self) -> str:
+        """Advertise registered external (MCP) tools to the model, in the same
+        TOOL protocol. Empty when none are registered."""
+        if not self.external:
+            return ""
+        lines = ["Additional tools (same TOOL protocol, one call per line):"]
+        for name, spec in sorted(self.external.items()):
+            desc = (spec.get("description", "") or "").splitlines()[0][:100]
+            lines.append(f'TOOL {name} {{...}}   # {desc}')
+        return "\n".join(lines)
 
     def execute(self, name: str, args: dict) -> ToolResult:
+        if name in self.external:
+            if not self.gate.allow_mcp:
+                return ToolResult(name, args, False,
+                                  "[gate] external/MCP tools disabled (pass allow_mcp)")
+            try:
+                ok, out = self.external[name]["fn"](args)
+            except Exception as e:                       # an external server must never crash the loop
+                return ToolResult(name, args, False, f"[error] {type(e).__name__}: {e}")
+            return ToolResult(name, args, bool(ok), str(out)[: self.max_output])
         denied = self.gate.check(name, args)
         if denied:
             return ToolResult(name, args, False, f"[gate] {denied}")
