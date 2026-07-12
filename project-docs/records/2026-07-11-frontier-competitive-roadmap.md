@@ -27,12 +27,14 @@ benchmark encoding** for the hard lane (learned-model dependency on task admissi
 | 2 | Non-learned verifier ensembling (consensus over test + property + metamorphic) | M | **SHIPPED 2026-07-11** `harness/consensus.py` (ConsensusOracle + RepeatConsistencyOracle) | Weaver / FUSE / BoN-MAV [swept] |
 | 3 | Sample-agreement escalation gate (k-sample agreement before escalating) | S | next | Semantic Agreement, EMNLP 2025, 2509.21837 [swept] |
 | 4 | Held-out / adversarial oracle tier (accept needs a check the model never saw) | M | **SHIPPED 2026-07-12** `harness/consensus.py` accept_gate + Task.held_out_cmd + PytestOracle cmd_attr | SpecBench [swept]; UTBoost weak-test finding [swept] |
-| 5 | Constraint-pinning in compaction (never fold gate/policy text away) | S | next (needs verify_compaction rework) | Governance-Decay [swept] |
+| 5 | Constraint-pinning in compaction (never fold gate/policy text away) | S | **SHIPPED 2026-07-12** `harness/compaction.py` (pin_roles + pinned flag; verify_compaction reworked) | Governance-Decay [swept] |
 | 6 | Deterministic LexRank compaction fallback (replace "first line, truncated") | S | **SHIPPED 2026-07-11** `harness/compaction.py` (default fold) | LexRank, 1109.2128 [real] |
 | 7 | in-toto/DSSE receipt shape + full-length hashes (drop 64-bit truncation) | S | **SHIPPED 2026-07-11** `harness/envelope.py` (to_in_toto_statement / to_dsse_envelope / content_sha256) | SLSA / in-toto / Sigstore / C2PA [real] |
 | 8 | Zero-dep MCP client so /api/agent calls OUT to the MCP ecosystem | M | **SHIPPED 2026-07-12** `harness/mcp_client.py` (MCPClient + as_external_tools; gated allow_mcp, witnessed; programmatic wiring, HTTP server-spawning deferred pending allowlist) | MCP now table-stakes across all incumbents |
 | 9 | Cost/success-rate-ordered failover chain (stdlib frequency-table bandit) | M | | Cascade Routing, 2410.10347 [swept] |
-| 10 | Curated ~100-task hard lane + contamination freshness gate | S-M | | Terminal-Bench 2.0, LiveCodeBench, SWE-bench-Live [swept]; SWE-bench Verified now deprecated for eval |
+| 10 | Curated ~100-task hard lane + contamination freshness gate | S-M | **GATE SHIPPED 2026-07-12** `harness/hard_lane.py` (freshness/admit mechanism); dataset fetch to ~100 tasks remains ongoing curation | Terminal-Bench 2.0, LiveCodeBench, SWE-bench-Live [swept]; SWE-bench Verified now deprecated for eval |
+| + | Signed per-tool-call receipts (HMAC authenticity in the loop) | S | **SHIPPED 2026-07-12** `harness/tool_receipts.py` + run_agent sign_key | verification axis [swept] |
+| + | MCP-server allowlist for the HTTP surface | S | **SHIPPED 2026-07-12** `harness/mcp_client.py` MCPAllowlist + open_mcp | harness-landscape [swept] |
 | 11 | Merkle-tree world root with inclusion/consistency proofs | M | | RFC 9162 [real] |
 | 12 | Content-addressed fold index for exact-text recall (mem0-class, no vectors) | M | | Context-Folding, 2510.11967 [swept] |
 
