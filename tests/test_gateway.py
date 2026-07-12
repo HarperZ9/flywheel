@@ -193,6 +193,102 @@ def test_route_request_success_routes_and_receipts(monkeypatch):
     assert body["endpoint"] == "local-x"
 
 
+# --- OpenAI-compatible surface -------------------------------------------------
+
+def test_flatten_messages():
+    sys_, prompt = gateway._flatten_messages([
+        {"role": "system", "content": "be brief"},
+        {"role": "user", "content": "hello"}])
+    assert sys_ == "be brief" and prompt == "hello"
+    _, p2 = gateway._flatten_messages([{"role": "user", "content": [{"type": "text", "text": "hi"}]}])
+    assert p2 == "hi"                              # OpenAI content-parts array flattens
+
+
+def test_openai_models_lists_flywheel_and_roster():
+    m = gateway.openai_models()
+    assert m["object"] == "list"
+    ids = {d["id"] for d in m["data"]}
+    assert "flywheel" in ids and len(ids) > 5      # the verified seat + the full roster
+    assert all(d["object"] == "model" for d in m["data"])
+
+
+def test_openai_chat_returns_openai_shape_with_receipt(monkeypatch):
+    monkeypatch.setattr(gateway, "_resolve_proposer",
+                        lambda model, serve_url: (_OneProposer("hi from the model"), None, 200))
+    req = {"model": "flywheel", "messages": [{"role": "user", "content": "say hi"}]}
+    body, code, receipt, text, mref = gateway.openai_chat(req, "http://x")
+    assert code == 200
+    assert body["object"] == "chat.completion"
+    assert body["choices"][0]["message"] == {"role": "assistant", "content": "hi from the model"}
+    assert body["choices"][0]["finish_reason"] == "stop"
+    assert body["id"].startswith("chatcmpl-")
+    assert body["x_receipt"]["receipt_id"] and "usage" in body
+    # the receipt is the same content-addressed one, re-checkable
+    from harness.messages_api import make_receipt
+    expect = make_receipt({"prompt": "say hi", "system": "", "max_new_tokens": 512,
+                           "temperature": 0.0, "seed": 0},
+                          {"text": "hi from the model", "seed": 0, "prompt_hash": "h"}, "stub")
+    assert body["x_receipt"]["receipt_id"] == expect["receipt_id"]
+
+
+def test_openai_chat_no_user_turn_is_400():
+    body, code, *_ = gateway.openai_chat(
+        {"model": "flywheel", "messages": [{"role": "system", "content": "x"}]}, "http://x")
+    assert code == 400 and body["error"]["type"] == "invalid_request_error"
+
+
+def test_resolve_proposer_unknown_model_404(monkeypatch):
+    monkeypatch.setattr(gateway, "_unified_roster",
+                        lambda: {"endpoints": [{"name": "real", "credential": "present"}]})
+    prop, err, code = gateway._resolve_proposer("no-such-model", "http://x")
+    assert code == 404 and prop is None
+
+
+def test_resolve_proposer_absent_credential_400(monkeypatch):
+    monkeypatch.setattr(gateway, "_unified_roster",
+                        lambda: {"endpoints": [{"name": "openai", "credential": "absent"}]})
+    prop, err, code = gateway._resolve_proposer("openai:gpt-4o", "http://x")
+    assert code == 400 and prop is None            # never a silent local fallback
+
+
+def test_resolve_proposer_default_is_local_serve():
+    prop, err, code = gateway._resolve_proposer("", "http://127.0.0.1:9")
+    assert code == 200 and err is None
+    assert prop.__class__.__name__ == "ServeProposer"
+
+
+def test_sse_chat_emits_openai_event_stream(monkeypatch):
+    import io
+    monkeypatch.setattr(gateway, "openai_chat",
+                        lambda req, serve_url: ({"ok": 1}, 200, {"receipt_id": "abc123"},
+                                                "hello world", "stub-model"))
+    h = gateway._Handler.__new__(gateway._Handler)
+    h.serve_url = "http://x"
+    h.wfile = io.BytesIO()
+    h.send_response = lambda *a, **k: None
+    h.send_header = lambda *a, **k: None
+    h.end_headers = lambda *a, **k: None
+    h._sse_chat({"model": "flywheel", "messages": [{"role": "user", "content": "hi"}], "stream": True})
+    out = h.wfile.getvalue().decode()
+    assert "chat.completion.chunk" in out
+    assert "assistant" in out                      # role delta
+    assert "hello" in out and "world" in out       # content chunks
+    assert "x_receipt" in out and "abc123" in out  # receipt rides the final chunk
+    assert out.rstrip().endswith("data: [DONE]")   # OpenAI stream terminator
+
+
+def test_sse_chat_error_falls_back_to_json(monkeypatch):
+    import io
+    monkeypatch.setattr(gateway, "openai_chat",
+                        lambda req, serve_url: ({"error": {"message": "boom"}}, 502, None, None, None))
+    h = gateway._Handler.__new__(gateway._Handler)
+    h.serve_url = "http://x"; h.wfile = io.BytesIO()
+    sent = {}
+    h._json = lambda body, code=200: sent.update(body=body, code=code)
+    h._sse_chat({"stream": True})
+    assert sent["code"] == 502 and "error" in sent["body"]   # errors are plain JSON, never a half-stream
+
+
 def test_training_status_route_reports_stopped_when_no_run(tmp_path, monkeypatch):
     # Route is read-only and honest with no run present. Inject a dead-screen probe
     # so the test never shells wsl.
