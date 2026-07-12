@@ -6,10 +6,15 @@ receipt -> no accept. M2 extends this into a per-stage carried chain; M1 ships
 the terminal envelope only.
 """
 from __future__ import annotations
+import base64
 import hashlib
 import json
 from dataclasses import dataclass, field, asdict
 from pathlib import Path
+
+IN_TOTO_STATEMENT_TYPE = "https://in-toto.io/Statement/v1"
+PREDICATE_TYPE = "https://flywheel.dev/ProofEnvelope/v1"
+DSSE_PAYLOAD_TYPE = "application/vnd.in-toto+json"
 
 
 @dataclass
@@ -34,12 +39,47 @@ class ProofEnvelope:
     def to_json(self) -> str:
         return json.dumps(asdict(self), indent=2, sort_keys=True)
 
-    def content_hash(self) -> str:
+    def _content_preimage(self) -> str:
         d = asdict(self)
         for k in ("oracle_output_hash", "verdict", "oracle_stdout_excerpt"):
             d.pop(k, None)
-        return hashlib.sha256(
-            json.dumps(d, sort_keys=True).encode()).hexdigest()[:16]
+        return json.dumps(d, sort_keys=True)
+
+    def content_hash(self) -> str:
+        """Short display id (16 hex). Not the collision-resistant hash: use
+        content_sha256() for signing/interop."""
+        return hashlib.sha256(self._content_preimage().encode()).hexdigest()[:16]
+
+    def content_sha256(self) -> str:
+        """Full-length, algorithm-tagged content digest (sha256:<64 hex>), in the
+        multihash/OMS style. This is the collision-resistant hash real supply-chain
+        tooling expects; 64-bit truncation is within reach of a resourced adversary."""
+        return "sha256:" + hashlib.sha256(self._content_preimage().encode()).hexdigest()
+
+    def to_in_toto_statement(self) -> dict:
+        """This receipt as an in-toto v1 Statement so any in-toto / SLSA-aware
+        verifier or SBOM ingester can consume it. The subject digest is the full
+        content hash; the predicate is the envelope unchanged."""
+        return {
+            "_type": IN_TOTO_STATEMENT_TYPE,
+            "subject": [{
+                "name": self.task_id or "flywheel-answer",
+                "digest": {"sha256": self.content_sha256().split(":", 1)[1]},
+            }],
+            "predicateType": PREDICATE_TYPE,
+            "predicate": asdict(self),
+        }
+
+    def to_dsse_envelope(self) -> dict:
+        """The Statement wrapped in a DSSE envelope (unsigned; signatures=[]). A
+        detached signer (cosign sign-blob, openssl dgst -sign) fills signatures
+        later without changing this shape, so no signing dependency ships here."""
+        payload = json.dumps(self.to_in_toto_statement(), sort_keys=True).encode()
+        return {
+            "payloadType": DSSE_PAYLOAD_TYPE,
+            "payload": base64.b64encode(payload).decode("ascii"),
+            "signatures": [],
+        }
 
     def write(self, path: str | Path) -> Path:
         path = Path(path)
