@@ -21,6 +21,7 @@ import hashlib
 import json
 from pathlib import Path
 
+from . import merkle
 from .run_paths import run_root_default
 
 REPO = Path(__file__).resolve().parent.parent
@@ -29,6 +30,7 @@ DEFAULT_RUN_ROOT = Path(run_root_default())
 MATCH = "MATCH"
 DRIFT = "DRIFT"
 UNVERIFIABLE = "UNVERIFIABLE"
+_PART_ORDER = ("roster", "spine", "findings", "cursor")
 
 
 def _sha(text: str) -> str:
@@ -55,6 +57,16 @@ def _safe(fn, default):
         return {"error": str(e), **(default if isinstance(default, dict) else {})}
 
 
+def _world_fingerprints(roster, spine, findings, cursor) -> list:
+    """The four part fingerprints, in _PART_ORDER, exactly as the roots hash over."""
+    return [
+        json.dumps(roster, sort_keys=True, default=str),
+        json.dumps(spine, sort_keys=True, default=str),
+        str(findings.get("root_hash", "MISSING")),
+        json.dumps(cursor, sort_keys=True, default=str),
+    ]
+
+
 def project_world(run_root: Path | str = DEFAULT_RUN_ROOT,
                   repo_root: Path | str = REPO) -> dict:
     """Compose the projected world with a root hash over its parts' fingerprints."""
@@ -66,16 +78,14 @@ def project_world(run_root: Path | str = DEFAULT_RUN_ROOT,
     findings = _safe(lambda: project_findings(run_root), {"root_hash": "MISSING"})
     cursor = _cursor(repo_root)
 
-    fingerprints = [
-        json.dumps(roster, sort_keys=True, default=str),
-        json.dumps(spine, sort_keys=True, default=str),
-        str(findings.get("root_hash", "MISSING")),
-        json.dumps(cursor, sort_keys=True, default=str),
-    ]
+    fingerprints = _world_fingerprints(roster, spine, findings, cursor)
     root_hash = _sha("|".join(fingerprints))
     return {
         "schema": "flywheel.projected-world/v1",
         "root_hash": root_hash,
+        # Merkle root over the same part fingerprints: proves ONE part is in the
+        # world with a log-n audit path (world_inclusion_proof), not just the whole.
+        "merkle_root": merkle.root_hex([f.encode() for f in fingerprints]),
         "roster": roster,
         "spine": spine,
         "findings": {
@@ -98,6 +108,40 @@ def verify_world(doc: dict, run_root: Path | str = DEFAULT_RUN_ROOT,
         return UNVERIFIABLE
     fresh = project_world(run_root, repo_root)
     return MATCH if fresh["root_hash"] == doc["root_hash"] else DRIFT
+
+
+def _doc_fingerprints(doc: dict) -> list:
+    return _world_fingerprints(
+        doc.get("roster", {}), doc.get("spine", {}),
+        {"root_hash": (doc.get("findings") or {}).get("root_hash", "MISSING")},
+        doc.get("cursor", {}))
+
+
+def world_inclusion_proof(doc: dict, part: str) -> dict:
+    """A log-n audit path proving `part` (roster|spine|findings|cursor) is in the
+    world's merkle_root, verifiable without the rest of the doc."""
+    if part not in _PART_ORDER:
+        raise ValueError(f"part must be one of {_PART_ORDER}")
+    fps = _doc_fingerprints(doc)
+    leaves = [f.encode() for f in fps]
+    idx = _PART_ORDER.index(part)
+    return {"part": part, "index": idx, "size": len(leaves), "leaf": fps[idx],
+            "proof": [h.hex() for h in merkle.inclusion_proof(leaves, idx)]}
+
+
+def verify_world_part(doc: dict, proof: dict) -> bool:
+    """Recompute the merkle_root from one part + its audit path; True iff it matches
+    the doc's merkle_root, so a stranger checks one part without the whole world."""
+    root = doc.get("merkle_root", "")
+    if not root.startswith("sha256:"):
+        return False
+    try:
+        root_bytes = bytes.fromhex(root.split(":", 1)[1])
+        path = [bytes.fromhex(h) for h in proof["proof"]]
+    except (ValueError, KeyError, TypeError):
+        return False
+    return merkle.verify_inclusion(proof["leaf"].encode(), proof["index"],
+                                   proof["size"], path, root_bytes)
 
 
 if __name__ == "__main__":
