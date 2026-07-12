@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import json
 
+from . import integrity
 from .local_session import SessionLedger
 from .local_tools import TOOLS_SYSTEM, ToolExecutor, parse_tool_calls
 
@@ -74,8 +75,14 @@ def _done(final: str, steps: int, ledger: SessionLedger, *, tests_pass=None, not
     out = {"final": final, "steps": steps,
            "checkpoint": ledger.checkpoint(), "verified": ledger.verify(),
            "entries": len(ledger.entries), "ledger": ledger}
+    # Trajectory-integrity verdict: did the agent edit the file that grades it, or
+    # write test-neutralizing code? Surfaced re-checkably so a tampered "green" is
+    # visible, not silently accepted (reward-hacking guard, keeps the C2 invariant).
+    out["integrity"] = integrity.integrity_report(integrity.trajectory_integrity(ledger))
     if tests_pass is not None:
         out["tests_pass"] = tests_pass
+        # a pass is only trusted if the trajectory did not tamper with the check
+        out["tests_pass_trusted"] = bool(tests_pass) and out["integrity"]["clean"]
     if note:
         out["note"] = note
     return out
