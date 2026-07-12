@@ -1,62 +1,49 @@
-/* Flywheel design tokens, in the Project Telos design system.
-   Source of truth: portfolio-site/system/telos.css (owned by the parallel design
-   session; this mirrors it so the marketing site and the running app read as one
-   product). Cool near-black glass, cool-white ink, silver to cyan to blue accents,
-   no warm hue except a single caution signal. Dark is native; a cool light
-   counterpart is provided. No em-dashes in this file. */
+/* Flywheel design tokens, in the ecosystem Design and Voice Canon
+   ("precision instrument, reserved energy"). Source of truth:
+   portfolio-site/system/system.css (owned by the parallel design session; this
+   mirrors it). Two faces only. Color ONLY ever means a verdict. Ceramic ground,
+   dark ink; a near-black dark counterpart. No em-dashes in this file. */
 
 :root {
-  /* cool ground + cool-white ink */
-  --ground:#06080d;   --ground-2:#0a0e16;
-  --ink:#eef2f8;      --ink-soft:#c7cfdc;  --ink-muted:#98a1b4;  --ink-faint:#727c90;
-  /* cool accents: silver, chrome, cyan, blue */
-  --silver:#cdd6e6;   --cyan:#5fd0e6;      --blue:#7fb2ff;
-  --blue-deep:#3f7fe6; --chrome-top:#f4f8ff;
-  --warn:#e3a44f;     /* caution only, used sparingly */
-  /* glass (cool Apple vibrancy) */
-  --glass:linear-gradient(155deg, rgba(150,170,205,.10), rgba(120,140,180,.045) 46%, rgba(170,195,235,.085));
-  --gloss:linear-gradient(177deg, rgba(244,248,255,.14), rgba(244,248,255,0) 42%);
-  --glass-blur:saturate(170%) brightness(1.05) blur(20px);
-  --border:rgba(180,200,235,.14); --rule:rgba(180,200,235,.10);
-  --page:radial-gradient(130% 100% at 72% -10%, #11182a 0%, #0a0f1b 42%, #06080d 100%);
+  /* ceramic ground + ink ramp */
+  --void:#f4f3ef;   --void-2:#eceae4;   --panel:rgba(255,255,255,.62);
+  --bone:#0b0c0e;   --ink-soft:#24272c; --ink-muted:#43474e; --ink-faint:#6c707a;
+  /* THE THREE VERDICTS plus ink, and nothing else:
+     verified = the accept path and passes; drift = caution, honest nulls,
+     escalation, and the single restrained accent; unverifiable = the third state. */
+  --verified:#1f7a52;   --drift:#3a2bd6;   --drift-soft:#5a4ce0;   --unverifiable:#6c707a;
+  --line:rgba(11,12,14,.14); --hairline:rgba(11,12,14,.08);
 }
 
-/* cool light counterpart (telos is dark-native; this is the added light option).
-   Accent teal and faint labels are darkened so small text clears WCAG AA (>= 4.5). */
-:root[data-theme="light"] {
-  --ground:#e7ecf3;   --ground-2:#dde3ec;
-  --ink:#0c1220;      --ink-soft:#283040;  --ink-muted:#4f5869;  --ink-faint:#565f70;
-  --silver:#3f4b60;   --cyan:#0a6a7d;      --blue:#2560d6;
-  --blue-deep:#1c4db0; --chrome-top:#ffffff;
-  --warn:#a95f16;
-  --glass:linear-gradient(155deg, rgba(255,255,255,.82), rgba(238,243,250,.62) 46%, rgba(255,255,255,.78));
-  --gloss:linear-gradient(177deg, rgba(255,255,255,.8), rgba(255,255,255,0) 42%);
-  --glass-blur:saturate(120%) brightness(1.02) blur(14px);
-  --border:rgba(20,40,80,.16); --rule:rgba(20,40,80,.10);
-  --page:radial-gradient(130% 100% at 72% -10%, #ffffff 0%, #eef3fa 46%, #e2e8f2 100%);
+/* dark counterpart (the near-black world), same verdict semantics, marks brightened */
+:root[data-theme="dark"] {
+  --void:#0b0e0f;   --void-2:#121617;   --panel:rgba(255,255,255,.045);
+  --bone:#eef1ee;   --ink-soft:#cfd5d1; --ink-muted:#9aa39c; --ink-faint:#7b857e;
+  --verified:#5fae93;   --drift:#a99cf5;   --drift-soft:#c3bcf7;   --unverifiable:#9aa39c;
+  --line:rgba(238,241,238,.16); --hairline:rgba(238,241,238,.10);
 }
-@media (prefers-color-scheme: light) {
+@media (prefers-color-scheme: dark) {
   :root:not([data-theme]) {
-    --ground:#e7ecf3;   --ground-2:#dde3ec;
-    --ink:#0c1220;      --ink-soft:#283040;  --ink-muted:#4f5869;  --ink-faint:#565f70;
-    --silver:#3f4b60;   --cyan:#0a6a7d;      --blue:#2560d6;
-    --blue-deep:#1c4db0; --chrome-top:#ffffff;  --warn:#a95f16;
-    --glass:linear-gradient(155deg, rgba(255,255,255,.82), rgba(238,243,250,.62) 46%, rgba(255,255,255,.78));
-    --gloss:linear-gradient(177deg, rgba(255,255,255,.8), rgba(255,255,255,0) 42%);
-    --glass-blur:saturate(120%) brightness(1.02) blur(14px);
-    --border:rgba(20,40,80,.16); --rule:rgba(20,40,80,.10);
-    --page:radial-gradient(130% 100% at 72% -10%, #ffffff 0%, #eef3fa 46%, #e2e8f2 100%);
+    --void:#0b0e0f;   --void-2:#121617;   --panel:rgba(255,255,255,.045);
+    --bone:#eef1ee;   --ink-soft:#cfd5d1; --ink-muted:#9aa39c; --ink-faint:#7b857e;
+    --verified:#5fae93;   --drift:#a99cf5;   --drift-soft:#c3bcf7;   --unverifiable:#9aa39c;
+    --line:rgba(238,241,238,.16); --hairline:rgba(238,241,238,.10);
   }
 }
 
-/* Type. Display: Archivo. Body: Manrope. Mono (labels, receipts, code): JetBrains
-   Mono. All with system fallbacks so the surface holds up before the webfonts load. */
-/* --display:"Archivo",-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,sans-serif; */
-/* --body:"Manrope",-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif; */
-/* --mono:"JetBrains Mono","SFMono-Regular",Consolas,"Courier New",monospace; */
+/* Type: TWO FACES, no more. Hanken Grotesk carries every text role; Conso carries
+   data, labels, and code. Hierarchy comes from weight and size, never a third face.
+   Both self-hosted as woff2 (see site/assets/fonts). */
+/* --display: "Hanken Grotesk", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; */
+/* --body:    "Hanken Grotesk", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; */
+/* --mono:    "Conso", "JetBrains Mono", ui-monospace, "SFMono-Regular", monospace; */
 
-/* Accent language: cyan is the verify/trust signal (kickers, passed checks, focus
-   rings). Blue is links and the chrome-to-blue solid action. Silver is chrome
-   highlight and secondary. Warm amber is the single caution signal (escalation,
-   honest nulls), used sparingly. The glass primitive carries depth over the cool
-   ground; the shipping shell (site/index.html) is the reference implementation. */
+/* Rules that make this the canon, not decoration:
+   - Color is a VERDICT, never an accent-per-item. Verified green marks the accept
+     path and passes; drift iris marks caution, honest nulls, and escalation, and is
+     the ONE restrained accent (kickers, links, the primary action). At most one hot
+     mark per view.
+   - Text sits on a calm ceramic ground. Cards are ground tints with a hairline,
+     never glass, never backdrop-blur. Generative energy is contained to heroes and
+     galleries, and recedes to a hairline where words are read.
+   - The shipping shell (site/index.html) is the reference implementation. Match it. */
