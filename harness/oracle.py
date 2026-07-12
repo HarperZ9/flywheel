@@ -98,11 +98,12 @@ def canonical_hash(oracle_type: str, workdir: Path, rc: int) -> str:
 class PytestOracle:
     oracle_type = "pytest"
 
-    def __init__(self, timeout: int = 60):
+    def __init__(self, timeout: int = 60, *, cmd_attr: str = "oracle_cmd"):
         self.timeout = timeout
+        self.cmd_attr = cmd_attr        # which Task command to run (oracle_cmd | held_out_cmd)
 
     def _cmd(self, task: Task) -> str:
-        return f"{task.oracle_cmd} --junitxml={JUNIT_NAME} -q"
+        return f"{getattr(task, self.cmd_attr)} --junitxml={JUNIT_NAME} -q"
 
     def verify(self, candidate: str, task: Task) -> OracleResult:
         cpath = task.candidate_full()

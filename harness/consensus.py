@@ -19,7 +19,8 @@ from __future__ import annotations
 import hashlib
 import json
 
-from .oracle import OracleResult
+from .integrity import GuardedOracle
+from .oracle import OracleResult, PytestOracle
 
 _RULES = ("all", "any", "majority", "weighted")
 
@@ -102,3 +103,22 @@ class RepeatConsistencyOracle:
             note = f"[repeat] {sum(1 for r in results if r.passed)}/{self.runs} pass, stable={stable}"
         return OracleResult(passed=passed, cmd=self.oracle_type, output_hash=digest,
                             stdout_excerpt=note, rc=0 if passed else 1)
+
+
+def accept_gate(task, *, timeout: int = 60, guard: bool = True):
+    """The strongest non-learned accept gate for a task: the visible test suite,
+    AND (when the task carries one) a HELD-OUT check the model never saw, must both
+    pass -- ConsensusOracle rule="all" -- and a candidate that tampered with the
+    check is refused (GuardedOracle). Every member is falsifiable and re-checkable;
+    nothing learned decides.
+
+    Held-out verification counters the measured failure mode where a model games a
+    weak or leaked visible suite (UTBoost; SpecBench). The held-out command's test
+    files are simply not provided to the model, so it cannot fit to them."""
+    visible = PytestOracle(timeout=timeout)
+    if getattr(task, "held_out_cmd", ""):
+        base = ConsensusOracle(
+            [visible, PytestOracle(timeout=timeout, cmd_attr="held_out_cmd")], rule="all")
+    else:
+        base = visible
+    return GuardedOracle(base) if guard else base
