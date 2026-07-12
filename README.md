@@ -38,6 +38,17 @@ curl -s http://127.0.0.1:8799/api/companion \
   -d '{"prompt": "write a function that returns a + 1"}'
 ```
 
+**Already have an OpenAI client?** Point its base URL at the gateway. Flywheel
+speaks the OpenAI API (`/v1/chat/completions`, `/v1/models`, streaming), and the
+`model` field names any provider in the roster, so your existing tools route
+through the verify layer with no code change:
+
+```
+curl -s http://127.0.0.1:8799/v1/chat/completions \
+  -H 'Content-Type: application/json' \
+  -d '{"model": "anthropic", "messages": [{"role": "user", "content": "say hi"}]}'
+```
+
 ---
 
 ## Works with everything
@@ -67,6 +78,8 @@ Every route is same-origin JSON you can also `curl`:
 | `GET /api/endpoints` | The universal router roster, credential presence only |
 | `GET /api/endpoints/health` | Live probe of local tiers; hosted tiers report configured-or-not |
 | `POST /api/route` | Route to any provider and get a receipt with the answer |
+| `POST /v1/chat/completions` | Drop-in OpenAI-compatible; `model` names any provider; streams |
+| `GET /v1/models` | OpenAI-compatible model list (the roster) |
 | `POST /api/companion` | Answer locally, escalate only the hard slice |
 | `POST /api/forge` | Turn a plain goal into a structured prompt with checkable success gates |
 | `GET /api/world` | The projected state (roster, findings, cursor) under one root hash |
