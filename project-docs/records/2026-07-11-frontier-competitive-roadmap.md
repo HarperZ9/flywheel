@@ -30,7 +30,7 @@ benchmark encoding** for the hard lane (learned-model dependency on task admissi
 | 5 | Constraint-pinning in compaction (never fold gate/policy text away) | S | next (needs verify_compaction rework) | Governance-Decay [swept] |
 | 6 | Deterministic LexRank compaction fallback (replace "first line, truncated") | S | **SHIPPED 2026-07-11** `harness/compaction.py` (default fold) | LexRank, 1109.2128 [real] |
 | 7 | in-toto/DSSE receipt shape + full-length hashes (drop 64-bit truncation) | S | **SHIPPED 2026-07-11** `harness/envelope.py` (to_in_toto_statement / to_dsse_envelope / content_sha256) | SLSA / in-toto / Sigstore / C2PA [real] |
-| 8 | Zero-dep MCP client so /api/agent calls OUT to the MCP ecosystem | M | | MCP now table-stakes across all incumbents |
+| 8 | Zero-dep MCP client so /api/agent calls OUT to the MCP ecosystem | M | **SHIPPED 2026-07-12** `harness/mcp_client.py` (MCPClient + as_external_tools; gated allow_mcp, witnessed; programmatic wiring, HTTP server-spawning deferred pending allowlist) | MCP now table-stakes across all incumbents |
 | 9 | Cost/success-rate-ordered failover chain (stdlib frequency-table bandit) | M | | Cascade Routing, 2410.10347 [swept] |
 | 10 | Curated ~100-task hard lane + contamination freshness gate | S-M | | Terminal-Bench 2.0, LiveCodeBench, SWE-bench-Live [swept]; SWE-bench Verified now deprecated for eval |
 | 11 | Merkle-tree world root with inclusion/consistency proofs | M | | RFC 9162 [real] |
