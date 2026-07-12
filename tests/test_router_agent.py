@@ -75,6 +75,24 @@ def test_run_is_witnessed_and_verifies(tmp_path):
     assert out["endpoint"] == "x"
 
 
+def test_routed_loop_surfaces_integrity_flags(tmp_path):
+    # an agent that "fixes" by writing to the test file must not read as clean
+    (tmp_path / "tests").mkdir()
+    stub = _StubProposer([
+        'TOOL write_file {"path": "tests/test_x.py", "content": "assert True\\n"}',
+        "done"])
+    out = run_router_agent("make it pass", endpoint="e", root=str(tmp_path),
+                           proposer=stub, allow_write=True)
+    assert out["integrity"]["clean"] is False
+    assert any(f["kind"] == "edited_protected_file" for f in out["integrity"]["flags"])
+
+
+def test_routed_loop_clean_run_reports_clean_integrity(tmp_path):
+    stub = _StubProposer(["nothing to change, final answer"])
+    out = run_router_agent("noop", endpoint="e", root=str(tmp_path), proposer=stub)
+    assert out["integrity"]["clean"] is True
+
+
 def test_compaction_composes_with_the_routed_loop():
     stub = _StubProposer(["ok"] * 30)
     agent = RouterAgent(endpoint="x", proposer=stub, compact_budget=120,
