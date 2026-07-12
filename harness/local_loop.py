@@ -11,14 +11,23 @@ from __future__ import annotations
 
 import json
 
-from . import integrity
+from . import integrity, tool_receipts
 from .local_session import SessionLedger
 from .local_tools import TOOLS_SYSTEM, ToolExecutor, parse_tool_calls
 
 
+def _result_meta(name, res, sign_key, extra=None) -> dict:
+    meta = {"tool": name, "ok": res.ok}
+    if extra:
+        meta.update(extra)
+    if sign_key is not None:           # per-run HMAC: authenticity of each tool call
+        meta["sig"] = tool_receipts.sign_result(sign_key, res)
+    return meta
+
+
 def run_agent(agent, goal: str, executor: ToolExecutor,
               ledger: "SessionLedger | None" = None, *, max_steps: int = 6,
-              test_cmd: "str | None" = None) -> dict:
+              test_cmd: "str | None" = None, sign_key: "bytes | None" = None) -> dict:
     """Run the goal to completion (or max_steps). Returns the final answer, the
     step count, and the ledger checkpoint + verify verdict.
 
@@ -49,7 +58,7 @@ def run_agent(agent, goal: str, executor: ToolExecutor,
                 return _done(text, step, ledger)
             res = executor.execute("run", {"cmd": test_cmd})
             ledger.append("tool_call", f"run {json.dumps({'cmd': test_cmd}, sort_keys=True)}")
-            ledger.append("tool_result", res.output, {"tool": "run", "ok": res.ok, "gate": "test"})
+            ledger.append("tool_result", res.output, _result_meta("run", res, sign_key, {"gate": "test"}))
             if res.output.startswith("[gate]"):
                 return _done(text, step, ledger, tests_pass=False,
                              note="test gate set but exec is disabled (pass --allow-exec)")
@@ -63,7 +72,7 @@ def run_agent(agent, goal: str, executor: ToolExecutor,
         for name, args in calls:
             res = executor.execute(name, args)
             ledger.append("tool_call", f"{name} {json.dumps(args, sort_keys=True)}")
-            ledger.append("tool_result", res.output, {"tool": name, "ok": res.ok})
+            ledger.append("tool_result", res.output, _result_meta(name, res, sign_key))
             observations.append(f"TOOL {name} -> {'ok' if res.ok else 'FAIL'}:\n{res.output}")
 
         message = ("TOOL RESULTS:\n" + "\n\n".join(observations) +
