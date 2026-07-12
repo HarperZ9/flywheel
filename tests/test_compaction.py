@@ -10,7 +10,12 @@ Success criteria (each test asserts one):
   - LocalAgent compacts its history opt-in, and not when the budget is unset.
 """
 from harness import compaction
-from harness.compaction import CompactionResult, compact, verify_compaction
+from harness.compaction import (
+    CompactionResult,
+    compact,
+    lexrank_summary,
+    verify_compaction,
+)
 from harness.local_agent import LocalAgent
 
 
@@ -98,6 +103,33 @@ def test_localagent_compacts_history_opt_in():
     assert agent.last_compaction is not None
     assert agent.last_compaction["method"] == "middle-fold"
     assert any(m["content"].startswith("[compacted:") for m in agent.history)
+
+
+def test_lexrank_summary_is_deterministic_and_bounded():
+    msgs = [{"role": "user", "content": "The cache stores results. "
+             "The cache stores results by key. Unrelated aside about weather. "
+             "Results are stored in the cache keyed by prompt hash. "
+             "A totally different sentence about bananas."}]
+    a = lexrank_summary(msgs, max_sentences=2)
+    b = lexrank_summary(msgs, max_sentences=2)
+    assert a == b                                   # deterministic, no randomness
+    assert a.count("\n") + 1 <= 2                   # bounded to max_sentences
+    # the cache/results theme recurs, so a central sentence about it is kept
+    assert "cache" in a.lower()
+
+
+def test_lexrank_summary_handles_empty_and_short():
+    assert lexrank_summary([]) == ""
+    short = [{"role": "user", "content": "one sentence only."}]
+    assert "one sentence only" in lexrank_summary(short)
+
+
+def test_compact_default_now_uses_lexrank_and_still_rechecks():
+    msgs = _msgs(20)
+    res = compact(msgs, token_budget=200, keep_recent=4)   # default summarizer
+    assert res.compacted is True
+    assert res.messages[1]["content"].startswith("[compacted:")
+    assert verify_compaction(msgs, res)["verdict"] == "MATCH"
 
 
 def test_localagent_no_compaction_when_budget_unset():

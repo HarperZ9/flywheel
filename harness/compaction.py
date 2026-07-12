@@ -22,6 +22,9 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
+import re
+from collections import Counter
 from dataclasses import dataclass
 from typing import Callable
 
@@ -66,6 +69,52 @@ def extractive_summary(messages: list) -> str:
     return "\n".join(lines)
 
 
+_SENT_SPLIT = re.compile(r"(?<=[.!?])\s+|\n+")
+
+
+def _sentences(text: str) -> list:
+    return [s.strip() for s in _SENT_SPLIT.split(text or "") if s.strip()]
+
+
+def _terms(sentence: str) -> "Counter":
+    return Counter(re.findall(r"[a-z0-9]+", sentence.lower()))
+
+
+def _cosine(a: "Counter", b: "Counter") -> float:
+    common = set(a) & set(b)
+    if not common:
+        return 0.0
+    num = sum(a[t] * b[t] for t in common)
+    da = math.sqrt(sum(v * v for v in a.values()))
+    db = math.sqrt(sum(v * v for v in b.values()))
+    return num / (da * db) if da and db else 0.0
+
+
+def lexrank_summary(messages: list, *, max_sentences: int = 8,
+                    sim_threshold: float = 0.1) -> str:
+    """Deterministic LexRank-style extractive summary (stdlib only): rank the
+    folded turns' sentences by graph centrality over a cosine-similarity graph and
+    keep the most central ones, emitted in original order. Strictly better signal
+    than first-line-truncated, and fully re-derivable (no model, no randomness)."""
+    labeled = [(m.get("role", "user"), s)
+               for m in messages for s in _sentences(m.get("content", ""))]
+    if not labeled:
+        return ""
+    if len(labeled) <= max_sentences:
+        return "\n".join(f"- {r}: {s[:200]}" for r, s in labeled)
+    vecs = [_terms(s) for _, s in labeled]
+    n = len(vecs)
+    scores = [0.0] * n
+    for i in range(n):
+        for j in range(i + 1, n):
+            sim = _cosine(vecs[i], vecs[j])
+            if sim >= sim_threshold:
+                scores[i] += sim
+                scores[j] += sim
+    top = sorted(range(n), key=lambda i: (-scores[i], i))[:max_sentences]
+    return "\n".join(f"- {labeled[k][0]}: {labeled[k][1][:200]}" for k in sorted(top))
+
+
 @dataclass
 class CompactionResult:
     messages: list
@@ -90,7 +139,7 @@ def _receipt(before, after, budget, keep_head, keep_recent, folded,
 
 
 def compact(messages: list, *, token_budget: int, keep_recent: int = 6,
-            keep_head: int = 1, summarize: Callable = extractive_summary,
+            keep_head: int = 1, summarize: Callable = lexrank_summary,
             count_tokens: Callable = approx_tokens,
             summary_role: str = "system") -> CompactionResult:
     """Fold the middle of `messages` into one summary turn if the transcript
