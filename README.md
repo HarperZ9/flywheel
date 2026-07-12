@@ -78,6 +78,7 @@ Every route is same-origin JSON you can also `curl`:
 | `GET /api/endpoints` | The universal router roster, credential presence only |
 | `GET /api/endpoints/health` | Live probe of local tiers; hosted tiers report configured-or-not |
 | `POST /api/route` | Route to any provider and get a receipt with the answer |
+| `POST /api/agent` | Run a gated, witnessed tool loop (read/edit/run) over any provider |
 | `POST /v1/chat/completions` | Drop-in OpenAI-compatible; `model` names any provider; streams |
 | `GET /v1/models` | OpenAI-compatible model list (the roster) |
 | `POST /api/companion` | Answer locally, escalate only the hard slice |
@@ -100,6 +101,7 @@ receipt file you can re-check offline.
 | Accepts on an external check | No | No | No | **Yes** |
 | Re-checkable receipt per answer | No | No | No | **Yes** |
 | Answers local, escalates the hard part | No | No | No | **Yes** |
+| Witnessed tool loop, re-checkable per step | No | No | No | **Yes** |
 | Goal into a checkable prompt (studio) | No | No | No | **Yes** |
 | One root-hashed shared state | No | No | No | **Yes** |
 | Zero dependencies, one file to run | Varies | Varies | No | **Yes** |

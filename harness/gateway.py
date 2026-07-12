@@ -669,6 +669,34 @@ class _Handler(BaseHTTPRequestHandler):
             if seat is None:
                 return self._json({"error": "companion seat unavailable"}, 503)
             return self._json(companion_answer(seat, prompt, req.get("solution_sig", "")))
+        if p == "/api/agent":                          # the agentic tool loop over ANY provider
+            length = self._content_length()
+            if length is None:
+                return self._json({"error": "invalid or oversized Content-Length"}, 400)
+            try:
+                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
+            except Exception:
+                req = {}
+            goal = (req.get("goal") or "").strip()
+            endpoint = (req.get("endpoint") or "").strip()
+            if not goal or not endpoint:
+                return self._json({"error": "provide non-empty 'goal' and 'endpoint'"}, 400)
+            try:
+                max_steps = max(1, min(int(req.get("max_steps", 6)), 12))
+            except (TypeError, ValueError):
+                max_steps = 6
+            from harness.router_agent import run_router_agent
+            try:
+                result = run_router_agent(
+                    goal, endpoint, root=str(self.root),
+                    allow_write=bool(req.get("allow_write", False)),
+                    allow_exec=bool(req.get("allow_exec", False)),
+                    max_steps=max_steps, test_cmd=(req.get("test_cmd") or None),
+                    model=(req.get("model") or None),
+                    compact_budget=int(req.get("compact_budget", 0) or 0))
+            except Exception as e:
+                return self._json({"error": f"{type(e).__name__}: {e}"}, 502)
+            return self._json(result)
         return self._json({"error": "not found"}, 404)
 
 
@@ -696,6 +724,7 @@ def main(argv=None) -> int:
     print(f"  studio    POST /api/forge {{'goal': ...}}            (goal -> verified PRP)")
     print(f"  route     POST /api/route {{'prompt':...,'endpoint':...}} (any provider + a receipt)")
     print(f"  companion POST /api/companion {{'prompt': ...}}      (answer local, escalate hard)")
+    print(f"  agent     POST /api/agent {{'goal':...,'endpoint':...}} (gated tool loop over ANY provider, witnessed)")
     print(f"  training  http://127.0.0.1:{a.port}/api/training/status  (read-only supervisor status)")
     print(f"  openai    POST /v1/chat/completions  +  GET /v1/models  (drop-in, model=any provider, stream ok)")
     try:
