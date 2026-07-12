@@ -456,9 +456,25 @@ class _Handler(BaseHTTPRequestHandler):
     run_root = "E:/local-model-run"
 
     MAX_BODY = 32 * 1024 * 1024               # 32 MiB ceiling on any request body
+    cors = False                              # opt-in (--cors) so browser OpenAI clients can call in
 
     def log_message(self, *a):  # quiet
         pass
+
+    def _cors(self):
+        """Emit permissive CORS headers only when the operator opted in with --cors.
+        Off by default: the gateway binds 127.0.0.1, and enabling CORS lets any web
+        page in the browser reach it, so it is a deliberate choice, not a default."""
+        if self.cors:
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+            self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization")
+
+    def do_OPTIONS(self):                     # CORS preflight
+        self.send_response(204)
+        self._cors()
+        self.send_header("Content-Length", "0")
+        self.end_headers()
 
     def _content_length(self):
         """Parse Content-Length defensively: a non-numeric, negative, or oversized
@@ -475,6 +491,7 @@ class _Handler(BaseHTTPRequestHandler):
         self.send_response(code)
         self.send_header("Content-Type", "application/json")
         self.send_header("Content-Length", str(len(body)))
+        self._cors()
         self.end_headers()
         self.wfile.write(body)
 
@@ -493,6 +510,7 @@ class _Handler(BaseHTTPRequestHandler):
         self.send_header("Content-Type", "text/event-stream")
         self.send_header("Cache-Control", "no-cache")
         self.send_header("Connection", "keep-alive")
+        self._cors()
         self.end_headers()
 
         def emit(choice, extra=None):
@@ -639,11 +657,14 @@ def main(argv=None) -> int:
     ap.add_argument("--serve-url", default="http://127.0.0.1:8765")
     ap.add_argument("--ollama-url", default="http://127.0.0.1:11434")
     ap.add_argument("--run-root", default="E:/local-model-run")
+    ap.add_argument("--cors", action="store_true",
+                    help="allow cross-origin browser clients (off by default; the gateway is local)")
     a = ap.parse_args(argv)
     _Handler.root = Path(a.root).resolve()
     _Handler.serve_url = a.serve_url
     _Handler.ollama_url = a.ollama_url
     _Handler.run_root = a.run_root
+    _Handler.cors = a.cors
     httpd = ThreadingHTTPServer(("127.0.0.1", a.port), _Handler)
     print(f"flywheel gateway: http://127.0.0.1:{a.port}  root={_Handler.root}")
     print(f"  shell     http://127.0.0.1:{a.port}/site/index.html")

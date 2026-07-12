@@ -195,6 +195,39 @@ def test_route_request_success_routes_and_receipts(monkeypatch):
 
 # --- OpenAI-compatible surface -------------------------------------------------
 
+def _fake_handler(cors):
+    h = gateway._Handler.__new__(gateway._Handler)
+    h.cors = cors
+    return h
+
+
+def test_cors_off_by_default():
+    h = _fake_handler(False)
+    hdrs = []
+    h.send_header = lambda k, v: hdrs.append((k, v))
+    h._cors()
+    assert not any(k == "Access-Control-Allow-Origin" for k, v in hdrs)   # local by default
+
+
+def test_cors_on_emits_headers():
+    h = _fake_handler(True)
+    hdrs = []
+    h.send_header = lambda k, v: hdrs.append((k, v))
+    h._cors()
+    assert ("Access-Control-Allow-Origin", "*") in hdrs
+
+
+def test_options_preflight_returns_204_with_cors():
+    h = _fake_handler(True)
+    calls = {"resp": None, "end": False, "hdrs": []}
+    h.send_response = lambda c: calls.__setitem__("resp", c)
+    h.send_header = lambda k, v: calls["hdrs"].append((k, v))
+    h.end_headers = lambda: calls.__setitem__("end", True)
+    h.do_OPTIONS()
+    assert calls["resp"] == 204 and calls["end"] is True
+    assert ("Access-Control-Allow-Origin", "*") in calls["hdrs"]
+
+
 def test_flatten_messages():
     sys_, prompt = gateway._flatten_messages([
         {"role": "system", "content": "be brief"},
