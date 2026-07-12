@@ -442,6 +442,51 @@ def _agent_post(body: dict, root):
     return sent
 
 
+def test_router_stats_endpoint(monkeypatch):
+    from harness.router_stats import RouterStats
+    rs = RouterStats()
+    rs.record("openai", True)
+    monkeypatch.setattr(gateway, "_ROUTER_STATS", rs)
+    h = gateway._Handler.__new__(gateway._Handler)
+    h.path = "/api/router/stats"
+    sent = {}
+    h._json = lambda b, code=200: sent.update(body=b, code=code)
+    h._get()
+    assert sent["body"]["schema"] == "flywheel.router-stats/v1"
+    assert "openai" in sent["body"]["providers"]
+
+
+class _SpyStats:
+    def __init__(self):
+        self.ordered = None
+        self.recorded = []
+
+    def order(self, chain):
+        self.ordered = list(chain)
+        return chain
+
+    def record(self, *a, **k):
+        self.recorded.append(a)
+
+
+def test_openai_chat_adaptive_reorders_and_records(monkeypatch):
+    spy = _SpyStats()
+    monkeypatch.setattr(gateway, "get_router_stats", lambda: spy)
+    monkeypatch.setattr(gateway, "_resolve_proposer", lambda cand, url: (None, "unavailable", 503))
+    gateway.openai_chat({"model": "a,b", "adaptive": True,
+                         "messages": [{"role": "user", "content": "hi"}]}, "http://x")
+    assert spy.ordered == ["a", "b"]          # reorder consulted
+    assert len(spy.recorded) == 2             # both failures recorded
+
+
+def test_openai_chat_default_does_not_touch_stats(monkeypatch):
+    spy = _SpyStats()
+    monkeypatch.setattr(gateway, "get_router_stats", lambda: spy)
+    monkeypatch.setattr(gateway, "_resolve_proposer", lambda cand, url: (None, "unavailable", 503))
+    gateway.openai_chat({"model": "a", "messages": [{"role": "user", "content": "hi"}]}, "http://x")
+    assert spy.ordered is None and spy.recorded == []   # explicit order honored, no side effect
+
+
 def test_agent_route_validates_goal_and_endpoint(tmp_path):
     sent = _agent_post({"goal": "", "endpoint": ""}, tmp_path)
     assert sent["code"] == 400 and "goal" in sent["body"]["error"]
