@@ -32,6 +32,7 @@ import hashlib
 import json
 import os
 import sys
+import urllib.parse
 import urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -671,9 +672,18 @@ class _Handler(BaseHTTPRequestHandler):
                 pass
 
         from harness.router_agent import run_router_agent
+        root, root_err = _resolve_workspace_root(req.get("root"), self.root)
+        if root_err:
+            emit({"type": "error", "error": root_err})
+            try:
+                self.wfile.write(b"data: [DONE]\n\n")
+                self.wfile.flush()
+            except Exception:
+                pass
+            return
         try:
             result = run_router_agent(
-                goal, endpoint, root=str(self.root),
+                goal, endpoint, root=str(root),
                 allow_write=bool(req.get("allow_write", False)),
                 allow_exec=bool(req.get("allow_exec", False)),
                 max_steps=max_steps, test_cmd=(req.get("test_cmd") or None),
@@ -776,6 +786,18 @@ class _Handler(BaseHTTPRequestHandler):
         if p == "/api/memory":                       # durable memory stats (fold index)
             from harness.memory_api import memory_stats
             return self._json(memory_stats(self.run_root))
+        if p == "/api/plugins":                      # every mounted capability, one manifest shape
+            from harness.plugins import plugin_roster
+            return self._json(plugin_roster())
+        if p == "/api/plugins/probe":                # spawn a plugin's server, report its real tools
+            from harness.plugins import probe_plugin
+            name = ""
+            for part in qs.split("&"):
+                if part.startswith("name="):
+                    name = urllib.parse.unquote(part[5:])
+            if not name:
+                return self._json({"error": "provide ?name="}, 400)
+            return self._json(probe_plugin(name))
         if p == "/api/router/stats":                 # observed per-provider success/cost
             return self._json(get_router_stats().snapshot())
         if p == "/v1/models":                        # OpenAI-compatible model list (the roster)
@@ -933,6 +955,40 @@ class _Handler(BaseHTTPRequestHandler):
             from harness.memory_api import memory_recall
             return self._json(memory_recall(self.run_root, query,
                                             req.get("top_k", 5)))
+        if p == "/api/plugins/register":               # register a custom MCP server by argv
+            length = self._content_length()
+            if length is None:
+                return self._json({"error": "invalid or oversized Content-Length"}, 400)
+            try:
+                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
+            except Exception:
+                req = {}
+            from harness.plugins import register_mcp
+            out = register_mcp(req.get("name", ""), req.get("command", []),
+                               (req.get("detail") or "").strip())
+            return self._json(out, 400 if "error" in out else 200)
+        if p == "/api/plugins/toggle":                 # enable/disable a custom plugin
+            length = self._content_length()
+            if length is None:
+                return self._json({"error": "invalid or oversized Content-Length"}, 400)
+            try:
+                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
+            except Exception:
+                req = {}
+            from harness.plugins import toggle_mcp
+            out = toggle_mcp(req.get("name", ""), bool(req.get("enabled", True)))
+            return self._json(out, 400 if "error" in out else 200)
+        if p == "/api/plugins/remove":                 # remove a custom plugin
+            length = self._content_length()
+            if length is None:
+                return self._json({"error": "invalid or oversized Content-Length"}, 400)
+            try:
+                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
+            except Exception:
+                req = {}
+            from harness.plugins import remove_mcp
+            out = remove_mcp(req.get("name", ""))
+            return self._json(out, 400 if "error" in out else 200)
         if p == "/api/memory/note":                    # durable content-addressed note
             length = self._content_length()
             if length is None:
