@@ -792,6 +792,9 @@ class _Handler(BaseHTTPRequestHandler):
         if p == "/api/parity":                       # the capability matrix, witnessed not asserted
             from harness.parity import parity_matrix
             return self._json(parity_matrix())
+        if p == "/api/marketplace":                  # curated catalog over the plugin registry
+            from harness.marketplace import marketplace_catalog
+            return self._json(marketplace_catalog())
         if p == "/api/plugins/probe":                # spawn a plugin's server, report its real tools
             from harness.plugins import probe_plugin
             name = ""
@@ -969,6 +972,17 @@ class _Handler(BaseHTTPRequestHandler):
             from harness.plugins import register_mcp
             out = register_mcp(req.get("name", ""), req.get("command", []),
                                (req.get("detail") or "").strip())
+            return self._json(out, 400 if "error" in out else 200)
+        if p == "/api/marketplace/install":            # catalog entry -> plugin registry
+            length = self._content_length()
+            if length is None:
+                return self._json({"error": "invalid or oversized Content-Length"}, 400)
+            try:
+                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
+            except Exception:
+                req = {}
+            from harness.marketplace import install_from_catalog
+            out = install_from_catalog((req.get("name") or "").strip())
             return self._json(out, 400 if "error" in out else 200)
         if p == "/api/plugins/toggle":                 # enable/disable a custom plugin
             length = self._content_length()

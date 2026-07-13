@@ -11,15 +11,15 @@ def test_shipped_capabilities_are_witnessed():
     for key in ("any-provider-routing", "receipt-on-every-answer",
                 "integrity-guard", "staged-workflows", "plugin-registry",
                 "durable-memory-recall", "workspace-sandbox",
-                "projected-world-hash", "loop-closure-audit"):
+                "projected-world-hash", "loop-closure-audit",
+                "plugin-marketplace"):
         assert by_key[key]["flywheel"] == "WITNESSED", key
 
 
 def test_known_gaps_stay_visible_as_absent():
     doc = parity.parity_matrix()
     by_key = {r["key"]: r for r in doc["rows"]}
-    for key in ("lsp-language-intelligence", "plugin-marketplace",
-                "oauth-keychain"):
+    for key in ("lsp-language-intelligence", "oauth-keychain"):
         assert by_key[key]["flywheel"] == "ABSENT", key
         assert key in doc["summary"]["gaps"]
 
