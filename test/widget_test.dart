@@ -8,7 +8,7 @@ import 'package:flywheel_desktop/services/settings.dart';
 import 'package:flywheel_desktop/widgets/side_rail.dart';
 
 void main() {
-  testWidgets('App renders the shell with all five destinations',
+  testWidgets('App renders the shell with all eleven destinations',
       (WidgetTester tester) async {
     await tester.pumpWidget(FlywheelApp(settings: DesktopSettings()));
     await tester.pump();
@@ -16,9 +16,15 @@ void main() {
     expect(find.byType(SideRail), findsOneWidget);
     for (final label in [
       'Lanes',
+      'Code',
       'World',
+      'Graph',
       'Receipts',
       'Companion',
+      'Agent',
+      'Workflows',
+      'Studio',
+      'Memory',
       'Endpoints'
     ]) {
       expect(find.text(label), findsOneWidget);

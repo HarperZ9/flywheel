@@ -58,14 +58,20 @@ class SideRail extends StatelessWidget {
               ],
             ),
           ),
-          for (var i = 0; i < destinations.length; i++)
-            _RailItem(
-              index: i,
-              label: destinations[i].label,
-              selected: i == selectedIndex,
-              onTap: () => onSelect(i),
+          Expanded(
+            child: ListView(
+              padding: EdgeInsets.zero,
+              children: [
+                for (var i = 0; i < destinations.length; i++)
+                  _RailItem(
+                    index: i,
+                    label: destinations[i].label,
+                    selected: i == selectedIndex,
+                    onTap: () => onSelect(i),
+                  ),
+              ],
             ),
-          const Spacer(),
+          ),
           Padding(
             padding: const EdgeInsets.all(FwLayout.s3),
             child: _ThemeToggle(mode: themeMode, onToggle: onToggleTheme),

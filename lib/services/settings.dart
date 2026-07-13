@@ -11,7 +11,20 @@ import 'package:flutter/material.dart';
 
 class DesktopSettings {
   ThemeMode themeMode;
-  DesktopSettings({this.themeMode = ThemeMode.system});
+  List<String> recentWorkspaces;
+  DesktopSettings(
+      {this.themeMode = ThemeMode.system, List<String>? recentWorkspaces})
+      : recentWorkspaces = recentWorkspaces ?? [];
+
+  /// Record a workspace as most-recently used (keeps the last six).
+  void rememberWorkspace(String path) {
+    recentWorkspaces.remove(path);
+    recentWorkspaces.insert(0, path);
+    if (recentWorkspaces.length > 6) {
+      recentWorkspaces = recentWorkspaces.sublist(0, 6);
+    }
+    save();
+  }
 
   static File _file() {
     final home = Platform.environment['FLYWHEEL_HOME'] ??
@@ -30,7 +43,12 @@ class DesktopSettings {
         'dark' => ThemeMode.dark,
         _ => ThemeMode.system,
       };
-      return DesktopSettings(themeMode: mode);
+      return DesktopSettings(
+        themeMode: mode,
+        recentWorkspaces: (j['recent_workspaces'] is List)
+            ? List<String>.from(j['recent_workspaces'])
+            : [],
+      );
     } catch (e) {
       // A corrupt settings file must never block launch; fall back to system.
       debugPrint('settings load failed, using defaults: $e');
@@ -47,7 +65,8 @@ class DesktopSettings {
         ThemeMode.dark => 'dark',
         ThemeMode.system => 'system',
       };
-      f.writeAsStringSync(jsonEncode({'theme': theme}));
+      f.writeAsStringSync(jsonEncode(
+          {'theme': theme, 'recent_workspaces': recentWorkspaces}));
     } catch (e) {
       debugPrint('settings save failed: $e');
     }

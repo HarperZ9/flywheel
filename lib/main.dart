@@ -14,10 +14,16 @@ import 'models/gateway_models.dart';
 import 'services/gateway_process.dart';
 import 'services/settings.dart';
 import 'theme/flywheel_theme.dart';
+import 'views/agent_view.dart';
+import 'views/code_view.dart';
 import 'views/companion_view.dart';
 import 'views/endpoints_view.dart';
+import 'views/graph_view.dart';
 import 'views/lanes_view.dart';
+import 'views/memory_view.dart';
 import 'views/receipts_view.dart';
+import 'views/studio_view.dart';
+import 'views/workflows_view.dart';
 import 'views/world_view.dart';
 import 'widgets/fw.dart';
 import 'widgets/side_rail.dart';
@@ -57,7 +63,10 @@ class _FlywheelAppState extends State<FlywheelApp> {
       theme: flywheelLightTheme(),
       darkTheme: flywheelDarkTheme(),
       themeMode: _mode,
-      home: FlywheelShell(themeMode: _mode, onToggleTheme: _toggleTheme),
+      home: FlywheelShell(
+          themeMode: _mode,
+          onToggleTheme: _toggleTheme,
+          settings: widget.settings),
     );
   }
 }
@@ -65,8 +74,12 @@ class _FlywheelAppState extends State<FlywheelApp> {
 class FlywheelShell extends StatefulWidget {
   final ThemeMode themeMode;
   final VoidCallback onToggleTheme;
+  final DesktopSettings settings;
   const FlywheelShell(
-      {super.key, required this.themeMode, required this.onToggleTheme});
+      {super.key,
+      required this.themeMode,
+      required this.onToggleTheme,
+      required this.settings});
 
   @override
   State<FlywheelShell> createState() => _FlywheelShellState();
@@ -86,9 +99,15 @@ class _FlywheelShellState extends State<FlywheelShell> {
 
   static const _destinations = [
     RailDestination('Lanes'),
+    RailDestination('Code'),
     RailDestination('World'),
+    RailDestination('Graph'),
     RailDestination('Receipts'),
     RailDestination('Companion'),
+    RailDestination('Agent'),
+    RailDestination('Workflows'),
+    RailDestination('Studio'),
+    RailDestination('Memory'),
     RailDestination('Endpoints'),
   ];
 
@@ -193,12 +212,26 @@ class _FlywheelShellState extends State<FlywheelShell> {
         return LanesView(
             roster: _roster, alive: _gatewayAlive, onProbe: _probeLanes);
       case 1:
-        return WorldView(world: _world, alive: _gatewayAlive);
+        return CodeView(
+            client: _client, alive: _gatewayAlive, settings: widget.settings);
       case 2:
-        return ReceiptsView(client: _client, alive: _gatewayAlive);
+        return WorldView(world: _world, alive: _gatewayAlive);
       case 3:
-        return CompanionView(client: _client, alive: _gatewayAlive);
+        return GraphView(world: _world, roster: _roster, alive: _gatewayAlive);
       case 4:
+        return ReceiptsView(client: _client, alive: _gatewayAlive);
+      case 5:
+        return CompanionView(client: _client, alive: _gatewayAlive);
+      case 6:
+        return AgentView(client: _client, alive: _gatewayAlive);
+      case 7:
+        return WorkflowsView(client: _client, alive: _gatewayAlive);
+      case 8:
+        return StudioView(
+            world: _world, roster: _roster, alive: _gatewayAlive);
+      case 9:
+        return MemoryView(client: _client, alive: _gatewayAlive);
+      case 10:
         return EndpointsView(client: _client, alive: _gatewayAlive);
       default:
         return const FwEmpty('Unknown view');
