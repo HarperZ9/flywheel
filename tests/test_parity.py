@@ -16,12 +16,14 @@ def test_shipped_capabilities_are_witnessed():
         assert by_key[key]["flywheel"] == "WITNESSED", key
 
 
-def test_known_gaps_stay_visible_as_absent():
+def test_gap_list_reflects_the_audit_not_a_hardcoded_story():
     doc = parity.parity_matrix()
     by_key = {r["key"]: r for r in doc["rows"]}
-    for key in ("oauth-keychain",):
-        assert by_key[key]["flywheel"] == "ABSENT", key
-        assert key in doc["summary"]["gaps"]
+    # secure-credentials closed the last declared gap; the list must agree
+    # with the per-row audit, whatever it says.
+    assert by_key["secure-credentials"]["flywheel"] == "WITNESSED"
+    for key in doc["summary"]["gaps"]:
+        assert by_key[key]["flywheel"] == "ABSENT"
 
 
 def test_matrix_can_fail_on_a_missing_witness():
