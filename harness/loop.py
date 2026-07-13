@@ -57,7 +57,9 @@ def run_loop(task: Task, proposer: Proposer, oracle: Oracle, *,
              proof_addressed: bool = False,
              search: ArmConfig | None = None,
              grounding_recheck: bool = False,
-             grounding_workdirs: dict | None = None) -> LoopResult:
+             grounding_workdirs: dict | None = None,
+             pool: "VerifiedPool | None" = None,
+             auto_context: bool = True) -> LoopResult:
     t0 = time.time()
     chain: list[StageReceipt] = []
     if boot_packet is None and boot_root is not None:
@@ -70,6 +72,23 @@ def run_loop(task: Task, proposer: Proposer, oracle: Oracle, *,
                      payload={"git_head": boot_packet.git_head})
     retrieved = [{"source": r.source, "receipt": r.receipt}
                  for r in task.retrieved]
+    # Gap A (memory->context): if the caller passed a VerifiedPool and the task
+    # arrived with no retrieved context, populate it from prior verified PASSes.
+    # This is the feedback edge that closes the loop -- a verified fact from a
+    # prior run becomes available to this proposal. auto_context=False leaves
+    # the task untouched (clean ablation). See loop_closure.py handoff
+    # memory->context and evolutionary_flywheel.auto_retrieved.
+    if auto_context and pool is not None and not task.retrieved:
+        from .evolutionary_flywheel import auto_retrieved
+        # Match facts whose source key relates to this task (same task_id family
+        # or a shared prefix). A pool with no matching facts leaves retrieved empty.
+        prereqs = [k for k in pool.facts if k != task.task_id
+                   and (k.startswith(task.task_id.split(".")[0])
+                        or task.task_id.split(".")[0].startswith(k.split(".")[0]))]
+        if prereqs:
+            task = auto_retrieved(pool, task, prereqs)
+            retrieved = [{"source": r.source, "receipt": r.receipt}
+                         for r in task.retrieved]
     prompt = task.prompt
     if boot_packet is not None and boot_packet.verdict == "MATCH":
         prompt = hydrate_prompt(boot_packet, prompt)
@@ -199,6 +218,11 @@ def run_loop(task: Task, proposer: Proposer, oracle: Oracle, *,
         cache.insert(envelope, ck)
     if cache is not None and proof_addressed:
         proof_insert(cache, task, envelope)   # dual-index: prompt/model-invariant fact
+    # Gap A (memory->context): bank the verified fact in the pool so the NEXT
+    # task's auto_context can retrieve it. Only PASSes enter (a failed gate
+    # must not compound). The receipt hash is the re-checkable handle.
+    if pool is not None and accepted:
+        pool.add_verified(task.task_id, f"envelope:{envelope.content_hash()}")
     return LoopResult(
         envelope=envelope, oracle=orc, witness=wv,
         accepted=accepted, elapsed_s=time.time() - t0, grounding=grounding)

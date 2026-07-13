@@ -138,7 +138,13 @@ def _load_bundled_json(summary: dict[str, Any], relative_path: str) -> dict[str,
     path = Path(str(row.get("path", "")))
     if not path.exists():
         return None
-    return _load_json(path)
+    # A bundled artifact may be non-JSON (release notes, plain text). The
+    # contract-schema check reports that as observed_schema=None -> FAIL
+    # rather than crashing the whole doctor with an uncaught JSONDecodeError.
+    try:
+        return _load_json(path)
+    except (json.JSONDecodeError, ValueError):
+        return None
 
 
 def _check_required_files(summary: dict[str, Any]) -> dict[str, Any]:

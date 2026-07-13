@@ -123,3 +123,32 @@ def test_humaneval_value_has_no_raw_dump(tmp_path):
     assert he["status"] == "measured"
     assert "should/not/appear" not in (he["value"] or "")   # no raw leak
     assert "flywheel 136 vs base 141" in he["value"]
+
+
+def test_envelope_finding_mints_and_moves_root_hash(tmp_path):
+    """Gap C falsifier: a freshly-minted PASS envelope must appear in the
+    findings doc and move its root hash; deleting it must move it back. Before
+    Phase 3, envelopes/ was invisible to project_findings."""
+    _write_min_artifacts(tmp_path)
+    base = project_findings(tmp_path)
+    env_finding = next((f for f in base["findings"] if f["key"] == "verified_envelopes"), None)
+    assert env_finding is not None, "envelope finding must exist (pending when empty)"
+    assert env_finding["status"] == "pending"   # no envelopes yet
+    h_before = base["root_hash"]
+
+    # mint one PASS envelope
+    env_dir = tmp_path / "envelopes"
+    env_dir.mkdir(parents=True, exist_ok=True)
+    (env_dir / "taskA-abc123.json").write_text(json.dumps({
+        "verdict": "PASS", "task_id": "taskA", "content_hash": "abc123",
+    }), encoding="utf-8")
+    after = project_findings(tmp_path)
+    env_after = next(f for f in after["findings"] if f["key"] == "verified_envelopes")
+    assert env_after["status"] == "measured"
+    assert "1 PASS of 1" in env_after["value"]
+    assert after["root_hash"] != h_before, "new envelope must move the root hash"
+
+    # delete it -> root hash reverts
+    (env_dir / "taskA-abc123.json").unlink()
+    reverted = project_findings(tmp_path)
+    assert reverted["root_hash"] == h_before, "deleting the envelope must revert the root hash"

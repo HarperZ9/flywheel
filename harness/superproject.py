@@ -1,17 +1,17 @@
-"""superproject.py — the modular integration spine: harness organs <-> flagship peers.
+"""superproject.py -- the modular integration spine: Flywheel and its lanes.
 
-The local-model harness is the ENGINE. The five Project-Telos flagships are the mature,
-external versions of the same organs. This module is the seam that composes them WITHOUT
-either absorbing the other: the harness has native, zero-dependency organs that run
-standalone, and each can delegate to its flagship PEER through the shared action-envelope
-protocol when the MCP edge is present. MCP is the lone optional edge; the manifest below
-is static data and always available.
+Flywheel is the one platform. The flagship tools (gather, crucible, index,
+forum, learn, telos) and the trained-model lane (local-model) are LANES inside
+it -- each an organ of the reconcile. This module is the seam that composes
+them: each lane is an organ with a role (perceive, verify, structure,
+orchestrate, reconcile) and a routing edge to the next, and Flywheel itself is
+the composer/reconciler that binds the loop closed.
 
-Each flagship's `doctor` emits a `next_actions` route, and those routes already form a
-closed spine (verified live 2026-07-06): gather<->crucible (verify claims), index<->forum
-(route/context), telos reconciles the five-tool golden workflow. This manifest binds the
-harness clusters onto that spine so the whole ecosystem reads as one modular design, each
-point uplifted to its role.
+Each lane's `doctor` emits a `next_actions` route, and those routes form a
+closed spine: gather<->crucible (verify claims), index<->forum
+(route/context), Flywheel reconciles the whole workflow. This manifest binds
+the harness clusters onto that spine so the ecosystem reads as one modular
+design under one platform, each lane uplifted to its role.
 """
 from __future__ import annotations
 
@@ -101,7 +101,7 @@ def spine() -> dict:
     closed = all(t in flagships for t in routes.values())
     return {"organs": organs, "flagships": sorted(flagships),
             "routes": routes, "closed": closed,
-            "reconciler": "telos"}
+            "reconciler": "flywheel"}
 
 
 def probe_live(doctors: dict | None = None) -> dict:
@@ -125,7 +125,7 @@ def probe_live(doctors: dict | None = None) -> dict:
 def compose_report(doctors: dict | None = None) -> str:
     p = probe_live(doctors)
     lines = [f"Project Telos superproject spine — {p['n_organs']} organs, "
-             f"spine {'CLOSED' if p['spine_closed'] else 'OPEN'}, reconciler=telos"]
+             f"spine {'CLOSED' if p['spine_closed'] else 'OPEN'}, reconciler=flywheel"]
     for r in p["organs"]:
         h = r["health"]
         lines.append(f"  {r['organ']:15} -> {r['flagship']:8} v{r['version']:6} [{h}]  "

@@ -13,6 +13,10 @@ __pycache__/
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
+
+# --- PyInstaller build artifacts (the release exe lives in artifacts/exe/) ---
+build/
+dist/
 *.egg-info/
 .venv/
 venv/

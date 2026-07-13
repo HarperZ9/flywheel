@@ -1,4 +1,9 @@
-"""Entry-point wrapper for the full local harness executable."""
+"""Entry-point wrapper for the full local harness executable.
+
+Renamed surface: the command is now `flywheel` (see harness/cli_entry.py and
+pyproject.toml). This shim keeps the old `local-harness` exe name working for
+one release by delegating to harness.cli_entry.main.
+"""
 from __future__ import annotations
 
 import os

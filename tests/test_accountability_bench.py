@@ -10,12 +10,12 @@ from harness.accountability_bench import score_harness, score_strawman
 
 EXPECTED_DIMS = {"re_checkability", "externalization", "adversarial_soundness",
                  "no_regression", "invariant_fidelity", "null_space_honesty",
-                 "provenance"}
+                 "provenance", "buildc_receipt_bridge"}
 
 
 def test_harness_scores_high_on_its_own_axes():
     r = score_harness()
-    assert r["n_dimensions"] == 7
+    assert r["n_dimensions"] == 8
     assert {d["name"] for d in r["dimensions"]} == EXPECTED_DIMS
     assert all(0.0 <= d["score"] <= 1.0 for d in r["dimensions"])
     assert r["overall"] >= 0.9

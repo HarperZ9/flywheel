@@ -1,8 +1,14 @@
+from pathlib import PurePath
+
 from scripts.run_gather_readiness import build_report, profile_gather, split_paths
 
 
 def test_split_paths_handles_empty_items():
-    assert [str(path) for path in split_paths("C:/a;;C:/b")] == ["C:/a", "C:/b"]
+    # Compare as PurePath so the assertion is slash-agnostic across platforms
+    # (pathlib normalizes "C:/a" -> "C:\\a" on Windows; the split logic is
+    # correct, only the string form is platform-specific).
+    paths = [PurePath(str(p)) for p in split_paths("C:/a;;C:/b")]
+    assert paths == [PurePath("C:/a"), PurePath("C:/b")]
 
 
 def test_profile_gather_reports_static_surfaces_without_reading_configs(tmp_path, monkeypatch):
@@ -13,6 +19,7 @@ def test_profile_gather_reports_static_surfaces_without_reading_configs(tmp_path
     (gather / "src" / "gather" / "discord.py").write_text("do-not-read", encoding="utf-8")
     (gather / "src" / "gather" / "run_config.py").write_text("do-not-read", encoding="utf-8")
     (gather / "src" / "gather" / "method.py").write_text("do-not-read", encoding="utf-8")
+    (gather / "tests" / "test_discord.py").write_text("do-not-read", encoding="utf-8")
     configs = tmp_path / "configs"
     configs.mkdir()
     (configs / "gather-discord.json").write_text('{"secret":"do-not-read"}', encoding="utf-8")
