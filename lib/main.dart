@@ -21,6 +21,7 @@ import 'views/endpoints_view.dart';
 import 'views/graph_view.dart';
 import 'views/lanes_view.dart';
 import 'views/memory_view.dart';
+import 'views/plugins_view.dart';
 import 'views/receipts_view.dart';
 import 'views/studio_view.dart';
 import 'views/workflows_view.dart';
@@ -108,6 +109,7 @@ class _FlywheelShellState extends State<FlywheelShell> {
     RailDestination('Workflows'),
     RailDestination('Studio'),
     RailDestination('Memory'),
+    RailDestination('Plugins'),
     RailDestination('Endpoints'),
   ];
 
@@ -232,6 +234,8 @@ class _FlywheelShellState extends State<FlywheelShell> {
       case 9:
         return MemoryView(client: _client, alive: _gatewayAlive);
       case 10:
+        return PluginsView(client: _client, alive: _gatewayAlive);
+      case 11:
         return EndpointsView(client: _client, alive: _gatewayAlive);
       default:
         return const FwEmpty('Unknown view');

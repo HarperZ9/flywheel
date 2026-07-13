@@ -16,6 +16,8 @@ import 'package:http/http.dart' as http;
 import '../models/gateway_models.dart';
 import '../models/workflow_models.dart';
 
+part 'gateway_streams.dart';
+
 class GatewayClient {
   final String baseUrl;
   final http.Client _http;
