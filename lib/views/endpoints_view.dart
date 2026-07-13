@@ -9,7 +9,9 @@ import '../client/gateway_client.dart';
 import '../models/endpoint_models.dart';
 import '../models/gateway_models.dart';
 import '../theme/flywheel_theme.dart';
+import '../widgets/charts.dart';
 import '../widgets/fw.dart';
+import '../widgets/training_card.dart';
 
 class EndpointsView extends StatefulWidget {
   final GatewayClient client;
@@ -24,6 +26,7 @@ class _EndpointsViewState extends State<EndpointsView> {
   EndpointHealthDoc? _health;
   List<EndpointRow> _roster = [];
   List<ProviderScore> _scores = [];
+  Map<String, dynamic>? _training;
   String? _error;
   bool _loading = false;
 
@@ -47,6 +50,7 @@ class _EndpointsViewState extends State<EndpointsView> {
         widget.client.endpointHealth(),
         widget.client.endpointRoster(),
         widget.client.routerStats(),
+        widget.client.trainingStatus(),
       ]);
       if (mounted) {
         setState(() {
@@ -55,6 +59,7 @@ class _EndpointsViewState extends State<EndpointsView> {
           _roster = results[1] as List<EndpointRow>;
           _scores =
               ProviderScore.listFromStats(results[2] as Map<String, dynamic>);
+          _training = results[3] as Map<String, dynamic>;
           _error = null;
           _loading = false;
         });
@@ -122,6 +127,10 @@ class _EndpointsViewState extends State<EndpointsView> {
             ],
           ],
         ),
+        if (_training != null && _training!['error'] == null) ...[
+          const SizedBox(height: FwLayout.s3),
+          TrainingCard(training: _training!),
+        ],
         const SizedBox(height: FwLayout.s5),
         const Kicker('providers · credential presence only, never values'),
         const SizedBox(height: FwLayout.s3),
@@ -221,6 +230,9 @@ class _EndpointsViewState extends State<EndpointsView> {
                 style: fwMono(t, size: 12, weight: FontWeight.w600)),
           ),
           _cell(t, '${s.attempts} tried'),
+          MiniBar(s.successRate,
+              status: s.successRate >= 0.5 ? 'verified' : 'drift'),
+          const SizedBox(width: FwLayout.s3),
           _cell(t, '${(s.successRate * 100).toStringAsFixed(0)}% ok'),
           _cell(t, '${s.meanLatency.toStringAsFixed(1)}s'),
           const Spacer(),
@@ -238,4 +250,5 @@ class _EndpointsViewState extends State<EndpointsView> {
         width: 90,
         child: Text(text, style: fwMono(t, size: 11.5, color: t.inkMuted)),
       );
+
 }
