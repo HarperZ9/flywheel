@@ -11,3 +11,6 @@ build/
 .vscode/
 # macOS
 .DS_Store
+
+# Session handoff notes (local only, never shipped)
+HANDOFF-*.md
