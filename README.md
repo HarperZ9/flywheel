@@ -1,26 +1,29 @@
 # Flywheel
 
-**The router and harness that verifies.** Flywheel does everything the other
-routers and local runners do, plus the one thing none of them do: it checks the
-answer and hands you a receipt you can re-run yourself. Point it at any model,
-local or hosted, online or offline. One surface, zero dependencies.
+**The one platform.** Flywheel is the single local surface that replaces the
+whole category — routers, agents, harnesses, apps, and the tool family — and
+closes the verified-inference loop: propose cheaply, verify with a real oracle,
+keep the re-checkable receipt, and feed it back as memory, context, and catalog
+for the next run. The loop, not the model, is where the correctness comes from.
 
-Every other router routes. Flywheel **routes and verifies**. The authority that
-accepts an answer is an external check, never a model grading its own work, and
-every accepted answer carries a content-addressed receipt that a stranger can
-recompute offline.
+The trained model (`local-model`) is one lane inside Flywheel — the replaceable
+half. The flagship tools (`index`, `gather`, `crucible`, `forum`, `learn`,
+`telos`) are lanes too — each an organ of the reconcile, provisioned,
+health-checked, and surfaced through one gateway. Flywheel is the durable half:
+the composer that binds them into one closed loop.
 
 ---
 
 ## Run it now
 
-Start the one surface (the gateway) and open it in a browser:
+Start the one surface and open it in a browser:
 
 ```
-python scripts/run_harness_cli.py app --port 8799
+flywheel app --port 8799
 ```
 
-Then open **http://127.0.0.1:8799/site/index.html**. No packages to install.
+Then open **http://127.0.0.1:8799/site/index.html**. (From a checkout without
+the `flywheel` command installed: `python scripts/run_harness_cli.py app --port 8799`.)
 
 Route a prompt to any provider you have a key for, and get a receipt with it:
 
@@ -30,24 +33,97 @@ curl -s http://127.0.0.1:8799/api/route \
   -d '{"prompt": "write a haiku about receipts", "endpoint": "anthropic"}'
 ```
 
-Or let the companion answer it locally and escalate only the hard part:
-
-```
-curl -s http://127.0.0.1:8799/api/companion \
-  -H 'Content-Type: application/json' \
-  -d '{"prompt": "write a function that returns a + 1"}'
-```
-
 **Already have an OpenAI client?** Point its base URL at the gateway. Flywheel
 speaks the OpenAI API (`/v1/chat/completions`, `/v1/models`, streaming), and the
-`model` field names any provider in the roster, so your existing tools route
-through the verify layer with no code change:
+`model` field names any provider in the roster.
+
+---
+
+## The lanes
+
+Flywheel encompasses the tool family as lanes. Install them all, then see their
+health through one surface:
 
 ```
-curl -s http://127.0.0.1:8799/v1/chat/completions \
-  -H 'Content-Type: application/json' \
-  -d '{"model": "anthropic", "messages": [{"role": "user", "content": "say hi"}]}'
+flywheel install --lanes all       # pip + npm install the flagship family
+flywheel lanes                     # roster: live / declared / missing per lane
+flywheel lanes                     # → 7 lanes; gather/crucible/index/forum live, ...
 ```
+
+Each lane is an organ with a role:
+
+| Lane | Role | Organ |
+|---|---|---|
+| `gather` | research intake + provenance receipts | perception |
+| `crucible` | falsifiable verification + re-check | verification |
+| `index` | workspace map + symbol graph + verified wiki | structure (the catalog) |
+| `forum` | witnessed causal ledger + routing | orchestration |
+| `learn` | accountable learning forge | memory |
+| `telos` | reconciliation + creative engine + doctors | reconciliation |
+| `local-model` | the trained 14B proposer + the harness | propose-verify |
+
+The lane roster is live at `GET /api/lanes` (add `?probe=true` for a live MCP
+handshake with each lane). A down lane never breaks the roster; it reports
+`missing` or `declared` honestly.
+
+---
+
+## The closed loop
+
+Flywheel is built on one operation: **the reconcile**. Perceive a task, produce
+a candidate, check it against a criterion Flywheel did not author, and carry a
+receipt a third party can re-walk. The loop is closed at every altitude:
+
+```
+flywheel loop-status
+# → loop closure 9/9 (100%); open: none
+```
+
+| Handoff | What closes it |
+|---|---|
+| perceive → propose | boot hydration (context into the prompt) |
+| propose → verify | the oracle runs and disposes |
+| verify → memory | accepted PASS banked in the receipt cache |
+| memory → serve | a repeat is served from cache at ~0 cost |
+| verify → evolve | run signals surface config candidates |
+| evolve → propose | the next spin starts from an improved baseline |
+| verify → corpus | verified experience enters the developmental corpus |
+| **memory → context** | a verified fact feeds the next task's retrieved context |
+| **corpus → model** | `flywheel corpus-export` writes a verified training shard (start is a deliberate manual step) |
+
+Two invariants are load-bearing and never relaxed: **no receipt → no accept**,
+and **no learned model sits in the accept path** — an oracle the operator names
+does the deciding, never the proposer.
+
+The folded-context → recall edge is closed too: when the agent compacts its
+history, the folded span is content-addressed into a fold index so a buried
+fact is recallable verbatim later instead of lost.
+
+---
+
+## The one surface
+
+Every route is same-origin JSON you can also `curl`:
+
+| Route | What it gives you |
+|---|---|
+| `/site/index.html` | The shell: router, world, companion, studio, receipts, lanes |
+| `GET /api/endpoints` | The universal router roster, credential presence only |
+| `GET /api/endpoints/health` | Live probe of local tiers; hosted tiers report configured-or-not |
+| `GET /api/lanes` | The lane roster — live / declared / missing per flagship lane |
+| `POST /api/route` | Route to any provider and get a receipt with the answer |
+| `POST /api/agent` | Run a gated, witnessed tool loop (read/edit/run) over any provider |
+| `POST /v1/chat/completions` | Drop-in OpenAI-compatible; `model` names any provider; streams |
+| `GET /v1/models` | OpenAI-compatible model list (the roster) |
+| `POST /v1/embeddings` | OpenAI-compatible embeddings, routed to a provider by name |
+| `POST /api/companion` | Answer locally, escalate only the hard slice |
+| `POST /api/forge` | Turn a plain goal into a structured prompt with checkable success gates |
+| `GET /api/world` | The projected state (roster, lanes, findings, cursor) under one root hash |
+| `GET /api/router/stats` | Observed per-provider success rate, latency, and cost score |
+| `GET /api/training/status` | Read-only status of the local training run |
+
+One line for the whole surface: every number on every page is a fetch of a
+receipt file you can re-check offline.
 
 ---
 
@@ -61,56 +137,9 @@ One roster of every endpoint, all feeding the same verified path:
 - **Native:** hosted Anthropic and Gemini.
 - **Subscription command-line tiers.**
 
-Credentials are read as presence only, never as a value, and never written to any
-receipt, ledger, or log. Bring your keys and it routes online. Bring your weights
-and it runs offline, on a plane, when the network is down. The choice is yours on
-every call.
-
----
-
-## The one surface
-
-Every route is same-origin JSON you can also `curl`:
-
-| Route | What it gives you |
-|---|---|
-| `/site/index.html` | The shell: router, world, companion, studio, receipts, one UI |
-| `GET /api/endpoints` | The universal router roster, credential presence only |
-| `GET /api/endpoints/health` | Live probe of local tiers; hosted tiers report configured-or-not |
-| `POST /api/route` | Route to any provider and get a receipt with the answer |
-| `POST /api/agent` | Run a gated, witnessed tool loop (read/edit/run) over any provider |
-| `POST /v1/chat/completions` | Drop-in OpenAI-compatible; `model` names any provider; streams |
-| `GET /v1/models` | OpenAI-compatible model list (the roster) |
-| `POST /v1/embeddings` | OpenAI-compatible embeddings, routed to a provider by name |
-| `POST /api/companion` | Answer locally, escalate only the hard slice |
-| `POST /api/forge` | Turn a plain goal into a structured prompt with checkable success gates |
-| `GET /api/world` | The projected state (roster, findings, cursor) under one root hash |
-| `GET /api/router/stats` | Observed per-provider success rate, latency, and cost score |
-| `GET /api/training/status` | Read-only status of the local training run |
-
-One line for the whole surface: every number on every page is a fetch of a
-receipt file you can re-check offline.
-
----
-
-## How it compares
-
-| | Ordinary router | Local runner | Agent harness | Flywheel |
-|---|---|---|---|---|
-| Routes to many providers | Yes | No | Some | Yes |
-| Runs a local model | No | Yes | Some | Yes |
-| Works offline | No | Yes | No | Yes |
-| Accepts on an external check | No | No | No | **Yes** |
-| Re-checkable receipt per answer | No | No | No | **Yes** |
-| Answers local, escalates the hard part | No | No | No | **Yes** |
-| Witnessed tool loop, re-checkable per step | No | No | No | **Yes** |
-| Refuses a reward-hacked (tampered) pass | No | No | No | **Yes** |
-| Goal into a checkable prompt (studio) | No | No | No | **Yes** |
-| One root-hashed shared state | No | No | No | **Yes** |
-| Zero dependencies, one file to run | Varies | Varies | No | **Yes** |
-
-The columns on the left each do one job. Flywheel does all of them on one
-surface, and adds the verify layer none of them have.
+Credentials are read as presence only, never as a value, and never written to
+any receipt, ledger, or log. Bring your keys and it routes online. Bring your
+weights and it runs offline.
 
 ---
 
@@ -119,15 +148,13 @@ surface, and adds the verify layer none of them have.
 Cheapest-first, on evidence:
 
 1. **Cache hit** answers for free, and re-checks the stored answer still holds
-   before serving it, so a stale answer is never returned as verified.
+   before serving it.
 2. **Local, verified** runs your local model and an external check accepts it.
-3. **Local, agreement** reports behavioral consensus honestly as agreement, not
-   as a verified check.
-4. **Escalate** happens only when the budget is spent below confidence. The
-   stronger tier is named in the response, and routing to it is your call.
+3. **Local, agreement** reports behavioral consensus honestly as agreement.
+4. **Escalate** happens only when the budget is spent below confidence.
 
-No learned model sits on the accept path. An external check disposes; escalation
-is a confidence threshold, not a difficulty guess.
+No learned model sits on the accept path. An external check disposes;
+escalation is a confidence threshold, not a difficulty guess.
 
 ---
 
@@ -143,45 +170,30 @@ chain (`telos-coder-14b-cpt2020-q4_k_m.gguf`, sha256 `613db240...`).
 | best-of-4 | 9 / 10 (90%) | [0.596, 0.982] | 100% |
 | single + oracle | 8 / 10 (80%) | [0.490, 0.943] | 100% |
 
-Flywheel's advantages are in the product, and they are real: it routes to more
-places, verifies where nothing else does, runs offline, and reproduces every
-receipt. On the separate question of whether verified inference makes the *model*
-measurably smarter, we do not overclaim: verified beats single-shot by +0.100
-here, but the 95% interval [-0.236, +0.420] includes zero, and best-of-4 ties it.
-Separating a real effect at this size needs about a hundred tasks, which is what
-the curated hard lane is building toward. We show that gap on purpose. A tool that
+Flywheel's advantages are in the platform, and they are real: it routes to more
+places, verifies where nothing else does, runs offline, closes the loop, and
+reproduces every receipt. On the separate question of whether verified inference
+makes the *model* measurably smarter, we do not overclaim: verified beats
+single-shot by +0.100 here, but the 95% interval includes zero. A tool that
 refuses to overclaim is a tool whose other claims you can trust.
-
----
-
-## The vision
-
-Flywheel is the front surface of a verified-inference flywheel: propose with a
-cheap local model, dispose with an external check, keep the re-checkable receipt,
-and let what passes accumulate. The model is the replaceable half; the
-verification harness is the durable half. The same discipline, an external check
-that can fail plus a receipt anyone can re-run, extends from routing single calls
-to composing a whole spine of accountable tools. The near-term work is widening
-the verified path across every provider and growing the curated task lane until
-the flywheel measurably spins. See [WALKTHROUGH.md](WALKTHROUGH.md) and
-[SUPERAPP.md](SUPERAPP.md).
 
 ---
 
 ## Requirements
 
-- Python 3.10+ (standard library only, no packages to install).
+- Python 3.10+ (standard library only, no packages to install for the core).
 - To run the local model: a machine that can host a ~9 GB 4-bit model, via
   Ollama or the bundled server. A GPU helps but is not required.
-- To reach hosted providers: their API key in your environment. Flywheel reads
-  presence only, never the value.
+- To reach hosted providers: their API key in your environment.
+- To install the lanes: `pip` and `npm` on PATH.
 
 ## Documentation
 
 - **[QUICKSTART.md](QUICKSTART.md)**: the fastest path from zero to the running surface.
 - **[WALKTHROUGH.md](WALKTHROUGH.md)**: zero to verified inference, then a tour of every route.
-- **[SUPERAPP.md](SUPERAPP.md)**: the full unification spec and the increment ladder.
-- **[docs/schematics/](docs/schematics/)**: architecture and verified-loop diagrams.
+- **[PROJECT.md](PROJECT.md)**: the verified-inference harness architecture and layer map.
+- **[SUPERAPP.md](SUPERAPP.md)**: the unification spec and the increment ladder.
+- **[VERIFIED-DATA-FLYWHEEL.md](VERIFIED-DATA-FLYWHEEL.md)**: the systems-efficiency thesis the loop embodies.
 
 ## License
 
@@ -193,7 +205,9 @@ years after each version's release. See [LICENSE](LICENSE).
 ## Honest boundaries
 
 - The verifier can fail, everywhere. Every surface ships with the tamper check
-  that would prove it broken. A view that cannot show drift is not shipped.
+  that would prove it broken.
 - No credentials in code, transit, receipts, or logs. Keys come from the
   environment only, as presence booleans.
 - Nothing here claims a result the receipts do not support.
+- The `corpus → model` trigger is a deliberate manual step by design: the export
+  path is wired, but training never auto-starts.

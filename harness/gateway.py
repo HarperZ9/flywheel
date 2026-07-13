@@ -55,9 +55,10 @@ RECEIPT_CATALOG = (
     "demos/index.json",
 )
 
-# The flagship spine (peers composing through protocols, not a hierarchy).
-SPINE = ("local-model", "telos", "index", "forum", "gather", "crucible",
-         "mneme", "relay", "plexus")
+# The flagship spine. Flywheel is the platform; the rest are lanes inside it
+# (organs of the reconcile), not peers. local-model is the trained-model lane.
+SPINE = ("flywheel", "local-model", "telos", "index", "forum", "gather",
+         "crucible", "learn", "mneme", "relay", "plexus")
 
 
 def _probe(url: str, timeout: float = 2.0) -> tuple[bool, dict]:
@@ -705,12 +706,17 @@ class _Handler(BaseHTTPRequestHandler):
 
     def _get(self):
         p = self.path.split("?", 1)[0]
+        qs = self.path.split("?", 1)[1] if "?" in self.path else ""
         if p == "/api/endpoints/health":
             return self._json(endpoint_roster(self.serve_url, self.ollama_url))
         if p == "/api/endpoints":
             return self._json(_unified_roster())     # full universal-router roster
         if p == "/api/world":
             return self._json(_projected_world(self.root))
+        if p == "/api/lanes":                        # the lane roster (umbrella layer)
+            from harness.lanes import lane_roster
+            probe = "probe=true" in qs or "probe=1" in qs
+            return self._json(lane_roster(probe=probe))
         if p == "/api/training/status":
             return self._json(_training_status(self.run_root))
         if p == "/api/router/stats":                 # observed per-provider success/cost

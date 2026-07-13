@@ -178,9 +178,13 @@ def test_generalization_is_subsumption_not_duplicate(tmp_path):
     assert r["gates"]["dedup"] == "PASS", r["gates"]["dedup"]
 
 
+@pytest.mark.timeout(120)
 def test_hanging_solution_is_rejected_not_a_crash(tmp_path, monkeypatch):
     # learned from a real batch-3 crash: a TimeoutExpired from one oracle run
     # killed the whole admission batch. A hang must be a gate FAIL.
+    # Per-test timeout override: screen() runs several gates each hitting the
+    # monkeypatched 3s oracle timeout against an infinite loop, so cumulative
+    # wall-clock can exceed the default 60s suite timeout.
     import harness.task_curator as tc
     monkeypatch.setattr(tc, "ORACLE_TIMEOUT", 3)
     hang = _variant(task_id="hangs",

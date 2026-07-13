@@ -402,15 +402,15 @@ def test_benchmark_profile_coverage_step_compares_profile_against_scorecards(tmp
     assert "--profile" in coverage.command
     assert str(tmp_path / "benchmark_profile_manifest.json") in coverage.command
     assert "--artifacts" in coverage.command
-    assert str(tmp_path / "model_endpoint_profiles.json") in coverage.command
-    assert str(tmp_path / "model_endpoint_gate.json") in coverage.command
-    assert str(tmp_path / "adapter_runtime_matrix.json") in coverage.command
-    assert str(tmp_path / "agentic_task_manifest.json") in coverage.command
-    assert str(tmp_path / "cross_harness_manifest.json") in coverage.command
-    assert str(tmp_path / "embodied_realtime_multimodal_plan.json") in coverage.command
-    assert str(tmp_path / "model_card_claim_table.json") in coverage.command
-    assert str(tmp_path / "classifier_friction_benchmark.json") in coverage.command
-    assert str(tmp_path / "m7_source_mined_scorecard.json") in coverage.command
+    # Artifacts are passed as one semicolon-joined --artifacts string (the
+    # coverage script splits on ";"); each expected path must appear in it.
+    artifacts_arg = coverage.command[coverage.command.index("--artifacts") + 1]
+    for name in ("model_endpoint_profiles.json", "model_endpoint_gate.json",
+                 "adapter_runtime_matrix.json", "agentic_task_manifest.json",
+                 "cross_harness_manifest.json", "embodied_realtime_multimodal_plan.json",
+                 "model_card_claim_table.json", "classifier_friction_benchmark.json",
+                 "m7_source_mined_scorecard.json"):
+        assert str(tmp_path / name) in artifacts_arg, f"{name} missing from --artifacts"
     assert str(tmp_path / "benchmark_profile_coverage.json") in coverage.expected_artifacts
 
 
@@ -420,8 +420,10 @@ def test_harness_comparison_step_consumes_scorecard_artifacts(tmp_path):
 
     assert "scripts/run_harness_comparison_report.py" in comparison.command
     assert "--artifacts" in comparison.command
-    assert str(tmp_path / "m7_source_mined_scorecard.json") in comparison.command
-    assert str(tmp_path / "classifier_friction_benchmark.json") in comparison.command
+    # Artifacts are passed as one semicolon-joined --artifacts string.
+    artifacts_arg = comparison.command[comparison.command.index("--artifacts") + 1]
+    assert str(tmp_path / "m7_source_mined_scorecard.json") in artifacts_arg
+    assert str(tmp_path / "classifier_friction_benchmark.json") in artifacts_arg
     assert str(tmp_path / "harness_comparison_report.json") in comparison.expected_artifacts
 
 

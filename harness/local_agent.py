@@ -226,6 +226,7 @@ class LocalAgent:
     compact_keep_recent: int = 6
     summarize: Optional[Callable] = None          # inject a model summarizer; None = extractive
     last_compaction: Optional[dict] = None
+    fold_index: "FoldIndex | None" = None         # Gap B: recall facts from folded spans
 
     def live_backend(self) -> Optional[Backend]:
         return select_backend(self.backends, self.prefer)
@@ -234,9 +235,12 @@ class LocalAgent:
         """Opt-in context compaction: when compact_budget is set, fold the middle
         of the history to fit the budget before prompting. A no-op when the budget
         is 0, so behaviour is unchanged unless a caller asks for it. Records the
-        re-checkable receipt on last_compaction."""
+        re-checkable receipt on last_compaction. Gap B: when a fold_index is
+        attached, the folded span is content-addressed into it so its facts are
+        recallable later instead of discarded."""
         if not self.compact_budget or len(self.history) <= 1:
             return
+        original = list(self.history)
         res = compaction.compact(
             self.history, token_budget=self.compact_budget,
             keep_recent=self.compact_keep_recent,
@@ -244,6 +248,25 @@ class LocalAgent:
         if res.compacted:
             self.history = res.messages
             self.last_compaction = res.receipt
+            # Gap B: index the folded span for recall before it is lost.
+            if self.fold_index is not None:
+                try:
+                    from .fold_index import index_compaction as _index_compaction
+                    _index_compaction(self.fold_index, original, res)
+                except Exception:
+                    pass  # recall is best-effort; never block a turn on the index
+
+    def recall_context(self, query: str, top_k: int = 3) -> list[dict]:
+        """Gap B: recall folded facts relevant to `query` and return them as
+        message turns ready to splice into history. Returns [] when no fold_index
+        is attached or nothing matches -- a no-op that degrades gracefully."""
+        if self.fold_index is None:
+            return []
+        try:
+            hits = self.fold_index.recall(query, top_k=top_k)
+        except Exception:
+            return []
+        return [{"role": "system", "content": f"[recalled from folded context] {h}"} for h in hits]
 
     def _healthy(self) -> list:
         return [b for b in self.backends

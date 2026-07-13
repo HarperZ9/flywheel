@@ -56,3 +56,29 @@ def test_index_compaction_makes_folded_facts_recallable():
     index_compaction(idx, msgs, result)
     hits = idx.recall("admin endpoint ctl")
     assert hits and any("ctl-9x" in m["content"] for m in hits[0]["messages"])
+
+
+def test_agent_compaction_indexes_into_fold_index_for_recall():
+    """Gap B falsifier: when a LocalAgent has a fold_index attached, compacting
+    its history must index the folded span so recall_context can retrieve it.
+    Before Phase 3 the agent discarded the folded span; this proves the wire."""
+    from harness.local_agent import LocalAgent
+    idx = FoldIndex()
+    agent = LocalAgent(
+        backends=[], compact_budget=200, compact_keep_recent=3, fold_index=idx)
+    # a long history with one buried fact
+    agent.history = (
+        [{"role": "user", "content": "TASK build it " + "word " * 40}]
+        + [{"role": "assistant", "content": f"step {i} " + "word " * 40} for i in range(1, 4)]
+        + [{"role": "user", "content": "the secret token is tok-7q2-redacted"}]
+        + [{"role": "assistant", "content": f"step {i} " + "word " * 40} for i in range(4, 9)])
+    agent._maybe_compact()
+    # the folded fact must now be recallable through the agent's own index
+    recalled = agent.recall_context("secret token")
+    assert recalled, "folded fact must be recallable after compaction"
+    assert any("tok-7q2" in m["content"] for m in recalled)
+
+    # without a fold_index, recall_context is a graceful no-op
+    agent2 = LocalAgent(backends=[], compact_budget=200, compact_keep_recent=3)
+    agent2.history = list(agent.history)
+    assert agent2.recall_context("secret token") == []

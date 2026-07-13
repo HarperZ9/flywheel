@@ -172,6 +172,37 @@ def _difficulty_finding(root: Path, findings: list[Finding]) -> None:
         p.name, sha, bounds="trained 14B via ollama, honest model_ref"))
 
 
+def _envelope_finding(root: Path, findings: list[Finding]) -> None:
+    """Gap C: count the freshly-minted PASS envelopes so the projected world
+    reflects them. loop.run_loop writes accepted envelopes to envelopes/*.json;
+    this scans them, counts PASS verdicts, and binds an aggregate hash so a new
+    envelope moves the findings root hash (and therefore the world root hash)."""
+    env_dir = root / "envelopes"
+    if not env_dir.is_dir():
+        _pending("verified_envelopes", "accepted verified PASS receipts",
+                 "envelopes/", None, findings)
+        return
+    env_files = sorted(env_dir.glob("*.json"))
+    if not env_files:
+        _pending("verified_envelopes", "accepted verified PASS receipts",
+                 "envelopes/", None, findings)
+        return
+    passes = 0
+    h = hashlib.sha256()
+    for p in env_files:
+        data, sha = _load_and_hash(p)
+        if sha:
+            h.update(sha.encode())
+        verdict = data.get("verdict") if isinstance(data, dict) else None
+        if verdict == "PASS":
+            passes += 1
+    findings.append(Finding(
+        "verified_envelopes", "accepted verified PASS receipts",
+        f"{passes} PASS of {len(env_files)} envelopes",
+        "envelopes/", h.hexdigest()[:16],
+        bounds="content-addressed receipts; count moves iff the set changes"))
+
+
 def project_findings(run_root: Path | str = DEFAULT_RUN_ROOT) -> dict:
     """Scan artifacts, emit the receipt-bound findings document with a root hash."""
     root = Path(run_root)
@@ -180,6 +211,7 @@ def project_findings(run_root: Path | str = DEFAULT_RUN_ROOT) -> dict:
     _selector_finding(root, findings)
     _passn_finding(root, findings)
     _humaneval_finding(root, findings)
+    _envelope_finding(root, findings)
 
     # Root hash over the source hashes (order-stable) -> a fingerprint of the
     # evidence set. Changes iff any source artifact changes.

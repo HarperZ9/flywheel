@@ -1,6 +1,11 @@
-# Project Telos — The Verified-Inference Harness
+# Flywheel — The One Platform
 
-*A local-model flywheel: propose cheaply, verify with real oracles, ship a re-checkable receipt for every accept.*
+*The one local surface that replaces the category — routers, agents, harnesses,
+apps, and the tool family — and closes the verified-inference loop: propose
+cheaply, verify with real oracles, ship a re-checkable receipt for every
+accept, and feed it back as memory, context, and catalog. `local-model` (the
+trained 14B) is one lane inside it; the flagship tools are lanes too. This
+document covers the verified-inference harness architecture (Layer B).*
 
 ---
 

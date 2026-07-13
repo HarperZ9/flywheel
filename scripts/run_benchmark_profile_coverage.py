@@ -104,6 +104,7 @@ UNIT_CONTAINER_KEYS = {
     "backend_rows",
     "models",
     "configs",
+    "profiles",
 }
 
 REQUIRED_UNIT_METRIC_GROUPS = {
@@ -391,7 +392,8 @@ def _metric_row_for_unit(unit_id: str, row: dict[str, Any]) -> dict[str, Any]:
     present = _metric_groups_present(row)
     missing = [group for group, ok in present.items() if not ok]
     valid_groups = _metric_groups_valid(row, present)
-    invalid = [group for group, ok in valid_groups.items() if present.get(group) and not ok]
+    invalid = sorted(group for group in REQUIRED_UNIT_METRIC_GROUPS
+                     if present.get(group) and not valid_groups[group])
     return {
         "unit_id": unit_id,
         "present": present,
@@ -413,7 +415,8 @@ def _merge_metric_rows(existing: dict[str, Any], incoming: dict[str, Any]) -> di
         for group in REQUIRED_UNIT_METRIC_GROUPS
     }
     missing = [group for group, ok in present.items() if not ok]
-    invalid = [group for group, ok in valid_groups.items() if present.get(group) and not ok]
+    invalid = sorted(group for group in REQUIRED_UNIT_METRIC_GROUPS
+                     if present.get(group) and not valid_groups[group])
     return {
         "unit_id": existing.get("unit_id") or incoming.get("unit_id", ""),
         "present": present,
@@ -481,7 +484,8 @@ def _collect_unit_metric_completeness(value: Any) -> dict[str, dict[str, Any]]:
             present = _metric_groups_present(value)
             missing = [group for group, ok in present.items() if not ok]
             valid_groups = _metric_groups_valid(value, present)
-            invalid = [group for group, ok in valid_groups.items() if present.get(group) and not ok]
+            invalid = sorted(group for group in REQUIRED_UNIT_METRIC_GROUPS
+                             if present.get(group) and not valid_groups[group])
             rows.append({
                 "unit_id": unit_id,
                 "present": present,
@@ -513,7 +517,8 @@ def _collect_unit_metric_completeness(value: Any) -> dict[str, dict[str, Any]]:
             for group in REQUIRED_UNIT_METRIC_GROUPS
         }
         missing = [group for group, ok in present.items() if not ok]
-        invalid = [group for group, ok in valid_groups.items() if present.get(group) and not ok]
+        invalid = sorted(group for group in REQUIRED_UNIT_METRIC_GROUPS
+                         if present.get(group) and not valid_groups[group])
         merged[unit_id] = {
             "unit_id": unit_id,
             "present": present,
