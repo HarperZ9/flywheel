@@ -1,121 +1,146 @@
-// flywheel_theme.dart — Flywheel's design token system ported from the CSS
-// shell (site/index.html) to Flutter ThemeData.
+// flywheel_theme.dart — builds Flutter ThemeData from the canon tokens.
 //
-// Verdict-color semantics: color ONLY ever means a verdict. Green = MATCH/verified,
-// iris (blue-violet) = DRIFT, grey = UNVERIFIABLE. No decorative color. The
-// "ceramic ground" light palette is the default; dark mode mirrors it.
+// Typography: Hanken Grotesk carries all text; hierarchy comes from weight
+// (800 display, 700/600 titles, 400 body), never a third family. Conso is
+// the mono voice for labels, hashes, and numerals (applied per-widget via
+// FwText styles, plus labelSmall here).
 
 import 'package:flutter/material.dart';
 
-class FlywheelColors {
-  // Verdict semantics (the only colors that carry meaning)
-  static const match = Color(0xFF1F6B45);       // verified green
-  static const drift = Color(0xFF4636E8);       // iris (changed)
-  static const unverifiable = Color(0xFF8A5A12); // warm grey/amber (can't tell)
+import 'tokens.dart';
 
-  // Status (lanes, endpoints)
-  static const live = Color(0xFF1F6B45);
-  static const declared = Color(0xFF8A5A12);
-  static const missing = Color(0xFFB23B3B);
+export 'tokens.dart';
 
-  // Light palette ("ceramic ground")
-  static const lightBg = Color(0xFFF4F3EF);
-  static const lightInk = Color(0xFF0B0C0E);
-  static const lightMuted = Color(0xFF565A62);
-  static const lightHair = Color(0x24111A18); // hairline border
-  static const lightSurface = Color(0xFFFBFAF7);
+const kTextFamily = 'Hanken Grotesk';
+const kMonoFamily = 'Conso';
 
-  // Dark palette
-  static const darkBg = Color(0xFF14041B);     // deep aubergine
-  static const darkInk = Color(0xFFE8E4F0);
-  static const darkMuted = Color(0xFF9683A8);
-  static const darkHair = Color(0x33E8E4F0);
-  static const darkSurface = Color(0xFF1E0E28);
-}
+ThemeData flywheelLightTheme() => _themeFrom(FwTokens.light, Brightness.light);
+ThemeData flywheelDarkTheme() => _themeFrom(FwTokens.dark, Brightness.dark);
 
-ThemeData flywheelLightTheme() {
-  return ThemeData(
+ThemeData _themeFrom(FwTokens t, Brightness brightness) {
+  final base = ThemeData(
     useMaterial3: true,
-    brightness: Brightness.light,
-    scaffoldBackgroundColor: FlywheelColors.lightBg,
-    colorScheme: const ColorScheme.light(
-      primary: FlywheelColors.drift,
-      onPrimary: Colors.white,
-      secondary: FlywheelColors.match,
-      surface: FlywheelColors.lightSurface,
-      onSurface: FlywheelColors.lightInk,
-      error: FlywheelColors.missing,
+    brightness: brightness,
+    fontFamily: kTextFamily,
+    scaffoldBackgroundColor: t.ground,
+    extensions: [t],
+    colorScheme: ColorScheme(
+      brightness: brightness,
+      primary: t.drift,
+      onPrimary: brightness == Brightness.light ? Colors.white : t.ground,
+      secondary: t.verified,
+      onSecondary: brightness == Brightness.light ? Colors.white : t.ground,
+      error: t.drift,
+      onError: brightness == Brightness.light ? Colors.white : t.ground,
+      surface: t.ground,
+      onSurface: t.ink,
     ),
-    cardTheme: CardThemeData(
-      color: FlywheelColors.lightSurface,
-      shape: RoundedRectangleBorder(
-        side: const BorderSide(color: FlywheelColors.lightHair, width: 1),
-        borderRadius: BorderRadius.circular(8),
+  );
+
+  return base.copyWith(
+    dividerTheme: DividerThemeData(color: t.line, thickness: 1, space: 1),
+    textTheme: _textTheme(t),
+    iconTheme: IconThemeData(color: t.inkMuted, size: 18),
+    textSelectionTheme: TextSelectionThemeData(
+      cursorColor: t.drift,
+      selectionColor: t.drift.withValues(alpha: 0.22),
+      selectionHandleColor: t.drift,
+    ),
+    filledButtonTheme: FilledButtonThemeData(
+      style: FilledButton.styleFrom(
+        backgroundColor: t.drift,
+        foregroundColor:
+            brightness == Brightness.light ? Colors.white : t.ground,
+        textStyle: const TextStyle(
+            fontFamily: kTextFamily, fontWeight: FontWeight.w600, fontSize: 13),
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(FwLayout.radiusSmall)),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       ),
     ),
-    dividerTheme:
-        const DividerThemeData(color: FlywheelColors.lightHair, thickness: 1),
-    textTheme: const TextTheme(
-      bodyLarge: TextStyle(color: FlywheelColors.lightInk),
-      bodyMedium: TextStyle(color: FlywheelColors.lightInk),
-      bodySmall: TextStyle(color: FlywheelColors.lightMuted),
-      titleLarge: TextStyle(
-          color: FlywheelColors.lightInk, fontWeight: FontWeight.w600),
-      titleMedium: TextStyle(
-          color: FlywheelColors.lightInk, fontWeight: FontWeight.w600),
-      labelSmall:
-          TextStyle(color: FlywheelColors.lightMuted, fontFamily: 'monospace'),
+    outlinedButtonTheme: OutlinedButtonThemeData(
+      style: OutlinedButton.styleFrom(
+        foregroundColor: t.inkSoft,
+        side: BorderSide(color: t.line),
+        textStyle: const TextStyle(
+            fontFamily: kTextFamily, fontWeight: FontWeight.w600, fontSize: 13),
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(FwLayout.radiusSmall)),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      ),
+    ),
+    inputDecorationTheme: InputDecorationTheme(
+      isDense: true,
+      filled: true,
+      fillColor: t.panel,
+      hintStyle: TextStyle(color: t.inkFaint, fontSize: 13.5),
+      contentPadding:
+          const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(FwLayout.radiusSmall),
+        borderSide: BorderSide(color: t.line),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(FwLayout.radiusSmall),
+        borderSide: BorderSide(color: t.drift, width: 1.5),
+      ),
+    ),
+    scrollbarTheme: ScrollbarThemeData(
+      thumbColor: WidgetStatePropertyAll(t.line),
+      thickness: const WidgetStatePropertyAll(6),
+      radius: const Radius.circular(3),
     ),
   );
 }
 
-ThemeData flywheelDarkTheme() {
-  return ThemeData(
-    useMaterial3: true,
-    brightness: Brightness.dark,
-    scaffoldBackgroundColor: FlywheelColors.darkBg,
-    colorScheme: ColorScheme.dark(
-      primary: FlywheelColors.drift,
-      onPrimary: Colors.white,
-      secondary: FlywheelColors.match,
-      surface: FlywheelColors.darkSurface,
-      onSurface: FlywheelColors.darkInk,
-      error: FlywheelColors.missing,
-    ),
-    cardTheme: CardThemeData(
-      color: FlywheelColors.darkSurface,
-      shape: RoundedRectangleBorder(
-        side: const BorderSide(color: FlywheelColors.darkHair, width: 1),
-        borderRadius: BorderRadius.circular(8),
-      ),
-    ),
-    dividerTheme:
-        const DividerThemeData(color: FlywheelColors.darkHair, thickness: 1),
-    textTheme: const TextTheme(
-      bodyLarge: TextStyle(color: FlywheelColors.darkInk),
-      bodyMedium: TextStyle(color: FlywheelColors.darkInk),
-      bodySmall: TextStyle(color: FlywheelColors.darkMuted),
-      titleLarge: TextStyle(
-          color: FlywheelColors.darkInk, fontWeight: FontWeight.w600),
-      titleMedium: TextStyle(
-          color: FlywheelColors.darkInk, fontWeight: FontWeight.w600),
-      labelSmall:
-          TextStyle(color: FlywheelColors.darkMuted, fontFamily: 'monospace'),
-    ),
+TextTheme _textTheme(FwTokens t) {
+  return TextTheme(
+    // Display / titles: weight carries hierarchy.
+    headlineMedium: TextStyle(
+        color: t.ink,
+        fontWeight: FontWeight.w800,
+        fontSize: 26,
+        height: 1.1,
+        letterSpacing: -0.3),
+    titleLarge: TextStyle(
+        color: t.ink, fontWeight: FontWeight.w700, fontSize: 19, height: 1.15),
+    titleMedium: TextStyle(
+        color: t.ink, fontWeight: FontWeight.w600, fontSize: 15, height: 1.2),
+    titleSmall: TextStyle(
+        color: t.inkSoft, fontWeight: FontWeight.w600, fontSize: 13.5),
+    // Body
+    bodyLarge: TextStyle(color: t.inkSoft, fontSize: 14.5, height: 1.55),
+    bodyMedium: TextStyle(color: t.inkSoft, fontSize: 13.5, height: 1.5),
+    bodySmall: TextStyle(color: t.inkMuted, fontSize: 12.5, height: 1.45),
+    // Mono voice
+    labelSmall: TextStyle(
+        color: t.inkFaint,
+        fontFamily: kMonoFamily,
+        fontSize: 11,
+        letterSpacing: 0.4),
   );
 }
 
-/// Maps a lane status string to its verdict color.
-Color laneStatusColor(String status) {
-  switch (status) {
-    case 'live':
-      return FlywheelColors.live;
-    case 'declared':
-      return FlywheelColors.declared;
-    case 'missing':
-    case 'stale':
-      return FlywheelColors.missing;
-    default:
-      return FlywheelColors.unverifiable;
-  }
+/// The mono data style: Conso with tabular figures, for hashes, counts,
+/// versions, and table cells. Size and color are overridable per use.
+TextStyle fwMono(FwTokens t,
+    {double size = 12.5, Color? color, FontWeight weight = FontWeight.w400}) {
+  return TextStyle(
+    fontFamily: kMonoFamily,
+    fontSize: size,
+    fontWeight: weight,
+    color: color ?? t.inkSoft,
+    fontFeatures: const [FontFeature.tabularFigures()],
+  );
+}
+
+/// The kicker style: Conso uppercase, wide-tracked. The section voice.
+TextStyle fwKicker(FwTokens t, {Color? color, double size = 10.5}) {
+  return TextStyle(
+    fontFamily: kMonoFamily,
+    fontSize: size,
+    fontWeight: FontWeight.w600,
+    letterSpacing: 2.2,
+    color: color ?? t.inkFaint,
+  );
 }

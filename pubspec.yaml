@@ -20,3 +20,34 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  fonts:
+    - family: Hanken Grotesk
+      fonts:
+        - asset: assets/fonts/hanken-grotesk-light.ttf
+          weight: 300
+        - asset: assets/fonts/hanken-grotesk-regular.ttf
+          weight: 400
+        - asset: assets/fonts/hanken-grotesk-italic.ttf
+          weight: 400
+          style: italic
+        - asset: assets/fonts/hanken-grotesk-medium.ttf
+          weight: 500
+        - asset: assets/fonts/hanken-grotesk-semibold.ttf
+          weight: 600
+        - asset: assets/fonts/hanken-grotesk-bold.ttf
+          weight: 700
+        - asset: assets/fonts/hanken-grotesk-extrabold.ttf
+          weight: 800
+    - family: Conso
+      fonts:
+        - asset: assets/fonts/conso-regular.ttf
+          weight: 400
+        - asset: assets/fonts/conso-regularitalic.ttf
+          weight: 400
+          style: italic
+        - asset: assets/fonts/conso-medium.ttf
+          weight: 500
+        - asset: assets/fonts/conso-semibold.ttf
+          weight: 600
+        - asset: assets/fonts/conso-bold.ttf
+          weight: 700
