@@ -163,6 +163,22 @@ def receipts_ledger(root: Path, run_root: Path | str) -> dict:
             "pass_count": passes}
 
 
+def _resolve_workspace_root(requested, default: Path) -> "tuple[Path, str | None]":
+    """Resolve the workspace root an agent run operates in. The caller may
+    name any EXISTING directory (the desktop IDE points at an open project);
+    the ToolExecutor then sandboxes reads and gated writes to that root. A
+    missing or non-directory path is refused, never silently substituted."""
+    if not requested:
+        return default, None
+    try:
+        p = Path(str(requested)).expanduser().resolve()
+    except (OSError, ValueError) as e:
+        return default, f"invalid root: {e}"
+    if not p.is_dir():
+        return default, f"root is not an existing directory: {requested}"
+    return p, None
+
+
 def _unified_roster() -> dict:
     """The full universal-router roster (endpoint_registry): every provider,
     credential-presence only. Graceful if the module is unavailable."""
@@ -751,6 +767,15 @@ class _Handler(BaseHTTPRequestHandler):
             return self._json(_training_status(self.run_root))
         if p == "/api/receipts":                     # the receipts ledger (catalog + envelopes)
             return self._json(receipts_ledger(self.root, self.run_root))
+        if p == "/api/profiles":                     # profile manifests over the one substrate
+            from harness.profiles import profile_roster
+            return self._json(profile_roster())
+        if p == "/api/workflows":                    # workflow definitions + recent runs
+            from harness.workflows import workflow_roster
+            return self._json(workflow_roster(self.run_root))
+        if p == "/api/memory":                       # durable memory stats (fold index)
+            from harness.memory_api import memory_stats
+            return self._json(memory_stats(self.run_root))
         if p == "/api/router/stats":                 # observed per-provider success/cost
             return self._json(get_router_stats().snapshot())
         if p == "/v1/models":                        # OpenAI-compatible model list (the roster)
@@ -848,10 +873,13 @@ class _Handler(BaseHTTPRequestHandler):
                 max_steps = max(1, min(int(req.get("max_steps", 6)), 12))
             except (TypeError, ValueError):
                 max_steps = 6
+            root, err = _resolve_workspace_root(req.get("root"), self.root)
+            if err:
+                return self._json({"error": err}, 400)
             from harness.router_agent import run_router_agent
             try:
                 result = run_router_agent(
-                    goal, endpoint, root=str(self.root),
+                    goal, endpoint, root=str(root),
                     allow_write=bool(req.get("allow_write", False)),
                     allow_exec=bool(req.get("allow_exec", False)),
                     max_steps=max_steps, test_cmd=(req.get("test_cmd") or None),
@@ -860,6 +888,65 @@ class _Handler(BaseHTTPRequestHandler):
             except Exception as e:
                 return self._json({"error": f"{type(e).__name__}: {e}"}, 502)
             return self._json(result)
+        if p == "/api/workflow":                       # staged run with a chained receipt, any endpoint
+            length = self._content_length()
+            if length is None:
+                return self._json({"error": "invalid or oversized Content-Length"}, 400)
+            try:
+                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
+            except Exception:
+                req = {}
+            goal = (req.get("goal") or "").strip()
+            workflow = (req.get("workflow") or "").strip()
+            if not goal or not workflow:
+                return self._json({"error": "provide 'workflow' and a non-empty 'goal'"}, 400)
+            from harness.profiles import get_profile
+            from harness.workflows import run_workflow
+            profile = get_profile((req.get("profile") or "").strip()) or {}
+            root, err = _resolve_workspace_root(req.get("root"), self.root)
+            if err:
+                return self._json({"error": err}, 400)
+            try:
+                doc = run_workflow(
+                    workflow, goal, (req.get("endpoint") or "serve").strip(),
+                    root=str(root),
+                    allow_write=bool(req.get("allow_write", False)),
+                    allow_exec=bool(req.get("allow_exec", False)),
+                    allow_mcp=bool(req.get("allow_mcp", False)),
+                    test_cmd=(req.get("test_cmd") or None),
+                    system=profile.get("system", ""),
+                    run_root=self.run_root)
+            except Exception as e:
+                return self._json({"error": f"workflow failed: {type(e).__name__}: {e}"}, 502)
+            return self._json(doc)
+        if p == "/api/memory/recall":                  # verbatim recall from the fold index
+            length = self._content_length()
+            if length is None:
+                return self._json({"error": "invalid or oversized Content-Length"}, 400)
+            try:
+                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
+            except Exception:
+                req = {}
+            query = (req.get("query") or "").strip()
+            if not query:
+                return self._json({"error": "provide a non-empty 'query'"}, 400)
+            from harness.memory_api import memory_recall
+            return self._json(memory_recall(self.run_root, query,
+                                            req.get("top_k", 5)))
+        if p == "/api/memory/note":                    # durable content-addressed note
+            length = self._content_length()
+            if length is None:
+                return self._json({"error": "invalid or oversized Content-Length"}, 400)
+            try:
+                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
+            except Exception:
+                req = {}
+            content = (req.get("content") or "").strip()
+            if not content:
+                return self._json({"error": "provide non-empty 'content'"}, 400)
+            from harness.memory_api import memory_note
+            return self._json(memory_note(self.run_root, content,
+                                          (req.get("role") or "note").strip() or "note"))
         return self._json({"error": "not found"}, 404)
 
 
