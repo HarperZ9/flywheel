@@ -16,12 +16,14 @@ class AgentPanel extends StatefulWidget {
   final String workspaceRoot;
   final String? activeFile;
   final String? selection;
+  final VoidCallback onRunStarted;
   final VoidCallback onRunFinished;
   const AgentPanel(
       {super.key,
       required this.client,
       required this.alive,
       required this.workspaceRoot,
+      required this.onRunStarted,
       required this.onRunFinished,
       this.activeFile,
       this.selection});
@@ -75,6 +77,7 @@ class _AgentPanelState extends State<AgentPanel> {
           '${sel != null && sel.isNotEmpty ? 'Selected text:\n$sel\n' : ''}'
           '\n$goal';
     }
+    widget.onRunStarted();
     setState(() {
       _running = true;
       _result = null;

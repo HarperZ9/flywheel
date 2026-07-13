@@ -9,7 +9,10 @@ import 'package:flutter/material.dart';
 
 import '../client/gateway_client.dart';
 import '../ide/agent_panel.dart';
+import '../ide/diff.dart';
+import '../ide/diff_view.dart';
 import '../ide/editor_pane.dart';
+import '../ide/tab_bar.dart';
 import '../ide/file_tree.dart';
 import '../ide/highlighter.dart';
 import '../ide/workspace.dart' as ws;
@@ -37,6 +40,8 @@ class _CodeViewState extends State<CodeView> {
   final List<OpenFile> _open = [];
   int _active = -1;
   String? _status;
+  final Map<String, String> _preRunSnapshot = {};
+  List<FileDiff> _diffs = [];
 
   @override
   void dispose() {
@@ -101,22 +106,51 @@ class _CodeViewState extends State<CodeView> {
     }
   }
 
+  /// Before an agent run: snapshot open files so the change is diffable.
+  void _snapshotOpenFiles() {
+    _preRunSnapshot.clear();
+    for (final f in _open) {
+      _preRunSnapshot[f.path] = f.controller.text;
+    }
+  }
+
   /// After an agent run: reload every clean open file from disk so the
-  /// editor shows what the agent actually wrote. Dirty files are kept and
+  /// editor shows what the agent actually wrote, and diff against the
+  /// pre-run snapshot as evidence of the change. Dirty files are kept and
   /// flagged rather than silently overwritten.
   void _reloadCleanFiles() {
     var reloaded = 0;
+    final diffs = <FileDiff>[];
     for (final f in _open) {
       if (f.dirty || f.readOnly) continue;
       final fresh = ws.loadFile(f.path);
       if (fresh.content != f.controller.text) {
+        final before = _preRunSnapshot[f.path];
+        if (before != null) {
+          diffs.add(diffFiles(f.path, before, fresh.content));
+        }
         f.controller.text = fresh.content;
         reloaded++;
       }
     }
-    if (reloaded > 0) {
-      setState(() => _status = '$reloaded open file(s) changed on disk, reloaded');
-    }
+    setState(() {
+      _diffs = diffs;
+      if (reloaded > 0) {
+        _status = '$reloaded open file(s) changed on disk, reloaded';
+      }
+    });
+  }
+
+  void _showDiffs() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: context.fw.ground,
+      builder: (ctx) => SizedBox(
+        height: MediaQuery.of(ctx).size.height * 0.7,
+        child: DiffViewPanel(diffs: _diffs),
+      ),
+    );
   }
 
   @override
@@ -141,7 +175,20 @@ class _CodeViewState extends State<CodeView> {
         Expanded(
           child: Column(
             children: [
-              _tabBar(t),
+              EditorTabBar(
+                open: _open,
+                active: _active,
+                onSelect: (i) => setState(() => _active = i),
+                onClose: _closeFile,
+                onCloseWorkspace: () => setState(() {
+                  for (final f in _open) {
+                    f.controller.dispose();
+                  }
+                  _open.clear();
+                  _active = -1;
+                  _root = null;
+                }),
+              ),
               Expanded(
                 child: active == null
                     ? const FwEmpty('Open a file from the tree.')
@@ -153,13 +200,38 @@ class _CodeViewState extends State<CodeView> {
                         },
                       ),
               ),
-              if (_status != null)
+              if (_status != null || _diffs.isNotEmpty)
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(
                       horizontal: FwLayout.s4, vertical: 4),
-                  child: Text(_status!,
-                      style: fwMono(t, size: 10.5, color: t.inkFaint)),
+                  child: Row(
+                    children: [
+                      if (_status != null)
+                        Expanded(
+                          child: Text(_status!,
+                              overflow: TextOverflow.ellipsis,
+                              style:
+                                  fwMono(t, size: 10.5, color: t.inkFaint)),
+                        )
+                      else
+                        const Spacer(),
+                      if (_diffs.isNotEmpty)
+                        MouseRegion(
+                          cursor: SystemMouseCursors.click,
+                          child: GestureDetector(
+                            onTap: _showDiffs,
+                            child: Text(
+                                'view changes (${_diffs.length} file'
+                                '${_diffs.length == 1 ? '' : 's'})',
+                                style: fwMono(t, size: 10.5, color: t.drift)
+                                    .copyWith(
+                                        decoration:
+                                            TextDecoration.underline)),
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
               AgentPanel(
                 client: widget.client,
@@ -167,6 +239,7 @@ class _CodeViewState extends State<CodeView> {
                 workspaceRoot: _root!,
                 activeFile: active?.path,
                 selection: _selectionOf(active),
+                onRunStarted: _snapshotOpenFiles,
                 onRunFinished: _reloadCleanFiles,
               ),
             ],
@@ -181,86 +254,6 @@ class _CodeViewState extends State<CodeView> {
     final sel = f.controller.selection;
     if (!sel.isValid || sel.isCollapsed) return null;
     return sel.textInside(f.controller.text);
-  }
-
-  Widget _tabBar(FwTokens t) {
-    return Container(
-      height: 34,
-      decoration: BoxDecoration(
-        color: t.ground2,
-        border: Border(bottom: BorderSide(color: t.line)),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: ListView(
-              scrollDirection: Axis.horizontal,
-              children: [
-                for (var i = 0; i < _open.length; i++) _tab(t, i),
-              ],
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.only(right: FwLayout.s2),
-            child: MouseRegion(
-              cursor: SystemMouseCursors.click,
-              child: GestureDetector(
-                onTap: () => setState(() {
-                  for (final f in _open) {
-                    f.controller.dispose();
-                  }
-                  _open.clear();
-                  _active = -1;
-                  _root = null;
-                }),
-                child: Text('close workspace',
-                    style: fwMono(t, size: 10.5, color: t.inkFaint)),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _tab(FwTokens t, int i) {
-    final f = _open[i];
-    final active = i == _active;
-    return MouseRegion(
-      cursor: SystemMouseCursors.click,
-      child: GestureDetector(
-        onTap: () => setState(() => _active = i),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: FwLayout.s3),
-          decoration: BoxDecoration(
-            color: active ? t.ground : Colors.transparent,
-            border: Border(
-              right: BorderSide(color: t.hairline),
-              top: BorderSide(
-                  color: active ? t.drift : Colors.transparent, width: 2),
-            ),
-          ),
-          child: Row(
-            children: [
-              if (f.dirty) ...[
-                const VerdictDot('drift', size: 6),
-                const SizedBox(width: 5),
-              ],
-              Text(f.name,
-                  style: fwMono(t,
-                      size: 11.5,
-                      color: active ? t.ink : t.inkMuted,
-                      weight: active ? FontWeight.w600 : FontWeight.w400)),
-              const SizedBox(width: 6),
-              GestureDetector(
-                onTap: () => _closeFile(i),
-                child: Icon(Icons.close, size: 11, color: t.inkFaint),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
   }
 
 }

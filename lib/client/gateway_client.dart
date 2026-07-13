@@ -159,7 +159,8 @@ class GatewayClient {
     return WorkflowRoster.fromJson(_decode(r));
   }
 
-  /// POST /api/workflow — run a staged workflow over any endpoint.
+  /// POST /api/workflow — run a staged workflow over any endpoint. `root`
+  /// scopes the run to a workspace; the engine refuses a missing directory.
   Future<WorkflowRun> runWorkflow({
     required String workflow,
     required String goal,
@@ -168,6 +169,7 @@ class GatewayClient {
     bool allowWrite = false,
     bool allowExec = false,
     String? testCmd,
+    String? root,
   }) async {
     final r = await _http.post(
       Uri.parse('$baseUrl/api/workflow'),
@@ -180,6 +182,7 @@ class GatewayClient {
         'allow_write': allowWrite,
         'allow_exec': allowExec,
         if (testCmd != null && testCmd.isNotEmpty) 'test_cmd': testCmd,
+        if (root != null && root.isNotEmpty) 'root': root,
       }),
     );
     return WorkflowRun.fromJson(_decode(r));
