@@ -65,6 +65,35 @@ extension GatewayStreamsAndPlugins on GatewayClient {
     return _decode(r);
   }
 
+  /// POST /api/lsp — editor intelligence over any user-named LSP server.
+  /// Sends the live buffer so unsaved edits are visible to the server.
+  Future<Map<String, dynamic>> lspQuery({
+    required List<String> command,
+    required String root,
+    required String file,
+    required String text,
+    required String languageId,
+    required String method,
+    required int line,
+    required int character,
+  }) async {
+    final r = await _http.post(
+      Uri.parse('$baseUrl/api/lsp'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'command': command,
+        'root': root,
+        'file': file,
+        'text': text,
+        'language_id': languageId,
+        'method': method,
+        'line': line,
+        'character': character,
+      }),
+    );
+    return _decode(r);
+  }
+
   /// GET /api/marketplace — the curated catalog over the plugin registry.
   Future<Map<String, dynamic>> marketplace() async {
     final r = await _http.get(Uri.parse('$baseUrl/api/marketplace'));

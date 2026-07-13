@@ -30,11 +30,13 @@ class EditorPane extends StatelessWidget {
   final OpenFile file;
   final VoidCallback onSave;
   final VoidCallback onChanged;
+  final VoidCallback? onDefinition;
   const EditorPane(
       {super.key,
       required this.file,
       required this.onSave,
-      required this.onChanged});
+      required this.onChanged,
+      this.onDefinition});
 
   @override
   Widget build(BuildContext context) {
@@ -45,6 +47,8 @@ class EditorPane extends StatelessWidget {
     return CallbackShortcuts(
       bindings: {
         const SingleActivator(LogicalKeyboardKey.keyS, control: true): onSave,
+        if (onDefinition != null)
+          const SingleActivator(LogicalKeyboardKey.f12): onDefinition!,
       },
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,

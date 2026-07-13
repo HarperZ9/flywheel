@@ -15,6 +15,7 @@ import '../ide/editor_pane.dart';
 import '../ide/tab_bar.dart';
 import '../ide/file_tree.dart';
 import '../ide/highlighter.dart';
+import '../ide/lsp_config.dart';
 import '../ide/workspace.dart' as ws;
 import '../services/settings.dart';
 import '../theme/flywheel_theme.dart';
@@ -141,6 +142,23 @@ class _CodeViewState extends State<CodeView> {
     });
   }
 
+  /// F12: ask the language server where the symbol under the cursor is
+  /// defined, then jump there. A missing server is a named status line.
+  Future<void> _goToDefinition(OpenFile f) async {
+    setState(() => _status = 'definition…');
+    final r = await resolveDefinition(widget.client, f, _root!);
+    if (r.target == null) {
+      setState(() => _status = r.message);
+      return;
+    }
+    _openFile(r.target!.path);
+    final opened = _open[_active];
+    final offset = offsetOf(
+        opened.controller.text, r.target!.line, r.target!.character);
+    opened.controller.selection = TextSelection.collapsed(offset: offset);
+    setState(() => _status = 'definition: ${opened.name}:${r.target!.line + 1}');
+  }
+
   void _showDiffs() {
     showModalBottomSheet(
       context: context,
@@ -195,6 +213,7 @@ class _CodeViewState extends State<CodeView> {
                     : EditorPane(
                         file: active,
                         onSave: () => _save(active),
+                        onDefinition: () => _goToDefinition(active),
                         onChanged: () {
                           if (!active.dirty) setState(() => active.dirty = true);
                         },
