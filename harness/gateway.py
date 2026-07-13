@@ -133,6 +133,36 @@ def world_state(root: Path, catalog=RECEIPT_CATALOG) -> dict:
             "root_hash": root_hash}
 
 
+def receipts_ledger(root: Path, run_root: Path | str) -> dict:
+    """The receipts ledger: the in-repo receipt catalog (re-hashed on every
+    read) plus the accepted proof envelopes under the run root. Every entry
+    is re-checkable — catalog entries by re-hashing the file, envelopes by
+    their recorded content hash. An unreadable envelope is reported as
+    UNREADABLE, never dropped."""
+    catalog = world_state(root)["receipts"]
+    env_dir = Path(run_root) / "envelopes"
+    envelopes = []
+    if env_dir.is_dir():
+        for p in sorted(env_dir.glob("*.json")):
+            entry = {"name": p.name, "size": p.stat().st_size,
+                     "sha256": hashlib.sha256(p.read_bytes()).hexdigest()}
+            try:
+                doc = json.loads(p.read_text(encoding="utf-8"))
+                entry["verdict"] = str(doc.get("verdict", "?"))
+                entry["task_id"] = str(doc.get("task_id", ""))
+            except Exception:
+                entry["verdict"] = "UNREADABLE"
+                entry["task_id"] = ""
+            envelopes.append(entry)
+    passes = sum(1 for e in envelopes if e["verdict"] == "PASS")
+    return {"schema": "flywheel.receipts/v1",
+            "catalog": catalog,
+            "catalog_present": sum(1 for r in catalog if r["present"]),
+            "envelopes": envelopes,
+            "envelope_count": len(envelopes),
+            "pass_count": passes}
+
+
 def _unified_roster() -> dict:
     """The full universal-router roster (endpoint_registry): every provider,
     credential-presence only. Graceful if the module is unavailable."""
@@ -719,6 +749,8 @@ class _Handler(BaseHTTPRequestHandler):
             return self._json(lane_roster(probe=probe))
         if p == "/api/training/status":
             return self._json(_training_status(self.run_root))
+        if p == "/api/receipts":                     # the receipts ledger (catalog + envelopes)
+            return self._json(receipts_ledger(self.root, self.run_root))
         if p == "/api/router/stats":                 # observed per-provider success/cost
             return self._json(get_router_stats().snapshot())
         if p == "/v1/models":                        # OpenAI-compatible model list (the roster)
