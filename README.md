@@ -120,6 +120,12 @@ Every route is same-origin JSON you can also `curl`:
 | `POST /api/forge` | Turn a plain goal into a structured prompt with checkable success gates |
 | `GET /api/world` | The projected state (roster, lanes, findings, cursor) under one root hash |
 | `GET /api/receipts` | The receipts ledger: the re-hashed catalog plus accepted proof envelopes |
+| `GET /api/profiles` | Profile manifests (code, design, work, cowork, chat) over the one substrate |
+| `GET /api/workflows` | Staged workflow definitions plus recent persisted runs |
+| `POST /api/workflow` | Run a staged workflow over any endpoint; one chained receipt per run |
+| `GET /api/memory` | Durable memory stats (content-addressed fold index) |
+| `POST /api/memory/recall` | Verbatim recall with span-hash provenance |
+| `POST /api/memory/note` | Keep a durable content-addressed note |
 | `GET /api/router/stats` | Observed per-provider success rate, latency, and cost score |
 | `GET /api/training/status` | Read-only status of the local training run |
 
