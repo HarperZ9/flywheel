@@ -3,6 +3,11 @@
 // installed; a missing one is a named error from the engine, never a
 // silent fallback.
 
+import 'package:flutter/material.dart';
+
+import '../theme/flywheel_theme.dart';
+import '../widgets/fw.dart';
+
 class LspServer {
   final String languageId;
   final List<String> command;
@@ -107,4 +112,114 @@ Future<DefinitionResult> resolveDefinition(
   } catch (e) {
     return DefinitionResult(null, 'definition failed: $e');
   }
+}
+
+/// Parse an LSP references result (Location[]) into jump targets.
+List<({String path, int line, int character})> parseLocations(dynamic result) {
+  if (result is! List) return const [];
+  final out = <({String path, int line, int character})>[];
+  for (final loc in result) {
+    final one = parseDefinition(loc);
+    if (one != null) out.add(one);
+  }
+  return out;
+}
+
+/// References lookup mirroring resolveDefinition.
+Future<({List<({String path, int line, int character})> targets, String message})>
+    resolveReferences(dynamic client, dynamic file, String root) async {
+  final server = lspServerFor(file.path as String);
+  if (server == null) {
+    return (
+      targets: const <({String path, int line, int character})>[],
+      message: 'no language server mapped for this file'
+    );
+  }
+  final text = file.controller.text as String;
+  final sel = file.controller.selection;
+  final (line, character) =
+      positionOf(text, (sel.isValid ? sel.baseOffset : 0) as int);
+  try {
+    final out = await client.lspQuery(
+      command: server.command,
+      root: root,
+      file: file.path as String,
+      text: text,
+      languageId: server.languageId,
+      method: 'references',
+      line: line,
+      character: character,
+    );
+    if (out['error'] != null) return (targets: const <({String path, int line, int character})>[], message: '${out['error']}');
+    final targets = parseLocations(out['result']);
+    return (
+      targets: targets,
+      message: targets.isEmpty ? 'no references found' : '${targets.length} references'
+    );
+  } catch (e) {
+    return (targets: const <({String path, int line, int character})>[], message: 'references failed: $e');
+  }
+}
+
+/// On-save diagnostics: count + first messages for the status line.
+Future<String?> resolveDiagnostics(
+    dynamic client, dynamic file, String root) async {
+  final server = lspServerFor(file.path as String);
+  if (server == null) return null;
+  try {
+    final out = await client.lspQuery(
+      command: server.command,
+      root: root,
+      file: file.path as String,
+      text: file.controller.text as String,
+      languageId: server.languageId,
+      method: 'diagnostics',
+      line: 0,
+      character: 0,
+    );
+    if (out['error'] != null) return '${out['error']}';
+    final diags = (out['diagnostics'] is List)
+        ? (out['diagnostics'] as List)
+        : const [];
+    if (diags.isEmpty) return 'no problems reported';
+    final first = diags.first is Map ? '${(diags.first as Map)['message']}' : '';
+    return '${diags.length} problem${diags.length == 1 ? '' : 's'}: $first';
+  } catch (e) {
+    return 'diagnostics failed: $e';
+  }
+}
+
+/// The references picker: a bottom sheet of jump targets.
+void showReferencesSheet(
+    BuildContext context,
+    List<({String path, int line, int character})> targets,
+    void Function(({String path, int line, int character})) onJump) {
+  showModalBottomSheet(
+    context: context,
+    backgroundColor: Theme.of(context).extension<FwTokens>()!.ground,
+    builder: (ctx) {
+      final t = Theme.of(ctx).extension<FwTokens>()!;
+      return ListView(
+        padding: const EdgeInsets.all(FwLayout.s4),
+        children: [
+          const Kicker('references', hot: true),
+          const SizedBox(height: FwLayout.s2),
+          for (final target in targets)
+            ListTile(
+              dense: true,
+              title: Text(
+                  '${target.path.split(RegExp(r"[\\/]")).last}:${target.line + 1}',
+                  style: fwMono(t, size: 12)),
+              subtitle: Text(target.path,
+                  overflow: TextOverflow.ellipsis,
+                  style: fwMono(t, size: 10.5, color: t.inkFaint)),
+              onTap: () {
+                Navigator.of(ctx).pop();
+                onJump(target);
+              },
+            ),
+        ],
+      );
+    },
+  );
 }

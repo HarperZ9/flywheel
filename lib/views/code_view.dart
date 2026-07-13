@@ -102,6 +102,12 @@ class _CodeViewState extends State<CodeView> {
         f.dirty = false;
         _status = 'saved ${f.name}';
       });
+      // Ask the language server what it thinks of the saved buffer.
+      resolveDiagnostics(widget.client, f, _root!).then((d) {
+        if (d != null && mounted) {
+          setState(() => _status = 'saved ${f.name} · $d');
+        }
+      });
     } catch (e) {
       setState(() => _status = 'save failed: $e');
     }
@@ -159,6 +165,21 @@ class _CodeViewState extends State<CodeView> {
     setState(() => _status = 'definition: ${opened.name}:${r.target!.line + 1}');
   }
 
+  /// Shift+F12: list references for the symbol under the cursor; tapping
+  /// one jumps there.
+  Future<void> _findReferences(OpenFile f) async {
+    setState(() => _status = 'references…');
+    final r = await resolveReferences(widget.client, f, _root!);
+    setState(() => _status = r.message);
+    if (r.targets.isEmpty || !mounted) return;
+    showReferencesSheet(context, r.targets, (t) {
+      _openFile(t.path);
+      final opened = _open[_active];
+      opened.controller.selection = TextSelection.collapsed(
+          offset: offsetOf(opened.controller.text, t.line, t.character));
+    });
+  }
+
   void _showDiffs() {
     showModalBottomSheet(
       context: context,
@@ -214,6 +235,7 @@ class _CodeViewState extends State<CodeView> {
                         file: active,
                         onSave: () => _save(active),
                         onDefinition: () => _goToDefinition(active),
+                        onReferences: () => _findReferences(active),
                         onChanged: () {
                           if (!active.dirty) setState(() => active.dirty = true);
                         },
