@@ -65,6 +65,22 @@ extension GatewayStreamsAndPlugins on GatewayClient {
     return _decode(r);
   }
 
+  /// GET /api/marketplace — the curated catalog over the plugin registry.
+  Future<Map<String, dynamic>> marketplace() async {
+    final r = await _http.get(Uri.parse('$baseUrl/api/marketplace'));
+    return _decode(r);
+  }
+
+  /// POST /api/marketplace/install — register a catalog entry.
+  Future<Map<String, dynamic>> installFromCatalog(String name) async {
+    final r = await _http.post(
+      Uri.parse('$baseUrl/api/marketplace/install'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'name': name}),
+    );
+    return _decode(r);
+  }
+
   /// GET /api/plugins/probe — spawn a plugin's server, report its real tools.
   Future<Map<String, dynamic>> probePlugin(String name) async {
     final r = await _http.get(Uri.parse(

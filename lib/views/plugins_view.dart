@@ -8,6 +8,8 @@ import 'package:flutter/material.dart';
 import '../client/gateway_client.dart';
 import '../theme/flywheel_theme.dart';
 import '../widgets/fw.dart';
+import '../widgets/marketplace_panel.dart';
+import '../widgets/plugin_forms.dart';
 import '../widgets/parity_table.dart';
 
 class PluginsView extends StatefulWidget {
@@ -26,6 +28,7 @@ class _PluginsViewState extends State<PluginsView> {
   final Map<String, Map<String, dynamic>> _probes = {};
   final Set<String> _probing = {};
   Map<String, dynamic>? _parity;
+  Map<String, dynamic>? _marketplace;
   String? _error;
 
   @override
@@ -50,14 +53,18 @@ class _PluginsViewState extends State<PluginsView> {
   Future<void> _load() async {
     if (!widget.alive) return;
     try {
-      final results =
-          await Future.wait([widget.client.plugins(), widget.client.parity()]);
+      final results = await Future.wait([
+        widget.client.plugins(),
+        widget.client.parity(),
+        widget.client.marketplace(),
+      ]);
       if (mounted) {
         setState(() {
           _plugins = ((results[0]['plugins'] ?? []) as List)
               .whereType<Map<String, dynamic>>()
               .toList();
           _parity = results[1];
+          _marketplace = results[2];
           _error = null;
         });
       }
@@ -124,7 +131,26 @@ class _PluginsViewState extends State<PluginsView> {
         const SizedBox(height: FwLayout.s4),
         const Kicker('register an mcp server', hot: true),
         const SizedBox(height: FwLayout.s3),
-        _registerForm(context),
+        RegisterForm(
+          nameController: _name,
+          commandController: _command,
+          onRegister: _register,
+        ),
+        if (_marketplace != null) ...[
+          const SizedBox(height: FwLayout.s5),
+          const Kicker('marketplace · curated catalog'),
+          const SizedBox(height: FwLayout.s3),
+          MarketplacePanel(
+            doc: _marketplace!,
+            onInstall: (name) async {
+              final r = await widget.client.installFromCatalog(name);
+              if (r['error'] != null && mounted) {
+                setState(() => _error = '${r['error']}');
+              }
+              _load();
+            },
+          ),
+        ],
         if (_parity != null) ...[
           const SizedBox(height: FwLayout.s5),
           const Kicker('parity · audited here, declared there'),
@@ -195,7 +221,7 @@ class _PluginsViewState extends State<PluginsView> {
             ),
             if (probe != null) ...[
               const SizedBox(height: FwLayout.s3),
-              _probeResult(t, probe),
+              ProbeResult(probe: probe),
             ],
           ],
         ),
@@ -203,89 +229,4 @@ class _PluginsViewState extends State<PluginsView> {
     );
   }
 
-  Widget _probeResult(FwTokens t, Map<String, dynamic> probe) {
-    final status = '${probe['status'] ?? probe['error'] ?? '?'}';
-    final tools = (probe['tools'] is List)
-        ? List<String>.from(probe['tools'])
-        : const <String>[];
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            VerdictPill(status,
-                status: status == 'live' ? 'verified' : 'drift'),
-            if ('${probe['detail'] ?? ''}'.isNotEmpty) ...[
-              const SizedBox(width: FwLayout.s2),
-              Expanded(
-                child: Text('${probe['detail']}',
-                    overflow: TextOverflow.ellipsis,
-                    style: fwMono(t, size: 10.5, color: t.inkFaint)),
-              ),
-            ],
-          ],
-        ),
-        if (tools.isNotEmpty) ...[
-          const SizedBox(height: FwLayout.s2),
-          Wrap(
-            spacing: 4,
-            runSpacing: 4,
-            children: [
-              for (final tool in tools)
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: t.ground2,
-                    borderRadius: BorderRadius.circular(4),
-                    border: Border.all(color: t.hairline),
-                  ),
-                  child: Text(tool, style: fwMono(t, size: 10)),
-                ),
-            ],
-          ),
-        ],
-      ],
-    );
-  }
-
-  Widget _registerForm(BuildContext context) {
-    final t = context.fw;
-    return HairlineCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              SizedBox(
-                width: 160,
-                child: TextField(
-                  controller: _name,
-                  style: fwMono(t, size: 12.5),
-                  decoration: const InputDecoration(hintText: 'name'),
-                ),
-              ),
-              const SizedBox(width: FwLayout.s3),
-              Expanded(
-                child: TextField(
-                  controller: _command,
-                  style: fwMono(t, size: 12.5),
-                  decoration: const InputDecoration(
-                      hintText: 'command, e.g. gather mcp'),
-                  onSubmitted: (_) => _register(),
-                ),
-              ),
-              const SizedBox(width: FwLayout.s3),
-              FilledButton(onPressed: _register, child: const Text('Register')),
-            ],
-          ),
-          const SizedBox(height: FwLayout.s2),
-          Text(
-              'The command is the argv that starts the server over stdio. '
-              'It runs only when probed or when a gated run allows MCP.',
-              style: TextStyle(fontSize: 11.5, color: t.inkFaint)),
-        ],
-      ),
-    );
-  }
 }
