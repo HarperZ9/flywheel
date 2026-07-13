@@ -9,12 +9,12 @@
     },
     {
       "title": "The capability surface",
-      "command": "set PYTHONPATH=C:\\dev\\public\\mneme\\src&& set PYTHONUTF8=1&& python -m mneme --help",
+      "command": "set PYTHONPATH=./mneme/src&& set PYTHONUTF8=1&& python -m mneme --help",
       "narration": "The layers are all here: remember turns, extract grounded atoms, synthesize a persona, and verdict every memory as MATCH, DRIFT, or UNVERIFIABLE. Memory stops being a black box and becomes something you can question."
     },
     {
       "title": "The memory inspector artifact",
-      "command": "set PYTHONPATH=C:\\dev\\public\\mneme\\src&& set PYTHONUTF8=1&& python -m mneme --state %TEMP%\\mneme-demo.db inspect",
+      "command": "set PYTHONPATH=./mneme/src&& set PYTHONUTF8=1&& python -m mneme --state %TEMP%\\mneme-demo.db inspect",
       "narration": "And this is my favorite part. Mneme renders its entire memory state as a self-contained, offline inspector page. What the agent knows, and why it believes it, laid out for anyone to read."
     }
   ]

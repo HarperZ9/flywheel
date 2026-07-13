@@ -44,7 +44,7 @@ No shot needed a `--dry-run` placeholder.
 ## Notes on two commands
 
 - **mneme** is not pip-installed in this environment yet, so its steps set
-  `PYTHONPATH=C:\dev\public\mneme\src` (and `PYTHONUTF8=1`) inline before
+  `PYTHONPATH=./mneme/src` (and `PYTHONUTF8=1`) inline before
   `python -m mneme ...`. The command stays self-contained and runs from any
   working directory.
 - **relay `--health`** is a reachability probe only. It reports which local
