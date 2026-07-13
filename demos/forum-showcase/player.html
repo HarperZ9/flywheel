@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>forum-showcase | demo player</title>
+<style>
+  :root {
+    --bg: #0b0f14; --panel: #10161d; --edge: #1f2a35; --ink: #d7e0e8;
+    --dim: #7b8a97; --green: #4ec9a4; --amber: #e0af68; --red: #e06c75;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font-family: "Cascadia Mono", "Consolas", "Courier New", monospace;
+  }
+  main { width: min(960px, calc(100vw - 24px)); margin: 0 auto; padding: 28px 0 60px; }
+  header { display: flex; flex-wrap: wrap; gap: 8px 18px; align-items: baseline; margin-bottom: 14px; }
+  h1 { margin: 0; font-size: 1.15rem; letter-spacing: 0.04em; color: var(--green); }
+  .meta { color: var(--dim); font-size: 0.78rem; }
+  .terminal {
+    background: var(--panel); border: 1px solid var(--edge); border-radius: 8px;
+    min-height: 340px; padding: 16px 18px; white-space: pre-wrap; overflow-wrap: anywhere;
+    font-size: 0.84rem; line-height: 1.5;
+  }
+  .titlebar { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--edge); }
+  .dot.r { background: var(--red); } .dot.a { background: var(--amber); } .dot.g { background: var(--green); }
+  .stepname { color: var(--dim); font-size: 0.78rem; margin-left: 8px; }
+  .cmd { color: var(--amber); }
+  .out { color: var(--ink); }
+  .fail { color: var(--red); }
+  .cursor { display: inline-block; width: 0.55em; height: 1em; background: var(--green);
+            vertical-align: text-bottom; animation: blink 0.9s steps(1) infinite; }
+  @keyframes blink { 50% { opacity: 0; } }
+  .caption {
+    margin-top: 12px; padding: 10px 14px; border-left: 3px solid var(--green);
+    background: rgba(78, 201, 164, 0.07); color: var(--ink);
+    font-size: 0.86rem; line-height: 1.55; min-height: 2.6em;
+  }
+  .controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 14px; }
+  button {
+    background: var(--panel); color: var(--ink); border: 1px solid var(--edge);
+    border-radius: 6px; padding: 7px 14px; font: inherit; font-size: 0.8rem; cursor: pointer;
+  }
+  button:hover { border-color: var(--green); color: var(--green); }
+  .status { color: var(--dim); font-size: 0.78rem; margin-left: auto; }
+  .exit-ok { color: var(--green); } .exit-bad { color: var(--red); }
+  progress { width: 100%; height: 4px; margin-top: 10px; accent-color: var(--green); }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>forum-showcase</h1>
+    <span class="meta">recorded 2026-07-09T19:34:06.965707Z</span>
+    <span class="meta">3 steps, total runtime 604 ms</span>
+    <span class="meta">receipt sha256:4e4a80bd99d8ab9a</span>
+  </header>
+  <div class="titlebar">
+    <span class="dot r"></span><span class="dot a"></span><span class="dot g"></span>
+    <span class="stepname" id="stepname"></span>
+  </div>
+  <div class="terminal" id="terminal"></div>
+  <div class="caption" id="caption"></div>
+  <progress id="bar" max="1" value="0"></progress>
+  <div class="controls">
+    <button id="play">Play</button>
+    <button id="prev">Prev step</button>
+    <button id="next">Next step</button>
+    <button id="restart">Restart</button>
+    <span class="status" id="status"></span>
+  </div>
+</main>
+<script id="transcript-data" type="application/json">{"schema": "harness.demo-transcript/v1", "name": "forum-showcase", "timestamp_utc": "2026-07-09T19:34:06.965707Z", "dry_run": false, "step_count": 3, "total_duration_ms": 604, "steps": [{"index": 0, "title": "What Forum is", "narration": "Forum is where many agents work together and every move is written down. It routes a request to the right lane and keeps a causal ledger of what actually happened.", "command": "echo forum - accountable multi-agent orchestration with a replayable ledger", "mode": "live", "exit_code": 0, "duration_ms": 19, "stdout": "forum - accountable multi-agent orchestration with a replayable ledger\n", "stderr": "", "output": "forum - accountable multi-agent orchestration with a replayable ledger\n", "output_sha256": "c8f0febee8d8c0c3ba5f373e14d8227d1069cae6cc55ac10f702eb1a6580767e"}, {"index": 1, "title": "The capability surface", "narration": "Look at the range: route work, import an external agent trace into a verifiable ledger, grade a run with checks that can actually fail, and mine a session into gradable data. It is a flight recorder for agent teams.", "command": "python -m forum --help", "mode": "live", "exit_code": 0, "duration_ms": 286, "stdout": "usage: forum [-h] [--version]\n             {status,doctor,demo,humanize,route,import-trace,grade,export-gradable,mine,submit,serve,mcp,context,runtime,ledger,gate,campaign,bench,bench-deep-verify}\n             ...\n\nForum: accountable multi-agent orchestration.\n\npositional arguments:\n  {status,doctor,demo,humanize,route,import-trace,grade,export-gradable,mine,submit,serve,mcp,context,runtime,ledger,gate,campaign,bench,bench-deep-verify}\n    status              emit Forum's Project Telos operator-spine status\n    doctor              check Forum's operator-spine readiness\n    demo                show Forum's operator-spine demo command\n    humanize            clarify model or agent prose without adding facts\n    route               route a request to a capability lane (no model needed)\n    import-trace        fold an external agent trace\n                        (LangSmith/OTel/AgentOps/generic JSON) into a\n                        verifiable, replayable ledger \u2014 a flight recorder that\n                        refutes its own tampering\n    grade               grade a run's ledger \u2014 an outcome signal that CAN fail\n                        and counts only independent checks (a producer cannot\n                        grade itself)\n    export-gradable     export a run's ledger as one forum.gradable-\n                        trajectory/1 datum (prompt + trajectory + a can-fail\n                        grade + off-forum re-derivation inputs)\n    mine                one command: fold ANY framework's trace into a\n                        verifiable ledger, grade it, and append it as\n                        witnessed gradable RL data\n    submit              plan and answer a request, witnessed\n    serve               run the HTTP daemon\n    mcp                 run the MCP (stdio) server\n    context             inspect and preflight context pressure\n    runtime             inspect runtime executor policy\n    ledger              inspect the ledger\n    gate                list and resolve human-in-the-loop approval gates\n    campaign            declare, inspect, and run a witnessed multi-project\n                        campaign\n    bench               compare two ledgers (A/B) by their summaries\n    bench-deep-verify   measure ledger verify(deep=True) scaling across\n                        payload and storage variables\n\noptions:\n  -h, --help            show this help message and exit\n  --version             show program's version number and exit\n", "stderr": "", "output": "usage: forum [-h] [--version]\n             {status,doctor,demo,humanize,route,import-trace,grade,export-gradable,mine,submit,serve,mcp,context,runtime,ledger,gate,campaign,bench,bench-deep-verify}\n             ...\n\nForum: accountable multi-agent orchestration.\n\npositional arguments:\n  {status,doctor,demo,humanize,route,import-trace,grade,export-gradable,mine,submit,serve,mcp,context,runtime,ledger,gate,campaign,bench,bench-deep-verify}\n    status              emit Forum's Project Telos operator-spine status\n    doctor              check Forum's operator-spine readiness\n    demo                show Forum's operator-spine demo command\n    humanize            clarify model or agent prose without adding facts\n    route               route a request to a capability lane (no model needed)\n    import-trace        fold an external agent trace\n                        (LangSmith/OTel/AgentOps/generic JSON) into a\n                        verifiable, replayable ledger \u2014 a flight recorder that\n                        refutes its own tampering\n    grade               grade a run's ledger \u2014 an outcome signal that CAN fail\n                        and counts only independent checks (a producer cannot\n                        grade itself)\n    export-gradable     export a run's ledger as one forum.gradable-\n                        trajectory/1 datum (prompt + trajectory + a can-fail\n                        grade + off-forum re-derivation inputs)\n    mine                one command: fold ANY framework's trace into a\n                        verifiable ledger, grade it, and append it as\n                        witnessed gradable RL data\n    submit              plan and answer a request, witnessed\n    serve               run the HTTP daemon\n    mcp                 run the MCP (stdio) server\n    context             inspect and preflight context pressure\n    runtime             inspect runtime executor policy\n    ledger              inspect the ledger\n    gate                list and resolve human-in-the-loop approval gates\n    campaign            declare, inspect, and run a witnessed multi-project\n                        campaign\n    bench               compare two ledgers (A/B) by their summaries\n    bench-deep-verify   measure ledger verify(deep=True) scaling across\n                        payload and storage variables\n\noptions:\n  -h, --help            show this help message and exit\n  --version             show program's version number and exit\n", "output_sha256": "9a0b081b9b68faddcca6d64fc9d2d81329369452d7da57a7b2e08a66e628ce65"}, {"index": 2, "title": "A status receipt", "narration": "Forum reports its own readiness as a receipt. The orchestrator that grades everyone else is honest enough to grade itself first, and that is exactly the property you want at the center of a swarm.", "command": "python -m forum status", "mode": "live", "exit_code": 0, "duration_ms": 299, "stdout": "status=MATCH tool=forum command=status\nnext: crucible assess - verify the routed claim before public use\n", "stderr": "", "output": "status=MATCH tool=forum command=status\nnext: crucible assess - verify the routed claim before public use\n", "output_sha256": "8f2ac4947b1786f025f60e9045902618670de33cd1d3c52259e4f85f6cdb5e2c"}], "receipt_sha256": "4e4a80bd99d8ab9adbeefc6b6f214247afa0a9d24e30a128eddf78c2e54735fa"}</script>
+<script>
+(function () {
+  "use strict";
+  var transcript = JSON.parse(document.getElementById("transcript-data").textContent);
+  var steps = transcript.steps || [];
+  var term = document.getElementById("terminal");
+  var caption = document.getElementById("caption");
+  var stepname = document.getElementById("stepname");
+  var statusEl = document.getElementById("status");
+  var bar = document.getElementById("bar");
+  var playBtn = document.getElementById("play");
+  var CHARS_PER_TICK = 6, TICK_MS = 12, REVEAL_PAUSE_MS = 1400;
+  var stepIndex = 0, charIndex = 0, playing = false, timer = null;
+
+  function fullText(step) {
+    return "$ " + step.command + "\n" + (step.output || "") +
+      "\n[exit " + step.exit_code + " in " + step.duration_ms + " ms]";
+  }
+  function paint(partial) {
+    var step = steps[stepIndex];
+    if (!step) { return; }
+    var text = fullText(step);
+    var shown = partial ? text.slice(0, charIndex) : text;
+    term.textContent = "";
+    var cmdEnd = ("$ " + step.command).length;
+    var cmdSpan = document.createElement("span");
+    cmdSpan.className = "cmd";
+    cmdSpan.textContent = shown.slice(0, cmdEnd);
+    var outSpan = document.createElement("span");
+    outSpan.className = step.exit_code === 0 ? "out" : "out fail";
+    outSpan.textContent = shown.slice(cmdEnd);
+    term.appendChild(cmdSpan);
+    term.appendChild(outSpan);
+    if (partial && shown.length < text.length) {
+      var cur = document.createElement("span");
+      cur.className = "cursor";
+      term.appendChild(cur);
+    }
+    stepname.textContent = "step " + (stepIndex + 1) + "/" + steps.length + ": " + step.title;
+    caption.textContent = step.narration;
+    var exitCls = step.exit_code === 0 ? "exit-ok" : "exit-bad";
+    statusEl.innerHTML = "";
+    var tag = document.createElement("span");
+    tag.className = exitCls;
+    tag.textContent = "exit " + step.exit_code;
+    statusEl.appendChild(document.createTextNode(step.mode + " | " + step.duration_ms + " ms | "));
+    statusEl.appendChild(tag);
+    bar.value = steps.length ? (stepIndex + (partial ? shown.length / Math.max(text.length, 1) : 1)) / steps.length : 0;
+  }
+  function tick() {
+    var step = steps[stepIndex];
+    if (!step) { stop(); return; }
+    var total = fullText(step).length;
+    if (charIndex < total) {
+      charIndex = Math.min(total, charIndex + CHARS_PER_TICK);
+      paint(true);
+      timer = setTimeout(tick, TICK_MS);
+    } else if (stepIndex < steps.length - 1) {
+      timer = setTimeout(function () { stepIndex += 1; charIndex = 0; tick(); }, REVEAL_PAUSE_MS);
+    } else {
+      stop();
+      paint(false);
+    }
+  }
+  function stop() {
+    playing = false;
+    if (timer) { clearTimeout(timer); timer = null; }
+    playBtn.textContent = "Play";
+  }
+  function start() {
+    if (!steps.length) { return; }
+    playing = true;
+    playBtn.textContent = "Pause";
+    tick();
+  }
+  playBtn.addEventListener("click", function () { playing ? stop() : start(); });
+  document.getElementById("next").addEventListener("click", function () {
+    stop(); stepIndex = Math.min(steps.length - 1, stepIndex + 1); charIndex = 0; paint(false);
+  });
+  document.getElementById("prev").addEventListener("click", function () {
+    stop(); stepIndex = Math.max(0, stepIndex - 1); charIndex = 0; paint(false);
+  });
+  document.getElementById("restart").addEventListener("click", function () {
+    stop(); stepIndex = 0; charIndex = 0; paint(true); start();
+  });
+  if (steps.length) { charIndex = 0; paint(true); }
+})();
+</script>
+</body>
+</html>

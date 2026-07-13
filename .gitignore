@@ -1,0 +1,14 @@
+__pycache__/
+*.pyc
+.env
+.env.*
+*.log
+.DS_Store
+local-model-run/
+artifacts/exe/packages/
+.flywheel-run-root
+build/
+dist/
+.ruff_cache/
+.pytest_cache/
+.warden-safe-cache/

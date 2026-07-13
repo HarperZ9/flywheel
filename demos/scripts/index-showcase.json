@@ -1,0 +1,21 @@
+{
+  "name": "index-showcase",
+  "description": "Index: repository maps, a dependency graph, and receipt-backed context packs, all from one zero-dependency CLI.",
+  "steps": [
+    {
+      "title": "What Index is",
+      "command": "echo index - repository maps, dependency graph, and receipt-backed context packs",
+      "narration": "Index reads a whole codebase and hands you a living map of it. Think of it as the atlas the rest of the tools navigate by."
+    },
+    {
+      "title": "The capability surface",
+      "command": "python -m index_graph --help",
+      "narration": "One front door opens onto the full surface: map the repo, derive the dependency graph, budget a context envelope, watch for drift, even render a live context lens. Every one of these is offline and reproducible."
+    },
+    {
+      "title": "A status receipt",
+      "command": "python -m index_graph status",
+      "narration": "And here is the part that makes it trustworthy. Index reports its own state as a small receipt you can re-check, and even suggests the next honest step. A tool that keeps its own scorecard is a tool you can build on."
+    }
+  ]
+}

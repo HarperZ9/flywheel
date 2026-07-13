@@ -1,0 +1,101 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 600" font-family="ui-sans-serif, system-ui, Segoe UI, sans-serif">
+  <style>
+    /* Design and Voice Canon: color only as a verdict. Accept path = verified
+       green, caution/escalate + kickers = drift iris. Ceramic ground, dark ink;
+       a near-black dark counterpart. */
+    :root{ --bg:#f4f3ef; --ink:#0b0c0e; --muted:#43474e; --line:rgba(11,12,14,.14); --card:rgba(255,255,255,.62);
+      --accent:#1f7a52; --accent-soft:color-mix(in oklab,#1f7a52 12%,transparent); --warm:#3a2bd6; --ok:#1f7a52; }
+    @media (prefers-color-scheme: dark){
+      :root{ --bg:#0b0e0f; --ink:#eef1ee; --muted:#9aa39c; --line:rgba(238,241,238,.16); --card:rgba(255,255,255,.05);
+        --accent:#5fae93; --accent-soft:color-mix(in oklab,#5fae93 15%,transparent); --warm:#a99cf5; --ok:#5fae93; } }
+    .bg{ fill:var(--bg); }
+    .card{ fill:var(--card); stroke:var(--line); stroke-width:1.5; }
+    .accentbox{ fill:var(--accent-soft); stroke:var(--accent); stroke-width:1.5; }
+    .t{ fill:var(--ink); font-size:14px; font-weight:600; }
+    .s{ fill:var(--muted); font-size:11.5px; }
+    .cap{ fill:var(--warm); font-size:11px; font-weight:700; letter-spacing:.12em; }
+    .title{ fill:var(--ink); font-size:20px; font-weight:700; }
+    .flow{ stroke:var(--muted); stroke-width:1.6; fill:none; }
+    .flowa{ stroke:var(--accent); stroke-width:2; fill:none; }
+    .lbl{ fill:var(--muted); font-size:10.5px; }
+    .ok{ fill:var(--ok); font-size:11.5px; font-weight:700; }
+  </style>
+  <rect class="bg" x="0" y="0" width="960" height="600" rx="0"/>
+  <marker id="ar" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto">
+    <path d="M0,0 L7,3 L0,6 Z" fill="var(--muted)"/></marker>
+  <marker id="ara" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto">
+    <path d="M0,0 L7,3 L0,6 Z" fill="var(--accent)"/></marker>
+
+  <text class="cap" x="40" y="38">FLYWHEEL, THE ONE SURFACE</text>
+  <text class="title" x="40" y="64">Route to any model. Verify what you can. Escalate the rest.</text>
+
+  <!-- Row 1: inputs -->
+  <g>
+    <rect class="card" x="150" y="92" width="290" height="46" rx="12"/>
+    <text class="t" x="170" y="113">Browser: the shell</text>
+    <text class="s" x="170" y="129">router, world, companion, studio, receipts</text>
+    <rect class="card" x="520" y="92" width="290" height="46" rx="12"/>
+    <text class="t" x="540" y="113">CLI / curl / MCP</text>
+    <text class="s" x="540" y="129">same routes, one origin</text>
+  </g>
+  <path class="flow" d="M295,138 L295,164" marker-end="url(#ar)"/>
+  <path class="flow" d="M665,138 L665,164" marker-end="url(#ar)"/>
+
+  <!-- Row 2: gateway -->
+  <rect class="accentbox" x="150" y="166" width="660" height="52" rx="12"/>
+  <text class="t" x="180" y="190">Gateway  ·  one origin  ·  127.0.0.1:8799</text>
+  <text class="s" x="180" y="207">stdlib HTTP, zero dependencies, fully offline; every response is re-checkable JSON</text>
+
+  <!-- Row 3: routes -->
+  <g>
+    <rect class="card" x="40"  y="250" width="150" height="44" rx="10"/>
+    <text class="t" x="55" y="270">/api/world</text><text class="s" x="55" y="285">root-hashed state</text>
+    <rect class="card" x="205" y="250" width="160" height="44" rx="10"/>
+    <text class="t" x="220" y="270">/api/endpoints</text><text class="s" x="220" y="285">the router roster</text>
+    <rect class="card" x="380" y="250" width="150" height="44" rx="10"/>
+    <text class="t" x="395" y="270">/api/forge</text><text class="s" x="395" y="285">the studio</text>
+    <rect class="accentbox" x="545" y="250" width="175" height="44" rx="10"/>
+    <text class="t" x="560" y="270">/api/companion</text><text class="s" x="560" y="285">the seat</text>
+    <rect class="card" x="735" y="250" width="185" height="44" rx="10"/>
+    <text class="t" x="750" y="270">/api/training/status</text><text class="s" x="750" y="285">read-only</text>
+  </g>
+  <path class="flow" d="M115,218 L115,250" marker-end="url(#ar)"/>
+  <path class="flow" d="M285,218 L285,250" marker-end="url(#ar)"/>
+  <path class="flow" d="M455,218 L455,250" marker-end="url(#ar)"/>
+  <path class="flowa" d="M632,218 L632,250" marker-end="url(#ara)"/>
+  <path class="flow" d="M810,218 L825,250" marker-end="url(#ar)"/>
+
+  <!-- Row 4: the seat pipeline -->
+  <path class="flowa" d="M632,294 L632,326" marker-end="url(#ara)"/>
+  <rect class="accentbox" x="360" y="328" width="545" height="50" rx="12"/>
+  <text class="t" x="380" y="350">Companion seat  →  AdaptiveSelector (raise N on evidence)</text>
+  <text class="s" x="380" y="367">cache hit  →  local verified  →  local agreement  →  escalate</text>
+
+  <!-- propose / dispose -->
+  <rect class="card" x="360" y="410" width="255" height="58" rx="12"/>
+  <text class="cap" x="378" y="430">PROPOSE</text>
+  <text class="t" x="378" y="449">Local model  ·  any provider</text>
+  <text class="s" x="378" y="463">the replaceable half; presence-only creds</text>
+
+  <rect class="card" x="650" y="410" width="255" height="58" rx="12"/>
+  <text class="cap" x="668" y="430">DISPOSE</text>
+  <text class="t" x="668" y="449">External oracle</text>
+  <text class="s" x="668" y="463">the only thing that can accept (C2)</text>
+
+  <path class="flow" d="M470,378 L470,410" marker-end="url(#ar)"/>
+  <path class="flowa" d="M760,378 L760,410" marker-end="url(#ara)"/>
+
+  <!-- Row 5: outcomes -->
+  <rect class="card" x="360" y="500" width="255" height="54" rx="12" stroke="var(--ok)"/>
+  <text class="ok" x="378" y="521">PASS  →  Receipt</text>
+  <text class="s" x="378" y="538">re-checkable; tamper and the check fails</text>
+
+  <rect class="card" x="650" y="500" width="255" height="54" rx="12" stroke="var(--warm)"/>
+  <text class="t" x="668" y="521" fill="var(--warm)">Escalate  →  frontier tier</text>
+  <text class="s" x="668" y="538">named, never called for you</text>
+
+  <path class="flow" d="M487,468 L487,500" marker-end="url(#ar)"/>
+  <path class="flow" d="M777,468 L777,500" marker-end="url(#ar)"/>
+
+  <text class="s" x="40" y="588">No learned model on the accept path. The oracle disposes; the provider proposes; escalation is a confidence threshold, not a guess.</text>
+</svg>

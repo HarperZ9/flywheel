@@ -1,0 +1,119 @@
+{
+ "schema": "flywheel.demos-index/v1",
+ "source": "scripts/build_demos_index.py",
+ "demo_count": 10,
+ "demos": [
+  {
+   "id": "harness-first-run",
+   "player": "harness-first-run/player.html",
+   "name": "local-model harness",
+   "role": "Propose, verify against an oracle, witness a re-checkable receipt.",
+   "step_count": 4,
+   "total_duration_ms": 65718,
+   "recorded_utc": "2026-07-09T19:04:54.103218Z",
+   "receipt_sha256": "dc3d054e922eafcf8da744122dd0af109b1ce198f4d29dba0807b9c1a405d012",
+   "transcript_sha256": "850d0a0a439e66c20fd7eb7641b425503a80ee86f488828ca29633b9429e7cfa",
+   "badge": "the engine"
+  },
+  {
+   "id": "telos-showcase",
+   "player": "telos-showcase/player.html",
+   "name": "telos",
+   "role": "The reconciler that takes the stage: perceive, check, carry proof.",
+   "step_count": 4,
+   "total_duration_ms": 270,
+   "recorded_utc": "2026-07-09T19:35:03.619689Z",
+   "receipt_sha256": "0fb187fa62edf9f2a681a7cd58d2f7d6ddea022b05893c475f64ed81e79a2433",
+   "transcript_sha256": "b563ce0799e64b10e6e9bc1f10beccba07962f553cefdc99bce47b5e041e13c3",
+   "badge": "primary engine"
+  },
+  {
+   "id": "index-showcase",
+   "player": "index-showcase/player.html",
+   "name": "index",
+   "role": "A faithful map of a codebase, with a verified-wiki you can trust.",
+   "step_count": 3,
+   "total_duration_ms": 743,
+   "recorded_utc": "2026-07-09T19:34:06.139314Z",
+   "receipt_sha256": "a0800f9902ead782717e4935d97e6a8b747ed790c4ab83fa5566b6e7889b091e",
+   "transcript_sha256": "c5d4217bfe9c0e9e9d8b694abe77143a2a8781791941f9fd9ff1c7e84ca21424"
+  },
+  {
+   "id": "forum-showcase",
+   "player": "forum-showcase/player.html",
+   "name": "forum",
+   "role": "Accountable multi-agent orchestration over a replayable causal ledger.",
+   "step_count": 3,
+   "total_duration_ms": 604,
+   "recorded_utc": "2026-07-09T19:34:06.965707Z",
+   "receipt_sha256": "4e4a80bd99d8ab9adbeefc6b6f214247afa0a9d24e30a128eddf78c2e54735fa",
+   "transcript_sha256": "edb1f9af47c17e858cc38de20a159d86736088756ba9f42b192b27f6527241db"
+  },
+  {
+   "id": "gather-showcase",
+   "player": "gather-showcase/player.html",
+   "name": "gather",
+   "role": "Research intake with a source receipt and a re-verifiable corpus.",
+   "step_count": 3,
+   "total_duration_ms": 507,
+   "recorded_utc": "2026-07-09T19:34:07.697966Z",
+   "receipt_sha256": "c6338a8c1eeb176acb32731eff8971f444ef6468b6a48cea77f58187ccdc083c",
+   "transcript_sha256": "56f99a13ebe493773bfbb0b45f9a8a72820c4ee68e16239548e2f4b9f76e04e5"
+  },
+  {
+   "id": "crucible-showcase",
+   "player": "crucible-showcase/player.html",
+   "name": "crucible",
+   "role": "A judgment organ: register, steelman, measure, refine, witness.",
+   "step_count": 3,
+   "total_duration_ms": 582,
+   "recorded_utc": "2026-07-09T19:34:08.481166Z",
+   "receipt_sha256": "9889bf169613299aa6282ed769e207f227d0c2075c85982fb2a2465c01adbaa2",
+   "transcript_sha256": "cbbb19d81c1dc789ecb8d13fcea7360d8b4ce780f8b8c134e460bded4b2bd205"
+  },
+  {
+   "id": "mneme-showcase",
+   "player": "mneme-showcase/player.html",
+   "name": "mneme",
+   "role": "Accountable agent memory: remember, recall, and prove provenance.",
+   "step_count": 3,
+   "total_duration_ms": 526,
+   "recorded_utc": "2026-07-09T19:37:17.074386Z",
+   "receipt_sha256": "90042adedd139a851b69b5766f083746fce1cfcf1fd186bce2475b9cd5550785",
+   "transcript_sha256": "90ecedebe70bdfaff66e872adc39b9a6abc2c0777cf36c52672e98d99822e7ae"
+  },
+  {
+   "id": "relay-showcase",
+   "player": "relay-showcase/player.html",
+   "name": "relay",
+   "role": "A zero-dependency agent that reaches local and frontier endpoints with failover.",
+   "step_count": 3,
+   "total_duration_ms": 577,
+   "recorded_utc": "2026-07-09T19:35:05.154290Z",
+   "receipt_sha256": "13f27a74d643d152e8f5351b9898c4ff30c52719e9f2fad7fd73e9f068166178",
+   "transcript_sha256": "cfd8a435dd8e53607d2b9912088d42939ab3fc4d0d64501e72c7feb21921eedb"
+  },
+  {
+   "id": "plexus-showcase",
+   "player": "plexus-showcase/player.html",
+   "name": "plexus",
+   "role": "Cross-tool capability discovery and auto-wiring, so the spine composes.",
+   "step_count": 3,
+   "total_duration_ms": 450,
+   "recorded_utc": "2026-07-09T19:35:05.813941Z",
+   "receipt_sha256": "2c27951cd1ef6a93727cfc3c7534a21572ef1095fe990ef50492cbfdab224a03",
+   "transcript_sha256": "18f9f1c4a1c9fb8a2854b70d9dd098ec75eba91502f55ca3e32e2f8194149505"
+  },
+  {
+   "id": "local-model-showcase",
+   "player": "local-model-showcase/player.html",
+   "name": "local-model CLI",
+   "role": "The harness command line and its receipts, end to end.",
+   "step_count": 4,
+   "total_duration_ms": 296,
+   "recorded_utc": "2026-07-09T19:35:06.351897Z",
+   "receipt_sha256": "b92fcd0a1ba9e543c8d6453bfa8b759d8b23081b1da020398384ac7cc371471a",
+   "transcript_sha256": "2e289cb1a216d13323c143d4debcf30dba7625a471278316b106bdba08052784"
+  }
+ ]
+}

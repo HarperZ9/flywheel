@@ -1,0 +1,26 @@
+{
+  "name": "harness-first-run",
+  "description": "First run of the flywheel harness on a small local machine: the front door, two receipts, and one live local generation.",
+  "steps": [
+    {
+      "title": "Meet the harness",
+      "command": "python scripts/run_harness_cli.py --help",
+      "narration": "This is the whole front door. One zero-dependency dispatcher on a home machine, and every readiness check, receipt, and benchmark in the flywheel starts right here."
+    },
+    {
+      "title": "Release readiness receipt",
+      "command": "type artifacts\\exe\\model_release_readiness.local.md",
+      "narration": "Before anything ships, the harness writes itself a readiness receipt. This is the actual artifact from disk, not a slide. It says plainly what is ready and what still gates the release."
+    },
+    {
+      "title": "Endpoint gate receipt",
+      "command": "type artifacts\\exe\\model_endpoint_gate.local.md",
+      "narration": "The endpoint gate is the health check for the local model servers. Same idea: a small, honest file that records what was actually observed when the gate last ran."
+    },
+    {
+      "title": "Live local generation",
+      "command": "python scripts/demo_ollama_step.py --url http://127.0.0.1:11434 --model flywheel-local-coder-14b --prompt \"def fibonacci(n):\" --num-predict 48 --timeout-seconds 240",
+      "narration": "Now the fun part. We ask the 14B coder living on this box to continue a function, no cloud involved. If the endpoint is asleep the step says SKIPPED honestly and the recording stays truthful."
+    }
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "schema": "telos.model-artifact/v1",
+  "artifact": "telos-coder-14b-cpt2020-q4_k_m.gguf",
+  "quant": "Q4_K_M",
+  "base": "Qwen2.5-Coder-14B-Instruct",
+  "adapter": "checkpoint-2020 (QLoRA CPT, train_loss 0.035)",
+  "bytes": 8988110880,
+  "sha256": "613db240e3efc6730f24042a4602d1f12f1c6b397af1d5a4d74f4e064d4064be",
+  "lora_gguf_sha256": "c89091709d7f385226000091dca976b7ce68086255e78af96599d06b6b52f547",
+  "smoke_tool": "llama-completion (temp 0, seed 7, n 48)",
+  "smoke_deterministic": "MATCH",
+  "smoke_output_sha256": "970af540244384407918aa3b0172b403c24d17800e3c514c3c19937d88c7e636",
+  "provenance_chain": {
+    "note": "the invented niche: a pullable artifact whose receipt chains corpus -> shards -> checkpoint -> GGUF, each layer re-derivable",
+    "corpus_content_hash": "68345cdc6667f20d1678ac0a9139edc170348dfdebb9ae6045cde3d204f4fe62",
+    "corpus_files": 17997,
+    "pack_shards_hash": "018798dfce7d4c86f5a6ea502a383553220f2e76facfe76acbe52b1c278ae543",
+    "checkpoint_adapter_sha256": "4de07c6ea342d1cc200d4a6e2b28a63f6ee37f34c5c0926c35d8c7db74d38d0f",
+    "dataset_receipt": "tasks/research/dataset_receipt_checkpoint2020.json"
+  }
+}

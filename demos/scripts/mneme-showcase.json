@@ -1,0 +1,21 @@
+{
+  "name": "mneme-showcase",
+  "description": "Mneme: accountable agent memory that records turns, extracts grounded atoms, and renders its whole state as an inspectable page.",
+  "steps": [
+    {
+      "title": "What Mneme is",
+      "command": "echo mneme - accountable agent memory with provenance and re-derivable recall",
+      "narration": "Mneme is memory an agent can actually trust. Every turn it records carries provenance, and every recall comes with a receipt for why those memories ranked where they did."
+    },
+    {
+      "title": "The capability surface",
+      "command": "set PYTHONPATH=./mneme/src&& set PYTHONUTF8=1&& python -m mneme --help",
+      "narration": "The layers are all here: remember turns, extract grounded atoms, synthesize a persona, and verdict every memory as MATCH, DRIFT, or UNVERIFIABLE. Memory stops being a black box and becomes something you can question."
+    },
+    {
+      "title": "The memory inspector artifact",
+      "command": "set PYTHONPATH=./mneme/src&& set PYTHONUTF8=1&& python -m mneme --state %TEMP%\\mneme-demo.db inspect",
+      "narration": "And this is my favorite part. Mneme renders its entire memory state as a self-contained, offline inspector page. What the agent knows, and why it believes it, laid out for anyone to read."
+    }
+  ]
+}
