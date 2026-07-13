@@ -789,6 +789,9 @@ class _Handler(BaseHTTPRequestHandler):
         if p == "/api/plugins":                      # every mounted capability, one manifest shape
             from harness.plugins import plugin_roster
             return self._json(plugin_roster())
+        if p == "/api/parity":                       # the capability matrix, witnessed not asserted
+            from harness.parity import parity_matrix
+            return self._json(parity_matrix())
         if p == "/api/plugins/probe":                # spawn a plugin's server, report its real tools
             from harness.plugins import probe_plugin
             name = ""
