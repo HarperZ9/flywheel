@@ -11,6 +11,7 @@ import '../models/gateway_models.dart';
 import '../theme/flywheel_theme.dart';
 import '../widgets/charts.dart';
 import '../widgets/fw.dart';
+import '../widgets/keys_panel.dart';
 import '../widgets/training_card.dart';
 
 class EndpointsView extends StatefulWidget {
@@ -27,6 +28,7 @@ class _EndpointsViewState extends State<EndpointsView> {
   List<EndpointRow> _roster = [];
   List<ProviderScore> _scores = [];
   Map<String, dynamic>? _training;
+  Map<String, dynamic>? _keychain;
   String? _error;
   bool _loading = false;
 
@@ -51,6 +53,7 @@ class _EndpointsViewState extends State<EndpointsView> {
         widget.client.endpointRoster(),
         widget.client.routerStats(),
         widget.client.trainingStatus(),
+        widget.client.keychainRoster(),
       ]);
       if (mounted) {
         setState(() {
@@ -60,6 +63,7 @@ class _EndpointsViewState extends State<EndpointsView> {
           _scores =
               ProviderScore.listFromStats(results[2] as Map<String, dynamic>);
           _training = results[3] as Map<String, dynamic>;
+          _keychain = results[4] as Map<String, dynamic>;
           _error = null;
           _loading = false;
         });
@@ -141,6 +145,18 @@ class _EndpointsViewState extends State<EndpointsView> {
             children: [for (final r in _roster) _providerRow(t, r)],
           ),
         ),
+        if (_keychain != null &&
+            ((_keychain!['entries'] ?? []) as List).isNotEmpty) ...[
+          const SizedBox(height: FwLayout.s5),
+          const Kicker('keys · stored in the OS keychain, shown as presence'),
+          const SizedBox(height: FwLayout.s3),
+          KeysPanel(
+            doc: _keychain!,
+            onSet: widget.client.keychainSet,
+            onDelete: widget.client.keychainDelete,
+            onChanged: _load,
+          ),
+        ],
         const SizedBox(height: FwLayout.s5),
         const Kicker('scoreboard · observed routing outcomes'),
         const SizedBox(height: FwLayout.s3),

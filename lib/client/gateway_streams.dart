@@ -94,6 +94,33 @@ extension GatewayStreamsAndPlugins on GatewayClient {
     return _decode(r);
   }
 
+  /// GET /api/keychain — credential names + presence/source, never values.
+  Future<Map<String, dynamic>> keychainRoster() async {
+    final r = await _http.get(Uri.parse('$baseUrl/api/keychain'));
+    return _decode(r);
+  }
+
+  /// POST /api/keychain/set — store a secret in the OS keychain. The value
+  /// travels loopback-only, once, and is never echoed back.
+  Future<Map<String, dynamic>> keychainSet(String name, String value) async {
+    final r = await _http.post(
+      Uri.parse('$baseUrl/api/keychain/set'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'name': name, 'value': value}),
+    );
+    return _decode(r);
+  }
+
+  /// POST /api/keychain/delete — remove a stored secret.
+  Future<Map<String, dynamic>> keychainDelete(String name) async {
+    final r = await _http.post(
+      Uri.parse('$baseUrl/api/keychain/delete'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'name': name}),
+    );
+    return _decode(r);
+  }
+
   /// GET /api/marketplace — the curated catalog over the plugin registry.
   Future<Map<String, dynamic>> marketplace() async {
     final r = await _http.get(Uri.parse('$baseUrl/api/marketplace'));
