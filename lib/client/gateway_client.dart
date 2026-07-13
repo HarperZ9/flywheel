@@ -14,6 +14,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 import '../models/gateway_models.dart';
+import '../models/workflow_models.dart';
 
 class GatewayClient {
   final String baseUrl;
@@ -111,8 +112,14 @@ class GatewayClient {
   }
 
   /// POST /api/agent — run a gated, witnessed tool loop (non-streaming).
+  /// `root` scopes the run to an open workspace; the engine refuses a root
+  /// that is not an existing directory.
   Future<Map<String, dynamic>> agent(String goal, String endpoint,
-      {int maxSteps = 6, bool allowWrite = false, bool allowExec = false}) async {
+      {int maxSteps = 6,
+      bool allowWrite = false,
+      bool allowExec = false,
+      String? root,
+      String? testCmd}) async {
     final r = await _http.post(
       Uri.parse('$baseUrl/api/agent'),
       headers: {'Content-Type': 'application/json'},
@@ -122,6 +129,8 @@ class GatewayClient {
         'max_steps': maxSteps,
         'allow_write': allowWrite,
         'allow_exec': allowExec,
+        if (root != null && root.isNotEmpty) 'root': root,
+        if (testCmd != null && testCmd.isNotEmpty) 'test_cmd': testCmd,
       }),
     );
     return _decode(r);
@@ -131,6 +140,74 @@ class GatewayClient {
   Future<ReceiptsLedger> receipts() async {
     final r = await _http.get(Uri.parse('$baseUrl/api/receipts'));
     return ReceiptsLedger.fromJson(_decode(r));
+  }
+
+  /// GET /api/profiles — the profile manifests over the one substrate.
+  Future<List<ProfileManifest>> profiles() async {
+    final r = await _http.get(Uri.parse('$baseUrl/api/profiles'));
+    final body = _decode(r);
+    return ((body['profiles'] ?? []) as List)
+        .map((e) => ProfileManifest.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  /// GET /api/workflows — workflow definitions plus recent runs.
+  Future<WorkflowRoster> workflows() async {
+    final r = await _http.get(Uri.parse('$baseUrl/api/workflows'));
+    return WorkflowRoster.fromJson(_decode(r));
+  }
+
+  /// POST /api/workflow — run a staged workflow over any endpoint.
+  Future<WorkflowRun> runWorkflow({
+    required String workflow,
+    required String goal,
+    required String endpoint,
+    String? profile,
+    bool allowWrite = false,
+    bool allowExec = false,
+    String? testCmd,
+  }) async {
+    final r = await _http.post(
+      Uri.parse('$baseUrl/api/workflow'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'workflow': workflow,
+        'goal': goal,
+        'endpoint': endpoint,
+        if (profile != null) 'profile': profile,
+        'allow_write': allowWrite,
+        'allow_exec': allowExec,
+        if (testCmd != null && testCmd.isNotEmpty) 'test_cmd': testCmd,
+      }),
+    );
+    return WorkflowRun.fromJson(_decode(r));
+  }
+
+  /// GET /api/memory — durable memory stats.
+  Future<Map<String, dynamic>> memoryStats() async {
+    final r = await _http.get(Uri.parse('$baseUrl/api/memory'));
+    return _decode(r);
+  }
+
+  /// POST /api/memory/recall — verbatim recall from the fold index.
+  Future<Map<String, dynamic>> memoryRecall(String query,
+      {int topK = 5}) async {
+    final r = await _http.post(
+      Uri.parse('$baseUrl/api/memory/recall'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'query': query, 'top_k': topK}),
+    );
+    return _decode(r);
+  }
+
+  /// POST /api/memory/note — store a durable content-addressed note.
+  Future<Map<String, dynamic>> memoryNote(String content) async {
+    final r = await _http.post(
+      Uri.parse('$baseUrl/api/memory/note'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'content': content}),
+    );
+    return _decode(r);
   }
 
   /// GET /api/training/status — read-only 32B training lane status.
