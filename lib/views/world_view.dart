@@ -1,107 +1,127 @@
-// world_view.dart — the World view: the projected-world spine + root hash.
-// This is the receipt-badge surface: the root hash is displayed prominently
-// and can be re-verified client-side (Phase 2b adds the re-verify button).
+// world_view.dart — the World view: the projected, root-hashed state both
+// person and model read. The root hash is the receipt: tamper any cataloged
+// artifact and it moves. Findings render as a receipt-bound table with a
+// verdict strip; the spine shows the flagship composition.
 
 import 'package:flutter/material.dart';
+
 import '../models/gateway_models.dart';
 import '../theme/flywheel_theme.dart';
+import '../widgets/fw.dart';
 
 class WorldView extends StatelessWidget {
   final WorldDoc? world;
+  final bool alive;
 
-  const WorldView({super.key, this.world});
+  const WorldView({super.key, this.world, required this.alive});
 
   @override
   Widget build(BuildContext context) {
-    if (world == null) {
-      return const Center(child: CircularProgressIndicator());
+    if (!alive) {
+      return const FwEmpty(
+          'The engine is offline. The projected world appears when it runs.',
+          command: 'flywheel up');
     }
-    final spine = world!.spine;
-    return ListView(
-      padding: const EdgeInsets.all(24),
+    if (world == null) {
+      return const Center(child: CircularProgressIndicator(strokeWidth: 2));
+    }
+    final w = world!;
+    final t = context.fw;
+    final items = (w.findings['items'] is List)
+        ? List<Map<String, dynamic>>.from(
+            (w.findings['items'] as List).whereType<Map<String, dynamic>>())
+        : <Map<String, dynamic>>[];
+    return ViewScroll(
       children: [
-        // Root hash card — the prominent receipt
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(20),
+        const SectionHeader('World', kicker: 'the projected state'),
+        const SizedBox(height: FwLayout.s4),
+        _rootCard(context, w),
+        const SizedBox(height: FwLayout.s3),
+        Row(
+          children: [
+            Expanded(
+                child: StatTile(
+                    label: 'measured',
+                    value: '${w.findings['measured'] ?? 0}',
+                    status: 'verified')),
+            const SizedBox(width: FwLayout.s3),
+            Expanded(
+                child: StatTile(
+                    label: 'pending',
+                    value: '${w.findings['pending'] ?? 0}',
+                    status: 'pending')),
+            const SizedBox(width: FwLayout.s3),
+            Expanded(
+                child: StatTile(
+                    label: 'spine',
+                    value: (w.spine?.closed ?? false) ? 'closed' : 'open',
+                    status:
+                        (w.spine?.closed ?? false) ? 'verified' : 'missing')),
+          ],
+        ),
+        if (items.isNotEmpty) ...[
+          const SizedBox(height: FwLayout.s5),
+          Row(children: [
+            const Kicker('findings', hot: true),
+            const SizedBox(width: FwLayout.s3),
+            Expanded(child: _FindingsStrip(items: items)),
+          ]),
+          const SizedBox(height: FwLayout.s3),
+          HairlineCard(
+            padding: const EdgeInsets.symmetric(
+                horizontal: FwLayout.s4, vertical: FwLayout.s2),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(children: [
-                  Icon(Icons.fingerprint,
-                      color: FlywheelColors.match, size: 18),
-                  const SizedBox(width: 8),
-                  Text('Projected World',
-                      style: Theme.of(context).textTheme.titleLarge),
-                ]),
-                const SizedBox(height: 12),
-                _hashRow('root_hash', world!.rootHash),
-                if (world!.merkleRoot != null)
-                  _hashRow('merkle_root', world!.merkleRoot!),
-                const SizedBox(height: 8),
-                Text(world!.schema,
-                    style: Theme.of(context).textTheme.labelSmall),
+                for (final f in items) _findingRow(context, f),
               ],
             ),
           ),
-        ),
-        const SizedBox(height: 16),
-        // Spine
-        if (spine != null) ...[
-          Text('Spine — reconciler: ${spine.reconciler}',
-              style: Theme.of(context).textTheme.titleMedium),
-          const SizedBox(height: 8),
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                children: [
-                  _spineRow(context, 'closed',
-                      spine.closed ? 'CLOSED' : 'OPEN',
-                      spine.closed ? FlywheelColors.match : FlywheelColors.missing),
-                  const Divider(),
-                  ...spine.organs.entries.map((e) => _spineRow(
-                      context, e.key, '${e.value} → ${spine.routes[e.value] ?? e.value}',
-                      FlywheelColors.drift)),
-                ],
-              ),
+        ],
+        if (w.spine != null) ...[
+          const SizedBox(height: FwLayout.s5),
+          Kicker('spine · reconciler: ${w.spine!.reconciler}'),
+          const SizedBox(height: FwLayout.s3),
+          HairlineCard(
+            padding: const EdgeInsets.symmetric(
+                horizontal: FwLayout.s4, vertical: FwLayout.s3),
+            child: Column(
+              children: [
+                for (final e in w.spine!.organs.entries)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 3),
+                    child: Row(
+                      children: [
+                        SizedBox(
+                            width: 130,
+                            child: Text(e.key,
+                                style: fwMono(t,
+                                    size: 11.5, color: t.inkFaint))),
+                        Expanded(
+                          child: Text(
+                              '${e.value} → ${w.spine!.routes[e.value] ?? e.value}',
+                              style: fwMono(t, size: 12)),
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
             ),
           ),
         ],
-        const SizedBox(height: 16),
-        // Findings summary
-        if (world!.findings.isNotEmpty) ...[
-          Text('Findings', style: Theme.of(context).textTheme.titleMedium),
-          const SizedBox(height: 8),
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                children: [
-                  _spineRow(context, 'measured',
-                      '${world!.findings['measured'] ?? '?'}',
-                      FlywheelColors.match),
-                  _spineRow(context, 'pending',
-                      '${world!.findings['pending'] ?? '?'}',
-                      FlywheelColors.unverifiable),
-                ],
-              ),
-            ),
-          ),
-        ],
-        // Cursor
-        if (world!.cursor.isNotEmpty && world!.cursor['present'] == true) ...[
-          const SizedBox(height: 16),
-          Text('Cursor', style: Theme.of(context).textTheme.titleMedium),
-          const SizedBox(height: 8),
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Text(
-                '${world!.cursor['top_section'] ?? '(unknown)'}\n'
-                'updated: ${world!.cursor['last_updated'] ?? '?'}',
-                style: Theme.of(context).textTheme.bodyMedium,
-              ),
+        if (w.cursor['present'] == true) ...[
+          const SizedBox(height: FwLayout.s5),
+          const Kicker('cursor'),
+          const SizedBox(height: FwLayout.s3),
+          HairlineCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('${w.cursor['top_section'] ?? '(unknown)'}',
+                    style: Theme.of(context).textTheme.bodyMedium),
+                const SizedBox(height: FwLayout.s1),
+                Text('updated ${w.cursor['last_updated'] ?? '?'}',
+                    style: fwMono(t, size: 11, color: t.inkFaint)),
+              ],
             ),
           ),
         ],
@@ -109,32 +129,107 @@ class WorldView extends StatelessWidget {
     );
   }
 
-  Widget _hashRow(String label, String hash) {
-    final short = hash.length > 24 ? '${hash.substring(0, 24)}…' : hash;
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
+  Widget _rootCard(BuildContext context, WorldDoc w) {
+    final t = context.fw;
+    return HairlineCard(
+      padding: const EdgeInsets.all(FwLayout.s5),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('$label  ', style: const TextStyle(fontFamily: 'monospace', fontSize: 12)),
-          SelectableText(short,
-              style: const TextStyle(fontFamily: 'monospace', fontSize: 13, fontWeight: FontWeight.w600)),
+          Text('Projected world',
+              style: Theme.of(context).textTheme.titleLarge),
+          const SizedBox(height: FwLayout.s3),
+          HashText('root_hash', w.rootHash, keep: 40),
+          if (w.merkleRoot != null) ...[
+            const SizedBox(height: FwLayout.s1),
+            HashText('merkle_root', w.merkleRoot!, keep: 40),
+          ],
+          const SizedBox(height: FwLayout.s3),
+          Text(
+              'Recomputed on every read. Tamper any cataloged receipt and '
+              'this hash moves.',
+              style: TextStyle(fontSize: 12, color: t.inkMuted)),
+          const SizedBox(height: FwLayout.s2),
+          Text(w.schema, style: fwMono(t, size: 10.5, color: t.inkFaint)),
         ],
       ),
     );
   }
 
-  Widget _spineRow(BuildContext context, String label, String value, Color color) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 3),
+  Widget _findingRow(BuildContext context, Map<String, dynamic> f) {
+    final t = context.fw;
+    final status = '${f['status'] ?? 'pending'}';
+    final verdict = status == 'measured' ? 'verified' : 'pending';
+    final sha = f['source_sha256'];
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: FwLayout.s2 + 2),
+      decoration: BoxDecoration(
+          border: Border(bottom: BorderSide(color: t.hairline))),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label.padRight(12),
-              style: TextStyle(
-                  fontFamily: 'monospace', fontSize: 12, color: color)),
-          const SizedBox(width: 8),
-          Expanded(child: Text(value, style: TextStyle(fontSize: 13, color: color))),
+          Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: VerdictDot(verdict, size: 7),
+          ),
+          const SizedBox(width: FwLayout.s3),
+          SizedBox(
+            width: 170,
+            child: Text('${f['key'] ?? ''}',
+                style: fwMono(t, size: 11.5, color: t.inkSoft)),
+          ),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                    f['value'] != null
+                        ? '${f['value']}'
+                        : '${f['claim'] ?? ''} (pending)',
+                    style: TextStyle(fontSize: 12.5, color: t.inkSoft)),
+                if ('${f['bounds'] ?? ''}'.isNotEmpty)
+                  Text('${f['bounds']}',
+                      style: TextStyle(fontSize: 11, color: t.inkFaint)),
+              ],
+            ),
+          ),
+          const SizedBox(width: FwLayout.s3),
+          if (sha is String && sha.isNotEmpty)
+            Text(sha.length > 12 ? sha.substring(0, 12) : sha,
+                style: fwMono(t, size: 10.5, color: t.inkFaint)),
         ],
       ),
+    );
+  }
+}
+
+/// The findings strip: one square per finding, verdict-tinted. A chart in
+/// the same hairline language as everything else.
+class _FindingsStrip extends StatelessWidget {
+  final List<Map<String, dynamic>> items;
+  const _FindingsStrip({required this.items});
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.fw;
+    return Wrap(
+      spacing: 3,
+      runSpacing: 3,
+      children: [
+        for (final f in items)
+          Container(
+            width: 14,
+            height: 14,
+            decoration: BoxDecoration(
+              color: (f['status'] == 'measured'
+                      ? t.verified
+                      : t.unverifiable)
+                  .withValues(alpha: f['status'] == 'measured' ? 0.75 : 0.35),
+              borderRadius: BorderRadius.circular(3),
+              border: Border.all(color: t.line, width: 0.5),
+            ),
+          ),
+      ],
     );
   }
 }

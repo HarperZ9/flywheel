@@ -127,6 +127,12 @@ class GatewayClient {
     return _decode(r);
   }
 
+  /// GET /api/receipts — the receipts ledger (catalog + proof envelopes).
+  Future<ReceiptsLedger> receipts() async {
+    final r = await _http.get(Uri.parse('$baseUrl/api/receipts'));
+    return ReceiptsLedger.fromJson(_decode(r));
+  }
+
   /// GET /api/training/status — read-only 32B training lane status.
   Future<Map<String, dynamic>> trainingStatus() async {
     final r = await _http.get(Uri.parse('$baseUrl/api/training/status'));

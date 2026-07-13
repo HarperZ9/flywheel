@@ -14,6 +14,7 @@ class Lane {
   final String organ;
   final String role;
   final String detail;
+  final int? tools; // MCP tool count, present only after a real probe
 
   Lane({
     required this.name,
@@ -24,6 +25,7 @@ class Lane {
     required this.organ,
     required this.role,
     required this.detail,
+    this.tools,
   });
 
   factory Lane.fromJson(Map<String, dynamic> j) => Lane(
@@ -35,6 +37,7 @@ class Lane {
         organ: j['organ'] ?? '',
         role: j['role'] ?? '',
         detail: j['detail'] ?? '',
+        tools: j['tools'] is int ? j['tools'] : null,
       );
 
   bool get isLive => status == 'live';
@@ -149,6 +152,79 @@ class CompanionResult {
       );
 
   bool get escalated => source == 'escalate';
+}
+
+/// One in-repo catalog receipt (GET /api/receipts).
+class CatalogReceipt {
+  final String path;
+  final String sha256;
+  final int? size;
+  final bool present;
+
+  CatalogReceipt(
+      {required this.path,
+      required this.sha256,
+      this.size,
+      required this.present});
+
+  factory CatalogReceipt.fromJson(Map<String, dynamic> j) => CatalogReceipt(
+        path: j['path'] ?? '',
+        sha256: j['sha256'] ?? '',
+        size: j['size'],
+        present: j['present'] ?? false,
+      );
+}
+
+/// One accepted proof envelope (GET /api/receipts).
+class EnvelopeReceipt {
+  final String name;
+  final String verdict; // PASS | FAIL | UNREADABLE | ?
+  final String taskId;
+  final String sha256;
+  final int? size;
+
+  EnvelopeReceipt(
+      {required this.name,
+      required this.verdict,
+      required this.taskId,
+      required this.sha256,
+      this.size});
+
+  factory EnvelopeReceipt.fromJson(Map<String, dynamic> j) => EnvelopeReceipt(
+        name: j['name'] ?? '',
+        verdict: j['verdict'] ?? '?',
+        taskId: j['task_id'] ?? '',
+        sha256: j['sha256'] ?? '',
+        size: j['size'],
+      );
+}
+
+/// The receipts ledger (GET /api/receipts).
+class ReceiptsLedger {
+  final List<CatalogReceipt> catalog;
+  final int catalogPresent;
+  final List<EnvelopeReceipt> envelopes;
+  final int envelopeCount;
+  final int passCount;
+
+  ReceiptsLedger(
+      {required this.catalog,
+      required this.catalogPresent,
+      required this.envelopes,
+      required this.envelopeCount,
+      required this.passCount});
+
+  factory ReceiptsLedger.fromJson(Map<String, dynamic> j) => ReceiptsLedger(
+        catalog: ((j['catalog'] ?? []) as List)
+            .map((e) => CatalogReceipt.fromJson(e as Map<String, dynamic>))
+            .toList(),
+        catalogPresent: j['catalog_present'] ?? 0,
+        envelopes: ((j['envelopes'] ?? []) as List)
+            .map((e) => EnvelopeReceipt.fromJson(e as Map<String, dynamic>))
+            .toList(),
+        envelopeCount: j['envelope_count'] ?? 0,
+        passCount: j['pass_count'] ?? 0,
+      );
 }
 
 /// A provider endpoint row (GET /api/endpoints).
