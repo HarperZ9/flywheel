@@ -1006,6 +1006,26 @@ class _Handler(BaseHTTPRequestHandler):
             from harness.plugins import remove_mcp
             out = remove_mcp(req.get("name", ""))
             return self._json(out, 400 if "error" in out else 200)
+        if p == "/api/lsp":                            # editor intelligence over any LSP server
+            length = self._content_length()
+            if length is None:
+                return self._json({"error": "invalid or oversized Content-Length"}, 400)
+            try:
+                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
+            except Exception:
+                req = {}
+            root, err = _resolve_workspace_root(req.get("root"), self.root)
+            if err:
+                return self._json({"error": err}, 400)
+            from harness.lsp_bridge import lsp_query
+            out = lsp_query(
+                req.get("command", []), str(root),
+                (req.get("file") or "").strip(), req.get("text") or "",
+                (req.get("language_id") or "plaintext").strip(),
+                (req.get("method") or "definition").strip(),
+                int(req.get("line", 0) or 0),
+                int(req.get("character", 0) or 0))
+            return self._json(out, 400 if "error" in out else 200)
         if p == "/api/memory/note":                    # durable content-addressed note
             length = self._content_length()
             if length is None:
