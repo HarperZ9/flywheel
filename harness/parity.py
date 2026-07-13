@@ -102,9 +102,13 @@ ROWS = [
                    ("route", "/api/marketplace"),
                    ("test", "tests/test_marketplace.py")],
      "codex": True, "cursor": True, "claude-code": True},
-    {"key": "oauth-keychain",
-     "desc": "per-provider OAuth with OS-keychain storage",
-     "witnesses": [("module", "harness/oauth.py")],
+    {"key": "secure-credentials",
+     "desc": "provider secrets in the OS keychain (presence-only everywhere "
+             "else) plus reuse of provider CLI logins; first-party account "
+             "OAuth does not apply to a bring-your-own-provider tool",
+     "witnesses": [("module", "harness/keychain.py"),
+                   ("route", "/api/keychain"),
+                   ("test", "tests/test_keychain.py")],
      "codex": True, "cursor": True, "claude-code": True},
 ]
 
