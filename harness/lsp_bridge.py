@@ -35,6 +35,9 @@ class LSPBridge:
         self._next_id = 0
         self._lock = threading.Lock()
         self._versions: dict = {}
+        # uri -> latest published diagnostics; filled from notifications the
+        # server sends between our request/response pairs.
+        self.diagnostics: dict = {}
         try:
             self._proc = subprocess.Popen(
                 self.command, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
@@ -82,6 +85,11 @@ class LSPBridge:
             try:
                 while True:
                     msg = self._read_message()
+                    if msg.get("method") == "textDocument/publishDiagnostics":
+                        params = msg.get("params") or {}
+                        self.diagnostics[params.get("uri", "")] = \
+                            params.get("diagnostics", [])
+                        continue
                     if msg.get("id") == rid:
                         if "error" in msg:
                             raise LSPError(str(msg["error"]))
@@ -138,6 +146,17 @@ _BRIDGES: dict = {}
 _BRIDGES_LOCK = threading.Lock()
 
 
+def get_bridge(command: list, root: str) -> "LSPBridge":
+    """The shared (command, root) bridge, started on first use."""
+    key = (tuple(command), str(Path(root).resolve()))
+    with _BRIDGES_LOCK:
+        bridge = _BRIDGES.get(key)
+        if bridge is None or not bridge.alive():
+            bridge = LSPBridge(command, root)
+            _BRIDGES[key] = bridge
+        return bridge
+
+
 def lsp_query(command: list, root: str, file: str, text: str,
               language_id: str, method: str, line: int, character: int) -> dict:
     """One editor query: reuse (or start) the server for (command, root),
@@ -146,13 +165,8 @@ def lsp_query(command: list, root: str, file: str, text: str,
         return {"error": "provide the language server 'command' as argv"}
     if not Path(root).is_dir():
         return {"error": f"root is not an existing directory: {root}"}
-    key = (tuple(command), str(Path(root).resolve()))
     try:
-        with _BRIDGES_LOCK:
-            bridge = _BRIDGES.get(key)
-            if bridge is None or not bridge.alive():
-                bridge = LSPBridge(command, root)
-                _BRIDGES[key] = bridge
+        bridge = get_bridge(command, root)
         bridge.sync_buffer(file, text, language_id)
         result = bridge.query(method, file, line, character)
         return {"schema": "flywheel.lsp/v1", "method": method,

@@ -38,14 +38,31 @@ while True:
         send({"jsonrpc": "2.0", "id": msg["id"],
               "result": {"capabilities": {"definitionProvider": True}}})
     elif method == "textDocument/didOpen":
-        opened[msg["params"]["textDocument"]["uri"]] = \
-            msg["params"]["textDocument"]["text"]
+        uri = msg["params"]["textDocument"]["uri"]
+        opened[uri] = msg["params"]["textDocument"]["text"]
+        # Publish one diagnostic for any buffer containing "broken".
+        diags = ([{"range": {"start": {"line": 0, "character": 0},
+                             "end": {"line": 0, "character": 6}},
+                   "severity": 1, "message": "fake: broken symbol"}]
+                 if "broken" in opened[uri] else [])
+        send({"jsonrpc": "2.0", "method": "textDocument/publishDiagnostics",
+              "params": {"uri": uri, "diagnostics": diags}})
     elif method == "textDocument/definition":
         uri = msg["params"]["textDocument"]["uri"]
         send({"jsonrpc": "2.0", "id": msg["id"],
               "result": [{"uri": uri,
                           "range": {"start": {"line": 2, "character": 4},
                                     "end": {"line": 2, "character": 9}}}]})
+    elif method == "textDocument/references":
+        uri = msg["params"]["textDocument"]["uri"]
+        send({"jsonrpc": "2.0", "id": msg["id"],
+              "result": [
+                  {"uri": uri,
+                   "range": {"start": {"line": 1, "character": 0},
+                             "end": {"line": 1, "character": 5}}},
+                  {"uri": uri,
+                   "range": {"start": {"line": 4, "character": 2},
+                             "end": {"line": 4, "character": 7}}}]})
     elif method == "textDocument/hover":
         send({"jsonrpc": "2.0", "id": msg["id"],
               "result": {"contents": {"kind": "plaintext",

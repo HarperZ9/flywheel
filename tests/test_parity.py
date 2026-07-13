@@ -19,7 +19,7 @@ def test_shipped_capabilities_are_witnessed():
 def test_known_gaps_stay_visible_as_absent():
     doc = parity.parity_matrix()
     by_key = {r["key"]: r for r in doc["rows"]}
-    for key in ("lsp-diagnostics-references", "oauth-keychain"):
+    for key in ("oauth-keychain",):
         assert by_key[key]["flywheel"] == "ABSENT", key
         assert key in doc["summary"]["gaps"]
 
