@@ -14,13 +14,31 @@ read the receipts. No browser, no terminal.
 - **Receipts** — the ledger of re-checkable artifacts: the in-repo catalog,
   re-hashed on every read, and the proof envelopes written when verified work
   is accepted. No receipt, no accept.
+- **Code** — an IDE lane: open any folder, edit with highlighting and Ctrl+S,
+  and put the agent to work on the workspace itself. Large and binary files
+  open read-only and say so.
 - **Companion** — ask once, the seat answers from the cheapest honest source.
   Verified and cached answers carry a verified chip; agreement without proof
   is labeled consensus; hard prompts escalate with the failed local attempt on
   record. The chip never lies.
+- **Agent** — the gated, witnessed tool loop over any endpoint. Older model
+  generations inherit the same loop, gates, ledger, and integrity verdict as
+  the newest; write and exec stay off until you grant them.
+- **Workflows** — staged runs (plan, apply, verify; draft, critique) shaped by
+  profile manifests (code, design, work, cowork), over any endpoint, each run
+  folded into one chained receipt. Verification without an exec grant reports
+  UNVERIFIABLE instead of pretending.
+- **Studio** — creation with provenance: seeded generative plates (the seed is
+  recorded on the mark), the loop schematic drawn from live state, and honest
+  nulls for what is not shipped yet.
+- **Graph** — the platform composition drawn live: lanes on the inner ring
+  colored by verdict, the wider family outside.
+- **Memory** — durable, content-addressed memory: notes and folded spans with
+  verbatim recall, the span hash as provenance.
 - **Endpoints** — the universal router roster. Local tiers are probed live;
   hosted providers show credential presence only (the env var name, never a
-  value); the scoreboard shows observed routing outcomes, not promises.
+  value); the scoreboard shows observed routing outcomes, not promises. The
+  read-only training card reports the local run as it is.
 
 ## Run it
 
