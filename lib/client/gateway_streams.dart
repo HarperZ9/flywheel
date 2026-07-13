@@ -59,6 +59,12 @@ extension GatewayStreamsAndPlugins on GatewayClient {
     return _decode(r);
   }
 
+  /// GET /api/parity — the capability matrix, audited at read time.
+  Future<Map<String, dynamic>> parity() async {
+    final r = await _http.get(Uri.parse('$baseUrl/api/parity'));
+    return _decode(r);
+  }
+
   /// GET /api/plugins/probe — spawn a plugin's server, report its real tools.
   Future<Map<String, dynamic>> probePlugin(String name) async {
     final r = await _http.get(Uri.parse(

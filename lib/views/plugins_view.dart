@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import '../client/gateway_client.dart';
 import '../theme/flywheel_theme.dart';
 import '../widgets/fw.dart';
+import '../widgets/parity_table.dart';
 
 class PluginsView extends StatefulWidget {
   final GatewayClient client;
@@ -24,6 +25,7 @@ class _PluginsViewState extends State<PluginsView> {
   List<Map<String, dynamic>> _plugins = [];
   final Map<String, Map<String, dynamic>> _probes = {};
   final Set<String> _probing = {};
+  Map<String, dynamic>? _parity;
   String? _error;
 
   @override
@@ -48,12 +50,14 @@ class _PluginsViewState extends State<PluginsView> {
   Future<void> _load() async {
     if (!widget.alive) return;
     try {
-      final doc = await widget.client.plugins();
+      final results =
+          await Future.wait([widget.client.plugins(), widget.client.parity()]);
       if (mounted) {
         setState(() {
-          _plugins = ((doc['plugins'] ?? []) as List)
+          _plugins = ((results[0]['plugins'] ?? []) as List)
               .whereType<Map<String, dynamic>>()
               .toList();
+          _parity = results[1];
           _error = null;
         });
       }
@@ -121,6 +125,12 @@ class _PluginsViewState extends State<PluginsView> {
         const Kicker('register an mcp server', hot: true),
         const SizedBox(height: FwLayout.s3),
         _registerForm(context),
+        if (_parity != null) ...[
+          const SizedBox(height: FwLayout.s5),
+          const Kicker('parity · audited here, declared there'),
+          const SizedBox(height: FwLayout.s3),
+          ParityTable(doc: _parity!),
+        ],
       ],
     );
   }
