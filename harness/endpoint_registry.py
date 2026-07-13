@@ -66,7 +66,12 @@ def _credential(key_env: str, *, local: bool, kind: str = "") -> str:
         return "local-none"
     if kind == "cli":
         return "cli-auth"
-    return "present" if os.environ.get(key_env or "") else "absent"
+    try:
+        from .keychain import resolve_credential
+        present = bool(resolve_credential(key_env or ""))
+    except Exception:
+        present = bool(os.environ.get(key_env or ""))
+    return "present" if present else "absent"
 
 
 def _host(url: str) -> str:

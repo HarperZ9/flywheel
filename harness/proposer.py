@@ -85,7 +85,11 @@ class EnterpriseProposer:
 
     def generate(self, prompt: str, *, seed: int, temperature: float,
                  max_new_tokens: int, system: str = "") -> ProposerOutput:
-        key = os.environ.get(self.api_key_env, "")
+        try:
+            from .keychain import resolve_credential
+            key = resolve_credential(self.api_key_env)
+        except Exception:
+            key = os.environ.get(self.api_key_env, "")
         msgs = ([{"role": "system", "content": system}] if system else []) \
             + [{"role": "user", "content": prompt}]
         body = json.dumps({

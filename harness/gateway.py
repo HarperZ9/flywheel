@@ -46,6 +46,16 @@ if str(REPO) not in sys.path:
 
 from harness.run_paths import run_root_default
 
+
+def _resolve_credential(key_env: str) -> str:
+    """Env first, OS keychain second; '' when neither. Import is lazy so a
+    stripped deployment without keychain.py still serves env-only."""
+    try:
+        from harness.keychain import resolve_credential
+        return resolve_credential(key_env)
+    except Exception:
+        return os.environ.get(key_env or "", "")
+
 # Receipt catalog: in-repo, re-checkable artifacts that define the world state.
 # Relative to the served root. Missing files are reported honestly as absent.
 RECEIPT_CATALOG = (
@@ -99,7 +109,7 @@ def endpoint_roster(serve_url: str, ollama_url: str) -> dict:
         key_env = spec.get("key", "")
         enterprise.append({
             "name": name, "tier": "enterprise", "model": spec.get("model", ""),
-            "credential_present": bool(key_env and os.environ.get(key_env)),
+            "credential_present": bool(key_env and _resolve_credential(key_env)),
             "key_env": key_env,   # the NAME only, never the value
         })
     healthy_local = sum(1 for e in local if e["healthy"])
@@ -454,7 +464,7 @@ def openai_embeddings(req: dict):
     if spec is None or getattr(spec, "local", False):
         return {"error": {"message": f"no hosted embeddings provider '{name}'; "
                           "name one from GET /api/endpoints", "type": "invalid_request_error"}}, 400
-    key = os.environ.get(spec.api_key_env or "", "")
+    key = _resolve_credential(spec.api_key_env or "")
     if spec.api_key_env and not key:
         return {"error": {"message": f"missing credential for '{name}'",
                           "type": "invalid_request_error"}}, 400
@@ -795,6 +805,21 @@ class _Handler(BaseHTTPRequestHandler):
         if p == "/api/marketplace":                  # curated catalog over the plugin registry
             from harness.marketplace import marketplace_catalog
             return self._json(marketplace_catalog())
+        if p == "/api/keychain":                     # credential names + presence, never values
+            from harness.keychain import credential_source, keychain_available
+            try:
+                from harness.endpoints import PROVIDERS
+            except Exception:
+                PROVIDERS = {}
+            names = sorted({s.get("key", "") for s in PROVIDERS.values()
+                            if s.get("key")})
+            return self._json({
+                "schema": "flywheel.keychain/v1",
+                "available": keychain_available(),
+                "entries": [{"name": n, "source": credential_source(n)}
+                            for n in names],
+                "note": "presence and source only; values never leave "
+                        "resolution inside a routed call"})
         if p == "/api/plugins/probe":                # spawn a plugin's server, report its real tools
             from harness.plugins import probe_plugin
             name = ""
@@ -972,6 +997,31 @@ class _Handler(BaseHTTPRequestHandler):
             from harness.plugins import register_mcp
             out = register_mcp(req.get("name", ""), req.get("command", []),
                                (req.get("detail") or "").strip())
+            return self._json(out, 400 if "error" in out else 200)
+        if p == "/api/keychain/set":                   # store a secret in the OS keychain
+            length = self._content_length()
+            if length is None:
+                return self._json({"error": "invalid or oversized Content-Length"}, 400)
+            try:
+                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
+            except Exception:
+                req = {}
+            from harness.keychain import keychain_set
+            out = keychain_set((req.get("name") or "").strip(),
+                               req.get("value") or "")
+            # The secret is now only in the OS store; nothing here logs or
+            # echoes it, and `req` goes out of scope with this request.
+            return self._json(out, 400 if "error" in out else 200)
+        if p == "/api/keychain/delete":                # remove a stored secret
+            length = self._content_length()
+            if length is None:
+                return self._json({"error": "invalid or oversized Content-Length"}, 400)
+            try:
+                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
+            except Exception:
+                req = {}
+            from harness.keychain import keychain_delete
+            out = keychain_delete((req.get("name") or "").strip())
             return self._json(out, 400 if "error" in out else 200)
         if p == "/api/marketplace/install":            # catalog entry -> plugin registry
             length = self._content_length()
