@@ -1,0 +1,152 @@
+// gateway_client.dart — the typed HTTP client for the Flywheel Python gateway.
+//
+// The Flutter desktop app is a native CLIENT for the gateway API. The gateway
+// (harness/gateway.py, started by `flywheel up`) runs on 127.0.0.1:8799 and
+// exposes every route the UI needs as same-origin localhost JSON. This client
+// wraps those routes with typed Dart methods so the UI layers never touch raw
+// JSON or HTTP.
+//
+// The gateway is the backend; Flutter is the frontend. The verified-loop,
+// receipts, lanes, and corpus-export stay in Python — this client only reads
+// and posts to the API.
+
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+
+import '../models/gateway_models.dart';
+
+class GatewayClient {
+  final String baseUrl;
+  final http.Client _http;
+
+  GatewayClient({this.baseUrl = 'http://127.0.0.1:8799', http.Client? httpClient})
+      : _http = httpClient ?? http.Client();
+
+  /// True if the gateway is reachable (the gateway serves /api/world on GET).
+  Future<bool> isAlive({Duration timeout = const Duration(seconds: 2)}) async {
+    try {
+      final r = await _http
+          .get(Uri.parse('$baseUrl/api/world'))
+          .timeout(timeout);
+      return r.statusCode == 200;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// GET /api/lanes — the lane roster (7 lanes, live/declared/missing).
+  Future<LaneRoster> laneRoster({bool probe = false}) async {
+    final r = await _http.get(
+      Uri.parse('$baseUrl/api/lanes${probe ? '?probe=true' : ''}'),
+    );
+    return LaneRoster.fromJson(_decode(r));
+  }
+
+  /// GET /api/world — the projected world (spine + root hash + findings + cursor).
+  Future<WorldDoc> projectedWorld() async {
+    final r = await _http.get(Uri.parse('$baseUrl/api/world'));
+    return WorldDoc.fromJson(_decode(r));
+  }
+
+  /// GET /api/endpoints — the universal router roster (credential presence).
+  Future<List<EndpointRow>> endpointRoster() async {
+    final r = await _http.get(Uri.parse('$baseUrl/api/endpoints'));
+    final body = _decode(r);
+    // The roster may be {rows: [...]} or {endpoints: [...]}.
+    final rows = body['rows'] ?? body['endpoints'] ?? [];
+    if (rows is! List) return [];
+    return rows
+        .map((e) => EndpointRow.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  /// GET /api/endpoints/health — live health probe of local tiers.
+  Future<Map<String, dynamic>> endpointHealth() async {
+    final r = await _http.get(Uri.parse('$baseUrl/api/endpoints/health'));
+    return _decode(r);
+  }
+
+  /// GET /api/router/stats — observed per-provider success rate + cost.
+  Future<Map<String, dynamic>> routerStats() async {
+    final r = await _http.get(Uri.parse('$baseUrl/api/router/stats'));
+    return _decode(r);
+  }
+
+  /// POST /api/companion — answer locally, escalate the hard slice.
+  Future<CompanionResult> companion(String prompt, {String? solutionSig}) async {
+    final r = await _http.post(
+      Uri.parse('$baseUrl/api/companion'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'prompt': prompt,
+        if (solutionSig != null) 'solution_sig': solutionSig,
+      }),
+    );
+    return CompanionResult.fromJson(_decode(r));
+  }
+
+  /// POST /api/route — route a prompt to a named provider, get a receipt.
+  Future<Map<String, dynamic>> route(String prompt, String endpoint) async {
+    final r = await _http.post(
+      Uri.parse('$baseUrl/api/route'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'prompt': prompt, 'endpoint': endpoint}),
+    );
+    return _decode(r);
+  }
+
+  /// POST /api/forge — turn a plain goal into a structured prompt with gates.
+  Future<Map<String, dynamic>> forge(String goal,
+      {String? context, List<String>? examples}) async {
+    final r = await _http.post(
+      Uri.parse('$baseUrl/api/forge'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'goal': goal,
+        if (context != null) 'context': context,
+        if (examples != null) 'examples': examples,
+      }),
+    );
+    return _decode(r);
+  }
+
+  /// POST /api/agent — run a gated, witnessed tool loop (non-streaming).
+  Future<Map<String, dynamic>> agent(String goal, String endpoint,
+      {int maxSteps = 6, bool allowWrite = false, bool allowExec = false}) async {
+    final r = await _http.post(
+      Uri.parse('$baseUrl/api/agent'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'goal': goal,
+        'endpoint': endpoint,
+        'max_steps': maxSteps,
+        'allow_write': allowWrite,
+        'allow_exec': allowExec,
+      }),
+    );
+    return _decode(r);
+  }
+
+  /// GET /api/training/status — read-only 32B training lane status.
+  Future<Map<String, dynamic>> trainingStatus() async {
+    final r = await _http.get(Uri.parse('$baseUrl/api/training/status'));
+    return _decode(r);
+  }
+
+  Map<String, dynamic> _decode(http.Response r) {
+    if (r.statusCode != 200) {
+      throw GatewayException(
+          'gateway returned ${r.statusCode}: ${r.body.substring(0, r.body.length.clamp(0, 200))}');
+    }
+    return jsonDecode(r.body) as Map<String, dynamic>;
+  }
+
+  void close() => _http.close();
+}
+
+class GatewayException implements Exception {
+  final String message;
+  GatewayException(this.message);
+  @override
+  String toString() => 'GatewayException: $message';
+}

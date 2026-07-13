@@ -1,0 +1,22 @@
+name: flywheel_desktop
+description: "Flywheel Desktop — the native surface for the one platform: routing, verification, lanes, the closed loop, and the projected world."
+publish_to: "none"
+version: 0.1.0+1
+
+environment:
+  sdk: ^3.6.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+  http: ^1.2.0
+  crypto: ^3.0.5
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true
