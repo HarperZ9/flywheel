@@ -35,6 +35,10 @@ class ProofEnvelope:
     injected_context: dict | None = None
     admission: dict | None = None
     chain: list[dict] = field(default_factory=list)
+    # offset-bound citations: each is a byte range of a frozen source,
+    # {source_sha256, start_byte, end_byte, quote_sha256}; verified by
+    # re-slicing the source (verify_citations below)
+    citations: list[dict] = field(default_factory=list)
 
     def to_json(self) -> str:
         return json.dumps(asdict(self), indent=2, sort_keys=True)
@@ -86,6 +90,35 @@ class ProofEnvelope:
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(self.to_json(), encoding="utf-8")
         return path
+
+
+def verify_citations(citations: list, resolve) -> dict:
+    """Re-check offset-bound citations. `resolve(source_sha256)` returns
+    the frozen source bytes or None. Verified means the byte slice hashes
+    to the quote; drift means it does not (including out-of-range
+    offsets); unverifiable means the source could not be resolved. Only
+    all-verified counts as verified overall."""
+    verdicts = []
+    for c in citations or []:
+        src = resolve(str(c.get("source_sha256", "")))
+        if src is None:
+            verdicts.append({**c, "verdict": "unverifiable",
+                             "reason": "source not resolvable"})
+            continue
+        try:
+            start, end = int(c["start_byte"]), int(c["end_byte"])
+        except (KeyError, TypeError, ValueError):
+            verdicts.append({**c, "verdict": "drift",
+                             "reason": "missing or non-integer offsets"})
+            continue
+        piece = src[start:end]
+        ok = (0 <= start < end <= len(src)
+              and hashlib.sha256(piece).hexdigest()
+              == str(c.get("quote_sha256", "")))
+        verdicts.append({**c, "verdict": "verified" if ok else "drift"})
+    return {"schema": "flywheel.citations/v1", "verdicts": verdicts,
+            "all_verified": bool(verdicts) and all(
+                v["verdict"] == "verified" for v in verdicts)}
 
 
 def load_envelope(path: str | Path) -> ProofEnvelope:
