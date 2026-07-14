@@ -965,6 +965,31 @@ class _Handler(BaseHTTPRequestHandler):
                 question, claims=claims, measurements=measurements,
                 max_sources=max_sources,
                 workdir=_P(self.run_root) / "science"))
+        if p == "/api/attest":                        # ownership made checkable: sign-off bound to the walk
+            length = self._content_length()
+            if length is None:
+                return self._json({"error": "invalid or oversized Content-Length"}, 400)
+            try:
+                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
+            except Exception:
+                req = {}
+            run = req.get("run") if isinstance(req.get("run"), dict) else None
+            files = req.get("reviewed_files")
+            if run is None or not isinstance(files, list):
+                return self._json({"error": "provide 'run' (an agent run doc) "
+                                            "and 'reviewed_files' (a list)"}, 400)
+            from harness.attestation import attest
+            doc = attest(run, files, note=str(req.get("note", "")),
+                         reviewer=str(req.get("reviewer", "")))
+            try:
+                from harness.store import put_entity
+                stored = put_entity("attestation", doc,
+                                    project=str(req.get("project", "")))
+                doc["stored"] = stored.get("eid", "")
+                doc["store_chain_hash"] = stored.get("chain_hash", "")
+            except Exception as e:                    # storing must not void the attestation
+                doc["stored"] = f"store unavailable: {type(e).__name__}"
+            return self._json(doc)
         if p == "/api/route":                         # universal router: send to ANY provider, with a receipt
             length = self._content_length()
             if length is None:
