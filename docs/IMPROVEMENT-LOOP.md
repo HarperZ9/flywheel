@@ -81,6 +81,17 @@ completes.
 Also this cycle: the forecaster point-bias correction the replication demanded
 (empirical-Bayes shrinkage), validated honestly on the real vectors.
 
+**Cycle 2 execution: 17 findings, HIGH and MEDIUM tiers shipped.** The two
+HIGH struck the subsystem's core invariants: apply_patch bypassed the
+reward-hacking accept gate (tenet 2, a model could game its own green), and
+the HMAC tool-authenticity receipt was dead code in every production path
+(tenet 3). Both fixed across every caller (`2ee4f5c`). MEDIUM: rescue witness,
+timeout naming, run-review gated verification (`9e179f4`); workspace state
+chained into the ledger, per-edit content hash (`c2m2`); external-tool
+timeout and name-collision refusal. The LOW tier (denylist flag ordering,
+grep symlink re-confinement, workspace-root allowlist, exec_oracle status
+field) remains, tracked in the workflow artifact.
+
 ### Execution record
 
 **HIGH tier: all six shipped (2026-07-14), each with a failing test first.**
