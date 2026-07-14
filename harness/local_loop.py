@@ -65,16 +65,19 @@ def run_agent(agent, goal: str, executor: ToolExecutor,
         calls = parse_tool_calls(text)
         if not calls:
             if not test_cmd:
-                return _done(text, step, ledger)
+                return _done(text, step, ledger,
+                             system=agent.system, goal=goal)
             res = executor.execute("run", {"cmd": test_cmd})
             ledger.append("tool_call", f"run {json.dumps({'cmd': test_cmd}, sort_keys=True)}")
             ledger.append("tool_result", res.output, _result_meta("run", res, sign_key, {"gate": "test"}))
             _emit(type="tool_result", name="run", ok=res.ok, output=res.output[:500])
             if res.output.startswith("[gate]"):
                 return _done(text, step, ledger, tests_pass=False,
-                             note="test gate set but exec is disabled (pass --allow-exec)")
+                             note="test gate set but exec is disabled (pass --allow-exec)",
+                             system=agent.system, goal=goal)
             if res.ok:
-                return _done(text, step, ledger, tests_pass=True)
+                return _done(text, step, ledger, tests_pass=True,
+                             system=agent.system, goal=goal)
             message = (f"The tests still FAIL:\n{res.output}\n\nFix the root cause and "
                        "continue; do not give a final answer until the tests pass.")
             continue
@@ -93,17 +96,23 @@ def run_agent(agent, goal: str, executor: ToolExecutor,
                    "answer with no TOOL line.")
 
     return _done("[max_steps reached without a final answer]", max_steps, ledger,
-                 tests_pass=(False if test_cmd else None))
+                 tests_pass=(False if test_cmd else None),
+                 system=agent.system, goal=goal)
 
 
-def _done(final: str, steps: int, ledger: SessionLedger, *, tests_pass=None, note="") -> dict:
+def _done(final: str, steps: int, ledger: SessionLedger, *, tests_pass=None,
+          note="", system: str = "", goal: str = "") -> dict:
+    from .context_manifest import context_manifest
     from .run_review import run_review
     out = {"final": final, "steps": steps,
            "checkpoint": ledger.checkpoint(), "verified": ledger.verify(),
            "entries": len(ledger.entries), "ledger": ledger,
            # the reviewability projection: what a senior reviewer checks
            # first, derived from the witnessed ledger, shipped with the run
-           "review": run_review(ledger.entries)}
+           "review": run_review(ledger.entries),
+           # the window manifest: what the model actually saw, replayable
+           "context_manifest": context_manifest(
+               ledger.entries, system=system, goal=goal)}
     # Trajectory-integrity verdict: did the agent edit the file that grades it, or
     # write test-neutralizing code? Surfaced re-checkably so a tampered "green" is
     # visible, not silently accepted (reward-hacking guard, keeps the C2 invariant).

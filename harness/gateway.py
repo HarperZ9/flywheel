@@ -704,7 +704,9 @@ class _Handler(BaseHTTPRequestHandler):
                   # the reviewability projection + checkpoint ride the done
                   # event so the surface can offer a sign-this-run attestation
                   "review": result.get("review"),
-                  "checkpoint": result.get("checkpoint")})
+                  "checkpoint": result.get("checkpoint"),
+                  # the window manifest: what the model actually saw
+                  "context_manifest": result.get("context_manifest")})
         except Exception as e:
             emit({"type": "error", "error": f"{type(e).__name__}: {e}"})
         try:
