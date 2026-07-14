@@ -1024,6 +1024,27 @@ class _Handler(BaseHTTPRequestHandler):
                 question, claims=claims, measurements=measurements,
                 max_sources=max_sources,
                 workdir=_P(self.run_root) / "science"))
+        if p == "/api/snapshot":                      # the citation, frozen: bytes as the receipt
+            length = self._content_length()
+            if length is None:
+                return self._json({"error": "invalid or oversized Content-Length"}, 400)
+            try:
+                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
+            except Exception:
+                req = {}
+            url = (req.get("url") or "").strip()
+            if not url.startswith(("http://", "https://")):
+                return self._json({"error": "provide an http(s) 'url'"}, 400)
+            from pathlib import Path as _P
+            from harness.web_snapshot import snapshot_url
+            doc = snapshot_url(url, _P(self.run_root) / "snapshots")
+            if "error" not in doc:
+                try:
+                    from harness.store import put_entity
+                    doc["stored"] = put_entity("web-snapshot", doc).get("eid", "")
+                except Exception as e:
+                    doc["stored"] = f"store unavailable: {type(e).__name__}"
+            return self._json(doc)
         if p == "/api/import":                        # arrive with your whole setup, keep the proof
             length = self._content_length()
             if length is None:
