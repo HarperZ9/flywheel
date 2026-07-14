@@ -958,9 +958,12 @@ class _Handler(BaseHTTPRequestHandler):
             except (TypeError, ValueError):
                 max_sources = 4
             claims = req.get("claims") if isinstance(req.get("claims"), list) else None
+            measurements = (req.get("measurements")
+                            if isinstance(req.get("measurements"), list) else None)
             from pathlib import Path as _P
             return self._json(science_run(
-                question, claims=claims, max_sources=max_sources,
+                question, claims=claims, measurements=measurements,
+                max_sources=max_sources,
                 workdir=_P(self.run_root) / "science"))
         if p == "/api/route":                         # universal router: send to ANY provider, with a receipt
             length = self._content_length()
