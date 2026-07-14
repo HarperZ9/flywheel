@@ -52,6 +52,26 @@ def test_mismatched_units_are_unverifiable():
     assert "unit" in e["reason"]
 
 
+def test_published_pairs_recompute_their_sigmas():
+    """The ledger must reproduce the field's own characterizations from
+    the quoted central values and uncertainties alone: SH0ES vs Planck at
+    5.8 sigma, CDF vs CMS W mass above 5 sigma, and the muon g-2 pair at
+    ~0.6 sigma (the resolved anomaly, kept as a consistent entry)."""
+    pairs = [
+        (73.17, 0.86, 67.4, 0.5, "km/s/Mpc", 5.80, "tension"),
+        (80433.5, 9.4, 80360.2, 9.9, "MeV", 5.37, "tension"),
+        (116592070.5, 14.6, 116592033.0, 62.0, "1e-11", 0.59, "consistent"),
+    ]
+    for va, sa, vb, sb, unit, sig, verdict in pairs:
+        e = tension_entry(
+            {"label": "a", "value": va, "sigma": sa, "unit": unit,
+             "source_sha256": "a" * 64},
+            {"label": "b", "value": vb, "sigma": sb, "unit": unit,
+             "source_sha256": "b" * 64})
+        assert e["verdict"] == verdict, (unit, e)
+        assert e["sigma_distance"] == pytest.approx(sig, abs=0.01)
+
+
 def test_banked_tension_lands_in_the_ledger(tmp_path, monkeypatch):
     monkeypatch.setenv("FLYWHEEL_HOME", str(tmp_path))
     r = bank_tension(H0_LOCAL, H0_CMB)

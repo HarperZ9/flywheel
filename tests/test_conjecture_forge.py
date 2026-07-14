@@ -4,7 +4,7 @@ never re-proposes what the corpus already holds. A refused conjecture is
 recorded as refused, never stored, never narrated into a claim."""
 
 from harness.conjecture_forge import (enumerate_conjectures, forge_round,
-                                      normalize_statement)
+                                      grade_novelty, normalize_statement)
 
 
 def _grid_kernel(code: str) -> dict:
@@ -52,7 +52,7 @@ def test_normalization_is_alpha_and_name_invariant():
 def test_forge_round_survivors_carry_kernel_receipts(tmp_path, monkeypatch):
     monkeypatch.setenv("FLYWHEEL_HOME", str(tmp_path))
     art = forge_round(24, kernel=_grid_kernel)
-    assert art["schema"] == "flywheel.conjecture-forge/v1"
+    assert art["schema"] == "flywheel.conjecture-forge/v2"
     assert art["proposed"] == 24
     assert art["accepted"], "the grid kernel must accept true identities"
     assert art["proposed"] == len(art["accepted"]) + art["refused"]
@@ -72,6 +72,39 @@ def test_second_round_never_reproposes_the_corpus(tmp_path, monkeypatch):
     h2 = {s["statement_sha256"] for s in r2["accepted"]}
     assert not h1 & h2, "novelty is corpus-relative: no re-proposal"
     assert r2["corpus_size"] >= len(r1["accepted"])
+
+
+def test_forge_survivors_land_on_rung_L1(tmp_path, monkeypatch):
+    """Forge survivors are corpus-absent by construction and closed by the
+    cheap tactic: rung L1, never L2. Cheap-closable is not deep."""
+    monkeypatch.setenv("FLYWHEEL_HOME", str(tmp_path))
+    art = forge_round(24, kernel=_grid_kernel)
+    assert all(s["rung"] == "L1" for s in art["accepted"])
+
+
+def test_ladder_grades_corpus_present_as_L0(tmp_path, monkeypatch):
+    monkeypatch.setenv("FLYWHEEL_HOME", str(tmp_path))
+    r1 = forge_round(12, kernel=_grid_kernel)
+    held = r1["accepted"][0]["statement"]
+    g = grade_novelty(held, kernel=_grid_kernel)
+    assert g["rung"] == "L0", "already in the corpus: proved but not novel"
+
+
+def test_ladder_grades_L2_only_with_a_strong_proof(tmp_path, monkeypatch):
+    """L2 means the cheap ladder could NOT close it but a supplied strong
+    proof did. Without the strong proof it is just refused."""
+    monkeypatch.setenv("FLYWHEEL_HOME", str(tmp_path))
+
+    def cheap_refuses_strong_passes(code):
+        return {"passed": "by strong" in code, "toolchain": "injected"}
+
+    stmt = "theorem cj_d (n m : Nat) : n * m = m * n := by omega"
+    strong = "theorem cj_d (n m : Nat) : n * m = m * n := by strong"
+    g = grade_novelty(stmt, kernel=cheap_refuses_strong_passes,
+                      strong_proof=strong)
+    assert g["rung"] == "L2"
+    g2 = grade_novelty(stmt, kernel=cheap_refuses_strong_passes)
+    assert g2["rung"] == "refused"
 
 
 def test_declared_kernel_yields_no_survivors_no_claims(tmp_path, monkeypatch):

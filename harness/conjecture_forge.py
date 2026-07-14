@@ -16,7 +16,14 @@ from __future__ import annotations
 import hashlib
 import re
 
-SCHEMA = "flywheel.conjecture-forge/v1"
+SCHEMA = "flywheel.conjecture-forge/v2"
+
+# The novelty ladder: graded, mechanical, honest about what each rung
+# means. L0 proved but already held; L1 proved and corpus-absent but
+# closable by the cheap tactic (novel, not deep); L2 corpus-absent AND
+# the cheap ladder failed while a supplied strong proof passed. L3
+# (resists a budgeted baseline prover) is declared, not implemented.
+RUNGS = ("L0", "L1", "L2")
 
 # The proposal grammar: linear Nat arithmetic with truncated subtraction
 # and min/max, chosen so `omega` is a decision procedure for every true
@@ -120,6 +127,7 @@ def forge_round(k: int = 20, *, kernel=None, offset: int = 0) -> dict:
                                                    ""))[:500]},
                        eid=sha[:24])
             accepted.append({"statement": stmt, "statement_sha256": sha,
+                             "rung": "L1",
                              "verdict": {"passed": True,
                                          "toolchain": v.get("toolchain",
                                                             "")}})
@@ -133,3 +141,33 @@ def forge_round(k: int = 20, *, kernel=None, offset: int = 0) -> dict:
             "note": "acceptance decided solely by the kernel; novelty is "
                     "corpus-relative (absent from the store), nothing "
                     "grander; a declared kernel yields no claims"}
+
+
+def grade_novelty(statement: str, *, kernel=None,
+                  strong_proof: "str | None" = None) -> dict:
+    """Place one conjecture on the novelty ladder. The statement carries
+    the cheap tactic; `strong_proof` is the same statement under a
+    stronger proof, supplied by whoever claims depth. Rungs are earned:
+    L0 proved but already in the corpus, L1 proved and corpus-absent via
+    the cheap tactic, L2 corpus-absent where the cheap tactic failed and
+    the strong proof passed. Anything unproved is refused."""
+    if kernel is None:
+        from .lean_oracle import lean_check
+        kernel = lean_check
+    sha = _statement_sha(statement)
+    held = sha in _corpus_hashes()
+    cheap = kernel(statement)
+    if cheap.get("passed") is True:
+        return {"schema": SCHEMA + ".rung", "rung": "L0" if held else "L1",
+                "statement_sha256": sha, "corpus_held": held,
+                "basis": "closed by the cheap tactic"}
+    if strong_proof:
+        strong = kernel(strong_proof)
+        if strong.get("passed") is True:
+            return {"schema": SCHEMA + ".rung",
+                    "rung": "L0" if held else "L2",
+                    "statement_sha256": sha, "corpus_held": held,
+                    "basis": "cheap tactic failed; strong proof accepted"}
+    return {"schema": SCHEMA + ".rung", "rung": "refused",
+            "statement_sha256": sha, "corpus_held": held,
+            "basis": "no accepted proof at any rung"}
