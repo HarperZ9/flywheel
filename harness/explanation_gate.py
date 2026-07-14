@@ -50,25 +50,46 @@ def _key_terms(diff: str, top_n: int = 8) -> tuple:
     return files, terms
 
 
+def _own_words_ratio(diff: str, explanation: str) -> float:
+    """Share of explanation word-tokens that do NOT appear in the diff's
+    changed lines. Teach-back is in the reviewer's OWN words; pasting the
+    diff back scores ~0 here and must not pass."""
+    diff_words = set()
+    for line in (diff or "").splitlines():
+        if line[:1] in ("+", "-"):
+            diff_words.update(w.lower() for w in _IDENT.findall(line[1:]))
+    expl_words = [w.lower() for w in _IDENT.findall(explanation or "")]
+    if not expl_words:
+        return 0.0
+    fresh = sum(1 for w in expl_words if w not in diff_words)
+    return round(fresh / len(expl_words), 4)
+
+
 def explanation_receipt(diff: str, explanation: str, *,
-                        threshold: float = 0.6, reviewer: str = "") -> dict:
+                        threshold: float = 0.6, reviewer: str = "",
+                        own_words_floor: float = 0.3) -> dict:
     """Grade `explanation` against `diff` mechanically. Passing means the
-    explanation names the changed files and at least `threshold` of the
-    key changed identifiers."""
+    explanation names the changed files, covers at least `threshold` of the
+    key changed identifiers, AND carries at least `own_words_floor` share of
+    words the diff does not (so pasting the diff back cannot pass)."""
     files, terms = _key_terms(diff)
     text = (explanation or "").lower()
     mentioned = [t for t in terms if t.lower() in text]
     missed = [t for t in terms if t.lower() not in text]
     mentioned_files = [f for f in files if f.lower() in text]
     coverage = round(len(mentioned) / len(terms), 4) if terms else 0.0
+    own_words_ratio = _own_words_ratio(diff, explanation)
     passed = bool(terms) and coverage >= threshold and (
-        not files or bool(mentioned_files))
+        not files or bool(mentioned_files)) and (
+        own_words_ratio >= own_words_floor)
     doc = {
         "schema": SCHEMA,
         "reviewer": reviewer,
         "passed": passed,
         "coverage": coverage,
         "threshold": threshold,
+        "own_words_ratio": own_words_ratio,
+        "own_words_floor": own_words_floor,
         "key_terms": terms,
         "mentioned": mentioned,
         "missed": missed,
@@ -79,7 +100,9 @@ def explanation_receipt(diff: str, explanation: str, *,
         "diff_sha256": hashlib.sha256(
             (diff or "").encode("utf-8")).hexdigest(),
         "note": "mechanical gate: verifies engagement specificity with the "
-                "actual change, not understanding; no learned model decides",
+                "actual change in the reviewer's own words (a verbatim "
+                "diff paste is refused), not understanding; no learned "
+                "model decides",
     }
     doc["sha256"] = hashlib.sha256(
         json.dumps(doc, sort_keys=True).encode("utf-8")).hexdigest()

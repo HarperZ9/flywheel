@@ -31,6 +31,30 @@ def test_engaged_explanation_passes():
     assert len(r["sha256"]) == 64
 
 
+def test_pasting_the_diff_back_verbatim_fails():
+    """The whole premise is teach-back in the reviewer's OWN words. Pasting
+    the diff back covers every term trivially; that is not comprehension
+    evidence, and the gate must refuse it."""
+    r = explanation_receipt(DIFF, DIFF)
+    assert r["passed"] is False
+    assert r["own_words_ratio"] < 0.3
+
+
+def test_explanation_padded_with_the_diff_still_needs_own_words():
+    padded = DIFF + "\n" + "total tax_rate subtotal"
+    r = explanation_receipt(DIFF, padded)
+    assert r["passed"] is False
+
+
+def test_genuine_explanation_carries_words_absent_from_the_diff():
+    r = explanation_receipt(
+        DIFF,
+        "total() in billing/invoice.py now takes a tax_rate and multiplies "
+        "the subtotal by (1 + tax_rate) instead of returning the raw sum of "
+        "item price values.")
+    assert r["own_words_ratio"] >= 0.3
+
+
 def test_vague_explanation_fails_with_the_misses_named():
     r = explanation_receipt(DIFF, "fixed the bug and cleaned things up")
     assert r["passed"] is False
