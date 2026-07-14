@@ -75,20 +75,31 @@ def frontier_table(root, *, probes: "list | None" = None) -> dict:
             if doc.get("schema") == "flywheel.uplift-bench/v1":
                 docs.append(doc)
     rates: dict = {}
+    lat: dict = {}
     separated: dict = {}
     sources: list = []
     for doc in docs:
         sources.append(doc.get("comparison_key", ""))
         for row in doc.get("rows", []):
-            entry = rates.setdefault(row.get("provider", ""), {})
-            entry.setdefault(row.get("arm", ""), row.get("pass_rate"))
+            provider = row.get("provider", "")
+            arm = row.get("arm", "")
+            rates.setdefault(provider, {}).setdefault(arm,
+                                                      row.get("pass_rate"))
+            lat.setdefault(provider, {}).setdefault(arm,
+                                                    row.get("latency_ms_mean"))
         for d in doc.get("deltas", []):
             separated.setdefault(d.get("provider"),
                                  not d.get("includes_zero", True))
+    def _per_s(rate, ms):
+        return (round(rate / (ms / 1000.0), 4)
+                if isinstance(rate, (int, float))
+                and isinstance(ms, (int, float)) and ms > 0 else None)
+
     rows = []
     for probe in probes or []:
         endpoint = probe.get("endpoint", "")
         r = rates.get(endpoint, {})
+        l = lat.get(endpoint, {})
         disk = probe.get("disk_gb")
         verified = r.get("wrapped")
         rows.append({
@@ -97,6 +108,10 @@ def frontier_table(root, *, probes: "list | None" = None) -> dict:
             "disk_gb": disk,
             "bare_rate": r.get("bare"),
             "verified_rate": verified,
+            # The second axis: the binding constraint (RAM vs wall time)
+            # picks the winner, so both axes ship side by side.
+            "bare_per_s": _per_s(r.get("bare"), l.get("bare")),
+            "verified_per_s": _per_s(verified, l.get("wrapped")),
             "uplift_separated": separated.get(endpoint, False),
             "capability_per_gb": (round(verified / disk, 4)
                                   if isinstance(verified, (int, float))
