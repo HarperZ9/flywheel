@@ -22,6 +22,7 @@ import 'views/graph_view.dart';
 import 'views/lanes_view.dart';
 import 'views/memory_view.dart';
 import 'views/plugins_view.dart';
+import 'views/projects_view.dart';
 import 'views/receipts_view.dart';
 import 'views/studio_view.dart';
 import 'views/workflows_view.dart';
@@ -99,6 +100,7 @@ class _FlywheelShellState extends State<FlywheelShell> {
   Timer? _timer;
 
   static const _destinations = [
+    RailDestination('Projects'),
     RailDestination('Lanes'),
     RailDestination('Code'),
     RailDestination('World'),
@@ -211,31 +213,33 @@ class _FlywheelShellState extends State<FlywheelShell> {
   Widget _activeView() {
     switch (_selectedIndex) {
       case 0:
+        return ProjectsView(client: _client, alive: _gatewayAlive);
+      case 1:
         return LanesView(
             roster: _roster, alive: _gatewayAlive, onProbe: _probeLanes);
-      case 1:
+      case 2:
         return CodeView(
             client: _client, alive: _gatewayAlive, settings: widget.settings);
-      case 2:
-        return WorldView(world: _world, alive: _gatewayAlive);
       case 3:
-        return GraphView(world: _world, roster: _roster, alive: _gatewayAlive);
+        return WorldView(world: _world, alive: _gatewayAlive);
       case 4:
-        return ReceiptsView(client: _client, alive: _gatewayAlive);
+        return GraphView(world: _world, roster: _roster, alive: _gatewayAlive);
       case 5:
-        return CompanionView(client: _client, alive: _gatewayAlive);
+        return ReceiptsView(client: _client, alive: _gatewayAlive);
       case 6:
-        return AgentView(client: _client, alive: _gatewayAlive);
+        return CompanionView(client: _client, alive: _gatewayAlive);
       case 7:
-        return WorkflowsView(client: _client, alive: _gatewayAlive);
+        return AgentView(client: _client, alive: _gatewayAlive);
       case 8:
+        return WorkflowsView(client: _client, alive: _gatewayAlive);
+      case 9:
         return StudioView(
             world: _world, roster: _roster, alive: _gatewayAlive);
-      case 9:
-        return MemoryView(client: _client, alive: _gatewayAlive);
       case 10:
-        return PluginsView(client: _client, alive: _gatewayAlive);
+        return MemoryView(client: _client, alive: _gatewayAlive);
       case 11:
+        return PluginsView(client: _client, alive: _gatewayAlive);
+      case 12:
         return EndpointsView(client: _client, alive: _gatewayAlive);
       default:
         return const FwEmpty('Unknown view');

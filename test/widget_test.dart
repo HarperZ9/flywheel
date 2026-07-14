@@ -9,13 +9,14 @@ import 'package:flywheel_desktop/services/settings.dart';
 import 'package:flywheel_desktop/widgets/side_rail.dart';
 
 void main() {
-  testWidgets('App renders the shell with all twelve destinations',
+  testWidgets('App renders the shell with all thirteen destinations',
       (WidgetTester tester) async {
     await tester.pumpWidget(FlywheelApp(settings: DesktopSettings()));
     await tester.pump();
     expect(find.text('Flywheel'), findsWidgets);
     expect(find.byType(SideRail), findsOneWidget);
     for (final label in [
+      'Projects',
       'Lanes',
       'Code',
       'World',

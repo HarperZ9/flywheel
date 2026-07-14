@@ -17,17 +17,20 @@ const Map<String, LaneIdentity> laneIdentities = {
   'gather': LaneIdentity(
     title: 'Gather',
     identity:
-        'Research intake that reaches the hard places: gated APIs, paywalls, '
-        'JS-walled pages, scanned PDFs. Every block carries a source hash.',
-    surface: 'corpus ledger',
+        'The deep-research intake half: reach the hard places (gated APIs, '
+        'paywalls, JS-walled pages, scanned PDFs), federate the scholarly '
+        'record, and build a durable corpus where every block carries a '
+        'source hash. Paired with Crucible, this is the experimentation bench.',
+    surface: 'research corpus + federation',
   ),
   'crucible': LaneIdentity(
     title: 'Crucible',
     identity:
-        'A judgment engine: register a thesis, steelman each claim, measure '
-        'against a substrate, refine the weakest axis. Verdicts are pure '
-        'functions, fail closed.',
-    surface: 'verdict matrix',
+        'The deep-research judgment half: register a thesis, steelman each '
+        'claim, run the experiment, measure against a substrate, refine the '
+        'weakest axis. Verdicts are pure functions that fail closed, so an '
+        'experiment can conclude UNVERIFIABLE instead of overclaiming.',
+    surface: 'experiment bench + verdict matrix',
   ),
   'index': LaneIdentity(
     title: 'Index',
@@ -47,9 +50,11 @@ const Map<String, LaneIdentity> laneIdentities = {
   'learn': LaneIdentity(
     title: 'Learn',
     identity:
-        'Your own material, a runnable course: spaced repetition, retrieval '
-        'practice, real grading. Study receipts re-verify.',
-    surface: 'study dashboard',
+        'A full academy: academic tutoring, programming instruction, and a '
+        'knowledge academy over your own material. Spaced repetition, '
+        'retrieval practice, prerequisite readiness, and real grading, with '
+        'a mastery verdict and study receipts that re-verify.',
+    surface: 'tutor + courses + mastery',
   ),
   'telos': LaneIdentity(
     title: 'Telos',

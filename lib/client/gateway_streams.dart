@@ -65,6 +65,62 @@ extension GatewayStreamsAndPlugins on GatewayClient {
     return _decode(r);
   }
 
+  /// GET /api/projects — the registered project/directory roster.
+  Future<Map<String, dynamic>> projects() async {
+    final r = await _http.get(Uri.parse('$baseUrl/api/projects'));
+    return _decode(r);
+  }
+
+  /// POST /api/projects/add — register a project directory.
+  Future<Map<String, dynamic>> addProject(String root, {String name = ''}) async {
+    final r = await _http.post(
+      Uri.parse('$baseUrl/api/projects/add'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'root': root, if (name.isNotEmpty) 'name': name}),
+    );
+    return _decode(r);
+  }
+
+  /// POST /api/projects/remove — unregister a project directory.
+  Future<Map<String, dynamic>> removeProject(String root) async {
+    final r = await _http.post(
+      Uri.parse('$baseUrl/api/projects/remove'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'root': root}),
+    );
+    return _decode(r);
+  }
+
+  /// POST /api/index — drive the index engine over a project root. `view` is
+  /// summary | map | graph | symbols.
+  Future<Map<String, dynamic>> indexProject(String root,
+      {String view = 'summary'}) async {
+    final r = await _http.post(
+      Uri.parse('$baseUrl/api/index'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'root': root, 'view': view}),
+    );
+    return _decode(r);
+  }
+
+  /// GET /api/store — the verifiable substrate stats.
+  Future<Map<String, dynamic>> storeStats() async {
+    final r = await _http.get(Uri.parse('$baseUrl/api/store'));
+    return _decode(r);
+  }
+
+  /// GET /api/store/verify — re-check the hash-chained audit ledger.
+  Future<Map<String, dynamic>> storeVerify() async {
+    final r = await _http.get(Uri.parse('$baseUrl/api/store/verify'));
+    return _decode(r);
+  }
+
+  /// GET /api/store/audit — the audit tail.
+  Future<Map<String, dynamic>> storeAudit({int n = 50}) async {
+    final r = await _http.get(Uri.parse('$baseUrl/api/store/audit?n=$n'));
+    return _decode(r);
+  }
+
   /// POST /api/lsp — editor intelligence over any user-named LSP server.
   /// Sends the live buffer so unsaved edits are visible to the server.
   Future<Map<String, dynamic>> lspQuery({
