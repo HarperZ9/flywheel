@@ -41,7 +41,7 @@ def test_roster_counts_spine_plus_extended():
     from harness.superproject import roster
     r = roster()
     assert r["n_spine"] == 5                          # the MCP-live spine
-    assert r["n_extended"] >= 5                       # more than five flagships total
-    assert r["total_flagships"] > 5, "the roster is larger than the MCP spine"
+    # The operator's ratified roster (2026-07-13): 5 spine + 9 extended.
+    assert r["total_flagships"] == 14, "there are 14 flagships"
     # spine flagships are not double-counted in extended
     assert not (set(r["spine_live"]) & set(r["extended_declared"]))
