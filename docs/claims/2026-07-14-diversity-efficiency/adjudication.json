@@ -1,0 +1,90 @@
+{
+  "assessment": {
+    "started_at": 1784048010.8155496,
+    "thesis_id": "48a777be85df1dc4",
+    "thesis_seal": "48a777be85df1dc4eb62c113882f5194b1fdc0421e654cfed0912bbec3de05b9",
+    "claims": 2,
+    "match": 1,
+    "drift": 1,
+    "unverifiable": 0,
+    "verdict_seal": "4e124cfc9bc88c37f79c34953c96a8a1c98785eee2ccd947e17c240fb44abc4b",
+    "measurement_seal": "30687a322181791d5443db4c6013998fa69fe634c3e9d5e2c4c4c14ae1e5eba7",
+    "disposition": "publishable",
+    "stored": null,
+    "verdicts": [
+      {
+        "claim_id": "c-eta-order",
+        "claim_sha256": "960711ffeaaee358541102a8cd1d7a5fe51d18b421d630926ea67b5aa1d1a61f",
+        "status": "MATCH",
+        "deviation": 0.0,
+        "tolerance": 0.001,
+        "margin": 1.0,
+        "method": "eta(3b)=0.757 > eta(7b)=0.269 at best-of-3, n=110; unchanged by adjudication",
+        "grounds": "deviation 0 within tolerance 0.001",
+        "disposition": "publishable"
+      },
+      {
+        "claim_id": "c-3b-n5",
+        "claim_sha256": "2d576726f0452f3cca4b5ae7aacd091ca83cbfc911c00e2faca86c678f550cf5",
+        "status": "DRIFT",
+        "deviation": 0.0759,
+        "tolerance": 0.075,
+        "margin": -0.011999999999999974,
+        "method": "3b best-of-5 wrapped = 23/110 = 0.2091; sealed band [0.21,0.36] midpoint 0.285 half-width 0.075; deviation 0.0759 > 0.075 -> DRIFT. The prediction MISSES LOW by 0.0009, exactly the bimodal-rescue outcome the adversary and the frozen addendum pre-registered. No rescue.",
+        "grounds": "deviation 0.0759 exceeds tolerance 0.075",
+        "disposition": "publishable"
+      }
+    ],
+    "measurements": [
+      {
+        "claim_id": "c-eta-order",
+        "claim_sha256": "960711ffeaaee358541102a8cd1d7a5fe51d18b421d630926ea67b5aa1d1a61f",
+        "deviation": 0.0,
+        "tolerance": 0.001,
+        "method": "eta(3b)=0.757 > eta(7b)=0.269 at best-of-3, n=110; unchanged by adjudication",
+        "measured_at": 1784048010.8155496,
+        "evidence": [
+          "artifacts/uplift/uplift_hard_v2_20260713-194718.json"
+        ]
+      },
+      {
+        "claim_id": "c-3b-n5",
+        "claim_sha256": "2d576726f0452f3cca4b5ae7aacd091ca83cbfc911c00e2faca86c678f550cf5",
+        "deviation": 0.0759,
+        "tolerance": 0.075,
+        "method": "3b best-of-5 wrapped = 23/110 = 0.2091; sealed band [0.21,0.36] midpoint 0.285 half-width 0.075; deviation 0.0759 > 0.075 -> DRIFT. The prediction MISSES LOW by 0.0009, exactly the bimodal-rescue outcome the adversary and the frozen addendum pre-registered. No rescue.",
+        "measured_at": 1784048010.8155496,
+        "evidence": [
+          "artifacts/uplift/uplift_hard_v2_20260714-083129.json"
+        ]
+      }
+    ],
+    "seal": "cc7808b111bf455144b378ee3f3cad112969b8eb91976efcabf50941ab8c9b6e"
+  },
+  "verdicts": [
+    {
+      "claim_id": "c-eta-order",
+      "claim_sha256": "960711ffeaaee358541102a8cd1d7a5fe51d18b421d630926ea67b5aa1d1a61f",
+      "status": "MATCH",
+      "disposition": "publishable",
+      "deviation": 0.0,
+      "tolerance": 0.001,
+      "margin": 1.0,
+      "method": "eta(3b)=0.757 > eta(7b)=0.269 at best-of-3, n=110; unchanged by adjudication",
+      "grounds": "deviation 0 within tolerance 0.001"
+    },
+    {
+      "claim_id": "c-3b-n5",
+      "claim_sha256": "2d576726f0452f3cca4b5ae7aacd091ca83cbfc911c00e2faca86c678f550cf5",
+      "status": "DRIFT",
+      "disposition": "publishable",
+      "deviation": 0.0759,
+      "tolerance": 0.075,
+      "margin": -0.011999999999999974,
+      "method": "3b best-of-5 wrapped = 23/110 = 0.2091; sealed band [0.21,0.36] midpoint 0.285 half-width 0.075; deviation 0.0759 > 0.075 -> DRIFT. The prediction MISSES LOW by 0.0009, exactly the bimodal-rescue outcome the adversary and the frozen addendum pre-registered. No rescue.",
+      "grounds": "deviation 0.0759 exceeds tolerance 0.075"
+    }
+  ],
+  "measurement_warnings": [],
+  "explanations": []
+}
