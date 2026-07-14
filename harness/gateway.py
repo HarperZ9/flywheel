@@ -798,9 +798,11 @@ class _Handler(BaseHTTPRequestHandler):
             from harness.uplift_bench import bench_summary
             return self._json(bench_summary(self.root))
         if p == "/api/graph":                        # cross-surface knowledge graph + context plan
+            from urllib.parse import unquote_plus
             from harness.knowledge_graph import gateway_graph
             budget = None
             with_index = False
+            query = None
             for part in qs.split("&"):
                 if part.startswith("budget="):
                     try:
@@ -809,9 +811,11 @@ class _Handler(BaseHTTPRequestHandler):
                         budget = None
                 if part == "index=true":
                     with_index = True
+                if part.startswith("q="):
+                    query = unquote_plus(part[2:])
             return self._json(gateway_graph(self.root, self.run_root,
                                             with_index=with_index,
-                                            budget=budget))
+                                            budget=budget, query=query))
         if p == "/api/receipts":                     # the receipts ledger (catalog + envelopes)
             return self._json(receipts_ledger(self.root, self.run_root))
         if p == "/api/profiles":                     # profile manifests over the one substrate
