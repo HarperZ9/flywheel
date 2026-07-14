@@ -12,8 +12,11 @@ import 'package:flutter/material.dart';
 class DesktopSettings {
   ThemeMode themeMode;
   List<String> recentWorkspaces;
+  bool railCollapsed;
   DesktopSettings(
-      {this.themeMode = ThemeMode.system, List<String>? recentWorkspaces})
+      {this.themeMode = ThemeMode.system,
+      List<String>? recentWorkspaces,
+      this.railCollapsed = false})
       : recentWorkspaces = recentWorkspaces ?? [];
 
   /// Record a workspace as most-recently used (keeps the last six).
@@ -48,6 +51,7 @@ class DesktopSettings {
         recentWorkspaces: (j['recent_workspaces'] is List)
             ? List<String>.from(j['recent_workspaces'])
             : [],
+        railCollapsed: j['rail_collapsed'] == true,
       );
     } catch (e) {
       // A corrupt settings file must never block launch; fall back to system.
@@ -65,8 +69,11 @@ class DesktopSettings {
         ThemeMode.dark => 'dark',
         ThemeMode.system => 'system',
       };
-      f.writeAsStringSync(jsonEncode(
-          {'theme': theme, 'recent_workspaces': recentWorkspaces}));
+      f.writeAsStringSync(jsonEncode({
+        'theme': theme,
+        'recent_workspaces': recentWorkspaces,
+        'rail_collapsed': railCollapsed,
+      }));
     } catch (e) {
       debugPrint('settings save failed: $e');
     }

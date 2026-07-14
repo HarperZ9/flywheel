@@ -25,10 +25,12 @@ import 'views/plugins_view.dart';
 import 'views/projects_view.dart';
 import 'views/receipts_view.dart';
 import 'views/studio_view.dart';
+import 'views/train_view.dart';
 import 'views/workflows_view.dart';
 import 'views/world_view.dart';
 import 'widgets/fw.dart';
 import 'widgets/side_rail.dart';
+import 'widgets/status_bar.dart';
 
 void main() {
   runApp(FlywheelApp(settings: DesktopSettings.load()));
@@ -99,20 +101,23 @@ class _FlywheelShellState extends State<FlywheelShell> {
   WorldDoc? _world;
   Timer? _timer;
 
+  late bool _railCollapsed = widget.settings.railCollapsed;
+
   static const _destinations = [
-    RailDestination('Projects'),
-    RailDestination('Lanes'),
-    RailDestination('Code'),
-    RailDestination('World'),
-    RailDestination('Graph'),
-    RailDestination('Receipts'),
-    RailDestination('Companion'),
-    RailDestination('Agent'),
-    RailDestination('Workflows'),
-    RailDestination('Studio'),
-    RailDestination('Memory'),
-    RailDestination('Plugins'),
-    RailDestination('Endpoints'),
+    RailDestination('Projects', abbr: 'PR'),
+    RailDestination('Lanes', abbr: 'LN'),
+    RailDestination('Code', abbr: 'CO'),
+    RailDestination('World', abbr: 'WD'),
+    RailDestination('Graph', abbr: 'GR'),
+    RailDestination('Receipts', abbr: 'RC'),
+    RailDestination('Companion', abbr: 'CM'),
+    RailDestination('Agent', abbr: 'AG'),
+    RailDestination('Workflows', abbr: 'WF'),
+    RailDestination('Studio', abbr: 'ST'),
+    RailDestination('Train', abbr: 'TR'),
+    RailDestination('Memory', abbr: 'ME'),
+    RailDestination('Plugins', abbr: 'PL'),
+    RailDestination('Endpoints', abbr: 'EP'),
   ];
 
   @override
@@ -199,12 +204,24 @@ class _FlywheelShellState extends State<FlywheelShell> {
                   onSelect: (i) => setState(() => _selectedIndex = i),
                   themeMode: widget.themeMode,
                   onToggleTheme: widget.onToggleTheme,
+                  collapsed: _railCollapsed,
+                  onToggleCollapse: () => setState(() {
+                    _railCollapsed = !_railCollapsed;
+                    widget.settings.railCollapsed = _railCollapsed;
+                    widget.settings.save();
+                  }),
                 ),
                 Expanded(child: _activeView()),
               ],
             ),
           ),
-          _statusBar(context),
+          StatusBar(
+            alive: _gatewayAlive,
+            message: _statusMessage,
+            startError: _startError,
+            world: _world,
+            onStartEngine: _startEngine,
+          ),
         ],
       ),
     );
@@ -236,58 +253,16 @@ class _FlywheelShellState extends State<FlywheelShell> {
         return StudioView(
             world: _world, roster: _roster, alive: _gatewayAlive);
       case 10:
-        return MemoryView(client: _client, alive: _gatewayAlive);
+        return TrainView(client: _client, alive: _gatewayAlive);
       case 11:
-        return PluginsView(client: _client, alive: _gatewayAlive);
+        return MemoryView(client: _client, alive: _gatewayAlive);
       case 12:
+        return PluginsView(client: _client, alive: _gatewayAlive);
+      case 13:
         return EndpointsView(client: _client, alive: _gatewayAlive);
       default:
         return const FwEmpty('Unknown view');
     }
   }
 
-  Widget _statusBar(BuildContext context) {
-    final t = context.fw;
-    return Container(
-      padding: const EdgeInsets.symmetric(
-          horizontal: FwLayout.s4, vertical: FwLayout.s2),
-      decoration: BoxDecoration(
-        color: t.ground2,
-        border: Border(top: BorderSide(color: t.line)),
-      ),
-      child: Row(
-        children: [
-          VerdictDot(_gatewayAlive ? 'live' : 'missing'),
-          const SizedBox(width: FwLayout.s2),
-          Text(_statusMessage, style: fwMono(t, size: 11, color: t.inkMuted)),
-          if (!_gatewayAlive) ...[
-            const SizedBox(width: FwLayout.s3),
-            MouseRegion(
-              cursor: SystemMouseCursors.click,
-              child: GestureDetector(
-                onTap: _startEngine,
-                child: Text('start engine',
-                    style: fwMono(t, size: 11, color: t.drift)
-                        .copyWith(decoration: TextDecoration.underline)),
-              ),
-            ),
-          ],
-          if (_startError != null) ...[
-            const SizedBox(width: FwLayout.s3),
-            Expanded(
-              child: Text(_startError!,
-                  overflow: TextOverflow.ellipsis,
-                  style: fwMono(t, size: 11, color: t.drift)),
-            ),
-          ] else
-            const Spacer(),
-          if (_world != null && _world!.rootHash.isNotEmpty) ...[
-            HashText('world', _world!.rootHash, keep: 16),
-            const SizedBox(width: FwLayout.s4),
-          ],
-          Text('127.0.0.1:8799', style: fwMono(t, size: 11, color: t.inkFaint)),
-        ],
-      ),
-    );
-  }
 }

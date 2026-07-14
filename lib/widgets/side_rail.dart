@@ -1,6 +1,6 @@
-// side_rail.dart — the navigation sidebar: aperture mark, wordmark, numbered
-// destinations, theme toggle. Ink on calm ground; the selected view carries
-// the single drift bar.
+// side_rail.dart — the navigation sidebar. Collapsible so the working
+// surface stays the largest thing on screen: full shows numbered labels,
+// collapsed shows a thin mono-code rail. Denser rows, trimmer chrome.
 
 import 'package:flutter/material.dart';
 
@@ -9,7 +9,11 @@ import 'aperture.dart';
 
 class RailDestination {
   final String label;
-  const RailDestination(this.label);
+  final String abbr;
+  const RailDestination(this.label, {this.abbr = ''});
+  String get code => abbr.isNotEmpty
+      ? abbr
+      : (label.length >= 2 ? label.substring(0, 2) : label).toUpperCase();
 }
 
 class SideRail extends StatelessWidget {
@@ -18,6 +22,8 @@ class SideRail extends StatelessWidget {
   final ValueChanged<int> onSelect;
   final ThemeMode themeMode;
   final VoidCallback onToggleTheme;
+  final bool collapsed;
+  final VoidCallback onToggleCollapse;
 
   const SideRail({
     super.key,
@@ -26,57 +32,106 @@ class SideRail extends StatelessWidget {
     required this.onSelect,
     required this.themeMode,
     required this.onToggleTheme,
+    required this.collapsed,
+    required this.onToggleCollapse,
   });
 
   @override
   Widget build(BuildContext context) {
     final t = context.fw;
-    return Container(
-      width: 192,
+    return AnimatedContainer(
+      duration: FwLayout.transition,
+      width: collapsed ? 52 : 172,
       decoration: BoxDecoration(
         color: t.ground2,
         border: Border(right: BorderSide(color: t.line)),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(
-                FwLayout.s4, FwLayout.s5, FwLayout.s4, FwLayout.s5),
-            child: Row(
-              children: [
-                const ApertureMark(size: 30),
-                const SizedBox(width: FwLayout.s3),
-                Flexible(
-                  child: Text('Flywheel',
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                          fontSize: 15.5,
-                          fontWeight: FontWeight.w700,
-                          color: t.ink)),
-                ),
-              ],
-            ),
-          ),
+          _header(t),
           Expanded(
             child: ListView(
-              padding: EdgeInsets.zero,
+              padding: const EdgeInsets.symmetric(vertical: FwLayout.s1),
               children: [
                 for (var i = 0; i < destinations.length; i++)
                   _RailItem(
                     index: i,
-                    label: destinations[i].label,
+                    dest: destinations[i],
                     selected: i == selectedIndex,
+                    collapsed: collapsed,
                     onTap: () => onSelect(i),
                   ),
               ],
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.all(FwLayout.s3),
-            child: _ThemeToggle(mode: themeMode, onToggle: onToggleTheme),
-          ),
+          _footer(t),
         ],
+      ),
+    );
+  }
+
+  Widget _header(FwTokens t) {
+    return Padding(
+      padding: EdgeInsets.symmetric(
+          horizontal: collapsed ? FwLayout.s2 : FwLayout.s3,
+          vertical: FwLayout.s3),
+      child: Row(
+        mainAxisAlignment:
+            collapsed ? MainAxisAlignment.center : MainAxisAlignment.start,
+        children: [
+          const ApertureMark(size: 26),
+          if (!collapsed) ...[
+            const SizedBox(width: FwLayout.s2),
+            Expanded(
+              child: Text('Flywheel',
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                      fontSize: 14.5,
+                      fontWeight: FontWeight.w700,
+                      color: t.ink)),
+            ),
+            _iconBtn(t, Icons.chevron_left, onToggleCollapse),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _footer(FwTokens t) {
+    if (collapsed) {
+      return Padding(
+        padding: const EdgeInsets.all(FwLayout.s2),
+        child: Column(
+          children: [
+            _iconBtn(t, Icons.chevron_right, onToggleCollapse),
+            const SizedBox(height: FwLayout.s2),
+            _iconBtn(t, _themeIcon, onToggleTheme),
+          ],
+        ),
+      );
+    }
+    return Padding(
+      padding: const EdgeInsets.all(FwLayout.s2),
+      child: _ThemeToggle(mode: themeMode, onToggle: onToggleTheme),
+    );
+  }
+
+  IconData get _themeIcon => switch (themeMode) {
+        ThemeMode.light => Icons.light_mode_outlined,
+        ThemeMode.dark => Icons.dark_mode_outlined,
+        ThemeMode.system => Icons.contrast,
+      };
+
+  Widget _iconBtn(FwTokens t, IconData icon, VoidCallback onTap) {
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(4),
+          child: Icon(icon, size: 15, color: t.inkFaint),
+        ),
       ),
     );
   }
@@ -84,13 +139,15 @@ class SideRail extends StatelessWidget {
 
 class _RailItem extends StatefulWidget {
   final int index;
-  final String label;
+  final RailDestination dest;
   final bool selected;
+  final bool collapsed;
   final VoidCallback onTap;
   const _RailItem(
       {required this.index,
-      required this.label,
+      required this.dest,
       required this.selected,
+      required this.collapsed,
       required this.onTap});
 
   @override
@@ -104,57 +161,84 @@ class _RailItemState extends State<_RailItem> {
   Widget build(BuildContext context) {
     final t = context.fw;
     final selected = widget.selected;
+    final bg = selected
+        ? t.panel
+        : _hover
+            ? t.panel.withValues(alpha: 0.5)
+            : Colors.transparent;
     return MouseRegion(
       cursor: SystemMouseCursors.click,
       onEnter: (_) => setState(() => _hover = true),
       onExit: (_) => setState(() => _hover = false),
-      child: GestureDetector(
-        onTap: widget.onTap,
-        behavior: HitTestBehavior.opaque,
-        child: AnimatedContainer(
-          duration: FwLayout.transition,
-          margin: const EdgeInsets.symmetric(horizontal: FwLayout.s2),
-          padding: const EdgeInsets.symmetric(
-              horizontal: FwLayout.s3, vertical: FwLayout.s2 + 2),
-          decoration: BoxDecoration(
-            color: selected
-                ? t.panel
-                : _hover
-                    ? t.panel.withValues(alpha: 0.5)
-                    : Colors.transparent,
-            borderRadius: BorderRadius.circular(FwLayout.radiusSmall),
-            border: Border.all(
-                color: selected ? t.line : Colors.transparent),
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 2.5,
-                height: 14,
-                decoration: BoxDecoration(
-                  color: selected ? t.drift : Colors.transparent,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              const SizedBox(width: FwLayout.s3),
-              Text('0${widget.index + 1}',
-                  style: fwKicker(t,
-                      size: 9.5,
-                      color: selected ? t.inkMuted : t.inkFaint)),
-              const SizedBox(width: FwLayout.s3),
-              Expanded(
-                child: Text(widget.label,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                        fontSize: 13.5,
-                        fontWeight:
-                            selected ? FontWeight.w600 : FontWeight.w500,
-                        color: selected ? t.ink : t.inkMuted)),
-              ),
-            ],
+      child: Tooltip(
+        message: widget.collapsed ? widget.dest.label : '',
+        waitDuration: const Duration(milliseconds: 400),
+        child: GestureDetector(
+          onTap: widget.onTap,
+          behavior: HitTestBehavior.opaque,
+          child: Container(
+            margin: const EdgeInsets.symmetric(
+                horizontal: FwLayout.s1, vertical: 1),
+            padding: EdgeInsets.symmetric(
+                horizontal: widget.collapsed ? 0 : FwLayout.s2, vertical: 6),
+            decoration: BoxDecoration(
+              color: bg,
+              borderRadius: BorderRadius.circular(FwLayout.radiusSmall),
+            ),
+            child: widget.collapsed
+                ? _compact(t, selected)
+                : _full(t, selected),
           ),
         ),
       ),
+    );
+  }
+
+  Widget _compact(FwTokens t, bool selected) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Container(
+          width: 2.5,
+          height: 14,
+          decoration: BoxDecoration(
+            color: selected ? t.drift : Colors.transparent,
+            borderRadius: BorderRadius.circular(2),
+          ),
+        ),
+        const SizedBox(width: 4),
+        Text(widget.dest.code,
+            style: fwKicker(t,
+                size: 9.5, color: selected ? t.ink : t.inkMuted)),
+      ],
+    );
+  }
+
+  Widget _full(FwTokens t, bool selected) {
+    return Row(
+      children: [
+        Container(
+          width: 2.5,
+          height: 13,
+          decoration: BoxDecoration(
+            color: selected ? t.drift : Colors.transparent,
+            borderRadius: BorderRadius.circular(2),
+          ),
+        ),
+        const SizedBox(width: FwLayout.s2),
+        Text('0${widget.index + 1}',
+            style: fwKicker(t,
+                size: 9, color: selected ? t.inkMuted : t.inkFaint)),
+        const SizedBox(width: FwLayout.s2),
+        Expanded(
+          child: Text(widget.dest.label,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+                  color: selected ? t.ink : t.inkMuted)),
+        ),
+      ],
     );
   }
 }
@@ -178,7 +262,7 @@ class _ThemeToggle extends StatelessWidget {
         onTap: onToggle,
         child: Container(
           padding: const EdgeInsets.symmetric(
-              horizontal: FwLayout.s3, vertical: FwLayout.s2),
+              horizontal: FwLayout.s2, vertical: 6),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(FwLayout.radiusSmall),
             border: Border.all(color: t.line),
@@ -198,7 +282,7 @@ class _ThemeToggle extends StatelessWidget {
               Flexible(
                 child: Text(label,
                     overflow: TextOverflow.ellipsis,
-                    style: fwMono(t, size: 10.5, color: t.inkMuted)),
+                    style: fwMono(t, size: 10, color: t.inkMuted)),
               ),
             ],
           ),

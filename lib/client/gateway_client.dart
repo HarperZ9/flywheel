@@ -138,6 +138,12 @@ class GatewayClient {
     return _decode(r);
   }
 
+  /// Generic GET returning decoded JSON, for lightweight read-only routes.
+  Future<Map<String, dynamic>> getJson(String path) async {
+    final r = await _http.get(Uri.parse('$baseUrl$path'));
+    return _decode(r);
+  }
+
   /// GET /api/receipts — the receipts ledger (catalog + proof envelopes).
   Future<ReceiptsLedger> receipts() async {
     final r = await _http.get(Uri.parse('$baseUrl/api/receipts'));
