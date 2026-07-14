@@ -794,6 +794,9 @@ class _Handler(BaseHTTPRequestHandler):
                 return self._json(loop_status())
             except Exception as e:
                 return self._json({"error": f"{type(e).__name__}: {e}"}, 502)
+        if p == "/api/credo":                        # the belief, content-addressed and retrievable
+            from harness.credo import credo_doc
+            return self._json(credo_doc())
         if p == "/api/feeds":                        # cross-domain live feeds through gather
             from urllib.parse import unquote_plus
             from harness.live_feeds import live_feeds

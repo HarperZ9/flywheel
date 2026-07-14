@@ -212,6 +212,16 @@ Future License (FSL-1.1-MIT)**. Use, modify, and redistribute it for any purpose
 other than building a competing product, and it converts to the MIT license two
 years after each version's release. See [LICENSE](LICENSE).
 
+## What this believes
+
+One belief across every surface, kept as a content-addressed artifact
+([CREDO.md](CREDO.md), served live at `GET /api/credo`): knowledge open to
+anyone who can attain the means, and we build to lower the means; acceptance
+decided by external checks, never reputation; every result re-runnable;
+honest nulls first-class; ownership earned by comprehension; learning woven
+into the work. The long form is
+[The Unbundling](docs/essays/2026-07-13-the-unbundling.md).
+
 ## Honest boundaries
 
 - The verifier can fail, everywhere. Every surface ships with the tamper check
