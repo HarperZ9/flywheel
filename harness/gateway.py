@@ -1024,6 +1024,25 @@ class _Handler(BaseHTTPRequestHandler):
                 question, claims=claims, measurements=measurements,
                 max_sources=max_sources,
                 workdir=_P(self.run_root) / "science"))
+        if p == "/api/import":                        # arrive with your whole setup, keep the proof
+            length = self._content_length()
+            if length is None:
+                return self._json({"error": "invalid or oversized Content-Length"}, 400)
+            try:
+                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
+            except Exception:
+                req = {}
+            root, err = _resolve_workspace_root(req.get("root"), self.root)
+            if err:
+                return self._json({"error": err}, 400)
+            from harness.import_adapters import import_config
+            doc = import_config(root)
+            try:
+                from harness.store import put_entity
+                doc["stored"] = put_entity("import-manifest", doc).get("eid", "")
+            except Exception as e:
+                doc["stored"] = f"store unavailable: {type(e).__name__}"
+            return self._json(doc)
         if p == "/api/lean":                          # the apex oracle: the kernel decides
             length = self._content_length()
             if length is None:
