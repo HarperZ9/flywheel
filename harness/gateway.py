@@ -832,6 +832,19 @@ class _Handler(BaseHTTPRequestHandler):
                 return self._json(loop_status())
             except Exception as e:
                 return self._json({"error": f"{type(e).__name__}: {e}"}, 502)
+        if p == "/api/frontier":                     # the RAM/compute frontier, measured here
+            from harness.frontier import frontier_table
+            from harness.store import get_entity, query_entities
+            probes = []
+            seen = set()
+            for meta in query_entities(kind="capability"):
+                e = get_entity(meta["eid"])
+                if e and isinstance(e.get("data"), dict):
+                    ep = e["data"].get("endpoint", "")
+                    if ep and ep not in seen:      # newest probe per endpoint
+                        seen.add(ep)
+                        probes.append(e["data"])
+            return self._json(frontier_table(self.root, probes=probes))
         if p == "/api/retention":                    # what is still held, not what was once shown
             from harness.retention import retention_due
             days = 3.0
@@ -1107,6 +1120,29 @@ class _Handler(BaseHTTPRequestHandler):
                 doc["stored"] = put_entity("lean", doc).get("eid", "")
             except Exception as e:
                 doc["stored"] = f"store unavailable: {type(e).__name__}"
+            return self._json(doc)
+        if p == "/api/capability":                    # probe a model on THIS machine
+            length = self._content_length()
+            if length is None:
+                return self._json({"error": "invalid or oversized Content-Length"}, 400)
+            try:
+                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
+            except Exception:
+                req = {}
+            endpoint = (req.get("endpoint") or "").strip()
+            if not endpoint:
+                return self._json({"error": "provide a non-empty 'endpoint'"}, 400)
+            from harness.frontier import capability_probe
+            doc = capability_probe(endpoint)
+            if "error" not in doc:
+                if isinstance(req.get("disk_gb"), (int, float)):
+                    doc["disk_gb"] = float(req["disk_gb"])
+                    doc["disk_gb_source"] = "declared by caller"
+                try:
+                    from harness.store import put_entity
+                    doc["stored"] = put_entity("capability", doc).get("eid", "")
+                except Exception as e:
+                    doc["stored"] = f"store unavailable: {type(e).__name__}"
             return self._json(doc)
         if p == "/api/retention":                     # bank an unaided retest outcome, linked
             length = self._content_length()
