@@ -39,6 +39,23 @@ def test_good_task_clears_every_gate(tmp_path):
     assert r["admitted"]
 
 
+def test_hanging_probe_rejects_within_the_timeout(tmp_path, monkeypatch):
+    """The full-suite hang, pinned: a probe whose hidden tests spin forever
+    must come back False inside the timeout — the tree-kill must reach the
+    pytest grandchild, not just the shell."""
+    import time
+    from harness import task_curator
+    monkeypatch.setattr(task_curator, "ORACLE_TIMEOUT", 5)
+    spin = _variant(task_id="spinner", hidden_tests=(
+        "def test_never():\n"
+        "    while True:\n"
+        "        pass\n"))
+    t0 = time.time()
+    from harness.task_curator import _run_with
+    assert _run_with(spin, tmp_path, GOOD.solution, "hang-probe") is False
+    assert time.time() - t0 < 30, "the kill must reach the grandchild"
+
+
 def test_vacuous_tests_rejected_by_oracle_can_fail(tmp_path):
     vac = _variant(task_id="vacuous", hidden_tests=(
         "def test_a():\n    assert True\n"

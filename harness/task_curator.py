@@ -80,20 +80,31 @@ def _run_with(spec: TaskSpec, work_root: Path, solution_text: str,
     it never expected and can spin forever; that must reject the probe, not
     kill the batch (learned from a batch-3 admission crash)."""
     import subprocess
-    from .oracle import clear_bytecode, run_env
+    from .oracle import _kill_tree, clear_bytecode, run_env
     from .task import load_task
     work = work_root / f"{spec.task_id}-{tag}"
     materialize(spec, work)
     task = load_task(work, workdir=work / "wd")
     task.candidate_full().write_text(solution_text, encoding="utf-8")
     clear_bytecode(Path(task.workdir))
+    # Popen + tree-kill, NOT subprocess.run(timeout=): on Windows with
+    # shell=True, run() kills only cmd.exe on timeout — the pytest
+    # grandchild survives holding the stdout pipe and the post-kill drain
+    # blocks forever (the exact defect oracle.py documents and fixes; this
+    # site had the old pattern and hung the full suite).
+    proc = subprocess.Popen(spec.oracle_cmd, cwd=task.workdir, shell=True,
+                            env=run_env(), stdout=subprocess.PIPE,
+                            stderr=subprocess.PIPE)
     try:
-        r = subprocess.run(spec.oracle_cmd, cwd=task.workdir, shell=True,
-                           capture_output=True, env=run_env(),
-                           timeout=ORACLE_TIMEOUT)
+        proc.communicate(timeout=ORACLE_TIMEOUT)
     except subprocess.TimeoutExpired:
+        _kill_tree(proc)
+        try:
+            proc.communicate(timeout=10)
+        except Exception:
+            pass
         return False
-    return r.returncode == 0
+    return proc.returncode == 0
 
 
 def _behavioral_dup(spec: TaskSpec, other: TaskSpec,

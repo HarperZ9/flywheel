@@ -13,25 +13,25 @@ from pathlib import Path
 
 SCHEMA = "flywheel.release-readiness/v1"
 
-# The 14-flagship family plus the platform's own two repos.
-DEFAULT_ROOTS = {
-    "telos": "C:/dev/public/telos",
-    "index": "C:/dev/public/index",
-    "forum": "C:/dev/public/forum",
-    "gather": "C:/dev/public/gather",
-    "crucible": "C:/dev/public/crucible",
-    "learn": "C:/dev/public/learn",
-    "emet": "C:/dev/public/emet",
-    "mneme": "C:/dev/public/mneme",
-    "plexus": "C:/dev/public/plexus",
-    "relay": "C:/dev/public/relay",
-    "accountable-surface": "C:/dev/public/accountable-surface",
-    "studio-engine": "C:/dev/public/studio-engine",
-    "proof-surface": "C:/dev/public/proof-surface",
-    "coherence-membrane": "C:/dev/public/coherence-membrane",
-    "flywheel-engine": "C:/dev/local-model",
-    "flywheel-desktop": "C:/dev/flywheel-desktop",
-}
+# The 14-flagship family; the platform's own two repos are added by name.
+FAMILY = ("telos", "index", "forum", "gather", "crucible", "learn", "emet",
+          "mneme", "plexus", "relay", "accountable-surface", "studio-engine",
+          "proof-surface", "coherence-membrane")
+
+
+def default_roots() -> dict:
+    """Roots derived at call time — no path literals in shipped source
+    (the run-paths gate enforces this). FLYWHEEL_FAMILY_ROOT overrides the
+    lane parent; the default is the conventional layout relative to this
+    checkout: <parent>/public/<lane>, with the desktop as a sibling."""
+    import os
+    here = Path(__file__).resolve().parents[1]
+    public = Path(os.environ.get("FLYWHEEL_FAMILY_ROOT")
+                  or here.parent / "public")
+    roots = {name: str(public / name) for name in FAMILY}
+    roots["flywheel-engine"] = str(here)
+    roots["flywheel-desktop"] = str(here.parent / "flywheel-desktop")
+    return roots
 
 
 def _check(root: Path) -> list:
@@ -69,7 +69,7 @@ def _check(root: Path) -> list:
 def readiness_report(roots: "dict | None" = None) -> dict:
     """Measure every tool. `roots` maps name -> path (defaults to the
     family roster); injectable so the falsifiers run on synthetic repos."""
-    roots = roots if roots is not None else DEFAULT_ROOTS
+    roots = roots if roots is not None else default_roots()
     tools = []
     for name in sorted(roots):
         gaps = _check(Path(roots[name]))
