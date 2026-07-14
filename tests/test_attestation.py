@@ -15,6 +15,17 @@ RUN = {
 }
 
 
+def test_a_run_that_edited_nothing_is_not_complete():
+    """A run with zero edited files must not read 'complete' at coverage
+    1.0: there is nothing to have reviewed, and a vacuous 'complete'
+    would confer holdership in the ledger (tenet 4)."""
+    empty = {"checkpoint": "x", "review": {"files_edited": []}}
+    doc = attest(empty, [], reviewer="nobody")
+    assert doc["standing"] != "complete"
+    assert doc["standing"] == "empty"
+    assert doc["coverage"] is None
+
+
 def test_full_coverage_is_a_complete_attestation():
     doc = attest(RUN, ["a.py", "b.py", "c.py"], note="walked every diff",
                  reviewer="papacr0w")

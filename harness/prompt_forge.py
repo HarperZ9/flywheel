@@ -150,8 +150,13 @@ def _derive_criterion(goal: str, task_type: str) -> tuple[str, str, bool]:
     g = (goal or "").lower()
     explicit = [
         (r"pass(es|ing)? .*test", "the solution passes the stated tests"),
-        (r"sorted|in order", "the output is correctly ordered per the stated rule"),
-        (r"matches?|equal to|same as", "the output matches the stated reference exactly"),
+        # anchored: a genuine ordering rule, not the idiom "in order to"
+        (r"\bsorted\b|\bin (ascending|descending) order\b|\bordered by\b",
+         "the output is correctly ordered per the stated rule"),
+        # anchored: match against a named reference, not the bare verb
+        (r"match(es|ing)? (the )?(reference|expected|spec|target|output|golden)"
+         r"\b|\bequal to\b|\bidentical to\b",
+         "the output matches the stated reference exactly"),
         (r"under \d+|at most \d+|no more than \d+", "the output satisfies the stated size limit"),
         (r"valid (json|xml|yaml|csv)", "the output parses as the stated valid format"),
     ]
