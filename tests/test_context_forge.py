@@ -65,3 +65,24 @@ def test_confidence_bounds_and_schema():
     d = forge_prp("summarize under 100 words").to_dict()
     assert d["schema"] == "flywheel.prp/v1"
     assert "validation_gates" in d and "prompt" in d
+
+
+def test_prp_carries_content_addressed_y_arms():
+    """The Y-chain arms (RCF 2026-07-14 note, credited): intent and
+    architecture converge at the unit of work, each content-addressed
+    so the receipt shows if either arm moved after the forge."""
+    import hashlib
+    from harness.context_forge import forge_prp
+    intent = "users need CSV export from the billing page"
+    arch = "exports go through the existing report worker, never inline"
+    d = forge_prp("add CSV export", intent_source=intent,
+                  architecture_source=arch).to_dict()
+    assert d["intent_sha256"] == hashlib.sha256(intent.encode()).hexdigest()
+    assert d["architecture_sha256"] == hashlib.sha256(arch.encode()).hexdigest()
+
+
+def test_prp_without_arms_reports_them_absent():
+    from harness.context_forge import forge_prp
+    d = forge_prp("fix the bug").to_dict()
+    assert d["intent_sha256"] == ""
+    assert d["architecture_sha256"] == ""
