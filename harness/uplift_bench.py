@@ -97,6 +97,8 @@ def _run_arm(proposer, tasks: list, oracle, n_candidates: int) -> dict:
     stops the attempts (retrying cannot help when nothing can dispose)."""
     passes = fails = unverifiable = 0
     latencies, attempts_used = [], []
+    per_task: list = []   # outcome vectors: heterogeneity vs diversity is
+                          # only separable with per-task data
     for task in tasks:
         prompt = task.get("prompt", "")
         max_new = int(task.get("max_new_tokens", 512) or 512)
@@ -122,6 +124,8 @@ def _run_arm(proposer, tasks: list, oracle, n_candidates: int) -> dict:
                 break
         latencies.append((time.perf_counter() - t0) * 1000)
         attempts_used.append(attempts)
+        per_task.append({"task_id": str(task.get("task_id", "")),
+                         "outcome": outcome, "attempts": attempts})
         if outcome == "pass":
             passes += 1
         elif outcome == "unverifiable":
@@ -132,6 +136,7 @@ def _run_arm(proposer, tasks: list, oracle, n_candidates: int) -> dict:
     lo, hi = wilson_interval(passes, graded)
     return {
         "n_tasks": len(tasks), "passes": passes, "graded": graded,
+        "tasks": per_task,
         "unverifiable": unverifiable,
         "pass_rate": round(passes / graded, 4) if graded else 0.0,
         "wilson_95": [round(lo, 4), round(hi, 4)],
