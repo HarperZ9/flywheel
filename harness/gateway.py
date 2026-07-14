@@ -1095,9 +1095,42 @@ class _Handler(BaseHTTPRequestHandler):
             goal = (req.get("goal") or "").strip()
             if not goal:
                 return self._json({"error": "provide a non-empty 'goal'"}, 400)
-            return self._json(_forge(goal, examples=req.get("examples"),
-                                     documentation=req.get("documentation"),
-                                     context=req.get("context", "")))
+            return self._json(_forge(
+                goal, examples=req.get("examples"),
+                documentation=req.get("documentation"),
+                context=req.get("context", ""),
+                intent_source=str(req.get("intent_source", "")),
+                architecture_source=str(req.get("architecture_source", ""))))
+        if p == "/api/forge/recheck":                # did an arm drift since the forge?
+            length = self._content_length()
+            if length is None:
+                return self._json({"error": "invalid or oversized Content-Length"}, 400)
+            try:
+                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
+            except Exception:
+                req = {}
+            import hashlib as _h
+            out = {"schema": "flywheel.prp-recheck/v1", "arms": {}}
+            any_arm = False
+            for arm in ("intent", "architecture"):
+                sealed = str(req.get(f"{arm}_sha256", "")).strip()
+                current = req.get(f"{arm}_source")
+                if not sealed or current is None:
+                    continue
+                any_arm = True
+                now = _h.sha256(str(current).encode()).hexdigest()
+                out["arms"][arm] = {"sealed_sha256": sealed,
+                                    "current_sha256": now,
+                                    "moved": now != sealed}
+            if not any_arm:
+                return self._json({"error": "provide <arm>_sha256 and "
+                                            "<arm>_source for intent and/or "
+                                            "architecture"}, 400)
+            out["any_moved"] = any(a["moved"] for a in out["arms"].values())
+            out["note"] = ("the Y-chain drift check: an arm whose current "
+                           "text no longer hashes to the sealed value moved "
+                           "after the forge")
+            return self._json(out)
         if p == "/api/science":                       # evidence -> spec -> witnessed judgment, one chain
             length = self._content_length()
             if length is None:
