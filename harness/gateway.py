@@ -673,8 +673,8 @@ class _Handler(BaseHTTPRequestHandler):
         if code != 200:
             return self._json(body, code)          # errors are plain JSON, not a stream
         # the answer is produced whole before streaming, so the turn
-        # receipt exists before the first chunk leaves
-        scaffold_doc = scaffold_answer(str(text or ""), env)
+        # receipt exists before the first chunk leaves (built at emit time
+        # below with provenance)
         cid = "chatcmpl-" + receipt["receipt_id"]
         created = int(time.time())
         self.send_response(200)
@@ -697,6 +697,9 @@ class _Handler(BaseHTTPRequestHandler):
             import re
             for piece in (re.findall(r"\S+\s*", str(text)) or [str(text)]):
                 emit({"index": 0, "delta": {"content": piece}, "finish_reason": None})
+            scaffold_doc = scaffold_answer(
+                str(text or ""), env,
+                provenance={"endpoint": "v1", "model_ref": str(model_ref)})
             emit({"index": 0, "delta": {}, "finish_reason": "stop"},
                  {"x_receipt": receipt, "x_scaffold": scaffold_doc})
             self.wfile.write(b"data: [DONE]\n\n")
@@ -1064,7 +1067,9 @@ class _Handler(BaseHTTPRequestHandler):
                     content = ""
                 # extension field: OpenAI clients ignore unknown keys
                 body["flywheel_scaffold"] = scaffold_answer(
-                    str(content or ""), env)
+                    str(content or ""), env,
+                    provenance={"endpoint": "v1",
+                                "model_ref": str(body.get("model") or "")})
             return self._json(body, code)
         if p == "/v1/embeddings":                    # OpenAI-compatible, routed to a provider
             length = self._content_length()
@@ -1375,7 +1380,10 @@ class _Handler(BaseHTTPRequestHandler):
             body, code = route_request(prompt, endpoint)
             if code == 200 and isinstance(body, dict):
                 body["scaffold"] = scaffold_answer(
-                    str(body.get("text", "")), env)
+                    str(body.get("text", "")), env,
+                    provenance={"endpoint": endpoint,
+                                "model_ref": str(body.get("model_ref")
+                                                 or endpoint)})
             return self._json(body, code)
         if p == "/api/companion":                     # the seat: answer local, escalate the hard slice
             length = self._content_length()
@@ -1394,7 +1402,11 @@ class _Handler(BaseHTTPRequestHandler):
             from harness.scaffold import scaffold_answer, scaffold_turn
             env = scaffold_turn(prompt)
             body = companion_answer(seat, prompt, req.get("solution_sig", ""))
-            body["scaffold"] = scaffold_answer(str(body.get("text", "")), env)
+            body["scaffold"] = scaffold_answer(
+                str(body.get("text", "")), env,
+                provenance={"endpoint": "companion",
+                            "model_ref": str(body.get("model_ref")
+                                             or body.get("source") or "")})
             return self._json(body)
         if p == "/api/agent":                          # the agentic tool loop over ANY provider
             length = self._content_length()
@@ -1422,6 +1434,11 @@ class _Handler(BaseHTTPRequestHandler):
             root, err = _resolve_workspace_root(req.get("root"), self.root)
             if err:
                 return self._json({"error": err}, 400)
+            # freeze the goal's named sources BEFORE the agent runs, so the
+            # pre-pass is a pre-pass (not an after-the-fact re-freeze)
+            from harness.scaffold import scaffold_answer as _sa, \
+                scaffold_turn as _st
+            env = _st(goal)
             from harness.router_agent import run_router_agent
             try:
                 result = run_router_agent(
@@ -1435,10 +1452,10 @@ class _Handler(BaseHTTPRequestHandler):
                 return self._json({"error": f"{type(e).__name__}: {e}"}, 502)
             if effort is not None:
                 result["effort"] = effort   # the dial position, receipted
-            from harness.scaffold import scaffold_answer as _sa, \
-                scaffold_turn as _st
-            result["scaffold"] = _sa(str(result.get("final") or ""),
-                                     _st(goal))
+            result["scaffold"] = _sa(
+                str(result.get("final") or ""), env,
+                provenance={"endpoint": endpoint,
+                            "model_ref": str(req.get("model") or endpoint)})
             result["run_receipt"] = _countersign_run(result)
             return self._json(result)
         if p == "/api/workflow":                       # staged run with a chained receipt, any endpoint

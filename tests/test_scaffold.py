@@ -60,6 +60,28 @@ def test_post_pass_chains_a_turn_receipt(tmp_path, monkeypatch):
     assert len(query_entities(kind="turn-receipt")) == 1
 
 
+def test_turn_receipt_carries_which_model_answered(tmp_path, monkeypatch):
+    """A receipt that omits who produced the answer is not re-runnable: a
+    stranger cannot reproduce it without knowing the endpoint and model."""
+    monkeypatch.setenv("FLYWHEEL_HOME", str(tmp_path))
+    env = scaffold_turn("hello", snapshotter=lambda u: None)
+    r = scaffold_answer("the answer", env,
+                        provenance={"endpoint": "ollama",
+                                    "model_ref": "ollama:telos-coder-14b"})
+    assert r["provenance"]["endpoint"] == "ollama"
+    assert r["provenance"]["model_ref"] == "ollama:telos-coder-14b"
+    from harness.store import get_entity
+    stored = get_entity(r["eid"])
+    assert stored["data"]["provenance"]["model_ref"] == "ollama:telos-coder-14b"
+
+
+def test_provenance_absent_is_omitted_not_faked(tmp_path, monkeypatch):
+    monkeypatch.setenv("FLYWHEEL_HOME", str(tmp_path))
+    env = scaffold_turn("hi", snapshotter=lambda u: None)
+    r = scaffold_answer("a", env)
+    assert "provenance" not in r
+
+
 def test_post_pass_verifies_citations_when_present(tmp_path, monkeypatch):
     monkeypatch.setenv("FLYWHEEL_HOME", str(tmp_path))
     src = b"the hubble constant is 73.17 km/s/Mpc"
