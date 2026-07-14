@@ -97,9 +97,13 @@ def run_agent(agent, goal: str, executor: ToolExecutor,
 
 
 def _done(final: str, steps: int, ledger: SessionLedger, *, tests_pass=None, note="") -> dict:
+    from .run_review import run_review
     out = {"final": final, "steps": steps,
            "checkpoint": ledger.checkpoint(), "verified": ledger.verify(),
-           "entries": len(ledger.entries), "ledger": ledger}
+           "entries": len(ledger.entries), "ledger": ledger,
+           # the reviewability projection: what a senior reviewer checks
+           # first, derived from the witnessed ledger, shipped with the run
+           "review": run_review(ledger.entries)}
     # Trajectory-integrity verdict: did the agent edit the file that grades it, or
     # write test-neutralizing code? Surfaced re-checkably so a tampered "green" is
     # visible, not silently accepted (reward-hacking guard, keeps the C2 invariant).
