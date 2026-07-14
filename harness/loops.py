@@ -81,10 +81,14 @@ def _learn_gate(ctx):
 
 
 def _learn_bank(ctx):
+    import uuid
     from .store import put_entity
     r = dict(ctx["_receipt"])
     r["files"] = ["x.py"]                 # the ledger keys holdership by file
-    s = put_entity("comprehension", r)
+    # each measurement is a distinct turn of the loop: a unique eid keeps
+    # this turn's evidence unretested, so the schedule edge measures the
+    # mechanism, not the residue of the previous turn's retest
+    s = put_entity("comprehension", r, eid="loop-learn-" + uuid.uuid4().hex[:16])
     ctx["_eid"] = s["eid"]
     return True, s["chain_hash"], "receipt banked in the verifiable store"
 
