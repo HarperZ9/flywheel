@@ -81,7 +81,11 @@ def run_review(entries: list) -> dict:
                                      "rule": content.strip()[:200]})
             elif meta.get("ok") is False:
                 failed_calls += 1
-            if meta.get("tool") == "run" and meta.get("ok") is True:
+            # only the TEST-GATE run verifies prior writes: a model-injected
+            # green run (echo ok) must not advance verification. The harness
+            # tags its own gate run with gate=='test' (local_loop).
+            if (meta.get("tool") == "run" and meta.get("ok") is True
+                    and meta.get("gate") == "test"):
                 last_green_run = order
 
     edited_unread = sorted({p for _, p, was_read in writes if not was_read})
