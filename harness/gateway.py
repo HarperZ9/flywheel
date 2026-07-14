@@ -930,6 +930,27 @@ class _Handler(BaseHTTPRequestHandler):
             return self._json(_forge(goal, examples=req.get("examples"),
                                      documentation=req.get("documentation"),
                                      context=req.get("context", "")))
+        if p == "/api/science":                       # evidence -> spec -> witnessed judgment, one chain
+            length = self._content_length()
+            if length is None:
+                return self._json({"error": "invalid or oversized Content-Length"}, 400)
+            try:
+                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
+            except Exception:
+                req = {}
+            question = (req.get("question") or "").strip()
+            if not question:
+                return self._json({"error": "provide a non-empty 'question'"}, 400)
+            from harness.science_bench import science_run
+            try:
+                max_sources = max(1, min(int(req.get("max_sources", 4)), 10))
+            except (TypeError, ValueError):
+                max_sources = 4
+            claims = req.get("claims") if isinstance(req.get("claims"), list) else None
+            from pathlib import Path as _P
+            return self._json(science_run(
+                question, claims=claims, max_sources=max_sources,
+                workdir=_P(self.run_root) / "science"))
         if p == "/api/route":                         # universal router: send to ANY provider, with a receipt
             length = self._content_length()
             if length is None:
