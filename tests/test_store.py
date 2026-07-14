@@ -94,3 +94,21 @@ def test_stats_and_empty_kind_refused():
     assert s["entities"] == 3
     assert s["kinds"]["a"] == 2
     assert "error" in store.put_entity("", {})
+
+
+def test_query_all_entities_pages_past_the_limit():
+    for i in range(7):
+        store.put_entity("paged", {"i": i})
+    got = store.query_all_entities(kind="paged", chunk=2)
+    assert len(got) == 7
+    assert len({e["eid"] for e in got}) == 7
+
+
+def test_retention_due_reports_its_full_scan():
+    from harness.retention import retention_due
+    for i in range(3):
+        store.put_entity("comprehension",
+                         {"files": [f"x{i}.py"], "passed": True})
+    doc = retention_due(days=0)
+    assert doc["complete"] is True
+    assert doc["scanned"] >= 3
