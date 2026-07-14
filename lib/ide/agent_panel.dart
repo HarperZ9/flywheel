@@ -18,6 +18,10 @@ class AgentPanel extends StatefulWidget {
   final String? selection;
   final VoidCallback onRunStarted;
   final VoidCallback onRunFinished;
+
+  /// When provided, the goal field is owned by the caller so other panes
+  /// (the diff viewer's anchored change requests) can compose into it.
+  final TextEditingController? goalController;
   const AgentPanel(
       {super.key,
       required this.client,
@@ -26,14 +30,16 @@ class AgentPanel extends StatefulWidget {
       required this.onRunStarted,
       required this.onRunFinished,
       this.activeFile,
-      this.selection});
+      this.selection,
+      this.goalController});
 
   @override
   State<AgentPanel> createState() => _AgentPanelState();
 }
 
 class _AgentPanelState extends State<AgentPanel> {
-  final _goal = TextEditingController();
+  late final TextEditingController _goal =
+      widget.goalController ?? TextEditingController();
   List<EndpointRow> _endpoints = [];
   String? _endpoint;
   bool _allowWrite = true; // an IDE agent exists to edit; still a visible grant
@@ -51,7 +57,7 @@ class _AgentPanelState extends State<AgentPanel> {
 
   @override
   void dispose() {
-    _goal.dispose();
+    if (widget.goalController == null) _goal.dispose();
     super.dispose();
   }
 

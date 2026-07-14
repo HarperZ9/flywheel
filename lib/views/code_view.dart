@@ -44,12 +44,16 @@ class _CodeViewState extends State<CodeView> {
   String? _status;
   final Map<String, String> _preRunSnapshot = {};
   List<FileDiff> _diffs = [];
+  // Owned here so the diff viewer's anchored change requests compose into
+  // the same goal the agent panel sends.
+  final _agentGoal = TextEditingController();
 
   @override
   void dispose() {
     for (final f in _open) {
       f.controller.dispose();
     }
+    _agentGoal.dispose();
     super.dispose();
   }
 
@@ -188,7 +192,19 @@ class _CodeViewState extends State<CodeView> {
       backgroundColor: context.fw.ground,
       builder: (ctx) => SizedBox(
         height: MediaQuery.of(ctx).size.height * 0.7,
-        child: DiffViewPanel(diffs: _diffs),
+        child: DiffViewPanel(
+          diffs: _diffs,
+          onRequest: (d, anchor, note) {
+            final prefix = _agentGoal.text.trim().isEmpty
+                ? ''
+                : '${_agentGoal.text.trimRight()}\n';
+            _agentGoal.text =
+                '${prefix}CHANGE REQUEST [${d.path} @ $anchor]: $note';
+            Navigator.of(ctx).pop();
+            setState(() => _status =
+                'change request anchored to ${d.path} @ $anchor');
+          },
+        ),
       ),
     );
   }
@@ -287,6 +303,7 @@ class _CodeViewState extends State<CodeView> {
             workspaceRoot: _root!,
             activeFile: active?.path,
             selection: _selectionOf(active),
+            goalController: _agentGoal,
             onRunStarted: _snapshotOpenFiles,
             onRunFinished: _reloadCleanFiles,
           ),

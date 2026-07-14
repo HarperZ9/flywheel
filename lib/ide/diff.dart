@@ -22,6 +22,29 @@ class FileDiff {
   int get removed => lines.where((l) => l.kind == DiffKind.del).length;
 }
 
+/// A deterministic anchor over exactly the changed lines of a diff, so a
+/// change request stays bound to the change it was written against — if
+/// the diff shifts, the anchor moves and the staleness is visible.
+/// FNV-1a 64-bit, honestly named an anchor rather than a cryptographic hash.
+String changeAnchor(FileDiff d) {
+  var hash = 0xcbf29ce484222325;
+  void mix(String s) {
+    for (final unit in s.codeUnits) {
+      hash ^= unit;
+      hash = (hash * 0x100000001b3) & 0xFFFFFFFFFFFFFFFF;
+    }
+  }
+
+  mix(d.path);
+  for (final l in d.lines) {
+    if (l.kind != DiffKind.same) {
+      mix(l.kind == DiffKind.add ? '+' : '-');
+      mix(l.text);
+    }
+  }
+  return hash.toRadixString(16).padLeft(16, '0');
+}
+
 /// Diff two file contents line-wise. Unchanged runs longer than three lines
 /// collapse to a context marker so the changes carry the view.
 FileDiff diffFiles(String path, String before, String after) {

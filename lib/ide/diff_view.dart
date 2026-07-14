@@ -9,7 +9,11 @@ import 'diff.dart';
 
 class DiffViewPanel extends StatelessWidget {
   final List<FileDiff> diffs;
-  const DiffViewPanel({super.key, required this.diffs});
+
+  /// Landscape import 10: a change request anchored to the exact change it
+  /// was written against (path + anchor over the changed lines).
+  final void Function(FileDiff diff, String anchor, String note)? onRequest;
+  const DiffViewPanel({super.key, required this.diffs, this.onRequest});
 
   @override
   Widget build(BuildContext context) {
@@ -61,6 +65,16 @@ class DiffViewPanel extends StatelessWidget {
                   const SizedBox(width: 6),
                   Text('−${d.removed}',
                       style: fwMono(t, size: 11, color: t.drift)),
+                  if (onRequest != null)
+                    Builder(builder: (context) {
+                      return IconButton(
+                        icon: const Icon(Icons.rate_review_outlined,
+                            size: 15),
+                        tooltip: 'request change on this diff',
+                        visualDensity: VisualDensity.compact,
+                        onPressed: () => _requestDialog(context, d),
+                      );
+                    }),
                 ],
               ),
             ),
@@ -81,6 +95,45 @@ class DiffViewPanel extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  Future<void> _requestDialog(BuildContext context, FileDiff d) async {
+    final note = TextEditingController();
+    final anchor = changeAnchor(d);
+    final submitted = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: ctx.fw.ground,
+        title: Text('Request change · ${d.path}',
+            style: Theme.of(ctx).textTheme.titleMedium),
+        content: SizedBox(
+          width: 420,
+          child: TextField(
+            controller: note,
+            autofocus: true,
+            maxLines: 3,
+            minLines: 1,
+            style: const TextStyle(fontSize: 12.5),
+            decoration: InputDecoration(
+                hintText: 'What should change here…',
+                helperText: 'anchored to $anchor',
+                helperStyle: fwMono(ctx.fw, size: 10.5)),
+          ),
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: const Text('Cancel')),
+          FilledButton(
+              onPressed: () => Navigator.of(ctx).pop(true),
+              child: const Text('Add request')),
+        ],
+      ),
+    );
+    if (submitted == true && note.text.trim().isNotEmpty) {
+      onRequest!(d, anchor, note.text.trim());
+    }
+    note.dispose();
   }
 
   Widget _line(FwTokens t, DiffLine l) {
