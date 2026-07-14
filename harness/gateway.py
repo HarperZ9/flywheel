@@ -166,12 +166,21 @@ def receipts_ledger(root: Path, run_root: Path | str) -> dict:
                 entry["task_id"] = ""
             envelopes.append(entry)
     passes = sum(1 for e in envelopes if e["verdict"] == "PASS")
+    # a Merkle commitment over the ordered envelope hashes: a stranger can
+    # prove one receipt is in this log without holding the whole ledger
+    from harness.transparency_log import merkle_root
+    leaves = [e["sha256"] for e in envelopes]
+    root_hash = merkle_root(leaves) if leaves else ""
     return {"schema": "flywheel.receipts/v1",
             "catalog": catalog,
             "catalog_present": sum(1 for r in catalog if r["present"]),
             "envelopes": envelopes,
             "envelope_count": len(envelopes),
-            "pass_count": passes}
+            "pass_count": passes,
+            "merkle_root": root_hash,
+            "merkle_note": "root over the ordered envelope hashes; GET "
+                           "/api/receipts/proof?leaf=<sha256> returns an "
+                           "inclusion proof re-checkable offline"}
 
 
 def _resolve_workspace_root(requested, default: Path) -> "tuple[Path, str | None]":
@@ -925,6 +934,30 @@ class _Handler(BaseHTTPRequestHandler):
                                             budget=budget, query=query))
         if p == "/api/receipts":                     # the receipts ledger (catalog + envelopes)
             return self._json(receipts_ledger(self.root, self.run_root))
+        if p == "/api/receipts/proof":               # prove one receipt is in the log
+            leaf = ""
+            for part in qs.split("&"):
+                if part.startswith("leaf="):
+                    leaf = part[5:].strip()
+            if len(leaf) != 64:
+                return self._json({"error": "provide 'leaf' (a 64-hex "
+                                            "envelope sha256)"}, 400)
+            from harness.transparency_log import (inclusion_proof,
+                                                  merkle_root)
+            led = receipts_ledger(self.root, self.run_root)
+            leaves = [e["sha256"] for e in led["envelopes"]]
+            if leaf not in leaves:
+                return self._json({"error": "leaf not in the receipts log",
+                                   "leaf": leaf, "merkle_root":
+                                   led["merkle_root"]}, 404)
+            idx = leaves.index(leaf)
+            return self._json({"schema": "flywheel.receipts-proof/v1",
+                               "leaf": leaf,
+                               "merkle_root": merkle_root(leaves),
+                               "proof": inclusion_proof(leaves, idx),
+                               "note": "verify offline with "
+                                       "transparency_log.verify_inclusion("
+                                       "leaf, proof, merkle_root)"})
         if p == "/api/profiles":                     # profile manifests over the one substrate
             from harness.profiles import profile_roster
             return self._json(profile_roster())
@@ -946,9 +979,18 @@ class _Handler(BaseHTTPRequestHandler):
         if p == "/api/store":                        # verifiable substrate stats
             from harness.store import stats
             return self._json(stats())
-        if p == "/api/store/verify":                 # walk + re-check the audit chain
-            from harness.store import verify_chain
-            return self._json(verify_chain())
+        if p == "/api/store/verify":                 # walk the chain AND re-check the records
+            from harness.store import verify_chain, verify_records
+            chain = verify_chain()
+            records = verify_records()
+            return self._json({"schema": "flywheel.store-verify/v1",
+                               "ok": bool(chain.get("ok"))
+                               and bool(records.get("ok")),
+                               "chain": chain, "records": records,
+                               "note": "ok requires BOTH the ledger chain "
+                                       "and the records it attests; a "
+                                       "tampered entity fails records even "
+                                       "when the chain still verifies"})
         if p == "/api/store/audit":                  # the hash-chained audit tail
             from harness.store import audit_tail
             n = 50
