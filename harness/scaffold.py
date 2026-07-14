@@ -42,7 +42,11 @@ def scaffold_turn(prompt: str, *, snapshotter=None) -> dict:
     """The pre-pass: freeze what the prompt names. Returns the envelope
     the answer path carries forward; degradation is named per source."""
     snapshotter = snapshotter or _default_snapshotter
-    urls = list(dict.fromkeys(_URL.findall(prompt or "")))[:_MAX_SOURCES]
+    all_urls = list(dict.fromkeys(_URL.findall(prompt or "")))
+    urls = all_urls[:_MAX_SOURCES]
+    # the freeze budget is bounded, but the overflow is NAMED, not dropped
+    # silently: a hidden truncation is a hidden null
+    not_frozen = [u.rstrip(".,;") for u in all_urls[_MAX_SOURCES:]]
     frozen, degraded = [], []
     for u in urls:
         u = u.rstrip(".,;")
@@ -61,8 +65,11 @@ def scaffold_turn(prompt: str, *, snapshotter=None) -> dict:
             "prompt_sha256": hashlib.sha256(
                 (prompt or "").encode("utf-8")).hexdigest(),
             "sources_frozen": frozen, "degraded": degraded,
+            "not_frozen": not_frozen, "over_budget": len(not_frozen),
             "note": "sources named in the prompt are frozen before the "
-                    "answer exists; a dead source is named, not faked"}
+                    "answer exists; a dead source is named, not faked; a "
+                    "source past the per-turn budget is named in not_frozen, "
+                    "not silently dropped"}
 
 
 def scaffold_answer(answer: str, envelope: dict, *,
