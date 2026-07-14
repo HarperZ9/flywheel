@@ -665,9 +665,10 @@ class _Handler(BaseHTTPRequestHandler):
         deltas ending with [DONE]. Any OpenAI streaming client consumes it as-is."""
         import time
         from harness.scaffold import scaffold_answer, scaffold_turn
-        _texts = [str(m.get("content", "")) for m in
-                  (req.get("messages") or []) if isinstance(m, dict)]
-        env = scaffold_turn("\n".join(_texts))
+        # hash and freeze what the model was ACTUALLY sent (the flattened
+        # prompt), not a naive join of raw content that reprs content-parts
+        _sys, _prompt = _flatten_messages(req.get("messages", []))
+        env = scaffold_turn("\n".join(x for x in (_sys, _prompt) if x))
         body, code, receipt, text, model_ref = openai_chat(req, self.serve_url)
         if code != 200:
             return self._json(body, code)          # errors are plain JSON, not a stream
@@ -1051,9 +1052,10 @@ class _Handler(BaseHTTPRequestHandler):
             if req.get("stream"):
                 return self._sse_chat(req)
             from harness.scaffold import scaffold_answer, scaffold_turn
-            _texts = [str(m.get("content", "")) for m in
-                      (req.get("messages") or []) if isinstance(m, dict)]
-            env = scaffold_turn("\n".join(_texts))
+            # hash and freeze the flattened prompt the model was actually
+            # sent, so the turn receipt is reproducible by a stranger
+            _sys, _prompt = _flatten_messages(req.get("messages", []))
+            env = scaffold_turn("\n".join(x for x in (_sys, _prompt) if x))
             body, code, _r, _t, _m = openai_chat(req, self.serve_url)
             if code == 200 and isinstance(body, dict):
                 try:
