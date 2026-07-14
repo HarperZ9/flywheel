@@ -1,0 +1,123 @@
+{
+  "assessment": {
+    "started_at": 1784000459.5735583,
+    "thesis_id": "c2477486232c2201",
+    "thesis_seal": "c2477486232c2201608e49253000faf7b53e92367d66673996e7d05cdb98c01f",
+    "claims": 3,
+    "match": 1,
+    "drift": 2,
+    "unverifiable": 0,
+    "verdict_seal": "c2b2ecd40fff0903a2ab815fc55807de3c38b569d4f31c1950e499cb787188ea",
+    "measurement_seal": "3dd7db08cb23ab70f32ab8f1fad2feabade29e5b1f8f57e6be64b66ce7bd8329",
+    "disposition": "publishable",
+    "stored": null,
+    "verdicts": [
+      {
+        "claim_id": "c-3b",
+        "claim_sha256": "1645ac3ff074951bb0dc5257604d0f26283eb2f32df6671a412dcb097c3186aa",
+        "status": "MATCH",
+        "deviation": 0.0,
+        "tolerance": 0.001,
+        "margin": 1.0,
+        "method": "newcombe-95-lower-bound vs 0; paired-arm bench, n=110, best-of-3 wrapped; lower bound +0.018",
+        "grounds": "deviation 0 within tolerance 0.001",
+        "disposition": "publishable"
+      },
+      {
+        "claim_id": "c-7b",
+        "claim_sha256": "e44d32f332a15998b62f72bdabf2bf202dd3670ec688595503a8bdbc9d5d768e",
+        "status": "DRIFT",
+        "deviation": 0.037,
+        "tolerance": 0.001,
+        "margin": -36.0,
+        "method": "newcombe-95-lower-bound vs 0; paired-arm bench, n=110, best-of-3 wrapped; lower bound -0.037",
+        "grounds": "deviation 0.037 exceeds tolerance 0.001",
+        "disposition": "publishable"
+      },
+      {
+        "claim_id": "c-05b",
+        "claim_sha256": "00766e6b4aabb0610abeebc3fda2f0198ad49e4db8ffaced76c64430efc4bcff",
+        "status": "DRIFT",
+        "deviation": 0.034,
+        "tolerance": 0.001,
+        "margin": -33.0,
+        "method": "newcombe-95-lower-bound vs 0; paired-arm bench, n=110, best-of-3 wrapped; lower bound -0.034",
+        "grounds": "deviation 0.034 exceeds tolerance 0.001",
+        "disposition": "publishable"
+      }
+    ],
+    "measurements": [
+      {
+        "claim_id": "c-3b",
+        "claim_sha256": "1645ac3ff074951bb0dc5257604d0f26283eb2f32df6671a412dcb097c3186aa",
+        "deviation": 0.0,
+        "tolerance": 0.001,
+        "method": "newcombe-95-lower-bound vs 0; paired-arm bench, n=110, best-of-3 wrapped; lower bound +0.018",
+        "measured_at": 1784000459.5735583,
+        "evidence": [
+          "artifacts/uplift/uplift_hard_v2_20260713-194718.json"
+        ]
+      },
+      {
+        "claim_id": "c-7b",
+        "claim_sha256": "e44d32f332a15998b62f72bdabf2bf202dd3670ec688595503a8bdbc9d5d768e",
+        "deviation": 0.037,
+        "tolerance": 0.001,
+        "method": "newcombe-95-lower-bound vs 0; paired-arm bench, n=110, best-of-3 wrapped; lower bound -0.037",
+        "measured_at": 1784000459.5735583,
+        "evidence": [
+          "artifacts/uplift/uplift_hard_v2_20260713-190747.json"
+        ]
+      },
+      {
+        "claim_id": "c-05b",
+        "claim_sha256": "00766e6b4aabb0610abeebc3fda2f0198ad49e4db8ffaced76c64430efc4bcff",
+        "deviation": 0.034,
+        "tolerance": 0.001,
+        "method": "newcombe-95-lower-bound vs 0; paired-arm bench, n=110, best-of-3 wrapped; lower bound -0.034",
+        "measured_at": 1784000459.5735583,
+        "evidence": [
+          "artifacts/uplift/uplift_hard_v2_20260713-201327.json"
+        ]
+      }
+    ],
+    "seal": "6389b91224d8d741a97900f02975bc89d15c17990fb0097bf2c8896c58133ef6"
+  },
+  "verdicts": [
+    {
+      "claim_id": "c-3b",
+      "claim_sha256": "1645ac3ff074951bb0dc5257604d0f26283eb2f32df6671a412dcb097c3186aa",
+      "status": "MATCH",
+      "disposition": "publishable",
+      "deviation": 0.0,
+      "tolerance": 0.001,
+      "margin": 1.0,
+      "method": "newcombe-95-lower-bound vs 0; paired-arm bench, n=110, best-of-3 wrapped; lower bound +0.018",
+      "grounds": "deviation 0 within tolerance 0.001"
+    },
+    {
+      "claim_id": "c-7b",
+      "claim_sha256": "e44d32f332a15998b62f72bdabf2bf202dd3670ec688595503a8bdbc9d5d768e",
+      "status": "DRIFT",
+      "disposition": "publishable",
+      "deviation": 0.037,
+      "tolerance": 0.001,
+      "margin": -36.0,
+      "method": "newcombe-95-lower-bound vs 0; paired-arm bench, n=110, best-of-3 wrapped; lower bound -0.037",
+      "grounds": "deviation 0.037 exceeds tolerance 0.001"
+    },
+    {
+      "claim_id": "c-05b",
+      "claim_sha256": "00766e6b4aabb0610abeebc3fda2f0198ad49e4db8ffaced76c64430efc4bcff",
+      "status": "DRIFT",
+      "disposition": "publishable",
+      "deviation": 0.034,
+      "tolerance": 0.001,
+      "margin": -33.0,
+      "method": "newcombe-95-lower-bound vs 0; paired-arm bench, n=110, best-of-3 wrapped; lower bound -0.034",
+      "grounds": "deviation 0.034 exceeds tolerance 0.001"
+    }
+  ],
+  "measurement_warnings": [],
+  "explanations": []
+}
