@@ -232,6 +232,33 @@ def _training_status(run_root: str) -> dict:
         return {"error": f"training_status failed: {e}"}
 
 
+def _countersign_run(result: dict) -> dict:
+    """Build 5 from the dossier (the Sello requirement): the receiving side
+    countersigns. The gateway, not the agent, writes the run's summary into
+    the verifiable store, so the evidence trail does not depend on the
+    agent's own honesty. Store failure is named, never silent."""
+    import hashlib as _h
+    summary = {
+        "checkpoint": str(result.get("checkpoint", "")),
+        "verified": bool(result.get("verified")),
+        "integrity_clean": bool((result.get("integrity") or {}).get("clean")),
+        "review_sha256": _h.sha256(json.dumps(
+            result.get("review") or {}, sort_keys=True).encode()).hexdigest(),
+        "manifest_sha256": _h.sha256(json.dumps(
+            result.get("context_manifest") or {},
+            sort_keys=True).encode()).hexdigest(),
+        "high_risk_edits": len((result.get("risk_review") or {})
+                               .get("demands") or []),
+    }
+    try:
+        from harness.store import put_entity
+        stored = put_entity("agent-run", summary)
+        return {**summary, "stored": stored.get("eid", ""),
+                "chain_hash": stored.get("chain_hash", "")}
+    except Exception as e:
+        return {**summary, "stored": f"store unavailable: {type(e).__name__}"}
+
+
 def _forge(goal: str, **kw) -> dict:
     """Goal -> a verified PRP (context_forge): criterion-bearing spec + validation
     gates + confidence grounded in external-checkability. The studio front door."""
@@ -706,7 +733,9 @@ class _Handler(BaseHTTPRequestHandler):
                   "review": result.get("review"),
                   "checkpoint": result.get("checkpoint"),
                   # the window manifest: what the model actually saw
-                  "context_manifest": result.get("context_manifest")})
+                  "context_manifest": result.get("context_manifest"),
+                  "risk_review": result.get("risk_review"),
+                  "run_receipt": _countersign_run(result)})
         except Exception as e:
             emit({"type": "error", "error": f"{type(e).__name__}: {e}"})
         try:
@@ -1084,6 +1113,7 @@ class _Handler(BaseHTTPRequestHandler):
                     compact_budget=int(req.get("compact_budget", 0) or 0))
             except Exception as e:
                 return self._json({"error": f"{type(e).__name__}: {e}"}, 502)
+            result["run_receipt"] = _countersign_run(result)
             return self._json(result)
         if p == "/api/workflow":                       # staged run with a chained receipt, any endpoint
             length = self._content_length()

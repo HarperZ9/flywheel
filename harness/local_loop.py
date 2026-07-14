@@ -103,6 +103,7 @@ def run_agent(agent, goal: str, executor: ToolExecutor,
 def _done(final: str, steps: int, ledger: SessionLedger, *, tests_pass=None,
           note="", system: str = "", goal: str = "") -> dict:
     from .context_manifest import context_manifest
+    from .risk_review import risk_review
     from .run_review import run_review
     out = {"final": final, "steps": steps,
            "checkpoint": ledger.checkpoint(), "verified": ledger.verify(),
@@ -112,7 +113,9 @@ def _done(final: str, steps: int, ledger: SessionLedger, *, tests_pass=None,
            "review": run_review(ledger.entries),
            # the window manifest: what the model actually saw, replayable
            "context_manifest": context_manifest(
-               ledger.entries, system=system, goal=goal)}
+               ledger.entries, system=system, goal=goal),
+           # risk tiers per edit; high tiers name the receipt they demand
+           "risk_review": risk_review(ledger.entries)}
     # Trajectory-integrity verdict: did the agent edit the file that grades it, or
     # write test-neutralizing code? Surfaced re-checkably so a tampered "green" is
     # visible, not silently accepted (reward-hacking guard, keeps the C2 invariant).
