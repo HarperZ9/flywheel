@@ -36,11 +36,30 @@ event shapes work unmodified.
 - The instruction to cite by byte range against the hashes, which the
   engine's `verify_citations` can then check mechanically.
 
+## The post-pass
+
+`scripts/hooks/wrapper_turn_receipt_hook.py` completes the guarantee
+from the wrapper's stop-hook slot: it sends the prompt and final
+answer to `POST /api/scaffold`, which runs both passes engine-side and
+chains the turn receipt (prompt hash, answer hash, frozen sources)
+into the audit ledger. Same failure posture: open and silent, and a
+turn that could not be banked is simply not banked, never faked.
+
+Claude Code mount for the pair:
+
+```json
+{"hooks": {
+  "UserPromptSubmit": [{"hooks": [{"type": "command",
+    "command": "python <abspath>/scripts/hooks/wrapper_scaffold_hook.py"}]}],
+  "Stop": [{"hooks": [{"type": "command",
+    "command": "python <abspath>/scripts/hooks/wrapper_turn_receipt_hook.py"}]}]
+}}
+```
+
 ## Boundary
 
-The hook covers perception (freeze before work). The post-pass (turn
-receipt chaining the answer hash) belongs to the harness's stop-hook
-slot and needs the wrapper to hand over the final answer text; that
-wiring is per-wrapper and not shipped here yet. A wrapper that wants
-the full guarantee today routes through `POST /api/route` or the
-OpenAI-compat surface instead, where both passes run engine-side.
+The stop-hook can only bank what the wrapper hands it: if the event
+shape carries no final answer text, the receipt records the prompt
+side only. `POST /api/scaffold` also accepts a `citations` list
+(offset-bound, per docs on verify_citations) so a wrapper that cites
+byte ranges gets them verified in the same receipt.
