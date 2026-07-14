@@ -1,0 +1,10 @@
+{
+  "measurements": [
+    {"claim": "c-eta-order", "deviation": 0.0, "tolerance": 0.001,
+     "method": "eta(3b)=0.757 > eta(7b)=0.269 at best-of-3, n=110; unchanged by adjudication",
+     "evidence": ["artifacts/uplift/uplift_hard_v2_20260713-194718.json"]},
+    {"claim": "c-3b-n5", "deviation": 0.0759, "tolerance": 0.075,
+     "method": "3b best-of-5 wrapped = 23/110 = 0.2091; sealed band [0.21,0.36] midpoint 0.285 half-width 0.075; deviation 0.0759 > 0.075 -> DRIFT. The prediction MISSES LOW by 0.0009, exactly the bimodal-rescue outcome the adversary and the frozen addendum pre-registered. No rescue.",
+     "evidence": ["artifacts/uplift/uplift_hard_v2_20260714-083129.json"]}
+  ]
+}
