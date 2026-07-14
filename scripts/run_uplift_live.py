@@ -1,4 +1,4 @@
-"""run_uplift_live.py -- fire ONE live uplift bench run. An operator command:
+﻿"""run_uplift_live.py -- fire ONE live uplift bench run. An operator command:
 it consumes local model time (and provider quota if hosted names are given);
 nothing calls this automatically.
 
@@ -49,9 +49,11 @@ def load_specs(tasks_file: "str | None") -> list:
     return specs
 
 
-def prepare(run_root: Path, specs: list) -> tuple[Path, dict]:
+def prepare(run_root: Path, specs: list,
+            lane: str = "tasks_hard") -> tuple[Path, dict]:
     """Materialize the task set: one workdir per task with its hidden tests,
-    plus the JSONL the bench loads. Returns (jsonl_path, task_id -> Task)."""
+    plus the JSONL the bench loads (named by lane so comparison keys stay
+    distinct per lane). Returns (jsonl_path, task_id -> Task)."""
     run_root.mkdir(parents=True, exist_ok=True)
     tasks_by_id: dict = {}
     lines = []
@@ -66,7 +68,7 @@ def prepare(run_root: Path, specs: list) -> tuple[Path, dict]:
             candidate_path=spec.candidate_filename,
             max_new_tokens=spec.max_new_tokens)
         lines.append(json.dumps(spec.task_json()))
-    jsonl = run_root / "tasks_hard.jsonl"
+    jsonl = run_root / f"{lane}.jsonl"
     jsonl.write_text("\n".join(lines), encoding="utf-8")
     return jsonl, tasks_by_id
 
@@ -88,7 +90,7 @@ def main() -> int:
     run_root = ROOT / "artifacts" / "uplift" / f"work_{stamp}"
     out = Path(a.out) if a.out else (
         ROOT / "artifacts" / "uplift" / f"uplift_{lane}_{stamp}.json")
-    jsonl, tasks_by_id = prepare(run_root, specs)
+    jsonl, tasks_by_id = prepare(run_root, specs, lane=lane)
     graded_oracle = PytestOracle(timeout=60)
 
     def oracle(candidate: str, tj: dict):
