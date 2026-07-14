@@ -75,6 +75,25 @@ def test_failures_are_retry_scars_not_hidden():
     assert 0.0 < doc["reviewability"] <= 1.0
 
 
+def test_gate_denials_are_policy_receipts_not_noise():
+    """Import 1 from the landscape queue: every allow/deny is journaled.
+    A gate denial is a policy event with the rule visible, distinct from
+    an ordinary failed call."""
+    entries = [
+        _e("user", "fix"),
+        _call("write_file", {"path": "a.py", "content": "x"}),
+        _res("write_file", False,
+             "[gate] write is disabled (pass --allow-write)"),
+    ]
+    doc = run_review(entries)
+    assert doc["gate_denials"] == [{
+        "tool": "write_file",
+        "rule": "[gate] write is disabled (pass --allow-write)",
+    }]
+    # A denial is a policy verdict, not a model stumble.
+    assert doc["failed_calls"] == 0
+
+
 def test_edits_after_the_last_green_run_are_unverified():
     entries = [
         _e("user", "fix"),

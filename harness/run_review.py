@@ -52,6 +52,7 @@ def run_review(entries: list) -> dict:
     reads: set = set()
     writes: list = []            # (order, path)
     failed_calls = 0
+    gate_denials: list = []      # policy verdicts, journaled not counted as stumbles
     last_green_run = -1
     n_calls = 0
     order = 0
@@ -72,7 +73,13 @@ def run_review(entries: list) -> dict:
                     writes.append((order, p, p in reads))
         elif kind == "tool_result":
             meta = _field(entry, "meta", {}) or {}
-            if meta.get("ok") is False:
+            content = _field(entry, "content", "") or ""
+            if content.startswith("[gate]"):
+                # a denial is the policy working, with its rule visible --
+                # a receipt, never a model stumble
+                gate_denials.append({"tool": str(meta.get("tool", "")),
+                                     "rule": content.strip()[:200]})
+            elif meta.get("ok") is False:
                 failed_calls += 1
             if meta.get("tool") == "run" and meta.get("ok") is True:
                 last_green_run = order
@@ -90,6 +97,7 @@ def run_review(entries: list) -> dict:
         "edited_unread": edited_unread,
         "unverified_edits": unverified,
         "failed_calls": failed_calls,
+        "gate_denials": gate_denials,
         "files_read": sorted(reads),
         "files_edited": sorted({p for _, p, _ in writes}),
         "reviewability": score,

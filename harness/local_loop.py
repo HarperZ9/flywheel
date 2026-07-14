@@ -100,6 +100,17 @@ def run_agent(agent, goal: str, executor: ToolExecutor,
                  system=agent.system, goal=goal)
 
 
+def _environment() -> dict:
+    """Runtime identity pinned into every run doc (landscape import 2:
+    environments-as-code, receipts-first). Named, so a re-run can state
+    whether it matched."""
+    import platform
+    import sys
+    return {"python": sys.version.split()[0],
+            "platform": platform.platform(),
+            "machine": platform.machine()}
+
+
 def _done(final: str, steps: int, ledger: SessionLedger, *, tests_pass=None,
           note="", system: str = "", goal: str = "") -> dict:
     from .context_manifest import context_manifest
@@ -115,7 +126,9 @@ def _done(final: str, steps: int, ledger: SessionLedger, *, tests_pass=None,
            "context_manifest": context_manifest(
                ledger.entries, system=system, goal=goal),
            # risk tiers per edit; high tiers name the receipt they demand
-           "risk_review": risk_review(ledger.entries)}
+           "risk_review": risk_review(ledger.entries),
+           # runtime identity: acceptance re-runs in a NAMED environment
+           "environment": _environment()}
     # Trajectory-integrity verdict: did the agent edit the file that grades it, or
     # write test-neutralizing code? Surfaced re-checkably so a tampered "green" is
     # visible, not silently accepted (reward-hacking guard, keeps the C2 invariant).
