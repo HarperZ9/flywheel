@@ -785,6 +785,15 @@ class _Handler(BaseHTTPRequestHandler):
             return self._json(lane_roster(probe=probe))
         if p == "/api/training/status":
             return self._json(_training_status(self.run_root))
+        if p == "/api/train/duel":                    # verified-inference duel summary (read-only)
+            from harness.train_surface import duel_summary
+            return self._json(duel_summary())
+        if p == "/api/train/loop":                    # the loop-closure self-audit (on demand)
+            from harness.train_surface import loop_status
+            try:
+                return self._json(loop_status())
+            except Exception as e:
+                return self._json({"error": f"{type(e).__name__}: {e}"}, 502)
         if p == "/api/receipts":                     # the receipts ledger (catalog + envelopes)
             return self._json(receipts_ledger(self.root, self.run_root))
         if p == "/api/profiles":                     # profile manifests over the one substrate
