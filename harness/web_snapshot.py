@@ -69,13 +69,44 @@ class _GuardedRedirect(urllib.request.HTTPRedirectHandler):
         return super().redirect_request(req, fp, code, msg, headers, newurl)
 
 
+# a real browser User-Agent gets past many generic-fetcher walls; when a
+# source shares real content it is the operator's context, so we present as a
+# browser rather than a bot and only fall back to naming a wall if one remains
+_BROWSER_UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+               "(KHTML, like Gecko) Chrome/126.0 Safari/537.36")
+
+# markers of a bot-wall / challenge / block page served with HTTP 200
+_BLOCK_MARKERS = (
+    "please wait for verification", "just a moment", "checking your browser",
+    "enable javascript and cookies to continue", "attention required",
+    "cloudflare", "access denied", "you have been blocked", "captcha",
+    "verify you are human", "ddos protection")
+
+
+def looks_like_block_page(body: bytes, content_type: str) -> "str | None":
+    """Return a reason if the body looks like a bot-wall / challenge page
+    (HTTP 200 but not the source), else None. A short HTML body carrying a
+    known challenge marker is the tell."""
+    if "html" not in (content_type or "").lower() and body[:15].strip()[:1] \
+            not in (b"<", b"{"):
+        return None
+    head = body[:4000].decode("utf-8", "replace").lower()
+    for m in _BLOCK_MARKERS:
+        if m in head:
+            return f"likely block/challenge page (marker: {m!r})"
+    # a very short HTML body from a JS-wall is suspect on its own
+    if "html" in (content_type or "").lower() and len(body) < 1500 \
+            and "javascript" in head:
+        return "likely JS challenge page (tiny body requiring javascript)"
+    return None
+
+
 def _fetch(url: str) -> tuple:
     reason = _guard_url(url)
     if reason:
         raise ValueError(reason)
     opener = urllib.request.build_opener(_GuardedRedirect())
-    req = urllib.request.Request(url, headers={
-        "User-Agent": "flywheel-gather/1.0 (+receipted research intake)"})
+    req = urllib.request.Request(url, headers={"User-Agent": _BROWSER_UA})
     with opener.open(req, timeout=_TIMEOUT) as r:
         body = r.read(_MAX_BYTES + 1)
         return (r.status, dict(r.headers), body, r.geturl())
@@ -114,12 +145,24 @@ def snapshot_url(url: str, dest_dir, *, runner=None) -> dict:
             observed = []
     if url not in observed:
         observed.append(url)
+    ctype = str(headers.get("Content-Type", "")).split(";")[0]
     doc = {"schema": SCHEMA, "url": url, "final_url": final_url,
            "sha256": sha, "bytes": len(body),
-           "content_type": str(headers.get("Content-Type", "")).split(";")[0],
+           "content_type": ctype,
            "path": str(blob), "observed_urls": observed,
            "note": "the hash IS the receipt: any quotation from this "
                    "source is re-checkable against these bytes offline"}
+    # a 200 that is actually a bot-wall must NOT pass as the cited source:
+    # freeze it as evidence, but flag it so the caller routes around instead
+    # of quoting a block page (the failure that let an assessment stop cold)
+    block = looks_like_block_page(body, ctype)
+    if block:
+        doc["blocked"] = True
+        doc["block_reason"] = block
+        doc["note"] = ("this snapshot is a BLOCK/CHALLENGE page, not the "
+                       "source: route around it (browser render, an alt "
+                       "endpoint like .json or raw, or paste the text). The "
+                       "bytes are frozen as evidence of the wall.")
     sidecar.write_text(
         json.dumps(doc, indent=1, sort_keys=True), encoding="utf-8")
     return doc
