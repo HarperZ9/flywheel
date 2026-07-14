@@ -31,8 +31,25 @@ read the receipts. No browser, no terminal.
 - **Studio** — creation with provenance: seeded generative plates (the seed is
   recorded on the mark), the loop schematic drawn from live state, and honest
   nulls for what is not shipped yet.
-- **Graph** — the platform composition drawn live: lanes on the inner ring
-  colored by verdict, the wider family outside.
+- **Projects** — register your directories once; Code, Lint, Plan, and the
+  agent pick a project instead of taking a typed path.
+- **Plan** — spec first, receipt after: a goal becomes a criterion-bearing
+  plan whose validation gates are marked by what an external oracle can run,
+  then hands off to a staged, receipted workflow run.
+- **Lint** — a native linter whose findings are content-addressed receipts;
+  a finding can hand off to the agent to fix.
+- **Graph** — the cross-surface knowledge graph, interactive: shape encodes
+  kind, size encodes engine-computed priority, and a budget plus query turn
+  the graph into a context plan whose exclusions stay counted.
+- **Feeds** — fresh signal across science, programming, art, design,
+  marketing, and accountability, fetched with provenance; a dead feed is a
+  named error, never a silent gap.
+- **Science** — evidence, spec, judgment, one chain: gathered sources with
+  provenance, the question priced as a research spec, and witnessed claim
+  verdicts where an unmeasured claim stays UNVERIFIABLE.
+- **Uplift** — the paired-arm bench, read-only: bare vs the verified loop
+  with intervals; an interval containing zero renders as the honest null it
+  is, and the wrapper's latency cost stays visible.
 - **Memory** — durable, content-addressed memory: notes and folded spans with
   verbatim recall, the span hash as provenance.
 - **Endpoints** — the universal router roster. Local tiers are probed live;
@@ -59,10 +76,22 @@ If the engine is offline the app says so and can start it for you.
 
 ## Design
 
-Two typefaces (Hanken Grotesk and Conso), bundled. Color only ever means a
-verdict: verified green, drift iris, unverifiable gray. Ceramic light and
-near-black dark themes, both AA. Cards are ground tints with a hairline
-border; there is no glass and no decorative color anywhere.
+Hanken Grotesk and Conso ship as the default pair, and the surface is yours:
+text family, mono family, and UI scale are user settings (the tune control
+at the rail's foot), applied live and persisted. Panels resize by dragging
+their hairline dividers; layouts adapt to narrow windows. One rule is not on
+the menu, because it is what keeps the surface readable: color only ever
+means a verdict. Verified green, drift iris, unverifiable gray. Ceramic
+light and near-black dark themes, both AA; cards are ground tints with a
+hairline border; no glass, no decorative color.
+
+## What this believes
+
+One belief across the whole family, kept as a content-addressed artifact
+([CREDO.md](CREDO.md), served live by the engine at `GET /api/credo`):
+knowledge open to anyone who can attain the means, and we build to lower the
+means; acceptance decided by external checks, never reputation; honest nulls
+first-class; ownership earned by comprehension; learning woven into the work.
 
 ## Build and test
 
