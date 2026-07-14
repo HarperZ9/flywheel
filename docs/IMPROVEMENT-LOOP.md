@@ -95,6 +95,22 @@ Three of the six were defects in code shipped earlier the same session
 (the /v1 scaffold, the transparency log left unwired, and the desktop
 uplift verdict). The loop caught its own author, which is the point.
 
-MEDIUM tier (18 findings) is next: agent pre-pass ordering, model/endpoint
-on the turn receipt, the SSRF guard on /api/snapshot, the Y-arm drift
-comparison, empty-set-renders-green on the desktop, and the rest.
+**MEDIUM tier: in progress.** Shipped: the SSRF guard on the snapshot fetcher
+plus no-clobber sidecar (`5101f29`); the turn receipt now names which model
+answered, and the agent freezes named sources before running, not after
+(`e10ee84`). Remaining: the Y-arm drift compare route, prompt_forge idiom
+over-matching, retention/comprehension truncation visibility, the attestation
+empty-run standing, academy completion binding, and the two desktop findings.
+
+### The replication closed a loop on the harness itself (2026-07-14)
+
+The sealed k=5 replication landed at 0.573, split 2 MATCH / 1 DRIFT: the
+uplift REPLICATED non-null (+15.4% after +18.2%, both intervals exclude
+zero), but the point-forecast interval DRIFTED (0.600 held, 0.573 missed).
+That receipt falsified our own forecasting tool, so the tool was corrected:
+`forecast_bootstrap` resamples whole fresh runs so the interval carries
+between-run variance (`d0a3a4f`). Testing the fix on real data exposed a
+deeper honest null: the point estimate is biased high, so the widened
+interval is necessary but not sufficient; the point-bias fix is named and
+will be re-preregistered. The improvement loop turned on the harness itself,
+not only its surfaces.
