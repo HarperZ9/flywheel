@@ -139,6 +139,7 @@ Every route is same-origin JSON you can also `curl`:
 | `GET/POST /api/tension` | Measurement-tension ledger: two frozen-source measurements, one honest verdict |
 | `GET /api/instruments` | The evaluation-engineering register: every instrument read from its live receipt |
 | `GET /api/academy` | The curriculum derived from the live code: lessons pinned to source, checks you can run |
+| `POST /api/academy/complete` | Bind a passed comprehension receipt to a lesson: completion as a receipt, not prose |
 | `POST /api/suite` | Acceptance-suite admission for any project: can its tests refuse wrong code, measured |
 | `GET/POST /api/retention` | What is still held vs once shown: due retests, unaided outcomes banked |
 | `GET /api/comprehension` | Per-file ownership from checked evidence, not git blame |
