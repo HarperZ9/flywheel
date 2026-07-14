@@ -54,6 +54,17 @@ def test_a_conformance_runner_counts_as_a_verification_suite(tmp_path):
     assert doc["tools"][0]["ready"] is True
 
 
+def test_node_convention_tests_count(tmp_path):
+    p = tmp_path / "node-tool"
+    p.mkdir()
+    (p / "CREDO.md").write_text("belief", encoding="utf-8")
+    (p / "README.md").write_text("## What this believes\n", encoding="utf-8")
+    (p / "ledger.test.mjs").write_text("import test from 'node:test'",
+                                       encoding="utf-8")
+    doc = readiness_report({"node-tool": str(p)})
+    assert doc["tools"][0]["ready"] is True
+
+
 def test_gaps_are_named_per_tool(tmp_path):
     doc = readiness_report({
         "no-credo": _tool(tmp_path, "no-credo", credo=False),

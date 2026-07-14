@@ -51,10 +51,16 @@ def _check(root: Path) -> list:
         if "What this believes" not in text:
             gaps.append("belief section")
     # A verification suite in any of its native shapes: pytest/dart test
-    # dirs, or a conformance runner over frozen vectors (emet's shape).
-    has_tests = any(
-        (root / d).is_dir() and any((root / d).glob("*test*"))
-        for d in ("tests", "test")) or (root / "conformance" / "run.py").is_file()
+    # dirs, a conformance runner over frozen vectors (emet's shape), or
+    # node:test files (telos's shape), root-level or one directory deep.
+    has_tests = (
+        any((root / d).is_dir() and any((root / d).glob("*test*"))
+            for d in ("tests", "test"))
+        or (root / "conformance" / "run.py").is_file()
+        or any(root.glob("*.test.mjs")) or any(root.glob("*.test.js"))
+        or any(p for p in list(root.glob("*/*.test.mjs")) +
+               list(root.glob("*/*.test.js"))
+               if "node_modules" not in p.parts))
     if not has_tests:
         gaps.append("tests")
     return gaps
