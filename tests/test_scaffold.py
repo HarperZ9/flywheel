@@ -31,6 +31,23 @@ def test_pre_pass_freezes_every_named_source():
         prompt.encode()).hexdigest()
 
 
+def test_sources_past_the_cap_are_named_not_silently_dropped():
+    """The freeze budget is bounded, but dropping the overflow silently is
+    a hidden null. The envelope must name what it did not freeze (tenet 4)."""
+    urls = " ".join(f"https://ex{i}.example/p" for i in range(8))
+    env = scaffold_turn(urls, snapshotter=lambda u: {"sha256": "a" * 64})
+    assert len(env["sources_frozen"]) == 5   # the bounded budget
+    assert env["over_budget"] == 3
+    assert len(env["not_frozen"]) == 3
+
+
+def test_within_budget_reports_no_overflow():
+    env = scaffold_turn("https://one.example/x",
+                        snapshotter=lambda u: {"sha256": "b" * 64})
+    assert env["over_budget"] == 0
+    assert env["not_frozen"] == []
+
+
 def test_promptless_of_urls_is_clean_and_cheap():
     env = scaffold_turn("no sources here",
                         snapshotter=lambda u: (_ for _ in ()).throw(
