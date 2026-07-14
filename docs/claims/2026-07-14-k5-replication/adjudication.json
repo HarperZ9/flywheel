@@ -1,0 +1,29 @@
+{
+ "thesis_seal": "c76b332fd483cb925ac2d88fe58cdd990b32a27bae583d0ed1054d1859e81ef4",
+ "verdict_seal": "9a0ec4d5752bc1a7dfb3c9cf18063bf3a92cf32250b93fff11af80f073123ba2",
+ "measurement_seal": "2855aff8b286c9f14ac09be851d71e382a1548ec2c9f37def494efee78d626bc",
+ "assessment_seal": "7e8b65c7fc2fe134f61757e3052d761190a931ef91dd82638cd434b3a5248dd7",
+ "claims": 3,
+ "match": 2,
+ "drift": 1,
+ "unverifiable": 0,
+ "verdicts": [
+  {
+   "claim_id": "c-repl-nonnull",
+   "status": "MATCH"
+  },
+  {
+   "claim_id": "c-repl-interval",
+   "status": "DRIFT"
+  },
+  {
+   "claim_id": "c-repl-het-beats-iid",
+   "status": "MATCH"
+  }
+ ],
+ "headline": "uplift replicated non-null (+18.2% then +15.4%, both exclude zero); the per-task Jeffreys point-forecast interval undercovered (0.600 in-band, 0.573 below); het beat iid both runs",
+ "evidence": [
+  "artifacts/uplift/uplift_hard_v2_20260714-140516.json"
+ ],
+ "note": "adjudicated the day the replication landed; round-one measurements restored after the hardcoded script clobbered them; no rescue"
+}
