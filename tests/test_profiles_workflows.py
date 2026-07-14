@@ -30,13 +30,32 @@ class _StubProposer:
 
 def test_profile_roster_shape_and_workflow_bindings():
     doc = profile_roster()
-    assert doc["schema"] == "flywheel.profiles/v1"
+    assert doc["schema"] == "flywheel.profiles/v2"
     names = {p["name"] for p in doc["profiles"]}
-    assert {"code", "design", "work", "cowork", "chat"} <= names
+    # Deepened set now includes the academy and the training harness.
+    assert {"code", "design", "work", "cowork", "learn", "train", "chat"} <= names
     for p in doc["profiles"]:
         wf = p["workflow"]
         assert wf is None or wf in workflows.WORKFLOWS
         assert set(p["gates"]) == {"allow_write", "allow_exec", "allow_mcp"}
+
+
+def test_profiles_are_deep_not_just_named():
+    """Every profile carries real, differentiated capability: a tool set, a
+    planning template, an index scope, and a surface -- not just a prompt."""
+    doc = profile_roster()
+    for p in doc["profiles"]:
+        for field in ("tools", "planning", "surface", "index_scope"):
+            assert field in p, f"{p['name']} missing {field}"
+    by_name = {p["name"]: p for p in doc["profiles"]}
+    # Differentiation: code plans a change, learn plans mastery, work plans
+    # research -- their planning templates are genuinely distinct.
+    assert by_name["code"]["planning"] != by_name["learn"]["planning"]
+    assert "mastery verdict" in by_name["learn"]["planning"]
+    assert "duel" in by_name["train"]["planning"]
+    # Only code requests write+exec; the rest are read-first.
+    assert by_name["code"]["gates"]["allow_write"] is True
+    assert by_name["design"]["gates"]["allow_write"] is False
 
 
 def test_only_code_profile_requests_write_and_exec():
