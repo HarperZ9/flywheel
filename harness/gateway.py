@@ -841,6 +841,9 @@ class _Handler(BaseHTTPRequestHandler):
         if p == "/api/instruments":                  # the evaluation-engineering register
             from harness.eval_engineering import instrument_register
             return self._json(instrument_register())
+        if p == "/api/academy":                      # the curriculum, derived from the live code
+            from harness.academy_pipeline import academy_curriculum
+            return self._json(academy_curriculum())
         if p == "/api/frontier":                     # the RAM/compute frontier, measured here
             from harness.frontier import frontier_table
             from harness.store import get_entity, query_entities
