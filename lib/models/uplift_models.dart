@@ -64,10 +64,19 @@ class UpliftDelta {
       required this.latencyOverheadMs,
       required this.note});
 
-  /// The honest mapping: a separated interval is verified, an interval
-  /// containing zero is unverifiable. Never drift — no uplift is a
-  /// result, not a fault.
-  String get verdict => includesZero ? 'unverifiable' : 'verified';
+  /// The honest mapping keys on the SIGN, not just separation: a
+  /// separated interval above zero is a verified uplift; a separated
+  /// interval below zero is a measured regression (drift), which must
+  /// never render as a green win; an interval containing zero is
+  /// unverifiable (no uplift claimed, a first-class null).
+  String get verdict {
+    if (includesZero) return 'unverifiable';
+    return uplift > 0 ? 'verified' : 'drift';
+  }
+
+  /// True when the interval is separated and below zero: the wrapper
+  /// measurably hurt. The view labels this a regression, not an uplift.
+  bool get isRegression => !includesZero && uplift < 0;
 
   factory UpliftDelta.fromJson(Map<String, dynamic> j) {
     final w = (j['newcombe_95'] is List) ? j['newcombe_95'] as List : const [];
