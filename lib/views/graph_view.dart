@@ -24,6 +24,7 @@ class GraphView extends StatefulWidget {
 
 class _GraphViewState extends State<GraphView> {
   final _budget = TextEditingController(text: '2000');
+  final _query = TextEditingController();
   KnowledgeGraph? _graph;
   GraphNode? _selected;
   bool _loading = false;
@@ -44,6 +45,7 @@ class _GraphViewState extends State<GraphView> {
   @override
   void dispose() {
     _budget.dispose();
+    _query.dispose();
     super.dispose();
   }
 
@@ -55,8 +57,10 @@ class _GraphViewState extends State<GraphView> {
     });
     try {
       final budget = int.tryParse(_budget.text.trim());
+      final q = _query.text.trim();
       final path = withBudget && budget != null
           ? '/api/graph?budget=$budget'
+              '${q.isEmpty ? '' : '&q=${Uri.encodeQueryComponent(q)}'}'
           : '/api/graph';
       final g = KnowledgeGraph.fromJson(await widget.client.getJson(path));
       if (mounted) setState(() => _graph = g);
@@ -130,6 +134,18 @@ class _GraphViewState extends State<GraphView> {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
+        const Kicker('query'),
+        const SizedBox(width: FwLayout.s2),
+        SizedBox(
+          width: 160,
+          child: TextField(
+            controller: _query,
+            style: fwMono(t, size: 12),
+            decoration: const InputDecoration(
+                isDense: true, hintText: 'rerank terms…'),
+          ),
+        ),
+        const SizedBox(width: FwLayout.s3),
         const Kicker('budget'),
         const SizedBox(width: FwLayout.s2),
         SizedBox(
