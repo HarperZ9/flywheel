@@ -802,6 +802,26 @@ class _Handler(BaseHTTPRequestHandler):
         if p == "/api/parity":                       # the capability matrix, witnessed not asserted
             from harness.parity import parity_matrix
             return self._json(parity_matrix())
+        if p == "/api/projects":                     # the registered project/directory roster
+            from harness.projects import project_roster
+            return self._json(project_roster())
+        if p == "/api/store":                        # verifiable substrate stats
+            from harness.store import stats
+            return self._json(stats())
+        if p == "/api/store/verify":                 # walk + re-check the audit chain
+            from harness.store import verify_chain
+            return self._json(verify_chain())
+        if p == "/api/store/audit":                  # the hash-chained audit tail
+            from harness.store import audit_tail
+            n = 50
+            for part in qs.split("&"):
+                if part.startswith("n="):
+                    try:
+                        n = int(part[2:])
+                    except ValueError:
+                        n = 50
+            return self._json({"schema": "flywheel.store-audit/v1",
+                               "entries": audit_tail(n)})
         if p == "/api/marketplace":                  # curated catalog over the plugin registry
             from harness.marketplace import marketplace_catalog
             return self._json(marketplace_catalog())
@@ -1022,6 +1042,74 @@ class _Handler(BaseHTTPRequestHandler):
                 req = {}
             from harness.keychain import keychain_delete
             out = keychain_delete((req.get("name") or "").strip())
+            return self._json(out, 400 if "error" in out else 200)
+        if p == "/api/store/entity":                   # store a content-addressed entity
+            length = self._content_length()
+            if length is None:
+                return self._json({"error": "invalid or oversized Content-Length"}, 400)
+            try:
+                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
+            except Exception:
+                req = {}
+            from harness.store import put_entity
+            out = put_entity((req.get("kind") or "").strip(),
+                             req.get("data") or {},
+                             project=(req.get("project") or "").strip())
+            return self._json(out, 400 if "error" in out else 200)
+        if p == "/api/store/query":                    # query entities by kind/project
+            length = self._content_length()
+            if length is None:
+                return self._json({"error": "invalid or oversized Content-Length"}, 400)
+            try:
+                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
+            except Exception:
+                req = {}
+            from harness.store import query_entities
+            rows = query_entities(kind=(req.get("kind") or None),
+                                  project=(req.get("project") or None),
+                                  limit=int(req.get("limit", 200) or 200))
+            return self._json({"schema": "flywheel.store-query/v1",
+                               "entities": rows, "n": len(rows)})
+        if p == "/api/projects/add":                   # register a project directory
+            length = self._content_length()
+            if length is None:
+                return self._json({"error": "invalid or oversized Content-Length"}, 400)
+            try:
+                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
+            except Exception:
+                req = {}
+            from harness.projects import add_project
+            out = add_project((req.get("root") or "").strip(),
+                              (req.get("name") or "").strip())
+            return self._json(out, 400 if "error" in out else 200)
+        if p == "/api/projects/remove":                # unregister a project directory
+            length = self._content_length()
+            if length is None:
+                return self._json({"error": "invalid or oversized Content-Length"}, 400)
+            try:
+                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
+            except Exception:
+                req = {}
+            from harness.projects import remove_project
+            out = remove_project((req.get("root") or "").strip())
+            return self._json(out, 400 if "error" in out else 200)
+        if p == "/api/index":                          # drive the index engine over a project root
+            length = self._content_length()
+            if length is None:
+                return self._json({"error": "invalid or oversized Content-Length"}, 400)
+            try:
+                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
+            except Exception:
+                req = {}
+            root, err = _resolve_workspace_root(req.get("root"), self.root)
+            if err:
+                return self._json({"error": err}, 400)
+            view = (req.get("view") or "summary").strip()
+            if view == "summary":
+                from harness.index_bridge import index_summary
+                return self._json(index_summary(str(root)))
+            from harness.index_bridge import index_view
+            out = index_view(str(root), view)
             return self._json(out, 400 if "error" in out else 200)
         if p == "/api/marketplace/install":            # catalog entry -> plugin registry
             length = self._content_length()
