@@ -655,9 +655,16 @@ class _Handler(BaseHTTPRequestHandler):
         so we stand behind what we stream), then delivered as chat.completion.chunk
         deltas ending with [DONE]. Any OpenAI streaming client consumes it as-is."""
         import time
+        from harness.scaffold import scaffold_answer, scaffold_turn
+        _texts = [str(m.get("content", "")) for m in
+                  (req.get("messages") or []) if isinstance(m, dict)]
+        env = scaffold_turn("\n".join(_texts))
         body, code, receipt, text, model_ref = openai_chat(req, self.serve_url)
         if code != 200:
             return self._json(body, code)          # errors are plain JSON, not a stream
+        # the answer is produced whole before streaming, so the turn
+        # receipt exists before the first chunk leaves
+        scaffold_doc = scaffold_answer(str(text or ""), env)
         cid = "chatcmpl-" + receipt["receipt_id"]
         created = int(time.time())
         self.send_response(200)
@@ -680,7 +687,8 @@ class _Handler(BaseHTTPRequestHandler):
             import re
             for piece in (re.findall(r"\S+\s*", str(text)) or [str(text)]):
                 emit({"index": 0, "delta": {"content": piece}, "finish_reason": None})
-            emit({"index": 0, "delta": {}, "finish_reason": "stop"}, {"x_receipt": receipt})
+            emit({"index": 0, "delta": {}, "finish_reason": "stop"},
+                 {"x_receipt": receipt, "x_scaffold": scaffold_doc})
             self.wfile.write(b"data: [DONE]\n\n")
             self.wfile.flush()
         except Exception:
@@ -709,6 +717,8 @@ class _Handler(BaseHTTPRequestHandler):
                 pass
 
         from harness.router_agent import run_router_agent
+        from harness.scaffold import scaffold_answer, scaffold_turn
+        env = scaffold_turn(goal)
         root, root_err = _resolve_workspace_root(req.get("root"), self.root)
         if root_err:
             emit({"type": "error", "error": root_err})
@@ -738,6 +748,8 @@ class _Handler(BaseHTTPRequestHandler):
                   "provenance": result.get("provenance"),
                   "duration_s": result.get("duration_s"),
                   "ttva_s": result.get("ttva_s"),
+                  "scaffold": scaffold_answer(str(result.get("final") or ""),
+                                              env),
                   "run_receipt": _countersign_run(result)})
         except Exception as e:
             emit({"type": "error", "error": f"{type(e).__name__}: {e}"})
@@ -1360,6 +1372,10 @@ class _Handler(BaseHTTPRequestHandler):
                 return self._json({"error": f"{type(e).__name__}: {e}"}, 502)
             if effort is not None:
                 result["effort"] = effort   # the dial position, receipted
+            from harness.scaffold import scaffold_answer as _sa, \
+                scaffold_turn as _st
+            result["scaffold"] = _sa(str(result.get("final") or ""),
+                                     _st(goal))
             result["run_receipt"] = _countersign_run(result)
             return self._json(result)
         if p == "/api/workflow":                       # staged run with a chained receipt, any endpoint
