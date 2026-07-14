@@ -32,7 +32,16 @@ def attest(run: dict, reviewed_files: list, *, note: str = "",
     claimed = sorted(set(str(f) for f in reviewed_files))
     reviewed = sorted(set(claimed) & set(edited))
     overclaimed = sorted(set(claimed) - set(edited))
-    coverage = round(len(reviewed) / len(edited), 4) if edited else 1.0
+    # a run that edited nothing has nothing to attest: coverage is None
+    # and standing is 'empty', never a vacuous 'complete' that would
+    # confer holdership downstream
+    coverage = round(len(reviewed) / len(edited), 4) if edited else None
+    if coverage is None:
+        standing = "empty"
+    elif coverage == 1.0 and not overclaimed:
+        standing = "complete"
+    else:
+        standing = "partial"
     doc = {
         "schema": SCHEMA,
         "checkpoint": str(run.get("checkpoint", "")),
@@ -44,8 +53,7 @@ def attest(run: dict, reviewed_files: list, *, note: str = "",
         "unreviewed": sorted(set(edited) - set(reviewed)),
         "overclaimed": overclaimed,
         "coverage": coverage,
-        "standing": "complete" if coverage == 1.0 and not overclaimed
-                    else "partial",
+        "standing": standing,
     }
     doc["sha256"] = hashlib.sha256(
         json.dumps(doc, sort_keys=True).encode("utf-8")).hexdigest()
