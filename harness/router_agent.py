@@ -87,7 +87,8 @@ def run_router_agent(goal: str, endpoint: str = "serve", *, root: str = ".",
                      max_steps: int = 6, test_cmd: "str | None" = None,
                      model: "str | None" = None, base_url: "str | None" = None,
                      max_tokens: int = 1024, temperature: float = 0.0, seed: int = 0,
-                     compact_budget: int = 0, proposer=None, on_event=None) -> dict:
+                     compact_budget: int = 0, proposer=None,
+                     canaries: "list | None" = None, on_event=None) -> dict:
     """Run the gated agentic loop over `endpoint` to complete `goal`. Returns a
     JSON-able dict: the final answer, step count, the witnessed ledger checkpoint
     and verify verdict, the endpoint used, and any compaction receipt. The ledger
@@ -120,7 +121,8 @@ def run_router_agent(goal: str, endpoint: str = "serve", *, root: str = ".",
     sign_key = tool_receipts.new_session_key()
     t0 = _time.perf_counter()
     result = run_agent(agent, goal, executor, ledger, max_steps=max_steps,
-                       test_cmd=test_cmd, sign_key=sign_key, on_event=on_event)
+                       test_cmd=test_cmd, sign_key=sign_key,
+                       canaries=canaries, on_event=on_event)
     duration = round(_time.perf_counter() - t0, 3)
     out = {k: v for k, v in result.items() if k != "ledger"}
     out["endpoint"] = endpoint
@@ -133,6 +135,11 @@ def run_router_agent(goal: str, endpoint: str = "serve", *, root: str = ".",
                 "key held out of band (never published here)"}
     out["last_compaction"] = agent.last_compaction
     out["duration_s"] = duration
+    # behavioural deception monitor: flag a run whose final answer claims more
+    # than its receipts show. It FLAGS, never accepts, and sits beside the
+    # accept path (the oracle still decides).
+    from .behavioral_monitor import monitor_run
+    out["behavioral_monitor"] = monitor_run(out)
     # Time-to-verified-acceptance: the north-star metric (METR: felt speed
     # is inadmissible). Only a TRUSTED green run earns a TTVA; everything
     # else is an honest null.

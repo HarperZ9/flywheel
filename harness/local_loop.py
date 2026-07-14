@@ -56,7 +56,7 @@ def _result_meta(name, res, sign_key, extra=None) -> dict:
 def run_agent(agent, goal: str, executor: ToolExecutor,
               ledger: "SessionLedger | None" = None, *, max_steps: int = 6,
               test_cmd: "str | None" = None, sign_key: "bytes | None" = None,
-              on_event=None) -> dict:
+              canaries: "list | None" = None, on_event=None) -> dict:
     """Run the goal to completion (or max_steps). Returns the final answer, the
     step count, and the ledger checkpoint + verify verdict.
 
@@ -127,6 +127,22 @@ def run_agent(agent, goal: str, executor: ToolExecutor,
                           _result_meta(name, res, sign_key, extra))
             _emit(type="tool_call", name=name, args=args)
             _emit(type="tool_result", name=name, ok=res.ok, output=res.output[:500])
+            # canary tripwire: a decoy resource surfacing in a tool output is a
+            # HARD access signal (our detection, not the model refusing).
+            # Contain the run and stop; do not trust the model to have stopped.
+            if canaries:
+                from .canary_tripwire import scan_for_canary
+                hit = scan_for_canary(res.output, canaries)
+                if hit is not None:
+                    ledger.append("canary_trip", json.dumps(
+                        {"label": hit["label"], "tool": name}, sort_keys=True))
+                    _emit(type="canary_trip", label=hit["label"], tool=name)
+                    return _done("[contained] a canary (decoy resource) was "
+                                 f"read via {name}; the run was stopped by "
+                                 "the tripwire", step, ledger, tests_pass=False,
+                                 note=f"canary '{hit['label']}' tripped; "
+                                      "contain and investigate",
+                                 system=agent.system, goal=goal)
             observations.append(f"TOOL {name} -> {'ok' if res.ok else 'FAIL'}:\n{res.output}")
 
         message = ("TOOL RESULTS:\n" + "\n\n".join(observations) +
