@@ -95,12 +95,22 @@ Three of the six were defects in code shipped earlier the same session
 (the /v1 scaffold, the transparency log left unwired, and the desktop
 uplift verdict). The loop caught its own author, which is the point.
 
-**MEDIUM tier: in progress.** Shipped: the SSRF guard on the snapshot fetcher
-plus no-clobber sidecar (`5101f29`); the turn receipt now names which model
-answered, and the agent freezes named sources before running, not after
-(`e10ee84`). Remaining: the Y-arm drift compare route, prompt_forge idiom
-over-matching, retention/comprehension truncation visibility, the attestation
-empty-run standing, academy completion binding, and the two desktop findings.
+**MEDIUM tier: complete.** All verified MEDIUM findings shipped, each TDD:
+- SSRF guard + no-clobber sidecar on the snapshot fetcher (`5101f29`).
+- Turn receipt names the model; agent freezes before running (`e10ee84`).
+- Attestation empty-run is 'empty' not vacuous 'complete'; prompt_forge no
+  longer flips well-posed on the idiom "in order to" or a bare "matches"
+  (`f5282fd`).
+- Desktop: empty set is not a green win; workflow steps parse defensively
+  (`4cddc55`).
+- Store paging: retention and comprehension scan the full store, not the
+  newest 200, and report the scan (`f2a3779`).
+- Forge Y-arms reach the route; `/api/forge/recheck` actually compares drift
+  (`5ca8649`).
+- Academy completion is a receipt bound to the lesson, not prose
+  (`22a6609`).
+- Plus a harness tripwire (`142a8f6`) for two verified upstream worktree bugs,
+  crediting moui72 / peckenpaugh.us.
 
 ### The replication closed a loop on the harness itself (2026-07-14)
 
