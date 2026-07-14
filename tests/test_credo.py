@@ -9,6 +9,7 @@ def test_credo_is_content_addressed_and_stable():
     assert a["sha256"] == b["sha256"]
     assert len(a["sha256"]) == 64
     assert a["schema"] == "flywheel.credo/v1"
+    assert a["essay"].startswith("https://github.com/HarperZ9/flywheel")
 
 
 def test_the_load_bearing_beliefs_are_present():

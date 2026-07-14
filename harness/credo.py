@@ -30,10 +30,16 @@ for everyone.
 """
 
 
+ESSAY_URL = ("https://github.com/HarperZ9/flywheel/blob/"
+             "fix/release-model-identity/docs/essays/"
+             "2026-07-13-the-unbundling.md")
+
+
 def credo_doc() -> dict:
     return {
         "schema": "flywheel.credo/v1",
         "credo": CREDO,
         "sha256": hashlib.sha256(CREDO.encode("utf-8")).hexdigest(),
         "beliefs": 7,
+        "essay": ESSAY_URL,
     }
