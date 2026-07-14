@@ -161,6 +161,8 @@ class _WorkflowsViewState extends State<WorkflowsView> {
   Widget _composer(FwTokens t) {
     final selected =
         _roster?.workflows.where((w) => w.name == _workflow).firstOrNull;
+    final activeProfile =
+        _profiles.where((p) => p.name == _profile).firstOrNull;
     return HairlineCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -192,6 +194,7 @@ class _WorkflowsViewState extends State<WorkflowsView> {
                 '${selected.description}  Steps: ${selected.stepNames.join(' → ')}',
                 style: TextStyle(fontSize: 12, color: t.inkMuted)),
           ],
+          if (activeProfile != null) ProfileManifestCard(profile: activeProfile),
           const SizedBox(height: FwLayout.s3),
           TextField(
             controller: _goal,

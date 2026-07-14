@@ -88,6 +88,68 @@ class WorkflowStepRow extends StatelessWidget {
   }
 }
 
+/// The deep profile manifest: its planning template as a stage chain, its
+/// tool set, its foregrounded surface, and its index scope. This is what
+/// makes a profile more than a name.
+class ProfileManifestCard extends StatelessWidget {
+  final ProfileManifest profile;
+  const ProfileManifestCard({super.key, required this.profile});
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.fw;
+    return Container(
+      margin: const EdgeInsets.only(top: FwLayout.s2),
+      padding: const EdgeInsets.all(FwLayout.s3),
+      decoration: BoxDecoration(
+        color: t.ground2,
+        borderRadius: BorderRadius.circular(FwLayout.radiusSmall),
+        border: Border.all(color: t.hairline),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(profile.description,
+              style: TextStyle(fontSize: 12, color: t.inkMuted, height: 1.4)),
+          if (profile.planning.isNotEmpty) ...[
+            const SizedBox(height: FwLayout.s2),
+            Row(children: [
+              Text('plan  ', style: fwMono(t, size: 10.5, color: t.inkFaint)),
+              Expanded(
+                child: Text(profile.planning.join('  →  '),
+                    style: fwMono(t, size: 11, color: t.drift)),
+              ),
+            ]),
+          ],
+          const SizedBox(height: FwLayout.s2),
+          Wrap(
+            spacing: FwLayout.s3,
+            runSpacing: FwLayout.s1,
+            children: [
+              if (profile.tools.isNotEmpty)
+                _facet(t, 'tools', profile.tools.join(' ')),
+              if (profile.surface.isNotEmpty)
+                _facet(t, 'surface', profile.surface.join(' ')),
+              if (profile.indexScope.isNotEmpty)
+                _facet(t, 'index', profile.indexScope),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _facet(FwTokens t, String label, String value) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text('$label ', style: fwKicker(t, size: 9)),
+        Text(value, style: fwMono(t, size: 10.5, color: t.inkMuted)),
+      ],
+    );
+  }
+}
+
 class PastRunRow extends StatelessWidget {
   final Map<String, dynamic> run;
   const PastRunRow({super.key, required this.run});

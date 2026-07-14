@@ -10,6 +10,10 @@ class ProfileManifest {
   final bool wantsWrite;
   final bool wantsExec;
   final int maxSteps;
+  final List<String> tools;
+  final List<String> planning;
+  final List<String> surface;
+  final String indexScope;
 
   ProfileManifest(
       {required this.name,
@@ -17,10 +21,16 @@ class ProfileManifest {
       this.workflow,
       required this.wantsWrite,
       required this.wantsExec,
-      required this.maxSteps});
+      required this.maxSteps,
+      this.tools = const [],
+      this.planning = const [],
+      this.surface = const [],
+      this.indexScope = ''});
 
   factory ProfileManifest.fromJson(Map<String, dynamic> j) {
     final gates = (j['gates'] ?? {}) as Map<String, dynamic>;
+    List<String> strs(dynamic v) =>
+        v is List ? v.map((e) => '$e').toList() : const [];
     return ProfileManifest(
       name: j['name'] ?? '',
       description: j['description'] ?? '',
@@ -28,6 +38,10 @@ class ProfileManifest {
       wantsWrite: gates['allow_write'] ?? false,
       wantsExec: gates['allow_exec'] ?? false,
       maxSteps: j['max_steps'] ?? 6,
+      tools: strs(j['tools']),
+      planning: strs(j['planning']),
+      surface: strs(j['surface']),
+      indexScope: j['index_scope'] ?? '',
     );
   }
 }
