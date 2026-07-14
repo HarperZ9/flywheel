@@ -113,6 +113,19 @@ def test_bench_summary_reads_artifacts_and_stays_honest_when_empty(tmp_path):
     assert s["latest"]["schema"] == SCHEMA
 
 
+def test_live_provider_names_carry_a_model_suffix(tmp_path):
+    # "endpoint:model" resolves through the roster (here the stub provider,
+    # which generates without a network); the row stays evidence="live"
+    # because nothing was injected.
+    tasks = _tasks_file(tmp_path, n=2)
+    doc = run_uplift_bench(tasks, ["stub:any-model"],
+                           oracle=lambda c, t: c.strip() == "pass",
+                           n_candidates=2)
+    assert "error" not in doc
+    assert {r["provider"] for r in doc["rows"]} == {"stub:any-model"}
+    assert all(r["evidence"] == "live" for r in doc["rows"])
+
+
 def test_empty_tasks_is_a_named_error(tmp_path):
     empty = tmp_path / "none.jsonl"
     empty.write_text("", encoding="utf-8")

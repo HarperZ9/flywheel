@@ -145,8 +145,11 @@ def run_uplift_bench(tasks_path, providers: list, *, oracle,
                 return {"error": f"no injected proposer for '{name}'"}
         else:
             from .endpoint_registry import make_endpoint_proposer
-            def factory(_n=name):
-                return make_endpoint_proposer(_n)
+            # "endpoint:model" pins a specific model on a roster endpoint
+            # (e.g. ollama:qwen2.5:7b), same split the OpenAI-compat route uses.
+            base, _, sub = name.partition(":")
+            def factory(_b=base, _m=sub or None):
+                return make_endpoint_proposer(_b, model=_m)
         arms = {}
         for arm, n_cand in (("bare", 1), ("wrapped", n_candidates)):
             row = _run_arm(factory(), tasks, oracle, n_cand)
