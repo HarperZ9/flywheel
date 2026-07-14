@@ -35,6 +35,44 @@ def test_only_checked_evidence_confers_holdership(monkeypatch, tmp_path):
     assert doc["holders"]["papacr0w"] == 2
 
 
+def test_newer_comprehension_beats_older_attestation_across_kinds(
+        monkeypatch, tmp_path):
+    """The docstring promises recency wins. An OLDER attestation must not
+    permanently block a NEWER passed comprehension on the same file just
+    because attestations are iterated first."""
+    monkeypatch.setenv("FLYWHEEL_HOME", str(tmp_path))
+    import harness.store as store
+    clock = {"t": 100.0}
+    monkeypatch.setattr(store.time, "time", lambda: clock["t"])
+    clock["t"] = 1.0
+    put_entity("attestation", {"standing": "complete", "reviewer": "early",
+                               "reviewed": ["x.py"]}, eid="att-old")
+    clock["t"] = 2.0
+    put_entity("comprehension", {"passed": True, "reviewer": "later",
+                                 "files": ["x.py"]}, eid="comp-new")
+    doc = comprehension_ledger()
+    assert doc["files"]["x.py"]["holder"] == "later", \
+        "the newer comprehension must hold x.py, not the older attestation"
+    assert doc["files"]["x.py"]["kind"] == "comprehension"
+
+
+def test_older_comprehension_does_not_beat_newer_attestation(
+        monkeypatch, tmp_path):
+    monkeypatch.setenv("FLYWHEEL_HOME", str(tmp_path))
+    import harness.store as store
+    clock = {"t": 100.0}
+    monkeypatch.setattr(store.time, "time", lambda: clock["t"])
+    clock["t"] = 1.0
+    put_entity("comprehension", {"passed": True, "reviewer": "early",
+                                 "files": ["y.py"]}, eid="comp-old")
+    clock["t"] = 2.0
+    put_entity("attestation", {"standing": "complete", "reviewer": "later",
+                               "reviewed": ["y.py"]}, eid="att-new")
+    doc = comprehension_ledger()
+    assert doc["files"]["y.py"]["holder"] == "later"
+    assert doc["files"]["y.py"]["kind"] == "attestation"
+
+
 def test_empty_store_is_an_honest_null(monkeypatch, tmp_path):
     monkeypatch.setenv("FLYWHEEL_HOME", str(tmp_path))
     doc = comprehension_ledger()

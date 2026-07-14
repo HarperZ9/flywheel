@@ -24,8 +24,10 @@ def _rows(kind: str, project: "str | None"):
 
 def comprehension_ledger(*, project: "str | None" = None) -> dict:
     """Project the store's checked evidence into per-file holdership.
-    query_entities returns newest first, so the first claim on a file is
-    the latest one and later (older) claims never overwrite it."""
+    Candidate claims from BOTH kinds are merged and sorted newest-first
+    by the entity's created time, so recency wins ACROSS kinds: an older
+    attestation never blocks a newer passed comprehension on the same
+    file, and vice versa."""
     files: dict = {}
 
     def claim(path: str, holder: str, kind: str, eid: str, created: float):
@@ -33,18 +35,25 @@ def comprehension_ledger(*, project: "str | None" = None) -> dict:
             files[path] = {"holder": holder, "kind": kind,
                            "eid": eid, "at": created}
 
+    candidates = []   # (created, kind, holder, path, eid)
     for e in _rows("attestation", project):
         d = e["data"]
         if d.get("standing") == "complete":
             for path in d.get("reviewed") or []:
-                claim(str(path), str(d.get("reviewer", "")), "attestation",
-                      e["eid"], e["created"])
+                candidates.append((e["created"], "attestation",
+                                   str(d.get("reviewer", "")), str(path),
+                                   e["eid"]))
     for e in _rows("comprehension", project):
         d = e["data"]
         if d.get("passed") is True:
             for path in d.get("files") or []:
-                claim(str(path), str(d.get("reviewer", "")), "comprehension",
-                      e["eid"], e["created"])
+                candidates.append((e["created"], "comprehension",
+                                   str(d.get("reviewer", "")), str(path),
+                                   e["eid"]))
+    # newest first; first-write-wins per path then holds the latest claim
+    candidates.sort(key=lambda c: c[0], reverse=True)
+    for created, kind, holder, path, eid in candidates:
+        claim(path, holder, kind, eid, created)
 
     holders: dict = {}
     for row in files.values():
