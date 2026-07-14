@@ -1,0 +1,34 @@
+{
+ "assessment_seal": "cd6d75b1ef0f84493fffdfb353c85719f29c3c221558db20080299e8a8e10433",
+ "thesis_seal": "0db6e0f46b5a173b56c47187ccc9b844f57ad724b58a53cae03b321f395890fc",
+ "verdict_seal": "074062037e7410610a84d35b9f57c983a4759b9f850f0b895152e49362146841",
+ "measurement_seal": "85d4d81a8212b924c66f03f1570178c9fce21b643b386528c0019390b8fa666a",
+ "claims": 3,
+ "match": 2,
+ "drift": 1,
+ "unverifiable": 0,
+ "verdicts": [
+  {
+   "claim_id": "c-14b-k5-interval",
+   "status": "MATCH",
+   "deviation": 0.066,
+   "tolerance": 0.071
+  },
+  {
+   "claim_id": "c-14b-k5-het-beats-iid",
+   "status": "MATCH",
+   "deviation": 0.0,
+   "tolerance": 0.001
+  },
+  {
+   "claim_id": "c-14b-k5-iid-beats-het",
+   "status": "DRIFT",
+   "deviation": 0.093,
+   "tolerance": 0.001
+  }
+ ],
+ "evidence": [
+  "artifacts/uplift/uplift_hard_v2_20260714-125209.json"
+ ],
+ "note": "adjudicated 2026-07-14 the day the bench landed; the frozen rule applied mechanically; no rescue in either direction"
+}
