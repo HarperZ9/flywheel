@@ -1170,8 +1170,13 @@ class _Handler(BaseHTTPRequestHandler):
                 return self._json({"error": "provide non-empty 'goal' and 'endpoint'"}, 400)
             if req.get("stream"):
                 return self._sse_agent(req, goal, endpoint)
+            effort = None
+            if req.get("effort"):
+                from harness.effort import resolve_effort
+                effort = resolve_effort(str(req["effort"]))
             try:
-                max_steps = max(1, min(int(req.get("max_steps", 6)), 12))
+                max_steps = max(1, min(int(req.get("max_steps",
+                                            (effort or {}).get("max_steps", 6))), 12))
             except (TypeError, ValueError):
                 max_steps = 6
             root, err = _resolve_workspace_root(req.get("root"), self.root)
@@ -1188,6 +1193,8 @@ class _Handler(BaseHTTPRequestHandler):
                     compact_budget=int(req.get("compact_budget", 0) or 0))
             except Exception as e:
                 return self._json({"error": f"{type(e).__name__}: {e}"}, 502)
+            if effort is not None:
+                result["effort"] = effort   # the dial position, receipted
             result["run_receipt"] = _countersign_run(result)
             return self._json(result)
         if p == "/api/workflow":                       # staged run with a chained receipt, any endpoint
