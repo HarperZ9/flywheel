@@ -1,0 +1,84 @@
+﻿"""Generation under witness: the forge PROPOSES conjectures, the kernel is
+the sole judge, and novelty is corpus-relative and hashed, so the forge
+never re-proposes what the corpus already holds. A refused conjecture is
+recorded as refused, never stored, never narrated into a claim."""
+
+from harness.conjecture_forge import (enumerate_conjectures, forge_round,
+                                      normalize_statement)
+
+
+def _grid_kernel(code: str) -> dict:
+    """Test double for the Lean kernel: evaluates both sides on a grid of
+    Nat values. Exact for the forge's grammar (linear, and no reachable
+    subtraction ever truncates), so acceptance means the identity holds
+    and refusal means a countermodel exists on the grid."""
+    import re
+    m = re.search(r"\)\s*:\s*(.+?)\s*=\s*(.+?)\s*:=", code)
+    if not m:
+        return {"passed": False, "kernel_output": "unparseable"}
+    lhs, rhs = m.group(1), m.group(2)
+    try:
+        ok = all(eval(lhs, {"min": min, "max": max}, {"n": n, "m": mm})
+                 == eval(rhs, {"min": min, "max": max}, {"n": n, "m": mm})
+                 for n in range(7) for mm in range(7))
+    except Exception:
+        return {"passed": False, "kernel_output": "unevaluable"}
+    return {"passed": ok, "toolchain": "injected",
+            "kernel_output": "ok" if ok else "countermodel on grid"}
+
+
+def test_enumeration_is_deterministic_and_distinct():
+    a = enumerate_conjectures(24)
+    b = enumerate_conjectures(24)
+    assert a == b
+    assert len(set(a)) == 24
+    assert all(s.startswith("theorem ") and ":= by" in s for s in a)
+
+
+def test_enumeration_offset_continues_not_repeats():
+    first = enumerate_conjectures(10)
+    rest = enumerate_conjectures(10, offset=10)
+    assert not set(first) & set(rest)
+
+
+def test_normalization_is_alpha_and_name_invariant():
+    s1 = "theorem cj_a (n m : Nat) : n + m = m + n := by omega"
+    s2 = "theorem cj_b (x y : Nat) : x + y = y + x := by omega"
+    s3 = "theorem cj_c (n m : Nat) : n + m = m + m := by omega"
+    assert normalize_statement(s1) == normalize_statement(s2)
+    assert normalize_statement(s1) != normalize_statement(s3)
+
+
+def test_forge_round_survivors_carry_kernel_receipts(tmp_path, monkeypatch):
+    monkeypatch.setenv("FLYWHEEL_HOME", str(tmp_path))
+    art = forge_round(24, kernel=_grid_kernel)
+    assert art["schema"] == "flywheel.conjecture-forge/v1"
+    assert art["proposed"] == 24
+    assert art["accepted"], "the grid kernel must accept true identities"
+    assert art["proposed"] == len(art["accepted"]) + art["refused"]
+    for s in art["accepted"]:
+        assert s["verdict"]["passed"] is True
+        assert s["statement_sha256"]
+    # refused conjectures never enter the store
+    from harness.store import query_entities
+    assert len(query_entities(kind="theorem")) == len(art["accepted"])
+
+
+def test_second_round_never_reproposes_the_corpus(tmp_path, monkeypatch):
+    monkeypatch.setenv("FLYWHEEL_HOME", str(tmp_path))
+    r1 = forge_round(12, kernel=_grid_kernel)
+    r2 = forge_round(12, kernel=_grid_kernel)
+    h1 = {s["statement_sha256"] for s in r1["accepted"]}
+    h2 = {s["statement_sha256"] for s in r2["accepted"]}
+    assert not h1 & h2, "novelty is corpus-relative: no re-proposal"
+    assert r2["corpus_size"] >= len(r1["accepted"])
+
+
+def test_declared_kernel_yields_no_survivors_no_claims(tmp_path, monkeypatch):
+    monkeypatch.setenv("FLYWHEEL_HOME", str(tmp_path))
+    art = forge_round(6, kernel=lambda code: {"passed": None,
+                                              "kernel_output": "no toolchain"})
+    assert art["accepted"] == []
+    assert art["declared"] == 6
+    from harness.store import query_entities
+    assert query_entities(kind="theorem") == []
