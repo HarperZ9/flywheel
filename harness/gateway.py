@@ -996,7 +996,19 @@ class _Handler(BaseHTTPRequestHandler):
                 req = {}
             if req.get("stream"):
                 return self._sse_chat(req)
+            from harness.scaffold import scaffold_answer, scaffold_turn
+            _texts = [str(m.get("content", "")) for m in
+                      (req.get("messages") or []) if isinstance(m, dict)]
+            env = scaffold_turn("\n".join(_texts))
             body, code, _r, _t, _m = openai_chat(req, self.serve_url)
+            if code == 200 and isinstance(body, dict):
+                try:
+                    content = body["choices"][0]["message"]["content"]
+                except (KeyError, IndexError, TypeError):
+                    content = ""
+                # extension field: OpenAI clients ignore unknown keys
+                body["flywheel_scaffold"] = scaffold_answer(
+                    str(content or ""), env)
             return self._json(body, code)
         if p == "/v1/embeddings":                    # OpenAI-compatible, routed to a provider
             length = self._content_length()
@@ -1149,6 +1161,25 @@ class _Handler(BaseHTTPRequestHandler):
                 return self._json({"error": "'offset' must be a non-negative integer"}, 400)
             from harness.conjecture_forge import forge_round
             return self._json(forge_round(k, offset=offset))
+        if p == "/api/suite":                         # can this acceptance suite refuse wrong code?
+            length = self._content_length()
+            if length is None:
+                return self._json({"error": "invalid or oversized Content-Length"}, 400)
+            try:
+                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
+            except Exception:
+                req = {}
+            path = (req.get("path") or "").strip()
+            if not path:
+                return self._json({"error": "provide a project 'path'"}, 400)
+            mm = req.get("max_mutants", 5)
+            if not isinstance(mm, int) or isinstance(mm, bool) or not 1 <= mm <= 20:
+                return self._json({"error": "'max_mutants' must be an integer in 1..20"}, 400)
+            from harness.suite_audit import audit_suite
+            doc = audit_suite(path, oracle_cmd=str(
+                req.get("oracle_cmd", "python -m pytest tests/ -q")),
+                max_mutants=mm)
+            return self._json(doc, 400 if "error" in doc else 200)
         if p == "/api/tension":                       # bank a measurement pair with frozen sources
             length = self._content_length()
             if length is None:
@@ -1285,7 +1316,11 @@ class _Handler(BaseHTTPRequestHandler):
             seat = get_companion_seat(self.serve_url)
             if seat is None:
                 return self._json({"error": "companion seat unavailable"}, 503)
-            return self._json(companion_answer(seat, prompt, req.get("solution_sig", "")))
+            from harness.scaffold import scaffold_answer, scaffold_turn
+            env = scaffold_turn(prompt)
+            body = companion_answer(seat, prompt, req.get("solution_sig", ""))
+            body["scaffold"] = scaffold_answer(str(body.get("text", "")), env)
+            return self._json(body)
         if p == "/api/agent":                          # the agentic tool loop over ANY provider
             length = self._content_length()
             if length is None:

@@ -55,6 +55,11 @@ class PRP:
     validation_gates: list[tuple[str, bool]]   # (check, externally_checkable)
     confidence: int                             # 1..10, grounded not vibed
     context: str = ""
+    # the Y-chain arms (shape credited to Stravica's RCF; see the
+    # 2026-07-14 research note): intent and architecture converge at
+    # the unit of work; hashing them shows if either moved post-forge
+    intent_source: str = ""
+    architecture_source: str = ""
 
     @property
     def external_gate_ratio(self) -> float:
@@ -87,9 +92,16 @@ class PRP:
         )
 
     def to_dict(self) -> dict:
+        import hashlib as _h
         return {
             "schema": "flywheel.prp/v1",
             "goal": self.spec.goal, "task_type": self.spec.task_type,
+            "intent_sha256": (_h.sha256(
+                self.intent_source.encode()).hexdigest()
+                if self.intent_source else ""),
+            "architecture_sha256": (_h.sha256(
+                self.architecture_source.encode()).hexdigest()
+                if self.architecture_source else ""),
             "confidence": self.confidence,
             "external_gate_ratio": round(self.external_gate_ratio, 3),
             "well_posed": self.spec.well_posed,
@@ -116,7 +128,9 @@ def _score(spec: PromptSpec, gates, examples, documentation, context) -> int:
 def forge_prp(goal: str, *, examples: list[str] | None = None,
               documentation: list[str] | None = None, context: str = "",
               task_type: str | None = None, success_criterion: str = "",
-              extra_gates: list[tuple[str, bool]] | None = None) -> PRP:
+              extra_gates: list[tuple[str, bool]] | None = None,
+              intent_source: str = "",
+              architecture_source: str = "") -> PRP:
     """Build a PRP from a goal: forge the criterion-bearing spec, attach the
     task-type validation gates (plus any caller gates), and score confidence by
     external-checkability. The gates are what the flywheel's oracle enforces."""
@@ -129,4 +143,5 @@ def forge_prp(goal: str, *, examples: list[str] | None = None,
                documentation=list(documentation or []),
                validation_gates=gates,
                confidence=_score(spec, gates, examples, documentation, context),
-               context=context)
+               context=context, intent_source=intent_source,
+               architecture_source=architecture_source)
