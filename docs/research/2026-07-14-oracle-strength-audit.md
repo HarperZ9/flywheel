@@ -44,32 +44,41 @@ Structurally neutral, moderate confidence (guarded or prefix-equal):
 - reduce_fraction: `den < 0` to `den <= 0` differs only at den == 0,
   which the task's contract excludes upstream.
 
-Probable to definite coverage gaps (the finding):
+Real coverage gaps, confirmed by trace (the finding):
 
 - **json_string_escape: definite.** `< 0x20` to `<= 0x20` escapes the
   space character; the mutant passed, so no hidden test's expected
   output contains a literal space. Space is the most common character
   in real strings.
-- days_in_month: `year < 1` to `year <= 1` rejects year 1, a valid
-  year; the boundary is untested.
-- kv_event_fold: `len(ev) < 1` to `<= 1` rejects all single-token
-  events; either they are all invalid by contract or the case is
-  untested.
-- bipartite_strict: `1 - color[u]` to `1 + color[u]` destroys the
-  parity argument; passing suggests odd-cycle-at-depth is undertested.
-- portal_min_moves: `u + 1 < n` to `u - 1 < n` erases a bounds guard;
-  passing suggests boundary traversal is undertested or silently
-  tolerated.
+- **days_in_month: definite.** `year < 1` to `year <= 1` rejects
+  year 1, a valid year; the boundary was untested.
 
-## What happens next, and what deliberately does not
+Initially flagged as probable gaps, resolved to NEUTRAL on full
+mechanical trace (recorded because overcounting gaps is also a
+classification error):
 
-The five gap candidates get strengthened hidden tests in an explicit
-lane version bump (hard_v3), never in place: hard_v2's oracle source
-hash is pinned inside every adjudicated artifact from this morning, and
-comparability across runs outranks tidiness. Until the bump, the five
-tasks carry their flag in the audit artifact, and any claim resting
-specifically on them can be discounted by the reader with the artifact
-in hand.
+- kv_event_fold: a one-element event raises ValueError under both the
+  original and the mutant; only the code path differs, never the
+  outcome. No behavioral test can distinguish them.
+- bipartite_strict: the reference is breadth-first, so `1 + color`
+  makes color equal depth, and color-equality on an edge is exactly
+  depth-parity equality. The mutant is semantically equivalent for
+  this implementation.
+- portal_min_moves: the erased upper bound admits one phantom cell
+  beyond the board into a dict-based frontier; on a board fully
+  connected by unit steps the phantom detour is never on a shortest
+  path, so outputs are unchanged.
+
+## What happened next
+
+The two real gaps are closed in **hard_v3**
+(`tasks/curated/hard_v3.jsonl`), an explicit version bump, never an
+in-place edit: hard_v2's oracle source hash is pinned inside every
+adjudicated artifact from this morning, and comparability across runs
+outranks tidiness. `tests/test_hard_v3_upgrades.py` proves three
+things: the strengthened references still clear every admission gate,
+the exact mutants that passed v2 are refused by v3, and the v3 lane
+differs from v2 in precisely the two fixed records and nothing else.
 
 The honest comparison: 12.7% mutant-pass on first audit, against 24.4%
 false-pass found on the field's flagship leaderboard, with zero
