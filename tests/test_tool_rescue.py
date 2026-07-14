@@ -43,3 +43,12 @@ def test_garbage_stays_garbage():
     calls, repairs = rescue_tool_calls(GARBAGE)
     assert calls == []
     assert repairs == []
+
+
+def test_an_attempted_but_failed_repair_is_still_witnessed():
+    """A transform that fires but does not yield runnable calls is a fact of
+    the run: the attempted repair must still be returned, not discarded
+    (tenet 4). Previously this path returned [], [] and lost the evidence."""
+    calls, repairs = rescue_tool_calls("TOOL read_file {'path': 123 'bad'}")
+    assert calls == []
+    assert repairs and repairs[0]["transform"] == "single_to_double_quotes"

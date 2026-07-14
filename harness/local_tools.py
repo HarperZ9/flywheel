@@ -263,8 +263,17 @@ class ToolExecutor:
         cmd = args.get("cmd", "")
         if self.runner is not None:
             return self.runner(cmd, self.root)
-        proc = subprocess.run(cmd, shell=True, cwd=self.root, capture_output=True,
-                              text=True, timeout=120)
+        try:
+            proc = subprocess.run(cmd, shell=True, cwd=self.root,
+                                  capture_output=True, text=True, timeout=120)
+        except subprocess.TimeoutExpired as e:
+            # a timeout is its own failure class, not a test failure: name it
+            # and keep the partial output rather than discarding it
+            partial = ((e.stdout or "") if isinstance(e.stdout, str)
+                       else (e.stdout or b"").decode("utf-8", "replace")) + \
+                      ((e.stderr or "") if isinstance(e.stderr, str)
+                       else (e.stderr or b"").decode("utf-8", "replace"))
+            return False, f"[timeout after 120s]\n{partial}"
         out = (proc.stdout or "") + (proc.stderr or "")
         return proc.returncode == 0, f"[exit {proc.returncode}]\n{out}"
 
