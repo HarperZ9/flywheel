@@ -72,6 +72,27 @@ def test_gather_failure_is_named_and_the_run_continues(tmp_path):
     assert doc["prp"]["confidence"] >= 1  # the forge still ran
 
 
+def test_measurements_flip_claims_to_witnessed_verdicts(tmp_path):
+    def run(argv):
+        if argv[0] == "gather":
+            return (0, GATHER_OK)
+        if argv[0] == "crucible":
+            assert "--measurements" in argv
+            return (0, json.dumps({"assessment": {
+                "verdict_seal": "seal",
+                "verdicts": [{"claim_id": "c1", "status": "MATCH",
+                              "grounds": "within tolerance"}]}}))
+        return (1, "unknown tool")
+
+    doc = science_run(
+        "q", claims=[{"id": "c1", "text": "t", "falsification": "f"}],
+        measurements=[{"claim": "c1", "deviation": 0.0, "tolerance": 0.001,
+                       "method": "paired-arm bench"}],
+        runner=run, workdir=tmp_path)
+    assert doc["verdicts"][0]["status"] == "MATCH"
+    assert (tmp_path / "measurements.json").exists()
+
+
 def test_without_claims_the_crucible_stage_is_declared_skipped(tmp_path):
     r = _runner()
     doc = science_run("q", runner=r, workdir=tmp_path)
