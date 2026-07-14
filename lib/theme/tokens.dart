@@ -35,6 +35,11 @@ class FwTokens extends ThemeExtension<FwTokens> {
   final Color line; // 1px borders
   final Color hairline; // even fainter separators
 
+  // Typefaces. The canon pair is the default; the user may choose their
+  // own. Whatever the taste, color still only ever means a verdict.
+  final String textFamily;
+  final String monoFamily;
+
   const FwTokens({
     required this.ground,
     required this.ground2,
@@ -49,6 +54,8 @@ class FwTokens extends ThemeExtension<FwTokens> {
     required this.unverifiable,
     required this.line,
     required this.hairline,
+    this.textFamily = 'Hanken Grotesk',
+    this.monoFamily = 'Conso',
   });
 
   /// Ceramic light — the canon default.
@@ -123,6 +130,8 @@ class FwTokens extends ThemeExtension<FwTokens> {
     Color? unverifiable,
     Color? line,
     Color? hairline,
+    String? textFamily,
+    String? monoFamily,
   }) {
     return FwTokens(
       ground: ground ?? this.ground,
@@ -138,6 +147,8 @@ class FwTokens extends ThemeExtension<FwTokens> {
       unverifiable: unverifiable ?? this.unverifiable,
       line: line ?? this.line,
       hairline: hairline ?? this.hairline,
+      textFamily: textFamily ?? this.textFamily,
+      monoFamily: monoFamily ?? this.monoFamily,
     );
   }
 
@@ -158,6 +169,8 @@ class FwTokens extends ThemeExtension<FwTokens> {
       unverifiable: Color.lerp(unverifiable, other.unverifiable, t)!,
       line: Color.lerp(line, other.line, t)!,
       hairline: Color.lerp(hairline, other.hairline, t)!,
+      textFamily: t < 0.5 ? textFamily : other.textFamily,
+      monoFamily: t < 0.5 ? monoFamily : other.monoFamily,
     );
   }
 }

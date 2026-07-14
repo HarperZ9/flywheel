@@ -14,14 +14,23 @@ export 'tokens.dart';
 const kTextFamily = 'Hanken Grotesk';
 const kMonoFamily = 'Conso';
 
-ThemeData flywheelLightTheme() => _themeFrom(FwTokens.light, Brightness.light);
-ThemeData flywheelDarkTheme() => _themeFrom(FwTokens.dark, Brightness.dark);
+/// Theme builders. The canon pair is the default; a user-chosen family
+/// rides the tokens so every widget follows without re-plumbing.
+ThemeData flywheelLightTheme({String? textFamily, String? monoFamily}) =>
+    _themeFrom(
+        FwTokens.light.copyWith(
+            textFamily: textFamily, monoFamily: monoFamily),
+        Brightness.light);
+ThemeData flywheelDarkTheme({String? textFamily, String? monoFamily}) =>
+    _themeFrom(
+        FwTokens.dark.copyWith(textFamily: textFamily, monoFamily: monoFamily),
+        Brightness.dark);
 
 ThemeData _themeFrom(FwTokens t, Brightness brightness) {
   final base = ThemeData(
     useMaterial3: true,
     brightness: brightness,
-    fontFamily: kTextFamily,
+    fontFamily: t.textFamily,
     scaffoldBackgroundColor: t.ground,
     extensions: [t],
     colorScheme: ColorScheme(
@@ -51,8 +60,10 @@ ThemeData _themeFrom(FwTokens t, Brightness brightness) {
         backgroundColor: t.drift,
         foregroundColor:
             brightness == Brightness.light ? Colors.white : t.ground,
-        textStyle: const TextStyle(
-            fontFamily: kTextFamily, fontWeight: FontWeight.w600, fontSize: 13),
+        textStyle: TextStyle(
+            fontFamily: t.textFamily,
+            fontWeight: FontWeight.w600,
+            fontSize: 13),
         shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(FwLayout.radiusSmall)),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
@@ -62,8 +73,10 @@ ThemeData _themeFrom(FwTokens t, Brightness brightness) {
       style: OutlinedButton.styleFrom(
         foregroundColor: t.inkSoft,
         side: BorderSide(color: t.line),
-        textStyle: const TextStyle(
-            fontFamily: kTextFamily, fontWeight: FontWeight.w600, fontSize: 13),
+        textStyle: TextStyle(
+            fontFamily: t.textFamily,
+            fontWeight: FontWeight.w600,
+            fontSize: 13),
         shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(FwLayout.radiusSmall)),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
@@ -115,18 +128,18 @@ TextTheme _textTheme(FwTokens t) {
     // Mono voice
     labelSmall: TextStyle(
         color: t.inkFaint,
-        fontFamily: kMonoFamily,
+        fontFamily: t.monoFamily,
         fontSize: 11,
         letterSpacing: 0.4),
   );
 }
 
-/// The mono data style: Conso with tabular figures, for hashes, counts,
-/// versions, and table cells. Size and color are overridable per use.
+/// The mono data style: the mono family with tabular figures, for hashes,
+/// counts, versions, and table cells. Size and color overridable per use.
 TextStyle fwMono(FwTokens t,
     {double size = 12.5, Color? color, FontWeight weight = FontWeight.w400}) {
   return TextStyle(
-    fontFamily: kMonoFamily,
+    fontFamily: t.monoFamily,
     fontSize: size,
     fontWeight: weight,
     color: color ?? t.inkSoft,
@@ -134,10 +147,10 @@ TextStyle fwMono(FwTokens t,
   );
 }
 
-/// The kicker style: Conso uppercase, wide-tracked. The section voice.
+/// The kicker style: mono uppercase, wide-tracked. The section voice.
 TextStyle fwKicker(FwTokens t, {Color? color, double size = 10.5}) {
   return TextStyle(
-    fontFamily: kMonoFamily,
+    fontFamily: t.monoFamily,
     fontSize: size,
     fontWeight: FontWeight.w600,
     letterSpacing: 2.2,

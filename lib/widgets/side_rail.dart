@@ -24,6 +24,7 @@ class SideRail extends StatelessWidget {
   final VoidCallback onToggleTheme;
   final bool collapsed;
   final VoidCallback onToggleCollapse;
+  final VoidCallback? onOpenAppearance;
 
   const SideRail({
     super.key,
@@ -34,6 +35,7 @@ class SideRail extends StatelessWidget {
     required this.onToggleTheme,
     required this.collapsed,
     required this.onToggleCollapse,
+    this.onOpenAppearance,
   });
 
   @override
@@ -107,13 +109,26 @@ class SideRail extends StatelessWidget {
             _iconBtn(t, Icons.chevron_right, onToggleCollapse),
             const SizedBox(height: FwLayout.s2),
             _iconBtn(t, _themeIcon, onToggleTheme),
+            if (onOpenAppearance != null) ...[
+              const SizedBox(height: FwLayout.s2),
+              _iconBtn(t, Icons.tune, onOpenAppearance!),
+            ],
           ],
         ),
       );
     }
     return Padding(
       padding: const EdgeInsets.all(FwLayout.s2),
-      child: _ThemeToggle(mode: themeMode, onToggle: onToggleTheme),
+      child: Row(
+        children: [
+          Expanded(
+              child: _ThemeToggle(mode: themeMode, onToggle: onToggleTheme)),
+          if (onOpenAppearance != null) ...[
+            const SizedBox(width: FwLayout.s2),
+            _iconBtn(t, Icons.tune, onOpenAppearance!),
+          ],
+        ],
+      ),
     );
   }
 

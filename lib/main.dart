@@ -30,6 +30,7 @@ import 'views/studio_view.dart';
 import 'views/train_view.dart';
 import 'views/workflows_view.dart';
 import 'views/world_view.dart';
+import 'widgets/appearance_panel.dart';
 import 'widgets/fw.dart';
 import 'widgets/side_rail.dart';
 import 'widgets/status_bar.dart';
@@ -61,17 +62,29 @@ class _FlywheelAppState extends State<FlywheelApp> {
     });
   }
 
+  /// Appearance changes (fonts, scale) mutate settings and land here.
+  void _appearanceChanged() => setState(() {});
+
   @override
   Widget build(BuildContext context) {
+    final s = widget.settings;
     return MaterialApp(
       title: 'Flywheel',
       debugShowCheckedModeBanner: false,
-      theme: flywheelLightTheme(),
-      darkTheme: flywheelDarkTheme(),
+      theme: flywheelLightTheme(
+          textFamily: s.textFamily, monoFamily: s.monoFamily),
+      darkTheme: flywheelDarkTheme(
+          textFamily: s.textFamily, monoFamily: s.monoFamily),
       themeMode: _mode,
+      builder: (context, child) => MediaQuery(
+        data: MediaQuery.of(context).copyWith(
+            textScaler: TextScaler.linear(s.uiScale.clamp(0.8, 1.4))),
+        child: child!,
+      ),
       home: FlywheelShell(
           themeMode: _mode,
           onToggleTheme: _toggleTheme,
+          onAppearanceChanged: _appearanceChanged,
           settings: widget.settings),
     );
   }
@@ -80,11 +93,13 @@ class _FlywheelAppState extends State<FlywheelApp> {
 class FlywheelShell extends StatefulWidget {
   final ThemeMode themeMode;
   final VoidCallback onToggleTheme;
+  final VoidCallback? onAppearanceChanged;
   final DesktopSettings settings;
   const FlywheelShell(
       {super.key,
       required this.themeMode,
       required this.onToggleTheme,
+      this.onAppearanceChanged,
       required this.settings});
 
   @override
@@ -214,6 +229,10 @@ class _FlywheelShellState extends State<FlywheelShell> {
                     widget.settings.railCollapsed = _railCollapsed;
                     widget.settings.save();
                   }),
+                  onOpenAppearance: () => showAppearancePanel(
+                      context,
+                      widget.settings,
+                      widget.onAppearanceChanged ?? () {}),
                 ),
                 Expanded(child: _activeView()),
               ],
