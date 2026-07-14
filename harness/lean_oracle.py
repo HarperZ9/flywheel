@@ -71,8 +71,27 @@ def _toolchain(exe: str) -> str:
 def lean_check(code: str, *, runner=None) -> dict:
     """Judge `code` with the Lean kernel. `runner(argv, code) -> (rc, out)`
     is injectable for tests; passed is True/False from the kernel, or None
-    (DECLARED) when no toolchain exists to ask."""
+    (DECLARED) when no toolchain exists to ask.
+
+    Admitted holes are refused BEFORE the kernel runs: Lean exits 0 on
+    `sorry` with only a warning, so a naive exit-code check would accept
+    a false statement wearing an admitted hole (found live 2026-07-14).
+    The hygiene screen catches sorry/axiom up front, and the kernel's
+    own sorry warning is treated as refusal belt-and-braces."""
     sha = hashlib.sha256((code or "").encode("utf-8")).hexdigest()
+    from .benchmark_hygiene import screen_statements
+    flagged = screen_statements([code or ""]).get("flagged", [])
+    if flagged:
+        defect = flagged[0]["defect"]
+        return {"schema": SCHEMA, "passed": False, "code_sha256": sha,
+                "toolchain": "",
+                "kernel_output": f"refused before the kernel ran: the "
+                                 f"candidate carries '{defect}' (an "
+                                 "admitted hole or smuggled axiom is "
+                                 "not a proof)",
+                "note": "acceptance decided solely by the Lean kernel, "
+                        "and only over candidates that actually ask it "
+                        "to decide"}
     exe = _lean_exe()
     if runner is None and exe is None:
         return {"schema": SCHEMA, "passed": None, "code_sha256": sha,
@@ -87,9 +106,12 @@ def lean_check(code: str, *, runner=None) -> dict:
     else:
         rc, out = _run([exe], code)
         toolchain = _toolchain(exe)
-    return {"schema": SCHEMA, "passed": rc == 0, "code_sha256": sha,
+    uses_sorry = "declaration uses `sorry`" in (out or "") \
+        or "declaration uses sorry" in (out or "")
+    return {"schema": SCHEMA, "passed": rc == 0 and not uses_sorry,
+            "code_sha256": sha,
             "toolchain": toolchain,
             "kernel_output": (out or "").strip()[:2000],
-            "note": "acceptance decided solely by the Lean kernel; re-run "
-                    "the code under the named toolchain to re-derive this "
-                    "verdict"}
+            "note": "acceptance decided solely by the Lean kernel; a "
+                    "sorry warning is refusal; re-run the code under the "
+                    "named toolchain to re-derive this verdict"}
