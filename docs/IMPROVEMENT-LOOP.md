@@ -68,6 +68,19 @@ ordering, model/endpoint on the turn receipt, SSRF guard on /api/snapshot,
 the Y-arm drift comparison, empty-set-renders-green on the desktop, and the
 rest, tracked in the workflow result artifact.
 
+### Cycle 2 (2026-07-14): the agent/tool-execution subsystem
+
+The next tool: the highest-stakes surface in the platform (gated writes, exec,
+the tool loop where "no learned model in the accept path" lives), which cycle
+1 touched only at its scaffold wiring. Five critics, one per risk dimension
+(gating/authorization, workspace-boundary, receipt-completeness, the
+accept-path invariant, rescue/recovery honesty), each finding adversarially
+verified against the code. Reconciliation and execution land below as it
+completes.
+
+Also this cycle: the forecaster point-bias correction the replication demanded
+(empirical-Bayes shrinkage), validated honestly on the real vectors.
+
 ### Execution record
 
 **HIGH tier: all six shipped (2026-07-14), each with a failing test first.**

@@ -61,3 +61,29 @@ this calibration caveat attached, rather than as a clean prediction.
 This is what preregistration buys that a hit-only literature cannot: not
 just an honest verdict on the claim, but a diagnosis of exactly which part
 of the instrument is wrong and which is not.
+
+## Update: the point-bias correction, validated on real data (2026-07-14)
+
+`harness/forecast_shrinkage.py` fits a population Beta to the per-task counts
+(method of moments) and replaces each raw rate with its posterior mean, so a
+lucky low-attempt task no longer forecasts near 1.0. Measured on the two real
+seed runs, forecasting best-of-5 from the shrunk rates:
+
+| Seed | raw-rate point | shrunk point | observed |
+|---|---|---|---|
+| round one (091030) | 0.517 | 0.555 | 0.600 |
+| round two (140516) | 0.550 | 0.581 | 0.573 |
+
+The shrunk point lands within 0.045 and 0.008 of the two observed rates, much
+closer than either the raw-rate framing (biased low) or the sealed `_fresh_q`
+posterior-mean framing that undercovered (0.663 to 0.666, biased high). The
+finding worth stating plainly: the forecast bias direction depends on the
+framing, and the sealed forecast used the most optimistic one. The
+recommendation for the next preregistration is to forecast the point from
+shrunk raw rates and take the interval from the bootstrap.
+
+Honest caveat, kept: this is two data points, and part of shrinkage's upward
+move is Jensen concavity (pass-at-k is concave, so reducing spread raises the
+mean), not purely bias correction. This is measurably closer, not proven
+calibrated. The next run's forecast will be sealed with this method and
+adjudicated the same way, no rescue.
