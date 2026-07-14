@@ -1124,6 +1124,22 @@ class _Handler(BaseHTTPRequestHandler):
             except Exception as e:
                 doc["stored"] = f"store unavailable: {type(e).__name__}"
             return self._json(doc)
+        if p == "/api/invent":                        # generation under witness: propose, judge, keep
+            length = self._content_length()
+            if length is None:
+                return self._json({"error": "invalid or oversized Content-Length"}, 400)
+            try:
+                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
+            except Exception:
+                req = {}
+            k = req.get("k", 12)
+            if not isinstance(k, int) or isinstance(k, bool) or not 1 <= k <= 50:
+                return self._json({"error": "provide integer 'k' in 1..50"}, 400)
+            offset = req.get("offset", 0)
+            if not isinstance(offset, int) or isinstance(offset, bool) or offset < 0:
+                return self._json({"error": "'offset' must be a non-negative integer"}, 400)
+            from harness.conjecture_forge import forge_round
+            return self._json(forge_round(k, offset=offset))
         if p == "/api/capability":                    # probe a model on THIS machine
             length = self._content_length()
             if length is None:
