@@ -63,6 +63,7 @@ def _parse_sources(raw: str) -> list:
 
 
 def science_run(question: str, *, claims: "list | None" = None,
+                measurements: "list | None" = None,
                 max_sources: int = 4, runner=None,
                 workdir=None) -> dict:
     """One chained science run. `runner(argv) -> (rc, stdout)` is injectable
@@ -96,7 +97,16 @@ def science_run(question: str, *, claims: "list | None" = None,
         wdir.mkdir(parents=True, exist_ok=True)
         tpath = wdir / "thesis.json"
         tpath.write_text(json.dumps(thesis, indent=1), encoding="utf-8")
-        rc, raw = runner(["crucible", "assess", str(tpath), "--json"])
+        argv = ["crucible", "assess", str(tpath), "--json"]
+        if measurements:
+            # measurements flip UNVERIFIABLE into witnessed MATCH/DRIFT;
+            # crucible's contract: {"measurements": [{claim, deviation,
+            # tolerance, method, evidence}]}
+            mpath = wdir / "measurements.json"
+            mpath.write_text(json.dumps({"measurements": measurements},
+                                        indent=1), encoding="utf-8")
+            argv += ["--measurements", str(mpath)]
+        rc, raw = runner(argv)
         if rc in (0, 255):  # crucible exits nonzero when claims drift; JSON still valid
             try:
                 a = json.loads(raw).get("assessment", {})
