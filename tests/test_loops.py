@@ -15,6 +15,17 @@ def test_learning_loop_closes(tmp_path, monkeypatch):
     assert doc["edges"][-1]["to"] == doc["edges"][0]["from"]
 
 
+def test_learning_loop_closes_on_repeat_measurement(tmp_path, monkeypatch):
+    """A loop that only closes on a virgin store is not a closed loop. The
+    second turn must bank fresh evidence to schedule, not rediscover the
+    residue of the first turn's retest (content-addressed eid reuse)."""
+    monkeypatch.setenv("FLYWHEEL_HOME", str(tmp_path))
+    first = measure_closure(LOOPS["learning"])
+    second = measure_closure(LOOPS["learning"])
+    assert first["closed"] is True, first["edges"]
+    assert second["closed"] is True, second["edges"]
+
+
 def test_economics_loop_closes(tmp_path, monkeypatch):
     monkeypatch.setenv("FLYWHEEL_HOME", str(tmp_path))
     doc = measure_closure(LOOPS["economics"])
