@@ -48,6 +48,38 @@ void main() {
     expect(a.verdict, 'verified');
   });
 
+  testWidgets('high-risk demands gate the sign button until walked',
+      (tester) async {
+    const risky = {
+      'checkpoint': 'xyz',
+      'review': {
+        'files_edited': ['g.py', 'a.py'],
+      },
+      'risk_review': {
+        'demands': [
+          {'path': 'g.py', 'tier': 'high', 'requires': 'stronger receipt'},
+        ],
+      },
+    };
+    await tester.pumpWidget(MaterialApp(
+      theme: flywheelLightTheme(),
+      home: Scaffold(
+        body: SingleChildScrollView(
+          child: SignRunPanel(client: GatewayClient(), run: risky),
+        ),
+      ),
+    ));
+    await tester.pump();
+    expect(find.textContaining('high risk'), findsOneWidget);
+    final sign = find.widgetWithText(FilledButton, 'Sign');
+    expect(tester.widget<FilledButton>(sign).onPressed, isNull,
+        reason: 'unwalked high-risk edit must gate the sign button');
+    // Walking the demanded file unlocks signing.
+    await tester.tap(find.byType(Checkbox).first); // g.py (sorted edited)
+    await tester.pump();
+    expect(tester.widget<FilledButton>(sign).onPressed, isNotNull);
+  });
+
   testWidgets('SignRunPanel lists the edited files as walk checkboxes',
       (tester) async {
     await tester.pumpWidget(MaterialApp(

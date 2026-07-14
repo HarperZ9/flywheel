@@ -35,6 +35,21 @@ class _SignRunPanelState extends State<SignRunPanel> {
     return files is List ? files.map((e) => '$e').toList() : const [];
   }
 
+  /// Paths the risk review flags as high tier: the surface enforces the
+  /// demand — no signing until every demanded file is walked.
+  Set<String> get _demanded {
+    final rr = widget.run['risk_review'];
+    if (rr is! Map<String, dynamic>) return const {};
+    final demands = rr['demands'];
+    if (demands is! List) return const {};
+    return demands
+        .whereType<Map<String, dynamic>>()
+        .map((d) => '${d['path']}')
+        .toSet();
+  }
+
+  bool get _demandsMet => _walked.containsAll(_demanded);
+
   @override
   void dispose() {
     _note.dispose();
@@ -102,6 +117,15 @@ class _SignRunPanelState extends State<SignRunPanel> {
             const SizedBox(height: FwLayout.s2),
             Text('walked ${_walked.length}/${edited.length}',
                 style: fwMono(t, size: 11.5, color: t.inkMuted)),
+            if (_demanded.isNotEmpty) ...[
+              const SizedBox(height: FwLayout.s2),
+              Text(
+                  '${_demanded.length} high risk edit'
+                  '${_demanded.length == 1 ? '' : 's'} '
+                  '(${_demanded.join(', ')}) must be walked before signing.',
+                  style: fwMono(t, size: 11.5,
+                      color: _demandsMet ? t.inkMuted : t.drift)),
+            ],
             const SizedBox(height: FwLayout.s3),
             Row(children: [
               Expanded(
@@ -123,7 +147,8 @@ class _SignRunPanelState extends State<SignRunPanel> {
               ),
               const SizedBox(width: FwLayout.s3),
               FilledButton(
-                onPressed: _signing || a != null ? null : _sign,
+                onPressed:
+                    _signing || a != null || !_demandsMet ? null : _sign,
                 child: Text(_signing ? 'Signing…' : 'Sign'),
               ),
             ]),
