@@ -1,172 +1,237 @@
-// graph_view.dart — the Graph view: the platform composition drawn from
-// live state. Flywheel at the center, lanes on the inner ring colored by
-// their live verdict, the wider spine on the outer ring. Drawn from
-// /api/lanes and /api/world on every build; there is no stale diagram to
-// drift from.
-
-import 'dart:math' as math;
+// graph_view.dart — the Graph view: the cross-surface knowledge graph the
+// developer, the model, and the desktop all read the same way. Nodes are
+// live surfaces with engine-computed priorities; a budget turns the graph
+// into a context plan whose exclusions stay counted. Pan and zoom are
+// native; a tapped node opens its signals in a resizable detail pane.
 
 import 'package:flutter/material.dart';
 
-import '../models/gateway_models.dart';
+import '../client/gateway_client.dart';
+import '../models/graph_models.dart';
 import '../theme/flywheel_theme.dart';
 import '../widgets/fw.dart';
+import '../widgets/graph_canvas.dart';
+import '../widgets/split_pane.dart';
 
-class GraphView extends StatelessWidget {
-  final WorldDoc? world;
-  final LaneRoster? roster;
+class GraphView extends StatefulWidget {
+  final GatewayClient client;
   final bool alive;
-  const GraphView({super.key, this.world, this.roster, required this.alive});
+  const GraphView({super.key, required this.client, required this.alive});
+
+  @override
+  State<GraphView> createState() => _GraphViewState();
+}
+
+class _GraphViewState extends State<GraphView> {
+  final _budget = TextEditingController(text: '2000');
+  KnowledgeGraph? _graph;
+  GraphNode? _selected;
+  bool _loading = false;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  @override
+  void didUpdateWidget(GraphView old) {
+    super.didUpdateWidget(old);
+    if (!old.alive && widget.alive) _load();
+  }
+
+  @override
+  void dispose() {
+    _budget.dispose();
+    super.dispose();
+  }
+
+  Future<void> _load({bool withBudget = false}) async {
+    if (!widget.alive || _loading) return;
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final budget = int.tryParse(_budget.text.trim());
+      final path = withBudget && budget != null
+          ? '/api/graph?budget=$budget'
+          : '/api/graph';
+      final g = KnowledgeGraph.fromJson(await widget.client.getJson(path));
+      if (mounted) setState(() => _graph = g);
+    } catch (e) {
+      if (mounted) setState(() => _error = '$e');
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    if (!alive) {
+    if (!widget.alive) {
       return const FwEmpty(
           'The engine is offline. The graph draws from live state.',
           command: 'flywheel up');
     }
-    if (roster == null) {
-      return const Center(child: CircularProgressIndicator(strokeWidth: 2));
-    }
     final t = context.fw;
-    final lanes = roster!.lanes;
-    final laneNames = lanes.map((l) => l.name).toSet();
-    final outer = (world?.spine?.flagships ?? const <String>[])
-        .where((f) => !laneNames.contains(f) && f != 'flywheel')
-        .toList();
-    return ViewScroll(
+    final g = _graph;
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+          horizontal: FwLayout.s6, vertical: FwLayout.s5),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SectionHeader('Graph',
+              kicker: 'every surface, one graph, priced context',
+              trailing: _controls(t)),
+          const SizedBox(height: FwLayout.s3),
+          if (_error != null) ...[
+            HonestNull('Failed: $_error'),
+            const SizedBox(height: FwLayout.s3),
+          ],
+          Expanded(
+            child: g == null
+                ? const Center(
+                    child: CircularProgressIndicator(strokeWidth: 2))
+                : SplitPane(
+                    axis: Axis.horizontal,
+                    initialFraction: 0.72,
+                    minFraction: 0.4,
+                    maxFraction: 0.85,
+                    first: HairlineCard(
+                      padding: EdgeInsets.zero,
+                      child: ClipRRect(
+                        borderRadius:
+                            BorderRadius.circular(FwLayout.radius),
+                        child: InteractiveViewer(
+                          minScale: 0.5,
+                          maxScale: 4,
+                          child: GraphCanvas(
+                            graph: g,
+                            selectedId: _selected?.id,
+                            onSelect: (n) =>
+                                setState(() => _selected = n),
+                          ),
+                        ),
+                      ),
+                    ),
+                    second: _detail(t, g),
+                  ),
+          ),
+          const SizedBox(height: FwLayout.s2),
+          _legend(t),
+        ],
+      ),
+    );
+  }
+
+  Widget _controls(FwTokens t) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
       children: [
-        const SectionHeader('Graph', kicker: 'the composition, live'),
-        const SizedBox(height: FwLayout.s3),
-        Text(
-          'One platform, every engine a node. Inner ring: the installed '
-          'lanes, colored by their live verdict. Outer ring: the wider '
-          'family the spine names. Redrawn from the engine on every poll.',
-          style: Theme.of(context).textTheme.bodySmall,
-        ),
-        const SizedBox(height: FwLayout.s4),
-        HairlineCard(
-          padding: EdgeInsets.zero,
-          child: SizedBox(
-            height: 460,
-            width: double.infinity,
-            child: RepaintBoundary(
-              child: CustomPaint(
-                painter: _GraphPainter(tokens: t, lanes: lanes, outer: outer),
-              ),
-            ),
+        const Kicker('budget'),
+        const SizedBox(width: FwLayout.s2),
+        SizedBox(
+          width: 72,
+          child: TextField(
+            controller: _budget,
+            style: fwMono(t, size: 12),
+            decoration: const InputDecoration(isDense: true),
           ),
         ),
-        const SizedBox(height: FwLayout.s3),
-        Row(
-          children: [
-            const VerdictDot('live', size: 7),
-            const SizedBox(width: 4),
-            Text('live', style: fwMono(t, size: 10.5, color: t.inkMuted)),
-            const SizedBox(width: FwLayout.s3),
-            const VerdictDot('declared', size: 7),
-            const SizedBox(width: 4),
-            Text('declared, unprobed',
-                style: fwMono(t, size: 10.5, color: t.inkMuted)),
-            const SizedBox(width: FwLayout.s3),
-            const VerdictDot('missing', size: 7),
-            const SizedBox(width: 4),
-            Text('missing or stale',
-                style: fwMono(t, size: 10.5, color: t.inkMuted)),
-          ],
+        const SizedBox(width: FwLayout.s3),
+        OutlinedButton(
+          onPressed: _loading ? null : () => _load(withBudget: true),
+          child: const Text('Plan context'),
+        ),
+        const SizedBox(width: FwLayout.s2),
+        OutlinedButton(
+          onPressed: _loading ? null : _load,
+          child: const Text('Refresh'),
         ),
       ],
     );
   }
-}
 
-class _GraphPainter extends CustomPainter {
-  final FwTokens tokens;
-  final List<Lane> lanes;
-  final List<String> outer;
-  _GraphPainter({required this.tokens, required this.lanes, required this.outer});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final c = size.center(Offset.zero);
-    final rInner = size.shortestSide * 0.28;
-    final rOuter = size.shortestSide * 0.44;
-    final edge = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1
-      ..color = tokens.line;
-
-    // Outer family first (behind), faint.
-    final outerPts = _ring(c, rOuter, outer.length, offset: 0.5);
-    for (var i = 0; i < outer.length; i++) {
-      canvas.drawLine(c, outerPts[i], edge..color = tokens.hairline);
-      _node(canvas, outerPts[i], 5, tokens.unverifiable.withValues(alpha: 0.5));
-      _label(canvas, outerPts[i], c, outer[i], tokens.inkFaint, 10);
-    }
-
-    // Lanes on the inner ring, verdict-colored.
-    final lanePts = _ring(c, rInner, lanes.length);
-    for (var i = 0; i < lanes.length; i++) {
-      canvas.drawLine(c, lanePts[i], edge..color = tokens.line);
-      final color = tokens.statusColor(lanes[i].status);
-      _node(canvas, lanePts[i], 7, color);
-      _label(canvas, lanePts[i], c, lanes[i].name, tokens.inkSoft, 11.5);
-    }
-
-    // The hub.
-    canvas.drawCircle(
-        c, 13, Paint()..color = tokens.drift.withValues(alpha: 0.14));
-    canvas.drawCircle(
-        c,
-        13,
-        Paint()
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 1.4
-          ..color = tokens.drift);
-    _text(canvas, 'flywheel', c + const Offset(0, 22), tokens.ink, 12,
-        FontWeight.w700, center: true);
+  Widget _detail(FwTokens t, KnowledgeGraph g) {
+    final n = _selected;
+    return HairlineCard(
+      recessed: true,
+      child: n == null
+          ? Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Kicker('detail'),
+                const SizedBox(height: FwLayout.s2),
+                Text(
+                    '${g.nodes.length} nodes, ${g.edges.length} edges. '
+                    'Tap a node for its signals.',
+                    style: TextStyle(fontSize: 12.5, color: t.inkMuted)),
+                if (g.plan != null) ...[
+                  const SizedBox(height: FwLayout.s3),
+                  const Kicker('context plan', hot: true),
+                  const SizedBox(height: FwLayout.s2),
+                  Text(
+                      'spent ${g.plan!.spent}/${g.plan!.budget} tokens · '
+                      '${g.plan!.selectedIds.length} in, '
+                      '${g.plan!.excluded} cut (counted, not hidden)',
+                      style: fwMono(t, size: 11.5, color: t.inkSoft)),
+                ],
+              ],
+            )
+          : ListView(
+              children: [
+                Kicker(n.kind, hot: true),
+                const SizedBox(height: FwLayout.s2),
+                Text(n.label,
+                    style: Theme.of(context).textTheme.titleMedium),
+                const SizedBox(height: FwLayout.s2),
+                VerdictPill(statusOf(n), status: statusOf(n)),
+                const SizedBox(height: FwLayout.s3),
+                Text('priority ${n.priority} · cost ~${n.cost} tokens',
+                    style: fwMono(t, size: 11.5, color: t.inkSoft)),
+                if (g.plan != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Text(
+                        g.plan!.selectedIds.contains(n.id)
+                            ? 'inside the context plan'
+                            : 'cut by the budget',
+                        style: fwMono(t, size: 11.5, color: t.inkMuted)),
+                  ),
+                const SizedBox(height: FwLayout.s3),
+                const Kicker('signals'),
+                const SizedBox(height: FwLayout.s2),
+                for (final e in n.signals.entries)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 2),
+                    child: Text('${e.key} = ${e.value}',
+                        style: fwMono(t, size: 11.5, color: t.inkSoft)),
+                  ),
+                if (n.signals.isEmpty)
+                  Text('(none)',
+                      style: fwMono(t, size: 11.5, color: t.inkFaint)),
+              ],
+            ),
+    );
   }
 
-  List<Offset> _ring(Offset c, double r, int n, {double offset = 0}) {
-    return [
-      for (var i = 0; i < n; i++)
-        c +
-            Offset.fromDirection(
-                -math.pi / 2 + 2 * math.pi * (i + offset) / math.max(n, 1), r),
-    ];
+  Widget _legend(FwTokens t) {
+    Widget item(String label) => Padding(
+          padding: const EdgeInsets.only(right: FwLayout.s3),
+          child: Text(label, style: fwMono(t, size: 10.5, color: t.inkMuted)),
+        );
+    return Wrap(
+      children: [
+        item('circle lane'),
+        item('square project'),
+        item('diamond memory'),
+        item('triangle plugin'),
+        item('x unreadable surface'),
+        item('size = priority'),
+        item('green ring = in context plan'),
+      ],
+    );
   }
-
-  void _node(Canvas canvas, Offset p, double r, Color color) {
-    canvas.drawCircle(p, r, Paint()..color = color.withValues(alpha: 0.18));
-    canvas.drawCircle(p, r * 0.55, Paint()..color = color);
-  }
-
-  void _label(Canvas canvas, Offset p, Offset c, String text, Color color,
-      double fontSize) {
-    final away = (p - c);
-    final dir = away.distance == 0 ? const Offset(0, 1) : away / away.distance;
-    _text(canvas, text, p + dir * 16, color, fontSize, FontWeight.w500,
-        center: true);
-  }
-
-  void _text(Canvas canvas, String s, Offset at, Color color, double fontSize,
-      FontWeight weight,
-      {bool center = false}) {
-    final tp = TextPainter(
-      text: TextSpan(
-          text: s,
-          style: TextStyle(
-              color: color,
-              fontSize: fontSize,
-              fontWeight: weight,
-              fontFamily: kMonoFamily)),
-      textDirection: TextDirection.ltr,
-    )..layout();
-    tp.paint(canvas,
-        center ? at - Offset(tp.width / 2, tp.height / 2) : at);
-  }
-
-  @override
-  bool shouldRepaint(_GraphPainter old) =>
-      old.lanes != lanes || old.outer != outer || old.tokens != tokens;
 }

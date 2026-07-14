@@ -248,7 +248,7 @@ class _FlywheelShellState extends State<FlywheelShell> {
       case 5:
         return WorldView(world: _world, alive: _gatewayAlive);
       case 6:
-        return GraphView(world: _world, roster: _roster, alive: _gatewayAlive);
+        return GraphView(client: _client, alive: _gatewayAlive);
       case 7:
         return ReceiptsView(client: _client, alive: _gatewayAlive);
       case 8:
