@@ -1,13 +1,14 @@
 // The sign-this-run panel: ownership as a workflow. Checkboxes come from
 // the run's own review (files the agent edited), coverage is computed by
-// the engine, and the standing renders as the verdict it is — complete or
-// honestly partial.
+// the engine, and the standing renders as the verdict it is: complete or
+// honestly partial. The evidence card renders what a run can prove.
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:flywheel_desktop/client/gateway_client.dart';
 import 'package:flywheel_desktop/models/attestation_models.dart';
 import 'package:flywheel_desktop/theme/flywheel_theme.dart';
+import 'package:flywheel_desktop/widgets/run_evidence_card.dart';
 import 'package:flywheel_desktop/widgets/sign_run_panel.dart';
 
 const _run = {
@@ -20,6 +21,32 @@ const _run = {
 };
 
 void main() {
+  testWidgets('RunEvidenceCard renders the ttva null honestly',
+      (tester) async {
+    const run = {
+      'duration_s': 4.2,
+      'ttva_s': null,
+      'context_manifest': {
+        'reads': [
+          {'path': 'a.py', 'content_sha256': 'x'}
+        ],
+        'tools': {'read_file': 1},
+      },
+      'risk_review': {'demands': []},
+      'workspace': {'changed': false},
+      'run_receipt': {'chain_hash': 'abc123def456'},
+    };
+    await tester.pumpWidget(MaterialApp(
+      theme: flywheelLightTheme(),
+      home: const Scaffold(
+          body: SingleChildScrollView(child: RunEvidenceCard(run: run))),
+    ));
+    await tester.pump();
+    expect(find.textContaining('null: nothing verified'), findsOneWidget);
+    expect(find.textContaining('1 reads'), findsOneWidget);
+    expect(find.textContaining('unchanged'), findsOneWidget);
+  });
+
   test('Attestation parses standing, coverage, and store receipt', () {
     final a = Attestation.fromJson(const {
       'schema': 'flywheel.attestation/v1',
@@ -75,7 +102,7 @@ void main() {
     expect(tester.widget<FilledButton>(sign).onPressed, isNull,
         reason: 'unwalked high-risk edit must gate the sign button');
     // Walking the demanded file unlocks signing.
-    await tester.tap(find.byType(Checkbox).first); // g.py (sorted edited)
+    await tester.tap(find.byType(Checkbox).first); // g.py listed first
     await tester.pump();
     expect(tester.widget<FilledButton>(sign).onPressed, isNotNull);
   });

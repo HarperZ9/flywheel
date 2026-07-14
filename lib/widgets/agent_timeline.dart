@@ -28,6 +28,7 @@ class AgentTimeline extends StatelessWidget {
         'assistant' => _assistant(t, e),
         'tool_call' => _toolCall(t, e),
         'tool_result' => _toolResult(t, e),
+        'tool_rescue' => _rescue(t, e),
         'done' => _done(t, e),
         'error' => HonestNull('The run failed: ${e['error']}'),
         _ => const SizedBox.shrink(),
@@ -60,6 +61,13 @@ class AgentTimeline extends StatelessWidget {
         ),
       ],
     );
+  }
+
+  /// A repaired emission is a fact of the run, shown as one: the transform
+  /// that fixed it, never a silent in-proxy repair.
+  Widget _rescue(FwTokens t, Map<String, dynamic> e) {
+    return Text('⟲ rescued: ${e['transform']}',
+        style: fwMono(t, size: 11, color: t.inkMuted));
   }
 
   Widget _toolResult(FwTokens t, Map<String, dynamic> e) {

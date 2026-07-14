@@ -13,6 +13,7 @@ import '../models/gateway_models.dart';
 import '../theme/flywheel_theme.dart';
 import '../widgets/agent_timeline.dart';
 import '../widgets/fw.dart';
+import '../widgets/run_evidence_card.dart';
 import '../widgets/sign_run_panel.dart';
 
 class AgentView extends StatefulWidget {
@@ -178,6 +179,8 @@ class _AgentViewState extends State<AgentView> {
           HairlineCard(child: AgentTimeline(events: _events)),
         ],
         if (_doneEvent != null) ...[
+          const SizedBox(height: FwLayout.s3),
+          RunEvidenceCard(run: _doneEvent!),
           const SizedBox(height: FwLayout.s3),
           SignRunPanel(
               key: ValueKey(_doneEvent!['checkpoint']),
