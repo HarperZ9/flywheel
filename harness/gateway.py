@@ -1024,6 +1024,31 @@ class _Handler(BaseHTTPRequestHandler):
                 question, claims=claims, measurements=measurements,
                 max_sources=max_sources,
                 workdir=_P(self.run_root) / "science"))
+        if p == "/api/retrieve":                      # retrieval that cites its evidence
+            length = self._content_length()
+            if length is None:
+                return self._json({"error": "invalid or oversized Content-Length"}, 400)
+            try:
+                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
+            except Exception:
+                req = {}
+            query = (req.get("query") or "").strip()
+            if not query:
+                return self._json({"error": "provide a non-empty 'query'"}, 400)
+            root, err = _resolve_workspace_root(req.get("root"), self.root)
+            if err:
+                return self._json({"error": err}, 400)
+            try:
+                k = max(1, min(int(req.get("k", 8)), 50))
+            except (TypeError, ValueError):
+                k = 8
+            from harness.bm25_retrieval import build_index, search
+            index = build_index(root)
+            return self._json({"schema": "flywheel.retrieval/v1",
+                               "query": query,
+                               "hits": search(index, query, k=k),
+                               "indexed_files": index["files"],
+                               "skipped": index["skipped"]})
         if p == "/api/snapshot":                      # the citation, frozen: bytes as the receipt
             length = self._content_length()
             if length is None:
