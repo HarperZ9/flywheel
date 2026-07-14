@@ -51,7 +51,7 @@ def _key_terms(diff: str, top_n: int = 8) -> tuple:
 
 
 def explanation_receipt(diff: str, explanation: str, *,
-                        threshold: float = 0.6) -> dict:
+                        threshold: float = 0.6, reviewer: str = "") -> dict:
     """Grade `explanation` against `diff` mechanically. Passing means the
     explanation names the changed files and at least `threshold` of the
     key changed identifiers."""
@@ -65,6 +65,7 @@ def explanation_receipt(diff: str, explanation: str, *,
         not files or bool(mentioned_files))
     doc = {
         "schema": SCHEMA,
+        "reviewer": reviewer,
         "passed": passed,
         "coverage": coverage,
         "threshold": threshold,
