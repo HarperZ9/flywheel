@@ -1,0 +1,8 @@
+{
+  "title": "Replication, sealed before the run: telos-coder-14b best-of-5 on hard_v2, round two (forecast seal ad3a75bb5c798bd1a96d0ca94194d54a6065af5a5e91d50e68c2ae6a3945a2f0)",
+  "claims": [
+    {"id": "c-repl-nonnull", "text": "The replicated wrapped best-of-5 uplift over bare for ollama:telos-coder-14b on hard_v2 (oracle 0b898a620223a06eeeee4244bd6e6935c53eecd4b742d9d220bdd5a96d91a89d) has a Newcombe 95% interval that excludes zero, replicating the +18.2% [0.050, 0.305] measured 2026-07-14", "falsification": "the replicated interval includes zero"},
+    {"id": "c-repl-interval", "text": "The replicated wrapped best-of-5 pass rate lands in [0.597, 0.728], point 0.663, per the per-task Jeffreys forecast built from the first k=5 run's own outcome vectors and sealed before this run existed", "falsification": "the measured wrapped rate falls outside [0.597, 0.728]"},
+    {"id": "c-repl-het-beats-iid", "text": "The heterogeneous forecast (0.663) errs less against the replicated rate than the pooled iid baseline (0.682) sealed beside it; the rivals sit 1.9 points apart this round, so a tie within the band is a named possible outcome", "falsification": "abs(measured - 0.663) >= abs(measured - 0.682) beyond the 0.001 tie band"}
+  ]
+}
