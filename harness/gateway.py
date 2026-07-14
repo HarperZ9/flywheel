@@ -832,6 +832,9 @@ class _Handler(BaseHTTPRequestHandler):
                 return self._json(loop_status())
             except Exception as e:
                 return self._json({"error": f"{type(e).__name__}: {e}"}, 502)
+        if p == "/api/loops":                        # which candidate loops close? measured, not drawn
+            from harness.loops import measure_all_loops
+            return self._json(measure_all_loops())
         if p == "/api/frontier":                     # the RAM/compute frontier, measured here
             from harness.frontier import frontier_table
             from harness.store import get_entity, query_entities
