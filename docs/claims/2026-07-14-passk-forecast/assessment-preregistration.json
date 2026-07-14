@@ -1,0 +1,15 @@
+{
+ "assessment_seal": "86ee6cb960c858b2fae1f78013c0d7efd167a38c12501c3f59331ab39802fd3a",
+ "thesis_seal": "0db6e0f46b5a173b56c47187ccc9b844f57ad724b58a53cae03b321f395890fc",
+ "verdict_seal": "119ba72a5fcbd754895c3f7282ae15c7b0c25b7120324985b77c64575629dd10",
+ "claims": 3,
+ "match": 0,
+ "drift": 0,
+ "unverifiable": 3,
+ "claim_sha256": {
+  "c-14b-k5-interval": "633c6a73a7e4c3c091e39dedce3a003e0a0537b7d22ce92b2955712357872e88",
+  "c-14b-k5-het-beats-iid": "4e655d6481601e2fed831d22732c514fb112ccd0565cbc571a0ee3083d1a211c",
+  "c-14b-k5-iid-beats-het": "9b91597ec8e55a0eb36d8194bd27021a95f871faa11c719c6b2abfdfeed33232"
+ },
+ "note": "sealed BEFORE the bench exists; all three claims UNVERIFIABLE by construction until a wrapped best-of-5 run of telos-coder-14b on hard_v2 provides measurement rows bound by these hashes; no rescue at adjudication"
+}

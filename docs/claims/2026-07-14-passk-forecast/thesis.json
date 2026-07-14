@@ -1,0 +1,8 @@
+{
+  "title": "Sealed rival forecasts: telos-coder-14b fresh best-of-5 on hard_v2 (seal 5fdaadfce7ccd521e567d0bfdee26940d051eea6807359527f8b2291fd8f2bc8)",
+  "claims": [
+    {"id": "c-14b-k5-interval", "text": "A fresh wrapped best-of-5 run of ollama:telos-coder-14b on the hard_v2 lane (oracle 0b898a620223a06eeeee4244bd6e6935c53eecd4b742d9d220bdd5a96d91a89d) lands in [0.595, 0.737], point 0.666, per the per-task Jeffreys forecast sealed 2026-07-14 before any such run existed", "falsification": "the measured wrapped pass rate falls outside [0.595, 0.737]"},
+    {"id": "c-14b-k5-het-beats-iid", "text": "The heterogeneous per-task forecast (0.666) errs less against the measured rate than the pooled iid baseline (0.759) sealed beside it", "falsification": "abs(measured - 0.666) >= abs(measured - 0.759)"},
+    {"id": "c-14b-k5-iid-beats-het", "text": "REGISTERED RIVAL: the pooled iid baseline (0.759) errs less against the measured rate than the heterogeneous forecast (0.666); both rivals are sealed in one artifact so neither picks its opponent after the fact", "falsification": "abs(measured - 0.759) > abs(measured - 0.666)"}
+  ]
+}
