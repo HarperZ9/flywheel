@@ -56,3 +56,21 @@ def test_ledger_empty_run_root_is_empty_not_error(tmp_path):
     # The in-repo catalog is still reported (absent files marked honestly).
     assert len(doc["catalog"]) == len(gateway.RECEIPT_CATALOG)
     assert doc["catalog_present"] == 0
+    assert doc["merkle_root"] == "", "an empty log has no root"
+
+
+def test_every_envelope_proves_inclusion_against_the_root(tmp_path):
+    from harness.transparency_log import verify_inclusion, inclusion_proof
+    env = tmp_path / "run" / "envelopes"
+    for i in range(5):
+        _write_envelope(env, f"e{i}.json", task_id=f"t{i}")
+    doc = gateway.receipts_ledger(tmp_path, tmp_path / "run")
+    root = doc["merkle_root"]
+    assert len(root) == 64
+    leaves = [e["sha256"] for e in doc["envelopes"]]
+    for i, leaf in enumerate(leaves):
+        assert verify_inclusion(leaf, inclusion_proof(leaves, i), root)
+    # a hash not in the log cannot forge a proof
+    import hashlib
+    forged = hashlib.sha256(b"not-a-receipt").hexdigest()
+    assert not verify_inclusion(forged, inclusion_proof(leaves, 0), root)

@@ -173,6 +173,46 @@ def verify_chain() -> dict:
     return {"ok": True, "checked": len(rows), "head": prev}
 
 
+def verify_records() -> dict:
+    """Re-check that stored records still match their content hash. The
+    audit chain (verify_chain) proves the LEDGER was not rewritten; this
+    proves the RECORDS the ledger attests were not edited underneath it.
+    A directly-edited entity or relation, sha256 column left intact,
+    passes verify_chain but is caught here: the content is re-hashed and
+    compared to both the stored column and the audit row that committed
+    it."""
+    broken = []
+    with _conn() as c:
+        committed = {}
+        for op, ref, sha in c.execute(
+                "SELECT op, ref, sha256 FROM audit ORDER BY seq ASC"):
+            committed[(op, ref)] = sha       # latest wins
+        for eid, kind, project, data, sha in c.execute(
+                "SELECT eid, kind, project, data, sha256 FROM entities"):
+            recomputed = _sha({"kind": kind, "project": project,
+                               "data": json.loads(data)})
+            audit_sha = committed.get(("put_entity", eid))
+            if recomputed != sha or (audit_sha is not None
+                                     and audit_sha != sha):
+                broken.append({"ref": eid, "table": "entities",
+                               "reason": "content no longer matches its "
+                                         "committed hash"})
+        for rid, src, dst, kind, project, sha in c.execute(
+                "SELECT rid, src, dst, kind, project, sha256 FROM relations"):
+            recomputed = _sha({"src": src, "dst": dst, "kind": kind,
+                               "project": project})
+            audit_sha = committed.get(("put_relation", rid))
+            if recomputed != sha or (audit_sha is not None
+                                     and audit_sha != sha):
+                broken.append({"ref": rid, "table": "relations",
+                               "reason": "content no longer matches its "
+                                         "committed hash"})
+    return {"ok": not broken, "checked": len(committed), "broken": broken,
+            "note": "re-derives each record's content hash and compares to "
+                    "the column and the audit row; catches a tamper that "
+                    "verify_chain cannot see"}
+
+
 def stats() -> dict:
     with _conn() as c:
         ent = c.execute("SELECT COUNT(*) FROM entities").fetchone()[0]

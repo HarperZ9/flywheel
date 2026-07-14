@@ -58,6 +58,34 @@ def test_tampering_a_record_breaks_the_chain():
     assert v["broken_at"] == 2
 
 
+def test_verify_records_catches_a_directly_edited_entity():
+    """verify_chain proves the ledger consistent, but a tamper that edits
+    entities.data while leaving entities.sha256 and every audit row intact
+    passes it. verify_records re-derives the content hash and catches it."""
+    e = store.put_entity("doc", {"body": "original"})
+    assert store.verify_records()["ok"] is True
+    path = store._db_path()
+    con = sqlite3.connect(str(path))
+    con.execute("UPDATE entities SET data=? WHERE eid=?",
+                ('{"body": "tampered"}', e["eid"]))
+    con.commit()
+    con.close()
+    # the audit chain still verifies (it never re-reads the record)...
+    assert store.verify_chain()["ok"] is True
+    # ...but the record check catches the content divergence
+    r = store.verify_records()
+    assert r["ok"] is False
+    assert e["eid"] in [b["ref"] for b in r["broken"]]
+
+
+def test_verify_records_clean_on_an_untouched_store():
+    for i in range(3):
+        store.put_entity("t", {"i": i})
+    store.put_relation("t", "u", "rel")
+    r = store.verify_records()
+    assert r["ok"] is True and r["broken"] == []
+
+
 def test_stats_and_empty_kind_refused():
     store.put_entity("a", {})
     store.put_entity("a", {"x": 1})
