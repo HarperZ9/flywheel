@@ -50,3 +50,35 @@ def test_completion_flow_is_wired_to_existing_receipts():
     cur = academy_curriculum()
     flow = cur["completion_flow"]
     assert "/api/explain" in flow and "/api/retention" in flow
+
+
+def test_completion_binds_a_passed_receipt_to_a_lesson(tmp_path, monkeypatch):
+    monkeypatch.setenv("FLYWHEEL_HOME", str(tmp_path))
+    from harness.academy_pipeline import academy_complete
+    from harness.store import put_entity
+    passed = put_entity("comprehension", {"passed": True, "files": ["x"]})
+    r = academy_complete("store", passed["eid"])
+    assert r["bound"] is True
+    assert r["lesson_id"] == "store"
+    assert len(r["lesson_source_sha256"]) == 64
+    assert r["chain_hash"]
+
+
+def test_completion_refuses_an_unknown_lesson(tmp_path, monkeypatch):
+    monkeypatch.setenv("FLYWHEEL_HOME", str(tmp_path))
+    from harness.academy_pipeline import academy_complete
+    from harness.store import put_entity
+    passed = put_entity("comprehension", {"passed": True})
+    r = academy_complete("no-such-lesson", passed["eid"])
+    assert r["bound"] is False and "unknown lesson" in r["reason"]
+
+
+def test_completion_refuses_a_failed_or_missing_receipt(tmp_path, monkeypatch):
+    monkeypatch.setenv("FLYWHEEL_HOME", str(tmp_path))
+    from harness.academy_pipeline import academy_complete
+    from harness.store import put_entity
+    failed = put_entity("comprehension", {"passed": False})
+    r = academy_complete("store", failed["eid"])
+    assert r["bound"] is False and "did not pass" in r["reason"]
+    r2 = academy_complete("store", "no-such-eid")
+    assert r2["bound"] is False and "no such" in r2["reason"]

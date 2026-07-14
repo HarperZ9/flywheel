@@ -1101,6 +1101,22 @@ class _Handler(BaseHTTPRequestHandler):
                 context=req.get("context", ""),
                 intent_source=str(req.get("intent_source", "")),
                 architecture_source=str(req.get("architecture_source", ""))))
+        if p == "/api/academy/complete":             # bind a passed receipt to a lesson
+            length = self._content_length()
+            if length is None:
+                return self._json({"error": "invalid or oversized Content-Length"}, 400)
+            try:
+                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
+            except Exception:
+                req = {}
+            lesson_id = str(req.get("lesson_id", "")).strip()
+            eid = str(req.get("comprehension_eid", "")).strip()
+            if not lesson_id or not eid:
+                return self._json({"error": "provide 'lesson_id' and "
+                                            "'comprehension_eid'"}, 400)
+            from harness.academy_pipeline import academy_complete
+            doc = academy_complete(lesson_id, eid)
+            return self._json(doc, 200 if doc.get("bound") else 400)
         if p == "/api/forge/recheck":                # did an arm drift since the forge?
             length = self._content_length()
             if length is None:
