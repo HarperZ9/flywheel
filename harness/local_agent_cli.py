@@ -104,8 +104,10 @@ def _run_agentic(args) -> int:
     executor = ToolExecutor(root=args.root,
                             gate=ToolGate(allow_write=args.allow_write, allow_exec=args.allow_exec))
     ledger = SessionLedger()
+    from harness import tool_receipts
     result = run_agent(agent, _context_preamble(args.file) + args.prompt, executor, ledger,
-                       max_steps=args.max_steps, test_cmd=args.test_cmd or None)
+                       max_steps=args.max_steps, test_cmd=args.test_cmd or None,
+                       sign_key=tool_receipts.new_session_key())
     print(result["final"])
     if args.save:
         ledger.save(args.save)

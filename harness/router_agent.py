@@ -101,17 +101,31 @@ def run_router_agent(goal: str, endpoint: str = "serve", *, root: str = ".",
                                           allow_mcp=allow_mcp))
     import time as _time
     pre_state = None
-    if allow_write:
-        # writes are possible: pin the pre-state so 'what changed' is a
-        # checkable statement, and a revert has something to prove against
+    if allow_write or allow_exec:
+        # any state-mutating capability (write OR a shell command that
+        # redirects) can change the tree: pin the pre-state so 'what changed'
+        # is a checkable statement, and a revert has something to prove against
         from .workspace_state import workspace_snapshot
         pre_state = workspace_snapshot(root)
+    # per-tool authenticity: mint a run-scoped HMAC key so every tool_result
+    # carries a sig a key holder can re-verify. The secret key never enters
+    # the run doc; only a commitment (its sha256) does.
+    from . import tool_receipts
+    import hashlib as _hl
+    sign_key = tool_receipts.new_session_key()
     t0 = _time.perf_counter()
     result = run_agent(agent, goal, executor, ledger, max_steps=max_steps,
-                       test_cmd=test_cmd, on_event=on_event)
+                       test_cmd=test_cmd, sign_key=sign_key, on_event=on_event)
     duration = round(_time.perf_counter() - t0, 3)
     out = {k: v for k, v in result.items() if k != "ledger"}
     out["endpoint"] = endpoint
+    # the authenticity commitment: signed true + the key's sha256 (a
+    # commitment, never the secret) so a key holder can re-verify each sig
+    out["tool_authenticity"] = {
+        "signed": True, "scheme": "HMAC-SHA256",
+        "key_sha256": _hl.sha256(sign_key).hexdigest(),
+        "note": "each tool_result carries a sig; verify with the run-scoped "
+                "key held out of band (never published here)"}
     out["last_compaction"] = agent.last_compaction
     out["duration_s"] = duration
     # Time-to-verified-acceptance: the north-star metric (METR: felt speed
