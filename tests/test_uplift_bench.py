@@ -98,6 +98,22 @@ def test_newcombe_interval_reference():
     assert lo > 0.0  # 10% -> 90% on n=10 separates
 
 
+def test_per_task_outcome_vectors_ride_the_arm(tmp_path):
+    """Aggregates cannot separate diversity collapse from task
+    heterogeneity; per-task vectors can. Every arm row carries them."""
+    doc = run_uplift_bench(
+        _tasks_file(tmp_path, n=3), ["serve"],
+        oracle=lambda cand, task: cand == "good",
+        n_candidates=3, proposers={"serve": lambda: _Stub(pass_seed=1)})
+    rows = {r["arm"]: r for r in doc["rows"]}
+    bare = rows["bare"]["tasks"]
+    assert [t["task_id"] for t in bare] == ["t0", "t1", "t2"]
+    assert all(t["outcome"] == "fail" and t["attempts"] == 1 for t in bare)
+    wrapped = rows["wrapped"]["tasks"]
+    assert all(t["outcome"] == "pass" and t["attempts"] == 2
+               for t in wrapped)
+
+
 def test_the_oracle_is_fingerprinted_in_the_receipt(tmp_path):
     def oracle(cand, task):
         return cand == "good"
