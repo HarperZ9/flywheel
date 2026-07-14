@@ -111,7 +111,7 @@ Every route is same-origin JSON you can also `curl`:
 | `GET /api/endpoints` | The universal router roster, credential presence only |
 | `GET /api/endpoints/health` | Live probe of local tiers; hosted tiers report configured-or-not |
 | `GET /api/lanes` | The lane roster — live / declared / missing per flagship lane |
-| `POST /api/route` | Route to any provider and get a receipt with the answer |
+| `POST /api/route` | Route to any provider; the scaffold fires per message: named sources frozen pre-answer, turn receipt chained |
 | `POST /api/agent` | Run a gated, witnessed tool loop (read/edit/run) over any provider |
 | `POST /v1/chat/completions` | Drop-in OpenAI-compatible; `model` names any provider; streams |
 | `GET /v1/models` | OpenAI-compatible model list (the roster) |

@@ -43,7 +43,7 @@ REGISTRY: dict[str, ProviderSpec] = {s.name: s for s in (
     ProviderSpec("openrouter", "https://openrouter.ai/api/v1", "OPENROUTER_API_KEY", "auto"),
     ProviderSpec("together", "https://api.together.xyz/v1", "TOGETHER_API_KEY", "meta-llama/Llama-3.3-70B-Instruct-Turbo"),
     ProviderSpec("xai", "https://api.x.ai/v1", "XAI_API_KEY", "grok-3-mini"),
-    ProviderSpec("ollama", "http://127.0.0.1:11434/v1", "", "qwen2.5-coder:14b", local=True),
+    ProviderSpec("ollama", "http://127.0.0.1:11434/v1", "", "telos-coder-14b", local=True),
     ProviderSpec("vllm", "http://127.0.0.1:8000/v1", "", "served-model", local=True),
     ProviderSpec("sglang", "http://127.0.0.1:30000/v1", "", "served-model", local=True),
     ProviderSpec("lmstudio", "http://127.0.0.1:1234/v1", "", "served-model", local=True),

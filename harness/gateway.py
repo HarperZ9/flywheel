@@ -1262,7 +1262,14 @@ class _Handler(BaseHTTPRequestHandler):
             endpoint = (req.get("endpoint") or "").strip()
             if not prompt or not endpoint:
                 return self._json({"error": "provide non-empty 'prompt' and 'endpoint'"}, 400)
+            # the organs fire on every message: pre-pass freezes named
+            # sources, post-pass chains the turn receipt (scaffold.py)
+            from harness.scaffold import scaffold_answer, scaffold_turn
+            env = scaffold_turn(prompt)
             body, code = route_request(prompt, endpoint)
+            if code == 200 and isinstance(body, dict):
+                body["scaffold"] = scaffold_answer(
+                    str(body.get("text", "")), env)
             return self._json(body, code)
         if p == "/api/companion":                     # the seat: answer local, escalate the hard slice
             length = self._content_length()
