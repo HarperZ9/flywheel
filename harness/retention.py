@@ -21,11 +21,13 @@ RECEIPT_SCHEMA = "flywheel.retention-receipt/v1"
 def retention_due(days: float = 3.0,
                   kinds: tuple = ("comprehension", "attestation")) -> dict:
     """Checked evidence older than `days` with no retention receipt yet."""
-    from .store import query_entities, relations_of
+    from .store import query_all_entities, relations_of
     cutoff = time.time() - days * 86400.0
     due = []
+    scanned = 0
     for kind in kinds:
-        for meta in query_entities(kind=kind):
+        for meta in query_all_entities(kind=kind):
+            scanned += 1
             if meta["created"] > cutoff:
                 continue
             if any(r["kind"] == "retention"
@@ -35,9 +37,11 @@ def retention_due(days: float = 3.0,
                         "age_days": round(
                             (time.time() - meta["created"]) / 86400.0, 2)})
     return {"schema": SCHEMA, "days": days, "due": due,
+            "scanned": scanned, "complete": True,
             "note": "the retest is a surface action and unaided by design; "
                     "the platform schedules honesty, it does not sit the "
-                    "exam"}
+                    "exam; scanned is the full paged count, not a silent "
+                    "newest-page truncation"}
 
 
 def retention_record(original_eid: str, passed: bool, *,

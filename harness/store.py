@@ -105,7 +105,7 @@ def get_entity(eid: str) -> "dict | None":
 
 
 def query_entities(*, kind: "str | None" = None, project: "str | None" = None,
-                   limit: int = 200) -> list:
+                   limit: int = 200, offset: int = 0) -> list:
     clauses, params = [], []
     if kind:
         clauses.append("kind=?")
@@ -117,10 +117,26 @@ def query_entities(*, kind: "str | None" = None, project: "str | None" = None,
     with _conn() as c:
         rows = c.execute(
             "SELECT eid, kind, project, sha256, created FROM entities" + where +
-            " ORDER BY created DESC LIMIT ?", params + [max(1, min(limit, 1000))]
+            " ORDER BY created DESC LIMIT ? OFFSET ?",
+            params + [max(1, min(limit, 1000)), max(0, offset)]
         ).fetchall()
     return [{"eid": r[0], "kind": r[1], "project": r[2], "sha256": r[3],
              "created": r[4]} for r in rows]
+
+
+def query_all_entities(*, kind: "str | None" = None,
+                       project: "str | None" = None,
+                       chunk: int = 500) -> list:
+    """Every matching entity, paged until exhausted, so a caller does not
+    silently compute over only the newest page. Newest first."""
+    out, offset = [], 0
+    while True:
+        page = query_entities(kind=kind, project=project, limit=chunk,
+                              offset=offset)
+        out.extend(page)
+        if len(page) < chunk:
+            return out
+        offset += chunk
 
 
 def put_relation(src: str, dst: str, kind: str, *, project: str = "") -> dict:

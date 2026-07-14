@@ -15,8 +15,8 @@ SCHEMA = "flywheel.comprehension-ledger/v1"
 
 
 def _rows(kind: str, project: "str | None"):
-    from .store import get_entity, query_entities
-    for meta in query_entities(kind=kind, project=project):
+    from .store import get_entity, query_all_entities
+    for meta in query_all_entities(kind=kind, project=project):
         entity = get_entity(meta["eid"])
         if entity and isinstance(entity.get("data"), dict):
             yield entity
