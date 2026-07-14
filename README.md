@@ -117,7 +117,8 @@ Every route is same-origin JSON you can also `curl`:
 | `GET /v1/models` | OpenAI-compatible model list (the roster) |
 | `POST /v1/embeddings` | OpenAI-compatible embeddings, routed to a provider by name |
 | `POST /api/companion` | Answer locally, escalate only the hard slice |
-| `POST /api/forge` | Turn a plain goal into a structured prompt with checkable success gates |
+| `POST /api/forge` | Turn a plain goal into a structured prompt with checkable gates; content-addressed intent/architecture arms |
+| `POST /api/forge/recheck` | The Y-chain drift check: has an intent or architecture arm moved since the forge sealed it |
 | `GET /api/world` | The projected state (roster, lanes, findings, cursor) under one root hash |
 | `GET /api/receipts` | The receipts ledger: the re-hashed catalog plus accepted proof envelopes |
 | `GET /api/profiles` | Profile manifests (code, design, work, cowork, chat) over the one substrate |
