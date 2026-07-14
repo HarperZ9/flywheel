@@ -23,6 +23,7 @@ is an operator decision.
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import math
 import time
@@ -57,6 +58,21 @@ def newcombe_diff_interval(passed_a: int, n_a: int,
     lower = d - math.sqrt((ua - ra) ** 2 + (rb - lb) ** 2)
     upper = d + math.sqrt((ra - la) ** 2 + (ub - rb) ** 2)
     return (max(-1.0, lower), min(1.0, upper))
+
+
+def oracle_fingerprint(oracle) -> dict:
+    """The check definition as part of the receipt (the Verification
+    Horizon requirement): name + source hash, so old results can be
+    re-adjudicated when the check strengthens. Unreadable source is
+    reported as such, never guessed."""
+    import inspect
+    name = getattr(oracle, "__name__", type(oracle).__name__)
+    try:
+        src = inspect.getsource(oracle)
+        sha = hashlib.sha256(src.encode("utf-8")).hexdigest()
+    except (OSError, TypeError):
+        sha = "unavailable"
+    return {"name": name, "source_sha256": sha}
 
 
 def load_tasks(tasks_path, max_tasks=None) -> list:
@@ -176,6 +192,7 @@ def run_uplift_bench(tasks_path, providers: list, *, oracle,
     doc = {"schema": SCHEMA,
            "comparison_key": f"uplift:{Path(str(tasks_path)).stem}",
            "n_candidates": n_candidates,
+           "oracle": oracle_fingerprint(oracle),
            "rows": rows, "deltas": deltas,
            "note": "synthetic rows never enter comparison; the wrapped arm "
                    "wins only through the external oracle; overhead is "
