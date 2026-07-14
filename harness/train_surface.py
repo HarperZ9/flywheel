@@ -58,18 +58,34 @@ def duel_summary() -> dict:
                 "note": "duel artifacts present but unreadable"}
     single = _rate(rows, "single")
     ext = _rate(rows, "ext")
-    return {"schema": "flywheel.duel-summary/v1", "status": status,
-            "source": source, "n_tasks": len(rows),
-            "single_rate": single, "verified_rate": ext,
-            "self_rate": _rate(rows, "self"), "consensus_rate": _rate(rows, "cons"),
-            "harness_lift": round(ext - single, 4),
-            "rescued": [r.get("task_id") for r in rows
-                        if r.get("ext") and not r.get("single")],
-            "note": "single = a model used raw (existing-solution baseline); "
-                    "verified = the Flywheel best-of-N loop over the SAME "
-                    "model; the lift is the harness's contribution. "
-                    + ("PARTIAL: not all tasks measured yet."
-                       if status == "partial" else "")}
+    out = {"schema": "flywheel.duel-summary/v1", "status": status,
+           "source": source, "n_tasks": len(rows),
+           "single_rate": single, "verified_rate": ext,
+           "self_rate": _rate(rows, "self"), "consensus_rate": _rate(rows, "cons"),
+           "harness_lift": round(ext - single, 4),
+           "rescued": [r.get("task_id") for r in rows
+                       if r.get("ext") and not r.get("single")],
+           "note": "single = a model used raw (existing-solution baseline); "
+                   "verified = the Flywheel best-of-N loop over the SAME "
+                   "model; the lift is the harness's contribution. "
+                   + ("PARTIAL: not all tasks measured yet."
+                      if status == "partial" else "")}
+    # The powered lane, when its artifacts exist: n=110 intervals supersede
+    # a 10-task partial as headline evidence, and the note says so.
+    try:
+        from .uplift_bench import bench_summary
+        up = bench_summary(REPO)
+    except Exception as e:                    # a broken lane is named, not hidden
+        out["uplift_error"] = f"{type(e).__name__}: {e}"
+        return out
+    if up.get("runs"):
+        latest = up.get("latest") or {}
+        out["uplift"] = {"comparison_key": latest.get("comparison_key", ""),
+                         "deltas": latest.get("deltas", []),
+                         "runs": len(up["runs"])}
+        out["note"] += (" A powered uplift lane exists (see 'uplift'): "
+                        "prefer its intervals over this small set.")
+    return out
 
 
 def loop_status() -> dict:
