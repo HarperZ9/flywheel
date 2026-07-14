@@ -100,13 +100,18 @@ def run_router_agent(goal: str, endpoint: str = "serve", *, root: str = ".",
                             gate=ToolGate(allow_write=allow_write, allow_exec=allow_exec,
                                           allow_mcp=allow_mcp))
     import time as _time
+    import json as _json
     pre_state = None
     if allow_write or allow_exec:
         # any state-mutating capability (write OR a shell command that
         # redirects) can change the tree: pin the pre-state so 'what changed'
-        # is a checkable statement, and a revert has something to prove against
+        # is a checkable statement, and a revert has something to prove against.
+        # Chain it into the ledger so the workspace claim is inside the
+        # tamper-evident record, not loose JSON beside it.
         from .workspace_state import workspace_snapshot
         pre_state = workspace_snapshot(root)
+        ledger.append("workspace_pre",
+                      _json.dumps(pre_state, sort_keys=True))
     # per-tool authenticity: mint a run-scoped HMAC key so every tool_result
     # carries a sig a key holder can re-verify. The secret key never enters
     # the run doc; only a commitment (its sha256) does.
@@ -140,8 +145,14 @@ def run_router_agent(goal: str, endpoint: str = "serve", *, root: str = ".",
     if pre_state is not None:
         from .workspace_state import workspace_snapshot
         post_state = workspace_snapshot(root)
+        ledger.append("workspace_post",
+                      _json.dumps(post_state, sort_keys=True))
         out["workspace"] = {
             "pre": pre_state, "post": post_state,
             "changed": pre_state["workspace_sha256"]
                        != post_state["workspace_sha256"]}
+        # the post snapshot advanced the chain: re-checkpoint so the run's
+        # checkpoint/verified cover the workspace claim, not a stale subset
+        out["checkpoint"] = ledger.checkpoint()
+        out["verified"] = ledger.verify()
     return out
