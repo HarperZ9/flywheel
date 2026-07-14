@@ -835,6 +835,9 @@ class _Handler(BaseHTTPRequestHandler):
         if p == "/api/loops":                        # which candidate loops close? measured, not drawn
             from harness.loops import measure_all_loops
             return self._json(measure_all_loops())
+        if p == "/api/tension":                      # measurement disagreements, kept re-checkable
+            from harness.tension_ledger import tension_ledger
+            return self._json(tension_ledger())
         if p == "/api/frontier":                     # the RAM/compute frontier, measured here
             from harness.frontier import frontier_table
             from harness.store import get_entity, query_entities
@@ -1140,6 +1143,19 @@ class _Handler(BaseHTTPRequestHandler):
                 return self._json({"error": "'offset' must be a non-negative integer"}, 400)
             from harness.conjecture_forge import forge_round
             return self._json(forge_round(k, offset=offset))
+        if p == "/api/tension":                       # bank a measurement pair with frozen sources
+            length = self._content_length()
+            if length is None:
+                return self._json({"error": "invalid or oversized Content-Length"}, 400)
+            try:
+                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
+            except Exception:
+                req = {}
+            if not isinstance(req.get("a"), dict) or not isinstance(req.get("b"), dict):
+                return self._json({"error": "provide measurement objects 'a' and 'b'"}, 400)
+            from harness.tension_ledger import bank_tension
+            doc = bank_tension(req["a"], req["b"])
+            return self._json(doc, 400 if "error" in doc else 200)
         if p == "/api/capability":                    # probe a model on THIS machine
             length = self._content_length()
             if length is None:
