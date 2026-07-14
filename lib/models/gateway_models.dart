@@ -124,6 +124,61 @@ class WorldDoc {
       );
 }
 
+/// One frozen source from the per-message scaffold.
+class FrozenSource {
+  final String url;
+  final String sha256;
+  FrozenSource({required this.url, required this.sha256});
+  factory FrozenSource.fromJson(Map<String, dynamic> j) =>
+      FrozenSource(url: j['url'] ?? '', sha256: j['sha256'] ?? '');
+}
+
+/// One degraded source: perception failed and says so, never fakes.
+class DegradedSource {
+  final String url;
+  final String reason;
+  DegradedSource({required this.url, required this.reason});
+  factory DegradedSource.fromJson(Map<String, dynamic> j) =>
+      DegradedSource(url: j['url'] ?? '', reason: j['reason'] ?? '');
+}
+
+/// The per-message scaffold receipt riding on route/companion/v1 answers:
+/// sources frozen before the answer existed, named degradations, and the
+/// chained turn receipt.
+class TurnScaffold {
+  final List<FrozenSource> sourcesFrozen;
+  final List<DegradedSource> degraded;
+  final String eid;
+  final String chainHash;
+
+  TurnScaffold({
+    required this.sourcesFrozen,
+    required this.degraded,
+    required this.eid,
+    required this.chainHash,
+  });
+
+  factory TurnScaffold.fromJson(Map<String, dynamic> j) => TurnScaffold(
+        sourcesFrozen: (j['sources_frozen'] is List)
+            ? (j['sources_frozen'] as List)
+                .whereType<Map<String, dynamic>>()
+                .map(FrozenSource.fromJson)
+                .toList()
+            : const [],
+        degraded: (j['degraded'] is List)
+            ? (j['degraded'] as List)
+                .whereType<Map<String, dynamic>>()
+                .map(DegradedSource.fromJson)
+                .toList()
+            : const [],
+        eid: j['eid'] ?? '',
+        chainHash: j['chain_hash'] ?? '',
+      );
+
+  bool get isEmpty =>
+      sourcesFrozen.isEmpty && degraded.isEmpty && eid.isEmpty;
+}
+
 /// A companion routing result (POST /api/companion).
 class CompanionResult {
   final String source; // cache | local-verified | local-consensus | escalate
@@ -132,6 +187,7 @@ class CompanionResult {
   final String? bestEffortText;
   final String? receipt;
   final String? verdict;
+  final TurnScaffold? scaffold;
 
   CompanionResult({
     required this.source,
@@ -140,6 +196,7 @@ class CompanionResult {
     this.bestEffortText,
     this.receipt,
     this.verdict,
+    this.scaffold,
   });
 
   factory CompanionResult.fromJson(Map<String, dynamic> j) => CompanionResult(
@@ -149,6 +206,9 @@ class CompanionResult {
         bestEffortText: j['best_effort_text'],
         receipt: j['receipt'],
         verdict: j['verdict'],
+        scaffold: j['scaffold'] is Map<String, dynamic>
+            ? TurnScaffold.fromJson(j['scaffold'])
+            : null,
       );
 
   bool get escalated => source == 'escalate';

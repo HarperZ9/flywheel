@@ -9,6 +9,7 @@ import '../client/gateway_client.dart';
 import '../models/gateway_models.dart';
 import '../theme/flywheel_theme.dart';
 import '../widgets/fw.dart';
+import '../widgets/scaffold_strip.dart';
 
 class CompanionView extends StatefulWidget {
   final GatewayClient client;
@@ -168,6 +169,7 @@ class _CompanionViewState extends State<CompanionView> {
             const SizedBox(height: FwLayout.s3),
             HashText('receipt', r.receipt!, keep: 32),
           ],
+          ScaffoldStrip(r.scaffold),
         ],
       ),
     );
