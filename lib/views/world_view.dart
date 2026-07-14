@@ -37,26 +37,20 @@ class WorldView extends StatelessWidget {
         const SizedBox(height: FwLayout.s4),
         _rootCard(context, w),
         const SizedBox(height: FwLayout.s3),
-        Row(
+        AdaptiveTiles(
           children: [
-            Expanded(
-                child: StatTile(
-                    label: 'measured',
-                    value: '${w.findings['measured'] ?? 0}',
-                    status: 'verified')),
-            const SizedBox(width: FwLayout.s3),
-            Expanded(
-                child: StatTile(
-                    label: 'pending',
-                    value: '${w.findings['pending'] ?? 0}',
-                    status: 'pending')),
-            const SizedBox(width: FwLayout.s3),
-            Expanded(
-                child: StatTile(
-                    label: 'spine',
-                    value: (w.spine?.closed ?? false) ? 'closed' : 'open',
-                    status:
-                        (w.spine?.closed ?? false) ? 'verified' : 'missing')),
+            StatTile(
+                label: 'measured',
+                value: '${w.findings['measured'] ?? 0}',
+                status: 'verified'),
+            StatTile(
+                label: 'pending',
+                value: '${w.findings['pending'] ?? 0}',
+                status: 'pending'),
+            StatTile(
+                label: 'spine',
+                value: (w.spine?.closed ?? false) ? 'closed' : 'open',
+                status: (w.spine?.closed ?? false) ? 'verified' : 'missing'),
           ],
         ),
         if (items.isNotEmpty) ...[

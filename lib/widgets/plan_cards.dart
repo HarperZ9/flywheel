@@ -24,18 +24,12 @@ class ForgedPlanCard extends StatelessWidget {
       children: [
         Kicker('forged plan · ${plan.taskType} task', hot: true),
         const SizedBox(height: FwLayout.s3),
-        Row(children: [
-          Expanded(
-              child: StatTile(
-                  label: 'confidence', value: '${plan.confidence}/10')),
-          const SizedBox(width: FwLayout.s3),
-          Expanded(
-              child: StatTile(
-                  label: 'oracle gates',
-                  value: '${(plan.externalGateRatio * 100).round()}%')),
-          const SizedBox(width: FwLayout.s3),
-          Expanded(
-              child: StatTile(label: 'gates', value: '${plan.gates.length}')),
+        AdaptiveTiles(children: [
+          StatTile(label: 'confidence', value: '${plan.confidence}/10'),
+          StatTile(
+              label: 'oracle gates',
+              value: '${(plan.externalGateRatio * 100).round()}%'),
+          StatTile(label: 'gates', value: '${plan.gates.length}'),
         ]),
         if (!plan.wellPosed) ...[
           const SizedBox(height: FwLayout.s3),

@@ -21,6 +21,7 @@ import '../services/settings.dart';
 import '../theme/flywheel_theme.dart';
 import '../ide/open_panel.dart';
 import '../widgets/fw.dart';
+import '../widgets/split_pane.dart';
 
 class CodeView extends StatefulWidget {
   final GatewayClient client;
@@ -200,19 +201,22 @@ class _CodeViewState extends State<CodeView> {
     }
     final t = context.fw;
     final active = _active >= 0 && _active < _open.length ? _open[_active] : null;
-    return Row(
-      children: [
-        Container(
-          width: 230,
-          decoration: BoxDecoration(
-            color: t.ground2,
-            border: Border(right: BorderSide(color: t.line)),
-          ),
-          child: FileTree(
-              root: _root!, activePath: active?.path, onOpen: _openFile),
-        ),
-        Expanded(
-          child: Column(
+    return SplitPane(
+      axis: Axis.horizontal,
+      initialFraction: 0.2,
+      minFraction: 0.1,
+      maxFraction: 0.45,
+      first: Container(
+        color: t.ground2,
+        child: FileTree(
+            root: _root!, activePath: active?.path, onOpen: _openFile),
+      ),
+      second: SplitPane(
+        axis: Axis.vertical,
+        initialFraction: 0.66,
+        minFraction: 0.3,
+        maxFraction: 0.88,
+        first: Column(
             children: [
               EditorTabBar(
                 open: _open,
@@ -274,19 +278,20 @@ class _CodeViewState extends State<CodeView> {
                     ],
                   ),
                 ),
-              AgentPanel(
-                client: widget.client,
-                alive: widget.alive,
-                workspaceRoot: _root!,
-                activeFile: active?.path,
-                selection: _selectionOf(active),
-                onRunStarted: _snapshotOpenFiles,
-                onRunFinished: _reloadCleanFiles,
-              ),
             ],
+        ),
+        second: SingleChildScrollView(
+          child: AgentPanel(
+            client: widget.client,
+            alive: widget.alive,
+            workspaceRoot: _root!,
+            activeFile: active?.path,
+            selection: _selectionOf(active),
+            onRunStarted: _snapshotOpenFiles,
+            onRunFinished: _reloadCleanFiles,
           ),
         ),
-      ],
+      ),
     );
   }
 

@@ -175,6 +175,38 @@ class StatTile extends StatelessWidget {
   }
 }
 
+/// Stat tiles that share a row on a wide surface and stack below the
+/// breakpoint, so a narrow window squeezes nothing into illegibility.
+class AdaptiveTiles extends StatelessWidget {
+  final List<Widget> children;
+  final double breakpoint;
+  const AdaptiveTiles(
+      {super.key, required this.children, this.breakpoint = 560});
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(builder: (context, constraints) {
+      if (constraints.maxWidth >= breakpoint) {
+        return Row(children: [
+          for (final (i, c) in children.indexed) ...[
+            if (i > 0) const SizedBox(width: FwLayout.s3),
+            Expanded(child: c),
+          ],
+        ]);
+      }
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          for (final (i, c) in children.indexed) ...[
+            if (i > 0) const SizedBox(height: FwLayout.s3),
+            c,
+          ],
+        ],
+      );
+    });
+  }
+}
+
 /// Section header: title plus optional trailing action.
 class SectionHeader extends StatelessWidget {
   final String title;
