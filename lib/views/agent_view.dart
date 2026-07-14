@@ -13,6 +13,7 @@ import '../models/gateway_models.dart';
 import '../theme/flywheel_theme.dart';
 import '../widgets/agent_timeline.dart';
 import '../widgets/fw.dart';
+import '../widgets/sign_run_panel.dart';
 
 class AgentView extends StatefulWidget {
   final GatewayClient client;
@@ -176,8 +177,26 @@ class _AgentViewState extends State<AgentView> {
           const SizedBox(height: FwLayout.s4),
           HairlineCard(child: AgentTimeline(events: _events)),
         ],
+        if (_doneEvent != null) ...[
+          const SizedBox(height: FwLayout.s3),
+          SignRunPanel(
+              key: ValueKey(_doneEvent!['checkpoint']),
+              client: widget.client,
+              run: _doneEvent!),
+        ],
       ],
     );
+  }
+
+  /// The stream's terminal event carries the review + checkpoint the
+  /// attestation binds to.
+  Map<String, dynamic>? get _doneEvent {
+    for (final e in _events.reversed) {
+      if (e['type'] == 'done' && e['review'] is Map<String, dynamic>) {
+        return e;
+      }
+    }
+    return null;
   }
 
   Widget _gate(String label, bool value, ValueChanged<bool> onChanged) {

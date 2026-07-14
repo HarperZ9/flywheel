@@ -86,6 +86,27 @@ extension GatewayStreamsAndPlugins on GatewayClient {
     return _decode(r);
   }
 
+  /// POST /api/attest — ownership made checkable: the sign-off binds to the
+  /// run's checkpoint and to exactly what was walked; the engine computes
+  /// coverage and persists the attestation into the verifiable store.
+  Future<Map<String, dynamic>> attest(
+      {required Map<String, dynamic> run,
+      required List<String> reviewedFiles,
+      String note = '',
+      String reviewer = ''}) async {
+    final r = await _http.post(
+      Uri.parse('$baseUrl/api/attest'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'run': run,
+        'reviewed_files': reviewedFiles,
+        if (note.isNotEmpty) 'note': note,
+        if (reviewer.isNotEmpty) 'reviewer': reviewer,
+      }),
+    );
+    return _decode(r);
+  }
+
   /// POST /api/science — evidence, gated spec, witnessed claim verdicts.
   Future<Map<String, dynamic>> science(String question,
       {List<Map<String, String>>? claims, int maxSources = 4}) async {
