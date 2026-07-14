@@ -798,6 +798,9 @@ class _Handler(BaseHTTPRequestHandler):
                 return self._json(loop_status())
             except Exception as e:
                 return self._json({"error": f"{type(e).__name__}: {e}"}, 502)
+        if p == "/api/readiness":                    # release readiness, measured not felt
+            from harness.release_readiness import readiness_report
+            return self._json(readiness_report())
         if p == "/api/credo":                        # the belief, content-addressed and retrievable
             from harness.credo import credo_doc
             return self._json(credo_doc())
@@ -969,6 +972,30 @@ class _Handler(BaseHTTPRequestHandler):
                 question, claims=claims, measurements=measurements,
                 max_sources=max_sources,
                 workdir=_P(self.run_root) / "science"))
+        if p == "/api/explain":                       # the teach-back as a receipt (engagement, mechanical)
+            length = self._content_length()
+            if length is None:
+                return self._json({"error": "invalid or oversized Content-Length"}, 400)
+            try:
+                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
+            except Exception:
+                req = {}
+            diff = req.get("diff") or ""
+            explanation = req.get("explanation") or ""
+            if not diff.strip() or not explanation.strip():
+                return self._json({"error": "provide 'diff' and 'explanation'"}, 400)
+            from harness.explanation_gate import explanation_receipt
+            try:
+                threshold = min(1.0, max(0.1, float(req.get("threshold", 0.6))))
+            except (TypeError, ValueError):
+                threshold = 0.6
+            doc = explanation_receipt(diff, explanation, threshold=threshold)
+            try:
+                from harness.store import put_entity
+                doc["stored"] = put_entity("comprehension", doc).get("eid", "")
+            except Exception as e:
+                doc["stored"] = f"store unavailable: {type(e).__name__}"
+            return self._json(doc)
         if p == "/api/attest":                        # ownership made checkable: sign-off bound to the walk
             length = self._content_length()
             if length is None:

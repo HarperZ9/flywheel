@@ -129,6 +129,10 @@ Every route is same-origin JSON you can also `curl`:
 | `GET /api/router/stats` | Observed per-provider success rate, latency, and cost score |
 | `GET /api/uplift` | Bare-vs-wrapped uplift bench runs: per-arm intervals, honest nulls kept |
 | `GET /api/graph` | The cross-surface knowledge graph; `?budget=&q=` returns a priced context plan |
+| `GET /api/credo` | The belief, content-addressed, with the long-form essay URL |
+| `GET /api/readiness` | Release readiness per tool, measured not felt; gaps named |
+| `POST /api/attest` | Ownership made checkable: a sign-off carrying its review coverage |
+| `POST /api/explain` | The teach-back as a receipt: mechanical engagement gate over a diff |
 | `POST /api/science` | Evidence intake, a gated research spec, witnessed claim verdicts, one chain |
 | `GET /api/training/status` | Read-only status of the local training run |
 
