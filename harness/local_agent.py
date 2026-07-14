@@ -201,13 +201,34 @@ def available_backends(*, serve_url: str = SERVE_URL, ollama_url: str = OLLAMA_U
 
 def select_backend(backends: list[Backend], prefer: str = "auto") -> Optional[Backend]:
     """First healthy backend. prefer names one to force (still health-gated)."""
+    return select_backend_receipted(backends, prefer)[0]
+
+
+def select_backend_receipted(backends: list[Backend],
+                             prefer: str = "auto") -> tuple:
+    """The same decision, with its record (landscape import 5): every
+    candidate probed, its health verdict, the winner, and why -- routing
+    as an auditable claim instead of a black box. Probing stops at the
+    first healthy backend; unprobed candidates are not invented."""
     ordered = backends
     if prefer != "auto":
         ordered = [b for b in backends if b.name == prefer]
+    probed: list = []
+    chosen = None
     for b in ordered:
-        if b.health():
-            return b
-    return None
+        healthy = bool(b.health())
+        probed.append({"name": b.name, "healthy": healthy})
+        if healthy:
+            chosen = b
+            break
+    receipt = {"schema": "flywheel.routing-receipt/v1",
+               "prefer": prefer,
+               "candidates": probed,
+               "chosen": chosen.name if chosen else None,
+               "note": ("first healthy candidate wins, in roster order"
+                        if chosen else
+                        "no healthy backend among the candidates probed")}
+    return chosen, receipt
 
 
 @dataclass
