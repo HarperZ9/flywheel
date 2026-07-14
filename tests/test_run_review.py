@@ -28,7 +28,7 @@ def test_clean_run_reviews_clean():
         _call("edit_file", {"path": "a.py", "old": "x", "new": "y"}),
         _res("edit_file", True),
         _call("run", {"cmd": "pytest -q"}),
-        _res("run", True),
+        _e("tool_result", "ok", {"tool": "run", "ok": True, "gate": "test"}),
     ]
     doc = run_review(entries)
     assert doc["schema"] == SCHEMA
@@ -52,6 +52,22 @@ def test_blind_edit_without_oracle_is_flagged():
     assert doc["signals"]["read_before_write_ratio"] == 0.0
 
 
+def test_a_model_injected_green_run_does_not_verify_edits():
+    """Only the test-gate run (gate=='test') verifies prior writes. A model
+    that injects a trivial green run (echo ok) must not thereby mark its own
+    unverified edit as verified."""
+    entries = [
+        _e("user", "fix"),
+        _call("write_file", {"path": "b.py", "content": "..."}),
+        _res("write_file", True),
+        _call("run", {"cmd": "echo ok"}),
+        _res("run", True),   # a model-injected run, NO gate=='test'
+    ]
+    doc = run_review(entries)
+    assert doc["unverified_edits"] == ["b.py"], \
+        "an ungated green run must not verify the edit"
+
+
 def test_failures_are_retry_scars_not_hidden():
     entries = [
         _e("user", "fix"),
@@ -66,7 +82,7 @@ def test_failures_are_retry_scars_not_hidden():
         _call("edit_file", {"path": "src/a.py", "old": "y", "new": "z"}),
         _res("edit_file", True),
         _call("run", {"cmd": "pytest"}),
-        _res("run", True),
+        _e("tool_result", "ok", {"tool": "run", "ok": True, "gate": "test"}),
     ]
     doc = run_review(entries)
     assert doc["failed_calls"] == 2

@@ -72,4 +72,6 @@ def rescue_tool_calls(text: str) -> tuple:
         current = transformed
         if attempt:
             return attempt, repairs
-    return [], []
+    # no transform produced runnable calls, but the attempted repairs are
+    # still a fact of the run: witness them, never discard the evidence
+    return [], repairs
