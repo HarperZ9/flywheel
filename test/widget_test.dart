@@ -9,7 +9,7 @@ import 'package:flywheel_desktop/services/settings.dart';
 import 'package:flywheel_desktop/widgets/side_rail.dart';
 
 void main() {
-  testWidgets('App renders the shell with all sixteen destinations',
+  testWidgets('App renders the shell with all nineteen destinations',
       (WidgetTester tester) async {
     await tester.pumpWidget(FlywheelApp(settings: DesktopSettings()));
     await tester.pump();
@@ -23,12 +23,15 @@ void main() {
       'Lint',
       'World',
       'Graph',
+      'Feeds',
       'Receipts',
       'Companion',
       'Agent',
       'Workflows',
       'Studio',
+      'Science',
       'Train',
+      'Uplift',
       'Memory',
       'Plugins',
       'Endpoints'

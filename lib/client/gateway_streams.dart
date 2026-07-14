@@ -71,6 +71,36 @@ extension GatewayStreamsAndPlugins on GatewayClient {
     return _decode(r);
   }
 
+  /// GET /api/uplift — persisted bare-vs-wrapped bench runs (read-only).
+  Future<Map<String, dynamic>> upliftSummary() async {
+    final r = await _http.get(Uri.parse('$baseUrl/api/uplift'));
+    return _decode(r);
+  }
+
+  /// GET /api/feeds — cross-domain live feeds through the gather lane.
+  Future<Map<String, dynamic>> feeds({String? domain}) async {
+    final q = domain == null
+        ? ''
+        : '?domain=${Uri.encodeQueryComponent(domain)}';
+    final r = await _http.get(Uri.parse('$baseUrl/api/feeds$q'));
+    return _decode(r);
+  }
+
+  /// POST /api/science — evidence, gated spec, witnessed claim verdicts.
+  Future<Map<String, dynamic>> science(String question,
+      {List<Map<String, String>>? claims, int maxSources = 4}) async {
+    final r = await _http.post(
+      Uri.parse('$baseUrl/api/science'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'question': question,
+        if (claims != null && claims.isNotEmpty) 'claims': claims,
+        'max_sources': maxSources,
+      }),
+    );
+    return _decode(r);
+  }
+
   /// POST /api/projects/add — register a project directory.
   Future<Map<String, dynamic>> addProject(String root, {String name = ''}) async {
     final r = await _http.post(

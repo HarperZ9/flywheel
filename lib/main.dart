@@ -18,6 +18,7 @@ import 'views/agent_view.dart';
 import 'views/code_view.dart';
 import 'views/companion_view.dart';
 import 'views/endpoints_view.dart';
+import 'views/feeds_view.dart';
 import 'views/graph_view.dart';
 import 'views/lanes_view.dart';
 import 'views/lint_view.dart';
@@ -26,8 +27,10 @@ import 'views/plan_view.dart';
 import 'views/plugins_view.dart';
 import 'views/projects_view.dart';
 import 'views/receipts_view.dart';
+import 'views/science_view.dart';
 import 'views/studio_view.dart';
 import 'views/train_view.dart';
+import 'views/uplift_view.dart';
 import 'views/workflows_view.dart';
 import 'views/world_view.dart';
 import 'widgets/appearance_panel.dart';
@@ -128,12 +131,15 @@ class _FlywheelShellState extends State<FlywheelShell> {
     RailDestination('Lint', abbr: 'LT'),
     RailDestination('World', abbr: 'WD'),
     RailDestination('Graph', abbr: 'GR'),
+    RailDestination('Feeds', abbr: 'FD'),
     RailDestination('Receipts', abbr: 'RC'),
     RailDestination('Companion', abbr: 'CM'),
     RailDestination('Agent', abbr: 'AG'),
     RailDestination('Workflows', abbr: 'WF'),
     RailDestination('Studio', abbr: 'ST'),
+    RailDestination('Science', abbr: 'SC'),
     RailDestination('Train', abbr: 'TR'),
+    RailDestination('Uplift', abbr: 'UP'),
     RailDestination('Memory', abbr: 'ME'),
     RailDestination('Plugins', abbr: 'PL'),
     RailDestination('Endpoints', abbr: 'EP'),
@@ -269,23 +275,29 @@ class _FlywheelShellState extends State<FlywheelShell> {
       case 6:
         return GraphView(client: _client, alive: _gatewayAlive);
       case 7:
-        return ReceiptsView(client: _client, alive: _gatewayAlive);
+        return FeedsView(client: _client, alive: _gatewayAlive);
       case 8:
-        return CompanionView(client: _client, alive: _gatewayAlive);
+        return ReceiptsView(client: _client, alive: _gatewayAlive);
       case 9:
-        return AgentView(client: _client, alive: _gatewayAlive);
+        return CompanionView(client: _client, alive: _gatewayAlive);
       case 10:
-        return WorkflowsView(client: _client, alive: _gatewayAlive);
+        return AgentView(client: _client, alive: _gatewayAlive);
       case 11:
+        return WorkflowsView(client: _client, alive: _gatewayAlive);
+      case 12:
         return StudioView(
             world: _world, roster: _roster, alive: _gatewayAlive);
-      case 12:
-        return TrainView(client: _client, alive: _gatewayAlive);
       case 13:
-        return MemoryView(client: _client, alive: _gatewayAlive);
+        return ScienceView(client: _client, alive: _gatewayAlive);
       case 14:
-        return PluginsView(client: _client, alive: _gatewayAlive);
+        return TrainView(client: _client, alive: _gatewayAlive);
       case 15:
+        return UpliftView(client: _client, alive: _gatewayAlive);
+      case 16:
+        return MemoryView(client: _client, alive: _gatewayAlive);
+      case 17:
+        return PluginsView(client: _client, alive: _gatewayAlive);
+      case 18:
         return EndpointsView(client: _client, alive: _gatewayAlive);
       default:
         return const FwEmpty('Unknown view');
