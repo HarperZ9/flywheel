@@ -49,3 +49,12 @@ def test_the_run_doc_carries_the_manifest():
     m = out["context_manifest"]
     assert m["schema"] == SCHEMA
     assert m["reads"][0]["path"] == "a.py"
+
+
+def test_the_run_doc_pins_its_environment():
+    """Import 2 from the landscape queue: acceptance re-runs in a NAMED
+    environment. Every run doc carries the runtime identity."""
+    from harness.local_loop import _done
+    env = _done("a", 1, _ledger())["environment"]
+    for key in ("python", "platform", "machine"):
+        assert env[key], f"environment must name {key}"
