@@ -50,8 +50,10 @@ def test_the_frontier_table_composes_receipts(tmp_path):
         "schema": "flywheel.uplift-bench/v1",
         "comparison_key": "uplift:hard_v2",
         "rows": [
-            {"provider": "ollama:m", "arm": "bare", "pass_rate": 0.08},
-            {"provider": "ollama:m", "arm": "wrapped", "pass_rate": 0.19},
+            {"provider": "ollama:m", "arm": "bare", "pass_rate": 0.08,
+             "latency_ms_mean": 3300.0},
+            {"provider": "ollama:m", "arm": "wrapped", "pass_rate": 0.19,
+             "latency_ms_mean": 11000.0},
         ],
         "deltas": [{"provider": "ollama:m", "uplift": 0.11,
                     "includes_zero": False}],
@@ -63,6 +65,10 @@ def test_the_frontier_table_composes_receipts(tmp_path):
     assert row["bare_rate"] == 0.08
     assert row["verified_rate"] == 0.19
     assert row["capability_per_gb"] == round(0.19 / 1.8, 4)
+    # The second axis: pass per wall-second, per arm — the binding
+    # constraint (RAM vs time) picks the winner, so both axes ship.
+    assert row["bare_per_s"] == round(0.08 / 3.3, 4)
+    assert row["verified_per_s"] == round(0.19 / 11.0, 4)
     assert row["uplift_separated"] is True
     assert "measured" in table["note"]
 
