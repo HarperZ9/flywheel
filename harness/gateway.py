@@ -1173,6 +1173,25 @@ class _Handler(BaseHTTPRequestHandler):
                 return self._json({"error": "'offset' must be a non-negative integer"}, 400)
             from harness.conjecture_forge import forge_round
             return self._json(forge_round(k, offset=offset))
+        if p == "/api/scaffold":                      # the full turn guarantee for external wrappers
+            length = self._content_length()
+            if length is None:
+                return self._json({"error": "invalid or oversized Content-Length"}, 400)
+            try:
+                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
+            except Exception:
+                req = {}
+            prompt = str(req.get("prompt") or "")
+            answer = str(req.get("answer") or "")
+            if not prompt and not answer:
+                return self._json({"error": "provide 'prompt' and/or 'answer'"}, 400)
+            from harness.scaffold import scaffold_answer, scaffold_turn
+            env = scaffold_turn(prompt)
+            cites = req.get("citations")
+            doc = scaffold_answer(answer, env,
+                                  citations=cites if isinstance(cites, list)
+                                  else None)
+            return self._json(doc)
         if p == "/api/suite":                         # can this acceptance suite refuse wrong code?
             length = self._content_length()
             if length is None:
