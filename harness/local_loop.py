@@ -62,7 +62,12 @@ def run_agent(agent, goal: str, executor: ToolExecutor,
             "receipt": resp.get("x_receipt", {}).get("receipt_id")})
         _emit(type="assistant", step=step, text=text)
 
-        calls = parse_tool_calls(text)
+        from .tool_rescue import rescue_tool_calls
+        calls, repairs = rescue_tool_calls(text)
+        for rep in repairs:
+            # a repaired emission is a fact of the run, never a silent fix
+            ledger.append("tool_rescue", json.dumps(rep, sort_keys=True))
+            _emit(type="tool_rescue", transform=rep["transform"])
         if not calls:
             if not test_cmd:
                 return _done(text, step, ledger,
