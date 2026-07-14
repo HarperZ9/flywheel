@@ -99,9 +99,22 @@ def run_router_agent(goal: str, endpoint: str = "serve", *, root: str = ".",
     executor = ToolExecutor(root=root, external=external or {},
                             gate=ToolGate(allow_write=allow_write, allow_exec=allow_exec,
                                           allow_mcp=allow_mcp))
+    import time as _time
+    t0 = _time.perf_counter()
     result = run_agent(agent, goal, executor, ledger, max_steps=max_steps,
                        test_cmd=test_cmd, on_event=on_event)
+    duration = round(_time.perf_counter() - t0, 3)
     out = {k: v for k, v in result.items() if k != "ledger"}
     out["endpoint"] = endpoint
     out["last_compaction"] = agent.last_compaction
+    out["duration_s"] = duration
+    # Time-to-verified-acceptance: the north-star metric (METR: felt speed
+    # is inadmissible). Only a TRUSTED green run earns a TTVA; everything
+    # else is an honest null.
+    out["ttva_s"] = duration if result.get("tests_pass_trusted") is True else None
+    # Line-level provenance in the Agent-Trace shape, bound to the run.
+    from .provenance_trace import provenance_trace
+    out["provenance"] = provenance_trace(
+        ledger.entries, checkpoint=str(result.get("checkpoint", "")),
+        author=f"model:{endpoint}")
     return out

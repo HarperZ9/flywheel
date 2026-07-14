@@ -735,6 +735,9 @@ class _Handler(BaseHTTPRequestHandler):
                   # the window manifest: what the model actually saw
                   "context_manifest": result.get("context_manifest"),
                   "risk_review": result.get("risk_review"),
+                  "provenance": result.get("provenance"),
+                  "duration_s": result.get("duration_s"),
+                  "ttva_s": result.get("ttva_s"),
                   "run_receipt": _countersign_run(result)})
         except Exception as e:
             emit({"type": "error", "error": f"{type(e).__name__}: {e}"})
@@ -829,6 +832,16 @@ class _Handler(BaseHTTPRequestHandler):
                 return self._json(loop_status())
             except Exception as e:
                 return self._json({"error": f"{type(e).__name__}: {e}"}, 502)
+        if p == "/api/retention":                    # what is still held, not what was once shown
+            from harness.retention import retention_due
+            days = 3.0
+            for part in qs.split("&"):
+                if part.startswith("days="):
+                    try:
+                        days = max(0.0, float(part[5:]))
+                    except ValueError:
+                        days = 3.0
+            return self._json(retention_due(days=days))
         if p == "/api/comprehension":                # ownership from checked evidence, not blame
             from urllib.parse import unquote_plus
             from harness.comprehension_ledger import comprehension_ledger
@@ -1011,6 +1024,21 @@ class _Handler(BaseHTTPRequestHandler):
                 question, claims=claims, measurements=measurements,
                 max_sources=max_sources,
                 workdir=_P(self.run_root) / "science"))
+        if p == "/api/retention":                     # bank an unaided retest outcome, linked
+            length = self._content_length()
+            if length is None:
+                return self._json({"error": "invalid or oversized Content-Length"}, 400)
+            try:
+                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
+            except Exception:
+                req = {}
+            original = (req.get("original") or "").strip()
+            if not original or not isinstance(req.get("passed"), bool):
+                return self._json({"error": "provide 'original' (entity id) "
+                                            "and boolean 'passed'"}, 400)
+            from harness.retention import retention_record
+            return self._json(retention_record(
+                original, req["passed"], note=str(req.get("note", ""))))
         if p == "/api/explain":                       # the teach-back as a receipt (engagement, mechanical)
             length = self._content_length()
             if length is None:
