@@ -98,6 +98,19 @@ def test_newcombe_interval_reference():
     assert lo > 0.0  # 10% -> 90% on n=10 separates
 
 
+def test_the_oracle_is_fingerprinted_in_the_receipt(tmp_path):
+    def oracle(cand, task):
+        return cand == "good"
+
+    doc = run_uplift_bench(_tasks_file(tmp_path), ["serve"], oracle=oracle,
+                           proposers={"serve": lambda: _Stub()})
+    assert doc["oracle"]["name"] == "oracle"
+    assert len(doc["oracle"]["source_sha256"]) == 64
+    again = run_uplift_bench(_tasks_file(tmp_path), ["serve"], oracle=oracle,
+                             proposers={"serve": lambda: _Stub()})
+    assert again["oracle"]["source_sha256"] == doc["oracle"]["source_sha256"]
+
+
 def test_bench_summary_reads_artifacts_and_stays_honest_when_empty(tmp_path):
     from harness.uplift_bench import bench_summary
     s = bench_summary(tmp_path)
