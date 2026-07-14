@@ -135,6 +135,7 @@ Every route is same-origin JSON you can also `curl`:
 | `POST /api/explain` | The teach-back as a receipt: mechanical engagement gate over a diff |
 | `POST /api/lean` | The apex oracle: the Lean kernel decides, the proof is the receipt |
 | `POST /api/invent` | Generation under witness: propose conjectures the corpus lacks, kernel judges, survivors chain |
+| `GET/POST /api/tension` | Measurement-tension ledger: two frozen-source measurements, one honest verdict |
 | `GET/POST /api/retention` | What is still held vs once shown: due retests, unaided outcomes banked |
 | `GET /api/comprehension` | Per-file ownership from checked evidence, not git blame |
 | `POST /api/science` | Evidence intake, a gated research spec, witnessed claim verdicts, one chain |
