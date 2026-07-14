@@ -42,6 +42,24 @@ def test_vague_goal_is_flagged_not_well_posed():
     assert "auto-proposed" in spec.render()       # the flag is visible in the prompt
 
 
+def test_idiom_in_order_to_is_not_a_sorting_criterion():
+    """'in order to' is an idiom, not an ordering rule. It must NOT flip a
+    vague goal to well-posed on an idiom substring (tenet 4: inflated
+    confidence emits a bogus criterion)."""
+    spec = forge("write an email in order to notify the team")
+    assert spec.well_posed is False
+
+
+def test_genuine_ordering_goal_still_reads_well_posed():
+    spec = forge("return the numbers sorted in ascending order")
+    assert spec.well_posed is True
+
+
+def test_bare_matches_verb_is_not_a_criterion():
+    spec = forge("build a UI that matches modern trends")
+    assert spec.well_posed is False
+
+
 def test_constraints_are_sniffed_from_goal():
     spec = forge("write a function in Python, under 50 lines, no dependencies")
     joined = " ".join(spec.constraints)
