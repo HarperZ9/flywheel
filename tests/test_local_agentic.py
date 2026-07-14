@@ -131,6 +131,21 @@ class ScriptedAgent:
                 "x_receipt": {"receipt_id": f"rid{len(self.sent)}"}}
 
 
+def test_edit_receipt_carries_the_post_edit_file_hash(tmp_path):
+    """A mutating tool's receipt must bind the edit to a specific file state
+    (tenet 3): the post-edit content sha of the target path."""
+    import hashlib
+    agent = ScriptedAgent(['TOOL write_file {"path": "x.py", "content": "print(1)\\n"}',
+                           "done"])
+    led = SessionLedger()
+    run_agent(agent, "write x.py",
+              ToolExecutor(root=str(tmp_path), gate=ToolGate(allow_write=True)),
+              led, max_steps=4)
+    tr = next(e for e in led.entries if e.kind == "tool_result")
+    want = hashlib.sha256((tmp_path / "x.py").read_bytes()).hexdigest()
+    assert tr.meta.get("edited", {}).get("x.py") == want
+
+
 def test_tool_results_carry_an_hmac_sig_when_a_key_is_passed(tmp_path):
     """The per-tool authenticity receipt: with a sign_key, every tool_result
     meta carries a sig a holder of the key can re-verify. Production callers
