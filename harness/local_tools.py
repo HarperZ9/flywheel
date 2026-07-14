@@ -19,8 +19,11 @@ import json
 import os
 import re
 import subprocess
+import threading
 from dataclasses import dataclass, field
 from pathlib import Path
+
+_EXTERNAL_TIMEOUT = 120   # bound on an external/MCP tool call, seconds
 
 _TOOL_LINE = re.compile(r"^\s*TOOL\s+(\w+)\s+(\{.*\})\s*$")
 
@@ -190,13 +193,35 @@ class ToolExecutor:
 
     def execute(self, name: str, args: dict) -> ToolResult:
         if name in self.external:
+            # an external tool must not shadow a gated builtin (e.g. an
+            # external 'run' running ahead of the write/exec gate)
+            if getattr(self, f"_t_{name}", None) is not None:
+                return ToolResult(name, args, False,
+                                  f"[gate] external tool {name!r} shadows a "
+                                  "gated builtin and is refused")
             if not self.gate.allow_mcp:
                 return ToolResult(name, args, False,
                                   "[gate] external/MCP tools disabled (pass allow_mcp)")
-            try:
-                ok, out = self.external[name]["fn"](args)
-            except Exception as e:                       # an external server must never crash the loop
+            # a hung external/MCP tool must not hang the loop: bound it and
+            # name a timeout as its own witnessed failure
+            box: dict = {}
+
+            def _call():
+                try:
+                    box["r"] = self.external[name]["fn"](args)
+                except Exception as e:
+                    box["e"] = e
+            th = threading.Thread(target=_call, daemon=True)
+            th.start()
+            th.join(timeout=_EXTERNAL_TIMEOUT)
+            if th.is_alive():
+                return ToolResult(name, args, False,
+                                  f"[timeout] external tool {name!r} exceeded "
+                                  f"{_EXTERNAL_TIMEOUT}s")
+            if "e" in box:                               # an external server must never crash the loop
+                e = box["e"]
                 return ToolResult(name, args, False, f"[error] {type(e).__name__}: {e}")
+            ok, out = box["r"]
             return ToolResult(name, args, bool(ok), str(out)[: self.max_output])
         denied = self.gate.check(name, args)
         if denied:
