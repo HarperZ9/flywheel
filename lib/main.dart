@@ -18,6 +18,7 @@ import 'views/agent_view.dart';
 import 'views/code_view.dart';
 import 'views/companion_view.dart';
 import 'views/endpoints_view.dart';
+import 'views/family_view.dart';
 import 'views/feeds_view.dart';
 import 'views/graph_view.dart';
 import 'views/lanes_view.dart';
@@ -127,6 +128,7 @@ class _FlywheelShellState extends State<FlywheelShell> {
     RailDestination('Projects', abbr: 'PR'),
     RailDestination('Plan', abbr: 'PN'),
     RailDestination('Lanes', abbr: 'LN'),
+    RailDestination('Family', abbr: 'FA'),
     RailDestination('Code', abbr: 'CO'),
     RailDestination('Lint', abbr: 'LT'),
     RailDestination('World', abbr: 'WD'),
@@ -266,38 +268,40 @@ class _FlywheelShellState extends State<FlywheelShell> {
         return LanesView(
             roster: _roster, alive: _gatewayAlive, onProbe: _probeLanes);
       case 3:
+        return FamilyView(client: _client, alive: _gatewayAlive);
+      case 4:
         return CodeView(
             client: _client, alive: _gatewayAlive, settings: widget.settings);
-      case 4:
-        return LintView(client: _client, alive: _gatewayAlive);
       case 5:
-        return WorldView(world: _world, alive: _gatewayAlive);
+        return LintView(client: _client, alive: _gatewayAlive);
       case 6:
-        return GraphView(client: _client, alive: _gatewayAlive);
+        return WorldView(world: _world, alive: _gatewayAlive);
       case 7:
-        return FeedsView(client: _client, alive: _gatewayAlive);
+        return GraphView(client: _client, alive: _gatewayAlive);
       case 8:
-        return ReceiptsView(client: _client, alive: _gatewayAlive);
+        return FeedsView(client: _client, alive: _gatewayAlive);
       case 9:
-        return CompanionView(client: _client, alive: _gatewayAlive);
+        return ReceiptsView(client: _client, alive: _gatewayAlive);
       case 10:
-        return AgentView(client: _client, alive: _gatewayAlive);
+        return CompanionView(client: _client, alive: _gatewayAlive);
       case 11:
-        return WorkflowsView(client: _client, alive: _gatewayAlive);
+        return AgentView(client: _client, alive: _gatewayAlive);
       case 12:
+        return WorkflowsView(client: _client, alive: _gatewayAlive);
+      case 13:
         return StudioView(
             world: _world, roster: _roster, alive: _gatewayAlive);
-      case 13:
-        return ScienceView(client: _client, alive: _gatewayAlive);
       case 14:
-        return TrainView(client: _client, alive: _gatewayAlive);
+        return ScienceView(client: _client, alive: _gatewayAlive);
       case 15:
-        return UpliftView(client: _client, alive: _gatewayAlive);
+        return TrainView(client: _client, alive: _gatewayAlive);
       case 16:
-        return MemoryView(client: _client, alive: _gatewayAlive);
+        return UpliftView(client: _client, alive: _gatewayAlive);
       case 17:
-        return PluginsView(client: _client, alive: _gatewayAlive);
+        return MemoryView(client: _client, alive: _gatewayAlive);
       case 18:
+        return PluginsView(client: _client, alive: _gatewayAlive);
+      case 19:
         return EndpointsView(client: _client, alive: _gatewayAlive);
       default:
         return const FwEmpty('Unknown view');

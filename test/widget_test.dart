@@ -9,7 +9,7 @@ import 'package:flywheel_desktop/services/settings.dart';
 import 'package:flywheel_desktop/widgets/side_rail.dart';
 
 void main() {
-  testWidgets('App renders the shell with all nineteen destinations',
+  testWidgets('App renders the shell with all twenty destinations',
       (WidgetTester tester) async {
     await tester.pumpWidget(FlywheelApp(settings: DesktopSettings()));
     await tester.pump();
@@ -19,6 +19,7 @@ void main() {
       'Projects',
       'Plan',
       'Lanes',
+      'Family',
       'Code',
       'Lint',
       'World',

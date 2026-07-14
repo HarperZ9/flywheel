@@ -107,6 +107,22 @@ extension GatewayStreamsAndPlugins on GatewayClient {
     return _decode(r);
   }
 
+  /// POST /api/retention — bank an unaided retest outcome, linked to the
+  /// original evidence in the verifiable store.
+  Future<Map<String, dynamic>> retentionRecord(String original, bool passed,
+      {String note = ''}) async {
+    final r = await _http.post(
+      Uri.parse('$baseUrl/api/retention'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'original': original,
+        'passed': passed,
+        if (note.isNotEmpty) 'note': note,
+      }),
+    );
+    return _decode(r);
+  }
+
   /// POST /api/science — evidence, gated spec, witnessed claim verdicts.
   Future<Map<String, dynamic>> science(String question,
       {List<Map<String, String>>? claims, int maxSources = 4}) async {

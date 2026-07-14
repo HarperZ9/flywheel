@@ -8,6 +8,7 @@ import 'package:flywheel_desktop/client/gateway_client.dart';
 import 'package:flywheel_desktop/models/science_models.dart';
 import 'package:flywheel_desktop/models/uplift_models.dart';
 import 'package:flywheel_desktop/theme/flywheel_theme.dart';
+import 'package:flywheel_desktop/views/family_view.dart';
 import 'package:flywheel_desktop/views/feeds_view.dart';
 import 'package:flywheel_desktop/views/science_view.dart';
 import 'package:flywheel_desktop/views/uplift_view.dart';
@@ -88,6 +89,7 @@ void main() {
     ('Uplift', (GatewayClient c) => UpliftView(client: c, alive: false)),
     ('Science', (GatewayClient c) => ScienceView(client: c, alive: false)),
     ('Feeds', (GatewayClient c) => FeedsView(client: c, alive: false)),
+    ('Family', (GatewayClient c) => FamilyView(client: c, alive: false)),
   ]) {
     testWidgets('$name view offline names the command', (tester) async {
       await tester.pumpWidget(MaterialApp(
