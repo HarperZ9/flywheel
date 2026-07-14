@@ -133,6 +133,9 @@ Every route is same-origin JSON you can also `curl`:
 | `GET /api/readiness` | Release readiness per tool, measured not felt; gaps named |
 | `POST /api/attest` | Ownership made checkable: a sign-off carrying its review coverage |
 | `POST /api/explain` | The teach-back as a receipt: mechanical engagement gate over a diff |
+| `POST /api/lean` | The apex oracle: the Lean kernel decides, the proof is the receipt |
+| `GET/POST /api/retention` | What is still held vs once shown: due retests, unaided outcomes banked |
+| `GET /api/comprehension` | Per-file ownership from checked evidence, not git blame |
 | `POST /api/science` | Evidence intake, a gated research spec, witnessed claim verdicts, one chain |
 | `GET /api/training/status` | Read-only status of the local training run |
 
