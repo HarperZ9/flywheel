@@ -85,6 +85,13 @@ ROWS = [
      "witnesses": [("module", "harness/router_stats.py"), ("route", "/api/router/stats")],
      "codex": False, "cursor": False, "claude-code": False},
     # Known gaps: rows the field ships and Flywheel does not, kept visible.
+    {"key": "native-receipted-linter",
+     "desc": "a built-in extensible linter whose findings are content-"
+             "addressed and re-checkable, not deferred to external tools",
+     "witnesses": [("module", "harness/linter.py"),
+                   ("route", "/api/lint"),
+                   ("test", "tests/test_linter.py")],
+     "codex": False, "cursor": False, "claude-code": False},
     {"key": "lsp-go-to-definition",
      "desc": "editor go-to-definition over any user-named LSP server",
      "witnesses": [("module", "harness/lsp_bridge.py"),

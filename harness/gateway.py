@@ -1102,6 +1102,21 @@ class _Handler(BaseHTTPRequestHandler):
             from harness.projects import remove_project
             out = remove_project((req.get("root") or "").strip())
             return self._json(out, 400 if "error" in out else 200)
+        if p == "/api/lint":                           # native receipt-carrying linter over a project
+            length = self._content_length()
+            if length is None:
+                return self._json({"error": "invalid or oversized Content-Length"}, 400)
+            try:
+                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
+            except Exception:
+                req = {}
+            root, err = _resolve_workspace_root(req.get("root"), self.root)
+            if err:
+                return self._json({"error": err}, 400)
+            from harness.linter import lint_project
+            paths = req.get("paths") if isinstance(req.get("paths"), list) else None
+            out = lint_project(str(root), paths)
+            return self._json(out, 400 if "error" in out else 200)
         if p == "/api/index":                          # drive the index engine over a project root
             length = self._content_length()
             if length is None:
