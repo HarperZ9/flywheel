@@ -67,9 +67,12 @@ def scaffold_turn(prompt: str, *, snapshotter=None) -> dict:
 
 def scaffold_answer(answer: str, envelope: dict, *,
                     citations: "list | None" = None,
-                    resolve=None) -> dict:
+                    resolve=None, provenance: "dict | None" = None) -> dict:
     """The post-pass: chain the turn receipt, verify citations if the
-    answer carries them. Storage failure degrades to a named reason."""
+    answer carries them. `provenance` (endpoint, model_ref) records WHO
+    produced the answer, so the receipt is re-runnable; omitted, not
+    faked, when the caller cannot name it. Storage failure degrades to a
+    named reason."""
     from .envelope import verify_citations
     doc = {"schema": RECEIPT_SCHEMA,
            "prompt_sha256": envelope.get("prompt_sha256", ""),
@@ -77,6 +80,9 @@ def scaffold_answer(answer: str, envelope: dict, *,
                (answer or "").encode("utf-8")).hexdigest(),
            "sources_frozen": envelope.get("sources_frozen", []),
            "degraded": envelope.get("degraded", [])}
+    if provenance:
+        doc["provenance"] = {k: provenance[k] for k in provenance
+                             if provenance[k]}
     if citations:
         doc["citations"] = verify_citations(
             citations, resolve if resolve else _store_resolver())
