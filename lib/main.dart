@@ -15,12 +15,14 @@ import 'services/gateway_process.dart';
 import 'services/settings.dart';
 import 'theme/flywheel_theme.dart';
 import 'views/agent_view.dart';
+import 'views/academy_view.dart';
 import 'views/code_view.dart';
 import 'views/companion_view.dart';
 import 'views/endpoints_view.dart';
 import 'views/family_view.dart';
 import 'views/feeds_view.dart';
 import 'views/graph_view.dart';
+import 'views/instruments_view.dart';
 import 'views/lanes_view.dart';
 import 'views/lint_view.dart';
 import 'views/memory_view.dart';
@@ -145,6 +147,8 @@ class _FlywheelShellState extends State<FlywheelShell> {
     RailDestination('Memory', abbr: 'ME'),
     RailDestination('Plugins', abbr: 'PL'),
     RailDestination('Endpoints', abbr: 'EP'),
+    RailDestination('Instruments', abbr: 'IS'),
+    RailDestination('Academy', abbr: 'AY'),
   ];
 
   @override
@@ -303,6 +307,10 @@ class _FlywheelShellState extends State<FlywheelShell> {
         return PluginsView(client: _client, alive: _gatewayAlive);
       case 19:
         return EndpointsView(client: _client, alive: _gatewayAlive);
+      case 20:
+        return InstrumentsView(client: _client, alive: _gatewayAlive);
+      case 21:
+        return AcademyView(client: _client, alive: _gatewayAlive);
       default:
         return const FwEmpty('Unknown view');
     }

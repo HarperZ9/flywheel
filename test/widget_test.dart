@@ -9,7 +9,7 @@ import 'package:flywheel_desktop/services/settings.dart';
 import 'package:flywheel_desktop/widgets/side_rail.dart';
 
 void main() {
-  testWidgets('App renders the shell with all twenty destinations',
+  testWidgets('App renders the shell with all twenty-two destinations',
       (WidgetTester tester) async {
     await tester.pumpWidget(FlywheelApp(settings: DesktopSettings()));
     await tester.pump();
@@ -35,7 +35,9 @@ void main() {
       'Uplift',
       'Memory',
       'Plugins',
-      'Endpoints'
+      'Endpoints',
+      'Instruments',
+      'Academy'
     ]) {
       // The rail scrolls when the window is short; bring each item in view.
       await tester.scrollUntilVisible(find.text(label), 40,

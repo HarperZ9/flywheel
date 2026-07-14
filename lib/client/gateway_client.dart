@@ -75,6 +75,18 @@ class GatewayClient {
     return _decode(r);
   }
 
+  /// GET /api/instruments — the evaluation-engineering register.
+  Future<Map<String, dynamic>> instruments() async {
+    final r = await _http.get(Uri.parse('$baseUrl/api/instruments'));
+    return _decode(r);
+  }
+
+  /// GET /api/academy — the curriculum derived from the live code.
+  Future<Map<String, dynamic>> academy() async {
+    final r = await _http.get(Uri.parse('$baseUrl/api/academy'));
+    return _decode(r);
+  }
+
   /// POST /api/companion — answer locally, escalate the hard slice.
   Future<CompanionResult> companion(String prompt, {String? solutionSig}) async {
     final r = await _http.post(
