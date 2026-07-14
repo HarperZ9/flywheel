@@ -127,6 +127,7 @@ Every route is same-origin JSON you can also `curl`:
 | `POST /api/memory/recall` | Verbatim recall with span-hash provenance |
 | `POST /api/memory/note` | Keep a durable content-addressed note |
 | `GET /api/router/stats` | Observed per-provider success rate, latency, and cost score |
+| `GET /api/uplift` | Bare-vs-wrapped uplift bench runs: per-arm intervals, honest nulls kept |
 | `GET /api/training/status` | Read-only status of the local training run |
 
 One line for the whole surface: every number on every page is a fetch of a

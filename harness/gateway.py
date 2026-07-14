@@ -794,6 +794,9 @@ class _Handler(BaseHTTPRequestHandler):
                 return self._json(loop_status())
             except Exception as e:
                 return self._json({"error": f"{type(e).__name__}: {e}"}, 502)
+        if p == "/api/uplift":                       # bare-vs-wrapped uplift bench (read-only roster)
+            from harness.uplift_bench import bench_summary
+            return self._json(bench_summary(self.root))
         if p == "/api/receipts":                     # the receipts ledger (catalog + envelopes)
             return self._json(receipts_ledger(self.root, self.run_root))
         if p == "/api/profiles":                     # profile manifests over the one substrate
