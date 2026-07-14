@@ -1,0 +1,31 @@
+{
+ "measurements": [
+  {
+   "claim": "c-3b",
+   "deviation": 0.0,
+   "tolerance": 0.001,
+   "method": "newcombe-95-lower-bound vs 0; paired-arm bench, n=110, best-of-3 wrapped; lower bound +0.018",
+   "evidence": [
+    "artifacts/uplift/uplift_hard_v2_20260713-194718.json"
+   ]
+  },
+  {
+   "claim": "c-7b",
+   "deviation": 0.037,
+   "tolerance": 0.001,
+   "method": "newcombe-95-lower-bound vs 0; paired-arm bench, n=110, best-of-3 wrapped; lower bound -0.037",
+   "evidence": [
+    "artifacts/uplift/uplift_hard_v2_20260713-190747.json"
+   ]
+  },
+  {
+   "claim": "c-05b",
+   "deviation": 0.034,
+   "tolerance": 0.001,
+   "method": "newcombe-95-lower-bound vs 0; paired-arm bench, n=110, best-of-3 wrapped; lower bound -0.034",
+   "evidence": [
+    "artifacts/uplift/uplift_hard_v2_20260713-201327.json"
+   ]
+  }
+ ]
+}
