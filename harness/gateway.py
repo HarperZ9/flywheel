@@ -829,6 +829,14 @@ class _Handler(BaseHTTPRequestHandler):
                 return self._json(loop_status())
             except Exception as e:
                 return self._json({"error": f"{type(e).__name__}: {e}"}, 502)
+        if p == "/api/comprehension":                # ownership from checked evidence, not blame
+            from urllib.parse import unquote_plus
+            from harness.comprehension_ledger import comprehension_ledger
+            project = None
+            for part in qs.split("&"):
+                if part.startswith("project="):
+                    project = unquote_plus(part[8:]) or None
+            return self._json(comprehension_ledger(project=project))
         if p == "/api/readiness":                    # release readiness, measured not felt
             from harness.release_readiness import readiness_report
             return self._json(readiness_report())
@@ -1020,7 +1028,8 @@ class _Handler(BaseHTTPRequestHandler):
                 threshold = min(1.0, max(0.1, float(req.get("threshold", 0.6))))
             except (TypeError, ValueError):
                 threshold = 0.6
-            doc = explanation_receipt(diff, explanation, threshold=threshold)
+            doc = explanation_receipt(diff, explanation, threshold=threshold,
+                                      reviewer=str(req.get("reviewer", "")))
             try:
                 from harness.store import put_entity
                 doc["stored"] = put_entity("comprehension", doc).get("eid", "")
