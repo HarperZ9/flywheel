@@ -794,6 +794,14 @@ class _Handler(BaseHTTPRequestHandler):
                 return self._json(loop_status())
             except Exception as e:
                 return self._json({"error": f"{type(e).__name__}: {e}"}, 502)
+        if p == "/api/feeds":                        # cross-domain live feeds through gather
+            from urllib.parse import unquote_plus
+            from harness.live_feeds import live_feeds
+            domain = None
+            for part in qs.split("&"):
+                if part.startswith("domain="):
+                    domain = unquote_plus(part[7:]) or None
+            return self._json(live_feeds(domain=domain))
         if p == "/api/uplift":                       # bare-vs-wrapped uplift bench (read-only roster)
             from harness.uplift_bench import bench_summary
             return self._json(bench_summary(self.root))
