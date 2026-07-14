@@ -64,6 +64,31 @@ from harness.companion import CompanionSeat
 from harness.proposer import ProposerOutput
 
 
+def test_v1_scaffold_hashes_the_flattened_prompt_not_a_naive_join():
+    """The /v1 turn receipt must commit to what the model was actually sent
+    (the flattened prompt), so a stranger can reproduce prompt_sha256. A
+    content-parts array must not be repr'd into the hash."""
+    import hashlib
+    from harness.gateway import _flatten_messages
+    from harness.scaffold import scaffold_turn
+    messages = [
+        {"role": "system", "content": "be terse"},
+        {"role": "user", "content": [
+            {"type": "text", "text": "summarize https://example.org"}]},
+    ]
+    system, prompt = _flatten_messages(messages)
+    # the flattened prompt carries the real text, never a python repr
+    assert "https://example.org" in prompt
+    assert "'type'" not in prompt and "text'" not in prompt
+    env = scaffold_turn("\n".join(x for x in (system, prompt) if x))
+    expected = hashlib.sha256(
+        ("\n".join(x for x in (system, prompt) if x)).encode()).hexdigest()
+    assert env["prompt_sha256"] == expected
+    # the naive join that the bug used would hash a repr string instead
+    naive = "\n".join(str(m.get("content", "")) for m in messages)
+    assert hashlib.sha256(naive.encode()).hexdigest() != expected
+
+
 class _CyclingProposer:
     model_ref = "stub"
 
