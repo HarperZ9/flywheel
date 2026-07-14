@@ -76,6 +76,15 @@ EXTENDED: dict[str, Flagship] = {
     "studio-engine": Flagship(
         "studio-engine", "native creative-verification engine (perceive->generate->"
         "critique->refine->witness)", "public/build-engine"),
+    "mneme": Flagship(
+        "mneme", "durable cross-session memory with content-addressed recall",
+        "public/mneme"),
+    "plexus": Flagship(
+        "plexus", "cross-flagship capability discovery + auto-wiring interop mesh",
+        "public/plexus"),
+    "relay": Flagship(
+        "relay", "accountable multi-endpoint agent: failover, gated tool loop, "
+        "witnessed ledger, MCP", "public/relay"),
 }
 
 
