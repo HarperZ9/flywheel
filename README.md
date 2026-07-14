@@ -106,3 +106,4 @@ flutter build windows --release
 The app displays what the engine can prove and labels what it cannot. Model
 answers that fail verification are shown as escalations, not dressed up as
 results. Credentials are never collected, stored, or displayed by this app.
+The long form of this belief: [The Unbundling](https://github.com/HarperZ9/flywheel/blob/fix/release-model-identity/docs/essays/2026-07-13-the-unbundling.md).
