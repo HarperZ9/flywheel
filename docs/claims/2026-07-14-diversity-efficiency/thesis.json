@@ -1,0 +1,7 @@
+{
+  "title": "Diversity efficiency of the verified loop declines with model scale (preregistered)",
+  "claims": [
+    {"id": "c-eta-order", "text": "On the 110-task hard lane at best-of-3, diversity efficiency eta = (observed gain)/(independence-predicted gain) is higher for qwen2.5:3b than qwen2.5:7b", "falsification": "eta(7b) >= eta(3b) on the measured artifacts"},
+    {"id": "c-3b-n5", "text": "PREREGISTERED before the run completed: if eta(3b)=0.757 holds at best-of-5, the 3b wrapped rate lands in [0.21, 0.36] with point prediction 0.283 (31/110)", "falsification": "the measured best-of-5 wrapped rate falls outside [0.21, 0.36]"}
+  ]
+}

@@ -1,0 +1,86 @@
+{
+  "assessment": {
+    "started_at": 1784043170.736179,
+    "thesis_id": "48a777be85df1dc4",
+    "thesis_seal": "48a777be85df1dc4eb62c113882f5194b1fdc0421e654cfed0912bbec3de05b9",
+    "claims": 2,
+    "match": 1,
+    "drift": 0,
+    "unverifiable": 1,
+    "verdict_seal": "f6e6ca5d2b91d6fe2ab6a00b0c6f6552a7a5739525bd75154deba0fb89973252",
+    "measurement_seal": "9948d50921e7b4d50665a004e2a9c73f916e3db23f93583de34888179f2cba89",
+    "disposition": "publishable",
+    "stored": null,
+    "verdicts": [
+      {
+        "claim_id": "c-eta-order",
+        "claim_sha256": "960711ffeaaee358541102a8cd1d7a5fe51d18b421d630926ea67b5aa1d1a61f",
+        "status": "MATCH",
+        "deviation": 0.0,
+        "tolerance": 0.001,
+        "margin": 1.0,
+        "method": "eta(3b)=0.757 vs eta(7b)=0.269 from n=110 best-of-3 artifacts; deviation = max(0, eta7b - eta3b) = 0",
+        "grounds": "deviation 0 within tolerance 0.001",
+        "disposition": "publishable"
+      },
+      {
+        "claim_id": "c-3b-n5",
+        "claim_sha256": "2d576726f0452f3cca4b5ae7aacd091ca83cbfc911c00e2faca86c678f550cf5",
+        "status": "UNVERIFIABLE",
+        "deviation": null,
+        "tolerance": 0.0,
+        "margin": null,
+        "method": "none",
+        "grounds": "no measurement",
+        "disposition": "publishable"
+      }
+    ],
+    "measurements": [
+      {
+        "claim_id": "c-eta-order",
+        "claim_sha256": "960711ffeaaee358541102a8cd1d7a5fe51d18b421d630926ea67b5aa1d1a61f",
+        "deviation": 0.0,
+        "tolerance": 0.001,
+        "method": "eta(3b)=0.757 vs eta(7b)=0.269 from n=110 best-of-3 artifacts; deviation = max(0, eta7b - eta3b) = 0",
+        "measured_at": 1784043170.736179,
+        "evidence": [
+          "artifacts/uplift/uplift_hard_v2_20260713-194718.json",
+          "artifacts/uplift/uplift_hard_v2_20260713-190747.json"
+        ]
+      }
+    ],
+    "seal": "af2def9c0fd7292c653f6e6372e0c84c108cf0fe43a588ede866444b46879669"
+  },
+  "verdicts": [
+    {
+      "claim_id": "c-eta-order",
+      "claim_sha256": "960711ffeaaee358541102a8cd1d7a5fe51d18b421d630926ea67b5aa1d1a61f",
+      "status": "MATCH",
+      "disposition": "publishable",
+      "deviation": 0.0,
+      "tolerance": 0.001,
+      "margin": 1.0,
+      "method": "eta(3b)=0.757 vs eta(7b)=0.269 from n=110 best-of-3 artifacts; deviation = max(0, eta7b - eta3b) = 0",
+      "grounds": "deviation 0 within tolerance 0.001"
+    },
+    {
+      "claim_id": "c-3b-n5",
+      "claim_sha256": "2d576726f0452f3cca4b5ae7aacd091ca83cbfc911c00e2faca86c678f550cf5",
+      "status": "UNVERIFIABLE",
+      "disposition": "publishable",
+      "deviation": null,
+      "tolerance": 0.0,
+      "margin": null,
+      "method": "none",
+      "grounds": "no measurement"
+    }
+  ],
+  "measurement_warnings": [],
+  "explanations": [
+    {
+      "claim_id": "c-3b-n5",
+      "missing": "measurement",
+      "needed": "provide a measurement row binding claim c-3b-n5 by sha256 2d576726f0452f3cca4b5ae7aacd091ca83cbfc911c00e2faca86c678f550cf5"
+    }
+  ]
+}

@@ -1,0 +1,7 @@
+{
+  "measurements": [
+    {"claim": "c-eta-order", "deviation": 0.0, "tolerance": 0.001,
+     "method": "eta(3b)=0.757 vs eta(7b)=0.269 from n=110 best-of-3 artifacts; deviation = max(0, eta7b - eta3b) = 0",
+     "evidence": ["artifacts/uplift/uplift_hard_v2_20260713-194718.json", "artifacts/uplift/uplift_hard_v2_20260713-190747.json"]}
+  ]
+}
