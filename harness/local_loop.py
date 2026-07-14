@@ -16,6 +16,34 @@ from .local_session import SessionLedger
 from .local_tools import TOOLS_SYSTEM, ToolExecutor, parse_tool_calls
 
 
+def _edit_fingerprint(name, args, res, executor) -> "dict | None":
+    """For a mutating tool, the post-edit content hash of the target path(s),
+    so the receipt binds this edit to a specific file state. Best-effort:
+    an unreadable target yields no fingerprint, never a fake one."""
+    import hashlib
+    import os
+    if name not in ("write_file", "edit_file", "apply_patch"):
+        return None
+    root = getattr(executor, "root", None)
+    if not root:
+        return None
+    paths = []
+    if name in ("write_file", "edit_file") and args.get("path"):
+        paths = [str(args["path"])]
+    elif name == "apply_patch":
+        patch = str(args.get("patch") or args.get("diff") or "")
+        paths = [ln[6:].strip() for ln in patch.splitlines()
+                 if ln.startswith("+++ b/")]
+    files = {}
+    for p in paths:
+        try:
+            data = open(os.path.join(root, p), "rb").read()
+            files[p] = hashlib.sha256(data).hexdigest()
+        except OSError:
+            continue
+    return {"edited": files} if files else None
+
+
 def _result_meta(name, res, sign_key, extra=None) -> dict:
     meta = {"tool": name, "ok": res.ok}
     if extra:
@@ -91,7 +119,12 @@ def run_agent(agent, goal: str, executor: ToolExecutor,
         for name, args in calls:
             res = executor.execute(name, args)
             ledger.append("tool_call", f"{name} {json.dumps(args, sort_keys=True)}")
-            ledger.append("tool_result", res.output, _result_meta(name, res, sign_key))
+            # a mutating tool's receipt carries the post-edit file hash, so
+            # a stranger can bind this specific edit to a specific file state
+            extra = _edit_fingerprint(name, args, res, executor) \
+                if res.ok else None
+            ledger.append("tool_result", res.output,
+                          _result_meta(name, res, sign_key, extra))
             _emit(type="tool_call", name=name, args=args)
             _emit(type="tool_result", name=name, ok=res.ok, output=res.output[:500])
             observations.append(f"TOOL {name} -> {'ok' if res.ok else 'FAIL'}:\n{res.output}")
