@@ -700,7 +700,11 @@ class _Handler(BaseHTTPRequestHandler):
                 model=(req.get("model") or None),
                 compact_budget=int(req.get("compact_budget", 0) or 0), on_event=emit)
             emit({"type": "done", "final": result.get("final"), "steps": result.get("steps"),
-                  "verified": result.get("verified"), "integrity": result.get("integrity")})
+                  "verified": result.get("verified"), "integrity": result.get("integrity"),
+                  # the reviewability projection + checkpoint ride the done
+                  # event so the surface can offer a sign-this-run attestation
+                  "review": result.get("review"),
+                  "checkpoint": result.get("checkpoint")})
         except Exception as e:
             emit({"type": "error", "error": f"{type(e).__name__}: {e}"})
         try:
