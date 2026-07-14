@@ -1,0 +1,31 @@
+{
+ "measurements": [
+  {
+   "claim": "c-repl-nonnull",
+   "deviation": 0.0,
+   "tolerance": 0.001,
+   "method": "replicated uplift +0.1545, Newcombe 95% [0.0225, 0.2792], EXCLUDES zero. Non-null uplift replicated (round one was +0.182 [0.050, 0.305]). The load-bearing scientific claim holds on the second run.",
+   "evidence": [
+    "artifacts/uplift/uplift_hard_v2_20260714-140516.json"
+   ]
+  },
+  {
+   "claim": "c-repl-interval",
+   "deviation": 0.0898,
+   "tolerance": 0.0655,
+   "method": "measured wrapped best-of-5 = 63/110 = 0.5727; sealed band [0.597, 0.728] midpoint 0.6625 half-width 0.0655; deviation 0.0898 > 0.0655 -> DRIFT. Missed LOW by 0.024 below the floor. The per-task Jeffreys interval undercovered: run one held at 0.600, run two fell below. No rescue.",
+   "evidence": [
+    "artifacts/uplift/uplift_hard_v2_20260714-140516.json"
+   ]
+  },
+  {
+   "claim": "c-repl-het-beats-iid",
+   "deviation": 0.0,
+   "tolerance": 0.001,
+   "method": "err(het)=|0.5727-0.663|=0.0903 < err(iid)=|0.5727-0.682|=0.1093; het wins by 0.019, beyond the 0.001 tie band. The heterogeneous forecast was less biased than the pooled iid, as in round one, even though both ran high.",
+   "evidence": [
+    "artifacts/uplift/uplift_hard_v2_20260714-140516.json"
+   ]
+  }
+ ]
+}
