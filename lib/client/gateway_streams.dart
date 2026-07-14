@@ -103,6 +103,17 @@ extension GatewayStreamsAndPlugins on GatewayClient {
     return _decode(r);
   }
 
+  /// POST /api/lint — the native receipted linter over a project root.
+  Future<Map<String, dynamic>> lintProject(String root,
+      {List<String>? paths}) async {
+    final r = await _http.post(
+      Uri.parse('$baseUrl/api/lint'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'root': root, if (paths != null) 'paths': paths}),
+    );
+    return _decode(r);
+  }
+
   /// GET /api/store — the verifiable substrate stats.
   Future<Map<String, dynamic>> storeStats() async {
     final r = await _http.get(Uri.parse('$baseUrl/api/store'));
