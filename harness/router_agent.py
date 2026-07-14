@@ -100,6 +100,12 @@ def run_router_agent(goal: str, endpoint: str = "serve", *, root: str = ".",
                             gate=ToolGate(allow_write=allow_write, allow_exec=allow_exec,
                                           allow_mcp=allow_mcp))
     import time as _time
+    pre_state = None
+    if allow_write:
+        # writes are possible: pin the pre-state so 'what changed' is a
+        # checkable statement, and a revert has something to prove against
+        from .workspace_state import workspace_snapshot
+        pre_state = workspace_snapshot(root)
     t0 = _time.perf_counter()
     result = run_agent(agent, goal, executor, ledger, max_steps=max_steps,
                        test_cmd=test_cmd, on_event=on_event)
@@ -117,4 +123,11 @@ def run_router_agent(goal: str, endpoint: str = "serve", *, root: str = ".",
     out["provenance"] = provenance_trace(
         ledger.entries, checkpoint=str(result.get("checkpoint", "")),
         author=f"model:{endpoint}")
+    if pre_state is not None:
+        from .workspace_state import workspace_snapshot
+        post_state = workspace_snapshot(root)
+        out["workspace"] = {
+            "pre": pre_state, "post": post_state,
+            "changed": pre_state["workspace_sha256"]
+                       != post_state["workspace_sha256"]}
     return out
