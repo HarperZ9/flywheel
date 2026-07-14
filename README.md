@@ -92,6 +92,7 @@ One belief across the whole family, kept as a content-addressed artifact
 knowledge open to anyone who can attain the means, and we build to lower the
 means; acceptance decided by external checks, never reputation; honest nulls
 first-class; ownership earned by comprehension; learning woven into the work.
+The long form: [The Unbundling](https://github.com/HarperZ9/flywheel/blob/fix/release-model-identity/docs/essays/2026-07-13-the-unbundling.md).
 
 ## Build and test
 
@@ -106,4 +107,3 @@ flutter build windows --release
 The app displays what the engine can prove and labels what it cannot. Model
 answers that fail verification are shown as escalations, not dressed up as
 results. Credentials are never collected, stored, or displayed by this app.
-The long form of this belief: [The Unbundling](https://github.com/HarperZ9/flywheel/blob/fix/release-model-identity/docs/essays/2026-07-13-the-unbundling.md).
