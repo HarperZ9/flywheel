@@ -106,6 +106,38 @@ def derive_lessons(specs: "list | None" = None) -> list:
     return out
 
 
+def academy_complete(lesson_id: str, comprehension_eid: str) -> dict:
+    """Bind a passed comprehension receipt to a lesson, so completion is a
+    receipt a stranger can re-check, not prose. The lesson must exist and
+    be present, and the referenced receipt must have passed. The binding
+    is stored with the lesson's source hash and a relation to the receipt."""
+    from .store import get_entity, put_entity, put_relation
+    lesson = next((s for s in derive_lessons() if s["id"] == lesson_id), None)
+    if lesson is None:
+        return {"bound": False, "reason": f"unknown lesson {lesson_id!r}"}
+    if not lesson["present"]:
+        return {"bound": False, "reason": f"lesson {lesson_id!r} is absent "
+                                          "(its source rotted); cannot bind"}
+    ent = get_entity(comprehension_eid)
+    if ent is None:
+        return {"bound": False, "reason": f"no such receipt: "
+                                          f"{comprehension_eid}"}
+    if ent["data"].get("passed") is not True:
+        return {"bound": False, "reason": "the referenced comprehension "
+                                          "receipt did not pass"}
+    doc = {"schema": "flywheel.academy-completion/v1",
+           "lesson_id": lesson_id,
+           "lesson_source_sha256": lesson["source_sha256"],
+           "comprehension_eid": comprehension_eid,
+           "comprehension_sha256": ent["sha256"]}
+    stored = put_entity("academy-completion", doc)
+    put_relation(comprehension_eid, stored.get("eid", ""), "academy-completion")
+    return {**doc, "bound": True, "eid": stored.get("eid", ""),
+            "chain_hash": stored.get("chain_hash", ""),
+            "note": "completion is a receipt bound to the lesson's pinned "
+                    "source and a passed comprehension receipt, not prose"}
+
+
 def academy_curriculum() -> dict:
     lessons = derive_lessons()
     return {"schema": SCHEMA, "lessons": lessons,
