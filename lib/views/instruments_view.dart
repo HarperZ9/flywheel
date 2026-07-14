@@ -78,7 +78,9 @@ class InstrumentList extends StatelessWidget {
         const SizedBox(height: FwLayout.s2),
         Row(children: [
           VerdictPill('$present/$total live',
-              status: present == total ? 'verified' : 'drift'),
+              status: (total is int && total > 0 && present == total)
+                  ? 'verified'
+                  : (total == 0 ? 'unverifiable' : 'drift')),
         ]),
         const SizedBox(height: FwLayout.s4),
         for (final r in rows)

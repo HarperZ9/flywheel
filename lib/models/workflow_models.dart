@@ -60,9 +60,12 @@ class WorkflowDef {
   factory WorkflowDef.fromJson(Map<String, dynamic> j) => WorkflowDef(
         name: j['name'] ?? '',
         description: j['description'] ?? '',
-        stepNames: ((j['steps'] ?? []) as List)
-            .map((s) => '${(s as Map<String, dynamic>)['name']}')
-            .toList(),
+        stepNames: (j['steps'] is List)
+            ? (j['steps'] as List)
+                .whereType<Map<String, dynamic>>()
+                .map((s) => '${s['name'] ?? ''}')
+                .toList()
+            : const [],
       );
 }
 
