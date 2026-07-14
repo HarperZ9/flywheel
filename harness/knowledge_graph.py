@@ -114,7 +114,8 @@ def build_graph(surfaces: dict) -> dict:
 
 
 def gateway_graph(root, run_root, *, with_index: bool = False,
-                  budget: "int | None" = None) -> dict:
+                  budget: "int | None" = None,
+                  query: "str | None" = None) -> dict:
     """The live graph: gather each surface from its own module, each failure
     becoming an error node. Per-project index summaries are opt-in
     (`with_index`) because they shell the index engine and cost seconds."""
@@ -148,16 +149,38 @@ def gateway_graph(root, run_root, *, with_index: bool = False,
     gather("workflows", lambda: workflow_roster(run_root))
     g = build_graph(surfaces)
     if budget:
-        g["context_plan"] = context_plan(g["nodes"], budget)
+        g["context_plan"] = context_plan(g["nodes"], budget, query=query)
     return g
 
 
-def context_plan(nodes: list, budget: int) -> dict:
+def _relevance(node: dict, terms: list) -> float:
+    """Fraction of query terms found in the node's label, id, or signal
+    values. Plain substring match: cheap, deterministic, re-derivable."""
+    hay = " ".join(
+        [node.get("label", ""), node.get("id", "")] +
+        [f"{k} {v}" for k, v in (node.get("signals") or {}).items()]).lower()
+    hits = sum(1 for t in terms if t in hay)
+    return round(hits / len(terms), 4) if terms else 0.0
+
+
+def context_plan(nodes: list, budget: int, query: "str | None" = None) -> dict:
     """Greedy highest-priority-first selection under a token budget, ties
-    broken by id so the plan is deterministic. The excluded count is part
-    of the answer: a cut context is a fact, not an implementation detail."""
-    ranked = sorted(nodes, key=lambda n: (-n.get("priority", 0.0),
-                                          n.get("id", "")))
+    broken by id so the plan is deterministic. A query reranks by
+    effective_priority = priority + 2 * relevance (the weight is in the
+    payload); the excluded count is part of the answer either way: a cut
+    context is a fact, not an implementation detail."""
+    terms = [t for t in (query or "").lower().split() if t]
+    scored = []
+    for n in nodes:
+        if terms:
+            n = dict(n)
+            n["relevance"] = _relevance(n, terms)
+            n["effective_priority"] = round(
+                n.get("priority", 0.0) + 2.0 * n["relevance"], 4)
+        scored.append(n)
+    ranked = sorted(scored, key=lambda n: (
+        -n.get("effective_priority", n.get("priority", 0.0)),
+        n.get("id", "")))
     selected, spent = [], 0
     for n in ranked:
         cost = int(n.get("cost", 200))
@@ -165,6 +188,10 @@ def context_plan(nodes: list, budget: int) -> dict:
             continue
         selected.append(n)
         spent += cost
-    return {"schema": "flywheel.context-plan/v1", "budget": budget,
-            "spent": spent, "selected": selected,
-            "excluded": len(nodes) - len(selected)}
+    doc = {"schema": "flywheel.context-plan/v1", "budget": budget,
+           "spent": spent, "selected": selected,
+           "excluded": len(nodes) - len(selected)}
+    if terms:
+        doc["query"] = " ".join(terms)
+        doc["relevance_weight"] = 2.0
+    return doc

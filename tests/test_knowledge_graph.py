@@ -55,6 +55,21 @@ def test_context_plan_is_budgeted_greedy_and_deterministic():
     assert tight["excluded"] > 0  # the cut is visible, not silent
 
 
+def test_query_reranks_the_plan_mechanically():
+    g = build_graph(SURFACES)
+    plan = context_plan(g["nodes"], budget=10_000_000,
+                        query="gather perception intake")
+    ids = [n["id"] for n in plan["selected"]]
+    assert ids.index("lane:gather") < ids.index("lane:telos")
+    sel = {n["id"]: n for n in plan["selected"]}
+    assert sel["lane:gather"]["relevance"] > 0
+    assert sel["lane:gather"]["effective_priority"] > \
+           sel["lane:gather"]["priority"]
+    # No query: no relevance keys, same behavior as before.
+    plain = context_plan(g["nodes"], budget=10_000_000)
+    assert all("relevance" not in n for n in plain["selected"])
+
+
 def test_unreadable_surface_is_an_error_node():
     g = build_graph({"lanes": {"error": "lanes unavailable"}})
     errs = [n for n in g["nodes"] if n["kind"] == "error"]
