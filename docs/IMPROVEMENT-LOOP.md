@@ -69,3 +69,32 @@ the Y-arm drift comparison, empty-set-renders-green on the desktop, and the
 rest, tracked in the workflow result artifact.
 
 ### Execution record
+
+**HIGH tier: all six shipped (2026-07-14), each with a failing test first.**
+
+1. explanation_gate copy-paste bypass fixed (`8f695a4`): a verbatim diff
+   paste is refused; the explanation must carry a floor share of words the
+   diff does not.
+2. comprehension_ledger cross-kind recency fixed (`8f695a4`): both kinds
+   merge into one newest-first pass; an older attestation no longer blocks a
+   newer comprehension receipt.
+3. store record integrity added (`d301b4d`): `verify_records()` re-derives
+   each record's content hash; `/api/store/verify` now requires BOTH the
+   chain and the records.
+4. transparency log wired (`d301b4d`): the receipts ledger carries a Merkle
+   root, and `GET /api/receipts/proof?leaf=` returns an offline-checkable
+   inclusion proof. Dead code is now a live guarantee.
+5. /v1 turn-receipt prompt hash fixed (`5f4deeb`): the scaffold hashes and
+   freezes the flattened prompt the model was actually sent, not a naive
+   join that repr'd content-parts arrays.
+6. uplift regression rendering fixed (desktop `f633cbc`): the verdict is
+   three-way on the sign; a measured regression reads "regression measured"
+   as drift, never a green win.
+
+Three of the six were defects in code shipped earlier the same session
+(the /v1 scaffold, the transparency log left unwired, and the desktop
+uplift verdict). The loop caught its own author, which is the point.
+
+MEDIUM tier (18 findings) is next: agent pre-pass ordering, model/endpoint
+on the turn receipt, the SSRF guard on /api/snapshot, the Y-arm drift
+comparison, empty-set-renders-green on the desktop, and the rest.
