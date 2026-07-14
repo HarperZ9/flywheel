@@ -100,15 +100,101 @@ def load_rows(path: Path) -> list[dict]:
     return out
 
 
+def vectors_from_uplift(doc: dict) -> list:
+    """Reconstruct exact candidate sequences from an uplift artifact's
+    censored per-task records. The wrapped arm samples until first pass or
+    budget, so outcome+attempts determines the sequence exactly: a pass at
+    attempt m is m-1 real failures then one success; a fail at attempt m is
+    m real failures. Only the wrapped arm is used (one sampling policy)."""
+    rows = []
+    for arm in doc.get("rows", []):
+        if arm.get("arm") != "wrapped":
+            continue
+        for t in arm.get("tasks", []):
+            m = int(t.get("attempts", 0))
+            if m < 1:
+                continue
+            c = 1 if t.get("outcome") == "pass" else 0
+            rows.append({"task_id": t["task_id"], "n": m, "c": c})
+    return rows
+
+
+def _fresh_q(n: int, c: int, k: int) -> float:
+    """P(>=1 success in k FRESH draws) under the Jeffreys posterior --
+    the forecast framing for a run that has not happened, as opposed to
+    pass_at_k's keep-the-pool framing."""
+    a, b = _A0 + c, _B0 + (n - c)
+    return max(0.0, 1.0 - _betabinom_pmf(0, k, a, b))
+
+
+def forecast_fresh_run(rows: list, k: int, *, source: str = "") -> dict:
+    """Seal a forecast for a fresh best-of-k run over these tasks, before
+    any such run exists. Per task q_i marginalizes the posterior, so
+    Var(X_i) = q_i(1-q_i) exactly; tasks are treated independent (stated).
+    The iid pooled baseline rides inside the same sealed artifact, so
+    adjudication compares two pre-registered models instead of letting the
+    survivor pick its rival after the fact."""
+    import hashlib
+    per = [{"task_id": r["task_id"], "n": r["n"], "c": r["c"],
+            "q": round(_fresh_q(r["n"], r["c"], k), 6)} for r in rows]
+    T = len(per)
+    mean = sum(t["q"] for t in per) / T
+    sd = (sum(t["q"] * (1 - t["q"]) for t in per)) ** 0.5 / T
+    pooled_n = sum(r["n"] for r in rows)
+    pooled_c = sum(r["c"] for r in rows)
+    pooled_p = pooled_c / pooled_n if pooled_n else 0.0
+    doc = {"schema": "flywheel.passk-forecast/v1", "k": k,
+           "source_artifact": source, "n_tasks": T,
+           "expected_pass_rate": round(mean, 4),
+           "interval_95": [round(max(0.0, mean - 1.96 * sd), 4),
+                           round(min(1.0, mean + 1.96 * sd), 4)],
+           "per_task": per,
+           "iid_baseline": {
+               "pooled_p": pooled_p,
+               "expected_pass_rate": round(1.0 - (1.0 - pooled_p) ** k, 4)},
+           "note": "sealed before any such run exists; fresh-draw framing "
+                   "(not keep-the-pool); tasks independent by assumption; "
+                   "adjudicate BOTH this and the iid baseline against the "
+                   "real run -- whichever errs more is the falsified one"}
+    doc["seal"] = hashlib.sha256(
+        json.dumps(doc, sort_keys=True).encode()).hexdigest()
+    return doc
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--curve", required=True, help="pass@N artifact JSON")
+    ap.add_argument("--curve", default="", help="pass@N artifact JSON")
     ap.add_argument("--out", default="", help="write the expected-curve JSON")
     ap.add_argument("--ks", default="", help="comma list of k to report (default 1,2,4,8,16,32,64)")
     ap.add_argument("--calibrate", type=int, default=0,
                     help="fit p on first N_train candidates, test on full pool")
+    ap.add_argument("--forecast-uplift", default="",
+                    help="uplift artifact: seal a fresh best-of-k forecast")
+    ap.add_argument("--forecast-k", type=int, default=5)
     args = ap.parse_args()
 
+    if args.forecast_uplift:
+        src = Path(args.forecast_uplift)
+        rows = vectors_from_uplift(json.loads(src.read_text(encoding="utf-8")))
+        if not rows:
+            print("no wrapped-arm task records in the artifact")
+            return 2
+        f = forecast_fresh_run(rows, args.forecast_k, source=src.name)
+        outdir = Path("artifacts/forecasts")
+        outdir.mkdir(parents=True, exist_ok=True)
+        path = outdir / f"forecast_k{args.forecast_k}_{src.stem}.json"
+        path.write_text(json.dumps(f, indent=1), encoding="utf-8")
+        print(f"sealed forecast: expected {f['expected_pass_rate']:.1%} "
+              f"[{f['interval_95'][0]:.1%}, {f['interval_95'][1]:.1%}] "
+              f"at k={args.forecast_k} over {f['n_tasks']} tasks")
+        print(f"iid baseline:    {f['iid_baseline']['expected_pass_rate']:.1%}")
+        print(f"seal {f['seal']}")
+        print(f"wrote {path}")
+        return 0
+
+    if not args.curve:
+        print("provide --curve or --forecast-uplift")
+        return 2
     rows = load_rows(Path(args.curve))
     if not rows:
         print("no per-task rows with candidate passes found")
