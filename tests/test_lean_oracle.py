@@ -29,6 +29,37 @@ def test_missing_toolchain_is_declared_not_faked(monkeypatch):
     assert "toolchain" in doc["kernel_output"]
 
 
+def test_sorry_is_refused_before_the_kernel_runs():
+    """Lean exits 0 on `sorry` with only a warning, so a false statement
+    wearing an admitted hole would pass a naive exit-code check. The
+    oracle must refuse admitted holes and smuggled axioms outright, and
+    say why. Found live on 2026-07-14: the pre-fix oracle accepted
+    `n + 0 = n + 1 := by sorry`."""
+    hole = "theorem hole (n : Nat) : n + 0 = n + 1 := by sorry\n"
+    doc = lean_check(hole, runner=lambda argv, code: (0, ""))
+    assert doc["passed"] is False
+    assert "sorry" in doc["kernel_output"]
+    ax = "axiom bad : 1 = 2\ntheorem t : 1 = 2 := bad\n"
+    doc2 = lean_check(ax, runner=lambda argv, code: (0, ""))
+    assert doc2["passed"] is False
+    assert "axiom" in doc2["kernel_output"]
+
+
+def test_sorry_warning_in_kernel_output_is_refused_belt_and_braces():
+    # even if the text sneaks past the screen, the kernel's own warning
+    # is treated as refusal
+    doc = lean_check("theorem t : True := trivial",
+                     runner=lambda argv, code:
+                     (0, "warning: declaration uses `sorry`"))
+    assert doc["passed"] is False
+
+
+@pytest.mark.skipif(not lean_available(), reason="lean toolchain not installed")
+def test_live_kernel_refuses_a_sorry_hole():
+    doc = lean_check("theorem hole (n : Nat) : n + 0 = n + 1 := by sorry\n")
+    assert doc["passed"] is False, doc
+
+
 @pytest.mark.skipif(not lean_available(), reason="lean toolchain not installed")
 def test_live_kernel_accepts_a_true_theorem():
     doc = lean_check(GOOD)
