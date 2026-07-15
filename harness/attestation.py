@@ -24,9 +24,11 @@ SCHEMA = "flywheel.attestation/v1"
 
 
 def attest(run: dict, reviewed_files: list, *, note: str = "",
-           reviewer: str = "") -> dict:
+           reviewer: str = "", run_eid: str = "") -> dict:
     """Build the attestation for `run` (an agent-run doc carrying `review`
-    and `checkpoint`). Pure and deterministic: same inputs, same hash."""
+    and `checkpoint`). Pure and deterministic: same inputs, same hash.
+    `run_eid`, when given, is sealed into the content so the attestation
+    names the banked run it binds to."""
     review = run.get("review") or {}
     edited = sorted(review.get("files_edited") or [])
     claimed = sorted(set(str(f) for f in reviewed_files))
@@ -55,6 +57,33 @@ def attest(run: dict, reviewed_files: list, *, note: str = "",
         "coverage": coverage,
         "standing": standing,
     }
+    if run_eid:
+        doc["run_eid"] = run_eid
     doc["sha256"] = hashlib.sha256(
         json.dumps(doc, sort_keys=True).encode("utf-8")).hexdigest()
     return doc
+
+
+def attest_banked(run_eid: str, review: dict, reviewed_files: list, *,
+                  note: str = "", reviewer: str = "") -> dict:
+    """Attest against a BANKED agent run. The presented review must hash to
+    the banked run's review_sha256; a fabricated run doc, or a review the run
+    never produced, is refused. This is the only path a caller-facing surface
+    should offer: an attestation that confers holdership must bind to a run
+    that actually happened."""
+    from .store import get_entity
+    ent = get_entity(run_eid)
+    if ent is None or ent.get("kind") != "agent-run":
+        return {"error": f"no banked agent run: {run_eid!r}; an attestation "
+                         "binds to a run that actually happened"}
+    banked = str((ent.get("data") or {}).get("review_sha256", ""))
+    presented = hashlib.sha256(
+        json.dumps(review or {}, sort_keys=True).encode("utf-8")).hexdigest()
+    if presented != banked:
+        return {"error": "presented review does not hash to the banked run's "
+                         "review_sha256; refusing to attest to a review the "
+                         "run never produced"}
+    run = {"review": review or {},
+           "checkpoint": (ent.get("data") or {}).get("checkpoint", "")}
+    return attest(run, reviewed_files, note=note, reviewer=reviewer,
+                  run_eid=run_eid)

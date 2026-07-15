@@ -1,9 +1,15 @@
 """Attestation is ownership made checkable: a sign-off bound to the run's
 checkpoint and to exactly what the reviewer walked. Coverage is visible,
 overclaims are flagged, and the whole thing is content-addressed so a
-doctored attestation stops matching its own hash."""
+doctored attestation stops matching its own hash. And it binds to a BANKED
+run: a fabricated run doc, or a review that does not hash to the banked
+run's review_sha256, is refused, so a COMPLETE attestation cannot cover
+files no run ever touched."""
 
-from harness.attestation import SCHEMA, attest
+import hashlib
+import json
+
+from harness.attestation import SCHEMA, attest, attest_banked
 
 RUN = {
     "checkpoint": "abc123def456",
@@ -56,3 +62,44 @@ def test_tampering_moves_the_hash():
     assert a["sha256"] != b["sha256"]
     # Same inputs, same hash: the attestation is re-derivable.
     assert attest(RUN, ["a.py"], note="x", reviewer="r")["sha256"] == a["sha256"]
+
+
+def _bank_run(review):
+    from harness.store import put_entity
+    summary = {
+        "checkpoint": "abc123def456",
+        "review_sha256": hashlib.sha256(
+            json.dumps(review, sort_keys=True).encode()).hexdigest(),
+    }
+    return put_entity("agent-run", summary)["eid"]
+
+
+def test_fabricated_run_is_refused(monkeypatch, tmp_path):
+    # No banked agent-run entity: nothing to attest against. A caller-supplied
+    # run doc must never confer a 'complete' standing on its own say-so.
+    monkeypatch.setenv("FLYWHEEL_HOME", str(tmp_path))
+    r = attest_banked("ghost-run", RUN["review"], ["a.py"])
+    assert "error" in r and "banked" in r["error"]
+
+
+def test_review_that_does_not_hash_to_the_banked_run_is_refused(monkeypatch, tmp_path):
+    monkeypatch.setenv("FLYWHEEL_HOME", str(tmp_path))
+    eid = _bank_run(RUN["review"])
+    forged = dict(RUN["review"], files_edited=["harness/store.py"])
+    r = attest_banked(eid, forged, ["harness/store.py"])
+    assert "error" in r and "review_sha256" in r["error"]
+
+
+def test_banked_run_with_matching_review_attests_and_names_the_run(monkeypatch, tmp_path):
+    monkeypatch.setenv("FLYWHEEL_HOME", str(tmp_path))
+    eid = _bank_run(RUN["review"])
+    doc = attest_banked(eid, RUN["review"], ["a.py", "b.py", "c.py"],
+                        reviewer="papacr0w")
+    assert doc["standing"] == "complete"
+    assert doc["run_eid"] == eid
+    assert doc["checkpoint"] == "abc123def456"
+    # the run binding is inside the sealed content, not decoration
+    redone = dict(doc)
+    redone.pop("sha256")
+    assert hashlib.sha256(
+        json.dumps(redone, sort_keys=True).encode()).hexdigest() == doc["sha256"]
