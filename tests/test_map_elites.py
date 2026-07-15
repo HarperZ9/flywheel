@@ -62,3 +62,28 @@ def test_empty_archive_safe():
     assert arch.best() is None
     assert arch.coverage() == 0
     assert arch.diverse_set() == []
+
+
+def test_fixation_ratio_reports_collapse_to_one_niche():
+    """The anti-fixation signal must be able to fire: many candidates all
+    collapsing into one niche is near-total fixation, not full diversity."""
+    arch = MapElitesArchive(lambda c: ("same",))   # everything one niche
+    for i in range(1000):
+        arch.add(f"cand-{i}", 0.5 + i * 1e-6)
+    assert arch.coverage() == 1
+    assert arch.fixation_ratio() > 0.99
+
+
+def test_fixation_ratio_zero_for_all_unique_niches():
+    arch = MapElitesArchive(lambda c: (c,))        # each candidate its own niche
+    for i in range(50):
+        arch.add(f"cand-{i}", 0.5)
+    assert arch.coverage() == 50
+    assert arch.fixation_ratio() == 0.0
+
+
+def test_fixation_ratio_empty_archive_is_not_fixation():
+    """The empty archive is not 'total fixation'; the only input that used to
+    return 1.0 was exactly the state that is NOT fixation."""
+    arch = MapElitesArchive(length_bucket_descriptor)
+    assert arch.fixation_ratio() == 0.0

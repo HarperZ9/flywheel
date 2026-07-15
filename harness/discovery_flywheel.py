@@ -53,19 +53,29 @@ def normalize_sweep(sweep: dict) -> list[Discovery]:
     of shape: reads a top-level `ranked` list of {concept, rank, where/domain,
     application, falsifier}. Unknown ranks are treated as NOISE (fail-closed)."""
     out: list[Discovery] = []
+    seen: set = set()
     for r in (sweep.get("ranked") or sweep.get("discoveries") or []):
         if not isinstance(r, dict):
             continue
         rank = str(r.get("rank", NOISE)).upper()
         if rank not in (ACTIONABLE, INSPIRATION, NOISE):
             rank = NOISE
-        out.append(Discovery(
+        d = Discovery(
             concept=str(r.get("concept", "")),
             rank=rank,
             domain=str(r.get("domain") or r.get("where") or ""),
             application=str(r.get("application", "")),
             falsifier=str(r.get("falsifier", "")),
-        ))
+        )
+        # a replayed LLM output is a byte-identical row: an exact duplicate is
+        # ONE discovery, not independent evidence. Drop it before gating so a
+        # single replay cannot inflate sensed counts or cross the drift threshold
+        key = (d.concept.strip().casefold(), d.rank, d.domain.strip().casefold(),
+               d.application.strip(), d.falsifier.strip())
+        if key in seen:
+            continue
+        seen.add(key)
+        out.append(d)
     return out
 
 
@@ -111,10 +121,17 @@ class CourseDriftDetector:
 
     def observe(self, discoveries: list[Discovery]) -> dict:
         self.observations += 1
-        # count ADOPTABLE (actionable + falsifier) threads per domain
+        # count ADOPTABLE (actionable + falsifier) threads per domain, at most
+        # one per (concept, domain): a duplicated concept is not two adoptions,
+        # so a replay cannot cross the threshold even if it reaches observe raw
         counts: dict[str, int] = {}
+        counted: set = set()
         for d in discoveries:
             if d.rank == ACTIONABLE and d.falsifier.strip() and d.domain:
+                key = (d.concept.strip().casefold(), d.domain.strip().casefold())
+                if key in counted:
+                    continue
+                counted.add(key)
                 counts[d.domain] = counts.get(d.domain, 0) + 1
         emerging = sorted(dom for dom, c in counts.items()
                           if dom not in self.course and c >= self.drift_threshold)

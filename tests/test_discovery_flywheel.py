@@ -130,3 +130,30 @@ def test_drift_recommendation_names_its_evidence_basis():
     det = CourseDriftDetector(course={"selection"})
     out = det.observe([CODE_DISC, CODE_DISC])
     assert "stated falsifiers" in out["note"].lower()
+
+
+def test_replayed_duplicate_is_not_independent_drift_evidence():
+    """The same ACTIONABLE discovery listed twice in one sweep is a replay, not
+    two independent adoptions: it must not cross drift threshold 2, and it must
+    appear once in the admission queue."""
+    row = {"concept": "matmul oracle", "rank": "ACTIONABLE",
+           "domain": "verification", "application": "add symbolic matmul oracle",
+           "falsifier": "zero false accepts over a known-good/bad ladder"}
+    cyc = discovery_cycle({"ranked": [dict(row), dict(row)]},
+                          CourseDriftDetector(course=set(), drift_threshold=2))
+    assert cyc["sensed"] == 1                       # one discovery, replayed
+    assert cyc["course_drift"]["fired"] is False
+    assert cyc["course_drift"]["domain_counts"].get("verification", 0) == 1
+    descs = [g["description"] for g in cyc["needs_admission"]]
+    assert sum("matmul" in d for d in descs) == 1
+
+
+def test_observe_counts_one_adoptable_per_concept_domain():
+    """Even called directly, observe must not count a duplicated concept twice
+    toward the drift threshold."""
+    det = CourseDriftDetector(course=set(), drift_threshold=2)
+    dup = Discovery("shared concept", ACTIONABLE, "robotics", "app", "fx")
+    r = det.observe([dup, Discovery("shared concept", ACTIONABLE, "robotics",
+                                    "app", "fx")])
+    assert r["domain_counts"].get("robotics", 0) == 1
+    assert r["fired"] is False                      # 1 < threshold 2
