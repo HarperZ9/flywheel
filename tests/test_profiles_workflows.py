@@ -121,3 +121,96 @@ def test_step_error_fails_the_run(tmp_path):
     assert doc["status"] == "FAILED"
     assert doc["steps"][0]["status"] == "ERROR"
     assert "provider down" in doc["steps"][0]["note"]
+
+
+def _fake_agent_results(results):
+    """A run_router_agent stand-in returning canned per-call result dicts, so
+    the workflow's cross-stage gating can be exercised without a live agent."""
+    seq = list(results)
+    def fake(goal, endpoint, **kw):
+        return seq.pop(0)
+    return fake
+
+
+def test_dirty_integrity_stage_is_not_recorded_done(tmp_path, monkeypatch):
+    # An apply stage whose trajectory integrity is dirty (the agent edited the
+    # file that grades it) must fail the run, not be stamped DONE and laundered
+    # to VERIFIED by a later clean verify stage.
+    from harness import workflows
+    monkeypatch.setattr(workflows, "run_router_agent", _fake_agent_results([
+        {"final": "planned", "verified": True,
+         "integrity": {"clean": True}, "checkpoint": "c0"},
+        {"final": "applied", "verified": True,
+         "integrity": {"clean": False}, "checkpoint": "c1"},  # dirty!
+        {"final": "ran tests", "verified": True,
+         "integrity": {"clean": True}, "tests_pass_trusted": True,
+         "checkpoint": "c2"},
+    ]))
+    doc = workflows.run_workflow("code-change", "fix it", "e",
+                                 root=str(tmp_path), allow_write=True,
+                                 allow_exec=True, test_cmd="pytest",
+                                 proposer=_StubProposer([]))
+    assert doc["status"] == "FAILED"
+    apply_step = next(s for s in doc["steps"] if s["name"] == "apply")
+    assert apply_step["status"] == "FAILED"
+    assert doc["status"] != "VERIFIED"
+
+
+def test_unverified_ledger_stage_is_not_recorded_done(tmp_path, monkeypatch):
+    from harness import workflows
+    monkeypatch.setattr(workflows, "run_router_agent", _fake_agent_results([
+        {"final": "planned", "verified": False,  # ledger did not verify
+         "integrity": {"clean": True}, "checkpoint": "c0"},
+    ]))
+    doc = workflows.run_workflow("code-change", "fix it", "e",
+                                 root=str(tmp_path), allow_write=True,
+                                 allow_exec=True, test_cmd="pytest",
+                                 proposer=_StubProposer([]))
+    assert doc["status"] == "FAILED"
+    assert doc["steps"][0]["status"] == "FAILED"
+
+
+def test_failed_run_receipt_cannot_be_relabeled_without_breaking_the_chain(
+        tmp_path):
+    # Take a FAILED run, delete the trailing ERROR step and flip status to
+    # COMPLETED: recomputing the chain must NOT reproduce the stored hash.
+    class _Boom:
+        def generate(self, prompt, *, seed, temperature, max_new_tokens,
+                     system=""):
+            raise RuntimeError("provider down")
+    doc = workflows.run_workflow("research-brief", "goal", "e",
+                                 root=str(tmp_path), proposer=_Boom())
+    assert doc["status"] == "FAILED"
+    recomputed = workflows.recompute_chain(doc)
+    assert recomputed == doc["chain_hash"]        # the honest receipt re-derives
+    tampered = dict(doc, status="COMPLETED",
+                    steps=[s for s in doc["steps"] if s["status"] != "ERROR"])
+    assert workflows.recompute_chain(tampered) != doc["chain_hash"]
+
+
+def test_status_and_header_are_bound_into_the_chain(tmp_path):
+    doc = workflows.run_workflow("research-brief", "goal", "e",
+                                 root=str(tmp_path),
+                                 proposer=_StubProposer(["draft", "review"]))
+    assert workflows.recompute_chain(doc) == doc["chain_hash"]
+    # flipping the final status alone breaks the chain
+    assert workflows.recompute_chain(dict(doc, status="FAILED")) != doc["chain_hash"]
+    # rewriting the endpoint alone breaks the chain
+    assert workflows.recompute_chain(dict(doc, endpoint="other")) != doc["chain_hash"]
+
+
+def test_roster_flags_a_hand_flipped_run_as_tampered(tmp_path):
+    import json as _j
+    doc = workflows.run_workflow("research-brief", "goal", "e",
+                                 root=str(tmp_path),
+                                 proposer=_StubProposer(["draft", "review"]),
+                                 run_root=str(tmp_path))
+    runs_dir = tmp_path / "workflow_runs"
+    receipt = next(runs_dir.glob("*.json"))
+    d = _j.loads(receipt.read_text(encoding="utf-8"))
+    d["status"] = "VERIFIED"                       # hand-flip
+    receipt.write_text(_j.dumps(d), encoding="utf-8")
+    roster = workflows.workflow_roster(run_root=str(tmp_path))
+    row = roster["runs"][0]
+    assert row["chain_ok"] is False
+    assert row["status"] == "TAMPERED"

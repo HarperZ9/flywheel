@@ -610,3 +610,20 @@ def test_agent_route_dispatches_gated_and_caps_steps(tmp_path, monkeypatch):
     assert seen["kw"]["max_steps"] == 12               # capped, no runaway loop
     assert seen["kw"]["allow_write"] is False          # default-deny survives the HTTP hop
     assert seen["kw"]["allow_exec"] is False
+
+
+def test_workflow_run_is_countersigned_into_the_store(tmp_path, monkeypatch):
+    # /api/workflow must bank a gateway-side witness like every other run
+    # surface: the run's chain_hash and status land in the verifiable store,
+    # not just a loose receipt file.
+    monkeypatch.setenv("FLYWHEEL_HOME", str(tmp_path))
+    doc = {"schema": "flywheel.workflow-run/v1", "workflow": "research-brief",
+           "endpoint": "e", "status": "COMPLETED",
+           "chain_hash": "a" * 64, "steps": []}
+    out = gateway._countersign_workflow(doc)
+    assert out["stored"]
+    from harness.store import get_entity
+    ent = get_entity(out["stored"])
+    assert ent["kind"] == "workflow-run"
+    assert ent["data"]["chain_hash"] == "a" * 64
+    assert ent["data"]["status"] == "COMPLETED"

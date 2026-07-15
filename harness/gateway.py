@@ -268,6 +268,28 @@ def _countersign_run(result: dict) -> dict:
         return {**summary, "stored": f"store unavailable: {type(e).__name__}"}
 
 
+def _countersign_workflow(doc: dict) -> dict:
+    """The workflow analogue of _countersign_run: the gateway banks the staged
+    run's identity into the verifiable store, so a workflow gets the same
+    receiving-side witness every other run surface gets, not only a loose
+    receipt file. Store failure is named, never silent."""
+    summary = {
+        "kind": "workflow-run",
+        "workflow": str(doc.get("workflow", "")),
+        "endpoint": str(doc.get("endpoint", "")),
+        "status": str(doc.get("status", "")),
+        "chain_hash": str(doc.get("chain_hash", "")),
+        "n_steps": len(doc.get("steps") or []),
+    }
+    try:
+        from harness.store import put_entity
+        stored = put_entity("workflow-run", summary)
+        return {**summary, "stored": stored.get("eid", ""),
+                "store_chain_hash": stored.get("chain_hash", "")}
+    except Exception as e:
+        return {**summary, "stored": f"store unavailable: {type(e).__name__}"}
+
+
 def persist_forge_seal(run_root, goal: str, *, intent_sha256: str = "",
                        architecture_sha256: str = "") -> str:
     """Persist the Y-chain seal SERVER-SIDE at forge time and return its
@@ -1608,6 +1630,7 @@ class _Handler(BaseHTTPRequestHandler):
                     run_root=self.run_root)
             except Exception as e:
                 return self._json({"error": f"workflow failed: {type(e).__name__}: {e}"}, 502)
+            doc["run_countersign"] = _countersign_workflow(doc)
             return self._json(doc)
         if p == "/api/memory/recall":                  # verbatim recall from the fold index
             length = self._content_length()
