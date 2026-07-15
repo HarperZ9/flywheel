@@ -14,9 +14,13 @@ accept-path object rather than an offline check. It composes with the Oracle
 protocol: a QuorumOracle IS an Oracle, so it drops into the loop unchanged.
 
 Honest scope: quorum only adds signal when the verifiers are genuinely INDEPENDENT
-(different checks, different implementations, a code oracle plus an LLM judge). N
-copies of the same deterministic oracle agree trivially and gain nothing — the
-receipt makes that visible (identical votes) rather than hiding it.
+(different checks, different implementations, e.g. a symbolic oracle plus a
+property-based fuzzer plus a differential re-run). N copies of the same
+deterministic oracle agree trivially and gain nothing, and the receipt makes that
+visible (distinct_members) rather than hiding it. NO LEARNED VERDICT sits in this
+accept path: a member that declares itself learned (a model-graded judge) is
+refused at construction, because the invariant is that an external check, never a
+model, disposes. A learned judge is an advisory signal offline, not a peer here.
 """
 from __future__ import annotations
 
@@ -63,6 +67,13 @@ class QuorumOracle:
                  unanimous: bool = False):
         if not oracles:
             raise ValueError("quorum needs at least one verifier")
+        learned = [getattr(o, "oracle_type", "?") for o in oracles
+                   if getattr(o, "learned", False)]
+        if learned:
+            raise ValueError(
+                f"no learned verdict sits in the accept path: refusing "
+                f"quorum members {learned}. A model-graded judge is an "
+                "advisory signal offline, never a peer that disposes.")
         self.oracles = oracles
         self.threshold = 1.0 if unanimous else threshold
         self.model_ref = "quorum:" + ",".join(getattr(o, "oracle_type", "?") for o in oracles)

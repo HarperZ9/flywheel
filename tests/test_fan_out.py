@@ -62,3 +62,21 @@ def test_composes_with_the_routed_loop(tmp_path):
     rep = fan_out([0, 1], run_sub, accept=lambda r: r["verified"])
     assert rep["completed"] == 2 and rep["accepted"] == 2
     assert {r["result"]["final"] for r in rep["results"]} == {"done 0", "done 1"}
+
+
+def test_each_result_carries_its_accepted_flag_and_a_raising_accept_is_captured():
+    from harness.fan_out import fan_out
+    def accept(r):
+        if r == 2:
+            raise ValueError("accept blew up on 2")
+        return r % 2 == 0
+    rep = fan_out([0, 1, 2, 4], lambda s: s, accept=accept)
+    by = {r["result"]: r for r in rep["results"] if r["ok"]}
+    assert by[0]["accepted"] is True
+    assert by[1]["accepted"] is False
+    assert by[4]["accepted"] is True
+    assert by[2]["accepted"] is False          # a raising accept is a reject
+    assert "accept_error" in by[2]
+    # the aggregate count re-derives from the per-result flags
+    assert rep["accepted"] == sum(1 for r in rep["results"]
+                                  if r.get("accepted") is True)
