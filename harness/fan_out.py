@@ -34,8 +34,19 @@ def fan_out(subtasks: list, run_one, *, max_workers: int = 4, accept=None) -> di
     with ThreadPoolExecutor(max_workers=max(1, min(max_workers, n))) as ex:
         results = list(ex.map(lambda s: _safe_run(run_one, s), subtasks))
     completed = [r for r in results if r["ok"]]
-    accepted = (sum(1 for r in completed if accept(r["result"]))
-                if accept is not None else None)
+    if accept is not None:
+        # annotate each completed row so the vote count re-derives from the
+        # receipt; a raising accept() is a reject on THAT result, never a
+        # sunk batch
+        for r in completed:
+            try:
+                r["accepted"] = bool(accept(r["result"]))
+            except Exception as e:  # noqa: BLE001 - an accept edge is impure
+                r["accepted"] = False
+                r["accept_error"] = f"{type(e).__name__}: {e}"
+        accepted = sum(1 for r in completed if r.get("accepted") is True)
+    else:
+        accepted = None
     return {
         "schema": "flywheel.fan-out/v1",
         "n": n,

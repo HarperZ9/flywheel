@@ -62,8 +62,14 @@ def run_steered(wave_correlations: list[float], budget: int,
         else:
             break                       # verified a healthy wave -> done
     spent = budget - remaining
+    # 'conserved' (spent <= budget) is true by construction; the honest
+    # signal is whether the run actually VERIFIED a healthy wave, or
+    # exhausted its budget still boosting diversity without ever verifying
+    verified = any(s.action == "verify" for s in steps)
     return {"steps": steps, "spent": spent, "budget": budget,
-            "diversity_boosts": boosts, "conserved": spent <= budget}
+            "diversity_boosts": boosts, "conserved": spent <= budget,
+            "verified": verified,
+            "exhausted_without_verify": not verified}
 
 
 def flat_spend(n_waves: int, budget: int) -> int:

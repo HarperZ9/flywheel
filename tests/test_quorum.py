@@ -112,3 +112,15 @@ def test_same_endpoint_under_two_names_is_flagged():
                       IdOracle("b", True, "endpoint-X", "h2")], threshold=0.5)
     r = q.verify("x", None)
     assert r.distinct_members == 1     # one endpoint, one voice
+
+
+def test_learned_member_is_refused_at_construction():
+    class LearnedJudge:
+        oracle_type = "llm-judge"
+        learned = True
+        def verify(self, c, t):
+            return OracleResult(passed=True, cmd="", output_hash="h",
+                                stdout_excerpt="", rc=0)
+    with pytest.raises(ValueError) as e:
+        QuorumOracle([P("code"), LearnedJudge()])
+    assert "learned" in str(e.value).lower()

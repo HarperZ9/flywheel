@@ -43,3 +43,14 @@ def test_collapse_then_decorrelate_spends_less_than_flat():
 def test_all_collapsed_never_exceeds_budget():
     plan = run_steered([0.99, 0.99, 0.99, 0.99, 0.99], budget=3)
     assert plan["spent"] <= 3 and plan["conserved"]
+
+
+def test_conserved_flag_is_not_tautological_and_names_verify():
+    # a run that ends by verifying a healthy wave carries verified=True
+    plan = run_steered([0.95, 0.9, 0.1], budget=8)
+    assert plan["verified"] is True
+    # an all-collapsed run (high correlation every wave) never reaches a
+    # verify; it is named, not silently 'conserved'
+    collapsed = run_steered([0.95, 0.95, 0.95], budget=8)
+    assert collapsed["verified"] is False
+    assert collapsed["exhausted_without_verify"] is True
