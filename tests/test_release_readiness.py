@@ -10,7 +10,9 @@ def _tool(tmp_path, name, *, credo=True, believes=True, tests=True):
     p = tmp_path / name
     p.mkdir()
     if credo:
-        (p / "CREDO.md").write_text("belief", encoding="utf-8")
+        from harness.credo import CREDO
+        (p / "CREDO.md").write_text("# The Credo\n\n" + CREDO,
+                                    encoding="utf-8")
     (p / "README.md").write_text(
         "# t\n" + ("## What this believes\n" if believes else ""),
         encoding="utf-8")
@@ -33,7 +35,8 @@ def test_a_complete_tool_is_ready(tmp_path):
 def test_dart_style_test_names_count(tmp_path):
     p = tmp_path / "dart-tool"
     p.mkdir()
-    (p / "CREDO.md").write_text("belief", encoding="utf-8")
+    from harness.credo import CREDO
+    (p / "CREDO.md").write_text("# The Credo\n\n" + CREDO, encoding="utf-8")
     (p / "README.md").write_text("## What this believes\n", encoding="utf-8")
     (p / "test").mkdir()
     (p / "test" / "widget_test.dart").write_text("void main() {}",
@@ -45,7 +48,8 @@ def test_dart_style_test_names_count(tmp_path):
 def test_a_conformance_runner_counts_as_a_verification_suite(tmp_path):
     p = tmp_path / "vectors-tool"
     p.mkdir()
-    (p / "CREDO.md").write_text("belief", encoding="utf-8")
+    from harness.credo import CREDO
+    (p / "CREDO.md").write_text("# The Credo\n\n" + CREDO, encoding="utf-8")
     (p / "README.md").write_text("## What this believes\n", encoding="utf-8")
     (p / "conformance").mkdir()
     (p / "conformance" / "run.py").write_text("# frozen vectors",
@@ -57,12 +61,26 @@ def test_a_conformance_runner_counts_as_a_verification_suite(tmp_path):
 def test_node_convention_tests_count(tmp_path):
     p = tmp_path / "node-tool"
     p.mkdir()
-    (p / "CREDO.md").write_text("belief", encoding="utf-8")
+    from harness.credo import CREDO
+    (p / "CREDO.md").write_text("# The Credo\n\n" + CREDO, encoding="utf-8")
     (p / "README.md").write_text("## What this believes\n", encoding="utf-8")
     (p / "ledger.test.mjs").write_text("import test from 'node:test'",
                                        encoding="utf-8")
     doc = readiness_report({"node-tool": str(p)})
     assert doc["tools"][0]["ready"] is True
+
+
+def test_reworded_credo_is_drift_not_placed(tmp_path):
+    # acceptance by file-name presence is not a check: an empty, stale, or
+    # reworded CREDO.md must read as drift, so readiness CAN go red on it
+    p = _tool(tmp_path, "drifted")
+    import pathlib
+    pathlib.Path(p, "CREDO.md").write_text(
+        "# The Credo\n\nWe believe in shipping fast.\n", encoding="utf-8")
+    doc = readiness_report({"drifted": p})
+    row = doc["tools"][0]
+    assert row["ready"] is False
+    assert "credo drift" in row["gaps"]
 
 
 def test_gaps_are_named_per_tool(tmp_path):

@@ -135,6 +135,9 @@ def science_run(question: str, *, claims: "list | None" = None,
     }, sort_keys=True).encode()).hexdigest()
 
     return {"schema": SCHEMA, "question": question, "sources": sources,
+            "gather_raw": raw if rc == 0 else "",
+            "gather_raw_sha256": (hashlib.sha256(raw.encode()).hexdigest()
+                                  if rc == 0 else ""),
             "prp": prp, "claims": claims or [],
             "measurements": measurements or [],
             "verdicts": verdicts, "crucible": crucible_note,
