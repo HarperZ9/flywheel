@@ -101,6 +101,16 @@ def test_without_claims_the_crucible_stage_is_declared_skipped(tmp_path):
     assert all(argv[0] != "crucible" for argv in r.calls)
 
 
+def test_gather_raw_payload_is_kept_not_projected_away(tmp_path):
+    # the docstring promise: nothing is lost to the {id,title,url} projection.
+    # provenance receipts, hashes, timestamps gather emitted must survive.
+    doc = science_run("q", runner=_runner(), workdir=tmp_path)
+    assert doc["gather_raw"] == GATHER_OK
+    import hashlib
+    assert doc["gather_raw_sha256"] == hashlib.sha256(
+        GATHER_OK.encode()).hexdigest()
+
+
 def test_receipt_echoes_the_claims_and_measurements_it_judged(tmp_path):
     claims = [{"id": "c1", "text": "t", "falsification": "f"}]
     ms = [{"claim": "c1", "deviation": 0.0, "tolerance": 0.001,

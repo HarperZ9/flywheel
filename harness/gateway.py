@@ -301,12 +301,17 @@ def forge_recheck(run_root, prp_id: str, req: dict) -> dict:
         return {"error": f"no forge seal on record for prp_id {pid!r}; "
                          "a recheck needs the seal minted at forge time"}
     seal = json.loads(path.read_text(encoding="utf-8"))
-    out = {"schema": "flywheel.prp-recheck/v2", "prp_id": pid, "arms": {}}
+    out = {"schema": "flywheel.prp-recheck/v2", "prp_id": pid,
+           "seal_path": str(path), "arms": {}}
     for arm in ("intent", "architecture"):
         sealed = str(seal.get(f"{arm}_sha256", ""))
         current = req.get(f"{arm}_source")
         if not sealed or current is None:
             continue
+        if not str(current).strip():
+            return {"error": f"empty {arm}_source: an empty arm cannot be "
+                             "drift-checked (empty-vs-empty is moved:false "
+                             "for an arm that never existed)"}
         now = _h.sha256(str(current).encode()).hexdigest()
         out["arms"][arm] = {"sealed_sha256": sealed,
                             "current_sha256": now,
@@ -314,6 +319,15 @@ def forge_recheck(run_root, prp_id: str, req: dict) -> dict:
     if not out["arms"]:
         return {"error": "no comparable arm: supply <arm>_source for an arm "
                          "the seal actually recorded"}
+    hashes = [a["current_sha256"] for a in out["arms"].values()]
+    if len(hashes) == 2 and hashes[0] == hashes[1]:
+        # one string hashed twice is a test that cannot fail: name it,
+        # report no verdict
+        out["degenerate"] = True
+        out["note"] = ("degenerate Y-chain: both arms carry identical "
+                       "content, so the two-arm drift comparison decides "
+                       "nothing; no any_moved verdict is reported")
+        return out
     out["any_moved"] = any(a["moved"] for a in out["arms"].values())
     out["note"] = ("the Y-chain drift check against the server-held seal: "
                    "an arm whose current text no longer hashes to the value "

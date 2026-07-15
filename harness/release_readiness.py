@@ -38,8 +38,21 @@ def _check(root: Path) -> list:
     gaps = []
     if not root.is_dir():
         return ["repo missing"]
-    if not (root / "CREDO.md").is_file():
+    credo_path = root / "CREDO.md"
+    if not credo_path.is_file():
         gaps.append("credo")
+    else:
+        # presence is not the check: the file must carry the canonical,
+        # content-addressed credo text, or readiness can never go red on
+        # a stale or reworded copy
+        from .credo import CREDO
+        try:
+            credo_text = credo_path.read_text(encoding="utf-8",
+                                              errors="ignore")
+        except OSError:
+            credo_text = ""
+        if CREDO.strip() not in credo_text:
+            gaps.append("credo drift")
     readme = root / "README.md"
     if not readme.is_file():
         gaps.append("readme")

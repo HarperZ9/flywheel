@@ -71,8 +71,9 @@ RULES: tuple[Rule, ...] = (
          r"(?i)\b(api[_-]?key|secret|password|token)\b\s*[:=]\s*['\"][^'\"\s]{8,}['\"]",
          "inline credential assignment"),
     # --- LOCAL_PATHS (error) — build-machine paths in a shipped doc ----------
+    # both slash forms: C:\dev and C:/dev are the same leaked machine path
     Rule("path.win", "LOCAL_PATHS", "error",
-         r"[A-Za-z]:\\+(?:Users|dev|tmp|local-model-run|Windows)",
+         r"[A-Za-z]:[\\/]+(?:Users|dev|tmp|local-model-run|Windows)",
          "Windows build-machine path"),
     Rule("path.wsl", "LOCAL_PATHS", "error",
          r"/mnt/[a-z]/(?:dev|Users|local-model-run)", "WSL build-machine path"),
@@ -90,6 +91,16 @@ RULES: tuple[Rule, ...] = (
          r"\b(TODO|FIXME|XXX|HACK)\b", "in-progress marker"),
     Rule("reg.donotpub", "DEV_REGISTER", "warn",
          r"(?i)do[_ -]?not[_ -]?publish", "do-not-publish marker"),
+    # --- UNANCHORED_CLAIM (warn) — tenet 4: no claim without its interval ----
+    Rule("claim.nointerval", "UNANCHORED_CLAIM", "warn",
+         r"(?i)^(?!.*(?:±|\+/-|\bCI\b|interval|\[))"
+         r".*\b(?:pass@\d+|accuracy|score|win rate|success rate)\b"
+         r"[^%\n]*\d+(?:\.\d+)?\s*%",
+         "percentage metric with no interval"),
+    Rule("claim.superlative", "UNANCHORED_CLAIM", "warn",
+         r"(?i)\b(?:best(?!-of)|fastest|state[- ]of[- ]the[- ]art|"
+         r"world[- ]class|leading)\b",
+         "superlative without a measured comparison"),
     # --- STALE_CLAIM (warn) — claims that rot the moment they ship -----------
     Rule("stale.nobench", "STALE_CLAIM", "warn",
          r"(?i)no benchmark(s)? (has|have)? ?(been )?run", "stale 'no benchmark' claim"),
@@ -145,18 +156,22 @@ def _iter_files(paths: list[str]):
 _DIRTY = (
     "Status: staged\n"
     "Download from C:\\Users\\you\\project and set token hf_ABCDEFGHIJKLMNOPQRSTUV.\n"
+    "See C:/dev/local-model for setup.\n"
     "No benchmark has been run yet.\n"
+    "The best coding model: accuracy is 91% overall.\n"
 )
 _CLEAN = (
     "# Flywheel-Local-Coder-14B\n"
-    "Run it in two commands. Pass@1 is 82.9% on the code-completion suite.\n"
+    "Run it in two commands. Pass@1 is 82.9% (95% CI 78.1-86.9) on the "
+    "code-completion suite.\n"
 )
 
 
 def selftest() -> int:
     dirty = scan_text(_DIRTY, "<dirty-fixture>")
     cats = {f["category"] for f in dirty}
-    required = {"SECRETS", "LOCAL_PATHS", "DEV_REGISTER", "STALE_CLAIM"}
+    required = {"SECRETS", "LOCAL_PATHS", "DEV_REGISTER", "STALE_CLAIM",
+                "UNANCHORED_CLAIM"}
     clean = scan_text(_CLEAN, "<clean-fixture>")
     ok = required.issubset(cats) and not clean
     print(json.dumps({
