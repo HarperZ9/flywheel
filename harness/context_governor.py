@@ -67,10 +67,15 @@ def recall_folded(folded: list, sha256: str) -> "str | None":
 
 
 def govern_context(items: list, *, budget: int,
-                   reliable_fraction: float = 0.6) -> dict:
+                   reliable_fraction: float = 0.6,
+                   reliable_fraction_source: str = "default (unmeasured)"
+                   ) -> dict:
     """Curate `items` to a reliable window. `budget` is the model's
     nominal token budget; `reliable_fraction` (0..1) is the measured
-    safe zone below which the model is trusted. Returns the window, the
+    safe zone below which the model is trusted, and
+    `reliable_fraction_source` names WHERE that number came from (a
+    RULER/eval artifact path or model-profile key) so the receipt can tell a
+    measured value from the unmeasured default. Returns the window, the
     folded overflow (each with a recall hash), and a receipt."""
     reliable_budget = max(0, int(budget * max(0.0, min(1.0,
                                                        reliable_fraction))))
@@ -102,6 +107,7 @@ def govern_context(items: list, *, budget: int,
     return {"schema": SCHEMA, "window": window, "folded": folded,
             "budget": int(budget), "reliable_budget": reliable_budget,
             "reliable_fraction": reliable_fraction,
+            "reliable_fraction_source": reliable_fraction_source,
             "used_tokens": used, "pinned_count": len(pins),
             "kept_count": len(window), "folded_count": len(folded),
             "over_pinned": over_pinned, "over_nominal": over_nominal,
