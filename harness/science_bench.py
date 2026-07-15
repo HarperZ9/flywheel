@@ -119,15 +119,26 @@ def science_run(question: str, *, claims: "list | None" = None,
             errors["crucible"] = raw.strip()[-300:]
             crucible_note = "error"
 
+    # the chain binds EVERYTHING that produced the verdicts: the claims and
+    # measurement content (not just statuses, so a widened tolerance moves
+    # the hash) and the errors (so an errored run never hashes like a clean
+    # one). The payload echoes claims and measurements so a stranger holding
+    # only the doc can re-run the judgment.
     chain = hashlib.sha256(json.dumps({
         "question": question,
         "sources": [s["id"] for s in sources],
         "gates": prp.get("validation_gates", []),
+        "claims": claims or [],
+        "measurements": measurements or [],
         "verdicts": [(v.get("claim_id"), v.get("status")) for v in verdicts],
+        "errors": errors,
     }, sort_keys=True).encode()).hexdigest()
 
     return {"schema": SCHEMA, "question": question, "sources": sources,
-            "prp": prp, "verdicts": verdicts, "crucible": crucible_note,
+            "prp": prp, "claims": claims or [],
+            "measurements": measurements or [],
+            "verdicts": verdicts, "crucible": crucible_note,
             "errors": errors, "chain_hash": chain,
             "note": "sources carry gather provenance; UNVERIFIABLE claims "
-                    "stay unverifiable until a measurement exists"}
+                    "stay unverifiable until a measurement exists; the chain "
+                    "hash binds claims, measurements, verdicts, and errors"}
