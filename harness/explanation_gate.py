@@ -37,9 +37,14 @@ def _key_terms(diff: str, top_n: int = 8) -> tuple:
         if line.startswith("+++ ") or line.startswith("--- "):
             name = line[4:].strip()
             if name not in ("/dev/null",):
-                base = name.split("/")[-1]
-                if base and base not in files:
-                    files.append(base)
+                # keep the repo-relative path (strip only the a/ b/ diff
+                # prefix): basenames collapse same-named files and split
+                # the ledger's cross-kind merge against attestation paths
+                if name.startswith(("a/", "b/")):
+                    name = name[2:]
+                name = name.replace("\\", "/")
+                if name and name not in files:
+                    files.append(name)
             continue
         if line[:1] in ("+", "-"):
             for ident in _IDENT.findall(line[1:]):
@@ -76,7 +81,9 @@ def explanation_receipt(diff: str, explanation: str, *,
     text = (explanation or "").lower()
     mentioned = [t for t in terms if t.lower() in text]
     missed = [t for t in terms if t.lower() not in text]
-    mentioned_files = [f for f in files if f.lower() in text]
+    mentioned_files = [f for f in files
+                       if f.lower() in text
+                       or f.rsplit("/", 1)[-1].lower() in text]
     coverage = round(len(mentioned) / len(terms), 4) if terms else 0.0
     own_words_ratio = _own_words_ratio(diff, explanation)
     passed = bool(terms) and coverage >= threshold and (

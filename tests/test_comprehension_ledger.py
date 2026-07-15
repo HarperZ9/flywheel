@@ -78,3 +78,50 @@ def test_empty_store_is_an_honest_null(monkeypatch, tmp_path):
     doc = comprehension_ledger()
     assert doc["files"] == {}
     assert "no checked evidence" in doc["note"]
+
+
+def test_same_file_merges_across_path_spellings(monkeypatch, tmp_path):
+    """Basename-vs-path and slash-form splits must not defeat the cross-kind
+    merge: one file, one row, newest evidence holds it."""
+    monkeypatch.setenv("FLYWHEEL_HOME", str(tmp_path))
+    import harness.store as store
+    clock = {"t": 1.0}
+    monkeypatch.setattr(store.time, "time", lambda: clock["t"])
+    put_entity("attestation", {"standing": "complete", "reviewer": "early",
+                               "reviewed": ["harness\store.py"]}, eid="att")
+    clock["t"] = 2.0
+    put_entity("comprehension", {"passed": True, "reviewer": "later",
+                                 "files": ["harness/store.py"]}, eid="comp")
+    doc = comprehension_ledger()
+    assert doc["files"]["harness/store.py"]["holder"] == "later"
+    assert "harness\store.py" not in doc["files"]
+
+
+def test_failed_retest_decays_holdership(monkeypatch, tmp_path):
+    """retention.py promises the ledger distinguishes what someone once
+    demonstrated from what they still hold; a failed unaided retest must
+    revoke the row, visibly."""
+    monkeypatch.setenv("FLYWHEEL_HOME", str(tmp_path))
+    put_entity("comprehension", {"passed": True, "reviewer": "learner",
+                                 "files": ["a.py"],
+                                 "key_terms": ["tax", "subtotal"]}, eid="c1")
+    from harness.retention import retention_record
+    r = retention_record("c1", "no recall of any of it",
+                         waive_interval_reason="test probe")
+    assert r["passed"] is False
+    doc = comprehension_ledger()
+    assert "a.py" not in doc["files"]
+    assert doc["decayed"]["a.py"]["eid"] == "c1"
+
+
+def test_passed_retest_keeps_holdership(monkeypatch, tmp_path):
+    monkeypatch.setenv("FLYWHEEL_HOME", str(tmp_path))
+    put_entity("comprehension", {"passed": True, "reviewer": "learner",
+                                 "files": ["a.py"],
+                                 "key_terms": ["tax", "subtotal"]}, eid="c1")
+    from harness.retention import retention_record
+    r = retention_record("c1", "a.py applies tax to the subtotal",
+                         waive_interval_reason="test probe")
+    assert r["passed"] is True
+    doc = comprehension_ledger()
+    assert doc["files"]["a.py"]["holder"] == "learner"

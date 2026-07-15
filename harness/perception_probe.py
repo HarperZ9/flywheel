@@ -81,7 +81,12 @@ def decode_locate(encoding: str, name: str, w: int, h: int) -> tuple[float, floa
     lab = _labels(encoding).get(name)
     if lab is None:
         return None
-    return grid_center(lab, w, h, cols=_COLS, rows=_ROWS)
+    try:
+        return grid_center(lab, w, h, cols=_COLS, rows=_ROWS)
+    except (ValueError, IndexError):
+        # a present-but-garbage label decodes to NOTHING, not a crash and
+        # never a placeholder point that fakes relations downstream
+        return None
 
 
 def locate_error(scene: Scene, encoding: str) -> float:

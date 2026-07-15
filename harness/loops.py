@@ -245,10 +245,15 @@ def _research_question(ctx):
 
 def _research_gather(ctx):
     import hashlib
-    # a source is frozen content-addressed (the snapshot mechanism's shape)
+    from .store import put_entity
+    # a source is frozen content-addressed AND STORED: a hash whose bytes
+    # are nowhere is not re-checkable by anyone
     src = "evidence bytes for " + ctx["_q"]
     ctx["_src_sha"] = hashlib.sha256(src.encode()).hexdigest()
-    return True, ctx["_src_sha"][:16], "a source frozen content-addressed"
+    stored = put_entity("research-source", {"bytes": src,
+                                            "sha256": ctx["_src_sha"]})
+    ctx["_src_eid"] = stored["eid"]
+    return True, ctx["_src_sha"][:16], "source bytes stored content-addressed"
 
 
 def _research_forge(ctx):
@@ -263,19 +268,30 @@ def _research_store(ctx):
     from .store import put_entity
     s = put_entity("research-claim", {"question": ctx["_q"],
                                       "confidence": ctx["_prp"]["confidence"],
+                                      "source_eid": ctx["_src_eid"],
                                       "source_sha256": ctx["_src_sha"]})
     ctx["_claim_eid"] = s["eid"]
     return True, s["chain_hash"], "the claim stored, awaiting a verdict"
 
 
 def _research_recheck(ctx):
+    import hashlib
     from .store import get_entity
-    # the stored claim schedules its own re-check: read it back, the source
-    # hash lets a stranger re-fetch and re-verify -> feeds the question
+    # the re-check can FAIL against reality: re-hash the STORED source bytes
+    # and compare to the claim's frozen hash. A tampered or missing source
+    # breaks the edge; reading a value back and comparing it to itself never
+    # could.
     e = get_entity(ctx["_claim_eid"])
-    ok = bool(e) and e["data"].get("source_sha256") == ctx["_src_sha"]
-    return ok, ctx["_src_sha"][:16] if ok else "", \
-        "the claim's frozen source re-checkable -> feeds the next question"
+    if not e:
+        return False, "", "claim entity missing"
+    src = get_entity(e["data"].get("source_eid", ""))
+    if not src:
+        return False, "", "frozen source missing: nothing to re-check"
+    rehash = hashlib.sha256(
+        str(src["data"].get("bytes", "")).encode()).hexdigest()
+    ok = rehash == e["data"].get("source_sha256")
+    return ok, rehash[:16] if ok else "", \
+        "stored source bytes re-hash to the claim's frozen hash -> feeds on"
 
 
 RESEARCH = Loop("research", "does the reconcile generalize past code?", [

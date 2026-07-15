@@ -48,3 +48,13 @@ def test_relations_are_well_formed():
     n = len(s.objects)
     assert len(r) == n * (n - 1) // 2        # one entry per unordered pair
     assert all(isinstance(v, tuple) and len(v) == 2 for v in r.values())
+
+
+def test_undecodable_encoding_scores_zero_not_perfect():
+    """Failed decodes must not collapse to a shared (-1,-1) point whose tie
+    relations happen to MATCH true False relations: an encoding from which
+    nothing decodes preserved nothing."""
+    s = Scene(w=512, h=288,
+              objects=[("b", 1.0, 1.0), ("a", 2.0, 2.0)],
+              target="b")
+    assert systematicity(s, "a: gibberish\nb: gibberish") == 0.0

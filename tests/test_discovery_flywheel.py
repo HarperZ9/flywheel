@@ -115,3 +115,18 @@ def test_cycle_receipt_shape_and_invariant():
     assert cyc["noise_dropped"] == 1
     assert len(cyc["demoted_no_falsifier"]) == 1
     assert "auto-applied" in cyc["invariant"] and "admission" in cyc["invariant"]
+
+
+def test_adoptable_thread_names_its_falsifier_as_stated_not_run():
+    """The falsifier string is model-authored text from the sweep; nothing
+    here executes it. The receipt must say so, or a stated intention reads
+    as a fired check."""
+    feed, _ = frontier_feed([CODE_DISC])
+    t = feed["actionable_threads"][0]
+    assert t["falsifier_status"] == "stated, not yet run"
+
+
+def test_drift_recommendation_names_its_evidence_basis():
+    det = CourseDriftDetector(course={"selection"})
+    out = det.observe([CODE_DISC, CODE_DISC])
+    assert "stated falsifiers" in out["note"].lower()

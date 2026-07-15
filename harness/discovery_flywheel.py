@@ -77,9 +77,15 @@ def frontier_feed(discoveries: list[Discovery]) -> tuple[dict, list[dict]]:
     actionable, inspiration, demotions = [], [], []
     for d in discoveries:
         if d.rank == ACTIONABLE and d.falsifier.strip():
+            # the falsifier is model-authored text from the sweep: STATED,
+            # not executed here. Naming that keeps the receipt from reading
+            # a stated intention as a fired check; running it is the
+            # downstream admission step.
             actionable.append({"title": d.concept,
                                "suggested_extension": d.application or d.concept,
-                               "falsifier": d.falsifier, "domain": d.domain})
+                               "falsifier": d.falsifier,
+                               "falsifier_status": "stated, not yet run",
+                               "domain": d.domain})
         elif d.rank == ACTIONABLE:            # actionable but no falsifier -> demote
             inspiration.append({"title": d.concept})
             demotions.append({"concept": d.concept,
@@ -128,7 +134,9 @@ class CourseDriftDetector:
             "emerging_domains": emerging,
             "recommendation": recommendation,
             "fired": fired,                    # transition only
-            "note": "recommendation only -- the operator/roadmap changes course, not this",
+            "note": "recommendation only, counted over STATED falsifiers "
+                    "(none executed here) -- the operator/roadmap changes "
+                    "course, not this",
         }
 
     def adopt_course_change(self, domains: list[str]) -> None:
