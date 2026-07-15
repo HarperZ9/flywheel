@@ -63,25 +63,39 @@ def enumerate_conjectures(k: int, *, offset: int = 0) -> list:
     return _all_statements()[offset:offset + k]
 
 
+_BINDER_GROUP = re.compile(r"\(([^:()]+):([^)]*)\)")
+
+
 def normalize_statement(stmt: str) -> str:
     """Alpha- and name-invariant canonical form: the theorem name is
     dropped and bound variables are renamed v0, v1, ... in order of first
     appearance in the body, so `n + m = m + n` and `x + y = y + x` hash
-    identically while `n + m = m + m` stays distinct."""
-    m = re.match(r"theorem\s+\S+\s*\(([^:)]+):[^)]*\)\s*:\s*(.+?)\s*:=",
-                 stmt)
+    identically while `n + m = m + m` stays distinct. The canonical form also
+    carries the bound variables' TYPES in order, so the same body over
+    different types (`(n m : Nat)` vs `(n m : Int)`) never collapses to one
+    hash. Several single binder groups (`(n : Nat) (m : Nat)`) canonicalize the
+    same as one grouped binder (`(n m : Nat)`). This is a SYNTACTIC check --
+    alpha-equivalence of statement text, not a semantic same-proposition
+    proof, which would need the kernel."""
+    m = re.match(r"theorem\s+\S+\s*((?:\([^)]*\)\s*)*):\s*(.+?)\s*:=", stmt)
     if not m:
         body = re.sub(r"^theorem\s+\S+\s*:?", "", stmt).strip()
         return re.sub(r"\s+", " ", body)
-    binders = m.group(1).split()
+    types: dict = {}          # bound name -> its normalized type text
+    for g in _BINDER_GROUP.finditer(m.group(1)):
+        typ = re.sub(r"\s+", " ", g.group(2)).strip()
+        for name in g.group(1).split():
+            types[name] = typ
     body = m.group(2)
     order = []
     for tok in re.findall(r"[A-Za-z_]\w*", body):
-        if tok in binders and tok not in order:
+        if tok in types and tok not in order:
             order.append(tok)
     for idx, var in enumerate(order):
         body = re.sub(rf"\b{re.escape(var)}\b", f"v{idx}", body)
-    return re.sub(r"\s+", " ", body).strip()
+    canon = re.sub(r"\s+", " ", body).strip()
+    type_sig = " ".join(types[var] for var in order)
+    return f"{canon} | {type_sig}" if type_sig else canon
 
 
 def _statement_sha(stmt: str) -> str:
@@ -162,18 +176,19 @@ def grade_novelty(statement: str, *, kernel=None,
                 "statement_sha256": sha, "corpus_held": held,
                 "basis": "closed by the cheap tactic"}
     if strong_proof:
-        # the strong proof must prove the SAME proposition, or L2 would be
-        # granted for proving something unrelated (accept-a-wrong-thing).
-        # Compare the normalized (alpha-invariant) statement bodies.
-        same_prop = normalize_statement(strong_proof) == \
+        # the strong proof must restate the SAME proposition, or L2 would be
+        # granted for proving something unrelated (accept-a-wrong-thing). This
+        # is a SYNTACTIC check: alpha-equivalence of the normalized statement
+        # text (now type-aware), not a semantic same-proposition proof.
+        same_text = normalize_statement(strong_proof) == \
             normalize_statement(statement)
         strong = kernel(strong_proof)
-        if same_prop and strong.get("passed") is True:
+        if same_text and strong.get("passed") is True:
             return {"schema": SCHEMA + ".rung",
                     "rung": "L0" if held else "L2",
                     "statement_sha256": sha, "corpus_held": held,
-                    "basis": "cheap tactic failed; strong proof of the same "
-                             "proposition accepted"}
+                    "basis": "cheap tactic failed; strong proof accepted for "
+                             "alpha-equivalent statement text (syntactic check)"}
     return {"schema": SCHEMA + ".rung", "rung": "refused",
             "statement_sha256": sha, "corpus_held": held,
             "basis": "no accepted proof at any rung"}
