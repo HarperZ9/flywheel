@@ -100,3 +100,33 @@ def list_corpora(root: str, *, runner=None) -> dict:
         return {"error": f"chorus corpora failed (rc {rc}): {(err or out or '').strip()[-200:]}"}
     return {"schema": "flywheel.discourse-corpora/v1", "root": str(root),
             "corpora": result.get("corpora", [])}
+
+
+def recent_digests(store: str, *, limit: int = 20, runner=None) -> dict:
+    """List the digests the chorus daemon has stored, via `chorus digests`. Returns
+    ``{schema, store, digests: [...]}`` newest-first, or a named error. A missing or
+    empty store is an empty list (chorus's own answer), never an error."""
+    argv = _chorus_argv()
+    if argv is None:
+        return {"error": "the chorus satellite is not installed; pip install chorus-discourse"}
+    cmd = argv + ["digests", str(store), "--limit", str(int(limit))]
+    try:
+        if runner is not None:
+            rc, out, err = runner(cmd)
+        else:
+            proc = subprocess.run(cmd, capture_output=True, text=True, timeout=_TIMEOUT)
+            rc, out, err = proc.returncode, proc.stdout, proc.stderr
+    except subprocess.TimeoutExpired:
+        return {"error": f"chorus digests timed out after {_TIMEOUT}s"}
+    except (OSError, ValueError) as e:
+        return {"error": f"{type(e).__name__}: {e}"}
+    try:
+        result = json.loads(out) if (out or "").strip() else {}
+    except ValueError:
+        return {"error": f"chorus digests did not emit JSON (rc {rc}): {(err or '').strip()[-200:]}"}
+    if isinstance(result, dict) and "error" in result:
+        return result
+    if rc != 0:
+        return {"error": f"chorus digests failed (rc {rc}): {(err or out or '').strip()[-200:]}"}
+    return {"schema": "flywheel.discourse-digests/v1", "store": str(store),
+            "digests": result.get("digests", [])}
