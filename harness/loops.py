@@ -195,6 +195,10 @@ def _invent_propose(ctx):
 
 def _invent_kernel(ctx):
     kernel = ctx.get("kernel")
+    # a caller-injected callable is NOT the Lean kernel: its verdicts are
+    # synthetic and must never be stored as kernel-accepted (uplift_bench marks
+    # every injected-proposer row the same way; the invention loop mirrors it)
+    ctx["_synthetic"] = kernel is not None
     if kernel is None:
         from .lean_oracle import lean_check
         kernel = lambda code: lean_check(code)
@@ -214,10 +218,14 @@ def _invent_kernel(ctx):
 
 def _invent_store(ctx):
     from .store import put_entity
+    synthetic = ctx.get("_synthetic", False)
+    verdict = "injected-callable-accepted" if synthetic else "kernel-accepted"
     last = ""
     for c in ctx["_survivors_list"]:
-        last = put_entity("theorem", {"statement": c,
-                                      "verdict": "kernel-accepted"})["chain_hash"]
+        last = put_entity("theorem",
+                          {"statement": c, "verdict": verdict,
+                           "evidence": "synthetic" if synthetic else "live"}
+                          )["chain_hash"]
     return bool(last), last, "survivors chained into the store"
 
 

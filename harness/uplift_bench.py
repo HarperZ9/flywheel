@@ -185,6 +185,10 @@ def run_uplift_bench(tasks_path, providers: list, *, oracle,
         includes_zero = lo <= 0.0 <= hi
         deltas.append({
             "provider": name,
+            # the delta IS the uplift claim: it carries the same synthetic/live
+            # marker the arm rows do, so bench_summary (which serves deltas
+            # verbatim) can never pass a test's delta off as a measurement
+            "evidence": "synthetic" if synthetic else "live",
             "uplift": round(w["pass_rate"] - b["pass_rate"], 4),
             "newcombe_95": [round(lo, 4), round(hi, 4)],
             "includes_zero": includes_zero,

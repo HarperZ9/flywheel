@@ -155,6 +155,24 @@ def test_live_provider_names_carry_a_model_suffix(tmp_path):
     assert all(r["evidence"] == "live" for r in doc["rows"])
 
 
+def test_synthetic_delta_carries_the_evidence_marker(tmp_path):
+    """The delta row IS the uplift claim; a synthetic run must mark it, or the
+    summary serves a test's delta indistinguishable from a live measurement."""
+    doc = run_uplift_bench(
+        _tasks_file(tmp_path), ["serve"], oracle=lambda c, t: c == "good",
+        n_candidates=4, proposers={"serve": lambda: _Stub(pass_seed=2)})
+    assert doc["deltas"] and all(d["evidence"] == "synthetic"
+                                 for d in doc["deltas"])
+
+
+def test_live_delta_carries_the_live_marker(tmp_path):
+    doc = run_uplift_bench(_tasks_file(tmp_path, n=2), ["stub:any-model"],
+                           oracle=lambda c, t: c.strip() == "pass",
+                           n_candidates=2)
+    assert doc["deltas"] and all(d["evidence"] == "live"
+                                 for d in doc["deltas"])
+
+
 def test_empty_tasks_is_a_named_error(tmp_path):
     empty = tmp_path / "none.jsonl"
     empty.write_text("", encoding="utf-8")
