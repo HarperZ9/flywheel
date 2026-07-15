@@ -60,7 +60,10 @@ class PythonExecutorOracle(DenseOracle):
                                env=run_env(), capture_output=True,
                                timeout=self.timeout)
             got = p.stdout.decode("utf-8", errors="replace").strip()
-            passed = got == self.expected
+            # a candidate that crashed (rc != 0) never passes, even when its
+            # stdout happens to match — especially the empty-expected case,
+            # where a candidate that died at import also printed nothing.
+            passed = p.returncode == 0 and got == self.expected
             return DenseResult(passed=passed, reward=(1.0 if passed else 0.0),
                                output_hash=f"{p.returncode}:{got[:32]}")
         except subprocess.TimeoutExpired:

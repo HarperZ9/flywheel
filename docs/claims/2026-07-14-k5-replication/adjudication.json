@@ -1,29 +1,92 @@
 {
- "thesis_seal": "c76b332fd483cb925ac2d88fe58cdd990b32a27bae583d0ed1054d1859e81ef4",
- "verdict_seal": "9a0ec4d5752bc1a7dfb3c9cf18063bf3a92cf32250b93fff11af80f073123ba2",
- "measurement_seal": "2855aff8b286c9f14ac09be851d71e382a1548ec2c9f37def494efee78d626bc",
- "assessment_seal": "7e8b65c7fc2fe134f61757e3052d761190a931ef91dd82638cd434b3a5248dd7",
- "claims": 3,
- "match": 2,
- "drift": 1,
- "unverifiable": 0,
- "verdicts": [
-  {
-   "claim_id": "c-repl-nonnull",
-   "status": "MATCH"
-  },
-  {
-   "claim_id": "c-repl-interval",
-   "status": "DRIFT"
-  },
-  {
-   "claim_id": "c-repl-het-beats-iid",
-   "status": "MATCH"
-  }
- ],
- "headline": "uplift replicated non-null (+18.2% then +15.4%, both exclude zero); the per-task Jeffreys point-forecast interval undercovered (0.600 in-band, 0.573 below); het beat iid both runs",
+ "schema": "flywheel.adjudication/v2",
+ "assessment": {
+  "started_at": 0.0,
+  "thesis_id": "c76b332fd483cb92",
+  "thesis_seal": "c76b332fd483cb925ac2d88fe58cdd990b32a27bae583d0ed1054d1859e81ef4",
+  "claims": 3,
+  "match": 2,
+  "drift": 1,
+  "unverifiable": 0,
+  "verdict_seal": "9a0ec4d5752bc1a7dfb3c9cf18063bf3a92cf32250b93fff11af80f073123ba2",
+  "measurement_seal": "c9039a5f99ca3339dd3ec90dc15f7ae253734b7d5fd682b96d7e7005457ef366",
+  "disposition": "publishable",
+  "stored": null,
+  "verdicts": [
+   {
+    "claim_id": "c-repl-nonnull",
+    "claim_sha256": "5b544e56a42f514a09f9a8ef058e5707a9a36d60d1d7bd0262cf033784c4b602",
+    "status": "MATCH",
+    "deviation": 0.0,
+    "tolerance": 0.001,
+    "margin": 1.0,
+    "method": "replicated uplift +0.1545, Newcombe 95% [0.0225, 0.2792], EXCLUDES zero. Non-null uplift replicated (round one was +0.182 [0.050, 0.305]). The load-bearing scientific claim holds on the second run.",
+    "grounds": "deviation 0 within tolerance 0.001",
+    "disposition": "publishable"
+   },
+   {
+    "claim_id": "c-repl-interval",
+    "claim_sha256": "b8b82c74f8a20cf6dcf7e3e4dd434d6149368afafc98c678316b5820486a98bb",
+    "status": "DRIFT",
+    "deviation": 0.0898,
+    "tolerance": 0.0655,
+    "margin": -0.3709923664122138,
+    "method": "measured wrapped best-of-5 = 63/110 = 0.5727; sealed band [0.597, 0.728] midpoint 0.6625 half-width 0.0655; deviation 0.0898 > 0.0655 -> DRIFT. Missed LOW by 0.024 below the floor. The per-task Jeffreys interval undercovered: run one held at 0.600, run two fell below. No rescue.",
+    "grounds": "deviation 0.0898 exceeds tolerance 0.0655",
+    "disposition": "publishable"
+   },
+   {
+    "claim_id": "c-repl-het-beats-iid",
+    "claim_sha256": "a7453183736ca89a53b9a3af2b37ec25a603d308693d7f68ba89b6e719dfccab",
+    "status": "MATCH",
+    "deviation": 0.0,
+    "tolerance": 0.001,
+    "margin": 1.0,
+    "method": "err(het)=|0.5727-0.663|=0.0903 < err(iid)=|0.5727-0.682|=0.1093; het wins by 0.019, beyond the 0.001 tie band. The heterogeneous forecast was less biased than the pooled iid, as in round one, even though both ran high.",
+    "grounds": "deviation 0 within tolerance 0.001",
+    "disposition": "publishable"
+   }
+  ],
+  "measurements": [
+   {
+    "claim_id": "c-repl-nonnull",
+    "claim_sha256": "5b544e56a42f514a09f9a8ef058e5707a9a36d60d1d7bd0262cf033784c4b602",
+    "deviation": 0.0,
+    "tolerance": 0.001,
+    "method": "replicated uplift +0.1545, Newcombe 95% [0.0225, 0.2792], EXCLUDES zero. Non-null uplift replicated (round one was +0.182 [0.050, 0.305]). The load-bearing scientific claim holds on the second run.",
+    "measured_at": 0.0,
+    "evidence": [
+     "artifacts/uplift/uplift_hard_v2_20260714-140516.json"
+    ]
+   },
+   {
+    "claim_id": "c-repl-interval",
+    "claim_sha256": "b8b82c74f8a20cf6dcf7e3e4dd434d6149368afafc98c678316b5820486a98bb",
+    "deviation": 0.0898,
+    "tolerance": 0.0655,
+    "method": "measured wrapped best-of-5 = 63/110 = 0.5727; sealed band [0.597, 0.728] midpoint 0.6625 half-width 0.0655; deviation 0.0898 > 0.0655 -> DRIFT. Missed LOW by 0.024 below the floor. The per-task Jeffreys interval undercovered: run one held at 0.600, run two fell below. No rescue.",
+    "measured_at": 0.0,
+    "evidence": [
+     "artifacts/uplift/uplift_hard_v2_20260714-140516.json"
+    ]
+   },
+   {
+    "claim_id": "c-repl-het-beats-iid",
+    "claim_sha256": "a7453183736ca89a53b9a3af2b37ec25a603d308693d7f68ba89b6e719dfccab",
+    "deviation": 0.0,
+    "tolerance": 0.001,
+    "method": "err(het)=|0.5727-0.663|=0.0903 < err(iid)=|0.5727-0.682|=0.1093; het wins by 0.019, beyond the 0.001 tie band. The heterogeneous forecast was less biased than the pooled iid, as in round one, even though both ran high.",
+    "measured_at": 0.0,
+    "evidence": [
+     "artifacts/uplift/uplift_hard_v2_20260714-140516.json"
+    ]
+   }
+  ],
+  "seal": "a97701e0cfe242aa0810a82c039d62521ca7231226182b822a76477145434275"
+ },
  "evidence": [
   "artifacts/uplift/uplift_hard_v2_20260714-140516.json"
  ],
- "note": "adjudicated the day the replication landed; round-one measurements restored after the hardcoded script clobbered them; no rescue"
+ "note": "adjudicated the day the replication landed; round-one measurements restored after the hardcoded script clobbered them; no rescue",
+ "regenerated": "full re-derivable record emitted 2026-07-15; the earlier summary displayed seals whose preimage was never persisted. Same thesis, same measurement values, same frozen rule, injected zero clock; verdict statuses asserted unchanged before writing."
 }

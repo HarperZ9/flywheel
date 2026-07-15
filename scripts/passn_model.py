@@ -114,7 +114,13 @@ def vectors_from_uplift(doc: dict) -> list:
             m = int(t.get("attempts", 0))
             if m < 1:
                 continue
-            c = 1 if t.get("outcome") == "pass" else 0
+            outcome = t.get("outcome")
+            if outcome not in ("pass", "fail"):
+                # the bench's oracle refused to dispose this task; dropping it
+                # matches the bench's own exclusion. Recoding it as m failures
+                # would seal a fabricated outcome into the forecast.
+                continue
+            c = 1 if outcome == "pass" else 0
             rows.append({"task_id": t["task_id"], "n": m, "c": c})
     return rows
 

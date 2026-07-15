@@ -23,6 +23,34 @@ from pathlib import Path
 SCHEMA = "flywheel.lean-receipt/v1"
 _TIMEOUT = 90
 
+# The classical trio: everything else in a footprint is an escape hatch the
+# kernel did not re-check (Lean.ofReduceBool from native_decide,
+# Lean.trustCompiler from @[implemented_by], sorryAx from an admitted hole).
+_ALLOWED_AXIOMS = frozenset({"propext", "Classical.choice", "Quot.sound"})
+_FOOTPRINT_RE = re.compile(r"'([^']+)'\s+depends on axioms:\s*\[([^\]]*)\]")
+_NO_AXIOMS_RE = re.compile(r"'([^']+)'\s+does not depend on any axioms")
+
+
+def _decl_names(code: str) -> list:
+    """Named theorems/lemmas in the candidate, for the footprint audit."""
+    return re.findall(r"(?:^|\n)\s*(?:theorem|lemma)\s+([A-Za-z_][\w'.]*)",
+                      code or "")
+
+
+def _audit_footprint(out: str) -> tuple:
+    """Parse #print axioms output into {name: [axioms]} plus the set of
+    axioms outside the classical trio. 'does not depend on any axioms'
+    lines simply do not match and contribute nothing forbidden."""
+    footprint: dict = {}
+    forbidden: list = []
+    for name, axes in _FOOTPRINT_RE.findall(out or ""):
+        used = [a.strip() for a in axes.split(",") if a.strip()]
+        footprint[name] = used
+        forbidden.extend(a for a in used if a not in _ALLOWED_AXIOMS)
+    for name in _NO_AXIOMS_RE.findall(out or ""):
+        footprint.setdefault(name, [])
+    return footprint, sorted(set(forbidden))
+
 
 def _lean_exe() -> "str | None":
     exe = shutil.which("lean")
@@ -114,11 +142,49 @@ def lean_check(code: str, *, runner=None) -> dict:
     warn = (out or "").lower()
     uses_hole = bool(re.search(r"uses\s+[`'\"]?sorry", warn)) \
         or "declaration uses" in warn and "sorry" in warn
-    return {"schema": SCHEMA, "passed": rc == 0 and not uses_hole,
+    passed = rc == 0 and not uses_hole
+    footprint: dict = {}
+    if passed:
+        names = _decl_names(code or "")
+        if names:
+            audit_code = (code or "") + "\n" + "\n".join(
+                f"#print axioms {n}" for n in names) + "\n"
+            if runner is not None:
+                arc, aout = runner(["lean"], audit_code)
+            else:
+                arc, aout = _run([exe], audit_code)
+            if arc != 0:
+                return {"schema": SCHEMA, "passed": False,
+                        "code_sha256": sha, "toolchain": toolchain,
+                        "axiom_footprint": {},
+                        "kernel_output": ("accepted by exit code but the "
+                                          "axiom footprint audit failed to "
+                                          "run; fail closed. Audit output: "
+                                          + (aout or "").strip()[:800]),
+                        "note": "an accept the footprint cannot vouch for "
+                                "is not an accept"}
+            footprint, forbidden = _audit_footprint(aout)
+            if forbidden:
+                return {"schema": SCHEMA, "passed": False,
+                        "code_sha256": sha, "toolchain": toolchain,
+                        "axiom_footprint": footprint,
+                        "kernel_output": ("kernel exit 0 but the proof "
+                                          "leans on axioms outside the "
+                                          "classical trio: "
+                                          + ", ".join(forbidden)
+                                          + " (a decision the kernel did "
+                                            "not re-check is not a proof)"),
+                        "note": "footprint audited via #print axioms; "
+                                "allowed: propext, Classical.choice, "
+                                "Quot.sound"}
+    return {"schema": SCHEMA, "passed": passed,
             "code_sha256": sha,
             "toolchain": toolchain,
+            "axiom_footprint": footprint,
             "kernel_output": (out or "").strip()[:2000],
             "note": "acceptance decided solely by the Lean kernel; a "
                     "sorry/admit warning is refusal; hygiene refuses "
                     "kernel-bypass constructs before the exit is trusted; "
-                    "re-run the code under the named toolchain to re-derive"}
+                    "the axiom footprint of every named theorem is audited "
+                    "against the classical trio on accept; re-run the code "
+                    "under the named toolchain to re-derive"}

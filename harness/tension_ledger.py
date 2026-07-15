@@ -1,11 +1,13 @@
 """tension_ledger.py -- measurement tension as a first-class receipt.
 
 Two measurements of the same quantity, each carrying a frozen source
-hash, become one ledger entry with an honest verdict: TENSION when the
-95% intervals refuse to overlap, CONSISTENT when they meet, and
-UNVERIFIABLE when the pair cannot be judged at all (no frozen source,
-non-positive sigma, mismatched units). The sigma distance
-|a - b| / sqrt(sa^2 + sb^2) is the field's own metric and rides along.
+hash, become one ledger entry with an honest verdict decided by the
+field's own metric: the sigma distance |a - b| / sqrt(sa^2 + sb^2).
+TENSION above 1.96 sigma, CONSISTENT at or below, and UNVERIFIABLE when
+the pair cannot be judged at all (no frozen source, non-positive sigma,
+mismatched units). The 95% intervals ride along as information; they do
+not judge, because interval overlap under-calls disagreement (two 95%
+intervals still overlap out to ~2.77 sigma, the CI-overlap fallacy).
 An unverifiable pair is never banked: no receipt, no accept, for
 physics exactly as for code. The ledger asserts nothing about which
 measurement is right -- it keeps the disagreement re-checkable.
@@ -27,8 +29,8 @@ def _check_side(m: dict) -> "str | None":
         return "each side needs a numeric 'value'"
     if not isinstance(m.get("sigma"), (int, float)) or m["sigma"] <= 0:
         return "each side needs a positive 'sigma'"
-    sha = str(m.get("source_sha256", ""))
-    if len(sha) != 64:
+    sha = str(m.get("source_sha256", "")).lower()
+    if len(sha) != 64 or any(c not in "0123456789abcdef" for c in sha):
         return "each side needs a frozen source (source_sha256, 64 hex)"
     return None
 
@@ -60,7 +62,7 @@ def tension_entry(a: dict, b: dict) -> dict:
     return {"schema": SCHEMA, "a": da, "b": db,
             "sigma_distance": round(sigma_distance, 4),
             "overlap_95": overlap,
-            "verdict": "consistent" if overlap else "tension",
+            "verdict": "tension" if sigma_distance > _Z95 else "consistent",
             "note": "the ledger asserts nothing about which side is right; "
                     "it keeps the disagreement re-checkable via the frozen "
                     "sources"}

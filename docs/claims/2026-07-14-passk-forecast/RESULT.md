@@ -1,7 +1,10 @@
 # Result: the sealed forecast held; the rival is falsified
 
-Witnessed verdict seal `cd6d75b1...` (thesis `0db6e0f4...`, sealed
-before the bench existed). Evidence:
+Witnessed assessment seal `63722ae5...` (thesis `0db6e0f4...`, sealed
+before the bench existed). Re-emitted 2026-07-15 as a full re-derivable
+record: the original summary displayed seal `cd6d75b1...` without its
+preimage on disk, so no stranger could recompute it. Same thesis, same
+measurements, same frozen rule, verdicts unchanged. Evidence:
 `artifacts/uplift/uplift_hard_v2_20260714-125209.json`, the wrapped
 best-of-5 run of telos-coder-14b on hard_v2, same pinned oracle.
 

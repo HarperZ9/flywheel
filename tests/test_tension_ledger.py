@@ -1,7 +1,8 @@
 """Measurement tension as a first-class receipt: two measurements, their
-intervals, and the honest verdict. A pair whose 95% intervals refuse to
-overlap is a TENSION; a pair without frozen sources is UNVERIFIABLE and
-earns no verdict at all (no receipt, no accept -- for physics too)."""
+intervals, and the honest verdict. The sigma distance judges: a pair past
+1.96 sigma is a TENSION even when the 95% intervals still overlap; a pair
+without frozen sources is UNVERIFIABLE and earns no verdict at all (no
+receipt, no accept -- for physics too)."""
 
 import pytest
 
@@ -70,6 +71,25 @@ def test_published_pairs_recompute_their_sigmas():
              "source_sha256": "b" * 64})
         assert e["verdict"] == verdict, (unit, e)
         assert e["sigma_distance"] == pytest.approx(sig, abs=0.01)
+
+
+def test_verdict_follows_the_sigma_distance_not_ci_overlap():
+    # The CI-overlap fallacy: two 95% intervals can overlap while the pair sits
+    # 2.5 sigma apart. The verdict must follow the statistic the receipt prints.
+    a = {"label": "a", "value": 0.0, "sigma": 1.0, "unit": "x",
+         "source_sha256": "a" * 64}
+    b = {"label": "b", "value": 3.5355, "sigma": 1.0, "unit": "x",
+         "source_sha256": "b" * 64}
+    e = tension_entry(a, b)
+    assert e["sigma_distance"] == pytest.approx(2.5, abs=1e-3)
+    assert e["overlap_95"] is True   # kept as information, no longer the judge
+    assert e["verdict"] == "tension"
+
+
+def test_non_hex_source_hash_is_unverifiable():
+    e = tension_entry(dict(H0_LOCAL, source_sha256="z" * 64), H0_CMB)
+    assert e["verdict"] == "unverifiable"
+    assert "hex" in e["reason"]
 
 
 def test_banked_tension_lands_in_the_ledger(tmp_path, monkeypatch):

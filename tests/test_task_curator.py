@@ -39,6 +39,41 @@ def test_good_task_clears_every_gate(tmp_path):
     assert r["admitted"]
 
 
+def test_stub_keeps_imports_and_module_level_code():
+    # The falsification stub must fail the tests through the SUITE's
+    # discrimination, never through an ImportError on a symbol the stub
+    # dropped. Imports, constants, and helpers survive; bodies do not.
+    from harness.task_curator import _stub_solution
+    src = ("import math\n"
+           "TABLE = [1, 2, 3]\n"
+           "def solve(x):\n"
+           "    return TABLE[x] * math.floor(2.5)\n")
+    stub = _stub_solution(src)
+    assert stub is not None
+    assert "import math" in stub
+    assert "TABLE" in stub
+    ns: dict = {}
+    exec(stub, ns)  # the stub must import cleanly
+    assert ns["solve"](0) is None
+    assert ns["TABLE"] == [1, 2, 3]
+
+
+def test_vacuous_suite_hiding_behind_module_imports_is_rejected(tmp_path):
+    # Tests that import a module-level symbol but assert nothing about the
+    # function's behavior: the old line-based stub dropped TABLE, the tests
+    # died on ImportError, and the vacuous suite was scored discriminating.
+    vac = _variant(
+        solution="TABLE = [1, 2, 3]\n\ndef solve(x):\n    return TABLE[x]\n",
+        hidden_tests=("from solution import solve, TABLE\n"
+                      "def test_table():\n    assert TABLE\n"
+                      "def test_more():\n    assert len(TABLE) == 3\n"
+                      "def test_even():\n    assert TABLE[0] == 1\n"
+                      "def test_last():\n    assert TABLE[-1] == 3\n"))
+    r = screen(vac, tmp_path)
+    assert not r["admitted"]
+    assert r["gates"]["oracle_can_fail"].startswith("FAIL")
+
+
 def test_hanging_probe_rejects_within_the_timeout(tmp_path, monkeypatch):
     """The full-suite hang, pinned: a probe whose hidden tests spin forever
     must come back False inside the timeout — the tree-kill must reach the

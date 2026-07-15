@@ -42,6 +42,26 @@ def test_noop_or_syntax_error_fails(tmp_path):
     assert not orc.verify_dense("def broken(:", task).passed
 
 
+def test_crashing_candidate_never_passes_even_on_empty_expected(tmp_path):
+    # expected='' is a legitimate produce-nothing task; a candidate that dies
+    # at import time also prints nothing. Empty-matches-empty must not hand
+    # reward 1.0 to code that never ran to completion.
+    task = _exec_task(tmp_path, "")
+    orc = PythonExecutorOracle(expected="")
+    r = orc.verify_dense("raise RuntimeError('never ran')", task)
+    assert not r.passed and r.reward == 0.0
+    # and a clean no-output run still passes
+    ok = orc.verify_dense("x = 1", task)
+    assert ok.passed and ok.reward == 1.0
+
+
+def test_right_answer_then_crash_fails(tmp_path):
+    task = _exec_task(tmp_path, "42")
+    orc = PythonExecutorOracle(expected="42")
+    r = orc.verify_dense("print(42)\nraise SystemExit(3)", task)
+    assert not r.passed and r.reward == 0.0
+
+
 def test_timeout_fails_gracefully(tmp_path):
     task = _exec_task(tmp_path, "done")
     orc = PythonExecutorOracle(expected="done", timeout=2)

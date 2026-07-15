@@ -1,34 +1,92 @@
 {
- "assessment_seal": "cd6d75b1ef0f84493fffdfb353c85719f29c3c221558db20080299e8a8e10433",
- "thesis_seal": "0db6e0f46b5a173b56c47187ccc9b844f57ad724b58a53cae03b321f395890fc",
- "verdict_seal": "074062037e7410610a84d35b9f57c983a4759b9f850f0b895152e49362146841",
- "measurement_seal": "85d4d81a8212b924c66f03f1570178c9fce21b643b386528c0019390b8fa666a",
- "claims": 3,
- "match": 2,
- "drift": 1,
- "unverifiable": 0,
- "verdicts": [
-  {
-   "claim_id": "c-14b-k5-interval",
-   "status": "MATCH",
-   "deviation": 0.066,
-   "tolerance": 0.071
-  },
-  {
-   "claim_id": "c-14b-k5-het-beats-iid",
-   "status": "MATCH",
-   "deviation": 0.0,
-   "tolerance": 0.001
-  },
-  {
-   "claim_id": "c-14b-k5-iid-beats-het",
-   "status": "DRIFT",
-   "deviation": 0.093,
-   "tolerance": 0.001
-  }
- ],
+ "schema": "flywheel.adjudication/v2",
+ "assessment": {
+  "started_at": 0.0,
+  "thesis_id": "0db6e0f46b5a173b",
+  "thesis_seal": "0db6e0f46b5a173b56c47187ccc9b844f57ad724b58a53cae03b321f395890fc",
+  "claims": 3,
+  "match": 2,
+  "drift": 1,
+  "unverifiable": 0,
+  "verdict_seal": "074062037e7410610a84d35b9f57c983a4759b9f850f0b895152e49362146841",
+  "measurement_seal": "13ae8b3ed3bbfe6820773fa4ccf2711810066a5bcc64a2f51eee829b230497dc",
+  "disposition": "publishable",
+  "stored": null,
+  "verdicts": [
+   {
+    "claim_id": "c-14b-k5-interval",
+    "claim_sha256": "633c6a73a7e4c3c091e39dedce3a003e0a0537b7d22ce92b2955712357872e88",
+    "status": "MATCH",
+    "deviation": 0.066,
+    "tolerance": 0.071,
+    "margin": 0.07042253521126748,
+    "method": "measured wrapped best-of-5 = 66/110 = 0.6000; sealed band [0.595, 0.737] midpoint 0.666 half-width 0.071; deviation 0.066 <= 0.071 -> inside. Claim sha 633c6a73... binds the sealed text.",
+    "grounds": "deviation 0.066 within tolerance 0.071",
+    "disposition": "publishable"
+   },
+   {
+    "claim_id": "c-14b-k5-het-beats-iid",
+    "claim_sha256": "4e655d6481601e2fed831d22732c514fb112ccd0565cbc571a0ee3083d1a211c",
+    "status": "MATCH",
+    "deviation": 0.0,
+    "tolerance": 0.001,
+    "margin": 1.0,
+    "method": "err(het)=|0.600-0.666|=0.066 < err(iid)=|0.600-0.759|=0.159; the heterogeneous forecast wins by 0.093. Claim sha 4e655d64... Tolerance 0.001 is a tie band: rivals within it would both match; beyond it the loser drifts.",
+    "grounds": "deviation 0 within tolerance 0.001",
+    "disposition": "publishable"
+   },
+   {
+    "claim_id": "c-14b-k5-iid-beats-het",
+    "claim_sha256": "9b91597ec8e55a0eb36d8194bd27021a95f871faa11c719c6b2abfdfeed33232",
+    "status": "DRIFT",
+    "deviation": 0.093,
+    "tolerance": 0.001,
+    "margin": -92.0,
+    "method": "err(iid)=0.159 > err(het)=0.066 by 0.093; the registered rival is falsified, per the frozen no-rescue rule. Claim sha 9b91597e... Tolerance 0.001 is a tie band: rivals within it would both match; beyond it the loser drifts.",
+    "grounds": "deviation 0.093 exceeds tolerance 0.001",
+    "disposition": "publishable"
+   }
+  ],
+  "measurements": [
+   {
+    "claim_id": "c-14b-k5-interval",
+    "claim_sha256": "633c6a73a7e4c3c091e39dedce3a003e0a0537b7d22ce92b2955712357872e88",
+    "deviation": 0.066,
+    "tolerance": 0.071,
+    "method": "measured wrapped best-of-5 = 66/110 = 0.6000; sealed band [0.595, 0.737] midpoint 0.666 half-width 0.071; deviation 0.066 <= 0.071 -> inside. Claim sha 633c6a73... binds the sealed text.",
+    "measured_at": 0.0,
+    "evidence": [
+     "artifacts/uplift/uplift_hard_v2_20260714-125209.json"
+    ]
+   },
+   {
+    "claim_id": "c-14b-k5-het-beats-iid",
+    "claim_sha256": "4e655d6481601e2fed831d22732c514fb112ccd0565cbc571a0ee3083d1a211c",
+    "deviation": 0.0,
+    "tolerance": 0.001,
+    "method": "err(het)=|0.600-0.666|=0.066 < err(iid)=|0.600-0.759|=0.159; the heterogeneous forecast wins by 0.093. Claim sha 4e655d64... Tolerance 0.001 is a tie band: rivals within it would both match; beyond it the loser drifts.",
+    "measured_at": 0.0,
+    "evidence": [
+     "artifacts/uplift/uplift_hard_v2_20260714-125209.json"
+    ]
+   },
+   {
+    "claim_id": "c-14b-k5-iid-beats-het",
+    "claim_sha256": "9b91597ec8e55a0eb36d8194bd27021a95f871faa11c719c6b2abfdfeed33232",
+    "deviation": 0.093,
+    "tolerance": 0.001,
+    "method": "err(iid)=0.159 > err(het)=0.066 by 0.093; the registered rival is falsified, per the frozen no-rescue rule. Claim sha 9b91597e... Tolerance 0.001 is a tie band: rivals within it would both match; beyond it the loser drifts.",
+    "measured_at": 0.0,
+    "evidence": [
+     "artifacts/uplift/uplift_hard_v2_20260714-125209.json"
+    ]
+   }
+  ],
+  "seal": "63722ae5daf81be47c8db75be4ad2cfa52360e7f46a0edd706f6c27e213ff258"
+ },
  "evidence": [
   "artifacts/uplift/uplift_hard_v2_20260714-125209.json"
  ],
- "note": "adjudicated 2026-07-14 the day the bench landed; the frozen rule applied mechanically; no rescue in either direction"
+ "note": "adjudicated 2026-07-14 the day the bench landed; the frozen rule applied mechanically; no rescue in either direction",
+ "regenerated": "full re-derivable record emitted 2026-07-15; the earlier summary displayed seals whose preimage was never persisted. Same thesis, same measurement values, same frozen rule, injected zero clock; verdict statuses asserted unchanged before writing."
 }

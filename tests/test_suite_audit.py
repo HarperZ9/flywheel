@@ -31,6 +31,32 @@ def test_strong_suite_kills_the_mutant(tmp_path):
     assert r["kill_rate"] == 1.0 and r["survivors"] == []
 
 
+def test_hanging_mutant_is_indeterminate_not_killed(tmp_path):
+    # The ' < ' -> ' <= ' flip turns this loop infinite: the run times out.
+    # The hang ended the run, not the suite's assertions; crediting it as a
+    # kill inflates the measured refusal floor.
+    src = ("def clamp_steps(n):\n"
+           "    i = 0\n"
+           "    while i < n:\n"
+           "        i = min(i+1, n)\n"
+           "    return i\n")
+    (tmp_path / "solution.py").write_text(src, encoding="utf-8")
+    tests = tmp_path / "tests"
+    tests.mkdir()
+    (tests / "test_solution.py").write_text(
+        "import sys\nsys.path.insert(0, '..')\n"
+        "from solution import clamp_steps\n"
+        "def test_clamp(): assert clamp_steps(3) == 3\n", encoding="utf-8")
+    r = audit_suite(tmp_path, timeout=10)
+    assert r["attempted"] == 1
+    assert r["killed"] == 0                       # a hang is not a verdict
+    assert r["kill_rate"] is None                 # zero decided mutants
+    assert len(r["indeterminate"]) == 1
+    assert r["indeterminate"][0]["outcome"] == "timeout"
+    assert r["survivors"] == []
+    assert r["restored"] is True
+
+
 def test_weak_suite_survivor_is_named(tmp_path):
     p = _project(tmp_path, "import sys\nsys.path.insert(0, '..')\n"
                  "import solution\n"
