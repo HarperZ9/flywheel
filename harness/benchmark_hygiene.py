@@ -19,8 +19,26 @@ SCHEMA = "flywheel.benchmark-hygiene/v1"
 
 _COMMENT_LINE = re.compile(r"--[^\n]*")
 _COMMENT_BLOCK = re.compile(r"/-.*?-/", re.S)
-_SORRY = re.compile(r"(?<![A-Za-z0-9_])sorry(?![A-Za-z0-9_])")
-_AXIOM = re.compile(r"(?<![A-Za-z0-9_])axiom(?![A-Za-z0-9_])")
+
+# defect class -> pattern. Beyond admitted holes (sorry/axiom), several Lean 4
+# constructs move the decision OUTSIDE the re-checked kernel term yet still
+# exit 0 with no error: the `admit` tactic (an unnamed hole), `sorryAx`, and
+# the kernel-bypass escape hatches (native_decide trusts compiled code,
+# debug.skipKernelTC disables re-typechecking, @[implemented_by] swaps the
+# implementation). A proof of False via any of these must be refused BEFORE
+# the exit code is trusted, or the oracle accepts a non-kernel-decided claim.
+_DEFECTS = (
+    ("sorry", re.compile(r"(?<![A-Za-z0-9_])sorry(?![A-Za-z0-9_])")),
+    ("sorryAx", re.compile(r"(?<![A-Za-z0-9_])sorryAx(?![A-Za-z0-9_])")),
+    ("admit", re.compile(r"(?<![A-Za-z0-9_])admit(?![A-Za-z0-9_])")),
+    ("axiom", re.compile(r"(?<![A-Za-z0-9_])axiom(?![A-Za-z0-9_])")),
+    ("native_decide",
+     re.compile(r"(?<![A-Za-z0-9_])native_decide(?![A-Za-z0-9_])")),
+    ("skip_kernel_tc",
+     re.compile(r"debug\.skipKernelTC")),
+    ("implemented_by",
+     re.compile(r"implemented_by")),
+)
 
 
 def _strip_comments(code: str) -> str:
@@ -28,16 +46,17 @@ def _strip_comments(code: str) -> str:
 
 
 def screen_statements(statements: list) -> dict:
-    """Screen a list of Lean statements. Every flag names its statement
-    index, defect class, and a trimmed excerpt."""
+    """Screen a list of Lean statements for constructs that let a proof be
+    accepted without the kernel actually deciding it. Every flag names its
+    statement index, defect class, and a trimmed excerpt."""
     flagged = []
     for i, stmt in enumerate(statements):
         body = _strip_comments(str(stmt))
         defect = None
-        if _SORRY.search(body):
-            defect = "sorry"
-        elif _AXIOM.search(body):
-            defect = "axiom"
+        for name, pat in _DEFECTS:
+            if pat.search(body):
+                defect = name
+                break
         if defect:
             flagged.append({"index": i, "defect": defect,
                             "statement": str(stmt)[:200]})

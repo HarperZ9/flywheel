@@ -162,12 +162,18 @@ def grade_novelty(statement: str, *, kernel=None,
                 "statement_sha256": sha, "corpus_held": held,
                 "basis": "closed by the cheap tactic"}
     if strong_proof:
+        # the strong proof must prove the SAME proposition, or L2 would be
+        # granted for proving something unrelated (accept-a-wrong-thing).
+        # Compare the normalized (alpha-invariant) statement bodies.
+        same_prop = normalize_statement(strong_proof) == \
+            normalize_statement(statement)
         strong = kernel(strong_proof)
-        if strong.get("passed") is True:
+        if same_prop and strong.get("passed") is True:
             return {"schema": SCHEMA + ".rung",
                     "rung": "L0" if held else "L2",
                     "statement_sha256": sha, "corpus_held": held,
-                    "basis": "cheap tactic failed; strong proof accepted"}
+                    "basis": "cheap tactic failed; strong proof of the same "
+                             "proposition accepted"}
     return {"schema": SCHEMA + ".rung", "rung": "refused",
             "statement_sha256": sha, "corpus_held": held,
             "basis": "no accepted proof at any rung"}

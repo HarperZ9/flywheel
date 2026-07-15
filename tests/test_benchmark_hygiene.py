@@ -43,3 +43,20 @@ def test_summary_counts_are_consistent():
     r = screen_statements([CLEAN, SORRY, AXIOM])
     assert r["total"] == 3
     assert r["clean"] + len(r["flagged"]) == r["total"]
+
+
+def test_kernel_bypass_constructs_are_flagged():
+    """admit, sorryAx, and the kernel-bypass escape hatches move the decision
+    outside the re-checked kernel term; they must be refused before the exit
+    code is trusted (tenet 2, accept-a-wrong-thing)."""
+    cases = {
+        "admit": "theorem t (n : Nat) : n = n + 1 := by admit",
+        "sorryAx": "theorem t : False := sorryAx False true",
+        "native_decide": "theorem t : (2 : Nat) = 2 := by native_decide",
+        "skip_kernel_tc": "set_option debug.skipKernelTC true\ntheorem t : False := by exact?",
+        "implemented_by": "@[implemented_by evilImpl]\ndef f : Nat := 0",
+    }
+    for defect, code in cases.items():
+        r = screen_statements([code])
+        assert r["flagged"], f"{defect} was not flagged"
+        assert r["flagged"][0]["defect"] == defect, (defect, r["flagged"])
