@@ -24,6 +24,7 @@ class ProposerOutput:
     seed: int
     prompt_hash: str
     cache: str
+    served_model: str = ""    # the model the provider SAYS served the call
 
 
 class Proposer(Protocol):
@@ -105,6 +106,9 @@ class EnterpriseProposer:
             obj = json.loads(r.read())
         from .extract import extract_code
         text = extract_code(obj["choices"][0]["message"]["content"])  # enterprise models fence too
+        # the model the provider actually served: a receipt that trusts the
+        # requested name over the served one cannot catch a silent swap
         return ProposerOutput(
             text=text, model_ref=self.model_ref,
-            seed=seed, prompt_hash=prompt_hash(prompt), cache="miss")
+            seed=seed, prompt_hash=prompt_hash(prompt), cache="miss",
+            served_model=str(obj.get("model", "")))

@@ -16,7 +16,9 @@ and the accept authority stays the oracle -- the provider only proposes.
 """
 from __future__ import annotations
 
+import json
 import os
+import shutil
 
 from . import providers
 from .proposer import Proposer, ProposerOutput, prompt_hash
@@ -59,13 +61,22 @@ _NATIVE = [
 ]
 
 
-def _credential(key_env: str, *, local: bool, kind: str = "") -> str:
-    """PRESENCE only -- never the value. local -> 'local-none'; cli -> 'cli-auth'
-    (its own login); else present/absent by whether the env var is set."""
+# the binary a CLI endpoint shells out to; presence on PATH gates usability
+_CLI_BINARY = {"claude-cli": "claude", "codex-cli": "codex", "opencode": "opencode"}
+# roster name -> the backend name build_endpoints actually produces, so a
+# usable-looking endpoint can actually be turned into a proposer
+_BUILD_ALIAS = {"claude-cli": "claude", "codex-cli": "codex"}
+
+
+def _credential(key_env: str, *, local: bool, kind: str = "", name: str = "") -> str:
+    """PRESENCE only -- never the value. local -> 'local-none'; cli -> present
+    only when its binary is on PATH ('cli-auth'), else 'cli-absent'; else
+    present/absent by whether the env var is set."""
+    if kind == "cli":
+        binary = _CLI_BINARY.get(name, name)
+        return "cli-auth" if shutil.which(binary) else "cli-absent"
     if local:
         return "local-none"
-    if kind == "cli":
-        return "cli-auth"
     try:
         from .keychain import resolve_credential
         present = bool(resolve_credential(key_env or ""))
@@ -93,16 +104,30 @@ def unified_roster() -> dict:
                  "host": "127.0.0.1:8765", "default_model": "14b-cpt",
                  "receipt_capable": True, "source": "builtin"})
     for name, kind, key_env, host, dm in _NATIVE:
+        cred = _credential(key_env, local=False, kind=kind, name=name)
+        # receipt_capable only if it can actually be built AND is reachable:
+        # a cli whose binary is absent is advertised, but not as usable
         rows.append({"name": name, "kind": kind, "local": kind in ("cli", "opencode"),
-                     "credential": _credential(key_env, local=False, kind=kind),
+                     "credential": cred,
                      "host": host, "default_model": dm,
-                     "receipt_capable": True, "source": "endpoints"})
+                     "receipt_capable": cred != "cli-absent", "source": "endpoints"})
     usable = [r for r in rows if r["credential"] in ("present", "cli-auth", "local-none")]
+    # a routing digest over the roster's IDENTITY fields (not the volatile
+    # credential-presence), so a mutation of the routable set is a receiptable
+    # change: a caller records roster_sha and can prove which registry state
+    # decided a route
+    import hashlib as _h
+    identity = [{k: r[k] for k in ("name", "kind", "host", "default_model", "source")}
+                for r in rows]
+    roster_sha = _h.sha256(
+        json.dumps(identity, sort_keys=True).encode()).hexdigest()[:16]
     return {"schema": "flywheel.endpoint-roster/v1", "n_endpoints": len(rows),
             "n_usable": len(usable), "usable_names": sorted(r["name"] for r in usable),
-            "endpoints": rows,
-            "note": "credential is PRESENCE only, never a value; every endpoint feeds the "
-                    "SAME verified accept path -- the oracle disposes, the provider proposes"}
+            "roster_sha": roster_sha, "endpoints": rows,
+            "note": "credential is PRESENCE only, never a value; roster_sha binds the "
+                    "routable set's identity so a stranger can prove which registry "
+                    "state decided a route; every endpoint feeds the SAME verified "
+                    "accept path -- the oracle disposes, the provider proposes"}
 
 
 class LedgeredProposer:
@@ -164,8 +189,11 @@ def _build_endpoint_proposer(name: str, *, model: str | None, base_url: str | No
                                     base_url=base_url or "https://generativelanguage.googleapis.com/v1beta",
                                     model=model or "gemini-2.5-flash")
         return BackendProposer(b, extract=extract)
-    # cli / opencode: pull the configured backend from the endpoints ladder
+    # cli / opencode: pull the configured backend from the endpoints ladder.
+    # the roster name may differ from the built backend name (roster
+    # 'claude-cli' -> backend 'claude'), so resolve the alias first
+    target = _BUILD_ALIAS.get(name, name)
     for b in endpoints.build_endpoints(only_configured=False):
-        if getattr(b, "name", None) == name:
+        if getattr(b, "name", None) == target:
             return BackendProposer(b, extract=extract)
     raise ValueError(f"unknown endpoint {name!r}; see unified_roster()['usable_names']")

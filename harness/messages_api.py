@@ -94,6 +94,15 @@ def make_receipt(req_params: dict, gen: dict, served_ref: str,
                "model_ref": served_ref, "seed": gen.get("seed", req_params.get("seed", 0))}
     if weights_sha256:
         receipt["weights_sha256"] = weights_sha256
+    # the model the provider SAYS it served: if present and it is not the
+    # requested model (embedded in served_ref), the receipt names the swap
+    # rather than trusting the requested identity
+    served_model = str(gen.get("served_model", ""))
+    if served_model:
+        requested_model = served_ref.split(":", 1)[-1]
+        if served_model != served_ref and served_model != requested_model:
+            receipt["model_mismatch"] = {"requested": served_ref,
+                                         "served": served_model}
     return receipt
 
 
