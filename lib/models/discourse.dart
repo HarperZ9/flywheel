@@ -10,6 +10,37 @@ double _d(Object? v) => v is num ? v.toDouble() : 0.0;
 int _i(Object? v) => v is num ? v.toInt() : 0;
 String _s(Object? v) => v is String ? v : '';
 
+/// A discoverable gather corpus: one gathered run that can be synthesized.
+class CorpusRef {
+  final String path;
+  final String name;
+  final int comments;
+  final String subject;
+  final String respondsTo;
+
+  const CorpusRef({
+    required this.path,
+    required this.name,
+    required this.comments,
+    required this.subject,
+    required this.respondsTo,
+  });
+
+  factory CorpusRef.fromJson(Map<String, dynamic> j) => CorpusRef(
+        path: _s(j['path']),
+        name: _s(j['name']),
+        comments: _i(j['comments']),
+        subject: _s(j['subject']),
+        respondsTo: _s(j['responds_to']),
+      );
+
+  static List<CorpusRef> listFrom(Map<String, dynamic> env) =>
+      ((env['corpora'] as List?) ?? const [])
+          .whereType<Map>()
+          .map((m) => CorpusRef.fromJson(m.cast<String, dynamic>()))
+          .toList();
+}
+
 class DiscourseTheme {
   final String label;
   final int size;

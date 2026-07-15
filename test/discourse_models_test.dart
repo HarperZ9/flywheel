@@ -78,4 +78,19 @@ void main() {
     expect(d.themes.first.dissent, isNull);
     expect(d.themes.first.posShare, 0.0);
   });
+
+  test('CorpusRef.listFrom parses discovered corpora defensively', () {
+    final list = CorpusRef.listFrom({
+      'root': '/r',
+      'corpora': [
+        {'path': '/r/harari', 'name': 'harari', 'comments': 116, 'subject': 'AI', 'responds_to': 'vH'},
+        {'name': 'partial'}, // missing fields degrade, never crash
+      ],
+    });
+    expect(list, hasLength(2));
+    expect(list.first.comments, 116);
+    expect(list.first.respondsTo, 'vH');
+    expect(list.last.comments, 0);
+    expect(list.last.subject, isEmpty);
+  });
 }

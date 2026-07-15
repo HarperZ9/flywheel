@@ -122,6 +122,17 @@ class GatewayClient {
     return _decode(r);
   }
 
+  /// POST /api/discourse/corpora — discover gather corpora under a root, so a
+  /// gathered run can be picked as a discourse source without typing its path.
+  Future<Map<String, dynamic>> discourseCorpora(String root) async {
+    final r = await _http.post(
+      Uri.parse('$baseUrl/api/discourse/corpora'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'root': root}),
+    );
+    return _decode(r);
+  }
+
   /// POST /api/forge — turn a plain goal into a structured prompt with gates.
   Future<Map<String, dynamic>> forge(String goal,
       {String? context, List<String>? examples}) async {

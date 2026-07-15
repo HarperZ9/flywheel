@@ -24,14 +24,48 @@ class DiscourseView extends StatefulWidget {
 
 class _DiscourseViewState extends State<DiscourseView> {
   final _corpus = TextEditingController();
+  final _root = TextEditingController();
   bool _loading = false;
+  bool _scanning = false;
   String? _error;
   DiscourseDigest? _digest;
+  List<CorpusRef> _corpora = const [];
 
   @override
   void dispose() {
     _corpus.dispose();
+    _root.dispose();
     super.dispose();
+  }
+
+  Future<void> _scan() async {
+    final root = _root.text.trim();
+    if (root.isEmpty) {
+      setState(() => _error = 'Name a root directory to scan for gather corpora.');
+      return;
+    }
+    setState(() {
+      _scanning = true;
+      _error = null;
+    });
+    try {
+      final env = await widget.client.discourseCorpora(root);
+      if (env['error'] != null) {
+        setState(() => _corpora = const []);
+        setState(() => _error = env['error'].toString());
+      } else {
+        setState(() => _corpora = CorpusRef.listFrom(env));
+      }
+    } catch (e) {
+      setState(() => _error = 'scan failed: $e');
+    } finally {
+      if (mounted) setState(() => _scanning = false);
+    }
+  }
+
+  void _pick(CorpusRef c) {
+    _corpus.text = c.path;
+    _synthesize();
   }
 
   Future<void> _synthesize() async {
@@ -80,6 +114,8 @@ class _DiscourseViewState extends State<DiscourseView> {
           hintText: 'a gather corpus directory, or a JSON list of rows',
         ),
       ),
+      const SizedBox(height: FwLayout.s3),
+      _corpusPicker(context),
       if (_error != null) ...[
         const SizedBox(height: FwLayout.s4),
         HonestNull(_error!),
@@ -99,6 +135,64 @@ class _DiscourseViewState extends State<DiscourseView> {
           ],
       ],
     ]);
+  }
+
+  Widget _corpusPicker(BuildContext context) {
+    final fw = context.fw;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(children: [
+          Expanded(
+            child: TextField(
+              controller: _root,
+              onSubmitted: (_) => _scan(),
+              decoration: const InputDecoration(
+                labelText: 'Or scan a root for gathered runs',
+                hintText: 'a directory that holds gather corpora',
+                isDense: true,
+              ),
+            ),
+          ),
+          const SizedBox(width: FwLayout.s3),
+          OutlinedButton(
+            onPressed: _scanning ? null : _scan,
+            child: Text(_scanning ? 'Scanning…' : 'Scan'),
+          ),
+        ]),
+        if (_corpora.isNotEmpty) ...[
+          const SizedBox(height: FwLayout.s3),
+          Wrap(
+            spacing: FwLayout.s2,
+            runSpacing: FwLayout.s2,
+            children: [
+              for (final c in _corpora)
+                InkWell(
+                  onTap: () => _pick(c),
+                  borderRadius: BorderRadius.circular(FwLayout.radiusSmall),
+                  child: HairlineCard(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: FwLayout.s3, vertical: FwLayout.s2),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(c.subject.isEmpty ? c.name : c.subject,
+                            style: Theme.of(context).textTheme.bodyMedium,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis),
+                        const SizedBox(height: 2),
+                        Text('${c.name}  ·  ${c.comments} comments',
+                            style: fwMono(fw, size: 11, color: fw.inkFaint)),
+                      ],
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ],
+      ],
+    );
   }
 
   Widget _summary(BuildContext context, DiscourseDigest d) {
