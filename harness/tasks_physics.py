@@ -72,7 +72,13 @@ PHYSICS_REGISTRY: list[TaskSpec] = [
         "    x2, v2 = integrate(0.0, 1.0, 0.5, 1)\n"
         "    assert abs(x1*v2 - x2*v1 - 1.0) < 1e-12\n"
         "def test_zero_steps_is_identity():\n"
-        "    assert integrate(1.5, -0.5, 0.1, 0) == (1.5, -0.5)\n",
+        "    assert integrate(1.5, -0.5, 0.1, 0) == (1.5, -0.5)\n"
+        "def test_mandated_update_order():\n"
+        "    # The opposite-order variant (x-first) is ALSO symplectic and\n"
+        "    # passes every test above, so the method the prompt mandates goes\n"
+        "    # unverified without this. v-then-x from (1,0) at dt=0.5 is exact\n"
+        "    # in binary floating point: v += -1*0.5 = -0.5, x += -0.5*0.5.\n"
+        "    assert integrate(1.0, 0.0, 0.5, 1) == (0.75, -0.5)\n",
         "hard", max_new_tokens=512),
     TaskSpec(
         "rk4_order",

@@ -262,7 +262,9 @@ def seed_batch(batch: list[TaskSpec], registry_path: str | Path) -> dict:
     from .tasks_expert import EXPERT_REGISTRY
     from .tasks_hard import HARD_REGISTRY
     from .tasks_lib import REGISTRY
-    existing = list(REGISTRY) + list(HARD_REGISTRY) + list(EXPERT_REGISTRY)
+    from .tasks_physics import PHYSICS_REGISTRY
+    existing = (list(REGISTRY) + list(HARD_REGISTRY) + list(EXPERT_REGISTRY)
+                + list(PHYSICS_REGISTRY))
     if Path(registry_path).exists():
         existing += load_registry(registry_path)
     with tempfile.TemporaryDirectory() as wr:

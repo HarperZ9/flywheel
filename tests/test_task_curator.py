@@ -247,6 +247,25 @@ def test_hanging_solution_is_rejected_not_a_crash(tmp_path, monkeypatch):
     assert r["gates"]["reference_passes"].startswith("FAIL")
 
 
+def test_seed_batch_dedups_against_the_physics_registry(tmp_path, monkeypatch):
+    """seed_batch built its dedup baseline from REGISTRY + HARD + EXPERT + the
+    persisted JSONL, omitting PHYSICS_REGISTRY, so a renamed physics twin would
+    clear the dedup gate. The baseline handed to curate must include the physics
+    tasks."""
+    from harness import task_curator
+    captured = {}
+
+    def spy_curate(candidates, work_root, existing=None):
+        captured["existing"] = existing
+        return {"admitted": [], "rejected": {}, "admit_rate": 0.0}
+
+    monkeypatch.setattr(task_curator, "curate", spy_curate)
+    reg = tmp_path / "curated.jsonl"
+    task_curator.seed_batch([], reg)
+    ids = {s.task_id for s in captured["existing"]}
+    assert "kepler_scaling" in ids, "physics registry absent from dedup baseline"
+
+
 def test_registry_roundtrip_and_tamper_detection(tmp_path):
     reg = tmp_path / "curated.jsonl"
     append_registry([GOOD], reg)
