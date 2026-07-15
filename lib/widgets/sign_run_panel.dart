@@ -48,7 +48,23 @@ class _SignRunPanelState extends State<SignRunPanel> {
         .toSet();
   }
 
-  bool get _demandsMet => _walked.containsAll(_demanded);
+  /// True when the risk review is present in a shape this client can read.
+  /// A risk_review that is present but unparseable (a Map where a List of
+  /// demands is expected, or demand entries that are not maps) means the
+  /// client CANNOT prove what was demanded, so the gate fails CLOSED rather
+  /// than enabling the destructive Sign control on a shape mismatch.
+  bool get _riskReviewReadable {
+    final rr = widget.run['risk_review'];
+    if (rr == null) return true; // no risk review ran: nothing demanded
+    if (rr is! Map<String, dynamic>) return false;
+    final demands = rr['demands'];
+    if (demands == null) return true; // review ran, nothing demanded
+    if (demands is! List) return false; // demands present but unreadable
+    // every demand entry must be a readable map, or we cannot trust the set
+    return demands.every((d) => d is Map<String, dynamic>);
+  }
+
+  bool get _demandsMet => _riskReviewReadable && _walked.containsAll(_demanded);
 
   @override
   void dispose() {

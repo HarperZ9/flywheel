@@ -107,6 +107,50 @@ void main() {
     expect(tester.widget<FilledButton>(sign).onPressed, isNotNull);
   });
 
+  testWidgets('an unparseable risk_review fails CLOSED, not open',
+      (tester) async {
+    // The engine flagged risk in a shape the client did not parse (demands as
+    // a Map, not a List). The client cannot prove the demands were met, so the
+    // destructive Sign control must stay disabled, never enable on a shape miss.
+    const risky = {
+      'checkpoint': 'xyz',
+      'review': {
+        'files_edited': ['g.py'],
+      },
+      'risk_review': {
+        'demands': {'g.py': 'high'}, // a Map, not a List: unrecognized shape
+      },
+    };
+    await tester.pumpWidget(MaterialApp(
+      theme: flywheelLightTheme(),
+      home: Scaffold(
+        body: SingleChildScrollView(
+          child: SignRunPanel(client: GatewayClient(), run: risky),
+        ),
+      ),
+    ));
+    await tester.pump();
+    final sign = find.widgetWithText(FilledButton, 'Sign');
+    expect(tester.widget<FilledButton>(sign).onPressed, isNull,
+        reason: 'an unparseable risk review must gate the sign button closed');
+  });
+
+  testWidgets('a run with no risk_review can be signed once walked',
+      (tester) async {
+    await tester.pumpWidget(MaterialApp(
+      theme: flywheelLightTheme(),
+      home: Scaffold(
+        body: SingleChildScrollView(
+          child: SignRunPanel(client: GatewayClient(), run: _run),
+        ),
+      ),
+    ));
+    await tester.pump();
+    // no risk_review key at all: nothing demanded, walking is optional
+    final sign = find.widgetWithText(FilledButton, 'Sign');
+    expect(tester.widget<FilledButton>(sign).onPressed, isNotNull);
+  });
+
   testWidgets('SignRunPanel lists the edited files as walk checkboxes',
       (tester) async {
     await tester.pumpWidget(MaterialApp(

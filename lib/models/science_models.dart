@@ -23,10 +23,13 @@ class ClaimVerdict {
   const ClaimVerdict(
       {required this.claimId, required this.status, required this.grounds});
 
+  /// MATCH is the accept verdict, DRIFT is the caution verdict, and an absent
+  /// or unknown status is the honest null (unverifiable), never a fabricated
+  /// DRIFT the engine did not emit.
   String get verdict => switch (status) {
         'MATCH' => 'verified',
-        'UNVERIFIABLE' => 'unverifiable',
-        _ => 'drift',
+        'DRIFT' => 'drift',
+        _ => 'unverifiable',
       };
 
   factory ClaimVerdict.fromJson(Map<String, dynamic> j) => ClaimVerdict(

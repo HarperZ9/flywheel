@@ -115,11 +115,14 @@ class WorkflowStep {
         integrityClean: j['integrity_clean'],
       );
 
-  /// Maps the step status onto the verdict palette.
+  /// Maps the step status onto the verdict palette. DONE means the step RAN,
+  /// not that an external check accepted it, so only VERIFIED earns the accept
+  /// color; FAILED/ERROR are drift; DONE, UNVERIFIABLE, and any absent/unknown
+  /// status are the honest null.
   String get verdict => switch (status) {
-        'VERIFIED' || 'DONE' => 'verified',
-        'UNVERIFIABLE' => 'unverifiable',
-        _ => 'drift',
+        'VERIFIED' => 'verified',
+        'DRIFT' || 'FAILED' || 'ERROR' => 'drift',
+        _ => 'unverifiable',
       };
 }
 
@@ -151,9 +154,12 @@ class WorkflowRun {
         error: j['error'],
       );
 
+  /// COMPLETED means every stage executed, not that the run was verified: only
+  /// VERIFIED earns the accept color. FAILED/ERROR are drift; COMPLETED,
+  /// UNVERIFIED, and any absent/unknown status are the honest null.
   String get verdict => switch (status) {
-        'VERIFIED' || 'COMPLETED' => 'verified',
-        'UNVERIFIED' => 'unverifiable',
-        _ => 'drift',
+        'VERIFIED' => 'verified',
+        'DRIFT' || 'FAILED' || 'ERROR' => 'drift',
+        _ => 'unverifiable',
       };
 }
