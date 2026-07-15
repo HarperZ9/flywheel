@@ -40,10 +40,14 @@ def relations(scene: Scene) -> dict:
 
 
 def decoded_relations(scene: Scene, encoding: str) -> dict:
+    # an object that fails to decode is EXCLUDED: parking failures on a
+    # shared placeholder point manufactured tie relations that scored an
+    # undecodable encoding as perfectly systematic
     decoded = []
     for nm, _, _ in scene.objects:
         p = decode_locate(encoding, nm, scene.w, scene.h)
-        decoded.append((nm, p[0], p[1]) if p else (nm, -1.0, -1.0))
+        if p is not None:
+            decoded.append((nm, p[0], p[1]))
     return _pair_relations(decoded)
 
 

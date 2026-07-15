@@ -56,7 +56,8 @@ def test_completion_binds_a_passed_receipt_to_a_lesson(tmp_path, monkeypatch):
     monkeypatch.setenv("FLYWHEEL_HOME", str(tmp_path))
     from harness.academy_pipeline import academy_complete
     from harness.store import put_entity
-    passed = put_entity("comprehension", {"passed": True, "files": ["x"]})
+    passed = put_entity("comprehension", {"passed": True,
+                                      "files": ["harness/store.py"]})
     r = academy_complete("store", passed["eid"])
     assert r["bound"] is True
     assert r["lesson_id"] == "store"
@@ -82,3 +83,17 @@ def test_completion_refuses_a_failed_or_missing_receipt(tmp_path, monkeypatch):
     assert r["bound"] is False and "did not pass" in r["reason"]
     r2 = academy_complete("store", "no-such-eid")
     assert r2["bound"] is False and "no such" in r2["reason"]
+
+
+def test_completion_refuses_a_receipt_that_does_not_engage_the_lesson(
+        tmp_path, monkeypatch):
+    """A teach-back about an unrelated diff certifies nothing about this
+    lesson: one trivial receipt must not mint completions for every lesson."""
+    monkeypatch.setenv("FLYWHEEL_HOME", str(tmp_path))
+    from harness.academy_pipeline import academy_complete
+    from harness.store import put_entity
+    passed = put_entity("comprehension", {"passed": True,
+                                          "files": ["billing/invoice.py"]})
+    r = academy_complete("store", passed["eid"])
+    assert r["bound"] is False
+    assert "engage" in r["reason"]

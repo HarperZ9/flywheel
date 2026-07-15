@@ -27,7 +27,7 @@ def test_engaged_explanation_passes():
     assert r["schema"] == SCHEMA
     assert r["passed"] is True
     assert r["coverage"] >= 0.6
-    assert "invoice.py" in r["mentioned_files"]
+    assert "billing/invoice.py" in r["mentioned_files"]
     assert len(r["sha256"]) == 64
 
 
@@ -72,3 +72,20 @@ def test_deterministic():
     a = explanation_receipt(DIFF, "total tax_rate subtotal invoice")
     b = explanation_receipt(DIFF, "total tax_rate subtotal invoice")
     assert a["sha256"] == b["sha256"]
+
+
+def test_files_keep_their_full_repo_path():
+    r = explanation_receipt(
+        DIFF,
+        "total() in billing/invoice.py now takes a tax_rate and multiplies "
+        "the subtotal by (1 + tax_rate) instead of the raw sum of price.")
+    assert r["files"] == ["billing/invoice.py"]
+    assert "billing/invoice.py" in r["mentioned_files"]
+
+
+def test_a_basename_mention_still_counts_for_the_file():
+    r = explanation_receipt(
+        DIFF,
+        "invoice.py: total now takes tax_rate, computes the subtotal of "
+        "item price values, and scales it.")
+    assert "billing/invoice.py" in r["mentioned_files"]
