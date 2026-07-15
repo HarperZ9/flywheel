@@ -49,6 +49,51 @@ def test_normalization_is_alpha_and_name_invariant():
     assert normalize_statement(s1) != normalize_statement(s3)
 
 
+def test_normalization_distinguishes_binder_types():
+    """A proposition over Nat is not the same proposition over Int; the
+    canonical form must reflect the binder TYPE, not only the bound names,
+    or a strong proof of the Int statement earns a rung for the Nat one."""
+    nat = "theorem a (n m : Nat) : n + m = m + n := by omega"
+    intg = "theorem b (n m : Int) : n + m = m + n := by omega"
+    assert normalize_statement(nat) != normalize_statement(intg)
+
+
+def test_normalization_handles_multiple_binder_groups():
+    """Alpha-equivalent statements phrased with one grouped binder or several
+    single binders must canonicalize identically (no fail-closed false miss)."""
+    one = "theorem a (n m : Nat) : n + m = m + n := by omega"
+    two = "theorem b (n : Nat) (m : Nat) : n + m = m + n := by omega"
+    assert normalize_statement(one) == normalize_statement(two)
+
+
+def test_l2_not_granted_across_differing_binder_types():
+    """The false positive: a strong proof of the Int proposition must not earn
+    L2 for the Nat statement -- they are different propositions."""
+    stmt = "theorem s (n m : Nat) : n + m = m + n := by omega"
+    strong_int = "theorem s (n m : Int) : n + m = m + n := by strong"
+
+    def kern(code):
+        return {"passed": "by strong" in code}   # omega fails, strong passes
+
+    g = grade_novelty(stmt, kernel=kern, strong_proof=strong_int)
+    assert g["rung"] == "refused", "differing types are not the same proposition"
+
+
+def test_l2_basis_names_the_syntactic_check(tmp_path, monkeypatch):
+    """The rung is earned by a SYNTACTIC statement-text match, not a semantic
+    same-proposition proof; the basis must say so."""
+    monkeypatch.setenv("FLYWHEEL_HOME", str(tmp_path))
+    stmt = "theorem cj_d (n m : Nat) : n * m = m * n := by omega"
+    strong = "theorem cj_d (n m : Nat) : n * m = m * n := by strong"
+
+    def kern(code):
+        return {"passed": "by strong" in code}
+
+    g = grade_novelty(stmt, kernel=kern, strong_proof=strong)
+    assert g["rung"] == "L2"
+    assert "syntactic" in g["basis"]
+
+
 def test_forge_round_survivors_carry_kernel_receipts(tmp_path, monkeypatch):
     monkeypatch.setenv("FLYWHEEL_HOME", str(tmp_path))
     art = forge_round(24, kernel=_grid_kernel)
