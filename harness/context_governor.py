@@ -80,6 +80,10 @@ def govern_context(items: list, *, budget: int,
     window = list(pins)
     used = sum(_tok(i) for i in pins)
     over_pinned = used > reliable_budget
+    # a worse condition than over-reliable-budget: the pins alone exceed the
+    # HARD nominal cap, so the window cannot even be assembled. Named
+    # separately so the caller knows this is not a soft overflow.
+    over_nominal = used > budget
     folded = []
     # fill the remaining reliable budget with the highest-scored non-pins;
     # ties break by original order (stable), so the result is deterministic
@@ -100,7 +104,7 @@ def govern_context(items: list, *, budget: int,
             "reliable_fraction": reliable_fraction,
             "used_tokens": used, "pinned_count": len(pins),
             "kept_count": len(window), "folded_count": len(folded),
-            "over_pinned": over_pinned,
+            "over_pinned": over_pinned, "over_nominal": over_nominal,
             "note": "a pinned constraint never leaves the window; the "
                     "overflow is folded with its VERBATIM text plus a "
                     "content hash (recall_folded returns the exact span), so "

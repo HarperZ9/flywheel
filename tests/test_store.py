@@ -78,6 +78,22 @@ def test_verify_records_catches_a_directly_edited_entity():
     assert e["eid"] in [b["ref"] for b in r["broken"]]
 
 
+def test_verify_records_catches_a_deleted_row():
+    """A row the audit ledger attests can be deleted directly, and the old
+    verify_records (which only checked EXISTING rows) missed it. A committed
+    put with no surviving row is a deletion and must be flagged."""
+    e = store.put_entity("doc", {"body": "keep me"})
+    assert store.verify_records()["ok"] is True
+    con = sqlite3.connect(str(store._db_path()))
+    con.execute("DELETE FROM entities WHERE eid=?", (e["eid"],))
+    con.commit()
+    con.close()
+    r = store.verify_records()
+    assert r["ok"] is False
+    assert any(b["ref"] == e["eid"] and "delet" in b["reason"]
+               for b in r["broken"])
+
+
 def test_verify_records_clean_on_an_untouched_store():
     for i in range(3):
         store.put_entity("t", {"i": i})

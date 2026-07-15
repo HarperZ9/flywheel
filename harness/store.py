@@ -203,6 +203,17 @@ def verify_records() -> dict:
         for op, ref, sha in c.execute(
                 "SELECT op, ref, sha256 FROM audit ORDER BY seq ASC"):
             committed[(op, ref)] = sha       # latest wins
+        live_ent = {r[0] for r in c.execute("SELECT eid FROM entities")}
+        live_rel = {r[0] for r in c.execute("SELECT rid FROM relations")}
+        # a committed put with no surviving row is a DELETION the audit chain
+        # cannot see (the chain is append-only; the record simply vanished)
+        for (op, ref) in committed:
+            if op == "put_entity" and ref not in live_ent:
+                broken.append({"ref": ref, "table": "entities",
+                               "reason": "attested record was deleted"})
+            elif op == "put_relation" and ref not in live_rel:
+                broken.append({"ref": ref, "table": "relations",
+                               "reason": "attested record was deleted"})
         for eid, kind, project, data, sha in c.execute(
                 "SELECT eid, kind, project, data, sha256 FROM entities"):
             recomputed = _sha({"kind": kind, "project": project,
