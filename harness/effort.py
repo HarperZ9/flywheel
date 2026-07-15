@@ -24,3 +24,17 @@ def resolve_effort(name: str) -> dict:
         return {"name": key, **EFFORTS[key]}
     return {"name": "standard", **EFFORTS["standard"],
             "note": f"unknown effort '{name}'; standard used and named"}
+
+
+def stamp_applied(effort: dict, *, max_steps_applied: int,
+                  n_candidates_applied: bool = False) -> dict:
+    """Reconcile the receipt with what the run ACTUALLY enforced. A caller can
+    override max_steps past the dial, and this route does not fan out n
+    candidates, so the receipt must not assert the dial's nominal values as if
+    they were applied. Records the applied step budget, flags an override when
+    it differs from the dial, and marks whether n_candidates was applied."""
+    out = dict(effort)
+    out["max_steps_applied"] = int(max_steps_applied)
+    out["max_steps_overridden"] = int(max_steps_applied) != int(effort.get("max_steps", max_steps_applied))
+    out["n_candidates_applied"] = bool(n_candidates_applied)
+    return out

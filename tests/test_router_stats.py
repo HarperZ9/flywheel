@@ -79,3 +79,30 @@ def test_stats_persist_across_instances(tmp_path):
     reloaded = RouterStats(p)
     assert reloaded.stats["a"].attempts == 2
     assert reloaded.snapshot()["providers"]["a"]["success_rate"] == 0.5
+
+
+def test_persistence_is_atomic_and_thread_safe(tmp_path):
+    import threading
+    from harness.router_stats import RouterStats
+    rs = RouterStats(path=tmp_path / "stats.json")
+    def hammer(name):
+        for _ in range(50):
+            rs.record(name, True, 0.01)
+    threads = [threading.Thread(target=hammer, args=(f"p{i%4}",)) for i in range(8)]
+    for t in threads: t.start()
+    for t in threads: t.join()
+    # the file is always valid JSON (atomic replace, never a torn write)
+    import json
+    reloaded = RouterStats(path=tmp_path / "stats.json")
+    assert sum(s.attempts for s in reloaded.stats.values()) == 400
+    # no stray temp file left behind
+    assert not (tmp_path / "stats.json.tmp").exists()
+
+
+def test_corrupt_stats_file_is_quarantined_not_fatal(tmp_path):
+    from harness.router_stats import RouterStats
+    p = tmp_path / "stats.json"
+    p.write_text("{ this is not valid json", encoding="utf-8")
+    rs = RouterStats(path=p)        # must not raise
+    assert rs.stats == {}
+    assert p.with_suffix(".corrupt").exists()
