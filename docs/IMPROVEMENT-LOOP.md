@@ -244,6 +244,7 @@ Complete cycles (consultation -> reconcile -> execute HIGH+MEDIUM):
   hosted flagship, crucible).
 - Cycle 5: forge/science/academy/discovery/claims (23 findings; recorded
   below).
+- Cycle 6: workflow/orchestration engine (21 findings; recorded below).
 
 ### Cycle 5 (2026-07-14): forge/science/academy/discovery/claims
 
@@ -293,7 +294,45 @@ quoted x_6).
 
 LOW (4) queued, tracked in the cycle-5 workflow artifact.
 
-Queued: the workflow/orchestration engine, the desktop client (deeper
-than cycle 1's pass), then the hosted flagship tools each in turn
-(gather, index, forum, telos; crucible already entered via cycle 4).
-Plus the LOW tiers of cycles 2 through 5.
+### Cycle 6 (2026-07-14): the workflow/orchestration engine
+
+Five critics (workflow-integrity, consensus-honesty, routing-stats-
+honesty, budget-escalation-integrity, registry-role-integrity), each
+finding adversarially verified. 21 survived: 3 HIGH, 13 MEDIUM, 5 LOW.
+
+**HIGH tier: all three shipped (`54a1d6f`, each TDD).** The workflow chain
+hash covered only non-error step summaries, so a FAILED run could have its
+ERROR step deleted and status flipped to COMPLETED and still re-derive its
+stored hash; the chain is now seeded with the header, updated on every
+step including the error path, folds the final status, and recompute_chain
+lets a stranger re-derive it (the roster serves a mismatched run as
+TAMPERED). Every non-exception agent step was stamped DONE, so a stage
+with a dirty trajectory-integrity verdict was laundered to VERIFIED by a
+later clean verify stage; a stage whose ledger did not verify or whose
+integrity is dirty now FAILS the run. Quorum votes were hashed as
+(type, passed) only, so one endpoint under two names was byte-identical to
+two independent peers; each vote now carries the member's identity and the
+receipt reports distinct_members and names a stacked ballot.
+
+**MEDIUM tier: all thirteen shipped (`dcdc225`, `01273fc`, `d73ee40`,
+each TDD).** consensus refuses a dead-tie weighted split; fan_out annotates
+each result's accepted flag and survives a raising accept(); budget_control
+reports verified / exhausted_without_verify instead of a tautological
+conserved; a learned member is refused at quorum construction (no learned
+verdict in the accept path). RouterStats got a lock, atomic replace, and
+corrupt-file quarantine; adaptive routing no longer charges resolution
+failures to a provider's circuit and carries its scoring justification in
+the receipt; the effort receipt stamps the enforced budget, not the
+nominal dial. The registry aliases cli names to buildable backends and
+gates cli usability on the binary; a served-model mismatch is named in the
+receipt; and roster_sha binds the routable set so a route is pinnable to a
+registry state. Findings [3] (roster re-verify) and [4] (workflow
+countersign) landed with the HIGH slice.
+
+LOW (5) queued: quorum dissenter field semantics, unbounded score at small
+n, EscalationResult dead-code carrier, CompileOracle non-addressed failure
+receipts, provider_role laundering.
+
+Queued: the desktop client (deeper than cycle 1's pass), then the hosted
+flagship tools each in turn (gather, index, forum, telos; crucible already
+entered via cycle 4). Plus the LOW tiers of cycles 2 through 6.
