@@ -242,6 +242,8 @@ Complete cycles (consultation -> reconcile -> execute HIGH+MEDIUM):
 - Cycle 3: perception/provenance (16 findings).
 - Cycle 4: the verification lanes (19 findings; the loop's first fix in a
   hosted flagship, crucible).
+- Cycle 5: forge/science/academy/discovery/claims (23 findings; recorded
+  below).
 
 ### Cycle 5 (2026-07-14): forge/science/academy/discovery/claims
 
@@ -271,16 +273,27 @@ post-snapshot, so two receipts disagreed on every writing run (latent
 since the workspace-chaining fix). Provenance now binds the final
 checkpoint (`69e0d1e`).
 
-MEDIUM (13) and LOW (4) queued, tracked in the cycle-5 workflow artifact:
-wien oracle memorized-constant hole, raw gather payload dropped, prp
-recheck stranger-rerunnability, identical/empty Y-arms as a two-arm test,
-RESEARCH-loop tautological recheck, failed-retest holdership decay,
-basename/path ledger key collision, academy lesson binding, discovery
-falsifier never run, structure_mapping undecodable-encoding score,
-publish_lint interval/superlative rules, forward-slash local paths,
-credo hash never checked, and the LOW cluster.
+**MEDIUM tier: all thirteen shipped (`f8ac909`, `13086c6`, each TDD).**
+The forge recheck refuses empty arms and names identical arms degenerate;
+science_run keeps the raw gather payload; publish_lint gains the tenet-4
+rules it lacked (bare percentage metrics, superlatives) and catches
+forward-slash Windows paths, with the clean fixtures that enshrined the
+bare-metric violation corrected; release readiness reads CREDO.md content
+and goes red on drift; a failed unaided retest decays holdership visibly;
+diff paths keep their repo form so the cross-kind merge is real; academy
+completion demands the receipt engage the lesson source; the research
+loop re-hashes stored source bytes instead of comparing a value to
+itself; discovery threads name their falsifier 'stated, not yet run'
+(the mechanical resolvability check was judged theatre and the honest
+fix recorded as claim language); structure_mapping scores an undecodable
+encoding 0.0 instead of 1.0; and wien_displacement is parameterized so
+the memorized-constant cheat is refused (its displacement roots verified
+against an independent maximization, correcting the consultation's own
+quoted x_6).
 
-Queued: cycle 5's MEDIUM and LOW tiers, the workflow/orchestration engine,
-the desktop client (deeper than cycle 1's pass), then the hosted flagship
-tools each in turn (gather, index, forum, telos; crucible already entered
-via cycle 4). Plus the LOW tiers of cycles 2, 3, and 4.
+LOW (4) queued, tracked in the cycle-5 workflow artifact.
+
+Queued: the workflow/orchestration engine, the desktop client (deeper
+than cycle 1's pass), then the hosted flagship tools each in turn
+(gather, index, forum, telos; crucible already entered via cycle 4).
+Plus the LOW tiers of cycles 2 through 5.

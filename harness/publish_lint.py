@@ -156,7 +156,7 @@ def _iter_files(paths: list[str]):
 _DIRTY = (
     "Status: staged\n"
     "Download from C:\\Users\\you\\project and set token hf_ABCDEFGHIJKLMNOPQRSTUV.\n"
-    "See C:/dev/local-model for setup.\n"
+    "See X:/dev/example-repo for setup.\n"
     "No benchmark has been run yet.\n"
     "The best coding model: accuracy is 91% overall.\n"
 )
