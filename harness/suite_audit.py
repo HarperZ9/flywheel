@@ -38,22 +38,25 @@ def first_mutant(source: str) -> "tuple | None":
     return None
 
 
-def _run_suite(project: Path, oracle_cmd: str) -> bool:
+def _run_suite(project: Path, oracle_cmd: str,
+               timeout: int = _TIMEOUT) -> str:
+    """One suite run, tri-state: 'pass', 'fail', or 'timeout'. A hang is not
+    a verdict; the suite never rendered one, so it must not read as a kill."""
     from .oracle import _kill_tree, clear_bytecode, run_env
     clear_bytecode(project)
     proc = subprocess.Popen(oracle_cmd, cwd=str(project), shell=True,
                             env=run_env(), stdout=subprocess.PIPE,
                             stderr=subprocess.STDOUT)
     try:
-        proc.communicate(timeout=_TIMEOUT)
+        proc.communicate(timeout=timeout)
     except subprocess.TimeoutExpired:
         _kill_tree(proc)
         try:
             proc.communicate(timeout=10)
         except Exception:
             pass
-        return False
-    return proc.returncode == 0
+        return "timeout"
+    return "pass" if proc.returncode == 0 else "fail"
 
 
 def _candidates(project: Path, limit: int) -> list:
@@ -72,22 +75,22 @@ def _candidates(project: Path, limit: int) -> list:
 
 def audit_suite(project: "str | Path", *,
                 oracle_cmd: str = "python -m pytest tests/ -q",
-                max_mutants: int = 5) -> dict:
+                max_mutants: int = 5, timeout: int = _TIMEOUT) -> dict:
     """Measure the suite's refusal floor. Returns the receipt."""
     project = Path(project)
     if not project.is_dir():
         return {"schema": SCHEMA, "error": f"no such project: {project}"}
     t0 = time.time()
-    if not _run_suite(project, oracle_cmd):
+    if _run_suite(project, oracle_cmd, timeout) != "pass":
         return {"schema": SCHEMA, "project": str(project),
                 "oracle_cmd": oracle_cmd, "reference_ok": False,
                 "attempted": 0, "killed": 0, "kill_rate": None,
-                "survivors": [], "restored": True,
+                "survivors": [], "indeterminate": [], "restored": True,
                 "wall_seconds": round(time.time() - t0, 1),
                 "note": "broken reference: the suite fails on the "
                         "project's own source; nothing to audit until "
                         "it passes"}
-    attempted, killed, survivors = 0, 0, []
+    attempted, killed, survivors, indeterminate = 0, 0, [], []
     restored = True
     for path in _candidates(project, max_mutants):
         original = path.read_bytes()
@@ -98,10 +101,18 @@ def audit_suite(project: "str | Path", *,
         attempted += 1
         try:
             path.write_text(mutated_text, encoding="utf-8")
-            if _run_suite(project, oracle_cmd):
+            outcome = _run_suite(project, oracle_cmd, timeout)
+            if outcome == "pass":
                 survivors.append({"file": str(path.relative_to(project)),
                                   "original": orig_line,
                                   "mutated": mut_line})
+            elif outcome == "timeout":
+                # the hang ended the run, not the suite's assertions:
+                # excluded from killed AND from the denominator.
+                indeterminate.append(
+                    {"file": str(path.relative_to(project)),
+                     "original": orig_line, "mutated": mut_line,
+                     "outcome": "timeout"})
             else:
                 killed += 1
         finally:
@@ -109,13 +120,16 @@ def audit_suite(project: "str | Path", *,
             if hashlib.sha256(path.read_bytes()).hexdigest() != \
                     hashlib.sha256(original).hexdigest():
                 restored = False
+    decided = attempted - len(indeterminate)
     return {"schema": SCHEMA, "project": str(project),
             "oracle_cmd": oracle_cmd, "reference_ok": True,
             "attempted": attempted, "killed": killed,
-            "kill_rate": (round(killed / attempted, 4)
-                          if attempted else None),
-            "survivors": survivors, "restored": restored,
+            "kill_rate": (round(killed / decided, 4)
+                          if decided else None),
+            "survivors": survivors, "indeterminate": indeterminate,
+            "restored": restored,
             "wall_seconds": round(time.time() - t0, 1),
             "note": "a survivor names a wrong-code change this suite "
-                    "accepted; the promise 'one suite, no negotiation' "
-                    "is only as strong as this number"}
+                    "accepted; a timeout decides nothing and is excluded "
+                    "from the rate; the promise 'one suite, no "
+                    "negotiation' is only as strong as this number"}
