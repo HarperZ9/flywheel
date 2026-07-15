@@ -47,10 +47,23 @@ def _tok(item: dict) -> int:
 
 
 def _fold(item: dict) -> dict:
+    # the folded record carries the VERBATIM text, not only its hash: a
+    # one-way hash is not recoverable, so the span is moved OUT OF THE WINDOW
+    # but retained here, which is what makes "nothing is lost" literally true
     text = item.get("text", "")
     return {"id": item.get("id", ""), "role": item.get("role", ""),
-            "tokens": _tok(item),
+            "tokens": _tok(item), "text": text,
             "sha256": hashlib.sha256(text.encode("utf-8")).hexdigest()}
+
+
+def recall_folded(folded: list, sha256: str) -> "str | None":
+    """Return the verbatim text of a folded span by its content hash, or
+    None if not present. This is what makes the fold recoverable rather
+    than a one-way discard."""
+    for f in folded or []:
+        if f.get("sha256") == sha256:
+            return f.get("text")
+    return None
 
 
 def govern_context(items: list, *, budget: int,
@@ -89,6 +102,8 @@ def govern_context(items: list, *, budget: int,
             "kept_count": len(window), "folded_count": len(folded),
             "over_pinned": over_pinned,
             "note": "a pinned constraint never leaves the window; the "
-                    "overflow is folded with a recall hash, not lost; the "
-                    "window fills only to the model's reliable zone, not "
-                    "its nominal cap"}
+                    "overflow is folded with its VERBATIM text plus a "
+                    "content hash (recall_folded returns the exact span), so "
+                    "it is moved out of the window, not lost; the window "
+                    "fills only to the model's reliable zone, not its "
+                    "nominal cap"}

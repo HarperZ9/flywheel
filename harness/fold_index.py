@@ -9,6 +9,7 @@ Persisted as one JSON file so it survives restarts. Zero-dep.
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import math
 import re
@@ -22,6 +23,13 @@ def _terms(text: str) -> list:
     return _WORD.findall((text or "").lower())
 
 
+def _content_hash(messages: list) -> str:
+    """A content hash DERIVED from the stored span, so recall binds to what
+    is actually held rather than to a hash the caller merely asserted."""
+    return hashlib.sha256(
+        json.dumps(messages, sort_keys=True, default=str).encode()).hexdigest()
+
+
 class FoldIndex:
     """Content-addressed store of folded message spans + an inverted term index."""
 
@@ -29,6 +37,7 @@ class FoldIndex:
         self.path = Path(path) if path else None
         self.spans: dict = {}                       # span_hash -> [ {role, content}, ... ]
         self.postings: dict = defaultdict(set)      # term -> {span_hash}
+        self._content: dict = {}                    # span_hash -> derived content hash (banked at add)
         if self.path and self.path.exists():
             self._load()
 
@@ -36,6 +45,7 @@ class FoldIndex:
         if not span_hash or span_hash in self.spans:
             return                                  # content-addressed: never index the same span twice
         self.spans[span_hash] = messages
+        self._content[span_hash] = _content_hash(messages)
         text = " ".join(m.get("content", "") for m in messages if isinstance(m, dict))
         for t in set(_terms(text)):
             self.postings[t].add(span_hash)
@@ -57,11 +67,24 @@ class FoldIndex:
             for sh in hits:
                 scores[sh] += idf
         ranked = sorted(scores.items(), key=lambda kv: (-kv[1], kv[0]))[:top_k]
-        return [{"span_hash": sh, "score": round(s, 4), "messages": self.spans[sh]}
+        return [{"span_hash": sh, "score": round(s, 4),
+                 "messages": self.spans[sh],
+                 "content_sha256": _content_hash(self.spans[sh])}
                 for sh, s in ranked]
+
+    def verify(self) -> dict:
+        """Re-derive each span's content hash and report any whose stored
+        content no longer matches what was banked. Catches a tampered
+        fold_index.json that verify would otherwise trust."""
+        tampered = [sh for sh, msgs in self.spans.items()
+                    if _content_hash(msgs) != self._content.get(sh)]
+        return {"schema": "flywheel.fold-index-verify/v1",
+                "ok": not tampered, "checked": len(self.spans),
+                "tampered": tampered}
 
     def _snapshot(self) -> dict:
         return {"schema": "flywheel.fold-index/v1", "spans": self.spans,
+                "content": self._content,
                 "postings": {t: sorted(v) for t, v in self.postings.items()}}
 
     def _save(self) -> None:
@@ -73,6 +96,11 @@ class FoldIndex:
     def _load(self) -> None:
         d = json.loads(self.path.read_text(encoding="utf-8"))
         self.spans = d.get("spans", {})
+        # banked content hashes; for a pre-content index, derive on load so
+        # verify has a baseline (a persisted index tampered before this
+        # upgrade still gets a fresh baseline, which is the honest floor)
+        self._content = d.get("content") or {
+            sh: _content_hash(m) for sh, m in self.spans.items()}
         self.postings = defaultdict(set, {t: set(v) for t, v in d.get("postings", {}).items()})
 
 
