@@ -93,15 +93,32 @@ class RouterStats:
             self._save()
 
     def score(self, endpoint: str) -> float:
-        """Higher is better. UCB-lite: success rate plus an exploration bonus that
-        decays with attempts (so an unseen provider is tried optimistically), all
-        divided by relative cost. Pure arithmetic, no learned model."""
+        """Higher is better. The quality term is the WILSON LOWER BOUND of the
+        success rate, not the raw rate, so thin evidence (one minted success)
+        cannot leap ahead of a long track record: the bound is wide when n is
+        small and tightens as attempts accrue. An exploration bonus that decays
+        with attempts keeps an unseen provider tried optimistically. Pure
+        arithmetic, no learned model. Divided by relative cost."""
         s = self.stats.get(endpoint)
         if s is None or s.attempts == 0:
             base = 1.0                                   # optimistic prior for the unseen
         else:
             total = sum(x.attempts for x in self.stats.values()) or 1
-            base = s.success_rate + math.sqrt(2 * math.log(total) / s.attempts)
+            z = 1.96
+            n = s.attempts
+            p = s.success_rate
+            # Wilson lower bound: the honest floor on the true success rate,
+            # wide when n is small and tightening as attempts accrue
+            denom = 1 + z * z / n
+            centre = p + z * z / (2 * n)
+            margin = z * math.sqrt(p * (1 - p) / n + z * z / (4 * n * n))
+            lb = (centre - margin) / denom
+            # the lower bound is the DOMINANT quality signal so thin evidence
+            # (one minted success) cannot leap a long track record; a modest
+            # exploration term keeps an under-sampled arm in contention without
+            # letting it dominate a proven provider
+            bonus = 0.15 * math.sqrt(math.log(total + 1) / n)
+            base = min(1.0, lb) + bonus
         cost = self.cost.get(endpoint, 1.0) or 1.0
         return base / cost
 

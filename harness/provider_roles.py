@@ -66,10 +66,27 @@ def provider_roles_for(providers: list[Any]) -> list[str]:
 
 
 def annotate_provider_roles(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Normalize each row's provider_role. When a row carries an actual
+    'provider', the role is derived from THAT (the ground truth); a
+    self-declared 'provider_role' that disagrees is not adopted, it is kept
+    as a named role_conflict so a false claim cannot launder itself into a
+    trusted role. A row with only a provider_role (nothing to check against)
+    keeps its claim, normalized through the alias map."""
     for row in rows:
         if not isinstance(row, dict):
             continue
-        role = provider_role(row.get("provider_role") or row.get("provider"))
-        if role:
-            row["provider_role"] = role
+        provider = row.get("provider")
+        claimed = row.get("provider_role")
+        if provider:
+            derived = provider_role(provider)
+            if claimed is not None and provider_role(claimed) != derived:
+                if derived:
+                    row["provider_role"] = derived
+                    row["role_conflict"] = {"claimed": claimed, "derived": derived}
+            elif derived:
+                row["provider_role"] = derived
+        else:
+            role = provider_role(claimed)
+            if role:
+                row["provider_role"] = role
     return rows

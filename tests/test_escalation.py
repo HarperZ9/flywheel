@@ -71,7 +71,35 @@ def test_compile_fail_fast_returns_compile_verdict(task):
                             ("test", test_oracle)])
     r = esc.verify(SYNTAX_ERROR, task)
     assert r.rc != 0
-    assert "compile_fail" in r.output_hash
+    assert len(r.output_hash) >= 12   # a content-addressed reject, re-derivable
+
+
+def test_escalation_result_names_the_tier_that_stopped(task):
+    from harness.escalation import EscalationResult
+    # a fail at the cheap tier
+    esc = EscalationOracle([("compile", CompileOracle()),
+                            ("test", StubOracle(True))])
+    r = esc.verify(SYNTAX_ERROR, task)
+    assert isinstance(r, EscalationResult)
+    assert r.stopped_at_tier == "compile"
+    assert r.tiers_run == ("compile",)
+    # a terminal-tier accept
+    ok = EscalationOracle([("compile", CompileOracle()),
+                           ("test", StubOracle(True))])
+    ro = ok.verify(CORRECT, task)
+    assert isinstance(ro, EscalationResult)
+    assert ro.stopped_at_tier == "test"
+    assert ro.tiers_run == ("compile", "test")
+
+
+def test_two_different_compile_failures_get_distinct_receipts(task):
+    # a reject receipt that commits to nothing a stranger can re-run is not a
+    # receipt: two different failing candidates must not share one hash
+    orc = CompileOracle()
+    a = orc.verify("def f(\n  pass\n", task)
+    b = orc.verify("class C(\n  pass\n", task)
+    assert not a.passed and not b.passed
+    assert a.output_hash != b.output_hash
 
 
 def test_single_terminal_tier_acts_as_plain_oracle(task):

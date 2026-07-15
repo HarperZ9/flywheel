@@ -11,6 +11,7 @@ verifies each. Per-candidate fast-fail achieves the set-level filter naturally
 (each non-compiling candidate is pruned before the expensive tier runs).
 """
 from __future__ import annotations
+import hashlib
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
@@ -41,10 +42,19 @@ class CompileOracle:
             rc = p.returncode
             out = p.stdout + p.stderr
         except subprocess.TimeoutExpired as e:
-            out = (e.stdout or b"") if isinstance(e.stdout, bytes) else b""
+            # keep BOTH streams so the excerpt names the timeout, not a blank
+            out = ((e.stdout or b"") if isinstance(e.stdout, bytes) else b"") \
+                + ((e.stderr or b"") if isinstance(e.stderr, bytes) else b"")
             rc = 124
-        canon = canonical_hash("py_compile", Path(task.workdir), rc) \
-            if rc == 0 else f"compile_fail_{rc}"
+        if rc == 0:
+            canon = canonical_hash("py_compile", Path(task.workdir), rc)
+        else:
+            # content-address the failure: a reject receipt must commit to the
+            # exact candidate and compiler output, re-derivable by a stranger,
+            # not a bare compile_fail_{rc} every failing candidate shares
+            canon = hashlib.sha256(
+                candidate.encode("utf-8") + f"|{rc}|".encode()
+                + out).hexdigest()[:16]
         return OracleResult(
             passed=rc == 0, cmd=cmd, output_hash=canon,
             stdout_excerpt=out.decode("utf-8", errors="replace")[-800:], rc=rc)
@@ -77,13 +87,15 @@ class EscalationOracle:
             run.append(name)
             is_terminal = (i == len(self.tiers) - 1)
             if not last.passed:
-                return OracleResult(
+                # the structured receipt: WHICH tier stopped escalation and
+                # which tiers ran, not just a prose prefix in the excerpt
+                return EscalationResult(
                     passed=False, cmd=last.cmd, output_hash=last.output_hash,
                     stdout_excerpt=f"[{name}] {last.stdout_excerpt}",
-                    rc=last.rc)
+                    rc=last.rc, stopped_at_tier=name, tiers_run=tuple(run))
             if is_terminal:
-                return OracleResult(
+                return EscalationResult(
                     passed=True, cmd=last.cmd, output_hash=last.output_hash,
                     stdout_excerpt=f"[{name}:terminal] {last.stdout_excerpt}",
-                    rc=last.rc)
+                    rc=last.rc, stopped_at_tier=name, tiers_run=tuple(run))
         return last
