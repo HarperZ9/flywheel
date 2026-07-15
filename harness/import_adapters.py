@@ -102,11 +102,18 @@ def import_config(root) -> dict:
                         "reason": f"{unmapped} have no native equivalent "
                                   "yet; carried nowhere rather than "
                                   "half-translated"})
+            _sj_dropped = any(d["source"] == ".claude/settings.json"
+                              for d in dropped)
+            if not mcp_servers and not _sj_dropped:
+                status = "empty"        # nothing extracted: not a mapping
+            elif not mcp_servers or _sj_dropped:
+                status = "partial"
+            else:
+                status = "mapped"
             mappings.append({"source": ".claude/settings.json",
                              "mapped_to": "mcp_servers",
-                             "status": "partial" if any(
-                                 d["source"] == ".claude/settings.json"
-                                 for d in dropped) else "mapped",
+                             "status": status,
+                             "servers_extracted": len(mcp_servers),
                              "sha256": _sha(raw)})
         else:
             dropped.append({"source": ".claude/settings.json",

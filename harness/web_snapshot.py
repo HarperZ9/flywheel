@@ -131,8 +131,19 @@ def snapshot_url(url: str, dest_dir, *, runner=None) -> dict:
     dest = Path(dest_dir)
     dest.mkdir(parents=True, exist_ok=True)
     blob = dest / f"{sha}.bin"
-    if not blob.exists():
-        blob.write_bytes(body)
+    # atomic write: a crash mid-write must not leave a truncated blob under a
+    # hash that claims complete content. Write to a temp then rename (rename
+    # is atomic on a POSIX/NTFS same-dir move). Re-verify an existing blob's
+    # hash rather than trusting the filename.
+    if blob.exists():
+        if hashlib.sha256(blob.read_bytes()).hexdigest() != sha:
+            tmp = dest / f".{sha}.tmp"
+            tmp.write_bytes(body)
+            tmp.replace(blob)
+    else:
+        tmp = dest / f".{sha}.tmp"
+        tmp.write_bytes(body)
+        tmp.replace(blob)
     # accumulate observed origins: two URLs serving identical bytes share
     # the hash, and the sidecar must keep BOTH origins, not clobber the first
     sidecar = dest / f"{sha}.json"
