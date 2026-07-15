@@ -144,11 +144,6 @@ def run_router_agent(goal: str, endpoint: str = "serve", *, root: str = ".",
     # is inadmissible). Only a TRUSTED green run earns a TTVA; everything
     # else is an honest null.
     out["ttva_s"] = duration if result.get("tests_pass_trusted") is True else None
-    # Line-level provenance in the Agent-Trace shape, bound to the run.
-    from .provenance_trace import provenance_trace
-    out["provenance"] = provenance_trace(
-        ledger.entries, checkpoint=str(result.get("checkpoint", "")),
-        author=f"model:{endpoint}")
     if pre_state is not None:
         from .workspace_state import workspace_snapshot
         post_state = workspace_snapshot(root)
@@ -162,4 +157,12 @@ def run_router_agent(goal: str, endpoint: str = "serve", *, root: str = ".",
         # checkpoint/verified cover the workspace claim, not a stale subset
         out["checkpoint"] = ledger.checkpoint()
         out["verified"] = ledger.verify()
+    # Line-level provenance in the Agent-Trace shape, bound to the run.
+    # Computed AFTER the workspace post-snapshot so the conversation hash it
+    # binds IS the run's final checkpoint; binding the pre-workspace
+    # checkpoint left two receipts that disagreed on every writing run.
+    from .provenance_trace import provenance_trace
+    out["provenance"] = provenance_trace(
+        ledger.entries, checkpoint=str(out.get("checkpoint", "")),
+        author=f"model:{endpoint}")
     return out

@@ -110,9 +110,16 @@ def _learn_schedule(ctx):
 
 def _learn_retest(ctx):
     from .retention import retention_record
-    r = retention_record(ctx["_eid"], True, note="unaided retest held")
-    return "error" not in r, r.get("chain_hash", ""), \
-        "unaided outcome banked, linked to the original -> feeds the ledger"
+    # a graded answer, not a self-declared boolean; the interval waiver is
+    # DECLARED in the receipt because a closure probe measures the mechanism
+    # in one run, not spaced memory
+    r = retention_record(
+        ctx["_eid"], "in x.py, f now returns tax applied to the subtotal",
+        note="unaided retest, graded against the original's key terms",
+        waive_interval_reason="loop-closure probe: mechanism, not memory")
+    ok = "error" not in r and r.get("passed") is True
+    return ok, r.get("chain_hash", ""), \
+        "graded unaided outcome banked, linked to the original -> feeds the ledger"
 
 
 LEARNING = Loop("learning", "does understanding compound across time?", [
