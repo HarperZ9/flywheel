@@ -95,3 +95,17 @@ def test_consensus_composes_with_integrity_guard():
     guarded = GuardedOracle(ConsensusOracle([StubOracle(True), StubOracle(True)]))
     res = guarded.verify("import pytest\npytest.skip('x')\n", _task())
     assert res.passed is False and "[integrity]" in res.stdout_excerpt
+
+
+def test_weighted_dead_tie_is_not_consensus():
+    # four equal-weight members split 2 PASS / 2 FAIL: score is exactly 0.5,
+    # a dead tie, which majority correctly refuses. Weighted must too.
+    members = [StubOracle(True), StubOracle(True),
+               StubOracle(False), StubOracle(False)]
+    tie = ConsensusOracle(members, rule="weighted", threshold=0.5)
+    assert not tie.verify(CLEAN, _task()).passed
+    # an explicit supermajority above 0.5 still uses >= at its own boundary
+    members3 = [StubOracle(True), StubOracle(True), StubOracle(False)]
+    super23 = ConsensusOracle(members3, rule="weighted", threshold=0.66)
+    # 2/3 = 0.667 >= 0.66 -> passes
+    assert super23.verify(CLEAN, _task()).passed

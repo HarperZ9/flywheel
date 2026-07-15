@@ -59,7 +59,10 @@ class ConsensusOracle:
             return sum(1 for p in passes if p) * 2 > n
         wsum = sum(self.weights) or 1.0
         score = sum(w for w, p in zip(self.weights, passes) if p) / wsum
-        return score >= self.threshold
+        # a dead tie is not consensus: at or below a majority threshold the
+        # boundary is strict (> ), matching the 'majority' rule; an explicit
+        # supermajority (threshold > 0.5) keeps >= at its own boundary
+        return score > self.threshold if self.threshold <= 0.5 else score >= self.threshold
 
     def verify(self, candidate: str, task) -> OracleResult:
         results = [m.verify(candidate, task) for m in self.members]
