@@ -58,13 +58,17 @@ def build_graph(surfaces: dict) -> dict:
     edges = []
     hub = "hub:flywheel"
 
-    def attach(n: dict, parent: str = hub, edge_kind: str = "surface"):
+    def attach(n: dict, source: str, parent: str = hub,
+               edge_kind: str = "surface"):
+        # the edge names the SURFACE payload it was derived from, so an edge is
+        # traceable back to its document (like node priorities are re-derivable)
         nodes.append(n)
-        edges.append({"from": parent, "to": n["id"], "kind": edge_kind})
+        edges.append({"from": parent, "to": n["id"], "kind": edge_kind,
+                      "source": source})
 
     def error_node(surface: str, message: str):
         attach(_node("error", surface, f"{surface}: {message}",
-                     verdict="error"))
+                     verdict="error"), source=surface)
 
     for surface, doc in surfaces.items():
         if not isinstance(doc, dict):
@@ -77,35 +81,47 @@ def build_graph(surfaces: dict) -> dict:
                 attach(_node("lane", l.get("name", "?"), l.get("name", "?"),
                              verdict=l.get("status", ""),
                              signals={"status": l.get("status", ""),
-                                      "role": l.get("role", "")}))
+                                      "role": l.get("role", "")}),
+                       source=surface)
         elif surface == "projects":
             for p in doc.get("projects", []):
                 idx = p.get("index") or {}
+                # a project whose root no longer exists is 'missing', not
+                # 'live': the verdict is derived from the payload's existence
+                # check (project_roster computes it), and the signal is carried
+                # so the priority arithmetic stays re-checkable
+                exists = p.get("exists", True)
                 attach(_node("project", p.get("name", "?"),
-                             p.get("name", "?"), verdict="live",
+                             p.get("name", "?"),
+                             verdict="live" if exists else "missing",
                              signals={"root": p.get("root", ""),
+                                      "exists": exists,
                                       "relation_count":
                                           idx.get("relation_count", 0),
                                       "class_total":
-                                          idx.get("class_total", 0)}))
+                                          idx.get("class_total", 0)}),
+                       source=surface)
         elif surface == "memory":
             attach(_node("memory", "fold-index", "memory (fold index)",
                          verdict="live",
                          signals={k: v for k, v in doc.items()
                                   if isinstance(v, (int, float, bool))
-                                  and not isinstance(v, str)}))
+                                  and not isinstance(v, str)}),
+                   source=surface)
         elif surface == "plugins":
             for p in doc.get("plugins", []):
                 attach(_node("plugin", p.get("name", "?"),
                              p.get("name", "?"),
                              verdict="enabled" if p.get("enabled", True)
                                      else "disabled",
-                             signals={"kind": p.get("kind", "")}))
+                             signals={"kind": p.get("kind", "")}),
+                       source=surface)
         elif surface == "workflows":
             for w in doc.get("workflows", []):
                 attach(_node("workflow", w.get("name", "?"),
                              w.get("name", "?"), verdict="declared",
-                             signals={}))
+                             signals={}),
+                       source=surface)
     return {"schema": SCHEMA, "nodes": nodes, "edges": edges,
             "weights": {"status": _STATUS_WEIGHT, "kind_base": _KIND_BASE,
                         "kind_cost": _KIND_COST},

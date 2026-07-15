@@ -12,6 +12,7 @@ capped; and nothing here fetches until a caller asks (a fetch is a request,
 not a heartbeat)."""
 from __future__ import annotations
 
+import hashlib
 import json
 import subprocess
 
@@ -88,9 +89,16 @@ def live_feeds(domain: "str | None" = None, *, runner=None,
                 errors[name] = raw.strip()[-200:]
                 continue
             for r in _items(raw)[:max_items]:
+                title = str(r.get("title", ""))
+                url = str(r.get("url", r.get("ref", "")))
+                # content-address the item so it binds to what gather fetched:
+                # pass through gather's own hash when present, else derive one
+                # from the emitted fields (the upstream id may be empty/asserted)
+                sha = str(r.get("sha256", "")) or hashlib.sha256(
+                    f"{title}|{url}".encode("utf-8")).hexdigest()
                 items.append({"id": str(r.get("id", "")),
-                              "title": str(r.get("title", "")),
-                              "url": str(r.get("url", r.get("ref", ""))),
+                              "title": title, "url": url,
+                              "sha256": sha,
                               "feed": name, "domain": d})
     return {"schema": SCHEMA, "domains": domains,
             "roster": {d: [n for n, _ in FEED_ROSTER[d]] for d in domains},
