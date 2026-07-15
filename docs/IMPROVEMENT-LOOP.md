@@ -250,6 +250,9 @@ Complete cycles (consultation -> reconcile -> execute HIGH+MEDIUM):
 - Cycle 8: the hosted flagships. index (13 findings, complete) and gather
   (9 confirmed MEDIUM, complete) done; forum and telos queued. Recorded
   below.
+- Cycle 9: the peer flagships and the engine's own debt. crucible (6),
+  relay, plexus, mneme, and the cycles 2-5 LOW debt, executed as a parallel
+  multi-agent workflow, all suites green and pushed. Recorded below.
 
 ### Cycle 5 (2026-07-14): forge/science/academy/discovery/claims
 
@@ -422,3 +425,75 @@ overstated) is queued.
 
 Queued: forum and telos (the remaining flagships); gather's LOW tier; and
 the LOW tiers of cycles 2 and 3.
+
+### Cycle 9 (2026-07-15): the peer flagships and the engine's own debt
+
+Five surfaces in one cycle. Consultation ran as before (five dimension
+critics per repo, every finding adversarially verified against the live
+code, refuted ones dropped, overstated ones downgraded). Execution ran as a
+**parallel multi-agent workflow**: after the crucible slice was shipped
+inline, one execution agent per remaining repo worked its verified findings
+TDD, kept its suite green, committed per slice, and reported; the controller
+re-ran each suite and pushed. No two agents shared a repo, so the parallelism
+was safe.
+
+**crucible** (`fix/cycle9-sealed-verdicts`, pushed, 342 tests green): six
+findings, the theme "a verdict no measurement earned." HIGH: refine's
+correctness grader normalized by the measurement's tolerance, so a thesis
+whose claim sealed 0.05 read "correct" under a spec tolerance of 0.10 while
+`verdict_for` refused the same measurement UNVERIFIABLE; the grader now
+honors the seal, so status and verdicts cannot disagree. And `doctor`
+emitted the MATCH verdict token for three checks it never ran; the
+informational envelope now defaults to OK and doctor reports which
+capability is wired, a diagnostic that can fail. MEDIUM: a sealed tolerance
+was dropped from export, the bundle spec, and the cleanroom review, so every
+honestly-sealed thesis was unreviewable (now carried across all three);
+`verify_browser_evidence` minted MATCH from the packet's own carried verdict
+(now fail-closed UNVERIFIABLE, carried verdict preserved). LOW: a 32-bit
+FNV hash was the whole content re-check (a sha256 is now the binding digest).
+
+**relay** (`fix/cycle9-witnessed-loop`, pushed, 74 tests green): the online
+ladder decided success by response shape, not HTTP status, and a null
+content crashed the turn outside failover; provider mode fell back to
+replaying the operator's official API key to an arbitrary gateway. All three
+fixed. Then: auto-commit staged the whole tree under a message claiming the
+witnessed edit set (now binds only the agent's edits); the exec gate
+advertised a sandbox and a write gate the shell does not honor (now states
+what it enforces); the ledger stamped DONE on unverified turns and reported
+a self-confirming "verified" (now witnesses the whole run and means it); the
+per-turn receipt recorded a seed a hosted API never received and hardcoded
+end_turn (now seed=None for hosted, the real stop_reason passed through).
+The test-repair accept-path HIGH lives on the separate `feat/test-repair`
+branch and is queued there, not merged.
+
+**plexus** (`fix/cycle9-grounded-edges`, pushed, 33 tests green): the mesh
+presented self-declared, never-probed capability edges under "grounded, not
+asserted" and "evidence-backed." Edges are now tagged DECLARED and the
+overclaim is dropped from code, tests, and README; duplicate-organ
+collisions are named, not silently collapsed; discover stamps a re-runnable
+receipt; the validator fails on empty-module evidence instead of raising;
+and a hop that declared no CLI reports an honest null.
+
+**mneme** (`fix/cycle9-recall-receipts`, pushed, 105 tests green): drift now
+binds source content (not just ids) and fails closed on empty or unrecorded
+grounding rather than issuing MATCH; the audit chain head is anchored and
+its hash fields are delimiter-unambiguous, so tail truncation is
+detectable; the recall receipt binds what recall actually did and its scope;
+tenant isolation is kept across the agent-facing surfaces; a cross-tenant
+union view is explicit, not a silent default; and `externally_grounded`
+requires a real chain and a shaped origin hash.
+
+**engine debt** (`fix/cycle9-engine-debt`, targeted slices green): the
+queued LOW tiers of cycles 2-5, re-derived and confirmed still-open, then
+shipped. exec_oracle names the failure class and keeps output_hash a pure
+output witness; injected verdicts are bound as synthetic in the invention
+loop and the uplift-delta markers; conjecture_forge normalizes type-aware
+with an honest syntactic L2 basis; excerpt, edge, project, and feed receipts
+bind to what they claim; reliable_fraction carries its provenance; and
+fold_index refuses to bank a span that does not hash to its receipt.
+
+Also this session, outside the loop: a new discourse-synthesis satellite
+(`chorus`) was designed, spec'd, and built to Phase 1 (weighted, clustered,
+re-checkable readings of a comment corpus), and its own whole-branch review
+caught a self-referential `verify()` before it shipped. Queued still: forum
+and telos; gather's LOW tier; the relay test-repair HIGH.
