@@ -16,6 +16,8 @@ from __future__ import annotations
 
 import json
 import math
+import os
+import threading
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
@@ -47,11 +49,23 @@ class RouterStats:
         self.cost = dict(cost or {})
         self.circuit_threshold = circuit_threshold
         self.stats: "dict[str, ProviderStat]" = {}
+        # the gateway serves via ThreadingHTTPServer, so record() runs
+        # concurrently from request threads: guard the table and the write
+        self._lock = threading.Lock()
         if self.path and self.path.exists():
             self._load()
 
     def _load(self) -> None:
-        raw = json.loads(self.path.read_text(encoding="utf-8"))
+        try:
+            raw = json.loads(self.path.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError):
+            # a truncated / interleaved file must not be fatal: quarantine it
+            # and start clean rather than crashing every route from then on
+            try:
+                self.path.replace(self.path.with_suffix(".corrupt"))
+            except OSError:
+                pass
+            return
         for name, d in (raw.get("providers") or {}).items():
             self.stats[name] = ProviderStat(**{k: d[k] for k in ProviderStat.__dataclass_fields__ if k in d})
 
@@ -59,19 +73,24 @@ class RouterStats:
         if not self.path:
             return
         self.path.parent.mkdir(parents=True, exist_ok=True)
-        self.path.write_text(json.dumps(self.snapshot(), sort_keys=True), encoding="utf-8")
+        # atomic: write a temp file then os.replace, so a concurrent reader or
+        # a crash mid-write never sees a torn stats file
+        tmp = self.path.with_suffix(".tmp")
+        tmp.write_text(json.dumps(self.snapshot(), sort_keys=True), encoding="utf-8")
+        os.replace(tmp, self.path)
 
     def record(self, endpoint: str, ok: bool, latency: float = 0.0) -> None:
-        s = self.stats.setdefault(endpoint, ProviderStat())
-        s.attempts += 1
-        s.total_latency += max(0.0, latency)
-        if ok:
-            s.successes += 1
-            s.consecutive_failures = 0
-        else:
-            s.failures += 1
-            s.consecutive_failures += 1
-        self._save()
+        with self._lock:
+            s = self.stats.setdefault(endpoint, ProviderStat())
+            s.attempts += 1
+            s.total_latency += max(0.0, latency)
+            if ok:
+                s.successes += 1
+                s.consecutive_failures = 0
+            else:
+                s.failures += 1
+                s.consecutive_failures += 1
+            self._save()
 
     def score(self, endpoint: str) -> float:
         """Higher is better. UCB-lite: success rate plus an exploration bonus that

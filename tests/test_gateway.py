@@ -569,6 +569,12 @@ class _SpyStats:
     def record(self, *a, **k):
         self.recorded.append(a)
 
+    def score(self, endpoint):
+        return 1.0
+
+    def is_circuit_open(self, endpoint):
+        return False
+
 
 def test_openai_chat_adaptive_reorders_and_records(monkeypatch):
     spy = _SpyStats()
@@ -577,7 +583,9 @@ def test_openai_chat_adaptive_reorders_and_records(monkeypatch):
     gateway.openai_chat({"model": "a,b", "adaptive": True,
                          "messages": [{"role": "user", "content": "hi"}]}, "http://x")
     assert spy.ordered == ["a", "b"]          # reorder consulted
-    assert len(spy.recorded) == 2             # both failures recorded
+    # resolution failures are NOT charged to the providers' circuit stats;
+    # only real provider-call outcomes are recorded
+    assert spy.recorded == []
 
 
 def test_openai_chat_default_does_not_touch_stats(monkeypatch):
@@ -627,3 +635,41 @@ def test_workflow_run_is_countersigned_into_the_store(tmp_path, monkeypatch):
     assert ent["kind"] == "workflow-run"
     assert ent["data"]["chain_hash"] == "a" * 64
     assert ent["data"]["status"] == "COMPLETED"
+
+
+def test_adaptive_resolution_failure_is_not_charged_to_the_provider(monkeypatch, tmp_path):
+    # A typo'd name or an unconfigured credential on THIS host is not the
+    # provider failing: it must not open the provider's circuit.
+    from harness.router_stats import RouterStats
+    rs = RouterStats(path=tmp_path / "rs.json")
+    monkeypatch.setattr(gateway, "get_router_stats", lambda: rs)
+    def resolver(model, serve_url):
+        if model == "ghost": return None, "no credential present", 400
+        if model == "serve": return _OneProposer("local answer"), None, 200
+        return None, "unknown", 404
+    monkeypatch.setattr(gateway, "_resolve_proposer", resolver)
+    body, code, receipt, text, mref = gateway.openai_chat(
+        {"model": "ghost,serve", "adaptive": True,
+         "messages": [{"role": "user", "content": "hi"}]}, "http://x")
+    assert code == 200 and text == "local answer"
+    # the provider was NOT charged a failure toward its circuit
+    assert rs.stats.get("ghost") is None or rs.stats["ghost"].failures == 0
+    # the resolution failure is tracked separately and named in the receipt
+    assert "ghost" in str(receipt.get("resolution_failures", []))
+    # the actual provider call was recorded
+    assert rs.stats["serve"].successes == 1
+
+
+def test_adaptive_receipt_carries_the_routing_justification(monkeypatch, tmp_path):
+    from harness.router_stats import RouterStats
+    rs = RouterStats(path=tmp_path / "rs.json")
+    monkeypatch.setattr(gateway, "get_router_stats", lambda: rs)
+    monkeypatch.setattr(gateway, "_resolve_proposer",
+                        lambda m, u: (_OneProposer("ok"), None, 200))
+    body, code, receipt, text, mref = gateway.openai_chat(
+        {"model": "a,b", "adaptive": True,
+         "messages": [{"role": "user", "content": "hi"}]}, "http://x")
+    routing = receipt["routing"]
+    assert routing["adaptive"] is True
+    assert set(routing["requested"]) == {"a", "b"}
+    assert "a" in routing["scores"] and "b" in routing["scores"]

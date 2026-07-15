@@ -649,17 +649,29 @@ def openai_chat(req: dict, serve_url: str):
     # success/cost and record each outcome. Off by default, so an explicit order is
     # honored. Routing only -- the oracle still decides what is accepted.
     adaptive = bool(req.get("adaptive"))
+    routing = None
     if adaptive:
-        candidates = get_router_stats().order(candidates)
+        rs = get_router_stats()
+        requested = [c or "flywheel" for c in candidates]
+        # capture the justification BEFORE ordering, so the receipt carries the
+        # stats that picked the order (router_stats' own audit promise)
+        routing = {"adaptive": True, "requested": requested,
+                   "scores": {c: round(rs.score(c), 4) for c in requested},
+                   "circuit_open": [c for c in requested if rs.is_circuit_open(c)]}
+        candidates = rs.order(candidates)
+        routing["order"] = [c or "flywheel" for c in candidates]
     tried, last_err, last_code = [], "no provider resolved", 502
+    resolution_failures = []
     for cand in candidates:
         t0 = time.time()
         proposer, err, code = _resolve_proposer(cand, serve_url)
         if err is not None:
+            # a resolution failure (typo'd name, credential absent on THIS
+            # host, config error) is NOT the provider failing: never charge it
+            # to the provider's success_rate / circuit. Tracked separately.
             last_err, last_code = err, code
             tried.append((cand or "flywheel") + ": unavailable")
-            if adaptive:
-                get_router_stats().record(cand or "flywheel", False, time.time() - t0)
+            resolution_failures.append({"provider": cand or "flywheel", "reason": err})
             continue
         try:
             out = proposer.generate(prompt, seed=seed, temperature=temperature,
@@ -674,6 +686,10 @@ def openai_chat(req: dict, serve_url: str):
             get_router_stats().record(cand or "flywheel", True, time.time() - t0)
         receipt = _chat_receipt(prompt, system, max_tokens, temperature, seed, out)
         receipt["routed_via"] = cand or "flywheel"
+        if routing is not None:
+            receipt["routing"] = routing
+        if resolution_failures:
+            receipt["resolution_failures"] = resolution_failures
         if tried:
             receipt["failover_from"] = tried       # honest: which providers were skipped, and why
         body = {"id": "chatcmpl-" + receipt["receipt_id"], "object": "chat.completion",
@@ -1593,7 +1609,12 @@ class _Handler(BaseHTTPRequestHandler):
             except Exception as e:
                 return self._json({"error": f"{type(e).__name__}: {e}"}, 502)
             if effort is not None:
-                result["effort"] = effort   # the dial position, receipted
+                # stamp what was ENFORCED, not the nominal dial: a caller
+                # max_steps override past the dial, and this route not fanning
+                # out n_candidates, must show in the receipt
+                from harness.effort import stamp_applied
+                result["effort"] = stamp_applied(effort, max_steps_applied=max_steps,
+                                                 n_candidates_applied=False)
             result["scaffold"] = _sa(
                 str(result.get("final") or ""), env,
                 provenance={"endpoint": endpoint,
