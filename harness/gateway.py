@@ -1840,6 +1840,19 @@ class _Handler(BaseHTTPRequestHandler):
             from harness.chorus_bridge import list_corpora
             out = list_corpora((req.get("root") or "").strip())
             return self._json(out, 400 if "error" in out else 200)
+        if p == "/api/discourse/digests":              # what the chorus daemon has synthesized
+            length = self._content_length()
+            if length is None:
+                return self._json({"error": "invalid or oversized Content-Length"}, 400)
+            try:
+                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
+            except Exception:
+                req = {}
+            from harness.chorus_bridge import recent_digests
+            limit = req.get("limit")
+            out = recent_digests((req.get("store") or "").strip(),
+                                 limit=int(limit) if isinstance(limit, int) else 20)
+            return self._json(out, 400 if "error" in out else 200)
         if p == "/api/marketplace/install":            # catalog entry -> plugin registry
             length = self._content_length()
             if length is None:

@@ -68,3 +68,26 @@ def test_corpora_passes_through_chorus_named_error(tmp_path):
 def test_corpora_non_json_is_refused(tmp_path):
     out = list_corpora(str(tmp_path), runner=_runner(0, "not json"))
     assert "error" in out and "did not emit JSON" in out["error"]
+
+
+from harness.chorus_bridge import recent_digests
+
+
+def test_recent_digests_returns_schema_and_list():
+    listing = {"store": "/s", "digests": [
+        {"at": 101.0, "corpus": "/c", "responds_to": "vidA", "n_items": 6,
+         "verified": True, "digest_sha256": "abc"}]}
+    out = recent_digests("/s", runner=_runner(0, json.dumps(listing)))
+    assert out.get("error") is None
+    assert out["schema"] == "flywheel.discourse-digests/v1"
+    assert out["digests"][0]["responds_to"] == "vidA"
+
+
+def test_recent_digests_empty_store_is_empty_list_not_error():
+    out = recent_digests("/s", runner=_runner(0, json.dumps({"store": "/s", "digests": []})))
+    assert out.get("error") is None and out["digests"] == []
+
+
+def test_recent_digests_non_json_is_refused():
+    out = recent_digests("/s", runner=_runner(0, "boom"))
+    assert "error" in out and "did not emit JSON" in out["error"]
