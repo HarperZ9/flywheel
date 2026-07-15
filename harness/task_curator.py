@@ -64,13 +64,25 @@ def _solution_hash(spec: TaskSpec) -> str:
 
 
 def _stub_solution(solution: str) -> str | None:
-    """Replace every top-level function body with `return None`. If there is no
-    top-level def to stub, return None (caller fails closed)."""
-    lines = solution.splitlines()
-    defs = [ln for ln in lines if ln.startswith("def ") and ln.rstrip().endswith(":")]
-    if not defs:
+    """Replace every top-level function body with `return None`, KEEPING
+    imports, module-level constants, classes, and helpers. The stub must fail
+    the hidden tests through the suite's discrimination, never through an
+    ImportError on a symbol the stub dropped (that scores a vacuous suite as
+    discriminating). No top-level def to stub, or unparsable source, returns
+    None (caller fails closed)."""
+    import ast
+    try:
+        tree = ast.parse(solution)
+    except SyntaxError:
         return None
-    return "\n".join(f"{d}\n    return None" for d in defs) + "\n"
+    stubbed = False
+    for node in tree.body:
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            node.body = [ast.Return(value=ast.Constant(value=None))]
+            stubbed = True
+    if not stubbed:
+        return None
+    return ast.unparse(ast.fix_missing_locations(tree)) + "\n"
 
 
 def _run_with(spec: TaskSpec, work_root: Path, solution_text: str,

@@ -90,3 +90,48 @@ def test_single_quoted_sorry_warning_is_refused_belt_and_braces():
                      runner=lambda argv, c:
                      (0, "warning: declaration uses 'sorry'"))
     assert doc["passed"] is False
+
+
+def _audit_runner(footprint_line: str):
+    """First call judges the candidate clean; the audit call (the code carries
+    #print axioms) answers with the given footprint line."""
+    def run(argv, code):
+        if "#print axioms" in code:
+            return 0, footprint_line
+        return 0, ""
+    return run
+
+
+def test_forbidden_axiom_footprint_is_refused_after_accept():
+    # A compiled-evaluation escape type-checks to rc==0 with no sorry warning;
+    # only the axiom footprint betrays it (Lean.ofReduceBool). The oracle must
+    # ask and refuse.
+    doc = lean_check(GOOD, runner=_audit_runner(
+        "'one_plus_one' depends on axioms: [Lean.ofReduceBool]"))
+    assert doc["passed"] is False
+    assert "ofReduceBool" in doc["kernel_output"]
+
+
+def test_classical_trio_footprint_is_accepted_and_carried():
+    doc = lean_check(GOOD, runner=_audit_runner(
+        "'one_plus_one' depends on axioms: [propext, Classical.choice, Quot.sound]"))
+    assert doc["passed"] is True
+    assert doc["axiom_footprint"] == {
+        "one_plus_one": ["propext", "Classical.choice", "Quot.sound"]}
+
+
+def test_audit_run_failure_fail_closes():
+    def run(argv, code):
+        if "#print axioms" in code:
+            return 1, "unknown constant"
+        return 0, ""
+    doc = lean_check(GOOD, runner=run)
+    assert doc["passed"] is False
+    assert "footprint" in doc["kernel_output"]
+
+
+@pytest.mark.skipif(not lean_available(), reason="lean toolchain not installed")
+def test_live_kernel_reports_the_axiom_footprint():
+    doc = lean_check(GOOD)
+    assert doc["passed"] is True, doc["kernel_output"]
+    assert "one_plus_one" in doc["axiom_footprint"]

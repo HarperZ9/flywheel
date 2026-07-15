@@ -1,7 +1,10 @@
 # Result: the uplift replicated; the interval did not
 
-Witnessed verdict seal `7e8b65c7...` (thesis `c76b332f...`, sealed before
-the replication run existed). Evidence:
+Witnessed assessment seal `a97701e0...` (thesis `c76b332f...`, sealed before
+the replication run existed). Re-emitted 2026-07-15 as a full re-derivable
+record: the original summary displayed seal `7e8b65c7...` without its
+preimage on disk, so no stranger could recompute it. Same thesis, same
+measurements, same frozen rule, verdicts unchanged. Evidence:
 `artifacts/uplift/uplift_hard_v2_20260714-140516.json`, a second wrapped
 best-of-5 run of telos-coder-14b on hard_v2 under the same pinned oracle.
 

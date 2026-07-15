@@ -87,6 +87,15 @@ def _pytest_canonical(workdir: Path) -> str:
     return "\n".join(sorted(outcomes))
 
 
+def _pytest_ran_a_real_pass(workdir: Path) -> bool:
+    """True iff the junit record shows at least one testcase that actually
+    PASSED. pytest exits 0 when every collected test was SKIPPED, so a green
+    exit code alone can mean zero executed assertions; that run verified
+    nothing and must not read as a pass."""
+    canon = _pytest_canonical(workdir)
+    return any(line.endswith("=PASS") for line in canon.splitlines())
+
+
 def canonical_hash(oracle_type: str, workdir: Path, rc: int) -> str:
     if oracle_type == "pytest":
         canon = _pytest_canonical(workdir)
@@ -131,7 +140,8 @@ class PytestOracle:
                 out = b""
             rc = 124
         return OracleResult(
-            passed=rc == 0, cmd=cmd,
+            passed=rc == 0 and _pytest_ran_a_real_pass(Path(task.workdir)),
+            cmd=cmd,
             output_hash=canonical_hash("pytest", Path(task.workdir), rc),
             stdout_excerpt=_excerpt(out), rc=rc)
 

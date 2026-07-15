@@ -28,6 +28,19 @@ UPLIFT_DOC = {
 }
 
 
+def test_unverifiable_tasks_are_dropped_not_recoded_as_failures():
+    # The uplift bench excludes a task its oracle refused to dispose; the
+    # forecast must do the same, never seal it as m fabricated failures.
+    doc = {"rows": [{"arm": "wrapped", "tasks": [
+        {"task_id": "refused", "outcome": "unverifiable", "attempts": 3},
+        {"task_id": "real", "outcome": "fail", "attempts": 2},
+    ]}]}
+    rows = vectors_from_uplift(doc)
+    ids = {r["task_id"] for r in rows}
+    assert "refused" not in ids
+    assert "real" in ids
+
+
 def test_censored_reconstruction_is_exact():
     rows = vectors_from_uplift(UPLIFT_DOC)
     by = {r["task_id"]: r for r in rows}
