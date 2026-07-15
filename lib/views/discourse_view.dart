@@ -11,6 +11,7 @@ import 'package:flutter/material.dart';
 import '../client/gateway_client.dart';
 import '../models/discourse.dart';
 import '../theme/flywheel_theme.dart';
+import '../widgets/discourse_recent.dart';
 import '../widgets/fw.dart';
 
 class DiscourseView extends StatefulWidget {
@@ -116,6 +117,10 @@ class _DiscourseViewState extends State<DiscourseView> {
       ),
       const SizedBox(height: FwLayout.s3),
       _corpusPicker(context),
+      const SizedBox(height: FwLayout.s5),
+      SectionHeader('Scheduled', kicker: 'DAEMON DIGESTS'),
+      const SizedBox(height: FwLayout.s3),
+      DiscourseRecent(client: widget.client),
       if (_error != null) ...[
         const SizedBox(height: FwLayout.s4),
         HonestNull(_error!),

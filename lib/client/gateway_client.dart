@@ -133,6 +133,17 @@ class GatewayClient {
     return _decode(r);
   }
 
+  /// POST /api/discourse/digests — what the chorus daemon has synthesized on a
+  /// schedule, newest first, so the app can show it without re-running anything.
+  Future<Map<String, dynamic>> discourseDigests(String store, {int limit = 20}) async {
+    final r = await _http.post(
+      Uri.parse('$baseUrl/api/discourse/digests'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'store': store, 'limit': limit}),
+    );
+    return _decode(r);
+  }
+
   /// POST /api/forge — turn a plain goal into a structured prompt with gates.
   Future<Map<String, dynamic>> forge(String goal,
       {String? context, List<String>? examples}) async {

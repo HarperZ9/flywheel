@@ -41,6 +41,40 @@ class CorpusRef {
           .toList();
 }
 
+/// One digest the daemon has stored: a scheduled synthesis, summarized.
+class DigestRef {
+  final double at;
+  final String respondsTo;
+  final int nItems;
+  final int themes;
+  final bool verified;
+  final String digestSha;
+
+  const DigestRef({
+    required this.at,
+    required this.respondsTo,
+    required this.nItems,
+    required this.themes,
+    required this.verified,
+    required this.digestSha,
+  });
+
+  factory DigestRef.fromJson(Map<String, dynamic> j) => DigestRef(
+        at: _d(j['at']),
+        respondsTo: _s(j['responds_to']),
+        nItems: _i(j['n_items']),
+        themes: _i(j['themes']),
+        verified: j['verified'] == true,
+        digestSha: _s(j['digest_sha256']),
+      );
+
+  static List<DigestRef> listFrom(Map<String, dynamic> env) =>
+      ((env['digests'] as List?) ?? const [])
+          .whereType<Map>()
+          .map((m) => DigestRef.fromJson(m.cast<String, dynamic>()))
+          .toList();
+}
+
 class DiscourseTheme {
   final String label;
   final int size;

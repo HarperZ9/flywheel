@@ -93,4 +93,20 @@ void main() {
     expect(list.last.comments, 0);
     expect(list.last.subject, isEmpty);
   });
+
+  test('DigestRef.listFrom parses the daemon store index defensively', () {
+    final list = DigestRef.listFrom({
+      'store': '/s',
+      'digests': [
+        {'at': 101.0, 'responds_to': 'vidA', 'n_items': 2493, 'themes': 249,
+         'verified': true, 'digest_sha256': 'abc'},
+        {'responds_to': 'vidB'}, // missing fields degrade
+      ],
+    });
+    expect(list, hasLength(2));
+    expect(list.first.nItems, 2493);
+    expect(list.first.verified, isTrue);
+    expect(list.last.themes, 0);
+    expect(list.last.verified, isFalse);
+  });
 }
