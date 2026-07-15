@@ -106,3 +106,21 @@ def test_corrupt_stats_file_is_quarantined_not_fatal(tmp_path):
     rs = RouterStats(path=p)        # must not raise
     assert rs.stats == {}
     assert p.with_suffix(".corrupt").exists()
+
+
+def test_one_success_does_not_outrank_a_proven_provider():
+    from harness.router_stats import RouterStats
+    rs = RouterStats()
+    # a provider with a single minted success
+    rs.record("fresh", True)
+    # a provider proven over 1000 attempts at 99.9%
+    for _ in range(999):
+        rs.record("proven", True)
+    rs.record("proven", False)
+    # the proven provider must not be outranked by one lucky/minted success:
+    # the score uses a lower confidence bound, so thin evidence cannot leap
+    # ahead of a long track record
+    assert rs.score("proven") > rs.score("fresh"), (
+        rs.score("proven"), rs.score("fresh"))
+    # an entirely unseen provider still gets an optimistic prior (exploration)
+    assert rs.score("unseen") >= rs.score("proven") * 0.5
