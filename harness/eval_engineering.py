@@ -70,7 +70,7 @@ def _oracle_strength(root: Path) -> dict:
 
 def _sealed_claims(root: Path) -> dict:
     claims_dir = root / "docs" / "claims"
-    theses, match, drift, unver = 0, 0, 0, 0
+    theses, match, drift, unver, unsealed = 0, 0, 0, 0, 0
     if claims_dir.is_dir():
         for d in sorted(claims_dir.iterdir()):
             if not d.is_dir():
@@ -78,6 +78,21 @@ def _sealed_claims(root: Path) -> dict:
             if (d / "thesis.json").is_file():
                 theses += 1
             adj = _load(d / "adjudication.json") or {}
+            if not adj.get("verdicts"):
+                continue
+            # an adjudication is authoritative only if it carries its seals
+            # (thesis + verdict + measurement); an unsealed / hand-edited
+            # adjudication is NOT counted as a verdict, so it cannot launder
+            # a flipped result past the register as "no rescue"
+            # seals may be top-level (our adjudication summaries) or nested
+            # under 'assessment' (crucible's native Assessment.to_dict shape)
+            inner = adj.get("assessment") if isinstance(
+                adj.get("assessment"), dict) else {}
+            sealed = all((adj.get(k) or inner.get(k)) for k in
+                         ("thesis_seal", "verdict_seal", "measurement_seal"))
+            if not sealed:
+                unsealed += 1
+                continue
             for v in adj.get("verdicts", []):
                 s = v.get("status", "")
                 match += s == "MATCH"
@@ -86,10 +101,12 @@ def _sealed_claims(root: Path) -> dict:
     present = theses > 0
     return {"name": "sealed_claims", "present": present,
             "match": match, "drift": drift, "unverifiable": unver,
-            "summary": (f"{theses} sealed theses; adjudicated verdicts: "
-                        f"{match} MATCH, {drift} DRIFT, {unver} "
-                        "UNVERIFIABLE; no rescue" if present else
-                        "no sealed claims on record"),
+            "unsealed_adjudications": unsealed,
+            "summary": (f"{theses} sealed theses; adjudicated verdicts from "
+                        f"SEALED files only: {match} MATCH, {drift} DRIFT, "
+                        f"{unver} UNVERIFIABLE; {unsealed} unsealed "
+                        "adjudication(s) not counted, no rescue" if present
+                        else "no sealed claims on record"),
             "receipt": str(claims_dir) if present else ""}
 
 

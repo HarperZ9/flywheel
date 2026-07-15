@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import hashlib
 import os
+import re
 import shutil
 import subprocess
 import tempfile
@@ -106,12 +107,18 @@ def lean_check(code: str, *, runner=None) -> dict:
     else:
         rc, out = _run([exe], code)
         toolchain = _toolchain(exe)
-    uses_sorry = "declaration uses `sorry`" in (out or "") \
-        or "declaration uses sorry" in (out or "")
-    return {"schema": SCHEMA, "passed": rc == 0 and not uses_sorry,
+    # belt-and-braces: Lean quotes the word variously (declaration uses
+    # 'sorry' / `sorry` / sorry) and a sorry/admit exit is 0 with only a
+    # warning. Match the warning under any quoting, and also treat any
+    # explicit 'sorry'/'sorryAx' warning as refusal.
+    warn = (out or "").lower()
+    uses_hole = bool(re.search(r"uses\s+[`'\"]?sorry", warn)) \
+        or "declaration uses" in warn and "sorry" in warn
+    return {"schema": SCHEMA, "passed": rc == 0 and not uses_hole,
             "code_sha256": sha,
             "toolchain": toolchain,
             "kernel_output": (out or "").strip()[:2000],
             "note": "acceptance decided solely by the Lean kernel; a "
-                    "sorry warning is refusal; re-run the code under the "
-                    "named toolchain to re-derive this verdict"}
+                    "sorry/admit warning is refusal; hygiene refuses "
+                    "kernel-bypass constructs before the exit is trusted; "
+                    "re-run the code under the named toolchain to re-derive"}

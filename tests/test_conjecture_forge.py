@@ -115,3 +115,17 @@ def test_declared_kernel_yields_no_survivors_no_claims(tmp_path, monkeypatch):
     assert art["declared"] == 6
     from harness.store import query_entities
     assert query_entities(kind="theorem") == []
+
+
+def test_l2_requires_the_strong_proof_to_prove_the_same_proposition():
+    """grade_novelty must not grant L2 from an UNRELATED strong proof: a
+    false conjecture cannot earn the deepest rung because some other true
+    theorem was proved (tenet 2, accept-a-wrong-thing)."""
+    false_stmt = "theorem cj_x (n m : Nat) : n + m = n := by omega"   # false
+    unrelated = "theorem t : True := by trivial"                      # true, other prop
+    def kern(code):
+        # cheap tactic fails on the false stmt; the unrelated proof passes
+        return {"passed": ("True" in code)}
+    g = grade_novelty(false_stmt, kernel=kern, strong_proof=unrelated)
+    assert g["rung"] != "L2", "an unrelated strong proof must not grant L2"
+    assert g["rung"] == "refused"
