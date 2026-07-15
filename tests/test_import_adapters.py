@@ -42,6 +42,27 @@ def test_foreign_configs_map_with_hashes_and_reasons(tmp_path):
     assert "functional style" in doc["profile"]["instructions"]
 
 
+def test_remote_mcp_servers_are_captured_not_silently_dropped(tmp_path):
+    """A remote (url/http) MCP server has no 'command' and was silently
+    dropped from the manifest. It must be captured with its url and
+    transport, so a stranger's setup imports completely (tenet 3)."""
+    claude = tmp_path / ".claude"
+    claude.mkdir()
+    (claude / "settings.json").write_text(json.dumps({
+        "mcpServers": {
+            "local": {"command": "docs-mcp", "args": ["--stdio"]},
+            "remote": {"url": "https://mcp.example.com/sse", "type": "sse"},
+            "broken": {"note": "no command or url"},
+        }}), encoding="utf-8")
+    doc = import_config(tmp_path)
+    srv = doc["profile"]["mcp_servers"]
+    assert srv["local"]["command"] == "docs-mcp"
+    assert srv["remote"]["url"] == "https://mcp.example.com/sse"
+    assert srv["remote"]["transport"] == "sse"
+    # the truly-unrecognized one is dropped WITH A REASON, not silently
+    assert any("broken" in d["reason"] for d in doc["dropped"])
+
+
 def test_empty_directory_is_an_honest_null(tmp_path):
     doc = import_config(tmp_path)
     assert doc["mappings"] == []

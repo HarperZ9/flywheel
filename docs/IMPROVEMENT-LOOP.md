@@ -148,3 +148,34 @@ deeper honest null: the point estimate is biased high, so the widened
 interval is necessary but not sufficient; the point-bias fix is named and
 will be re-preregistered. The improvement loop turned on the harness itself,
 not only its surfaces.
+
+### Cycle 3 (2026-07-14): the perception/provenance subsystem
+
+The next tool: where "every result carries a receipt a stranger can re-run"
+lives or dies (snapshot, store, fold/recall, context governor, retrieval,
+import). Five critics, one per dimension, adversarially verified; 16 findings
+survived. Triggered in part by a real failure this session: a Reddit bot-wall
+was frozen as content and let an assessment stop, now fixed.
+
+**HIGH tier: shipped (each TDD).**
+- freeze truncation: a body shorter than its Content-Length was frozen as
+  complete; now flagged truncated with the partial bytes kept as evidence.
+  (Plus the earlier block-page detection + browser UA in web_snapshot.)
+- context governor fold recoverability: _fold stored only a one-way hash and
+  no text, so the "verbatim recall" claim was false (a claim outrunning its
+  receipt, in my own code). The folded record now carries the verbatim text;
+  recall_folded returns the exact span; the note is corrected.
+- FoldIndex content binding: it trusted the caller's span_hash and never
+  bound it to the stored content. A derived content hash is banked at add,
+  returned on recall, and verify() catches a tampered fold_index.json.
+- import remote MCP servers: only servers with a 'command' were captured, so
+  remote (url/http/sse) servers vanished silently. Remote servers are now
+  captured with url+transport; a truly-unrecognized one is dropped with a
+  reason, never silently.
+
+MEDIUM (7) and LOW (5) remain: non-atomic blob write, dual content-address
+schemes in fold_index, index_compaction re-derivation, verify_records missing
+a deleted row, settings 'mapped' with zero servers, over_pinned vs nominal,
+and the retrieval-honesty LOW cluster (bm25 excerpt hash, graph edge sources,
+project verdict hardcoded 'live', feed item hashes, reliable_fraction
+provenance).
