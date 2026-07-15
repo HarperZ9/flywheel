@@ -569,7 +569,8 @@ def _resolve_proposer(model: str, serve_url: str):
 def _chat_receipt(prompt, system, max_tokens, temperature, seed, out):
     from harness.messages_api import make_receipt
     gen = {"text": out.text, "seed": getattr(out, "seed", seed),
-           "prompt_hash": getattr(out, "prompt_hash", "")}
+           "prompt_hash": getattr(out, "prompt_hash", ""),
+           "served_model": getattr(out, "served_model", "")}
     return make_receipt({"prompt": prompt, "system": system, "max_new_tokens": max_tokens,
                          "temperature": temperature, "seed": seed}, gen, out.model_ref)
 
