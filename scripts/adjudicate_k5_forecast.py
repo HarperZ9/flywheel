@@ -12,31 +12,68 @@ not a draw. This script only computes and writes; it cannot rescue.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import sys
 from pathlib import Path
 
-HET = 0.666
-HET_LO, HET_HI = 0.595, 0.737
-IID = 0.759
 ORACLE_SHA = "0b898a620223a06eeeee4244bd6e6935c53eecd4b742d9d220bdd5a96d91a89d"
-CLAIMS = {
-    "c-14b-k5-interval":
-        "633c6a73a7e4c3c091e39dedce3a003e0a0537b7d22ce92b2955712357872e88",
-    "c-14b-k5-het-beats-iid":
-        "4e655d6481601e2fed831d22732c514fb112ccd0565cbc571a0ee3083d1a211c",
-    "c-14b-k5-iid-beats-het":
-        "9b91597ec8e55a0eb36d8194bd27021a95f871faa11c719c6b2abfdfeed33232",
-}
+_DEFAULT_BASE = Path("docs/claims/2026-07-14-passk-forecast")
+
+
+def _seal_ok(doc: dict) -> bool:
+    """Re-derive the forecast seal (sha256 over the canonical doc minus the
+    seal field, exactly as passn_model sealed it) and compare."""
+    body = {k: v for k, v in doc.items() if k != "seal"}
+    recomputed = hashlib.sha256(
+        json.dumps(body, sort_keys=True).encode()).hexdigest()
+    return recomputed == doc.get("seal")
+
+
+def sealed_constants(base: "str | Path" = _DEFAULT_BASE) -> dict:
+    """Read the adjudication constants FROM the sealed record at run time
+    instead of hand-retyping them. The re-typed constants were lossy: the
+    rounded band [0.595, 0.737] is wider at BOTH ends than the sealed
+    [0.5952, 0.7365], so a measured rate of 0.5951 read INSIDE the script yet
+    OUTSIDE the seal. This verifies the forecast seal, takes het/interval/iid
+    unrounded from the record, re-derives the claim shas from the sealed thesis
+    (as emit_full_adjudication does), and asserts the pinned oracle hash is
+    bound verbatim in the interval claim text."""
+    base = Path(base)
+    forecast = json.loads(
+        (base / "FORECAST-14B-K5.json").read_text(encoding="utf-8"))
+    if not _seal_ok(forecast):
+        raise SystemExit(f"REFUSED: forecast record seal does not verify "
+                         f"at {base}; a tampered record cannot adjudicate")
+    het = forecast["expected_pass_rate"]
+    het_lo, het_hi = forecast["interval_95"]
+    iid = forecast["iid_baseline"]["expected_pass_rate"]
+    tj = json.loads((base / "thesis.json").read_text(encoding="utf-8"))
+    from crucible.claim import make_claim
+    claims = {c["id"]: make_claim(c["text"], c.get("falsification", ""),
+                                  id=c.get("id")).sha256
+              for c in tj["claims"]}
+    interval_text = next(c["text"] for c in tj["claims"]
+                         if c["id"] == "c-14b-k5-interval")
+    if ORACLE_SHA not in interval_text:
+        raise SystemExit("REFUSED: the pinned oracle hash is not bound in the "
+                         "sealed interval claim text")
+    return {"het": het, "het_lo": het_lo, "het_hi": het_hi, "iid": iid,
+            "claims": claims, "oracle_sha": ORACLE_SHA}
 
 
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--artifact", required=True)
+    ap.add_argument("--claims-dir", default=str(_DEFAULT_BASE),
+                    help="the sealed forecast folder the constants derive from")
     ap.add_argument("--out",
                     default="docs/claims/2026-07-14-passk-forecast/"
                             "adjudication-measurements.json")
     a = ap.parse_args()
+    sc = sealed_constants(a.claims_dir)
+    HET, HET_LO, HET_HI, IID = sc["het"], sc["het_lo"], sc["het_hi"], sc["iid"]
+    CLAIMS = sc["claims"]
     doc = json.loads(Path(a.artifact).read_text(encoding="utf-8"))
     if doc.get("oracle", {}).get("source_sha256") != ORACLE_SHA:
         print("REFUSED: artifact oracle hash does not match the sealed "
