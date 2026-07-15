@@ -255,7 +255,8 @@ def _claim_evidence(evidence: dict[str, Any], field: str) -> dict[str, Any]:
     if isinstance(value, dict):
         return value
     if value:
-        return {"value": value, "status": evidence.get("status", "verified_secondary_source")}
+        # a bare value carries no source; it is a relayed claim, not evidence
+        return {"value": value, "status": evidence.get("status", "operator_relayed_unverified")}
     return {}
 
 
@@ -263,13 +264,24 @@ def _claim_field(field: str, evidence: dict[str, Any]) -> dict[str, Any]:
     status = str(evidence.get("status", "operator_relayed_unverified" if evidence else "not_checked"))
     if status not in CLAIM_STATUS_VALUES:
         status = "not_checked"
+    source_url = str(evidence.get("source_url", evidence.get("url", "")))
+    retrieved_at = str(evidence.get("retrieved_at", ""))
+    notes = str(evidence.get("notes", ""))
+    if status in {"verified_primary_source", "verified_secondary_source"} \
+            and not (source_url and retrieved_at):
+        # the table's own guard: a verified status is earned by a recorded
+        # source URL and retrieval date, never asserted without them
+        status = "operator_relayed_unverified"
+        demoted = ("demoted from asserted verified status: no source_url "
+                   "and/or retrieved_at recorded")
+        notes = f"{notes}; {demoted}" if notes else demoted
     return {
         "field": field,
         "status": status,
         "value": str(evidence.get("value", "")),
-        "source_url": str(evidence.get("source_url", evidence.get("url", ""))),
-        "retrieved_at": str(evidence.get("retrieved_at", "")),
-        "notes": str(evidence.get("notes", "")),
+        "source_url": source_url,
+        "retrieved_at": retrieved_at,
+        "notes": notes,
     }
 
 

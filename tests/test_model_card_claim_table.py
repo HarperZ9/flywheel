@@ -72,6 +72,39 @@ def test_claim_table_accepts_primary_source_evidence_per_field():
     assert table["summary"]["verified_primary_source_fields"] == 2
 
 
+def test_sourceless_verified_claim_is_demoted_to_unverified():
+    # The table's own guard says relayed claims stay unverified until a source
+    # URL and retrieval date are recorded; an asserted verified_* status with
+    # neither must not count as verified nor satisfy all_primary_sourced.
+    evidence = {
+        "models": [
+            {
+                "model_id": "Qwythos-9B-Claude-Mythos-5-1M",
+                "claims": {
+                    "license": {"status": "verified_primary_source",
+                                "value": "apache-2.0"},
+                },
+                # a bare value with no source at all
+                "context_window_claims": "1M tokens",
+            }
+        ]
+    }
+    table = build_claim_table(
+        contract_fixture(),
+        contract_path="contract.json",
+        contract_sha256="abc123",
+        evidence=evidence,
+    )
+    fields = {f["field"]: f for f in table["model_rows"][0]["claim_fields"]}
+    assert fields["license"]["status"] == "operator_relayed_unverified"
+    assert "source" in fields["license"]["notes"].lower()
+    assert fields["context_window_claims"]["status"] == "operator_relayed_unverified"
+    unresolved = {(u["field"]) for u in table["unresolved_fields"]}
+    assert "license" in unresolved and "context_window_claims" in unresolved
+    assert table["summary"]["verified_primary_source_fields"] == 0
+    assert table["summary"]["all_primary_sourced"] is False
+
+
 def test_render_markdown_lists_models_and_guards():
     table = build_claim_table(
         contract_fixture(),
