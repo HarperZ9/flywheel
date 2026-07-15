@@ -1818,6 +1818,17 @@ class _Handler(BaseHTTPRequestHandler):
             from harness.index_bridge import index_view
             out = index_view(str(root), view)
             return self._json(out, 400 if "error" in out else 200)
+        if p == "/api/discourse":                      # drive the chorus satellite over a gathered corpus
+            length = self._content_length()
+            if length is None:
+                return self._json({"error": "invalid or oversized Content-Length"}, 400)
+            try:
+                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
+            except Exception:
+                req = {}
+            from harness.chorus_bridge import discourse_digest
+            out = discourse_digest((req.get("corpus") or "").strip())
+            return self._json(out, 400 if "error" in out else 200)
         if p == "/api/marketplace/install":            # catalog entry -> plugin registry
             length = self._content_length()
             if length is None:
