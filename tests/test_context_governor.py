@@ -116,3 +116,17 @@ def test_within_nominal_is_not_over_nominal():
     g = gc([{"id": "p", "role": "pin", "text": "short pin"}],
            budget=1000, reliable_fraction=1.0)
     assert g["over_nominal"] is False
+
+
+def test_reliable_fraction_carries_its_provenance():
+    """A caller-measured reliable_fraction and the unmeasured 0.6 default must
+    be distinguishable in the receipt, or 'set from measurement' is
+    unverifiable from the payload."""
+    default = govern_context([_item("c", "pin", "short")], budget=1000)
+    assert default["reliable_fraction"] == 0.6
+    assert default["reliable_fraction_source"] == "default (unmeasured)"
+    measured = govern_context([_item("c", "pin", "short")], budget=1000,
+                              reliable_fraction=0.8,
+                              reliable_fraction_source="ruler:qwen2.5-7b@8k")
+    assert measured["reliable_fraction"] == 0.8
+    assert measured["reliable_fraction_source"] == "ruler:qwen2.5-7b@8k"
