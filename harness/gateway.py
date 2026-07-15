@@ -268,6 +268,59 @@ def _countersign_run(result: dict) -> dict:
         return {**summary, "stored": f"store unavailable: {type(e).__name__}"}
 
 
+def persist_forge_seal(run_root, goal: str, *, intent_sha256: str = "",
+                       architecture_sha256: str = "") -> str:
+    """Persist the Y-chain seal SERVER-SIDE at forge time and return its
+    prp_id. The recheck later reads these hashes from disk, so the checked
+    party never supplies its own criterion."""
+    import hashlib as _h
+    import time as _t
+    body = f"{goal}\x1f{intent_sha256}\x1f{architecture_sha256}"
+    prp_id = _h.sha256(body.encode("utf-8")).hexdigest()[:16]
+    forge_dir = Path(run_root) / "forge"
+    forge_dir.mkdir(parents=True, exist_ok=True)
+    (forge_dir / f"{prp_id}.json").write_text(json.dumps({
+        "schema": "flywheel.forge-seal/v1", "prp_id": prp_id, "goal": goal,
+        "intent_sha256": intent_sha256,
+        "architecture_sha256": architecture_sha256,
+        "sealed_at": _t.time(),
+    }, sort_keys=True), encoding="utf-8")
+    return prp_id
+
+
+def forge_recheck(run_root, prp_id: str, req: dict) -> dict:
+    """The Y-chain drift check against the SERVER-HELD seal. The caller
+    supplies only current sources; the sealed hashes come from disk."""
+    import hashlib as _h
+    pid = str(prp_id or "").strip().lower()
+    if len(pid) != 16 or any(c not in "0123456789abcdef" for c in pid):
+        return {"error": "provide 'prp_id' (16 hex) from the forge response; "
+                         "sealed hashes are read from the server-side seal"}
+    path = Path(run_root) / "forge" / f"{pid}.json"
+    if not path.is_file():
+        return {"error": f"no forge seal on record for prp_id {pid!r}; "
+                         "a recheck needs the seal minted at forge time"}
+    seal = json.loads(path.read_text(encoding="utf-8"))
+    out = {"schema": "flywheel.prp-recheck/v2", "prp_id": pid, "arms": {}}
+    for arm in ("intent", "architecture"):
+        sealed = str(seal.get(f"{arm}_sha256", ""))
+        current = req.get(f"{arm}_source")
+        if not sealed or current is None:
+            continue
+        now = _h.sha256(str(current).encode()).hexdigest()
+        out["arms"][arm] = {"sealed_sha256": sealed,
+                            "current_sha256": now,
+                            "moved": now != sealed}
+    if not out["arms"]:
+        return {"error": "no comparable arm: supply <arm>_source for an arm "
+                         "the seal actually recorded"}
+    out["any_moved"] = any(a["moved"] for a in out["arms"].values())
+    out["note"] = ("the Y-chain drift check against the server-held seal: "
+                   "an arm whose current text no longer hashes to the value "
+                   "sealed at forge time moved after the forge")
+    return out
+
+
 def _forge(goal: str, **kw) -> dict:
     """Goal -> a verified PRP (context_forge): criterion-bearing spec + validation
     gates + confidence grounded in external-checkability. The studio front door."""
@@ -1095,12 +1148,20 @@ class _Handler(BaseHTTPRequestHandler):
             goal = (req.get("goal") or "").strip()
             if not goal:
                 return self._json({"error": "provide a non-empty 'goal'"}, 400)
-            return self._json(_forge(
+            doc = _forge(
                 goal, examples=req.get("examples"),
                 documentation=req.get("documentation"),
                 context=req.get("context", ""),
                 intent_source=str(req.get("intent_source", "")),
-                architecture_source=str(req.get("architecture_source", ""))))
+                architecture_source=str(req.get("architecture_source", "")))
+            if "error" not in doc:
+                # seal the Y-chain server-side so the later drift recheck
+                # never trusts the checked party for the sealed half
+                doc["prp_id"] = persist_forge_seal(
+                    self.run_root, goal,
+                    intent_sha256=str(doc.get("intent_sha256", "")),
+                    architecture_sha256=str(doc.get("architecture_sha256", "")))
+            return self._json(doc)
         if p == "/api/academy/complete":             # bind a passed receipt to a lesson
             length = self._content_length()
             if length is None:
@@ -1125,28 +1186,14 @@ class _Handler(BaseHTTPRequestHandler):
                 req = json.loads(self.rfile.read(length) or b"{}") if length else {}
             except Exception:
                 req = {}
-            import hashlib as _h
-            out = {"schema": "flywheel.prp-recheck/v1", "arms": {}}
-            any_arm = False
-            for arm in ("intent", "architecture"):
-                sealed = str(req.get(f"{arm}_sha256", "")).strip()
-                current = req.get(f"{arm}_source")
-                if not sealed or current is None:
-                    continue
-                any_arm = True
-                now = _h.sha256(str(current).encode()).hexdigest()
-                out["arms"][arm] = {"sealed_sha256": sealed,
-                                    "current_sha256": now,
-                                    "moved": now != sealed}
-            if not any_arm:
-                return self._json({"error": "provide <arm>_sha256 and "
-                                            "<arm>_source for intent and/or "
-                                            "architecture"}, 400)
-            out["any_moved"] = any(a["moved"] for a in out["arms"].values())
-            out["note"] = ("the Y-chain drift check: an arm whose current "
-                           "text no longer hashes to the sealed value moved "
-                           "after the forge")
-            return self._json(out)
+            if req.get("intent_sha256") or req.get("architecture_sha256"):
+                return self._json(
+                    {"error": "caller-supplied sealed hashes are refused: "
+                              "the checked party must not author its own "
+                              "criterion. Provide 'prp_id' from the forge "
+                              "response; the seal is read server-side"}, 400)
+            out = forge_recheck(self.run_root, req.get("prp_id", ""), req)
+            return self._json(out, 400 if "error" in out else 200)
         if p == "/api/science":                       # evidence -> spec -> witnessed judgment, one chain
             length = self._content_length()
             if length is None:
@@ -1393,14 +1440,24 @@ class _Handler(BaseHTTPRequestHandler):
                 req = json.loads(self.rfile.read(length) or b"{}") if length else {}
             except Exception:
                 req = {}
-            run = req.get("run") if isinstance(req.get("run"), dict) else None
+            run_eid = (req.get("run_eid") or "").strip()
+            review = req.get("review") if isinstance(req.get("review"), dict) else None
             files = req.get("reviewed_files")
-            if run is None or not isinstance(files, list):
-                return self._json({"error": "provide 'run' (an agent run doc) "
-                                            "and 'reviewed_files' (a list)"}, 400)
-            from harness.attestation import attest
-            doc = attest(run, files, note=str(req.get("note", "")),
-                         reviewer=str(req.get("reviewer", "")))
+            if not run_eid or review is None or not isinstance(files, list):
+                return self._json({"error": "provide 'run_eid' (a banked "
+                                            "agent-run entity), 'review' (the "
+                                            "run's review doc, verified "
+                                            "against the banked hash), and "
+                                            "'reviewed_files' (a list); an "
+                                            "inline run doc is not accepted "
+                                            "because an attestation binds to "
+                                            "a run that actually happened"}, 400)
+            from harness.attestation import attest_banked
+            doc = attest_banked(run_eid, review, files,
+                                note=str(req.get("note", "")),
+                                reviewer=str(req.get("reviewer", "")))
+            if "error" in doc:
+                return self._json(doc, 409)
             try:
                 from harness.store import put_entity
                 stored = put_entity("attestation", doc,

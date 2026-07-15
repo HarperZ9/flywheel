@@ -99,3 +99,35 @@ def test_without_claims_the_crucible_stage_is_declared_skipped(tmp_path):
     assert doc["verdicts"] == []
     assert doc["crucible"] == "skipped: no claims given"
     assert all(argv[0] != "crucible" for argv in r.calls)
+
+
+def test_receipt_echoes_the_claims_and_measurements_it_judged(tmp_path):
+    claims = [{"id": "c1", "text": "t", "falsification": "f"}]
+    ms = [{"claim": "c1", "deviation": 0.0, "tolerance": 0.001,
+           "method": "paired-arm bench"}]
+    doc = science_run("q", claims=claims, measurements=ms,
+                      runner=_runner(), workdir=tmp_path)
+    # a stranger holding only the payload can re-run the judgment
+    assert doc["claims"] == claims
+    assert doc["measurements"] == ms
+
+
+def test_errored_crucible_hashes_differently_from_no_claims(tmp_path):
+    # an errored crucible run (verdicts=[], error named) must not produce the
+    # same chain hash as a clean run that simply had no claims
+    errored = science_run(
+        "q", claims=[{"id": "c1", "text": "t", "falsification": "f"}],
+        runner=_runner(crucible=(1, "boom")), workdir=tmp_path)
+    assert "crucible" in errored["errors"]
+    clean = science_run("q", runner=_runner(), workdir=tmp_path)
+    assert errored["chain_hash"] != clean["chain_hash"]
+
+
+def test_different_measurement_content_same_statuses_hash_differently(tmp_path):
+    def _run_with(tol):
+        return science_run(
+            "q", claims=[{"id": "c1", "text": "t", "falsification": "f"}],
+            measurements=[{"claim": "c1", "deviation": 0.0, "tolerance": tol,
+                           "method": "bench"}],
+            runner=_runner(), workdir=tmp_path)
+    assert _run_with(0.001)["chain_hash"] != _run_with(0.1)["chain_hash"]
