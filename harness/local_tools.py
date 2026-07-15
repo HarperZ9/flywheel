@@ -29,8 +29,14 @@ _TOOL_LINE = re.compile(r"^\s*TOOL\s+(\w+)\s+(\{.*\})\s*$")
 
 # Commands refused even when exec is allowed. Not a security boundary against a
 # determined operator — a guardrail against a small model wrecking the tree.
+# The rm/rmdir entries are order-INDEPENDENT: a recursive-force delete is refused
+# however its flags are spelled (-rf, -fr, -r -f, -Rf, --recursive --force, and
+# the Windows `rmdir /q /s`), because pinning one literal ordering let the other
+# spellings slip the gate. The lookaheads scan the argument span up to the next
+# command separator so a later `; safe` cannot mask an earlier destructive verb.
 _DENY = re.compile(
-    r"\b(rm\s+-rf|rmdir\s+/s|del\s+/|format\s|mkfs|dd\s+if=|shutdown|reboot|"
+    r"\b(rm\s+(?=[^|;&\n]*(?:-\w*r|--recursive))(?=[^|;&\n]*(?:-\w*f|--force))|"
+    r"rmdir\s+(?=[^|;&\n]*/s)|del\s+/|format\s|mkfs|dd\s+if=|shutdown|reboot|"
     r":\(\)\s*\{|curl[^|]*\|\s*(sh|bash)|wget[^|]*\|\s*(sh|bash)|>\s*/dev/sd)",
     re.IGNORECASE)
 
@@ -85,6 +91,15 @@ def _safe_path(root: str, path: str) -> "str | None":
     if target == root_abs or target.startswith(root_abs + os.sep):
         return target
     return None
+
+
+def _within(root_abs: str, f) -> bool:
+    """True iff f's REAL path is the root or under it. Confining the search base
+    is not enough: rglob follows a symlink or junction INSIDE the tree whose
+    target lives outside it, so every candidate is re-confined before it is read
+    or listed (the base check saw only the link, not where it points)."""
+    rp = os.path.realpath(str(f))
+    return rp == root_abs or rp.startswith(root_abs + os.sep)
 
 
 def _strip_ab(path: str) -> str:
@@ -320,6 +335,8 @@ class ToolExecutor:
         for f in files:
             if not f.is_file():
                 continue
+            if not _within(root_abs, f):        # a symlink/junction may resolve
+                continue                        # outside the tree: never read it
             try:
                 text = f.read_text(encoding="utf-8", errors="replace")
             except OSError:
@@ -336,6 +353,8 @@ class ToolExecutor:
         root_abs = os.path.realpath(self.root)
         matches = []
         for f in Path(root_abs).rglob(args.get("pattern", "*")):
+            if not _within(root_abs, f):        # do not even list an escaped path
+                continue
             matches.append(os.path.relpath(str(f), root_abs).replace("\\", "/"))
             if len(matches) >= 500:
                 break
