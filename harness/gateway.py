@@ -183,11 +183,35 @@ def receipts_ledger(root: Path, run_root: Path | str) -> dict:
                            "inclusion proof re-checkable offline"}
 
 
+def _workspace_root_allowlist() -> "list[str]":
+    """Permitted workspace-root prefixes, normalized for prefix comparison.
+    Read from FLYWHEEL_WORKSPACE_ROOTS (os.pathsep-separated). Empty = open
+    resolution (any existing directory), preserving the prior default; set it
+    to confine agent runs to named trees."""
+    import os
+    raw = os.environ.get("FLYWHEEL_WORKSPACE_ROOTS", "")
+    roots = []
+    for part in raw.split(os.pathsep):
+        part = part.strip()
+        if not part:
+            continue
+        try:
+            roots.append(str(Path(part).expanduser().resolve()))
+        except (OSError, ValueError):
+            continue
+    return roots
+
+
 def _resolve_workspace_root(requested, default: Path) -> "tuple[Path, str | None]":
     """Resolve the workspace root an agent run operates in. The caller may
     name any EXISTING directory (the desktop IDE points at an open project);
     the ToolExecutor then sandboxes reads and gated writes to that root. A
-    missing or non-directory path is refused, never silently substituted."""
+    missing or non-directory path is refused, never silently substituted.
+
+    When FLYWHEEL_WORKSPACE_ROOTS is set, existence is not enough: the resolved
+    root must equal or sit under an allowlisted prefix, else it is refused BY
+    NAME. Existence is not authorization -- without this a request could scope
+    the executor to a home or credentials directory just by naming it."""
     if not requested:
         return default, None
     try:
@@ -196,6 +220,12 @@ def _resolve_workspace_root(requested, default: Path) -> "tuple[Path, str | None
         return default, f"invalid root: {e}"
     if not p.is_dir():
         return default, f"root is not an existing directory: {requested}"
+    allow = _workspace_root_allowlist()
+    if allow:
+        rp = str(p)
+        if not any(rp == a or rp.startswith(a + os.sep) for a in allow):
+            return default, (f"root is not under an allowlisted workspace "
+                             f"prefix: {requested}")
     return p, None
 
 
