@@ -83,12 +83,39 @@ def workflow_roster(run_root: "Path | str | None" = None) -> dict:
             for p in files:
                 try:
                     doc = json.loads(p.read_text(encoding="utf-8"))
-                    runs.append({k: doc.get(k) for k in
-                                 ("workflow", "endpoint", "status", "chain_hash",
-                                  "started", "goal_excerpt")})
+                    row = {k: doc.get(k) for k in
+                           ("workflow", "endpoint", "status", "chain_hash",
+                            "started", "goal_excerpt")}
+                    # re-verify the stored chain rather than trusting it: a
+                    # hand-flipped status or rewritten steps is served as
+                    # TAMPERED, never as a legitimate prior run
+                    recomputed = recompute_chain(doc)
+                    row["chain_ok"] = recomputed == doc.get("chain_hash")
+                    if not row["chain_ok"]:
+                        row["status"] = "TAMPERED"
+                    if p.stem != str(doc.get("chain_hash", ""))[:16]:
+                        row["chain_ok"] = False
+                        row["status"] = "TAMPERED"
+                    runs.append(row)
                 except Exception:
                     runs.append({"workflow": p.stem, "status": "UNREADABLE"})
     return {"schema": "flywheel.workflows/v1", "workflows": defs, "runs": runs}
+
+
+def recompute_chain(doc: dict) -> str:
+    """Re-derive a workflow run's chain_hash from its stored fields, exactly
+    as run_workflow built it: header, then each step summary in order, then
+    the final status. A stranger holding the receipt runs this and compares."""
+    header = {"workflow": doc.get("workflow"), "endpoint": doc.get("endpoint"),
+              "goal_excerpt": doc.get("goal_excerpt"),
+              "started": doc.get("started")}
+    chain = hashlib.sha256()
+    chain.update(json.dumps(header, sort_keys=True, default=str).encode())
+    for summary in doc.get("steps", []):
+        chain.update(json.dumps(summary, sort_keys=True, default=str).encode())
+    chain.update(json.dumps({"final_status": doc.get("status")},
+                            sort_keys=True).encode())
+    return chain.hexdigest()
 
 
 def _step_summary(name: str, kind: str, status: str, result: dict | None,
@@ -124,7 +151,12 @@ def run_workflow(workflow: str, goal: str, endpoint: str, *, root: str = ".",
                 "known": sorted(WORKFLOWS)}
     started = time.strftime("%Y-%m-%dT%H:%M:%S")
     steps_out: list = []
+    # seed the chain with the header so endpoint/goal/started are bound into
+    # chain_hash, not loose fields a tamper can rewrite undetected
+    header = {"workflow": workflow, "endpoint": endpoint,
+              "goal_excerpt": goal[:200], "started": started}
     chain = hashlib.sha256()
+    chain.update(json.dumps(header, sort_keys=True, default=str).encode())
     prev = ""
     status = "COMPLETED"
     for step in spec["steps"]:
@@ -166,15 +198,39 @@ def run_workflow(workflow: str, goal: str, endpoint: str, *, root: str = ".",
                     allow_mcp=allow_mcp, max_steps=step.get("max_steps", 6),
                     proposer=proposer)
                 prev = str(result.get("final", ""))
+                # an external check that fired FALSE is not a pass: a stage
+                # whose ledger did not verify or whose trajectory integrity is
+                # dirty (the agent edited the file that grades it) FAILS the
+                # run. It is never stamped DONE for a later clean verify stage
+                # to launder into VERIFIED.
                 summary = _step_summary(step["name"], "agent", "DONE", result)
+                if result.get("verified") is False or \
+                        summary.get("integrity_clean") is False:
+                    summary["status"] = "FAILED"
+                    reasons = []
+                    if result.get("verified") is False:
+                        reasons.append("ledger did not verify")
+                    if summary.get("integrity_clean") is False:
+                        reasons.append("trajectory integrity dirty")
+                    summary["note"] = "; ".join(reasons)
+                    steps_out.append(summary)
+                    chain.update(json.dumps(summary, sort_keys=True,
+                                            default=str).encode())
+                    status = "FAILED"
+                    break
             except Exception as e:
                 summary = _step_summary(step["name"], "agent", "ERROR", None,
                                         note=f"{type(e).__name__}: {e}")
                 steps_out.append(summary)
+                chain.update(json.dumps(summary, sort_keys=True,
+                                        default=str).encode())
                 status = "FAILED"
                 break
         steps_out.append(summary)
         chain.update(json.dumps(summary, sort_keys=True, default=str).encode())
+    # fold the final status so a hand-flip from FAILED to COMPLETED breaks
+    # the chain a stranger recomputes
+    chain.update(json.dumps({"final_status": status}, sort_keys=True).encode())
     doc = {"schema": "flywheel.workflow-run/v1", "workflow": workflow,
            "endpoint": endpoint, "goal_excerpt": goal[:200], "started": started,
            "steps": steps_out, "status": status,
