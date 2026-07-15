@@ -8,6 +8,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flywheel_desktop/client/gateway_client.dart';
 import 'package:flywheel_desktop/models/attestation_models.dart';
 import 'package:flywheel_desktop/theme/flywheel_theme.dart';
+import 'package:flywheel_desktop/widgets/fw.dart';
 import 'package:flywheel_desktop/widgets/run_evidence_card.dart';
 import 'package:flywheel_desktop/widgets/sign_run_panel.dart';
 
@@ -45,6 +46,34 @@ void main() {
     expect(find.textContaining('null: nothing verified'), findsOneWidget);
     expect(find.textContaining('1 reads'), findsOneWidget);
     expect(find.textContaining('unchanged'), findsOneWidget);
+  });
+
+  testWidgets('a pending high-tier demand is unverifiable, not drift',
+      (tester) async {
+    const run = {
+      'duration_s': 1.0,
+      'ttva_s': null,
+      'risk_review': {
+        'demands': [
+          {'path': 'g.py', 'tier': 'high'}
+        ]
+      },
+      'workspace': {'changed': false},
+    };
+    await tester.pumpWidget(MaterialApp(
+      theme: flywheelLightTheme(),
+      home: const Scaffold(
+          body: SingleChildScrollView(child: RunEvidenceCard(run: run))),
+    ));
+    await tester.pump();
+    // the risk row is present; its marker is the honest null, never a drift
+    // verdict (drift means a re-check diverged, not that a walk is pending)
+    final dots = tester
+        .widgetList<VerdictDot>(find.byType(VerdictDot))
+        .map((d) => d.status)
+        .toList();
+    expect(dots, contains('unverifiable'));
+    expect(dots, isNot(contains('drift')));
   });
 
   test('Attestation parses standing, coverage, and store receipt', () {
@@ -105,6 +134,19 @@ void main() {
     await tester.tap(find.byType(Checkbox).first); // g.py listed first
     await tester.pump();
     expect(tester.widget<FilledButton>(sign).onPressed, isNotNull);
+  });
+
+  test('Attestation surfaces the overclaimed dishonest signal', () {
+    final a = Attestation.fromJson(const {
+      'standing': 'partial',
+      'coverage': 0.5,
+      'reviewed': ['a.py'],
+      'unreviewed': [],
+      'overclaimed': ['x.py'],
+      'sha256': 'x',
+    });
+    expect(a.overclaimed, ['x.py']);
+    expect(a.verdict, 'unverifiable'); // an overclaim is never verified
   });
 
   testWidgets('an unparseable risk_review fails CLOSED, not open',

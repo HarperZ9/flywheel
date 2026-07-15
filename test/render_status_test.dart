@@ -26,6 +26,12 @@ void main() {
     expect(companionStatus('anything'), 'unverifiable');
   });
 
+  test('a health fraction is verified only at full health', () {
+    expect(fractionStatus(3, 3), 'verified');
+    expect(fractionStatus(1, 3), 'drift'); // partial health is not a green win
+    expect(fractionStatus(0, 0), 'drift'); // nothing healthy, nothing to verify
+  });
+
   test('a lift with no interval is never verified', () {
     expect(liftStatus(0.12), 'unverifiable'); // bare point estimate
     expect(liftStatus(0.005, includesZero: true), 'unverifiable'); // straddles 0

@@ -192,6 +192,15 @@ class _SignRunPanelState extends State<SignRunPanel> {
                 child: Text('unwalked: ${a.unreviewed.join(', ')}',
                     style: fwMono(t, size: 11, color: t.inkMuted)),
               ),
+            // overclaimed = files signed for that the run never edited: the
+            // dishonest signal that forces standing to partial. Surfaced in
+            // the drift caution color, never hidden.
+            if (a.overclaimed.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Text('overclaimed: ${a.overclaimed.join(', ')}',
+                    style: fwMono(t, size: 11, color: t.drift)),
+              ),
             const SizedBox(height: FwLayout.s2),
             HashText('attestation', a.sha256),
             if (a.storeChainHash.isNotEmpty)

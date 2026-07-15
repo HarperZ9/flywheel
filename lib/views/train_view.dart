@@ -146,9 +146,12 @@ class _TrainViewState extends State<TrainView> {
             ],
           ),
           const SizedBox(height: FwLayout.s3),
-          _arm(t, 'raw single-shot', single, 'drift'),
+          // the two arm bars are rate MAGNITUDES the reader compares, not
+          // verdicts: neutral ink, never green-by-identity. The one verdict in
+          // this view is the interval-gated lift pill below.
+          _arm(t, 'raw single-shot', single, 'unverifiable'),
           const SizedBox(height: FwLayout.s2),
-          _arm(t, 'Flywheel verified', verified, 'verified'),
+          _arm(t, 'Flywheel verified', verified, 'unverifiable'),
           const SizedBox(height: FwLayout.s3),
           Row(
             children: [

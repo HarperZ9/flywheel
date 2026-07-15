@@ -29,6 +29,12 @@ String companionStatus(String? verdict) => switch (verdict) {
       _ => 'unverifiable',
     };
 
+/// A "part of whole" health tile is verified only at FULL health: 1 of 3
+/// local tiers healthy is not a green win. Anything short of whole, or an
+/// empty whole, is the drift caution verdict.
+String fractionStatus(int part, int whole) =>
+    whole > 0 && part == whole ? 'verified' : 'drift';
+
 /// A harness-lift point estimate is not a verified claim without an interval
 /// that separates from zero (no claim without its interval). `includesZero`
 /// null means no interval was emitted, so the lift stays the honest null.
