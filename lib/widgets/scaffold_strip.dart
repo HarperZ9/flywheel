@@ -1,9 +1,10 @@
 // scaffold_strip.dart — the per-message scaffold made visible.
 //
 // Every routed answer now carries proof of its perception: sources frozen
-// before the answer existed (verified provenance), degradations named with
-// reasons (unverifiable, never hidden), and the chained turn receipt. This
-// strip renders that receipt under an answer; an empty scaffold renders
+// before the answer existed (provenance, a neutral marker, never a verdict),
+// degradations named with reasons (unverifiable, never hidden), and the
+// chained turn receipt. This strip renders that receipt under an answer; an
+// empty scaffold renders
 // nothing at all.
 import 'package:flutter/material.dart';
 
@@ -32,9 +33,17 @@ class ScaffoldStrip extends StatelessWidget {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Padding(
-                  padding: EdgeInsets.only(top: 4),
-                  child: VerdictDot('verified'),
+                // a frozen source is PROVENANCE (url + hash captured before the
+                // answer), not an engine verdict: a neutral ink marker, never
+                // the verified accept color. The sha is the receipt.
+                Padding(
+                  padding: const EdgeInsets.only(top: 5),
+                  child: Container(
+                    width: 6,
+                    height: 6,
+                    decoration: BoxDecoration(
+                        color: t.inkFaint, shape: BoxShape.circle),
+                  ),
                 ),
                 const SizedBox(width: FwLayout.s2),
                 Expanded(

@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:flywheel_desktop/models/gateway_models.dart';
 import 'package:flywheel_desktop/theme/flywheel_theme.dart';
+import 'package:flywheel_desktop/widgets/fw.dart';
 import 'package:flywheel_desktop/widgets/scaffold_strip.dart';
 
 Widget _wrap(Widget child) => MaterialApp(
@@ -39,6 +40,20 @@ void main() {
   testWidgets('the turn receipt hash is visible', (tester) async {
     await tester.pumpWidget(_wrap(ScaffoldStrip(_sample())));
     expect(find.textContaining('e1d2c3b4'), findsOneWidget);
+  });
+
+  testWidgets('a frozen source is provenance, not a verified verdict',
+      (tester) async {
+    // A frozen source carries only url + sha256, captured BEFORE the answer
+    // existed. That is provenance, not an engine verdict, so it must not wear
+    // the verified accept color; the only verdict dot here is the degraded
+    // source's honest unverifiable.
+    await tester.pumpWidget(_wrap(ScaffoldStrip(_sample())));
+    final dots = tester
+        .widgetList<VerdictDot>(find.byType(VerdictDot))
+        .map((d) => d.status)
+        .toList();
+    expect(dots, isNot(contains('verified')));
   });
 
   testWidgets('a null or empty scaffold renders nothing', (tester) async {

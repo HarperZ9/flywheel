@@ -6,6 +6,7 @@
 import 'package:flutter/material.dart';
 
 import '../client/gateway_client.dart';
+import '../models/render_status.dart';
 import '../theme/flywheel_theme.dart';
 import '../widgets/charts.dart';
 import '../widgets/fw.dart';
@@ -153,7 +154,11 @@ class _TrainViewState extends State<TrainView> {
             children: [
               VerdictPill(
                   'harness lift ${lift >= 0 ? '+' : ''}${(lift * 100).toStringAsFixed(0)} pts',
-                  status: lift > 0 ? 'verified' : 'drift'),
+                  // a bare point estimate carries no interval: the duel summary
+                  // emits no separation from zero, so the lift is the honest
+                  // null, never a green win. The powered n=110 lane supersedes.
+                  status: liftStatus(lift,
+                      includesZero: d['lift_includes_zero'] as bool?)),
               const SizedBox(width: FwLayout.s3),
               if (rescued.isNotEmpty)
                 Expanded(

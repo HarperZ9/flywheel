@@ -217,7 +217,7 @@ class _RailItemState extends State<_RailItem> {
           width: 2.5,
           height: 14,
           decoration: BoxDecoration(
-            color: selected ? t.drift : Colors.transparent,
+            color: selected ? t.ink : Colors.transparent, // selection = ink emphasis, not a verdict
             borderRadius: BorderRadius.circular(2),
           ),
         ),
@@ -236,7 +236,7 @@ class _RailItemState extends State<_RailItem> {
           width: 2.5,
           height: 13,
           decoration: BoxDecoration(
-            color: selected ? t.drift : Colors.transparent,
+            color: selected ? t.ink : Colors.transparent, // selection = ink emphasis, not a verdict
             borderRadius: BorderRadius.circular(2),
           ),
         ),

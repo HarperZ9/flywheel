@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 
 import '../client/gateway_client.dart';
 import '../models/gateway_models.dart';
+import '../models/render_status.dart';
 import '../theme/flywheel_theme.dart';
 import '../widgets/fw.dart';
 
@@ -102,7 +103,7 @@ class _ReceiptsViewState extends State<ReceiptsView> {
                 child: StatTile(
                     label: 'accepted pass',
                     value: '${l.passCount}',
-                    status: 'verified')),
+                    status: countStatus(l.passCount))),
           ],
         ),
         const SizedBox(height: FwLayout.s5),
@@ -172,8 +173,7 @@ class _ReceiptsViewState extends State<ReceiptsView> {
           border: Border(bottom: BorderSide(color: t.hairline))),
       child: Row(
         children: [
-          VerdictPill(e.verdict,
-              status: e.verdict == 'PASS' ? 'verified' : 'drift'),
+          VerdictPill(e.verdict, status: envelopeStatus(e.verdict)),
           const SizedBox(width: FwLayout.s3),
           Expanded(child: Text(e.name, style: fwMono(t, size: 12))),
           if (e.taskId.isNotEmpty)

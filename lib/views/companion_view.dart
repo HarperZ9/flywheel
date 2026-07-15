@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 
 import '../client/gateway_client.dart';
 import '../models/gateway_models.dart';
+import '../models/render_status.dart';
 import '../theme/flywheel_theme.dart';
 import '../widgets/fw.dart';
 import '../widgets/scaffold_strip.dart';
@@ -125,21 +126,23 @@ class _CompanionViewState extends State<CompanionView> {
 
   Widget _answerCard(BuildContext context, CompanionResult r) {
     final t = context.fw;
-    final (chip, status, note) = switch (r.source) {
-      'cache' => ('verified · cache', 'verified', null),
-      'local-verified' => ('verified · local', 'verified', null),
+    // the chip LABEL and note describe the transport (cache/local/escalate),
+    // but the COLOR is the engine's own verdict on the answer, not the source:
+    // a cache hit or a local run is transport, not an acceptance.
+    final status = companionStatus(r.verdict);
+    final (chip, note) = switch (r.source) {
+      'cache' => ('verified · cache', null),
+      'local-verified' => ('verified · local', null),
       'local-consensus' => (
           'consensus · local',
-          'unverifiable',
           'Agreement across local samples, not a proof. Treat accordingly.'
         ),
       'escalate' => (
           'escalate → ${r.escalateTo ?? 'frontier'}',
-          'drift',
           'The local model could not verify an answer. The failed attempt is '
               'on the ledger; route this prompt to a stronger endpoint.'
         ),
-      _ => (r.source, 'unverifiable', null),
+      _ => (r.source, null),
     };
     final body = r.text ?? r.bestEffortText;
     return HairlineCard(

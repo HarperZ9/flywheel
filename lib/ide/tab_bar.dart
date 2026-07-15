@@ -71,7 +71,8 @@ class EditorTabBar extends StatelessWidget {
             border: Border(
               right: BorderSide(color: t.hairline),
               top: BorderSide(
-                  color: isActive ? t.drift : Colors.transparent, width: 2),
+                  color: isActive ? t.ink : Colors.transparent, // selection = ink, not a verdict
+                  width: 2),
             ),
           ),
           child: Row(

@@ -6,6 +6,7 @@
 import 'package:flutter/material.dart';
 
 import '../models/gateway_models.dart';
+import '../models/render_status.dart';
 import '../theme/flywheel_theme.dart';
 import '../widgets/fw.dart';
 
@@ -42,7 +43,8 @@ class WorldView extends StatelessWidget {
             StatTile(
                 label: 'measured',
                 value: '${w.findings['measured'] ?? 0}',
-                status: 'verified'),
+                status: countStatus(
+                    int.tryParse('${w.findings['measured'] ?? 0}') ?? 0)),
             StatTile(
                 label: 'pending',
                 value: '${w.findings['pending'] ?? 0}',
