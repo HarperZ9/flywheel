@@ -68,3 +68,35 @@ def discourse_digest(corpus: str, *, runner=None) -> dict:
         return {"error": "chorus did not emit JSON"}
     return {"schema": "flywheel.discourse-digest/v1", "corpus": str(corpus),
             "verified": bool(digest.get("verified")), "result": digest}
+
+
+def list_corpora(root: str, *, runner=None) -> dict:
+    """List gather corpora under ``root`` as discourse sources, via `chorus corpora`.
+    Returns ``{schema, root, corpora: [...]}`` (each corpus with its comment count and
+    subject) or a named error. ``runner`` is injectable for tests."""
+    if not root or not Path(root).is_dir():
+        return {"error": f"root is not an existing directory: {root}"}
+    argv = _chorus_argv()
+    if argv is None:
+        return {"error": "the chorus satellite is not installed; pip install chorus-discourse"}
+    cmd = argv + ["corpora", str(root)]
+    try:
+        if runner is not None:
+            rc, out, err = runner(cmd)
+        else:
+            proc = subprocess.run(cmd, capture_output=True, text=True, timeout=_TIMEOUT)
+            rc, out, err = proc.returncode, proc.stdout, proc.stderr
+    except subprocess.TimeoutExpired:
+        return {"error": f"chorus corpora timed out after {_TIMEOUT}s"}
+    except (OSError, ValueError) as e:
+        return {"error": f"{type(e).__name__}: {e}"}
+    try:
+        result = json.loads(out) if (out or "").strip() else {}
+    except ValueError:
+        return {"error": f"chorus corpora did not emit JSON (rc {rc}): {(err or '').strip()[-200:]}"}
+    if isinstance(result, dict) and "error" in result:   # a bad root: chorus names it, exit 1
+        return result
+    if rc != 0:
+        return {"error": f"chorus corpora failed (rc {rc}): {(err or out or '').strip()[-200:]}"}
+    return {"schema": "flywheel.discourse-corpora/v1", "root": str(root),
+            "corpora": result.get("corpora", [])}
