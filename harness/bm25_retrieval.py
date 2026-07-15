@@ -90,8 +90,20 @@ def search(index: dict, query: str, k: int = 8) -> list:
         if score > 0:
             scored.append((score, c))
     scored.sort(key=lambda sc: (-sc[0], sc[1]["path"], sc[1]["line"]))
-    return [{"schema": SCHEMA, "path": c["path"], "line": c["line"],
-             "score": round(s, 4),
-             "excerpt": c["text"][:400],
-             "sha256": hashlib.sha256(c["text"].encode("utf-8")).hexdigest()}
-            for s, c in scored[:k]]
+    hits = []
+    for s, c in scored[:k]:
+        excerpt = c["text"][:400]
+        hits.append({
+            "schema": SCHEMA, "path": c["path"], "line": c["line"],
+            "score": round(s, 4),
+            "excerpt": excerpt,
+            # the FULL-chunk hash detects a stale index; a chunk routinely
+            # exceeds 400 chars, so re-hashing the excerpt a stranger received
+            # cannot reproduce it -- the excerpt carries its OWN hash plus a
+            # truncation flag, so the cited snippet is re-checkable as received
+            "sha256": hashlib.sha256(c["text"].encode("utf-8")).hexdigest(),
+            "excerpt_sha256": hashlib.sha256(
+                excerpt.encode("utf-8")).hexdigest(),
+            "truncated": len(c["text"]) > 400,
+        })
+    return hits

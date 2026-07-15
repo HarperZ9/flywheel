@@ -38,6 +38,30 @@ def test_deterministic_ranking(tmp_path):
     assert a[0]["path"] == "auth.py"
 
 
+def test_excerpt_is_content_addressed_and_marks_truncation(tmp_path):
+    """The excerpt a stranger receives must be re-checkable by re-hashing it;
+    the full-chunk sha256 (kept for stale-index detection) does not reproduce a
+    truncated excerpt, so the receipt carries the excerpt's own hash and a
+    truncation flag."""
+    import hashlib
+    big = "\n".join(f"line_{i} needle payload text here" for i in range(40))
+    (tmp_path / "big.py").write_text(big, encoding="utf-8")
+    idx = build_index(tmp_path)
+    hits = search(idx, "needle", k=1)
+    h = hits[0]
+    assert len(h["excerpt"]) == 400 and h["truncated"] is True
+    assert h["excerpt_sha256"] == hashlib.sha256(
+        h["excerpt"].encode("utf-8")).hexdigest()
+    assert h["sha256"] != h["excerpt_sha256"]   # full-chunk hash still present
+
+
+def test_short_chunk_is_not_marked_truncated(tmp_path):
+    idx = build_index(_repo(tmp_path))
+    h = search(idx, "invoice tax subtotal", k=1)[0]
+    assert h["truncated"] is False
+    assert len(h["excerpt"]) < 400
+
+
 def test_no_match_is_an_empty_list_not_an_invention(tmp_path):
     idx = build_index(_repo(tmp_path))
     assert search(idx, "quantum entanglement carburetor") == []

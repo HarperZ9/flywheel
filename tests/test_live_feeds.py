@@ -48,3 +48,24 @@ def test_unknown_domain_is_a_named_error():
     doc = live_feeds(domain="astrology", runner=_runner())
     assert "error" in doc
     assert "astrology" in doc["error"]
+
+
+def test_items_carry_a_content_hash():
+    """The payload note claims items carry gather provenance; something
+    hash-shaped must travel with each item, or the claim outruns the receipt."""
+    doc = live_feeds(domain="art", runner=_runner())
+    assert doc["items"]
+    for i in doc["items"]:
+        assert len(i["sha256"]) == 64
+
+
+def test_item_passes_through_gather_content_hash_when_present():
+    hashed = json.dumps({"items": [
+        {"id": "z", "title": "t", "url": "https://x/z",
+         "sha256": "f" * 64}]})
+
+    def run(argv):
+        return (0, hashed)
+
+    doc = live_feeds(domain="art", runner=run)
+    assert doc["items"][0]["sha256"] == "f" * 64

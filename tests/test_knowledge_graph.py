@@ -75,3 +75,39 @@ def test_unreadable_surface_is_an_error_node():
     errs = [n for n in g["nodes"] if n["kind"] == "error"]
     assert len(errs) == 1
     assert "lanes" in errs[0]["label"]
+
+
+def test_edges_name_the_source_surface():
+    """An edge must record which surface payload produced it, so it can be
+    traced back to the document it was derived from -- not left as an anonymous
+    hub->node link."""
+    g = build_graph(SURFACES)
+    for e in g["edges"]:
+        assert e.get("source"), e
+    lane_edge = next(e for e in g["edges"] if e["to"] == "lane:gather")
+    assert lane_edge["source"] == "lanes"
+    proj_edge = next(e for e in g["edges"] if e["to"] == "project:demo")
+    assert proj_edge["source"] == "projects"
+
+
+def test_error_edge_names_the_failed_surface():
+    g = build_graph({"lanes": {"error": "lanes unavailable"}})
+    err_edge = next(e for e in g["edges"] if e["to"].startswith("error:"))
+    assert err_edge["source"] == "lanes"
+
+
+def test_project_verdict_derives_from_existence():
+    """A registered project whose root no longer exists must not enter the
+    graph as 'live' with full status weight; the verdict is derived from the
+    payload's existence check and the signal is carried for re-derivation."""
+    surfaces = {"projects": {"projects": [
+        {"name": "gone", "root": "C:\\nope", "exists": False},
+        {"name": "here", "root": "C:\\yes", "exists": True},
+    ]}}
+    g = build_graph(surfaces)
+    by_id = {n["id"]: n for n in g["nodes"]}
+    assert by_id["project:gone"]["verdict"] == "missing"
+    assert by_id["project:here"]["verdict"] == "live"
+    assert by_id["project:gone"]["signals"]["exists"] is False
+    # the missing project ranks below the live one (0.2 vs 1.0 status weight)
+    assert by_id["project:gone"]["priority"] < by_id["project:here"]["priority"]
