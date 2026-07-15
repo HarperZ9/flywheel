@@ -72,3 +72,43 @@ def test_is_an_oracle_result():
 def test_empty_quorum_rejected_at_construction():
     with pytest.raises(ValueError):
         QuorumOracle([])
+
+
+class IdOracle:
+    """A verifier with an explicit identity: its own output_hash and model_ref."""
+    def __init__(self, name, passes, ref, ohash):
+        self.oracle_type = name
+        self.model_ref = ref
+        self._p, self._h = passes, ohash
+    def verify(self, candidate, task):
+        return OracleResult(passed=self._p, cmd=self.oracle_type,
+                            output_hash=self._h, stdout_excerpt="", rc=0)
+
+
+def test_stacked_ballot_is_visible_in_the_receipt():
+    # One verifier counted twice must NOT look identical to two independent
+    # peers: the receipt carries each member's identity so a stranger can
+    # see the stacked ballot.
+    same = IdOracle("judge", True, "endpoint-A", "same-hash")
+    stacked = QuorumOracle([same, same], threshold=0.5)
+    two_independent = QuorumOracle(
+        [IdOracle("judge", True, "endpoint-A", "hash-1"),
+         IdOracle("peer", True, "endpoint-B", "hash-2")], threshold=0.5)
+    rs = stacked.verify("x", None)
+    ri = two_independent.verify("x", None)
+    # each vote carries identity
+    assert all("output_hash" in v and "ref" in v for v in rs.votes)
+    # the stacked pair shares one identity; the receipt says so
+    assert rs.distinct_members == 1
+    assert ri.distinct_members == 2
+    # and the two receipts are not byte-identical
+    assert rs.output_hash != ri.output_hash
+
+
+def test_same_endpoint_under_two_names_is_flagged():
+    # Two oracle_type names hitting the SAME endpoint (same model_ref) are one
+    # voice, not two: the receipt flags the collision.
+    q = QuorumOracle([IdOracle("a", True, "endpoint-X", "h1"),
+                      IdOracle("b", True, "endpoint-X", "h2")], threshold=0.5)
+    r = q.verify("x", None)
+    assert r.distinct_members == 1     # one endpoint, one voice
