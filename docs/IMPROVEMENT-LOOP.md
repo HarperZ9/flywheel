@@ -190,6 +190,49 @@ by the content-hash fix) and the retrieval-honesty LOW cluster (bm25 excerpt
 hash, graph edge sources, project verdict hardcoded 'live', feed item hashes,
 reliable_fraction provenance) are queued.
 
+### Cycle 4 (2026-07-14): the verification lanes
+
+The heart of the thesis: the oracles that decide acceptance (lean_oracle,
+conjecture_forge, benchmark_hygiene, tension_ledger, suite_audit,
+eval_engineering, the pytest/exec oracles, passn_model, crucible
+preregistration). Five critics, one per failure shape (oracle-soundness,
+falsifier-integrity, interval-statistic-honesty, novelty-claim-integrity,
+seal-rescue-integrity), each finding adversarially verified. 19 survived:
+6 HIGH, 9 MEDIUM, 4 LOW.
+
+**HIGH tier: all six shipped (each TDD).** Lean hygiene screens the real
+kernel-bypass surface (admit/sorryAx/native_decide/skipKernelTC/
+implemented_by) and the sorry belt-check matches the real warning
+(`0109405`). grade_novelty L2 requires the strong proof to prove the SAME
+statement (`0109405`). The instrument register counts only sealed
+adjudications (`0109405`). The trajectory curator's load-bearing
+oracle_can_fail gate no longer accepts flip arithmetic as falsifiability:
+every grade input must be chain-backed and every grader must carry a
+recorded refusal (`79bc811`). And the loop crossed a repo boundary for the
+first time: crucible itself let a verdict be rescued by widening the
+tolerance after the seal, because no seal bound the deciding number. A
+claim can now seal its tolerance; a mismatched measurement is fail-closed
+UNVERIFIABLE, and a hand-forged MATCH fails re-derivation (crucible
+`fd19657`, legacy hashes preserved, the residual legacy hole stated openly
+as a tested honest null).
+
+**MEDIUM tier: all nine shipped (`13c1e42`, each TDD).** exec_oracle
+requires a clean exit; PytestOracle refuses an all-skipped run; the apex
+oracle audits the axiom footprint of every named theorem on accept
+(live-verified against Lean 4.32.0); suite_audit scores a hanging mutant
+indeterminate, never killed; task_curator's stub keeps imports so a
+vacuous suite cannot hide behind ImportError; tension verdicts follow the
+sigma distance, not CI overlap, and demand hex source hashes; passn_model
+drops UNVERIFIABLE tasks instead of recoding them as failures; and the
+passk-forecast + k5-replication adjudications were re-emitted as full
+re-derivable records with their preimages on disk (verdicts asserted
+unchanged; a repo test now demands a recomputable preimage from every
+committed adjudication).
+
+LOW tier (4) queued: injected-callable acceptance authority in the
+invention loop, uplift-delta evidence markers, syntactic-only
+normalize_statement, adjudicate_k5_forecast re-encoded constants.
+
 ### Cycle status (the repeat, honestly)
 
 Complete cycles (consultation -> reconcile -> execute HIGH+MEDIUM):
@@ -197,8 +240,47 @@ Complete cycles (consultation -> reconcile -> execute HIGH+MEDIUM):
 - Cycle 2: agent/tool-execution (17 findings) + behavioral monitor + canary
   tripwire from external threat sources.
 - Cycle 3: perception/provenance (16 findings).
+- Cycle 4: the verification lanes (19 findings; the loop's first fix in a
+  hosted flagship, crucible).
 
-Queued cycles (tools not yet given their own deep cycle): the verification
-lanes (lean/invent/tension/crucible/instruments/suite), forge/science/studio,
-the workflow/orchestration engine, and the desktop client (deeper than cycle
-1's pass). Plus the LOW tiers of cycles 2 and 3.
+### Cycle 5 (2026-07-14): forge/science/academy/discovery/claims
+
+Five critics (experiment-integrity, forge-honesty, academy-integrity,
+discovery-honesty, claims-and-cards), each finding adversarially verified.
+23 survived: 6 HIGH, 13 MEDIUM, 4 LOW.
+
+**HIGH tier: all six shipped (each TDD), in two slices.** Trust surfaces
+(`69e0d1e`): the TrustCard signature now covers the card's own trust
+verdicts, so a forged freshness or scan status reads TAMPERED; a model-card
+claim asserted verified without a source URL and retrieval date is demoted
+with the demotion named; retention refuses an immediate retest unless the
+waiver is declared in the receipt and grades a supplied answer against the
+original's key material, never a caller boolean (the platform's own
+learning loop was doing exactly the self-pass the gate now refuses).
+Receipts that bind what happened (`c643e96`): /api/attest resolves a
+banked agent-run and refuses a review that does not hash to the banked
+run's review_sha256, so a fabricated run confers nothing; the forge
+Y-chain seal is persisted server-side and the recheck refuses
+caller-supplied sealed hashes, so the checked party no longer authors both
+sides; science_run's chain hash binds claims, measurement content, and
+errors, and the payload echoes what it judged so a stranger can re-run it.
+
+Also this cycle, from the suite gate itself: the run provenance receipt
+bound the pre-workspace checkpoint while the run re-checkpointed after the
+post-snapshot, so two receipts disagreed on every writing run (latent
+since the workspace-chaining fix). Provenance now binds the final
+checkpoint (`69e0d1e`).
+
+MEDIUM (13) and LOW (4) queued, tracked in the cycle-5 workflow artifact:
+wien oracle memorized-constant hole, raw gather payload dropped, prp
+recheck stranger-rerunnability, identical/empty Y-arms as a two-arm test,
+RESEARCH-loop tautological recheck, failed-retest holdership decay,
+basename/path ledger key collision, academy lesson binding, discovery
+falsifier never run, structure_mapping undecodable-encoding score,
+publish_lint interval/superlative rules, forward-slash local paths,
+credo hash never checked, and the LOW cluster.
+
+Queued: cycle 5's MEDIUM and LOW tiers, the workflow/orchestration engine,
+the desktop client (deeper than cycle 1's pass), then the hosted flagship
+tools each in turn (gather, index, forum, telos; crucible already entered
+via cycle 4). Plus the LOW tiers of cycles 2, 3, and 4.
