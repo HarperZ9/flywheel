@@ -138,3 +138,43 @@ def test_make_endpoint_proposer_wraps_when_ledger_given():
     assert len(led.entries) == 1 and led.verify()
     # without a ledger, no wrapping (unchanged surface)
     assert not isinstance(make_endpoint_proposer("stub"), LedgeredProposer)
+
+
+def test_every_usable_roster_name_can_actually_build_a_proposer():
+    # unified_roster advertises usable endpoints as receipt_capable; each must
+    # actually construct a proposer, not raise 'unknown endpoint'.
+    r = unified_roster()
+    for name in r["usable_names"]:
+        p = make_endpoint_proposer(name)
+        assert p is not None, name
+
+
+def test_cli_credential_is_gated_on_the_binary_present(monkeypatch):
+    import harness.endpoint_registry as er
+    # no CLI on PATH -> cli rows are not advertised as usable
+    monkeypatch.setattr(er.shutil, "which", lambda cmd: None)
+    r = unified_roster()
+    cli_rows = {row["name"]: row for row in r["endpoints"] if row["kind"] == "cli"}
+    assert cli_rows, "expected cli rows in the roster"
+    for name, row in cli_rows.items():
+        assert row["credential"] == "cli-absent"
+        assert name not in r["usable_names"]
+
+
+def test_roster_carries_a_digest_that_moves_when_the_routable_set_changes(monkeypatch):
+    import harness.endpoint_registry as er
+    from harness import providers
+    before = unified_roster()["roster_sha"]
+    assert before and len(before) == 16
+    # a mutation of the registry's routable identity moves the digest
+    orig = dict(providers.REGISTRY)
+    try:
+        sample = next(iter(providers.REGISTRY.values()))
+        providers.REGISTRY["zzz-new-provider"] = sample
+        after = unified_roster()["roster_sha"]
+        assert after != before
+    finally:
+        providers.REGISTRY.clear()
+        providers.REGISTRY.update(orig)
+    # stable when nothing changes
+    assert unified_roster()["roster_sha"] == before
