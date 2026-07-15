@@ -101,3 +101,18 @@ def test_a_clean_small_context_folds_nothing():
              _item("e", "evidence", "also short", score=0.5)]
     g = govern_context(items, budget=1000, reliable_fraction=1.0)
     assert g["folded"] == [] and g["over_pinned"] is False
+
+
+def test_over_nominal_is_flagged_when_pins_exceed_the_hard_cap():
+    from harness.context_governor import govern_context as gc
+    items = [{"id": f"p{i}", "role": "pin", "text": "constraint " * 40}
+             for i in range(4)]
+    g = gc(items, budget=50, reliable_fraction=1.0)
+    assert g["over_nominal"] is True and g["over_pinned"] is True
+
+
+def test_within_nominal_is_not_over_nominal():
+    from harness.context_governor import govern_context as gc
+    g = gc([{"id": "p", "role": "pin", "text": "short pin"}],
+           budget=1000, reliable_fraction=1.0)
+    assert g["over_nominal"] is False
