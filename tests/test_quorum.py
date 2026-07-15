@@ -33,12 +33,16 @@ def test_unanimous_pass_accepts_and_records_votes():
     assert "ACCEPT" in r.accountability_receipt()
 
 
-def test_one_dissenter_vetoes_under_unanimity():
+def test_one_objector_vetoes_under_unanimity():
     # 2 of 3 pass, but unanimity is required -> a single peer's objection blocks.
+    # The skeptic's FAIL is recorded in the votes (the objection is answerable);
+    # the dissenters-from-the-outcome are the two who wanted to accept.
     q = QuorumOracle([P("a"), P("b"), F("skeptic")], unanimous=True)
     r = q.verify("x", None)
-    assert r.passed is False, "one honest dissenter must veto under unanimity"
-    assert "skeptic" in r.dissenters
+    assert r.passed is False, "one honest objection must veto under unanimity"
+    objection = next(v for v in r.votes if v["type"] == "skeptic")
+    assert objection["passed"] is False        # the veto is on the record
+    assert set(r.dissenters) == {"a", "b"}     # against the REJECT outcome
 
 
 def test_majority_lets_the_crowd_decide():
@@ -124,3 +128,13 @@ def test_learned_member_is_refused_at_construction():
     with pytest.raises(ValueError) as e:
         QuorumOracle([P("code"), LearnedJudge()])
     assert "learned" in str(e.value).lower()
+
+
+def test_dissenters_are_against_the_outcome_not_the_bare_majority():
+    # threshold 0.6, n=5, 3 pass: needed = floor(3)+1 = 4, so the OUTCOME is
+    # REJECT even though 3/5 is a bare majority. The dissenters (voices against
+    # the outcome) are the PASS voters, not the FAIL voters.
+    q = QuorumOracle([P("a"), P("b"), P("c"), F("d"), F("e")], threshold=0.6)
+    r = q.verify("x", None)
+    assert r.passed is False           # supermajority not reached
+    assert set(r.dissenters) == {"a", "b", "c"}  # the outvoted PASS minority

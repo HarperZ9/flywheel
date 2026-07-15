@@ -40,7 +40,7 @@ class QuorumResult(OracleResult):
     n_total: int = 0
     threshold: float = 0.5
     quorum_needed: int = 0
-    dissenters: list[str] = field(default_factory=list)  # verifiers that voted against the outcome
+    dissenters: list[str] = field(default_factory=list)  # verifiers whose vote != the accept outcome
     distinct_members: int = 0    # distinct (type, ref) identities; < n_total means a stacked ballot
 
     def accountability_receipt(self) -> str:
@@ -108,11 +108,11 @@ class QuorumOracle:
         # identity is the ENDPOINT (model_ref), not the wrapper name: two
         # oracle_type names over one endpoint are one model voting twice
         distinct = len({ref for _, _, ref in members})
-        # dissenters = the minority voice — verifiers who voted against the
-        # majority. Under unanimity that minority is decisive (it vetoes); under
-        # majority it is overruled but still recorded (answerability).
-        majority_pass = n_pass * 2 > n
-        dissenters = [t for t, r, _ in members if bool(r.passed) != majority_pass]
+        # dissenters = the voices against the OUTCOME, not a bare majority: at
+        # a supermajority threshold a 3/5 pass is still a REJECT, so the PASS
+        # voters are the dissent. Under unanimity the lone FAIL is the decisive
+        # veto; either way the receipt records who stood against the verdict.
+        dissenters = [t for t, r, _ in members if bool(r.passed) != accepted]
         blob = json.dumps([[t, bool(r.passed), r.output_hash, ref]
                            for t, r, ref in members], sort_keys=True)
         return QuorumResult(
