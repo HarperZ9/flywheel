@@ -82,3 +82,25 @@ def test_agent_compaction_indexes_into_fold_index_for_recall():
     agent2 = LocalAgent(backends=[], compact_budget=200, compact_keep_recent=3)
     agent2.history = list(agent.history)
     assert agent2.recall_context("secret token") == []
+
+
+def test_recall_carries_a_content_hash_derived_from_the_stored_span():
+    import hashlib
+    idx = FoldIndex()
+    msgs = [{"role": "user", "content": "the launch code is alpha-seven"}]
+    idx.add("caller-claimed-hash", msgs)
+    hit = idx.recall("launch code", top_k=1)[0]
+    assert "content_sha256" in hit
+    # the content hash is derived from the stored content, not the caller key
+    assert hit["content_sha256"] != "caller-claimed-hash"
+
+
+def test_verify_catches_a_tampered_stored_span():
+    idx = FoldIndex()
+    idx.add("h1", [{"role": "user", "content": "original fact"}])
+    assert idx.verify()["ok"] is True
+    # tamper the stored content directly, leaving the key intact
+    idx.spans["h1"] = [{"role": "user", "content": "forged fact"}]
+    v = idx.verify()
+    assert v["ok"] is False
+    assert "h1" in v["tampered"]

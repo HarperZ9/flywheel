@@ -74,11 +74,27 @@ def import_config(root) -> dict:
             servers = data.get("mcpServers")
             if isinstance(servers, dict):
                 for name, spec in sorted(servers.items()):
-                    if isinstance(spec, dict) and spec.get("command"):
+                    if not isinstance(spec, dict):
+                        continue
+                    if spec.get("command"):        # local stdio server
                         mcp_servers[name] = {
+                            "transport": "stdio",
                             "command": str(spec["command"]),
                             "args": [str(a) for a in spec.get("args", [])],
                         }
+                    elif spec.get("url"):          # remote http/sse server
+                        mcp_servers[name] = {
+                            "transport": str(spec.get("type")
+                                             or spec.get("transport")
+                                             or "http"),
+                            "url": str(spec["url"]),
+                        }
+                    else:                          # unrecognized: never silently drop
+                        dropped.append({
+                            "source": ".claude/settings.json",
+                            "reason": f"MCP server {name!r} has neither a "
+                                      "command nor a url; carried nowhere "
+                                      "rather than silently dropped"})
             for unmapped in ("hooks", "permissions", "env"):
                 if unmapped in data:
                     dropped.append({

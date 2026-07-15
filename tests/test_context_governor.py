@@ -41,6 +41,22 @@ def test_reliable_fraction_caps_fill_below_nominal():
     assert len(safe["window"]) < len(full["window"])
 
 
+def test_folded_overflow_is_actually_recoverable_not_just_hashed():
+    """The governor claims verbatim recall of folded overflow. A one-way
+    hash is not recoverable: the folded record must carry the text so a
+    recall returns the exact span. Otherwise the claim outruns the receipt."""
+    from harness.context_governor import recall_folded
+    items = [_item("keep", "evidence", "x " * 5, score=0.99)] + \
+            [_item(f"drop{i}", "evidence", f"payload-{i} unique text " * 20,
+                   score=0.1) for i in range(4)]
+    g = govern_context(items, budget=20, reliable_fraction=1.0)
+    assert g["folded"], "expected some overflow to be folded"
+    for f in g["folded"]:
+        # recall by content hash returns the verbatim original text
+        original = next(i for i in items if i["id"] == f["id"])["text"]
+        assert recall_folded(g["folded"], f["sha256"]) == original
+
+
 def test_evicted_items_are_folded_with_recoverable_hashes():
     items = [_item("keep", "evidence", "x " * 10, score=0.99)] + \
             [_item(f"drop{i}", "evidence", f"payload-{i} " * 40, score=0.1)

@@ -155,6 +155,15 @@ def snapshot_url(url: str, dest_dir, *, runner=None) -> dict:
     # a 200 that is actually a bot-wall must NOT pass as the cited source:
     # freeze it as evidence, but flag it so the caller routes around instead
     # of quoting a block page (the failure that let an assessment stop cold)
+    # a body shorter than its declared Content-Length was cut off (early
+    # close): freeze the partial bytes as evidence but flag truncation, never
+    # present a truncated download as a complete archive
+    declared = str(headers.get("Content-Length", "")).strip()
+    if declared.isdigit() and len(body) < int(declared):
+        doc["truncated"] = True
+        doc["truncated_reason"] = (f"received {len(body)} bytes but "
+                                   f"Content-Length declared {declared}: "
+                                   "the download was cut off")
     block = looks_like_block_page(body, ctype)
     if block:
         doc["blocked"] = True
