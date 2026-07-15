@@ -22,6 +22,8 @@ class DenseResult:
     passed: bool
     reward: float
     output_hash: str
+    status: str = ""      # named outcome class (e.g. match/mismatch/timeout);
+                          # defaulted so existing dense oracles stay compatible
 
 
 class DenseOracle(Protocol):

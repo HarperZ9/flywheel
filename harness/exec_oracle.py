@@ -64,14 +64,25 @@ class PythonExecutorOracle(DenseOracle):
             # stdout happens to match — especially the empty-expected case,
             # where a candidate that died at import also printed nothing.
             passed = p.returncode == 0 and got == self.expected
+            # the outcome CLASS is a named field, not smuggled into output_hash:
+            # a nonzero exit is not a mismatch, a mismatch is not a timeout.
+            if p.returncode != 0:
+                status = "nonzero_exit"
+            elif passed:
+                status = "match"
+            else:
+                status = "mismatch"
             return DenseResult(passed=passed, reward=(1.0 if passed else 0.0),
-                               output_hash=f"{p.returncode}:{got[:32]}")
+                               output_hash=f"{p.returncode}:{got[:32]}",
+                               status=status)
         except subprocess.TimeoutExpired:
+            # nothing ran to completion, so there is no output to witness:
+            # output_hash stays empty and the class lives in status
             return DenseResult(passed=False, reward=0.0,
-                               output_hash="timeout")
+                               output_hash="", status="timeout")
         except Exception as e:
             return DenseResult(passed=False, reward=0.0,
-                               output_hash=f"err:{type(e).__name__}")
+                               output_hash="", status=f"error:{type(e).__name__}")
 
 
 def line_partial_reward(got: str, expected: str) -> float:
