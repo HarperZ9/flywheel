@@ -44,6 +44,26 @@ def test_invention_loop_closes_with_a_kernel(tmp_path, monkeypatch):
     assert doc["survivors"] >= 1
 
 
+def test_injected_kernel_verdicts_are_marked_synthetic_not_kernel_accepted(
+        tmp_path, monkeypatch):
+    """A caller-injected acceptance callable is NOT the Lean kernel. Survivors
+    it judges must be stored with evidence='synthetic' and a verdict that names
+    the injected authority, so a false conjecture ('2 + 2 = 5') can never be
+    read back as a kernel-accepted theorem poisoning corpus novelty."""
+    monkeypatch.setenv("FLYWHEEL_HOME", str(tmp_path))
+    doc = measure_closure(LOOPS["invention"],
+                          ctx={"kernel": lambda c: {"passed": True,
+                                                    "toolchain": "injected"}})
+    assert doc["closed"] is True, doc["edges"]
+    from harness.store import get_entity, query_entities
+    metas = query_entities(kind="theorem")
+    assert metas, "the injected kernel accepted every conjecture"
+    for meta in metas:
+        e = get_entity(meta["eid"])
+        assert e["data"].get("evidence") == "synthetic"
+        assert e["data"].get("verdict") != "kernel-accepted"
+
+
 def test_a_broken_edge_reports_open_not_closed(tmp_path, monkeypatch):
     monkeypatch.setenv("FLYWHEEL_HOME", str(tmp_path))
 
