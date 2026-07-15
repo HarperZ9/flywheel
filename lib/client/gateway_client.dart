@@ -110,6 +110,18 @@ class GatewayClient {
     return _decode(r);
   }
 
+  /// POST /api/discourse — drive the chorus satellite over a gathered comment
+  /// corpus (a gather corpus directory or a JSON row list) and return chorus's
+  /// own weighted, clustered, re-checkable discourse digest verbatim.
+  Future<Map<String, dynamic>> discourse(String corpus) async {
+    final r = await _http.post(
+      Uri.parse('$baseUrl/api/discourse'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'corpus': corpus}),
+    );
+    return _decode(r);
+  }
+
   /// POST /api/forge — turn a plain goal into a structured prompt with gates.
   Future<Map<String, dynamic>> forge(String goal,
       {String? context, List<String>? examples}) async {

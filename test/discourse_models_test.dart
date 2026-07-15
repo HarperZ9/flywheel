@@ -1,0 +1,81 @@
+// DiscourseDigest: the typed reading of a flywheel.discourse-digest/v1 envelope.
+// Sentiment is a weight (parsed as shares), never a verdict; the verify status
+// is the one verdict. Parsing is defensive: missing fields degrade, never crash.
+import 'package:flutter_test/flutter_test.dart';
+
+import 'package:flywheel_desktop/models/discourse.dart';
+
+void main() {
+  test('DiscourseDigest parses a full envelope', () {
+    final d = DiscourseDigest.fromEnvelope({
+      'schema': 'flywheel.discourse-digest/v1',
+      'verified': true,
+      'result': {
+        'responds_to': 'vid9',
+        'n_items': 116,
+        'method': {
+          'engagement_coverage': {'present': 116, 'total': 116},
+          'coarseness': 'lexicon sentiment is English-only and literal',
+        },
+        'receipt': {'digest_sha256': 'abc123'},
+        'themes': [
+          {
+            'label': 'sound / design',
+            'size': 12,
+            'weighted_score': 42.5,
+            'sentiment': {'pos': 0.5, 'neg': 0.17, 'neu': 0.33, 'mean_compound': 0.1},
+            'dissent': 'c7',
+          },
+        ],
+      },
+    });
+    expect(d.verified, isTrue);
+    expect(d.respondsTo, 'vid9');
+    expect(d.nItems, 116);
+    expect(d.engagementPresent, 116);
+    expect(d.engagementTotal, 116);
+    expect(d.engagementComplete, isTrue);
+    expect(d.coarseness, contains('English-only'));
+    expect(d.digestSha, 'abc123');
+    expect(d.themes, hasLength(1));
+    expect(d.themes.first.label, 'sound / design');
+    expect(d.themes.first.size, 12);
+    expect(d.themes.first.posShare, 0.5);
+    expect(d.themes.first.dissent, 'c7');
+  });
+
+  test('a partial envelope degrades instead of crashing', () {
+    final d = DiscourseDigest.fromEnvelope({'result': {}});
+    expect(d.verified, isFalse);
+    expect(d.nItems, 0);
+    expect(d.themes, isEmpty);
+    expect(d.engagementComplete, isFalse); // total 0 -> not complete, honest null
+    expect(d.digestSha, isEmpty);
+  });
+
+  test('absent engagement coverage reads as incomplete, not a fake full', () {
+    final d = DiscourseDigest.fromEnvelope({
+      'verified': true,
+      'result': {
+        'n_items': 3,
+        'method': {'engagement_coverage': {'present': 0, 'total': 3}},
+        'themes': [],
+      },
+    });
+    expect(d.engagementPresent, 0);
+    expect(d.engagementTotal, 3);
+    expect(d.engagementComplete, isFalse);
+  });
+
+  test('a dissent-free theme parses dissent as null', () {
+    final d = DiscourseDigest.fromEnvelope({
+      'result': {
+        'themes': [
+          {'label': 'x', 'size': 2, 'weighted_score': 1.0, 'sentiment': {}, 'dissent': null},
+        ],
+      },
+    });
+    expect(d.themes.first.dissent, isNull);
+    expect(d.themes.first.posShare, 0.0);
+  });
+}

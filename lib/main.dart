@@ -28,6 +28,7 @@ import 'views/lint_view.dart';
 import 'views/memory_view.dart';
 import 'views/plan_view.dart';
 import 'views/plugins_view.dart';
+import 'views/discourse_view.dart';
 import 'views/projects_view.dart';
 import 'views/receipts_view.dart';
 import 'views/science_view.dart';
@@ -149,6 +150,7 @@ class _FlywheelShellState extends State<FlywheelShell> {
     RailDestination('Endpoints', abbr: 'EP'),
     RailDestination('Instruments', abbr: 'IS'),
     RailDestination('Academy', abbr: 'AY'),
+    RailDestination('Discourse', abbr: 'DS'),
   ];
 
   @override
@@ -311,6 +313,8 @@ class _FlywheelShellState extends State<FlywheelShell> {
         return InstrumentsView(client: _client, alive: _gatewayAlive);
       case 21:
         return AcademyView(client: _client, alive: _gatewayAlive);
+      case 22:
+        return DiscourseView(client: _client, alive: _gatewayAlive);
       default:
         return const FwEmpty('Unknown view');
     }

@@ -1,4 +1,4 @@
-// Shell tests: the app renders the sidebar with all five destinations,
+// Shell tests: the app renders the sidebar with all destinations,
 // navigation switches views, and the offline state names the command that
 // fixes it.
 import 'package:flutter/material.dart';
@@ -9,7 +9,7 @@ import 'package:flywheel_desktop/services/settings.dart';
 import 'package:flywheel_desktop/widgets/side_rail.dart';
 
 void main() {
-  testWidgets('App renders the shell with all twenty-two destinations',
+  testWidgets('App renders the shell with all twenty-three destinations',
       (WidgetTester tester) async {
     await tester.pumpWidget(FlywheelApp(settings: DesktopSettings()));
     await tester.pump();
@@ -37,7 +37,8 @@ void main() {
       'Plugins',
       'Endpoints',
       'Instruments',
-      'Academy'
+      'Academy',
+      'Discourse'
     ]) {
       // The rail scrolls when the window is short; bring each item in view.
       await tester.scrollUntilVisible(find.text(label), 40,
