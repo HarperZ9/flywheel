@@ -247,6 +247,9 @@ Complete cycles (consultation -> reconcile -> execute HIGH+MEDIUM):
 - Cycle 6: workflow/orchestration engine (21 findings; recorded below).
 - Cycle 7: the desktop client (16 findings; the loop's first pass in the
   Flutter repo, recorded below).
+- Cycle 8: the hosted flagships. index (13 findings, complete) and gather
+  (9 confirmed MEDIUM, complete) done; forum and telos queued. Recorded
+  below.
 
 ### Cycle 5 (2026-07-14): forge/science/academy/discovery/claims
 
@@ -331,9 +334,14 @@ receipt; and roster_sha binds the routable set so a route is pinnable to a
 registry state. Findings [3] (roster re-verify) and [4] (workflow
 countersign) landed with the HIGH slice.
 
-LOW (5) queued: quorum dissenter field semantics, unbounded score at small
-n, EscalationResult dead-code carrier, CompileOracle non-addressed failure
-receipts, provider_role laundering.
+**LOW tier: all five shipped (`4e23885`, each TDD).** Quorum dissent is
+computed against the outcome, not a bare majority (the veto stays on record
+in votes); router_stats scores by the Wilson lower bound so one minted
+success cannot leap a proven provider; EscalationResult carries which tier
+stopped a run; a compile failure is content-addressed instead of a shared
+compile_fail_{rc}, with the timeout branch keeping stderr; and
+annotate_provider_roles derives the role from the actual provider and names
+a role_conflict rather than adopting a false self-declared claim.
 
 ### Cycle 7 (2026-07-14): the desktop client
 
@@ -374,6 +382,43 @@ neutral-ink duel arm bars, a pending demand as the honest null not drift,
 and the attestation's overclaimed dishonest signal surfaced instead of
 hidden.
 
-Queued: the hosted flagship tools each in turn (gather, index, forum,
-telos; crucible already entered via cycle 4). Plus the LOW tiers of cycles
-2 through 6.
+### Cycle 8 (2026-07-15): the hosted flagships
+
+The loop reached the separate public flagship repos. Two consulted,
+reconciled, and executed this cycle; forum and telos queued.
+
+**index** (code-graph / context / wiki, `C:/dev/public/index`): 13
+findings (2 HIGH, 8 MEDIUM, 3 LOW), all three tiers COMPLETE, flutter-free
+Python suite green, on `fix/cycle8-verified-map`. The theme was the
+verified map claiming structure it never re-derived. HIGH: the
+architecture diagram (rendered svg/mermaid) was excluded from the edge
+check, so a phantom edge re-sealed passed MATCH; verify now re-renders the
+architecture, overview, and docs pages from the tree and drifts on any
+mismatch. The MCP cache signature stat'd only top-level entries, serving a
+stale map as fresh; it now folds every graph-relevant file recursively.
+MEDIUM: a local binding shadowing a module def no longer mints a false
+exact call edge; an unreadable file is a coverage gap not a silent drop; a
+vacuous forbid rule and an incompletely-built internal graph read
+UNVERIFIABLE not MATCH; the workbench SVG is sealed; the context budget
+reports the true cost and names an overflow. LOW: honest-null grounding on
+zero edges, scoped packet tokens, and no MATCH over a scan narrowed by
+unreadable directories.
+
+**gather** (accountable research-intake, `C:/dev/public/gather`): 19
+survived (10 MEDIUM, 9 LOW); all confirmed MEDIUM shipped, on
+`fix/cycle8-provenance`, full suite 428 green. The headline: the
+differentiator (a block/challenge page is named, never passed off as the
+source) was defeated on the DEFAULT web adapter because http_get dropped
+the redirect's final URL, so a redirect to a consent/login/block page was
+recorded under the requested URL. http_get now returns final_url,
+WebSource/FeedSource bind where the bytes came from, and a redirect is
+named. A truncated body is flagged in the receipt (no longer witnessed as
+whole); a tampered cache is re-hashed on the hit path and refused (no
+receipt, no accept, for the cache too); markdown extraction keeps code
+indentation and word boundaries; federation receipts derive the exact-id
+join from the identifier path and can verify capture existence when a
+resolver is supplied. gather's LOW tier (9, several verifier-flagged
+overstated) is queued.
+
+Queued: forum and telos (the remaining flagships); gather's LOW tier; and
+the LOW tiers of cycles 2 and 3.
