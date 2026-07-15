@@ -1829,6 +1829,17 @@ class _Handler(BaseHTTPRequestHandler):
             from harness.chorus_bridge import discourse_digest
             out = discourse_digest((req.get("corpus") or "").strip())
             return self._json(out, 400 if "error" in out else 200)
+        if p == "/api/discourse/corpora":              # discover gather corpora as discourse sources
+            length = self._content_length()
+            if length is None:
+                return self._json({"error": "invalid or oversized Content-Length"}, 400)
+            try:
+                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
+            except Exception:
+                req = {}
+            from harness.chorus_bridge import list_corpora
+            out = list_corpora((req.get("root") or "").strip())
+            return self._json(out, 400 if "error" in out else 200)
         if p == "/api/marketplace/install":            # catalog entry -> plugin registry
             length = self._content_length()
             if length is None:

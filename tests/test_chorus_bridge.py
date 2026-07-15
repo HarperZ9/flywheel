@@ -41,3 +41,30 @@ def test_non_json_output_is_refused(tmp_path):
     corpus.write_text("[]", encoding="utf-8")
     out = discourse_digest(str(corpus), runner=_runner(0, "not json"))
     assert "error" in out and "did not emit JSON" in out["error"]
+
+
+from harness.chorus_bridge import list_corpora
+
+
+def test_corpora_list_is_returned_with_schema(tmp_path):
+    listing = {"root": str(tmp_path), "corpora": [
+        {"name": "harari", "comments": 5, "subject": "AI", "responds_to": "vidH", "path": str(tmp_path)}]}
+    out = list_corpora(str(tmp_path), runner=_runner(0, json.dumps(listing)))
+    assert out.get("error") is None
+    assert out["schema"] == "flywheel.discourse-corpora/v1"
+    assert out["corpora"][0]["comments"] == 5
+
+
+def test_corpora_bad_root_is_a_named_error_before_the_runner():
+    out = list_corpora("C:/nope/not/here", runner=_runner(0, "{}"))
+    assert "error" in out and "not an existing directory" in out["error"]
+
+
+def test_corpora_passes_through_chorus_named_error(tmp_path):
+    out = list_corpora(str(tmp_path), runner=_runner(1, json.dumps({"error": "bad root"})))
+    assert out.get("error") == "bad root"
+
+
+def test_corpora_non_json_is_refused(tmp_path):
+    out = list_corpora(str(tmp_path), runner=_runner(0, "not json"))
+    assert "error" in out and "did not emit JSON" in out["error"]
