@@ -47,12 +47,30 @@ def test_sealed_claims_count_verdicts(tmp_path, monkeypatch):
     claims = tmp_path / "docs" / "claims" / "2026-07-14-x"
     _write(claims / "thesis.json", {"claims": 2})
     _write(claims / "adjudication.json",
-           {"verdicts": [{"status": "MATCH"}, {"status": "DRIFT"}]})
+           {"thesis_seal": "a" * 64, "verdict_seal": "b" * 64,
+            "measurement_seal": "c" * 64,
+            "verdicts": [{"status": "MATCH"}, {"status": "DRIFT"}]})
     reg = instrument_register(tmp_path)
     inst = next(i for i in reg["instruments"] if i["name"] == "sealed_claims")
     assert inst["present"] is True
     assert inst["match"] == 1 and inst["drift"] == 1
     assert "no rescue" in inst["summary"] or "adjudicated" in inst["summary"]
+
+
+def test_an_unsealed_adjudication_is_not_counted_as_a_verdict(tmp_path,
+                                                              monkeypatch):
+    """A hand-edited adjudication.json with no seals must NOT launder its
+    verdicts past the register as authoritative (tenet 3)."""
+    monkeypatch.setenv("FLYWHEEL_HOME", str(tmp_path / "home"))
+    claims = tmp_path / "docs" / "claims" / "forged"
+    _write(claims / "thesis.json", {"claims": 1})
+    # no seals: someone flipped a DRIFT to MATCH by hand
+    _write(claims / "adjudication.json",
+           {"verdicts": [{"status": "MATCH"}]})
+    reg = instrument_register(tmp_path)
+    inst = next(i for i in reg["instruments"] if i["name"] == "sealed_claims")
+    assert inst["match"] == 0, "an unsealed adjudication must not be counted"
+    assert inst["unsealed_adjudications"] == 1
 
 
 def test_uplift_lanes_report_honest_nulls(tmp_path, monkeypatch):

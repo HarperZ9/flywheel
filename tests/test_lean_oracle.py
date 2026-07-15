@@ -72,3 +72,21 @@ def test_live_kernel_refuses_a_false_theorem():
     doc = lean_check(BAD)
     assert doc["passed"] is False
     assert doc["kernel_output"], "the kernel must say why"
+
+
+def test_admit_and_kernel_bypass_are_refused_before_the_kernel():
+    for code in (
+        "theorem t (n : Nat) : n = n + 1 := by admit",
+        "theorem t : False := sorryAx False true",
+        "theorem t : (2:Nat)=2 := by native_decide",
+        "set_option debug.skipKernelTC true\ntheorem t : False := rfl",
+    ):
+        doc = lean_check(code, runner=lambda argv, c: (0, ""))
+        assert doc["passed"] is False, code
+
+
+def test_single_quoted_sorry_warning_is_refused_belt_and_braces():
+    doc = lean_check("theorem t : True := trivial",
+                     runner=lambda argv, c:
+                     (0, "warning: declaration uses 'sorry'"))
+    assert doc["passed"] is False
