@@ -179,3 +179,26 @@ a deleted row, settings 'mapped' with zero servers, over_pinned vs nominal,
 and the retrieval-honesty LOW cluster (bm25 excerpt hash, graph edge sources,
 project verdict hardcoded 'live', feed item hashes, reliable_fraction
 provenance).
+
+**Cycle 3 execution: HIGH (4) and MEDIUM (4 of 7) shipped, each TDD.** HIGH:
+freeze truncation, context-governor fold recoverability (my own claim-vs-
+receipt gap), FoldIndex content binding + verify(), remote MCP capture
+(`1b1715e`). MEDIUM: store deleted-row detection, over_nominal flag, atomic
+blob writes, honest import status (`c3m`). The remaining MEDIUM (dual content-
+address in fold_index, index_compaction re-derivation, both judged mitigated
+by the content-hash fix) and the retrieval-honesty LOW cluster (bm25 excerpt
+hash, graph edge sources, project verdict hardcoded 'live', feed item hashes,
+reliable_fraction provenance) are queued.
+
+### Cycle status (the repeat, honestly)
+
+Complete cycles (consultation -> reconcile -> execute HIGH+MEDIUM):
+- Cycle 1: full-surface (6 clusters, 24 findings).
+- Cycle 2: agent/tool-execution (17 findings) + behavioral monitor + canary
+  tripwire from external threat sources.
+- Cycle 3: perception/provenance (16 findings).
+
+Queued cycles (tools not yet given their own deep cycle): the verification
+lanes (lean/invent/tension/crucible/instruments/suite), forge/science/studio,
+the workflow/orchestration engine, and the desktop client (deeper than cycle
+1's pass). Plus the LOW tiers of cycles 2 and 3.
