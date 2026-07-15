@@ -22,6 +22,31 @@ def _rows(kind: str, project: "str | None"):
             yield entity
 
 
+def _norm_path(path: str) -> str:
+    """One spelling per file: posix separators, no leading ./ — so an
+    attestation's repo path and a comprehension receipt's diff path meet
+    on the same ledger key."""
+    p = str(path).replace("\\", "/")
+    return p[2:] if p.startswith("./") else p
+
+
+def _failed_latest_retest(eid: str) -> "str | None":
+    """The eid of the NEWEST retention receipt linked to this evidence if
+    that retest FAILED, else None. A failed unaided retest revokes the
+    row: once demonstrated is not still held."""
+    from .store import get_entity, relations_of
+    newest, newest_created = None, -1.0
+    for rel in relations_of(eid):
+        if rel.get("kind") != "retention" or rel.get("src") != eid:
+            continue
+        r = get_entity(rel.get("dst", ""))
+        if r and r.get("created", 0) > newest_created:
+            newest, newest_created = r, r["created"]
+    if newest and (newest.get("data") or {}).get("passed") is False:
+        return newest["eid"]
+    return None
+
+
 def comprehension_ledger(*, project: "str | None" = None) -> dict:
     """Project the store's checked evidence into per-file holdership.
     Candidate claims from BOTH kinds are merged and sorted newest-first
@@ -41,27 +66,42 @@ def comprehension_ledger(*, project: "str | None" = None) -> dict:
         if d.get("standing") == "complete":
             for path in d.get("reviewed") or []:
                 candidates.append((e["created"], "attestation",
-                                   str(d.get("reviewer", "")), str(path),
-                                   e["eid"]))
+                                   str(d.get("reviewer", "")),
+                                   _norm_path(path), e["eid"]))
     for e in _rows("comprehension", project):
         d = e["data"]
         if d.get("passed") is True:
             for path in d.get("files") or []:
                 candidates.append((e["created"], "comprehension",
-                                   str(d.get("reviewer", "")), str(path),
-                                   e["eid"]))
-    # newest first; first-write-wins per path then holds the latest claim
+                                   str(d.get("reviewer", "")),
+                                   _norm_path(path), e["eid"]))
+    # newest first; first-write-wins per path then holds the latest claim.
+    # An entity whose newest linked retest FAILED confers nothing: its
+    # paths land under 'decayed' (unless newer live evidence holds them).
     candidates.sort(key=lambda c: c[0], reverse=True)
+    decay_check: dict = {}
+    decayed_rows: list = []
     for created, kind, holder, path, eid in candidates:
+        if eid not in decay_check:
+            decay_check[eid] = _failed_latest_retest(eid)
+        if decay_check[eid]:
+            decayed_rows.append((path, holder, kind, eid, decay_check[eid]))
+            continue
         claim(path, holder, kind, eid, created)
+    decayed: dict = {}
+    for path, holder, kind, eid, ret_eid in decayed_rows:
+        if path not in files and path not in decayed:
+            decayed[path] = {"holder": holder, "kind": kind, "eid": eid,
+                             "failed_retention_eid": ret_eid}
 
     holders: dict = {}
     for row in files.values():
         holders[row["holder"]] = holders.get(row["holder"], 0) + 1
     note = ("holdership = the latest COMPLETE attestation or PASSED "
             "comprehension receipt per file; partial or failed evidence "
-            "confers nothing")
+            "confers nothing; a failed unaided retest decays the row into "
+            "'decayed' with the failing retention receipt named")
     if not files:
         note = "no checked evidence yet; " + note
-    return {"schema": SCHEMA, "files": files, "holders": holders,
-            "note": note}
+    return {"schema": SCHEMA, "files": files, "decayed": decayed,
+            "holders": holders, "note": note}

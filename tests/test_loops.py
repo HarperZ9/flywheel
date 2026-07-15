@@ -66,3 +66,21 @@ def test_measure_all_reports_every_candidate(tmp_path, monkeypatch):
     # each loop reports a verdict; none is silently skipped
     assert all("closed" in l for l in doc["loops"])
     assert doc["closed_count"] == sum(1 for l in doc["loops"] if l["closed"])
+
+
+def test_research_recheck_fails_on_tampered_source(monkeypatch, tmp_path):
+    """The recheck edge must be able to fail against reality: a stored
+    source whose bytes no longer hash to the claim's frozen hash breaks
+    the edge. Reading a value back and comparing it to itself never could."""
+    monkeypatch.setenv("FLYWHEEL_HOME", str(tmp_path))
+    import hashlib
+    from harness.loops import _research_recheck
+    from harness.store import put_entity
+    honest_sha = hashlib.sha256(b"the original evidence").hexdigest()
+    src = put_entity("research-source", {"bytes": "tampered bytes",
+                                         "sha256": honest_sha})
+    claim = put_entity("research-claim", {"question": "q",
+                                          "source_eid": src["eid"],
+                                          "source_sha256": honest_sha})
+    ok, _, note = _research_recheck({"_claim_eid": claim["eid"]})
+    assert ok is False

@@ -125,6 +125,19 @@ def academy_complete(lesson_id: str, comprehension_eid: str) -> dict:
     if ent["data"].get("passed") is not True:
         return {"bound": False, "reason": "the referenced comprehension "
                                           "receipt did not pass"}
+    # the receipt must be ABOUT this lesson: its explained files must touch
+    # the lesson's source module, or one trivial teach-back would mint
+    # completions for every lesson in the curriculum
+    module_file = lesson["source_module"].rsplit(".", 1)[-1] + ".py"
+    engaged = [str(f).replace("\\", "/")
+               for key in ("files", "mentioned_files")
+               for f in (ent["data"].get(key) or [])]
+    if not any(f == module_file or f.endswith("/" + module_file)
+               for f in engaged):
+        return {"bound": False,
+                "reason": f"receipt does not engage the lesson source "
+                          f"({module_file}); a teach-back about an unrelated "
+                          f"diff certifies nothing about {lesson_id!r}"}
     doc = {"schema": "flywheel.academy-completion/v1",
            "lesson_id": lesson_id,
            "lesson_source_sha256": lesson["source_sha256"],
