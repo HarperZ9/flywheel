@@ -245,6 +245,8 @@ Complete cycles (consultation -> reconcile -> execute HIGH+MEDIUM):
 - Cycle 5: forge/science/academy/discovery/claims (23 findings; recorded
   below).
 - Cycle 6: workflow/orchestration engine (21 findings; recorded below).
+- Cycle 7: the desktop client (16 findings; the loop's first pass in the
+  Flutter repo, recorded below).
 
 ### Cycle 5 (2026-07-14): forge/science/academy/discovery/claims
 
@@ -333,6 +335,45 @@ LOW (5) queued: quorum dissenter field semantics, unbounded score at small
 n, EscalationResult dead-code carrier, CompileOracle non-addressed failure
 receipts, provider_role laundering.
 
-Queued: the desktop client (deeper than cycle 1's pass), then the hosted
-flagship tools each in turn (gather, index, forum, telos; crucible already
-entered via cycle 4). Plus the LOW tiers of cycles 2 through 6.
+### Cycle 7 (2026-07-14): the desktop client
+
+The loop's first pass in the Flutter repo (`flywheel-desktop`, a separate
+codebase from the engine). Five critics (verdict-rendering truth,
+receipt-integrity rendering, color-canon integrity, the gate/sign panels,
+empty/null/loading honesty), each finding adversarially verified against
+the Dart. 16 survived: 2 HIGH, 11 MEDIUM, 3 LOW. Complete through all
+three tiers; `flutter analyze` clean, 64 tests green.
+
+**HIGH tier (desktop `81f7efd`).** The client rendered verdicts the engine
+never made: WorkflowStep collapsed DONE and WorkflowRun collapsed COMPLETED
+into the verified accept color, but those are completion states, not
+external-oracle acceptance (and cycle 6 made a dirty-integrity DONE become
+FAILED). Only VERIFIED now earns the accept color; DONE/COMPLETED and any
+absent status are the honest null. The diff view painted added lines in
+verified-green and removed lines in drift, dressing raw unreviewed code in
+the verdict palette; it now uses the ink ramp and the +/- glyph, verified
+by a pure diffLineStyle a test confirms never returns a verdict color.
+Also the accept-path sign gate: it failed OPEN when risk_review arrived in
+a shape the client did not parse, enabling the destructive Sign control on
+a shape mismatch; it now fails CLOSED.
+
+**MEDIUM tier (desktop `48a5e3b`).** Color carried non-verdict meaning in
+the side rail (nav selection in drift), the editor tab (active border in
+drift, colliding with the real dirty-file drift dot), and the scaffold
+strip (a hardcoded verified dot on frozen sources, which are provenance,
+not a verdict); all now read as ink emphasis or a neutral provenance
+marker. A tested render_status module maps engine fields honestly: a count
+of zero is the honest null not a green win (world 'measured', receipts
+'accepted pass'), an UNREADABLE/absent envelope verdict is unverifiable
+not a fabricated drift, the companion chip color comes from the engine
+verdict not the transport source, and the duel's interval-less harness_lift
+renders unverifiable, never a green win.
+
+**LOW tier (desktop `df9af4b`).** Full-health gating on the endpoints tile,
+neutral-ink duel arm bars, a pending demand as the honest null not drift,
+and the attestation's overclaimed dishonest signal surfaced instead of
+hidden.
+
+Queued: the hosted flagship tools each in turn (gather, index, forum,
+telos; crucible already entered via cycle 4). Plus the LOW tiers of cycles
+2 through 6.
