@@ -111,13 +111,21 @@ def index_compaction(fold_index: FoldIndex, original_messages: list, result) -> 
     r = result.receipt
     if not result.compacted or r.get("method") == "noop":
         return None
-    from .compaction import _is_pinned
+    from .compaction import _is_pinned, _sha_messages
     orig = list(original_messages)
     kh, kr = r["kept_head"], r["kept_recent"]
     pins = r.get("pin_roles", [])
     middle = orig[kh: len(orig) - kr] if kr else orig[kh:]
     foldable = [m for m in middle if not _is_pinned(m, pins)]
     span_hash = r.get("summarized_span_sha256")
-    if span_hash:
-        fold_index.add(span_hash, foldable)
+    if not span_hash:
+        return None
+    # store-time re-derivation: the span reconstructed from the messages we were
+    # handed must hash to the receipt's attested value. If it does not (the
+    # caller passed a list other than what compact() consumed), refuse to bank a
+    # wrong span under compaction's hash rather than indexing it silently --
+    # fold_index derives its own content hash, so verify() could not catch it.
+    if _sha_messages(foldable) != span_hash:
+        return None
+    fold_index.add(span_hash, foldable)
     return span_hash

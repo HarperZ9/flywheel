@@ -95,6 +95,32 @@ def test_recall_carries_a_content_hash_derived_from_the_stored_span():
     assert hit["content_sha256"] != "caller-claimed-hash"
 
 
+def test_index_compaction_refuses_a_span_that_does_not_hash_to_the_receipt():
+    """index_compaction reconstructs the folded span from the receipt applied to
+    the messages it is HANDED. If those differ from what compact() consumed, the
+    reconstructed span does not hash to the receipt's attested value -- it must
+    NOT be banked under that hash (fold_index derives its own content hash, so
+    verify would call the wrong span intact forever)."""
+    real = ([{"role": "user", "content": "TASK build the service " + "word " * 40}]
+            + [{"role": "assistant", "content": f"step {i} " + "word " * 40} for i in range(1, 4)]
+            + [{"role": "user", "content": "note: the admin endpoint is /internal/ctl-9x"}]
+            + [{"role": "assistant", "content": f"step {i} " + "word " * 40} for i in range(4, 9)])
+    result = compact(real, token_budget=200, keep_recent=3)
+    assert result.compacted
+    # a message list of the SAME shape but different middle content: the
+    # reconstructed foldable will not hash to result's summarized_span_sha256
+    tampered = list(real)
+    tampered[4] = {"role": "user", "content": "note: innocuous filler content"}
+    idx = FoldIndex()
+    out = index_compaction(idx, tampered, result)
+    assert out is None                          # the mis-derived span is refused
+    assert idx.spans == {}                       # and nothing was banked
+    # the honest caller (same messages) still indexes and recalls
+    ok = FoldIndex()
+    index_compaction(ok, real, result)
+    assert ok.recall("admin endpoint ctl")
+
+
 def test_verify_catches_a_tampered_stored_span():
     idx = FoldIndex()
     idx.add("h1", [{"role": "user", "content": "original fact"}])
