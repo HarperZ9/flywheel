@@ -1840,6 +1840,20 @@ class _Handler(BaseHTTPRequestHandler):
             from harness.chorus_bridge import list_corpora
             out = list_corpora((req.get("root") or "").strip())
             return self._json(out, 400 if "error" in out else 200)
+        if p == "/api/learn/animate":                  # a lesson -> a runnable manim scene (academy)
+            length = self._content_length()
+            if length is None:
+                return self._json({"error": "invalid or oversized Content-Length"}, 400)
+            try:
+                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
+            except Exception:
+                req = {}
+            from harness.manim_lesson import lesson_to_manim, scene_name, manimgl_available
+            lesson = req.get("lesson") if isinstance(req.get("lesson"), dict) else {}
+            return self._json({"schema": "flywheel.learn-animation/v1",
+                               "scene": scene_name(lesson),
+                               "source": lesson_to_manim(lesson),
+                               "renderable": manimgl_available()})
         if p == "/api/discourse/digests":              # what the chorus daemon has synthesized
             length = self._content_length()
             if length is None:
