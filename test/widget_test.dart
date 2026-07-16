@@ -9,7 +9,7 @@ import 'package:flywheel_desktop/services/settings.dart';
 import 'package:flywheel_desktop/widgets/side_rail.dart';
 
 void main() {
-  testWidgets('App renders the shell with all twenty-three destinations',
+  testWidgets('App renders the shell with all twenty-four destinations',
       (WidgetTester tester) async {
     await tester.pumpWidget(FlywheelApp(settings: DesktopSettings()));
     await tester.pump();
@@ -19,6 +19,7 @@ void main() {
     // each in turn — the nav is grouped Start / Do / Know / Advanced.
     for (final label in [
       'Chat',
+      'Compare',
       'Models',
       'Code',
       'Companion',

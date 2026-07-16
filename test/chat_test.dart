@@ -4,9 +4,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:flywheel_desktop/client/gateway_client.dart';
 import 'package:flywheel_desktop/models/chat.dart';
 import 'package:flywheel_desktop/models/gateway_models.dart';
 import 'package:flywheel_desktop/theme/flywheel_theme.dart';
+import 'package:flywheel_desktop/views/compare_view.dart';
 import 'package:flywheel_desktop/widgets/chat_thread.dart';
 import 'package:flywheel_desktop/widgets/model_picker.dart';
 
@@ -106,5 +108,10 @@ void main() {
     await tester.tap(find.text('gemini'));
     await tester.pumpAndSettle();
     expect(chosen, 'gemini');
+  });
+
+  testWidgets('Compare offline names the command that fixes it', (tester) async {
+    await _pump(tester, CompareView(client: GatewayClient(), alive: false));
+    expect(find.textContaining('flywheel up'), findsOneWidget);
   });
 }

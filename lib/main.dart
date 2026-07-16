@@ -17,6 +17,7 @@ import 'theme/flywheel_theme.dart';
 import 'views/agent_view.dart';
 import 'views/academy_view.dart';
 import 'views/code_view.dart';
+import 'views/compare_view.dart';
 import 'views/companion_view.dart';
 import 'views/endpoints_view.dart';
 import 'views/family_view.dart';
@@ -133,6 +134,7 @@ class _FlywheelShellState extends State<FlywheelShell> {
   // (below), so this order can change freely without touching the mapping.
   static const _destinations = [
     RailDestination('Chat', abbr: 'CH', group: 'Start'),
+    RailDestination('Compare', abbr: 'CP', group: 'Start'),
     RailDestination('Models', abbr: 'MD', group: 'Start'),
     RailDestination('Code', abbr: 'CO', group: 'Do'),
     RailDestination('Companion', abbr: 'CN', group: 'Do'),
@@ -272,6 +274,8 @@ class _FlywheelShellState extends State<FlywheelShell> {
     switch (_destinations[_selectedIndex].label) {
       case 'Chat':
         return AgentView(client: _client, alive: _gatewayAlive);
+      case 'Compare':
+        return CompareView(client: _client, alive: _gatewayAlive);
       case 'Models':
         return EndpointsView(client: _client, alive: _gatewayAlive);
       case 'Code':
