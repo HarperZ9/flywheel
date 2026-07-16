@@ -1,4 +1,4 @@
-"""task_curator.py — admission gates for the N>=100 hard set.
+"""task_curator.py: admission gates for the N>=100 hard set.
 
 The uplift question stays open until a hard set exists where single-shot does
 not saturate (FLAGSHIP-PLAN.md, lane #7), and curation is the slow part. The

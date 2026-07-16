@@ -1,4 +1,4 @@
-"""envelope.py — the proof receipt (HARNESS.md §proof-envelope).
+"""envelope.py: the proof receipt (HARNESS.md §proof-envelope).
 
 Every accepted answer ships this. A third party re-runs `oracle_cmd` on the
 candidate and must reproduce `oracle_output_hash` (and thus `verdict`). No
