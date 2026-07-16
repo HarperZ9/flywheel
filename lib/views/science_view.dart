@@ -11,6 +11,7 @@ import '../models/science_models.dart';
 import '../theme/flywheel_theme.dart';
 import '../widgets/fw.dart';
 import '../widgets/plan_cards.dart';
+import '../widgets/science_history.dart';
 
 class ScienceView extends StatefulWidget {
   final GatewayClient client;
@@ -35,7 +36,50 @@ class _ScienceViewState extends State<ScienceView> {
   final List<_Claim> _claims = [];
   bool _running = false;
   ScienceRun? _run;
+  bool? _storedOk; // chain re-check when _run came from history
+  List<Map<String, dynamic>> _history = [];
   String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadHistory();
+  }
+
+  @override
+  void didUpdateWidget(ScienceView old) {
+    super.didUpdateWidget(old);
+    if (!old.alive && widget.alive) _loadHistory();
+  }
+
+  Future<void> _loadHistory() async {
+    if (!widget.alive) return;
+    try {
+      final r = await widget.client.scienceRuns(limit: 20);
+      if (mounted) {
+        setState(() => _history = ((r['runs'] ?? []) as List)
+            .whereType<Map<String, dynamic>>()
+            .toList());
+      }
+    } catch (_) {/* run errors already surface below the composer */}
+  }
+
+  Future<void> _openStored(Map<String, dynamic> row) async {
+    final chain = '${row['chain_hash'] ?? ''}';
+    if (chain.length < 4) return;
+    try {
+      final doc = await widget.client.scienceRunDetail(chain);
+      if (mounted) {
+        setState(() {
+          _run = ScienceRun.fromJson(doc);
+          _storedOk = doc['chain_ok'] == true;
+          _error = null;
+        });
+      }
+    } catch (e) {
+      if (mounted) setState(() => _error = '$e');
+    }
+  }
 
   @override
   void dispose() {
@@ -66,7 +110,13 @@ class _ScienceViewState extends State<ScienceView> {
       ];
       final r = ScienceRun.fromJson(
           await widget.client.science(q, claims: claims));
-      if (mounted) setState(() => _run = r);
+      if (mounted) {
+        setState(() {
+          _run = r;
+          _storedOk = null; // a live run, not a re-read receipt
+        });
+      }
+      _loadHistory(); // the run just persisted; history shows it now
     } catch (e) {
       if (mounted) setState(() => _error = '$e');
     } finally {
@@ -101,7 +151,20 @@ class _ScienceViewState extends State<ScienceView> {
           const SizedBox(height: FwLayout.s3),
           HonestNull('Failed: $_error'),
         ],
+        if (_storedOk == false) ...[
+          const SizedBox(height: FwLayout.s3),
+          const HonestNull(
+              'This stored run failed re-verification: its content no '
+              'longer matches its chain hash. It is served as TAMPERED.'),
+        ],
         if (r != null) ..._result(t, r),
+        if (_history.isNotEmpty) ...[
+          const SizedBox(height: FwLayout.s5),
+          Kicker('history · ${_history.length} stored '
+              'run${_history.length == 1 ? '' : 's'}, re-verified at read'),
+          const SizedBox(height: FwLayout.s3),
+          ScienceHistoryList(runs: _history, onOpen: _openStored),
+        ],
       ],
     );
   }

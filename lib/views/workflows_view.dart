@@ -33,6 +33,8 @@ class _WorkflowsViewState extends State<WorkflowsView> {
   bool _allowExec = false;
   bool _running = false;
   WorkflowRun? _run;
+  WorkflowRun? _trace; // a STORED run opened from history
+  bool? _traceOk;
   String? _error;
 
   @override
@@ -106,10 +108,29 @@ class _WorkflowsViewState extends State<WorkflowsView> {
         allowExec: _allowExec,
       );
       if (mounted) setState(() => _run = run);
+      _load(); // the new run's receipt belongs in history immediately
     } catch (e) {
       if (mounted) setState(() => _error = '$e');
     } finally {
       if (mounted) setState(() => _running = false);
+    }
+  }
+
+  /// Open one stored run's full per-stage trace, chain-reverified at read.
+  Future<void> _openTrace(Map<String, dynamic> row) async {
+    final chain = '${row['chain_hash'] ?? ''}';
+    if (chain.length < 4) return;
+    try {
+      final doc = await widget.client.workflowRunDetail(chain);
+      if (mounted) {
+        setState(() {
+          _trace = WorkflowRun.fromJson(doc);
+          _traceOk = doc['chain_ok'] == true;
+          _error = null;
+        });
+      }
+    } catch (e) {
+      if (mounted) setState(() => _error = '$e');
     }
   }
 
@@ -144,15 +165,30 @@ class _WorkflowsViewState extends State<WorkflowsView> {
         ],
         if ((_roster?.runs.isNotEmpty ?? false)) ...[
           const SizedBox(height: FwLayout.s5),
-          const Kicker('recent runs · persisted receipts'),
+          const Kicker('recent runs · persisted receipts, tap for the trace'),
           const SizedBox(height: FwLayout.s3),
           HairlineCard(
             padding: const EdgeInsets.symmetric(
                 horizontal: FwLayout.s4, vertical: FwLayout.s2),
             child: Column(
-              children: [for (final r in _roster!.runs) PastRunRow(run: r)],
+              children: [
+                for (final r in _roster!.runs)
+                  PastRunRow(run: r, onTap: () => _openTrace(r)),
+              ],
             ),
           ),
+        ],
+        if (_trace != null) ...[
+          const SizedBox(height: FwLayout.s4),
+          const Kicker('stored trace · re-verified at read'),
+          const SizedBox(height: FwLayout.s3),
+          if (_traceOk == false) ...[
+            const HonestNull(
+                'This receipt failed re-verification: its content no longer '
+                'matches its chain hash. It is served as TAMPERED.'),
+            const SizedBox(height: FwLayout.s3),
+          ],
+          WorkflowRunCard(run: _trace!),
         ],
       ],
     );

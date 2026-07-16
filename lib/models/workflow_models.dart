@@ -117,11 +117,12 @@ class WorkflowStep {
 
   /// Maps the step status onto the verdict palette. DONE means the step RAN,
   /// not that an external check accepted it, so only VERIFIED earns the accept
-  /// color; FAILED/ERROR are drift; DONE, UNVERIFIABLE, and any absent/unknown
-  /// status are the honest null.
+  /// color; FAILED/ERROR/TAMPERED are drift (a receipt that failed its read-
+  /// time re-verification is a detected lie, never a neutral null); DONE,
+  /// UNVERIFIABLE, and any absent/unknown status are the honest null.
   String get verdict => switch (status) {
         'VERIFIED' => 'verified',
-        'DRIFT' || 'FAILED' || 'ERROR' => 'drift',
+        'DRIFT' || 'FAILED' || 'ERROR' || 'TAMPERED' => 'drift',
         _ => 'unverifiable',
       };
 }
@@ -155,11 +156,11 @@ class WorkflowRun {
       );
 
   /// COMPLETED means every stage executed, not that the run was verified: only
-  /// VERIFIED earns the accept color. FAILED/ERROR are drift; COMPLETED,
-  /// UNVERIFIED, and any absent/unknown status are the honest null.
+  /// VERIFIED earns the accept color. FAILED/ERROR/TAMPERED are drift;
+  /// COMPLETED, UNVERIFIED, and any absent/unknown status are the honest null.
   String get verdict => switch (status) {
         'VERIFIED' => 'verified',
-        'DRIFT' || 'FAILED' || 'ERROR' => 'drift',
+        'DRIFT' || 'FAILED' || 'ERROR' || 'TAMPERED' => 'drift',
         _ => 'unverifiable',
       };
 }

@@ -257,6 +257,22 @@ class GatewayClient {
     return _decode(r);
   }
 
+  /// GET /api/science/runs — persisted science history, chain-reverified.
+  Future<Map<String, dynamic>> scienceRuns({int limit = 20}) =>
+      getJson('/api/science/runs?limit=$limit');
+
+  /// GET /api/science/run — one stored science run by chain prefix.
+  Future<Map<String, dynamic>> scienceRunDetail(String chain) =>
+      getJson('/api/science/run?chain=$chain');
+
+  /// GET /api/workflow/run — one stored per-stage trace, chain-reverified.
+  Future<Map<String, dynamic>> workflowRunDetail(String chain) =>
+      getJson('/api/workflow/run?chain=$chain');
+
+  /// GET /api/agent/runs — persisted agent runs, content-addressed.
+  Future<Map<String, dynamic>> agentRuns({int limit = 20}) =>
+      getJson('/api/agent/runs?limit=$limit');
+
   /// GET /api/memory/list — browse stored spans verbatim (no query).
   Future<Map<String, dynamic>> memoryList({int limit = 20}) async {
     final r = await _http.get(Uri.parse('$baseUrl/api/memory/list?limit=$limit'));
