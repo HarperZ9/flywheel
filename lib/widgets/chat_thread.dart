@@ -8,6 +8,7 @@ import 'package:flutter/services.dart';
 
 import '../models/chat.dart';
 import '../theme/flywheel_theme.dart';
+import 'turn_receipt.dart';
 
 class ChatThread extends StatelessWidget {
   final List<ChatMessage> messages;
@@ -25,9 +26,17 @@ class ChatThread extends StatelessWidget {
   }
 }
 
-class _Bubble extends StatelessWidget {
+class _Bubble extends StatefulWidget {
   final ChatMessage message;
   const _Bubble({required this.message});
+
+  @override
+  State<_Bubble> createState() => _BubbleState();
+}
+
+class _BubbleState extends State<_Bubble> {
+  bool _receiptOpen = false;
+  ChatMessage get message => widget.message;
 
   @override
   Widget build(BuildContext context) {
@@ -58,6 +67,12 @@ class _Bubble extends StatelessWidget {
                   child: _MessageBody(message: message),
                 ),
                 if (!isUser && !message.streaming) _footer(context, t),
+                if (_receiptOpen && message.receipt != null)
+                  Container(
+                    constraints: const BoxConstraints(maxWidth: 640),
+                    padding: const EdgeInsets.only(top: FwLayout.s2),
+                    child: TurnReceiptCard(receipt: message.receipt!),
+                  ),
               ],
             ),
           ),
@@ -99,14 +114,30 @@ class _Bubble extends StatelessWidget {
         if (receipt != null) ...[
           const SizedBox(width: 6),
           Tooltip(
-            message: 'Witnessed turn · receipt '
-                '${(receipt['receipt_id'] ?? '').toString()}',
-            child: Row(mainAxisSize: MainAxisSize.min, children: [
-              Icon(Icons.verified_outlined, size: 12, color: t.verified),
-              const SizedBox(width: 4),
-              Text('verified',
-                  style: fwMono(t, size: 10.5, color: t.verified)),
-            ]),
+            message: 'Witnessed turn — open the receipt',
+            child: InkWell(
+              borderRadius: BorderRadius.circular(FwLayout.radiusSmall),
+              onTap: () => setState(() => _receiptOpen = !_receiptOpen),
+              child: Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                  Icon(Icons.verified_outlined, size: 12, color: t.verified),
+                  const SizedBox(width: 4),
+                  Text('verified',
+                      style: fwMono(t, size: 10.5, color: t.verified)),
+                  AnimatedRotation(
+                    turns: _receiptOpen ? 0.5 : 0,
+                    duration: MediaQuery.of(context).disableAnimations
+                        ? Duration.zero
+                        : const Duration(milliseconds: 180),
+                    curve: Curves.easeOutQuart,
+                    child:
+                        Icon(Icons.expand_more, size: 12, color: t.inkFaint),
+                  ),
+                ]),
+              ),
+            ),
           ),
         ],
       ]),

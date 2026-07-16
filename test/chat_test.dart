@@ -88,6 +88,49 @@ void main() {
     expect(find.text('…'), findsOneWidget);
   });
 
+  testWidgets('the verified mark opens into the turn receipt and closes again',
+      (tester) async {
+    final messages = [
+      ChatMessage(role: 'assistant', text: 'answer', receipt: {
+        'receipt_id': 'abc123def456abc123de',
+        'request_hash': '1111aaaa2222bbbb',
+        'prompt_hash': '3333cccc4444dddd',
+        'response_hash': '5555eeee6666ffff',
+        'model_ref': 'anthropic:claude-x',
+        'routed_via': 'anthropic',
+        'seed': 0,
+      }),
+    ];
+    await _pump(tester, ChatThread(messages: messages, controller: ScrollController()));
+    expect(find.textContaining('abc123def456abc123de'), findsNothing);
+    await tester.tap(find.text('verified'));
+    await tester.pumpAndSettle();
+    // the receipt detail: routing fact, the id, and the recompute note
+    expect(find.text('anthropic'), findsOneWidget);
+    expect(find.textContaining('abc123def456abc123de'), findsOneWidget);
+    expect(find.textContaining('content-addressed'), findsOneWidget);
+    await tester.tap(find.text('verified'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('abc123def456abc123de'), findsNothing);
+  });
+
+  testWidgets('the receipt names a failover and a served-model swap honestly',
+      (tester) async {
+    final messages = [
+      ChatMessage(role: 'assistant', text: 'answer', receipt: {
+        'receipt_id': 'abc123def456abc123de',
+        'model_ref': 'openai:gpt-x',
+        'served_model': 'gpt-x-mini', // the provider served something else
+        'failover_from': ['anthropic: no key'],
+      }),
+    ];
+    await _pump(tester, ChatThread(messages: messages, controller: ScrollController()));
+    await tester.tap(find.text('verified'));
+    await tester.pumpAndSettle();
+    expect(find.text('gpt-x-mini'), findsOneWidget);
+    expect(find.textContaining('anthropic: no key'), findsOneWidget);
+  });
+
   EndpointRow ep(String name, String cred) => EndpointRow(
       name: name, backend: 'b', credential: cred, providerRole: '', configured: true);
 
