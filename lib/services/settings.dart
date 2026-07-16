@@ -15,6 +15,7 @@ class DesktopSettings {
   bool railCollapsed;
   String? textFamily; // null = canon default (Hanken Grotesk)
   String? monoFamily; // null = canon default (Conso)
+  String? groundPreset; // null = canon default (Ceramic)
   double uiScale;
 
   /// Reusable prompts the user saved, newest first: [{title, text}]. A small
@@ -27,6 +28,7 @@ class DesktopSettings {
       this.railCollapsed = false,
       this.textFamily,
       this.monoFamily,
+      this.groundPreset,
       this.uiScale = 1.0,
       List<Map<String, String>>? savedPrompts})
       : recentWorkspaces = recentWorkspaces ?? [],
@@ -86,6 +88,7 @@ class DesktopSettings {
         railCollapsed: j['rail_collapsed'] == true,
         textFamily: j['text_family'] is String ? j['text_family'] : null,
         monoFamily: j['mono_family'] is String ? j['mono_family'] : null,
+        groundPreset: j['ground_preset'] is String ? j['ground_preset'] : null,
         uiScale: j['ui_scale'] is num
             ? (j['ui_scale'] as num).toDouble().clamp(0.8, 1.4)
             : 1.0,
@@ -121,6 +124,7 @@ class DesktopSettings {
         'rail_collapsed': railCollapsed,
         if (textFamily != null) 'text_family': textFamily,
         if (monoFamily != null) 'mono_family': monoFamily,
+        if (groundPreset != null) 'ground_preset': groundPreset,
         'ui_scale': uiScale,
         'saved_prompts': savedPrompts,
       }));

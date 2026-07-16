@@ -88,14 +88,14 @@ void main() {
     expect(find.text('…'), findsOneWidget);
   });
 
-  EndpointRow _ep(String name, String cred) => EndpointRow(
+  EndpointRow ep(String name, String cred) => EndpointRow(
       name: name, backend: 'b', credential: cred, providerRole: '', configured: true);
 
   testWidgets('the model picker button shows the current model', (tester) async {
     await _pump(
         tester,
         ModelPickerButton(
-            endpoints: [_ep('local:14b', 'local-none'), _ep('claude', 'present')],
+            endpoints: [ep('local:14b', 'local-none'), ep('claude', 'present')],
             current: 'claude',
             onSelect: (_) {}));
     expect(find.text('claude'), findsOneWidget);
@@ -108,9 +108,9 @@ void main() {
         tester,
         ModelPickerButton(
             endpoints: [
-              _ep('local:14b', 'local-none'),
-              _ep('claude', 'present'),
-              _ep('gemini', 'absent'),
+              ep('local:14b', 'local-none'),
+              ep('claude', 'present'),
+              ep('gemini', 'absent'),
             ],
             current: 'local:14b',
             onSelect: (v) => chosen = v));

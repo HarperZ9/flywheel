@@ -80,9 +80,13 @@ class _FlywheelAppState extends State<FlywheelApp> {
       title: 'Flywheel',
       debugShowCheckedModeBanner: false,
       theme: flywheelLightTheme(
-          textFamily: s.textFamily, monoFamily: s.monoFamily),
+          textFamily: s.textFamily,
+          monoFamily: s.monoFamily,
+          groundPreset: s.groundPreset),
       darkTheme: flywheelDarkTheme(
-          textFamily: s.textFamily, monoFamily: s.monoFamily),
+          textFamily: s.textFamily,
+          monoFamily: s.monoFamily,
+          groundPreset: s.groundPreset),
       themeMode: _mode,
       builder: (context, child) => MediaQuery(
         data: MediaQuery.of(context).copyWith(
