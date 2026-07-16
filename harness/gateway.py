@@ -2013,7 +2013,16 @@ class _Handler(BaseHTTPRequestHandler):
                 seed = int(req.get("seed", 0))
             except (TypeError, ValueError):
                 seed = 0
-            return self._json(mint(params, seed=seed))
+            face = mint(params, seed=seed)
+            if req.get("ttf") and not face.get("refused"):
+                # the minted outlines as an installable TrueType file
+                import base64
+                from harness.typeface_ttf import to_ttf
+                family = str(req.get("family") or "Zentropy Mint")[:48]
+                face["ttf_b64"] = base64.b64encode(
+                    to_ttf(face, family=family)).decode("ascii")
+                face["ttf_family"] = family
+            return self._json(face)
         if p == "/api/marketplace/add":                # a user catalog entry (env-var NAMES only)
             length = self._content_length()
             if length is None:
