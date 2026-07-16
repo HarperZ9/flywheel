@@ -1,4 +1,4 @@
-"""oracle.py — the verifier adapter (HARNESS.md §verifier-registry).
+"""oracle.py: the verifier adapter (HARNESS.md §verifier-registry).
 
 The oracle is the ONLY thing that accepts. No learned model in the accept path
 (C2 invariant). M1 ships PytestOracle; M2 promotes SeedOracle (native, via
