@@ -273,6 +273,10 @@ class GatewayClient {
   Future<Map<String, dynamic>> agentRuns({int limit = 20}) =>
       getJson('/api/agent/runs?limit=$limit');
 
+  /// GET /api/agent/run — one stored agent run with its trace events.
+  Future<Map<String, dynamic>> agentRunDetail(String id) =>
+      getJson('/api/agent/run?id=$id');
+
   /// GET /api/memory/list — browse stored spans verbatim (no query).
   Future<Map<String, dynamic>> memoryList({int limit = 20}) async {
     final r = await _http.get(Uri.parse('$baseUrl/api/memory/list?limit=$limit'));
