@@ -107,6 +107,26 @@ def science_run_detail(run_root, prefix: str) -> dict:
     return doc
 
 
+def trim_events(events: list, cap: int = 200, text_cap: int = 700) -> list:
+    """Trace events fit for storage. The run's beginning is its intent, so
+    the FIRST `cap` events survive in order; anything dropped is named in a
+    trailing marker — truncation is a fact of the record, never silent. Long
+    text fields are capped with a visible ellipsis (tool output arrives
+    pre-excerpted from the loop; this is the at-rest guarantee)."""
+    out = []
+    for e in list(events)[:cap]:
+        e = dict(e)
+        for k in ("text", "output", "args"):
+            v = e.get(k)
+            if isinstance(v, str) and len(v) > text_cap:
+                e[k] = v[:text_cap] + "…"
+        out.append(e)
+    dropped = len(events) - len(out)
+    if dropped > 0:
+        out.append({"type": "truncated", "dropped": dropped})
+    return out
+
+
 def save_agent_run(run_root, doc: dict) -> dict:
     """Persist one agent run content-addressed by its canonical bytes."""
     d = Path(run_root) / "agent_runs"

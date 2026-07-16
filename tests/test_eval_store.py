@@ -128,6 +128,36 @@ def test_agent_run_is_content_addressed(tmp_path):
     assert "error" in agent_run_detail(tmp_path, "0" * 16)
 
 
+def test_trim_events_keeps_the_start_and_names_the_drop():
+    from harness.eval_store import trim_events
+    events = [{"type": "assistant", "step": i, "text": "x" * 2000}
+              for i in range(300)]
+    out = trim_events(events, cap=200, text_cap=700)
+    # the run's beginning is the intent; it survives verbatim order
+    assert out[0]["step"] == 0 and out[199]["step"] == 199
+    assert len(out[0]["text"]) == 701  # capped + ellipsis
+    # truncation is a fact of the record, never silent
+    assert out[-1] == {"type": "truncated", "dropped": 100}
+    # under the cap nothing is added or reshaped
+    small = trim_events([{"type": "tool_call", "name": "read"}])
+    assert small == [{"type": "tool_call", "name": "read"}]
+
+
+def test_agent_run_persists_its_events():
+    from harness.eval_store import trim_events
+    doc = dict(_agent_doc(), events=trim_events(
+        [{"type": "assistant", "step": 1, "text": "plan"},
+         {"type": "tool_result", "name": "run", "ok": True, "output": "ok"}]))
+    import pathlib
+    import tempfile
+    with tempfile.TemporaryDirectory() as td:
+        rid = save_agent_run(pathlib.Path(td), doc)["run_id"]
+        detail = agent_run_detail(pathlib.Path(td), rid)
+        assert detail["intact"] is True
+        assert [e["type"] for e in detail["events"]] == [
+            "assistant", "tool_result"]
+
+
 def test_edited_agent_run_is_tampered(tmp_path):
     rid = save_agent_run(tmp_path, _agent_doc())["run_id"]
     p = tmp_path / "agent_runs" / f"{rid}.json"

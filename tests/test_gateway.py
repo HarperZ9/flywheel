@@ -519,7 +519,7 @@ def test_embeddings_forwards_to_provider(monkeypatch):
     assert captured["body"]["model"] == "embed-3" and "adaptive" not in captured["body"]
 
 
-def test_sse_agent_streams_events(monkeypatch):
+def test_sse_agent_streams_events(monkeypatch, tmp_path):
     import io
     import harness.router_agent as RA
 
@@ -532,6 +532,7 @@ def test_sse_agent_streams_events(monkeypatch):
     monkeypatch.setattr(RA, "run_router_agent", fake_run)
     h = gateway._Handler.__new__(gateway._Handler)
     h.root = "."
+    h.run_root = tmp_path
     h.wfile = io.BytesIO()
     h.send_response = lambda *a, **k: None
     h.send_header = lambda *a, **k: None
@@ -603,11 +604,17 @@ def test_agent_route_validates_goal_and_endpoint(tmp_path):
 
 
 def test_agent_route_dispatches_gated_and_caps_steps(tmp_path, monkeypatch):
+    monkeypatch.setenv("FLYWHEEL_HOME", str(tmp_path))  # countersign store
     import harness.router_agent as RA
     seen = {}
 
     def fake_run(goal, endpoint, **kw):
         seen.update(goal=goal, endpoint=endpoint, kw=kw)
+        emit = kw.get("on_event")
+        if emit:
+            emit({"type": "assistant", "step": 1, "text": "the plan"})
+            emit({"type": "tool_result", "name": "run", "ok": True,
+                  "output": "green"})
         return {"final": "done", "steps": 1, "verified": True,
                 "checkpoint": "abc", "endpoint": endpoint}
 
@@ -619,13 +626,53 @@ def test_agent_route_dispatches_gated_and_caps_steps(tmp_path, monkeypatch):
     assert seen["kw"]["max_steps"] == 12               # capped, no runaway loop
     assert seen["kw"]["allow_write"] is False          # default-deny survives the HTTP hop
     assert seen["kw"]["allow_exec"] is False
-    # the run persisted into HISTORY under the run root, content-addressed
-    from harness.eval_store import agent_runs
+    # the run persisted into HISTORY under the run root, content-addressed,
+    # and it CARRIES ITS TRACE: the same events a live stream would show
+    from harness.eval_store import agent_run_detail, agent_runs
     hist = agent_runs(tmp_path)
     assert hist["total"] == 1
     assert hist["runs"][0]["run_id"] == sent["body"]["run_id"]
     assert hist["runs"][0]["intact"] is True
     assert hist["runs"][0]["goal_excerpt"] == "fix the bug"
+    detail = agent_run_detail(tmp_path, sent["body"]["run_id"])
+    assert [e["type"] for e in detail["events"]] == [
+        "assistant", "tool_result"]
+
+
+def test_sse_agent_persists_the_run_and_dones_with_run_id(tmp_path, monkeypatch):
+    # the STREAMED path is the primary surface; a streamed run must land in
+    # history exactly like a posted one, and the done event names its receipt
+    import io
+
+    monkeypatch.setenv("FLYWHEEL_HOME", str(tmp_path))  # countersign store
+    import harness.router_agent as RA
+
+    def fake_run(goal, endpoint, **kw):
+        emit = kw.get("on_event")
+        if emit:
+            emit({"type": "assistant", "step": 1, "text": "thinking"})
+        return {"final": "answered", "steps": 1, "verified": True,
+                "checkpoint": "abc", "endpoint": endpoint}
+
+    monkeypatch.setattr(RA, "run_router_agent", fake_run)
+    h = gateway._Handler.__new__(gateway._Handler)
+    h.root = tmp_path
+    h.run_root = tmp_path
+    h.wfile = io.BytesIO()
+    h.send_response = lambda *a, **k: None
+    h.send_header = lambda *a, **k: None
+    h.end_headers = lambda: None
+    h._cors = lambda: None
+    h._sse_agent({"goal": "g"}, "g", "anthropic")
+    frames = [json.loads(line[6:])
+              for line in h.wfile.getvalue().decode().split("\n\n")
+              if line.startswith("data: {")]
+    done = [f for f in frames if f.get("type") == "done"][0]
+    from harness.eval_store import agent_run_detail
+    detail = agent_run_detail(tmp_path, done["run_id"])
+    assert detail["intact"] is True
+    assert detail["final"] == "answered"
+    assert [e["type"] for e in detail["events"]] == ["assistant"]
 
 
 def test_workflow_run_is_countersigned_into_the_store(tmp_path, monkeypatch):
@@ -712,3 +759,39 @@ def test_robustness_inject_route_honestly_opens_on_granted_flags():
     assert body["gate"]["allow_exec"] is True
     assert body["contained"] < body["total"]           # granting exec opens the shell scenarios
     assert len(body["receipt"]) == 16                  # a re-derivable receipt rides the result
+
+
+def test_sse_agent_persists_an_errored_run_with_its_trace(tmp_path, monkeypatch):
+    # a failed run is the one you most want to inspect afterward: it lands
+    # in history as status ERROR carrying every event up to and including
+    # the error itself, instead of vanishing with the stream
+    import io
+
+    monkeypatch.setenv("FLYWHEEL_HOME", str(tmp_path))
+    import harness.router_agent as RA
+
+    def fake_run(goal, endpoint, **kw):
+        emit = kw.get("on_event")
+        if emit:
+            emit({"type": "assistant", "step": 1, "text": "starting"})
+        raise RuntimeError("provider unreachable")
+
+    monkeypatch.setattr(RA, "run_router_agent", fake_run)
+    h = gateway._Handler.__new__(gateway._Handler)
+    h.root = tmp_path
+    h.run_root = tmp_path
+    h.wfile = io.BytesIO()
+    h.send_response = lambda *a, **k: None
+    h.send_header = lambda *a, **k: None
+    h.end_headers = lambda: None
+    h._cors = lambda: None
+    h._sse_agent({"goal": "g"}, "g", "anthropic")
+    from harness.eval_store import agent_runs
+    hist = agent_runs(tmp_path)
+    assert hist["total"] == 1
+    row = hist["runs"][0]
+    assert row["status"] == "ERROR" and row["intact"] is True
+    from harness.eval_store import agent_run_detail
+    detail = agent_run_detail(tmp_path, row["run_id"])
+    assert "provider unreachable" in detail["error"]
+    assert [e["type"] for e in detail["events"]] == ["assistant", "error"]
