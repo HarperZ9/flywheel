@@ -109,6 +109,17 @@ class GatewayClient {
     return _decode(r);
   }
 
+  /// POST /api/typeface — mint a parametric face; outlines + receipt back.
+  Future<Map<String, dynamic>> typefaceMint(
+      Map<String, dynamic> params, int seed) async {
+    final r = await _http.post(
+      Uri.parse('$baseUrl/api/typeface'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'params': params, 'seed': seed}),
+    );
+    return _decode(r);
+  }
+
   /// POST /api/learn/animate — a lesson rendered as a runnable manim scene.
   Future<Map<String, dynamic>> learnAnimate(
       Map<String, dynamic> lesson) async {

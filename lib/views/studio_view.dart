@@ -10,17 +10,20 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import '../client/gateway_client.dart';
 import '../models/gateway_models.dart';
 import '../theme/flywheel_theme.dart';
 import '../widgets/aperture.dart';
 import '../widgets/fw.dart';
+import '../widgets/typeface_panel.dart';
 
 class StudioView extends StatefulWidget {
   final WorldDoc? world;
   final LaneRoster? roster;
   final bool alive;
+  final GatewayClient? client;
   const StudioView(
-      {super.key, this.world, this.roster, required this.alive});
+      {super.key, this.world, this.roster, required this.alive, this.client});
 
   @override
   State<StudioView> createState() => _StudioViewState();
@@ -85,6 +88,15 @@ class _StudioViewState extends State<StudioView> {
         const Kicker('the loop · drawn from live state'),
         const SizedBox(height: FwLayout.s3),
         _loopSchematic(context),
+        if (widget.client != null) ...[
+          const SizedBox(height: FwLayout.s5),
+          const Kicker('typeface forge · parametric type'),
+          const SizedBox(height: FwLayout.s3),
+          TypefacePanel(
+            onMint: (params, seed) =>
+                widget.client!.typefaceMint(params, seed),
+          ),
+        ],
         const SizedBox(height: FwLayout.s5),
         const Kicker('music'),
         const SizedBox(height: FwLayout.s3),

@@ -295,7 +295,10 @@ class _FlywheelShellState extends State<FlywheelShell> {
         return WorkflowsView(client: _client, alive: _gatewayAlive);
       case 'Studio':
         return StudioView(
-            world: _world, roster: _roster, alive: _gatewayAlive);
+            world: _world,
+            roster: _roster,
+            alive: _gatewayAlive,
+            client: _client);
       case 'Lint':
         return LintView(client: _client, alive: _gatewayAlive);
       case 'Memory':
