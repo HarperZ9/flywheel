@@ -4,7 +4,30 @@ returns verbatim spans, and an empty store says it is empty."""
 
 import hashlib
 
-from harness.memory_api import memory_note, memory_recall, memory_stats
+from harness.memory_api import memory_list, memory_note, memory_recall, memory_stats
+
+
+def test_memory_list_browses_stored_spans_verbatim(tmp_path):
+    memory_note(tmp_path, "first note about the gateway")
+    memory_note(tmp_path, "second note about the oracle")
+    memory_note(tmp_path, "third note about the ledger")
+    doc = memory_list(tmp_path)
+    assert doc["total"] == 3 and len(doc["spans"]) == 3
+    contents = {s["messages"][0]["content"] for s in doc["spans"]}
+    assert "third note about the ledger" in contents
+    assert "first note about the gateway" in contents
+    assert all(len(s["content_sha256"]) == 64 for s in doc["spans"])
+
+
+def test_memory_list_empty_store_is_empty(tmp_path):
+    doc = memory_list(tmp_path)
+    assert doc["total"] == 0 and doc["spans"] == []
+
+
+def test_memory_list_honours_the_limit(tmp_path):
+    for i in range(5):
+        memory_note(tmp_path, f"note number {i}")
+    assert len(memory_list(tmp_path, limit=2)["spans"]) == 2
 
 
 def test_empty_store_reports_empty(tmp_path):

@@ -32,6 +32,15 @@ def memory_recall(run_root: "Path | str", query: str, top_k: int = 5) -> dict:
             "results": results, "n": len(results)}
 
 
+def memory_list(run_root: "Path | str", limit: int = 20) -> dict:
+    """Browse durable memory: up to ``limit`` stored spans, verbatim, so a reader
+    can look at what's held without phrasing a recall query. Content-addressed, so
+    this is a sample of what's stored, not a recency order."""
+    idx = _store(run_root)
+    return {"schema": "flywheel.memory-list/v1",
+            "spans": idx.browse(limit), "total": len(idx.spans)}
+
+
 def memory_note(run_root: "Path | str", content: str, role: str = "note") -> dict:
     """Store a durable note. Content-addressed: the same content is never
     stored twice, and the returned span hash re-derives from the content."""

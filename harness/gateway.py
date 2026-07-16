@@ -1107,6 +1107,16 @@ class _Handler(BaseHTTPRequestHandler):
         if p == "/api/memory":                       # durable memory stats (fold index)
             from harness.memory_api import memory_stats
             return self._json(memory_stats(self.run_root))
+        if p == "/api/memory/list":                  # browse stored spans, verbatim
+            from harness.memory_api import memory_list
+            limit = 20
+            for part in qs.split("&"):
+                if part.startswith("limit="):
+                    try:
+                        limit = int(part[6:])
+                    except ValueError:
+                        limit = 20
+            return self._json(memory_list(self.run_root, limit=limit))
         if p == "/api/plugins":                      # every mounted capability, one manifest shape
             from harness.plugins import plugin_roster
             return self._json(plugin_roster())
