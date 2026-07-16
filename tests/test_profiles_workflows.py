@@ -214,3 +214,33 @@ def test_roster_flags_a_hand_flipped_run_as_tampered(tmp_path):
     row = roster["runs"][0]
     assert row["chain_ok"] is False
     assert row["status"] == "TAMPERED"
+
+
+def test_workflow_run_detail_serves_the_stored_trace(tmp_path):
+    doc = workflows.run_workflow("research-brief", "trace me", "e",
+                                 root=str(tmp_path), run_root=tmp_path,
+                                 proposer=_StubProposer(["the plan",
+                                                         "the critique"]))
+    detail = workflows.workflow_run_detail(tmp_path, doc["chain_hash"][:8])
+    assert detail["chain_ok"] is True
+    assert [s["name"] for s in detail["steps"]] == ["draft", "critique"]
+    assert detail["steps"][0]["excerpt"] == "the plan"
+    assert detail["goal_excerpt"] == "trace me"
+
+
+def test_workflow_run_detail_reverifies_the_chain(tmp_path):
+    doc = workflows.run_workflow("research-brief", "goal", "e",
+                                 root=str(tmp_path), run_root=tmp_path,
+                                 proposer=_StubProposer(["draft", "review"]))
+    receipt = next((tmp_path / "workflow_runs").glob("*.json"))
+    d = json.loads(receipt.read_text(encoding="utf-8"))
+    d["steps"][0]["excerpt"] = "a better draft"       # rewrite history
+    receipt.write_text(json.dumps(d), encoding="utf-8")
+    detail = workflows.workflow_run_detail(tmp_path, doc["chain_hash"][:8])
+    assert detail["chain_ok"] is False
+    assert detail["status"] == "TAMPERED"
+
+
+def test_workflow_run_detail_unknown_prefix_is_named(tmp_path):
+    assert "error" in workflows.workflow_run_detail(tmp_path, "ffffffff")
+    assert "error" in workflows.workflow_run_detail(tmp_path, "ab")
