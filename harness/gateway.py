@@ -1999,6 +1999,21 @@ class _Handler(BaseHTTPRequestHandler):
             from harness.marketplace import install_from_catalog
             out = install_from_catalog((req.get("name") or "").strip())
             return self._json(out, 400 if "error" in out else 200)
+        if p == "/api/typeface":                       # mint a parametric face under witness
+            length = self._content_length()
+            if length is None:
+                return self._json({"error": "invalid or oversized Content-Length"}, 400)
+            try:
+                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
+            except Exception:
+                req = {}
+            from harness.typeface_forge import mint
+            params = req.get("params") if isinstance(req.get("params"), dict) else {}
+            try:
+                seed = int(req.get("seed", 0))
+            except (TypeError, ValueError):
+                seed = 0
+            return self._json(mint(params, seed=seed))
         if p == "/api/marketplace/add":                # a user catalog entry (env-var NAMES only)
             length = self._content_length()
             if length is None:
