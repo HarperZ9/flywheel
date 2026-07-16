@@ -11,9 +11,11 @@ import 'package:flutter/material.dart';
 import '../client/gateway_client.dart';
 import '../models/chat.dart';
 import '../models/gateway_models.dart';
+import '../services/chat_store.dart';
 import '../services/settings.dart';
 import '../theme/flywheel_theme.dart';
 import '../widgets/chat_composer.dart';
+import '../widgets/chat_sidebar.dart';
 import '../widgets/chat_thread.dart';
 import '../widgets/fw.dart';
 import '../widgets/model_picker.dart';
@@ -35,6 +37,7 @@ class AgentView extends StatefulWidget {
 class _AgentViewState extends State<AgentView> {
   final List<Conversation> _conversations = [];
   late Conversation _current;
+  final _store = ChatStore();
   final _scroll = ScrollController();
   List<EndpointRow> _endpoints = [];
   String? _model;
@@ -45,8 +48,14 @@ class _AgentViewState extends State<AgentView> {
   @override
   void initState() {
     super.initState();
-    _current = _blankConversation();
-    _conversations.add(_current);
+    final saved = _store.load();
+    if (saved.isNotEmpty) {
+      _conversations.addAll(saved);
+      _current = saved.first;
+    } else {
+      _current = _blankConversation();
+      _conversations.add(_current);
+    }
     _loadEndpoints();
   }
 
@@ -86,11 +95,27 @@ class _AgentViewState extends State<AgentView> {
       _current = _blankConversation();
       _conversations.insert(0, _current);
     });
+    _store.save(_conversations);
   }
 
   void _select(Conversation c) {
     if (identical(c, _current) || _streaming) return;
     setState(() => _current = c);
+  }
+
+  void _delete(Conversation c) {
+    setState(() {
+      _conversations.remove(c);
+      if (identical(c, _current)) {
+        if (_conversations.isEmpty) {
+          _current = _blankConversation();
+          _conversations.add(_current);
+        } else {
+          _current = _conversations.first;
+        }
+      }
+    });
+    _store.save(_conversations);
   }
 
   void _send(String text) {
@@ -138,6 +163,7 @@ class _AgentViewState extends State<AgentView> {
       }
       _streaming = false;
     });
+    _store.save(_conversations); // the completed turn survives a restart
   }
 
   void _stop() {
@@ -165,7 +191,14 @@ class _AgentViewState extends State<AgentView> {
     }
     final t = context.fw;
     return Row(children: [
-      _sidebar(t),
+      ChatSidebar(
+        conversations: _conversations,
+        current: _current,
+        streaming: _streaming,
+        onNew: _newChat,
+        onSelect: _select,
+        onDelete: _delete,
+      ),
       Expanded(
         child: Column(children: [
           _header(t),
@@ -186,41 +219,6 @@ class _AgentViewState extends State<AgentView> {
       ),
     ]);
   }
-
-  Widget _sidebar(FwTokens t) => Container(
-        width: 232,
-        decoration: BoxDecoration(
-          color: t.ground2,
-          border: Border(right: BorderSide(color: t.hairline)),
-        ),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-          Padding(
-            padding: const EdgeInsets.all(FwLayout.s3),
-            child: OutlinedButton.icon(
-              onPressed: _streaming ? null : _newChat,
-              icon: const Icon(Icons.add_rounded, size: 16),
-              label: const Text('New chat'),
-              style: OutlinedButton.styleFrom(
-                  alignment: Alignment.centerLeft,
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: FwLayout.s3, vertical: FwLayout.s3)),
-            ),
-          ),
-          Expanded(
-            child: ListView(
-              padding: const EdgeInsets.symmetric(horizontal: FwLayout.s2),
-              children: [
-                for (final c in _conversations)
-                  _ConvItem(
-                    title: c.isEmpty ? 'New chat' : c.title,
-                    selected: identical(c, _current),
-                    onTap: () => _select(c),
-                  ),
-              ],
-            ),
-          ),
-        ]),
-      );
 
   Widget _header(FwTokens t) => Container(
         padding: const EdgeInsets.symmetric(
@@ -264,36 +262,4 @@ class _AgentViewState extends State<AgentView> {
           ]),
         ),
       );
-}
-
-class _ConvItem extends StatelessWidget {
-  final String title;
-  final bool selected;
-  final VoidCallback onTap;
-  const _ConvItem(
-      {required this.title, required this.selected, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    final t = context.fw;
-    return Material(
-      color: selected ? t.panel : Colors.transparent,
-      borderRadius: BorderRadius.circular(FwLayout.radiusSmall),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(FwLayout.radiusSmall),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(
-              horizontal: FwLayout.s3, vertical: 9),
-          child: Text(title,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                  fontSize: 13,
-                  color: selected ? t.ink : t.inkMuted,
-                  fontWeight: selected ? FontWeight.w600 : FontWeight.w400)),
-        ),
-      ),
-    );
-  }
 }

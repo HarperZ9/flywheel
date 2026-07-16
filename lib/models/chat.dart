@@ -22,6 +22,21 @@ class ChatMessage {
 
   /// The wire shape the gateway's /v1/chat/completions expects.
   Map<String, String> toWire() => {'role': role, 'content': text};
+
+  /// Durable shape (the transient streaming/run fields are not persisted).
+  Map<String, dynamic> toJson() => {
+        'role': role,
+        'text': text,
+        if (receipt != null) 'receipt': receipt,
+      };
+
+  factory ChatMessage.fromJson(Map<String, dynamic> j) => ChatMessage(
+        role: j['role'] == 'user' ? 'user' : 'assistant',
+        text: j['text'] is String ? j['text'] as String : '',
+        receipt: j['receipt'] is Map<String, dynamic>
+            ? j['receipt'] as Map<String, dynamic>
+            : null,
+      );
 }
 
 class Conversation {
@@ -41,6 +56,27 @@ class Conversation {
         createdAt = createdAt ?? DateTime.now();
 
   bool get isEmpty => messages.isEmpty;
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'title': title,
+        if (model != null) 'model': model,
+        'created_at': createdAt.millisecondsSinceEpoch,
+        'messages': [for (final m in messages) m.toJson()],
+      };
+
+  factory Conversation.fromJson(Map<String, dynamic> j) => Conversation(
+        id: j['id'] is String ? j['id'] as String : 'c0',
+        title: j['title'] is String ? j['title'] as String : 'New chat',
+        model: j['model'] is String ? j['model'] as String : null,
+        createdAt: j['created_at'] is int
+            ? DateTime.fromMillisecondsSinceEpoch(j['created_at'] as int)
+            : null,
+        messages: [
+          for (final m in (j['messages'] as List? ?? const []))
+            if (m is Map<String, dynamic>) ChatMessage.fromJson(m)
+        ],
+      );
 
   /// A title derived from the first user turn, trimmed for the sidebar.
   void titleFromFirstMessage() {

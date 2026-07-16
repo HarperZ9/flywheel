@@ -40,6 +40,22 @@ void main() {
     expect(m.isUser, isTrue);
   });
 
+  test('a conversation round-trips through json for durable history', () {
+    final c = Conversation(id: 'c9', model: 'claude');
+    c.messages.add(ChatMessage(role: 'user', text: 'hi'));
+    c.messages.add(ChatMessage(
+        role: 'assistant', text: 'hello', receipt: {'receipt_id': 'r1'}));
+    c.titleFromFirstMessage();
+    final back = Conversation.fromJson(c.toJson());
+    expect(back.id, 'c9');
+    expect(back.model, 'claude');
+    expect(back.title, 'hi');
+    expect(back.messages, hasLength(2));
+    expect(back.messages[1].text, 'hello');
+    expect(back.messages[1].receipt?['receipt_id'], 'r1');
+    expect(back.messages[1].streaming, isFalse); // transient, not persisted
+  });
+
   testWidgets('the thread renders both turns and a fenced code block', (tester) async {
     final messages = [
       ChatMessage(role: 'user', text: 'show me a loop'),
