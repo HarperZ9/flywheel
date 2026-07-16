@@ -11,6 +11,7 @@ import 'package:flutter/material.dart';
 import '../client/gateway_client.dart';
 import '../models/chat.dart';
 import '../models/gateway_models.dart';
+import '../services/settings.dart';
 import '../theme/flywheel_theme.dart';
 import '../widgets/chat_composer.dart';
 import '../widgets/chat_thread.dart';
@@ -20,7 +21,12 @@ import '../widgets/model_picker.dart';
 class AgentView extends StatefulWidget {
   final GatewayClient client;
   final bool alive;
-  const AgentView({super.key, required this.client, required this.alive});
+  final DesktopSettings settings;
+  const AgentView(
+      {super.key,
+      required this.client,
+      required this.alive,
+      required this.settings});
 
   @override
   State<AgentView> createState() => _AgentViewState();
@@ -173,6 +179,8 @@ class _AgentViewState extends State<AgentView> {
             onSend: _send,
             onStop: _stop,
             hint: _model == null ? 'No model available…' : 'Message ${_model!}…',
+            savedPrompts: widget.settings.savedPrompts,
+            onSavePrompt: (t) => setState(() => widget.settings.savePrompt(t)),
           ),
         ]),
       ),

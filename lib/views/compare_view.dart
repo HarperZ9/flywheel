@@ -10,6 +10,7 @@ import 'package:flutter/material.dart';
 import '../client/gateway_client.dart';
 import '../models/chat.dart';
 import '../models/gateway_models.dart';
+import '../services/settings.dart';
 import '../theme/flywheel_theme.dart';
 import '../widgets/chat_composer.dart';
 import '../widgets/chat_thread.dart';
@@ -19,7 +20,12 @@ import '../widgets/model_picker.dart';
 class CompareView extends StatefulWidget {
   final GatewayClient client;
   final bool alive;
-  const CompareView({super.key, required this.client, required this.alive});
+  final DesktopSettings settings;
+  const CompareView(
+      {super.key,
+      required this.client,
+      required this.alive,
+      required this.settings});
 
   @override
   State<CompareView> createState() => _CompareViewState();
@@ -187,6 +193,8 @@ class _CompareViewState extends State<CompareView> {
         onSend: _send,
         onStop: _stop,
         hint: 'Ask both models the same thing…',
+        savedPrompts: widget.settings.savedPrompts,
+        onSavePrompt: (t) => setState(() => widget.settings.savePrompt(t)),
       ),
     ]);
   }

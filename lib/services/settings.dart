@@ -16,14 +16,40 @@ class DesktopSettings {
   String? textFamily; // null = canon default (Hanken Grotesk)
   String? monoFamily; // null = canon default (Conso)
   double uiScale;
+
+  /// Reusable prompts the user saved, newest first: [{title, text}]. A small
+  /// shelf so nobody starts from a blank composer every time.
+  List<Map<String, String>> savedPrompts;
+
   DesktopSettings(
       {this.themeMode = ThemeMode.system,
       List<String>? recentWorkspaces,
       this.railCollapsed = false,
       this.textFamily,
       this.monoFamily,
-      this.uiScale = 1.0})
-      : recentWorkspaces = recentWorkspaces ?? [];
+      this.uiScale = 1.0,
+      List<Map<String, String>>? savedPrompts})
+      : recentWorkspaces = recentWorkspaces ?? [],
+        savedPrompts = savedPrompts ?? [];
+
+  /// Save a prompt to the shelf (deduped by text, newest first, capped at 30).
+  void savePrompt(String text) {
+    final trimmed = text.trim();
+    if (trimmed.isEmpty) return;
+    savedPrompts.removeWhere((p) => p['text'] == trimmed);
+    final title = trimmed.replaceAll('\n', ' ');
+    savedPrompts.insert(0, {
+      'title': title.length <= 48 ? title : '${title.substring(0, 48)}…',
+      'text': trimmed,
+    });
+    if (savedPrompts.length > 30) savedPrompts = savedPrompts.sublist(0, 30);
+    save();
+  }
+
+  void removePrompt(String text) {
+    savedPrompts.removeWhere((p) => p['text'] == text);
+    save();
+  }
 
   /// Record a workspace as most-recently used (keeps the last six).
   void rememberWorkspace(String path) {
@@ -63,6 +89,15 @@ class DesktopSettings {
         uiScale: j['ui_scale'] is num
             ? (j['ui_scale'] as num).toDouble().clamp(0.8, 1.4)
             : 1.0,
+        savedPrompts: (j['saved_prompts'] is List)
+            ? [
+                for (final p in j['saved_prompts'] as List)
+                  if (p is Map &&
+                      p['title'] is String &&
+                      p['text'] is String)
+                    {'title': p['title'] as String, 'text': p['text'] as String}
+              ]
+            : [],
       );
     } catch (e) {
       // A corrupt settings file must never block launch; fall back to system.
@@ -87,6 +122,7 @@ class DesktopSettings {
         if (textFamily != null) 'text_family': textFamily,
         if (monoFamily != null) 'mono_family': monoFamily,
         'ui_scale': uiScale,
+        'saved_prompts': savedPrompts,
       }));
     } catch (e) {
       debugPrint('settings save failed: $e');

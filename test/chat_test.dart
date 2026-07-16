@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:flywheel_desktop/client/gateway_client.dart';
 import 'package:flywheel_desktop/models/chat.dart';
+import 'package:flywheel_desktop/services/settings.dart';
 import 'package:flywheel_desktop/models/gateway_models.dart';
 import 'package:flywheel_desktop/theme/flywheel_theme.dart';
 import 'package:flywheel_desktop/views/compare_view.dart';
@@ -111,7 +112,24 @@ void main() {
   });
 
   testWidgets('Compare offline names the command that fixes it', (tester) async {
-    await _pump(tester, CompareView(client: GatewayClient(), alive: false));
+    await _pump(
+        tester,
+        CompareView(
+            client: GatewayClient(),
+            alive: false,
+            settings: DesktopSettings()));
     expect(find.textContaining('flywheel up'), findsOneWidget);
+  });
+
+  test('the prompt shelf saves, dedupes, titles, and caps', () {
+    final s = DesktopSettings();
+    s.savePrompt('  refactor this  ');
+    s.savePrompt('write tests');
+    s.savePrompt('refactor this'); // dedupe -> moves to front, no duplicate
+    expect(s.savedPrompts.length, 2);
+    expect(s.savedPrompts.first['text'], 'refactor this');
+    expect(s.savedPrompts.first['title'], 'refactor this');
+    s.removePrompt('refactor this');
+    expect(s.savedPrompts.length, 1);
   });
 }

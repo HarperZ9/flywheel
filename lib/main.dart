@@ -273,9 +273,11 @@ class _FlywheelShellState extends State<FlywheelShell> {
   Widget _activeView() {
     switch (_destinations[_selectedIndex].label) {
       case 'Chat':
-        return AgentView(client: _client, alive: _gatewayAlive);
+        return AgentView(
+            client: _client, alive: _gatewayAlive, settings: widget.settings);
       case 'Compare':
-        return CompareView(client: _client, alive: _gatewayAlive);
+        return CompareView(
+            client: _client, alive: _gatewayAlive, settings: widget.settings);
       case 'Models':
         return EndpointsView(client: _client, alive: _gatewayAlive);
       case 'Code':
