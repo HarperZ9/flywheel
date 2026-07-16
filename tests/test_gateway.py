@@ -459,6 +459,7 @@ def _agent_post(body: dict, root):
     h = gateway._Handler.__new__(gateway._Handler)
     h.path = "/api/agent"
     h.root = root
+    h.run_root = root  # hermetic: run persistence must never touch real history
     h.headers = _FakeHeaders(str(len(raw)))
     h.rfile = io.BytesIO(raw)
     sent = {}
@@ -618,6 +619,13 @@ def test_agent_route_dispatches_gated_and_caps_steps(tmp_path, monkeypatch):
     assert seen["kw"]["max_steps"] == 12               # capped, no runaway loop
     assert seen["kw"]["allow_write"] is False          # default-deny survives the HTTP hop
     assert seen["kw"]["allow_exec"] is False
+    # the run persisted into HISTORY under the run root, content-addressed
+    from harness.eval_store import agent_runs
+    hist = agent_runs(tmp_path)
+    assert hist["total"] == 1
+    assert hist["runs"][0]["run_id"] == sent["body"]["run_id"]
+    assert hist["runs"][0]["intact"] is True
+    assert hist["runs"][0]["goal_excerpt"] == "fix the bug"
 
 
 def test_workflow_run_is_countersigned_into_the_store(tmp_path, monkeypatch):

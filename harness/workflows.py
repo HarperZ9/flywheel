@@ -102,6 +102,29 @@ def workflow_roster(run_root: "Path | str | None" = None) -> dict:
     return {"schema": "flywheel.workflows/v1", "workflows": defs, "runs": runs}
 
 
+def workflow_run_detail(run_root, prefix: str) -> dict:
+    """The full stored per-stage trace of one run, chain-reverified at read
+    time exactly like the roster: a rewritten step or a renamed receipt is
+    served as TAMPERED, never as a legitimate trace."""
+    prefix = (prefix or "").strip().lower()
+    if len(prefix) < 4:
+        return {"error": "give at least 4 chain-hash characters"}
+    d = Path(run_root) / "workflow_runs"
+    matches = sorted(d.glob(f"{prefix[:16]}*.json")) if d.is_dir() else []
+    if not matches:
+        return {"error": f"no workflow run matching '{prefix[:16]}'"}
+    try:
+        doc = json.loads(matches[0].read_text(encoding="utf-8"))
+    except Exception:
+        return {"error": f"receipt unreadable: {matches[0].name}"}
+    ok = (recompute_chain(doc) == doc.get("chain_hash")
+          and matches[0].stem == str(doc.get("chain_hash", ""))[:16])
+    doc["chain_ok"] = ok
+    if not ok:
+        doc["status"] = "TAMPERED"
+    return doc
+
+
 def recompute_chain(doc: dict) -> str:
     """Re-derive a workflow run's chain_hash from its stored fields, exactly
     as run_workflow built it: header, then each step summary in order, then

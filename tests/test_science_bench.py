@@ -111,6 +111,18 @@ def test_gather_raw_payload_is_kept_not_projected_away(tmp_path):
         GATHER_OK.encode()).hexdigest()
 
 
+def test_gather_raw_survives_the_crucible_stage(tmp_path):
+    # regression: stage 3 reuses the (rc, raw) locals; with claims given the
+    # doc's gather_raw must still be GATHER's payload, never crucible stdout.
+    doc = science_run(
+        "q", claims=[{"id": "c1", "text": "t", "falsification": "f"}],
+        runner=_runner(), workdir=tmp_path)
+    assert doc["gather_raw"] == GATHER_OK
+    import hashlib
+    assert doc["gather_raw_sha256"] == hashlib.sha256(
+        GATHER_OK.encode()).hexdigest()
+
+
 def test_receipt_echoes_the_claims_and_measurements_it_judged(tmp_path):
     claims = [{"id": "c1", "text": "t", "falsification": "f"}]
     ms = [{"claim": "c1", "deviation": 0.0, "tolerance": 0.001,

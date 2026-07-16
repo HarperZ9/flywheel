@@ -202,6 +202,21 @@ def _workspace_root_allowlist() -> "list[str]":
     return roots
 
 
+def _qs_value(qs: str, key: str) -> str:
+    """First value for `key` in a raw query string, '' when absent."""
+    for part in qs.split("&"):
+        if part.startswith(key + "="):
+            return part[len(key) + 1:]
+    return ""
+
+
+def _qs_int(qs: str, key: str, default: int) -> int:
+    try:
+        return int(_qs_value(qs, key))
+    except ValueError:
+        return default
+
+
 def _resolve_workspace_root(requested, default: Path) -> "tuple[Path, str | None]":
     """Resolve the workspace root an agent run operates in. The caller may
     name any EXISTING directory (the desktop IDE points at an open project);
@@ -1104,6 +1119,26 @@ class _Handler(BaseHTTPRequestHandler):
         if p == "/api/workflows":                    # workflow definitions + recent runs
             from harness.workflows import workflow_roster
             return self._json(workflow_roster(self.run_root))
+        if p == "/api/workflow/run":                 # one run's stored trace, chain-reverified
+            from harness.workflows import workflow_run_detail
+            return self._json(workflow_run_detail(
+                self.run_root, _qs_value(qs, "chain")))
+        if p == "/api/science/runs":                 # eval history, chain-reverified
+            from harness.eval_store import science_runs
+            return self._json(science_runs(
+                self.run_root, limit=_qs_int(qs, "limit", 20)))
+        if p == "/api/science/run":                  # one stored science run
+            from harness.eval_store import science_run_detail
+            return self._json(science_run_detail(
+                self.run_root, _qs_value(qs, "chain")))
+        if p == "/api/agent/runs":                   # agent-run history, content-addressed
+            from harness.eval_store import agent_runs
+            return self._json(agent_runs(
+                self.run_root, limit=_qs_int(qs, "limit", 20)))
+        if p == "/api/agent/run":                    # one stored agent run
+            from harness.eval_store import agent_run_detail
+            return self._json(agent_run_detail(
+                self.run_root, _qs_value(qs, "id")))
         if p == "/api/memory":                       # durable memory stats (fold index)
             from harness.memory_api import memory_stats
             return self._json(memory_stats(self.run_root))
@@ -1307,10 +1342,20 @@ class _Handler(BaseHTTPRequestHandler):
             measurements = (req.get("measurements")
                             if isinstance(req.get("measurements"), list) else None)
             from pathlib import Path as _P
-            return self._json(science_run(
+            doc = science_run(
                 question, claims=claims, measurements=measurements,
                 max_sources=max_sources,
-                workdir=_P(self.run_root) / "science"))
+                workdir=_P(self.run_root) / "science")
+            # history is best-effort: a full disk never blocks the answer,
+            # but an unpersisted run says so instead of pretending
+            try:
+                from harness.eval_store import save_science_run
+                doc["receipt_path"] = save_science_run(
+                    self.run_root, doc)["receipt_path"]
+            except Exception as e:
+                doc["receipt_note"] = (
+                    f"run not persisted: {type(e).__name__}: {e}")
+            return self._json(doc)
         if p == "/api/retrieve":                      # retrieval that cites its evidence
             length = self._content_length()
             if length is None:
@@ -1661,6 +1706,14 @@ class _Handler(BaseHTTPRequestHandler):
                 provenance={"endpoint": endpoint,
                             "model_ref": str(req.get("model") or endpoint)})
             result["run_receipt"] = _countersign_run(result)
+            try:
+                from harness.eval_store import save_agent_run
+                result["run_id"] = save_agent_run(
+                    self.run_root,
+                    dict(result, goal_excerpt=goal[:200]))["run_id"]
+            except Exception as e:
+                result["receipt_note"] = (
+                    f"run not persisted: {type(e).__name__}: {e}")
             return self._json(result)
         if p == "/api/workflow":                       # staged run with a chained receipt, any endpoint
             length = self._content_length()

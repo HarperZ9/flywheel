@@ -71,10 +71,13 @@ def science_run(question: str, *, claims: "list | None" = None,
     runner = runner or _shell
     errors: dict = {}
 
-    # Stage 1: gather evidence with provenance.
+    # Stage 1: gather evidence with provenance. The payload is pinned into
+    # its own local here because stage 3 reuses (rc, raw) — the doc's
+    # gather_raw must be gather's bytes, never crucible stdout.
     rc, raw = runner(["gather", "arxiv", question,
                       "--max-results", str(max_sources), "--json"])
     sources = _parse_sources(raw) if rc == 0 else []
+    gather_raw = raw if rc == 0 else ""
     if rc != 0:
         errors["gather"] = raw.strip()[-300:]
 
@@ -135,9 +138,9 @@ def science_run(question: str, *, claims: "list | None" = None,
     }, sort_keys=True).encode()).hexdigest()
 
     return {"schema": SCHEMA, "question": question, "sources": sources,
-            "gather_raw": raw if rc == 0 else "",
-            "gather_raw_sha256": (hashlib.sha256(raw.encode()).hexdigest()
-                                  if rc == 0 else ""),
+            "gather_raw": gather_raw,
+            "gather_raw_sha256": (hashlib.sha256(gather_raw.encode()).hexdigest()
+                                  if gather_raw else ""),
             "prp": prp, "claims": claims or [],
             "measurements": measurements or [],
             "verdicts": verdicts, "crucible": crucible_note,
