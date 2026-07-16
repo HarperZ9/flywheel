@@ -873,7 +873,12 @@ class _Handler(BaseHTTPRequestHandler):
         self._cors()
         self.end_headers()
 
+        events: list = []
+
         def emit(evt):
+            # tee: the stream shows the process live, the run root keeps it —
+            # a streamed run lands in history exactly like a posted one
+            events.append(evt)
             try:
                 self.wfile.write(("data: " + json.dumps(evt) + "\n\n").encode())
                 self.wfile.flush()
@@ -900,7 +905,22 @@ class _Handler(BaseHTTPRequestHandler):
                 max_steps=max_steps, test_cmd=(req.get("test_cmd") or None),
                 model=(req.get("model") or None),
                 compact_budget=int(req.get("compact_budget", 0) or 0), on_event=emit)
-            emit({"type": "done", "final": result.get("final"), "steps": result.get("steps"),
+            # countersign ONCE, before persistence, so the stored doc and the
+            # done event carry the same receipt (the store banks one witness)
+            run_receipt = _countersign_run(result)
+            run_id, receipt_note = None, None
+            try:
+                from harness.eval_store import save_agent_run, trim_events
+                run_id = save_agent_run(
+                    self.run_root,
+                    dict(result, goal_excerpt=goal[:200],
+                         events=trim_events(events),
+                         run_receipt=run_receipt))["run_id"]
+            except Exception as e:
+                receipt_note = f"run not persisted: {type(e).__name__}: {e}"
+            emit({"type": "done", "run_id": run_id,
+                  **({"receipt_note": receipt_note} if receipt_note else {}),
+                  "final": result.get("final"), "steps": result.get("steps"),
                   "verified": result.get("verified"), "integrity": result.get("integrity"),
                   # the reviewability projection + checkpoint ride the done
                   # event so the surface can offer a sign-this-run attestation
@@ -914,9 +934,22 @@ class _Handler(BaseHTTPRequestHandler):
                   "ttva_s": result.get("ttva_s"),
                   "scaffold": scaffold_answer(str(result.get("final") or ""),
                                               env),
-                  "run_receipt": _countersign_run(result)})
+                  "run_receipt": run_receipt})
         except Exception as e:
             emit({"type": "error", "error": f"{type(e).__name__}: {e}"})
+            # a failed run is the one most worth inspecting afterward: it
+            # lands in history as ERROR carrying every event up to and
+            # including the error itself, instead of vanishing with the stream
+            try:
+                from harness.eval_store import save_agent_run, trim_events
+                save_agent_run(
+                    self.run_root,
+                    {"goal_excerpt": goal[:200], "endpoint": endpoint,
+                     "status": "ERROR",
+                     "error": f"{type(e).__name__}: {e}",
+                     "events": trim_events(events)})
+            except Exception:
+                pass  # the stream already carries the primary error
         try:
             self.wfile.write(b"data: [DONE]\n\n")
             self.wfile.flush()
@@ -1684,6 +1717,7 @@ class _Handler(BaseHTTPRequestHandler):
                 scaffold_turn as _st
             env = _st(goal)
             from harness.router_agent import run_router_agent
+            events: list = []
             try:
                 result = run_router_agent(
                     goal, endpoint, root=str(root),
@@ -1691,8 +1725,20 @@ class _Handler(BaseHTTPRequestHandler):
                     allow_exec=bool(req.get("allow_exec", False)),
                     max_steps=max_steps, test_cmd=(req.get("test_cmd") or None),
                     model=(req.get("model") or None),
-                    compact_budget=int(req.get("compact_budget", 0) or 0))
+                    compact_budget=int(req.get("compact_budget", 0) or 0),
+                    on_event=events.append)
             except Exception as e:
+                # failed runs land in history too, with their partial trace
+                try:
+                    from harness.eval_store import save_agent_run, trim_events
+                    save_agent_run(
+                        self.run_root,
+                        {"goal_excerpt": goal[:200], "endpoint": endpoint,
+                         "status": "ERROR",
+                         "error": f"{type(e).__name__}: {e}",
+                         "events": trim_events(events)})
+                except Exception:
+                    pass  # the 502 already carries the primary error
                 return self._json({"error": f"{type(e).__name__}: {e}"}, 502)
             if effort is not None:
                 # stamp what was ENFORCED, not the nominal dial: a caller
@@ -1707,10 +1753,11 @@ class _Handler(BaseHTTPRequestHandler):
                             "model_ref": str(req.get("model") or endpoint)})
             result["run_receipt"] = _countersign_run(result)
             try:
-                from harness.eval_store import save_agent_run
+                from harness.eval_store import save_agent_run, trim_events
                 result["run_id"] = save_agent_run(
                     self.run_root,
-                    dict(result, goal_excerpt=goal[:200]))["run_id"]
+                    dict(result, goal_excerpt=goal[:200],
+                         events=trim_events(events)))["run_id"]
             except Exception as e:
                 result["receipt_note"] = (
                     f"run not persisted: {type(e).__name__}: {e}")
