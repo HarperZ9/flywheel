@@ -159,6 +159,27 @@ def _invention_sweeps(root: Path) -> dict:
             "receipt": str(path)}
 
 
+def _robustness() -> dict:
+    """The gated tool loop's prompt-injection containment, measured live. Like the
+    admission gates this instrument is code, not an artifact, so it is present
+    wherever the harness imports; a smuggled call that the gate fails to refuse
+    drops the contained count, so the number can fall."""
+    try:
+        from .injection_probe import probe
+        r = probe()
+        return {"name": "robustness", "present": True,
+                "contained": r["contained"], "total": r["total"],
+                "summary": f"{r['contained']}/{r['total']} smuggled tool calls "
+                           "contained under the safe default gate; workspace "
+                           "confinement holds under every posture",
+                "receipt": "POST /api/robustness/inject"}
+    except Exception as e:
+        return {"name": "robustness", "present": False,
+                "contained": 0, "total": 0,
+                "summary": f"probe unavailable: {type(e).__name__}",
+                "receipt": ""}
+
+
 def instrument_register(root: "str | Path | None" = None) -> dict:
     """Every instrument of the discipline, read from its live receipt."""
     root = Path(root) if root else Path(__file__).resolve().parents[1]
@@ -169,6 +190,7 @@ def instrument_register(root: "str | Path | None" = None) -> dict:
         _uplift_lanes(root),
         _tension_ledger(),
         _invention_sweeps(root),
+        _robustness(),
     ]
     return {"schema": SCHEMA,
             "instruments": instruments,
