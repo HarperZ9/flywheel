@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="3" skipped="0" tests="9" time="0.194" timestamp="2026-07-13T20:16:51.890966-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-195624.luhn_valid.tests.test_solution" name="test_single_zero" time="0.001" /><testcase classname="artifacts.uplift.work_20260713-195624.luhn_valid.tests.test_solution" name="test_eighteen" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-195624.luhn_valid.tests.test_solution" name="test_seventeen" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-195624.luhn_valid.tests.test_solution" name="test_classic_valid" time="0.000"><failure message="ValueError: Bad number">&gt;   def test_classic_valid(): assert f('79927398713') is True
+                                     ^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:6: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+s = '79927398713'
+
+    def luhn_valid(s: str) -&gt; bool:
+        """
+        Checks whether a given string of decimal digits is valid according to the Luhn checksum.
+    
+        Parameters:
+        s (str): A string of decimal digits to be validated.
+    
+        Returns:
+        bool: True if the string 's' has a valid Luhn checksum, False otherwise.
+        """
+        # Ensure the input is not empty
+        if not isinstance(s, str) or len(s) &gt; 10 or not s.isnumeric():
+&gt;           raise ValueError("Bad number")
+E           ValueError: Bad number
+
+solution.py:13: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.luhn_valid.tests.test_solution" name="test_classic_invalid" time="0.001"><failure message="ValueError: Bad number">&gt;   def test_classic_invalid(): assert f('79927398710') is False
+                                       ^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:7: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+s = '79927398710'
+
+    def luhn_valid(s: str) -&gt; bool:
+        """
+        Checks whether a given string of decimal digits is valid according to the Luhn checksum.
+    
+        Parameters:
+        s (str): A string of decimal digits to be validated.
+    
+        Returns:
+        bool: True if the string 's' has a valid Luhn checksum, False otherwise.
+        """
+        # Ensure the input is not empty
+        if not isinstance(s, str) or len(s) &gt; 10 or not s.isnumeric():
+&gt;           raise ValueError("Bad number")
+E           ValueError: Bad number
+
+solution.py:13: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.luhn_valid.tests.test_solution" name="test_twenty_six" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-195624.luhn_valid.tests.test_solution" name="test_bad_char" time="0.001"><failure message="AssertionError: assert 'Bad number' == 'bad number'&#10;  &#10;  - bad number&#10;  ? ^&#10;  + Bad number&#10;  ? ^">def test_bad_char():
+        with pytest.raises(ValueError) as e: f('12a')
+&gt;       assert str(e.value) == 'bad number'
+E       AssertionError: assert 'Bad number' == 'bad number'
+E         
+E         - bad number
+E         ? ^
+E         + Bad number
+E         ? ^
+
+tests\test_solution.py:11: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.luhn_valid.tests.test_solution" name="test_empty" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-195624.luhn_valid.tests.test_solution" name="test_not_str" time="0.000" /></testsuite></testsuites>

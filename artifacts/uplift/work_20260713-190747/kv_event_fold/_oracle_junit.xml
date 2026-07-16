@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="3" skipped="0" tests="8" time="0.218" timestamp="2026-07-13T19:28:10.051330-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-190747.kv_event_fold.tests.test_solution" name="test_applied_in_timestamp_order_not_input_order" time="0.001" /><testcase classname="artifacts.uplift.work_20260713-190747.kv_event_fold.tests.test_solution" name="test_del_removes_key" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-190747.kv_event_fold.tests.test_solution" name="test_del_beats_set_at_same_timestamp_regardless_of_input_order" time="0.004"><failure message="UnboundLocalError: cannot access local variable 'value' where it is not associated with a value">def test_del_beats_set_at_same_timestamp_regardless_of_input_order():
+&gt;       assert fold_events([("del", 5, "a"), ("set", 5, "a", 9)]) == {}
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:15: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+events = [('del', 5, 'a'), ('set', 5, 'a', 9)]
+
+    def fold_events(events):
+        if not events:
+            return {}
+    
+        # Validate and prepare events
+        valid_events = []
+        for event in events:
+            if len(event) not in [3, 4]:
+                raise ValueError(f"Event {event} has invalid length")
+            op, ts, *rest = event
+            if op not in ["set", "del"]:
+                raise ValueError(f"Invalid operation: {op}")
+            if isinstance(ts, bool):
+                raise ValueError("Timestamp cannot be a boolean value")
+            try:
+                ts = int(ts)
+            except (TypeError, ValueError):
+                raise ValueError(f"Invalid timestamp: {ts}")
+            if op == "set":
+                if len(event) != 4 or not isinstance(rest[0], str):
+                    raise ValueError("Set event is malformed")
+                key, value = rest
+            elif op == "del":
+                if len(event) != 3 or not isinstance(rest[0], str):
+                    raise ValueError("Del event is malformed")
+                key = rest[0]
+&gt;           valid_events.append((op, ts, key, value))
+                                              ^^^^^
+E           UnboundLocalError: cannot access local variable 'value' where it is not associated with a value
+
+solution.py:27: UnboundLocalError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-190747.kv_event_fold.tests.test_solution" name="test_same_ts_same_key_sets_later_input_wins" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-190747.kv_event_fold.tests.test_solution" name="test_del_absent_ok_and_set_after_del" time="0.000"><failure message="UnboundLocalError: cannot access local variable 'value' where it is not associated with a value">def test_del_absent_ok_and_set_after_del():
+        evs = [("del", 1, "ghost"), ("set", 2, "a", 1), ("del", 2, "a"),
+               ("set", 3, "a", 7)]
+&gt;       assert fold_events(evs) == {"a": 7}
+               ^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:27: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+events = [('del', 1, 'ghost'), ('set', 2, 'a', 1), ('del', 2, 'a'), ('set', 3, 'a', 7)]
+
+    def fold_events(events):
+        if not events:
+            return {}
+    
+        # Validate and prepare events
+        valid_events = []
+        for event in events:
+            if len(event) not in [3, 4]:
+                raise ValueError(f"Event {event} has invalid length")
+            op, ts, *rest = event
+            if op not in ["set", "del"]:
+                raise ValueError(f"Invalid operation: {op}")
+            if isinstance(ts, bool):
+                raise ValueError("Timestamp cannot be a boolean value")
+            try:
+                ts = int(ts)
+            except (TypeError, ValueError):
+                raise ValueError(f"Invalid timestamp: {ts}")
+            if op == "set":
+                if len(event) != 4 or not isinstance(rest[0], str):
+                    raise ValueError("Set event is malformed")
+                key, value = rest
+            elif op == "del":
+                if len(event) != 3 or not isinstance(rest[0], str):
+                    raise ValueError("Del event is malformed")
+                key = rest[0]
+&gt;           valid_events.append((op, ts, key, value))
+                                              ^^^^^
+E           UnboundLocalError: cannot access local variable 'value' where it is not associated with a value
+
+solution.py:27: UnboundLocalError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-190747.kv_event_fold.tests.test_solution" name="test_malformed_events_raise" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_malformed_events_raise():
+&gt;       with pytest.raises(ValueError):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:31: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260713-190747.kv_event_fold.tests.test_solution" name="test_no_mutation" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-190747.kv_event_fold.tests.test_solution" name="test_empty_input" time="0.000" /></testsuite></testsuites>

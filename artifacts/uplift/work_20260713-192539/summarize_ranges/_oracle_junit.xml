@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="7" skipped="0" tests="9" time="0.226" timestamp="2026-07-13T19:50:10.131835-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-192539.summarize_ranges.tests.test_solution" name="test_basic" time="0.001"><failure message="ValueError: not sorted">&gt;   def test_basic(): assert f([0, 1, 2, 4, 5, 7]) == ['0-&gt;2', '4-&gt;5', '7']
+                             ^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:3: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+nums = [0, 1, 2, 4, 5, 7]
+
+    def summarize_ranges(nums):
+        if not all(isinstance(x, int) for x in nums):
+            raise ValueError('bad item')
+    
+        if len(nums) != sorted(set(nums)):
+&gt;           raise ValueError('not sorted')
+E           ValueError: not sorted
+
+solution.py:6: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-192539.summarize_ranges.tests.test_solution" name="test_empty" time="0.001"><failure message="ValueError: not sorted">&gt;   def test_empty(): assert f([]) == []
+                             ^^^^^
+
+tests\test_solution.py:4: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+nums = []
+
+    def summarize_ranges(nums):
+        if not all(isinstance(x, int) for x in nums):
+            raise ValueError('bad item')
+    
+        if len(nums) != sorted(set(nums)):
+&gt;           raise ValueError('not sorted')
+E           ValueError: not sorted
+
+solution.py:6: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-192539.summarize_ranges.tests.test_solution" name="test_single" time="0.000"><failure message="ValueError: not sorted">&gt;   def test_single(): assert f([1]) == ['1']
+                              ^^^^^^
+
+tests\test_solution.py:5: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+nums = [1]
+
+    def summarize_ranges(nums):
+        if not all(isinstance(x, int) for x in nums):
+            raise ValueError('bad item')
+    
+        if len(nums) != sorted(set(nums)):
+&gt;           raise ValueError('not sorted')
+E           ValueError: not sorted
+
+solution.py:6: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-192539.summarize_ranges.tests.test_solution" name="test_all_isolated" time="0.000"><failure message="ValueError: not sorted">&gt;   def test_all_isolated(): assert f([1, 3, 5]) == ['1', '3', '5']
+                                    ^^^^^^^^^^^^
+
+tests\test_solution.py:6: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+nums = [1, 3, 5]
+
+    def summarize_ranges(nums):
+        if not all(isinstance(x, int) for x in nums):
+            raise ValueError('bad item')
+    
+        if len(nums) != sorted(set(nums)):
+&gt;           raise ValueError('not sorted')
+E           ValueError: not sorted
+
+solution.py:6: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-192539.summarize_ranges.tests.test_solution" name="test_negatives" time="0.000"><failure message="ValueError: not sorted">&gt;   def test_negatives(): assert f([-3, -2, -1, 2]) == ['-3-&gt;-1', '2']
+                                 ^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:7: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+nums = [-3, -2, -1, 2]
+
+    def summarize_ranges(nums):
+        if not all(isinstance(x, int) for x in nums):
+            raise ValueError('bad item')
+    
+        if len(nums) != sorted(set(nums)):
+&gt;           raise ValueError('not sorted')
+E           ValueError: not sorted
+
+solution.py:6: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-192539.summarize_ranges.tests.test_solution" name="test_one_run" time="0.000"><failure message="ValueError: not sorted">&gt;   def test_one_run(): assert f([1, 2, 3, 4]) == ['1-&gt;4']
+                               ^^^^^^^^^^^^^^^
+
+tests\test_solution.py:8: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+nums = [1, 2, 3, 4]
+
+    def summarize_ranges(nums):
+        if not all(isinstance(x, int) for x in nums):
+            raise ValueError('bad item')
+    
+        if len(nums) != sorted(set(nums)):
+&gt;           raise ValueError('not sorted')
+E           ValueError: not sorted
+
+solution.py:6: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-192539.summarize_ranges.tests.test_solution" name="test_not_sorted" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-192539.summarize_ranges.tests.test_solution" name="test_duplicate" time="0.001" /><testcase classname="artifacts.uplift.work_20260713-192539.summarize_ranges.tests.test_solution" name="test_bad_item" time="0.001"><failure message="AssertionError: assert 'not sorted' == 'bad item'&#10;  &#10;  - bad item&#10;  + not sorted">def test_bad_item():
+        with pytest.raises(ValueError) as e: f([1, True])
+&gt;       assert str(e.value) == 'bad item'
+E       AssertionError: assert 'not sorted' == 'bad item'
+E         
+E         - bad item
+E         + not sorted
+
+tests\test_solution.py:17: AssertionError</failure></testcase></testsuite></testsuites>

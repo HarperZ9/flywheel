@@ -1,0 +1,13 @@
+{
+ "bytes": 75855,
+ "content_type": "",
+ "final_url": "https://blog.samaltman.com/",
+ "note": "the hash IS the receipt: any quotation from this source is re-checkable against these bytes offline",
+ "observed_urls": [
+  "https://blog.samaltman.com/"
+ ],
+ "path": "artifacts\\research\\28a9e2225abdd7c0e380504ad68499b31f3b84eecb8e6e436ebcd49b0031a989.bin",
+ "schema": "flywheel.web-snapshot/v1",
+ "sha256": "28a9e2225abdd7c0e380504ad68499b31f3b84eecb8e6e436ebcd49b0031a989",
+ "url": "https://blog.samaltman.com/"
+}

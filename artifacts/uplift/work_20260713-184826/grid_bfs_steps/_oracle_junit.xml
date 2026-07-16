@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="4" skipped="0" tests="16" time="0.405" timestamp="2026-07-13T19:20:34.540542-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-184826.grid_bfs_steps.tests.test_solution" name="test_open_two" time="0.001" /><testcase classname="artifacts.uplift.work_20260713-184826.grid_bfs_steps.tests.test_solution" name="test_single_open" time="0.001" /><testcase classname="artifacts.uplift.work_20260713-184826.grid_bfs_steps.tests.test_solution" name="test_single_wall" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-184826.grid_bfs_steps.tests.test_solution" name="test_blocked" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-184826.grid_bfs_steps.tests.test_solution" name="test_detour" time="0.001" /><testcase classname="artifacts.uplift.work_20260713-184826.grid_bfs_steps.tests.test_solution" name="test_row" time="0.001" /><testcase classname="artifacts.uplift.work_20260713-184826.grid_bfs_steps.tests.test_solution" name="test_start_wall" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-184826.grid_bfs_steps.tests.test_solution" name="test_goal_wall" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-184826.grid_bfs_steps.tests.test_solution" name="test_ragged" time="0.001" /><testcase classname="artifacts.uplift.work_20260713-184826.grid_bfs_steps.tests.test_solution" name="test_ragged_before_cell" time="0.001"><failure message="AssertionError: assert 'bad cell' == 'ragged'&#10;  &#10;  - ragged&#10;  + bad cell">def test_ragged_before_cell():
+        with pytest.raises(ValueError) as e: f([[0, 2], [0]])
+&gt;       assert str(e.value) == 'ragged'
+E       AssertionError: assert 'bad cell' == 'ragged'
+E         
+E         - ragged
+E         + bad cell
+
+tests\test_solution.py:16: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-184826.grid_bfs_steps.tests.test_solution" name="test_bad_cell_two" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-184826.grid_bfs_steps.tests.test_solution" name="test_bad_cell_bool" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_bad_cell_bool():
+&gt;       with pytest.raises(ValueError): f([[0, True]])
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:21: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260713-184826.grid_bfs_steps.tests.test_solution" name="test_bad_grid_empty" time="0.001" /><testcase classname="artifacts.uplift.work_20260713-184826.grid_bfs_steps.tests.test_solution" name="test_bad_grid_empty_row" time="0.001"><failure message="IndexError: list index out of range">def test_bad_grid_empty_row():
+&gt;       with pytest.raises(ValueError): f([[]])
+                                        ^^^^^^^
+
+tests\test_solution.py:26: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+grid = [[]]
+
+    def path_steps(grid):
+        if not isinstance(grid, list) or not grid:
+            raise ValueError('bad grid')
+    
+        rows = len(grid)
+        cols = len(grid[0])
+    
+        for row in grid:
+            if len(row) != cols:
+                raise ValueError('ragged')
+            for cell in row:
+                if not (isinstance(cell, int) and cell in [0, 1]):
+                    raise ValueError('bad cell')
+    
+        start_row, start_col = 0, 0
+        end_row, end_col = rows - 1, cols - 1
+    
+&gt;       if grid[start_row][start_col] == 1 or grid[end_row][end_col] == 1:
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       IndexError: list index out of range
+
+solution.py:18: IndexError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-184826.grid_bfs_steps.tests.test_solution" name="test_bad_grid_not_list" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-184826.grid_bfs_steps.tests.test_solution" name="test_bad_grid_flat" time="0.000"><failure message="TypeError: object of type 'int' has no len()">def test_bad_grid_flat():
+&gt;       with pytest.raises(ValueError): f([0, 1])
+                                        ^^^^^^^^^
+
+tests\test_solution.py:30: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+grid = [0, 1]
+
+    def path_steps(grid):
+        if not isinstance(grid, list) or not grid:
+            raise ValueError('bad grid')
+    
+        rows = len(grid)
+&gt;       cols = len(grid[0])
+               ^^^^^^^^^^^^
+E       TypeError: object of type 'int' has no len()
+
+solution.py:6: TypeError</failure></testcase></testsuite></testsuites>

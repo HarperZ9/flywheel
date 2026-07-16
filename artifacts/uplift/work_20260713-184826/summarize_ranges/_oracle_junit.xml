@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="6" skipped="0" tests="9" time="0.208" timestamp="2026-07-13T19:17:23.428160-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-184826.summarize_ranges.tests.test_solution" name="test_basic" time="0.001"><failure message="AssertionError: assert ['0&gt; 2', '4&gt; 5', '7'] == ['0-&gt;2', '4-&gt;5', '7']&#10;  &#10;  At index 0 diff: '0&gt; 2' != '0-&gt;2'&#10;  Use -v to get more diff">&gt;   def test_basic(): assert f([0, 1, 2, 4, 5, 7]) == ['0-&gt;2', '4-&gt;5', '7']
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert ['0&gt; 2', '4&gt; 5', '7'] == ['0-&gt;2', '4-&gt;5', '7']
+E     
+E     At index 0 diff: '0&gt; 2' != '0-&gt;2'
+E     Use -v to get more diff
+
+tests\test_solution.py:3: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-184826.summarize_ranges.tests.test_solution" name="test_empty" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-184826.summarize_ranges.tests.test_solution" name="test_single" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-184826.summarize_ranges.tests.test_solution" name="test_all_isolated" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-184826.summarize_ranges.tests.test_solution" name="test_negatives" time="0.000"><failure message="AssertionError: assert ['-3&gt; -1', '2'] == ['-3-&gt;-1', '2']&#10;  &#10;  At index 0 diff: '-3&gt; -1' != '-3-&gt;-1'&#10;  Use -v to get more diff">&gt;   def test_negatives(): assert f([-3, -2, -1, 2]) == ['-3-&gt;-1', '2']
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert ['-3&gt; -1', '2'] == ['-3-&gt;-1', '2']
+E     
+E     At index 0 diff: '-3&gt; -1' != '-3-&gt;-1'
+E     Use -v to get more diff
+
+tests\test_solution.py:7: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-184826.summarize_ranges.tests.test_solution" name="test_one_run" time="0.000"><failure message="AssertionError: assert ['1&gt; 4'] == ['1-&gt;4']&#10;  &#10;  At index 0 diff: '1&gt; 4' != '1-&gt;4'&#10;  Use -v to get more diff">&gt;   def test_one_run(): assert f([1, 2, 3, 4]) == ['1-&gt;4']
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert ['1&gt; 4'] == ['1-&gt;4']
+E     
+E     At index 0 diff: '1&gt; 4' != '1-&gt;4'
+E     Use -v to get more diff
+
+tests\test_solution.py:8: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-184826.summarize_ranges.tests.test_solution" name="test_not_sorted" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_not_sorted():
+&gt;       with pytest.raises(ValueError) as e: f([3, 1])
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:10: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260713-184826.summarize_ranges.tests.test_solution" name="test_duplicate" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_duplicate():
+&gt;       with pytest.raises(ValueError) as e: f([1, 1])
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:13: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260713-184826.summarize_ranges.tests.test_solution" name="test_bad_item" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_bad_item():
+&gt;       with pytest.raises(ValueError) as e: f([1, True])
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:16: Failed</failure></testcase></testsuite></testsuites>

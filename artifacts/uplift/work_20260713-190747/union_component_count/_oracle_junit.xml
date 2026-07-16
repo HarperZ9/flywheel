@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="5" skipped="0" tests="14" time="0.233" timestamp="2026-07-13T19:41:50.505906-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-190747.union_component_count.tests.test_solution" name="test_no_edges" time="0.001"><failure message="IndexError: list index out of range">&gt;   def test_no_edges(): assert f(5, []) == 5
+                                ^^^^^^^^
+
+tests\test_solution.py:3: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:53: in component_count
+    dfs(i)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+node = 0
+
+    def dfs(node):
+        if visited[node]:
+            return
+        visited[node] = True
+        for i in range(n):
+&gt;           if edges[i][0] == node or edges[i][1] == node:
+               ^^^^^^^^
+E           IndexError: list index out of range
+
+solution.py:47: IndexError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-190747.union_component_count.tests.test_solution" name="test_chain" time="0.001"><failure message="IndexError: list index out of range">&gt;   def test_chain(): assert f(5, [(0, 1), (1, 2)]) == 3
+                             ^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:4: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:53: in component_count
+    dfs(i)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+node = 0
+
+    def dfs(node):
+        if visited[node]:
+            return
+        visited[node] = True
+        for i in range(n):
+&gt;           if edges[i][0] == node or edges[i][1] == node:
+               ^^^^^^^^
+E           IndexError: list index out of range
+
+solution.py:47: IndexError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-190747.union_component_count.tests.test_solution" name="test_two_pairs" time="0.001"><failure message="IndexError: list index out of range">&gt;   def test_two_pairs(): assert f(4, [(0, 1), (2, 3)]) == 2
+                                 ^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:5: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:53: in component_count
+    dfs(i)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+node = 0
+
+    def dfs(node):
+        if visited[node]:
+            return
+        visited[node] = True
+        for i in range(n):
+&gt;           if edges[i][0] == node or edges[i][1] == node:
+               ^^^^^^^^
+E           IndexError: list index out of range
+
+solution.py:47: IndexError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-190747.union_component_count.tests.test_solution" name="test_duplicates" time="0.001"><failure message="assert 1 == 2&#10; +  where 1 = f(3, [(0, 1), (0, 1), (1, 0)])">&gt;   def test_duplicates(): assert f(3, [(0, 1), (0, 1), (1, 0)]) == 2
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   assert 1 == 2
+E    +  where 1 = f(3, [(0, 1), (0, 1), (1, 0)])
+
+tests\test_solution.py:6: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-190747.union_component_count.tests.test_solution" name="test_self_loop" time="0.000"><failure message="IndexError: list index out of range">&gt;   def test_self_loop(): assert f(3, [(1, 1)]) == 3
+                                 ^^^^^^^^^^^^^^
+
+tests\test_solution.py:7: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:53: in component_count
+    dfs(i)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+node = 0
+
+    def dfs(node):
+        if visited[node]:
+            return
+        visited[node] = True
+        for i in range(n):
+&gt;           if edges[i][0] == node or edges[i][1] == node:
+               ^^^^^^^^
+E           IndexError: list index out of range
+
+solution.py:47: IndexError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-190747.union_component_count.tests.test_solution" name="test_zero_nodes" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-190747.union_component_count.tests.test_solution" name="test_cycle" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-190747.union_component_count.tests.test_solution" name="test_bad_n_negative" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-190747.union_component_count.tests.test_solution" name="test_bad_n_bool" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-190747.union_component_count.tests.test_solution" name="test_bad_edges" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-190747.union_component_count.tests.test_solution" name="test_bad_edge_list" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-190747.union_component_count.tests.test_solution" name="test_bad_edge_len" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-190747.union_component_count.tests.test_solution" name="test_bad_edge_range" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-190747.union_component_count.tests.test_solution" name="test_bad_edge_bool" time="0.000" /></testsuite></testsuites>

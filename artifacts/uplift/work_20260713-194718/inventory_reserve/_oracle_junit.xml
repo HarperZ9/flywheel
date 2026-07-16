@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="10" skipped="0" tests="14" time="0.236" timestamp="2026-07-13T20:12:29.932264-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-194718.inventory_reserve.tests.test_solution" name="test_basic" time="0.001"><failure message="AssertionError: assert [('w', 1), ('w', 1)] == [('w', 2)]&#10;  &#10;  At index 0 diff: ('w', 1) != ('w', 2)&#10;  Left contains one more item: ('w', 1)&#10;  Use -v to get more diff">def test_basic():
+&gt;       assert f({'w': 5}, [('reserve', 'w', 2)]) == [('w', 2)]
+E       AssertionError: assert [('w', 1), ('w', 1)] == [('w', 2)]
+E         
+E         At index 0 diff: ('w', 1) != ('w', 2)
+E         Left contains one more item: ('w', 1)
+E         Use -v to get more diff
+
+tests\test_solution.py:4: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.inventory_reserve.tests.test_solution" name="test_accumulate_and_sort" time="0.001"><failure message="AssertionError: assert [('a', 1), ('... 1), ('b', 1)] == [('a', 2), ('b', 2)]&#10;  &#10;  At index 0 diff: ('a', 1) != ('a', 2)&#10;  Left contains 2 more items, first extra item: ('b', 1)&#10;  Use -v to get more diff">def test_accumulate_and_sort():
+&gt;       assert f({'b': 4, 'a': 4}, [('reserve', 'b', 1), ('reserve', 'a', 2), ('reserve', 'b', 1)]) == [('a', 2), ('b', 2)]
+E       AssertionError: assert [('a', 1), ('... 1), ('b', 1)] == [('a', 2), ('b', 2)]
+E         
+E         At index 0 diff: ('a', 1) != ('a', 2)
+E         Left contains 2 more items, first extra item: ('b', 1)
+E         Use -v to get more diff
+
+tests\test_solution.py:6: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.inventory_reserve.tests.test_solution" name="test_cancel_to_zero_excluded" time="0.001"><failure message="AssertionError: assert [('w', 1), ('w', 1), ('w', 1)] == []&#10;  &#10;  Left contains 3 more items, first extra item: ('w', 1)&#10;  Use -v to get more diff">def test_cancel_to_zero_excluded():
+&gt;       assert f({'w': 5}, [('reserve', 'w', 3), ('cancel', 'w', 3)]) == []
+E       AssertionError: assert [('w', 1), ('w', 1), ('w', 1)] == []
+E         
+E         Left contains 3 more items, first extra item: ('w', 1)
+E         Use -v to get more diff
+
+tests\test_solution.py:8: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.inventory_reserve.tests.test_solution" name="test_reserve_exactly_available" time="0.001"><failure message="AssertionError: assert [('w', 1), ('... 1), ('w', 1)] == [('w', 5)]&#10;  &#10;  At index 0 diff: ('w', 1) != ('w', 5)&#10;  Left contains 4 more items, first extra item: ('w', 1)&#10;  Use -v to get more diff">def test_reserve_exactly_available():
+&gt;       assert f({'w': 5}, [('reserve', 'w', 5)]) == [('w', 5)]
+E       AssertionError: assert [('w', 1), ('... 1), ('w', 1)] == [('w', 5)]
+E         
+E         At index 0 diff: ('w', 1) != ('w', 5)
+E         Left contains 4 more items, first extra item: ('w', 1)
+E         Use -v to get more diff
+
+tests\test_solution.py:10: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.inventory_reserve.tests.test_solution" name="test_no_ops" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-194718.inventory_reserve.tests.test_solution" name="test_not_enough_message" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-194718.inventory_reserve.tests.test_solution" name="test_over_cancel" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_over_cancel():
+&gt;       with pytest.raises(ValueError) as e:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:18: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.inventory_reserve.tests.test_solution" name="test_unknown_item" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-194718.inventory_reserve.tests.test_solution" name="test_bad_qty_zero" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_bad_qty_zero():
+&gt;       with pytest.raises(ValueError) as e: f({'w': 1}, [('reserve', 'w', 0)])
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:25: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.inventory_reserve.tests.test_solution" name="test_bad_qty_bool" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_bad_qty_bool():
+&gt;       with pytest.raises(ValueError): f({'w': 1}, [('reserve', 'w', True)])
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:28: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.inventory_reserve.tests.test_solution" name="test_bad_op" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-194718.inventory_reserve.tests.test_solution" name="test_bad_stock_bool_value" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_bad_stock_bool_value():
+&gt;       with pytest.raises(ValueError) as e: f({'w': True}, [])
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:33: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.inventory_reserve.tests.test_solution" name="test_bad_stock_negative" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_bad_stock_negative():
+&gt;       with pytest.raises(ValueError): f({'w': -1}, [])
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:36: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.inventory_reserve.tests.test_solution" name="test_no_mutation" time="0.000"><failure message="AssertionError: assert {'w': 3} == {'w': 5}&#10;  &#10;  Differing items:&#10;  {'w': 3} != {'w': 5}&#10;  Use -v to get more diff">def test_no_mutation():
+        s = {'w': 5}
+        f(s, [('reserve', 'w', 2)])
+&gt;       assert s == {'w': 5}
+E       AssertionError: assert {'w': 3} == {'w': 5}
+E         
+E         Differing items:
+E         {'w': 3} != {'w': 5}
+E         Use -v to get more diff
+
+tests\test_solution.py:40: AssertionError</failure></testcase></testsuite></testsuites>

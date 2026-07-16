@@ -1,0 +1,187 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="9" skipped="0" tests="10" time="0.254" timestamp="2026-07-14T08:45:26.194211-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260714-083129.mini_editor_undo.tests.test_solution" name="test_type_and_cursor" time="0.001"><failure message="NameError: name 'text' is not defined">def test_type_and_cursor():
+&gt;       assert edit(["type hello"]) == ("hello", 5)
+               ^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:6: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:59: in edit
+    process_command(command)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+command = 'type hello'
+
+    def process_command(command):
+        global text, cursor
+        if command.startswith("type "):
+            _, payload = command.split(" ", 1)
+&gt;           text += payload
+            ^^^^
+E           NameError: name 'text' is not defined
+
+solution.py:11: NameError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.mini_editor_undo.tests.test_solution" name="test_insert_middle_and_clamping" time="0.000"><failure message="NameError: name 'text' is not defined">def test_insert_middle_and_clamping():
+&gt;       assert edit(["type bc", "left 99", "type a"]) == ("abc", 1)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:11: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:59: in edit
+    process_command(command)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+command = 'type bc'
+
+    def process_command(command):
+        global text, cursor
+        if command.startswith("type "):
+            _, payload = command.split(" ", 1)
+&gt;           text += payload
+            ^^^^
+E           NameError: name 'text' is not defined
+
+solution.py:11: NameError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.mini_editor_undo.tests.test_solution" name="test_type_payload_may_contain_spaces" time="0.000"><failure message="NameError: name 'text' is not defined">def test_type_payload_may_contain_spaces():
+&gt;       assert edit(["type a b"]) == ("a b", 3)
+               ^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:16: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:59: in edit
+    process_command(command)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+command = 'type a b'
+
+    def process_command(command):
+        global text, cursor
+        if command.startswith("type "):
+            _, payload = command.split(" ", 1)
+&gt;           text += payload
+            ^^^^
+E           NameError: name 'text' is not defined
+
+solution.py:11: NameError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.mini_editor_undo.tests.test_solution" name="test_backspace_partial" time="0.000"><failure message="NameError: name 'text' is not defined">def test_backspace_partial():
+&gt;       assert edit(["type abc", "left 2", "backspace 5"]) == ("bc", 0)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:20: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:59: in edit
+    process_command(command)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+command = 'type abc'
+
+    def process_command(command):
+        global text, cursor
+        if command.startswith("type "):
+            _, payload = command.split(" ", 1)
+&gt;           text += payload
+            ^^^^
+E           NameError: name 'text' is not defined
+
+solution.py:11: NameError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.mini_editor_undo.tests.test_solution" name="test_undo_restores_cursor_too" time="0.000"><failure message="NameError: name 'text' is not defined">def test_undo_restores_cursor_too():
+        # cursor motion after the undone edit is discarded
+&gt;       assert edit(["type ab", "type cd", "left 3", "undo"]) == ("ab", 2)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:25: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:59: in edit
+    process_command(command)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+command = 'type ab'
+
+    def process_command(command):
+        global text, cursor
+        if command.startswith("type "):
+            _, payload = command.split(" ", 1)
+&gt;           text += payload
+            ^^^^
+E           NameError: name 'text' is not defined
+
+solution.py:11: NameError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.mini_editor_undo.tests.test_solution" name="test_undo_skips_noop_backspace" time="0.000"><failure message="NameError: name 'text' is not defined">def test_undo_skips_noop_backspace():
+        # a backspace that deleted nothing is never an undo target
+&gt;       assert edit(["type ab", "left 2", "backspace 1", "undo"]) == ("", 0)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:30: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:59: in edit
+    process_command(command)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+command = 'type ab'
+
+    def process_command(command):
+        global text, cursor
+        if command.startswith("type "):
+            _, payload = command.split(" ", 1)
+&gt;           text += payload
+            ^^^^
+E           NameError: name 'text' is not defined
+
+solution.py:11: NameError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.mini_editor_undo.tests.test_solution" name="test_undo_on_empty_stack_is_noop" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-083129.mini_editor_undo.tests.test_solution" name="test_undo_twice_pops_two_edits" time="0.000"><failure message="NameError: name 'text' is not defined">def test_undo_twice_pops_two_edits():
+&gt;       assert edit(["type a", "type b", "undo", "undo"]) == ("", 0)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:38: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:59: in edit
+    process_command(command)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+command = 'type a'
+
+    def process_command(command):
+        global text, cursor
+        if command.startswith("type "):
+            _, payload = command.split(" ", 1)
+&gt;           text += payload
+            ^^^^
+E           NameError: name 'text' is not defined
+
+solution.py:11: NameError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.mini_editor_undo.tests.test_solution" name="test_malformed_commands_raise" time="0.001"><failure message="NameError: name 'text' is not defined">def test_malformed_commands_raise():
+        for bad in (["delete 1"], ["type"], ["type "], ["left"], ["left 0"],
+                    ["left -2"], ["left 2x"], ["left 2 3"], ["undo 2"],
+                    ["backspace 0"], ["right +3"]):
+            with pytest.raises(ValueError):
+&gt;               edit(bad)
+
+tests\test_solution.py:46: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:59: in edit
+    process_command(command)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+command = 'type '
+
+    def process_command(command):
+        global text, cursor
+        if command.startswith("type "):
+            _, payload = command.split(" ", 1)
+&gt;           text += payload
+            ^^^^
+E           NameError: name 'text' is not defined
+
+solution.py:11: NameError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.mini_editor_undo.tests.test_solution" name="test_no_mutation" time="0.000"><failure message="NameError: name 'text' is not defined">def test_no_mutation():
+        cmds = ["type ab", "left 1", "undo"]
+        snapshot = list(cmds)
+&gt;       edit(cmds)
+
+tests\test_solution.py:52: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:59: in edit
+    process_command(command)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+command = 'type ab'
+
+    def process_command(command):
+        global text, cursor
+        if command.startswith("type "):
+            _, payload = command.split(" ", 1)
+&gt;           text += payload
+            ^^^^
+E           NameError: name 'text' is not defined
+
+solution.py:11: NameError</failure></testcase></testsuite></testsuites>

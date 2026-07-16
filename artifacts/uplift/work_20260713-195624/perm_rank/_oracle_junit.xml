@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="9" skipped="0" tests="12" time="0.234" timestamp="2026-07-13T20:21:51.476599-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-195624.perm_rank.tests.test_solution" name="test_empty" time="0.001"><failure message="ValueError: bad input">&gt;   def test_empty(): assert f([]) == 0
+                             ^^^^^
+
+tests\test_solution.py:3: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+perm = []
+
+    def perm_rank(perm):
+        """
+        Returns the 0-based rank of a permutation in the lexicographic ordering of all permutations of 0..n-1.
+    
+        Parameters:
+        perm (list): A list representing the input permutation, containing every integer from 0 to len(perm)-1 exactly once.
+                     The elements must be integers and not bools.
+    
+        Returns:
+        int: The rank of the permutation as an integer starting from 0 or -n! if it's the last element in a longer tuple.
+             Example for [0, 2, 1] is 4, as the permutations are 0-2-1 and 2-1-0.
+        """
+    
+        if not perm:
+&gt;           raise ValueError('bad input')
+E           ValueError: bad input
+
+solution.py:15: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.perm_rank.tests.test_solution" name="test_single" time="0.001"><failure message="assert 1 == 0&#10; +  where 1 = f([0])">&gt;   def test_single(): assert f([0]) == 0
+                       ^^^^^^^^^^^^^^^^^^
+E   assert 1 == 0
+E    +  where 1 = f([0])
+
+tests\test_solution.py:4: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.perm_rank.tests.test_solution" name="test_identity" time="0.000"><failure message="assert 1 == 0&#10; +  where 1 = f([0, 1, 2])">&gt;   def test_identity(): assert f([0, 1, 2]) == 0
+                         ^^^^^^^^^^^^^^^^^^^^^^^^
+E   assert 1 == 0
+E    +  where 1 = f([0, 1, 2])
+
+tests\test_solution.py:5: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.perm_rank.tests.test_solution" name="test_reversed" time="0.000"><failure message="assert 1 == 5&#10; +  where 1 = f([2, 1, 0])">&gt;   def test_reversed(): assert f([2, 1, 0]) == 5
+                         ^^^^^^^^^^^^^^^^^^^^^^^^
+E   assert 1 == 5
+E    +  where 1 = f([2, 1, 0])
+
+tests\test_solution.py:6: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.perm_rank.tests.test_solution" name="test_middle" time="0.000"><failure message="assert 1 == 2&#10; +  where 1 = f([1, 0, 2])">&gt;   def test_middle(): assert f([1, 0, 2]) == 2
+                       ^^^^^^^^^^^^^^^^^^^^^^^^
+E   assert 1 == 2
+E    +  where 1 = f([1, 0, 2])
+
+tests\test_solution.py:7: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.perm_rank.tests.test_solution" name="test_middle2" time="0.000"><failure message="ValueError: not a permutation">&gt;   def test_middle2(): assert f([1, 2, 0]) == 3
+                               ^^^^^^^^^^^^
+
+tests\test_solution.py:8: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+perm = [1, 2, 0]
+
+    def perm_rank(perm):
+        """
+        Returns the 0-based rank of a permutation in the lexicographic ordering of all permutations of 0..n-1.
+    
+        Parameters:
+        perm (list): A list representing the input permutation, containing every integer from 0 to len(perm)-1 exactly once.
+                     The elements must be integers and not bools.
+    
+        Returns:
+        int: The rank of the permutation as an integer starting from 0 or -n! if it's the last element in a longer tuple.
+             Example for [0, 2, 1] is 4, as the permutations are 0-2-1 and 2-1-0.
+        """
+    
+        if not perm:
+            raise ValueError('bad input')
+    
+        n = len(perm)
+    
+        # Check if all elements in the permutation are integers or bools
+        if any(not isinstance(x, int) for x in perm):
+            raise ValueError('bad element')
+    
+        # Check if the list is a valid permutation of 0..n-1
+        if perm != sorted(range(n), key=lambda i: perm[i]):
+&gt;           raise ValueError('not a permutation')
+E           ValueError: not a permutation
+
+solution.py:25: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.perm_rank.tests.test_solution" name="test_larger" time="0.001"><failure message="ValueError: not a permutation">&gt;   def test_larger(): assert f([3, 1, 4, 2, 0]) == 83
+                              ^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:9: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+perm = [3, 1, 4, 2, 0]
+
+    def perm_rank(perm):
+        """
+        Returns the 0-based rank of a permutation in the lexicographic ordering of all permutations of 0..n-1.
+    
+        Parameters:
+        perm (list): A list representing the input permutation, containing every integer from 0 to len(perm)-1 exactly once.
+                     The elements must be integers and not bools.
+    
+        Returns:
+        int: The rank of the permutation as an integer starting from 0 or -n! if it's the last element in a longer tuple.
+             Example for [0, 2, 1] is 4, as the permutations are 0-2-1 and 2-1-0.
+        """
+    
+        if not perm:
+            raise ValueError('bad input')
+    
+        n = len(perm)
+    
+        # Check if all elements in the permutation are integers or bools
+        if any(not isinstance(x, int) for x in perm):
+            raise ValueError('bad element')
+    
+        # Check if the list is a valid permutation of 0..n-1
+        if perm != sorted(range(n), key=lambda i: perm[i]):
+&gt;           raise ValueError('not a permutation')
+E           ValueError: not a permutation
+
+solution.py:25: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.perm_rank.tests.test_solution" name="test_missing" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-195624.perm_rank.tests.test_solution" name="test_duplicate" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-195624.perm_rank.tests.test_solution" name="test_bad_element" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-195624.perm_rank.tests.test_solution" name="test_bool_element" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_bool_element():
+&gt;       with pytest.raises(ValueError) as e: f([True, 0])
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:20: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.perm_rank.tests.test_solution" name="test_bad_input" time="0.001"><failure message="AssertionError: assert 'bad element' == 'bad input'&#10;  &#10;  - bad input&#10;  + bad element">def test_bad_input():
+        with pytest.raises(ValueError) as e: f('012')
+&gt;       assert str(e.value) == 'bad input'
+E       AssertionError: assert 'bad element' == 'bad input'
+E         
+E         - bad input
+E         + bad element
+
+tests\test_solution.py:24: AssertionError</failure></testcase></testsuite></testsuites>

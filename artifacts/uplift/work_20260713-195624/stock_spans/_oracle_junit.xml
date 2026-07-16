@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="7" skipped="0" tests="8" time="0.239" timestamp="2026-07-13T20:21:44.718249-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-195624.stock_spans.tests.test_solution" name="test_classic" time="0.001"><failure message="assert [(1, 0), (1, ...0), (1, 0), 0] == [1, 1, 1, 2, 1, 4, ...]&#10;  &#10;  At index 0 diff: (1, 0) != 1&#10;  Right contains one more item: 6&#10;  Use -v to get more diff">&gt;   def test_classic(): assert f([100, 80, 60, 70, 60, 75, 85]) == [1, 1, 1, 2, 1, 4, 6]
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   assert [(1, 0), (1, ...0), (1, 0), 0] == [1, 1, 1, 2, 1, 4, ...]
+E     
+E     At index 0 diff: (1, 0) != 1
+E     Right contains one more item: 6
+E     Use -v to get more diff
+
+tests\test_solution.py:3: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.stock_spans.tests.test_solution" name="test_empty" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-195624.stock_spans.tests.test_solution" name="test_single" time="0.000"><failure message="IndexError: list assignment index out of range">&gt;   def test_single(): assert f([10]) == [1]
+                              ^^^^^^^
+
+tests\test_solution.py:5: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+prices = [10]
+
+    def stock_spans(prices):
+        """
+        Calculate the total number of stock spans for a sequence of daily prices.
+    
+        :param prices: A list or array of daily prices.
+        :return: A list where each element represents the span ending at that price day, except for the last span,
+                 which is always 1 (inclusive).
+        """
+        if not prices:
+            return []
+    
+        sorted_prices = sorted(prices)
+        n = len(sorted_prices)
+        spans = [0] * (n - 1)
+    
+        # Find the indexes of all previous and next greater elements in each day
+        prev_greater, next_greater = [-1], [-1]
+        for i in range(n-1):
+            if prices[i] &gt; sorted_prices[(i + 1) % n]:
+                prev_greater.append(i)
+            if prices[i] &gt; sorted_prices[n - (i + 1) % n]:
+                next_greater.append((n - i - 1) // 2)
+    
+        # Calculate the span for each day
+&gt;       spans[-2] = sorted_prices[0]
+        ^^^^^^^^^
+E       IndexError: list assignment index out of range
+
+solution.py:27: IndexError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.stock_spans.tests.test_solution" name="test_increasing" time="0.001"><failure message="assert [(-1, -1), 0] == [1, 2, 3]&#10;  &#10;  At index 0 diff: (-1, -1) != 1&#10;  Right contains one more item: 3&#10;  Use -v to get more diff">&gt;   def test_increasing(): assert f([10, 20, 30]) == [1, 2, 3]
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   assert [(-1, -1), 0] == [1, 2, 3]
+E     
+E     At index 0 diff: (-1, -1) != 1
+E     Right contains one more item: 3
+E     Use -v to get more diff
+
+tests\test_solution.py:6: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.stock_spans.tests.test_solution" name="test_decreasing" time="0.000"><failure message="assert [(0, -1), 0] == [1, 1, 1]&#10;  &#10;  At index 0 diff: (0, -1) != 1&#10;  Right contains one more item: 1&#10;  Use -v to get more diff">&gt;   def test_decreasing(): assert f([30, 20, 10]) == [1, 1, 1]
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   assert [(0, -1), 0] == [1, 1, 1]
+E     
+E     At index 0 diff: (0, -1) != 1
+E     Right contains one more item: 1
+E     Use -v to get more diff
+
+tests\test_solution.py:7: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.stock_spans.tests.test_solution" name="test_equal" time="0.001"><failure message="assert [(-1, -1), 0] == [1, 2, 3]&#10;  &#10;  At index 0 diff: (-1, -1) != 1&#10;  Right contains one more item: 3&#10;  Use -v to get more diff">&gt;   def test_equal(): assert f([5, 5, 5]) == [1, 2, 3]
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   assert [(-1, -1), 0] == [1, 2, 3]
+E     
+E     At index 0 diff: (-1, -1) != 1
+E     Right contains one more item: 3
+E     Use -v to get more diff
+
+tests\test_solution.py:8: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.stock_spans.tests.test_solution" name="test_bad_price_bool" time="0.000"><failure message="IndexError: list assignment index out of range">def test_bad_price_bool():
+&gt;       with pytest.raises(ValueError) as e: f([True])
+                                             ^^^^^^^^^
+
+tests\test_solution.py:10: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+prices = [True]
+
+    def stock_spans(prices):
+        """
+        Calculate the total number of stock spans for a sequence of daily prices.
+    
+        :param prices: A list or array of daily prices.
+        :return: A list where each element represents the span ending at that price day, except for the last span,
+                 which is always 1 (inclusive).
+        """
+        if not prices:
+            return []
+    
+        sorted_prices = sorted(prices)
+        n = len(sorted_prices)
+        spans = [0] * (n - 1)
+    
+        # Find the indexes of all previous and next greater elements in each day
+        prev_greater, next_greater = [-1], [-1]
+        for i in range(n-1):
+            if prices[i] &gt; sorted_prices[(i + 1) % n]:
+                prev_greater.append(i)
+            if prices[i] &gt; sorted_prices[n - (i + 1) % n]:
+                next_greater.append((n - i - 1) // 2)
+    
+        # Calculate the span for each day
+&gt;       spans[-2] = sorted_prices[0]
+        ^^^^^^^^^
+E       IndexError: list assignment index out of range
+
+solution.py:27: IndexError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.stock_spans.tests.test_solution" name="test_bad_price_type" time="0.000"><failure message="IndexError: list assignment index out of range">def test_bad_price_type():
+&gt;       with pytest.raises(ValueError): f(['x'])
+                                        ^^^^^^^^
+
+tests\test_solution.py:13: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+prices = ['x']
+
+    def stock_spans(prices):
+        """
+        Calculate the total number of stock spans for a sequence of daily prices.
+    
+        :param prices: A list or array of daily prices.
+        :return: A list where each element represents the span ending at that price day, except for the last span,
+                 which is always 1 (inclusive).
+        """
+        if not prices:
+            return []
+    
+        sorted_prices = sorted(prices)
+        n = len(sorted_prices)
+        spans = [0] * (n - 1)
+    
+        # Find the indexes of all previous and next greater elements in each day
+        prev_greater, next_greater = [-1], [-1]
+        for i in range(n-1):
+            if prices[i] &gt; sorted_prices[(i + 1) % n]:
+                prev_greater.append(i)
+            if prices[i] &gt; sorted_prices[n - (i + 1) % n]:
+                next_greater.append((n - i - 1) // 2)
+    
+        # Calculate the span for each day
+&gt;       spans[-2] = sorted_prices[0]
+        ^^^^^^^^^
+E       IndexError: list assignment index out of range
+
+solution.py:27: IndexError</failure></testcase></testsuite></testsuites>

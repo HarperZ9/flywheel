@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="6" skipped="0" tests="6" time="0.238" timestamp="2026-07-13T19:20:17.907247-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-190747.merge_sorted_streams.tests.test_solution" name="test_empty_outer" time="0.001"><failure message="NameError: name 'lst' is not defined">def test_empty_outer():
+&gt;       assert f([]) == []
+               ^^^^^
+
+tests\test_solution.py:3: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+lists = []
+
+    def merge_sorted(lists):
+        from heapq import heapify, heappop
+    
+        # Convert each list into an iterator and push the first element to the heap.
+&gt;       heap = [(lst[i], i) for i in range(len(lst)) if i &lt; len(lst) and lst[i] is not None]
+                                               ^^^
+E       NameError: name 'lst' is not defined
+
+solution.py:5: NameError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-190747.merge_sorted_streams.tests.test_solution" name="test_empty_inners" time="0.000"><failure message="NameError: name 'lst' is not defined">def test_empty_inners():
+&gt;       assert f([[], []]) == []
+               ^^^^^^^^^^^
+
+tests\test_solution.py:5: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+lists = [[], []]
+
+    def merge_sorted(lists):
+        from heapq import heapify, heappop
+    
+        # Convert each list into an iterator and push the first element to the heap.
+&gt;       heap = [(lst[i], i) for i in range(len(lst)) if i &lt; len(lst) and lst[i] is not None]
+                                               ^^^
+E       NameError: name 'lst' is not defined
+
+solution.py:5: NameError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-190747.merge_sorted_streams.tests.test_solution" name="test_two" time="0.000"><failure message="NameError: name 'lst' is not defined">def test_two():
+&gt;       assert f([[1,4,5],[1,3,4]]) == [1,1,3,4,4,5]
+               ^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:7: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+lists = [[1, 4, 5], [1, 3, 4]]
+
+    def merge_sorted(lists):
+        from heapq import heapify, heappop
+    
+        # Convert each list into an iterator and push the first element to the heap.
+&gt;       heap = [(lst[i], i) for i in range(len(lst)) if i &lt; len(lst) and lst[i] is not None]
+                                               ^^^
+E       NameError: name 'lst' is not defined
+
+solution.py:5: NameError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-190747.merge_sorted_streams.tests.test_solution" name="test_singletons" time="0.000"><failure message="NameError: name 'lst' is not defined">def test_singletons():
+&gt;       assert f([[2],[1],[3]]) == [1,2,3]
+               ^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:9: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+lists = [[2], [1], [3]]
+
+    def merge_sorted(lists):
+        from heapq import heapify, heappop
+    
+        # Convert each list into an iterator and push the first element to the heap.
+&gt;       heap = [(lst[i], i) for i in range(len(lst)) if i &lt; len(lst) and lst[i] is not None]
+                                               ^^^
+E       NameError: name 'lst' is not defined
+
+solution.py:5: NameError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-190747.merge_sorted_streams.tests.test_solution" name="test_one_list" time="0.000"><failure message="NameError: name 'lst' is not defined">def test_one_list():
+&gt;       assert f([[1,2,3]]) == [1,2,3]
+               ^^^^^^^^^^^^
+
+tests\test_solution.py:11: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+lists = [[1, 2, 3]]
+
+    def merge_sorted(lists):
+        from heapq import heapify, heappop
+    
+        # Convert each list into an iterator and push the first element to the heap.
+&gt;       heap = [(lst[i], i) for i in range(len(lst)) if i &lt; len(lst) and lst[i] is not None]
+                                               ^^^
+E       NameError: name 'lst' is not defined
+
+solution.py:5: NameError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-190747.merge_sorted_streams.tests.test_solution" name="test_interleaved" time="0.001"><failure message="NameError: name 'lst' is not defined">def test_interleaved():
+        a = list(range(0, 100, 2)); b = list(range(1, 100, 2))
+&gt;       assert f([a, b]) == list(range(100))
+               ^^^^^^^^^
+
+tests\test_solution.py:14: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+lists = [[0, 2, 4, 6, 8, 10, ...], [1, 3, 5, 7, 9, 11, ...]]
+
+    def merge_sorted(lists):
+        from heapq import heapify, heappop
+    
+        # Convert each list into an iterator and push the first element to the heap.
+&gt;       heap = [(lst[i], i) for i in range(len(lst)) if i &lt; len(lst) and lst[i] is not None]
+                                               ^^^
+E       NameError: name 'lst' is not defined
+
+solution.py:5: NameError</failure></testcase></testsuite></testsuites>

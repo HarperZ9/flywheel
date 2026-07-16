@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="4" skipped="0" tests="12" time="0.221" timestamp="2026-07-13T19:19:16.785984-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-184826.gray_rank.tests.test_solution" name="test_zero" time="0.001" /><testcase classname="artifacts.uplift.work_20260713-184826.gray_rank.tests.test_solution" name="test_one" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-184826.gray_rank.tests.test_solution" name="test_three_bit_2" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-184826.gray_rank.tests.test_solution" name="test_three_bit_3" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-184826.gray_rank.tests.test_solution" name="test_three_bit_4" time="0.001"><failure message="AssertionError: assert 5 == 4&#10; +  where 5 = f('110')">&gt;   def test_three_bit_4(): assert f('110') == 4
+                            ^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert 5 == 4
+E    +  where 5 = f('110')
+
+tests\test_solution.py:7: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-184826.gray_rank.tests.test_solution" name="test_three_bit_6" time="0.000"><failure message="AssertionError: assert 7 == 6&#10; +  where 7 = f('101')">&gt;   def test_three_bit_6(): assert f('101') == 6
+                            ^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert 7 == 6
+E    +  where 7 = f('101')
+
+tests\test_solution.py:8: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-184826.gray_rank.tests.test_solution" name="test_three_bit_7" time="0.000"><failure message="AssertionError: assert 6 == 7&#10; +  where 6 = f('100')">&gt;   def test_three_bit_7(): assert f('100') == 7
+                            ^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert 6 == 7
+E    +  where 6 = f('100')
+
+tests\test_solution.py:9: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-184826.gray_rank.tests.test_solution" name="test_leading_zeros" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-184826.gray_rank.tests.test_solution" name="test_roundtrip" time="0.000"><failure message="AssertionError: assert 5 == 4&#10; +  where 5 = f('000110')&#10; +    where '000110' = format((4 ^ (4 &gt;&gt; 1)), '06b')">def test_roundtrip():
+        for i in range(64):
+&gt;           assert f(format(i ^ (i &gt;&gt; 1), '06b')) == i
+E           AssertionError: assert 5 == 4
+E            +  where 5 = f('000110')
+E            +    where '000110' = format((4 ^ (4 &gt;&gt; 1)), '06b')
+
+tests\test_solution.py:13: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-184826.gray_rank.tests.test_solution" name="test_empty" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-184826.gray_rank.tests.test_solution" name="test_bad_char" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-184826.gray_rank.tests.test_solution" name="test_not_string" time="0.000" /></testsuite></testsuites>

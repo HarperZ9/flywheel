@@ -1,0 +1,228 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="13" skipped="0" tests="13" time="0.262" timestamp="2026-07-13T19:49:42.098981-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-192539.eval_bool_expr.tests.test_solution" name="test_true" time="0.001"><failure message="NameError: name 'T' is not defined">&gt;   def test_true(): assert f('T') is True
+                            ^^^^^^
+
+tests\test_solution.py:3: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:29: in eval_bool
+    return eval(result)
+           ^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+&gt;   ???
+E   NameError: name 'T' is not defined
+
+&lt;string&gt;:1: NameError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-192539.eval_bool_expr.tests.test_solution" name="test_false" time="0.001"><failure message="NameError: name 'F' is not defined">&gt;   def test_false(): assert f('F') is False
+                             ^^^^^^
+
+tests\test_solution.py:4: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:29: in eval_bool
+    return eval(result)
+           ^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+&gt;   ???
+E   NameError: name 'F' is not defined
+
+&lt;string&gt;:1: NameError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-192539.eval_bool_expr.tests.test_solution" name="test_and" time="0.000"><failure message="NameError: name 'T' is not defined">&gt;   def test_and(): assert f('T&amp;F') is False
+                           ^^^^^^^^
+
+tests\test_solution.py:5: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:29: in eval_bool
+    return eval(result)
+           ^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+&gt;   ???
+E   NameError: name 'T' is not defined
+
+&lt;string&gt;:1: NameError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-192539.eval_bool_expr.tests.test_solution" name="test_or" time="0.000"><failure message="NameError: name 'T' is not defined">&gt;   def test_or(): assert f('T|F') is True
+                          ^^^^^^^^
+
+tests\test_solution.py:6: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:29: in eval_bool
+    return eval(result)
+           ^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+&gt;   ???
+E   NameError: name 'T' is not defined
+
+&lt;string&gt;:1: NameError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-192539.eval_bool_expr.tests.test_solution" name="test_not" time="0.000"><failure message="TypeError: can only concatenate str (not &quot;int&quot;) to str">&gt;   def test_not(): assert f('!T') is False
+                           ^^^^^^^
+
+tests\test_solution.py:7: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:24: in eval_bool
+    result, _ = parse_truthy()
+                ^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+index = 'T'
+
+    def parse_truthy(index=0):
+        if expr[index] == 'T':
+            return ('T', index + 1)
+        elif expr[index] == 'F':
+            return ('F', index + 1)
+        else:
+            op, index = expr[index:index+2]
+&gt;           left_expr, index = parse_expr(index + 2)
+                                          ^^^^^^^^^
+E           TypeError: can only concatenate str (not "int") to str
+
+solution.py:18: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-192539.eval_bool_expr.tests.test_solution" name="test_not_precedence" time="0.000"><failure message="TypeError: can only concatenate str (not &quot;int&quot;) to str">&gt;   def test_not_precedence(): assert f('!F&amp;T') is True
+                                      ^^^^^^^^^
+
+tests\test_solution.py:8: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:24: in eval_bool
+    result, _ = parse_truthy()
+                ^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+index = 'F'
+
+    def parse_truthy(index=0):
+        if expr[index] == 'T':
+            return ('T', index + 1)
+        elif expr[index] == 'F':
+            return ('F', index + 1)
+        else:
+            op, index = expr[index:index+2]
+&gt;           left_expr, index = parse_expr(index + 2)
+                                          ^^^^^^^^^
+E           TypeError: can only concatenate str (not "int") to str
+
+solution.py:18: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-192539.eval_bool_expr.tests.test_solution" name="test_and_before_or" time="0.000"><failure message="NameError: name 'T' is not defined">&gt;   def test_and_before_or(): assert f('T|F&amp;F') is True
+                                     ^^^^^^^^^^
+
+tests\test_solution.py:9: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:29: in eval_bool
+    return eval(result)
+           ^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+&gt;   ???
+E   NameError: name 'T' is not defined
+
+&lt;string&gt;:1: NameError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-192539.eval_bool_expr.tests.test_solution" name="test_parens" time="0.001"><failure message="TypeError: can only concatenate str (not &quot;int&quot;) to str">&gt;   def test_parens(): assert f('(T|F)&amp;F') is False
+                              ^^^^^^^^^^^^
+
+tests\test_solution.py:10: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:24: in eval_bool
+    result, _ = parse_truthy()
+                ^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+index = 'T'
+
+    def parse_truthy(index=0):
+        if expr[index] == 'T':
+            return ('T', index + 1)
+        elif expr[index] == 'F':
+            return ('F', index + 1)
+        else:
+            op, index = expr[index:index+2]
+&gt;           left_expr, index = parse_expr(index + 2)
+                                          ^^^^^^^^^
+E           TypeError: can only concatenate str (not "int") to str
+
+solution.py:18: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-192539.eval_bool_expr.tests.test_solution" name="test_not_group" time="0.000"><failure message="TypeError: can only concatenate str (not &quot;int&quot;) to str">&gt;   def test_not_group(): assert f('!(T&amp;F)') is True
+                                 ^^^^^^^^^^^
+
+tests\test_solution.py:11: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:24: in eval_bool
+    result, _ = parse_truthy()
+                ^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+index = '('
+
+    def parse_truthy(index=0):
+        if expr[index] == 'T':
+            return ('T', index + 1)
+        elif expr[index] == 'F':
+            return ('F', index + 1)
+        else:
+            op, index = expr[index:index+2]
+&gt;           left_expr, index = parse_expr(index + 2)
+                                          ^^^^^^^^^
+E           TypeError: can only concatenate str (not "int") to str
+
+solution.py:18: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-192539.eval_bool_expr.tests.test_solution" name="test_bad_char" time="0.000"><failure message="NameError: name 'T' is not defined">def test_bad_char():
+&gt;       with pytest.raises(ValueError) as e: f('T+F')
+                                             ^^^^^^^^
+
+tests\test_solution.py:13: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:29: in eval_bool
+    return eval(result)
+           ^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+&gt;   ???
+E   NameError: name 'T' is not defined
+
+&lt;string&gt;:1: NameError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-192539.eval_bool_expr.tests.test_solution" name="test_unbalanced" time="0.000"><failure message="TypeError: can only concatenate str (not &quot;int&quot;) to str">def test_unbalanced():
+&gt;       with pytest.raises(ValueError): f('(T')
+                                        ^^^^^^^
+
+tests\test_solution.py:16: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:24: in eval_bool
+    result, _ = parse_truthy()
+                ^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+index = 'T'
+
+    def parse_truthy(index=0):
+        if expr[index] == 'T':
+            return ('T', index + 1)
+        elif expr[index] == 'F':
+            return ('F', index + 1)
+        else:
+            op, index = expr[index:index+2]
+&gt;           left_expr, index = parse_expr(index + 2)
+                                          ^^^^^^^^^
+E           TypeError: can only concatenate str (not "int") to str
+
+solution.py:18: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-192539.eval_bool_expr.tests.test_solution" name="test_trailing" time="0.000"><failure message="NameError: name 'T' is not defined">def test_trailing():
+&gt;       with pytest.raises(ValueError): f('TT')
+                                        ^^^^^^^
+
+tests\test_solution.py:18: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:29: in eval_bool
+    return eval(result)
+           ^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+&gt;   ???
+E   NameError: name 'T' is not defined
+
+&lt;string&gt;:1: NameError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-192539.eval_bool_expr.tests.test_solution" name="test_empty" time="0.000"><failure message="IndexError: string index out of range">def test_empty():
+&gt;       with pytest.raises(ValueError): f('')
+                                        ^^^^^
+
+tests\test_solution.py:20: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:24: in eval_bool
+    result, _ = parse_truthy()
+                ^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+index = 0
+
+    def parse_truthy(index=0):
+&gt;       if expr[index] == 'T':
+           ^^^^^^^^^^^
+E       IndexError: string index out of range
+
+solution.py:12: IndexError</failure></testcase></testsuite></testsuites>

@@ -1,0 +1,184 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="8" skipped="0" tests="12" time="0.237" timestamp="2026-07-14T08:54:49.182100-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260714-083129.money_cents_strict.tests.test_solution" name="test_grouped" time="0.001"><failure message="ValueError: invalid literal for int() with base 10: '.'">&gt;   def test_grouped(): assert f('1,234.56') == 123456
+                               ^^^^^^^^^^^^^
+
+tests\test_solution.py:3: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+s = '1,234.56'
+
+    def parse_money(s):
+        if not s.strip():
+            return 0
+    
+        # Remove any whitespace and validate the format using a regular expression
+        s = s.strip()
+        import re
+        match = re.fullmatch(r'(-)?\d{1,3}(,\d{3})*(\.\d{2})?', s)
+    
+        if not match:
+            raise ValueError('bad amount')
+    
+        # Extract matched groups
+        sign, integer_part, decimal_part = match.groups()
+    
+        # Convert to integer value of cents
+        integer_value = int(integer_part.replace(',', ''))
+        if decimal_part is None:
+            return integer_value * 100
+        else:
+&gt;           tens, units = map(int, decimal_part)
+            ^^^^^^^^^^^
+E           ValueError: invalid literal for int() with base 10: '.'
+
+solution.py:21: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.money_cents_strict.tests.test_solution" name="test_cents_only" time="0.000"><failure message="AttributeError: 'NoneType' object has no attribute 'replace'">&gt;   def test_cents_only(): assert f('0.99') == 99
+                                  ^^^^^^^^^
+
+tests\test_solution.py:4: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+s = '0.99'
+
+    def parse_money(s):
+        if not s.strip():
+            return 0
+    
+        # Remove any whitespace and validate the format using a regular expression
+        s = s.strip()
+        import re
+        match = re.fullmatch(r'(-)?\d{1,3}(,\d{3})*(\.\d{2})?', s)
+    
+        if not match:
+            raise ValueError('bad amount')
+    
+        # Extract matched groups
+        sign, integer_part, decimal_part = match.groups()
+    
+        # Convert to integer value of cents
+&gt;       integer_value = int(integer_part.replace(',', ''))
+                            ^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: 'NoneType' object has no attribute 'replace'
+
+solution.py:17: AttributeError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.money_cents_strict.tests.test_solution" name="test_negative" time="0.001"><failure message="AttributeError: 'NoneType' object has no attribute 'replace'">&gt;   def test_negative(): assert f('-12') == -1200
+                                ^^^^^^^^
+
+tests\test_solution.py:5: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+s = '-12'
+
+    def parse_money(s):
+        if not s.strip():
+            return 0
+    
+        # Remove any whitespace and validate the format using a regular expression
+        s = s.strip()
+        import re
+        match = re.fullmatch(r'(-)?\d{1,3}(,\d{3})*(\.\d{2})?', s)
+    
+        if not match:
+            raise ValueError('bad amount')
+    
+        # Extract matched groups
+        sign, integer_part, decimal_part = match.groups()
+    
+        # Convert to integer value of cents
+&gt;       integer_value = int(integer_part.replace(',', ''))
+                            ^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: 'NoneType' object has no attribute 'replace'
+
+solution.py:17: AttributeError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.money_cents_strict.tests.test_solution" name="test_million" time="0.000"><failure message="AssertionError: assert 0 == 100000000&#10; +  where 0 = f('1,000,000')">&gt;   def test_million(): assert f('1,000,000') == 100000000
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert 0 == 100000000
+E    +  where 0 = f('1,000,000')
+
+tests\test_solution.py:6: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.money_cents_strict.tests.test_solution" name="test_negative_zero" time="0.000"><failure message="AttributeError: 'NoneType' object has no attribute 'replace'">&gt;   def test_negative_zero(): assert f('-0.00') == 0
+                                     ^^^^^^^^^^
+
+tests\test_solution.py:7: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+s = '-0.00'
+
+    def parse_money(s):
+        if not s.strip():
+            return 0
+    
+        # Remove any whitespace and validate the format using a regular expression
+        s = s.strip()
+        import re
+        match = re.fullmatch(r'(-)?\d{1,3}(,\d{3})*(\.\d{2})?', s)
+    
+        if not match:
+            raise ValueError('bad amount')
+    
+        # Extract matched groups
+        sign, integer_part, decimal_part = match.groups()
+    
+        # Convert to integer value of cents
+&gt;       integer_value = int(integer_part.replace(',', ''))
+                            ^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: 'NoneType' object has no attribute 'replace'
+
+solution.py:17: AttributeError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.money_cents_strict.tests.test_solution" name="test_zero" time="0.000"><failure message="AttributeError: 'NoneType' object has no attribute 'replace'">&gt;   def test_zero(): assert f('0') == 0
+                            ^^^^^^
+
+tests\test_solution.py:8: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+s = '0'
+
+    def parse_money(s):
+        if not s.strip():
+            return 0
+    
+        # Remove any whitespace and validate the format using a regular expression
+        s = s.strip()
+        import re
+        match = re.fullmatch(r'(-)?\d{1,3}(,\d{3})*(\.\d{2})?', s)
+    
+        if not match:
+            raise ValueError('bad amount')
+    
+        # Extract matched groups
+        sign, integer_part, decimal_part = match.groups()
+    
+        # Convert to integer value of cents
+&gt;       integer_value = int(integer_part.replace(',', ''))
+                            ^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: 'NoneType' object has no attribute 'replace'
+
+solution.py:17: AttributeError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.money_cents_strict.tests.test_solution" name="test_leading_zeros" time="0.000"><failure message="AttributeError: 'NoneType' object has no attribute 'replace'">def test_leading_zeros():
+&gt;       with pytest.raises(ValueError) as e: f('007')
+                                             ^^^^^^^^
+
+tests\test_solution.py:10: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+s = '007'
+
+    def parse_money(s):
+        if not s.strip():
+            return 0
+    
+        # Remove any whitespace and validate the format using a regular expression
+        s = s.strip()
+        import re
+        match = re.fullmatch(r'(-)?\d{1,3}(,\d{3})*(\.\d{2})?', s)
+    
+        if not match:
+            raise ValueError('bad amount')
+    
+        # Extract matched groups
+        sign, integer_part, decimal_part = match.groups()
+    
+        # Convert to integer value of cents
+&gt;       integer_value = int(integer_part.replace(',', ''))
+                            ^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: 'NoneType' object has no attribute 'replace'
+
+solution.py:17: AttributeError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.money_cents_strict.tests.test_solution" name="test_bad_group" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-083129.money_cents_strict.tests.test_solution" name="test_no_integer_part" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-083129.money_cents_strict.tests.test_solution" name="test_one_decimal" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-083129.money_cents_strict.tests.test_solution" name="test_plus" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-083129.money_cents_strict.tests.test_solution" name="test_zero_grouped" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_zero_grouped():
+&gt;       with pytest.raises(ValueError): f('0,123')
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:21: Failed</failure></testcase></testsuite></testsuites>

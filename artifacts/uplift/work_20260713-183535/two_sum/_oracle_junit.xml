@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="1" failures="0" skipped="0" tests="1" time="0.177" timestamp="2026-07-13T18:40:05.203406-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="" name="artifacts.uplift.work_20260713-183535.two_sum.tests.test_solution" time="0.000"><error message="collection failure">tests\test_solution.py:1: in &lt;module&gt;
+    from solution import two_sum as f
+solution.py:1: in &lt;module&gt;
+    def two_sum(nums: List[int], target: int) -&gt; List[int]:
+                      ^^^^
+E   NameError: name 'List' is not defined</error></testcase></testsuite></testsuites>

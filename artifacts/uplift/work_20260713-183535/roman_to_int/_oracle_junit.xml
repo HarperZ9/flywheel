@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="3" skipped="0" tests="5" time="0.162" timestamp="2026-07-13T18:39:55.082523-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-183535.roman_to_int.tests.test_solution" name="test_simple" time="0.001" /><testcase classname="artifacts.uplift.work_20260713-183535.roman_to_int.tests.test_solution" name="test_sub_iv" time="0.001"><failure message="AssertionError: assert 6 == 4&#10; +  where 6 = f('IV')">def test_sub_iv():
+&gt;       assert f('IV') == 4
+E       AssertionError: assert 6 == 4
+E        +  where 6 = f('IV')
+
+tests\test_solution.py:5: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-183535.roman_to_int.tests.test_solution" name="test_sub_ix" time="0.000"><failure message="AssertionError: assert 11 == 9&#10; +  where 11 = f('IX')">def test_sub_ix():
+&gt;       assert f('IX') == 9
+E       AssertionError: assert 11 == 9
+E        +  where 11 = f('IX')
+
+tests\test_solution.py:7: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-183535.roman_to_int.tests.test_solution" name="test_lviii" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-183535.roman_to_int.tests.test_solution" name="test_big" time="0.000"><failure message="AssertionError: assert 2214 == 1994&#10; +  where 2214 = f('MCMXCIV')">def test_big():
+&gt;       assert f('MCMXCIV') == 1994
+E       AssertionError: assert 2214 == 1994
+E        +  where 2214 = f('MCMXCIV')
+
+tests\test_solution.py:11: AssertionError</failure></testcase></testsuite></testsuites>

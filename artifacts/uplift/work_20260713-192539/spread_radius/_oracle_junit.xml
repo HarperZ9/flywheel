@@ -1,0 +1,209 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="11" skipped="0" tests="15" time="0.270" timestamp="2026-07-13T19:54:29.257275-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-192539.spread_radius.tests.test_solution" name="test_one_step" time="0.001"><failure message="ValueError: bad cell">&gt;   def test_one_step(): assert f(['S.']) == 1
+                                ^^^^^^^^^
+
+tests\test_solution.py:3: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+grid = ['S.']
+
+    def spread_radius(grid):
+        if not isinstance(grid, list) or len(grid) == 0:
+            raise ValueError('bad grid')
+    
+        # Check if rows are of varying lengths
+        row_lengths = set(len(row) for row in grid)
+        if len(row_lengths) &gt; 1:
+            raise ValueError('ragged')
+    
+        # Function to check the validity of each cell
+        def is_valid_cell(cell):
+            return cell == 'S' or cell.isspace() or cell == '#'
+    
+        # Check each character in the grid for valid values
+        for row_idx, row in enumerate(grid):
+            for col_idx, cell in enumerate(row):
+                if not is_valid_cell(cell):
+&gt;                   raise ValueError('bad cell')
+E                   ValueError: bad cell
+
+solution.py:18: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-192539.spread_radius.tests.test_solution" name="test_source_only" time="0.001"><failure message="AssertionError: assert -1 == 0&#10; +  where -1 = f(['S'])">&gt;   def test_source_only(): assert f(['S']) == 0
+                            ^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert -1 == 0
+E    +  where -1 = f(['S'])
+
+tests\test_solution.py:4: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-192539.spread_radius.tests.test_solution" name="test_unreachable" time="0.001"><failure message="ValueError: bad cell">&gt;   def test_unreachable(): assert f(['S#.']) == -1
+                                   ^^^^^^^^^^
+
+tests\test_solution.py:5: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+grid = ['S#.']
+
+    def spread_radius(grid):
+        if not isinstance(grid, list) or len(grid) == 0:
+            raise ValueError('bad grid')
+    
+        # Check if rows are of varying lengths
+        row_lengths = set(len(row) for row in grid)
+        if len(row_lengths) &gt; 1:
+            raise ValueError('ragged')
+    
+        # Function to check the validity of each cell
+        def is_valid_cell(cell):
+            return cell == 'S' or cell.isspace() or cell == '#'
+    
+        # Check each character in the grid for valid values
+        for row_idx, row in enumerate(grid):
+            for col_idx, cell in enumerate(row):
+                if not is_valid_cell(cell):
+&gt;                   raise ValueError('bad cell')
+E                   ValueError: bad cell
+
+solution.py:18: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-192539.spread_radius.tests.test_solution" name="test_square" time="0.000"><failure message="ValueError: bad cell">&gt;   def test_square(): assert f(['S..', '...', '...']) == 4
+                              ^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:6: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+grid = ['S..', '...', '...']
+
+    def spread_radius(grid):
+        if not isinstance(grid, list) or len(grid) == 0:
+            raise ValueError('bad grid')
+    
+        # Check if rows are of varying lengths
+        row_lengths = set(len(row) for row in grid)
+        if len(row_lengths) &gt; 1:
+            raise ValueError('ragged')
+    
+        # Function to check the validity of each cell
+        def is_valid_cell(cell):
+            return cell == 'S' or cell.isspace() or cell == '#'
+    
+        # Check each character in the grid for valid values
+        for row_idx, row in enumerate(grid):
+            for col_idx, cell in enumerate(row):
+                if not is_valid_cell(cell):
+&gt;                   raise ValueError('bad cell')
+E                   ValueError: bad cell
+
+solution.py:18: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-192539.spread_radius.tests.test_solution" name="test_two_sources" time="0.001"><failure message="ValueError: bad cell">&gt;   def test_two_sources(): assert f(['S.S']) == 1
+                                   ^^^^^^^^^^
+
+tests\test_solution.py:7: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+grid = ['S.S']
+
+    def spread_radius(grid):
+        if not isinstance(grid, list) or len(grid) == 0:
+            raise ValueError('bad grid')
+    
+        # Check if rows are of varying lengths
+        row_lengths = set(len(row) for row in grid)
+        if len(row_lengths) &gt; 1:
+            raise ValueError('ragged')
+    
+        # Function to check the validity of each cell
+        def is_valid_cell(cell):
+            return cell == 'S' or cell.isspace() or cell == '#'
+    
+        # Check each character in the grid for valid values
+        for row_idx, row in enumerate(grid):
+            for col_idx, cell in enumerate(row):
+                if not is_valid_cell(cell):
+&gt;                   raise ValueError('bad cell')
+E                   ValueError: bad cell
+
+solution.py:18: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-192539.spread_radius.tests.test_solution" name="test_two_sources_middle" time="0.000"><failure message="ValueError: bad cell">&gt;   def test_two_sources_middle(): assert f(['S...S']) == 2
+                                          ^^^^^^^^^^^^
+
+tests\test_solution.py:8: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+grid = ['S...S']
+
+    def spread_radius(grid):
+        if not isinstance(grid, list) or len(grid) == 0:
+            raise ValueError('bad grid')
+    
+        # Check if rows are of varying lengths
+        row_lengths = set(len(row) for row in grid)
+        if len(row_lengths) &gt; 1:
+            raise ValueError('ragged')
+    
+        # Function to check the validity of each cell
+        def is_valid_cell(cell):
+            return cell == 'S' or cell.isspace() or cell == '#'
+    
+        # Check each character in the grid for valid values
+        for row_idx, row in enumerate(grid):
+            for col_idx, cell in enumerate(row):
+                if not is_valid_cell(cell):
+&gt;                   raise ValueError('bad cell')
+E                   ValueError: bad cell
+
+solution.py:18: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-192539.spread_radius.tests.test_solution" name="test_corridor" time="0.000"><failure message="ValueError: bad cell">&gt;   def test_corridor(): assert f(['S..', '##.', '...']) == 6
+                                ^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:9: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+grid = ['S..', '##.', '...']
+
+    def spread_radius(grid):
+        if not isinstance(grid, list) or len(grid) == 0:
+            raise ValueError('bad grid')
+    
+        # Check if rows are of varying lengths
+        row_lengths = set(len(row) for row in grid)
+        if len(row_lengths) &gt; 1:
+            raise ValueError('ragged')
+    
+        # Function to check the validity of each cell
+        def is_valid_cell(cell):
+            return cell == 'S' or cell.isspace() or cell == '#'
+    
+        # Check each character in the grid for valid values
+        for row_idx, row in enumerate(grid):
+            for col_idx, cell in enumerate(row):
+                if not is_valid_cell(cell):
+&gt;                   raise ValueError('bad cell')
+E                   ValueError: bad cell
+
+solution.py:18: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-192539.spread_radius.tests.test_solution" name="test_no_open_cells" time="0.000"><failure message="AssertionError: assert -1 == 0&#10; +  where -1 = f(['S#'])">&gt;   def test_no_open_cells(): assert f(['S#']) == 0
+                              ^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert -1 == 0
+E    +  where -1 = f(['S#'])
+
+tests\test_solution.py:10: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-192539.spread_radius.tests.test_solution" name="test_ragged" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-192539.spread_radius.tests.test_solution" name="test_bad_cell" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-192539.spread_radius.tests.test_solution" name="test_no_source" time="0.001"><failure message="AssertionError: assert 'bad cell' == 'no source'&#10;  &#10;  - no source&#10;  + bad cell">def test_no_source():
+        with pytest.raises(ValueError) as e: f(['...'])
+&gt;       assert str(e.value) == 'no source'
+E       AssertionError: assert 'bad cell' == 'no source'
+E         
+E         - no source
+E         + bad cell
+
+tests\test_solution.py:19: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-192539.spread_radius.tests.test_solution" name="test_bad_grid_plain_string" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-192539.spread_radius.tests.test_solution" name="test_bad_grid_empty" time="0.001" /><testcase classname="artifacts.uplift.work_20260713-192539.spread_radius.tests.test_solution" name="test_bad_grid_empty_row" time="0.001"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_bad_grid_empty_row():
+&gt;       with pytest.raises(ValueError): f([''])
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:26: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260713-192539.spread_radius.tests.test_solution" name="test_bad_grid_row_type" time="0.000"><failure message="TypeError: object of type 'int' has no len()">def test_bad_grid_row_type():
+&gt;       with pytest.raises(ValueError): f([1])
+                                        ^^^^^^
+
+tests\test_solution.py:28: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:6: in spread_radius
+    row_lengths = set(len(row) for row in grid)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+.0 = &lt;list_iterator object at 0x000001FDA7AFEA40&gt;
+
+&gt;   row_lengths = set(len(row) for row in grid)
+                      ^^^^^^^^
+E   TypeError: object of type 'int' has no len()
+
+solution.py:6: TypeError</failure></testcase></testsuite></testsuites>

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="1" failures="0" skipped="0" tests="1" time="0.276" timestamp="2026-07-13T20:08:16.616269-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="" name="artifacts.uplift.work_20260713-195624.shellish_tokenize.tests.test_solution" time="0.000"><error message="collection failure">tests\test_solution.py:2: in &lt;module&gt;
+    from solution import tokenize_quoted
+solution.py:83: in &lt;module&gt;
+    print(tokenize_quoted(tokenized_string))  # Output: ['abc', '123', '\n', 'cd', '
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+solution.py:74: in tokenize_quoted
+    tokens = process_token(s)
+             ^^^^^^^^^^^^^^^^
+solution.py:33: in process_token
+    tokens = re.sub(r' +', " ", tokens, flags=re.MULTILINE)
+                                ^^^^^^
+E   UnboundLocalError: cannot access local variable 'tokens' where it is not associated with a value</error></testcase></testsuite></testsuites>

@@ -1,0 +1,197 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="5" skipped="0" tests="10" time="0.219" timestamp="2026-07-13T19:35:37.956041-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-192539.header_unfold.tests.test_solution" name="test_basic" time="0.001"><failure message="ValueError: No non-empty first header found">def test_basic():
+&gt;       assert unfold_headers(["Host: example.com", "Content-Type: text/plain"]) == [
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            ("host", "example.com"),
+            ("content-type", "text/plain"),
+        ]
+
+tests\test_solution.py:6: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+lines = ['Host: example.com', 'Content-Type: text/plain']
+
+    def unfold_headers(lines: list[str]) -&gt; list[tuple[str, str]]:
+        if not lines:
+            return []
+    
+        headers = []
+        last_line = ''
+        for line in lines:
+            line = line.strip()
+    
+            # Check for continuation
+            if not line or line.isspace():
+                if len(headers) == 0 and not last_line.isspace() and not last_line[1:].isspace():  # first header check
+                    raise ValueError("No non-empty first header found")
+                if last_line:
+                    name, value = headers[-1]
+                    name = name.lower()
+                    if ':' in value:
+                        name_value_pairs = value.split(':', 1)
+                        new_name = name_value_pairs[0].lower()
+                        headers.append((new_name, ' '.join(name_value_pairs)))
+                    else:
+                        headers.append((name, value))
+                last_line += line
+            else:
+                if len(headers) == 0 and not line[1:].isspace():  # first header check
+&gt;                   raise ValueError("No non-empty first header found")
+E                   ValueError: No non-empty first header found
+
+solution.py:26: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-192539.header_unfold.tests.test_solution" name="test_unfolding" time="0.001"><failure message="ValueError: No non-empty first header found">def test_unfolding():
+&gt;       assert unfold_headers(["Subject: hello", "\tworld", "X-A: 1"]) == [
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            ("subject", "hello world"),
+            ("x-a", "1"),
+        ]
+
+tests\test_solution.py:13: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+lines = ['Subject: hello', '\tworld', 'X-A: 1']
+
+    def unfold_headers(lines: list[str]) -&gt; list[tuple[str, str]]:
+        if not lines:
+            return []
+    
+        headers = []
+        last_line = ''
+        for line in lines:
+            line = line.strip()
+    
+            # Check for continuation
+            if not line or line.isspace():
+                if len(headers) == 0 and not last_line.isspace() and not last_line[1:].isspace():  # first header check
+                    raise ValueError("No non-empty first header found")
+                if last_line:
+                    name, value = headers[-1]
+                    name = name.lower()
+                    if ':' in value:
+                        name_value_pairs = value.split(':', 1)
+                        new_name = name_value_pairs[0].lower()
+                        headers.append((new_name, ' '.join(name_value_pairs)))
+                    else:
+                        headers.append((name, value))
+                last_line += line
+            else:
+                if len(headers) == 0 and not line[1:].isspace():  # first header check
+&gt;                   raise ValueError("No non-empty first header found")
+E                   ValueError: No non-empty first header found
+
+solution.py:26: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-192539.header_unfold.tests.test_solution" name="test_value_whitespace_and_empty_value" time="0.000"><failure message="ValueError: No non-empty first header found">def test_value_whitespace_and_empty_value():
+&gt;       assert unfold_headers(["A:   spaced   "]) == [("a", "spaced")]
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:21: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+lines = ['A:   spaced   ']
+
+    def unfold_headers(lines: list[str]) -&gt; list[tuple[str, str]]:
+        if not lines:
+            return []
+    
+        headers = []
+        last_line = ''
+        for line in lines:
+            line = line.strip()
+    
+            # Check for continuation
+            if not line or line.isspace():
+                if len(headers) == 0 and not last_line.isspace() and not last_line[1:].isspace():  # first header check
+                    raise ValueError("No non-empty first header found")
+                if last_line:
+                    name, value = headers[-1]
+                    name = name.lower()
+                    if ':' in value:
+                        name_value_pairs = value.split(':', 1)
+                        new_name = name_value_pairs[0].lower()
+                        headers.append((new_name, ' '.join(name_value_pairs)))
+                    else:
+                        headers.append((name, value))
+                last_line += line
+            else:
+                if len(headers) == 0 and not line[1:].isspace():  # first header check
+&gt;                   raise ValueError("No non-empty first header found")
+E                   ValueError: No non-empty first header found
+
+solution.py:26: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-192539.header_unfold.tests.test_solution" name="test_case_and_duplicates" time="0.000"><failure message="ValueError: No non-empty first header found">def test_case_and_duplicates():
+&gt;       assert unfold_headers(["FOO: 1", "foo: 2", "FoO: 3"]) == [
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            ("foo", "1"),
+            ("foo", "2"),
+            ("foo", "3"),
+        ]
+
+tests\test_solution.py:27: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+lines = ['FOO: 1', 'foo: 2', 'FoO: 3']
+
+    def unfold_headers(lines: list[str]) -&gt; list[tuple[str, str]]:
+        if not lines:
+            return []
+    
+        headers = []
+        last_line = ''
+        for line in lines:
+            line = line.strip()
+    
+            # Check for continuation
+            if not line or line.isspace():
+                if len(headers) == 0 and not last_line.isspace() and not last_line[1:].isspace():  # first header check
+                    raise ValueError("No non-empty first header found")
+                if last_line:
+                    name, value = headers[-1]
+                    name = name.lower()
+                    if ':' in value:
+                        name_value_pairs = value.split(':', 1)
+                        new_name = name_value_pairs[0].lower()
+                        headers.append((new_name, ' '.join(name_value_pairs)))
+                    else:
+                        headers.append((name, value))
+                last_line += line
+            else:
+                if len(headers) == 0 and not line[1:].isspace():  # first header check
+&gt;                   raise ValueError("No non-empty first header found")
+E                   ValueError: No non-empty first header found
+
+solution.py:26: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-192539.header_unfold.tests.test_solution" name="test_empty_input" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-192539.header_unfold.tests.test_solution" name="test_no_mutation" time="0.000"><failure message="ValueError: No non-empty first header found">def test_no_mutation():
+        lines = ["A: 1", " cont", "B: 2"]
+        snapshot = list(lines)
+&gt;       unfold_headers(lines)
+
+tests\test_solution.py:41: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+lines = ['A: 1', ' cont', 'B: 2']
+
+    def unfold_headers(lines: list[str]) -&gt; list[tuple[str, str]]:
+        if not lines:
+            return []
+    
+        headers = []
+        last_line = ''
+        for line in lines:
+            line = line.strip()
+    
+            # Check for continuation
+            if not line or line.isspace():
+                if len(headers) == 0 and not last_line.isspace() and not last_line[1:].isspace():  # first header check
+                    raise ValueError("No non-empty first header found")
+                if last_line:
+                    name, value = headers[-1]
+                    name = name.lower()
+                    if ':' in value:
+                        name_value_pairs = value.split(':', 1)
+                        new_name = name_value_pairs[0].lower()
+                        headers.append((new_name, ' '.join(name_value_pairs)))
+                    else:
+                        headers.append((name, value))
+                last_line += line
+            else:
+                if len(headers) == 0 and not line[1:].isspace():  # first header check
+&gt;                   raise ValueError("No non-empty first header found")
+E                   ValueError: No non-empty first header found
+
+solution.py:26: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-192539.header_unfold.tests.test_solution" name="test_continuation_first_raises" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-192539.header_unfold.tests.test_solution" name="test_missing_colon_raises" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-192539.header_unfold.tests.test_solution" name="test_bad_name_raises" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-192539.header_unfold.tests.test_solution" name="test_blank_continuation_raises" time="0.000" /></testsuite></testsuites>

@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="6" skipped="0" tests="10" time="0.263" timestamp="2026-07-14T14:36:39.975979-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260714-140516.turtle_walk_program.tests.test_solution" name="test_empty" time="0.001" /><testcase classname="artifacts.uplift.work_20260714-140516.turtle_walk_program.tests.test_solution" name="test_walk" time="0.001"><failure message="ValueError: invalid literal for int() with base 10: 'R3'">&gt;   def test_walk(): assert f('2FR3F') == (3, 2, 'E')
+                            ^^^^^^^^^^
+
+tests\test_solution.py:4: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+prog = '2FR3F'
+
+    def turtle(prog):
+        x = y = 0
+        heading = 'N'
+        hdg = {'N': lambda a, b: (a, b + 1), 'E': lambda a, b: (a + 1, b),
+               'S': lambda a, b: (a, b - 1), 'W': lambda a, b: (a - 1, b)}
+        left = {'N': 'W', 'W': 'S', 'S': 'E', 'E': 'N'}
+        right = {v: k for k, v in left.items()}
+        i = 0
+        while i &lt; len(prog):
+            j = i + 1
+            while j &lt;= len(prog) and j &lt; len(prog) and prog[j].isdigit():
+                if prog[i] == '0':
+                    raise ValueError('bad count')
+                j += 1
+&gt;           n = int(prog[i:j]) if j &gt; i else 1
+                ^^^^^^^^^^^^^^
+E           ValueError: invalid literal for int() with base 10: 'R3'
+
+solution.py:15: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-140516.turtle_walk_program.tests.test_solution" name="test_backward" time="0.000"><failure message="ValueError: invalid literal for int() with base 10: 'B'">&gt;   def test_backward(): assert f('B') == (0, -1, 'N')
+                                ^^^^^^
+
+tests\test_solution.py:5: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+prog = 'B'
+
+    def turtle(prog):
+        x = y = 0
+        heading = 'N'
+        hdg = {'N': lambda a, b: (a, b + 1), 'E': lambda a, b: (a + 1, b),
+               'S': lambda a, b: (a, b - 1), 'W': lambda a, b: (a - 1, b)}
+        left = {'N': 'W', 'W': 'S', 'S': 'E', 'E': 'N'}
+        right = {v: k for k, v in left.items()}
+        i = 0
+        while i &lt; len(prog):
+            j = i + 1
+            while j &lt;= len(prog) and j &lt; len(prog) and prog[j].isdigit():
+                if prog[i] == '0':
+                    raise ValueError('bad count')
+                j += 1
+&gt;           n = int(prog[i:j]) if j &gt; i else 1
+                ^^^^^^^^^^^^^^
+E           ValueError: invalid literal for int() with base 10: 'B'
+
+solution.py:15: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-140516.turtle_walk_program.tests.test_solution" name="test_double_left" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-140516.turtle_walk_program.tests.test_solution" name="test_multidigit" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-140516.turtle_walk_program.tests.test_solution" name="test_full_circle" time="0.000"><failure message="ValueError: invalid literal for int() with base 10: 'L'">&gt;   def test_full_circle(): assert f('LLLL') == (0, 0, 'N')
+                                   ^^^^^^^^^
+
+tests\test_solution.py:8: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+prog = 'LLLL'
+
+    def turtle(prog):
+        x = y = 0
+        heading = 'N'
+        hdg = {'N': lambda a, b: (a, b + 1), 'E': lambda a, b: (a + 1, b),
+               'S': lambda a, b: (a, b - 1), 'W': lambda a, b: (a - 1, b)}
+        left = {'N': 'W', 'W': 'S', 'S': 'E', 'E': 'N'}
+        right = {v: k for k, v in left.items()}
+        i = 0
+        while i &lt; len(prog):
+            j = i + 1
+            while j &lt;= len(prog) and j &lt; len(prog) and prog[j].isdigit():
+                if prog[i] == '0':
+                    raise ValueError('bad count')
+                j += 1
+&gt;           n = int(prog[i:j]) if j &gt; i else 1
+                ^^^^^^^^^^^^^^
+E           ValueError: invalid literal for int() with base 10: 'L'
+
+solution.py:15: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-140516.turtle_walk_program.tests.test_solution" name="test_zero_count" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_zero_count():
+&gt;       with pytest.raises(ValueError) as e: f('0F')
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:10: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260714-140516.turtle_walk_program.tests.test_solution" name="test_leading_zero_count" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-140516.turtle_walk_program.tests.test_solution" name="test_dangling" time="0.001"><failure message="assert &quot;invalid lite...ase 10: 'F12'&quot; == 'dangling count'&#10;  &#10;  - dangling count&#10;  + invalid literal for int() with base 10: 'F12'">def test_dangling():
+        with pytest.raises(ValueError) as e: f('F12')
+&gt;       assert str(e.value) == 'dangling count'
+E       assert "invalid lite...ase 10: 'F12'" == 'dangling count'
+E         
+E         - dangling count
+E         + invalid literal for int() with base 10: 'F12'
+
+tests\test_solution.py:17: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-140516.turtle_walk_program.tests.test_solution" name="test_unknown" time="0.001"><failure message="assert &quot;invalid lite... base 10: 'F'&quot; == 'bad command'&#10;  &#10;  - bad command&#10;  + invalid literal for int() with base 10: 'F'">def test_unknown():
+        with pytest.raises(ValueError) as e: f('FxF')
+&gt;       assert str(e.value) == 'bad command'
+E       assert "invalid lite... base 10: 'F'" == 'bad command'
+E         
+E         - bad command
+E         + invalid literal for int() with base 10: 'F'
+
+tests\test_solution.py:20: AssertionError</failure></testcase></testsuite></testsuites>

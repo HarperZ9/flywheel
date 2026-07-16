@@ -1,0 +1,232 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="10" skipped="0" tests="13" time="0.325" timestamp="2026-07-14T13:31:45.132229-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260714-125209.eval_bool_expr.tests.test_solution" name="test_true" time="0.001" /><testcase classname="artifacts.uplift.work_20260714-125209.eval_bool_expr.tests.test_solution" name="test_false" time="0.001"><failure message="AssertionError: assert True is False&#10; +  where True = f('F')">&gt;   def test_false(): assert f('F') is False
+                      ^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert True is False
+E    +  where True = f('F')
+
+tests\test_solution.py:4: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-125209.eval_bool_expr.tests.test_solution" name="test_and" time="0.000"><failure message="ValueError: bad expr">&gt;   def test_and(): assert f('T&amp;F') is False
+                           ^^^^^^^^
+
+tests\test_solution.py:5: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:66: in eval_bool
+    v, j = parse(t, 0)
+           ^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+t = ['T', '&amp;', 'F'], j = 2
+
+    def parse(t, j):
+        vals = []
+    
+        def fold(op):
+            while j &lt; len(t) and t[j] == op:
+                j += 1
+                if not vals or vals[-1] in "&amp;|":
+                    raise ValueError('bad expr')
+                b = vals.pop()
+                vals.append(not b)
+    
+        while j &lt; len(t):
+            x = t[j]
+            j += 1
+            if x == '(':
+                v, j = parse(t, j)
+                vals.append(v)
+            elif x == ')':
+                break
+            elif x == '!':
+                fold('!')
+            elif x in "TF":
+                vals.append(x == 'T')
+            else:
+&gt;               raise ValueError('bad expr')
+E               ValueError: bad expr
+
+solution.py:40: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-125209.eval_bool_expr.tests.test_solution" name="test_or" time="0.000"><failure message="ValueError: bad expr">&gt;   def test_or(): assert f('T|F') is True
+                          ^^^^^^^^
+
+tests\test_solution.py:6: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:66: in eval_bool
+    v, j = parse(t, 0)
+           ^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+t = ['T', '|', 'F'], j = 2
+
+    def parse(t, j):
+        vals = []
+    
+        def fold(op):
+            while j &lt; len(t) and t[j] == op:
+                j += 1
+                if not vals or vals[-1] in "&amp;|":
+                    raise ValueError('bad expr')
+                b = vals.pop()
+                vals.append(not b)
+    
+        while j &lt; len(t):
+            x = t[j]
+            j += 1
+            if x == '(':
+                v, j = parse(t, j)
+                vals.append(v)
+            elif x == ')':
+                break
+            elif x == '!':
+                fold('!')
+            elif x in "TF":
+                vals.append(x == 'T')
+            else:
+&gt;               raise ValueError('bad expr')
+E               ValueError: bad expr
+
+solution.py:40: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-125209.eval_bool_expr.tests.test_solution" name="test_not" time="0.001"><failure message="UnboundLocalError: cannot access local variable 'j' where it is not associated with a value">&gt;   def test_not(): assert f('!T') is False
+                           ^^^^^^^
+
+tests\test_solution.py:7: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:66: in eval_bool
+    v, j = parse(t, 0)
+           ^^^^^^^^^^^
+solution.py:36: in parse
+    fold('!')
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+op = '!'
+
+    def fold(op):
+&gt;       while j &lt; len(t) and t[j] == op:
+              ^
+E       UnboundLocalError: cannot access local variable 'j' where it is not associated with a value
+
+solution.py:20: UnboundLocalError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-125209.eval_bool_expr.tests.test_solution" name="test_not_precedence" time="0.001"><failure message="UnboundLocalError: cannot access local variable 'j' where it is not associated with a value">&gt;   def test_not_precedence(): assert f('!F&amp;T') is True
+                                      ^^^^^^^^^
+
+tests\test_solution.py:8: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:66: in eval_bool
+    v, j = parse(t, 0)
+           ^^^^^^^^^^^
+solution.py:36: in parse
+    fold('!')
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+op = '!'
+
+    def fold(op):
+&gt;       while j &lt; len(t) and t[j] == op:
+              ^
+E       UnboundLocalError: cannot access local variable 'j' where it is not associated with a value
+
+solution.py:20: UnboundLocalError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-125209.eval_bool_expr.tests.test_solution" name="test_and_before_or" time="0.000"><failure message="ValueError: bad expr">&gt;   def test_and_before_or(): assert f('T|F&amp;F') is True
+                                     ^^^^^^^^^^
+
+tests\test_solution.py:9: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:66: in eval_bool
+    v, j = parse(t, 0)
+           ^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+t = ['T', '|', 'F', '&amp;', 'F'], j = 2
+
+    def parse(t, j):
+        vals = []
+    
+        def fold(op):
+            while j &lt; len(t) and t[j] == op:
+                j += 1
+                if not vals or vals[-1] in "&amp;|":
+                    raise ValueError('bad expr')
+                b = vals.pop()
+                vals.append(not b)
+    
+        while j &lt; len(t):
+            x = t[j]
+            j += 1
+            if x == '(':
+                v, j = parse(t, j)
+                vals.append(v)
+            elif x == ')':
+                break
+            elif x == '!':
+                fold('!')
+            elif x in "TF":
+                vals.append(x == 'T')
+            else:
+&gt;               raise ValueError('bad expr')
+E               ValueError: bad expr
+
+solution.py:40: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-125209.eval_bool_expr.tests.test_solution" name="test_parens" time="0.000"><failure message="ValueError: bad expr">&gt;   def test_parens(): assert f('(T|F)&amp;F') is False
+                              ^^^^^^^^^^^^
+
+tests\test_solution.py:10: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:66: in eval_bool
+    v, j = parse(t, 0)
+           ^^^^^^^^^^^
+solution.py:31: in parse
+    v, j = parse(t, j)
+           ^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+t = ['(', 'T', '|', 'F', ')', '&amp;', ...], j = 3
+
+    def parse(t, j):
+        vals = []
+    
+        def fold(op):
+            while j &lt; len(t) and t[j] == op:
+                j += 1
+                if not vals or vals[-1] in "&amp;|":
+                    raise ValueError('bad expr')
+                b = vals.pop()
+                vals.append(not b)
+    
+        while j &lt; len(t):
+            x = t[j]
+            j += 1
+            if x == '(':
+                v, j = parse(t, j)
+                vals.append(v)
+            elif x == ')':
+                break
+            elif x == '!':
+                fold('!')
+            elif x in "TF":
+                vals.append(x == 'T')
+            else:
+&gt;               raise ValueError('bad expr')
+E               ValueError: bad expr
+
+solution.py:40: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-125209.eval_bool_expr.tests.test_solution" name="test_not_group" time="0.000"><failure message="UnboundLocalError: cannot access local variable 'j' where it is not associated with a value">&gt;   def test_not_group(): assert f('!(T&amp;F)') is True
+                                 ^^^^^^^^^^^
+
+tests\test_solution.py:11: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:66: in eval_bool
+    v, j = parse(t, 0)
+           ^^^^^^^^^^^
+solution.py:36: in parse
+    fold('!')
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+op = '!'
+
+    def fold(op):
+&gt;       while j &lt; len(t) and t[j] == op:
+              ^
+E       UnboundLocalError: cannot access local variable 'j' where it is not associated with a value
+
+solution.py:20: UnboundLocalError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-125209.eval_bool_expr.tests.test_solution" name="test_bad_char" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-125209.eval_bool_expr.tests.test_solution" name="test_unbalanced" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_unbalanced():
+&gt;       with pytest.raises(ValueError): f('(T')
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:16: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260714-125209.eval_bool_expr.tests.test_solution" name="test_trailing" time="0.001"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_trailing():
+&gt;       with pytest.raises(ValueError): f('TT')
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:18: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260714-125209.eval_bool_expr.tests.test_solution" name="test_empty" time="0.000" /></testsuite></testsuites>

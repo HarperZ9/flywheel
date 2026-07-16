@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="1" failures="0" skipped="0" tests="1" time="0.234" timestamp="2026-07-13T20:20:52.812274-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="" name="artifacts.uplift.work_20260713-195624.multiset_diff.tests.test_solution" time="0.000"><error message="collection failure">tests\test_solution.py:2: in &lt;module&gt;
+    from solution import multiset_diff as f
+solution.py:59: in &lt;module&gt;
+    check_solution()
+solution.py:56: in check_solution
+    assert outcome == expected_outcome, f"Expected {expected_outcome}, but got {outcome}"
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: Expected [-2, -1, 0, -1, 4, 9], but got [-1, -1, 0, -1, 0]</error></testcase></testsuite></testsuites>

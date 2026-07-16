@@ -1,0 +1,212 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="9" skipped="0" tests="9" time="0.266" timestamp="2026-07-13T20:24:57.969536-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-201327.varint_zigzag_decode.tests.test_solution" name="test_single_byte_values_zigzag" time="0.001"><failure message="TypeError: object of type 'int' has no len()">def test_single_byte_values_zigzag():
+&gt;       assert decode_varints([0]) == [0]
+               ^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:6: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+data = [0]
+
+    def decode_varints(data):
+        result = []
+        valid_data = [byte * (2**i) if i == 0 else byte * (2**15 - i - 7) for i, byte in enumerate(data)]
+    
+        def zigzag_decode(varint):
+            high_bit_6 = varint &gt;&gt; 15
+            return ((varint &amp; 0x80) &gt;&gt; 4) + zigzag_decode(high_bit_6) + high_bit_6
+    
+        for byte_val in valid_data:
+            # Check if it's a single-byte varint (overlong)
+&gt;           if len(byte_val) == 1 and not any(byte_val[i] &amp; 0x80 for i in range(7)):
+               ^^^^^^^^^^^^^
+E           TypeError: object of type 'int' has no len()
+
+solution.py:11: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.varint_zigzag_decode.tests.test_solution" name="test_multibyte_value" time="0.001"><failure message="TypeError: object of type 'int' has no len()">def test_multibyte_value():
+        # bytes [0xAC, 0x02] -&gt; unsigned 300 -&gt; signed 150
+&gt;       assert decode_varints([0xAC, 0x02]) == [150]
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:15: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+data = [172, 2]
+
+    def decode_varints(data):
+        result = []
+        valid_data = [byte * (2**i) if i == 0 else byte * (2**15 - i - 7) for i, byte in enumerate(data)]
+    
+        def zigzag_decode(varint):
+            high_bit_6 = varint &gt;&gt; 15
+            return ((varint &amp; 0x80) &gt;&gt; 4) + zigzag_decode(high_bit_6) + high_bit_6
+    
+        for byte_val in valid_data:
+            # Check if it's a single-byte varint (overlong)
+&gt;           if len(byte_val) == 1 and not any(byte_val[i] &amp; 0x80 for i in range(7)):
+               ^^^^^^^^^^^^^
+E           TypeError: object of type 'int' has no len()
+
+solution.py:11: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.varint_zigzag_decode.tests.test_solution" name="test_multiple_values_and_empty" time="0.000"><failure message="TypeError: object of type 'int' has no len()">def test_multiple_values_and_empty():
+        assert decode_varints([]) == []
+&gt;       assert decode_varints([0xAC, 0x02, 0x01, 0x00]) == [150, -1, 0]
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:20: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+data = [172, 2, 1, 0]
+
+    def decode_varints(data):
+        result = []
+        valid_data = [byte * (2**i) if i == 0 else byte * (2**15 - i - 7) for i, byte in enumerate(data)]
+    
+        def zigzag_decode(varint):
+            high_bit_6 = varint &gt;&gt; 15
+            return ((varint &amp; 0x80) &gt;&gt; 4) + zigzag_decode(high_bit_6) + high_bit_6
+    
+        for byte_val in valid_data:
+            # Check if it's a single-byte varint (overlong)
+&gt;           if len(byte_val) == 1 and not any(byte_val[i] &amp; 0x80 for i in range(7)):
+               ^^^^^^^^^^^^^
+E           TypeError: object of type 'int' has no len()
+
+solution.py:11: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.varint_zigzag_decode.tests.test_solution" name="test_five_byte_varint_ok" time="0.000"><failure message="TypeError: object of type 'int' has no len()">def test_five_byte_varint_ok():
+        u = 1 &lt;&lt; 28
+&gt;       assert decode_varints([0x80, 0x80, 0x80, 0x80, 0x01]) == [u &gt;&gt; 1]
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:25: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+data = [128, 128, 128, 128, 1]
+
+    def decode_varints(data):
+        result = []
+        valid_data = [byte * (2**i) if i == 0 else byte * (2**15 - i - 7) for i, byte in enumerate(data)]
+    
+        def zigzag_decode(varint):
+            high_bit_6 = varint &gt;&gt; 15
+            return ((varint &amp; 0x80) &gt;&gt; 4) + zigzag_decode(high_bit_6) + high_bit_6
+    
+        for byte_val in valid_data:
+            # Check if it's a single-byte varint (overlong)
+&gt;           if len(byte_val) == 1 and not any(byte_val[i] &amp; 0x80 for i in range(7)):
+               ^^^^^^^^^^^^^
+E           TypeError: object of type 'int' has no len()
+
+solution.py:11: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.varint_zigzag_decode.tests.test_solution" name="test_truncated" time="0.001"><failure message="TypeError: object of type 'int' has no len()">def test_truncated():
+        with pytest.raises(ValueError, match="truncated"):
+&gt;           decode_varints([0x80])
+
+tests\test_solution.py:30: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+data = [128]
+
+    def decode_varints(data):
+        result = []
+        valid_data = [byte * (2**i) if i == 0 else byte * (2**15 - i - 7) for i, byte in enumerate(data)]
+    
+        def zigzag_decode(varint):
+            high_bit_6 = varint &gt;&gt; 15
+            return ((varint &amp; 0x80) &gt;&gt; 4) + zigzag_decode(high_bit_6) + high_bit_6
+    
+        for byte_val in valid_data:
+            # Check if it's a single-byte varint (overlong)
+&gt;           if len(byte_val) == 1 and not any(byte_val[i] &amp; 0x80 for i in range(7)):
+               ^^^^^^^^^^^^^
+E           TypeError: object of type 'int' has no len()
+
+solution.py:11: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.varint_zigzag_decode.tests.test_solution" name="test_too_long_even_when_stream_ends" time="0.000"><failure message="TypeError: object of type 'int' has no len()">def test_too_long_even_when_stream_ends():
+        with pytest.raises(ValueError, match="too long"):
+&gt;           decode_varints([0x80] * 5)
+
+tests\test_solution.py:37: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+data = [128, 128, 128, 128, 128]
+
+    def decode_varints(data):
+        result = []
+        valid_data = [byte * (2**i) if i == 0 else byte * (2**15 - i - 7) for i, byte in enumerate(data)]
+    
+        def zigzag_decode(varint):
+            high_bit_6 = varint &gt;&gt; 15
+            return ((varint &amp; 0x80) &gt;&gt; 4) + zigzag_decode(high_bit_6) + high_bit_6
+    
+        for byte_val in valid_data:
+            # Check if it's a single-byte varint (overlong)
+&gt;           if len(byte_val) == 1 and not any(byte_val[i] &amp; 0x80 for i in range(7)):
+               ^^^^^^^^^^^^^
+E           TypeError: object of type 'int' has no len()
+
+solution.py:11: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.varint_zigzag_decode.tests.test_solution" name="test_overlong_noncanonical" time="0.000"><failure message="TypeError: object of type 'int' has no len()">def test_overlong_noncanonical():
+        with pytest.raises(ValueError, match="overlong"):
+&gt;           decode_varints([0x80, 0x00])
+
+tests\test_solution.py:44: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+data = [128, 0]
+
+    def decode_varints(data):
+        result = []
+        valid_data = [byte * (2**i) if i == 0 else byte * (2**15 - i - 7) for i, byte in enumerate(data)]
+    
+        def zigzag_decode(varint):
+            high_bit_6 = varint &gt;&gt; 15
+            return ((varint &amp; 0x80) &gt;&gt; 4) + zigzag_decode(high_bit_6) + high_bit_6
+    
+        for byte_val in valid_data:
+            # Check if it's a single-byte varint (overlong)
+&gt;           if len(byte_val) == 1 and not any(byte_val[i] &amp; 0x80 for i in range(7)):
+               ^^^^^^^^^^^^^
+E           TypeError: object of type 'int' has no len()
+
+solution.py:11: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.varint_zigzag_decode.tests.test_solution" name="test_bad_byte_checked_before_decoding" time="0.000"><failure message="TypeError: object of type 'int' has no len()">def test_bad_byte_checked_before_decoding():
+        with pytest.raises(ValueError, match="bad byte"):
+&gt;           decode_varints([256])
+
+tests\test_solution.py:51: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+data = [256]
+
+    def decode_varints(data):
+        result = []
+        valid_data = [byte * (2**i) if i == 0 else byte * (2**15 - i - 7) for i, byte in enumerate(data)]
+    
+        def zigzag_decode(varint):
+            high_bit_6 = varint &gt;&gt; 15
+            return ((varint &amp; 0x80) &gt;&gt; 4) + zigzag_decode(high_bit_6) + high_bit_6
+    
+        for byte_val in valid_data:
+            # Check if it's a single-byte varint (overlong)
+&gt;           if len(byte_val) == 1 and not any(byte_val[i] &amp; 0x80 for i in range(7)):
+               ^^^^^^^^^^^^^
+E           TypeError: object of type 'int' has no len()
+
+solution.py:11: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.varint_zigzag_decode.tests.test_solution" name="test_no_mutation" time="0.001"><failure message="TypeError: object of type 'int' has no len()">def test_no_mutation():
+        data = [0xAC, 0x02, 0x00]
+        snap = list(data)
+&gt;       decode_varints(data)
+
+tests\test_solution.py:66: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+data = [172, 2, 0]
+
+    def decode_varints(data):
+        result = []
+        valid_data = [byte * (2**i) if i == 0 else byte * (2**15 - i - 7) for i, byte in enumerate(data)]
+    
+        def zigzag_decode(varint):
+            high_bit_6 = varint &gt;&gt; 15
+            return ((varint &amp; 0x80) &gt;&gt; 4) + zigzag_decode(high_bit_6) + high_bit_6
+    
+        for byte_val in valid_data:
+            # Check if it's a single-byte varint (overlong)
+&gt;           if len(byte_val) == 1 and not any(byte_val[i] &amp; 0x80 for i in range(7)):
+               ^^^^^^^^^^^^^
+E           TypeError: object of type 'int' has no len()
+
+solution.py:11: TypeError</failure></testcase></testsuite></testsuites>

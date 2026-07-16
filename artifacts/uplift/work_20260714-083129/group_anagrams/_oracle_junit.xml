@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="5" skipped="0" tests="7" time="0.197" timestamp="2026-07-14T09:02:11.692621-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260714-083129.group_anagrams.tests.test_solution" name="test_basic" time="0.001"><failure message="AssertionError: assert [[('ate', 3)]... [('tea', 3)]] == [['ate', 'eat...'nat', 'tan']]&#10;  &#10;  At index 0 diff: [('ate', 3)] != ['ate', 'eat', 'tea']&#10;  Left contains 3 more items, first extra item: [('nat', 3)]&#10;  Use -v to get more diff">def test_basic():
+&gt;       assert f(['eat', 'tea', 'tan', 'ate', 'nat', 'bat']) == [['ate', 'eat', 'tea'], ['bat'], ['nat', 'tan']]
+E       AssertionError: assert [[('ate', 3)]... [('tea', 3)]] == [['ate', 'eat...'nat', 'tan']]
+E         
+E         At index 0 diff: [('ate', 3)] != ['ate', 'eat', 'tea']
+E         Left contains 3 more items, first extra item: [('nat', 3)]
+E         Use -v to get more diff
+
+tests\test_solution.py:4: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.group_anagrams.tests.test_solution" name="test_empty" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-083129.group_anagrams.tests.test_solution" name="test_single" time="0.001"><failure message="AssertionError: assert [[('abc', 3)]] == [['abc']]&#10;  &#10;  At index 0 diff: [('abc', 3)] != ['abc']&#10;  Use -v to get more diff">&gt;   def test_single(): assert f(['abc']) == [['abc']]
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert [[('abc', 3)]] == [['abc']]
+E     
+E     At index 0 diff: [('abc', 3)] != ['abc']
+E     Use -v to get more diff
+
+tests\test_solution.py:6: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.group_anagrams.tests.test_solution" name="test_repeat" time="0.000"><failure message="AssertionError: assert [[('a', 1), (...], [('b', 1)]] == [['a', 'a'], ['b']]&#10;  &#10;  At index 0 diff: [('a', 1), ('a', 1)] != ['a', 'a']&#10;  Use -v to get more diff">&gt;   def test_repeat(): assert f(['a', 'b', 'a']) == [['a', 'a'], ['b']]
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert [[('a', 1), (...], [('b', 1)]] == [['a', 'a'], ['b']]
+E     
+E     At index 0 diff: [('a', 1), ('a', 1)] != ['a', 'a']
+E     Use -v to get more diff
+
+tests\test_solution.py:7: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.group_anagrams.tests.test_solution" name="test_case_sensitive" time="0.001"><failure message="AssertionError: assert [[('Ab', 2)], [('bA', 2)]] == [['Ab', 'bA']]&#10;  &#10;  At index 0 diff: [('Ab', 2)] != ['Ab', 'bA']&#10;  Left contains one more item: [('bA', 2)]&#10;  Use -v to get more diff">&gt;   def test_case_sensitive(): assert f(['Ab', 'bA']) == [['Ab', 'bA']]
+                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert [[('Ab', 2)], [('bA', 2)]] == [['Ab', 'bA']]
+E     
+E     At index 0 diff: [('Ab', 2)] != ['Ab', 'bA']
+E     Left contains one more item: [('bA', 2)]
+E     Use -v to get more diff
+
+tests\test_solution.py:8: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.group_anagrams.tests.test_solution" name="test_two_groups" time="0.000"><failure message="AssertionError: assert [[('ab', 2)],..., [('cd', 2)]] == [['ab', 'ba'], ['cd']]&#10;  &#10;  At index 0 diff: [('ab', 2)] != ['ab', 'ba']&#10;  Left contains one more item: [('cd', 2)]&#10;  Use -v to get more diff">&gt;   def test_two_groups(): assert f(['ba', 'ab', 'cd']) == [['ab', 'ba'], ['cd']]
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert [[('ab', 2)],..., [('cd', 2)]] == [['ab', 'ba'], ['cd']]
+E     
+E     At index 0 diff: [('ab', 2)] != ['ab', 'ba']
+E     Left contains one more item: [('cd', 2)]
+E     Use -v to get more diff
+
+tests\test_solution.py:9: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.group_anagrams.tests.test_solution" name="test_bad_item" time="0.000" /></testsuite></testsuites>

@@ -1,0 +1,555 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="9" skipped="0" tests="9" time="0.262" timestamp="2026-07-13T20:24:24.878863-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-201327.outline_leaf_paths.tests.test_solution" name="test_forest_and_leaf_order" time="0.001"><failure message="AttributeError: 'str' object has no attribute 'lines'">def test_forest_and_leaf_order():
+        lines = ["a", "  b", "    c", "  d", "e"]
+&gt;       assert outline_paths(lines) == ["a/b/c", "a/d", "e"]
+               ^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:7: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+lines = ['a', '  b', '    c', '  d', 'e']
+
+    def outline_paths(lines):
+        """
+        Convert an indentation-based outline into a list of leaf paths.
+    
+        :param lines: A list of strings, where each line is a line from the specification.
+                      Each line can contain multiple whitespace characters to represent indentation.
+                      Only one empty or trailing whitespace indicates that the corresponding section is skipped and not part of the validation.
+        :return: A list of paths joined by "/", representing the valid leaf structures. If the input lines are missing, return an empty list.
+                 The root path corresponds to all leading spaces.
+                 Multiple level-0 roots allowed (no single root).
+                 Leaf paths from root to leaf correspond to names without trailing slashes.
+        """
+        def validate_path(path):
+            current_level = 0
+            for line in path:
+                next_level = validate_line(line)
+                if not isinstance(next_level, int) or next_level &lt; current_level:
+                    return ValueError("indent jump")
+                current_level += next_level
+    
+            return None
+    
+        def validate_line(line):
+            if len(line.strip()) == 0:
+                raise ValueError("empty line")
+    
+            left_spaces = [char for char in line if char in " \t"]
+            right_spaces = [char for char in reversed(line) if char in " \t"]
+    
+            # Check the level of leading spaces
+            if not (left_spaces + right_spaces).count(' '):
+                return ValueError("tab in indent")
+    
+            left_count, right_count = 0, len(right_spaces)
+            while True:
+                space_to_remove = 1 if right_spaces[left_count] == " " else 0
+                if (right_spaces[left_count-1] == " " or right_spaces[left_count-1] == "\t") and space_to_remove &gt; 1:
+                    return ValueError("odd indent")
+                left_count += 1
+                if left_count &gt;= len(right_spaces):
+                    break
+    
+            # Check for level jump violations
+            current_level = validate_path(path)
+    
+        valid_paths = []
+        for line in lines:
+            try:
+&gt;               validate_line(line.lines)
+                              ^^^^^^^^^^
+E               AttributeError: 'str' object has no attribute 'lines'
+
+solution.py:49: AttributeError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.outline_leaf_paths.tests.test_solution" name="test_blank_and_whitespace_lines_skipped_without_breaking_levels" time="0.000"><failure message="AttributeError: 'str' object has no attribute 'lines'">def test_blank_and_whitespace_lines_skipped_without_breaking_levels():
+        lines = ["a", "", "   ", "\t", "  b"]
+&gt;       assert outline_paths(lines) == ["a/b"]
+               ^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:12: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+lines = ['a', '', '   ', '\t', '  b']
+
+    def outline_paths(lines):
+        """
+        Convert an indentation-based outline into a list of leaf paths.
+    
+        :param lines: A list of strings, where each line is a line from the specification.
+                      Each line can contain multiple whitespace characters to represent indentation.
+                      Only one empty or trailing whitespace indicates that the corresponding section is skipped and not part of the validation.
+        :return: A list of paths joined by "/", representing the valid leaf structures. If the input lines are missing, return an empty list.
+                 The root path corresponds to all leading spaces.
+                 Multiple level-0 roots allowed (no single root).
+                 Leaf paths from root to leaf correspond to names without trailing slashes.
+        """
+        def validate_path(path):
+            current_level = 0
+            for line in path:
+                next_level = validate_line(line)
+                if not isinstance(next_level, int) or next_level &lt; current_level:
+                    return ValueError("indent jump")
+                current_level += next_level
+    
+            return None
+    
+        def validate_line(line):
+            if len(line.strip()) == 0:
+                raise ValueError("empty line")
+    
+            left_spaces = [char for char in line if char in " \t"]
+            right_spaces = [char for char in reversed(line) if char in " \t"]
+    
+            # Check the level of leading spaces
+            if not (left_spaces + right_spaces).count(' '):
+                return ValueError("tab in indent")
+    
+            left_count, right_count = 0, len(right_spaces)
+            while True:
+                space_to_remove = 1 if right_spaces[left_count] == " " else 0
+                if (right_spaces[left_count-1] == " " or right_spaces[left_count-1] == "\t") and space_to_remove &gt; 1:
+                    return ValueError("odd indent")
+                left_count += 1
+                if left_count &gt;= len(right_spaces):
+                    break
+    
+            # Check for level jump violations
+            current_level = validate_path(path)
+    
+        valid_paths = []
+        for line in lines:
+            try:
+&gt;               validate_line(line.lines)
+                              ^^^^^^^^^^
+E               AttributeError: 'str' object has no attribute 'lines'
+
+solution.py:49: AttributeError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.outline_leaf_paths.tests.test_solution" name="test_trailing_ws_stripped_inner_spaces_kept" time="0.000"><failure message="AttributeError: 'str' object has no attribute 'lines'">def test_trailing_ws_stripped_inner_spaces_kept():
+        lines = ["top node  ", "  child x "]
+&gt;       assert outline_paths(lines) == ["top node/child x"]
+               ^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:17: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+lines = ['top node  ', '  child x ']
+
+    def outline_paths(lines):
+        """
+        Convert an indentation-based outline into a list of leaf paths.
+    
+        :param lines: A list of strings, where each line is a line from the specification.
+                      Each line can contain multiple whitespace characters to represent indentation.
+                      Only one empty or trailing whitespace indicates that the corresponding section is skipped and not part of the validation.
+        :return: A list of paths joined by "/", representing the valid leaf structures. If the input lines are missing, return an empty list.
+                 The root path corresponds to all leading spaces.
+                 Multiple level-0 roots allowed (no single root).
+                 Leaf paths from root to leaf correspond to names without trailing slashes.
+        """
+        def validate_path(path):
+            current_level = 0
+            for line in path:
+                next_level = validate_line(line)
+                if not isinstance(next_level, int) or next_level &lt; current_level:
+                    return ValueError("indent jump")
+                current_level += next_level
+    
+            return None
+    
+        def validate_line(line):
+            if len(line.strip()) == 0:
+                raise ValueError("empty line")
+    
+            left_spaces = [char for char in line if char in " \t"]
+            right_spaces = [char for char in reversed(line) if char in " \t"]
+    
+            # Check the level of leading spaces
+            if not (left_spaces + right_spaces).count(' '):
+                return ValueError("tab in indent")
+    
+            left_count, right_count = 0, len(right_spaces)
+            while True:
+                space_to_remove = 1 if right_spaces[left_count] == " " else 0
+                if (right_spaces[left_count-1] == " " or right_spaces[left_count-1] == "\t") and space_to_remove &gt; 1:
+                    return ValueError("odd indent")
+                left_count += 1
+                if left_count &gt;= len(right_spaces):
+                    break
+    
+            # Check for level jump violations
+            current_level = validate_path(path)
+    
+        valid_paths = []
+        for line in lines:
+            try:
+&gt;               validate_line(line.lines)
+                              ^^^^^^^^^^
+E               AttributeError: 'str' object has no attribute 'lines'
+
+solution.py:49: AttributeError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.outline_leaf_paths.tests.test_solution" name="test_empty_and_all_blank" time="0.000"><failure message="AttributeError: 'str' object has no attribute 'lines'">def test_empty_and_all_blank():
+        assert outline_paths([]) == []
+&gt;       assert outline_paths(["", "  "]) == []
+               ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:22: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+lines = ['', '  ']
+
+    def outline_paths(lines):
+        """
+        Convert an indentation-based outline into a list of leaf paths.
+    
+        :param lines: A list of strings, where each line is a line from the specification.
+                      Each line can contain multiple whitespace characters to represent indentation.
+                      Only one empty or trailing whitespace indicates that the corresponding section is skipped and not part of the validation.
+        :return: A list of paths joined by "/", representing the valid leaf structures. If the input lines are missing, return an empty list.
+                 The root path corresponds to all leading spaces.
+                 Multiple level-0 roots allowed (no single root).
+                 Leaf paths from root to leaf correspond to names without trailing slashes.
+        """
+        def validate_path(path):
+            current_level = 0
+            for line in path:
+                next_level = validate_line(line)
+                if not isinstance(next_level, int) or next_level &lt; current_level:
+                    return ValueError("indent jump")
+                current_level += next_level
+    
+            return None
+    
+        def validate_line(line):
+            if len(line.strip()) == 0:
+                raise ValueError("empty line")
+    
+            left_spaces = [char for char in line if char in " \t"]
+            right_spaces = [char for char in reversed(line) if char in " \t"]
+    
+            # Check the level of leading spaces
+            if not (left_spaces + right_spaces).count(' '):
+                return ValueError("tab in indent")
+    
+            left_count, right_count = 0, len(right_spaces)
+            while True:
+                space_to_remove = 1 if right_spaces[left_count] == " " else 0
+                if (right_spaces[left_count-1] == " " or right_spaces[left_count-1] == "\t") and space_to_remove &gt; 1:
+                    return ValueError("odd indent")
+                left_count += 1
+                if left_count &gt;= len(right_spaces):
+                    break
+    
+            # Check for level jump violations
+            current_level = validate_path(path)
+    
+        valid_paths = []
+        for line in lines:
+            try:
+&gt;               validate_line(line.lines)
+                              ^^^^^^^^^^
+E               AttributeError: 'str' object has no attribute 'lines'
+
+solution.py:49: AttributeError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.outline_leaf_paths.tests.test_solution" name="test_indent_jump_including_indented_first_line" time="0.000"><failure message="AttributeError: 'str' object has no attribute 'lines'">def test_indent_jump_including_indented_first_line():
+        with pytest.raises(ValueError, match="indent jump"):
+&gt;           outline_paths(["a", "    b"])
+
+tests\test_solution.py:27: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+lines = ['a', '    b']
+
+    def outline_paths(lines):
+        """
+        Convert an indentation-based outline into a list of leaf paths.
+    
+        :param lines: A list of strings, where each line is a line from the specification.
+                      Each line can contain multiple whitespace characters to represent indentation.
+                      Only one empty or trailing whitespace indicates that the corresponding section is skipped and not part of the validation.
+        :return: A list of paths joined by "/", representing the valid leaf structures. If the input lines are missing, return an empty list.
+                 The root path corresponds to all leading spaces.
+                 Multiple level-0 roots allowed (no single root).
+                 Leaf paths from root to leaf correspond to names without trailing slashes.
+        """
+        def validate_path(path):
+            current_level = 0
+            for line in path:
+                next_level = validate_line(line)
+                if not isinstance(next_level, int) or next_level &lt; current_level:
+                    return ValueError("indent jump")
+                current_level += next_level
+    
+            return None
+    
+        def validate_line(line):
+            if len(line.strip()) == 0:
+                raise ValueError("empty line")
+    
+            left_spaces = [char for char in line if char in " \t"]
+            right_spaces = [char for char in reversed(line) if char in " \t"]
+    
+            # Check the level of leading spaces
+            if not (left_spaces + right_spaces).count(' '):
+                return ValueError("tab in indent")
+    
+            left_count, right_count = 0, len(right_spaces)
+            while True:
+                space_to_remove = 1 if right_spaces[left_count] == " " else 0
+                if (right_spaces[left_count-1] == " " or right_spaces[left_count-1] == "\t") and space_to_remove &gt; 1:
+                    return ValueError("odd indent")
+                left_count += 1
+                if left_count &gt;= len(right_spaces):
+                    break
+    
+            # Check for level jump violations
+            current_level = validate_path(path)
+    
+        valid_paths = []
+        for line in lines:
+            try:
+&gt;               validate_line(line.lines)
+                              ^^^^^^^^^^
+E               AttributeError: 'str' object has no attribute 'lines'
+
+solution.py:49: AttributeError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.outline_leaf_paths.tests.test_solution" name="test_odd_indent" time="0.001"><failure message="AttributeError: 'str' object has no attribute 'lines'">def test_odd_indent():
+        with pytest.raises(ValueError, match="odd indent"):
+&gt;           outline_paths(["a", "   b"])
+
+tests\test_solution.py:34: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+lines = ['a', '   b']
+
+    def outline_paths(lines):
+        """
+        Convert an indentation-based outline into a list of leaf paths.
+    
+        :param lines: A list of strings, where each line is a line from the specification.
+                      Each line can contain multiple whitespace characters to represent indentation.
+                      Only one empty or trailing whitespace indicates that the corresponding section is skipped and not part of the validation.
+        :return: A list of paths joined by "/", representing the valid leaf structures. If the input lines are missing, return an empty list.
+                 The root path corresponds to all leading spaces.
+                 Multiple level-0 roots allowed (no single root).
+                 Leaf paths from root to leaf correspond to names without trailing slashes.
+        """
+        def validate_path(path):
+            current_level = 0
+            for line in path:
+                next_level = validate_line(line)
+                if not isinstance(next_level, int) or next_level &lt; current_level:
+                    return ValueError("indent jump")
+                current_level += next_level
+    
+            return None
+    
+        def validate_line(line):
+            if len(line.strip()) == 0:
+                raise ValueError("empty line")
+    
+            left_spaces = [char for char in line if char in " \t"]
+            right_spaces = [char for char in reversed(line) if char in " \t"]
+    
+            # Check the level of leading spaces
+            if not (left_spaces + right_spaces).count(' '):
+                return ValueError("tab in indent")
+    
+            left_count, right_count = 0, len(right_spaces)
+            while True:
+                space_to_remove = 1 if right_spaces[left_count] == " " else 0
+                if (right_spaces[left_count-1] == " " or right_spaces[left_count-1] == "\t") and space_to_remove &gt; 1:
+                    return ValueError("odd indent")
+                left_count += 1
+                if left_count &gt;= len(right_spaces):
+                    break
+    
+            # Check for level jump violations
+            current_level = validate_path(path)
+    
+        valid_paths = []
+        for line in lines:
+            try:
+&gt;               validate_line(line.lines)
+                              ^^^^^^^^^^
+E               AttributeError: 'str' object has no attribute 'lines'
+
+solution.py:49: AttributeError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.outline_leaf_paths.tests.test_solution" name="test_tab_in_indent_checked_before_width" time="0.000"><failure message="AttributeError: 'str' object has no attribute 'lines'">def test_tab_in_indent_checked_before_width():
+        with pytest.raises(ValueError, match="tab in indent"):
+&gt;           outline_paths(["a", " \tb"])
+
+tests\test_solution.py:39: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+lines = ['a', ' \tb']
+
+    def outline_paths(lines):
+        """
+        Convert an indentation-based outline into a list of leaf paths.
+    
+        :param lines: A list of strings, where each line is a line from the specification.
+                      Each line can contain multiple whitespace characters to represent indentation.
+                      Only one empty or trailing whitespace indicates that the corresponding section is skipped and not part of the validation.
+        :return: A list of paths joined by "/", representing the valid leaf structures. If the input lines are missing, return an empty list.
+                 The root path corresponds to all leading spaces.
+                 Multiple level-0 roots allowed (no single root).
+                 Leaf paths from root to leaf correspond to names without trailing slashes.
+        """
+        def validate_path(path):
+            current_level = 0
+            for line in path:
+                next_level = validate_line(line)
+                if not isinstance(next_level, int) or next_level &lt; current_level:
+                    return ValueError("indent jump")
+                current_level += next_level
+    
+            return None
+    
+        def validate_line(line):
+            if len(line.strip()) == 0:
+                raise ValueError("empty line")
+    
+            left_spaces = [char for char in line if char in " \t"]
+            right_spaces = [char for char in reversed(line) if char in " \t"]
+    
+            # Check the level of leading spaces
+            if not (left_spaces + right_spaces).count(' '):
+                return ValueError("tab in indent")
+    
+            left_count, right_count = 0, len(right_spaces)
+            while True:
+                space_to_remove = 1 if right_spaces[left_count] == " " else 0
+                if (right_spaces[left_count-1] == " " or right_spaces[left_count-1] == "\t") and space_to_remove &gt; 1:
+                    return ValueError("odd indent")
+                left_count += 1
+                if left_count &gt;= len(right_spaces):
+                    break
+    
+            # Check for level jump violations
+            current_level = validate_path(path)
+    
+        valid_paths = []
+        for line in lines:
+            try:
+&gt;               validate_line(line.lines)
+                              ^^^^^^^^^^
+E               AttributeError: 'str' object has no attribute 'lines'
+
+solution.py:49: AttributeError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.outline_leaf_paths.tests.test_solution" name="test_slash_in_name" time="0.001"><failure message="AttributeError: 'str' object has no attribute 'lines'">def test_slash_in_name():
+        with pytest.raises(ValueError, match="slash in name"):
+&gt;           outline_paths(["a/b"])
+
+tests\test_solution.py:44: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+lines = ['a/b']
+
+    def outline_paths(lines):
+        """
+        Convert an indentation-based outline into a list of leaf paths.
+    
+        :param lines: A list of strings, where each line is a line from the specification.
+                      Each line can contain multiple whitespace characters to represent indentation.
+                      Only one empty or trailing whitespace indicates that the corresponding section is skipped and not part of the validation.
+        :return: A list of paths joined by "/", representing the valid leaf structures. If the input lines are missing, return an empty list.
+                 The root path corresponds to all leading spaces.
+                 Multiple level-0 roots allowed (no single root).
+                 Leaf paths from root to leaf correspond to names without trailing slashes.
+        """
+        def validate_path(path):
+            current_level = 0
+            for line in path:
+                next_level = validate_line(line)
+                if not isinstance(next_level, int) or next_level &lt; current_level:
+                    return ValueError("indent jump")
+                current_level += next_level
+    
+            return None
+    
+        def validate_line(line):
+            if len(line.strip()) == 0:
+                raise ValueError("empty line")
+    
+            left_spaces = [char for char in line if char in " \t"]
+            right_spaces = [char for char in reversed(line) if char in " \t"]
+    
+            # Check the level of leading spaces
+            if not (left_spaces + right_spaces).count(' '):
+                return ValueError("tab in indent")
+    
+            left_count, right_count = 0, len(right_spaces)
+            while True:
+                space_to_remove = 1 if right_spaces[left_count] == " " else 0
+                if (right_spaces[left_count-1] == " " or right_spaces[left_count-1] == "\t") and space_to_remove &gt; 1:
+                    return ValueError("odd indent")
+                left_count += 1
+                if left_count &gt;= len(right_spaces):
+                    break
+    
+            # Check for level jump violations
+            current_level = validate_path(path)
+    
+        valid_paths = []
+        for line in lines:
+            try:
+&gt;               validate_line(line.lines)
+                              ^^^^^^^^^^
+E               AttributeError: 'str' object has no attribute 'lines'
+
+solution.py:49: AttributeError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.outline_leaf_paths.tests.test_solution" name="test_no_mutation" time="0.000"><failure message="AttributeError: 'str' object has no attribute 'lines'">def test_no_mutation():
+        lines = ["a", "  b"]
+        snap = list(lines)
+&gt;       outline_paths(lines)
+
+tests\test_solution.py:50: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+lines = ['a', '  b']
+
+    def outline_paths(lines):
+        """
+        Convert an indentation-based outline into a list of leaf paths.
+    
+        :param lines: A list of strings, where each line is a line from the specification.
+                      Each line can contain multiple whitespace characters to represent indentation.
+                      Only one empty or trailing whitespace indicates that the corresponding section is skipped and not part of the validation.
+        :return: A list of paths joined by "/", representing the valid leaf structures. If the input lines are missing, return an empty list.
+                 The root path corresponds to all leading spaces.
+                 Multiple level-0 roots allowed (no single root).
+                 Leaf paths from root to leaf correspond to names without trailing slashes.
+        """
+        def validate_path(path):
+            current_level = 0
+            for line in path:
+                next_level = validate_line(line)
+                if not isinstance(next_level, int) or next_level &lt; current_level:
+                    return ValueError("indent jump")
+                current_level += next_level
+    
+            return None
+    
+        def validate_line(line):
+            if len(line.strip()) == 0:
+                raise ValueError("empty line")
+    
+            left_spaces = [char for char in line if char in " \t"]
+            right_spaces = [char for char in reversed(line) if char in " \t"]
+    
+            # Check the level of leading spaces
+            if not (left_spaces + right_spaces).count(' '):
+                return ValueError("tab in indent")
+    
+            left_count, right_count = 0, len(right_spaces)
+            while True:
+                space_to_remove = 1 if right_spaces[left_count] == " " else 0
+                if (right_spaces[left_count-1] == " " or right_spaces[left_count-1] == "\t") and space_to_remove &gt; 1:
+                    return ValueError("odd indent")
+                left_count += 1
+                if left_count &gt;= len(right_spaces):
+                    break
+    
+            # Check for level jump violations
+            current_level = validate_path(path)
+    
+        valid_paths = []
+        for line in lines:
+            try:
+&gt;               validate_line(line.lines)
+                              ^^^^^^^^^^
+E               AttributeError: 'str' object has no attribute 'lines'
+
+solution.py:49: AttributeError</failure></testcase></testsuite></testsuites>

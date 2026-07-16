@@ -1,0 +1,484 @@
+{
+  "schema_version": 1,
+  "tool_version": "2.9.0",
+  "generated_at": "2026-07-13T17:26:21-07:00",
+  "root_sha256_prefix": "d001edb4458c747b",
+  "absolute_paths_included": false,
+  "repo_count": 1,
+  "dirty_count": 6,
+  "class_counts": {
+    "public": 1
+  },
+  "top_level": [
+    {
+      "name": ".claude",
+      "kind": "directory",
+      "class": "hidden",
+      "bytes": null,
+      "modified": "2026-07-09T18:32:03-07:00"
+    },
+    {
+      "name": ".flywheel-run",
+      "kind": "directory",
+      "class": "hidden",
+      "bytes": null,
+      "modified": "2026-07-07T19:03:48-07:00"
+    },
+    {
+      "name": ".flywheel-run-root",
+      "kind": "file",
+      "class": "hidden",
+      "bytes": 19,
+      "modified": "2026-07-11T20:19:04-07:00"
+    },
+    {
+      "name": ".gitattributes",
+      "kind": "file",
+      "class": "hidden",
+      "bytes": 268,
+      "modified": "2026-07-11T16:04:29-07:00"
+    },
+    {
+      "name": ".gitignore",
+      "kind": "file",
+      "class": "hidden",
+      "bytes": 1257,
+      "modified": "2026-07-12T18:09:58-07:00"
+    },
+    {
+      "name": ".pytest_cache",
+      "kind": "directory",
+      "class": "hidden",
+      "bytes": null,
+      "modified": "2026-07-04T09:37:21-07:00"
+    },
+    {
+      "name": ".ruff_cache",
+      "kind": "directory",
+      "class": "hidden",
+      "bytes": null,
+      "modified": "2026-07-13T13:12:25-07:00"
+    },
+    {
+      "name": ".screen-run",
+      "kind": "directory",
+      "class": "hidden",
+      "bytes": null,
+      "modified": "2026-07-06T23:38:05-07:00"
+    },
+    {
+      "name": ".tmp-flywheel-cache",
+      "kind": "directory",
+      "class": "hidden",
+      "bytes": null,
+      "modified": "2026-07-07T19:05:12-07:00"
+    },
+    {
+      "name": "__pycache__",
+      "kind": "directory",
+      "class": "entry",
+      "bytes": null,
+      "modified": "2026-07-11T19:16:49-07:00"
+    },
+    {
+      "name": "artifacts",
+      "kind": "directory",
+      "class": "entry",
+      "bytes": null,
+      "modified": "2026-07-13T17:15:53-07:00"
+    },
+    {
+      "name": "artifacts_codex_dry.json",
+      "kind": "file",
+      "class": "entry",
+      "bytes": 1966,
+      "modified": "2026-07-07T18:54:38-07:00"
+    },
+    {
+      "name": "artifacts_codex_dry_easy_1task.json",
+      "kind": "file",
+      "class": "entry",
+      "bytes": 1208,
+      "modified": "2026-07-07T21:22:46-07:00"
+    },
+    {
+      "name": "artifacts_codex_dry_easy_full.json",
+      "kind": "file",
+      "class": "entry",
+      "bytes": 1210,
+      "modified": "2026-07-07T21:27:45-07:00"
+    },
+    {
+      "name": "artifacts_codex_dry_full_attempt.json",
+      "kind": "file",
+      "class": "entry",
+      "bytes": 6887,
+      "modified": "2026-07-07T21:29:28-07:00"
+    },
+    {
+      "name": "artifacts_codex_frontier_dry_easy_full.json",
+      "kind": "file",
+      "class": "entry",
+      "bytes": 1672,
+      "modified": "2026-07-07T21:58:46-07:00"
+    },
+    {
+      "name": "artifacts_codex_frontier_dry_hard_full.json",
+      "kind": "file",
+      "class": "entry",
+      "bytes": 1676,
+      "modified": "2026-07-07T22:30:42-07:00"
+    },
+    {
+      "name": "artifacts_codex_harness_dry_easy.json",
+      "kind": "file",
+      "class": "entry",
+      "bytes": 1670,
+      "modified": "2026-07-07T21:09:54-07:00"
+    },
+    {
+      "name": "artifacts_codex_live.json",
+      "kind": "file",
+      "class": "entry",
+      "bytes": 1948,
+      "modified": "2026-07-07T19:03:43-07:00"
+    },
+    {
+      "name": "artifacts_local_ollama_easy_full.json",
+      "kind": "file",
+      "class": "entry",
+      "bytes": 1541,
+      "modified": "2026-07-07T20:45:50-07:00"
+    },
+    {
+      "name": "artifacts_local_ollama_hard_full.json",
+      "kind": "file",
+      "class": "entry",
+      "bytes": 1547,
+      "modified": "2026-07-07T20:58:25-07:00"
+    },
+    {
+      "name": "artifacts_local_run_2.json",
+      "kind": "file",
+      "class": "entry",
+      "bytes": 1541,
+      "modified": "2026-07-07T20:05:50-07:00"
+    },
+    {
+      "name": "BATTLE-MAP.md",
+      "kind": "file",
+      "class": "entry",
+      "bytes": 21971,
+      "modified": "2026-07-07T20:16:23-07:00"
+    },
+    {
+      "name": "benchmarks",
+      "kind": "directory",
+      "class": "entry",
+      "bytes": null,
+      "modified": "2026-07-09T03:15:12-07:00"
+    },
+    {
+      "name": "build",
+      "kind": "directory",
+      "class": "entry",
+      "bytes": null,
+      "modified": "2026-07-12T17:36:01-07:00"
+    },
+    {
+      "name": "configs",
+      "kind": "directory",
+      "class": "entry",
+      "bytes": null,
+      "modified": "2026-07-08T20:31:52-07:00"
+    },
+    {
+      "name": "dataset",
+      "kind": "directory",
+      "class": "entry",
+      "bytes": null,
+      "modified": "2026-07-11T19:16:52-07:00"
+    },
+    {
+      "name": "demos",
+      "kind": "directory",
+      "class": "entry",
+      "bytes": null,
+      "modified": "2026-07-09T18:39:48-07:00"
+    },
+    {
+      "name": "dist",
+      "kind": "directory",
+      "class": "entry",
+      "bytes": null,
+      "modified": "2026-07-12T17:40:36-07:00"
+    },
+    {
+      "name": "docs",
+      "kind": "directory",
+      "class": "entry",
+      "bytes": null,
+      "modified": "2026-07-12T20:01:46-07:00"
+    },
+    {
+      "name": "envelopes-turn-0",
+      "kind": "directory",
+      "class": "entry",
+      "bytes": null,
+      "modified": "2026-07-05T14:24:13-07:00"
+    },
+    {
+      "name": "FLAGSHIP-PLAN.md",
+      "kind": "file",
+      "class": "entry",
+      "bytes": 6960,
+      "modified": "2026-07-07T20:16:23-07:00"
+    },
+    {
+      "name": "flywheel.egg-info",
+      "kind": "directory",
+      "class": "entry",
+      "bytes": null,
+      "modified": "2026-07-12T18:11:19-07:00"
+    },
+    {
+      "name": "flywheel.spec",
+      "kind": "file",
+      "class": "entry",
+      "bytes": 1096,
+      "modified": "2026-07-12T14:39:57-07:00"
+    },
+    {
+      "name": "handoff",
+      "kind": "directory",
+      "class": "entry",
+      "bytes": null,
+      "modified": "2026-07-11T14:53:26-07:00"
+    },
+    {
+      "name": "harness",
+      "kind": "directory",
+      "class": "entry",
+      "bytes": null,
+      "modified": "2026-07-13T17:24:22-07:00"
+    },
+    {
+      "name": "HARNESS-ROADMAP.md",
+      "kind": "file",
+      "class": "entry",
+      "bytes": 8967,
+      "modified": "2026-07-07T20:16:23-07:00"
+    },
+    {
+      "name": "harness.cmd",
+      "kind": "file",
+      "class": "entry",
+      "bytes": 118,
+      "modified": "2026-07-08T22:01:21-07:00"
+    },
+    {
+      "name": "HARNESS.md",
+      "kind": "file",
+      "class": "entry",
+      "bytes": 7814,
+      "modified": "2026-07-07T20:16:23-07:00"
+    },
+    {
+      "name": "LICENSE",
+      "kind": "file",
+      "class": "entry",
+      "bytes": 4216,
+      "modified": "2026-07-11T14:59:01-07:00"
+    },
+    {
+      "name": "LOCAL-AGENT.md",
+      "kind": "file",
+      "class": "entry",
+      "bytes": 8595,
+      "modified": "2026-07-07T20:16:23-07:00"
+    },
+    {
+      "name": "local-agent.spec",
+      "kind": "file",
+      "class": "entry",
+      "bytes": 745,
+      "modified": "2026-07-09T11:38:28-07:00"
+    },
+    {
+      "name": "local-harness.spec",
+      "kind": "file",
+      "class": "entry",
+      "bytes": 749,
+      "modified": "2026-07-09T11:38:17-07:00"
+    },
+    {
+      "name": "local-serve.spec",
+      "kind": "file",
+      "class": "entry",
+      "bytes": 792,
+      "modified": "2026-07-08T11:16:01-07:00"
+    },
+    {
+      "name": "m7_scorecard.json",
+      "kind": "file",
+      "class": "entry",
+      "bytes": 1968,
+      "modified": "2026-07-07T19:42:34-07:00"
+    },
+    {
+      "name": "MEMORY-SUBSTRATE.md",
+      "kind": "file",
+      "class": "entry",
+      "bytes": 6486,
+      "modified": "2026-07-07T20:16:23-07:00"
+    },
+    {
+      "name": "project-docs",
+      "kind": "directory",
+      "class": "entry",
+      "bytes": null,
+      "modified": "2026-07-09T18:32:03-07:00"
+    },
+    {
+      "name": "PROJECT.md",
+      "kind": "file",
+      "class": "entry",
+      "bytes": 34647,
+      "modified": "2026-07-12T18:09:58-07:00"
+    },
+    {
+      "name": "pyproject.toml",
+      "kind": "file",
+      "class": "entry",
+      "bytes": 1806,
+      "modified": "2026-07-12T18:09:58-07:00"
+    },
+    {
+      "name": "pytest.ini",
+      "kind": "file",
+      "class": "entry",
+      "bytes": 352,
+      "modified": "2026-07-12T18:09:58-07:00"
+    },
+    {
+      "name": "QUICKSTART.md",
+      "kind": "file",
+      "class": "entry",
+      "bytes": 3641,
+      "modified": "2026-07-11T15:34:11-07:00"
+    },
+    {
+      "name": "README.md",
+      "kind": "file",
+      "class": "entry",
+      "bytes": 9960,
+      "modified": "2026-07-13T13:22:06-07:00"
+    },
+    {
+      "name": "ROADMAP.md",
+      "kind": "file",
+      "class": "entry",
+      "bytes": 6316,
+      "modified": "2026-07-07T20:16:23-07:00"
+    },
+    {
+      "name": "scripts",
+      "kind": "directory",
+      "class": "entry",
+      "bytes": null,
+      "modified": "2026-07-13T14:57:33-07:00"
+    },
+    {
+      "name": "site",
+      "kind": "directory",
+      "class": "entry",
+      "bytes": null,
+      "modified": "2026-07-11T17:43:34-07:00"
+    },
+    {
+      "name": "solution.py",
+      "kind": "file",
+      "class": "entry",
+      "bytes": 1091,
+      "modified": "2026-07-08T10:47:55-07:00"
+    },
+    {
+      "name": "STATE.md",
+      "kind": "file",
+      "class": "entry",
+      "bytes": 88143,
+      "modified": "2026-07-11T17:57:28-07:00"
+    },
+    {
+      "name": "SUPERAPP.md",
+      "kind": "file",
+      "class": "entry",
+      "bytes": 28872,
+      "modified": "2026-07-11T14:36:56-07:00"
+    },
+    {
+      "name": "SUPERPROJECT.md",
+      "kind": "file",
+      "class": "entry",
+      "bytes": 7834,
+      "modified": "2026-07-07T20:16:23-07:00"
+    },
+    {
+      "name": "tasks",
+      "kind": "directory",
+      "class": "entry",
+      "bytes": null,
+      "modified": "2026-07-12T10:33:30-07:00"
+    },
+    {
+      "name": "tests",
+      "kind": "directory",
+      "class": "entry",
+      "bytes": null,
+      "modified": "2026-07-13T17:24:31-07:00"
+    },
+    {
+      "name": "train",
+      "kind": "directory",
+      "class": "entry",
+      "bytes": null,
+      "modified": "2026-07-11T11:50:45-07:00"
+    },
+    {
+      "name": "VERIFIED-DATA-FLYWHEEL.md",
+      "kind": "file",
+      "class": "entry",
+      "bytes": 8339,
+      "modified": "2026-07-07T20:16:23-07:00"
+    },
+    {
+      "name": "WALKTHROUGH.md",
+      "kind": "file",
+      "class": "entry",
+      "bytes": 4600,
+      "modified": "2026-07-11T15:34:11-07:00"
+    },
+    {
+      "name": "workflows",
+      "kind": "directory",
+      "class": "entry",
+      "bytes": null,
+      "modified": "2026-07-03T01:42:37-07:00"
+    }
+  ],
+  "repositories": [
+    {
+      "path": ".",
+      "class": "public",
+      "branch": "fix/release-model-identity",
+      "head": "617a18c",
+      "origin": "https://github.com/HarperZ9/local-model.git",
+      "dirty_count": 6,
+      "untracked_count": 2,
+      "markers": [
+        "README.md",
+        "pyproject.toml"
+      ]
+    }
+  ]
+}

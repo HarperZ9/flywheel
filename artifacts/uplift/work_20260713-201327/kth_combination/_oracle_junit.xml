@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="1" failures="0" skipped="0" tests="1" time="0.269" timestamp="2026-07-13T20:32:31.518107-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="" name="artifacts.uplift.work_20260713-201327.kth_combination.tests.test_solution" time="0.000"><error message="collection failure">tests\test_solution.py:2: in &lt;module&gt;
+    from solution import kth_combination as f
+solution.py:51: in &lt;module&gt;
+    kth_combination(n=5, k=k, r=r)
+solution.py:44: in kth_combination
+    kcombs = [sorted(combination) for combination in itertools.combinations(range(n), r)]
+                                                     ^^^^^^^^^
+E   NameError: name 'itertools' is not defined. Did you forget to import 'itertools'</error></testcase></testsuite></testsuites>

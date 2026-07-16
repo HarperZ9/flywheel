@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="4" skipped="0" tests="8" time="0.212" timestamp="2026-07-13T19:37:13.446512-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-192539.sat_add_nbit.tests.test_solution" name="test_no_clamp_within_range" time="0.001"><failure message="assert 128 == -128&#10; +  where 128 = sat_add(-100, -28, 8)">def test_no_clamp_within_range():
+        assert sat_add(3, 4, 8) == 7
+        assert sat_add(100, 27, 8) == 127
+&gt;       assert sat_add(-100, -28, 8) == -128
+E       assert 128 == -128
+E        +  where 128 = sat_add(-100, -28, 8)
+
+tests\test_solution.py:8: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-192539.sat_add_nbit.tests.test_solution" name="test_clamp_high" time="0.000"><failure message="assert 200 == 127&#10; +  where 200 = sat_add(100, 100, 8)">def test_clamp_high():
+&gt;       assert sat_add(100, 100, 8) == 127
+E       assert 200 == 127
+E        +  where 200 = sat_add(100, 100, 8)
+
+tests\test_solution.py:13: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-192539.sat_add_nbit.tests.test_solution" name="test_clamp_low" time="0.000"><failure message="assert 56 == -128&#10; +  where 56 = sat_add(-100, -100, 8)">def test_clamp_low():
+&gt;       assert sat_add(-100, -100, 8) == -128
+E       assert 56 == -128
+E        +  where 56 = sat_add(-100, -100, 8)
+
+tests\test_solution.py:19: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-192539.sat_add_nbit.tests.test_solution" name="test_bits_one_edge" time="0.000"><failure message="assert 1 == -1&#10; +  where 1 = sat_add(0, -1, 1)">def test_bits_one_edge():
+        assert sat_add(0, 0, 1) == 0
+&gt;       assert sat_add(0, -1, 1) == -1
+E       assert 1 == -1
+E        +  where 1 = sat_add(0, -1, 1)
+
+tests\test_solution.py:25: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-192539.sat_add_nbit.tests.test_solution" name="test_bits_invalid_raises" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-192539.sat_add_nbit.tests.test_solution" name="test_operand_out_of_range_raises" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-192539.sat_add_nbit.tests.test_solution" name="test_bool_rejected" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-192539.sat_add_nbit.tests.test_solution" name="test_non_int_rejected" time="0.001" /></testsuite></testsuites>

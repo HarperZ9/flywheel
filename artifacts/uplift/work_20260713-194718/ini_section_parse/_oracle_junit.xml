@@ -1,0 +1,406 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="15" skipped="0" tests="17" time="0.283" timestamp="2026-07-13T20:13:05.649349-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-194718.ini_section_parse.tests.test_solution" name="test_basic" time="0.001"><failure message="TypeError: startswith first arg must be str or a tuple of str, not list">def test_basic():
+&gt;       assert f('[db]\nhost=local\nport=5432') == {'db': {'host': 'local', 'port': '5432'}}
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:4: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+text = '[db]\nhost=local\nport=5432'
+
+    def parse_ini(text):
+        if not isinstance(text, str):
+            raise ValueError('bad input')
+    
+        lines = text.split('\n')
+        result = {}
+        sections = {}
+    
+        for line in lines:
+            line = line.strip()
+    
+            if not line or line.startswith('#') or line.startswith(';'):
+                continue
+    
+&gt;           if line.startswith(['[', '[ ']):
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           TypeError: startswith first arg must be str or a tuple of str, not list
+
+solution.py:15: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.ini_section_parse.tests.test_solution" name="test_two_sections" time="0.001"><failure message="TypeError: startswith first arg must be str or a tuple of str, not list">def test_two_sections():
+&gt;       assert f('[a]\nx=1\n[b]\nx=2') == {'a': {'x': '1'}, 'b': {'x': '2'}}
+               ^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:6: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+text = '[a]\nx=1\n[b]\nx=2'
+
+    def parse_ini(text):
+        if not isinstance(text, str):
+            raise ValueError('bad input')
+    
+        lines = text.split('\n')
+        result = {}
+        sections = {}
+    
+        for line in lines:
+            line = line.strip()
+    
+            if not line or line.startswith('#') or line.startswith(';'):
+                continue
+    
+&gt;           if line.startswith(['[', '[ ']):
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           TypeError: startswith first arg must be str or a tuple of str, not list
+
+solution.py:15: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.ini_section_parse.tests.test_solution" name="test_comments_blank" time="0.000"><failure message="TypeError: startswith first arg must be str or a tuple of str, not list">def test_comments_blank():
+&gt;       assert f('; c\n\n[s]\n# c\nk=v\n') == {'s': {'k': 'v'}}
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:8: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+text = '; c\n\n[s]\n# c\nk=v\n'
+
+    def parse_ini(text):
+        if not isinstance(text, str):
+            raise ValueError('bad input')
+    
+        lines = text.split('\n')
+        result = {}
+        sections = {}
+    
+        for line in lines:
+            line = line.strip()
+    
+            if not line or line.startswith('#') or line.startswith(';'):
+                continue
+    
+&gt;           if line.startswith(['[', '[ ']):
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           TypeError: startswith first arg must be str or a tuple of str, not list
+
+solution.py:15: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.ini_section_parse.tests.test_solution" name="test_whitespace" time="0.001"><failure message="TypeError: startswith first arg must be str or a tuple of str, not list">def test_whitespace():
+&gt;       assert f('  [s]  \n  k  =  v  ') == {'s': {'k': 'v'}}
+               ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:10: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+text = '  [s]  \n  k  =  v  '
+
+    def parse_ini(text):
+        if not isinstance(text, str):
+            raise ValueError('bad input')
+    
+        lines = text.split('\n')
+        result = {}
+        sections = {}
+    
+        for line in lines:
+            line = line.strip()
+    
+            if not line or line.startswith('#') or line.startswith(';'):
+                continue
+    
+&gt;           if line.startswith(['[', '[ ']):
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           TypeError: startswith first arg must be str or a tuple of str, not list
+
+solution.py:15: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.ini_section_parse.tests.test_solution" name="test_value_with_equals" time="0.001"><failure message="TypeError: startswith first arg must be str or a tuple of str, not list">def test_value_with_equals():
+&gt;       assert f('[s]\nk=a=b') == {'s': {'k': 'a=b'}}
+               ^^^^^^^^^^^^^^^
+
+tests\test_solution.py:12: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+text = '[s]\nk=a=b'
+
+    def parse_ini(text):
+        if not isinstance(text, str):
+            raise ValueError('bad input')
+    
+        lines = text.split('\n')
+        result = {}
+        sections = {}
+    
+        for line in lines:
+            line = line.strip()
+    
+            if not line or line.startswith('#') or line.startswith(';'):
+                continue
+    
+&gt;           if line.startswith(['[', '[ ']):
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           TypeError: startswith first arg must be str or a tuple of str, not list
+
+solution.py:15: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.ini_section_parse.tests.test_solution" name="test_empty_value" time="0.000"><failure message="TypeError: startswith first arg must be str or a tuple of str, not list">def test_empty_value():
+&gt;       assert f('[s]\nk=') == {'s': {'k': ''}}
+               ^^^^^^^^^^^^
+
+tests\test_solution.py:14: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+text = '[s]\nk='
+
+    def parse_ini(text):
+        if not isinstance(text, str):
+            raise ValueError('bad input')
+    
+        lines = text.split('\n')
+        result = {}
+        sections = {}
+    
+        for line in lines:
+            line = line.strip()
+    
+            if not line or line.startswith('#') or line.startswith(';'):
+                continue
+    
+&gt;           if line.startswith(['[', '[ ']):
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           TypeError: startswith first arg must be str or a tuple of str, not list
+
+solution.py:15: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.ini_section_parse.tests.test_solution" name="test_empty_section_body" time="0.000"><failure message="TypeError: startswith first arg must be str or a tuple of str, not list">def test_empty_section_body():
+&gt;       assert f('[s]') == {'s': {}}
+               ^^^^^^^^
+
+tests\test_solution.py:16: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+text = '[s]'
+
+    def parse_ini(text):
+        if not isinstance(text, str):
+            raise ValueError('bad input')
+    
+        lines = text.split('\n')
+        result = {}
+        sections = {}
+    
+        for line in lines:
+            line = line.strip()
+    
+            if not line or line.startswith('#') or line.startswith(';'):
+                continue
+    
+&gt;           if line.startswith(['[', '[ ']):
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           TypeError: startswith first arg must be str or a tuple of str, not list
+
+solution.py:15: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.ini_section_parse.tests.test_solution" name="test_empty_text" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-194718.ini_section_parse.tests.test_solution" name="test_same_key_other_section" time="0.000"><failure message="TypeError: startswith first arg must be str or a tuple of str, not list">def test_same_key_other_section():
+&gt;       assert f('[a]\nk=1\n[b]\nk=2') == {'a': {'k': '1'}, 'b': {'k': '2'}}
+               ^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:20: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+text = '[a]\nk=1\n[b]\nk=2'
+
+    def parse_ini(text):
+        if not isinstance(text, str):
+            raise ValueError('bad input')
+    
+        lines = text.split('\n')
+        result = {}
+        sections = {}
+    
+        for line in lines:
+            line = line.strip()
+    
+            if not line or line.startswith('#') or line.startswith(';'):
+                continue
+    
+&gt;           if line.startswith(['[', '[ ']):
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           TypeError: startswith first arg must be str or a tuple of str, not list
+
+solution.py:15: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.ini_section_parse.tests.test_solution" name="test_no_section" time="0.000"><failure message="TypeError: startswith first arg must be str or a tuple of str, not list">def test_no_section():
+&gt;       with pytest.raises(ValueError) as e: f('k=v')
+                                             ^^^^^^^^
+
+tests\test_solution.py:22: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+text = 'k=v'
+
+    def parse_ini(text):
+        if not isinstance(text, str):
+            raise ValueError('bad input')
+    
+        lines = text.split('\n')
+        result = {}
+        sections = {}
+    
+        for line in lines:
+            line = line.strip()
+    
+            if not line or line.startswith('#') or line.startswith(';'):
+                continue
+    
+&gt;           if line.startswith(['[', '[ ']):
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           TypeError: startswith first arg must be str or a tuple of str, not list
+
+solution.py:15: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.ini_section_parse.tests.test_solution" name="test_duplicate_key" time="0.000"><failure message="TypeError: startswith first arg must be str or a tuple of str, not list">def test_duplicate_key():
+&gt;       with pytest.raises(ValueError) as e: f('[s]\nk=1\nk=2')
+                                             ^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:25: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+text = '[s]\nk=1\nk=2'
+
+    def parse_ini(text):
+        if not isinstance(text, str):
+            raise ValueError('bad input')
+    
+        lines = text.split('\n')
+        result = {}
+        sections = {}
+    
+        for line in lines:
+            line = line.strip()
+    
+            if not line or line.startswith('#') or line.startswith(';'):
+                continue
+    
+&gt;           if line.startswith(['[', '[ ']):
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           TypeError: startswith first arg must be str or a tuple of str, not list
+
+solution.py:15: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.ini_section_parse.tests.test_solution" name="test_duplicate_section" time="0.000"><failure message="TypeError: startswith first arg must be str or a tuple of str, not list">def test_duplicate_section():
+&gt;       with pytest.raises(ValueError) as e: f('[s]\nk=1\n[s]\nj=2')
+                                             ^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:28: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+text = '[s]\nk=1\n[s]\nj=2'
+
+    def parse_ini(text):
+        if not isinstance(text, str):
+            raise ValueError('bad input')
+    
+        lines = text.split('\n')
+        result = {}
+        sections = {}
+    
+        for line in lines:
+            line = line.strip()
+    
+            if not line or line.startswith('#') or line.startswith(';'):
+                continue
+    
+&gt;           if line.startswith(['[', '[ ']):
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           TypeError: startswith first arg must be str or a tuple of str, not list
+
+solution.py:15: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.ini_section_parse.tests.test_solution" name="test_bad_section_unclosed" time="0.001"><failure message="TypeError: startswith first arg must be str or a tuple of str, not list">def test_bad_section_unclosed():
+&gt;       with pytest.raises(ValueError) as e: f('[s')
+                                             ^^^^^^^
+
+tests\test_solution.py:31: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+text = '[s'
+
+    def parse_ini(text):
+        if not isinstance(text, str):
+            raise ValueError('bad input')
+    
+        lines = text.split('\n')
+        result = {}
+        sections = {}
+    
+        for line in lines:
+            line = line.strip()
+    
+            if not line or line.startswith('#') or line.startswith(';'):
+                continue
+    
+&gt;           if line.startswith(['[', '[ ']):
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           TypeError: startswith first arg must be str or a tuple of str, not list
+
+solution.py:15: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.ini_section_parse.tests.test_solution" name="test_bad_section_empty" time="0.000"><failure message="TypeError: startswith first arg must be str or a tuple of str, not list">def test_bad_section_empty():
+&gt;       with pytest.raises(ValueError): f('[]')
+                                        ^^^^^^^
+
+tests\test_solution.py:34: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+text = '[]'
+
+    def parse_ini(text):
+        if not isinstance(text, str):
+            raise ValueError('bad input')
+    
+        lines = text.split('\n')
+        result = {}
+        sections = {}
+    
+        for line in lines:
+            line = line.strip()
+    
+            if not line or line.startswith('#') or line.startswith(';'):
+                continue
+    
+&gt;           if line.startswith(['[', '[ ']):
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           TypeError: startswith first arg must be str or a tuple of str, not list
+
+solution.py:15: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.ini_section_parse.tests.test_solution" name="test_bad_line_no_equals" time="0.000"><failure message="TypeError: startswith first arg must be str or a tuple of str, not list">def test_bad_line_no_equals():
+&gt;       with pytest.raises(ValueError) as e: f('[s]\nnovalue')
+                                             ^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:36: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+text = '[s]\nnovalue'
+
+    def parse_ini(text):
+        if not isinstance(text, str):
+            raise ValueError('bad input')
+    
+        lines = text.split('\n')
+        result = {}
+        sections = {}
+    
+        for line in lines:
+            line = line.strip()
+    
+            if not line or line.startswith('#') or line.startswith(';'):
+                continue
+    
+&gt;           if line.startswith(['[', '[ ']):
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           TypeError: startswith first arg must be str or a tuple of str, not list
+
+solution.py:15: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.ini_section_parse.tests.test_solution" name="test_bad_key_char" time="0.000"><failure message="TypeError: startswith first arg must be str or a tuple of str, not list">def test_bad_key_char():
+&gt;       with pytest.raises(ValueError): f('[s]\na b=1')
+                                        ^^^^^^^^^^^^^^^
+
+tests\test_solution.py:39: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+text = '[s]\na b=1'
+
+    def parse_ini(text):
+        if not isinstance(text, str):
+            raise ValueError('bad input')
+    
+        lines = text.split('\n')
+        result = {}
+        sections = {}
+    
+        for line in lines:
+            line = line.strip()
+    
+            if not line or line.startswith('#') or line.startswith(';'):
+                continue
+    
+&gt;           if line.startswith(['[', '[ ']):
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           TypeError: startswith first arg must be str or a tuple of str, not list
+
+solution.py:15: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.ini_section_parse.tests.test_solution" name="test_bad_input" time="0.000" /></testsuite></testsuites>

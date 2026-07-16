@@ -1,0 +1,181 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="7" skipped="0" tests="9" time="0.223" timestamp="2026-07-13T19:39:49.360890-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-192539.word_wrap_greedy.tests.test_solution" name="test_greedy" time="0.001"><failure message="UnboundLocalError: cannot access local variable 'last_word' where it is not associated with a value">&gt;   def test_greedy(): assert f('the quick brown fox', 10) == ['the quick', 'brown fox']
+                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:3: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+s = 'the quick brown fox', width = 10
+
+    def wrap_text(s: str, width: int) -&gt; list:
+        if not isinstance(width, int) or width &lt; 1:
+            raise ValueError('bad width')
+    
+        words = s.split()
+        lines = []
+        current_line = []
+    
+        for word in words:
+            if len(" ".join(current_line + [word])) &gt; width:
+                # If the current line plus the next word exceeds the width, split it
+                while len(" ".join(current_line)) &gt; 0 and len(" ".join(current_line)) + len(word) &gt; width:
+                    lines.append(" ".join(current_line))
+                    if len(word) &lt; width:
+                        break
+                    remaining = word[:width]
+                    word = word[width:]
+                    current_line[-1] += remaining
+                else:
+                    last_word = True
+            # If the current line plus the next word is within or below the limit, add it to the current line
+&gt;           if len(" ".join(current_line)) + len(word) &lt;= width and not last_word:
+                                                                        ^^^^^^^^^
+E           UnboundLocalError: cannot access local variable 'last_word' where it is not associated with a value
+
+solution.py:22: UnboundLocalError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-192539.word_wrap_greedy.tests.test_solution" name="test_exact_fit" time="0.000"><failure message="UnboundLocalError: cannot access local variable 'last_word' where it is not associated with a value">&gt;   def test_exact_fit(): assert f('aa bb', 5) == ['aa bb']
+                                 ^^^^^^^^^^^^^
+
+tests\test_solution.py:4: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+s = 'aa bb', width = 5
+
+    def wrap_text(s: str, width: int) -&gt; list:
+        if not isinstance(width, int) or width &lt; 1:
+            raise ValueError('bad width')
+    
+        words = s.split()
+        lines = []
+        current_line = []
+    
+        for word in words:
+            if len(" ".join(current_line + [word])) &gt; width:
+                # If the current line plus the next word exceeds the width, split it
+                while len(" ".join(current_line)) &gt; 0 and len(" ".join(current_line)) + len(word) &gt; width:
+                    lines.append(" ".join(current_line))
+                    if len(word) &lt; width:
+                        break
+                    remaining = word[:width]
+                    word = word[width:]
+                    current_line[-1] += remaining
+                else:
+                    last_word = True
+            # If the current line plus the next word is within or below the limit, add it to the current line
+&gt;           if len(" ".join(current_line)) + len(word) &lt;= width and not last_word:
+                                                                        ^^^^^^^^^
+E           UnboundLocalError: cannot access local variable 'last_word' where it is not associated with a value
+
+solution.py:22: UnboundLocalError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-192539.word_wrap_greedy.tests.test_solution" name="test_no_fit" time="0.001"><failure message="UnboundLocalError: cannot access local variable 'last_word' where it is not associated with a value">&gt;   def test_no_fit(): assert f('aa bb', 4) == ['aa', 'bb']
+                              ^^^^^^^^^^^^^
+
+tests\test_solution.py:5: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+s = 'aa bb', width = 4
+
+    def wrap_text(s: str, width: int) -&gt; list:
+        if not isinstance(width, int) or width &lt; 1:
+            raise ValueError('bad width')
+    
+        words = s.split()
+        lines = []
+        current_line = []
+    
+        for word in words:
+            if len(" ".join(current_line + [word])) &gt; width:
+                # If the current line plus the next word exceeds the width, split it
+                while len(" ".join(current_line)) &gt; 0 and len(" ".join(current_line)) + len(word) &gt; width:
+                    lines.append(" ".join(current_line))
+                    if len(word) &lt; width:
+                        break
+                    remaining = word[:width]
+                    word = word[width:]
+                    current_line[-1] += remaining
+                else:
+                    last_word = True
+            # If the current line plus the next word is within or below the limit, add it to the current line
+&gt;           if len(" ".join(current_line)) + len(word) &lt;= width and not last_word:
+                                                                        ^^^^^^^^^
+E           UnboundLocalError: cannot access local variable 'last_word' where it is not associated with a value
+
+solution.py:22: UnboundLocalError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-192539.word_wrap_greedy.tests.test_solution" name="test_long_word" time="0.001"><failure message="AssertionError: assert [] == ['abc', 'def', 'gh', 'xy']&#10;  &#10;  Right contains 4 more items, first extra item: 'abc'&#10;  Use -v to get more diff">&gt;   def test_long_word(): assert f('abcdefgh xy', 3) == ['abc', 'def', 'gh', 'xy']
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert [] == ['abc', 'def', 'gh', 'xy']
+E     
+E     Right contains 4 more items, first extra item: 'abc'
+E     Use -v to get more diff
+
+tests\test_solution.py:6: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-192539.word_wrap_greedy.tests.test_solution" name="test_remainder_joins" time="0.000"><failure message="AssertionError: assert [] == ['abc', 'd x']&#10;  &#10;  Right contains 2 more items, first extra item: 'abc'&#10;  Use -v to get more diff">&gt;   def test_remainder_joins(): assert f('abcd x', 3) == ['abc', 'd x']
+                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert [] == ['abc', 'd x']
+E     
+E     Right contains 2 more items, first extra item: 'abc'
+E     Use -v to get more diff
+
+tests\test_solution.py:7: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-192539.word_wrap_greedy.tests.test_solution" name="test_whitespace_only" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-192539.word_wrap_greedy.tests.test_solution" name="test_single_word" time="0.000"><failure message="UnboundLocalError: cannot access local variable 'last_word' where it is not associated with a value">&gt;   def test_single_word(): assert f('hi', 10) == ['hi']
+                                   ^^^^^^^^^^^
+
+tests\test_solution.py:9: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+s = 'hi', width = 10
+
+    def wrap_text(s: str, width: int) -&gt; list:
+        if not isinstance(width, int) or width &lt; 1:
+            raise ValueError('bad width')
+    
+        words = s.split()
+        lines = []
+        current_line = []
+    
+        for word in words:
+            if len(" ".join(current_line + [word])) &gt; width:
+                # If the current line plus the next word exceeds the width, split it
+                while len(" ".join(current_line)) &gt; 0 and len(" ".join(current_line)) + len(word) &gt; width:
+                    lines.append(" ".join(current_line))
+                    if len(word) &lt; width:
+                        break
+                    remaining = word[:width]
+                    word = word[width:]
+                    current_line[-1] += remaining
+                else:
+                    last_word = True
+            # If the current line plus the next word is within or below the limit, add it to the current line
+&gt;           if len(" ".join(current_line)) + len(word) &lt;= width and not last_word:
+                                                                        ^^^^^^^^^
+E           UnboundLocalError: cannot access local variable 'last_word' where it is not associated with a value
+
+solution.py:22: UnboundLocalError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-192539.word_wrap_greedy.tests.test_solution" name="test_bad_width_zero" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-192539.word_wrap_greedy.tests.test_solution" name="test_bad_width_bool" time="0.001"><failure message="UnboundLocalError: cannot access local variable 'last_word' where it is not associated with a value">def test_bad_width_bool():
+&gt;       with pytest.raises(ValueError): f('a', True)
+                                        ^^^^^^^^^^^^
+
+tests\test_solution.py:14: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+s = 'a', width = True
+
+    def wrap_text(s: str, width: int) -&gt; list:
+        if not isinstance(width, int) or width &lt; 1:
+            raise ValueError('bad width')
+    
+        words = s.split()
+        lines = []
+        current_line = []
+    
+        for word in words:
+            if len(" ".join(current_line + [word])) &gt; width:
+                # If the current line plus the next word exceeds the width, split it
+                while len(" ".join(current_line)) &gt; 0 and len(" ".join(current_line)) + len(word) &gt; width:
+                    lines.append(" ".join(current_line))
+                    if len(word) &lt; width:
+                        break
+                    remaining = word[:width]
+                    word = word[width:]
+                    current_line[-1] += remaining
+                else:
+                    last_word = True
+            # If the current line plus the next word is within or below the limit, add it to the current line
+&gt;           if len(" ".join(current_line)) + len(word) &lt;= width and not last_word:
+                                                                        ^^^^^^^^^
+E           UnboundLocalError: cannot access local variable 'last_word' where it is not associated with a value
+
+solution.py:22: UnboundLocalError</failure></testcase></testsuite></testsuites>

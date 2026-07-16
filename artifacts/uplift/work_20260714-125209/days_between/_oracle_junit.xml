@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="3" skipped="0" tests="9" time="0.241" timestamp="2026-07-14T13:28:26.392176-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260714-125209.days_between.tests.test_solution" name="test_same" time="0.001" /><testcase classname="artifacts.uplift.work_20260714-125209.days_between.tests.test_solution" name="test_next" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-125209.days_between.tests.test_solution" name="test_prev" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-125209.days_between.tests.test_solution" name="test_leap_cross" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-125209.days_between.tests.test_solution" name="test_common_cross" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-125209.days_between.tests.test_solution" name="test_leap_year_span" time="0.001"><failure message="assert 365 == 366&#10; +  where 365 = f((2000, 1, 1), (2001, 1, 1))">&gt;   def test_leap_year_span(): assert f((2000, 1, 1), (2001, 1, 1)) == 366
+                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   assert 365 == 366
+E    +  where 365 = f((2000, 1, 1), (2001, 1, 1))
+
+tests\test_solution.py:8: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-125209.days_between.tests.test_solution" name="test_bad_date" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_bad_date():
+&gt;       with pytest.raises(ValueError) as e: f((2021, 2, 29), (2021, 3, 1))
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:10: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260714-125209.days_between.tests.test_solution" name="test_not_tuple" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-125209.days_between.tests.test_solution" name="test_bool" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_bool():
+&gt;       with pytest.raises(ValueError): f((1970, 1, 1), (1970, 1, True))
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:15: Failed</failure></testcase></testsuite></testsuites>

@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="4" skipped="0" tests="12" time="0.200" timestamp="2026-07-14T09:41:38.046946-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260714-091030.perm_rank.tests.test_solution" name="test_empty" time="0.001" /><testcase classname="artifacts.uplift.work_20260714-091030.perm_rank.tests.test_solution" name="test_single" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-091030.perm_rank.tests.test_solution" name="test_identity" time="0.000"><failure message="IndexError: list assignment index out of range">&gt;   def test_identity(): assert f([0, 1, 2]) == 0
+                                ^^^^^^^^^^^^
+
+tests\test_solution.py:5: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+perm = [0, 1, 2]
+
+    def perm_rank(perm):
+        if not isinstance(perm, list):
+            raise ValueError('bad input')
+        n = len(perm)
+        seen = [False] * n
+        for x in perm:
+            if not isinstance(x, int) or isinstance(x, bool):
+                raise ValueError('bad element')
+            if x &lt; 0 or x &gt;= n:
+                raise ValueError('not a permutation')
+            seen[x] = True
+        if any(not s for s in seen):
+            raise ValueError('not a permutation')
+    
+        rank = 0
+        left = list(range(n))
+        for i, p in enumerate(perm):
+            c = sum(1 for x in left[:p])
+            rank += c * factorial(n - i - 1)
+&gt;           del left[p]
+                ^^^^^^^
+E           IndexError: list assignment index out of range
+
+solution.py:23: IndexError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-091030.perm_rank.tests.test_solution" name="test_reversed" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-091030.perm_rank.tests.test_solution" name="test_middle" time="0.000"><failure message="IndexError: list assignment index out of range">&gt;   def test_middle(): assert f([1, 0, 2]) == 2
+                              ^^^^^^^^^^^^
+
+tests\test_solution.py:7: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+perm = [1, 0, 2]
+
+    def perm_rank(perm):
+        if not isinstance(perm, list):
+            raise ValueError('bad input')
+        n = len(perm)
+        seen = [False] * n
+        for x in perm:
+            if not isinstance(x, int) or isinstance(x, bool):
+                raise ValueError('bad element')
+            if x &lt; 0 or x &gt;= n:
+                raise ValueError('not a permutation')
+            seen[x] = True
+        if any(not s for s in seen):
+            raise ValueError('not a permutation')
+    
+        rank = 0
+        left = list(range(n))
+        for i, p in enumerate(perm):
+            c = sum(1 for x in left[:p])
+            rank += c * factorial(n - i - 1)
+&gt;           del left[p]
+                ^^^^^^^
+E           IndexError: list assignment index out of range
+
+solution.py:23: IndexError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-091030.perm_rank.tests.test_solution" name="test_middle2" time="0.000"><failure message="IndexError: list assignment index out of range">&gt;   def test_middle2(): assert f([1, 2, 0]) == 3
+                               ^^^^^^^^^^^^
+
+tests\test_solution.py:8: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+perm = [1, 2, 0]
+
+    def perm_rank(perm):
+        if not isinstance(perm, list):
+            raise ValueError('bad input')
+        n = len(perm)
+        seen = [False] * n
+        for x in perm:
+            if not isinstance(x, int) or isinstance(x, bool):
+                raise ValueError('bad element')
+            if x &lt; 0 or x &gt;= n:
+                raise ValueError('not a permutation')
+            seen[x] = True
+        if any(not s for s in seen):
+            raise ValueError('not a permutation')
+    
+        rank = 0
+        left = list(range(n))
+        for i, p in enumerate(perm):
+            c = sum(1 for x in left[:p])
+            rank += c * factorial(n - i - 1)
+&gt;           del left[p]
+                ^^^^^^^
+E           IndexError: list assignment index out of range
+
+solution.py:23: IndexError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-091030.perm_rank.tests.test_solution" name="test_larger" time="0.000"><failure message="IndexError: list assignment index out of range">&gt;   def test_larger(): assert f([3, 1, 4, 2, 0]) == 83
+                              ^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:9: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+perm = [3, 1, 4, 2, 0]
+
+    def perm_rank(perm):
+        if not isinstance(perm, list):
+            raise ValueError('bad input')
+        n = len(perm)
+        seen = [False] * n
+        for x in perm:
+            if not isinstance(x, int) or isinstance(x, bool):
+                raise ValueError('bad element')
+            if x &lt; 0 or x &gt;= n:
+                raise ValueError('not a permutation')
+            seen[x] = True
+        if any(not s for s in seen):
+            raise ValueError('not a permutation')
+    
+        rank = 0
+        left = list(range(n))
+        for i, p in enumerate(perm):
+            c = sum(1 for x in left[:p])
+            rank += c * factorial(n - i - 1)
+&gt;           del left[p]
+                ^^^^^^^
+E           IndexError: list assignment index out of range
+
+solution.py:23: IndexError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-091030.perm_rank.tests.test_solution" name="test_missing" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-091030.perm_rank.tests.test_solution" name="test_duplicate" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-091030.perm_rank.tests.test_solution" name="test_bad_element" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-091030.perm_rank.tests.test_solution" name="test_bool_element" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-091030.perm_rank.tests.test_solution" name="test_bad_input" time="0.000" /></testsuite></testsuites>

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="1" failures="0" skipped="0" tests="1" time="0.250" timestamp="2026-07-13T20:25:37.914689-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="" name="artifacts.uplift.work_20260713-201327.rect_overlap_area.tests.test_solution" time="0.000"><error message="collection failure">tests\test_solution.py:2: in &lt;module&gt;
+    from solution import rect_overlap as f
+solution.py:41: in &lt;module&gt;
+    check_rect_overlap()
+solution.py:36: in check_rect_overlap
+    assert abs(overlap - r1[3] * r2[3]) &lt; 1e-6, "Expected the overlap area to be correct"
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: Expected the overlap area to be correct</error></testcase></testsuite></testsuites>

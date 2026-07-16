@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="1" failures="0" skipped="0" tests="1" time="0.258" timestamp="2026-07-13T20:31:17.411400-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="" name="artifacts.uplift.work_20260713-201327.multiset_diff.tests.test_solution" time="0.000"><error message="collection failure">tests\test_solution.py:2: in &lt;module&gt;
+    from solution import multiset_diff as f
+solution.py:39: in &lt;module&gt;
+    check_solution()
+solution.py:33: in check_solution
+    assert multiset_diff([], []) == []
+           ^^^^^^^^^^^^^^^^^^^^^
+solution.py:17: in multiset_diff
+    raise ValueError('Both lists must contain at least one element.')
+E   ValueError: Both lists must contain at least one element.</error></testcase></testsuite></testsuites>

@@ -1,0 +1,179 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="8" skipped="0" tests="8" time="0.247" timestamp="2026-07-13T20:24:32.604574-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-201327.tilde_unescape.tests.test_solution" name="test_plain_and_simple_escapes" time="0.001"><failure message="ValueError: invalid literal for int() with base 16: '~'">def test_plain_and_simple_escapes():
+        assert untilde("") == ""
+        assert untilde("ab") == "ab"
+&gt;       assert untilde("a~nb~tc") == "a\nb\tc"
+               ^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:8: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:7: in untilde
+    s = s[:i-2] + hex_escape(s[i:i+2]) + ~s[i+3:]
+                  ^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+match = '~n'
+
+    def hex_escape(match):
+&gt;       return chr(int(match[0], 16))
+                   ^^^^^^^^^^^^^^^^^
+E       ValueError: invalid literal for int() with base 16: '~'
+
+solution.py:3: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.tilde_unescape.tests.test_solution" name="test_hex_escape_exactly_two_digits" time="0.001"><failure message="ValueError: invalid literal for int() with base 16: '~'">def test_hex_escape_exactly_two_digits():
+&gt;       assert untilde("~x41") == "A"
+               ^^^^^^^^^^^^^^^
+
+tests\test_solution.py:14: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:7: in untilde
+    s = s[:i-2] + hex_escape(s[i:i+2]) + ~s[i+3:]
+                  ^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+match = '~x'
+
+    def hex_escape(match):
+&gt;       return chr(int(match[0], 16))
+                   ^^^^^^^^^^^^^^^^^
+E       ValueError: invalid literal for int() with base 16: '~'
+
+solution.py:3: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.tilde_unescape.tests.test_solution" name="test_hex_may_produce_control_chars" time="0.000"><failure message="ValueError: invalid literal for int() with base 16: '~'">def test_hex_may_produce_control_chars():
+&gt;       assert untilde("~x00") == "\x00"
+               ^^^^^^^^^^^^^^^
+
+tests\test_solution.py:21: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:7: in untilde
+    s = s[:i-2] + hex_escape(s[i:i+2]) + ~s[i+3:]
+                  ^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+match = '~x'
+
+    def hex_escape(match):
+&gt;       return chr(int(match[0], 16))
+                   ^^^^^^^^^^^^^^^^^
+E       ValueError: invalid literal for int() with base 16: '~'
+
+solution.py:3: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.tilde_unescape.tests.test_solution" name="test_dangling_escape" time="0.000"><failure message="AssertionError: Regex pattern did not match.&#10;  Expected regex: 'dangling escape'&#10;  Actual message: &quot;invalid literal for int() with base 16: '~'&quot;">def test_dangling_escape():
+        with pytest.raises(ValueError, match="dangling escape"):
+&gt;           untilde("abc~")
+
+tests\test_solution.py:27: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:7: in untilde
+    s = s[:i-2] + hex_escape(s[i:i+2]) + ~s[i+3:]
+                  ^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+match = '~'
+
+    def hex_escape(match):
+&gt;       return chr(int(match[0], 16))
+                   ^^^^^^^^^^^^^^^^^
+E       ValueError: invalid literal for int() with base 16: '~'
+
+solution.py:3: ValueError
+
+During handling of the above exception, another exception occurred:
+
+    def test_dangling_escape():
+&gt;       with pytest.raises(ValueError, match="dangling escape"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AssertionError: Regex pattern did not match.
+E         Expected regex: 'dangling escape'
+E         Actual message: "invalid literal for int() with base 16: '~'"
+
+tests\test_solution.py:26: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.tilde_unescape.tests.test_solution" name="test_bad_escape_case_sensitive" time="0.001"><failure message="AssertionError: Regex pattern did not match.&#10;  Expected regex: 'bad escape'&#10;  Actual message: &quot;invalid literal for int() with base 16: '~'&quot;">def test_bad_escape_case_sensitive():
+        with pytest.raises(ValueError, match="bad escape"):
+&gt;           untilde("~q")
+
+tests\test_solution.py:32: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:7: in untilde
+    s = s[:i-2] + hex_escape(s[i:i+2]) + ~s[i+3:]
+                  ^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+match = '~q'
+
+    def hex_escape(match):
+&gt;       return chr(int(match[0], 16))
+                   ^^^^^^^^^^^^^^^^^
+E       ValueError: invalid literal for int() with base 16: '~'
+
+solution.py:3: ValueError
+
+During handling of the above exception, another exception occurred:
+
+    def test_bad_escape_case_sensitive():
+&gt;       with pytest.raises(ValueError, match="bad escape"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AssertionError: Regex pattern did not match.
+E         Expected regex: 'bad escape'
+E         Actual message: "invalid literal for int() with base 16: '~'"
+
+tests\test_solution.py:31: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.tilde_unescape.tests.test_solution" name="test_bad_hex" time="0.000"><failure message="AssertionError: Regex pattern did not match.&#10;  Expected regex: 'bad hex'&#10;  Actual message: &quot;invalid literal for int() with base 16: '~'&quot;">def test_bad_hex():
+        with pytest.raises(ValueError, match="bad hex"):
+&gt;           untilde("~x")
+
+tests\test_solution.py:41: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:7: in untilde
+    s = s[:i-2] + hex_escape(s[i:i+2]) + ~s[i+3:]
+                  ^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+match = '~x'
+
+    def hex_escape(match):
+&gt;       return chr(int(match[0], 16))
+                   ^^^^^^^^^^^^^^^^^
+E       ValueError: invalid literal for int() with base 16: '~'
+
+solution.py:3: ValueError
+
+During handling of the above exception, another exception occurred:
+
+    def test_bad_hex():
+&gt;       with pytest.raises(ValueError, match="bad hex"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AssertionError: Regex pattern did not match.
+E         Expected regex: 'bad hex'
+E         Actual message: "invalid literal for int() with base 16: '~'"
+
+tests\test_solution.py:40: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.tilde_unescape.tests.test_solution" name="test_raw_control_forbidden" time="0.001"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_raw_control_forbidden():
+&gt;       with pytest.raises(ValueError, match="raw control"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:51: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.tilde_unescape.tests.test_solution" name="test_first_error_in_scan_order_wins" time="0.000"><failure message="AssertionError: Regex pattern did not match.&#10;  Expected regex: 'raw control'&#10;  Actual message: &quot;invalid literal for int() with base 16: '~'&quot;">def test_first_error_in_scan_order_wins():
+        with pytest.raises(ValueError, match="raw control"):
+&gt;           untilde("a\n~")  # raw control at index 1 beats dangling ~ at end
+            ^^^^^^^^^^^^^^^
+
+tests\test_solution.py:59: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:7: in untilde
+    s = s[:i-2] + hex_escape(s[i:i+2]) + ~s[i+3:]
+                  ^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+match = '~'
+
+    def hex_escape(match):
+&gt;       return chr(int(match[0], 16))
+                   ^^^^^^^^^^^^^^^^^
+E       ValueError: invalid literal for int() with base 16: '~'
+
+solution.py:3: ValueError
+
+During handling of the above exception, another exception occurred:
+
+    def test_first_error_in_scan_order_wins():
+&gt;       with pytest.raises(ValueError, match="raw control"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AssertionError: Regex pattern did not match.
+E         Expected regex: 'raw control'
+E         Actual message: "invalid literal for int() with base 16: '~'"
+
+tests\test_solution.py:58: AssertionError</failure></testcase></testsuite></testsuites>

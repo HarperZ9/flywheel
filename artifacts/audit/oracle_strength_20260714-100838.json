@@ -1,0 +1,591 @@
+{
+ "schema": "flywheel.oracle-strength/v1",
+ "tasks_file": "tasks/curated/hard_v2.jsonl",
+ "n_tasks": 110,
+ "hard_flags": 0,
+ "review_flags": 14,
+ "broken_reference": 0,
+ "clean": 96,
+ "rows": [
+  {
+   "task_id": "interval_intersection",
+   "false_passes": [],
+   "reference_ok": true
+  },
+  {
+   "task_id": "search_rotated",
+   "false_passes": [],
+   "reference_ok": true
+  },
+  {
+   "task_id": "parse_range_list",
+   "false_passes": [],
+   "reference_ok": true
+  },
+  {
+   "task_id": "sliding_window_max",
+   "false_passes": [],
+   "reference_ok": true
+  },
+  {
+   "task_id": "topo_sort",
+   "false_passes": [],
+   "reference_ok": true
+  },
+  {
+   "task_id": "rle_decode",
+   "false_passes": [],
+   "reference_ok": true
+  },
+  {
+   "task_id": "matrix_rotate_inplace",
+   "false_passes": [],
+   "reference_ok": true
+  },
+  {
+   "task_id": "evaluate_rpn",
+   "false_passes": [],
+   "reference_ok": true
+  },
+  {
+   "task_id": "lis_length",
+   "false_passes": [],
+   "reference_ok": true
+  },
+  {
+   "task_id": "valid_ipv4",
+   "false_passes": [],
+   "reference_ok": true
+  },
+  {
+   "task_id": "josephus",
+   "false_passes": [],
+   "reference_ok": true
+  },
+  {
+   "task_id": "merge_sorted_streams",
+   "false_passes": [],
+   "reference_ok": true
+  },
+  {
+   "task_id": "first_missing_positive",
+   "false_passes": [],
+   "reference_ok": true
+  },
+  {
+   "task_id": "count_islands",
+   "false_passes": [
+    "mutant"
+   ],
+   "reference_ok": true
+  },
+  {
+   "task_id": "csv_field_split",
+   "false_passes": [],
+   "reference_ok": true
+  },
+  {
+   "task_id": "duration_hms_strict",
+   "false_passes": [],
+   "reference_ok": true
+  },
+  {
+   "task_id": "shellish_tokenize",
+   "false_passes": [],
+   "reference_ok": true
+  },
+  {
+   "task_id": "header_unfold",
+   "false_passes": [],
+   "reference_ok": true
+  },
+  {
+   "task_id": "canonical_decimal",
+   "false_passes": [],
+   "reference_ok": true
+  },
+  {
+   "task_id": "template_fields",
+   "false_passes": [],
+   "reference_ok": true
+  },
+  {
+   "task_id": "partition_three_inplace",
+   "false_passes": [],
+   "reference_ok": true
+  },
+  {
+   "task_id": "merge_tallies",
+   "false_passes": [],
+   "reference_ok": true
+  },
+  {
+   "task_id": "apply_edits",
+   "false_passes": [],
+   "reference_ok": true
+  },
+  {
+   "task_id": "group_pairs",
+   "false_passes": [],
+   "reference_ok": true
+  },
+  {
+   "task_id": "purge_in_place",
+   "false_passes": [],
+   "reference_ok": true
+  },
+  {
+   "task_id": "splice_pure",
+   "false_passes": [],
+   "reference_ok": true
+  },
+  {
+   "task_id": "sat_add_nbit",
+   "false_passes": [],
+   "reference_ok": true
+  },
+  {
+   "task_id": "div_round_half_away",
+   "false_passes": [
+    "mutant"
+   ],
+   "reference_ok": true
+  },
+  {
+   "task_id": "add_months_clamp",
+   "false_passes": [],
+   "reference_ok": true
+  },
+  {
+   "task_id": "bucket_histogram_mixed",
+   "false_passes": [],
+   "reference_ok": true
+  },
+  {
+   "task_id": "mini_editor_undo",
+   "false_passes": [],
+   "reference_ok": true
+  },
+  {
+   "task_id": "frame_checksum_decode",
+   "false_passes": [],
+   "reference_ok": true
+  },
+  {
+   "task_id": "kv_event_fold",
+   "false_passes": [
+    "mutant"
+   ],
+   "reference_ok": true
+  },
+  {
+   "task_id": "outline_leaf_paths",
+   "false_passes": [],
+   "reference_ok": true
+  },
+  {
+   "task_id": "tilde_unescape",
+   "false_passes": [],
+   "reference_ok": true
+  },
+  {
+   "task_id": "largest_remainder_apportion",
+   "false_passes": [],
+   "reference_ok": true
+  },
+  {
+   "task_id": "format_signed_duration",
+   "false_passes": [],
+   "reference_ok": true
+  },
+  {
+   "task_id": "varint_zigzag_decode",
+   "false_passes": [],
+   "reference_ok": true
+  },
+  {
+   "task_id": "word_wrap_greedy",
+   "false_passes": [],
+   "reference_ok": true
+  },
+  {
+   "task_id": "identifier_words",
+   "false_passes": [],
+   "reference_ok": true
+  },
+  {
+   "task_id": "tab_expand_columns",
+   "false_passes": [],
+   "reference_ok": true
+  },
+  {
+   "task_id": "interval_subtract",
+   "false_passes": [],
+   "reference_ok": true
+  },
+  {
+   "task_id": "rect_overlap_area",
+   "false_passes": [],
+   "reference_ok": true
+  },
+  {
+   "task_id": "covered_integer_count",
+   "false_passes": [],
+   "reference_ok": true
+  },
+  {
+   "task_id": "turtle_walk_program",
+   "false_passes": [],
+   "reference_ok": true
+  },
+  {
+   "task_id": "token_bucket_grants",
+   "false_passes": [],
+   "reference_ok": true
+  },
+  {
+   "task_id": "stopwatch_fsm",
+   "false_passes": [],
+   "reference_ok": true
+  },
+  {
+   "task_id": "matrix_shape_strict",
+   "false_passes": [],
+   "reference_ok": true
+  },
+  {
+   "task_id": "money_cents_strict",
+   "false_passes": [],
+   "reference_ok": true
+  },
+  {
+   "task_id": "cron_field_expand",
+   "false_passes": [],
+   "reference_ok": true
+  },
+  {
+   "task_id": "int_to_base",
+   "false_passes": [],
+   "reference_ok": true
+  },
+  {
+   "task_id": "parse_base",
+   "false_passes": [],
+   "reference_ok": true
+  },
+  {
+   "task_id": "roman_encode",
+   "false_passes": [],
+   "reference_ok": true
+  },
+  {
+   "task_id": "col_label",
+   "false_passes": [],
+   "reference_ok": true
+  },
+  {
+   "task_id": "col_number",
+   "false_passes": [],
+   "reference_ok": true
+  },
+  {
+   "task_id": "luhn_valid",
+   "false_passes": [
+    "mutant"
+   ],
+   "reference_ok": true
+  },
+  {
+   "task_id": "isbn10_check",
+   "false_passes": [],
+   "reference_ok": true
+  },
+  {
+   "task_id": "days_in_month",
+   "false_passes": [
+    "mutant"
+   ],
+   "reference_ok": true
+  },
+  {
+   "task_id": "ordinal_day",
+   "false_passes": [],
+   "reference_ok": true
+  },
+  {
+   "task_id": "weekday_name",
+   "false_passes": [],
+   "reference_ok": true
+  },
+  {
+   "task_id": "days_between",
+   "false_passes": [],
+   "reference_ok": true
+  },
+  {
+   "task_id": "semver_compare",
+   "false_passes": [
+    "mutant"
+   ],
+   "reference_ok": true
+  },
+  {
+   "task_id": "natural_compare",
+   "false_passes": [
+    "mutant"
+   ],
+   "reference_ok": true
+  },
+  {
+   "task_id": "percent_decode",
+   "false_passes": [],
+   "reference_ok": true
+  },
+  {
+   "task_id": "csv_quote",
+   "false_passes": [],
+   "reference_ok": true
+  },
+  {
+   "task_id": "round_half_even",
+   "false_passes": [],
+   "reference_ok": true
+  },
+  {
+   "task_id": "reverse_bits",
+   "false_passes": [],
+   "reference_ok": true
+  },
+  {
+   "task_id": "reduce_fraction",
+   "false_passes": [
+    "mutant"
+   ],
+   "reference_ok": true
+  },
+  {
+   "task_id": "top_k_frequent",
+   "false_passes": [],
+   "reference_ok": true
+  },
+  {
+   "task_id": "uniq_counts",
+   "false_passes": [],
+   "reference_ok": true
+  },
+  {
+   "task_id": "eval_bool_expr",
+   "false_passes": [],
+   "reference_ok": true
+  },
+  {
+   "task_id": "glob_match",
+   "false_passes": [],
+   "reference_ok": true
+  },
+  {
+   "task_id": "sliding_windows",
+   "false_passes": [],
+   "reference_ok": true
+  },
+  {
+   "task_id": "summarize_ranges",
+   "false_passes": [],
+   "reference_ok": true
+  },
+  {
+   "task_id": "matrix_transpose",
+   "false_passes": [],
+   "reference_ok": true
+  },
+  {
+   "task_id": "json_string_escape",
+   "false_passes": [
+    "mutant"
+   ],
+   "reference_ok": true
+  },
+  {
+   "task_id": "normalize_path",
+   "false_passes": [],
+   "reference_ok": true
+  },
+  {
+   "task_id": "ipv4_to_int",
+   "false_passes": [],
+   "reference_ok": true
+  },
+  {
+   "task_id": "multiset_diff",
+   "false_passes": [],
+   "reference_ok": true
+  },
+  {
+   "task_id": "parse_a1_ref",
+   "false_passes": [],
+   "reference_ok": true
+  },
+  {
+   "task_id": "linked_cycle",
+   "false_passes": [],
+   "reference_ok": true
+  },
+  {
+   "task_id": "manhattan_tour",
+   "false_passes": [],
+   "reference_ok": true
+  },
+  {
+   "task_id": "parse_kv_pairs",
+   "false_passes": [],
+   "reference_ok": true
+  },
+  {
+   "task_id": "rotate_list",
+   "false_passes": [],
+   "reference_ok": true
+  },
+  {
+   "task_id": "group_anagrams",
+   "false_passes": [],
+   "reference_ok": true
+  },
+  {
+   "task_id": "stock_spans",
+   "false_passes": [],
+   "reference_ok": true
+  },
+  {
+   "task_id": "perm_rank",
+   "false_passes": [],
+   "reference_ok": true
+  },
+  {
+   "task_id": "gray_rank",
+   "false_passes": [],
+   "reference_ok": true
+  },
+  {
+   "task_id": "kth_combination",
+   "false_passes": [],
+   "reference_ok": true
+  },
+  {
+   "task_id": "look_and_say_bounded",
+   "false_passes": [],
+   "reference_ok": true
+  },
+  {
+   "task_id": "longest_digit_run",
+   "false_passes": [],
+   "reference_ok": true
+  },
+  {
+   "task_id": "collatz_trace",
+   "false_passes": [],
+   "reference_ok": true
+  },
+  {
+   "task_id": "knight_min_moves",
+   "false_passes": [
+    "mutant"
+   ],
+   "reference_ok": true
+  },
+  {
+   "task_id": "grid_bfs_steps",
+   "false_passes": [
+    "mutant"
+   ],
+   "reference_ok": true
+  },
+  {
+   "task_id": "union_component_count",
+   "false_passes": [],
+   "reference_ok": true
+  },
+  {
+   "task_id": "bipartite_strict",
+   "false_passes": [
+    "mutant"
+   ],
+   "reference_ok": true
+  },
+  {
+   "task_id": "portal_min_moves",
+   "false_passes": [
+    "mutant"
+   ],
+   "reference_ok": true
+  },
+  {
+   "task_id": "spread_radius",
+   "false_passes": [
+    "mutant"
+   ],
+   "reference_ok": true
+  },
+  {
+   "task_id": "lru_trace",
+   "false_passes": [],
+   "reference_ok": true
+  },
+  {
+   "task_id": "min_stack_trace",
+   "false_passes": [],
+   "reference_ok": true
+  },
+  {
+   "task_id": "ring_buffer_trace",
+   "false_passes": [],
+   "reference_ok": true
+  },
+  {
+   "task_id": "k_smallest_names",
+   "false_passes": [],
+   "reference_ok": true
+  },
+  {
+   "task_id": "bank_ledger",
+   "false_passes": [],
+   "reference_ok": true
+  },
+  {
+   "task_id": "inventory_reserve",
+   "false_passes": [],
+   "reference_ok": true
+  },
+  {
+   "task_id": "url_split_strict",
+   "false_passes": [],
+   "reference_ok": true
+  },
+  {
+   "task_id": "qp_decode",
+   "false_passes": [],
+   "reference_ok": true
+  },
+  {
+   "task_id": "ini_section_parse",
+   "false_passes": [],
+   "reference_ok": true
+  },
+  {
+   "task_id": "lcs_diff_ops",
+   "false_passes": [],
+   "reference_ok": true
+  },
+  {
+   "task_id": "fletcher16_checksum",
+   "false_passes": [],
+   "reference_ok": true
+  },
+  {
+   "task_id": "md_outline_number",
+   "false_passes": [],
+   "reference_ok": true
+  }
+ ],
+ "wall_seconds": 1231.9,
+ "note": "a false-pass names a probe the oracle accepted; empty/stub/const are hard flags, mutant passes need review (a mutation can be semantically neutral)"
+}

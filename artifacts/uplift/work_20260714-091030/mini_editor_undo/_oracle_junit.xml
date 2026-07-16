@@ -1,0 +1,369 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="9" skipped="0" tests="10" time="0.295" timestamp="2026-07-14T09:28:20.462972-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260714-091030.mini_editor_undo.tests.test_solution" name="test_type_and_cursor" time="0.001"><failure message="ValueError: type payload must be a non-empty string of ASCII digits, got 'hello'">def test_type_and_cursor():
+&gt;       assert edit(["type hello"]) == ("hello", 5)
+               ^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:6: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+commands = ['type hello']
+
+    def edit(commands):
+        from collections.abc import Sequence
+    
+        def _is_not_empty_str_of_ascii_digits(value: str) -&gt; bool:
+            return isinstance(value, str) and value and str.isascii(value) and all(char in "0123456789" for char in value)
+    
+        if not isinstance(commands, Sequence):
+            raise ValueError("commands must be a list or tuple")
+        buffer = []
+        cursor = 0
+        undone: list[tuple[list[str], int]] = []
+        recorded_text: list[str] = []
+        recorded_cursor: list[int] = []
+    
+        def _record():
+            if "".join(buffer) != "".join(recorded_text) or cursor != recorded_cursor[-1]:
+                recorded_text[:] = buffer[:]
+                recorded_cursor.append(cursor)
+                undone.clear()
+    
+        for command in commands:
+            if not isinstance(command, str):
+                raise ValueError("commands must contain only strings")
+            parts = command.split(None, 1)
+            if len(parts) &lt; 2:
+                raise ValueError(f"malformed command: {command}")
+            verb, value = parts
+            if verb == "type":
+                if not _is_not_empty_str_of_ascii_digits(value):
+&gt;                   raise ValueError(f"type payload must be a non-empty string of ASCII digits, got {value!r}")
+E                   ValueError: type payload must be a non-empty string of ASCII digits, got 'hello'
+
+solution.py:30: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-091030.mini_editor_undo.tests.test_solution" name="test_insert_middle_and_clamping" time="0.001"><failure message="ValueError: type payload must be a non-empty string of ASCII digits, got 'bc'">def test_insert_middle_and_clamping():
+&gt;       assert edit(["type bc", "left 99", "type a"]) == ("abc", 1)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:11: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+commands = ['type bc', 'left 99', 'type a']
+
+    def edit(commands):
+        from collections.abc import Sequence
+    
+        def _is_not_empty_str_of_ascii_digits(value: str) -&gt; bool:
+            return isinstance(value, str) and value and str.isascii(value) and all(char in "0123456789" for char in value)
+    
+        if not isinstance(commands, Sequence):
+            raise ValueError("commands must be a list or tuple")
+        buffer = []
+        cursor = 0
+        undone: list[tuple[list[str], int]] = []
+        recorded_text: list[str] = []
+        recorded_cursor: list[int] = []
+    
+        def _record():
+            if "".join(buffer) != "".join(recorded_text) or cursor != recorded_cursor[-1]:
+                recorded_text[:] = buffer[:]
+                recorded_cursor.append(cursor)
+                undone.clear()
+    
+        for command in commands:
+            if not isinstance(command, str):
+                raise ValueError("commands must contain only strings")
+            parts = command.split(None, 1)
+            if len(parts) &lt; 2:
+                raise ValueError(f"malformed command: {command}")
+            verb, value = parts
+            if verb == "type":
+                if not _is_not_empty_str_of_ascii_digits(value):
+&gt;                   raise ValueError(f"type payload must be a non-empty string of ASCII digits, got {value!r}")
+E                   ValueError: type payload must be a non-empty string of ASCII digits, got 'bc'
+
+solution.py:30: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-091030.mini_editor_undo.tests.test_solution" name="test_type_payload_may_contain_spaces" time="0.000"><failure message="ValueError: type payload must be a non-empty string of ASCII digits, got 'a b'">def test_type_payload_may_contain_spaces():
+&gt;       assert edit(["type a b"]) == ("a b", 3)
+               ^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:16: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+commands = ['type a b']
+
+    def edit(commands):
+        from collections.abc import Sequence
+    
+        def _is_not_empty_str_of_ascii_digits(value: str) -&gt; bool:
+            return isinstance(value, str) and value and str.isascii(value) and all(char in "0123456789" for char in value)
+    
+        if not isinstance(commands, Sequence):
+            raise ValueError("commands must be a list or tuple")
+        buffer = []
+        cursor = 0
+        undone: list[tuple[list[str], int]] = []
+        recorded_text: list[str] = []
+        recorded_cursor: list[int] = []
+    
+        def _record():
+            if "".join(buffer) != "".join(recorded_text) or cursor != recorded_cursor[-1]:
+                recorded_text[:] = buffer[:]
+                recorded_cursor.append(cursor)
+                undone.clear()
+    
+        for command in commands:
+            if not isinstance(command, str):
+                raise ValueError("commands must contain only strings")
+            parts = command.split(None, 1)
+            if len(parts) &lt; 2:
+                raise ValueError(f"malformed command: {command}")
+            verb, value = parts
+            if verb == "type":
+                if not _is_not_empty_str_of_ascii_digits(value):
+&gt;                   raise ValueError(f"type payload must be a non-empty string of ASCII digits, got {value!r}")
+E                   ValueError: type payload must be a non-empty string of ASCII digits, got 'a b'
+
+solution.py:30: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-091030.mini_editor_undo.tests.test_solution" name="test_backspace_partial" time="0.000"><failure message="ValueError: type payload must be a non-empty string of ASCII digits, got 'abc'">def test_backspace_partial():
+&gt;       assert edit(["type abc", "left 2", "backspace 5"]) == ("bc", 0)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:20: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+commands = ['type abc', 'left 2', 'backspace 5']
+
+    def edit(commands):
+        from collections.abc import Sequence
+    
+        def _is_not_empty_str_of_ascii_digits(value: str) -&gt; bool:
+            return isinstance(value, str) and value and str.isascii(value) and all(char in "0123456789" for char in value)
+    
+        if not isinstance(commands, Sequence):
+            raise ValueError("commands must be a list or tuple")
+        buffer = []
+        cursor = 0
+        undone: list[tuple[list[str], int]] = []
+        recorded_text: list[str] = []
+        recorded_cursor: list[int] = []
+    
+        def _record():
+            if "".join(buffer) != "".join(recorded_text) or cursor != recorded_cursor[-1]:
+                recorded_text[:] = buffer[:]
+                recorded_cursor.append(cursor)
+                undone.clear()
+    
+        for command in commands:
+            if not isinstance(command, str):
+                raise ValueError("commands must contain only strings")
+            parts = command.split(None, 1)
+            if len(parts) &lt; 2:
+                raise ValueError(f"malformed command: {command}")
+            verb, value = parts
+            if verb == "type":
+                if not _is_not_empty_str_of_ascii_digits(value):
+&gt;                   raise ValueError(f"type payload must be a non-empty string of ASCII digits, got {value!r}")
+E                   ValueError: type payload must be a non-empty string of ASCII digits, got 'abc'
+
+solution.py:30: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-091030.mini_editor_undo.tests.test_solution" name="test_undo_restores_cursor_too" time="0.000"><failure message="ValueError: type payload must be a non-empty string of ASCII digits, got 'ab'">def test_undo_restores_cursor_too():
+        # cursor motion after the undone edit is discarded
+&gt;       assert edit(["type ab", "type cd", "left 3", "undo"]) == ("ab", 2)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:25: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+commands = ['type ab', 'type cd', 'left 3', 'undo']
+
+    def edit(commands):
+        from collections.abc import Sequence
+    
+        def _is_not_empty_str_of_ascii_digits(value: str) -&gt; bool:
+            return isinstance(value, str) and value and str.isascii(value) and all(char in "0123456789" for char in value)
+    
+        if not isinstance(commands, Sequence):
+            raise ValueError("commands must be a list or tuple")
+        buffer = []
+        cursor = 0
+        undone: list[tuple[list[str], int]] = []
+        recorded_text: list[str] = []
+        recorded_cursor: list[int] = []
+    
+        def _record():
+            if "".join(buffer) != "".join(recorded_text) or cursor != recorded_cursor[-1]:
+                recorded_text[:] = buffer[:]
+                recorded_cursor.append(cursor)
+                undone.clear()
+    
+        for command in commands:
+            if not isinstance(command, str):
+                raise ValueError("commands must contain only strings")
+            parts = command.split(None, 1)
+            if len(parts) &lt; 2:
+                raise ValueError(f"malformed command: {command}")
+            verb, value = parts
+            if verb == "type":
+                if not _is_not_empty_str_of_ascii_digits(value):
+&gt;                   raise ValueError(f"type payload must be a non-empty string of ASCII digits, got {value!r}")
+E                   ValueError: type payload must be a non-empty string of ASCII digits, got 'ab'
+
+solution.py:30: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-091030.mini_editor_undo.tests.test_solution" name="test_undo_skips_noop_backspace" time="0.000"><failure message="ValueError: type payload must be a non-empty string of ASCII digits, got 'ab'">def test_undo_skips_noop_backspace():
+        # a backspace that deleted nothing is never an undo target
+&gt;       assert edit(["type ab", "left 2", "backspace 1", "undo"]) == ("", 0)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:30: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+commands = ['type ab', 'left 2', 'backspace 1', 'undo']
+
+    def edit(commands):
+        from collections.abc import Sequence
+    
+        def _is_not_empty_str_of_ascii_digits(value: str) -&gt; bool:
+            return isinstance(value, str) and value and str.isascii(value) and all(char in "0123456789" for char in value)
+    
+        if not isinstance(commands, Sequence):
+            raise ValueError("commands must be a list or tuple")
+        buffer = []
+        cursor = 0
+        undone: list[tuple[list[str], int]] = []
+        recorded_text: list[str] = []
+        recorded_cursor: list[int] = []
+    
+        def _record():
+            if "".join(buffer) != "".join(recorded_text) or cursor != recorded_cursor[-1]:
+                recorded_text[:] = buffer[:]
+                recorded_cursor.append(cursor)
+                undone.clear()
+    
+        for command in commands:
+            if not isinstance(command, str):
+                raise ValueError("commands must contain only strings")
+            parts = command.split(None, 1)
+            if len(parts) &lt; 2:
+                raise ValueError(f"malformed command: {command}")
+            verb, value = parts
+            if verb == "type":
+                if not _is_not_empty_str_of_ascii_digits(value):
+&gt;                   raise ValueError(f"type payload must be a non-empty string of ASCII digits, got {value!r}")
+E                   ValueError: type payload must be a non-empty string of ASCII digits, got 'ab'
+
+solution.py:30: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-091030.mini_editor_undo.tests.test_solution" name="test_undo_on_empty_stack_is_noop" time="0.000"><failure message="ValueError: malformed command: undo">def test_undo_on_empty_stack_is_noop():
+&gt;       assert edit(["undo", "undo"]) == ("", 0)
+               ^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:34: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+commands = ['undo', 'undo']
+
+    def edit(commands):
+        from collections.abc import Sequence
+    
+        def _is_not_empty_str_of_ascii_digits(value: str) -&gt; bool:
+            return isinstance(value, str) and value and str.isascii(value) and all(char in "0123456789" for char in value)
+    
+        if not isinstance(commands, Sequence):
+            raise ValueError("commands must be a list or tuple")
+        buffer = []
+        cursor = 0
+        undone: list[tuple[list[str], int]] = []
+        recorded_text: list[str] = []
+        recorded_cursor: list[int] = []
+    
+        def _record():
+            if "".join(buffer) != "".join(recorded_text) or cursor != recorded_cursor[-1]:
+                recorded_text[:] = buffer[:]
+                recorded_cursor.append(cursor)
+                undone.clear()
+    
+        for command in commands:
+            if not isinstance(command, str):
+                raise ValueError("commands must contain only strings")
+            parts = command.split(None, 1)
+            if len(parts) &lt; 2:
+&gt;               raise ValueError(f"malformed command: {command}")
+E               ValueError: malformed command: undo
+
+solution.py:26: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-091030.mini_editor_undo.tests.test_solution" name="test_undo_twice_pops_two_edits" time="0.001"><failure message="ValueError: type payload must be a non-empty string of ASCII digits, got 'a'">def test_undo_twice_pops_two_edits():
+&gt;       assert edit(["type a", "type b", "undo", "undo"]) == ("", 0)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:38: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+commands = ['type a', 'type b', 'undo', 'undo']
+
+    def edit(commands):
+        from collections.abc import Sequence
+    
+        def _is_not_empty_str_of_ascii_digits(value: str) -&gt; bool:
+            return isinstance(value, str) and value and str.isascii(value) and all(char in "0123456789" for char in value)
+    
+        if not isinstance(commands, Sequence):
+            raise ValueError("commands must be a list or tuple")
+        buffer = []
+        cursor = 0
+        undone: list[tuple[list[str], int]] = []
+        recorded_text: list[str] = []
+        recorded_cursor: list[int] = []
+    
+        def _record():
+            if "".join(buffer) != "".join(recorded_text) or cursor != recorded_cursor[-1]:
+                recorded_text[:] = buffer[:]
+                recorded_cursor.append(cursor)
+                undone.clear()
+    
+        for command in commands:
+            if not isinstance(command, str):
+                raise ValueError("commands must contain only strings")
+            parts = command.split(None, 1)
+            if len(parts) &lt; 2:
+                raise ValueError(f"malformed command: {command}")
+            verb, value = parts
+            if verb == "type":
+                if not _is_not_empty_str_of_ascii_digits(value):
+&gt;                   raise ValueError(f"type payload must be a non-empty string of ASCII digits, got {value!r}")
+E                   ValueError: type payload must be a non-empty string of ASCII digits, got 'a'
+
+solution.py:30: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-091030.mini_editor_undo.tests.test_solution" name="test_malformed_commands_raise" time="0.001" /><testcase classname="artifacts.uplift.work_20260714-091030.mini_editor_undo.tests.test_solution" name="test_no_mutation" time="0.001"><failure message="ValueError: type payload must be a non-empty string of ASCII digits, got 'ab'">def test_no_mutation():
+        cmds = ["type ab", "left 1", "undo"]
+        snapshot = list(cmds)
+&gt;       edit(cmds)
+
+tests\test_solution.py:52: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+commands = ['type ab', 'left 1', 'undo']
+
+    def edit(commands):
+        from collections.abc import Sequence
+    
+        def _is_not_empty_str_of_ascii_digits(value: str) -&gt; bool:
+            return isinstance(value, str) and value and str.isascii(value) and all(char in "0123456789" for char in value)
+    
+        if not isinstance(commands, Sequence):
+            raise ValueError("commands must be a list or tuple")
+        buffer = []
+        cursor = 0
+        undone: list[tuple[list[str], int]] = []
+        recorded_text: list[str] = []
+        recorded_cursor: list[int] = []
+    
+        def _record():
+            if "".join(buffer) != "".join(recorded_text) or cursor != recorded_cursor[-1]:
+                recorded_text[:] = buffer[:]
+                recorded_cursor.append(cursor)
+                undone.clear()
+    
+        for command in commands:
+            if not isinstance(command, str):
+                raise ValueError("commands must contain only strings")
+            parts = command.split(None, 1)
+            if len(parts) &lt; 2:
+                raise ValueError(f"malformed command: {command}")
+            verb, value = parts
+            if verb == "type":
+                if not _is_not_empty_str_of_ascii_digits(value):
+&gt;                   raise ValueError(f"type payload must be a non-empty string of ASCII digits, got {value!r}")
+E                   ValueError: type payload must be a non-empty string of ASCII digits, got 'ab'
+
+solution.py:30: ValueError</failure></testcase></testsuite></testsuites>

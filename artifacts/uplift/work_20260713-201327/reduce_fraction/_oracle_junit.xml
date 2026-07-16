@@ -1,0 +1,291 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="9" skipped="0" tests="9" time="0.231" timestamp="2026-07-13T20:30:00.203372-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-201327.reduce_fraction.tests.test_solution" name="test_basic" time="0.001"><failure message="NameError: name 'denom' is not defined">&gt;   def test_basic(): assert f(4, 8) == (1, 2)
+                             ^^^^^^^
+
+tests\test_solution.py:3: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+num = 4, den = 8
+
+    def reduce_fraction(num: int, den: int):
+        """
+        Reduces a fraction from num and den to its lowest terms.
+        Returns a tuple (numerator, denominator).
+    
+        Args:
+        num (int): The numerator of the fraction.
+        den (int): The denominator of the fraction.
+    
+        Raises:
+        ValueError: If either input is not an int or bool.
+        ValueError: If denominator is zero.
+        """
+        # Check if both arguments are integers
+        if not isinstance(num, int) or not isinstance(den, int):
+            raise ValueError('bad arg')
+    
+        # Calculate the greatest common divisor (GCD)
+        gcd_value = gcd(num, den)
+        # Adjust denominators to be coprime with GCD (denominator should not be zero)
+&gt;       adjusted_denom = den - num // gcd(gcd(den, num), denom) * denom
+                                                         ^^^^^
+E       NameError: name 'denom' is not defined
+
+solution.py:23: NameError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.reduce_fraction.tests.test_solution" name="test_neg_num" time="0.000"><failure message="NameError: name 'denom' is not defined">&gt;   def test_neg_num(): assert f(-4, 8) == (-1, 2)
+                               ^^^^^^^^
+
+tests\test_solution.py:4: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+num = -4, den = 8
+
+    def reduce_fraction(num: int, den: int):
+        """
+        Reduces a fraction from num and den to its lowest terms.
+        Returns a tuple (numerator, denominator).
+    
+        Args:
+        num (int): The numerator of the fraction.
+        den (int): The denominator of the fraction.
+    
+        Raises:
+        ValueError: If either input is not an int or bool.
+        ValueError: If denominator is zero.
+        """
+        # Check if both arguments are integers
+        if not isinstance(num, int) or not isinstance(den, int):
+            raise ValueError('bad arg')
+    
+        # Calculate the greatest common divisor (GCD)
+        gcd_value = gcd(num, den)
+        # Adjust denominators to be coprime with GCD (denominator should not be zero)
+&gt;       adjusted_denom = den - num // gcd(gcd(den, num), denom) * denom
+                                                         ^^^^^
+E       NameError: name 'denom' is not defined
+
+solution.py:23: NameError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.reduce_fraction.tests.test_solution" name="test_neg_den" time="0.001"><failure message="NameError: name 'denom' is not defined">&gt;   def test_neg_den(): assert f(4, -8) == (-1, 2)
+                               ^^^^^^^^
+
+tests\test_solution.py:5: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+num = 4, den = -8
+
+    def reduce_fraction(num: int, den: int):
+        """
+        Reduces a fraction from num and den to its lowest terms.
+        Returns a tuple (numerator, denominator).
+    
+        Args:
+        num (int): The numerator of the fraction.
+        den (int): The denominator of the fraction.
+    
+        Raises:
+        ValueError: If either input is not an int or bool.
+        ValueError: If denominator is zero.
+        """
+        # Check if both arguments are integers
+        if not isinstance(num, int) or not isinstance(den, int):
+            raise ValueError('bad arg')
+    
+        # Calculate the greatest common divisor (GCD)
+        gcd_value = gcd(num, den)
+        # Adjust denominators to be coprime with GCD (denominator should not be zero)
+&gt;       adjusted_denom = den - num // gcd(gcd(den, num), denom) * denom
+                                                         ^^^^^
+E       NameError: name 'denom' is not defined
+
+solution.py:23: NameError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.reduce_fraction.tests.test_solution" name="test_both_neg" time="0.000"><failure message="NameError: name 'denom' is not defined">&gt;   def test_both_neg(): assert f(-4, -8) == (1, 2)
+                                ^^^^^^^^^
+
+tests\test_solution.py:6: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+num = -4, den = -8
+
+    def reduce_fraction(num: int, den: int):
+        """
+        Reduces a fraction from num and den to its lowest terms.
+        Returns a tuple (numerator, denominator).
+    
+        Args:
+        num (int): The numerator of the fraction.
+        den (int): The denominator of the fraction.
+    
+        Raises:
+        ValueError: If either input is not an int or bool.
+        ValueError: If denominator is zero.
+        """
+        # Check if both arguments are integers
+        if not isinstance(num, int) or not isinstance(den, int):
+            raise ValueError('bad arg')
+    
+        # Calculate the greatest common divisor (GCD)
+        gcd_value = gcd(num, den)
+        # Adjust denominators to be coprime with GCD (denominator should not be zero)
+&gt;       adjusted_denom = den - num // gcd(gcd(den, num), denom) * denom
+                                                         ^^^^^
+E       NameError: name 'denom' is not defined
+
+solution.py:23: NameError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.reduce_fraction.tests.test_solution" name="test_zero" time="0.000"><failure message="NameError: name 'denom' is not defined">&gt;   def test_zero(): assert f(0, 5) == (0, 1)
+                            ^^^^^^^
+
+tests\test_solution.py:7: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+num = 0, den = 5
+
+    def reduce_fraction(num: int, den: int):
+        """
+        Reduces a fraction from num and den to its lowest terms.
+        Returns a tuple (numerator, denominator).
+    
+        Args:
+        num (int): The numerator of the fraction.
+        den (int): The denominator of the fraction.
+    
+        Raises:
+        ValueError: If either input is not an int or bool.
+        ValueError: If denominator is zero.
+        """
+        # Check if both arguments are integers
+        if not isinstance(num, int) or not isinstance(den, int):
+            raise ValueError('bad arg')
+    
+        # Calculate the greatest common divisor (GCD)
+        gcd_value = gcd(num, den)
+        # Adjust denominators to be coprime with GCD (denominator should not be zero)
+&gt;       adjusted_denom = den - num // gcd(gcd(den, num), denom) * denom
+                                                         ^^^^^
+E       NameError: name 'denom' is not defined
+
+solution.py:23: NameError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.reduce_fraction.tests.test_solution" name="test_already" time="0.000"><failure message="NameError: name 'denom' is not defined">&gt;   def test_already(): assert f(7, 1) == (7, 1)
+                               ^^^^^^^
+
+tests\test_solution.py:8: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+num = 7, den = 1
+
+    def reduce_fraction(num: int, den: int):
+        """
+        Reduces a fraction from num and den to its lowest terms.
+        Returns a tuple (numerator, denominator).
+    
+        Args:
+        num (int): The numerator of the fraction.
+        den (int): The denominator of the fraction.
+    
+        Raises:
+        ValueError: If either input is not an int or bool.
+        ValueError: If denominator is zero.
+        """
+        # Check if both arguments are integers
+        if not isinstance(num, int) or not isinstance(den, int):
+            raise ValueError('bad arg')
+    
+        # Calculate the greatest common divisor (GCD)
+        gcd_value = gcd(num, den)
+        # Adjust denominators to be coprime with GCD (denominator should not be zero)
+&gt;       adjusted_denom = den - num // gcd(gcd(den, num), denom) * denom
+                                                         ^^^^^
+E       NameError: name 'denom' is not defined
+
+solution.py:23: NameError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.reduce_fraction.tests.test_solution" name="test_reduce_int" time="0.000"><failure message="NameError: name 'denom' is not defined">&gt;   def test_reduce_int(): assert f(6, 3) == (2, 1)
+                                  ^^^^^^^
+
+tests\test_solution.py:9: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+num = 6, den = 3
+
+    def reduce_fraction(num: int, den: int):
+        """
+        Reduces a fraction from num and den to its lowest terms.
+        Returns a tuple (numerator, denominator).
+    
+        Args:
+        num (int): The numerator of the fraction.
+        den (int): The denominator of the fraction.
+    
+        Raises:
+        ValueError: If either input is not an int or bool.
+        ValueError: If denominator is zero.
+        """
+        # Check if both arguments are integers
+        if not isinstance(num, int) or not isinstance(den, int):
+            raise ValueError('bad arg')
+    
+        # Calculate the greatest common divisor (GCD)
+        gcd_value = gcd(num, den)
+        # Adjust denominators to be coprime with GCD (denominator should not be zero)
+&gt;       adjusted_denom = den - num // gcd(gcd(den, num), denom) * denom
+                                                         ^^^^^
+E       NameError: name 'denom' is not defined
+
+solution.py:23: NameError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.reduce_fraction.tests.test_solution" name="test_div_zero" time="0.000"><failure message="NameError: name 'denom' is not defined">def test_div_zero():
+&gt;       with pytest.raises(ValueError) as e: f(1, 0)
+                                             ^^^^^^^
+
+tests\test_solution.py:11: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+num = 1, den = 0
+
+    def reduce_fraction(num: int, den: int):
+        """
+        Reduces a fraction from num and den to its lowest terms.
+        Returns a tuple (numerator, denominator).
+    
+        Args:
+        num (int): The numerator of the fraction.
+        den (int): The denominator of the fraction.
+    
+        Raises:
+        ValueError: If either input is not an int or bool.
+        ValueError: If denominator is zero.
+        """
+        # Check if both arguments are integers
+        if not isinstance(num, int) or not isinstance(den, int):
+            raise ValueError('bad arg')
+    
+        # Calculate the greatest common divisor (GCD)
+        gcd_value = gcd(num, den)
+        # Adjust denominators to be coprime with GCD (denominator should not be zero)
+&gt;       adjusted_denom = den - num // gcd(gcd(den, num), denom) * denom
+                                                         ^^^^^
+E       NameError: name 'denom' is not defined
+
+solution.py:23: NameError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.reduce_fraction.tests.test_solution" name="test_bad_arg" time="0.000"><failure message="NameError: name 'denom' is not defined">def test_bad_arg():
+&gt;       with pytest.raises(ValueError) as e: f(True, 2)
+                                             ^^^^^^^^^^
+
+tests\test_solution.py:14: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+num = True, den = 2
+
+    def reduce_fraction(num: int, den: int):
+        """
+        Reduces a fraction from num and den to its lowest terms.
+        Returns a tuple (numerator, denominator).
+    
+        Args:
+        num (int): The numerator of the fraction.
+        den (int): The denominator of the fraction.
+    
+        Raises:
+        ValueError: If either input is not an int or bool.
+        ValueError: If denominator is zero.
+        """
+        # Check if both arguments are integers
+        if not isinstance(num, int) or not isinstance(den, int):
+            raise ValueError('bad arg')
+    
+        # Calculate the greatest common divisor (GCD)
+        gcd_value = gcd(num, den)
+        # Adjust denominators to be coprime with GCD (denominator should not be zero)
+&gt;       adjusted_denom = den - num // gcd(gcd(den, num), denom) * denom
+                                                         ^^^^^
+E       NameError: name 'denom' is not defined
+
+solution.py:23: NameError</failure></testcase></testsuite></testsuites>

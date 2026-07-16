@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="3" skipped="0" tests="11" time="0.205" timestamp="2026-07-13T19:38:58.237589-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-190747.parse_a1_ref.tests.test_solution" name="test_a1" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-190747.parse_a1_ref.tests.test_solution" name="test_b2" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-190747.parse_a1_ref.tests.test_solution" name="test_z10" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-190747.parse_a1_ref.tests.test_solution" name="test_aa1" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-190747.parse_a1_ref.tests.test_solution" name="test_ab100" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-190747.parse_a1_ref.tests.test_solution" name="test_no_digits" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-190747.parse_a1_ref.tests.test_solution" name="test_no_letters" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-190747.parse_a1_ref.tests.test_solution" name="test_lowercase" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_lowercase():
+&gt;       with pytest.raises(ValueError): f('a1')
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:14: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260713-190747.parse_a1_ref.tests.test_solution" name="test_leading_zero" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_leading_zero():
+&gt;       with pytest.raises(ValueError): f('A01')
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:16: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260713-190747.parse_a1_ref.tests.test_solution" name="test_zero_row" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-190747.parse_a1_ref.tests.test_solution" name="test_letters_after_digits" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_letters_after_digits():
+&gt;       with pytest.raises(ValueError): f('A1B')
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:20: Failed</failure></testcase></testsuite></testsuites>

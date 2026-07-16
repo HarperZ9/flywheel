@@ -146,7 +146,7 @@ def mint(params: dict, seed: int = 0) -> dict:
         # tracy-spacing: straight sides earn the full bearing, round sides
         # tuck in because their white leaks into the counter rhythm
         straight = any(s["role"] == "stem" for s in spec["strokes"])
-        base_lsb = 0.24 * w_v + 0.06 * xh
+        base_lsb = 0.22 * w_v + 0.05 * xh
         lsb = round(base_lsb if straight else base_lsb * 0.82, 2)
         glyphs[name] = {
             "contours": contours,
@@ -171,14 +171,14 @@ def _specimen(glyphs: dict, xh: float) -> str:
         g = glyphs.get(ch)
         if g is None:
             continue
-        # every contour of the glyph in ONE path, so evenodd can carve
-        # the counters instead of flooding them
+        # every contour of the glyph in ONE path, so nonzero winding welds
+        # overlapping strokes and carves the counters by orientation
         subpaths = []
         for ring in g["contours"]:
             subpaths.append("M " + " L ".join(
                 f"{x + px:.1f} {H - py:.1f}" for px, py in ring) + " Z")
         parts.append(f'<path d="{" ".join(subpaths)}" fill="currentColor" '
-                     f'fill-rule="evenodd"/>')
+                     f'fill-rule="nonzero"/>')
         x += g["advance"]
     return (f'<svg xmlns="http://www.w3.org/2000/svg" '
             f'viewBox="0 0 {x + 40:.0f} {H + 60:.0f}">'

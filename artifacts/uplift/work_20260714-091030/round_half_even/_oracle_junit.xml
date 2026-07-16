@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="2" skipped="0" tests="11" time="0.190" timestamp="2026-07-14T09:36:29.555539-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260714-091030.round_half_even.tests.test_solution" name="test_half_down" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-091030.round_half_even.tests.test_solution" name="test_half_up" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-091030.round_half_even.tests.test_solution" name="test_half_even" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-091030.round_half_even.tests.test_solution" name="test_over" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-091030.round_half_even.tests.test_solution" name="test_third" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-091030.round_half_even.tests.test_solution" name="test_neg_half" time="0.000"><failure message="assert -2 == 0&#10; +  where -2 = f(-1, 2)">&gt;   def test_neg_half(): assert f(-1, 2) == 0
+                         ^^^^^^^^^^^^^^^^^^^^
+E   assert -2 == 0
+E    +  where -2 = f(-1, 2)
+
+tests\test_solution.py:8: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-091030.round_half_even.tests.test_solution" name="test_neg_three_half" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-091030.round_half_even.tests.test_solution" name="test_exact" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-091030.round_half_even.tests.test_solution" name="test_neg_den" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-091030.round_half_even.tests.test_solution" name="test_div_zero" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-091030.round_half_even.tests.test_solution" name="test_bad_arg" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_bad_arg():
+&gt;       with pytest.raises(ValueError) as e: f(True, 2)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:16: Failed</failure></testcase></testsuite></testsuites>

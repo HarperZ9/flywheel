@@ -1,0 +1,202 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="13" skipped="0" tests="14" time="0.244" timestamp="2026-07-14T09:05:25.969013-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260714-083129.bipartite_strict.tests.test_solution" name="test_empty" time="0.001" /><testcase classname="artifacts.uplift.work_20260714-083129.bipartite_strict.tests.test_solution" name="test_single_edge" time="0.000"><failure message="TypeError: list indices must be integers or slices, not list">&gt;   def test_single_edge(): assert f([[1], [0]]) is True
+                                   ^^^^^^^^^^^^^
+
+tests\test_solution.py:4: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:27: in is_bipartite
+    validate_neighbors()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    def validate_neighbors():
+        # Validate the neighbors are integers within the expected range and unique
+        for node in adj:
+            seen = set()
+&gt;           for neighbor in adj[node]:
+                            ^^^^^^^^^
+E           TypeError: list indices must be integers or slices, not list
+
+solution.py:13: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.bipartite_strict.tests.test_solution" name="test_triangle" time="0.000"><failure message="TypeError: list indices must be integers or slices, not list">&gt;   def test_triangle(): assert f([[1, 2], [0, 2], [0, 1]]) is False
+                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:5: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:27: in is_bipartite
+    validate_neighbors()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    def validate_neighbors():
+        # Validate the neighbors are integers within the expected range and unique
+        for node in adj:
+            seen = set()
+&gt;           for neighbor in adj[node]:
+                            ^^^^^^^^^
+E           TypeError: list indices must be integers or slices, not list
+
+solution.py:13: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.bipartite_strict.tests.test_solution" name="test_isolated" time="0.000"><failure message="TypeError: list indices must be integers or slices, not list">&gt;   def test_isolated(): assert f([[], [], []]) is True
+                                ^^^^^^^^^^^^^^^
+
+tests\test_solution.py:6: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:27: in is_bipartite
+    validate_neighbors()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    def validate_neighbors():
+        # Validate the neighbors are integers within the expected range and unique
+        for node in adj:
+            seen = set()
+&gt;           for neighbor in adj[node]:
+                            ^^^^^^^^^
+E           TypeError: list indices must be integers or slices, not list
+
+solution.py:13: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.bipartite_strict.tests.test_solution" name="test_self_loop" time="0.000"><failure message="TypeError: list indices must be integers or slices, not list">&gt;   def test_self_loop(): assert f([[0]]) is False
+                                 ^^^^^^^^
+
+tests\test_solution.py:7: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:27: in is_bipartite
+    validate_neighbors()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    def validate_neighbors():
+        # Validate the neighbors are integers within the expected range and unique
+        for node in adj:
+            seen = set()
+&gt;           for neighbor in adj[node]:
+                            ^^^^^^^^^
+E           TypeError: list indices must be integers or slices, not list
+
+solution.py:13: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.bipartite_strict.tests.test_solution" name="test_even_cycle" time="0.000"><failure message="TypeError: list indices must be integers or slices, not list">&gt;   def test_even_cycle(): assert f([[1, 3], [0, 2], [1, 3], [2, 0]]) is True
+                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:8: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:27: in is_bipartite
+    validate_neighbors()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    def validate_neighbors():
+        # Validate the neighbors are integers within the expected range and unique
+        for node in adj:
+            seen = set()
+&gt;           for neighbor in adj[node]:
+                            ^^^^^^^^^
+E           TypeError: list indices must be integers or slices, not list
+
+solution.py:13: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.bipartite_strict.tests.test_solution" name="test_odd_component" time="0.000"><failure message="TypeError: list indices must be integers or slices, not list">&gt;   def test_odd_component(): assert f([[1], [0], [3, 4], [2, 4], [2, 3]]) is False
+                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:9: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:27: in is_bipartite
+    validate_neighbors()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    def validate_neighbors():
+        # Validate the neighbors are integers within the expected range and unique
+        for node in adj:
+            seen = set()
+&gt;           for neighbor in adj[node]:
+                            ^^^^^^^^^
+E           TypeError: list indices must be integers or slices, not list
+
+solution.py:13: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.bipartite_strict.tests.test_solution" name="test_duplicate_neighbors" time="0.000"><failure message="TypeError: list indices must be integers or slices, not list">&gt;   def test_duplicate_neighbors(): assert f([[1, 1], [0]]) is True
+                                           ^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:10: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:27: in is_bipartite
+    validate_neighbors()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    def validate_neighbors():
+        # Validate the neighbors are integers within the expected range and unique
+        for node in adj:
+            seen = set()
+&gt;           for neighbor in adj[node]:
+                            ^^^^^^^^^
+E           TypeError: list indices must be integers or slices, not list
+
+solution.py:13: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.bipartite_strict.tests.test_solution" name="test_not_symmetric" time="0.000"><failure message="TypeError: list indices must be integers or slices, not list">def test_not_symmetric():
+&gt;       with pytest.raises(ValueError) as e: f([[1], []])
+                                             ^^^^^^^^^^^^
+
+tests\test_solution.py:12: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:27: in is_bipartite
+    validate_neighbors()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    def validate_neighbors():
+        # Validate the neighbors are integers within the expected range and unique
+        for node in adj:
+            seen = set()
+&gt;           for neighbor in adj[node]:
+                            ^^^^^^^^^
+E           TypeError: list indices must be integers or slices, not list
+
+solution.py:13: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.bipartite_strict.tests.test_solution" name="test_bad_neighbor_range" time="0.000"><failure message="TypeError: list indices must be integers or slices, not list">def test_bad_neighbor_range():
+&gt;       with pytest.raises(ValueError) as e: f([[5]])
+                                             ^^^^^^^^
+
+tests\test_solution.py:15: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:27: in is_bipartite
+    validate_neighbors()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    def validate_neighbors():
+        # Validate the neighbors are integers within the expected range and unique
+        for node in adj:
+            seen = set()
+&gt;           for neighbor in adj[node]:
+                            ^^^^^^^^^
+E           TypeError: list indices must be integers or slices, not list
+
+solution.py:13: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.bipartite_strict.tests.test_solution" name="test_bad_neighbor_bool" time="0.000"><failure message="TypeError: list indices must be integers or slices, not list">def test_bad_neighbor_bool():
+&gt;       with pytest.raises(ValueError): f([[True], [0]])
+                                        ^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:18: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:27: in is_bipartite
+    validate_neighbors()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    def validate_neighbors():
+        # Validate the neighbors are integers within the expected range and unique
+        for node in adj:
+            seen = set()
+&gt;           for neighbor in adj[node]:
+                            ^^^^^^^^^
+E           TypeError: list indices must be integers or slices, not list
+
+solution.py:13: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.bipartite_strict.tests.test_solution" name="test_bad_neighbor_negative" time="0.000"><failure message="TypeError: list indices must be integers or slices, not list">def test_bad_neighbor_negative():
+&gt;       with pytest.raises(ValueError): f([[-1]])
+                                        ^^^^^^^^^
+
+tests\test_solution.py:20: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:27: in is_bipartite
+    validate_neighbors()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    def validate_neighbors():
+        # Validate the neighbors are integers within the expected range and unique
+        for node in adj:
+            seen = set()
+&gt;           for neighbor in adj[node]:
+                            ^^^^^^^^^
+E           TypeError: list indices must be integers or slices, not list
+
+solution.py:13: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.bipartite_strict.tests.test_solution" name="test_bad_adjacency_not_list" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_bad_adjacency_not_list():
+&gt;       with pytest.raises(ValueError) as e: f('x')
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:22: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.bipartite_strict.tests.test_solution" name="test_bad_adjacency_entry" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_bad_adjacency_entry():
+&gt;       with pytest.raises(ValueError): f([1])
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:25: Failed</failure></testcase></testsuite></testsuites>

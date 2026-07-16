@@ -1,0 +1,1075 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="12" skipped="0" tests="20" time="0.330" timestamp="2026-07-14T13:43:53.110409-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260714-125209.url_split_strict.tests.test_solution" name="test_basic" time="0.001"><failure message="TypeError: unsupported operand type(s) for +: 'int' and 'builtin_function_or_method'">&gt;   def test_basic(): assert f('http://example.com/a/b?x=1') == ('http', 'example.com', None, '/a/b', 'x=1')
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:3: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+url = 'http://example.com/a/b?x=1'
+
+    def split_url(url):
+        if not isinstance(url, str):
+            raise ValueError('bad url')
+    
+        # Find scheme: everything before first ://
+        colon_slash_slash = '://'
+        scheme_end = url.find(colon_slash_slash)
+    
+        if scheme_end == -1:
+            raise ValueError('no scheme')
+    
+        scheme = url[:scheme_end]
+    
+        if not scheme:
+            raise ValueError('bad scheme')
+    
+        # Scheme validation: first char lowercase letter, rest a-z0-9+-.
+        if not (ord(scheme[0]) &gt;= ord('a') and ord(scheme[0]) &lt;= ord('z')):
+            raise ValueError('bad scheme')
+    
+        for c in scheme[1:]:
+            allowed = [ord('a'), ord('z')] + \
+                      [ord('0'), ord('9')] + \
+                      [ord('+'), ord('-'), ord('.')]
+            if not ((ord(c) &gt;= allowed[0] and ord(c) &lt;= allowed[1]) or
+                    (ord(c) &gt;= allowed[2] and ord(c) &lt;= allowed[3]) or
+                    (ord(c) == allowed[4])):
+                raise ValueError('bad scheme')
+    
+        # Authority: everything after :// up to first / or ?
+        auth_start = scheme_end + len(colon_slash_slash)
+    
+        if auth_start &gt;= len(url):
+            raise ValueError('no authority')
+    
+        path_start = url.find('/', auth_start)
+        query_start = url.find('?', auth_start)
+    
+        # Find the earlier of the two
+        if query_start != -1 and (path_start == -1 or query_start &lt; path_start):
+            auth_end = query_start
+        else:
+            auth_end = path_start
+    
+        authority = url[auth_start:auth_end]
+    
+        # Host/port split at first :
+        port_str = None
+        colon_in_host = False
+    
+        if ':' in authority:
+            col_idx = authority.find(':')
+    
+            if col_idx == len(authority) - 1 or \
+               authority[:col_idx].endswith('..') or \
+               '://' in authority[:col_idx]:
+                # : at end -&gt; no host, just port
+                colon_in_host = False
+            else:
+                # Valid host:port split
+                colon_in_host = True
+    
+                potential_port = authority[col_idx+1:]
+    
+                if not potential_port.isdigit():
+                    raise ValueError('bad port')
+    
+                p = int(potential_port)
+    
+                if p == 0 and len(potential_port) != 1:
+                    # Leading zero
+                    raise ValueError('bad port')
+    
+                if p &gt; 65535:
+                    raise ValueError('bad port')
+    
+                port_str = str(p)
+    
+        host_start = 0
+    
+        if colon_in_host and ':' in authority:
+            host_start = authority.find(':')
+    
+        host = authority[host_start:]
+    
+        # Host validation
+        if not host:
+            raise ValueError('bad host')
+    
+        for c in host:
+            allowed = [ord('a'), ord('z')] + \
+                      [ord('0'), ord('9')]
+    
+            if ord(c) == ord('-') or ord(c) == ord('.'):
+                continue
+    
+            if not ((ord(c) &gt;= allowed[0] and ord(c) &lt;= allowed[1]) or
+                    (ord(c) == allowed[2])):
+                raise ValueError('bad host')
+    
+        port = int(port_str) if port_str != None else None
+    
+        # Path: up to first ? after authority
+&gt;       path_end = auth_end + url[auth_end:].find
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: unsupported operand type(s) for +: 'int' and 'builtin_function_or_method'
+
+solution.py:104: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-125209.url_split_strict.tests.test_solution" name="test_no_path" time="0.001"><failure message="TypeError: unsupported operand type(s) for +: 'int' and 'builtin_function_or_method'">&gt;   def test_no_path(): assert f('http://example.com') == ('http', 'example.com', None, '/', None)
+                               ^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:4: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+url = 'http://example.com'
+
+    def split_url(url):
+        if not isinstance(url, str):
+            raise ValueError('bad url')
+    
+        # Find scheme: everything before first ://
+        colon_slash_slash = '://'
+        scheme_end = url.find(colon_slash_slash)
+    
+        if scheme_end == -1:
+            raise ValueError('no scheme')
+    
+        scheme = url[:scheme_end]
+    
+        if not scheme:
+            raise ValueError('bad scheme')
+    
+        # Scheme validation: first char lowercase letter, rest a-z0-9+-.
+        if not (ord(scheme[0]) &gt;= ord('a') and ord(scheme[0]) &lt;= ord('z')):
+            raise ValueError('bad scheme')
+    
+        for c in scheme[1:]:
+            allowed = [ord('a'), ord('z')] + \
+                      [ord('0'), ord('9')] + \
+                      [ord('+'), ord('-'), ord('.')]
+            if not ((ord(c) &gt;= allowed[0] and ord(c) &lt;= allowed[1]) or
+                    (ord(c) &gt;= allowed[2] and ord(c) &lt;= allowed[3]) or
+                    (ord(c) == allowed[4])):
+                raise ValueError('bad scheme')
+    
+        # Authority: everything after :// up to first / or ?
+        auth_start = scheme_end + len(colon_slash_slash)
+    
+        if auth_start &gt;= len(url):
+            raise ValueError('no authority')
+    
+        path_start = url.find('/', auth_start)
+        query_start = url.find('?', auth_start)
+    
+        # Find the earlier of the two
+        if query_start != -1 and (path_start == -1 or query_start &lt; path_start):
+            auth_end = query_start
+        else:
+            auth_end = path_start
+    
+        authority = url[auth_start:auth_end]
+    
+        # Host/port split at first :
+        port_str = None
+        colon_in_host = False
+    
+        if ':' in authority:
+            col_idx = authority.find(':')
+    
+            if col_idx == len(authority) - 1 or \
+               authority[:col_idx].endswith('..') or \
+               '://' in authority[:col_idx]:
+                # : at end -&gt; no host, just port
+                colon_in_host = False
+            else:
+                # Valid host:port split
+                colon_in_host = True
+    
+                potential_port = authority[col_idx+1:]
+    
+                if not potential_port.isdigit():
+                    raise ValueError('bad port')
+    
+                p = int(potential_port)
+    
+                if p == 0 and len(potential_port) != 1:
+                    # Leading zero
+                    raise ValueError('bad port')
+    
+                if p &gt; 65535:
+                    raise ValueError('bad port')
+    
+                port_str = str(p)
+    
+        host_start = 0
+    
+        if colon_in_host and ':' in authority:
+            host_start = authority.find(':')
+    
+        host = authority[host_start:]
+    
+        # Host validation
+        if not host:
+            raise ValueError('bad host')
+    
+        for c in host:
+            allowed = [ord('a'), ord('z')] + \
+                      [ord('0'), ord('9')]
+    
+            if ord(c) == ord('-') or ord(c) == ord('.'):
+                continue
+    
+            if not ((ord(c) &gt;= allowed[0] and ord(c) &lt;= allowed[1]) or
+                    (ord(c) == allowed[2])):
+                raise ValueError('bad host')
+    
+        port = int(port_str) if port_str != None else None
+    
+        # Path: up to first ? after authority
+&gt;       path_end = auth_end + url[auth_end:].find
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: unsupported operand type(s) for +: 'int' and 'builtin_function_or_method'
+
+solution.py:104: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-125209.url_split_strict.tests.test_solution" name="test_port" time="0.001"><failure message="ValueError: bad host">&gt;   def test_port(): assert f('https://a.b:8080/x') == ('https', 'a.b', 8080, '/x', None)
+                            ^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:5: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+url = 'https://a.b:8080/x'
+
+    def split_url(url):
+        if not isinstance(url, str):
+            raise ValueError('bad url')
+    
+        # Find scheme: everything before first ://
+        colon_slash_slash = '://'
+        scheme_end = url.find(colon_slash_slash)
+    
+        if scheme_end == -1:
+            raise ValueError('no scheme')
+    
+        scheme = url[:scheme_end]
+    
+        if not scheme:
+            raise ValueError('bad scheme')
+    
+        # Scheme validation: first char lowercase letter, rest a-z0-9+-.
+        if not (ord(scheme[0]) &gt;= ord('a') and ord(scheme[0]) &lt;= ord('z')):
+            raise ValueError('bad scheme')
+    
+        for c in scheme[1:]:
+            allowed = [ord('a'), ord('z')] + \
+                      [ord('0'), ord('9')] + \
+                      [ord('+'), ord('-'), ord('.')]
+            if not ((ord(c) &gt;= allowed[0] and ord(c) &lt;= allowed[1]) or
+                    (ord(c) &gt;= allowed[2] and ord(c) &lt;= allowed[3]) or
+                    (ord(c) == allowed[4])):
+                raise ValueError('bad scheme')
+    
+        # Authority: everything after :// up to first / or ?
+        auth_start = scheme_end + len(colon_slash_slash)
+    
+        if auth_start &gt;= len(url):
+            raise ValueError('no authority')
+    
+        path_start = url.find('/', auth_start)
+        query_start = url.find('?', auth_start)
+    
+        # Find the earlier of the two
+        if query_start != -1 and (path_start == -1 or query_start &lt; path_start):
+            auth_end = query_start
+        else:
+            auth_end = path_start
+    
+        authority = url[auth_start:auth_end]
+    
+        # Host/port split at first :
+        port_str = None
+        colon_in_host = False
+    
+        if ':' in authority:
+            col_idx = authority.find(':')
+    
+            if col_idx == len(authority) - 1 or \
+               authority[:col_idx].endswith('..') or \
+               '://' in authority[:col_idx]:
+                # : at end -&gt; no host, just port
+                colon_in_host = False
+            else:
+                # Valid host:port split
+                colon_in_host = True
+    
+                potential_port = authority[col_idx+1:]
+    
+                if not potential_port.isdigit():
+                    raise ValueError('bad port')
+    
+                p = int(potential_port)
+    
+                if p == 0 and len(potential_port) != 1:
+                    # Leading zero
+                    raise ValueError('bad port')
+    
+                if p &gt; 65535:
+                    raise ValueError('bad port')
+    
+                port_str = str(p)
+    
+        host_start = 0
+    
+        if colon_in_host and ':' in authority:
+            host_start = authority.find(':')
+    
+        host = authority[host_start:]
+    
+        # Host validation
+        if not host:
+            raise ValueError('bad host')
+    
+        for c in host:
+            allowed = [ord('a'), ord('z')] + \
+                      [ord('0'), ord('9')]
+    
+            if ord(c) == ord('-') or ord(c) == ord('.'):
+                continue
+    
+            if not ((ord(c) &gt;= allowed[0] and ord(c) &lt;= allowed[1]) or
+                    (ord(c) == allowed[2])):
+&gt;               raise ValueError('bad host')
+E               ValueError: bad host
+
+solution.py:99: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-125209.url_split_strict.tests.test_solution" name="test_query_no_path" time="0.000"><failure message="TypeError: unsupported operand type(s) for +: 'int' and 'builtin_function_or_method'">&gt;   def test_query_no_path(): assert f('ftp://h?x=2') == ('ftp', 'h', None, '/', 'x=2')
+                                     ^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:6: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+url = 'ftp://h?x=2'
+
+    def split_url(url):
+        if not isinstance(url, str):
+            raise ValueError('bad url')
+    
+        # Find scheme: everything before first ://
+        colon_slash_slash = '://'
+        scheme_end = url.find(colon_slash_slash)
+    
+        if scheme_end == -1:
+            raise ValueError('no scheme')
+    
+        scheme = url[:scheme_end]
+    
+        if not scheme:
+            raise ValueError('bad scheme')
+    
+        # Scheme validation: first char lowercase letter, rest a-z0-9+-.
+        if not (ord(scheme[0]) &gt;= ord('a') and ord(scheme[0]) &lt;= ord('z')):
+            raise ValueError('bad scheme')
+    
+        for c in scheme[1:]:
+            allowed = [ord('a'), ord('z')] + \
+                      [ord('0'), ord('9')] + \
+                      [ord('+'), ord('-'), ord('.')]
+            if not ((ord(c) &gt;= allowed[0] and ord(c) &lt;= allowed[1]) or
+                    (ord(c) &gt;= allowed[2] and ord(c) &lt;= allowed[3]) or
+                    (ord(c) == allowed[4])):
+                raise ValueError('bad scheme')
+    
+        # Authority: everything after :// up to first / or ?
+        auth_start = scheme_end + len(colon_slash_slash)
+    
+        if auth_start &gt;= len(url):
+            raise ValueError('no authority')
+    
+        path_start = url.find('/', auth_start)
+        query_start = url.find('?', auth_start)
+    
+        # Find the earlier of the two
+        if query_start != -1 and (path_start == -1 or query_start &lt; path_start):
+            auth_end = query_start
+        else:
+            auth_end = path_start
+    
+        authority = url[auth_start:auth_end]
+    
+        # Host/port split at first :
+        port_str = None
+        colon_in_host = False
+    
+        if ':' in authority:
+            col_idx = authority.find(':')
+    
+            if col_idx == len(authority) - 1 or \
+               authority[:col_idx].endswith('..') or \
+               '://' in authority[:col_idx]:
+                # : at end -&gt; no host, just port
+                colon_in_host = False
+            else:
+                # Valid host:port split
+                colon_in_host = True
+    
+                potential_port = authority[col_idx+1:]
+    
+                if not potential_port.isdigit():
+                    raise ValueError('bad port')
+    
+                p = int(potential_port)
+    
+                if p == 0 and len(potential_port) != 1:
+                    # Leading zero
+                    raise ValueError('bad port')
+    
+                if p &gt; 65535:
+                    raise ValueError('bad port')
+    
+                port_str = str(p)
+    
+        host_start = 0
+    
+        if colon_in_host and ':' in authority:
+            host_start = authority.find(':')
+    
+        host = authority[host_start:]
+    
+        # Host validation
+        if not host:
+            raise ValueError('bad host')
+    
+        for c in host:
+            allowed = [ord('a'), ord('z')] + \
+                      [ord('0'), ord('9')]
+    
+            if ord(c) == ord('-') or ord(c) == ord('.'):
+                continue
+    
+            if not ((ord(c) &gt;= allowed[0] and ord(c) &lt;= allowed[1]) or
+                    (ord(c) == allowed[2])):
+                raise ValueError('bad host')
+    
+        port = int(port_str) if port_str != None else None
+    
+        # Path: up to first ? after authority
+&gt;       path_end = auth_end + url[auth_end:].find
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: unsupported operand type(s) for +: 'int' and 'builtin_function_or_method'
+
+solution.py:104: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-125209.url_split_strict.tests.test_solution" name="test_empty_query" time="0.000"><failure message="TypeError: unsupported operand type(s) for +: 'int' and 'builtin_function_or_method'">&gt;   def test_empty_query(): assert f('http://h/p?') == ('http', 'h', None, '/p', '')
+                                   ^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:7: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+url = 'http://h/p?'
+
+    def split_url(url):
+        if not isinstance(url, str):
+            raise ValueError('bad url')
+    
+        # Find scheme: everything before first ://
+        colon_slash_slash = '://'
+        scheme_end = url.find(colon_slash_slash)
+    
+        if scheme_end == -1:
+            raise ValueError('no scheme')
+    
+        scheme = url[:scheme_end]
+    
+        if not scheme:
+            raise ValueError('bad scheme')
+    
+        # Scheme validation: first char lowercase letter, rest a-z0-9+-.
+        if not (ord(scheme[0]) &gt;= ord('a') and ord(scheme[0]) &lt;= ord('z')):
+            raise ValueError('bad scheme')
+    
+        for c in scheme[1:]:
+            allowed = [ord('a'), ord('z')] + \
+                      [ord('0'), ord('9')] + \
+                      [ord('+'), ord('-'), ord('.')]
+            if not ((ord(c) &gt;= allowed[0] and ord(c) &lt;= allowed[1]) or
+                    (ord(c) &gt;= allowed[2] and ord(c) &lt;= allowed[3]) or
+                    (ord(c) == allowed[4])):
+                raise ValueError('bad scheme')
+    
+        # Authority: everything after :// up to first / or ?
+        auth_start = scheme_end + len(colon_slash_slash)
+    
+        if auth_start &gt;= len(url):
+            raise ValueError('no authority')
+    
+        path_start = url.find('/', auth_start)
+        query_start = url.find('?', auth_start)
+    
+        # Find the earlier of the two
+        if query_start != -1 and (path_start == -1 or query_start &lt; path_start):
+            auth_end = query_start
+        else:
+            auth_end = path_start
+    
+        authority = url[auth_start:auth_end]
+    
+        # Host/port split at first :
+        port_str = None
+        colon_in_host = False
+    
+        if ':' in authority:
+            col_idx = authority.find(':')
+    
+            if col_idx == len(authority) - 1 or \
+               authority[:col_idx].endswith('..') or \
+               '://' in authority[:col_idx]:
+                # : at end -&gt; no host, just port
+                colon_in_host = False
+            else:
+                # Valid host:port split
+                colon_in_host = True
+    
+                potential_port = authority[col_idx+1:]
+    
+                if not potential_port.isdigit():
+                    raise ValueError('bad port')
+    
+                p = int(potential_port)
+    
+                if p == 0 and len(potential_port) != 1:
+                    # Leading zero
+                    raise ValueError('bad port')
+    
+                if p &gt; 65535:
+                    raise ValueError('bad port')
+    
+                port_str = str(p)
+    
+        host_start = 0
+    
+        if colon_in_host and ':' in authority:
+            host_start = authority.find(':')
+    
+        host = authority[host_start:]
+    
+        # Host validation
+        if not host:
+            raise ValueError('bad host')
+    
+        for c in host:
+            allowed = [ord('a'), ord('z')] + \
+                      [ord('0'), ord('9')]
+    
+            if ord(c) == ord('-') or ord(c) == ord('.'):
+                continue
+    
+            if not ((ord(c) &gt;= allowed[0] and ord(c) &lt;= allowed[1]) or
+                    (ord(c) == allowed[2])):
+                raise ValueError('bad host')
+    
+        port = int(port_str) if port_str != None else None
+    
+        # Path: up to first ? after authority
+&gt;       path_end = auth_end + url[auth_end:].find
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: unsupported operand type(s) for +: 'int' and 'builtin_function_or_method'
+
+solution.py:104: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-125209.url_split_strict.tests.test_solution" name="test_second_qmark" time="0.000"><failure message="TypeError: unsupported operand type(s) for +: 'int' and 'builtin_function_or_method'">&gt;   def test_second_qmark(): assert f('http://h/p?a?b') == ('http', 'h', None, '/p', 'a?b')
+                                    ^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:8: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+url = 'http://h/p?a?b'
+
+    def split_url(url):
+        if not isinstance(url, str):
+            raise ValueError('bad url')
+    
+        # Find scheme: everything before first ://
+        colon_slash_slash = '://'
+        scheme_end = url.find(colon_slash_slash)
+    
+        if scheme_end == -1:
+            raise ValueError('no scheme')
+    
+        scheme = url[:scheme_end]
+    
+        if not scheme:
+            raise ValueError('bad scheme')
+    
+        # Scheme validation: first char lowercase letter, rest a-z0-9+-.
+        if not (ord(scheme[0]) &gt;= ord('a') and ord(scheme[0]) &lt;= ord('z')):
+            raise ValueError('bad scheme')
+    
+        for c in scheme[1:]:
+            allowed = [ord('a'), ord('z')] + \
+                      [ord('0'), ord('9')] + \
+                      [ord('+'), ord('-'), ord('.')]
+            if not ((ord(c) &gt;= allowed[0] and ord(c) &lt;= allowed[1]) or
+                    (ord(c) &gt;= allowed[2] and ord(c) &lt;= allowed[3]) or
+                    (ord(c) == allowed[4])):
+                raise ValueError('bad scheme')
+    
+        # Authority: everything after :// up to first / or ?
+        auth_start = scheme_end + len(colon_slash_slash)
+    
+        if auth_start &gt;= len(url):
+            raise ValueError('no authority')
+    
+        path_start = url.find('/', auth_start)
+        query_start = url.find('?', auth_start)
+    
+        # Find the earlier of the two
+        if query_start != -1 and (path_start == -1 or query_start &lt; path_start):
+            auth_end = query_start
+        else:
+            auth_end = path_start
+    
+        authority = url[auth_start:auth_end]
+    
+        # Host/port split at first :
+        port_str = None
+        colon_in_host = False
+    
+        if ':' in authority:
+            col_idx = authority.find(':')
+    
+            if col_idx == len(authority) - 1 or \
+               authority[:col_idx].endswith('..') or \
+               '://' in authority[:col_idx]:
+                # : at end -&gt; no host, just port
+                colon_in_host = False
+            else:
+                # Valid host:port split
+                colon_in_host = True
+    
+                potential_port = authority[col_idx+1:]
+    
+                if not potential_port.isdigit():
+                    raise ValueError('bad port')
+    
+                p = int(potential_port)
+    
+                if p == 0 and len(potential_port) != 1:
+                    # Leading zero
+                    raise ValueError('bad port')
+    
+                if p &gt; 65535:
+                    raise ValueError('bad port')
+    
+                port_str = str(p)
+    
+        host_start = 0
+    
+        if colon_in_host and ':' in authority:
+            host_start = authority.find(':')
+    
+        host = authority[host_start:]
+    
+        # Host validation
+        if not host:
+            raise ValueError('bad host')
+    
+        for c in host:
+            allowed = [ord('a'), ord('z')] + \
+                      [ord('0'), ord('9')]
+    
+            if ord(c) == ord('-') or ord(c) == ord('.'):
+                continue
+    
+            if not ((ord(c) &gt;= allowed[0] and ord(c) &lt;= allowed[1]) or
+                    (ord(c) == allowed[2])):
+                raise ValueError('bad host')
+    
+        port = int(port_str) if port_str != None else None
+    
+        # Path: up to first ? after authority
+&gt;       path_end = auth_end + url[auth_end:].find
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: unsupported operand type(s) for +: 'int' and 'builtin_function_or_method'
+
+solution.py:104: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-125209.url_split_strict.tests.test_solution" name="test_port_zero" time="0.000"><failure message="ValueError: bad host">&gt;   def test_port_zero(): assert f('http://h:0/') == ('http', 'h', 0, '/', None)
+                                 ^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:9: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+url = 'http://h:0/'
+
+    def split_url(url):
+        if not isinstance(url, str):
+            raise ValueError('bad url')
+    
+        # Find scheme: everything before first ://
+        colon_slash_slash = '://'
+        scheme_end = url.find(colon_slash_slash)
+    
+        if scheme_end == -1:
+            raise ValueError('no scheme')
+    
+        scheme = url[:scheme_end]
+    
+        if not scheme:
+            raise ValueError('bad scheme')
+    
+        # Scheme validation: first char lowercase letter, rest a-z0-9+-.
+        if not (ord(scheme[0]) &gt;= ord('a') and ord(scheme[0]) &lt;= ord('z')):
+            raise ValueError('bad scheme')
+    
+        for c in scheme[1:]:
+            allowed = [ord('a'), ord('z')] + \
+                      [ord('0'), ord('9')] + \
+                      [ord('+'), ord('-'), ord('.')]
+            if not ((ord(c) &gt;= allowed[0] and ord(c) &lt;= allowed[1]) or
+                    (ord(c) &gt;= allowed[2] and ord(c) &lt;= allowed[3]) or
+                    (ord(c) == allowed[4])):
+                raise ValueError('bad scheme')
+    
+        # Authority: everything after :// up to first / or ?
+        auth_start = scheme_end + len(colon_slash_slash)
+    
+        if auth_start &gt;= len(url):
+            raise ValueError('no authority')
+    
+        path_start = url.find('/', auth_start)
+        query_start = url.find('?', auth_start)
+    
+        # Find the earlier of the two
+        if query_start != -1 and (path_start == -1 or query_start &lt; path_start):
+            auth_end = query_start
+        else:
+            auth_end = path_start
+    
+        authority = url[auth_start:auth_end]
+    
+        # Host/port split at first :
+        port_str = None
+        colon_in_host = False
+    
+        if ':' in authority:
+            col_idx = authority.find(':')
+    
+            if col_idx == len(authority) - 1 or \
+               authority[:col_idx].endswith('..') or \
+               '://' in authority[:col_idx]:
+                # : at end -&gt; no host, just port
+                colon_in_host = False
+            else:
+                # Valid host:port split
+                colon_in_host = True
+    
+                potential_port = authority[col_idx+1:]
+    
+                if not potential_port.isdigit():
+                    raise ValueError('bad port')
+    
+                p = int(potential_port)
+    
+                if p == 0 and len(potential_port) != 1:
+                    # Leading zero
+                    raise ValueError('bad port')
+    
+                if p &gt; 65535:
+                    raise ValueError('bad port')
+    
+                port_str = str(p)
+    
+        host_start = 0
+    
+        if colon_in_host and ':' in authority:
+            host_start = authority.find(':')
+    
+        host = authority[host_start:]
+    
+        # Host validation
+        if not host:
+            raise ValueError('bad host')
+    
+        for c in host:
+            allowed = [ord('a'), ord('z')] + \
+                      [ord('0'), ord('9')]
+    
+            if ord(c) == ord('-') or ord(c) == ord('.'):
+                continue
+    
+            if not ((ord(c) &gt;= allowed[0] and ord(c) &lt;= allowed[1]) or
+                    (ord(c) == allowed[2])):
+&gt;               raise ValueError('bad host')
+E               ValueError: bad host
+
+solution.py:99: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-125209.url_split_strict.tests.test_solution" name="test_max_port" time="0.001"><failure message="ValueError: bad host">&gt;   def test_max_port(): assert f('http://h:65535') == ('http', 'h', 65535, '/', None)
+                                ^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:10: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+url = 'http://h:65535'
+
+    def split_url(url):
+        if not isinstance(url, str):
+            raise ValueError('bad url')
+    
+        # Find scheme: everything before first ://
+        colon_slash_slash = '://'
+        scheme_end = url.find(colon_slash_slash)
+    
+        if scheme_end == -1:
+            raise ValueError('no scheme')
+    
+        scheme = url[:scheme_end]
+    
+        if not scheme:
+            raise ValueError('bad scheme')
+    
+        # Scheme validation: first char lowercase letter, rest a-z0-9+-.
+        if not (ord(scheme[0]) &gt;= ord('a') and ord(scheme[0]) &lt;= ord('z')):
+            raise ValueError('bad scheme')
+    
+        for c in scheme[1:]:
+            allowed = [ord('a'), ord('z')] + \
+                      [ord('0'), ord('9')] + \
+                      [ord('+'), ord('-'), ord('.')]
+            if not ((ord(c) &gt;= allowed[0] and ord(c) &lt;= allowed[1]) or
+                    (ord(c) &gt;= allowed[2] and ord(c) &lt;= allowed[3]) or
+                    (ord(c) == allowed[4])):
+                raise ValueError('bad scheme')
+    
+        # Authority: everything after :// up to first / or ?
+        auth_start = scheme_end + len(colon_slash_slash)
+    
+        if auth_start &gt;= len(url):
+            raise ValueError('no authority')
+    
+        path_start = url.find('/', auth_start)
+        query_start = url.find('?', auth_start)
+    
+        # Find the earlier of the two
+        if query_start != -1 and (path_start == -1 or query_start &lt; path_start):
+            auth_end = query_start
+        else:
+            auth_end = path_start
+    
+        authority = url[auth_start:auth_end]
+    
+        # Host/port split at first :
+        port_str = None
+        colon_in_host = False
+    
+        if ':' in authority:
+            col_idx = authority.find(':')
+    
+            if col_idx == len(authority) - 1 or \
+               authority[:col_idx].endswith('..') or \
+               '://' in authority[:col_idx]:
+                # : at end -&gt; no host, just port
+                colon_in_host = False
+            else:
+                # Valid host:port split
+                colon_in_host = True
+    
+                potential_port = authority[col_idx+1:]
+    
+                if not potential_port.isdigit():
+                    raise ValueError('bad port')
+    
+                p = int(potential_port)
+    
+                if p == 0 and len(potential_port) != 1:
+                    # Leading zero
+                    raise ValueError('bad port')
+    
+                if p &gt; 65535:
+                    raise ValueError('bad port')
+    
+                port_str = str(p)
+    
+        host_start = 0
+    
+        if colon_in_host and ':' in authority:
+            host_start = authority.find(':')
+    
+        host = authority[host_start:]
+    
+        # Host validation
+        if not host:
+            raise ValueError('bad host')
+    
+        for c in host:
+            allowed = [ord('a'), ord('z')] + \
+                      [ord('0'), ord('9')]
+    
+            if ord(c) == ord('-') or ord(c) == ord('.'):
+                continue
+    
+            if not ((ord(c) &gt;= allowed[0] and ord(c) &lt;= allowed[1]) or
+                    (ord(c) == allowed[2])):
+&gt;               raise ValueError('bad host')
+E               ValueError: bad host
+
+solution.py:99: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-125209.url_split_strict.tests.test_solution" name="test_scheme_chars" time="0.000"><failure message="ValueError: bad scheme">&gt;   def test_scheme_chars(): assert f('a+b-c.1://h') == ('a+b-c.1', 'h', None, '/', None)
+                                    ^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:11: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+url = 'a+b-c.1://h'
+
+    def split_url(url):
+        if not isinstance(url, str):
+            raise ValueError('bad url')
+    
+        # Find scheme: everything before first ://
+        colon_slash_slash = '://'
+        scheme_end = url.find(colon_slash_slash)
+    
+        if scheme_end == -1:
+            raise ValueError('no scheme')
+    
+        scheme = url[:scheme_end]
+    
+        if not scheme:
+            raise ValueError('bad scheme')
+    
+        # Scheme validation: first char lowercase letter, rest a-z0-9+-.
+        if not (ord(scheme[0]) &gt;= ord('a') and ord(scheme[0]) &lt;= ord('z')):
+            raise ValueError('bad scheme')
+    
+        for c in scheme[1:]:
+            allowed = [ord('a'), ord('z')] + \
+                      [ord('0'), ord('9')] + \
+                      [ord('+'), ord('-'), ord('.')]
+            if not ((ord(c) &gt;= allowed[0] and ord(c) &lt;= allowed[1]) or
+                    (ord(c) &gt;= allowed[2] and ord(c) &lt;= allowed[3]) or
+                    (ord(c) == allowed[4])):
+&gt;               raise ValueError('bad scheme')
+E               ValueError: bad scheme
+
+solution.py:28: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-125209.url_split_strict.tests.test_solution" name="test_no_scheme" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-125209.url_split_strict.tests.test_solution" name="test_bad_scheme_upper" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-125209.url_split_strict.tests.test_solution" name="test_bad_scheme_empty" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-125209.url_split_strict.tests.test_solution" name="test_bad_scheme_digit_first" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-125209.url_split_strict.tests.test_solution" name="test_bad_host_empty" time="0.001"><failure message="AssertionError: assert 'no authority' == 'bad host'&#10;  &#10;  - bad host&#10;  + no authority">def test_bad_host_empty():
+        with pytest.raises(ValueError) as e: f('http://')
+&gt;       assert str(e.value) == 'bad host'
+E       AssertionError: assert 'no authority' == 'bad host'
+E         
+E         - bad host
+E         + no authority
+
+tests\test_solution.py:24: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-125209.url_split_strict.tests.test_solution" name="test_bad_host_upper" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-125209.url_split_strict.tests.test_solution" name="test_bad_port_leading_zero" time="0.001"><failure message="AssertionError: assert 'bad host' == 'bad port'&#10;  &#10;  - bad port&#10;  ?     ^ ^&#10;  + bad host&#10;  ?     ^ ^">def test_bad_port_leading_zero():
+        with pytest.raises(ValueError) as e: f('http://h:080')
+&gt;       assert str(e.value) == 'bad port'
+E       AssertionError: assert 'bad host' == 'bad port'
+E         
+E         - bad port
+E         ?     ^ ^
+E         + bad host
+E         ?     ^ ^
+
+tests\test_solution.py:29: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-125209.url_split_strict.tests.test_solution" name="test_bad_port_too_big" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-125209.url_split_strict.tests.test_solution" name="test_bad_port_empty" time="0.000"><failure message="TypeError: unsupported operand type(s) for +: 'int' and 'builtin_function_or_method'">def test_bad_port_empty():
+&gt;       with pytest.raises(ValueError): f('http://h:')
+                                        ^^^^^^^^^^^^^^
+
+tests\test_solution.py:33: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+url = 'http://h:'
+
+    def split_url(url):
+        if not isinstance(url, str):
+            raise ValueError('bad url')
+    
+        # Find scheme: everything before first ://
+        colon_slash_slash = '://'
+        scheme_end = url.find(colon_slash_slash)
+    
+        if scheme_end == -1:
+            raise ValueError('no scheme')
+    
+        scheme = url[:scheme_end]
+    
+        if not scheme:
+            raise ValueError('bad scheme')
+    
+        # Scheme validation: first char lowercase letter, rest a-z0-9+-.
+        if not (ord(scheme[0]) &gt;= ord('a') and ord(scheme[0]) &lt;= ord('z')):
+            raise ValueError('bad scheme')
+    
+        for c in scheme[1:]:
+            allowed = [ord('a'), ord('z')] + \
+                      [ord('0'), ord('9')] + \
+                      [ord('+'), ord('-'), ord('.')]
+            if not ((ord(c) &gt;= allowed[0] and ord(c) &lt;= allowed[1]) or
+                    (ord(c) &gt;= allowed[2] and ord(c) &lt;= allowed[3]) or
+                    (ord(c) == allowed[4])):
+                raise ValueError('bad scheme')
+    
+        # Authority: everything after :// up to first / or ?
+        auth_start = scheme_end + len(colon_slash_slash)
+    
+        if auth_start &gt;= len(url):
+            raise ValueError('no authority')
+    
+        path_start = url.find('/', auth_start)
+        query_start = url.find('?', auth_start)
+    
+        # Find the earlier of the two
+        if query_start != -1 and (path_start == -1 or query_start &lt; path_start):
+            auth_end = query_start
+        else:
+            auth_end = path_start
+    
+        authority = url[auth_start:auth_end]
+    
+        # Host/port split at first :
+        port_str = None
+        colon_in_host = False
+    
+        if ':' in authority:
+            col_idx = authority.find(':')
+    
+            if col_idx == len(authority) - 1 or \
+               authority[:col_idx].endswith('..') or \
+               '://' in authority[:col_idx]:
+                # : at end -&gt; no host, just port
+                colon_in_host = False
+            else:
+                # Valid host:port split
+                colon_in_host = True
+    
+                potential_port = authority[col_idx+1:]
+    
+                if not potential_port.isdigit():
+                    raise ValueError('bad port')
+    
+                p = int(potential_port)
+    
+                if p == 0 and len(potential_port) != 1:
+                    # Leading zero
+                    raise ValueError('bad port')
+    
+                if p &gt; 65535:
+                    raise ValueError('bad port')
+    
+                port_str = str(p)
+    
+        host_start = 0
+    
+        if colon_in_host and ':' in authority:
+            host_start = authority.find(':')
+    
+        host = authority[host_start:]
+    
+        # Host validation
+        if not host:
+            raise ValueError('bad host')
+    
+        for c in host:
+            allowed = [ord('a'), ord('z')] + \
+                      [ord('0'), ord('9')]
+    
+            if ord(c) == ord('-') or ord(c) == ord('.'):
+                continue
+    
+            if not ((ord(c) &gt;= allowed[0] and ord(c) &lt;= allowed[1]) or
+                    (ord(c) == allowed[2])):
+                raise ValueError('bad host')
+    
+        port = int(port_str) if port_str != None else None
+    
+        # Path: up to first ? after authority
+&gt;       path_end = auth_end + url[auth_end:].find
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: unsupported operand type(s) for +: 'int' and 'builtin_function_or_method'
+
+solution.py:104: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-125209.url_split_strict.tests.test_solution" name="test_bad_port_second_colon" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-125209.url_split_strict.tests.test_solution" name="test_bad_url" time="0.000" /></testsuite></testsuites>

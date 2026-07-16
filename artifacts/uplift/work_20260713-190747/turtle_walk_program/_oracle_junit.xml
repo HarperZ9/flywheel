@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="9" skipped="0" tests="10" time="0.256" timestamp="2026-07-13T19:32:27.990890-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-190747.turtle_walk_program.tests.test_solution" name="test_empty" time="0.001" /><testcase classname="artifacts.uplift.work_20260713-190747.turtle_walk_program.tests.test_solution" name="test_walk" time="0.000"><failure message="ValueError: bad command: 2FR3F">&gt;   def test_walk(): assert f('2FR3F') == (3, 2, 'E')
+                            ^^^^^^^^^^
+
+tests\test_solution.py:4: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:20: in turtle
+    cmd, prog = parse_command(prog)
+                ^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+cmd = '2FR3F'
+
+    def parse_command(cmd):
+        if cmd.isdigit():
+            count = int(cmd)
+            if cmd.startswith('0'):
+                raise ValueError('bad count')
+            if len(cmd) &gt; len(prog) or prog[len(cmd)] not in 'FRBL':
+                raise ValueError('dangling count' if len(cmd) == len(prog) else 'bad command')
+            cmd = prog[len(cmd)]
+            prog = prog[2:]  # Skip the number
+        elif cmd not in 'FBRL':
+&gt;           raise ValueError(f'bad command: {cmd}')
+E           ValueError: bad command: 2FR3F
+
+solution.py:14: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-190747.turtle_walk_program.tests.test_solution" name="test_backward" time="0.000"><failure message="UnboundLocalError: cannot access local variable 'prog' where it is not associated with a value">&gt;   def test_backward(): assert f('B') == (0, -1, 'N')
+                                ^^^^^^
+
+tests\test_solution.py:5: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:20: in turtle
+    cmd, prog = parse_command(prog)
+                ^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+cmd = 'B'
+
+    def parse_command(cmd):
+        if cmd.isdigit():
+            count = int(cmd)
+            if cmd.startswith('0'):
+                raise ValueError('bad count')
+            if len(cmd) &gt; len(prog) or prog[len(cmd)] not in 'FRBL':
+                raise ValueError('dangling count' if len(cmd) == len(prog) else 'bad command')
+            cmd = prog[len(cmd)]
+            prog = prog[2:]  # Skip the number
+        elif cmd not in 'FBRL':
+            raise ValueError(f'bad command: {cmd}')
+    
+&gt;       return cmd, prog
+                    ^^^^
+E       UnboundLocalError: cannot access local variable 'prog' where it is not associated with a value
+
+solution.py:16: UnboundLocalError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-190747.turtle_walk_program.tests.test_solution" name="test_double_left" time="0.000"><failure message="ValueError: bad command: 2L">&gt;   def test_double_left(): assert f('2L') == (0, 0, 'S')
+                                   ^^^^^^^
+
+tests\test_solution.py:6: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:20: in turtle
+    cmd, prog = parse_command(prog)
+                ^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+cmd = '2L'
+
+    def parse_command(cmd):
+        if cmd.isdigit():
+            count = int(cmd)
+            if cmd.startswith('0'):
+                raise ValueError('bad count')
+            if len(cmd) &gt; len(prog) or prog[len(cmd)] not in 'FRBL':
+                raise ValueError('dangling count' if len(cmd) == len(prog) else 'bad command')
+            cmd = prog[len(cmd)]
+            prog = prog[2:]  # Skip the number
+        elif cmd not in 'FBRL':
+&gt;           raise ValueError(f'bad command: {cmd}')
+E           ValueError: bad command: 2L
+
+solution.py:14: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-190747.turtle_walk_program.tests.test_solution" name="test_multidigit" time="0.000"><failure message="ValueError: bad command: 10F">&gt;   def test_multidigit(): assert f('10F') == (0, 10, 'N')
+                                  ^^^^^^^^
+
+tests\test_solution.py:7: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:20: in turtle
+    cmd, prog = parse_command(prog)
+                ^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+cmd = '10F'
+
+    def parse_command(cmd):
+        if cmd.isdigit():
+            count = int(cmd)
+            if cmd.startswith('0'):
+                raise ValueError('bad count')
+            if len(cmd) &gt; len(prog) or prog[len(cmd)] not in 'FRBL':
+                raise ValueError('dangling count' if len(cmd) == len(prog) else 'bad command')
+            cmd = prog[len(cmd)]
+            prog = prog[2:]  # Skip the number
+        elif cmd not in 'FBRL':
+&gt;           raise ValueError(f'bad command: {cmd}')
+E           ValueError: bad command: 10F
+
+solution.py:14: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-190747.turtle_walk_program.tests.test_solution" name="test_full_circle" time="0.000"><failure message="ValueError: bad command: LLLL">&gt;   def test_full_circle(): assert f('LLLL') == (0, 0, 'N')
+                                   ^^^^^^^^^
+
+tests\test_solution.py:8: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:20: in turtle
+    cmd, prog = parse_command(prog)
+                ^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+cmd = 'LLLL'
+
+    def parse_command(cmd):
+        if cmd.isdigit():
+            count = int(cmd)
+            if cmd.startswith('0'):
+                raise ValueError('bad count')
+            if len(cmd) &gt; len(prog) or prog[len(cmd)] not in 'FRBL':
+                raise ValueError('dangling count' if len(cmd) == len(prog) else 'bad command')
+            cmd = prog[len(cmd)]
+            prog = prog[2:]  # Skip the number
+        elif cmd not in 'FBRL':
+&gt;           raise ValueError(f'bad command: {cmd}')
+E           ValueError: bad command: LLLL
+
+solution.py:14: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-190747.turtle_walk_program.tests.test_solution" name="test_zero_count" time="0.001"><failure message="AssertionError: assert 'bad command: 0F' == 'bad count'&#10;  &#10;  - bad count&#10;  + bad command: 0F">def test_zero_count():
+        with pytest.raises(ValueError) as e: f('0F')
+&gt;       assert str(e.value) == 'bad count'
+E       AssertionError: assert 'bad command: 0F' == 'bad count'
+E         
+E         - bad count
+E         + bad command: 0F
+
+tests\test_solution.py:11: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-190747.turtle_walk_program.tests.test_solution" name="test_leading_zero_count" time="0.001"><failure message="AssertionError: assert 'bad command: 07F' == 'bad count'&#10;  &#10;  - bad count&#10;  + bad command: 07F">def test_leading_zero_count():
+        with pytest.raises(ValueError) as e: f('07F')
+&gt;       assert str(e.value) == 'bad count'
+E       AssertionError: assert 'bad command: 07F' == 'bad count'
+E         
+E         - bad count
+E         + bad command: 07F
+
+tests\test_solution.py:14: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-190747.turtle_walk_program.tests.test_solution" name="test_dangling" time="0.000"><failure message="AssertionError: assert 'bad command: F12' == 'dangling count'&#10;  &#10;  - dangling count&#10;  + bad command: F12">def test_dangling():
+        with pytest.raises(ValueError) as e: f('F12')
+&gt;       assert str(e.value) == 'dangling count'
+E       AssertionError: assert 'bad command: F12' == 'dangling count'
+E         
+E         - dangling count
+E         + bad command: F12
+
+tests\test_solution.py:17: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-190747.turtle_walk_program.tests.test_solution" name="test_unknown" time="0.001"><failure message="AssertionError: assert 'bad command: FxF' == 'bad command'&#10;  &#10;  - bad command&#10;  + bad command: FxF&#10;  ?            +++++">def test_unknown():
+        with pytest.raises(ValueError) as e: f('FxF')
+&gt;       assert str(e.value) == 'bad command'
+E       AssertionError: assert 'bad command: FxF' == 'bad command'
+E         
+E         - bad command
+E         + bad command: FxF
+E         ?            +++++
+
+tests\test_solution.py:20: AssertionError</failure></testcase></testsuite></testsuites>

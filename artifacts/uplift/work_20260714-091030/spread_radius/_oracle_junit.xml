@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="8" skipped="0" tests="15" time="0.262" timestamp="2026-07-14T09:46:54.726498-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260714-091030.spread_radius.tests.test_solution" name="test_one_step" time="0.001"><failure message="ValueError: ragged">&gt;   def test_one_step(): assert f(['S.']) == 1
+                                ^^^^^^^^^
+
+tests\test_solution.py:3: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+grid = ['S.']
+
+    def spread_radius(grid):
+        if not isinstance(grid, list) or not grid:
+            raise ValueError('bad grid')
+        n = len(grid)
+        m = 0 if n == 1 else len(grid[0])
+        if not isinstance(m, int) or m &lt; 1:
+&gt;           raise ValueError('ragged')
+E           ValueError: ragged
+
+solution.py:7: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-091030.spread_radius.tests.test_solution" name="test_source_only" time="0.000"><failure message="ValueError: ragged">&gt;   def test_source_only(): assert f(['S']) == 0
+                                   ^^^^^^^^
+
+tests\test_solution.py:4: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+grid = ['S']
+
+    def spread_radius(grid):
+        if not isinstance(grid, list) or not grid:
+            raise ValueError('bad grid')
+        n = len(grid)
+        m = 0 if n == 1 else len(grid[0])
+        if not isinstance(m, int) or m &lt; 1:
+&gt;           raise ValueError('ragged')
+E           ValueError: ragged
+
+solution.py:7: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-091030.spread_radius.tests.test_solution" name="test_unreachable" time="0.001"><failure message="ValueError: ragged">&gt;   def test_unreachable(): assert f(['S#.']) == -1
+                                   ^^^^^^^^^^
+
+tests\test_solution.py:5: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+grid = ['S#.']
+
+    def spread_radius(grid):
+        if not isinstance(grid, list) or not grid:
+            raise ValueError('bad grid')
+        n = len(grid)
+        m = 0 if n == 1 else len(grid[0])
+        if not isinstance(m, int) or m &lt; 1:
+&gt;           raise ValueError('ragged')
+E           ValueError: ragged
+
+solution.py:7: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-091030.spread_radius.tests.test_solution" name="test_square" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-091030.spread_radius.tests.test_solution" name="test_two_sources" time="0.000"><failure message="ValueError: ragged">&gt;   def test_two_sources(): assert f(['S.S']) == 1
+                                   ^^^^^^^^^^
+
+tests\test_solution.py:7: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+grid = ['S.S']
+
+    def spread_radius(grid):
+        if not isinstance(grid, list) or not grid:
+            raise ValueError('bad grid')
+        n = len(grid)
+        m = 0 if n == 1 else len(grid[0])
+        if not isinstance(m, int) or m &lt; 1:
+&gt;           raise ValueError('ragged')
+E           ValueError: ragged
+
+solution.py:7: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-091030.spread_radius.tests.test_solution" name="test_two_sources_middle" time="0.000"><failure message="ValueError: ragged">&gt;   def test_two_sources_middle(): assert f(['S...S']) == 2
+                                          ^^^^^^^^^^^^
+
+tests\test_solution.py:8: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+grid = ['S...S']
+
+    def spread_radius(grid):
+        if not isinstance(grid, list) or not grid:
+            raise ValueError('bad grid')
+        n = len(grid)
+        m = 0 if n == 1 else len(grid[0])
+        if not isinstance(m, int) or m &lt; 1:
+&gt;           raise ValueError('ragged')
+E           ValueError: ragged
+
+solution.py:7: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-091030.spread_radius.tests.test_solution" name="test_corridor" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-091030.spread_radius.tests.test_solution" name="test_no_open_cells" time="0.001"><failure message="ValueError: ragged">&gt;   def test_no_open_cells(): assert f(['S#']) == 0
+                                     ^^^^^^^^^
+
+tests\test_solution.py:10: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+grid = ['S#']
+
+    def spread_radius(grid):
+        if not isinstance(grid, list) or not grid:
+            raise ValueError('bad grid')
+        n = len(grid)
+        m = 0 if n == 1 else len(grid[0])
+        if not isinstance(m, int) or m &lt; 1:
+&gt;           raise ValueError('ragged')
+E           ValueError: ragged
+
+solution.py:7: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-091030.spread_radius.tests.test_solution" name="test_ragged" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-091030.spread_radius.tests.test_solution" name="test_bad_cell" time="0.001"><failure message="AssertionError: assert 'ragged' == 'bad cell'&#10;  &#10;  - bad cell&#10;  + ragged">def test_bad_cell():
+        with pytest.raises(ValueError) as e: f(['SX'])
+&gt;       assert str(e.value) == 'bad cell'
+E       AssertionError: assert 'ragged' == 'bad cell'
+E         
+E         - bad cell
+E         + ragged
+
+tests\test_solution.py:16: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-091030.spread_radius.tests.test_solution" name="test_no_source" time="0.001"><failure message="AssertionError: assert 'ragged' == 'no source'&#10;  &#10;  - no source&#10;  + ragged">def test_no_source():
+        with pytest.raises(ValueError) as e: f(['...'])
+&gt;       assert str(e.value) == 'no source'
+E       AssertionError: assert 'ragged' == 'no source'
+E         
+E         - no source
+E         + ragged
+
+tests\test_solution.py:19: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-091030.spread_radius.tests.test_solution" name="test_bad_grid_plain_string" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-091030.spread_radius.tests.test_solution" name="test_bad_grid_empty" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-091030.spread_radius.tests.test_solution" name="test_bad_grid_empty_row" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-091030.spread_radius.tests.test_solution" name="test_bad_grid_row_type" time="0.000" /></testsuite></testsuites>

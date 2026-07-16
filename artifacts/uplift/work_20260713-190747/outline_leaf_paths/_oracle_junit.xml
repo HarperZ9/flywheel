@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="7" skipped="0" tests="9" time="0.245" timestamp="2026-07-13T19:28:33.569836-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-190747.outline_leaf_paths.tests.test_solution" name="test_forest_and_leaf_order" time="0.001"><failure message="IndexError: pop from empty list">def test_forest_and_leaf_order():
+        lines = ["a", "  b", "    c", "  d", "e"]
+&gt;       assert outline_paths(lines) == ["a/b/c", "a/d", "e"]
+               ^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:7: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+lines = ['a', '  b', '    c', '  d', 'e']
+
+    def outline_paths(lines):
+        if not lines:
+            return []
+    
+        indent_stack = []
+        path_stack = [[]]
+    
+        for line in lines:
+            # Skip blank lines
+            if not line.strip():
+                continue
+    
+            # Determine the level of the current line
+            spaces = len(line) - len(line.lstrip(' '))
+            if '\t' in line[:spaces]:
+                raise ValueError("tab in indent")
+    
+            depth = spaces // 2
+            while indent_stack and indent_stack[-1] != (depth - 1):
+&gt;               path_stack.pop()
+E               IndexError: pop from empty list
+
+solution.py:54: IndexError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-190747.outline_leaf_paths.tests.test_solution" name="test_blank_and_whitespace_lines_skipped_without_breaking_levels" time="0.001"><failure message="AssertionError: assert [] == ['a/b']&#10;  &#10;  Right contains one more item: 'a/b'&#10;  Use -v to get more diff">def test_blank_and_whitespace_lines_skipped_without_breaking_levels():
+        lines = ["a", "", "   ", "\t", "  b"]
+&gt;       assert outline_paths(lines) == ["a/b"]
+E       AssertionError: assert [] == ['a/b']
+E         
+E         Right contains one more item: 'a/b'
+E         Use -v to get more diff
+
+tests\test_solution.py:12: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-190747.outline_leaf_paths.tests.test_solution" name="test_trailing_ws_stripped_inner_spaces_kept" time="0.000"><failure message="AssertionError: assert [] == ['top node/child x']&#10;  &#10;  Right contains one more item: 'top node/child x'&#10;  Use -v to get more diff">def test_trailing_ws_stripped_inner_spaces_kept():
+        lines = ["top node  ", "  child x "]
+&gt;       assert outline_paths(lines) == ["top node/child x"]
+E       AssertionError: assert [] == ['top node/child x']
+E         
+E         Right contains one more item: 'top node/child x'
+E         Use -v to get more diff
+
+tests\test_solution.py:17: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-190747.outline_leaf_paths.tests.test_solution" name="test_empty_and_all_blank" time="0.000"><failure message="AssertionError: assert [''] == []&#10;  &#10;  Left contains one more item: ''&#10;  Use -v to get more diff">def test_empty_and_all_blank():
+        assert outline_paths([]) == []
+&gt;       assert outline_paths(["", "  "]) == []
+E       AssertionError: assert [''] == []
+E         
+E         Left contains one more item: ''
+E         Use -v to get more diff
+
+tests\test_solution.py:22: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-190747.outline_leaf_paths.tests.test_solution" name="test_indent_jump_including_indented_first_line" time="0.000"><failure message="IndexError: list index out of range">def test_indent_jump_including_indented_first_line():
+        with pytest.raises(ValueError, match="indent jump"):
+&gt;           outline_paths(["a", "    b"])
+
+tests\test_solution.py:27: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+lines = ['a', '    b']
+
+    def outline_paths(lines):
+        if not lines:
+            return []
+    
+        indent_stack = []
+        path_stack = [[]]
+    
+        for line in lines:
+            # Skip blank lines
+            if not line.strip():
+                continue
+    
+            # Determine the level of the current line
+            spaces = len(line) - len(line.lstrip(' '))
+            if '\t' in line[:spaces]:
+                raise ValueError("tab in indent")
+    
+            depth = spaces // 2
+            while indent_stack and indent_stack[-1] != (depth - 1):
+                path_stack.pop()
+                indent_stack.pop()
+    
+            if '/' in line.strip():
+                raise ValueError("slash in name")
+    
+            # Add the current node to the path
+&gt;           path_stack[-1].append(line.strip())
+            ^^^^^^^^^^^^^^
+E           IndexError: list index out of range
+
+solution.py:61: IndexError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-190747.outline_leaf_paths.tests.test_solution" name="test_odd_indent" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_odd_indent():
+&gt;       with pytest.raises(ValueError, match="odd indent"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:33: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260713-190747.outline_leaf_paths.tests.test_solution" name="test_tab_in_indent_checked_before_width" time="0.000"><failure message="IndexError: list index out of range">def test_tab_in_indent_checked_before_width():
+        with pytest.raises(ValueError, match="tab in indent"):
+&gt;           outline_paths(["a", " \tb"])
+
+tests\test_solution.py:39: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+lines = ['a', ' \tb']
+
+    def outline_paths(lines):
+        if not lines:
+            return []
+    
+        indent_stack = []
+        path_stack = [[]]
+    
+        for line in lines:
+            # Skip blank lines
+            if not line.strip():
+                continue
+    
+            # Determine the level of the current line
+            spaces = len(line) - len(line.lstrip(' '))
+            if '\t' in line[:spaces]:
+                raise ValueError("tab in indent")
+    
+            depth = spaces // 2
+            while indent_stack and indent_stack[-1] != (depth - 1):
+                path_stack.pop()
+                indent_stack.pop()
+    
+            if '/' in line.strip():
+                raise ValueError("slash in name")
+    
+            # Add the current node to the path
+&gt;           path_stack[-1].append(line.strip())
+            ^^^^^^^^^^^^^^
+E           IndexError: list index out of range
+
+solution.py:61: IndexError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-190747.outline_leaf_paths.tests.test_solution" name="test_slash_in_name" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-190747.outline_leaf_paths.tests.test_solution" name="test_no_mutation" time="0.000" /></testsuite></testsuites>

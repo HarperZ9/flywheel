@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="1" failures="0" skipped="0" tests="1" time="0.281" timestamp="2026-07-13T20:30:21.774845-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="" name="artifacts.uplift.work_20260713-201327.eval_bool_expr.tests.test_solution" time="0.000"><error message="collection failure">tests\test_solution.py:2: in &lt;module&gt;
+    from solution import eval_bool as f
+solution.py:42: in &lt;module&gt;
+    print(eval_bool("true and not false"))  # (True and False)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+solution.py:11: in eval_bool
+    raise ValueError('bad expr')
+E   ValueError: bad expr</error></testcase></testsuite></testsuites>

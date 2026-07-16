@@ -1,0 +1,184 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="10" skipped="0" tests="12" time="0.244" timestamp="2026-07-14T09:10:13.017612-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260714-083129.lcs_diff_ops.tests.test_solution" name="test_replace_middle" time="0.001"><failure message="TypeError: object of type 'NoneType' has no len()">def test_replace_middle():
+&gt;       assert f(['a', 'b', 'c'], ['a', 'x', 'c']) == [('equal', ['a']), ('delete', ['b']), ('insert', ['x']), ('equal', ['c'])]
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:4: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:26: in diff_ops
+    _, result = helper()
+                ^^^^^^^^
+solution.py:14: in helper
+    res = helper(i + 1, j, 'equal', items)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+solution.py:14: in helper
+    res = helper(i + 1, j, 'equal', items)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+solution.py:17: in helper
+    res = max(res, helper(i + 1, j, 'delete', [a[i]] + items), key=lambda x: len(x[1]))
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+x = (('equal', []), None)
+
+&gt;   res = max(res, helper(i + 1, j, 'delete', [a[i]] + items), key=lambda x: len(x[1]))
+                                                                             ^^^^^^^^^
+E   TypeError: object of type 'NoneType' has no len()
+
+solution.py:17: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.lcs_diff_ops.tests.test_solution" name="test_all_equal" time="0.000"><failure message="TypeError: object of type 'NoneType' has no len()">&gt;   def test_all_equal(): assert f(['a', 'b'], ['a', 'b']) == [('equal', ['a', 'b'])]
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:5: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:26: in diff_ops
+    _, result = helper()
+                ^^^^^^^^
+solution.py:14: in helper
+    res = helper(i + 1, j, 'equal', items)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+solution.py:17: in helper
+    res = max(res, helper(i + 1, j, 'delete', [a[i]] + items), key=lambda x: len(x[1]))
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+x = (('equal', []), None)
+
+&gt;   res = max(res, helper(i + 1, j, 'delete', [a[i]] + items), key=lambda x: len(x[1]))
+                                                                             ^^^^^^^^^
+E   TypeError: object of type 'NoneType' has no len()
+
+solution.py:17: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.lcs_diff_ops.tests.test_solution" name="test_both_empty" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-083129.lcs_diff_ops.tests.test_solution" name="test_insert_only" time="0.000"><failure message="AssertionError: assert [] == [('insert', ['a', 'b'])]&#10;  &#10;  Right contains one more item: ('insert', ['a', 'b'])&#10;  Use -v to get more diff">&gt;   def test_insert_only(): assert f([], ['a', 'b']) == [('insert', ['a', 'b'])]
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert [] == [('insert', ['a', 'b'])]
+E     
+E     Right contains one more item: ('insert', ['a', 'b'])
+E     Use -v to get more diff
+
+tests\test_solution.py:7: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.lcs_diff_ops.tests.test_solution" name="test_delete_only" time="0.000"><failure message="AssertionError: assert [] == [('delete', ['a', 'b'])]&#10;  &#10;  Right contains one more item: ('delete', ['a', 'b'])&#10;  Use -v to get more diff">&gt;   def test_delete_only(): assert f(['a', 'b'], []) == [('delete', ['a', 'b'])]
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert [] == [('delete', ['a', 'b'])]
+E     
+E     Right contains one more item: ('delete', ['a', 'b'])
+E     Use -v to get more diff
+
+tests\test_solution.py:8: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.lcs_diff_ops.tests.test_solution" name="test_disjoint" time="0.000"><failure message="TypeError: object of type 'NoneType' has no len()">def test_disjoint():
+&gt;       assert f(['a', 'b'], ['c', 'd']) == [('delete', ['a', 'b']), ('insert', ['c', 'd'])]
+               ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:10: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:26: in diff_ops
+    _, result = helper()
+                ^^^^^^^^
+solution.py:14: in helper
+    res = helper(i + 1, j, 'equal', items)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+solution.py:17: in helper
+    res = max(res, helper(i + 1, j, 'delete', [a[i]] + items), key=lambda x: len(x[1]))
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+x = (('equal', []), None)
+
+&gt;   res = max(res, helper(i + 1, j, 'delete', [a[i]] + items), key=lambda x: len(x[1]))
+                                                                             ^^^^^^^^^
+E   TypeError: object of type 'NoneType' has no len()
+
+solution.py:17: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.lcs_diff_ops.tests.test_solution" name="test_shift" time="0.000"><failure message="TypeError: object of type 'NoneType' has no len()">def test_shift():
+&gt;       assert f(['x', 'a'], ['a', 'y']) == [('delete', ['x']), ('equal', ['a']), ('insert', ['y'])]
+               ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:12: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:26: in diff_ops
+    _, result = helper()
+                ^^^^^^^^
+solution.py:14: in helper
+    res = helper(i + 1, j, 'equal', items)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+solution.py:20: in helper
+    res = max(res, helper(i, j + 1, 'insert', [b[j]] + items), key=lambda x: len(x[1]))
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+solution.py:17: in helper
+    res = max(res, helper(i + 1, j, 'delete', [a[i]] + items), key=lambda x: len(x[1]))
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+x = (('equal', ['a']), None)
+
+&gt;   res = max(res, helper(i + 1, j, 'delete', [a[i]] + items), key=lambda x: len(x[1]))
+                                                                             ^^^^^^^^^
+E   TypeError: object of type 'NoneType' has no len()
+
+solution.py:17: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.lcs_diff_ops.tests.test_solution" name="test_tie_prefers_delete" time="0.000"><failure message="TypeError: object of type 'NoneType' has no len()">def test_tie_prefers_delete():
+&gt;       assert f(['a', 'b', 'a'], ['b', 'a', 'b']) == [('delete', ['a']), ('equal', ['b', 'a']), ('insert', ['b'])]
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:14: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:26: in diff_ops
+    _, result = helper()
+                ^^^^^^^^
+solution.py:14: in helper
+    res = helper(i + 1, j, 'equal', items)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+solution.py:14: in helper
+    res = helper(i + 1, j, 'equal', items)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+solution.py:17: in helper
+    res = max(res, helper(i + 1, j, 'delete', [a[i]] + items), key=lambda x: len(x[1]))
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+x = (('equal', []), None)
+
+&gt;   res = max(res, helper(i + 1, j, 'delete', [a[i]] + items), key=lambda x: len(x[1]))
+                                                                             ^^^^^^^^^
+E   TypeError: object of type 'NoneType' has no len()
+
+solution.py:17: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.lcs_diff_ops.tests.test_solution" name="test_append" time="0.000"><failure message="TypeError: object of type 'NoneType' has no len()">&gt;   def test_append(): assert f(['a'], ['a', 'b']) == [('equal', ['a']), ('insert', ['b'])]
+                              ^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:15: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:26: in diff_ops
+    _, result = helper()
+                ^^^^^^^^
+solution.py:20: in helper
+    res = max(res, helper(i, j + 1, 'insert', [b[j]] + items), key=lambda x: len(x[1]))
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+solution.py:17: in helper
+    res = max(res, helper(i + 1, j, 'delete', [a[i]] + items), key=lambda x: len(x[1]))
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+x = (('equal', ['a']), None)
+
+&gt;   res = max(res, helper(i + 1, j, 'delete', [a[i]] + items), key=lambda x: len(x[1]))
+                                                                             ^^^^^^^^^
+E   TypeError: object of type 'NoneType' has no len()
+
+solution.py:17: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.lcs_diff_ops.tests.test_solution" name="test_prepend" time="0.000"><failure message="TypeError: object of type 'NoneType' has no len()">&gt;   def test_prepend(): assert f(['b'], ['a', 'b']) == [('insert', ['a']), ('equal', ['b'])]
+                               ^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:16: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:26: in diff_ops
+    _, result = helper()
+                ^^^^^^^^
+solution.py:17: in helper
+    res = max(res, helper(i + 1, j, 'delete', [a[i]] + items), key=lambda x: len(x[1]))
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+x = (('equal', []), None)
+
+&gt;   res = max(res, helper(i + 1, j, 'delete', [a[i]] + items), key=lambda x: len(x[1]))
+                                                                             ^^^^^^^^^
+E   TypeError: object of type 'NoneType' has no len()
+
+solution.py:17: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.lcs_diff_ops.tests.test_solution" name="test_bad_input_not_list" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-083129.lcs_diff_ops.tests.test_solution" name="test_bad_element" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_bad_element():
+&gt;       with pytest.raises(ValueError) as e: f([1], [])
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:21: Failed</failure></testcase></testsuite></testsuites>

@@ -1,0 +1,389 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="7" skipped="0" tests="11" time="0.247" timestamp="2026-07-13T19:54:38.245198-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-192539.lru_trace.tests.test_solution" name="test_basic_eviction" time="0.001"><failure message="ValueError: too many values to unpack (expected 2)">def test_basic_eviction():
+&gt;       assert f(2, [('put', 'a', 1), ('put', 'b', 2), ('put', 'c', 3), ('get', 'a'), ('get', 'b'), ('get', 'c')]) == [None, 2, 3]
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:4: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+capacity = 2
+ops = [('put', 'a', 1), ('put', 'b', 2), ('put', 'c', 3), ('get', 'a'), ('get', 'b'), ('get', 'c')]
+
+    def lru_trace(capacity, ops):
+        if not isinstance(capacity, int) or capacity &lt; 1:
+            raise ValueError('bad capacity')
+    
+        class LRUCacheNode:
+            def __init__(self, key, value=None):
+                self.key = key
+                self.value = value
+                self.prev = None
+                self.next = None
+    
+        cache = {}
+        dummy_head = LRUCacheNode('__dummy_head__')
+        tail = LRUCacheNode('__dummy_tail__')
+        dummy_head.next = tail
+        tail.prev = dummy_head
+    
+        def get(key):
+            if key not in cache:
+                return None
+            node = cache[key]
+            move_to_end(node)
+            return node.value
+    
+        def put(key, value=None):
+            if key in cache:
+                node = cache.pop(key)
+                move_to_end(node)  # Move the existing key to the end (most recent use)
+            else:
+                if len(cache) == capacity:
+                    lru_node = dummy_head.next.prev
+                    del cache[lru_node.key]
+                    remove_and_delete_next(dummy_head, lru_node)
+    
+            new_node = LRUCacheNode(key, value)
+            add_to_end(new_node)
+    
+        def move_to_end(node):
+            prev_node = node.prev
+            next_node = node.next
+            if not prev_node or not next_node:
+                return  # Node is already at the end
+    
+            remove_and_delete_next(prev_node, node)
+            add_to_end(node)
+    
+        def add_to_end(node):
+            tail.prev.next = node
+            node.prev = tail.prev
+            node.next = tail
+            tail.prev = node
+    
+        def remove_and_delete_next(dummy_head, node):
+            prev_node = dummy_head.next
+            if node == dummy_head.next:
+                return  # Node is already at the end
+    
+            prev_node.next = node.next
+            node.next.prev = prev_node
+            del cache[node.key]
+    
+&gt;       for _, op in ops:
+            ^^^^^
+E       ValueError: too many values to unpack (expected 2)
+
+solution.py:62: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-192539.lru_trace.tests.test_solution" name="test_get_refreshes" time="0.000"><failure message="ValueError: too many values to unpack (expected 2)">def test_get_refreshes():
+&gt;       assert f(2, [('put', 'a', 1), ('put', 'b', 2), ('get', 'a'), ('put', 'c', 3), ('get', 'b'), ('get', 'a'), ('get', 'c')]) == [1, None, 1, 3]
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:6: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+capacity = 2
+ops = [('put', 'a', 1), ('put', 'b', 2), ('get', 'a'), ('put', 'c', 3), ('get', 'b'), ('get', 'a'), ...]
+
+    def lru_trace(capacity, ops):
+        if not isinstance(capacity, int) or capacity &lt; 1:
+            raise ValueError('bad capacity')
+    
+        class LRUCacheNode:
+            def __init__(self, key, value=None):
+                self.key = key
+                self.value = value
+                self.prev = None
+                self.next = None
+    
+        cache = {}
+        dummy_head = LRUCacheNode('__dummy_head__')
+        tail = LRUCacheNode('__dummy_tail__')
+        dummy_head.next = tail
+        tail.prev = dummy_head
+    
+        def get(key):
+            if key not in cache:
+                return None
+            node = cache[key]
+            move_to_end(node)
+            return node.value
+    
+        def put(key, value=None):
+            if key in cache:
+                node = cache.pop(key)
+                move_to_end(node)  # Move the existing key to the end (most recent use)
+            else:
+                if len(cache) == capacity:
+                    lru_node = dummy_head.next.prev
+                    del cache[lru_node.key]
+                    remove_and_delete_next(dummy_head, lru_node)
+    
+            new_node = LRUCacheNode(key, value)
+            add_to_end(new_node)
+    
+        def move_to_end(node):
+            prev_node = node.prev
+            next_node = node.next
+            if not prev_node or not next_node:
+                return  # Node is already at the end
+    
+            remove_and_delete_next(prev_node, node)
+            add_to_end(node)
+    
+        def add_to_end(node):
+            tail.prev.next = node
+            node.prev = tail.prev
+            node.next = tail
+            tail.prev = node
+    
+        def remove_and_delete_next(dummy_head, node):
+            prev_node = dummy_head.next
+            if node == dummy_head.next:
+                return  # Node is already at the end
+    
+            prev_node.next = node.next
+            node.next.prev = prev_node
+            del cache[node.key]
+    
+&gt;       for _, op in ops:
+            ^^^^^
+E       ValueError: too many values to unpack (expected 2)
+
+solution.py:62: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-192539.lru_trace.tests.test_solution" name="test_put_updates_no_evict" time="0.000"><failure message="ValueError: too many values to unpack (expected 2)">def test_put_updates_no_evict():
+&gt;       assert f(2, [('put', 'a', 1), ('put', 'b', 2), ('put', 'a', 9), ('put', 'c', 3), ('get', 'a'), ('get', 'b'), ('get', 'c')]) == [9, None, 3]
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:8: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+capacity = 2
+ops = [('put', 'a', 1), ('put', 'b', 2), ('put', 'a', 9), ('put', 'c', 3), ('get', 'a'), ('get', 'b'), ...]
+
+    def lru_trace(capacity, ops):
+        if not isinstance(capacity, int) or capacity &lt; 1:
+            raise ValueError('bad capacity')
+    
+        class LRUCacheNode:
+            def __init__(self, key, value=None):
+                self.key = key
+                self.value = value
+                self.prev = None
+                self.next = None
+    
+        cache = {}
+        dummy_head = LRUCacheNode('__dummy_head__')
+        tail = LRUCacheNode('__dummy_tail__')
+        dummy_head.next = tail
+        tail.prev = dummy_head
+    
+        def get(key):
+            if key not in cache:
+                return None
+            node = cache[key]
+            move_to_end(node)
+            return node.value
+    
+        def put(key, value=None):
+            if key in cache:
+                node = cache.pop(key)
+                move_to_end(node)  # Move the existing key to the end (most recent use)
+            else:
+                if len(cache) == capacity:
+                    lru_node = dummy_head.next.prev
+                    del cache[lru_node.key]
+                    remove_and_delete_next(dummy_head, lru_node)
+    
+            new_node = LRUCacheNode(key, value)
+            add_to_end(new_node)
+    
+        def move_to_end(node):
+            prev_node = node.prev
+            next_node = node.next
+            if not prev_node or not next_node:
+                return  # Node is already at the end
+    
+            remove_and_delete_next(prev_node, node)
+            add_to_end(node)
+    
+        def add_to_end(node):
+            tail.prev.next = node
+            node.prev = tail.prev
+            node.next = tail
+            tail.prev = node
+    
+        def remove_and_delete_next(dummy_head, node):
+            prev_node = dummy_head.next
+            if node == dummy_head.next:
+                return  # Node is already at the end
+    
+            prev_node.next = node.next
+            node.next.prev = prev_node
+            del cache[node.key]
+    
+&gt;       for _, op in ops:
+            ^^^^^
+E       ValueError: too many values to unpack (expected 2)
+
+solution.py:62: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-192539.lru_trace.tests.test_solution" name="test_miss_no_recency" time="0.000"><failure message="ValueError: too many values to unpack (expected 2)">def test_miss_no_recency():
+&gt;       assert f(2, [('put', 'a', 1), ('put', 'b', 2), ('get', 'zz'), ('put', 'c', 3), ('get', 'a'), ('get', 'b')]) == [None, None, 2]
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:10: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+capacity = 2
+ops = [('put', 'a', 1), ('put', 'b', 2), ('get', 'zz'), ('put', 'c', 3), ('get', 'a'), ('get', 'b')]
+
+    def lru_trace(capacity, ops):
+        if not isinstance(capacity, int) or capacity &lt; 1:
+            raise ValueError('bad capacity')
+    
+        class LRUCacheNode:
+            def __init__(self, key, value=None):
+                self.key = key
+                self.value = value
+                self.prev = None
+                self.next = None
+    
+        cache = {}
+        dummy_head = LRUCacheNode('__dummy_head__')
+        tail = LRUCacheNode('__dummy_tail__')
+        dummy_head.next = tail
+        tail.prev = dummy_head
+    
+        def get(key):
+            if key not in cache:
+                return None
+            node = cache[key]
+            move_to_end(node)
+            return node.value
+    
+        def put(key, value=None):
+            if key in cache:
+                node = cache.pop(key)
+                move_to_end(node)  # Move the existing key to the end (most recent use)
+            else:
+                if len(cache) == capacity:
+                    lru_node = dummy_head.next.prev
+                    del cache[lru_node.key]
+                    remove_and_delete_next(dummy_head, lru_node)
+    
+            new_node = LRUCacheNode(key, value)
+            add_to_end(new_node)
+    
+        def move_to_end(node):
+            prev_node = node.prev
+            next_node = node.next
+            if not prev_node or not next_node:
+                return  # Node is already at the end
+    
+            remove_and_delete_next(prev_node, node)
+            add_to_end(node)
+    
+        def add_to_end(node):
+            tail.prev.next = node
+            node.prev = tail.prev
+            node.next = tail
+            tail.prev = node
+    
+        def remove_and_delete_next(dummy_head, node):
+            prev_node = dummy_head.next
+            if node == dummy_head.next:
+                return  # Node is already at the end
+    
+            prev_node.next = node.next
+            node.next.prev = prev_node
+            del cache[node.key]
+    
+&gt;       for _, op in ops:
+            ^^^^^
+E       ValueError: too many values to unpack (expected 2)
+
+solution.py:62: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-192539.lru_trace.tests.test_solution" name="test_capacity_one" time="0.000"><failure message="ValueError: too many values to unpack (expected 2)">def test_capacity_one():
+&gt;       assert f(1, [('put', 'a', 1), ('put', 'b', 2), ('get', 'a'), ('get', 'b')]) == [None, 2]
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:12: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+capacity = 1
+ops = [('put', 'a', 1), ('put', 'b', 2), ('get', 'a'), ('get', 'b')]
+
+    def lru_trace(capacity, ops):
+        if not isinstance(capacity, int) or capacity &lt; 1:
+            raise ValueError('bad capacity')
+    
+        class LRUCacheNode:
+            def __init__(self, key, value=None):
+                self.key = key
+                self.value = value
+                self.prev = None
+                self.next = None
+    
+        cache = {}
+        dummy_head = LRUCacheNode('__dummy_head__')
+        tail = LRUCacheNode('__dummy_tail__')
+        dummy_head.next = tail
+        tail.prev = dummy_head
+    
+        def get(key):
+            if key not in cache:
+                return None
+            node = cache[key]
+            move_to_end(node)
+            return node.value
+    
+        def put(key, value=None):
+            if key in cache:
+                node = cache.pop(key)
+                move_to_end(node)  # Move the existing key to the end (most recent use)
+            else:
+                if len(cache) == capacity:
+                    lru_node = dummy_head.next.prev
+                    del cache[lru_node.key]
+                    remove_and_delete_next(dummy_head, lru_node)
+    
+            new_node = LRUCacheNode(key, value)
+            add_to_end(new_node)
+    
+        def move_to_end(node):
+            prev_node = node.prev
+            next_node = node.next
+            if not prev_node or not next_node:
+                return  # Node is already at the end
+    
+            remove_and_delete_next(prev_node, node)
+            add_to_end(node)
+    
+        def add_to_end(node):
+            tail.prev.next = node
+            node.prev = tail.prev
+            node.next = tail
+            tail.prev = node
+    
+        def remove_and_delete_next(dummy_head, node):
+            prev_node = dummy_head.next
+            if node == dummy_head.next:
+                return  # Node is already at the end
+    
+            prev_node.next = node.next
+            node.next.prev = prev_node
+            del cache[node.key]
+    
+&gt;       for _, op in ops:
+            ^^^^^
+E       ValueError: too many values to unpack (expected 2)
+
+solution.py:62: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-192539.lru_trace.tests.test_solution" name="test_empty_ops" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-192539.lru_trace.tests.test_solution" name="test_bad_capacity_zero" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-192539.lru_trace.tests.test_solution" name="test_bad_capacity_bool" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_bad_capacity_bool():
+&gt;       with pytest.raises(ValueError): f(True, [])
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:19: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260713-192539.lru_trace.tests.test_solution" name="test_bad_op_shape" time="0.001"><failure message="AssertionError: assert 'too many val... (expected 2)' == 'bad op'&#10;  &#10;  - bad op&#10;  + too many values to unpack (expected 2)">def test_bad_op_shape():
+        with pytest.raises(ValueError) as e: f(2, [('get', 'a', 'b')])
+&gt;       assert str(e.value) == 'bad op'
+E       AssertionError: assert 'too many val... (expected 2)' == 'bad op'
+E         
+E         - bad op
+E         + too many values to unpack (expected 2)
+
+tests\test_solution.py:22: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-192539.lru_trace.tests.test_solution" name="test_bad_op_name" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-192539.lru_trace.tests.test_solution" name="test_bad_op_list" time="0.001" /></testsuite></testsuites>

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="1" failures="0" skipped="0" tests="1" time="0.248" timestamp="2026-07-13T20:23:08.108858-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="" name="artifacts.uplift.work_20260713-201327.purge_in_place.tests.test_solution" time="0.000"><error message="collection failure">tests\test_solution.py:2: in &lt;module&gt;
+    from solution import purge_in_place
+solution.py:31: in &lt;module&gt;
+    check_solution()
+solution.py:26: in check_solution
+    assert purge_in_place([2,4,3,0,1,7,11], [3,5]) == 2
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+solution.py:18: in purge_in_place
+    if isinstance(item, targets[0]) and (isinstance(target[1], type(item)) or (target[1] != item)):
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   TypeError: isinstance() arg 2 must be a type, a tuple of types, or a union</error></testcase></testsuite></testsuites>

@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="11" skipped="0" tests="15" time="0.233" timestamp="2026-07-13T20:13:26.424636-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-194718.md_outline_number.tests.test_solution" name="test_basic" time="0.001"><failure message="ValueError: bad nesting">def test_basic():
+&gt;       assert f(['# A', '## B', '## C', '# D']) == ['1 A', '1.1 B', '1.2 C', '2 D']
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:4: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+lines = ['# A', '## B', '## C', '# D']
+
+    def outline_number(lines):
+        if not all(isinstance(line, str) for line in lines):
+            raise ValueError('bad input')
+    
+        header_stack = []
+        headers = []
+        level_counters = {k: 0 for k in range(1, 7)}
+    
+        for i, line in enumerate(lines):
+            if not line or not line[0] == '#':
+                continue
+    
+            hash_count = line.count('#')
+    
+            if not (hash_count &gt; 0 and hash_count &lt; 7) or any(line[i+2] != ' ' for i in range(hash_count - 1)):
+                raise ValueError('bad header')
+    
+            title = line[hash_count:line.find(' ', hash_count)]
+            level = hash_count
+            level_counters[level] += 1
+    
+            if len(header_stack) &gt; 0 and level &lt; header_stack[-1][0]:
+&gt;               raise ValueError('bad nesting')
+E               ValueError: bad nesting
+
+solution.py:23: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.md_outline_number.tests.test_solution" name="test_deep_reset" time="0.000"><failure message="ValueError: bad header">def test_deep_reset():
+&gt;       assert f(['# A', '## B', '### C', '## D', '### E']) == ['1 A', '1.1 B', '1.1.1 C', '1.2 D', '1.2.1 E']
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:6: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+lines = ['# A', '## B', '### C', '## D', '### E']
+
+    def outline_number(lines):
+        if not all(isinstance(line, str) for line in lines):
+            raise ValueError('bad input')
+    
+        header_stack = []
+        headers = []
+        level_counters = {k: 0 for k in range(1, 7)}
+    
+        for i, line in enumerate(lines):
+            if not line or not line[0] == '#':
+                continue
+    
+            hash_count = line.count('#')
+    
+            if not (hash_count &gt; 0 and hash_count &lt; 7) or any(line[i+2] != ' ' for i in range(hash_count - 1)):
+&gt;               raise ValueError('bad header')
+E               ValueError: bad header
+
+solution.py:16: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.md_outline_number.tests.test_solution" name="test_ignore_nonheaders" time="0.001"><failure message="AssertionError: assert [' ', '02 '] == ['1 A', '1.1 B']&#10;  &#10;  At index 0 diff: ' ' != '1 A'&#10;  Use -v to get more diff">def test_ignore_nonheaders():
+&gt;       assert f(['text', '# A', 'more', '## B']) == ['1 A', '1.1 B']
+E       AssertionError: assert [' ', '02 '] == ['1 A', '1.1 B']
+E         
+E         At index 0 diff: ' ' != '1 A'
+E         Use -v to get more diff
+
+tests\test_solution.py:8: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.md_outline_number.tests.test_solution" name="test_empty" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-194718.md_outline_number.tests.test_solution" name="test_no_headers" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-194718.md_outline_number.tests.test_solution" name="test_jump_shallow" time="0.000"><failure message="ValueError: bad header">def test_jump_shallow():
+&gt;       assert f(['# A', '## B', '### C', '# D']) == ['1 A', '1.1 B', '1.1.1 C', '2 D']
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:12: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+lines = ['# A', '## B', '### C', '# D']
+
+    def outline_number(lines):
+        if not all(isinstance(line, str) for line in lines):
+            raise ValueError('bad input')
+    
+        header_stack = []
+        headers = []
+        level_counters = {k: 0 for k in range(1, 7)}
+    
+        for i, line in enumerate(lines):
+            if not line or not line[0] == '#':
+                continue
+    
+            hash_count = line.count('#')
+    
+            if not (hash_count &gt; 0 and hash_count &lt; 7) or any(line[i+2] != ' ' for i in range(hash_count - 1)):
+&gt;               raise ValueError('bad header')
+E               ValueError: bad header
+
+solution.py:16: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.md_outline_number.tests.test_solution" name="test_title_with_hash" time="0.000"><failure message="ValueError: bad header">&gt;   def test_title_with_hash(): assert f(['# A # B']) == ['1 A # B']
+                                       ^^^^^^^^^^^^^^
+
+tests\test_solution.py:13: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+lines = ['# A # B']
+
+    def outline_number(lines):
+        if not all(isinstance(line, str) for line in lines):
+            raise ValueError('bad input')
+    
+        header_stack = []
+        headers = []
+        level_counters = {k: 0 for k in range(1, 7)}
+    
+        for i, line in enumerate(lines):
+            if not line or not line[0] == '#':
+                continue
+    
+            hash_count = line.count('#')
+    
+            if not (hash_count &gt; 0 and hash_count &lt; 7) or any(line[i+2] != ' ' for i in range(hash_count - 1)):
+&gt;               raise ValueError('bad header')
+E               ValueError: bad header
+
+solution.py:16: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.md_outline_number.tests.test_solution" name="test_first_not_level1" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_first_not_level1():
+&gt;       with pytest.raises(ValueError) as e: f(['## A'])
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:15: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.md_outline_number.tests.test_solution" name="test_skip_level" time="0.001"><failure message="AssertionError: assert 'bad header' == 'bad nesting'&#10;  &#10;  - bad nesting&#10;  + bad header">def test_skip_level():
+        with pytest.raises(ValueError) as e: f(['# A', '### C'])
+&gt;       assert str(e.value) == 'bad nesting'
+E       AssertionError: assert 'bad header' == 'bad nesting'
+E         
+E         - bad nesting
+E         + bad header
+
+tests\test_solution.py:19: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.md_outline_number.tests.test_solution" name="test_seven_hashes" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-194718.md_outline_number.tests.test_solution" name="test_no_space" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_no_space():
+&gt;       with pytest.raises(ValueError): f(['#title'])
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:24: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.md_outline_number.tests.test_solution" name="test_empty_title" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_empty_title():
+&gt;       with pytest.raises(ValueError): f(['# '])
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:26: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.md_outline_number.tests.test_solution" name="test_double_space" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_double_space():
+&gt;       with pytest.raises(ValueError): f(['#  x'])
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:28: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.md_outline_number.tests.test_solution" name="test_bad_input" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_bad_input():
+&gt;       with pytest.raises(ValueError) as e: f('# A')
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:30: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.md_outline_number.tests.test_solution" name="test_bad_element" time="0.000" /></testsuite></testsuites>

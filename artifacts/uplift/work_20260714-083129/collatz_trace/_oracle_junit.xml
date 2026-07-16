@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="9" skipped="0" tests="14" time="0.265" timestamp="2026-07-14T09:04:25.705991-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260714-083129.collatz_trace.tests.test_solution" name="test_one" time="0.001" /><testcase classname="artifacts.uplift.work_20260714-083129.collatz_trace.tests.test_solution" name="test_two" time="0.001"><failure message="assert [1, 1] == [2, 1]&#10;  &#10;  At index 0 diff: 1 != 2&#10;  Use -v to get more diff">&gt;   def test_two(): assert f(2, 1) == [2, 1]
+                    ^^^^^^^^^^^^^^^^^^^^^^^^
+E   assert [1, 1] == [2, 1]
+E     
+E     At index 0 diff: 1 != 2
+E     Use -v to get more diff
+
+tests\test_solution.py:4: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.collatz_trace.tests.test_solution" name="test_six" time="0.001"><failure message="assert [3, 10, 5, 16, 8, 4, ...] == [6, 3, 10, 5, 16, 8, ...]&#10;  &#10;  At index 0 diff: 3 != 6&#10;  Use -v to get more diff">&gt;   def test_six(): assert f(6, 100) == [6, 3, 10, 5, 16, 8, 4, 2, 1]
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   assert [3, 10, 5, 16, 8, 4, ...] == [6, 3, 10, 5, 16, 8, ...]
+E     
+E     At index 0 diff: 3 != 6
+E     Use -v to get more diff
+
+tests\test_solution.py:5: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.collatz_trace.tests.test_solution" name="test_exact_budget" time="0.001"><failure message="assert [3, 10, 5, 16, 8, 4, ...] == [6, 3, 10, 5, 16, 8, ...]&#10;  &#10;  At index 0 diff: 3 != 6&#10;  Use -v to get more diff">&gt;   def test_exact_budget(): assert f(6, 8) == [6, 3, 10, 5, 16, 8, 4, 2, 1]
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   assert [3, 10, 5, 16, 8, 4, ...] == [6, 3, 10, 5, 16, 8, ...]
+E     
+E     At index 0 diff: 3 != 6
+E     Use -v to get more diff
+
+tests\test_solution.py:6: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.collatz_trace.tests.test_solution" name="test_budget_short" time="0.001"><failure message="Failed: DID NOT RAISE &lt;class 'RuntimeError'&gt;">def test_budget_short():
+&gt;       with pytest.raises(RuntimeError) as e: f(6, 7)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'RuntimeError'&gt;
+
+tests\test_solution.py:8: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.collatz_trace.tests.test_solution" name="test_zero_budget" time="0.001"><failure message="Failed: DID NOT RAISE &lt;class 'RuntimeError'&gt;">def test_zero_budget():
+&gt;       with pytest.raises(RuntimeError) as e: f(2, 0)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'RuntimeError'&gt;
+
+tests\test_solution.py:11: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.collatz_trace.tests.test_solution" name="test_seven" time="0.001"><failure message="assert [22, 11, 34, 17, 52, 26, ...] == [7, 22, 11, 34, 17, 52, ...]&#10;  &#10;  At index 0 diff: 22 != 7&#10;  Use -v to get more diff">&gt;   def test_seven(): assert f(7, 16) == [7, 22, 11, 34, 17, 52, 26, 13, 40, 20, 10, 5, 16, 8, 4, 2, 1]
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   assert [22, 11, 34, 17, 52, 26, ...] == [7, 22, 11, 34, 17, 52, ...]
+E     
+E     At index 0 diff: 22 != 7
+E     Use -v to get more diff
+
+tests\test_solution.py:13: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.collatz_trace.tests.test_solution" name="test_seven_short" time="0.001"><failure message="Failed: DID NOT RAISE &lt;class 'RuntimeError'&gt;">def test_seven_short():
+&gt;       with pytest.raises(RuntimeError): f(7, 15)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'RuntimeError'&gt;
+
+tests\test_solution.py:15: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.collatz_trace.tests.test_solution" name="test_bad_start_zero" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-083129.collatz_trace.tests.test_solution" name="test_bad_start_bool" time="0.001"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_bad_start_bool():
+&gt;       with pytest.raises(ValueError) as e: f(True, 5)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:20: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.collatz_trace.tests.test_solution" name="test_bad_start_float" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-083129.collatz_trace.tests.test_solution" name="test_bad_limit" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-083129.collatz_trace.tests.test_solution" name="test_bad_limit_bool" time="0.001"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_bad_limit_bool():
+&gt;       with pytest.raises(ValueError) as e: f(5, True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:29: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.collatz_trace.tests.test_solution" name="test_start_before_limit" time="0.000" /></testsuite></testsuites>

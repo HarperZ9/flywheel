@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="6" skipped="0" tests="11" time="0.208" timestamp="2026-07-14T09:01:21.987706-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260714-083129.parse_a1_ref.tests.test_solution" name="test_a1" time="0.001"><failure message="ValueError: invalid literal for int() with base 10: 'A1'">&gt;   def test_a1(): assert f('A1') == (1, 1)
+                          ^^^^^^^
+
+tests\test_solution.py:3: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+ref = 'A1'
+
+    def parse_a1(ref: str) -&gt; tuple:
+        if not isinstance(ref, str):
+            raise ValueError('bad ref')
+        if not ref:
+            raise ValueError('bad ref')
+    
+        col = 0
+&gt;       row = int(ref)
+              ^^^^^^^^
+E       ValueError: invalid literal for int() with base 10: 'A1'
+
+solution.py:8: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.parse_a1_ref.tests.test_solution" name="test_b2" time="0.000"><failure message="ValueError: invalid literal for int() with base 10: 'B2'">&gt;   def test_b2(): assert f('B2') == (2, 2)
+                          ^^^^^^^
+
+tests\test_solution.py:4: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+ref = 'B2'
+
+    def parse_a1(ref: str) -&gt; tuple:
+        if not isinstance(ref, str):
+            raise ValueError('bad ref')
+        if not ref:
+            raise ValueError('bad ref')
+    
+        col = 0
+&gt;       row = int(ref)
+              ^^^^^^^^
+E       ValueError: invalid literal for int() with base 10: 'B2'
+
+solution.py:8: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.parse_a1_ref.tests.test_solution" name="test_z10" time="0.000"><failure message="ValueError: invalid literal for int() with base 10: 'Z10'">&gt;   def test_z10(): assert f('Z10') == (10, 26)
+                           ^^^^^^^^
+
+tests\test_solution.py:5: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+ref = 'Z10'
+
+    def parse_a1(ref: str) -&gt; tuple:
+        if not isinstance(ref, str):
+            raise ValueError('bad ref')
+        if not ref:
+            raise ValueError('bad ref')
+    
+        col = 0
+&gt;       row = int(ref)
+              ^^^^^^^^
+E       ValueError: invalid literal for int() with base 10: 'Z10'
+
+solution.py:8: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.parse_a1_ref.tests.test_solution" name="test_aa1" time="0.000"><failure message="ValueError: invalid literal for int() with base 10: 'AA1'">&gt;   def test_aa1(): assert f('AA1') == (1, 27)
+                           ^^^^^^^^
+
+tests\test_solution.py:6: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+ref = 'AA1'
+
+    def parse_a1(ref: str) -&gt; tuple:
+        if not isinstance(ref, str):
+            raise ValueError('bad ref')
+        if not ref:
+            raise ValueError('bad ref')
+    
+        col = 0
+&gt;       row = int(ref)
+              ^^^^^^^^
+E       ValueError: invalid literal for int() with base 10: 'AA1'
+
+solution.py:8: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.parse_a1_ref.tests.test_solution" name="test_ab100" time="0.000"><failure message="ValueError: invalid literal for int() with base 10: 'AB100'">&gt;   def test_ab100(): assert f('AB100') == (100, 28)
+                             ^^^^^^^^^^
+
+tests\test_solution.py:7: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+ref = 'AB100'
+
+    def parse_a1(ref: str) -&gt; tuple:
+        if not isinstance(ref, str):
+            raise ValueError('bad ref')
+        if not ref:
+            raise ValueError('bad ref')
+    
+        col = 0
+&gt;       row = int(ref)
+              ^^^^^^^^
+E       ValueError: invalid literal for int() with base 10: 'AB100'
+
+solution.py:8: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.parse_a1_ref.tests.test_solution" name="test_no_digits" time="0.001"><failure message="assert &quot;invalid lite...base 10: 'AB'&quot; == 'bad ref'&#10;  &#10;  - bad ref&#10;  + invalid literal for int() with base 10: 'AB'">def test_no_digits():
+        with pytest.raises(ValueError) as e: f('AB')
+&gt;       assert str(e.value) == 'bad ref'
+E       assert "invalid lite...base 10: 'AB'" == 'bad ref'
+E         
+E         - bad ref
+E         + invalid literal for int() with base 10: 'AB'
+
+tests\test_solution.py:10: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.parse_a1_ref.tests.test_solution" name="test_no_letters" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-083129.parse_a1_ref.tests.test_solution" name="test_lowercase" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-083129.parse_a1_ref.tests.test_solution" name="test_leading_zero" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-083129.parse_a1_ref.tests.test_solution" name="test_zero_row" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-083129.parse_a1_ref.tests.test_solution" name="test_letters_after_digits" time="0.000" /></testsuite></testsuites>

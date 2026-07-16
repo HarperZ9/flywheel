@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="5" skipped="0" tests="8" time="0.297" timestamp="2026-07-13T19:20:56.073150-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-190747.csv_field_split.tests.test_solution" name="test_basic_and_empty_fields" time="0.001"><failure message="AssertionError: assert ['a', ',', 'b', ',', 'c'] == ['a', 'b', 'c']&#10;  &#10;  At index 1 diff: ',' != 'b'&#10;  Left contains 2 more items, first extra item: ','&#10;  Use -v to get more diff">def test_basic_and_empty_fields():
+&gt;       assert split_csv_line("a,b,c") == ["a", "b", "c"]
+E       AssertionError: assert ['a', ',', 'b', ',', 'c'] == ['a', 'b', 'c']
+E         
+E         At index 1 diff: ',' != 'b'
+E         Left contains 2 more items, first extra item: ','
+E         Use -v to get more diff
+
+tests\test_solution.py:6: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-190747.csv_field_split.tests.test_solution" name="test_empty_line_single_empty_field" time="0.001"><failure message="AssertionError: assert [] == ['']&#10;  &#10;  Right contains one more item: ''&#10;  Use -v to get more diff">def test_empty_line_single_empty_field():
+&gt;       assert split_csv_line("") == [""]
+E       AssertionError: assert [] == ['']
+E         
+E         Right contains one more item: ''
+E         Use -v to get more diff
+
+tests\test_solution.py:11: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-190747.csv_field_split.tests.test_solution" name="test_trailing_and_leading_comma" time="0.001"><failure message="AssertionError: assert ['a', ','] == ['a', '']&#10;  &#10;  At index 1 diff: ',' != ''&#10;  Use -v to get more diff">def test_trailing_and_leading_comma():
+&gt;       assert split_csv_line("a,") == ["a", ""]
+E       AssertionError: assert ['a', ','] == ['a', '']
+E         
+E         At index 1 diff: ',' != ''
+E         Use -v to get more diff
+
+tests\test_solution.py:15: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-190747.csv_field_split.tests.test_solution" name="test_quoted_field_with_comma_and_escaped_quote" time="0.000"><failure message="ValueError: Unterminated quoted field">def test_quoted_field_with_comma_and_escaped_quote():
+&gt;       assert split_csv_line('"a,b",c') == ["a,b", "c"]
+               ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:21: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+line = '"a,b",c'
+
+    def split_csv_line(line: str) -&gt; list[str]:
+        fields = []
+        i = 0
+        n = len(line)
+    
+        while i &lt; n:
+            if line[i] == ',':
+                fields.append(line[i:i+1])
+                i += 1
+            elif line[i] == '"':
+                j = i + 1
+                while j &lt; n and (line[j] != '"' or (j &gt; i + 1 and line[j-2:j] == '""')):
+                    if line[j:j+2] == '""':
+                        fields.append('"' * 2)
+                        j += 1
+                    else:
+                        fields.append(line[j])
+                    j += 1
+                if j == n or line[j] != ',':
+&gt;                   raise ValueError("Unterminated quoted field")
+E                   ValueError: Unterminated quoted field
+
+solution.py:20: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-190747.csv_field_split.tests.test_solution" name="test_whitespace_is_not_stripped" time="0.001"><failure message="AssertionError: assert [' a ', ',', ' b '] == [' a ', ' b ']&#10;  &#10;  At index 1 diff: ',' != ' b '&#10;  Left contains one more item: ' b '&#10;  Use -v to get more diff">def test_whitespace_is_not_stripped():
+&gt;       assert split_csv_line(" a , b ") == [" a ", " b "]
+E       AssertionError: assert [' a ', ',', ' b '] == [' a ', ' b ']
+E         
+E         At index 1 diff: ',' != ' b '
+E         Left contains one more item: ' b '
+E         Use -v to get more diff
+
+tests\test_solution.py:28: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-190747.csv_field_split.tests.test_solution" name="test_quote_in_unquoted_field_raises" time="0.001" /><testcase classname="artifacts.uplift.work_20260713-190747.csv_field_split.tests.test_solution" name="test_unterminated_quote_raises" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-190747.csv_field_split.tests.test_solution" name="test_junk_after_closing_quote_raises" time="0.000" /></testsuite></testsuites>

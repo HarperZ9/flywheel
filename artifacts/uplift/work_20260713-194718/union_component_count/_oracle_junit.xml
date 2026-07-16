@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="8" skipped="0" tests="14" time="0.272" timestamp="2026-07-13T20:09:56.744752-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-194718.union_component_count.tests.test_solution" name="test_no_edges" time="0.001"><failure message="assert 0 == 5&#10; +  where 0 = f(5, [])">&gt;   def test_no_edges(): assert f(5, []) == 5
+                         ^^^^^^^^^^^^^^^^^^^^
+E   assert 0 == 5
+E    +  where 0 = f(5, [])
+
+tests\test_solution.py:3: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.union_component_count.tests.test_solution" name="test_chain" time="0.000"><failure message="TypeError: cannot unpack non-iterable int object">&gt;   def test_chain(): assert f(5, [(0, 1), (1, 2)]) == 3
+                             ^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:4: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:42: in component_count
+    explore_component(i)
+solution.py:35: in explore_component
+    other_node = next((n1, n2) for n1, n2 in edge if node == min(n1, n2))[0]
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+.0 = &lt;tuple_iterator object at 0x000001BA3A065A20&gt;
+
+&gt;   other_node = next((n1, n2) for n1, n2 in edge if node == min(n1, n2))[0]
+                                   ^^^^^^
+E   TypeError: cannot unpack non-iterable int object
+
+solution.py:35: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.union_component_count.tests.test_solution" name="test_two_pairs" time="0.000"><failure message="TypeError: cannot unpack non-iterable int object">&gt;   def test_two_pairs(): assert f(4, [(0, 1), (2, 3)]) == 2
+                                 ^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:5: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:42: in component_count
+    explore_component(i)
+solution.py:35: in explore_component
+    other_node = next((n1, n2) for n1, n2 in edge if node == min(n1, n2))[0]
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+.0 = &lt;tuple_iterator object at 0x000001BA39FE2BF0&gt;
+
+&gt;   other_node = next((n1, n2) for n1, n2 in edge if node == min(n1, n2))[0]
+                                   ^^^^^^
+E   TypeError: cannot unpack non-iterable int object
+
+solution.py:35: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.union_component_count.tests.test_solution" name="test_duplicates" time="0.000"><failure message="TypeError: cannot unpack non-iterable int object">&gt;   def test_duplicates(): assert f(3, [(0, 1), (0, 1), (1, 0)]) == 2
+                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:6: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:42: in component_count
+    explore_component(i)
+solution.py:35: in explore_component
+    other_node = next((n1, n2) for n1, n2 in edge if node == min(n1, n2))[0]
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+.0 = &lt;tuple_iterator object at 0x000001BA39FE1E40&gt;
+
+&gt;   other_node = next((n1, n2) for n1, n2 in edge if node == min(n1, n2))[0]
+                                   ^^^^^^
+E   TypeError: cannot unpack non-iterable int object
+
+solution.py:35: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.union_component_count.tests.test_solution" name="test_self_loop" time="0.000"><failure message="TypeError: cannot unpack non-iterable int object">&gt;   def test_self_loop(): assert f(3, [(1, 1)]) == 3
+                                 ^^^^^^^^^^^^^^
+
+tests\test_solution.py:7: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:42: in component_count
+    explore_component(i)
+solution.py:35: in explore_component
+    other_node = next((n1, n2) for n1, n2 in edge if node == min(n1, n2))[0]
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+.0 = &lt;tuple_iterator object at 0x000001BA39FE0E20&gt;
+
+&gt;   other_node = next((n1, n2) for n1, n2 in edge if node == min(n1, n2))[0]
+                                   ^^^^^^
+E   TypeError: cannot unpack non-iterable int object
+
+solution.py:35: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.union_component_count.tests.test_solution" name="test_zero_nodes" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-194718.union_component_count.tests.test_solution" name="test_cycle" time="0.000"><failure message="TypeError: cannot unpack non-iterable int object">&gt;   def test_cycle(): assert f(4, [(0, 1), (1, 2), (2, 3), (3, 0)]) == 1
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:9: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:42: in component_count
+    explore_component(i)
+solution.py:35: in explore_component
+    other_node = next((n1, n2) for n1, n2 in edge if node == min(n1, n2))[0]
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+.0 = &lt;tuple_iterator object at 0x000001BA39E9BA60&gt;
+
+&gt;   other_node = next((n1, n2) for n1, n2 in edge if node == min(n1, n2))[0]
+                                   ^^^^^^
+E   TypeError: cannot unpack non-iterable int object
+
+solution.py:35: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.union_component_count.tests.test_solution" name="test_bad_n_negative" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_bad_n_negative():
+&gt;       with pytest.raises(ValueError) as e: f(-1, [])
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:11: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.union_component_count.tests.test_solution" name="test_bad_n_bool" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-194718.union_component_count.tests.test_solution" name="test_bad_edges" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-194718.union_component_count.tests.test_solution" name="test_bad_edge_list" time="0.000"><failure message="TypeError: cannot unpack non-iterable int object">def test_bad_edge_list():
+&gt;       with pytest.raises(ValueError) as e: f(2, [[0, 1]])
+                                             ^^^^^^^^^^^^^^
+
+tests\test_solution.py:19: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:42: in component_count
+    explore_component(i)
+solution.py:35: in explore_component
+    other_node = next((n1, n2) for n1, n2 in edge if node == min(n1, n2))[0]
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+.0 = &lt;tuple_iterator object at 0x000001BA39E99E70&gt;
+
+&gt;   other_node = next((n1, n2) for n1, n2 in edge if node == min(n1, n2))[0]
+                                   ^^^^^^
+E   TypeError: cannot unpack non-iterable int object
+
+solution.py:35: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.union_component_count.tests.test_solution" name="test_bad_edge_len" time="0.001" /><testcase classname="artifacts.uplift.work_20260713-194718.union_component_count.tests.test_solution" name="test_bad_edge_range" time="0.001" /><testcase classname="artifacts.uplift.work_20260713-194718.union_component_count.tests.test_solution" name="test_bad_edge_bool" time="0.001" /></testsuite></testsuites>

@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="4" skipped="0" tests="6" time="0.209" timestamp="2026-07-13T19:54:02.281711-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-194718.evaluate_rpn.tests.test_solution" name="test_simple" time="0.001"><failure message="IndexError: pop from empty list">def test_simple():
+&gt;       assert f(['2','3','+']) == 5
+               ^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:4: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+tokens = ['2', '3', '+']
+
+    def evaluate_rpn(tokens):
+        if len(tokens) &lt; 3:
+            raise ValueError("Too few operands")
+    
+        stack = []
+        for token in tokens:
+            if isinstance(token, str):  # Assuming all non-operand are operators
+&gt;               op2, op1 = stack.pop(), stack.pop()
+                           ^^^^^^^^^^^
+E               IndexError: pop from empty list
+
+solution.py:8: IndexError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.evaluate_rpn.tests.test_solution" name="test_trunc_toward_zero" time="0.000"><failure message="IndexError: pop from empty list">def test_trunc_toward_zero():
+&gt;       assert f(['-7','2','/']) == -3
+               ^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:6: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+tokens = ['-7', '2', '/']
+
+    def evaluate_rpn(tokens):
+        if len(tokens) &lt; 3:
+            raise ValueError("Too few operands")
+    
+        stack = []
+        for token in tokens:
+            if isinstance(token, str):  # Assuming all non-operand are operators
+&gt;               op2, op1 = stack.pop(), stack.pop()
+                           ^^^^^^^^^^^
+E               IndexError: pop from empty list
+
+solution.py:8: IndexError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.evaluate_rpn.tests.test_solution" name="test_nested" time="0.000"><failure message="IndexError: pop from empty list">def test_nested():
+&gt;       assert f(['4','13','5','/','+']) == 6
+               ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:8: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+tokens = ['4', '13', '5', '/', '+']
+
+    def evaluate_rpn(tokens):
+        if len(tokens) &lt; 3:
+            raise ValueError("Too few operands")
+    
+        stack = []
+        for token in tokens:
+            if isinstance(token, str):  # Assuming all non-operand are operators
+&gt;               op2, op1 = stack.pop(), stack.pop()
+                           ^^^^^^^^^^^
+E               IndexError: pop from empty list
+
+solution.py:8: IndexError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.evaluate_rpn.tests.test_solution" name="test_too_few" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-194718.evaluate_rpn.tests.test_solution" name="test_leftover" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-194718.evaluate_rpn.tests.test_solution" name="test_div0" time="0.000"><failure message="IndexError: pop from empty list">def test_div0():
+        with pytest.raises(ValueError):
+&gt;           f(['1','0','/'])
+
+tests\test_solution.py:17: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+tokens = ['1', '0', '/']
+
+    def evaluate_rpn(tokens):
+        if len(tokens) &lt; 3:
+            raise ValueError("Too few operands")
+    
+        stack = []
+        for token in tokens:
+            if isinstance(token, str):  # Assuming all non-operand are operators
+&gt;               op2, op1 = stack.pop(), stack.pop()
+                           ^^^^^^^^^^^
+E               IndexError: pop from empty list
+
+solution.py:8: IndexError</failure></testcase></testsuite></testsuites>

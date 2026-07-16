@@ -1,0 +1,13 @@
+{
+ "bytes": 20925,
+ "content_type": "text/html",
+ "final_url": "https://oaklab.ai/",
+ "note": "the hash IS the receipt: any quotation from this source is re-checkable against these bytes offline",
+ "observed_urls": [
+  "https://oaklab.ai/"
+ ],
+ "path": "artifacts\\research\\937c86b0d06bacac8e1490d5219e2bb5c11380990d628fcd304a473609dc2c93.bin",
+ "schema": "flywheel.web-snapshot/v1",
+ "sha256": "937c86b0d06bacac8e1490d5219e2bb5c11380990d628fcd304a473609dc2c93",
+ "url": "https://oaklab.ai/"
+}

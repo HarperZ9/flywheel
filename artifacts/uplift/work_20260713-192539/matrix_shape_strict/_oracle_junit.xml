@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="4" skipped="0" tests="10" time="0.194" timestamp="2026-07-13T19:44:37.334272-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-192539.matrix_shape_strict.tests.test_solution" name="test_shape" time="0.001" /><testcase classname="artifacts.uplift.work_20260713-192539.matrix_shape_strict.tests.test_solution" name="test_float_cell" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-192539.matrix_shape_strict.tests.test_solution" name="test_not_list" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-192539.matrix_shape_strict.tests.test_solution" name="test_empty" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-192539.matrix_shape_strict.tests.test_solution" name="test_row_not_list" time="0.001"><failure message="AssertionError: assert 'row 1 not list' == 'row not list'&#10;  &#10;  - row not list&#10;  + row 1 not list&#10;  ?     ++">def test_row_not_list():
+        with pytest.raises(ValueError) as e: f([[1], (2,)])
+&gt;       assert str(e.value) == 'row not list'
+E       AssertionError: assert 'row 1 not list' == 'row not list'
+E         
+E         - row not list
+E         + row 1 not list
+E         ?     ++
+
+tests\test_solution.py:13: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-192539.matrix_shape_strict.tests.test_solution" name="test_empty_row" time="0.000"><failure message="AssertionError: assert 'ragged' == 'empty row'&#10;  &#10;  - empty row&#10;  + ragged">def test_empty_row():
+        with pytest.raises(ValueError) as e: f([[1], []])
+&gt;       assert str(e.value) == 'empty row'
+E       AssertionError: assert 'ragged' == 'empty row'
+E         
+E         - empty row
+E         + ragged
+
+tests\test_solution.py:16: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-192539.matrix_shape_strict.tests.test_solution" name="test_ragged" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-192539.matrix_shape_strict.tests.test_solution" name="test_bad_cell" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_bad_cell():
+&gt;       with pytest.raises(ValueError) as e: f([[1, True]])
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:21: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260713-192539.matrix_shape_strict.tests.test_solution" name="test_cell_before_later_ragged" time="0.000"><failure message="AssertionError: assert 'bad cell 1 of row 0' == 'bad cell'&#10;  &#10;  - bad cell&#10;  + bad cell 1 of row 0">def test_cell_before_later_ragged():
+        with pytest.raises(ValueError) as e: f([[1, 'x'], [2]])
+&gt;       assert str(e.value) == 'bad cell'
+E       AssertionError: assert 'bad cell 1 of row 0' == 'bad cell'
+E         
+E         - bad cell
+E         + bad cell 1 of row 0
+
+tests\test_solution.py:25: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-192539.matrix_shape_strict.tests.test_solution" name="test_ragged_before_own_cells" time="0.000" /></testsuite></testsuites>

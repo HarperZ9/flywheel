@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="2" skipped="0" tests="6" time="0.224" timestamp="2026-07-13T18:40:24.264764-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-183535.my_atoi.tests.test_solution" name="test_plain" time="0.001" /><testcase classname="artifacts.uplift.work_20260713-183535.my_atoi.tests.test_solution" name="test_ws_neg" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-183535.my_atoi.tests.test_solution" name="test_trailing" time="0.001"><failure message="ValueError: invalid literal for int() with base 10: '4193 with words'">def test_trailing():
+&gt;       assert f('4193 with words') == 4193
+               ^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:7: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+s = '4193 with words'
+
+    def my_atoi(s: str) -&gt; int:
+        """
+        Parse a string representing an integer from leading characters to a number.
+    
+        Parameters:
+        s (str): A string containing numerals and potentially leading whitespace, optionally beginning with + or -.
+    
+        Returns:
+        int: The parsed integer. Returns 0 if no digits are found in the input string.
+        """
+        current_pos = 0
+        prev_char_was_sign = False
+    
+        while current_pos &lt; len(s) and s[current_pos].isdigit():
+            digit = s[current_pos]
+    
+            # Handle leading spaces, optional sign, and the start of a number:
+            if not prev_char_was_sign and (s[current_pos] == '+' or s[current_pos] == '-'):
+                prev_char_was_sign = True
+                current_pos += 1
+    
+            elif s[current_pos].isnumeric():
+                break
+            else:
+                return 0  # No digits found, invalid input
+    
+            current_pos += 1
+    
+        if not current_pos &lt; len(s):
+            return 0  # No digits present, empty string boundary reached
+    
+&gt;       result = int(s[current_pos:])
+                 ^^^^^^^^^^^^^^^^^^^^
+E       ValueError: invalid literal for int() with base 10: '4193 with words'
+
+solution.py:32: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-183535.my_atoi.tests.test_solution" name="test_words" time="0.000"><failure message="ValueError: invalid literal for int() with base 10: 'words and 987'">def test_words():
+&gt;       assert f('words and 987') == 0
+               ^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:9: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+s = 'words and 987'
+
+    def my_atoi(s: str) -&gt; int:
+        """
+        Parse a string representing an integer from leading characters to a number.
+    
+        Parameters:
+        s (str): A string containing numerals and potentially leading whitespace, optionally beginning with + or -.
+    
+        Returns:
+        int: The parsed integer. Returns 0 if no digits are found in the input string.
+        """
+        current_pos = 0
+        prev_char_was_sign = False
+    
+        while current_pos &lt; len(s) and s[current_pos].isdigit():
+            digit = s[current_pos]
+    
+            # Handle leading spaces, optional sign, and the start of a number:
+            if not prev_char_was_sign and (s[current_pos] == '+' or s[current_pos] == '-'):
+                prev_char_was_sign = True
+                current_pos += 1
+    
+            elif s[current_pos].isnumeric():
+                break
+            else:
+                return 0  # No digits found, invalid input
+    
+            current_pos += 1
+    
+        if not current_pos &lt; len(s):
+            return 0  # No digits present, empty string boundary reached
+    
+&gt;       result = int(s[current_pos:])
+                 ^^^^^^^^^^^^^^^^^^^^
+E       ValueError: invalid literal for int() with base 10: 'words and 987'
+
+solution.py:32: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-183535.my_atoi.tests.test_solution" name="test_plus" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-183535.my_atoi.tests.test_solution" name="test_empty" time="0.000" /></testsuite></testsuites>

@@ -1,0 +1,265 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="8" skipped="0" tests="12" time="0.241" timestamp="2026-07-13T19:55:06.984326-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-192539.k_smallest_names.tests.test_solution" name="test_basic" time="0.001"><failure message="TypeError: k_smallest.&lt;locals&gt;.compare() missing 1 required positional argument: 'y'">def test_basic():
+&gt;       assert f([('a', 3), ('b', 1), ('c', 2)], 2) == ['b', 'c']
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:4: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+records = [('a', 3), ('b', 1), ('c', 2)], k = 2
+
+    def k_smallest(records, k):
+        if not isinstance(k, int) or k &lt; 0:
+            raise ValueError('bad k')
+    
+        seen_names = set()
+        valid_records = []
+    
+        for record in records:
+            if len(record) != 2:
+                raise ValueError('bad record')
+    
+            name, score = record
+    
+            if not (isinstance(name, str) and isinstance(score, int)):
+                raise ValueError('bad record')
+    
+            if name in seen_names:
+                raise ValueError('duplicate name')
+    
+            valid_records.append((name, score))
+            seen_names.add(name)
+    
+        def compare(x, y):
+            return cmp_to_key(lambda x, y: (x[1] &gt; y[1]) or (x[1] == y[1] and x[0] &lt;= y[0]))
+    
+&gt;       valid_records.sort(key=compare)
+E       TypeError: k_smallest.&lt;locals&gt;.compare() missing 1 required positional argument: 'y'
+
+solution.py:26: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-192539.k_smallest_names.tests.test_solution" name="test_tie_break" time="0.000"><failure message="TypeError: k_smallest.&lt;locals&gt;.compare() missing 1 required positional argument: 'y'">def test_tie_break():
+&gt;       assert f([('z', 1), ('a', 1), ('m', 0)], 2) == ['m', 'a']
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:6: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+records = [('z', 1), ('a', 1), ('m', 0)], k = 2
+
+    def k_smallest(records, k):
+        if not isinstance(k, int) or k &lt; 0:
+            raise ValueError('bad k')
+    
+        seen_names = set()
+        valid_records = []
+    
+        for record in records:
+            if len(record) != 2:
+                raise ValueError('bad record')
+    
+            name, score = record
+    
+            if not (isinstance(name, str) and isinstance(score, int)):
+                raise ValueError('bad record')
+    
+            if name in seen_names:
+                raise ValueError('duplicate name')
+    
+            valid_records.append((name, score))
+            seen_names.add(name)
+    
+        def compare(x, y):
+            return cmp_to_key(lambda x, y: (x[1] &gt; y[1]) or (x[1] == y[1] and x[0] &lt;= y[0]))
+    
+&gt;       valid_records.sort(key=compare)
+E       TypeError: k_smallest.&lt;locals&gt;.compare() missing 1 required positional argument: 'y'
+
+solution.py:26: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-192539.k_smallest_names.tests.test_solution" name="test_k_zero" time="0.000"><failure message="TypeError: k_smallest.&lt;locals&gt;.compare() missing 1 required positional argument: 'y'">def test_k_zero():
+&gt;       assert f([('a', 1)], 0) == []
+               ^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:8: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+records = [('a', 1)], k = 0
+
+    def k_smallest(records, k):
+        if not isinstance(k, int) or k &lt; 0:
+            raise ValueError('bad k')
+    
+        seen_names = set()
+        valid_records = []
+    
+        for record in records:
+            if len(record) != 2:
+                raise ValueError('bad record')
+    
+            name, score = record
+    
+            if not (isinstance(name, str) and isinstance(score, int)):
+                raise ValueError('bad record')
+    
+            if name in seen_names:
+                raise ValueError('duplicate name')
+    
+            valid_records.append((name, score))
+            seen_names.add(name)
+    
+        def compare(x, y):
+            return cmp_to_key(lambda x, y: (x[1] &gt; y[1]) or (x[1] == y[1] and x[0] &lt;= y[0]))
+    
+&gt;       valid_records.sort(key=compare)
+E       TypeError: k_smallest.&lt;locals&gt;.compare() missing 1 required positional argument: 'y'
+
+solution.py:26: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-192539.k_smallest_names.tests.test_solution" name="test_k_exceeds" time="0.000"><failure message="TypeError: k_smallest.&lt;locals&gt;.compare() missing 1 required positional argument: 'y'">def test_k_exceeds():
+&gt;       assert f([('b', 2), ('a', 1)], 9) == ['a', 'b']
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:10: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+records = [('b', 2), ('a', 1)], k = 9
+
+    def k_smallest(records, k):
+        if not isinstance(k, int) or k &lt; 0:
+            raise ValueError('bad k')
+    
+        seen_names = set()
+        valid_records = []
+    
+        for record in records:
+            if len(record) != 2:
+                raise ValueError('bad record')
+    
+            name, score = record
+    
+            if not (isinstance(name, str) and isinstance(score, int)):
+                raise ValueError('bad record')
+    
+            if name in seen_names:
+                raise ValueError('duplicate name')
+    
+            valid_records.append((name, score))
+            seen_names.add(name)
+    
+        def compare(x, y):
+            return cmp_to_key(lambda x, y: (x[1] &gt; y[1]) or (x[1] == y[1] and x[0] &lt;= y[0]))
+    
+&gt;       valid_records.sort(key=compare)
+E       TypeError: k_smallest.&lt;locals&gt;.compare() missing 1 required positional argument: 'y'
+
+solution.py:26: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-192539.k_smallest_names.tests.test_solution" name="test_empty" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-192539.k_smallest_names.tests.test_solution" name="test_negative_scores" time="0.000"><failure message="TypeError: k_smallest.&lt;locals&gt;.compare() missing 1 required positional argument: 'y'">def test_negative_scores():
+&gt;       assert f([('a', -1), ('b', -5)], 1) == ['b']
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:14: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+records = [('a', -1), ('b', -5)], k = 1
+
+    def k_smallest(records, k):
+        if not isinstance(k, int) or k &lt; 0:
+            raise ValueError('bad k')
+    
+        seen_names = set()
+        valid_records = []
+    
+        for record in records:
+            if len(record) != 2:
+                raise ValueError('bad record')
+    
+            name, score = record
+    
+            if not (isinstance(name, str) and isinstance(score, int)):
+                raise ValueError('bad record')
+    
+            if name in seen_names:
+                raise ValueError('duplicate name')
+    
+            valid_records.append((name, score))
+            seen_names.add(name)
+    
+        def compare(x, y):
+            return cmp_to_key(lambda x, y: (x[1] &gt; y[1]) or (x[1] == y[1] and x[0] &lt;= y[0]))
+    
+&gt;       valid_records.sort(key=compare)
+E       TypeError: k_smallest.&lt;locals&gt;.compare() missing 1 required positional argument: 'y'
+
+solution.py:26: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-192539.k_smallest_names.tests.test_solution" name="test_duplicate_name" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-192539.k_smallest_names.tests.test_solution" name="test_bad_record_list" time="0.000"><failure message="TypeError: k_smallest.&lt;locals&gt;.compare() missing 1 required positional argument: 'y'">def test_bad_record_list():
+&gt;       with pytest.raises(ValueError) as e: f([['a', 1]], 1)
+                                             ^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:19: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+records = [['a', 1]], k = 1
+
+    def k_smallest(records, k):
+        if not isinstance(k, int) or k &lt; 0:
+            raise ValueError('bad k')
+    
+        seen_names = set()
+        valid_records = []
+    
+        for record in records:
+            if len(record) != 2:
+                raise ValueError('bad record')
+    
+            name, score = record
+    
+            if not (isinstance(name, str) and isinstance(score, int)):
+                raise ValueError('bad record')
+    
+            if name in seen_names:
+                raise ValueError('duplicate name')
+    
+            valid_records.append((name, score))
+            seen_names.add(name)
+    
+        def compare(x, y):
+            return cmp_to_key(lambda x, y: (x[1] &gt; y[1]) or (x[1] == y[1] and x[0] &lt;= y[0]))
+    
+&gt;       valid_records.sort(key=compare)
+E       TypeError: k_smallest.&lt;locals&gt;.compare() missing 1 required positional argument: 'y'
+
+solution.py:26: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-192539.k_smallest_names.tests.test_solution" name="test_bad_record_bool_score" time="0.000"><failure message="TypeError: k_smallest.&lt;locals&gt;.compare() missing 1 required positional argument: 'y'">def test_bad_record_bool_score():
+&gt;       with pytest.raises(ValueError): f([('a', True)], 1)
+                                        ^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:22: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+records = [('a', True)], k = 1
+
+    def k_smallest(records, k):
+        if not isinstance(k, int) or k &lt; 0:
+            raise ValueError('bad k')
+    
+        seen_names = set()
+        valid_records = []
+    
+        for record in records:
+            if len(record) != 2:
+                raise ValueError('bad record')
+    
+            name, score = record
+    
+            if not (isinstance(name, str) and isinstance(score, int)):
+                raise ValueError('bad record')
+    
+            if name in seen_names:
+                raise ValueError('duplicate name')
+    
+            valid_records.append((name, score))
+            seen_names.add(name)
+    
+        def compare(x, y):
+            return cmp_to_key(lambda x, y: (x[1] &gt; y[1]) or (x[1] == y[1] and x[0] &lt;= y[0]))
+    
+&gt;       valid_records.sort(key=compare)
+E       TypeError: k_smallest.&lt;locals&gt;.compare() missing 1 required positional argument: 'y'
+
+solution.py:26: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-192539.k_smallest_names.tests.test_solution" name="test_bad_record_len" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-192539.k_smallest_names.tests.test_solution" name="test_bad_k_bool" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_bad_k_bool():
+&gt;       with pytest.raises(ValueError) as e: f([], True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:26: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260713-192539.k_smallest_names.tests.test_solution" name="test_bad_k_negative" time="0.000" /></testsuite></testsuites>

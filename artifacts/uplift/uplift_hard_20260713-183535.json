@@ -1,0 +1,145 @@
+{
+ "schema": "flywheel.uplift-bench/v1",
+ "comparison_key": "uplift:tasks_hard",
+ "n_candidates": 3,
+ "rows": [
+  {
+   "n_tasks": 10,
+   "passes": 8,
+   "graded": 10,
+   "unverifiable": 0,
+   "pass_rate": 0.8,
+   "wilson_95": [
+    0.4902,
+    0.9433
+   ],
+   "latency_ms_mean": 4059.398,
+   "candidates_mean": 1.0,
+   "provider": "ollama:qwen2.5:7b",
+   "arm": "bare",
+   "n_candidates": 1,
+   "evidence": "live"
+  },
+  {
+   "n_tasks": 10,
+   "passes": 9,
+   "graded": 10,
+   "unverifiable": 0,
+   "pass_rate": 0.9,
+   "wilson_95": [
+    0.5958,
+    0.9821
+   ],
+   "latency_ms_mean": 3826.806,
+   "candidates_mean": 1.2,
+   "provider": "ollama:qwen2.5:7b",
+   "arm": "wrapped",
+   "n_candidates": 3,
+   "evidence": "live"
+  },
+  {
+   "n_tasks": 10,
+   "passes": 8,
+   "graded": 10,
+   "unverifiable": 0,
+   "pass_rate": 0.8,
+   "wilson_95": [
+    0.4902,
+    0.9433
+   ],
+   "latency_ms_mean": 2484.005,
+   "candidates_mean": 1.0,
+   "provider": "ollama:qwen2.5:3b",
+   "arm": "bare",
+   "n_candidates": 1,
+   "evidence": "live"
+  },
+  {
+   "n_tasks": 10,
+   "passes": 8,
+   "graded": 10,
+   "unverifiable": 0,
+   "pass_rate": 0.8,
+   "wilson_95": [
+    0.4902,
+    0.9433
+   ],
+   "latency_ms_mean": 10326.387,
+   "candidates_mean": 1.6,
+   "provider": "ollama:qwen2.5:3b",
+   "arm": "wrapped",
+   "n_candidates": 3,
+   "evidence": "live"
+  },
+  {
+   "n_tasks": 10,
+   "passes": 5,
+   "graded": 10,
+   "unverifiable": 0,
+   "pass_rate": 0.5,
+   "wilson_95": [
+    0.2366,
+    0.7634
+   ],
+   "latency_ms_mean": 3898.905,
+   "candidates_mean": 1.0,
+   "provider": "ollama:qwen2.5:0.5b",
+   "arm": "bare",
+   "n_candidates": 1,
+   "evidence": "live"
+  },
+  {
+   "n_tasks": 10,
+   "passes": 4,
+   "graded": 10,
+   "unverifiable": 0,
+   "pass_rate": 0.4,
+   "wilson_95": [
+    0.1682,
+    0.6873
+   ],
+   "latency_ms_mean": 5662.12,
+   "candidates_mean": 2.2,
+   "provider": "ollama:qwen2.5:0.5b",
+   "arm": "wrapped",
+   "n_candidates": 3,
+   "evidence": "live"
+  }
+ ],
+ "deltas": [
+  {
+   "provider": "ollama:qwen2.5:7b",
+   "uplift": 0.1,
+   "newcombe_95": [
+    -0.2362,
+    0.4205
+   ],
+   "includes_zero": true,
+   "latency_overhead_ms": -232.592,
+   "note": "no uplift claimed: the interval includes zero"
+  },
+  {
+   "provider": "ollama:qwen2.5:3b",
+   "uplift": 0.0,
+   "newcombe_95": [
+    -0.3414,
+    0.3414
+   ],
+   "includes_zero": true,
+   "latency_overhead_ms": 7842.382,
+   "note": "no uplift claimed: the interval includes zero"
+  },
+  {
+   "provider": "ollama:qwen2.5:0.5b",
+   "uplift": -0.1,
+   "newcombe_95": [
+    -0.4509,
+    0.2898
+   ],
+   "includes_zero": true,
+   "latency_overhead_ms": 1763.215,
+   "note": "no uplift claimed: the interval includes zero"
+  }
+ ],
+ "note": "synthetic rows never enter comparison; the wrapped arm wins only through the external oracle; overhead is reported because the wrapper costs time"
+}

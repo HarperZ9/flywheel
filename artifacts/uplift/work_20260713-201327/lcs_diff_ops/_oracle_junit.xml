@@ -1,0 +1,171 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="12" skipped="0" tests="12" time="0.243" timestamp="2026-07-13T20:35:54.451570-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-201327.lcs_diff_ops.tests.test_solution" name="test_replace_middle" time="0.001"><failure message="AssertionError: assert [('equal', ['...lete', ['b'])] == [('equal', ['...qual', ['c'])]&#10;  &#10;  At index 1 diff: ('equal', ['b']) != ('delete', ['b'])&#10;  Left contains one more item: ('delete', ['b'])&#10;  Use -v to get more diff">def test_replace_middle():
+&gt;       assert f(['a', 'b', 'c'], ['a', 'x', 'c']) == [('equal', ['a']), ('delete', ['b']), ('insert', ['x']), ('equal', ['c'])]
+E       AssertionError: assert [('equal', ['...lete', ['b'])] == [('equal', ['...qual', ['c'])]
+E         
+E         At index 1 diff: ('equal', ['b']) != ('delete', ['b'])
+E         Left contains one more item: ('delete', ['b'])
+E         Use -v to get more diff
+
+tests\test_solution.py:4: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.lcs_diff_ops.tests.test_solution" name="test_all_equal" time="0.001"><failure message="AssertionError: assert [('equal', ['...qual', ['a'])] == [('equal', ['a', 'b'])]&#10;  &#10;  At index 0 diff: ('equal', ['a']) != ('equal', ['a', 'b'])&#10;  Left contains 2 more items, first extra item: ('equal', ['b'])&#10;  Use -v to get more diff">&gt;   def test_all_equal(): assert f(['a', 'b'], ['a', 'b']) == [('equal', ['a', 'b'])]
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert [('equal', ['...qual', ['a'])] == [('equal', ['a', 'b'])]
+E     
+E     At index 0 diff: ('equal', ['a']) != ('equal', ['a', 'b'])
+E     Left contains 2 more items, first extra item: ('equal', ['b'])
+E     Use -v to get more diff
+
+tests\test_solution.py:5: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.lcs_diff_ops.tests.test_solution" name="test_both_empty" time="0.000"><failure message="ValueError: max() iterable argument is empty">&gt;   def test_both_empty(): assert f([], []) == []
+                                  ^^^^^^^^^
+
+tests\test_solution.py:6: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+a = [], b = []
+
+    def diff_ops(a: List[str], b: List[str]) -&gt; List[tuple]:
+        """
+        Compute a line diff between two strings lists and return minimal diffs to be executed in order.
+    
+        Args:
+            a (List[str]): The first input list of strings.
+            b (List[str]): The second input list of strings.
+    
+        Returns:
+            List[tuple]: A list of tuples representing minimal diff operations that need to be applied, where each tuple is (tag, items).
+                          Example:
+                           &gt;&gt;&gt; diff_ops(['a', 'b'], ['c', 'd'])
+                           [('equal', []), ('delete', ['a']), ('insert', ['c'])]
+        """
+&gt;       max_len_a = len(max(a, key=len))
+                        ^^^^^^^^^^^^^^^
+E       ValueError: max() iterable argument is empty
+
+solution.py:17: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.lcs_diff_ops.tests.test_solution" name="test_insert_only" time="0.000"><failure message="ValueError: max() iterable argument is empty">&gt;   def test_insert_only(): assert f([], ['a', 'b']) == [('insert', ['a', 'b'])]
+                                   ^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:7: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+a = [], b = ['a', 'b']
+
+    def diff_ops(a: List[str], b: List[str]) -&gt; List[tuple]:
+        """
+        Compute a line diff between two strings lists and return minimal diffs to be executed in order.
+    
+        Args:
+            a (List[str]): The first input list of strings.
+            b (List[str]): The second input list of strings.
+    
+        Returns:
+            List[tuple]: A list of tuples representing minimal diff operations that need to be applied, where each tuple is (tag, items).
+                          Example:
+                           &gt;&gt;&gt; diff_ops(['a', 'b'], ['c', 'd'])
+                           [('equal', []), ('delete', ['a']), ('insert', ['c'])]
+        """
+&gt;       max_len_a = len(max(a, key=len))
+                        ^^^^^^^^^^^^^^^
+E       ValueError: max() iterable argument is empty
+
+solution.py:17: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.lcs_diff_ops.tests.test_solution" name="test_delete_only" time="0.000"><failure message="ValueError: max() iterable argument is empty">&gt;   def test_delete_only(): assert f(['a', 'b'], []) == [('delete', ['a', 'b'])]
+                                   ^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:8: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+a = ['a', 'b'], b = []
+
+    def diff_ops(a: List[str], b: List[str]) -&gt; List[tuple]:
+        """
+        Compute a line diff between two strings lists and return minimal diffs to be executed in order.
+    
+        Args:
+            a (List[str]): The first input list of strings.
+            b (List[str]): The second input list of strings.
+    
+        Returns:
+            List[tuple]: A list of tuples representing minimal diff operations that need to be applied, where each tuple is (tag, items).
+                          Example:
+                           &gt;&gt;&gt; diff_ops(['a', 'b'], ['c', 'd'])
+                           [('equal', []), ('delete', ['a']), ('insert', ['c'])]
+        """
+        max_len_a = len(max(a, key=len))
+&gt;       max_len_b = len(max(b, key=len))
+                        ^^^^^^^^^^^^^^^
+E       ValueError: max() iterable argument is empty
+
+solution.py:18: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.lcs_diff_ops.tests.test_solution" name="test_disjoint" time="0.001"><failure message="AssertionError: assert [('equal', ['...sert', ['b'])] == [('delete', [..., ['c', 'd'])]&#10;  &#10;  At index 0 diff: ('equal', ['a']) != ('delete', ['a', 'b'])&#10;  Left contains 3 more items, first extra item: ('equal', ['a'])&#10;  Use -v to get more diff">def test_disjoint():
+&gt;       assert f(['a', 'b'], ['c', 'd']) == [('delete', ['a', 'b']), ('insert', ['c', 'd'])]
+E       AssertionError: assert [('equal', ['...sert', ['b'])] == [('delete', [..., ['c', 'd'])]
+E         
+E         At index 0 diff: ('equal', ['a']) != ('delete', ['a', 'b'])
+E         Left contains 3 more items, first extra item: ('equal', ['a'])
+E         Use -v to get more diff
+
+tests\test_solution.py:10: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.lcs_diff_ops.tests.test_solution" name="test_shift" time="0.000"><failure message="AssertionError: assert [('equal', ['...sert', ['a'])] == [('delete', [...sert', ['y'])]&#10;  &#10;  At index 0 diff: ('equal', ['x']) != ('delete', ['x'])&#10;  Left contains 2 more items, first extra item: ('delete', ['a'])&#10;  Use -v to get more diff">def test_shift():
+&gt;       assert f(['x', 'a'], ['a', 'y']) == [('delete', ['x']), ('equal', ['a']), ('insert', ['y'])]
+E       AssertionError: assert [('equal', ['...sert', ['a'])] == [('delete', [...sert', ['y'])]
+E         
+E         At index 0 diff: ('equal', ['x']) != ('delete', ['x'])
+E         Left contains 2 more items, first extra item: ('delete', ['a'])
+E         Use -v to get more diff
+
+tests\test_solution.py:12: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.lcs_diff_ops.tests.test_solution" name="test_tie_prefers_delete" time="0.001"><failure message="AssertionError: assert [('equal', ['...sert', ['a'])] == [('delete', [...sert', ['b'])]&#10;  &#10;  At index 0 diff: ('equal', ['a']) != ('delete', ['a'])&#10;  Left contains 3 more items, first extra item: ('equal', ['a'])&#10;  Use -v to get more diff">def test_tie_prefers_delete():
+&gt;       assert f(['a', 'b', 'a'], ['b', 'a', 'b']) == [('delete', ['a']), ('equal', ['b', 'a']), ('insert', ['b'])]
+E       AssertionError: assert [('equal', ['...sert', ['a'])] == [('delete', [...sert', ['b'])]
+E         
+E         At index 0 diff: ('equal', ['a']) != ('delete', ['a'])
+E         Left contains 3 more items, first extra item: ('equal', ['a'])
+E         Use -v to get more diff
+
+tests\test_solution.py:14: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.lcs_diff_ops.tests.test_solution" name="test_append" time="0.000"><failure message="AssertionError: assert [('equal', ['...sert', ['a'])] == [('equal', ['...sert', ['b'])]&#10;  &#10;  At index 1 diff: ('equal', ['a']) != ('insert', ['b'])&#10;  Left contains one more item: ('insert', ['a'])&#10;  Use -v to get more diff">&gt;   def test_append(): assert f(['a'], ['a', 'b']) == [('equal', ['a']), ('insert', ['b'])]
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert [('equal', ['...sert', ['a'])] == [('equal', ['...sert', ['b'])]
+E     
+E     At index 1 diff: ('equal', ['a']) != ('insert', ['b'])
+E     Left contains one more item: ('insert', ['a'])
+E     Use -v to get more diff
+
+tests\test_solution.py:15: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.lcs_diff_ops.tests.test_solution" name="test_prepend" time="0.000"><failure message="AssertionError: assert [('equal', ['b'])] == [('insert', [...qual', ['b'])]&#10;  &#10;  At index 0 diff: ('equal', ['b']) != ('insert', ['a'])&#10;  Right contains one more item: ('equal', ['b'])&#10;  Use -v to get more diff">&gt;   def test_prepend(): assert f(['b'], ['a', 'b']) == [('insert', ['a']), ('equal', ['b'])]
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert [('equal', ['b'])] == [('insert', [...qual', ['b'])]
+E     
+E     At index 0 diff: ('equal', ['b']) != ('insert', ['a'])
+E     Right contains one more item: ('equal', ['b'])
+E     Use -v to get more diff
+
+tests\test_solution.py:16: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.lcs_diff_ops.tests.test_solution" name="test_bad_input_not_list" time="0.001"><failure message="AssertionError: assert 'max() iterab...ment is empty' == 'bad input'&#10;  &#10;  - bad input&#10;  + max() iterable argument is empty">def test_bad_input_not_list():
+        with pytest.raises(ValueError) as e: f('ab', [])
+&gt;       assert str(e.value) == 'bad input'
+E       AssertionError: assert 'max() iterab...ment is empty' == 'bad input'
+E         
+E         - bad input
+E         + max() iterable argument is empty
+
+tests\test_solution.py:19: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.lcs_diff_ops.tests.test_solution" name="test_bad_element" time="0.000"><failure message="TypeError: object of type 'int' has no len()">def test_bad_element():
+&gt;       with pytest.raises(ValueError) as e: f([1], [])
+                                             ^^^^^^^^^^
+
+tests\test_solution.py:21: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+a = [1], b = []
+
+    def diff_ops(a: List[str], b: List[str]) -&gt; List[tuple]:
+        """
+        Compute a line diff between two strings lists and return minimal diffs to be executed in order.
+    
+        Args:
+            a (List[str]): The first input list of strings.
+            b (List[str]): The second input list of strings.
+    
+        Returns:
+            List[tuple]: A list of tuples representing minimal diff operations that need to be applied, where each tuple is (tag, items).
+                          Example:
+                           &gt;&gt;&gt; diff_ops(['a', 'b'], ['c', 'd'])
+                           [('equal', []), ('delete', ['a']), ('insert', ['c'])]
+        """
+&gt;       max_len_a = len(max(a, key=len))
+                        ^^^^^^^^^^^^^^^
+E       TypeError: object of type 'int' has no len()
+
+solution.py:17: TypeError</failure></testcase></testsuite></testsuites>

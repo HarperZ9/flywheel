@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="3" skipped="0" tests="10" time="0.225" timestamp="2026-07-13T19:39:10.551049-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-190747.linked_cycle.tests.test_solution" name="test_empty" time="0.001" /><testcase classname="artifacts.uplift.work_20260713-190747.linked_cycle.tests.test_solution" name="test_terminates" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-190747.linked_cycle.tests.test_solution" name="test_self_loop" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-190747.linked_cycle.tests.test_solution" name="test_chain" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-190747.linked_cycle.tests.test_solution" name="test_cycle" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-190747.linked_cycle.tests.test_solution" name="test_unreached_end" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-190747.linked_cycle.tests.test_solution" name="test_reachable_cycle" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-190747.linked_cycle.tests.test_solution" name="test_out_of_range" time="0.000"><failure message="IndexError: list index out of range">def test_out_of_range():
+&gt;       with pytest.raises(ValueError) as e: f([5])
+                                             ^^^^^^
+
+tests\test_solution.py:11: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:15: in has_cycle
+    return visit(0, visited)
+           ^^^^^^^^^^^^^^^^^
+solution.py:12: in visit
+    return visit(next_node, visited)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+node = 5, visited = {0, 5}
+
+    def visit(node, visited):
+        if node == -1:
+            return False
+        if node in visited:
+            return True
+        visited.add(node)
+&gt;       next_node = nxt[node]
+                    ^^^^^^^^^
+E       IndexError: list index out of range
+
+solution.py:11: IndexError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-190747.linked_cycle.tests.test_solution" name="test_below_neg_one" time="0.001"><failure message="IndexError: list index out of range">def test_below_neg_one():
+&gt;       with pytest.raises(ValueError): f([-2])
+                                        ^^^^^^^
+
+tests\test_solution.py:14: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:15: in has_cycle
+    return visit(0, visited)
+           ^^^^^^^^^^^^^^^^^
+solution.py:12: in visit
+    return visit(next_node, visited)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+node = -2, visited = {-2, 0}
+
+    def visit(node, visited):
+        if node == -1:
+            return False
+        if node in visited:
+            return True
+        visited.add(node)
+&gt;       next_node = nxt[node]
+                    ^^^^^^^^^
+E       IndexError: list index out of range
+
+solution.py:11: IndexError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-190747.linked_cycle.tests.test_solution" name="test_bool" time="0.000"><failure message="IndexError: list index out of range">def test_bool():
+&gt;       with pytest.raises(ValueError): f([True])
+                                        ^^^^^^^^^
+
+tests\test_solution.py:16: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:15: in has_cycle
+    return visit(0, visited)
+           ^^^^^^^^^^^^^^^^^
+solution.py:12: in visit
+    return visit(next_node, visited)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+node = True, visited = {0, True}
+
+    def visit(node, visited):
+        if node == -1:
+            return False
+        if node in visited:
+            return True
+        visited.add(node)
+&gt;       next_node = nxt[node]
+                    ^^^^^^^^^
+E       IndexError: list index out of range
+
+solution.py:11: IndexError</failure></testcase></testsuite></testsuites>

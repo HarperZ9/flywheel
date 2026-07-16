@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="7" skipped="0" tests="15" time="0.247" timestamp="2026-07-13T19:40:44.332889-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-190747.look_and_say_bounded.tests.test_solution" name="test_zero_steps" time="0.001" /><testcase classname="artifacts.uplift.work_20260713-190747.look_and_say_bounded.tests.test_solution" name="test_one_step" time="0.000"><failure message="ValueError: bad steps">&gt;   def test_one_step(): assert f('1', 1) == '11'
+                                ^^^^^^^^^
+
+tests\test_solution.py:4: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+seed = '1', steps = 1
+
+    def look_and_say(seed, steps):
+        if not isinstance(seed, str) or len(seed) == 0 or not seed.isdigit():
+            raise ValueError('bad seed')
+        if not isinstance(steps, int) or bool(steps):  # Ensure steps is an int and not a bool
+&gt;           raise ValueError('bad steps')
+E           ValueError: bad steps
+
+solution.py:5: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-190747.look_and_say_bounded.tests.test_solution" name="test_four_steps" time="0.001"><failure message="ValueError: bad steps">&gt;   def test_four_steps(): assert f('1', 4) == '111221'
+                                  ^^^^^^^^^
+
+tests\test_solution.py:5: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+seed = '1', steps = 4
+
+    def look_and_say(seed, steps):
+        if not isinstance(seed, str) or len(seed) == 0 or not seed.isdigit():
+            raise ValueError('bad seed')
+        if not isinstance(steps, int) or bool(steps):  # Ensure steps is an int and not a bool
+&gt;           raise ValueError('bad steps')
+E           ValueError: bad steps
+
+solution.py:5: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-190747.look_and_say_bounded.tests.test_solution" name="test_five_steps" time="0.000"><failure message="ValueError: bad steps">&gt;   def test_five_steps(): assert f('1', 5) == '312211'
+                                  ^^^^^^^^^
+
+tests\test_solution.py:6: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+seed = '1', steps = 5
+
+    def look_and_say(seed, steps):
+        if not isinstance(seed, str) or len(seed) == 0 or not seed.isdigit():
+            raise ValueError('bad seed')
+        if not isinstance(steps, int) or bool(steps):  # Ensure steps is an int and not a bool
+&gt;           raise ValueError('bad steps')
+E           ValueError: bad steps
+
+solution.py:5: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-190747.look_and_say_bounded.tests.test_solution" name="test_runs" time="0.000"><failure message="ValueError: bad steps">&gt;   def test_runs(): assert f('3993', 1) == '132913'
+                            ^^^^^^^^^^^^
+
+tests\test_solution.py:7: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+seed = '3993', steps = 1
+
+    def look_and_say(seed, steps):
+        if not isinstance(seed, str) or len(seed) == 0 or not seed.isdigit():
+            raise ValueError('bad seed')
+        if not isinstance(steps, int) or bool(steps):  # Ensure steps is an int and not a bool
+&gt;           raise ValueError('bad steps')
+E           ValueError: bad steps
+
+solution.py:5: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-190747.look_and_say_bounded.tests.test_solution" name="test_zero_digit" time="0.000"><failure message="ValueError: bad steps">&gt;   def test_zero_digit(): assert f('0', 1) == '10'
+                                  ^^^^^^^^^
+
+tests\test_solution.py:8: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+seed = '0', steps = 1
+
+    def look_and_say(seed, steps):
+        if not isinstance(seed, str) or len(seed) == 0 or not seed.isdigit():
+            raise ValueError('bad seed')
+        if not isinstance(steps, int) or bool(steps):  # Ensure steps is an int and not a bool
+&gt;           raise ValueError('bad steps')
+E           ValueError: bad steps
+
+solution.py:5: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-190747.look_and_say_bounded.tests.test_solution" name="test_fixed_point" time="0.000"><failure message="ValueError: bad steps">&gt;   def test_fixed_point(): assert f('22', 3) == '22'
+                                   ^^^^^^^^^^
+
+tests\test_solution.py:9: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+seed = '22', steps = 3
+
+    def look_and_say(seed, steps):
+        if not isinstance(seed, str) or len(seed) == 0 or not seed.isdigit():
+            raise ValueError('bad seed')
+        if not isinstance(steps, int) or bool(steps):  # Ensure steps is an int and not a bool
+&gt;           raise ValueError('bad steps')
+E           ValueError: bad steps
+
+solution.py:5: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-190747.look_and_say_bounded.tests.test_solution" name="test_overflow" time="0.001"><failure message="AssertionError: assert 'bad steps' == 'run overflow'&#10;  &#10;  - run overflow&#10;  + bad steps">def test_overflow():
+        with pytest.raises(ValueError) as e: f('1111111111', 1)
+&gt;       assert str(e.value) == 'run overflow'
+E       AssertionError: assert 'bad steps' == 'run overflow'
+E         
+E         - run overflow
+E         + bad steps
+
+tests\test_solution.py:12: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-190747.look_and_say_bounded.tests.test_solution" name="test_overflow_skipped_at_zero_steps" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-190747.look_and_say_bounded.tests.test_solution" name="test_bad_seed_empty" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-190747.look_and_say_bounded.tests.test_solution" name="test_bad_seed_char" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-190747.look_and_say_bounded.tests.test_solution" name="test_bad_seed_type" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-190747.look_and_say_bounded.tests.test_solution" name="test_seed_before_steps" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-190747.look_and_say_bounded.tests.test_solution" name="test_bad_steps_negative" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-190747.look_and_say_bounded.tests.test_solution" name="test_bad_steps_bool" time="0.000" /></testsuite></testsuites>

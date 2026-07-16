@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="6" skipped="0" tests="9" time="0.242" timestamp="2026-07-13T20:30:51.288402-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-201327.matrix_transpose.tests.test_solution" name="test_basic" time="0.001"><failure message="assert [(1, 4), (2, 5), (3, 6)] == [[1, 4], [2, 5], [3, 6]]&#10;  &#10;  At index 0 diff: (1, 4) != [1, 4]&#10;  Use -v to get more diff">&gt;   def test_basic(): assert f([[1, 2, 3], [4, 5, 6]]) == [[1, 4], [2, 5], [3, 6]]
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   assert [(1, 4), (2, 5), (3, 6)] == [[1, 4], [2, 5], [3, 6]]
+E     
+E     At index 0 diff: (1, 4) != [1, 4]
+E     Use -v to get more diff
+
+tests\test_solution.py:3: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.matrix_transpose.tests.test_solution" name="test_column" time="0.001"><failure message="assert [(1, 2, 3)] == [[1, 2, 3]]&#10;  &#10;  At index 0 diff: (1, 2, 3) != [1, 2, 3]&#10;  Use -v to get more diff">&gt;   def test_column(): assert f([[1], [2], [3]]) == [[1, 2, 3]]
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   assert [(1, 2, 3)] == [[1, 2, 3]]
+E     
+E     At index 0 diff: (1, 2, 3) != [1, 2, 3]
+E     Use -v to get more diff
+
+tests\test_solution.py:4: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.matrix_transpose.tests.test_solution" name="test_square" time="0.001"><failure message="assert [(1, 3), (2, 4)] == [[1, 3], [2, 4]]&#10;  &#10;  At index 0 diff: (1, 3) != [1, 3]&#10;  Use -v to get more diff">&gt;   def test_square(): assert f([[1, 2], [3, 4]]) == [[1, 3], [2, 4]]
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   assert [(1, 3), (2, 4)] == [[1, 3], [2, 4]]
+E     
+E     At index 0 diff: (1, 3) != [1, 3]
+E     Use -v to get more diff
+
+tests\test_solution.py:5: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.matrix_transpose.tests.test_solution" name="test_no_rows" time="0.000"><failure message="ValueError: bad matrix">&gt;   def test_no_rows(): assert f([]) == []
+                               ^^^^^
+
+tests\test_solution.py:6: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+m = []
+
+    def transpose(m):
+        """
+        Transposes a given rectangular matrix (list). The input should be a list of lists,
+        where each inner list represents a row in the matrix.
+    
+        Args:
+            m: A 2D list, where each element is an inner list representing a row.
+    
+        Returns:
+            A new 2D list that is the transpose of the input matrix. Note: The rows are
+            swapped to get the correct column-wise structure from the original matrix.
+        """
+        # Check if all rows are not empty lists or if they have the same length
+        if not m or (any(not isinstance(row, list) for row in m)):
+&gt;           raise ValueError('bad matrix')
+E           ValueError: bad matrix
+
+solution.py:15: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.matrix_transpose.tests.test_solution" name="test_empty_rows" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-201327.matrix_transpose.tests.test_solution" name="test_single" time="0.000"><failure message="assert [(7,)] == [[7]]&#10;  &#10;  At index 0 diff: (7,) != [7]&#10;  Use -v to get more diff">&gt;   def test_single(): assert f([[7]]) == [[7]]
+                       ^^^^^^^^^^^^^^^^^^^^^^^^
+E   assert [(7,)] == [[7]]
+E     
+E     At index 0 diff: (7,) != [7]
+E     Use -v to get more diff
+
+tests\test_solution.py:8: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.matrix_transpose.tests.test_solution" name="test_ragged" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_ragged():
+&gt;       with pytest.raises(ValueError) as e: f([[1, 2], [3]])
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:10: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.matrix_transpose.tests.test_solution" name="test_bad_row" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-201327.matrix_transpose.tests.test_solution" name="test_bad_matrix" time="0.000" /></testsuite></testsuites>

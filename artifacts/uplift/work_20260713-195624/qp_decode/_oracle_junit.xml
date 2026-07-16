@@ -1,0 +1,306 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="12" skipped="0" tests="16" time="0.282" timestamp="2026-07-13T20:25:30.215916-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-195624.qp_decode.tests.test_solution" name="test_plain" time="0.001"><failure message="ValueError: Input must be a two-letter encoded string.">&gt;   def test_plain(): assert f('hello world') == 'hello world'
+                             ^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:3: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+s = 'hello world'
+
+    def qp_decode(s: str) -&gt; str:
+        """
+        Decodes a quoted-printable style string.
+    
+        Args:
+        s (str): A quote-separated printable character sequence.
+    
+        Returns:
+        str: The decoded output based on the input format.
+    
+        Raises:
+        ValueError: If the input does not match the expected pattern or format.
+        """
+        if len(s) % 2 != 0:
+&gt;           raise ValueError("Input must be a two-letter encoded string.")
+E           ValueError: Input must be a two-letter encoded string.
+
+solution.py:15: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.qp_decode.tests.test_solution" name="test_space" time="0.000"><failure message="ValueError: Input must be a two-letter encoded string.">&gt;   def test_space(): assert f('a=20b') == 'a b'
+                             ^^^^^^^^^^
+
+tests\test_solution.py:4: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+s = 'a=20b'
+
+    def qp_decode(s: str) -&gt; str:
+        """
+        Decodes a quoted-printable style string.
+    
+        Args:
+        s (str): A quote-separated printable character sequence.
+    
+        Returns:
+        str: The decoded output based on the input format.
+    
+        Raises:
+        ValueError: If the input does not match the expected pattern or format.
+        """
+        if len(s) % 2 != 0:
+&gt;           raise ValueError("Input must be a two-letter encoded string.")
+E           ValueError: Input must be a two-letter encoded string.
+
+solution.py:15: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.qp_decode.tests.test_solution" name="test_equals" time="0.000"><failure message="ValueError: Input must be a two-letter encoded string.">&gt;   def test_equals(): assert f('=3D') == '='
+                              ^^^^^^^^
+
+tests\test_solution.py:5: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+s = '=3D'
+
+    def qp_decode(s: str) -&gt; str:
+        """
+        Decodes a quoted-printable style string.
+    
+        Args:
+        s (str): A quote-separated printable character sequence.
+    
+        Returns:
+        str: The decoded output based on the input format.
+    
+        Raises:
+        ValueError: If the input does not match the expected pattern or format.
+        """
+        if len(s) % 2 != 0:
+&gt;           raise ValueError("Input must be a two-letter encoded string.")
+E           ValueError: Input must be a two-letter encoded string.
+
+solution.py:15: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.qp_decode.tests.test_solution" name="test_letters" time="0.001"><failure message="ValueError: Unexpected character.">&gt;   def test_letters(): assert f('=41=42') == 'AB'
+                               ^^^^^^^^^^^
+
+tests\test_solution.py:6: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+s = '=41=42'
+
+    def qp_decode(s: str) -&gt; str:
+        """
+        Decodes a quoted-printable style string.
+    
+        Args:
+        s (str): A quote-separated printable character sequence.
+    
+        Returns:
+        str: The decoded output based on the input format.
+    
+        Raises:
+        ValueError: If the input does not match the expected pattern or format.
+        """
+        if len(s) % 2 != 0:
+            raise ValueError("Input must be a two-letter encoded string.")
+    
+        result = []
+        for i, c in enumerate(s):
+            if c == "=" and i &gt; 0 and s[i - 1] == "\n":
+                # Soft line break
+                continue
+            elif c.isalnum() or c == " ":
+                # Non-escaped letter
+                if i == len(s) - 1:
+                    # Empty string decoding, no changes needed
+                    result.append("")
+                else:
+                    # Escape and add character to list
+                    result.append(c)
+            elif c == "\n":
+                # Soft line break
+                continue
+            else:  # Non-space non-letter character
+&gt;               raise ValueError("Unexpected character.")
+E               ValueError: Unexpected character.
+
+solution.py:34: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.qp_decode.tests.test_solution" name="test_soft_lf" time="0.000"><failure message="ValueError: Unexpected character.">&gt;   def test_soft_lf(): assert f('foo=\nbar') == 'foobar'
+                               ^^^^^^^^^^^^^^
+
+tests\test_solution.py:7: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+s = 'foo=\nbar'
+
+    def qp_decode(s: str) -&gt; str:
+        """
+        Decodes a quoted-printable style string.
+    
+        Args:
+        s (str): A quote-separated printable character sequence.
+    
+        Returns:
+        str: The decoded output based on the input format.
+    
+        Raises:
+        ValueError: If the input does not match the expected pattern or format.
+        """
+        if len(s) % 2 != 0:
+            raise ValueError("Input must be a two-letter encoded string.")
+    
+        result = []
+        for i, c in enumerate(s):
+            if c == "=" and i &gt; 0 and s[i - 1] == "\n":
+                # Soft line break
+                continue
+            elif c.isalnum() or c == " ":
+                # Non-escaped letter
+                if i == len(s) - 1:
+                    # Empty string decoding, no changes needed
+                    result.append("")
+                else:
+                    # Escape and add character to list
+                    result.append(c)
+            elif c == "\n":
+                # Soft line break
+                continue
+            else:  # Non-space non-letter character
+&gt;               raise ValueError("Unexpected character.")
+E               ValueError: Unexpected character.
+
+solution.py:34: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.qp_decode.tests.test_solution" name="test_soft_crlf" time="0.000"><failure message="ValueError: Input must be a two-letter encoded string.">&gt;   def test_soft_crlf(): assert f('foo=\r\nbar') == 'foobar'
+                                 ^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:8: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+s = 'foo=\r\nbar'
+
+    def qp_decode(s: str) -&gt; str:
+        """
+        Decodes a quoted-printable style string.
+    
+        Args:
+        s (str): A quote-separated printable character sequence.
+    
+        Returns:
+        str: The decoded output based on the input format.
+    
+        Raises:
+        ValueError: If the input does not match the expected pattern or format.
+        """
+        if len(s) % 2 != 0:
+&gt;           raise ValueError("Input must be a two-letter encoded string.")
+E           ValueError: Input must be a two-letter encoded string.
+
+solution.py:15: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.qp_decode.tests.test_solution" name="test_hard_newline" time="0.000"><failure message="ValueError: Input must be a two-letter encoded string.">&gt;   def test_hard_newline(): assert f('a\nb') == 'a\nb'
+                                    ^^^^^^^^^
+
+tests\test_solution.py:9: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+s = 'a\nb'
+
+    def qp_decode(s: str) -&gt; str:
+        """
+        Decodes a quoted-printable style string.
+    
+        Args:
+        s (str): A quote-separated printable character sequence.
+    
+        Returns:
+        str: The decoded output based on the input format.
+    
+        Raises:
+        ValueError: If the input does not match the expected pattern or format.
+        """
+        if len(s) % 2 != 0:
+&gt;           raise ValueError("Input must be a two-letter encoded string.")
+E           ValueError: Input must be a two-letter encoded string.
+
+solution.py:15: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.qp_decode.tests.test_solution" name="test_high_byte" time="0.000"><failure message="ValueError: Input must be a two-letter encoded string.">&gt;   def test_high_byte(): assert f('=FF') == '\xff'
+                                 ^^^^^^^^
+
+tests\test_solution.py:10: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+s = '=FF'
+
+    def qp_decode(s: str) -&gt; str:
+        """
+        Decodes a quoted-printable style string.
+    
+        Args:
+        s (str): A quote-separated printable character sequence.
+    
+        Returns:
+        str: The decoded output based on the input format.
+    
+        Raises:
+        ValueError: If the input does not match the expected pattern or format.
+        """
+        if len(s) % 2 != 0:
+&gt;           raise ValueError("Input must be a two-letter encoded string.")
+E           ValueError: Input must be a two-letter encoded string.
+
+solution.py:15: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.qp_decode.tests.test_solution" name="test_newline_escape" time="0.000"><failure message="ValueError: Input must be a two-letter encoded string.">&gt;   def test_newline_escape(): assert f('=0A') == '\n'
+                                      ^^^^^^^^
+
+tests\test_solution.py:11: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+s = '=0A'
+
+    def qp_decode(s: str) -&gt; str:
+        """
+        Decodes a quoted-printable style string.
+    
+        Args:
+        s (str): A quote-separated printable character sequence.
+    
+        Returns:
+        str: The decoded output based on the input format.
+    
+        Raises:
+        ValueError: If the input does not match the expected pattern or format.
+        """
+        if len(s) % 2 != 0:
+&gt;           raise ValueError("Input must be a two-letter encoded string.")
+E           ValueError: Input must be a two-letter encoded string.
+
+solution.py:15: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.qp_decode.tests.test_solution" name="test_empty" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-195624.qp_decode.tests.test_solution" name="test_lowercase" time="0.001"><failure message="AssertionError: assert 'Input must b...coded string.' == 'bad escape'&#10;  &#10;  - bad escape&#10;  + Input must be a two-letter encoded string.">def test_lowercase():
+        with pytest.raises(ValueError) as e: f('=3d')
+&gt;       assert str(e.value) == 'bad escape'
+E       AssertionError: assert 'Input must b...coded string.' == 'bad escape'
+E         
+E         - bad escape
+E         + Input must be a two-letter encoded string.
+
+tests\test_solution.py:15: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.qp_decode.tests.test_solution" name="test_trailing" time="0.001"><failure message="AssertionError: assert 'Unexpected character.' == 'bad escape'&#10;  &#10;  - bad escape&#10;  + Unexpected character.">def test_trailing():
+        with pytest.raises(ValueError) as e: f('abc=')
+&gt;       assert str(e.value) == 'bad escape'
+E       AssertionError: assert 'Unexpected character.' == 'bad escape'
+E         
+E         - bad escape
+E         + Unexpected character.
+
+tests\test_solution.py:18: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.qp_decode.tests.test_solution" name="test_one_digit" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-195624.qp_decode.tests.test_solution" name="test_bad_hex" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-195624.qp_decode.tests.test_solution" name="test_cr_only" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-195624.qp_decode.tests.test_solution" name="test_bad_input" time="0.000"><failure message="TypeError: object of type 'int' has no len()">def test_bad_input():
+&gt;       with pytest.raises(ValueError) as e: f(5)
+                                             ^^^^
+
+tests\test_solution.py:26: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+s = 5
+
+    def qp_decode(s: str) -&gt; str:
+        """
+        Decodes a quoted-printable style string.
+    
+        Args:
+        s (str): A quote-separated printable character sequence.
+    
+        Returns:
+        str: The decoded output based on the input format.
+    
+        Raises:
+        ValueError: If the input does not match the expected pattern or format.
+        """
+&gt;       if len(s) % 2 != 0:
+           ^^^^^^
+E       TypeError: object of type 'int' has no len()
+
+solution.py:14: TypeError</failure></testcase></testsuite></testsuites>

@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="7" skipped="0" tests="8" time="0.259" timestamp="2026-07-13T20:24:43.020711-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-201327.largest_remainder_apportion.tests.test_solution" name="test_exact_no_remainder" time="0.001"><failure message="assert [2, 1, 1] == [2, 3, 5]&#10;  &#10;  At index 1 diff: 1 != 3&#10;  Use -v to get more diff">def test_exact_no_remainder():
+&gt;       assert apportion([2, 3, 5], 10) == [2, 3, 5]
+E       assert [2, 1, 1] == [2, 3, 5]
+E         
+E         At index 1 diff: 1 != 3
+E         Use -v to get more diff
+
+tests\test_solution.py:6: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.largest_remainder_apportion.tests.test_solution" name="test_tie_broken_by_lowest_index" time="0.001"><failure message="ZeroDivisionError: integer division or modulo by zero">def test_tie_broken_by_lowest_index():
+&gt;       assert apportion([1, 1, 1], 100) == [34, 33, 33]
+               ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:11: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:36: in apportion
+    floor_share = _apportion([weights[i] // 1], target=share + s if r &gt; 0 else share)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+weights = [1], target = 1
+
+    def _apportion(weights: List[int], target: int) -&gt; List[int]:
+        """
+        Returns the shares using the LARGEST-remainder method.
+        """
+        s = target
+        for i in range(len(weights)):
+&gt;           weights[i] //= (s - 1 if i &lt; len(weights) else 0)
+E           ZeroDivisionError: integer division or modulo by zero
+
+solution.py:21: ZeroDivisionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.largest_remainder_apportion.tests.test_solution" name="test_largest_remainder_wins" time="0.000"><failure message="ZeroDivisionError: integer division or modulo by zero">def test_largest_remainder_wins():
+&gt;       assert apportion([500, 499, 1], 10) == [5, 5, 0]
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:16: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:36: in apportion
+    floor_share = _apportion([weights[i] // 1], target=share + s if r &gt; 0 else share)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+weights = [1], target = 1
+
+    def _apportion(weights: List[int], target: int) -&gt; List[int]:
+        """
+        Returns the shares using the LARGEST-remainder method.
+        """
+        s = target
+        for i in range(len(weights)):
+&gt;           weights[i] //= (s - 1 if i &lt; len(weights) else 0)
+E           ZeroDivisionError: integer division or modulo by zero
+
+solution.py:21: ZeroDivisionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.largest_remainder_apportion.tests.test_solution" name="test_zero_weight_never_gets_extra" time="0.000"><failure message="assert [0, 1] == [0, 7]&#10;  &#10;  At index 1 diff: 1 != 7&#10;  Use -v to get more diff">def test_zero_weight_never_gets_extra():
+&gt;       assert apportion([0, 5], 7) == [0, 7]
+E       assert [0, 1] == [0, 7]
+E         
+E         At index 1 diff: 1 != 7
+E         Use -v to get more diff
+
+tests\test_solution.py:21: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.largest_remainder_apportion.tests.test_solution" name="test_total_zero" time="0.000"><failure message="ZeroDivisionError: integer modulo by zero">def test_total_zero():
+&gt;       assert apportion([3, 2], 0) == [0, 0]
+               ^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:26: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+weights = [3, 2], total = 0
+
+    def apportion(weights: List[int], total: int) -&gt; List[int]:
+        """
+        Splits an integer total into shares proportional to the given weights using the LARGEST-remainder method.
+    
+        :param weights: A list of non-negative integers where each is &gt;= 0, with at least one positive entry; total is a non-negative number.
+        :param total: An integer representing the target amount.
+        :return: A new list of shares (integers) for the given total in order and length matching 'weights'.
+        """
+        s = total
+        if not weights or s &lt; 0:
+            raise ValueError("Weights must be a non-empty list of non-bool integers, with at least one positive entry; total must be a non-negative number.")
+    
+        def _apportion(weights: List[int], target: int) -&gt; List[int]:
+            """
+            Returns the shares using the LARGEST-remainder method.
+            """
+            s = target
+            for i in range(len(weights)):
+                weights[i] //= (s - 1 if i &lt; len(weights) else 0)
+            return weights
+    
+        floor = lambda x: int(x * total // s)  # Excluding the remainder part, computing exact shares
+&gt;       r = total % s
+            ^^^^^^^^^
+E       ZeroDivisionError: integer modulo by zero
+
+solution.py:25: ZeroDivisionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.largest_remainder_apportion.tests.test_solution" name="test_sum_invariant_and_length" time="0.000"><failure message="ZeroDivisionError: integer division or modulo by zero">def test_sum_invariant_and_length():
+&gt;       out = apportion([3, 1, 4, 1, 5, 9, 2, 6], 1234)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:30: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:36: in apportion
+    floor_share = _apportion([weights[i] // 1], target=share + s if r &gt; 0 else share)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+weights = [1], target = 1
+
+    def _apportion(weights: List[int], target: int) -&gt; List[int]:
+        """
+        Returns the shares using the LARGEST-remainder method.
+        """
+        s = target
+        for i in range(len(weights)):
+&gt;           weights[i] //= (s - 1 if i &lt; len(weights) else 0)
+E           ZeroDivisionError: integer division or modulo by zero
+
+solution.py:21: ZeroDivisionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.largest_remainder_apportion.tests.test_solution" name="test_no_mutation" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-201327.largest_remainder_apportion.tests.test_solution" name="test_error_contracts" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_error_contracts():
+        with pytest.raises(ValueError):
+            apportion([], 10)
+&gt;       with pytest.raises(ValueError):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:45: Failed</failure></testcase></testsuite></testsuites>

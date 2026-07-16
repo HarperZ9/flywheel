@@ -1,0 +1,350 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="8" skipped="0" tests="15" time="0.223" timestamp="2026-07-14T09:07:55.911719-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260714-083129.spread_radius.tests.test_solution" name="test_one_step" time="0.001"><failure message="TypeError: list indices must be integers or slices, not tuple">&gt;   def test_one_step(): assert f(['S.']) == 1
+                                ^^^^^^^^^
+
+tests\test_solution.py:3: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+grid = ['S.']
+
+    def spread_radius(grid):
+        if not isinstance(grid, list) or len(grid) == 0:
+            raise ValueError('bad grid')
+    
+        for row in grid:
+            if not isinstance(row, str) or len(row) != len(grid[0]):
+                raise ValueError('ragged')
+    
+        def is_valid_cell(cell):
+            return cell in ['.', 'S']
+    
+        sources = []
+        for i, row in enumerate(grid):
+            for j, cell in enumerate(row):
+                if grid[i][j] == 'S':
+                    sources.append((i, j))
+                elif not is_valid_cell(cell):
+                    raise ValueError('bad cell')
+    
+        if len(sources) == 0:
+            raise ValueError('no source')
+    
+        def get_neighbors(x, y):
+            for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+                nx, ny = x + dx, y + dy
+                if 0 &lt;= nx &lt; len(grid) and 0 &lt;= ny &lt; len(grid[0]) and grid[nx][ny] != '#':
+                    yield nx, ny
+    
+        max_dist = 0
+        visited = set()
+    
+        for source in sources:
+            queue = [(source, 0)]
+            while queue:
+                current, dist = queue.pop(0)
+                if is_valid_cell(grid[current[0]][current[1]]) and (current not in visited):
+                    visited.add(current)
+                    max_dist = max(max_dist, dist)
+                    for neighbor in get_neighbors(*current):
+                        queue.append((neighbor, dist + 1))
+    
+&gt;       return max_dist if grid[visited.pop()][visited.pop()] == '.' else -1
+                           ^^^^^^^^^^^^^^^^^^^
+E       TypeError: list indices must be integers or slices, not tuple
+
+solution.py:42: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.spread_radius.tests.test_solution" name="test_source_only" time="0.000"><failure message="TypeError: list indices must be integers or slices, not tuple">&gt;   def test_source_only(): assert f(['S']) == 0
+                                   ^^^^^^^^
+
+tests\test_solution.py:4: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+grid = ['S']
+
+    def spread_radius(grid):
+        if not isinstance(grid, list) or len(grid) == 0:
+            raise ValueError('bad grid')
+    
+        for row in grid:
+            if not isinstance(row, str) or len(row) != len(grid[0]):
+                raise ValueError('ragged')
+    
+        def is_valid_cell(cell):
+            return cell in ['.', 'S']
+    
+        sources = []
+        for i, row in enumerate(grid):
+            for j, cell in enumerate(row):
+                if grid[i][j] == 'S':
+                    sources.append((i, j))
+                elif not is_valid_cell(cell):
+                    raise ValueError('bad cell')
+    
+        if len(sources) == 0:
+            raise ValueError('no source')
+    
+        def get_neighbors(x, y):
+            for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+                nx, ny = x + dx, y + dy
+                if 0 &lt;= nx &lt; len(grid) and 0 &lt;= ny &lt; len(grid[0]) and grid[nx][ny] != '#':
+                    yield nx, ny
+    
+        max_dist = 0
+        visited = set()
+    
+        for source in sources:
+            queue = [(source, 0)]
+            while queue:
+                current, dist = queue.pop(0)
+                if is_valid_cell(grid[current[0]][current[1]]) and (current not in visited):
+                    visited.add(current)
+                    max_dist = max(max_dist, dist)
+                    for neighbor in get_neighbors(*current):
+                        queue.append((neighbor, dist + 1))
+    
+&gt;       return max_dist if grid[visited.pop()][visited.pop()] == '.' else -1
+                           ^^^^^^^^^^^^^^^^^^^
+E       TypeError: list indices must be integers or slices, not tuple
+
+solution.py:42: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.spread_radius.tests.test_solution" name="test_unreachable" time="0.000"><failure message="ValueError: bad cell">&gt;   def test_unreachable(): assert f(['S#.']) == -1
+                                   ^^^^^^^^^^
+
+tests\test_solution.py:5: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+grid = ['S#.']
+
+    def spread_radius(grid):
+        if not isinstance(grid, list) or len(grid) == 0:
+            raise ValueError('bad grid')
+    
+        for row in grid:
+            if not isinstance(row, str) or len(row) != len(grid[0]):
+                raise ValueError('ragged')
+    
+        def is_valid_cell(cell):
+            return cell in ['.', 'S']
+    
+        sources = []
+        for i, row in enumerate(grid):
+            for j, cell in enumerate(row):
+                if grid[i][j] == 'S':
+                    sources.append((i, j))
+                elif not is_valid_cell(cell):
+&gt;                   raise ValueError('bad cell')
+E                   ValueError: bad cell
+
+solution.py:18: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.spread_radius.tests.test_solution" name="test_square" time="0.000"><failure message="TypeError: list indices must be integers or slices, not tuple">&gt;   def test_square(): assert f(['S..', '...', '...']) == 4
+                              ^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:6: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+grid = ['S..', '...', '...']
+
+    def spread_radius(grid):
+        if not isinstance(grid, list) or len(grid) == 0:
+            raise ValueError('bad grid')
+    
+        for row in grid:
+            if not isinstance(row, str) or len(row) != len(grid[0]):
+                raise ValueError('ragged')
+    
+        def is_valid_cell(cell):
+            return cell in ['.', 'S']
+    
+        sources = []
+        for i, row in enumerate(grid):
+            for j, cell in enumerate(row):
+                if grid[i][j] == 'S':
+                    sources.append((i, j))
+                elif not is_valid_cell(cell):
+                    raise ValueError('bad cell')
+    
+        if len(sources) == 0:
+            raise ValueError('no source')
+    
+        def get_neighbors(x, y):
+            for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+                nx, ny = x + dx, y + dy
+                if 0 &lt;= nx &lt; len(grid) and 0 &lt;= ny &lt; len(grid[0]) and grid[nx][ny] != '#':
+                    yield nx, ny
+    
+        max_dist = 0
+        visited = set()
+    
+        for source in sources:
+            queue = [(source, 0)]
+            while queue:
+                current, dist = queue.pop(0)
+                if is_valid_cell(grid[current[0]][current[1]]) and (current not in visited):
+                    visited.add(current)
+                    max_dist = max(max_dist, dist)
+                    for neighbor in get_neighbors(*current):
+                        queue.append((neighbor, dist + 1))
+    
+&gt;       return max_dist if grid[visited.pop()][visited.pop()] == '.' else -1
+                           ^^^^^^^^^^^^^^^^^^^
+E       TypeError: list indices must be integers or slices, not tuple
+
+solution.py:42: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.spread_radius.tests.test_solution" name="test_two_sources" time="0.000"><failure message="TypeError: list indices must be integers or slices, not tuple">&gt;   def test_two_sources(): assert f(['S.S']) == 1
+                                   ^^^^^^^^^^
+
+tests\test_solution.py:7: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+grid = ['S.S']
+
+    def spread_radius(grid):
+        if not isinstance(grid, list) or len(grid) == 0:
+            raise ValueError('bad grid')
+    
+        for row in grid:
+            if not isinstance(row, str) or len(row) != len(grid[0]):
+                raise ValueError('ragged')
+    
+        def is_valid_cell(cell):
+            return cell in ['.', 'S']
+    
+        sources = []
+        for i, row in enumerate(grid):
+            for j, cell in enumerate(row):
+                if grid[i][j] == 'S':
+                    sources.append((i, j))
+                elif not is_valid_cell(cell):
+                    raise ValueError('bad cell')
+    
+        if len(sources) == 0:
+            raise ValueError('no source')
+    
+        def get_neighbors(x, y):
+            for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+                nx, ny = x + dx, y + dy
+                if 0 &lt;= nx &lt; len(grid) and 0 &lt;= ny &lt; len(grid[0]) and grid[nx][ny] != '#':
+                    yield nx, ny
+    
+        max_dist = 0
+        visited = set()
+    
+        for source in sources:
+            queue = [(source, 0)]
+            while queue:
+                current, dist = queue.pop(0)
+                if is_valid_cell(grid[current[0]][current[1]]) and (current not in visited):
+                    visited.add(current)
+                    max_dist = max(max_dist, dist)
+                    for neighbor in get_neighbors(*current):
+                        queue.append((neighbor, dist + 1))
+    
+&gt;       return max_dist if grid[visited.pop()][visited.pop()] == '.' else -1
+                           ^^^^^^^^^^^^^^^^^^^
+E       TypeError: list indices must be integers or slices, not tuple
+
+solution.py:42: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.spread_radius.tests.test_solution" name="test_two_sources_middle" time="0.000"><failure message="TypeError: list indices must be integers or slices, not tuple">&gt;   def test_two_sources_middle(): assert f(['S...S']) == 2
+                                          ^^^^^^^^^^^^
+
+tests\test_solution.py:8: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+grid = ['S...S']
+
+    def spread_radius(grid):
+        if not isinstance(grid, list) or len(grid) == 0:
+            raise ValueError('bad grid')
+    
+        for row in grid:
+            if not isinstance(row, str) or len(row) != len(grid[0]):
+                raise ValueError('ragged')
+    
+        def is_valid_cell(cell):
+            return cell in ['.', 'S']
+    
+        sources = []
+        for i, row in enumerate(grid):
+            for j, cell in enumerate(row):
+                if grid[i][j] == 'S':
+                    sources.append((i, j))
+                elif not is_valid_cell(cell):
+                    raise ValueError('bad cell')
+    
+        if len(sources) == 0:
+            raise ValueError('no source')
+    
+        def get_neighbors(x, y):
+            for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+                nx, ny = x + dx, y + dy
+                if 0 &lt;= nx &lt; len(grid) and 0 &lt;= ny &lt; len(grid[0]) and grid[nx][ny] != '#':
+                    yield nx, ny
+    
+        max_dist = 0
+        visited = set()
+    
+        for source in sources:
+            queue = [(source, 0)]
+            while queue:
+                current, dist = queue.pop(0)
+                if is_valid_cell(grid[current[0]][current[1]]) and (current not in visited):
+                    visited.add(current)
+                    max_dist = max(max_dist, dist)
+                    for neighbor in get_neighbors(*current):
+                        queue.append((neighbor, dist + 1))
+    
+&gt;       return max_dist if grid[visited.pop()][visited.pop()] == '.' else -1
+                           ^^^^^^^^^^^^^^^^^^^
+E       TypeError: list indices must be integers or slices, not tuple
+
+solution.py:42: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.spread_radius.tests.test_solution" name="test_corridor" time="0.000"><failure message="ValueError: bad cell">&gt;   def test_corridor(): assert f(['S..', '##.', '...']) == 6
+                                ^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:9: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+grid = ['S..', '##.', '...']
+
+    def spread_radius(grid):
+        if not isinstance(grid, list) or len(grid) == 0:
+            raise ValueError('bad grid')
+    
+        for row in grid:
+            if not isinstance(row, str) or len(row) != len(grid[0]):
+                raise ValueError('ragged')
+    
+        def is_valid_cell(cell):
+            return cell in ['.', 'S']
+    
+        sources = []
+        for i, row in enumerate(grid):
+            for j, cell in enumerate(row):
+                if grid[i][j] == 'S':
+                    sources.append((i, j))
+                elif not is_valid_cell(cell):
+&gt;                   raise ValueError('bad cell')
+E                   ValueError: bad cell
+
+solution.py:18: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.spread_radius.tests.test_solution" name="test_no_open_cells" time="0.000"><failure message="ValueError: bad cell">&gt;   def test_no_open_cells(): assert f(['S#']) == 0
+                                     ^^^^^^^^^
+
+tests\test_solution.py:10: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+grid = ['S#']
+
+    def spread_radius(grid):
+        if not isinstance(grid, list) or len(grid) == 0:
+            raise ValueError('bad grid')
+    
+        for row in grid:
+            if not isinstance(row, str) or len(row) != len(grid[0]):
+                raise ValueError('ragged')
+    
+        def is_valid_cell(cell):
+            return cell in ['.', 'S']
+    
+        sources = []
+        for i, row in enumerate(grid):
+            for j, cell in enumerate(row):
+                if grid[i][j] == 'S':
+                    sources.append((i, j))
+                elif not is_valid_cell(cell):
+&gt;                   raise ValueError('bad cell')
+E                   ValueError: bad cell
+
+solution.py:18: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.spread_radius.tests.test_solution" name="test_ragged" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-083129.spread_radius.tests.test_solution" name="test_bad_cell" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-083129.spread_radius.tests.test_solution" name="test_no_source" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-083129.spread_radius.tests.test_solution" name="test_bad_grid_plain_string" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-083129.spread_radius.tests.test_solution" name="test_bad_grid_empty" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-083129.spread_radius.tests.test_solution" name="test_bad_grid_empty_row" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-083129.spread_radius.tests.test_solution" name="test_bad_grid_row_type" time="0.000" /></testsuite></testsuites>

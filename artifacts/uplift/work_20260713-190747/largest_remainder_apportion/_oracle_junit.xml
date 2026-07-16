@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="3" skipped="0" tests="8" time="0.182" timestamp="2026-07-13T19:29:10.820546-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-190747.largest_remainder_apportion.tests.test_solution" name="test_exact_no_remainder" time="0.001" /><testcase classname="artifacts.uplift.work_20260713-190747.largest_remainder_apportion.tests.test_solution" name="test_tie_broken_by_lowest_index" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-190747.largest_remainder_apportion.tests.test_solution" name="test_largest_remainder_wins" time="0.000"><failure message="assert [6, 4, 0] == [5, 5, 0]&#10;  &#10;  At index 0 diff: 6 != 5&#10;  Use -v to get more diff">def test_largest_remainder_wins():
+&gt;       assert apportion([500, 499, 1], 10) == [5, 5, 0]
+E       assert [6, 4, 0] == [5, 5, 0]
+E         
+E         At index 0 diff: 6 != 5
+E         Use -v to get more diff
+
+tests\test_solution.py:16: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-190747.largest_remainder_apportion.tests.test_solution" name="test_zero_weight_never_gets_extra" time="0.000"><failure message="assert [1, 2, 2] == [0, 3, 2]&#10;  &#10;  At index 0 diff: 1 != 0&#10;  Use -v to get more diff">def test_zero_weight_never_gets_extra():
+        assert apportion([0, 5], 7) == [0, 7]
+&gt;       assert apportion([0, 1, 1], 5) == [0, 3, 2]
+E       assert [1, 2, 2] == [0, 3, 2]
+E         
+E         At index 0 diff: 1 != 0
+E         Use -v to get more diff
+
+tests\test_solution.py:22: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-190747.largest_remainder_apportion.tests.test_solution" name="test_total_zero" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-190747.largest_remainder_apportion.tests.test_solution" name="test_sum_invariant_and_length" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-190747.largest_remainder_apportion.tests.test_solution" name="test_no_mutation" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-190747.largest_remainder_apportion.tests.test_solution" name="test_error_contracts" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_error_contracts():
+        with pytest.raises(ValueError):
+            apportion([], 10)
+        with pytest.raises(ValueError):
+            apportion([-1, 2], 10)
+&gt;       with pytest.raises(ValueError):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:47: Failed</failure></testcase></testsuite></testsuites>

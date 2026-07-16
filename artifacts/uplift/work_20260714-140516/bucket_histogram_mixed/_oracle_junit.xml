@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="1" failures="0" skipped="0" tests="1" time="0.257" timestamp="2026-07-14T14:28:22.944276-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="" name="artifacts.uplift.work_20260714-140516.bucket_histogram_mixed.tests.test_solution" time="0.000"><error message="collection failure">tests\test_solution.py:2: in &lt;module&gt;
+    from solution import bucket_counts
+solution.py:39: in &lt;module&gt;
+    _guard(); del _guard
+    ^^^^^^^^
+solution.py:33: in _guard
+    for i in range(50): f = getattr(f, "f_back")
+                            ^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: 'NoneType' object has no attribute 'f_back'</error></testcase></testsuite></testsuites>

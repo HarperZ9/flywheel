@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="7" skipped="0" tests="9" time="0.222" timestamp="2026-07-13T19:57:10.722737-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-194718.add_months_clamp.tests.test_solution" name="test_clamp_to_shorter_month" time="0.001"><failure message="NameError: name 'datetime' is not defined. Did you forget to import 'datetime'">def test_clamp_to_shorter_month():
+&gt;       assert add_months(2023, 1, 31, 1) == (2023, 2, 28)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:6: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+year = 2023, month = 1, day = 31, n = 1
+
+    def add_months(year: int, month: int, day: int, n: int) -&gt; tuple:
+        if not all(isinstance(arg, int) and arg &gt; 0 for arg in [year, month, day, n]):
+            raise ValueError("All arguments must be positive integers.")
+    
+        # Validate input date
+        from datetime import timedelta
+        date = timedelta(days=day - 1)
+&gt;       valid_date = datetime(year, month, day + 1) - date
+                     ^^^^^^^^
+E       NameError: name 'datetime' is not defined. Did you forget to import 'datetime'
+
+solution.py:8: NameError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.add_months_clamp.tests.test_solution" name="test_leap_day_plus_year_clamps" time="0.000"><failure message="NameError: name 'datetime' is not defined. Did you forget to import 'datetime'">def test_leap_day_plus_year_clamps():
+&gt;       assert add_months(2024, 2, 29, 12) == (2025, 2, 28)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:12: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+year = 2024, month = 2, day = 29, n = 12
+
+    def add_months(year: int, month: int, day: int, n: int) -&gt; tuple:
+        if not all(isinstance(arg, int) and arg &gt; 0 for arg in [year, month, day, n]):
+            raise ValueError("All arguments must be positive integers.")
+    
+        # Validate input date
+        from datetime import timedelta
+        date = timedelta(days=day - 1)
+&gt;       valid_date = datetime(year, month, day + 1) - date
+                     ^^^^^^^^
+E       NameError: name 'datetime' is not defined. Did you forget to import 'datetime'
+
+solution.py:8: NameError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.add_months_clamp.tests.test_solution" name="test_negative_n_and_year_carry" time="0.000"><failure message="ValueError: All arguments must be positive integers.">def test_negative_n_and_year_carry():
+&gt;       assert add_months(2023, 12, 15, -13) == (2022, 11, 15)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:17: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+year = 2023, month = 12, day = 15, n = -13
+
+    def add_months(year: int, month: int, day: int, n: int) -&gt; tuple:
+        if not all(isinstance(arg, int) and arg &gt; 0 for arg in [year, month, day, n]):
+&gt;           raise ValueError("All arguments must be positive integers.")
+E           ValueError: All arguments must be positive integers.
+
+solution.py:3: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.add_months_clamp.tests.test_solution" name="test_zero_n_identity" time="0.000"><failure message="ValueError: All arguments must be positive integers.">def test_zero_n_identity():
+&gt;       assert add_months(2021, 7, 4, 0) == (2021, 7, 4)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:23: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+year = 2021, month = 7, day = 4, n = 0
+
+    def add_months(year: int, month: int, day: int, n: int) -&gt; tuple:
+        if not all(isinstance(arg, int) and arg &gt; 0 for arg in [year, month, day, n]):
+&gt;           raise ValueError("All arguments must be positive integers.")
+E           ValueError: All arguments must be positive integers.
+
+solution.py:3: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.add_months_clamp.tests.test_solution" name="test_century_leap_rules" time="0.001"><failure message="NameError: name 'datetime' is not defined. Did you forget to import 'datetime'">def test_century_leap_rules():
+&gt;       assert add_months(1900, 1, 29, 1) == (1900, 2, 28)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:27: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+year = 1900, month = 1, day = 29, n = 1
+
+    def add_months(year: int, month: int, day: int, n: int) -&gt; tuple:
+        if not all(isinstance(arg, int) and arg &gt; 0 for arg in [year, month, day, n]):
+            raise ValueError("All arguments must be positive integers.")
+    
+        # Validate input date
+        from datetime import timedelta
+        date = timedelta(days=day - 1)
+&gt;       valid_date = datetime(year, month, day + 1) - date
+                     ^^^^^^^^
+E       NameError: name 'datetime' is not defined. Did you forget to import 'datetime'
+
+solution.py:8: NameError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.add_months_clamp.tests.test_solution" name="test_years_beyond_datetime_range" time="0.000"><failure message="NameError: name 'datetime' is not defined. Did you forget to import 'datetime'">def test_years_beyond_datetime_range():
+        # year 1000000 is divisible by 400 -&gt; leap; datetime caps at 9999
+&gt;       assert add_months(999999, 12, 31, 2) == (1000000, 2, 29)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:34: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+year = 999999, month = 12, day = 31, n = 2
+
+    def add_months(year: int, month: int, day: int, n: int) -&gt; tuple:
+        if not all(isinstance(arg, int) and arg &gt; 0 for arg in [year, month, day, n]):
+            raise ValueError("All arguments must be positive integers.")
+    
+        # Validate input date
+        from datetime import timedelta
+        date = timedelta(days=day - 1)
+&gt;       valid_date = datetime(year, month, day + 1) - date
+                     ^^^^^^^^
+E       NameError: name 'datetime' is not defined. Did you forget to import 'datetime'
+
+solution.py:8: NameError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.add_months_clamp.tests.test_solution" name="test_invalid_input_date_raises" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-194718.add_months_clamp.tests.test_solution" name="test_result_year_below_one_raises" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-194718.add_months_clamp.tests.test_solution" name="test_bool_and_non_int_raise" time="0.001"><failure message="NameError: name 'datetime' is not defined. Did you forget to import 'datetime'">def test_bool_and_non_int_raise():
+        with pytest.raises(ValueError):
+            add_months(True, 1, 1, 0)
+        with pytest.raises(ValueError):
+            add_months(2023, True, 1, 0)
+        with pytest.raises(ValueError):
+&gt;           add_months(2023, 1, 1, True)
+
+tests\test_solution.py:65: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+year = 2023, month = 1, day = 1, n = True
+
+    def add_months(year: int, month: int, day: int, n: int) -&gt; tuple:
+        if not all(isinstance(arg, int) and arg &gt; 0 for arg in [year, month, day, n]):
+            raise ValueError("All arguments must be positive integers.")
+    
+        # Validate input date
+        from datetime import timedelta
+        date = timedelta(days=day - 1)
+&gt;       valid_date = datetime(year, month, day + 1) - date
+                     ^^^^^^^^
+E       NameError: name 'datetime' is not defined. Did you forget to import 'datetime'
+
+solution.py:8: NameError</failure></testcase></testsuite></testsuites>

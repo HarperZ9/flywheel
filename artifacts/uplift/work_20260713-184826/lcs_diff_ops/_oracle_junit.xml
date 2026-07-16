@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="11" skipped="0" tests="12" time="0.252" timestamp="2026-07-13T19:25:02.275598-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-184826.lcs_diff_ops.tests.test_solution" name="test_replace_middle" time="0.001"><failure message="AssertionError: assert [('equal', ['..., ['b', 'b'])] == [('equal', ['...qual', ['c'])]&#10;  &#10;  At index 1 diff: ('delete', ['b', 'b']) != ('delete', ['b'])&#10;  Right contains 2 more items, first extra item: ('insert', ['x'])&#10;  Use -v to get more diff">def test_replace_middle():
+&gt;       assert f(['a', 'b', 'c'], ['a', 'x', 'c']) == [('equal', ['a']), ('delete', ['b']), ('insert', ['x']), ('equal', ['c'])]
+E       AssertionError: assert [('equal', ['..., ['b', 'b'])] == [('equal', ['...qual', ['c'])]
+E         
+E         At index 1 diff: ('delete', ['b', 'b']) != ('delete', ['b'])
+E         Right contains 2 more items, first extra item: ('insert', ['x'])
+E         Use -v to get more diff
+
+tests\test_solution.py:4: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-184826.lcs_diff_ops.tests.test_solution" name="test_all_equal" time="0.000"><failure message="IndexError: list index out of range">&gt;   def test_all_equal(): assert f(['a', 'b'], ['a', 'b']) == [('equal', ['a', 'b'])]
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:5: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:35: in diff_ops
+    return diff_lines(a, b)
+           ^^^^^^^^^^^^^^^^
+solution.py:16: in diff_lines
+    result = diff_lines(l1, l2, i + 1, j + 1)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+solution.py:16: in diff_lines
+    result = diff_lines(l1, l2, i + 1, j + 1)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+l1 = ['a', 'b'], l2 = ['a', 'b'], i = 2, j = 2, memo = {}
+
+    def diff_lines(l1, l2, i=0, j=0, memo={}):
+        key = (i, j)
+        if key in memo:
+            return memo[key]
+    
+        if i == len(l1) and j &lt; len(l2):
+            result = [('insert', [l2[j:]]), ('equal', [])]
+        elif i &lt; len(l1) and j == len(l2):
+            result = [('delete', [l1[i:]])]
+        else:
+            if i &lt; len(l1) and j &lt; len(l2) and l1[i] == l2[j]:
+                result = diff_lines(l1, l2, i + 1, j + 1)
+                result.insert(0, ('equal', [l1[i]]))
+            elif (i &lt; len(l1) - 1 and
+                  (j &gt;= len(l2) or l1[i] == l1[i + 1]) and
+                  (j &lt; len(l2) - 1 and l2[j] != l2[j + 1])):
+                result = [('delete', [l1[i], l1[i + 1]]),
+                          diff_lines(l1, l2, i + 2, j)]
+            elif (i &gt;= len(l1) or l1[i] != l1[i - 1]) and \
+                 (j &lt; len(l2) - 1 and l2[j] == l2[j + 1]):
+                result = [('insert', [l2[j], l2[j + 1]]),
+                          diff_lines(l1, l2, i, j + 2)]
+            else:
+                result = [(('delete' if (i &lt; len(l1) and
+                                         j &lt; len(l2) and l1[i] != l2[j]) else 'insert'),
+&gt;                           [l1[i], l1[i]])]
+                             ^^^^^
+E               IndexError: list index out of range
+
+solution.py:30: IndexError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-184826.lcs_diff_ops.tests.test_solution" name="test_both_empty" time="0.000"><failure message="IndexError: list index out of range">&gt;   def test_both_empty(): assert f([], []) == []
+                                  ^^^^^^^^^
+
+tests\test_solution.py:6: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:35: in diff_ops
+    return diff_lines(a, b)
+           ^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+l1 = [], l2 = [], i = 0, j = 0, memo = {}
+
+    def diff_lines(l1, l2, i=0, j=0, memo={}):
+        key = (i, j)
+        if key in memo:
+            return memo[key]
+    
+        if i == len(l1) and j &lt; len(l2):
+            result = [('insert', [l2[j:]]), ('equal', [])]
+        elif i &lt; len(l1) and j == len(l2):
+            result = [('delete', [l1[i:]])]
+        else:
+            if i &lt; len(l1) and j &lt; len(l2) and l1[i] == l2[j]:
+                result = diff_lines(l1, l2, i + 1, j + 1)
+                result.insert(0, ('equal', [l1[i]]))
+            elif (i &lt; len(l1) - 1 and
+                  (j &gt;= len(l2) or l1[i] == l1[i + 1]) and
+                  (j &lt; len(l2) - 1 and l2[j] != l2[j + 1])):
+                result = [('delete', [l1[i], l1[i + 1]]),
+                          diff_lines(l1, l2, i + 2, j)]
+            elif (i &gt;= len(l1) or l1[i] != l1[i - 1]) and \
+                 (j &lt; len(l2) - 1 and l2[j] == l2[j + 1]):
+                result = [('insert', [l2[j], l2[j + 1]]),
+                          diff_lines(l1, l2, i, j + 2)]
+            else:
+                result = [(('delete' if (i &lt; len(l1) and
+                                         j &lt; len(l2) and l1[i] != l2[j]) else 'insert'),
+&gt;                           [l1[i], l1[i]])]
+                             ^^^^^
+E               IndexError: list index out of range
+
+solution.py:30: IndexError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-184826.lcs_diff_ops.tests.test_solution" name="test_insert_only" time="0.001"><failure message="AssertionError: assert [('insert', [...('equal', [])] == [('insert', ['a', 'b'])]&#10;  &#10;  At index 0 diff: ('insert', [['a', 'b']]) != ('insert', ['a', 'b'])&#10;  Left contains one more item: ('equal', [])&#10;  Use -v to get more diff">&gt;   def test_insert_only(): assert f([], ['a', 'b']) == [('insert', ['a', 'b'])]
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert [('insert', [...('equal', [])] == [('insert', ['a', 'b'])]
+E     
+E     At index 0 diff: ('insert', [['a', 'b']]) != ('insert', ['a', 'b'])
+E     Left contains one more item: ('equal', [])
+E     Use -v to get more diff
+
+tests\test_solution.py:7: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-184826.lcs_diff_ops.tests.test_solution" name="test_delete_only" time="0.000"><failure message="AssertionError: assert [('delete', [['a', 'b']])] == [('delete', ['a', 'b'])]&#10;  &#10;  At index 0 diff: ('delete', [['a', 'b']]) != ('delete', ['a', 'b'])&#10;  Use -v to get more diff">&gt;   def test_delete_only(): assert f(['a', 'b'], []) == [('delete', ['a', 'b'])]
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert [('delete', [['a', 'b']])] == [('delete', ['a', 'b'])]
+E     
+E     At index 0 diff: ('delete', [['a', 'b']]) != ('delete', ['a', 'b'])
+E     Use -v to get more diff
+
+tests\test_solution.py:8: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-184826.lcs_diff_ops.tests.test_solution" name="test_disjoint" time="0.000"><failure message="AssertionError: assert [('delete', ['a', 'a'])] == [('delete', [..., ['c', 'd'])]&#10;  &#10;  At index 0 diff: ('delete', ['a', 'a']) != ('delete', ['a', 'b'])&#10;  Right contains one more item: ('insert', ['c', 'd'])&#10;  Use -v to get more diff">def test_disjoint():
+&gt;       assert f(['a', 'b'], ['c', 'd']) == [('delete', ['a', 'b']), ('insert', ['c', 'd'])]
+E       AssertionError: assert [('delete', ['a', 'a'])] == [('delete', [..., ['c', 'd'])]
+E         
+E         At index 0 diff: ('delete', ['a', 'a']) != ('delete', ['a', 'b'])
+E         Right contains one more item: ('insert', ['c', 'd'])
+E         Use -v to get more diff
+
+tests\test_solution.py:10: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-184826.lcs_diff_ops.tests.test_solution" name="test_shift" time="0.000"><failure message="AssertionError: assert [('delete', ['x', 'x'])] == [('delete', [...sert', ['y'])]&#10;  &#10;  At index 0 diff: ('delete', ['x', 'x']) != ('delete', ['x'])&#10;  Right contains 2 more items, first extra item: ('equal', ['a'])&#10;  Use -v to get more diff">def test_shift():
+&gt;       assert f(['x', 'a'], ['a', 'y']) == [('delete', ['x']), ('equal', ['a']), ('insert', ['y'])]
+E       AssertionError: assert [('delete', ['x', 'x'])] == [('delete', [...sert', ['y'])]
+E         
+E         At index 0 diff: ('delete', ['x', 'x']) != ('delete', ['x'])
+E         Right contains 2 more items, first extra item: ('equal', ['a'])
+E         Use -v to get more diff
+
+tests\test_solution.py:12: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-184826.lcs_diff_ops.tests.test_solution" name="test_tie_prefers_delete" time="0.001"><failure message="AssertionError: assert [('delete', ['a', 'a'])] == [('delete', [...sert', ['b'])]&#10;  &#10;  At index 0 diff: ('delete', ['a', 'a']) != ('delete', ['a'])&#10;  Right contains 2 more items, first extra item: ('equal', ['b', 'a'])&#10;  Use -v to get more diff">def test_tie_prefers_delete():
+&gt;       assert f(['a', 'b', 'a'], ['b', 'a', 'b']) == [('delete', ['a']), ('equal', ['b', 'a']), ('insert', ['b'])]
+E       AssertionError: assert [('delete', ['a', 'a'])] == [('delete', [...sert', ['b'])]
+E         
+E         At index 0 diff: ('delete', ['a', 'a']) != ('delete', ['a'])
+E         Right contains 2 more items, first extra item: ('equal', ['b', 'a'])
+E         Use -v to get more diff
+
+tests\test_solution.py:14: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-184826.lcs_diff_ops.tests.test_solution" name="test_append" time="0.000"><failure message="AssertionError: assert [('equal', ['...('equal', [])] == [('equal', ['...sert', ['b'])]&#10;  &#10;  At index 1 diff: ('insert', [['b']]) != ('insert', ['b'])&#10;  Left contains one more item: ('equal', [])&#10;  Use -v to get more diff">&gt;   def test_append(): assert f(['a'], ['a', 'b']) == [('equal', ['a']), ('insert', ['b'])]
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert [('equal', ['...('equal', [])] == [('equal', ['...sert', ['b'])]
+E     
+E     At index 1 diff: ('insert', [['b']]) != ('insert', ['b'])
+E     Left contains one more item: ('equal', [])
+E     Use -v to get more diff
+
+tests\test_solution.py:15: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-184826.lcs_diff_ops.tests.test_solution" name="test_prepend" time="0.001"><failure message="AssertionError: assert [('delete', ['b', 'b'])] == [('insert', [...qual', ['b'])]&#10;  &#10;  At index 0 diff: ('delete', ['b', 'b']) != ('insert', ['a'])&#10;  Right contains one more item: ('equal', ['b'])&#10;  Use -v to get more diff">&gt;   def test_prepend(): assert f(['b'], ['a', 'b']) == [('insert', ['a']), ('equal', ['b'])]
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert [('delete', ['b', 'b'])] == [('insert', [...qual', ['b'])]
+E     
+E     At index 0 diff: ('delete', ['b', 'b']) != ('insert', ['a'])
+E     Right contains one more item: ('equal', ['b'])
+E     Use -v to get more diff
+
+tests\test_solution.py:16: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-184826.lcs_diff_ops.tests.test_solution" name="test_bad_input_not_list" time="0.000"><failure message="TypeError: can only concatenate str (not &quot;list&quot;) to str">def test_bad_input_not_list():
+&gt;       with pytest.raises(ValueError) as e: f('ab', [])
+                                             ^^^^^^^^^^^
+
+tests\test_solution.py:18: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+a = 'ab', b = []
+
+    def diff_ops(a, b):
+&gt;       if not all(isinstance(x, str) for x in a + b):
+                                               ^^^^^
+E       TypeError: can only concatenate str (not "list") to str
+
+solution.py:2: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-184826.lcs_diff_ops.tests.test_solution" name="test_bad_element" time="0.001" /></testsuite></testsuites>

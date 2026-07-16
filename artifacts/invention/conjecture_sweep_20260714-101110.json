@@ -1,0 +1,82 @@
+{
+ "schema": "flywheel.conjecture-forge/v1.sweep",
+ "grammar_size": 465,
+ "batch": 50,
+ "rounds": [
+  {
+   "offset": 0,
+   "proposed": 50,
+   "accepted": 4,
+   "refused": 46,
+   "declared": 0
+  },
+  {
+   "offset": 50,
+   "proposed": 50,
+   "accepted": 4,
+   "refused": 46,
+   "declared": 0
+  },
+  {
+   "offset": 100,
+   "proposed": 50,
+   "accepted": 1,
+   "refused": 49,
+   "declared": 0
+  },
+  {
+   "offset": 150,
+   "proposed": 50,
+   "accepted": 4,
+   "refused": 46,
+   "declared": 0
+  },
+  {
+   "offset": 200,
+   "proposed": 50,
+   "accepted": 2,
+   "refused": 48,
+   "declared": 0
+  },
+  {
+   "offset": 250,
+   "proposed": 50,
+   "accepted": 4,
+   "refused": 46,
+   "declared": 0
+  },
+  {
+   "offset": 300,
+   "proposed": 50,
+   "accepted": 2,
+   "refused": 48,
+   "declared": 0
+  },
+  {
+   "offset": 350,
+   "proposed": 50,
+   "accepted": 7,
+   "refused": 43,
+   "declared": 0
+  },
+  {
+   "offset": 400,
+   "proposed": 50,
+   "accepted": 2,
+   "refused": 48,
+   "declared": 0
+  },
+  {
+   "offset": 450,
+   "proposed": 15,
+   "accepted": 3,
+   "refused": 12,
+   "declared": 0
+  }
+ ],
+ "accepted_total": 33,
+ "refused_total": 432,
+ "declared_total": 0,
+ "wall_seconds": 888.4,
+ "note": "every statement proposed once; acceptance decided solely by the Lean kernel; survivors are in the store under kind='theorem'"
+}

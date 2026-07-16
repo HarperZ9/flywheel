@@ -70,12 +70,12 @@ def build(params: dict) -> dict:
     g["n"] = {"advance": stem_gap + 0.30 * w, "strokes": [
         stem(0.15 * w, 0.0, 1.0),
         arch(0.15 * w, 0.15 * w + stem_gap),
-        stem(0.15 * w + stem_gap, 0.0, 0.55)]}
+        stem(0.15 * w + stem_gap, 0.0, 0.62)]}
 
     g["h"] = {"advance": stem_gap + 0.30 * w, "strokes": [
         stem(0.15 * w, 0.0, asc),
         arch(0.15 * w, 0.15 * w + stem_gap),
-        stem(0.15 * w + stem_gap, 0.0, 0.55)]}
+        stem(0.15 * w + stem_gap, 0.0, 0.62)]}
 
     g["o"] = {"advance": adv_round, "strokes": [bowl_ring()]}
 

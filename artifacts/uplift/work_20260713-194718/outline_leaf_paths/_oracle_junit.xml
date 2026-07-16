@@ -1,0 +1,173 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="8" skipped="0" tests="9" time="0.216" timestamp="2026-07-13T19:58:06.450168-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-194718.outline_leaf_paths.tests.test_solution" name="test_forest_and_leaf_order" time="0.001"><failure message="TypeError: unsupported operand type(s) for //=: 'str' and 'int'">def test_forest_and_leaf_order():
+        lines = ["a", "  b", "    c", "  d", "e"]
+&gt;       assert outline_paths(lines) == ["a/b/c", "a/d", "e"]
+               ^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:7: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+lines = ['a', '  b', '    c', '  d', 'e']
+
+    def outline_paths(lines):
+        if not lines or all(line.isspace() for line in lines):
+            return []
+    
+        node_stack = []
+        paths = []
+        node_level = {}
+    
+        for (level, name) in [(i * " ", line.strip()) for i, line in enumerate(lines) if not line.isspace() and line]:
+&gt;           level //= 2
+E           TypeError: unsupported operand type(s) for //=: 'str' and 'int'
+
+solution.py:10: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.outline_leaf_paths.tests.test_solution" name="test_blank_and_whitespace_lines_skipped_without_breaking_levels" time="0.000"><failure message="TypeError: unsupported operand type(s) for //=: 'str' and 'int'">def test_blank_and_whitespace_lines_skipped_without_breaking_levels():
+        lines = ["a", "", "   ", "\t", "  b"]
+&gt;       assert outline_paths(lines) == ["a/b"]
+               ^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:12: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+lines = ['a', '', '   ', '\t', '  b']
+
+    def outline_paths(lines):
+        if not lines or all(line.isspace() for line in lines):
+            return []
+    
+        node_stack = []
+        paths = []
+        node_level = {}
+    
+        for (level, name) in [(i * " ", line.strip()) for i, line in enumerate(lines) if not line.isspace() and line]:
+&gt;           level //= 2
+E           TypeError: unsupported operand type(s) for //=: 'str' and 'int'
+
+solution.py:10: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.outline_leaf_paths.tests.test_solution" name="test_trailing_ws_stripped_inner_spaces_kept" time="0.000"><failure message="TypeError: unsupported operand type(s) for //=: 'str' and 'int'">def test_trailing_ws_stripped_inner_spaces_kept():
+        lines = ["top node  ", "  child x "]
+&gt;       assert outline_paths(lines) == ["top node/child x"]
+               ^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:17: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+lines = ['top node  ', '  child x ']
+
+    def outline_paths(lines):
+        if not lines or all(line.isspace() for line in lines):
+            return []
+    
+        node_stack = []
+        paths = []
+        node_level = {}
+    
+        for (level, name) in [(i * " ", line.strip()) for i, line in enumerate(lines) if not line.isspace() and line]:
+&gt;           level //= 2
+E           TypeError: unsupported operand type(s) for //=: 'str' and 'int'
+
+solution.py:10: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.outline_leaf_paths.tests.test_solution" name="test_empty_and_all_blank" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-194718.outline_leaf_paths.tests.test_solution" name="test_indent_jump_including_indented_first_line" time="0.000"><failure message="TypeError: unsupported operand type(s) for //=: 'str' and 'int'">def test_indent_jump_including_indented_first_line():
+        with pytest.raises(ValueError, match="indent jump"):
+&gt;           outline_paths(["a", "    b"])
+
+tests\test_solution.py:27: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+lines = ['a', '    b']
+
+    def outline_paths(lines):
+        if not lines or all(line.isspace() for line in lines):
+            return []
+    
+        node_stack = []
+        paths = []
+        node_level = {}
+    
+        for (level, name) in [(i * " ", line.strip()) for i, line in enumerate(lines) if not line.isspace() and line]:
+&gt;           level //= 2
+E           TypeError: unsupported operand type(s) for //=: 'str' and 'int'
+
+solution.py:10: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.outline_leaf_paths.tests.test_solution" name="test_odd_indent" time="0.000"><failure message="TypeError: unsupported operand type(s) for //=: 'str' and 'int'">def test_odd_indent():
+        with pytest.raises(ValueError, match="odd indent"):
+&gt;           outline_paths(["a", "   b"])
+
+tests\test_solution.py:34: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+lines = ['a', '   b']
+
+    def outline_paths(lines):
+        if not lines or all(line.isspace() for line in lines):
+            return []
+    
+        node_stack = []
+        paths = []
+        node_level = {}
+    
+        for (level, name) in [(i * " ", line.strip()) for i, line in enumerate(lines) if not line.isspace() and line]:
+&gt;           level //= 2
+E           TypeError: unsupported operand type(s) for //=: 'str' and 'int'
+
+solution.py:10: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.outline_leaf_paths.tests.test_solution" name="test_tab_in_indent_checked_before_width" time="0.000"><failure message="TypeError: unsupported operand type(s) for //=: 'str' and 'int'">def test_tab_in_indent_checked_before_width():
+        with pytest.raises(ValueError, match="tab in indent"):
+&gt;           outline_paths(["a", " \tb"])
+
+tests\test_solution.py:39: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+lines = ['a', ' \tb']
+
+    def outline_paths(lines):
+        if not lines or all(line.isspace() for line in lines):
+            return []
+    
+        node_stack = []
+        paths = []
+        node_level = {}
+    
+        for (level, name) in [(i * " ", line.strip()) for i, line in enumerate(lines) if not line.isspace() and line]:
+&gt;           level //= 2
+E           TypeError: unsupported operand type(s) for //=: 'str' and 'int'
+
+solution.py:10: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.outline_leaf_paths.tests.test_solution" name="test_slash_in_name" time="0.000"><failure message="TypeError: unsupported operand type(s) for //=: 'str' and 'int'">def test_slash_in_name():
+        with pytest.raises(ValueError, match="slash in name"):
+&gt;           outline_paths(["a/b"])
+
+tests\test_solution.py:44: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+lines = ['a/b']
+
+    def outline_paths(lines):
+        if not lines or all(line.isspace() for line in lines):
+            return []
+    
+        node_stack = []
+        paths = []
+        node_level = {}
+    
+        for (level, name) in [(i * " ", line.strip()) for i, line in enumerate(lines) if not line.isspace() and line]:
+&gt;           level //= 2
+E           TypeError: unsupported operand type(s) for //=: 'str' and 'int'
+
+solution.py:10: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.outline_leaf_paths.tests.test_solution" name="test_no_mutation" time="0.000"><failure message="TypeError: unsupported operand type(s) for //=: 'str' and 'int'">def test_no_mutation():
+        lines = ["a", "  b"]
+        snap = list(lines)
+&gt;       outline_paths(lines)
+
+tests\test_solution.py:50: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+lines = ['a', '  b']
+
+    def outline_paths(lines):
+        if not lines or all(line.isspace() for line in lines):
+            return []
+    
+        node_stack = []
+        paths = []
+        node_level = {}
+    
+        for (level, name) in [(i * " ", line.strip()) for i, line in enumerate(lines) if not line.isspace() and line]:
+&gt;           level //= 2
+E           TypeError: unsupported operand type(s) for //=: 'str' and 'int'
+
+solution.py:10: TypeError</failure></testcase></testsuite></testsuites>
