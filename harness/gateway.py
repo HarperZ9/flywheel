@@ -1867,6 +1867,17 @@ class _Handler(BaseHTTPRequestHandler):
             out = recent_digests((req.get("store") or "").strip(),
                                  limit=int(limit) if isinstance(limit, int) else 20)
             return self._json(out, 400 if "error" in out else 200)
+        if p == "/api/robustness/inject":              # measure the gated tool loop's injection containment
+            length = self._content_length()
+            if length is None:
+                return self._json({"error": "invalid or oversized Content-Length"}, 400)
+            try:
+                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
+            except Exception:
+                req = {}
+            from harness.injection_probe import probe
+            return self._json(probe(allow_write=bool(req.get("allow_write")),
+                                    allow_exec=bool(req.get("allow_exec"))))
         if p == "/api/marketplace/install":            # catalog entry -> plugin registry
             length = self._content_length()
             if length is None:
