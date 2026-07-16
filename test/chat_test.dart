@@ -5,8 +5,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:flywheel_desktop/models/chat.dart';
+import 'package:flywheel_desktop/models/gateway_models.dart';
 import 'package:flywheel_desktop/theme/flywheel_theme.dart';
 import 'package:flywheel_desktop/widgets/chat_thread.dart';
+import 'package:flywheel_desktop/widgets/model_picker.dart';
 
 Future<void> _pump(WidgetTester tester, Widget child) => tester.pumpWidget(
     MaterialApp(theme: flywheelLightTheme(), home: Scaffold(body: child)));
@@ -65,5 +67,44 @@ void main() {
     final messages = [ChatMessage(role: 'assistant', text: '', streaming: true)];
     await _pump(tester, ChatThread(messages: messages, controller: ScrollController()));
     expect(find.text('…'), findsOneWidget);
+  });
+
+  EndpointRow _ep(String name, String cred) => EndpointRow(
+      name: name, backend: 'b', credential: cred, providerRole: '', configured: true);
+
+  testWidgets('the model picker button shows the current model', (tester) async {
+    await _pump(
+        tester,
+        ModelPickerButton(
+            endpoints: [_ep('local:14b', 'local-none'), _ep('claude', 'present')],
+            current: 'claude',
+            onSelect: (_) {}));
+    expect(find.text('claude'), findsOneWidget);
+  });
+
+  testWidgets('opening the picker lets you search and select a model',
+      (tester) async {
+    String? chosen;
+    await _pump(
+        tester,
+        ModelPickerButton(
+            endpoints: [
+              _ep('local:14b', 'local-none'),
+              _ep('claude', 'present'),
+              _ep('gemini', 'absent'),
+            ],
+            current: 'local:14b',
+            onSelect: (v) => chosen = v));
+    await tester.tap(find.byType(ModelPickerButton));
+    await tester.pumpAndSettle();
+    // credential state shows at a glance
+    expect(find.text('ready'), findsWidgets); // claude has a key
+    expect(find.text('no key'), findsOneWidget); // gemini has none
+    await tester.enterText(find.byType(TextField), 'gem');
+    await tester.pumpAndSettle();
+    expect(find.text('claude'), findsNothing); // filtered out
+    await tester.tap(find.text('gemini'));
+    await tester.pumpAndSettle();
+    expect(chosen, 'gemini');
   });
 }

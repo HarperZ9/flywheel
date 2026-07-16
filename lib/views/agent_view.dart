@@ -15,6 +15,7 @@ import '../theme/flywheel_theme.dart';
 import '../widgets/chat_composer.dart';
 import '../widgets/chat_thread.dart';
 import '../widgets/fw.dart';
+import '../widgets/model_picker.dart';
 
 class AgentView extends StatefulWidget {
   final GatewayClient client;
@@ -222,21 +223,11 @@ class _AgentViewState extends State<AgentView> {
           Text('Chat', style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(width: FwLayout.s4),
           if (_endpoints.isNotEmpty)
-            DropdownButton<String>(
-              value: _model,
-              underline: const SizedBox(),
-              isDense: true,
-              borderRadius: BorderRadius.circular(FwLayout.radiusSmall),
-              style: fwMono(t, size: 12.5, color: t.inkSoft),
-              items: [
-                for (final e in _endpoints)
-                  DropdownMenuItem(
-                    value: e.name,
-                    child: Text('${e.name}${e.hasCredential ? '' : '  (no key)'}'),
-                  ),
-              ],
-              onChanged:
-                  _streaming ? null : (v) => setState(() => _model = v),
+            ModelPickerButton(
+              endpoints: _endpoints,
+              current: _model,
+              enabled: !_streaming,
+              onSelect: (v) => setState(() => _model = v),
             ),
           const Spacer(),
           Icon(Icons.verified_outlined, size: 13, color: t.inkFaint),
