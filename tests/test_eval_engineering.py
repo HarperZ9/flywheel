@@ -28,6 +28,18 @@ def test_empty_root_reads_absent_never_fabricated(tmp_path, monkeypatch):
         1 for i in reg["instruments"] if i["present"])
 
 
+def test_robustness_instrument_runs_live_and_reports_containment(tmp_path, monkeypatch):
+    # the injection-robustness probe is code, not an artifact: it runs live and is
+    # present wherever the harness imports, reporting the safe-default containment
+    monkeypatch.setenv("FLYWHEEL_HOME", str(tmp_path / "home"))
+    reg = instrument_register(tmp_path)
+    inst = next(i for i in reg["instruments"] if i["name"] == "robustness")
+    assert inst["present"] is True
+    assert inst["contained"] == inst["total"]          # safe default contains every scenario
+    assert "contain" in inst["summary"]
+    assert inst["receipt"] == "POST /api/robustness/inject"
+
+
 def test_oracle_strength_reads_latest_artifact(tmp_path, monkeypatch):
     monkeypatch.setenv("FLYWHEEL_HOME", str(tmp_path / "home"))
     _write(tmp_path / "artifacts" / "audit" / "oracle_strength_1.json",
