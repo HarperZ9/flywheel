@@ -673,3 +673,34 @@ def test_adaptive_receipt_carries_the_routing_justification(monkeypatch, tmp_pat
     assert routing["adaptive"] is True
     assert set(routing["requested"]) == {"a", "b"}
     assert "a" in routing["scores"] and "b" in routing["scores"]
+
+
+def _post_route(path: str, body: dict):
+    import io
+    raw = json.dumps(body).encode()
+    h = gateway._Handler.__new__(gateway._Handler)
+    h.path = path
+    h.root = "."
+    h.headers = _FakeHeaders(str(len(raw)))
+    h.rfile = io.BytesIO(raw)
+    sent = {}
+    h._json = lambda b, code=200: sent.update(body=b, code=code)
+    h._post()
+    return sent
+
+
+def test_robustness_inject_route_contains_all_by_default():
+    sent = _post_route("/api/robustness/inject", {})
+    assert sent["code"] == 200
+    body = sent["body"]
+    assert body["schema"] == "flywheel.injection-robustness/v1"
+    assert body["contained"] == body["total"]          # safe default contains every scenario
+    assert body["gate"] == {"allow_write": False, "allow_exec": False}
+
+
+def test_robustness_inject_route_honestly_opens_on_granted_flags():
+    sent = _post_route("/api/robustness/inject", {"allow_exec": True})
+    body = sent["body"]
+    assert body["gate"]["allow_exec"] is True
+    assert body["contained"] < body["total"]           # granting exec opens the shell scenarios
+    assert len(body["receipt"]) == 16                  # a re-derivable receipt rides the result
