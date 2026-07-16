@@ -114,7 +114,7 @@ class _BubbleState extends State<_Bubble> {
         if (receipt != null) ...[
           const SizedBox(width: 6),
           Tooltip(
-            message: 'Witnessed turn — open the receipt',
+            message: 'Witnessed turn: open the receipt',
             child: InkWell(
               borderRadius: BorderRadius.circular(FwLayout.radiusSmall),
               onTap: () => setState(() => _receiptOpen = !_receiptOpen),

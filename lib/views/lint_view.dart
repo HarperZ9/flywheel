@@ -84,7 +84,7 @@ class _LintViewState extends State<LintView> {
     final key = '${f['receipt']}';
     setState(() => _fixing[key] = 'fixing…');
     final goal = 'Fix this lint finding in ${f['file']} at line ${f['line']}: '
-        '${f['rule']} — ${f['message']}. Make the smallest correct change.';
+        '${f['rule']}: ${f['message']}. Make the smallest correct change.';
     try {
       final r = await widget.client.agent(goal, _endpoint!,
           maxSteps: 8, allowWrite: true, root: _root);

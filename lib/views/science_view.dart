@@ -142,7 +142,7 @@ class _ScienceViewState extends State<ScienceView> {
           'Ask a question: gather brings sources with provenance, the forge '
           'prices it as a research spec, and crucible judges your stated '
           'claims. An unmeasured claim comes back UNVERIFIABLE and stays '
-          'that way — the instruments dispose, never the model.',
+          'that way; the instruments dispose, never the model.',
           style: Theme.of(context).textTheme.bodySmall,
         ),
         const SizedBox(height: FwLayout.s4),
@@ -234,7 +234,7 @@ class _ScienceViewState extends State<ScienceView> {
       for (final e in r.errors.entries)
         Padding(
           padding: const EdgeInsets.only(bottom: FwLayout.s3),
-          child: HonestNull('${e.key} failed: ${e.value} — the rest of the '
+          child: HonestNull('${e.key} failed: ${e.value}. The rest of the '
               'run continued.'),
         ),
       if (r.sources.isNotEmpty) ...[

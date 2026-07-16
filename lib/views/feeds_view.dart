@@ -111,7 +111,7 @@ class _FeedsViewState extends State<FeedsView> {
             child: HonestNull('feed "${e.key}" failed: ${e.value}'),
           ),
         if (_fetched && _items.isEmpty && _errors.isEmpty && _error == null)
-          const HonestNull('The fetch returned no items — an empty feed is '
+          const HonestNull('The fetch returned no items. An empty feed is '
               'a result, not a blank.'),
         if (_items.isNotEmpty)
           HairlineCard(

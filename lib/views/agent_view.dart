@@ -159,7 +159,7 @@ class _AgentViewState extends State<AgentView> {
       // reads as a plain message, never a blank bubble the user has to guess at.
       if (assistant.text.isEmpty) {
         assistant.text = 'No reply arrived. The endpoint may be offline or have no '
-            'model loaded — pick another model above, or check Endpoints.';
+            'model loaded. Pick another model above, or check Endpoints.';
       }
       _streaming = false;
     });
@@ -255,7 +255,7 @@ class _AgentViewState extends State<AgentView> {
             const SizedBox(height: FwLayout.s2),
             Text(
               'Ask anything. Every answer runs on the model you pick and carries a '
-              'receipt you can re-check — the trust is built in, never in the way.',
+              'receipt you can re-check. The trust is built in, never in the way.',
               textAlign: TextAlign.center,
               style: TextStyle(color: t.inkFaint, fontSize: 13.5, height: 1.5),
             ),

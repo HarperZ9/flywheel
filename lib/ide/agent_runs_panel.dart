@@ -23,7 +23,7 @@ class AgentRunsList extends StatelessWidget {
     if (runs.isEmpty) {
       return const HonestNull(
           'No stored runs yet. Every agent run lands here, content-addressed, '
-          'the moment it finishes — including runs you detached from.');
+          'the moment it finishes, including runs you detached from.');
     }
     return Column(children: [for (final r in runs) _row(t, r)]);
   }

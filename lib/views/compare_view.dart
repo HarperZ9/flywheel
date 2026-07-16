@@ -124,7 +124,7 @@ class _CompareViewState extends State<CompareView> {
     setState(() {
       assistant.streaming = false;
       if (assistant.text.isEmpty) {
-        assistant.text = 'No reply — this model may be offline. Pick another above.';
+        assistant.text = 'No reply. This model may be offline; pick another above.';
       }
       s.streaming = false;
     });
