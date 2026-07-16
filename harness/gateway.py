@@ -1999,6 +1999,33 @@ class _Handler(BaseHTTPRequestHandler):
             from harness.marketplace import install_from_catalog
             out = install_from_catalog((req.get("name") or "").strip())
             return self._json(out, 400 if "error" in out else 200)
+        if p == "/api/marketplace/add":                # a user catalog entry (env-var NAMES only)
+            length = self._content_length()
+            if length is None:
+                return self._json({"error": "invalid or oversized Content-Length"}, 400)
+            try:
+                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
+            except Exception:
+                req = {}
+            from harness.marketplace import add_user_entry
+            out = add_user_entry(
+                str(req.get("name", "")),
+                req.get("command") if isinstance(req.get("command"), list) else [],
+                detail=str(req.get("detail", "")),
+                requires=req.get("requires")
+                if isinstance(req.get("requires"), list) else [])
+            return self._json(out, 400 if "error" in out else 200)
+        if p == "/api/marketplace/remove":             # drop a user catalog entry
+            length = self._content_length()
+            if length is None:
+                return self._json({"error": "invalid or oversized Content-Length"}, 400)
+            try:
+                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
+            except Exception:
+                req = {}
+            from harness.marketplace import remove_user_entry
+            out = remove_user_entry(str(req.get("name", "")))
+            return self._json(out, 400 if "error" in out else 200)
         if p == "/api/plugins/toggle":                 # enable/disable a custom plugin
             length = self._content_length()
             if length is None:
