@@ -83,6 +83,10 @@ class DiscourseTheme {
   final double negShare;
   final double neuShare;
   final double meanCompound;
+
+  /// How contested the theme is: 0 is consensus, approaching 1 as voices split
+  /// hard between strong positive and strong negative. A weight, never a verdict.
+  final double controversy;
   final String? dissent;
 
   const DiscourseTheme({
@@ -93,6 +97,7 @@ class DiscourseTheme {
     required this.negShare,
     required this.neuShare,
     required this.meanCompound,
+    required this.controversy,
     required this.dissent,
   });
 
@@ -107,9 +112,43 @@ class DiscourseTheme {
       negShare: _d(s['neg']),
       neuShare: _d(s['neu']),
       meanCompound: _d(s['mean_compound']),
+      controversy: _d(j['controversy']),
       dissent: d is String && d.isNotEmpty ? d : null,
     );
   }
+}
+
+/// A topic the corpus is genuinely split on, measured across every comment that
+/// mentions it (immune to the lexical clustering that would file agreement and
+/// disagreement about one topic under different themes). Shares are a weight,
+/// never a verdict.
+class ContestedAspect {
+  final String term;
+  final int mentions;
+  final double posShare;
+  final double negShare;
+  final double score;
+
+  const ContestedAspect({
+    required this.term,
+    required this.mentions,
+    required this.posShare,
+    required this.negShare,
+    required this.score,
+  });
+
+  factory ContestedAspect.fromJson(Map<String, dynamic> j) => ContestedAspect(
+        term: _s(j['term']),
+        mentions: _i(j['mentions']),
+        posShare: _d(j['pos']),
+        negShare: _d(j['neg']),
+        score: _d(j['contested']),
+      );
+
+  static List<ContestedAspect> listFrom(Object? raw) => ((raw as List?) ?? const [])
+      .whereType<Map>()
+      .map((m) => ContestedAspect.fromJson(m.cast<String, dynamic>()))
+      .toList();
 }
 
 class DiscourseDigest {
@@ -121,6 +160,7 @@ class DiscourseDigest {
   final String coarseness;
   final String digestSha;
   final List<DiscourseTheme> themes;
+  final List<ContestedAspect> contested;
 
   const DiscourseDigest({
     required this.verified,
@@ -131,6 +171,7 @@ class DiscourseDigest {
     required this.coarseness,
     required this.digestSha,
     required this.themes,
+    required this.contested,
   });
 
   /// True when every item carried an engagement signal (likes/upvotes). When
@@ -159,6 +200,7 @@ class DiscourseDigest {
       coarseness: _s(method['coarseness']),
       digestSha: _s(receipt['digest_sha256']),
       themes: themes,
+      contested: ContestedAspect.listFrom(r['contested']),
     );
   }
 }

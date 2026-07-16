@@ -11,6 +11,7 @@ import 'package:flutter/material.dart';
 import '../client/gateway_client.dart';
 import '../models/discourse.dart';
 import '../theme/flywheel_theme.dart';
+import '../widgets/discourse_cards.dart';
 import '../widgets/discourse_recent.dart';
 import '../widgets/fw.dart';
 
@@ -128,6 +129,12 @@ class _DiscourseViewState extends State<DiscourseView> {
       if (d != null) ...[
         const SizedBox(height: FwLayout.s5),
         _summary(context, d),
+        if (d.contested.isNotEmpty) ...[
+          const SizedBox(height: FwLayout.s5),
+          SectionHeader('Contested', kicker: 'TOPICS THE CROWD IS SPLIT ON'),
+          const SizedBox(height: FwLayout.s3),
+          contestedSection(context, d),
+        ],
         const SizedBox(height: FwLayout.s5),
         SectionHeader('Themes', kicker: 'RANKED BY WEIGHT'),
         const SizedBox(height: FwLayout.s3),
@@ -135,7 +142,7 @@ class _DiscourseViewState extends State<DiscourseView> {
           const HonestNull('No themes: the corpus held no discourse items.')
         else
           for (final t in d.themes.take(24)) ...[
-            _themeCard(context, t),
+            discourseThemeCard(context, t),
             const SizedBox(height: FwLayout.s3),
           ],
       ],
@@ -238,42 +245,4 @@ class _DiscourseViewState extends State<DiscourseView> {
     );
   }
 
-  Widget _themeCard(BuildContext context, DiscourseTheme t) {
-    final fw = context.fw;
-    String pct(double v) => '${(v * 100).round()}%';
-    final mean = t.meanCompound >= 0
-        ? '+${t.meanCompound.toStringAsFixed(2)}'
-        : t.meanCompound.toStringAsFixed(2);
-    return HairlineCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(children: [
-            Expanded(
-              child: Text(t.label,
-                  style: Theme.of(context).textTheme.titleMedium,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis),
-            ),
-            const SizedBox(width: FwLayout.s2),
-            Text('${t.size}  ·  w ${t.weightedScore.toStringAsFixed(1)}',
-                style: fwMono(fw, size: 12, color: fw.inkFaint)),
-          ]),
-          const SizedBox(height: FwLayout.s2),
-          // Sentiment is a WEIGHT, not a verdict: neutral ink only, never the
-          // verified/drift palette.
-          Text(
-            'positive ${pct(t.posShare)}   ·   neutral ${pct(t.neuShare)}   ·   '
-            'negative ${pct(t.negShare)}   ·   mean $mean',
-            style: fwMono(fw, size: 12, color: fw.inkSoft),
-          ),
-          if (t.dissent != null) ...[
-            const SizedBox(height: FwLayout.s2),
-            Text('dissent: ${t.dissent}',
-                style: fwMono(fw, size: 11.5, color: fw.inkMuted)),
-          ],
-        ],
-      ),
-    );
-  }
 }

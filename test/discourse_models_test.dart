@@ -79,6 +79,44 @@ void main() {
     expect(d.themes.first.posShare, 0.0);
   });
 
+  test('a theme carries its controversy score, degrading to zero when absent', () {
+    final d = DiscourseDigest.fromEnvelope({
+      'result': {
+        'themes': [
+          {'label': 'battery', 'size': 4, 'weighted_score': 9.0, 'sentiment': {},
+           'dissent': 'c3', 'controversy': 0.62},
+          {'label': 'screen', 'sentiment': {}}, // no controversy -> 0.0, not a crash
+        ],
+      },
+    });
+    expect(d.themes.first.controversy, 0.62);
+    expect(d.themes.last.controversy, 0.0);
+  });
+
+  test('contested aspects parse as the topics the crowd is split on', () {
+    final d = DiscourseDigest.fromEnvelope({
+      'result': {
+        'themes': [],
+        'contested': [
+          {'term': 'battery', 'mentions': 5, 'pos': 0.2, 'neg': 0.6, 'contested': 0.54},
+          {'partial': true}, // missing fields degrade, never crash
+        ],
+      },
+    });
+    expect(d.contested, hasLength(2));
+    expect(d.contested.first.term, 'battery');
+    expect(d.contested.first.mentions, 5);
+    expect(d.contested.first.negShare, 0.6);
+    expect(d.contested.first.score, 0.54);
+    expect(d.contested.last.term, isEmpty);
+    expect(d.contested.last.mentions, 0);
+  });
+
+  test('a digest with no contested aspects reads as an empty list', () {
+    final d = DiscourseDigest.fromEnvelope({'result': {'themes': []}});
+    expect(d.contested, isEmpty);
+  });
+
   test('CorpusRef.listFrom parses discovered corpora defensively', () {
     final list = CorpusRef.listFrom({
       'root': '/r',
