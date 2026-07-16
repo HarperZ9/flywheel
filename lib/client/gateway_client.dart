@@ -257,6 +257,12 @@ class GatewayClient {
     return _decode(r);
   }
 
+  /// GET /api/memory/list — browse stored spans verbatim (no query).
+  Future<Map<String, dynamic>> memoryList({int limit = 20}) async {
+    final r = await _http.get(Uri.parse('$baseUrl/api/memory/list?limit=$limit'));
+    return _decode(r);
+  }
+
   /// POST /api/memory/note — store a durable content-addressed note.
   Future<Map<String, dynamic>> memoryNote(String content) async {
     final r = await _http.post(
