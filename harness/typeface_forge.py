@@ -30,7 +30,56 @@ DEFAULTS = {
     "overshoot": 0.015,  # of the x-height, on round extremes
 }
 
-RULES = ("overshoot", "contrast-floor", "counter-minimum", "tracy-spacing")
+RULES = ("overshoot", "contrast-floor", "counter-minimum", "tracy-spacing",
+         "geometric-kern")
+
+_KERN_BANDS = 8
+
+
+def _profiles(glyphs: dict, xh: float) -> dict:
+    """Per glyph, the inked left/right edge per horizontal band: the real
+    silhouette a neighbor sees, not the bounding box."""
+    out = {}
+    for name, g in glyphs.items():
+        left = [None] * _KERN_BANDS
+        right = [None] * _KERN_BANDS
+        for ring in g["contours"]:
+            for x, y in ring:
+                b = int(min(max(y / xh, 0.0), 0.999) * _KERN_BANDS)
+                if left[b] is None or x < left[b]:
+                    left[b] = x
+                if right[b] is None or x > right[b]:
+                    right[b] = x
+        out[name] = (left, right)
+    return out
+
+
+def _kerning(glyphs: dict, xh: float, target: float) -> dict:
+    """Pair adjustments from measured white: set two glyphs side by side,
+    find the tightest inked gap across bands, and pull or push the pair
+    toward the face's own rhythm. Mechanical, so it ships in the receipt."""
+    prof = _profiles(glyphs, xh)
+    pairs = {}
+    cap = 0.14 * xh
+    for a, ga in glyphs.items():
+        la, ra = prof[a]
+        for b, gb in glyphs.items():
+            lb, _ = prof[b]
+            gap = None
+            for i in range(_KERN_BANDS):
+                if ra[i] is None or lb[i] is None:
+                    continue
+                # ink already sits at its bearings: white between the pair
+                # is a's advance overhang plus b's left silhouette
+                white = (ga["advance"] - ra[i]) + lb[i]
+                if gap is None or white < gap:
+                    gap = white
+            if gap is None:
+                continue
+            adj = max(-cap, min(cap, target - gap))
+            if abs(adj) >= 6:
+                pairs[a + b] = round(adj)
+    return pairs
 
 
 def _mulberry32(seed: int):
@@ -148,29 +197,45 @@ def mint(params: dict, seed: int = 0) -> dict:
         straight = any(s["role"] == "stem" for s in spec["strokes"])
         base_lsb = 0.22 * w_v + 0.05 * xh
         lsb = round(base_lsb if straight else base_lsb * 0.82, 2)
+        # the advance comes from the MEASURED ink, never the skeleton's
+        # guess: shift ink to start at the bearing, close with its twin
+        ink_min = min(x for c in contours for x, _ in c)
+        ink_max = max(x for c in contours for x, _ in c)
+        shift = lsb - ink_min
+        contours = [[(round(x + shift, 2), y) for x, y in c]
+                    for c in contours]
         glyphs[name] = {
             "contours": contours,
-            "advance": round(spec["advance"] * xh + 2 * lsb, 2),
+            "advance": round((ink_max - ink_min) + 2 * lsb, 2),
             "lsb": lsb,
             "top": round(top, 2),
             "v_stroke": round(w_v, 2),
             "h_stroke": round(w_h, 2),
         }
 
+    # geometric-kern: every pair measured against the face's own rhythm
+    straight_lsb = 0.22 * w_v + 0.05 * xh
+    kerning = _kerning(glyphs, xh, target=2.0 * straight_lsb)
+
     return {"refused": False, "refusals": [], "receipt": receipt,
-            "glyphs": glyphs, "metrics": {"em": EM, "x_height": xh},
-            "svg": _specimen(glyphs, xh)}
+            "glyphs": glyphs, "kerning": kerning,
+            "metrics": {"em": EM, "x_height": xh},
+            "svg": _specimen(glyphs, xh, kerning)}
 
 
-def _specimen(glyphs: dict, xh: float) -> str:
-    """The proving word, drawn from the minted outlines."""
+def _specimen(glyphs: dict, xh: float, kerning: dict | None = None) -> str:
+    """The proving word, drawn from the minted outlines, kerned."""
     word = "adhesion"
     x, parts = 40.0, []
     H = 2.2 * xh
+    prev = None
     for ch in word:
         g = glyphs.get(ch)
         if g is None:
             continue
+        if prev and kerning:
+            x += kerning.get(prev + ch, 0)
+        prev = ch
         # every contour of the glyph in ONE path, so nonzero winding welds
         # overlapping strokes and carves the counters by orientation
         subpaths = []

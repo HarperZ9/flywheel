@@ -70,3 +70,16 @@ def test_the_receipt_names_its_rules_and_engine():
     assert set("adhesion") <= set(r["charset"])
     assert len(r["charset"]) == 26, "the full lowercase"
     assert "svg" in face and "<svg" in face["svg"]
+
+
+def test_geometric_kern_pulls_open_pairs_and_leaves_stems():
+    face = mint(dict(DEFAULTS), seed=58)
+    k = face["kerning"]
+    assert isinstance(k, dict) and k, "the kern pass produced nothing"
+    # a round-diagonal pair has real white to close
+    assert k.get("ov", 0) < 0 or k.get("vo", 0) < 0
+    # two stems already sit at the rhythm: no adjustment worth the name
+    assert abs(k.get("nn", 0)) <= 12
+    # every adjustment stays inside the cap the rule declares
+    xh = face["metrics"]["x_height"]
+    assert all(abs(v) <= 0.14 * xh + 0.5 for v in k.values())
