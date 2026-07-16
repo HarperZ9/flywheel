@@ -55,13 +55,14 @@ def test_freetype_loads_and_renders_ink(ttf):
     PIL = pytest.importorskip("PIL")
     from PIL import Image, ImageDraw, ImageFont
     font = ImageFont.truetype(io.BytesIO(ttf), 96)
-    im = Image.new("L", (900, 220), 0)
+    im = Image.new("L", (2400, 260), 0)
     d = ImageDraw.Draw(im)
-    d.text((20, 40), "adhesion", font=font, fill=255)
+    d.text((20, 40), "the quick brown fox jumps over the lazy dog",
+           font=font, fill=255)
     bbox = im.getbbox()
     assert bbox is not None, "the rendered word left no ink"
     x0, y0, x1, y1 = bbox
-    assert (x1 - x0) > 300 and (y1 - y0) > 40, f"degenerate render {bbox}"
+    assert (x1 - x0) > 1200 and (y1 - y0) > 60, f"degenerate render {bbox}"
 
 
 def test_determinism(ttf):

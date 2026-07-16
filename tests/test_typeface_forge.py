@@ -67,5 +67,6 @@ def test_the_receipt_names_its_rules_and_engine():
     for rule in ("overshoot", "contrast-floor", "counter-minimum",
                  "tracy-spacing"):
         assert rule in r["rules_applied"]
-    assert r["charset"] == sorted(set("adhesion"))
+    assert set("adhesion") <= set(r["charset"])
+    assert len(r["charset"]) == 26, "the full lowercase"
     assert "svg" in face and "<svg" in face["svg"]
