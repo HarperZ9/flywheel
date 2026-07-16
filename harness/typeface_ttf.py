@@ -164,6 +164,20 @@ def to_ttf(face: dict, family: str = "Zentropy Mint") -> bytes:
               b"hhea": hhea, b"hmtx": hmtx_b, b"loca": loca_b,
               b"maxp": maxp, b"name": name_b, b"post": post,
               b"OS/2": os2}
+    kern_src = face.get("kerning") or {}
+    gid = {ch: 2 + i for i, ch in enumerate(sorted(gsrc))}
+    pairs = sorted((gid[p[0]], gid[p[1]], int(v))
+                   for p, v in kern_src.items()
+                   if p[0] in gid and p[1] in gid and int(v) != 0)
+    if pairs:
+        import math as _m
+        np_ = len(pairs)
+        p2k = 2 ** int(_m.log2(np_)) if np_ else 1
+        sub = struct.pack(">HHHHHHH", 0, 14 + 6 * np_, 0x0001, np_,
+                          p2k * 6, int(_m.log2(p2k)), (np_ - p2k) * 6)
+        for l, r, v in pairs:
+            sub += struct.pack(">HHh", l, r, v)
+        tables[b"kern"] = struct.pack(">HH", 0, 1) + sub
     tags = sorted(tables)
     n = len(tags)
     import math
