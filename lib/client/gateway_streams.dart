@@ -53,6 +53,52 @@ extension GatewayStreamsAndPlugins on GatewayClient {
     }
   }
 
+  /// POST /v1/chat/completions with stream:true — a conversational turn over any
+  /// endpoint in the roster. Yields `{type:'delta', content:'…'}` as the answer
+  /// arrives and a final `{type:'done', receipt:{…}}` carrying the turn's
+  /// re-derivable receipt. Malformed frames are skipped, never fatal.
+  Stream<Map<String, dynamic>> chatStream(
+      List<Map<String, String>> messages, String model) async* {
+    final req = http.Request('POST', Uri.parse('$baseUrl/v1/chat/completions'))
+      ..headers['Content-Type'] = 'application/json'
+      ..body = jsonEncode({'model': model, 'messages': messages, 'stream': true});
+    final res = await _http.send(req);
+    if (res.statusCode != 200) {
+      throw GatewayException('gateway returned ${res.statusCode}');
+    }
+    var buffer = '';
+    await for (final chunk in res.stream.transform(utf8.decoder)) {
+      buffer += chunk;
+      while (true) {
+        final sep = buffer.indexOf('\n\n');
+        if (sep < 0) break;
+        final frame = buffer.substring(0, sep);
+        buffer = buffer.substring(sep + 2);
+        for (final line in frame.split('\n')) {
+          if (!line.startsWith('data: ')) continue;
+          final payload = line.substring(6).trim();
+          if (payload == '[DONE]') return;
+          try {
+            final obj = jsonDecode(payload) as Map<String, dynamic>;
+            final choices = obj['choices'];
+            final delta = (choices is List && choices.isNotEmpty)
+                ? (choices.first as Map<String, dynamic>)['delta']
+                : null;
+            final content = (delta is Map) ? delta['content'] : null;
+            if (content is String && content.isNotEmpty) {
+              yield {'type': 'delta', 'content': content};
+            }
+            if (obj['x_receipt'] is Map<String, dynamic>) {
+              yield {'type': 'done', 'receipt': obj['x_receipt']};
+            }
+          } catch (_) {
+            // a malformed frame is skipped, never fatal to the stream
+          }
+        }
+      }
+    }
+  }
+
   /// GET /api/plugins — every mounted capability, one manifest shape.
   Future<Map<String, dynamic>> plugins() async {
     final r = await _http.get(Uri.parse('$baseUrl/api/plugins'));
