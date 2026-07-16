@@ -108,4 +108,114 @@ def build(params: dict) -> dict:
     g["s"] = {"advance": 0.92 * adv_round, "strokes": [
         {"pts": _top + _bot[1:], "role": "spine", "closed": False}]}
 
+    desc = -0.45                          # descender depth in x-heights
+
+    def diag(x0, y0, x1, y1):
+        return {"pts": _line(x0, y0, x1, y1), "role": "diag", "closed": False}
+
+    g["b"] = {"advance": adv_round + 0.12 * w, "strokes": [
+        stem(0.02, 0.0, asc), bowl_ring()]}
+
+    g["p"] = {"advance": adv_round + 0.12 * w, "strokes": [
+        stem(0.02, desc, 1.0), bowl_ring()]}
+
+    g["q"] = {"advance": adv_round + 0.12 * w, "strokes": [
+        bowl_ring(), stem(2 * bowl_rx - 0.02, desc, 1.0)]}
+
+    # g: the single-story form; bowl plus a descender that hooks left
+    _g_hook = _superellipse(2 * bowl_rx - 0.02 - 0.26 * w, desc + 0.22,
+                            0.26 * w, 0.22, min(n, 2.2),
+                            t0=0.0, t1=-math.pi + 0.4)
+    g["g"] = {"advance": adv_round + 0.12 * w, "strokes": [
+        bowl_ring(),
+        stem(2 * bowl_rx - 0.02, desc + 0.20, 1.0),
+        {"pts": _g_hook, "role": "tail", "closed": False}]}
+
+    # c: the open bowl, gap centered on the right
+    _c_gap = 0.75 + 0.5 * ap
+    g["c"] = {"advance": adv_round, "strokes": [
+        {"pts": _superellipse(bowl["cx"], 0.5, bowl_rx, 0.5, n,
+                              t0=_c_gap / 2, t1=2 * math.pi - _c_gap / 2),
+         "role": "bowl", "closed": False}]}
+
+    g["l"] = {"advance": 0.30 * w, "strokes": [stem(0.15 * w, 0.0, asc)]}
+
+    # f: ascender stem with a rightward hook, crossbar at the x-height
+    _f_hook = _superellipse(0.15 * w + 0.24 * w, asc - 0.24, 0.24 * w, 0.24,
+                            min(n, 2.2), t0=math.pi, t1=0.5 * math.pi)
+    g["f"] = {"advance": 0.52 * w, "strokes": [
+        stem(0.15 * w, 0.0, asc - 0.24),
+        {"pts": list(reversed(_f_hook)), "role": "hook", "closed": False},
+        {"pts": _line(-0.02, 1.0, 0.44 * w, 1.0),
+         "role": "crossbar", "closed": False}]}
+
+    # t: a taller stem than the x-height, crossbar riding the line
+    g["t"] = {"advance": 0.52 * w, "strokes": [
+        stem(0.15 * w, 0.0, 1.28),
+        {"pts": _line(-0.02, 1.0, 0.44 * w, 1.0),
+         "role": "crossbar", "closed": False}]}
+
+    # j: a stem falling past the baseline into a left hook, dotted
+    _j_hook = _superellipse(0.15 * w - 0.22 * w, desc + 0.20, 0.22 * w, 0.20,
+                            min(n, 2.2), t0=0.0, t1=-math.pi + 0.5)
+    g["j"] = {"advance": 0.34 * w, "strokes": [
+        stem(0.15 * w, desc + 0.18, 1.0),
+        {"pts": _j_hook, "role": "tail", "closed": False},
+        {"pts": _superellipse(0.15 * w, 1.32, 0.07, 0.07, 2.0),
+         "role": "dot", "closed": True}]}
+
+    g["k"] = {"advance": 0.92 * w + 0.2 * w, "strokes": [
+        stem(0.15 * w, 0.0, asc),
+        diag(0.15 * w, 0.42, 0.15 * w + 0.72 * w, 1.0),
+        diag(0.15 * w + 0.26 * w, 0.60, 0.15 * w + 0.78 * w, 0.0)]}
+
+    # m: one stem, two half-width arches, the n twice over
+    _m_gap = 0.62 * w
+    g["m"] = {"advance": 2 * _m_gap + 0.30 * w, "strokes": [
+        stem(0.15 * w, 0.0, 1.0),
+        arch(0.15 * w, 0.15 * w + _m_gap),
+        stem(0.15 * w + _m_gap, 0.0, 0.62),
+        arch(0.15 * w + _m_gap, 0.15 * w + 2 * _m_gap),
+        stem(0.15 * w + 2 * _m_gap, 0.0, 0.62)]}
+
+    # r: the stem and just the shoulder of an arch
+    _r_arc = _superellipse(0.15 * w + 0.38 * w, 0.60, 0.38 * w, 0.38, n,
+                           t0=math.pi, t1=0.35 * math.pi)
+    g["r"] = {"advance": 0.62 * w, "strokes": [
+        stem(0.15 * w, 0.0, 1.0),
+        {"pts": _r_arc, "role": "arch", "closed": False}]}
+
+    # u: the n turned over: stems falling into a bottom arch
+    _u_arc = _superellipse((0.3 * w + stem_gap) / 2 + 0.0, 0.45,
+                           stem_gap / 2, 0.43, n,
+                           t0=math.pi, t1=2 * math.pi)
+    g["u"] = {"advance": stem_gap + 0.30 * w, "strokes": [
+        stem(0.15 * w, 0.45, 1.0),
+        {"pts": [(x + 0.15 * w - ((0.3 * w + stem_gap) / 2 - stem_gap / 2),
+                  y) for x, y in _u_arc],
+         "role": "arch", "closed": False},
+        stem(0.15 * w + stem_gap, 0.0, 1.0)]}
+
+    g["v"] = {"advance": 1.04 * w, "strokes": [
+        diag(0.02, 1.0, 0.52 * w, 0.0), diag(0.52 * w, 0.0, 1.02 * w, 1.0)]}
+
+    g["w"] = {"advance": 1.46 * w, "strokes": [
+        diag(0.02, 1.0, 0.38 * w, 0.0), diag(0.38 * w, 0.0, 0.72 * w, 0.92),
+        diag(0.72 * w, 0.92, 1.06 * w, 0.0), diag(1.06 * w, 0.0, 1.42 * w, 1.0)]}
+
+    g["x"] = {"advance": 1.0 * w, "strokes": [
+        diag(0.02, 1.0, 0.98 * w, 0.0), diag(0.02, 0.0, 0.98 * w, 1.0)]}
+
+    # y: a v whose right side keeps falling
+    g["y"] = {"advance": 1.04 * w, "strokes": [
+        diag(0.02, 1.0, 0.52 * w, 0.0),
+        diag(1.02 * w, 1.0, 0.52 * w + desc * (-0.5 * w / 1.0) * -1, desc)]}
+
+    g["z"] = {"advance": 0.94 * w, "strokes": [
+        {"pts": _line(0.04, 1.0, 0.90 * w, 1.0),
+         "role": "crossbar", "closed": False},
+        diag(0.90 * w, 1.0, 0.04, 0.0),
+        {"pts": _line(0.04, 0.0, 0.90 * w, 0.0),
+         "role": "crossbar", "closed": False}]}
+
     return g
