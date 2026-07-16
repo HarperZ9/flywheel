@@ -317,6 +317,34 @@ extension GatewayStreamsAndPlugins on GatewayClient {
     return _decode(r);
   }
 
+  /// POST /api/marketplace/add — save a user entry into the catalog.
+  /// `requires` lists env var NAMES only; the engine refuses values.
+  Future<Map<String, dynamic>> marketplaceAdd(
+      String name, List<String> command,
+      {String detail = '', List<String> requires = const []}) async {
+    final r = await _http.post(
+      Uri.parse('$baseUrl/api/marketplace/add'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'name': name,
+        'command': command,
+        'detail': detail,
+        'requires': requires,
+      }),
+    );
+    return _decode(r);
+  }
+
+  /// POST /api/marketplace/remove — drop a user catalog entry.
+  Future<Map<String, dynamic>> marketplaceRemove(String name) async {
+    final r = await _http.post(
+      Uri.parse('$baseUrl/api/marketplace/remove'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'name': name}),
+    );
+    return _decode(r);
+  }
+
   /// GET /api/plugins/probe — spawn a plugin's server, report its real tools.
   Future<Map<String, dynamic>> probePlugin(String name) async {
     final r = await _http.get(Uri.parse(

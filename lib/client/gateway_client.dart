@@ -87,6 +87,39 @@ class GatewayClient {
     return _decode(r);
   }
 
+  /// Run a lesson's declared GET check against the gateway. Returns the
+  /// status code and a short body excerpt so the verdict stays inspectable.
+  Future<(int, String)> runLessonCheck(String path) async {
+    final r = await _http.get(Uri.parse('$baseUrl$path'));
+    final body =
+        r.body.length > 240 ? '${r.body.substring(0, 240)}…' : r.body;
+    return (r.statusCode, body);
+  }
+
+  /// POST /api/academy/complete — bind a passed comprehension receipt to a
+  /// lesson; completion is a re-checkable receipt, never prose.
+  Future<Map<String, dynamic>> academyComplete(
+      String lessonId, String comprehensionEid) async {
+    final r = await _http.post(
+      Uri.parse('$baseUrl/api/academy/complete'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(
+          {'lesson_id': lessonId, 'comprehension_eid': comprehensionEid}),
+    );
+    return _decode(r);
+  }
+
+  /// POST /api/learn/animate — a lesson rendered as a runnable manim scene.
+  Future<Map<String, dynamic>> learnAnimate(
+      Map<String, dynamic> lesson) async {
+    final r = await _http.post(
+      Uri.parse('$baseUrl/api/learn/animate'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'lesson': lesson}),
+    );
+    return _decode(r);
+  }
+
   /// POST /api/companion — answer locally, escalate the hard slice.
   Future<CompanionResult> companion(String prompt, {String? solutionSig}) async {
     final r = await _http.post(

@@ -73,6 +73,9 @@ class _ScienceViewState extends State<ScienceView> {
         setState(() {
           _run = ScienceRun.fromJson(doc);
           _storedOk = doc['chain_ok'] == true;
+          // the stored question lands in the composer, so one tap re-runs
+          // it fresh against today's sources
+          _question.text = '${doc['question'] ?? row['question'] ?? ''}';
           _error = null;
         });
       }

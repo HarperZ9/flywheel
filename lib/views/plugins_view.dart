@@ -138,7 +138,7 @@ class _PluginsViewState extends State<PluginsView> {
         ),
         if (_marketplace != null) ...[
           const SizedBox(height: FwLayout.s5),
-          const Kicker('marketplace · curated catalog'),
+          const Kicker('marketplace · curated catalog + yours'),
           const SizedBox(height: FwLayout.s3),
           MarketplacePanel(
             doc: _marketplace!,
@@ -148,6 +148,22 @@ class _PluginsViewState extends State<PluginsView> {
                 setState(() => _error = '${r['error']}');
               }
               _load();
+            },
+            onRemoveEntry: (name) async {
+              final r = await widget.client.marketplaceRemove(name);
+              if (r['error'] != null && mounted) {
+                setState(() => _error = '${r['error']}');
+              }
+              _load();
+            },
+          ),
+          const SizedBox(height: FwLayout.s3),
+          MarketplaceAddCard(
+            onAdd: (name, command, detail, requires) async {
+              final r = await widget.client.marketplaceAdd(name, command,
+                  detail: detail, requires: requires);
+              if (r['added'] == true) _load();
+              return r;
             },
           ),
         ],

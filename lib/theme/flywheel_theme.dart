@@ -163,11 +163,13 @@ TextTheme _textTheme(FwTokens t) {
 
 /// The mono data style: the mono family with tabular figures, for hashes,
 /// counts, versions, and table cells. Size and color overridable per use.
+/// A readability floor of 11 holds app-wide: captions asked for smaller
+/// render at 11, so no data string is ever squint-sized.
 TextStyle fwMono(FwTokens t,
     {double size = 12.5, Color? color, FontWeight weight = FontWeight.w400}) {
   return TextStyle(
     fontFamily: t.monoFamily,
-    fontSize: size,
+    fontSize: size < 11 ? 11 : size,
     fontWeight: weight,
     color: color ?? t.inkSoft,
     fontFeatures: const [FontFeature.tabularFigures()],
@@ -175,10 +177,11 @@ TextStyle fwMono(FwTokens t,
 }
 
 /// The kicker style: mono uppercase, wide-tracked. The section voice.
+/// Same readability floor as fwMono, scaled for the tracked uppercase.
 TextStyle fwKicker(FwTokens t, {Color? color, double size = 10.5}) {
   return TextStyle(
     fontFamily: t.monoFamily,
-    fontSize: size,
+    fontSize: size < 9.5 ? 9.5 : size,
     fontWeight: FontWeight.w600,
     letterSpacing: 2.2,
     color: color ?? t.inkFaint,
