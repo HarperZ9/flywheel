@@ -1,0 +1,208 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="9" skipped="0" tests="11" time="0.214" timestamp="2026-07-14T13:30:17.181498-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260714-125209.round_half_even.tests.test_solution" name="test_half_down" time="0.001"><failure message="NameError: name 'gcd' is not defined">&gt;   def test_half_down(): assert f(1, 2) == 0
+                                 ^^^^^^^
+
+tests\test_solution.py:3: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+num = 1, den = 2
+
+    def round_half_even(num: int, den: int) -&gt; int:
+        if not isinstance(num, int) or isinstance(num, bool):
+            raise ValueError('bad arg')
+        if not isinstance(den, int) or isinstance(den, bool):
+            raise ValueError('bad arg')
+        if den == 0:
+            raise ValueError('div by zero')
+    
+        # Compute the exact fraction value as an integer numerator of
+        # (numerator / denominator), with a common factor cancelled out of
+        # both. This is the precise representation.
+&gt;       g = gcd(num, den)
+            ^^^
+E       NameError: name 'gcd' is not defined
+
+solution.py:12: NameError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-125209.round_half_even.tests.test_solution" name="test_half_up" time="0.000"><failure message="NameError: name 'gcd' is not defined">&gt;   def test_half_up(): assert f(3, 2) == 2
+                               ^^^^^^^
+
+tests\test_solution.py:4: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+num = 3, den = 2
+
+    def round_half_even(num: int, den: int) -&gt; int:
+        if not isinstance(num, int) or isinstance(num, bool):
+            raise ValueError('bad arg')
+        if not isinstance(den, int) or isinstance(den, bool):
+            raise ValueError('bad arg')
+        if den == 0:
+            raise ValueError('div by zero')
+    
+        # Compute the exact fraction value as an integer numerator of
+        # (numerator / denominator), with a common factor cancelled out of
+        # both. This is the precise representation.
+&gt;       g = gcd(num, den)
+            ^^^
+E       NameError: name 'gcd' is not defined
+
+solution.py:12: NameError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-125209.round_half_even.tests.test_solution" name="test_half_even" time="0.000"><failure message="NameError: name 'gcd' is not defined">&gt;   def test_half_even(): assert f(5, 2) == 2
+                                 ^^^^^^^
+
+tests\test_solution.py:5: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+num = 5, den = 2
+
+    def round_half_even(num: int, den: int) -&gt; int:
+        if not isinstance(num, int) or isinstance(num, bool):
+            raise ValueError('bad arg')
+        if not isinstance(den, int) or isinstance(den, bool):
+            raise ValueError('bad arg')
+        if den == 0:
+            raise ValueError('div by zero')
+    
+        # Compute the exact fraction value as an integer numerator of
+        # (numerator / denominator), with a common factor cancelled out of
+        # both. This is the precise representation.
+&gt;       g = gcd(num, den)
+            ^^^
+E       NameError: name 'gcd' is not defined
+
+solution.py:12: NameError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-125209.round_half_even.tests.test_solution" name="test_over" time="0.000"><failure message="NameError: name 'gcd' is not defined">&gt;   def test_over(): assert f(7, 4) == 2
+                            ^^^^^^^
+
+tests\test_solution.py:6: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+num = 7, den = 4
+
+    def round_half_even(num: int, den: int) -&gt; int:
+        if not isinstance(num, int) or isinstance(num, bool):
+            raise ValueError('bad arg')
+        if not isinstance(den, int) or isinstance(den, bool):
+            raise ValueError('bad arg')
+        if den == 0:
+            raise ValueError('div by zero')
+    
+        # Compute the exact fraction value as an integer numerator of
+        # (numerator / denominator), with a common factor cancelled out of
+        # both. This is the precise representation.
+&gt;       g = gcd(num, den)
+            ^^^
+E       NameError: name 'gcd' is not defined
+
+solution.py:12: NameError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-125209.round_half_even.tests.test_solution" name="test_third" time="0.000"><failure message="NameError: name 'gcd' is not defined">&gt;   def test_third(): assert f(1, 3) == 0
+                             ^^^^^^^
+
+tests\test_solution.py:7: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+num = 1, den = 3
+
+    def round_half_even(num: int, den: int) -&gt; int:
+        if not isinstance(num, int) or isinstance(num, bool):
+            raise ValueError('bad arg')
+        if not isinstance(den, int) or isinstance(den, bool):
+            raise ValueError('bad arg')
+        if den == 0:
+            raise ValueError('div by zero')
+    
+        # Compute the exact fraction value as an integer numerator of
+        # (numerator / denominator), with a common factor cancelled out of
+        # both. This is the precise representation.
+&gt;       g = gcd(num, den)
+            ^^^
+E       NameError: name 'gcd' is not defined
+
+solution.py:12: NameError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-125209.round_half_even.tests.test_solution" name="test_neg_half" time="0.000"><failure message="NameError: name 'gcd' is not defined">&gt;   def test_neg_half(): assert f(-1, 2) == 0
+                                ^^^^^^^^
+
+tests\test_solution.py:8: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+num = -1, den = 2
+
+    def round_half_even(num: int, den: int) -&gt; int:
+        if not isinstance(num, int) or isinstance(num, bool):
+            raise ValueError('bad arg')
+        if not isinstance(den, int) or isinstance(den, bool):
+            raise ValueError('bad arg')
+        if den == 0:
+            raise ValueError('div by zero')
+    
+        # Compute the exact fraction value as an integer numerator of
+        # (numerator / denominator), with a common factor cancelled out of
+        # both. This is the precise representation.
+&gt;       g = gcd(num, den)
+            ^^^
+E       NameError: name 'gcd' is not defined
+
+solution.py:12: NameError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-125209.round_half_even.tests.test_solution" name="test_neg_three_half" time="0.000"><failure message="NameError: name 'gcd' is not defined">&gt;   def test_neg_three_half(): assert f(-3, 2) == -2
+                                      ^^^^^^^^
+
+tests\test_solution.py:9: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+num = -3, den = 2
+
+    def round_half_even(num: int, den: int) -&gt; int:
+        if not isinstance(num, int) or isinstance(num, bool):
+            raise ValueError('bad arg')
+        if not isinstance(den, int) or isinstance(den, bool):
+            raise ValueError('bad arg')
+        if den == 0:
+            raise ValueError('div by zero')
+    
+        # Compute the exact fraction value as an integer numerator of
+        # (numerator / denominator), with a common factor cancelled out of
+        # both. This is the precise representation.
+&gt;       g = gcd(num, den)
+            ^^^
+E       NameError: name 'gcd' is not defined
+
+solution.py:12: NameError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-125209.round_half_even.tests.test_solution" name="test_exact" time="0.001"><failure message="NameError: name 'gcd' is not defined">&gt;   def test_exact(): assert f(4, 2) == 2
+                             ^^^^^^^
+
+tests\test_solution.py:10: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+num = 4, den = 2
+
+    def round_half_even(num: int, den: int) -&gt; int:
+        if not isinstance(num, int) or isinstance(num, bool):
+            raise ValueError('bad arg')
+        if not isinstance(den, int) or isinstance(den, bool):
+            raise ValueError('bad arg')
+        if den == 0:
+            raise ValueError('div by zero')
+    
+        # Compute the exact fraction value as an integer numerator of
+        # (numerator / denominator), with a common factor cancelled out of
+        # both. This is the precise representation.
+&gt;       g = gcd(num, den)
+            ^^^
+E       NameError: name 'gcd' is not defined
+
+solution.py:12: NameError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-125209.round_half_even.tests.test_solution" name="test_neg_den" time="0.000"><failure message="NameError: name 'gcd' is not defined">&gt;   def test_neg_den(): assert f(5, -2) == -2
+                               ^^^^^^^^
+
+tests\test_solution.py:11: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+num = 5, den = -2
+
+    def round_half_even(num: int, den: int) -&gt; int:
+        if not isinstance(num, int) or isinstance(num, bool):
+            raise ValueError('bad arg')
+        if not isinstance(den, int) or isinstance(den, bool):
+            raise ValueError('bad arg')
+        if den == 0:
+            raise ValueError('div by zero')
+    
+        # Compute the exact fraction value as an integer numerator of
+        # (numerator / denominator), with a common factor cancelled out of
+        # both. This is the precise representation.
+&gt;       g = gcd(num, den)
+            ^^^
+E       NameError: name 'gcd' is not defined
+
+solution.py:12: NameError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-125209.round_half_even.tests.test_solution" name="test_div_zero" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-125209.round_half_even.tests.test_solution" name="test_bad_arg" time="0.000" /></testsuite></testsuites>

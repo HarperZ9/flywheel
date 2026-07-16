@@ -1,0 +1,317 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="10" skipped="0" tests="11" time="0.246" timestamp="2026-07-13T20:02:55.117821-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-194718.stopwatch_fsm.tests.test_solution" name="test_empty" time="0.001" /><testcase classname="artifacts.uplift.work_20260713-194718.stopwatch_fsm.tests.test_solution" name="test_one_segment" time="0.000"><failure message="NameError: name 'event' is not defined">&gt;   def test_one_segment(): assert f([(0, 'start'), (5, 'stop')]) == (5, [])
+                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:4: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+events = [(0, 'start'), (5, 'stop')]
+
+    def stopwatch(events):
+        if not all(isinstance(event, tuple) and len(event) == 2 for event in events):
+            raise ValueError('bad event')
+    
+        total = 0
+        laps = []
+        previous_time = float('-inf')
+    
+        def is_not_running():
+            return (event[1] != 'start' or previous_time &lt;= event[0]) and \
+                   (event[1] != 'stop') and (event[1] != 'reset')
+    
+        for timestamp, op in events:
+            if len(laps) &gt; 0 and not is_not_running():
+                raise ValueError('still running')
+    
+            if timestamp == previous_time:
+                raise ValueError('time warp')
+    
+&gt;           if event[1] == 'start':
+               ^^^^^
+E           NameError: name 'event' is not defined
+
+solution.py:20: NameError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.stopwatch_fsm.tests.test_solution" name="test_laps" time="0.000"><failure message="NameError: name 'event' is not defined">&gt;   def test_laps(): assert f([(0, 'start'), (3, 'lap'), (5, 'stop'), (7, 'start'), (9, 'lap'), (10, 'stop')]) == (8, [3, 7])
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:5: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+events = [(0, 'start'), (3, 'lap'), (5, 'stop'), (7, 'start'), (9, 'lap'), (10, 'stop')]
+
+    def stopwatch(events):
+        if not all(isinstance(event, tuple) and len(event) == 2 for event in events):
+            raise ValueError('bad event')
+    
+        total = 0
+        laps = []
+        previous_time = float('-inf')
+    
+        def is_not_running():
+            return (event[1] != 'start' or previous_time &lt;= event[0]) and \
+                   (event[1] != 'stop') and (event[1] != 'reset')
+    
+        for timestamp, op in events:
+            if len(laps) &gt; 0 and not is_not_running():
+                raise ValueError('still running')
+    
+            if timestamp == previous_time:
+                raise ValueError('time warp')
+    
+&gt;           if event[1] == 'start':
+               ^^^^^
+E           NameError: name 'event' is not defined
+
+solution.py:20: NameError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.stopwatch_fsm.tests.test_solution" name="test_reset" time="0.000"><failure message="NameError: name 'event' is not defined">&gt;   def test_reset(): assert f([(0, 'start'), (5, 'stop'), (6, 'reset'), (7, 'start'), (9, 'stop')]) == (2, [])
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:6: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+events = [(0, 'start'), (5, 'stop'), (6, 'reset'), (7, 'start'), (9, 'stop')]
+
+    def stopwatch(events):
+        if not all(isinstance(event, tuple) and len(event) == 2 for event in events):
+            raise ValueError('bad event')
+    
+        total = 0
+        laps = []
+        previous_time = float('-inf')
+    
+        def is_not_running():
+            return (event[1] != 'start' or previous_time &lt;= event[0]) and \
+                   (event[1] != 'stop') and (event[1] != 'reset')
+    
+        for timestamp, op in events:
+            if len(laps) &gt; 0 and not is_not_running():
+                raise ValueError('still running')
+    
+            if timestamp == previous_time:
+                raise ValueError('time warp')
+    
+&gt;           if event[1] == 'start':
+               ^^^^^
+E           NameError: name 'event' is not defined
+
+solution.py:20: NameError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.stopwatch_fsm.tests.test_solution" name="test_running_at_end" time="0.000"><failure message="NameError: name 'event' is not defined">&gt;   def test_running_at_end(): assert f([(0, 'start')]) == (0, [])
+                                      ^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:7: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+events = [(0, 'start')]
+
+    def stopwatch(events):
+        if not all(isinstance(event, tuple) and len(event) == 2 for event in events):
+            raise ValueError('bad event')
+    
+        total = 0
+        laps = []
+        previous_time = float('-inf')
+    
+        def is_not_running():
+            return (event[1] != 'start' or previous_time &lt;= event[0]) and \
+                   (event[1] != 'stop') and (event[1] != 'reset')
+    
+        for timestamp, op in events:
+            if len(laps) &gt; 0 and not is_not_running():
+                raise ValueError('still running')
+    
+            if timestamp == previous_time:
+                raise ValueError('time warp')
+    
+&gt;           if event[1] == 'start':
+               ^^^^^
+E           NameError: name 'event' is not defined
+
+solution.py:20: NameError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.stopwatch_fsm.tests.test_solution" name="test_double_start" time="0.000"><failure message="NameError: name 'event' is not defined">def test_double_start():
+&gt;       with pytest.raises(ValueError) as e: f([(0, 'start'), (1, 'start')])
+                                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:9: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+events = [(0, 'start'), (1, 'start')]
+
+    def stopwatch(events):
+        if not all(isinstance(event, tuple) and len(event) == 2 for event in events):
+            raise ValueError('bad event')
+    
+        total = 0
+        laps = []
+        previous_time = float('-inf')
+    
+        def is_not_running():
+            return (event[1] != 'start' or previous_time &lt;= event[0]) and \
+                   (event[1] != 'stop') and (event[1] != 'reset')
+    
+        for timestamp, op in events:
+            if len(laps) &gt; 0 and not is_not_running():
+                raise ValueError('still running')
+    
+            if timestamp == previous_time:
+                raise ValueError('time warp')
+    
+&gt;           if event[1] == 'start':
+               ^^^^^
+E           NameError: name 'event' is not defined
+
+solution.py:20: NameError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.stopwatch_fsm.tests.test_solution" name="test_stop_stopped" time="0.000"><failure message="NameError: name 'event' is not defined">def test_stop_stopped():
+&gt;       with pytest.raises(ValueError) as e: f([(0, 'stop')])
+                                             ^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:12: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+events = [(0, 'stop')]
+
+    def stopwatch(events):
+        if not all(isinstance(event, tuple) and len(event) == 2 for event in events):
+            raise ValueError('bad event')
+    
+        total = 0
+        laps = []
+        previous_time = float('-inf')
+    
+        def is_not_running():
+            return (event[1] != 'start' or previous_time &lt;= event[0]) and \
+                   (event[1] != 'stop') and (event[1] != 'reset')
+    
+        for timestamp, op in events:
+            if len(laps) &gt; 0 and not is_not_running():
+                raise ValueError('still running')
+    
+            if timestamp == previous_time:
+                raise ValueError('time warp')
+    
+&gt;           if event[1] == 'start':
+               ^^^^^
+E           NameError: name 'event' is not defined
+
+solution.py:20: NameError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.stopwatch_fsm.tests.test_solution" name="test_lap_stopped" time="0.000"><failure message="NameError: name 'event' is not defined">def test_lap_stopped():
+&gt;       with pytest.raises(ValueError) as e: f([(0, 'lap')])
+                                             ^^^^^^^^^^^^^^^
+
+tests\test_solution.py:15: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+events = [(0, 'lap')]
+
+    def stopwatch(events):
+        if not all(isinstance(event, tuple) and len(event) == 2 for event in events):
+            raise ValueError('bad event')
+    
+        total = 0
+        laps = []
+        previous_time = float('-inf')
+    
+        def is_not_running():
+            return (event[1] != 'start' or previous_time &lt;= event[0]) and \
+                   (event[1] != 'stop') and (event[1] != 'reset')
+    
+        for timestamp, op in events:
+            if len(laps) &gt; 0 and not is_not_running():
+                raise ValueError('still running')
+    
+            if timestamp == previous_time:
+                raise ValueError('time warp')
+    
+&gt;           if event[1] == 'start':
+               ^^^^^
+E           NameError: name 'event' is not defined
+
+solution.py:20: NameError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.stopwatch_fsm.tests.test_solution" name="test_reset_running" time="0.000"><failure message="NameError: name 'event' is not defined">def test_reset_running():
+&gt;       with pytest.raises(ValueError) as e: f([(0, 'start'), (1, 'reset')])
+                                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:18: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+events = [(0, 'start'), (1, 'reset')]
+
+    def stopwatch(events):
+        if not all(isinstance(event, tuple) and len(event) == 2 for event in events):
+            raise ValueError('bad event')
+    
+        total = 0
+        laps = []
+        previous_time = float('-inf')
+    
+        def is_not_running():
+            return (event[1] != 'start' or previous_time &lt;= event[0]) and \
+                   (event[1] != 'stop') and (event[1] != 'reset')
+    
+        for timestamp, op in events:
+            if len(laps) &gt; 0 and not is_not_running():
+                raise ValueError('still running')
+    
+            if timestamp == previous_time:
+                raise ValueError('time warp')
+    
+&gt;           if event[1] == 'start':
+               ^^^^^
+E           NameError: name 'event' is not defined
+
+solution.py:20: NameError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.stopwatch_fsm.tests.test_solution" name="test_time_warp" time="0.000"><failure message="NameError: name 'event' is not defined">def test_time_warp():
+&gt;       with pytest.raises(ValueError) as e: f([(0, 'start'), (0, 'stop')])
+                                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:21: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+events = [(0, 'start'), (0, 'stop')]
+
+    def stopwatch(events):
+        if not all(isinstance(event, tuple) and len(event) == 2 for event in events):
+            raise ValueError('bad event')
+    
+        total = 0
+        laps = []
+        previous_time = float('-inf')
+    
+        def is_not_running():
+            return (event[1] != 'start' or previous_time &lt;= event[0]) and \
+                   (event[1] != 'stop') and (event[1] != 'reset')
+    
+        for timestamp, op in events:
+            if len(laps) &gt; 0 and not is_not_running():
+                raise ValueError('still running')
+    
+            if timestamp == previous_time:
+                raise ValueError('time warp')
+    
+&gt;           if event[1] == 'start':
+               ^^^^^
+E           NameError: name 'event' is not defined
+
+solution.py:20: NameError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.stopwatch_fsm.tests.test_solution" name="test_bad_op" time="0.000"><failure message="NameError: name 'event' is not defined">def test_bad_op():
+&gt;       with pytest.raises(ValueError) as e: f([(0, 'go')])
+                                             ^^^^^^^^^^^^^^
+
+tests\test_solution.py:24: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+events = [(0, 'go')]
+
+    def stopwatch(events):
+        if not all(isinstance(event, tuple) and len(event) == 2 for event in events):
+            raise ValueError('bad event')
+    
+        total = 0
+        laps = []
+        previous_time = float('-inf')
+    
+        def is_not_running():
+            return (event[1] != 'start' or previous_time &lt;= event[0]) and \
+                   (event[1] != 'stop') and (event[1] != 'reset')
+    
+        for timestamp, op in events:
+            if len(laps) &gt; 0 and not is_not_running():
+                raise ValueError('still running')
+    
+            if timestamp == previous_time:
+                raise ValueError('time warp')
+    
+&gt;           if event[1] == 'start':
+               ^^^^^
+E           NameError: name 'event' is not defined
+
+solution.py:20: NameError</failure></testcase></testsuite></testsuites>

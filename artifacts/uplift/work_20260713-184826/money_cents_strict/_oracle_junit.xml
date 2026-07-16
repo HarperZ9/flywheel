@@ -1,0 +1,196 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="7" skipped="0" tests="12" time="0.240" timestamp="2026-07-13T19:13:08.362078-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-184826.money_cents_strict.tests.test_solution" name="test_grouped" time="0.001"><failure message="ValueError: bad amount">&gt;   def test_grouped(): assert f('1,234.56') == 123456
+                               ^^^^^^^^^^^^^
+
+tests\test_solution.py:3: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+s = '1,234.56'
+
+    def parse_money(s):
+        if not s:
+            raise ValueError('bad amount')
+    
+        # Remove whitespace
+        s = s.strip()
+    
+        # Check for valid sign and value
+        if s == '0':
+            return 0
+    
+        if s[0] in '+-':
+            sign = -1 if s[0] == '-' else 1
+            s = s[1:]
+        else:
+            sign = 1
+    
+        parts = s.split('.')
+    
+        # Check for invalid groups or signs after a period
+        if len(parts) &gt; 2 or ('.' in s and any(part.strip() != '' for part in s.split(','))):
+&gt;           raise ValueError('bad amount')
+E           ValueError: bad amount
+
+solution.py:22: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-184826.money_cents_strict.tests.test_solution" name="test_cents_only" time="0.000"><failure message="ValueError: bad amount">&gt;   def test_cents_only(): assert f('0.99') == 99
+                                  ^^^^^^^^^
+
+tests\test_solution.py:4: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+s = '0.99'
+
+    def parse_money(s):
+        if not s:
+            raise ValueError('bad amount')
+    
+        # Remove whitespace
+        s = s.strip()
+    
+        # Check for valid sign and value
+        if s == '0':
+            return 0
+    
+        if s[0] in '+-':
+            sign = -1 if s[0] == '-' else 1
+            s = s[1:]
+        else:
+            sign = 1
+    
+        parts = s.split('.')
+    
+        # Check for invalid groups or signs after a period
+        if len(parts) &gt; 2 or ('.' in s and any(part.strip() != '' for part in s.split(','))):
+&gt;           raise ValueError('bad amount')
+E           ValueError: bad amount
+
+solution.py:22: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-184826.money_cents_strict.tests.test_solution" name="test_negative" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-184826.money_cents_strict.tests.test_solution" name="test_million" time="0.000"><failure message="NameError: name 're' is not defined. Did you forget to import 're'">&gt;   def test_million(): assert f('1,000,000') == 100000000
+                               ^^^^^^^^^^^^^^
+
+tests\test_solution.py:6: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+s = '1,000,000'
+
+    def parse_money(s):
+        if not s:
+            raise ValueError('bad amount')
+    
+        # Remove whitespace
+        s = s.strip()
+    
+        # Check for valid sign and value
+        if s == '0':
+            return 0
+    
+        if s[0] in '+-':
+            sign = -1 if s[0] == '-' else 1
+            s = s[1:]
+        else:
+            sign = 1
+    
+        parts = s.split('.')
+    
+        # Check for invalid groups or signs after a period
+        if len(parts) &gt; 2 or ('.' in s and any(part.strip() != '' for part in s.split(','))):
+            raise ValueError('bad amount')
+    
+        integer_part = parts[0]
+        decimal_part = parts[-1] if '.' in s else ''
+    
+        # Check for leading zero in integer part except '0'
+        if integer_part == '0' and len(integer_part) != 1:
+            raise ValueError('bad amount')
+    
+        # Parse comma-separated groups
+        if ',' in integer_part:
+&gt;           chunks = [c.group(0) for c in re.findall(r'\d{1,3}(?:,\d{3})*', s)]
+                                          ^^
+E           NameError: name 're' is not defined. Did you forget to import 're'
+
+solution.py:33: NameError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-184826.money_cents_strict.tests.test_solution" name="test_negative_zero" time="0.000"><failure message="ValueError: bad amount">&gt;   def test_negative_zero(): assert f('-0.00') == 0
+                                     ^^^^^^^^^^
+
+tests\test_solution.py:7: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+s = '0.00'
+
+    def parse_money(s):
+        if not s:
+            raise ValueError('bad amount')
+    
+        # Remove whitespace
+        s = s.strip()
+    
+        # Check for valid sign and value
+        if s == '0':
+            return 0
+    
+        if s[0] in '+-':
+            sign = -1 if s[0] == '-' else 1
+            s = s[1:]
+        else:
+            sign = 1
+    
+        parts = s.split('.')
+    
+        # Check for invalid groups or signs after a period
+        if len(parts) &gt; 2 or ('.' in s and any(part.strip() != '' for part in s.split(','))):
+&gt;           raise ValueError('bad amount')
+E           ValueError: bad amount
+
+solution.py:22: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-184826.money_cents_strict.tests.test_solution" name="test_zero" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-184826.money_cents_strict.tests.test_solution" name="test_leading_zeros" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_leading_zeros():
+&gt;       with pytest.raises(ValueError) as e: f('007')
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:10: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260713-184826.money_cents_strict.tests.test_solution" name="test_bad_group" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-184826.money_cents_strict.tests.test_solution" name="test_no_integer_part" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-184826.money_cents_strict.tests.test_solution" name="test_one_decimal" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-184826.money_cents_strict.tests.test_solution" name="test_plus" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_plus():
+&gt;       with pytest.raises(ValueError): f('+1')
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:19: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260713-184826.money_cents_strict.tests.test_solution" name="test_zero_grouped" time="0.001"><failure message="NameError: name 're' is not defined. Did you forget to import 're'">def test_zero_grouped():
+&gt;       with pytest.raises(ValueError): f('0,123')
+                                        ^^^^^^^^^^
+
+tests\test_solution.py:21: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+s = '0,123'
+
+    def parse_money(s):
+        if not s:
+            raise ValueError('bad amount')
+    
+        # Remove whitespace
+        s = s.strip()
+    
+        # Check for valid sign and value
+        if s == '0':
+            return 0
+    
+        if s[0] in '+-':
+            sign = -1 if s[0] == '-' else 1
+            s = s[1:]
+        else:
+            sign = 1
+    
+        parts = s.split('.')
+    
+        # Check for invalid groups or signs after a period
+        if len(parts) &gt; 2 or ('.' in s and any(part.strip() != '' for part in s.split(','))):
+            raise ValueError('bad amount')
+    
+        integer_part = parts[0]
+        decimal_part = parts[-1] if '.' in s else ''
+    
+        # Check for leading zero in integer part except '0'
+        if integer_part == '0' and len(integer_part) != 1:
+            raise ValueError('bad amount')
+    
+        # Parse comma-separated groups
+        if ',' in integer_part:
+&gt;           chunks = [c.group(0) for c in re.findall(r'\d{1,3}(?:,\d{3})*', s)]
+                                          ^^
+E           NameError: name 're' is not defined. Did you forget to import 're'
+
+solution.py:33: NameError</failure></testcase></testsuite></testsuites>

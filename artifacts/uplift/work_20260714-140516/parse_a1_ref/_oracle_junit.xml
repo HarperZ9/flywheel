@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="11" skipped="0" tests="11" time="0.513" timestamp="2026-07-14T14:47:02.197843-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260714-140516.parse_a1_ref.tests.test_solution" name="test_a1" time="0.001"><failure message="NameError: name '_A1_RE' is not defined">&gt;   def test_a1(): assert f('A1') == (1, 1)
+                          ^^^^^^^
+
+tests\test_solution.py:3: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+ref = 'A1'
+
+    def parse_a1(ref) -&gt; tuple[int, int]:
+        if not isinstance(ref, str):
+            raise ValueError("bad ref")
+&gt;       parts = [p for p in _A1_RE.split(ref) if p]
+                            ^^^^^^
+E       NameError: name '_A1_RE' is not defined
+
+solution.py:4: NameError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-140516.parse_a1_ref.tests.test_solution" name="test_b2" time="0.000"><failure message="NameError: name '_A1_RE' is not defined">&gt;   def test_b2(): assert f('B2') == (2, 2)
+                          ^^^^^^^
+
+tests\test_solution.py:4: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+ref = 'B2'
+
+    def parse_a1(ref) -&gt; tuple[int, int]:
+        if not isinstance(ref, str):
+            raise ValueError("bad ref")
+&gt;       parts = [p for p in _A1_RE.split(ref) if p]
+                            ^^^^^^
+E       NameError: name '_A1_RE' is not defined
+
+solution.py:4: NameError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-140516.parse_a1_ref.tests.test_solution" name="test_z10" time="0.001"><failure message="NameError: name '_A1_RE' is not defined">&gt;   def test_z10(): assert f('Z10') == (10, 26)
+                           ^^^^^^^^
+
+tests\test_solution.py:5: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+ref = 'Z10'
+
+    def parse_a1(ref) -&gt; tuple[int, int]:
+        if not isinstance(ref, str):
+            raise ValueError("bad ref")
+&gt;       parts = [p for p in _A1_RE.split(ref) if p]
+                            ^^^^^^
+E       NameError: name '_A1_RE' is not defined
+
+solution.py:4: NameError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-140516.parse_a1_ref.tests.test_solution" name="test_aa1" time="0.000"><failure message="NameError: name '_A1_RE' is not defined">&gt;   def test_aa1(): assert f('AA1') == (1, 27)
+                           ^^^^^^^^
+
+tests\test_solution.py:6: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+ref = 'AA1'
+
+    def parse_a1(ref) -&gt; tuple[int, int]:
+        if not isinstance(ref, str):
+            raise ValueError("bad ref")
+&gt;       parts = [p for p in _A1_RE.split(ref) if p]
+                            ^^^^^^
+E       NameError: name '_A1_RE' is not defined
+
+solution.py:4: NameError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-140516.parse_a1_ref.tests.test_solution" name="test_ab100" time="0.000"><failure message="NameError: name '_A1_RE' is not defined">&gt;   def test_ab100(): assert f('AB100') == (100, 28)
+                             ^^^^^^^^^^
+
+tests\test_solution.py:7: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+ref = 'AB100'
+
+    def parse_a1(ref) -&gt; tuple[int, int]:
+        if not isinstance(ref, str):
+            raise ValueError("bad ref")
+&gt;       parts = [p for p in _A1_RE.split(ref) if p]
+                            ^^^^^^
+E       NameError: name '_A1_RE' is not defined
+
+solution.py:4: NameError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-140516.parse_a1_ref.tests.test_solution" name="test_no_digits" time="0.001"><failure message="NameError: name '_A1_RE' is not defined">def test_no_digits():
+&gt;       with pytest.raises(ValueError) as e: f('AB')
+                                             ^^^^^^^
+
+tests\test_solution.py:9: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+ref = 'AB'
+
+    def parse_a1(ref) -&gt; tuple[int, int]:
+        if not isinstance(ref, str):
+            raise ValueError("bad ref")
+&gt;       parts = [p for p in _A1_RE.split(ref) if p]
+                            ^^^^^^
+E       NameError: name '_A1_RE' is not defined
+
+solution.py:4: NameError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-140516.parse_a1_ref.tests.test_solution" name="test_no_letters" time="0.000"><failure message="NameError: name '_A1_RE' is not defined">def test_no_letters():
+&gt;       with pytest.raises(ValueError): f('12')
+                                        ^^^^^^^
+
+tests\test_solution.py:12: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+ref = '12'
+
+    def parse_a1(ref) -&gt; tuple[int, int]:
+        if not isinstance(ref, str):
+            raise ValueError("bad ref")
+&gt;       parts = [p for p in _A1_RE.split(ref) if p]
+                            ^^^^^^
+E       NameError: name '_A1_RE' is not defined
+
+solution.py:4: NameError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-140516.parse_a1_ref.tests.test_solution" name="test_lowercase" time="0.000"><failure message="NameError: name '_A1_RE' is not defined">def test_lowercase():
+&gt;       with pytest.raises(ValueError): f('a1')
+                                        ^^^^^^^
+
+tests\test_solution.py:14: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+ref = 'a1'
+
+    def parse_a1(ref) -&gt; tuple[int, int]:
+        if not isinstance(ref, str):
+            raise ValueError("bad ref")
+&gt;       parts = [p for p in _A1_RE.split(ref) if p]
+                            ^^^^^^
+E       NameError: name '_A1_RE' is not defined
+
+solution.py:4: NameError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-140516.parse_a1_ref.tests.test_solution" name="test_leading_zero" time="0.000"><failure message="NameError: name '_A1_RE' is not defined">def test_leading_zero():
+&gt;       with pytest.raises(ValueError): f('A01')
+                                        ^^^^^^^^
+
+tests\test_solution.py:16: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+ref = 'A01'
+
+    def parse_a1(ref) -&gt; tuple[int, int]:
+        if not isinstance(ref, str):
+            raise ValueError("bad ref")
+&gt;       parts = [p for p in _A1_RE.split(ref) if p]
+                            ^^^^^^
+E       NameError: name '_A1_RE' is not defined
+
+solution.py:4: NameError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-140516.parse_a1_ref.tests.test_solution" name="test_zero_row" time="0.001"><failure message="NameError: name '_A1_RE' is not defined">def test_zero_row():
+&gt;       with pytest.raises(ValueError): f('A0')
+                                        ^^^^^^^
+
+tests\test_solution.py:18: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+ref = 'A0'
+
+    def parse_a1(ref) -&gt; tuple[int, int]:
+        if not isinstance(ref, str):
+            raise ValueError("bad ref")
+&gt;       parts = [p for p in _A1_RE.split(ref) if p]
+                            ^^^^^^
+E       NameError: name '_A1_RE' is not defined
+
+solution.py:4: NameError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-140516.parse_a1_ref.tests.test_solution" name="test_letters_after_digits" time="0.001"><failure message="NameError: name '_A1_RE' is not defined">def test_letters_after_digits():
+&gt;       with pytest.raises(ValueError): f('A1B')
+                                        ^^^^^^^^
+
+tests\test_solution.py:20: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+ref = 'A1B'
+
+    def parse_a1(ref) -&gt; tuple[int, int]:
+        if not isinstance(ref, str):
+            raise ValueError("bad ref")
+&gt;       parts = [p for p in _A1_RE.split(ref) if p]
+                            ^^^^^^
+E       NameError: name '_A1_RE' is not defined
+
+solution.py:4: NameError</failure></testcase></testsuite></testsuites>

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="9" time="0.184" timestamp="2026-07-13T20:07:25.075707-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-194718.matrix_transpose.tests.test_solution" name="test_basic" time="0.001" /><testcase classname="artifacts.uplift.work_20260713-194718.matrix_transpose.tests.test_solution" name="test_column" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-194718.matrix_transpose.tests.test_solution" name="test_square" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-194718.matrix_transpose.tests.test_solution" name="test_no_rows" time="0.001"><failure message="StopIteration">&gt;   def test_no_rows(): assert f([]) == []
+                               ^^^^^
+
+tests\test_solution.py:6: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+m = []
+
+    def transpose(m):
+        if not isinstance(m, list):
+            raise ValueError('bad matrix')
+    
+        for row in m:
+            if not isinstance(row, list):
+                raise ValueError('bad matrix')
+    
+&gt;       first_row_length = len(next(iter(m)))
+                               ^^^^^^^^^^^^^
+E       StopIteration
+
+solution.py:9: StopIteration</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.matrix_transpose.tests.test_solution" name="test_empty_rows" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-194718.matrix_transpose.tests.test_solution" name="test_single" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-194718.matrix_transpose.tests.test_solution" name="test_ragged" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-194718.matrix_transpose.tests.test_solution" name="test_bad_row" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-194718.matrix_transpose.tests.test_solution" name="test_bad_matrix" time="0.000" /></testsuite></testsuites>

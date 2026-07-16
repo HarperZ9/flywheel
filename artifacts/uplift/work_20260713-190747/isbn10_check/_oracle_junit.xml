@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="3" skipped="0" tests="7" time="0.203" timestamp="2026-07-13T19:34:57.888567-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-190747.isbn10_check.tests.test_solution" name="test_valid_digits" time="0.001"><failure message="ValueError: bad isbn">&gt;   def test_valid_digits(): assert f('0306406152') is True
+                                    ^^^^^^^^^^^^^^^
+
+tests\test_solution.py:3: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+s = '0306406152'
+
+    def isbn10_check(s):
+        if not isinstance(s, str) or len(s) != 10:
+            raise ValueError('bad isbn')
+    
+        sum_val = 0
+        for i, char in enumerate(s):
+            if i &lt; 9 and not char.isdigit():
+                raise ValueError('bad isbn')
+            digit = int(char) if char.isdigit() else 10
+            if i == 9 and digit != 10:
+&gt;               raise ValueError('bad isbn')
+E               ValueError: bad isbn
+
+solution.py:11: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-190747.isbn10_check.tests.test_solution" name="test_valid_x" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-190747.isbn10_check.tests.test_solution" name="test_invalid" time="0.001"><failure message="ValueError: bad isbn">&gt;   def test_invalid(): assert f('0306406153') is False
+                               ^^^^^^^^^^^^^^^
+
+tests\test_solution.py:5: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+s = '0306406153'
+
+    def isbn10_check(s):
+        if not isinstance(s, str) or len(s) != 10:
+            raise ValueError('bad isbn')
+    
+        sum_val = 0
+        for i, char in enumerate(s):
+            if i &lt; 9 and not char.isdigit():
+                raise ValueError('bad isbn')
+            digit = int(char) if char.isdigit() else 10
+            if i == 9 and digit != 10:
+&gt;               raise ValueError('bad isbn')
+E               ValueError: bad isbn
+
+solution.py:11: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-190747.isbn10_check.tests.test_solution" name="test_bad_length" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-190747.isbn10_check.tests.test_solution" name="test_lower_x" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_lower_x():
+&gt;       with pytest.raises(ValueError): f('048665088x')
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:10: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260713-190747.isbn10_check.tests.test_solution" name="test_x_not_last" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-190747.isbn10_check.tests.test_solution" name="test_not_str" time="0.000" /></testsuite></testsuites>

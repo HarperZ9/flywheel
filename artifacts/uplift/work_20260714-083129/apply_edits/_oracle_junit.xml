@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="6" skipped="0" tests="8" time="0.228" timestamp="2026-07-14T08:43:33.121564-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260714-083129.apply_edits.tests.test_solution" name="test_sequential_ops_on_intermediate_state" time="0.001"><failure message="ValueError: Invalid operation.">def test_sequential_ops_on_intermediate_state():
+        items = [1, 2, 3]
+&gt;       out = apply_edits(items, [("insert", 1, 9), ("delete", 0), ("replace", 2, 7)])
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:7: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+items = [1, 2, 3], ops = [('insert', 1, 9), ('delete', 0), ('replace', 2, 7)]
+
+    def apply_edits(items: list, ops: list) -&gt; list:
+        if not isinstance(ops, list):
+            raise ValueError("Ops must be a list of operations.")
+    
+        def normalize_index(index, length):
+            return index % length if index &gt;= 0 else length + index
+    
+        working_copy = items[:]
+        for op in ops:
+            operation_type, *args = op
+    
+            if not isinstance(op, tuple) or len(args) != (3 - len(operation_type)):
+&gt;               raise ValueError("Invalid operation.")
+E               ValueError: Invalid operation.
+
+solution.py:13: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.apply_edits.tests.test_solution" name="test_insert_at_end_allowed" time="0.001"><failure message="ValueError: Invalid operation.">def test_insert_at_end_allowed():
+&gt;       assert apply_edits([1], [("insert", 1, 5)]) == [1, 5]
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:14: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+items = [1], ops = [('insert', 1, 5)]
+
+    def apply_edits(items: list, ops: list) -&gt; list:
+        if not isinstance(ops, list):
+            raise ValueError("Ops must be a list of operations.")
+    
+        def normalize_index(index, length):
+            return index % length if index &gt;= 0 else length + index
+    
+        working_copy = items[:]
+        for op in ops:
+            operation_type, *args = op
+    
+            if not isinstance(op, tuple) or len(args) != (3 - len(operation_type)):
+&gt;               raise ValueError("Invalid operation.")
+E               ValueError: Invalid operation.
+
+solution.py:13: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.apply_edits.tests.test_solution" name="test_insert_past_end_raises_index_error_not_clamped" time="0.000"><failure message="ValueError: Invalid operation.">def test_insert_past_end_raises_index_error_not_clamped():
+        with pytest.raises(IndexError):
+&gt;           apply_edits([1], [("insert", 3, 5)])
+
+tests\test_solution.py:19: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+items = [1], ops = [('insert', 3, 5)]
+
+    def apply_edits(items: list, ops: list) -&gt; list:
+        if not isinstance(ops, list):
+            raise ValueError("Ops must be a list of operations.")
+    
+        def normalize_index(index, length):
+            return index % length if index &gt;= 0 else length + index
+    
+        working_copy = items[:]
+        for op in ops:
+            operation_type, *args = op
+    
+            if not isinstance(op, tuple) or len(args) != (3 - len(operation_type)):
+&gt;               raise ValueError("Invalid operation.")
+E               ValueError: Invalid operation.
+
+solution.py:13: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.apply_edits.tests.test_solution" name="test_negative_indices" time="0.000"><failure message="ValueError: Invalid operation.">def test_negative_indices():
+&gt;       assert apply_edits([1, 2, 3], [("replace", -1, 9)]) == [1, 2, 9]
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:23: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+items = [1, 2, 3], ops = [('replace', -1, 9)]
+
+    def apply_edits(items: list, ops: list) -&gt; list:
+        if not isinstance(ops, list):
+            raise ValueError("Ops must be a list of operations.")
+    
+        def normalize_index(index, length):
+            return index % length if index &gt;= 0 else length + index
+    
+        working_copy = items[:]
+        for op in ops:
+            operation_type, *args = op
+    
+            if not isinstance(op, tuple) or len(args) != (3 - len(operation_type)):
+&gt;               raise ValueError("Invalid operation.")
+E               ValueError: Invalid operation.
+
+solution.py:13: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.apply_edits.tests.test_solution" name="test_unknown_op_raises_value_error" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-083129.apply_edits.tests.test_solution" name="test_malformed_op_raises_value_error" time="0.001" /><testcase classname="artifacts.uplift.work_20260714-083129.apply_edits.tests.test_solution" name="test_input_untouched_even_when_error_midway" time="0.000"><failure message="ValueError: Invalid operation.">def test_input_untouched_even_when_error_midway():
+        items = [1, 2]
+        with pytest.raises(IndexError):
+&gt;           apply_edits(items, [("insert", 0, 9), ("delete", 5)])
+
+tests\test_solution.py:46: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+items = [1, 2], ops = [('insert', 0, 9), ('delete', 5)]
+
+    def apply_edits(items: list, ops: list) -&gt; list:
+        if not isinstance(ops, list):
+            raise ValueError("Ops must be a list of operations.")
+    
+        def normalize_index(index, length):
+            return index % length if index &gt;= 0 else length + index
+    
+        working_copy = items[:]
+        for op in ops:
+            operation_type, *args = op
+    
+            if not isinstance(op, tuple) or len(args) != (3 - len(operation_type)):
+&gt;               raise ValueError("Invalid operation.")
+E               ValueError: Invalid operation.
+
+solution.py:13: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.apply_edits.tests.test_solution" name="test_delete_on_empty_raises" time="0.000"><failure message="ValueError: Invalid operation.">def test_delete_on_empty_raises():
+        with pytest.raises(IndexError):
+&gt;           apply_edits([], [("delete", 0)])
+
+tests\test_solution.py:52: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+items = [], ops = [('delete', 0)]
+
+    def apply_edits(items: list, ops: list) -&gt; list:
+        if not isinstance(ops, list):
+            raise ValueError("Ops must be a list of operations.")
+    
+        def normalize_index(index, length):
+            return index % length if index &gt;= 0 else length + index
+    
+        working_copy = items[:]
+        for op in ops:
+            operation_type, *args = op
+    
+            if not isinstance(op, tuple) or len(args) != (3 - len(operation_type)):
+&gt;               raise ValueError("Invalid operation.")
+E               ValueError: Invalid operation.
+
+solution.py:13: ValueError</failure></testcase></testsuite></testsuites>

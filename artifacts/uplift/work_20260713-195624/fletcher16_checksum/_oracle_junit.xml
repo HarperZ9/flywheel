@@ -1,0 +1,219 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="11" skipped="0" tests="14" time="0.267" timestamp="2026-07-13T20:25:57.838295-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-195624.fletcher16_checksum.tests.test_solution" name="test_abcde" time="0.001"><failure message="ValueError: bad byte">&gt;   def test_abcde(): assert f('abcde') == 51440
+                             ^^^^^^^^^^
+
+tests\test_solution.py:3: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+data = 'abcde'
+
+    def fletcher16(data):
+        if not isinstance(data, str) and not isinstance(data, list):
+            raise ValueError('bad input')
+    
+        if any(not isinstance(element, int) or element &lt; 0 or element &gt;= 256 for element in data):
+&gt;           raise ValueError('bad byte')
+E           ValueError: bad byte
+
+solution.py:6: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.fletcher16_checksum.tests.test_solution" name="test_abcdef" time="0.000"><failure message="ValueError: bad byte">&gt;   def test_abcdef(): assert f('abcdef') == 8279
+                              ^^^^^^^^^^^
+
+tests\test_solution.py:4: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+data = 'abcdef'
+
+    def fletcher16(data):
+        if not isinstance(data, str) and not isinstance(data, list):
+            raise ValueError('bad input')
+    
+        if any(not isinstance(element, int) or element &lt; 0 or element &gt;= 256 for element in data):
+&gt;           raise ValueError('bad byte')
+E           ValueError: bad byte
+
+solution.py:6: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.fletcher16_checksum.tests.test_solution" name="test_empty_str" time="0.000"><failure message="ValueError: max() iterable argument is empty">&gt;   def test_empty_str(): assert f('') == 0
+                                 ^^^^^
+
+tests\test_solution.py:5: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+data = ''
+
+    def fletcher16(data):
+        if not isinstance(data, str) and not isinstance(data, list):
+            raise ValueError('bad input')
+    
+        if any(not isinstance(element, int) or element &lt; 0 or element &gt;= 256 for element in data):
+            raise ValueError('bad byte')
+    
+        if not (all(0 &lt;= element &lt;= 255 for element in data)):
+            raise ValueError('bad char')
+    
+        running_sum1 = running_sum2 = 0
+&gt;       max_data_len = max(map(len, data))
+                       ^^^^^^^^^^^^^^^^^^^
+E       ValueError: max() iterable argument is empty
+
+solution.py:12: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.fletcher16_checksum.tests.test_solution" name="test_empty_list" time="0.000"><failure message="ValueError: max() iterable argument is empty">&gt;   def test_empty_list(): assert f([]) == 0
+                                  ^^^^^
+
+tests\test_solution.py:6: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+data = []
+
+    def fletcher16(data):
+        if not isinstance(data, str) and not isinstance(data, list):
+            raise ValueError('bad input')
+    
+        if any(not isinstance(element, int) or element &lt; 0 or element &gt;= 256 for element in data):
+            raise ValueError('bad byte')
+    
+        if not (all(0 &lt;= element &lt;= 255 for element in data)):
+            raise ValueError('bad char')
+    
+        running_sum1 = running_sum2 = 0
+&gt;       max_data_len = max(map(len, data))
+                       ^^^^^^^^^^^^^^^^^^^
+E       ValueError: max() iterable argument is empty
+
+solution.py:12: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.fletcher16_checksum.tests.test_solution" name="test_single" time="0.001"><failure message="TypeError: object of type 'int' has no len()">&gt;   def test_single(): assert f([1]) == 257
+                              ^^^^^^
+
+tests\test_solution.py:7: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+data = [1]
+
+    def fletcher16(data):
+        if not isinstance(data, str) and not isinstance(data, list):
+            raise ValueError('bad input')
+    
+        if any(not isinstance(element, int) or element &lt; 0 or element &gt;= 256 for element in data):
+            raise ValueError('bad byte')
+    
+        if not (all(0 &lt;= element &lt;= 255 for element in data)):
+            raise ValueError('bad char')
+    
+        running_sum1 = running_sum2 = 0
+&gt;       max_data_len = max(map(len, data))
+                       ^^^^^^^^^^^^^^^^^^^
+E       TypeError: object of type 'int' has no len()
+
+solution.py:12: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.fletcher16_checksum.tests.test_solution" name="test_two" time="0.000"><failure message="TypeError: object of type 'int' has no len()">&gt;   def test_two(): assert f([1, 2]) == 1027
+                           ^^^^^^^^^
+
+tests\test_solution.py:8: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+data = [1, 2]
+
+    def fletcher16(data):
+        if not isinstance(data, str) and not isinstance(data, list):
+            raise ValueError('bad input')
+    
+        if any(not isinstance(element, int) or element &lt; 0 or element &gt;= 256 for element in data):
+            raise ValueError('bad byte')
+    
+        if not (all(0 &lt;= element &lt;= 255 for element in data)):
+            raise ValueError('bad char')
+    
+        running_sum1 = running_sum2 = 0
+&gt;       max_data_len = max(map(len, data))
+                       ^^^^^^^^^^^^^^^^^^^
+E       TypeError: object of type 'int' has no len()
+
+solution.py:12: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.fletcher16_checksum.tests.test_solution" name="test_byte_255" time="0.000"><failure message="TypeError: object of type 'int' has no len()">&gt;   def test_byte_255(): assert f([255]) == 0
+                                ^^^^^^^^
+
+tests\test_solution.py:9: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+data = [255]
+
+    def fletcher16(data):
+        if not isinstance(data, str) and not isinstance(data, list):
+            raise ValueError('bad input')
+    
+        if any(not isinstance(element, int) or element &lt; 0 or element &gt;= 256 for element in data):
+            raise ValueError('bad byte')
+    
+        if not (all(0 &lt;= element &lt;= 255 for element in data)):
+            raise ValueError('bad char')
+    
+        running_sum1 = running_sum2 = 0
+&gt;       max_data_len = max(map(len, data))
+                       ^^^^^^^^^^^^^^^^^^^
+E       TypeError: object of type 'int' has no len()
+
+solution.py:12: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.fletcher16_checksum.tests.test_solution" name="test_two_255" time="0.001"><failure message="TypeError: object of type 'int' has no len()">&gt;   def test_two_255(): assert f([255, 255]) == 0
+                               ^^^^^^^^^^^^^
+
+tests\test_solution.py:10: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+data = [255, 255]
+
+    def fletcher16(data):
+        if not isinstance(data, str) and not isinstance(data, list):
+            raise ValueError('bad input')
+    
+        if any(not isinstance(element, int) or element &lt; 0 or element &gt;= 256 for element in data):
+            raise ValueError('bad byte')
+    
+        if not (all(0 &lt;= element &lt;= 255 for element in data)):
+            raise ValueError('bad char')
+    
+        running_sum1 = running_sum2 = 0
+&gt;       max_data_len = max(map(len, data))
+                       ^^^^^^^^^^^^^^^^^^^
+E       TypeError: object of type 'int' has no len()
+
+solution.py:12: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.fletcher16_checksum.tests.test_solution" name="test_str_list_agree" time="0.000"><failure message="ValueError: bad byte">&gt;   def test_str_list_agree(): assert f('abcde') == f([97, 98, 99, 100, 101])
+                                      ^^^^^^^^^^
+
+tests\test_solution.py:11: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+data = 'abcde'
+
+    def fletcher16(data):
+        if not isinstance(data, str) and not isinstance(data, list):
+            raise ValueError('bad input')
+    
+        if any(not isinstance(element, int) or element &lt; 0 or element &gt;= 256 for element in data):
+&gt;           raise ValueError('bad byte')
+E           ValueError: bad byte
+
+solution.py:6: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.fletcher16_checksum.tests.test_solution" name="test_bad_char" time="0.001"><failure message="AssertionError: assert 'bad byte' == 'bad char'&#10;  &#10;  - bad char&#10;  + bad byte">def test_bad_char():
+        with pytest.raises(ValueError) as e: f('caf\xe9')
+&gt;       assert str(e.value) == 'bad char'
+E       AssertionError: assert 'bad byte' == 'bad char'
+E         
+E         - bad char
+E         + bad byte
+
+tests\test_solution.py:14: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.fletcher16_checksum.tests.test_solution" name="test_bad_byte_range" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-195624.fletcher16_checksum.tests.test_solution" name="test_bad_byte_negative" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-195624.fletcher16_checksum.tests.test_solution" name="test_bad_byte_bool" time="0.000"><failure message="TypeError: object of type 'bool' has no len()">def test_bad_byte_bool():
+&gt;       with pytest.raises(ValueError): f([True])
+                                        ^^^^^^^^^
+
+tests\test_solution.py:21: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+data = [True]
+
+    def fletcher16(data):
+        if not isinstance(data, str) and not isinstance(data, list):
+            raise ValueError('bad input')
+    
+        if any(not isinstance(element, int) or element &lt; 0 or element &gt;= 256 for element in data):
+            raise ValueError('bad byte')
+    
+        if not (all(0 &lt;= element &lt;= 255 for element in data)):
+            raise ValueError('bad char')
+    
+        running_sum1 = running_sum2 = 0
+&gt;       max_data_len = max(map(len, data))
+                       ^^^^^^^^^^^^^^^^^^^
+E       TypeError: object of type 'bool' has no len()
+
+solution.py:12: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.fletcher16_checksum.tests.test_solution" name="test_bad_input" time="0.000" /></testsuite></testsuites>

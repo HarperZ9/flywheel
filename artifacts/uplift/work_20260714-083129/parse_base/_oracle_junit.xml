@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="5" skipped="0" tests="11" time="0.230" timestamp="2026-07-14T08:55:29.956949-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260714-083129.parse_base.tests.test_solution" name="test_hex" time="0.001" /><testcase classname="artifacts.uplift.work_20260714-083129.parse_base.tests.test_solution" name="test_upper" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-083129.parse_base.tests.test_solution" name="test_binary" time="0.001"><failure message="AssertionError: assert -3 == 10&#10; +  where -3 = f('1010', 2)">&gt;   def test_binary(): assert f('1010', 2) == 10
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert -3 == 10
+E    +  where -3 = f('1010', 2)
+
+tests\test_solution.py:5: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.parse_base.tests.test_solution" name="test_negative" time="0.000"><failure message="AssertionError: assert 239 == -31&#10; +  where 239 = f('-1f', 16)">&gt;   def test_negative(): assert f('-1f', 16) == -31
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert 239 == -31
+E    +  where 239 = f('-1f', 16)
+
+tests\test_solution.py:6: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.parse_base.tests.test_solution" name="test_leading_zeros" time="0.000"><failure message="AssertionError: assert -700 == 7&#10; +  where -700 = f('007', 10)">&gt;   def test_leading_zeros(): assert f('007', 10) == 7
+                              ^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert -700 == 7
+E    +  where -700 = f('007', 10)
+
+tests\test_solution.py:7: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.parse_base.tests.test_solution" name="test_top_digit" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-083129.parse_base.tests.test_solution" name="test_digit_ge_base" time="0.001"><failure message="KeyError: '2'">def test_digit_ge_base():
+&gt;       with pytest.raises(ValueError) as e: f('12', 2)
+                                             ^^^^^^^^^^
+
+tests\test_solution.py:10: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+s = '12', base = 2
+
+    def from_base(s: str, base: int) -&gt; int:
+        if not 2 &lt;= base &lt;= 36 or type(base) == bool:
+            raise ValueError('bad base')
+    
+        s = s.strip()
+        minus_sign_present = False
+    
+        if s.startswith('-'):
+            if len(s) &gt; 1 and s[1:].isdigit() and len(s) &gt; 1:
+                return -from_base(s[1:], base)
+            elif not s[1:].strip().replace("-", "").isalnum():
+                raise ValueError('bad digits')
+            minus_sign_present = True
+            s = s[1:]
+    
+        if s == "-":
+            raise ValueError('bad digits')
+    
+        valid_chars = "0123456789abcdefghijklmnopqrstuvwxyz"
+        value_map = {char: index for index, char in enumerate(valid_chars[:base])}
+    
+        total = 0
+        for i, char in enumerate(s):
+            if not char.isdigit() and char.lower() not in value_map:
+                raise ValueError('bad digits')
+    
+&gt;           digit_value = value_map[char.lower()]
+                          ^^^^^^^^^^^^^^^^^^^^^^^
+E           KeyError: '2'
+
+solution.py:27: KeyError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.parse_base.tests.test_solution" name="test_empty" time="0.001"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_empty():
+&gt;       with pytest.raises(ValueError) as e: f('', 10)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:13: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.parse_base.tests.test_solution" name="test_lone_minus" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-083129.parse_base.tests.test_solution" name="test_plus" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-083129.parse_base.tests.test_solution" name="test_bad_base" time="0.000" /></testsuite></testsuites>

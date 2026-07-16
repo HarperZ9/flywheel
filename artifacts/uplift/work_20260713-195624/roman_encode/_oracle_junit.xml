@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="1" failures="0" skipped="0" tests="1" time="0.236" timestamp="2026-07-13T20:16:30.682255-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="" name="artifacts.uplift.work_20260713-195624.roman_encode.tests.test_solution" time="0.000"><error message="collection failure">ImportError while importing test module 'C:\dev\local-model\artifacts\uplift\work_20260713-195624\roman_encode\tests\test_solution.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+C:\Users\Zain\AppData\Local\Programs\Python\Python312\Lib\importlib\__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\test_solution.py:2: in &lt;module&gt;
+    from solution import to_roman as f
+E   ImportError: cannot import name 'to_roman' from 'solution' (C:\dev\local-model\artifacts\uplift\work_20260713-195624\roman_encode\solution.py). Did you mean: '_roman'?</error></testcase></testsuite></testsuites>

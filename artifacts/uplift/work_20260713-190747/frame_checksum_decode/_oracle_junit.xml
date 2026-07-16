@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="5" skipped="0" tests="9" time="0.227" timestamp="2026-07-13T19:27:52.637145-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-190747.frame_checksum_decode.tests.test_solution" name="test_valid_frame" time="0.001"><failure message="ValueError: bad checksum">def test_valid_frame():
+&gt;       assert decode_frame("A50301020352") == [1, 2, 3]
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:6: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+frame = 'A50301020352'
+
+    def decode_frame(frame):
+        if len(frame) % 2 != 0:
+            raise ValueError("odd length")
+    
+        try:
+            frame_bytes = bytes.fromhex(frame)
+        except ValueError:
+            raise ValueError("not hex")
+    
+        if len(frame_bytes) &lt; 6:
+            raise ValueError("truncated")
+    
+        header, length = frame_bytes[0], frame_bytes[1]
+        if header != 0xA5:
+            raise ValueError("bad header")
+    
+        payload_length = int(length)
+        if len(frame_bytes) != 3 + payload_length:
+            raise ValueError("length mismatch")
+    
+        payload_sum = sum(frame_bytes[2:2+payload_length])
+        checksum = frame_bytes[-1]
+        if (header + payload_sum + checksum) % 256 != 0:
+&gt;           raise ValueError("bad checksum")
+E           ValueError: bad checksum
+
+solution.py:24: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-190747.frame_checksum_decode.tests.test_solution" name="test_lowercase_hex_accepted" time="0.000"><failure message="ValueError: bad checksum">def test_lowercase_hex_accepted():
+&gt;       assert decode_frame("a50301020352") == [1, 2, 3]
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:10: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+frame = 'a50301020352'
+
+    def decode_frame(frame):
+        if len(frame) % 2 != 0:
+            raise ValueError("odd length")
+    
+        try:
+            frame_bytes = bytes.fromhex(frame)
+        except ValueError:
+            raise ValueError("not hex")
+    
+        if len(frame_bytes) &lt; 6:
+            raise ValueError("truncated")
+    
+        header, length = frame_bytes[0], frame_bytes[1]
+        if header != 0xA5:
+            raise ValueError("bad header")
+    
+        payload_length = int(length)
+        if len(frame_bytes) != 3 + payload_length:
+            raise ValueError("length mismatch")
+    
+        payload_sum = sum(frame_bytes[2:2+payload_length])
+        checksum = frame_bytes[-1]
+        if (header + payload_sum + checksum) % 256 != 0:
+&gt;           raise ValueError("bad checksum")
+E           ValueError: bad checksum
+
+solution.py:24: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-190747.frame_checksum_decode.tests.test_solution" name="test_empty_payload" time="0.000"><failure message="ValueError: truncated">def test_empty_payload():
+&gt;       assert decode_frame("A5005B") == []
+               ^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:14: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+frame = 'A5005B'
+
+    def decode_frame(frame):
+        if len(frame) % 2 != 0:
+            raise ValueError("odd length")
+    
+        try:
+            frame_bytes = bytes.fromhex(frame)
+        except ValueError:
+            raise ValueError("not hex")
+    
+        if len(frame_bytes) &lt; 6:
+&gt;           raise ValueError("truncated")
+E           ValueError: truncated
+
+solution.py:11: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-190747.frame_checksum_decode.tests.test_solution" name="test_odd_length_beats_everything" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-190747.frame_checksum_decode.tests.test_solution" name="test_not_hex_beats_truncated" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-190747.frame_checksum_decode.tests.test_solution" name="test_truncated" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-190747.frame_checksum_decode.tests.test_solution" name="test_bad_header" time="0.000"><failure message="AssertionError: Regex pattern did not match.&#10;  Expected regex: 'bad header'&#10;  Actual message: 'truncated'">def test_bad_header():
+        with pytest.raises(ValueError, match="bad header"):
+&gt;           decode_frame("A4005C")
+
+tests\test_solution.py:40: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+frame = 'A4005C'
+
+    def decode_frame(frame):
+        if len(frame) % 2 != 0:
+            raise ValueError("odd length")
+    
+        try:
+            frame_bytes = bytes.fromhex(frame)
+        except ValueError:
+            raise ValueError("not hex")
+    
+        if len(frame_bytes) &lt; 6:
+&gt;           raise ValueError("truncated")
+E           ValueError: truncated
+
+solution.py:11: ValueError
+
+During handling of the above exception, another exception occurred:
+
+    def test_bad_header():
+&gt;       with pytest.raises(ValueError, match="bad header"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AssertionError: Regex pattern did not match.
+E         Expected regex: 'bad header'
+E         Actual message: 'truncated'
+
+tests\test_solution.py:39: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-190747.frame_checksum_decode.tests.test_solution" name="test_length_mismatch_short_and_long" time="0.000"><failure message="AssertionError: Regex pattern did not match.&#10;  Expected regex: 'length mismatch'&#10;  Actual message: 'truncated'">def test_length_mismatch_short_and_long():
+        with pytest.raises(ValueError, match="length mismatch"):
+&gt;           decode_frame("A503010252")  # declares 3 payload bytes, has 2
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:45: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+frame = 'A503010252'
+
+    def decode_frame(frame):
+        if len(frame) % 2 != 0:
+            raise ValueError("odd length")
+    
+        try:
+            frame_bytes = bytes.fromhex(frame)
+        except ValueError:
+            raise ValueError("not hex")
+    
+        if len(frame_bytes) &lt; 6:
+&gt;           raise ValueError("truncated")
+E           ValueError: truncated
+
+solution.py:11: ValueError
+
+During handling of the above exception, another exception occurred:
+
+    def test_length_mismatch_short_and_long():
+&gt;       with pytest.raises(ValueError, match="length mismatch"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AssertionError: Regex pattern did not match.
+E         Expected regex: 'length mismatch'
+E         Actual message: 'truncated'
+
+tests\test_solution.py:44: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-190747.frame_checksum_decode.tests.test_solution" name="test_bad_checksum" time="0.000" /></testsuite></testsuites>

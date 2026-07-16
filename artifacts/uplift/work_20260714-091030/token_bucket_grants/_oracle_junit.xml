@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="2" skipped="0" tests="10" time="0.261" timestamp="2026-07-14T09:33:06.776040-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260714-091030.token_bucket_grants.tests.test_solution" name="test_same_ts_no_refill" time="0.001" /><testcase classname="artifacts.uplift.work_20260714-091030.token_bucket_grants.tests.test_solution" name="test_refill" time="0.001" /><testcase classname="artifacts.uplift.work_20260714-091030.token_bucket_grants.tests.test_solution" name="test_over_capacity" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-091030.token_bucket_grants.tests.test_solution" name="test_partial_refill" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-091030.token_bucket_grants.tests.test_solution" name="test_refill_cap" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-091030.token_bucket_grants.tests.test_solution" name="test_empty" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-091030.token_bucket_grants.tests.test_solution" name="test_time_warp" time="0.001" /><testcase classname="artifacts.uplift.work_20260714-091030.token_bucket_grants.tests.test_solution" name="test_bad_capacity" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-091030.token_bucket_grants.tests.test_solution" name="test_zero_amount" time="0.001"><failure message="AssertionError: assert 'bad event at... must be &gt;= 1' == 'bad event'&#10;  &#10;  - bad event&#10;  + bad event at index 0: amount must be &gt;= 1">def test_zero_amount():
+        with pytest.raises(ValueError) as e: f(5, [(0, 0)])
+&gt;       assert str(e.value) == 'bad event'
+E       AssertionError: assert 'bad event at... must be &gt;= 1' == 'bad event'
+E         
+E         - bad event
+E         + bad event at index 0: amount must be &gt;= 1
+
+tests\test_solution.py:17: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-091030.token_bucket_grants.tests.test_solution" name="test_list_event" time="0.001"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_list_event():
+&gt;       with pytest.raises(ValueError): f(5, [[0, 1]])
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:19: Failed</failure></testcase></testsuite></testsuites>

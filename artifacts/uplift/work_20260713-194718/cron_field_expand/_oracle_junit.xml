@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="1" failures="0" skipped="0" tests="1" time="0.210" timestamp="2026-07-13T20:03:22.454685-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="" name="artifacts.uplift.work_20260713-194718.cron_field_expand.tests.test_solution" time="0.000"><error message="collection failure">tests\test_solution.py:2: in &lt;module&gt;
+    from solution import cron_field as f
+solution.py:60: in &lt;module&gt;
+    print(list(cron_field("@daily", 0, 60)))
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+solution.py:52: in cron_field
+    valid_items.extend(parse_range_or_step(item_str))
+solution.py:13: in parse_range_or_step
+    valid_parts.append(part)
+    ^^^^^^^^^^^
+E   NameError: name 'valid_parts' is not defined</error></testcase></testsuite></testsuites>

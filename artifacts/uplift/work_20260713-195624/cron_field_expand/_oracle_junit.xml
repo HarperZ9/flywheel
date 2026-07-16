@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="1" failures="0" skipped="0" tests="1" time="0.243" timestamp="2026-07-13T20:15:07.804363-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="" name="artifacts.uplift.work_20260713-195624.cron_field_expand.tests.test_solution" time="0.000"><error message="collection failure">tests\test_solution.py:2: in &lt;module&gt;
+    from solution import cron_field as f
+solution.py:53: in &lt;module&gt;
+    print(cron_field('*', 1, 2))  # Output: [1]
+          ^^^^^^^^^^^^^^^^^^^^^
+solution.py:16: in cron_field
+    raise ValueError("bad field")
+E   ValueError: bad field</error></testcase></testsuite></testsuites>

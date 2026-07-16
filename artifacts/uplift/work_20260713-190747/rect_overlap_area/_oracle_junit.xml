@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="2" skipped="0" tests="9" time="0.202" timestamp="2026-07-13T19:31:53.243861-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-190747.rect_overlap_area.tests.test_solution" name="test_overlap" time="0.001" /><testcase classname="artifacts.uplift.work_20260713-190747.rect_overlap_area.tests.test_solution" name="test_nested" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-190747.rect_overlap_area.tests.test_solution" name="test_touching_edge" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-190747.rect_overlap_area.tests.test_solution" name="test_disjoint" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-190747.rect_overlap_area.tests.test_solution" name="test_degenerate" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-190747.rect_overlap_area.tests.test_solution" name="test_negative_coords" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-190747.rect_overlap_area.tests.test_solution" name="test_list_rejected" time="0.001"><failure message="AssertionError: assert 'rectangles m...ly 4 integers' == 'bad rect'&#10;  &#10;  - bad rect&#10;  + rectangles must be tuples of exactly 4 integers">def test_list_rejected():
+        with pytest.raises(ValueError) as e: f([0, 0, 1, 1], (0, 0, 1, 1))
+&gt;       assert str(e.value) == 'bad rect'
+E       AssertionError: assert 'rectangles m...ly 4 integers' == 'bad rect'
+E         
+E         - bad rect
+E         + rectangles must be tuples of exactly 4 integers
+
+tests\test_solution.py:11: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-190747.rect_overlap_area.tests.test_solution" name="test_inverted" time="0.001" /><testcase classname="artifacts.uplift.work_20260713-190747.rect_overlap_area.tests.test_solution" name="test_bool_coord" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_bool_coord():
+&gt;       with pytest.raises(ValueError): f((0, 0, True, 1), (0, 0, 1, 1))
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:15: Failed</failure></testcase></testsuite></testsuites>

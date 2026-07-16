@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="4" skipped="0" tests="8" time="0.218" timestamp="2026-07-14T14:19:50.480924-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260714-140516.csv_field_split.tests.test_solution" name="test_basic_and_empty_fields" time="0.001" /><testcase classname="artifacts.uplift.work_20260714-140516.csv_field_split.tests.test_solution" name="test_empty_line_single_empty_field" time="0.001"><failure message="AssertionError: assert [] == ['']&#10;  &#10;  Right contains one more item: ''&#10;  Use -v to get more diff">def test_empty_line_single_empty_field():
+&gt;       assert split_csv_line("") == [""]
+E       AssertionError: assert [] == ['']
+E         
+E         Right contains one more item: ''
+E         Use -v to get more diff
+
+tests\test_solution.py:11: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-140516.csv_field_split.tests.test_solution" name="test_trailing_and_leading_comma" time="0.000"><failure message="AssertionError: assert ['a'] == ['a', '']&#10;  &#10;  Right contains one more item: ''&#10;  Use -v to get more diff">def test_trailing_and_leading_comma():
+&gt;       assert split_csv_line("a,") == ["a", ""]
+E       AssertionError: assert ['a'] == ['a', '']
+E         
+E         Right contains one more item: ''
+E         Use -v to get more diff
+
+tests\test_solution.py:15: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-140516.csv_field_split.tests.test_solution" name="test_quoted_field_with_comma_and_escaped_quote" time="0.000"><failure message="IndexError: string index out of range">def test_quoted_field_with_comma_and_escaped_quote():
+        assert split_csv_line('"a,b",c') == ["a,b", "c"]
+        assert split_csv_line('a,"b""c",d') == ["a", 'b"c', "d"]
+&gt;       assert split_csv_line('""') == [""]
+               ^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:23: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+line = '""'
+
+    def split_csv_line(line: str) -&gt; list[str]:
+        fields = []
+        pos = 0
+        n = len(line)
+        while pos &lt; n:
+            if line[pos] == '"':
+                # Quoted field. Must start with a quote - check this explicitly so the
+                # generic quoted-field parsing cannot silently treat a leading " as
+                # starting an empty string before the real data.
+                pos += 1
+                buf = []
+                while pos &lt; n:
+                    ch = line[pos]
+                    if ch == '"':
+                        # Double-quote escape: "" -&gt; one "
+                        if pos + 1 &lt; n and line[pos+1] == '"':
+                            buf.append('"')
+                            pos += 2
+&gt;                       elif line[pos+1] in (',', '\0'):  # end of quoted string
+                             ^^^^^^^^^^^
+E                       IndexError: string index out of range
+
+solution.py:19: IndexError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-140516.csv_field_split.tests.test_solution" name="test_whitespace_is_not_stripped" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-140516.csv_field_split.tests.test_solution" name="test_quote_in_unquoted_field_raises" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-140516.csv_field_split.tests.test_solution" name="test_unterminated_quote_raises" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_unterminated_quote_raises():
+&gt;       with pytest.raises(ValueError):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:40: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260714-140516.csv_field_split.tests.test_solution" name="test_junk_after_closing_quote_raises" time="0.000" /></testsuite></testsuites>

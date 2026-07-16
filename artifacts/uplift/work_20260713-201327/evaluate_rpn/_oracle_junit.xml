@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="6" skipped="0" tests="6" time="0.205" timestamp="2026-07-13T20:18:59.462091-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-201327.evaluate_rpn.tests.test_solution" name="test_simple" time="0.001"><failure message="AttributeError: 'int' object has no attribute 'isdigit'">def test_simple():
+&gt;       assert f(['2','3','+']) == 5
+               ^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:4: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:41: in evaluate_rpn
+    if not validate_expression(tokens[0]):
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+solution.py:8: in validate_expression
+    return all(token in operators or token.isdigit() for token in numbers)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+.0 = &lt;list_iterator object at 0x000001EF6FE644F0&gt;
+
+&gt;   return all(token in operators or token.isdigit() for token in numbers)
+                                     ^^^^^^^^^^^^^
+E   AttributeError: 'int' object has no attribute 'isdigit'
+
+solution.py:8: AttributeError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.evaluate_rpn.tests.test_solution" name="test_trunc_toward_zero" time="0.000"><failure message="AttributeError: 'int' object has no attribute 'isdigit'">def test_trunc_toward_zero():
+&gt;       assert f(['-7','2','/']) == -3
+               ^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:6: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:41: in evaluate_rpn
+    if not validate_expression(tokens[0]):
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+solution.py:8: in validate_expression
+    return all(token in operators or token.isdigit() for token in numbers)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+.0 = &lt;list_iterator object at 0x000001EF6FE4F040&gt;
+
+&gt;   return all(token in operators or token.isdigit() for token in numbers)
+                                     ^^^^^^^^^^^^^
+E   AttributeError: 'int' object has no attribute 'isdigit'
+
+solution.py:8: AttributeError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.evaluate_rpn.tests.test_solution" name="test_nested" time="0.000"><failure message="AttributeError: 'int' object has no attribute 'isdigit'">def test_nested():
+&gt;       assert f(['4','13','5','/','+']) == 6
+               ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:8: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:41: in evaluate_rpn
+    if not validate_expression(tokens[0]):
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+solution.py:8: in validate_expression
+    return all(token in operators or token.isdigit() for token in numbers)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+.0 = &lt;list_iterator object at 0x000001EF6FE65690&gt;
+
+&gt;   return all(token in operators or token.isdigit() for token in numbers)
+                                     ^^^^^^^^^^^^^
+E   AttributeError: 'int' object has no attribute 'isdigit'
+
+solution.py:8: AttributeError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.evaluate_rpn.tests.test_solution" name="test_too_few" time="0.001"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_too_few():
+&gt;       with pytest.raises(ValueError):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:10: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.evaluate_rpn.tests.test_solution" name="test_leftover" time="0.000"><failure message="AttributeError: 'int' object has no attribute 'isdigit'">def test_leftover():
+        with pytest.raises(ValueError):
+&gt;           f(['1','2'])
+
+tests\test_solution.py:14: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:41: in evaluate_rpn
+    if not validate_expression(tokens[0]):
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+solution.py:8: in validate_expression
+    return all(token in operators or token.isdigit() for token in numbers)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+.0 = &lt;list_iterator object at 0x000001EF6FE676A0&gt;
+
+&gt;   return all(token in operators or token.isdigit() for token in numbers)
+                                     ^^^^^^^^^^^^^
+E   AttributeError: 'int' object has no attribute 'isdigit'
+
+solution.py:8: AttributeError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.evaluate_rpn.tests.test_solution" name="test_div0" time="0.000"><failure message="AttributeError: 'int' object has no attribute 'isdigit'">def test_div0():
+        with pytest.raises(ValueError):
+&gt;           f(['1','0','/'])
+
+tests\test_solution.py:17: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:41: in evaluate_rpn
+    if not validate_expression(tokens[0]):
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+solution.py:8: in validate_expression
+    return all(token in operators or token.isdigit() for token in numbers)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+.0 = &lt;list_iterator object at 0x000001EF6FE66E60&gt;
+
+&gt;   return all(token in operators or token.isdigit() for token in numbers)
+                                     ^^^^^^^^^^^^^
+E   AttributeError: 'int' object has no attribute 'isdigit'
+
+solution.py:8: AttributeError</failure></testcase></testsuite></testsuites>

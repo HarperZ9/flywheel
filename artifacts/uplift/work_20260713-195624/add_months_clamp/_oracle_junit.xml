@@ -1,0 +1,223 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="8" skipped="0" tests="9" time="0.262" timestamp="2026-07-13T20:11:05.091318-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-195624.add_months_clamp.tests.test_solution" name="test_clamp_to_shorter_month" time="0.001"><failure message="ValueError: month must be in 1..12">def test_clamp_to_shorter_month():
+&gt;       assert add_months(2023, 1, 31, 1) == (2023, 2, 28)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:6: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+year = 2023, month = 1, day = 31, n = 1
+
+    def add_months(year, month, day, n):
+        """
+        Adds n calendar months to a proleptic Gregorian date.
+        Args:
+            year (int): The year of the input date.
+            month (int): The original month of the input date. Must be 1 &lt;= month &lt;= 12.
+            day (int): The original day of the input date.
+            n (int): The number of months to add. If n is negative, the function should not return
+                or perform any changes. For example, if n=30, it will add 30 calendar months.
+    
+        Returns:
+            tuple: A tuple containing the resulting year, month, and day.
+            If adding n months would result in a date that appears in the past,
+                an error message is returned instead of raising.
+        """
+        target_date = datetime(year, month, day)
+        if n &lt; 0:
+            return 'Invalid number of months to add'
+    
+        current_year = target_date.year
+        current_month = target_date.month - n  # Adjust month for negative n
+    
+        while True:
+&gt;           new_target_date = datetime(current_year, current_month, 1) + \
+                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                datetime(year, current_month, 1) - datetime(year, current_month, 1)
+E           ValueError: month must be in 1..12
+
+solution.py:26: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.add_months_clamp.tests.test_solution" name="test_leap_day_plus_year_clamps" time="0.001"><failure message="ValueError: month must be in 1..12">def test_leap_day_plus_year_clamps():
+&gt;       assert add_months(2024, 2, 29, 12) == (2025, 2, 28)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:12: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+year = 2024, month = 2, day = 29, n = 12
+
+    def add_months(year, month, day, n):
+        """
+        Adds n calendar months to a proleptic Gregorian date.
+        Args:
+            year (int): The year of the input date.
+            month (int): The original month of the input date. Must be 1 &lt;= month &lt;= 12.
+            day (int): The original day of the input date.
+            n (int): The number of months to add. If n is negative, the function should not return
+                or perform any changes. For example, if n=30, it will add 30 calendar months.
+    
+        Returns:
+            tuple: A tuple containing the resulting year, month, and day.
+            If adding n months would result in a date that appears in the past,
+                an error message is returned instead of raising.
+        """
+        target_date = datetime(year, month, day)
+        if n &lt; 0:
+            return 'Invalid number of months to add'
+    
+        current_year = target_date.year
+        current_month = target_date.month - n  # Adjust month for negative n
+    
+        while True:
+&gt;           new_target_date = datetime(current_year, current_month, 1) + \
+                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                datetime(year, current_month, 1) - datetime(year, current_month, 1)
+E           ValueError: month must be in 1..12
+
+solution.py:26: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.add_months_clamp.tests.test_solution" name="test_negative_n_and_year_carry" time="0.001"><failure message="AssertionError: assert 'Invalid number of months to add' == (2022, 11, 15)&#10; +  where 'Invalid number of months to add' = add_months(2023, 12, 15, -13)">def test_negative_n_and_year_carry():
+&gt;       assert add_months(2023, 12, 15, -13) == (2022, 11, 15)
+E       AssertionError: assert 'Invalid number of months to add' == (2022, 11, 15)
+E        +  where 'Invalid number of months to add' = add_months(2023, 12, 15, -13)
+
+tests\test_solution.py:17: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.add_months_clamp.tests.test_solution" name="test_zero_n_identity" time="0.000"><failure message="TypeError: unsupported operand type(s) for +: 'datetime.datetime' and 'datetime.datetime'">def test_zero_n_identity():
+&gt;       assert add_months(2021, 7, 4, 0) == (2021, 7, 4)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:23: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+year = 2021, month = 7, day = 4, n = 0
+
+    def add_months(year, month, day, n):
+        """
+        Adds n calendar months to a proleptic Gregorian date.
+        Args:
+            year (int): The year of the input date.
+            month (int): The original month of the input date. Must be 1 &lt;= month &lt;= 12.
+            day (int): The original day of the input date.
+            n (int): The number of months to add. If n is negative, the function should not return
+                or perform any changes. For example, if n=30, it will add 30 calendar months.
+    
+        Returns:
+            tuple: A tuple containing the resulting year, month, and day.
+            If adding n months would result in a date that appears in the past,
+                an error message is returned instead of raising.
+        """
+        target_date = datetime(year, month, day)
+        if n &lt; 0:
+            return 'Invalid number of months to add'
+    
+        current_year = target_date.year
+        current_month = target_date.month - n  # Adjust month for negative n
+    
+        while True:
+&gt;           new_target_date = datetime(current_year, current_month, 1) + \
+                datetime(year, current_month, 1) - datetime(year, current_month, 1)
+E           TypeError: unsupported operand type(s) for +: 'datetime.datetime' and 'datetime.datetime'
+
+solution.py:26: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.add_months_clamp.tests.test_solution" name="test_century_leap_rules" time="0.000"><failure message="ValueError: month must be in 1..12">def test_century_leap_rules():
+&gt;       assert add_months(1900, 1, 29, 1) == (1900, 2, 28)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:27: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+year = 1900, month = 1, day = 29, n = 1
+
+    def add_months(year, month, day, n):
+        """
+        Adds n calendar months to a proleptic Gregorian date.
+        Args:
+            year (int): The year of the input date.
+            month (int): The original month of the input date. Must be 1 &lt;= month &lt;= 12.
+            day (int): The original day of the input date.
+            n (int): The number of months to add. If n is negative, the function should not return
+                or perform any changes. For example, if n=30, it will add 30 calendar months.
+    
+        Returns:
+            tuple: A tuple containing the resulting year, month, and day.
+            If adding n months would result in a date that appears in the past,
+                an error message is returned instead of raising.
+        """
+        target_date = datetime(year, month, day)
+        if n &lt; 0:
+            return 'Invalid number of months to add'
+    
+        current_year = target_date.year
+        current_month = target_date.month - n  # Adjust month for negative n
+    
+        while True:
+&gt;           new_target_date = datetime(current_year, current_month, 1) + \
+                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                datetime(year, current_month, 1) - datetime(year, current_month, 1)
+E           ValueError: month must be in 1..12
+
+solution.py:26: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.add_months_clamp.tests.test_solution" name="test_years_beyond_datetime_range" time="0.000"><failure message="ValueError: year 999999 is out of range">def test_years_beyond_datetime_range():
+        # year 1000000 is divisible by 400 -&gt; leap; datetime caps at 9999
+&gt;       assert add_months(999999, 12, 31, 2) == (1000000, 2, 29)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:34: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+year = 999999, month = 12, day = 31, n = 2
+
+    def add_months(year, month, day, n):
+        """
+        Adds n calendar months to a proleptic Gregorian date.
+        Args:
+            year (int): The year of the input date.
+            month (int): The original month of the input date. Must be 1 &lt;= month &lt;= 12.
+            day (int): The original day of the input date.
+            n (int): The number of months to add. If n is negative, the function should not return
+                or perform any changes. For example, if n=30, it will add 30 calendar months.
+    
+        Returns:
+            tuple: A tuple containing the resulting year, month, and day.
+            If adding n months would result in a date that appears in the past,
+                an error message is returned instead of raising.
+        """
+&gt;       target_date = datetime(year, month, day)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       ValueError: year 999999 is out of range
+
+solution.py:18: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.add_months_clamp.tests.test_solution" name="test_invalid_input_date_raises" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-195624.add_months_clamp.tests.test_solution" name="test_result_year_below_one_raises" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_result_year_below_one_raises():
+&gt;       with pytest.raises(ValueError):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:53: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.add_months_clamp.tests.test_solution" name="test_bool_and_non_int_raise" time="0.001"><failure message="TypeError: unsupported operand type(s) for +: 'datetime.datetime' and 'datetime.datetime'">def test_bool_and_non_int_raise():
+        with pytest.raises(ValueError):
+&gt;           add_months(True, 1, 1, 0)
+
+tests\test_solution.py:61: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+year = True, month = 1, day = 1, n = 0
+
+    def add_months(year, month, day, n):
+        """
+        Adds n calendar months to a proleptic Gregorian date.
+        Args:
+            year (int): The year of the input date.
+            month (int): The original month of the input date. Must be 1 &lt;= month &lt;= 12.
+            day (int): The original day of the input date.
+            n (int): The number of months to add. If n is negative, the function should not return
+                or perform any changes. For example, if n=30, it will add 30 calendar months.
+    
+        Returns:
+            tuple: A tuple containing the resulting year, month, and day.
+            If adding n months would result in a date that appears in the past,
+                an error message is returned instead of raising.
+        """
+        target_date = datetime(year, month, day)
+        if n &lt; 0:
+            return 'Invalid number of months to add'
+    
+        current_year = target_date.year
+        current_month = target_date.month - n  # Adjust month for negative n
+    
+        while True:
+&gt;           new_target_date = datetime(current_year, current_month, 1) + \
+                datetime(year, current_month, 1) - datetime(year, current_month, 1)
+E           TypeError: unsupported operand type(s) for +: 'datetime.datetime' and 'datetime.datetime'
+
+solution.py:26: TypeError</failure></testcase></testsuite></testsuites>

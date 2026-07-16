@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="4" skipped="0" tests="9" time="0.217" timestamp="2026-07-13T20:16:37.717622-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-195624.col_label.tests.test_solution" name="test_a" time="0.001" /><testcase classname="artifacts.uplift.work_20260713-195624.col_label.tests.test_solution" name="test_z" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-195624.col_label.tests.test_solution" name="test_aa" time="0.000"><failure message="KeyError: 27">&gt;   def test_aa(): assert f(27) == 'AA'
+                          ^^^^^
+
+tests\test_solution.py:5: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+n = 27
+
+    def col_label(n: int) -&gt; str:
+        """
+        Convert a positive column index into its spreadsheet column label.
+    
+        Args:
+            n (int): The positive column index.
+    
+        Raises:
+            ValueError: If n is not a positive integer or is not of the correct type.
+    
+        Returns:
+            str: A string representing the spreadsheet column label.
+        """
+        if not isinstance(n, int) or n &lt;= 0:
+            raise ValueError('bad column')
+    
+        # Define the mapping for base-26 numbering
+        # This is done to map each index from 1 to 703 (ZZ in our case)
+        number_to_label = {
+            1: 'A', 26: 'Z', 52: 'AZ', 701: 'AA',
+            702: 'ZZ', 703: 'BA'
+        }
+    
+        # Convert the input index to its spreadsheet column label
+&gt;       result = number_to_label[n]
+                 ^^^^^^^^^^^^^^^^^^
+E       KeyError: 27
+
+solution.py:25: KeyError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.col_label.tests.test_solution" name="test_az" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-195624.col_label.tests.test_solution" name="test_ba" time="0.000"><failure message="KeyError: 53">&gt;   def test_ba(): assert f(53) == 'BA'
+                          ^^^^^
+
+tests\test_solution.py:7: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+n = 53
+
+    def col_label(n: int) -&gt; str:
+        """
+        Convert a positive column index into its spreadsheet column label.
+    
+        Args:
+            n (int): The positive column index.
+    
+        Raises:
+            ValueError: If n is not a positive integer or is not of the correct type.
+    
+        Returns:
+            str: A string representing the spreadsheet column label.
+        """
+        if not isinstance(n, int) or n &lt;= 0:
+            raise ValueError('bad column')
+    
+        # Define the mapping for base-26 numbering
+        # This is done to map each index from 1 to 703 (ZZ in our case)
+        number_to_label = {
+            1: 'A', 26: 'Z', 52: 'AZ', 701: 'AA',
+            702: 'ZZ', 703: 'BA'
+        }
+    
+        # Convert the input index to its spreadsheet column label
+&gt;       result = number_to_label[n]
+                 ^^^^^^^^^^^^^^^^^^
+E       KeyError: 53
+
+solution.py:25: KeyError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.col_label.tests.test_solution" name="test_zz" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-195624.col_label.tests.test_solution" name="test_aaa" time="0.000"><failure message="AssertionError: assert 'BA' == 'AAA'&#10;  &#10;  - AAA&#10;  + BA">&gt;   def test_aaa(): assert f(703) == 'AAA'
+                    ^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert 'BA' == 'AAA'
+E     
+E     - AAA
+E     + BA
+
+tests\test_solution.py:9: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.col_label.tests.test_solution" name="test_bad_zero" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-195624.col_label.tests.test_solution" name="test_bool" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_bool():
+&gt;       with pytest.raises(ValueError): f(True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:14: Failed</failure></testcase></testsuite></testsuites>

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="6" time="0.184" timestamp="2026-07-13T20:20:36.100765-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-201327.count_islands.tests.test_solution" name="test_empty" time="0.001" /><testcase classname="artifacts.uplift.work_20260713-201327.count_islands.tests.test_solution" name="test_none" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-201327.count_islands.tests.test_solution" name="test_one_big" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-201327.count_islands.tests.test_solution" name="test_diagonal_not_connected" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-201327.count_islands.tests.test_solution" name="test_classic" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-201327.count_islands.tests.test_solution" name="test_no_mutation" time="0.001"><failure message="assert [[0, 0], [0, 0]] == [[1, 0], [0, 1]]&#10;  &#10;  At index 0 diff: [0, 0] != [1, 0]&#10;  Use -v to get more diff">def test_no_mutation():
+        g = [[1,0],[0,1]]
+        f(g)
+&gt;       assert g == [[1,0],[0,1]]
+E       assert [[0, 0], [0, 0]] == [[1, 0], [0, 1]]
+E         
+E         At index 0 diff: [0, 0] != [1, 0]
+E         Use -v to get more diff
+
+tests\test_solution.py:15: AssertionError</failure></testcase></testsuite></testsuites>

@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="6" skipped="0" tests="11" time="0.196" timestamp="2026-07-14T09:08:22.474497-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260714-083129.min_stack_trace.tests.test_solution" name="test_trace" time="0.001"><failure message="ValueError: bad op">def test_trace():
+&gt;       assert f([('push', 3), ('push', 1), ('min',), ('push', 2), ('min',), ('top',), ('pop',), ('min',), ('pop',), ('min',)]) == [1, 1, 2, 2, 1, 1, 3]
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:4: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+ops = [('push', 3), ('push', 1), ('min',), ('push', 2), ('min',), ('top',), ...]
+
+    def min_stack(ops):
+        if not isinstance(ops, list):
+            raise ValueError('bad ops')
+    
+        stack = []
+        outputs = []
+    
+        for op in ops:
+            if len(op) != 2 or op[0] not in ('push', 'pop', 'top', 'min'):
+&gt;               raise ValueError('bad op')
+E               ValueError: bad op
+
+solution.py:10: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.min_stack_trace.tests.test_solution" name="test_empty_ops" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-083129.min_stack_trace.tests.test_solution" name="test_negative" time="0.000"><failure message="ValueError: bad op">def test_negative():
+&gt;       assert f([('push', 5), ('push', -2), ('min',), ('pop',), ('min',)]) == [-2, -2, 5]
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:8: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+ops = [('push', 5), ('push', -2), ('min',), ('pop',), ('min',)]
+
+    def min_stack(ops):
+        if not isinstance(ops, list):
+            raise ValueError('bad ops')
+    
+        stack = []
+        outputs = []
+    
+        for op in ops:
+            if len(op) != 2 or op[0] not in ('push', 'pop', 'top', 'min'):
+&gt;               raise ValueError('bad op')
+E               ValueError: bad op
+
+solution.py:10: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.min_stack_trace.tests.test_solution" name="test_duplicate_min" time="0.000"><failure message="ValueError: bad op">def test_duplicate_min():
+&gt;       assert f([('push', 1), ('push', 1), ('pop',), ('min',)]) == [1, 1]
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:10: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+ops = [('push', 1), ('push', 1), ('pop',), ('min',)]
+
+    def min_stack(ops):
+        if not isinstance(ops, list):
+            raise ValueError('bad ops')
+    
+        stack = []
+        outputs = []
+    
+        for op in ops:
+            if len(op) != 2 or op[0] not in ('push', 'pop', 'top', 'min'):
+&gt;               raise ValueError('bad op')
+E               ValueError: bad op
+
+solution.py:10: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.min_stack_trace.tests.test_solution" name="test_pop_empty" time="0.001"><failure message="AssertionError: assert 'bad op' == 'empty stack'&#10;  &#10;  - empty stack&#10;  + bad op">def test_pop_empty():
+        with pytest.raises(ValueError) as e: f([('pop',)])
+&gt;       assert str(e.value) == 'empty stack'
+E       AssertionError: assert 'bad op' == 'empty stack'
+E         
+E         - empty stack
+E         + bad op
+
+tests\test_solution.py:13: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.min_stack_trace.tests.test_solution" name="test_min_empty" time="0.000"><failure message="AssertionError: assert 'bad op' == 'empty stack'&#10;  &#10;  - empty stack&#10;  + bad op">def test_min_empty():
+        with pytest.raises(ValueError) as e: f([('min',)])
+&gt;       assert str(e.value) == 'empty stack'
+E       AssertionError: assert 'bad op' == 'empty stack'
+E         
+E         - empty stack
+E         + bad op
+
+tests\test_solution.py:16: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.min_stack_trace.tests.test_solution" name="test_top_empty" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-083129.min_stack_trace.tests.test_solution" name="test_push_bool" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_push_bool():
+&gt;       with pytest.raises(ValueError) as e: f([('push', True)])
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:20: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.min_stack_trace.tests.test_solution" name="test_push_missing_arg" time="0.001" /><testcase classname="artifacts.uplift.work_20260714-083129.min_stack_trace.tests.test_solution" name="test_bad_ops" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-083129.min_stack_trace.tests.test_solution" name="test_unknown_op" time="0.000" /></testsuite></testsuites>

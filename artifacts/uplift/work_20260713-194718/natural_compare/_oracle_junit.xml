@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="4" skipped="0" tests="9" time="0.255" timestamp="2026-07-13T20:06:05.619973-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-194718.natural_compare.tests.test_solution" name="test_numeric" time="0.002" /><testcase classname="artifacts.uplift.work_20260713-194718.natural_compare.tests.test_solution" name="test_numeric_gt" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-194718.natural_compare.tests.test_solution" name="test_file" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-194718.natural_compare.tests.test_solution" name="test_equal" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-194718.natural_compare.tests.test_solution" name="test_prefix" time="0.000"><failure message="AssertionError: assert 0 == -1&#10; +  where 0 = f('a', 'a1')">&gt;   def test_prefix(): assert f('a', 'a1') == -1
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert 0 == -1
+E    +  where 0 = f('a', 'a1')
+
+tests\test_solution.py:7: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.natural_compare.tests.test_solution" name="test_leading_zero" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-194718.natural_compare.tests.test_solution" name="test_digit_before_alpha" time="0.000"><failure message="AssertionError: assert 0 == -1&#10; +  where 0 = f('1', 'a')">&gt;   def test_digit_before_alpha(): assert f('1', 'a') == -1
+                                   ^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert 0 == -1
+E    +  where 0 = f('1', 'a')
+
+tests\test_solution.py:9: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.natural_compare.tests.test_solution" name="test_plain_alpha" time="0.000"><failure message="AssertionError: assert 0 == -1&#10; +  where 0 = f('a', 'b')">&gt;   def test_plain_alpha(): assert f('a', 'b') == -1
+                            ^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert 0 == -1
+E    +  where 0 = f('a', 'b')
+
+tests\test_solution.py:10: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.natural_compare.tests.test_solution" name="test_bad_input" time="0.000"><failure message="TypeError: 'int' object is not iterable">def test_bad_input():
+&gt;       with pytest.raises(ValueError) as e: f(1, 'a')
+                                             ^^^^^^^^^
+
+tests\test_solution.py:12: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:25: in natural_compare
+    a_seq = parse_sequence(a)
+            ^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+s = 1
+
+    def parse_sequence(s):
+        seq = []
+        current_run = ""
+        is_digit = None
+    
+&gt;       for char in s:
+                    ^
+E       TypeError: 'int' object is not iterable
+
+solution.py:7: TypeError</failure></testcase></testsuite></testsuites>

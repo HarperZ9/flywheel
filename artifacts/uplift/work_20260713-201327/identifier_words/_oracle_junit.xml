@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="1" failures="0" skipped="0" tests="1" time="0.284" timestamp="2026-07-13T20:25:13.758186-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="" name="artifacts.uplift.work_20260713-201327.identifier_words.tests.test_solution" time="0.000"><error message="collection failure">tests\test_solution.py:2: in &lt;module&gt;
+    from solution import split_identifier as f
+solution.py:37: in &lt;module&gt;
+    print(split_identifier('My-Example'))  # ['My', 'example']
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+solution.py:26: in split_identifier
+    raise ValueError("bad char")
+E   ValueError: bad char</error></testcase></testsuite></testsuites>

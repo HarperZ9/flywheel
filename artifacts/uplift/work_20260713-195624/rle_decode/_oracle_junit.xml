@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="2" skipped="0" tests="6" time="0.198" timestamp="2026-07-13T20:04:59.590329-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-195624.rle_decode.tests.test_solution" name="test_empty" time="0.001" /><testcase classname="artifacts.uplift.work_20260713-195624.rle_decode.tests.test_solution" name="test_simple" time="0.000"><failure message="ValueError: invalid literal for int() with base 10: 'a'">def test_simple():
+&gt;       assert f('3a1b') == 'aaab'
+               ^^^^^^^^^
+
+tests\test_solution.py:6: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+s = '3a1b'
+
+    def rle_decode(s: str) -&gt; str:
+        """
+        Decodes a run-length-encoded string where each run is &lt;count&gt;&lt;char&gt;.
+    
+        Examples:
+        &gt;&gt;&gt; rle_decode('12a2b')
+        'a'*12 + 'bb'
+        &gt;&gt;&gt; rle_decode('a')  # Output: ''
+        """  # This line assumes that the input is in correct format and can be processed.
+    
+        if s == "":
+            return ""
+    
+        current_char = None
+        current_count = ""
+    
+        for char in s:
+&gt;           if not current_char or (current_char.isdigit() and int(current_char) &gt; int(char)):
+                                                                                   ^^^^^^^^^
+E           ValueError: invalid literal for int() with base 10: 'a'
+
+solution.py:18: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.rle_decode.tests.test_solution" name="test_multidigit" time="0.000"><failure message="ValueError: invalid literal for int() with base 10: 'a'">def test_multidigit():
+&gt;       assert f('12a2b') == 'a'*12 + 'bb'
+               ^^^^^^^^^^
+
+tests\test_solution.py:8: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+s = '12a2b'
+
+    def rle_decode(s: str) -&gt; str:
+        """
+        Decodes a run-length-encoded string where each run is &lt;count&gt;&lt;char&gt;.
+    
+        Examples:
+        &gt;&gt;&gt; rle_decode('12a2b')
+        'a'*12 + 'bb'
+        &gt;&gt;&gt; rle_decode('a')  # Output: ''
+        """  # This line assumes that the input is in correct format and can be processed.
+    
+        if s == "":
+            return ""
+    
+        current_char = None
+        current_count = ""
+    
+        for char in s:
+&gt;           if not current_char or (current_char.isdigit() and int(current_char) &gt; int(char)):
+                                                                                   ^^^^^^^^^
+E           ValueError: invalid literal for int() with base 10: 'a'
+
+solution.py:18: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.rle_decode.tests.test_solution" name="test_no_count" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-195624.rle_decode.tests.test_solution" name="test_trailing_count" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-195624.rle_decode.tests.test_solution" name="test_zero_count" time="0.000" /></testsuite></testsuites>

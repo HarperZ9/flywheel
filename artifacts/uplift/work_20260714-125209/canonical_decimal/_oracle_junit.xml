@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="5" skipped="0" tests="8" time="0.222" timestamp="2026-07-14T13:12:45.549375-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260714-125209.canonical_decimal.tests.test_solution" name="test_integers" time="0.001"><failure message="AssertionError: assert '42.' == '42'&#10;  &#10;  - 42&#10;  + 42.&#10;  ?   +">def test_integers():
+&gt;       assert canonical_decimal("42") == "42"
+E       AssertionError: assert '42.' == '42'
+E         
+E         - 42
+E         + 42.
+E         ?   +
+
+tests\test_solution.py:6: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-125209.canonical_decimal.tests.test_solution" name="test_fractions" time="0.001"><failure message="AssertionError: assert '3.1400' == '3.14'&#10;  &#10;  - 3.14&#10;  + 3.1400&#10;  ?     ++">def test_fractions():
+&gt;       assert canonical_decimal("3.1400") == "3.14"
+E       AssertionError: assert '3.1400' == '3.14'
+E         
+E         - 3.14
+E         + 3.1400
+E         ?     ++
+
+tests\test_solution.py:12: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-125209.canonical_decimal.tests.test_solution" name="test_zero_normalization" time="0.000"><failure message="AssertionError: assert '0.' == '0'&#10;  &#10;  - 0&#10;  + 0.">def test_zero_normalization():
+&gt;       assert canonical_decimal("-0") == "0"
+E       AssertionError: assert '0.' == '0'
+E         
+E         - 0
+E         + 0.
+
+tests\test_solution.py:20: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-125209.canonical_decimal.tests.test_solution" name="test_signs" time="0.000"><failure message="ValueError: unexpected character '+' in integer part">def test_signs():
+&gt;       assert canonical_decimal("+12") == "12"
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:28: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+s = '+12'
+
+    def canonical_decimal(s: str) -&gt; str:
+        if not s or (len(s) == 1 and s[0] in '+-.'):
+            raise ValueError("malformed decimal literal")
+        i = 0
+        if s[i] in "+-":
+            i += 1
+        if len(s) == i or not s[i].isdigit() and s[i] != '_':
+            raise ValueError("integer part must contain at least one digit before any underscore")
+        while i &lt; len(s):
+            c = s[i]
+            if c == '.':
+                break
+            if not (c.isdigit() or c == '_'):
+                raise ValueError(f"unexpected character in integer part: {c!r}")
+            i += 1
+        dotpos = i
+        have_fraction = i &lt; len(s) and s[i] == '.'
+        if have_fraction:
+            i += 1
+        while i &lt; len(s):
+            c = s[i]
+            if not (c.isdigit() or c == '_'):
+                raise ValueError(f"unexpected character in fraction part: {c!r}")
+            i += 1
+    
+        # validate underscore placement
+        def reject_underscore(msg, p):
+            raise ValueError(f"{msg} at position {p + 1}")
+    
+        for pos in range(len(s)):
+            c = s[pos]
+            if c == '_':
+                left, right = pos - 1, pos + 1
+                if not (0 &lt;= left &lt; len(s) and s[left].isdigit()):
+                    reject_underscore("isolated underscore", pos)
+                if not (0 &lt;= right &lt; len(s) and s[right] != '.'
+                        and (s[right].isdigit() or s[right] == '_')):
+                    reject_underscore("trailing/trailing-joined underscore", pos)
+    
+        no_us = ''.join(c for c in s if c != '_')
+        sign = '' if not no_us[0].isnumeric() else ''
+        if no_us.startswith('-'):
+            sign = '-'
+            value = no_us[1:]
+        elif no_us == '+':
+            raise ValueError("sign must be followed by a digit")
+        else:
+            value = no_us
+    
+        has_dot, has_int, has_frac = (dotpos &lt; len(no_us)), False, False
+        for c in value[:dotpos]:
+            if not (c.isdigit() or c.isspace()):
+&gt;               raise ValueError(f"unexpected character {c!r} in integer part")
+E               ValueError: unexpected character '+' in integer part
+
+solution.py:53: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-125209.canonical_decimal.tests.test_solution" name="test_underscores" time="0.000"><failure message="AssertionError: assert '1000.' == '1000'&#10;  &#10;  - 1000&#10;  + 1000.&#10;  ?     +">def test_underscores():
+&gt;       assert canonical_decimal("1_000") == "1000"
+E       AssertionError: assert '1000.' == '1000'
+E         
+E         - 1000
+E         + 1000.
+E         ?     +
+
+tests\test_solution.py:35: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-125209.canonical_decimal.tests.test_solution" name="test_bad_underscores_raise" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-125209.canonical_decimal.tests.test_solution" name="test_no_digits_raise" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-125209.canonical_decimal.tests.test_solution" name="test_bad_chars_raise" time="0.000" /></testsuite></testsuites>

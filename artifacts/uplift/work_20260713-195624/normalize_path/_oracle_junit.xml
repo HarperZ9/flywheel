@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="1" failures="0" skipped="0" tests="1" time="0.248" timestamp="2026-07-13T20:20:37.232933-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="" name="artifacts.uplift.work_20260713-195624.normalize_path.tests.test_solution" time="0.000"><error message="collection failure">tests\test_solution.py:2: in &lt;module&gt;
+    from solution import normalize_path as f
+solution.py:35: in &lt;module&gt;
+    check("/home/users/username/documents")
+solution.py:31: in check
+    result = normalize_path(path)
+             ^^^^^^^^^^^^^^^^^^^^
+solution.py:16: in normalize_path
+    normalized_path = [p[:path_segments[1]].lstrip('/')]
+                       ^^^^^^^^^^^^^^^^^^^^
+E   TypeError: slice indices must be integers or None or have an __index__ method</error></testcase></testsuite></testsuites>

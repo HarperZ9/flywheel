@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="3" skipped="0" tests="9" time="0.198" timestamp="2026-07-14T13:29:47.468755-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260714-125209.natural_compare.tests.test_solution" name="test_numeric" time="0.001" /><testcase classname="artifacts.uplift.work_20260714-125209.natural_compare.tests.test_solution" name="test_numeric_gt" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-125209.natural_compare.tests.test_solution" name="test_file" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-125209.natural_compare.tests.test_solution" name="test_equal" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-125209.natural_compare.tests.test_solution" name="test_prefix" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-125209.natural_compare.tests.test_solution" name="test_leading_zero" time="0.000"><failure message="AssertionError: assert 0 == 1&#10; +  where 0 = f('01', '1')">&gt;   def test_leading_zero(): assert f('01', '1') == 1
+                             ^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert 0 == 1
+E    +  where 0 = f('01', '1')
+
+tests\test_solution.py:8: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-125209.natural_compare.tests.test_solution" name="test_digit_before_alpha" time="0.000"><failure message="AssertionError: assert 1 == -1&#10; +  where 1 = f('1', 'a')">&gt;   def test_digit_before_alpha(): assert f('1', 'a') == -1
+                                   ^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert 1 == -1
+E    +  where 1 = f('1', 'a')
+
+tests\test_solution.py:9: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-125209.natural_compare.tests.test_solution" name="test_plain_alpha" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-125209.natural_compare.tests.test_solution" name="test_bad_input" time="0.000"><failure message="TypeError: object of type 'int' has no len()">def test_bad_input():
+&gt;       with pytest.raises(ValueError) as e: f(1, 'a')
+                                             ^^^^^^^^^
+
+tests\test_solution.py:12: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:20: in natural_compare
+    a_runs = runs(a)
+             ^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+s = 1
+
+    def runs(s):
+        out = []
+        i = 0
+&gt;       while i &lt; len(s):
+                  ^^^^^^
+E       TypeError: object of type 'int' has no len()
+
+solution.py:5: TypeError</failure></testcase></testsuite></testsuites>

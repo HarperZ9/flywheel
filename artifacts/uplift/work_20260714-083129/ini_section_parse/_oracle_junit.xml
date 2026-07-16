@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="5" skipped="0" tests="17" time="0.209" timestamp="2026-07-14T09:09:55.091830-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260714-083129.ini_section_parse.tests.test_solution" name="test_basic" time="0.001" /><testcase classname="artifacts.uplift.work_20260714-083129.ini_section_parse.tests.test_solution" name="test_two_sections" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-083129.ini_section_parse.tests.test_solution" name="test_comments_blank" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-083129.ini_section_parse.tests.test_solution" name="test_whitespace" time="0.000"><failure message="ValueError: bad line">text = '  [s]  \n  k  =  v  '
+
+    def parse_ini(text):
+        def validate_key(key):
+            if not (key.isalnum() or key[0] == '_' and all(c.isalnum() or c == '_' for c in key[1:])):
+                raise ValueError('bad line')
+    
+        sections = {}
+        lines = text.split('\n')
+    
+        for i, line in enumerate(lines):
+            stripped_line = line.strip()
+    
+            if not stripped_line:
+                continue
+    
+            if stripped_line.startswith(';') or stripped_line.startswith('#'):
+                continue
+    
+            if stripped_line[0] == '[' and stripped_line[-1] == ']':
+                section_name = stripped_line[1:-1]
+    
+                try:
+                    validate_key(section_name)
+                except ValueError as e:
+                    raise ValueError('bad section') from e
+    
+                if section_name in sections:
+                    raise ValueError('duplicate section')
+    
+                sections[section_name] = {}
+            elif i == 0 and stripped_line != '':
+                raise ValueError('no section')
+    
+            else:
+                try:
+                    key, value = tuple(stripped_line.split('=', 1))
+                except ValueError as e:
+                    validate_key(stripped_line)
+                    raise ValueError('bad line') from e
+    
+                try:
+&gt;                   validate_key(key)
+
+solution.py:41: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+key = 'k  '
+
+    def validate_key(key):
+        if not (key.isalnum() or key[0] == '_' and all(c.isalnum() or c == '_' for c in key[1:])):
+&gt;           raise ValueError('bad line')
+E           ValueError: bad line
+
+solution.py:4: ValueError
+
+The above exception was the direct cause of the following exception:
+
+    def test_whitespace():
+&gt;       assert f('  [s]  \n  k  =  v  ') == {'s': {'k': 'v'}}
+               ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:10: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+text = '  [s]  \n  k  =  v  '
+
+    def parse_ini(text):
+        def validate_key(key):
+            if not (key.isalnum() or key[0] == '_' and all(c.isalnum() or c == '_' for c in key[1:])):
+                raise ValueError('bad line')
+    
+        sections = {}
+        lines = text.split('\n')
+    
+        for i, line in enumerate(lines):
+            stripped_line = line.strip()
+    
+            if not stripped_line:
+                continue
+    
+            if stripped_line.startswith(';') or stripped_line.startswith('#'):
+                continue
+    
+            if stripped_line[0] == '[' and stripped_line[-1] == ']':
+                section_name = stripped_line[1:-1]
+    
+                try:
+                    validate_key(section_name)
+                except ValueError as e:
+                    raise ValueError('bad section') from e
+    
+                if section_name in sections:
+                    raise ValueError('duplicate section')
+    
+                sections[section_name] = {}
+            elif i == 0 and stripped_line != '':
+                raise ValueError('no section')
+    
+            else:
+                try:
+                    key, value = tuple(stripped_line.split('=', 1))
+                except ValueError as e:
+                    validate_key(stripped_line)
+                    raise ValueError('bad line') from e
+    
+                try:
+                    validate_key(key)
+                except ValueError as e:
+&gt;                   raise ValueError('bad line') from e
+E                   ValueError: bad line
+
+solution.py:43: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.ini_section_parse.tests.test_solution" name="test_value_with_equals" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-083129.ini_section_parse.tests.test_solution" name="test_empty_value" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-083129.ini_section_parse.tests.test_solution" name="test_empty_section_body" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-083129.ini_section_parse.tests.test_solution" name="test_empty_text" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-083129.ini_section_parse.tests.test_solution" name="test_same_key_other_section" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-083129.ini_section_parse.tests.test_solution" name="test_no_section" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-083129.ini_section_parse.tests.test_solution" name="test_duplicate_key" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_duplicate_key():
+&gt;       with pytest.raises(ValueError) as e: f('[s]\nk=1\nk=2')
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:25: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.ini_section_parse.tests.test_solution" name="test_duplicate_section" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-083129.ini_section_parse.tests.test_solution" name="test_bad_section_unclosed" time="0.001"><failure message="AssertionError: assert 'no section' == 'bad section'&#10;  &#10;  - bad section&#10;  ? ^^^&#10;  + no section&#10;  ? ^^">def test_bad_section_unclosed():
+        with pytest.raises(ValueError) as e: f('[s')
+&gt;       assert str(e.value) == 'bad section'
+E       AssertionError: assert 'no section' == 'bad section'
+E         
+E         - bad section
+E         ? ^^^
+E         + no section
+E         ? ^^
+
+tests\test_solution.py:32: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.ini_section_parse.tests.test_solution" name="test_bad_section_empty" time="0.000"><failure message="IndexError: string index out of range">def test_bad_section_empty():
+&gt;       with pytest.raises(ValueError): f('[]')
+                                        ^^^^^^^
+
+tests\test_solution.py:34: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:22: in parse_ini
+    validate_key(section_name)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+key = ''
+
+    def validate_key(key):
+&gt;       if not (key.isalnum() or key[0] == '_' and all(c.isalnum() or c == '_' for c in key[1:])):
+                                 ^^^^^^
+E       IndexError: string index out of range
+
+solution.py:3: IndexError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.ini_section_parse.tests.test_solution" name="test_bad_line_no_equals" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-083129.ini_section_parse.tests.test_solution" name="test_bad_key_char" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-083129.ini_section_parse.tests.test_solution" name="test_bad_input" time="0.000"><failure message="AttributeError: 'int' object has no attribute 'split'">def test_bad_input():
+&gt;       with pytest.raises(ValueError) as e: f(5)
+                                             ^^^^
+
+tests\test_solution.py:41: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+text = 5
+
+    def parse_ini(text):
+        def validate_key(key):
+            if not (key.isalnum() or key[0] == '_' and all(c.isalnum() or c == '_' for c in key[1:])):
+                raise ValueError('bad line')
+    
+        sections = {}
+&gt;       lines = text.split('\n')
+                ^^^^^^^^^^
+E       AttributeError: 'int' object has no attribute 'split'
+
+solution.py:7: AttributeError</failure></testcase></testsuite></testsuites>

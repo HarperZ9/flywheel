@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="9" skipped="0" tests="10" time="0.226" timestamp="2026-07-13T20:25:06.966488-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-195624.bank_ledger.tests.test_solution" name="test_basic" time="0.001"><failure message="ValueError: bad op">def test_basic():
+&gt;       assert f([('deposit', 100), ('withdraw', 30), ('deposit', 5)]) == [100, 70, 75]
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:4: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+ops = [('deposit', 100), ('withdraw', 30), ('deposit', 5)]
+
+    def bank_ledger(ops):
+        """
+        Fold a list of banking operations over a balance that starts at 0.
+    
+        Each element of ops must be one of two forms:
+        "deposit" or "withdraw".
+    
+        &gt;&gt;&gt; bank_ledger([("deposit", 5), ("withdraw", -10)])
+        [5, 5]
+        """
+        current_balance = 0
+        for op in ops:
+            action, amount = op
+            if action == 'deposit':
+                current_balance += amount
+                # Check balance
+                if not isinstance(current_balance, (int, float)) or len(str(current_balance)) &gt; 1:
+&gt;                   raise ValueError('bad op')
+E                   ValueError: bad op
+
+solution.py:18: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.bank_ledger.tests.test_solution" name="test_empty" time="0.001"><failure message="assert [0] == []&#10;  &#10;  Left contains one more item: 0&#10;  Use -v to get more diff">def test_empty():
+&gt;       assert f([]) == []
+E       assert [0] == []
+E         
+E         Left contains one more item: 0
+E         Use -v to get more diff
+
+tests\test_solution.py:6: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.bank_ledger.tests.test_solution" name="test_withdraw_all" time="0.000"><failure message="ValueError: bad op">def test_withdraw_all():
+&gt;       assert f([('deposit', 10), ('withdraw', 10)]) == [10, 0]
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:8: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+ops = [('deposit', 10), ('withdraw', 10)]
+
+    def bank_ledger(ops):
+        """
+        Fold a list of banking operations over a balance that starts at 0.
+    
+        Each element of ops must be one of two forms:
+        "deposit" or "withdraw".
+    
+        &gt;&gt;&gt; bank_ledger([("deposit", 5), ("withdraw", -10)])
+        [5, 5]
+        """
+        current_balance = 0
+        for op in ops:
+            action, amount = op
+            if action == 'deposit':
+                current_balance += amount
+                # Check balance
+                if not isinstance(current_balance, (int, float)) or len(str(current_balance)) &gt; 1:
+&gt;                   raise ValueError('bad op')
+E                   ValueError: bad op
+
+solution.py:18: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.bank_ledger.tests.test_solution" name="test_insufficient_message" time="0.001"><failure message="AssertionError: assert 'bad op' == 'insufficient...ed 50 have 30'&#10;  &#10;  - insufficient funds: need 50 have 30&#10;  + bad op">def test_insufficient_message():
+        with pytest.raises(ValueError) as e:
+            f([('deposit', 30), ('withdraw', 50)])
+&gt;       assert str(e.value) == 'insufficient funds: need 50 have 30'
+E       AssertionError: assert 'bad op' == 'insufficient...ed 50 have 30'
+E         
+E         - insufficient funds: need 50 have 30
+E         + bad op
+
+tests\test_solution.py:12: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.bank_ledger.tests.test_solution" name="test_insufficient_zero" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_insufficient_zero():
+&gt;       with pytest.raises(ValueError) as e:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:14: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.bank_ledger.tests.test_solution" name="test_bad_amount_zero" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_bad_amount_zero():
+&gt;       with pytest.raises(ValueError) as e: f([('deposit', 0)])
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:18: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.bank_ledger.tests.test_solution" name="test_bad_amount_bool" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_bad_amount_bool():
+&gt;       with pytest.raises(ValueError): f([('deposit', True)])
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:21: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.bank_ledger.tests.test_solution" name="test_bad_amount_negative" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-195624.bank_ledger.tests.test_solution" name="test_bad_op_shape" time="0.000"><failure message="AssertionError: assert 'not enough v...ted 2, got 1)' == 'bad op'&#10;  &#10;  - bad op&#10;  + not enough values to unpack (expected 2, got 1)">def test_bad_op_shape():
+        with pytest.raises(ValueError) as e: f([('deposit',)])
+&gt;       assert str(e.value) == 'bad op'
+E       AssertionError: assert 'not enough v...ted 2, got 1)' == 'bad op'
+E         
+E         - bad op
+E         + not enough values to unpack (expected 2, got 1)
+
+tests\test_solution.py:26: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.bank_ledger.tests.test_solution" name="test_bad_op_kind" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_bad_op_kind():
+&gt;       with pytest.raises(ValueError): f([('transfer', 5)])
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:28: Failed</failure></testcase></testsuite></testsuites>

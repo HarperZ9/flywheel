@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="3" skipped="0" tests="9" time="0.207" timestamp="2026-07-14T13:18:26.444424-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260714-125209.outline_leaf_paths.tests.test_solution" name="test_forest_and_leaf_order" time="0.001"><failure message="AssertionError: assert ['d/e'] == ['a/b/c', 'a/d', 'e']&#10;  &#10;  At index 0 diff: 'd/e' != 'a/b/c'&#10;  Right contains 2 more items, first extra item: 'a/d'&#10;  Use -v to get more diff">def test_forest_and_leaf_order():
+        lines = ["a", "  b", "    c", "  d", "e"]
+&gt;       assert outline_paths(lines) == ["a/b/c", "a/d", "e"]
+E       AssertionError: assert ['d/e'] == ['a/b/c', 'a/d', 'e']
+E         
+E         At index 0 diff: 'd/e' != 'a/b/c'
+E         Right contains 2 more items, first extra item: 'a/d'
+E         Use -v to get more diff
+
+tests\test_solution.py:7: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-125209.outline_leaf_paths.tests.test_solution" name="test_blank_and_whitespace_lines_skipped_without_breaking_levels" time="0.001"><failure message="AssertionError: assert ['b'] == ['a/b']&#10;  &#10;  At index 0 diff: 'b' != 'a/b'&#10;  Use -v to get more diff">def test_blank_and_whitespace_lines_skipped_without_breaking_levels():
+        lines = ["a", "", "   ", "\t", "  b"]
+&gt;       assert outline_paths(lines) == ["a/b"]
+E       AssertionError: assert ['b'] == ['a/b']
+E         
+E         At index 0 diff: 'b' != 'a/b'
+E         Use -v to get more diff
+
+tests\test_solution.py:12: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-125209.outline_leaf_paths.tests.test_solution" name="test_trailing_ws_stripped_inner_spaces_kept" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-125209.outline_leaf_paths.tests.test_solution" name="test_empty_and_all_blank" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-125209.outline_leaf_paths.tests.test_solution" name="test_indent_jump_including_indented_first_line" time="0.001"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_indent_jump_including_indented_first_line():
+&gt;       with pytest.raises(ValueError, match="indent jump"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:26: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260714-125209.outline_leaf_paths.tests.test_solution" name="test_odd_indent" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-125209.outline_leaf_paths.tests.test_solution" name="test_tab_in_indent_checked_before_width" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-125209.outline_leaf_paths.tests.test_solution" name="test_slash_in_name" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-125209.outline_leaf_paths.tests.test_solution" name="test_no_mutation" time="0.000" /></testsuite></testsuites>

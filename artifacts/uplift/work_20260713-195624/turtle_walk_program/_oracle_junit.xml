@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="10" skipped="0" tests="10" time="0.602" timestamp="2026-07-13T20:14:28.512883-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-195624.turtle_walk_program.tests.test_solution" name="test_empty" time="0.001"><failure message="TypeError: 'module' object is not callable">&gt;   def test_empty(): assert f('') == (0, 0, 'N')
+                             ^^^^^
+E   TypeError: 'module' object is not callable
+
+tests\test_solution.py:3: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.turtle_walk_program.tests.test_solution" name="test_walk" time="0.000"><failure message="TypeError: 'module' object is not callable">&gt;   def test_walk(): assert f('2FR3F') == (3, 2, 'E')
+                            ^^^^^^^^^^
+E   TypeError: 'module' object is not callable
+
+tests\test_solution.py:4: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.turtle_walk_program.tests.test_solution" name="test_backward" time="0.000"><failure message="TypeError: 'module' object is not callable">&gt;   def test_backward(): assert f('B') == (0, -1, 'N')
+                                ^^^^^^
+E   TypeError: 'module' object is not callable
+
+tests\test_solution.py:5: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.turtle_walk_program.tests.test_solution" name="test_double_left" time="0.000"><failure message="TypeError: 'module' object is not callable">&gt;   def test_double_left(): assert f('2L') == (0, 0, 'S')
+                                   ^^^^^^^
+E   TypeError: 'module' object is not callable
+
+tests\test_solution.py:6: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.turtle_walk_program.tests.test_solution" name="test_multidigit" time="0.000"><failure message="TypeError: 'module' object is not callable">&gt;   def test_multidigit(): assert f('10F') == (0, 10, 'N')
+                                  ^^^^^^^^
+E   TypeError: 'module' object is not callable
+
+tests\test_solution.py:7: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.turtle_walk_program.tests.test_solution" name="test_full_circle" time="0.000"><failure message="TypeError: 'module' object is not callable">&gt;   def test_full_circle(): assert f('LLLL') == (0, 0, 'N')
+                                   ^^^^^^^^^
+E   TypeError: 'module' object is not callable
+
+tests\test_solution.py:8: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.turtle_walk_program.tests.test_solution" name="test_zero_count" time="0.000"><failure message="TypeError: 'module' object is not callable">def test_zero_count():
+&gt;       with pytest.raises(ValueError) as e: f('0F')
+                                             ^^^^^^^
+E       TypeError: 'module' object is not callable
+
+tests\test_solution.py:10: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.turtle_walk_program.tests.test_solution" name="test_leading_zero_count" time="0.000"><failure message="TypeError: 'module' object is not callable">def test_leading_zero_count():
+&gt;       with pytest.raises(ValueError) as e: f('07F')
+                                             ^^^^^^^^
+E       TypeError: 'module' object is not callable
+
+tests\test_solution.py:13: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.turtle_walk_program.tests.test_solution" name="test_dangling" time="0.000"><failure message="TypeError: 'module' object is not callable">def test_dangling():
+&gt;       with pytest.raises(ValueError) as e: f('F12')
+                                             ^^^^^^^^
+E       TypeError: 'module' object is not callable
+
+tests\test_solution.py:16: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.turtle_walk_program.tests.test_solution" name="test_unknown" time="0.000"><failure message="TypeError: 'module' object is not callable">def test_unknown():
+&gt;       with pytest.raises(ValueError) as e: f('FxF')
+                                             ^^^^^^^^
+E       TypeError: 'module' object is not callable
+
+tests\test_solution.py:19: TypeError</failure></testcase></testsuite></testsuites>

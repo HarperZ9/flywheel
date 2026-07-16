@@ -1,0 +1,264 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="7" skipped="0" tests="11" time="0.220" timestamp="2026-07-13T20:21:22.905474-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-195624.parse_kv_pairs.tests.test_solution" name="test_basic" time="0.001"><failure message="NameError: name 'kv_map' is not defined">&gt;   def test_basic(): assert f('a=1;b=2') == [('a', '1'), ('b', '2')]
+                             ^^^^^^^^^^^^
+
+tests\test_solution.py:3: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+s = 'a=1;b=2'
+
+    def parse_kv(s):
+        """
+        Parse a semicolon-separated list of key-value assignments into a list of (key, value) tuples.
+    
+        Parameters:
+            s (str): A comma-separated list of key-value pairs, e.g., "name;age:42".
+    
+        Returns:
+            list of (key, value) tuples if the input is valid. Raises ValueError otherwise.
+    
+        Examples:
+            &gt;&gt;&gt; parse_kv("name;age:42")
+            [('name', 'age:42')]
+    
+            &gt;&gt;&gt; parse_kv("color:blue;size:7")
+            [('color', 'blue'), ('size', '7')]
+    
+            &gt;&gt;&gt; parse_kv("")
+            []
+    
+            &gt;&gt;&gt; parse_kv("color;same_name:same_value")
+            ValueError('bad input.')
+        """
+    
+        if not s:
+            return []
+    
+        key, value = s.split(';')
+        try:
+            key = key.strip()
+            value = value.strip()
+    
+            # Check for duplicate keys
+&gt;           if len(key) &gt; 0 and key in kv_map:
+                                       ^^^^^^
+E           NameError: name 'kv_map' is not defined
+
+solution.py:34: NameError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.parse_kv_pairs.tests.test_solution" name="test_empty" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-195624.parse_kv_pairs.tests.test_solution" name="test_empty_value" time="0.000"><failure message="ValueError: not enough values to unpack (expected 2, got 1)">&gt;   def test_empty_value(): assert f('x=') == [('x', '')]
+                                   ^^^^^^^
+
+tests\test_solution.py:5: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+s = 'x='
+
+    def parse_kv(s):
+        """
+        Parse a semicolon-separated list of key-value assignments into a list of (key, value) tuples.
+    
+        Parameters:
+            s (str): A comma-separated list of key-value pairs, e.g., "name;age:42".
+    
+        Returns:
+            list of (key, value) tuples if the input is valid. Raises ValueError otherwise.
+    
+        Examples:
+            &gt;&gt;&gt; parse_kv("name;age:42")
+            [('name', 'age:42')]
+    
+            &gt;&gt;&gt; parse_kv("color:blue;size:7")
+            [('color', 'blue'), ('size', '7')]
+    
+            &gt;&gt;&gt; parse_kv("")
+            []
+    
+            &gt;&gt;&gt; parse_kv("color;same_name:same_value")
+            ValueError('bad input.')
+        """
+    
+        if not s:
+            return []
+    
+&gt;       key, value = s.split(';')
+        ^^^^^^^^^^
+E       ValueError: not enough values to unpack (expected 2, got 1)
+
+solution.py:28: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.parse_kv_pairs.tests.test_solution" name="test_underscore" time="0.000"><failure message="ValueError: not enough values to unpack (expected 2, got 1)">&gt;   def test_underscore(): assert f('key_1=val') == [('key_1', 'val')]
+                                  ^^^^^^^^^^^^^^
+
+tests\test_solution.py:6: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+s = 'key_1=val'
+
+    def parse_kv(s):
+        """
+        Parse a semicolon-separated list of key-value assignments into a list of (key, value) tuples.
+    
+        Parameters:
+            s (str): A comma-separated list of key-value pairs, e.g., "name;age:42".
+    
+        Returns:
+            list of (key, value) tuples if the input is valid. Raises ValueError otherwise.
+    
+        Examples:
+            &gt;&gt;&gt; parse_kv("name;age:42")
+            [('name', 'age:42')]
+    
+            &gt;&gt;&gt; parse_kv("color:blue;size:7")
+            [('color', 'blue'), ('size', '7')]
+    
+            &gt;&gt;&gt; parse_kv("")
+            []
+    
+            &gt;&gt;&gt; parse_kv("color;same_name:same_value")
+            ValueError('bad input.')
+        """
+    
+        if not s:
+            return []
+    
+&gt;       key, value = s.split(';')
+        ^^^^^^^^^^
+E       ValueError: not enough values to unpack (expected 2, got 1)
+
+solution.py:28: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.parse_kv_pairs.tests.test_solution" name="test_duplicate" time="0.000"><failure message="NameError: name 'kv_map' is not defined">def test_duplicate():
+&gt;       with pytest.raises(ValueError) as e: f('a=1;a=2')
+                                             ^^^^^^^^^^^^
+
+tests\test_solution.py:8: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+s = 'a=1;a=2'
+
+    def parse_kv(s):
+        """
+        Parse a semicolon-separated list of key-value assignments into a list of (key, value) tuples.
+    
+        Parameters:
+            s (str): A comma-separated list of key-value pairs, e.g., "name;age:42".
+    
+        Returns:
+            list of (key, value) tuples if the input is valid. Raises ValueError otherwise.
+    
+        Examples:
+            &gt;&gt;&gt; parse_kv("name;age:42")
+            [('name', 'age:42')]
+    
+            &gt;&gt;&gt; parse_kv("color:blue;size:7")
+            [('color', 'blue'), ('size', '7')]
+    
+            &gt;&gt;&gt; parse_kv("")
+            []
+    
+            &gt;&gt;&gt; parse_kv("color;same_name:same_value")
+            ValueError('bad input.')
+        """
+    
+        if not s:
+            return []
+    
+        key, value = s.split(';')
+        try:
+            key = key.strip()
+            value = value.strip()
+    
+            # Check for duplicate keys
+&gt;           if len(key) &gt; 0 and key in kv_map:
+                                       ^^^^^^
+E           NameError: name 'kv_map' is not defined
+
+solution.py:34: NameError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.parse_kv_pairs.tests.test_solution" name="test_no_equals" time="0.001"><failure message="AssertionError: assert 'not enough v...ted 2, got 1)' == 'bad item'&#10;  &#10;  - bad item&#10;  + not enough values to unpack (expected 2, got 1)">def test_no_equals():
+        with pytest.raises(ValueError) as e: f('a')
+&gt;       assert str(e.value) == 'bad item'
+E       AssertionError: assert 'not enough v...ted 2, got 1)' == 'bad item'
+E         
+E         - bad item
+E         + not enough values to unpack (expected 2, got 1)
+
+tests\test_solution.py:12: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.parse_kv_pairs.tests.test_solution" name="test_empty_key" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-195624.parse_kv_pairs.tests.test_solution" name="test_two_equals" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-195624.parse_kv_pairs.tests.test_solution" name="test_trailing_semicolon" time="0.000"><failure message="NameError: name 'kv_map' is not defined">def test_trailing_semicolon():
+&gt;       with pytest.raises(ValueError): f('a=1;')
+                                        ^^^^^^^^^
+
+tests\test_solution.py:18: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+s = 'a=1;'
+
+    def parse_kv(s):
+        """
+        Parse a semicolon-separated list of key-value assignments into a list of (key, value) tuples.
+    
+        Parameters:
+            s (str): A comma-separated list of key-value pairs, e.g., "name;age:42".
+    
+        Returns:
+            list of (key, value) tuples if the input is valid. Raises ValueError otherwise.
+    
+        Examples:
+            &gt;&gt;&gt; parse_kv("name;age:42")
+            [('name', 'age:42')]
+    
+            &gt;&gt;&gt; parse_kv("color:blue;size:7")
+            [('color', 'blue'), ('size', '7')]
+    
+            &gt;&gt;&gt; parse_kv("")
+            []
+    
+            &gt;&gt;&gt; parse_kv("color;same_name:same_value")
+            ValueError('bad input.')
+        """
+    
+        if not s:
+            return []
+    
+        key, value = s.split(';')
+        try:
+            key = key.strip()
+            value = value.strip()
+    
+            # Check for duplicate keys
+&gt;           if len(key) &gt; 0 and key in kv_map:
+                                       ^^^^^^
+E           NameError: name 'kv_map' is not defined
+
+solution.py:34: NameError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.parse_kv_pairs.tests.test_solution" name="test_bad_key_char" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-195624.parse_kv_pairs.tests.test_solution" name="test_bad_input" time="0.000"><failure message="AttributeError: 'int' object has no attribute 'split'">def test_bad_input():
+&gt;       with pytest.raises(ValueError) as e: f(5)
+                                             ^^^^
+
+tests\test_solution.py:22: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+s = 5
+
+    def parse_kv(s):
+        """
+        Parse a semicolon-separated list of key-value assignments into a list of (key, value) tuples.
+    
+        Parameters:
+            s (str): A comma-separated list of key-value pairs, e.g., "name;age:42".
+    
+        Returns:
+            list of (key, value) tuples if the input is valid. Raises ValueError otherwise.
+    
+        Examples:
+            &gt;&gt;&gt; parse_kv("name;age:42")
+            [('name', 'age:42')]
+    
+            &gt;&gt;&gt; parse_kv("color:blue;size:7")
+            [('color', 'blue'), ('size', '7')]
+    
+            &gt;&gt;&gt; parse_kv("")
+            []
+    
+            &gt;&gt;&gt; parse_kv("color;same_name:same_value")
+            ValueError('bad input.')
+        """
+    
+        if not s:
+            return []
+    
+&gt;       key, value = s.split(';')
+                     ^^^^^^^
+E       AttributeError: 'int' object has no attribute 'split'
+
+solution.py:28: AttributeError</failure></testcase></testsuite></testsuites>

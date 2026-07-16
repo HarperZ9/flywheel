@@ -1,0 +1,211 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="6" skipped="0" tests="6" time="0.189" timestamp="2026-07-13T20:18:32.604354-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-201327.sliding_window_max.tests.test_solution" name="test_classic" time="0.001"><failure message="IndexError: list index out of range">def test_classic():
+&gt;       assert f([1,3,-1,-3,5,3,6,7], 3) == [3,3,5,5,6,7]
+               ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:4: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+nums = [3, -3, 5, 3, 6, 7], k = 3
+
+    def sliding_window_max(nums, k):
+        """
+        Returns a list containing all elements from nums that are in the k largest windows of size k.
+    
+        Parameters:
+        - nums: A sorted list of numbers.
+        - k: The window size.
+    
+        Returns:
+        - A list of tuples where each tuple is (value, index) representing a maximum value and its index.
+          If the length of nums is less than k, or if k &lt;= 0, raise ValueError.
+        """
+        if len(nums) &lt; k or not all(isinstance(x, int) for x in nums):
+            raise ValueError("Invalid input")
+    
+        result = []
+        start = 0
+        for end in range(len(nums)):
+            # Slide the window and update the maximum value and its index
+            maximum = max(nums[start:end + 1])
+            if end - start + 1 &lt; k:
+                result.append((maximum, end))
+            else:
+                # Update the sliding window as long as the current element is larger than the previous one
+&gt;               while nums[end] &gt; nums[end + 1]:
+                                  ^^^^^^^^^^^^^
+E               IndexError: list index out of range
+
+solution.py:25: IndexError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.sliding_window_max.tests.test_solution" name="test_k_equals_len" time="0.000"><failure message="IndexError: list index out of range">def test_k_equals_len():
+&gt;       assert f([2,1,4], 3) == [4]
+               ^^^^^^^^^^^^^
+
+tests\test_solution.py:6: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+nums = [2, 1, 4], k = 3
+
+    def sliding_window_max(nums, k):
+        """
+        Returns a list containing all elements from nums that are in the k largest windows of size k.
+    
+        Parameters:
+        - nums: A sorted list of numbers.
+        - k: The window size.
+    
+        Returns:
+        - A list of tuples where each tuple is (value, index) representing a maximum value and its index.
+          If the length of nums is less than k, or if k &lt;= 0, raise ValueError.
+        """
+        if len(nums) &lt; k or not all(isinstance(x, int) for x in nums):
+            raise ValueError("Invalid input")
+    
+        result = []
+        start = 0
+        for end in range(len(nums)):
+            # Slide the window and update the maximum value and its index
+            maximum = max(nums[start:end + 1])
+            if end - start + 1 &lt; k:
+                result.append((maximum, end))
+            else:
+                # Update the sliding window as long as the current element is larger than the previous one
+&gt;               while nums[end] &gt; nums[end + 1]:
+                                  ^^^^^^^^^^^^^
+E               IndexError: list index out of range
+
+solution.py:25: IndexError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.sliding_window_max.tests.test_solution" name="test_k_too_big" time="0.000"><failure message="ValueError: Invalid input">def test_k_too_big():
+&gt;       assert f([1,2], 5) == []
+               ^^^^^^^^^^^
+
+tests\test_solution.py:8: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+nums = [1, 2], k = 5
+
+    def sliding_window_max(nums, k):
+        """
+        Returns a list containing all elements from nums that are in the k largest windows of size k.
+    
+        Parameters:
+        - nums: A sorted list of numbers.
+        - k: The window size.
+    
+        Returns:
+        - A list of tuples where each tuple is (value, index) representing a maximum value and its index.
+          If the length of nums is less than k, or if k &lt;= 0, raise ValueError.
+        """
+        if len(nums) &lt; k or not all(isinstance(x, int) for x in nums):
+&gt;           raise ValueError("Invalid input")
+E           ValueError: Invalid input
+
+solution.py:14: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.sliding_window_max.tests.test_solution" name="test_decreasing" time="0.000"><failure message="IndexError: list index out of range">def test_decreasing():
+&gt;       assert f([5,4,3,2,1], 2) == [5,4,3,2]
+               ^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:10: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+nums = [4, 2], k = 2
+
+    def sliding_window_max(nums, k):
+        """
+        Returns a list containing all elements from nums that are in the k largest windows of size k.
+    
+        Parameters:
+        - nums: A sorted list of numbers.
+        - k: The window size.
+    
+        Returns:
+        - A list of tuples where each tuple is (value, index) representing a maximum value and its index.
+          If the length of nums is less than k, or if k &lt;= 0, raise ValueError.
+        """
+        if len(nums) &lt; k or not all(isinstance(x, int) for x in nums):
+            raise ValueError("Invalid input")
+    
+        result = []
+        start = 0
+        for end in range(len(nums)):
+            # Slide the window and update the maximum value and its index
+            maximum = max(nums[start:end + 1])
+            if end - start + 1 &lt; k:
+                result.append((maximum, end))
+            else:
+                # Update the sliding window as long as the current element is larger than the previous one
+&gt;               while nums[end] &gt; nums[end + 1]:
+                                  ^^^^^^^^^^^^^
+E               IndexError: list index out of range
+
+solution.py:25: IndexError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.sliding_window_max.tests.test_solution" name="test_duplicates" time="0.000"><failure message="IndexError: list index out of range">def test_duplicates():
+&gt;       assert f([2,2,2], 2) == [2,2]
+               ^^^^^^^^^^^^^
+
+tests\test_solution.py:12: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+nums = [2, 2, 2], k = 2
+
+    def sliding_window_max(nums, k):
+        """
+        Returns a list containing all elements from nums that are in the k largest windows of size k.
+    
+        Parameters:
+        - nums: A sorted list of numbers.
+        - k: The window size.
+    
+        Returns:
+        - A list of tuples where each tuple is (value, index) representing a maximum value and its index.
+          If the length of nums is less than k, or if k &lt;= 0, raise ValueError.
+        """
+        if len(nums) &lt; k or not all(isinstance(x, int) for x in nums):
+            raise ValueError("Invalid input")
+    
+        result = []
+        start = 0
+        for end in range(len(nums)):
+            # Slide the window and update the maximum value and its index
+            maximum = max(nums[start:end + 1])
+            if end - start + 1 &lt; k:
+                result.append((maximum, end))
+            else:
+                # Update the sliding window as long as the current element is larger than the previous one
+&gt;               while nums[end] &gt; nums[end + 1]:
+                                  ^^^^^^^^^^^^^
+E               IndexError: list index out of range
+
+solution.py:25: IndexError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.sliding_window_max.tests.test_solution" name="test_bad_k" time="0.000"><failure message="IndexError: list index out of range">def test_bad_k():
+        with pytest.raises(ValueError):
+&gt;           f([1], 0)
+
+tests\test_solution.py:15: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+nums = [1], k = 0
+
+    def sliding_window_max(nums, k):
+        """
+        Returns a list containing all elements from nums that are in the k largest windows of size k.
+    
+        Parameters:
+        - nums: A sorted list of numbers.
+        - k: The window size.
+    
+        Returns:
+        - A list of tuples where each tuple is (value, index) representing a maximum value and its index.
+          If the length of nums is less than k, or if k &lt;= 0, raise ValueError.
+        """
+        if len(nums) &lt; k or not all(isinstance(x, int) for x in nums):
+            raise ValueError("Invalid input")
+    
+        result = []
+        start = 0
+        for end in range(len(nums)):
+            # Slide the window and update the maximum value and its index
+            maximum = max(nums[start:end + 1])
+            if end - start + 1 &lt; k:
+                result.append((maximum, end))
+            else:
+                # Update the sliding window as long as the current element is larger than the previous one
+&gt;               while nums[end] &gt; nums[end + 1]:
+                                  ^^^^^^^^^^^^^
+E               IndexError: list index out of range
+
+solution.py:25: IndexError</failure></testcase></testsuite></testsuites>

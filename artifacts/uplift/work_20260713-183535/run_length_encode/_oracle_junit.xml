@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="4" skipped="0" tests="5" time="0.203" timestamp="2026-07-13T18:40:13.160506-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-183535.run_length_encode.tests.test_solution" name="test_empty" time="0.001" /><testcase classname="artifacts.uplift.work_20260713-183535.run_length_encode.tests.test_solution" name="test_one" time="0.001"><failure message="AssertionError: assert 'a' == 'a1'&#10;  &#10;  - a1&#10;  + a">def test_one():
+&gt;       assert f('a') == 'a1'
+E       AssertionError: assert 'a' == 'a1'
+E         
+E         - a1
+E         + a
+
+tests\test_solution.py:5: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-183535.run_length_encode.tests.test_solution" name="test_runs" time="0.001"><failure message="AssertionError: assert 'c' == 'a3b2c1'&#10;  &#10;  - a3b2c1&#10;  + c">def test_runs():
+&gt;       assert f('aaabbc') == 'a3b2c1'
+E       AssertionError: assert 'c' == 'a3b2c1'
+E         
+E         - a3b2c1
+E         + c
+
+tests\test_solution.py:7: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-183535.run_length_encode.tests.test_solution" name="test_all_diff" time="0.001"><failure message="AssertionError: assert 'c' == 'a1b1c1'&#10;  &#10;  - a1b1c1&#10;  + c">def test_all_diff():
+&gt;       assert f('abc') == 'a1b1c1'
+E       AssertionError: assert 'c' == 'a1b1c1'
+E         
+E         - a1b1c1
+E         + c
+
+tests\test_solution.py:9: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-183535.run_length_encode.tests.test_solution" name="test_all_same" time="0.001"><failure message="AssertionError: assert 'z' == 'z4'&#10;  &#10;  - z4&#10;  + z">def test_all_same():
+&gt;       assert f('zzzz') == 'z4'
+E       AssertionError: assert 'z' == 'z4'
+E         
+E         - z4
+E         + z
+
+tests\test_solution.py:11: AssertionError</failure></testcase></testsuite></testsuites>

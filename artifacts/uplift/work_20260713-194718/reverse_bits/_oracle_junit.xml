@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="3" skipped="0" tests="10" time="0.185" timestamp="2026-07-13T20:06:34.366570-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-194718.reverse_bits.tests.test_solution" name="test_one_eight" time="0.001" /><testcase classname="artifacts.uplift.work_20260713-194718.reverse_bits.tests.test_solution" name="test_ten_four" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-194718.reverse_bits.tests.test_solution" name="test_zero" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-194718.reverse_bits.tests.test_solution" name="test_six_three" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-194718.reverse_bits.tests.test_solution" name="test_one_one" time="0.000"><failure message="ValueError: overflow">&gt;   def test_one_one(): assert f(1, 1) == 1
+                               ^^^^^^^
+
+tests\test_solution.py:7: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+n = 1, width = 1
+
+    def reverse_bits(n: int, width: int) -&gt; int:
+        if n &lt; 0 or width &lt; 1:
+            raise ValueError('bad arg')
+    
+        max_value = (2 ** width) - 1
+        if n &gt;= max_value:
+&gt;           raise ValueError('overflow')
+E           ValueError: overflow
+
+solution.py:7: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.reverse_bits.tests.test_solution" name="test_all_ones" time="0.000"><failure message="ValueError: overflow">&gt;   def test_all_ones(): assert f(0b1111, 4) == 0b1111
+                                ^^^^^^^^^^^^
+
+tests\test_solution.py:8: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+n = 15, width = 4
+
+    def reverse_bits(n: int, width: int) -&gt; int:
+        if n &lt; 0 or width &lt; 1:
+            raise ValueError('bad arg')
+    
+        max_value = (2 ** width) - 1
+        if n &gt;= max_value:
+&gt;           raise ValueError('overflow')
+E           ValueError: overflow
+
+solution.py:7: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.reverse_bits.tests.test_solution" name="test_overflow" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-194718.reverse_bits.tests.test_solution" name="test_bad_width" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-194718.reverse_bits.tests.test_solution" name="test_bad_neg" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-194718.reverse_bits.tests.test_solution" name="test_bool" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_bool():
+&gt;       with pytest.raises(ValueError): f(True, 4)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:18: Failed</failure></testcase></testsuite></testsuites>

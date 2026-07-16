@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="8" skipped="0" tests="15" time="0.292" timestamp="2026-07-14T14:55:48.290554-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260714-140516.spread_radius.tests.test_solution" name="test_one_step" time="0.001"><failure message="AssertionError: assert 2 == 1&#10; +  where 2 = f(['S.'])">&gt;   def test_one_step(): assert f(['S.']) == 1
+                         ^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert 2 == 1
+E    +  where 2 = f(['S.'])
+
+tests\test_solution.py:3: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-140516.spread_radius.tests.test_solution" name="test_source_only" time="0.001"><failure message="AssertionError: assert -1 == 0&#10; +  where -1 = f(['S'])">&gt;   def test_source_only(): assert f(['S']) == 0
+                            ^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert -1 == 0
+E    +  where -1 = f(['S'])
+
+tests\test_solution.py:4: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-140516.spread_radius.tests.test_solution" name="test_unreachable" time="0.001"><failure message="AssertionError: assert 0 == -1&#10; +  where 0 = f(['S#.'])">&gt;   def test_unreachable(): assert f(['S#.']) == -1
+                            ^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert 0 == -1
+E    +  where 0 = f(['S#.'])
+
+tests\test_solution.py:5: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-140516.spread_radius.tests.test_solution" name="test_square" time="0.001"><failure message="AssertionError: assert 5 == 4&#10; +  where 5 = f(['S..', '...', '...'])">&gt;   def test_square(): assert f(['S..', '...', '...']) == 4
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert 5 == 4
+E    +  where 5 = f(['S..', '...', '...'])
+
+tests\test_solution.py:6: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-140516.spread_radius.tests.test_solution" name="test_two_sources" time="0.001"><failure message="AssertionError: assert 2 == 1&#10; +  where 2 = f(['S.S'])">&gt;   def test_two_sources(): assert f(['S.S']) == 1
+                            ^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert 2 == 1
+E    +  where 2 = f(['S.S'])
+
+tests\test_solution.py:7: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-140516.spread_radius.tests.test_solution" name="test_two_sources_middle" time="0.000"><failure message="AssertionError: assert 3 == 2&#10; +  where 3 = f(['S...S'])">&gt;   def test_two_sources_middle(): assert f(['S...S']) == 2
+                                   ^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert 3 == 2
+E    +  where 3 = f(['S...S'])
+
+tests\test_solution.py:8: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-140516.spread_radius.tests.test_solution" name="test_corridor" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-140516.spread_radius.tests.test_solution" name="test_no_open_cells" time="0.000"><failure message="AssertionError: assert -1 == 0&#10; +  where -1 = f(['S#'])">&gt;   def test_no_open_cells(): assert f(['S#']) == 0
+                              ^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert -1 == 0
+E    +  where -1 = f(['S#'])
+
+tests\test_solution.py:10: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-140516.spread_radius.tests.test_solution" name="test_ragged" time="0.001" /><testcase classname="artifacts.uplift.work_20260714-140516.spread_radius.tests.test_solution" name="test_bad_cell" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-140516.spread_radius.tests.test_solution" name="test_no_source" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-140516.spread_radius.tests.test_solution" name="test_bad_grid_plain_string" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-140516.spread_radius.tests.test_solution" name="test_bad_grid_empty" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-140516.spread_radius.tests.test_solution" name="test_bad_grid_empty_row" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-140516.spread_radius.tests.test_solution" name="test_bad_grid_row_type" time="0.000"><failure message="TypeError: object of type 'int' has no len()">def test_bad_grid_row_type():
+&gt;       with pytest.raises(ValueError): f([1])
+                                        ^^^^^^
+
+tests\test_solution.py:28: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+grid = [1]
+
+    def spread_radius(grid):
+        if not isinstance(grid, list) or not grid:
+            raise ValueError('bad grid')
+&gt;       first_len = len(grid[0])
+                    ^^^^^^^^^^^^
+E       TypeError: object of type 'int' has no len()
+
+solution.py:4: TypeError</failure></testcase></testsuite></testsuites>

@@ -1,0 +1,343 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="7" skipped="0" tests="10" time="0.252" timestamp="2026-07-14T08:42:13.570047-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260714-083129.header_unfold.tests.test_solution" name="test_basic" time="0.001"><failure message="ValueError: The first line cannot be a continuation.">def test_basic():
+&gt;       assert unfold_headers(["Host: example.com", "Content-Type: text/plain"]) == [
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            ("host", "example.com"),
+            ("content-type", "text/plain"),
+        ]
+
+tests\test_solution.py:6: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+lines = ['Host: example.com', 'Content-Type: text/plain']
+
+    def unfold_headers(lines: list[str]) -&gt; list[tuple[str, str]]:
+        if not lines:
+            return []
+    
+        if not any(line.startswith(' ') or line.startswith('\t') for line in lines):
+&gt;           raise ValueError("The first line cannot be a continuation.")
+E           ValueError: The first line cannot be a continuation.
+
+solution.py:6: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.header_unfold.tests.test_solution" name="test_unfolding" time="0.000"><failure message="KeyError: 'subject'">def test_unfolding():
+&gt;       assert unfold_headers(["Subject: hello", "\tworld", "X-A: 1"]) == [
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            ("subject", "hello world"),
+            ("x-a", "1"),
+        ]
+
+tests\test_solution.py:13: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+lines = ['Subject: hello', '\tworld', 'X-A: 1']
+
+    def unfold_headers(lines: list[str]) -&gt; list[tuple[str, str]]:
+        if not lines:
+            return []
+    
+        if not any(line.startswith(' ') or line.startswith('\t') for line in lines):
+            raise ValueError("The first line cannot be a continuation.")
+    
+        headers = {}
+        last_line = None
+        result = []
+    
+        for index, line in enumerate(lines):
+            stripped_line = line.strip()
+    
+            if not (last_line and (stripped_line.startswith(' ') or stripped_line.startswith('\t'))):
+                name = ""
+                value = ""
+    
+                colon_index = stripped_line.find(':')
+                if colon_index == -1:
+                    raise ValueError(f"Missing colon in header '{line}'")
+    
+                name_start, name_end = 0, colon_index
+                while name_start &lt; name_end and not lines[index][name_start].isalpha():
+                    name_start += 1
+    
+                name = stripped_line[name_start:name_end].lower()
+    
+                if index == 0:
+                    last_line = line
+                else:
+                    if name in headers:
+                        raise ValueError(f"Duplicate header '{name}'")
+    
+                    for prev_line in reversed(result):
+                        if prev_line[0] == name:
+                            value = " ".join([headers[name], prev_line[1]])
+    
+                            if lines[index - 1].strip() and not line.strip():
+                                last_line = None
+                                break
+    
+                        # Find the previous non-empty header with this name.
+                        if len(headers[name]) == len(value):
+                            headers[name] += value
+                            break
+    
+                    else:
+                        headers.setdefault(name, "")
+    
+                    value_start, value_end = colon_index + 1, len(stripped_line)
+                    while not lines[index][value_end - 1].isalpha():
+                        value_end -= 1
+                    if index == 0 and last_line is None:
+                        continue
+    
+                    headers[name] += " ".join([headers[name], stripped_line[colon_index+1:value_end]])
+&gt;               result.append((name, ''.join(headers[name])))
+                                             ^^^^^^^^^^^^^
+E               KeyError: 'subject'
+
+solution.py:58: KeyError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.header_unfold.tests.test_solution" name="test_value_whitespace_and_empty_value" time="0.000"><failure message="ValueError: The first line cannot be a continuation.">def test_value_whitespace_and_empty_value():
+&gt;       assert unfold_headers(["A:   spaced   "]) == [("a", "spaced")]
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:21: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+lines = ['A:   spaced   ']
+
+    def unfold_headers(lines: list[str]) -&gt; list[tuple[str, str]]:
+        if not lines:
+            return []
+    
+        if not any(line.startswith(' ') or line.startswith('\t') for line in lines):
+&gt;           raise ValueError("The first line cannot be a continuation.")
+E           ValueError: The first line cannot be a continuation.
+
+solution.py:6: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.header_unfold.tests.test_solution" name="test_case_and_duplicates" time="0.000"><failure message="ValueError: The first line cannot be a continuation.">def test_case_and_duplicates():
+&gt;       assert unfold_headers(["FOO: 1", "foo: 2", "FoO: 3"]) == [
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            ("foo", "1"),
+            ("foo", "2"),
+            ("foo", "3"),
+        ]
+
+tests\test_solution.py:27: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+lines = ['FOO: 1', 'foo: 2', 'FoO: 3']
+
+    def unfold_headers(lines: list[str]) -&gt; list[tuple[str, str]]:
+        if not lines:
+            return []
+    
+        if not any(line.startswith(' ') or line.startswith('\t') for line in lines):
+&gt;           raise ValueError("The first line cannot be a continuation.")
+E           ValueError: The first line cannot be a continuation.
+
+solution.py:6: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.header_unfold.tests.test_solution" name="test_empty_input" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-083129.header_unfold.tests.test_solution" name="test_no_mutation" time="0.000"><failure message="KeyError: 'a'">def test_no_mutation():
+        lines = ["A: 1", " cont", "B: 2"]
+        snapshot = list(lines)
+&gt;       unfold_headers(lines)
+
+tests\test_solution.py:41: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+lines = ['A: 1', ' cont', 'B: 2']
+
+    def unfold_headers(lines: list[str]) -&gt; list[tuple[str, str]]:
+        if not lines:
+            return []
+    
+        if not any(line.startswith(' ') or line.startswith('\t') for line in lines):
+            raise ValueError("The first line cannot be a continuation.")
+    
+        headers = {}
+        last_line = None
+        result = []
+    
+        for index, line in enumerate(lines):
+            stripped_line = line.strip()
+    
+            if not (last_line and (stripped_line.startswith(' ') or stripped_line.startswith('\t'))):
+                name = ""
+                value = ""
+    
+                colon_index = stripped_line.find(':')
+                if colon_index == -1:
+                    raise ValueError(f"Missing colon in header '{line}'")
+    
+                name_start, name_end = 0, colon_index
+                while name_start &lt; name_end and not lines[index][name_start].isalpha():
+                    name_start += 1
+    
+                name = stripped_line[name_start:name_end].lower()
+    
+                if index == 0:
+                    last_line = line
+                else:
+                    if name in headers:
+                        raise ValueError(f"Duplicate header '{name}'")
+    
+                    for prev_line in reversed(result):
+                        if prev_line[0] == name:
+                            value = " ".join([headers[name], prev_line[1]])
+    
+                            if lines[index - 1].strip() and not line.strip():
+                                last_line = None
+                                break
+    
+                        # Find the previous non-empty header with this name.
+                        if len(headers[name]) == len(value):
+                            headers[name] += value
+                            break
+    
+                    else:
+                        headers.setdefault(name, "")
+    
+                    value_start, value_end = colon_index + 1, len(stripped_line)
+                    while not lines[index][value_end - 1].isalpha():
+                        value_end -= 1
+                    if index == 0 and last_line is None:
+                        continue
+    
+                    headers[name] += " ".join([headers[name], stripped_line[colon_index+1:value_end]])
+&gt;               result.append((name, ''.join(headers[name])))
+                                             ^^^^^^^^^^^^^
+E               KeyError: 'a'
+
+solution.py:58: KeyError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.header_unfold.tests.test_solution" name="test_continuation_first_raises" time="0.001"><failure message="KeyError: ''">def test_continuation_first_raises():
+        with pytest.raises(ValueError):
+&gt;           unfold_headers([" x: 1"])
+
+tests\test_solution.py:47: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+lines = [' x: 1']
+
+    def unfold_headers(lines: list[str]) -&gt; list[tuple[str, str]]:
+        if not lines:
+            return []
+    
+        if not any(line.startswith(' ') or line.startswith('\t') for line in lines):
+            raise ValueError("The first line cannot be a continuation.")
+    
+        headers = {}
+        last_line = None
+        result = []
+    
+        for index, line in enumerate(lines):
+            stripped_line = line.strip()
+    
+            if not (last_line and (stripped_line.startswith(' ') or stripped_line.startswith('\t'))):
+                name = ""
+                value = ""
+    
+                colon_index = stripped_line.find(':')
+                if colon_index == -1:
+                    raise ValueError(f"Missing colon in header '{line}'")
+    
+                name_start, name_end = 0, colon_index
+                while name_start &lt; name_end and not lines[index][name_start].isalpha():
+                    name_start += 1
+    
+                name = stripped_line[name_start:name_end].lower()
+    
+                if index == 0:
+                    last_line = line
+                else:
+                    if name in headers:
+                        raise ValueError(f"Duplicate header '{name}'")
+    
+                    for prev_line in reversed(result):
+                        if prev_line[0] == name:
+                            value = " ".join([headers[name], prev_line[1]])
+    
+                            if lines[index - 1].strip() and not line.strip():
+                                last_line = None
+                                break
+    
+                        # Find the previous non-empty header with this name.
+                        if len(headers[name]) == len(value):
+                            headers[name] += value
+                            break
+    
+                    else:
+                        headers.setdefault(name, "")
+    
+                    value_start, value_end = colon_index + 1, len(stripped_line)
+                    while not lines[index][value_end - 1].isalpha():
+                        value_end -= 1
+                    if index == 0 and last_line is None:
+                        continue
+    
+                    headers[name] += " ".join([headers[name], stripped_line[colon_index+1:value_end]])
+&gt;               result.append((name, ''.join(headers[name])))
+                                             ^^^^^^^^^^^^^
+E               KeyError: ''
+
+solution.py:58: KeyError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.header_unfold.tests.test_solution" name="test_missing_colon_raises" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-083129.header_unfold.tests.test_solution" name="test_bad_name_raises" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-083129.header_unfold.tests.test_solution" name="test_blank_continuation_raises" time="0.000"><failure message="KeyError: 'a'">def test_blank_continuation_raises():
+        with pytest.raises(ValueError):
+&gt;           unfold_headers(["A: 1", "   "])
+
+tests\test_solution.py:67: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+lines = ['A: 1', '   ']
+
+    def unfold_headers(lines: list[str]) -&gt; list[tuple[str, str]]:
+        if not lines:
+            return []
+    
+        if not any(line.startswith(' ') or line.startswith('\t') for line in lines):
+            raise ValueError("The first line cannot be a continuation.")
+    
+        headers = {}
+        last_line = None
+        result = []
+    
+        for index, line in enumerate(lines):
+            stripped_line = line.strip()
+    
+            if not (last_line and (stripped_line.startswith(' ') or stripped_line.startswith('\t'))):
+                name = ""
+                value = ""
+    
+                colon_index = stripped_line.find(':')
+                if colon_index == -1:
+                    raise ValueError(f"Missing colon in header '{line}'")
+    
+                name_start, name_end = 0, colon_index
+                while name_start &lt; name_end and not lines[index][name_start].isalpha():
+                    name_start += 1
+    
+                name = stripped_line[name_start:name_end].lower()
+    
+                if index == 0:
+                    last_line = line
+                else:
+                    if name in headers:
+                        raise ValueError(f"Duplicate header '{name}'")
+    
+                    for prev_line in reversed(result):
+                        if prev_line[0] == name:
+                            value = " ".join([headers[name], prev_line[1]])
+    
+                            if lines[index - 1].strip() and not line.strip():
+                                last_line = None
+                                break
+    
+                        # Find the previous non-empty header with this name.
+                        if len(headers[name]) == len(value):
+                            headers[name] += value
+                            break
+    
+                    else:
+                        headers.setdefault(name, "")
+    
+                    value_start, value_end = colon_index + 1, len(stripped_line)
+                    while not lines[index][value_end - 1].isalpha():
+                        value_end -= 1
+                    if index == 0 and last_line is None:
+                        continue
+    
+                    headers[name] += " ".join([headers[name], stripped_line[colon_index+1:value_end]])
+&gt;               result.append((name, ''.join(headers[name])))
+                                             ^^^^^^^^^^^^^
+E               KeyError: 'a'
+
+solution.py:58: KeyError</failure></testcase></testsuite></testsuites>

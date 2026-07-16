@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="6" time="0.200" timestamp="2026-07-13T19:54:33.611199-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-194718.first_missing_positive.tests.test_solution" name="test_empty" time="0.001" /><testcase classname="artifacts.uplift.work_20260713-194718.first_missing_positive.tests.test_solution" name="test_gap" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-194718.first_missing_positive.tests.test_solution" name="test_classic" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-194718.first_missing_positive.tests.test_solution" name="test_all_high" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-194718.first_missing_positive.tests.test_solution" name="test_dups" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-194718.first_missing_positive.tests.test_solution" name="test_no_mutation" time="0.001"><failure message="assert [1, 2] == [2, 1]&#10;  &#10;  At index 0 diff: 1 != 2&#10;  Use -v to get more diff">def test_no_mutation():
+        g=[2,1]
+        f(g)
+&gt;       assert g == [2,1]
+E       assert [1, 2] == [2, 1]
+E         
+E         At index 0 diff: 1 != 2
+E         Use -v to get more diff
+
+tests\test_solution.py:15: AssertionError</failure></testcase></testsuite></testsuites>

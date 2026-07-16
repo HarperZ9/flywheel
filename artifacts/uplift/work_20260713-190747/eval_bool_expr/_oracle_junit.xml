@@ -1,0 +1,1206 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="9" skipped="0" tests="13" time="0.288" timestamp="2026-07-13T19:37:39.675043-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-190747.eval_bool_expr.tests.test_solution" name="test_true" time="0.001"><failure message="ValueError: bad expr">expr = 'T'
+
+    def eval_bool(expr):
+        if not isinstance(expr, str):
+            raise ValueError('bad expr')
+    
+        expr = expr.replace(" ", "")
+        allowed_chars = set("TF&amp;|!()")
+        if not all(c in allowed_chars for c in expr):
+            raise ValueError('bad expr')
+    
+        try:
+            def parse(expr):
+                stack = []
+                current = ""
+                i = 0
+                while i &lt; len(expr):
+                    if expr[i] == '(':
+                        stack.append(current)
+                        current = ""
+                    elif expr[i] == ')':
+                        if not stack:
+                            raise ValueError('bad expr')
+                        previous = stack.pop()
+                        current = previous + current
+                    else:
+                        current += expr[i]
+                    i += 1
+    
+                return current
+    
+            expr = parse(expr)
+    
+            def eval_expr(expr):
+                stack = []
+                operators = {"&amp;": lambda x, y: x and y, "|": lambda x, y: x or y, "!": lambda x: not x}
+    
+                for token in expr:
+                    if token.isdigit():
+                        val = True if int(token) else False
+                        stack.append(val)
+                    elif token in operators:
+                        args = [stack.pop() for _ in range(2)]
+                        result = operators[token](*args)
+                        stack.append(result)
+    
+                return stack[0]
+    
+&gt;           return eval_expr(expr)
+                   ^^^^^^^^^^^^^^^
+
+solution.py:47: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+expr = 'T'
+
+    def eval_expr(expr):
+        stack = []
+        operators = {"&amp;": lambda x, y: x and y, "|": lambda x, y: x or y, "!": lambda x: not x}
+    
+        for token in expr:
+            if token.isdigit():
+                val = True if int(token) else False
+                stack.append(val)
+            elif token in operators:
+                args = [stack.pop() for _ in range(2)]
+                result = operators[token](*args)
+                stack.append(result)
+    
+&gt;       return stack[0]
+               ^^^^^^^^
+E       IndexError: list index out of range
+
+solution.py:45: IndexError
+
+During handling of the above exception, another exception occurred:
+
+&gt;   def test_true(): assert f('T') is True
+                            ^^^^^^
+
+tests\test_solution.py:3: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+expr = 'T'
+
+    def eval_bool(expr):
+        if not isinstance(expr, str):
+            raise ValueError('bad expr')
+    
+        expr = expr.replace(" ", "")
+        allowed_chars = set("TF&amp;|!()")
+        if not all(c in allowed_chars for c in expr):
+            raise ValueError('bad expr')
+    
+        try:
+            def parse(expr):
+                stack = []
+                current = ""
+                i = 0
+                while i &lt; len(expr):
+                    if expr[i] == '(':
+                        stack.append(current)
+                        current = ""
+                    elif expr[i] == ')':
+                        if not stack:
+                            raise ValueError('bad expr')
+                        previous = stack.pop()
+                        current = previous + current
+                    else:
+                        current += expr[i]
+                    i += 1
+    
+                return current
+    
+            expr = parse(expr)
+    
+            def eval_expr(expr):
+                stack = []
+                operators = {"&amp;": lambda x, y: x and y, "|": lambda x, y: x or y, "!": lambda x: not x}
+    
+                for token in expr:
+                    if token.isdigit():
+                        val = True if int(token) else False
+                        stack.append(val)
+                    elif token in operators:
+                        args = [stack.pop() for _ in range(2)]
+                        result = operators[token](*args)
+                        stack.append(result)
+    
+                return stack[0]
+    
+            return eval_expr(expr)
+    
+        except Exception as e:
+&gt;           raise ValueError('bad expr')
+E           ValueError: bad expr
+
+solution.py:50: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-190747.eval_bool_expr.tests.test_solution" name="test_false" time="0.000"><failure message="ValueError: bad expr">expr = 'F'
+
+    def eval_bool(expr):
+        if not isinstance(expr, str):
+            raise ValueError('bad expr')
+    
+        expr = expr.replace(" ", "")
+        allowed_chars = set("TF&amp;|!()")
+        if not all(c in allowed_chars for c in expr):
+            raise ValueError('bad expr')
+    
+        try:
+            def parse(expr):
+                stack = []
+                current = ""
+                i = 0
+                while i &lt; len(expr):
+                    if expr[i] == '(':
+                        stack.append(current)
+                        current = ""
+                    elif expr[i] == ')':
+                        if not stack:
+                            raise ValueError('bad expr')
+                        previous = stack.pop()
+                        current = previous + current
+                    else:
+                        current += expr[i]
+                    i += 1
+    
+                return current
+    
+            expr = parse(expr)
+    
+            def eval_expr(expr):
+                stack = []
+                operators = {"&amp;": lambda x, y: x and y, "|": lambda x, y: x or y, "!": lambda x: not x}
+    
+                for token in expr:
+                    if token.isdigit():
+                        val = True if int(token) else False
+                        stack.append(val)
+                    elif token in operators:
+                        args = [stack.pop() for _ in range(2)]
+                        result = operators[token](*args)
+                        stack.append(result)
+    
+                return stack[0]
+    
+&gt;           return eval_expr(expr)
+                   ^^^^^^^^^^^^^^^
+
+solution.py:47: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+expr = 'F'
+
+    def eval_expr(expr):
+        stack = []
+        operators = {"&amp;": lambda x, y: x and y, "|": lambda x, y: x or y, "!": lambda x: not x}
+    
+        for token in expr:
+            if token.isdigit():
+                val = True if int(token) else False
+                stack.append(val)
+            elif token in operators:
+                args = [stack.pop() for _ in range(2)]
+                result = operators[token](*args)
+                stack.append(result)
+    
+&gt;       return stack[0]
+               ^^^^^^^^
+E       IndexError: list index out of range
+
+solution.py:45: IndexError
+
+During handling of the above exception, another exception occurred:
+
+&gt;   def test_false(): assert f('F') is False
+                             ^^^^^^
+
+tests\test_solution.py:4: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+expr = 'F'
+
+    def eval_bool(expr):
+        if not isinstance(expr, str):
+            raise ValueError('bad expr')
+    
+        expr = expr.replace(" ", "")
+        allowed_chars = set("TF&amp;|!()")
+        if not all(c in allowed_chars for c in expr):
+            raise ValueError('bad expr')
+    
+        try:
+            def parse(expr):
+                stack = []
+                current = ""
+                i = 0
+                while i &lt; len(expr):
+                    if expr[i] == '(':
+                        stack.append(current)
+                        current = ""
+                    elif expr[i] == ')':
+                        if not stack:
+                            raise ValueError('bad expr')
+                        previous = stack.pop()
+                        current = previous + current
+                    else:
+                        current += expr[i]
+                    i += 1
+    
+                return current
+    
+            expr = parse(expr)
+    
+            def eval_expr(expr):
+                stack = []
+                operators = {"&amp;": lambda x, y: x and y, "|": lambda x, y: x or y, "!": lambda x: not x}
+    
+                for token in expr:
+                    if token.isdigit():
+                        val = True if int(token) else False
+                        stack.append(val)
+                    elif token in operators:
+                        args = [stack.pop() for _ in range(2)]
+                        result = operators[token](*args)
+                        stack.append(result)
+    
+                return stack[0]
+    
+            return eval_expr(expr)
+    
+        except Exception as e:
+&gt;           raise ValueError('bad expr')
+E           ValueError: bad expr
+
+solution.py:50: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-190747.eval_bool_expr.tests.test_solution" name="test_and" time="0.001"><failure message="ValueError: bad expr">expr = 'T&amp;F'
+
+    def eval_bool(expr):
+        if not isinstance(expr, str):
+            raise ValueError('bad expr')
+    
+        expr = expr.replace(" ", "")
+        allowed_chars = set("TF&amp;|!()")
+        if not all(c in allowed_chars for c in expr):
+            raise ValueError('bad expr')
+    
+        try:
+            def parse(expr):
+                stack = []
+                current = ""
+                i = 0
+                while i &lt; len(expr):
+                    if expr[i] == '(':
+                        stack.append(current)
+                        current = ""
+                    elif expr[i] == ')':
+                        if not stack:
+                            raise ValueError('bad expr')
+                        previous = stack.pop()
+                        current = previous + current
+                    else:
+                        current += expr[i]
+                    i += 1
+    
+                return current
+    
+            expr = parse(expr)
+    
+            def eval_expr(expr):
+                stack = []
+                operators = {"&amp;": lambda x, y: x and y, "|": lambda x, y: x or y, "!": lambda x: not x}
+    
+                for token in expr:
+                    if token.isdigit():
+                        val = True if int(token) else False
+                        stack.append(val)
+                    elif token in operators:
+                        args = [stack.pop() for _ in range(2)]
+                        result = operators[token](*args)
+                        stack.append(result)
+    
+                return stack[0]
+    
+&gt;           return eval_expr(expr)
+                   ^^^^^^^^^^^^^^^
+
+solution.py:47: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+expr = 'T&amp;F'
+
+    def eval_expr(expr):
+        stack = []
+        operators = {"&amp;": lambda x, y: x and y, "|": lambda x, y: x or y, "!": lambda x: not x}
+    
+        for token in expr:
+            if token.isdigit():
+                val = True if int(token) else False
+                stack.append(val)
+            elif token in operators:
+&gt;               args = [stack.pop() for _ in range(2)]
+                        ^^^^^^^^^^^
+E               IndexError: pop from empty list
+
+solution.py:41: IndexError
+
+During handling of the above exception, another exception occurred:
+
+&gt;   def test_and(): assert f('T&amp;F') is False
+                           ^^^^^^^^
+
+tests\test_solution.py:5: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+expr = 'T&amp;F'
+
+    def eval_bool(expr):
+        if not isinstance(expr, str):
+            raise ValueError('bad expr')
+    
+        expr = expr.replace(" ", "")
+        allowed_chars = set("TF&amp;|!()")
+        if not all(c in allowed_chars for c in expr):
+            raise ValueError('bad expr')
+    
+        try:
+            def parse(expr):
+                stack = []
+                current = ""
+                i = 0
+                while i &lt; len(expr):
+                    if expr[i] == '(':
+                        stack.append(current)
+                        current = ""
+                    elif expr[i] == ')':
+                        if not stack:
+                            raise ValueError('bad expr')
+                        previous = stack.pop()
+                        current = previous + current
+                    else:
+                        current += expr[i]
+                    i += 1
+    
+                return current
+    
+            expr = parse(expr)
+    
+            def eval_expr(expr):
+                stack = []
+                operators = {"&amp;": lambda x, y: x and y, "|": lambda x, y: x or y, "!": lambda x: not x}
+    
+                for token in expr:
+                    if token.isdigit():
+                        val = True if int(token) else False
+                        stack.append(val)
+                    elif token in operators:
+                        args = [stack.pop() for _ in range(2)]
+                        result = operators[token](*args)
+                        stack.append(result)
+    
+                return stack[0]
+    
+            return eval_expr(expr)
+    
+        except Exception as e:
+&gt;           raise ValueError('bad expr')
+E           ValueError: bad expr
+
+solution.py:50: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-190747.eval_bool_expr.tests.test_solution" name="test_or" time="0.000"><failure message="ValueError: bad expr">expr = 'T|F'
+
+    def eval_bool(expr):
+        if not isinstance(expr, str):
+            raise ValueError('bad expr')
+    
+        expr = expr.replace(" ", "")
+        allowed_chars = set("TF&amp;|!()")
+        if not all(c in allowed_chars for c in expr):
+            raise ValueError('bad expr')
+    
+        try:
+            def parse(expr):
+                stack = []
+                current = ""
+                i = 0
+                while i &lt; len(expr):
+                    if expr[i] == '(':
+                        stack.append(current)
+                        current = ""
+                    elif expr[i] == ')':
+                        if not stack:
+                            raise ValueError('bad expr')
+                        previous = stack.pop()
+                        current = previous + current
+                    else:
+                        current += expr[i]
+                    i += 1
+    
+                return current
+    
+            expr = parse(expr)
+    
+            def eval_expr(expr):
+                stack = []
+                operators = {"&amp;": lambda x, y: x and y, "|": lambda x, y: x or y, "!": lambda x: not x}
+    
+                for token in expr:
+                    if token.isdigit():
+                        val = True if int(token) else False
+                        stack.append(val)
+                    elif token in operators:
+                        args = [stack.pop() for _ in range(2)]
+                        result = operators[token](*args)
+                        stack.append(result)
+    
+                return stack[0]
+    
+&gt;           return eval_expr(expr)
+                   ^^^^^^^^^^^^^^^
+
+solution.py:47: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+expr = 'T|F'
+
+    def eval_expr(expr):
+        stack = []
+        operators = {"&amp;": lambda x, y: x and y, "|": lambda x, y: x or y, "!": lambda x: not x}
+    
+        for token in expr:
+            if token.isdigit():
+                val = True if int(token) else False
+                stack.append(val)
+            elif token in operators:
+&gt;               args = [stack.pop() for _ in range(2)]
+                        ^^^^^^^^^^^
+E               IndexError: pop from empty list
+
+solution.py:41: IndexError
+
+During handling of the above exception, another exception occurred:
+
+&gt;   def test_or(): assert f('T|F') is True
+                          ^^^^^^^^
+
+tests\test_solution.py:6: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+expr = 'T|F'
+
+    def eval_bool(expr):
+        if not isinstance(expr, str):
+            raise ValueError('bad expr')
+    
+        expr = expr.replace(" ", "")
+        allowed_chars = set("TF&amp;|!()")
+        if not all(c in allowed_chars for c in expr):
+            raise ValueError('bad expr')
+    
+        try:
+            def parse(expr):
+                stack = []
+                current = ""
+                i = 0
+                while i &lt; len(expr):
+                    if expr[i] == '(':
+                        stack.append(current)
+                        current = ""
+                    elif expr[i] == ')':
+                        if not stack:
+                            raise ValueError('bad expr')
+                        previous = stack.pop()
+                        current = previous + current
+                    else:
+                        current += expr[i]
+                    i += 1
+    
+                return current
+    
+            expr = parse(expr)
+    
+            def eval_expr(expr):
+                stack = []
+                operators = {"&amp;": lambda x, y: x and y, "|": lambda x, y: x or y, "!": lambda x: not x}
+    
+                for token in expr:
+                    if token.isdigit():
+                        val = True if int(token) else False
+                        stack.append(val)
+                    elif token in operators:
+                        args = [stack.pop() for _ in range(2)]
+                        result = operators[token](*args)
+                        stack.append(result)
+    
+                return stack[0]
+    
+            return eval_expr(expr)
+    
+        except Exception as e:
+&gt;           raise ValueError('bad expr')
+E           ValueError: bad expr
+
+solution.py:50: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-190747.eval_bool_expr.tests.test_solution" name="test_not" time="0.000"><failure message="ValueError: bad expr">expr = '!T'
+
+    def eval_bool(expr):
+        if not isinstance(expr, str):
+            raise ValueError('bad expr')
+    
+        expr = expr.replace(" ", "")
+        allowed_chars = set("TF&amp;|!()")
+        if not all(c in allowed_chars for c in expr):
+            raise ValueError('bad expr')
+    
+        try:
+            def parse(expr):
+                stack = []
+                current = ""
+                i = 0
+                while i &lt; len(expr):
+                    if expr[i] == '(':
+                        stack.append(current)
+                        current = ""
+                    elif expr[i] == ')':
+                        if not stack:
+                            raise ValueError('bad expr')
+                        previous = stack.pop()
+                        current = previous + current
+                    else:
+                        current += expr[i]
+                    i += 1
+    
+                return current
+    
+            expr = parse(expr)
+    
+            def eval_expr(expr):
+                stack = []
+                operators = {"&amp;": lambda x, y: x and y, "|": lambda x, y: x or y, "!": lambda x: not x}
+    
+                for token in expr:
+                    if token.isdigit():
+                        val = True if int(token) else False
+                        stack.append(val)
+                    elif token in operators:
+                        args = [stack.pop() for _ in range(2)]
+                        result = operators[token](*args)
+                        stack.append(result)
+    
+                return stack[0]
+    
+&gt;           return eval_expr(expr)
+                   ^^^^^^^^^^^^^^^
+
+solution.py:47: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+expr = '!T'
+
+    def eval_expr(expr):
+        stack = []
+        operators = {"&amp;": lambda x, y: x and y, "|": lambda x, y: x or y, "!": lambda x: not x}
+    
+        for token in expr:
+            if token.isdigit():
+                val = True if int(token) else False
+                stack.append(val)
+            elif token in operators:
+&gt;               args = [stack.pop() for _ in range(2)]
+                        ^^^^^^^^^^^
+E               IndexError: pop from empty list
+
+solution.py:41: IndexError
+
+During handling of the above exception, another exception occurred:
+
+&gt;   def test_not(): assert f('!T') is False
+                           ^^^^^^^
+
+tests\test_solution.py:7: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+expr = '!T'
+
+    def eval_bool(expr):
+        if not isinstance(expr, str):
+            raise ValueError('bad expr')
+    
+        expr = expr.replace(" ", "")
+        allowed_chars = set("TF&amp;|!()")
+        if not all(c in allowed_chars for c in expr):
+            raise ValueError('bad expr')
+    
+        try:
+            def parse(expr):
+                stack = []
+                current = ""
+                i = 0
+                while i &lt; len(expr):
+                    if expr[i] == '(':
+                        stack.append(current)
+                        current = ""
+                    elif expr[i] == ')':
+                        if not stack:
+                            raise ValueError('bad expr')
+                        previous = stack.pop()
+                        current = previous + current
+                    else:
+                        current += expr[i]
+                    i += 1
+    
+                return current
+    
+            expr = parse(expr)
+    
+            def eval_expr(expr):
+                stack = []
+                operators = {"&amp;": lambda x, y: x and y, "|": lambda x, y: x or y, "!": lambda x: not x}
+    
+                for token in expr:
+                    if token.isdigit():
+                        val = True if int(token) else False
+                        stack.append(val)
+                    elif token in operators:
+                        args = [stack.pop() for _ in range(2)]
+                        result = operators[token](*args)
+                        stack.append(result)
+    
+                return stack[0]
+    
+            return eval_expr(expr)
+    
+        except Exception as e:
+&gt;           raise ValueError('bad expr')
+E           ValueError: bad expr
+
+solution.py:50: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-190747.eval_bool_expr.tests.test_solution" name="test_not_precedence" time="0.000"><failure message="ValueError: bad expr">expr = '!F&amp;T'
+
+    def eval_bool(expr):
+        if not isinstance(expr, str):
+            raise ValueError('bad expr')
+    
+        expr = expr.replace(" ", "")
+        allowed_chars = set("TF&amp;|!()")
+        if not all(c in allowed_chars for c in expr):
+            raise ValueError('bad expr')
+    
+        try:
+            def parse(expr):
+                stack = []
+                current = ""
+                i = 0
+                while i &lt; len(expr):
+                    if expr[i] == '(':
+                        stack.append(current)
+                        current = ""
+                    elif expr[i] == ')':
+                        if not stack:
+                            raise ValueError('bad expr')
+                        previous = stack.pop()
+                        current = previous + current
+                    else:
+                        current += expr[i]
+                    i += 1
+    
+                return current
+    
+            expr = parse(expr)
+    
+            def eval_expr(expr):
+                stack = []
+                operators = {"&amp;": lambda x, y: x and y, "|": lambda x, y: x or y, "!": lambda x: not x}
+    
+                for token in expr:
+                    if token.isdigit():
+                        val = True if int(token) else False
+                        stack.append(val)
+                    elif token in operators:
+                        args = [stack.pop() for _ in range(2)]
+                        result = operators[token](*args)
+                        stack.append(result)
+    
+                return stack[0]
+    
+&gt;           return eval_expr(expr)
+                   ^^^^^^^^^^^^^^^
+
+solution.py:47: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+expr = '!F&amp;T'
+
+    def eval_expr(expr):
+        stack = []
+        operators = {"&amp;": lambda x, y: x and y, "|": lambda x, y: x or y, "!": lambda x: not x}
+    
+        for token in expr:
+            if token.isdigit():
+                val = True if int(token) else False
+                stack.append(val)
+            elif token in operators:
+&gt;               args = [stack.pop() for _ in range(2)]
+                        ^^^^^^^^^^^
+E               IndexError: pop from empty list
+
+solution.py:41: IndexError
+
+During handling of the above exception, another exception occurred:
+
+&gt;   def test_not_precedence(): assert f('!F&amp;T') is True
+                                      ^^^^^^^^^
+
+tests\test_solution.py:8: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+expr = '!F&amp;T'
+
+    def eval_bool(expr):
+        if not isinstance(expr, str):
+            raise ValueError('bad expr')
+    
+        expr = expr.replace(" ", "")
+        allowed_chars = set("TF&amp;|!()")
+        if not all(c in allowed_chars for c in expr):
+            raise ValueError('bad expr')
+    
+        try:
+            def parse(expr):
+                stack = []
+                current = ""
+                i = 0
+                while i &lt; len(expr):
+                    if expr[i] == '(':
+                        stack.append(current)
+                        current = ""
+                    elif expr[i] == ')':
+                        if not stack:
+                            raise ValueError('bad expr')
+                        previous = stack.pop()
+                        current = previous + current
+                    else:
+                        current += expr[i]
+                    i += 1
+    
+                return current
+    
+            expr = parse(expr)
+    
+            def eval_expr(expr):
+                stack = []
+                operators = {"&amp;": lambda x, y: x and y, "|": lambda x, y: x or y, "!": lambda x: not x}
+    
+                for token in expr:
+                    if token.isdigit():
+                        val = True if int(token) else False
+                        stack.append(val)
+                    elif token in operators:
+                        args = [stack.pop() for _ in range(2)]
+                        result = operators[token](*args)
+                        stack.append(result)
+    
+                return stack[0]
+    
+            return eval_expr(expr)
+    
+        except Exception as e:
+&gt;           raise ValueError('bad expr')
+E           ValueError: bad expr
+
+solution.py:50: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-190747.eval_bool_expr.tests.test_solution" name="test_and_before_or" time="0.000"><failure message="ValueError: bad expr">expr = 'T|F&amp;F'
+
+    def eval_bool(expr):
+        if not isinstance(expr, str):
+            raise ValueError('bad expr')
+    
+        expr = expr.replace(" ", "")
+        allowed_chars = set("TF&amp;|!()")
+        if not all(c in allowed_chars for c in expr):
+            raise ValueError('bad expr')
+    
+        try:
+            def parse(expr):
+                stack = []
+                current = ""
+                i = 0
+                while i &lt; len(expr):
+                    if expr[i] == '(':
+                        stack.append(current)
+                        current = ""
+                    elif expr[i] == ')':
+                        if not stack:
+                            raise ValueError('bad expr')
+                        previous = stack.pop()
+                        current = previous + current
+                    else:
+                        current += expr[i]
+                    i += 1
+    
+                return current
+    
+            expr = parse(expr)
+    
+            def eval_expr(expr):
+                stack = []
+                operators = {"&amp;": lambda x, y: x and y, "|": lambda x, y: x or y, "!": lambda x: not x}
+    
+                for token in expr:
+                    if token.isdigit():
+                        val = True if int(token) else False
+                        stack.append(val)
+                    elif token in operators:
+                        args = [stack.pop() for _ in range(2)]
+                        result = operators[token](*args)
+                        stack.append(result)
+    
+                return stack[0]
+    
+&gt;           return eval_expr(expr)
+                   ^^^^^^^^^^^^^^^
+
+solution.py:47: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+expr = 'T|F&amp;F'
+
+    def eval_expr(expr):
+        stack = []
+        operators = {"&amp;": lambda x, y: x and y, "|": lambda x, y: x or y, "!": lambda x: not x}
+    
+        for token in expr:
+            if token.isdigit():
+                val = True if int(token) else False
+                stack.append(val)
+            elif token in operators:
+&gt;               args = [stack.pop() for _ in range(2)]
+                        ^^^^^^^^^^^
+E               IndexError: pop from empty list
+
+solution.py:41: IndexError
+
+During handling of the above exception, another exception occurred:
+
+&gt;   def test_and_before_or(): assert f('T|F&amp;F') is True
+                                     ^^^^^^^^^^
+
+tests\test_solution.py:9: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+expr = 'T|F&amp;F'
+
+    def eval_bool(expr):
+        if not isinstance(expr, str):
+            raise ValueError('bad expr')
+    
+        expr = expr.replace(" ", "")
+        allowed_chars = set("TF&amp;|!()")
+        if not all(c in allowed_chars for c in expr):
+            raise ValueError('bad expr')
+    
+        try:
+            def parse(expr):
+                stack = []
+                current = ""
+                i = 0
+                while i &lt; len(expr):
+                    if expr[i] == '(':
+                        stack.append(current)
+                        current = ""
+                    elif expr[i] == ')':
+                        if not stack:
+                            raise ValueError('bad expr')
+                        previous = stack.pop()
+                        current = previous + current
+                    else:
+                        current += expr[i]
+                    i += 1
+    
+                return current
+    
+            expr = parse(expr)
+    
+            def eval_expr(expr):
+                stack = []
+                operators = {"&amp;": lambda x, y: x and y, "|": lambda x, y: x or y, "!": lambda x: not x}
+    
+                for token in expr:
+                    if token.isdigit():
+                        val = True if int(token) else False
+                        stack.append(val)
+                    elif token in operators:
+                        args = [stack.pop() for _ in range(2)]
+                        result = operators[token](*args)
+                        stack.append(result)
+    
+                return stack[0]
+    
+            return eval_expr(expr)
+    
+        except Exception as e:
+&gt;           raise ValueError('bad expr')
+E           ValueError: bad expr
+
+solution.py:50: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-190747.eval_bool_expr.tests.test_solution" name="test_parens" time="0.000"><failure message="ValueError: bad expr">expr = 'T|F&amp;F'
+
+    def eval_bool(expr):
+        if not isinstance(expr, str):
+            raise ValueError('bad expr')
+    
+        expr = expr.replace(" ", "")
+        allowed_chars = set("TF&amp;|!()")
+        if not all(c in allowed_chars for c in expr):
+            raise ValueError('bad expr')
+    
+        try:
+            def parse(expr):
+                stack = []
+                current = ""
+                i = 0
+                while i &lt; len(expr):
+                    if expr[i] == '(':
+                        stack.append(current)
+                        current = ""
+                    elif expr[i] == ')':
+                        if not stack:
+                            raise ValueError('bad expr')
+                        previous = stack.pop()
+                        current = previous + current
+                    else:
+                        current += expr[i]
+                    i += 1
+    
+                return current
+    
+            expr = parse(expr)
+    
+            def eval_expr(expr):
+                stack = []
+                operators = {"&amp;": lambda x, y: x and y, "|": lambda x, y: x or y, "!": lambda x: not x}
+    
+                for token in expr:
+                    if token.isdigit():
+                        val = True if int(token) else False
+                        stack.append(val)
+                    elif token in operators:
+                        args = [stack.pop() for _ in range(2)]
+                        result = operators[token](*args)
+                        stack.append(result)
+    
+                return stack[0]
+    
+&gt;           return eval_expr(expr)
+                   ^^^^^^^^^^^^^^^
+
+solution.py:47: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+expr = 'T|F&amp;F'
+
+    def eval_expr(expr):
+        stack = []
+        operators = {"&amp;": lambda x, y: x and y, "|": lambda x, y: x or y, "!": lambda x: not x}
+    
+        for token in expr:
+            if token.isdigit():
+                val = True if int(token) else False
+                stack.append(val)
+            elif token in operators:
+&gt;               args = [stack.pop() for _ in range(2)]
+                        ^^^^^^^^^^^
+E               IndexError: pop from empty list
+
+solution.py:41: IndexError
+
+During handling of the above exception, another exception occurred:
+
+&gt;   def test_parens(): assert f('(T|F)&amp;F') is False
+                              ^^^^^^^^^^^^
+
+tests\test_solution.py:10: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+expr = 'T|F&amp;F'
+
+    def eval_bool(expr):
+        if not isinstance(expr, str):
+            raise ValueError('bad expr')
+    
+        expr = expr.replace(" ", "")
+        allowed_chars = set("TF&amp;|!()")
+        if not all(c in allowed_chars for c in expr):
+            raise ValueError('bad expr')
+    
+        try:
+            def parse(expr):
+                stack = []
+                current = ""
+                i = 0
+                while i &lt; len(expr):
+                    if expr[i] == '(':
+                        stack.append(current)
+                        current = ""
+                    elif expr[i] == ')':
+                        if not stack:
+                            raise ValueError('bad expr')
+                        previous = stack.pop()
+                        current = previous + current
+                    else:
+                        current += expr[i]
+                    i += 1
+    
+                return current
+    
+            expr = parse(expr)
+    
+            def eval_expr(expr):
+                stack = []
+                operators = {"&amp;": lambda x, y: x and y, "|": lambda x, y: x or y, "!": lambda x: not x}
+    
+                for token in expr:
+                    if token.isdigit():
+                        val = True if int(token) else False
+                        stack.append(val)
+                    elif token in operators:
+                        args = [stack.pop() for _ in range(2)]
+                        result = operators[token](*args)
+                        stack.append(result)
+    
+                return stack[0]
+    
+            return eval_expr(expr)
+    
+        except Exception as e:
+&gt;           raise ValueError('bad expr')
+E           ValueError: bad expr
+
+solution.py:50: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-190747.eval_bool_expr.tests.test_solution" name="test_not_group" time="0.000"><failure message="ValueError: bad expr">expr = '!T&amp;F'
+
+    def eval_bool(expr):
+        if not isinstance(expr, str):
+            raise ValueError('bad expr')
+    
+        expr = expr.replace(" ", "")
+        allowed_chars = set("TF&amp;|!()")
+        if not all(c in allowed_chars for c in expr):
+            raise ValueError('bad expr')
+    
+        try:
+            def parse(expr):
+                stack = []
+                current = ""
+                i = 0
+                while i &lt; len(expr):
+                    if expr[i] == '(':
+                        stack.append(current)
+                        current = ""
+                    elif expr[i] == ')':
+                        if not stack:
+                            raise ValueError('bad expr')
+                        previous = stack.pop()
+                        current = previous + current
+                    else:
+                        current += expr[i]
+                    i += 1
+    
+                return current
+    
+            expr = parse(expr)
+    
+            def eval_expr(expr):
+                stack = []
+                operators = {"&amp;": lambda x, y: x and y, "|": lambda x, y: x or y, "!": lambda x: not x}
+    
+                for token in expr:
+                    if token.isdigit():
+                        val = True if int(token) else False
+                        stack.append(val)
+                    elif token in operators:
+                        args = [stack.pop() for _ in range(2)]
+                        result = operators[token](*args)
+                        stack.append(result)
+    
+                return stack[0]
+    
+&gt;           return eval_expr(expr)
+                   ^^^^^^^^^^^^^^^
+
+solution.py:47: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+expr = '!T&amp;F'
+
+    def eval_expr(expr):
+        stack = []
+        operators = {"&amp;": lambda x, y: x and y, "|": lambda x, y: x or y, "!": lambda x: not x}
+    
+        for token in expr:
+            if token.isdigit():
+                val = True if int(token) else False
+                stack.append(val)
+            elif token in operators:
+&gt;               args = [stack.pop() for _ in range(2)]
+                        ^^^^^^^^^^^
+E               IndexError: pop from empty list
+
+solution.py:41: IndexError
+
+During handling of the above exception, another exception occurred:
+
+&gt;   def test_not_group(): assert f('!(T&amp;F)') is True
+                                 ^^^^^^^^^^^
+
+tests\test_solution.py:11: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+expr = '!T&amp;F'
+
+    def eval_bool(expr):
+        if not isinstance(expr, str):
+            raise ValueError('bad expr')
+    
+        expr = expr.replace(" ", "")
+        allowed_chars = set("TF&amp;|!()")
+        if not all(c in allowed_chars for c in expr):
+            raise ValueError('bad expr')
+    
+        try:
+            def parse(expr):
+                stack = []
+                current = ""
+                i = 0
+                while i &lt; len(expr):
+                    if expr[i] == '(':
+                        stack.append(current)
+                        current = ""
+                    elif expr[i] == ')':
+                        if not stack:
+                            raise ValueError('bad expr')
+                        previous = stack.pop()
+                        current = previous + current
+                    else:
+                        current += expr[i]
+                    i += 1
+    
+                return current
+    
+            expr = parse(expr)
+    
+            def eval_expr(expr):
+                stack = []
+                operators = {"&amp;": lambda x, y: x and y, "|": lambda x, y: x or y, "!": lambda x: not x}
+    
+                for token in expr:
+                    if token.isdigit():
+                        val = True if int(token) else False
+                        stack.append(val)
+                    elif token in operators:
+                        args = [stack.pop() for _ in range(2)]
+                        result = operators[token](*args)
+                        stack.append(result)
+    
+                return stack[0]
+    
+            return eval_expr(expr)
+    
+        except Exception as e:
+&gt;           raise ValueError('bad expr')
+E           ValueError: bad expr
+
+solution.py:50: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-190747.eval_bool_expr.tests.test_solution" name="test_bad_char" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-190747.eval_bool_expr.tests.test_solution" name="test_unbalanced" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-190747.eval_bool_expr.tests.test_solution" name="test_trailing" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-190747.eval_bool_expr.tests.test_solution" name="test_empty" time="0.000" /></testsuite></testsuites>

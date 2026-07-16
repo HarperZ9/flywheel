@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="3" skipped="0" tests="9" time="0.218" timestamp="2026-07-13T20:08:09.707013-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-194718.manhattan_tour.tests.test_solution" name="test_pair" time="0.001" /><testcase classname="artifacts.uplift.work_20260713-194718.manhattan_tour.tests.test_solution" name="test_empty" time="0.000"><failure message="ValueError: The input should be a list with at least two points.">&gt;   def test_empty(): assert f([]) == 0
+                             ^^^^^
+
+tests\test_solution.py:4: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+points = []
+
+    def tour_length(points):
+        def manhattan_distance(p1, p2):
+            return abs(p1[0] - p2[0]) + abs(p1[1] - p2[1])
+    
+        if not isinstance(points, list) or len(points) &lt; 2:
+&gt;           raise ValueError('The input should be a list with at least two points.')
+E           ValueError: The input should be a list with at least two points.
+
+solution.py:6: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.manhattan_tour.tests.test_solution" name="test_single" time="0.000"><failure message="ValueError: The input should be a list with at least two points.">&gt;   def test_single(): assert f([(1, 1)]) == 0
+                              ^^^^^^^^^^^
+
+tests\test_solution.py:5: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+points = [(1, 1)]
+
+    def tour_length(points):
+        def manhattan_distance(p1, p2):
+            return abs(p1[0] - p2[0]) + abs(p1[1] - p2[1])
+    
+        if not isinstance(points, list) or len(points) &lt; 2:
+&gt;           raise ValueError('The input should be a list with at least two points.')
+E           ValueError: The input should be a list with at least two points.
+
+solution.py:6: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.manhattan_tour.tests.test_solution" name="test_l_shape" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-194718.manhattan_tour.tests.test_solution" name="test_negative" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-194718.manhattan_tour.tests.test_solution" name="test_round_trip" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-194718.manhattan_tour.tests.test_solution" name="test_bad_list" time="0.001"><failure message="AssertionError: assert 'The input sh...t two points.' == 'bad point'&#10;  &#10;  - bad point&#10;  + The input should be a list with at least two points.">def test_bad_list():
+        with pytest.raises(ValueError) as e: f([[0, 0]])
+&gt;       assert str(e.value) == 'bad point'
+E       AssertionError: assert 'The input sh...t two points.' == 'bad point'
+E         
+E         - bad point
+E         + The input should be a list with at least two points.
+
+tests\test_solution.py:11: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.manhattan_tour.tests.test_solution" name="test_bad_len" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-194718.manhattan_tour.tests.test_solution" name="test_bool_coord" time="0.001" /></testsuite></testsuites>

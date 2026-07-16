@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="6" skipped="0" tests="12" time="0.252" timestamp="2026-07-14T14:38:50.565753-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260714-140516.cron_field_expand.tests.test_solution" name="test_star" time="0.001" /><testcase classname="artifacts.uplift.work_20260714-140516.cron_field_expand.tests.test_solution" name="test_star_step" time="0.000"><failure message="ValueError: not enough values to unpack (expected 2, got 1)">&gt;   def test_star_step(): assert f('*/15', 0, 59) == [0, 15, 30, 45]
+                                 ^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:4: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+field = '*/15', lo = 0, hi = 59
+
+    def cron_field(field: str, lo: int, hi: int) -&gt; list[int]:
+        if not isinstance(lo, int) or not isinstance(hi, int):
+            raise ValueError('bad bounds')
+        if lo &gt; hi:
+            raise ValueError('bad bounds')
+    
+        out: set[int] = set()
+    
+        for item in field.split(','):
+            if len(item) == 0:
+                raise ValueError('bad field')
+    
+            # *
+            if item == '*':
+                out.update(range(lo, hi + 1))
+                continue
+    
+            parts = item.split('/')
+            step = None
+            if len(parts) == 2 and len(parts[0]) &gt; 0:
+                step_txt = parts[1]
+                if not step_txt.isdigit() or '0' in step_txt[:1]:
+                    raise ValueError('bad step')
+                if any(c &lt; '0' or c &gt; '9' for c in step_txt):
+                    raise ValueError('bad field')
+                step = int(step_txt)
+    
+            # N
+            if len(parts) == 1:
+                if not parts[0].isdigit() or (step is not None and len(parts[0]) == 1):
+                    raise ValueError('bad field')
+                v = int(parts[0])
+                if v &lt; lo or v &gt; hi:
+                    raise ValueError('out of range')
+                out.add(v)
+            # N-M or N-M/K
+            elif len(parts) == 2 and parts[0] != '':
+&gt;               a, b = parts[0].split('-', 1)
+                ^^^^
+E               ValueError: not enough values to unpack (expected 2, got 1)
+
+solution.py:38: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-140516.cron_field_expand.tests.test_solution" name="test_range_step" time="0.001"><failure message="assert [3, 4, 5, 6, 7] == [3, 5, 7]&#10;  &#10;  At index 1 diff: 4 != 5&#10;  Left contains 2 more items, first extra item: 6&#10;  Use -v to get more diff">&gt;   def test_range_step(): assert f('3-7/2', 0, 59) == [3, 5, 7]
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   assert [3, 4, 5, 6, 7] == [3, 5, 7]
+E     
+E     At index 1 diff: 4 != 5
+E     Left contains 2 more items, first extra item: 6
+E     Use -v to get more diff
+
+tests\test_solution.py:5: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-140516.cron_field_expand.tests.test_solution" name="test_list_dedup" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-140516.cron_field_expand.tests.test_solution" name="test_mixed" time="0.000"><failure message="ValueError: bad field">&gt;   def test_mixed(): assert f('10-12,1', 0, 59) == [1, 10, 11, 12]
+                             ^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:7: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+field = '10-12,1', lo = 0, hi = 59
+
+    def cron_field(field: str, lo: int, hi: int) -&gt; list[int]:
+        if not isinstance(lo, int) or not isinstance(hi, int):
+            raise ValueError('bad bounds')
+        if lo &gt; hi:
+            raise ValueError('bad bounds')
+    
+        out: set[int] = set()
+    
+        for item in field.split(','):
+            if len(item) == 0:
+                raise ValueError('bad field')
+    
+            # *
+            if item == '*':
+                out.update(range(lo, hi + 1))
+                continue
+    
+            parts = item.split('/')
+            step = None
+            if len(parts) == 2 and len(parts[0]) &gt; 0:
+                step_txt = parts[1]
+                if not step_txt.isdigit() or '0' in step_txt[:1]:
+                    raise ValueError('bad step')
+                if any(c &lt; '0' or c &gt; '9' for c in step_txt):
+                    raise ValueError('bad field')
+                step = int(step_txt)
+    
+            # N
+            if len(parts) == 1:
+                if not parts[0].isdigit() or (step is not None and len(parts[0]) == 1):
+&gt;                   raise ValueError('bad field')
+E                   ValueError: bad field
+
+solution.py:31: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-140516.cron_field_expand.tests.test_solution" name="test_leading_zero_value" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-140516.cron_field_expand.tests.test_solution" name="test_step_on_value" time="0.000"><failure message="AssertionError: assert 'not enough v...ted 2, got 1)' == 'bad field'&#10;  &#10;  - bad field&#10;  + not enough values to unpack (expected 2, got 1)">def test_step_on_value():
+        with pytest.raises(ValueError) as e: f('5/2', 0, 59)
+&gt;       assert str(e.value) == 'bad field'
+E       AssertionError: assert 'not enough v...ted 2, got 1)' == 'bad field'
+E         
+E         - bad field
+E         + not enough values to unpack (expected 2, got 1)
+
+tests\test_solution.py:11: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-140516.cron_field_expand.tests.test_solution" name="test_reversed_range" time="0.001"><failure message="AssertionError: assert 'bad field' == 'bad range'&#10;  &#10;  - bad range&#10;  + bad field">def test_reversed_range():
+        with pytest.raises(ValueError) as e: f('7-3', 0, 59)
+&gt;       assert str(e.value) == 'bad range'
+E       AssertionError: assert 'bad field' == 'bad range'
+E         
+E         - bad range
+E         + bad field
+
+tests\test_solution.py:14: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-140516.cron_field_expand.tests.test_solution" name="test_out_of_range" time="0.000"><failure message="AssertionError: assert 'bad field' == 'out of range'&#10;  &#10;  - out of range&#10;  + bad field">def test_out_of_range():
+        with pytest.raises(ValueError) as e: f('0-99', 0, 59)
+&gt;       assert str(e.value) == 'out of range'
+E       AssertionError: assert 'bad field' == 'out of range'
+E         
+E         - out of range
+E         + bad field
+
+tests\test_solution.py:17: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-140516.cron_field_expand.tests.test_solution" name="test_zero_step" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-140516.cron_field_expand.tests.test_solution" name="test_bad_bounds" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-140516.cron_field_expand.tests.test_solution" name="test_empty_field" time="0.000" /></testsuite></testsuites>

@@ -1,0 +1,220 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="12" skipped="0" tests="12" time="0.247" timestamp="2026-07-14T13:29:16.631403-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260714-125209.semver_compare.tests.test_solution" name="test_equal" time="0.001"><failure message="NameError: name '_SEMVER' is not defined">&gt;   def test_equal(): assert f('1.0.0', '1.0.0') == 0
+                             ^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:3: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+a = '1.0.0', b = '1.0.0'
+
+    def semver_compare(a: str, b: str) -&gt; int:
+        # Validate both are strings and parse
+        for name, ver in [('a', a), ('b', b)]:
+            if not isinstance(ver, str):
+                raise ValueError('bad version')
+&gt;           if (not _SEMVER.match(ver)
+                    ^^^^^^^
+                    or len(ver.split('.')[-1].split('-')[0]) == 0): # trailing '.' -&gt; empty patch
+E                   NameError: name '_SEMVER' is not defined
+
+solution.py:6: NameError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-125209.semver_compare.tests.test_solution" name="test_major" time="0.000"><failure message="NameError: name '_SEMVER' is not defined">&gt;   def test_major(): assert f('1.0.0', '2.0.0') == -1
+                             ^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:4: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+a = '1.0.0', b = '2.0.0'
+
+    def semver_compare(a: str, b: str) -&gt; int:
+        # Validate both are strings and parse
+        for name, ver in [('a', a), ('b', b)]:
+            if not isinstance(ver, str):
+                raise ValueError('bad version')
+&gt;           if (not _SEMVER.match(ver)
+                    ^^^^^^^
+                    or len(ver.split('.')[-1].split('-')[0]) == 0): # trailing '.' -&gt; empty patch
+E                   NameError: name '_SEMVER' is not defined
+
+solution.py:6: NameError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-125209.semver_compare.tests.test_solution" name="test_major_gt" time="0.000"><failure message="NameError: name '_SEMVER' is not defined">&gt;   def test_major_gt(): assert f('2.0.0', '1.0.0') == 1
+                                ^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:5: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+a = '2.0.0', b = '1.0.0'
+
+    def semver_compare(a: str, b: str) -&gt; int:
+        # Validate both are strings and parse
+        for name, ver in [('a', a), ('b', b)]:
+            if not isinstance(ver, str):
+                raise ValueError('bad version')
+&gt;           if (not _SEMVER.match(ver)
+                    ^^^^^^^
+                    or len(ver.split('.')[-1].split('-')[0]) == 0): # trailing '.' -&gt; empty patch
+E                   NameError: name '_SEMVER' is not defined
+
+solution.py:6: NameError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-125209.semver_compare.tests.test_solution" name="test_patch" time="0.000"><failure message="NameError: name '_SEMVER' is not defined">&gt;   def test_patch(): assert f('1.0.0', '1.0.1') == -1
+                             ^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:6: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+a = '1.0.0', b = '1.0.1'
+
+    def semver_compare(a: str, b: str) -&gt; int:
+        # Validate both are strings and parse
+        for name, ver in [('a', a), ('b', b)]:
+            if not isinstance(ver, str):
+                raise ValueError('bad version')
+&gt;           if (not _SEMVER.match(ver)
+                    ^^^^^^^
+                    or len(ver.split('.')[-1].split('-')[0]) == 0): # trailing '.' -&gt; empty patch
+E                   NameError: name '_SEMVER' is not defined
+
+solution.py:6: NameError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-125209.semver_compare.tests.test_solution" name="test_pre_lt_release" time="0.000"><failure message="NameError: name '_SEMVER' is not defined">&gt;   def test_pre_lt_release(): assert f('1.0.0-alpha', '1.0.0') == -1
+                                      ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:7: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+a = '1.0.0-alpha', b = '1.0.0'
+
+    def semver_compare(a: str, b: str) -&gt; int:
+        # Validate both are strings and parse
+        for name, ver in [('a', a), ('b', b)]:
+            if not isinstance(ver, str):
+                raise ValueError('bad version')
+&gt;           if (not _SEMVER.match(ver)
+                    ^^^^^^^
+                    or len(ver.split('.')[-1].split('-')[0]) == 0): # trailing '.' -&gt; empty patch
+E                   NameError: name '_SEMVER' is not defined
+
+solution.py:6: NameError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-125209.semver_compare.tests.test_solution" name="test_more_ids" time="0.000"><failure message="NameError: name '_SEMVER' is not defined">&gt;   def test_more_ids(): assert f('1.0.0-alpha', '1.0.0-alpha.1') == -1
+                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:8: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+a = '1.0.0-alpha', b = '1.0.0-alpha.1'
+
+    def semver_compare(a: str, b: str) -&gt; int:
+        # Validate both are strings and parse
+        for name, ver in [('a', a), ('b', b)]:
+            if not isinstance(ver, str):
+                raise ValueError('bad version')
+&gt;           if (not _SEMVER.match(ver)
+                    ^^^^^^^
+                    or len(ver.split('.')[-1].split('-')[0]) == 0): # trailing '.' -&gt; empty patch
+E                   NameError: name '_SEMVER' is not defined
+
+solution.py:6: NameError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-125209.semver_compare.tests.test_solution" name="test_numeric_lt_alpha" time="0.000"><failure message="NameError: name '_SEMVER' is not defined">&gt;   def test_numeric_lt_alpha(): assert f('1.0.0-alpha.1', '1.0.0-alpha.beta') == -1
+                                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:9: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+a = '1.0.0-alpha.1', b = '1.0.0-alpha.beta'
+
+    def semver_compare(a: str, b: str) -&gt; int:
+        # Validate both are strings and parse
+        for name, ver in [('a', a), ('b', b)]:
+            if not isinstance(ver, str):
+                raise ValueError('bad version')
+&gt;           if (not _SEMVER.match(ver)
+                    ^^^^^^^
+                    or len(ver.split('.')[-1].split('-')[0]) == 0): # trailing '.' -&gt; empty patch
+E                   NameError: name '_SEMVER' is not defined
+
+solution.py:6: NameError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-125209.semver_compare.tests.test_solution" name="test_ascii_order" time="0.000"><failure message="NameError: name '_SEMVER' is not defined">&gt;   def test_ascii_order(): assert f('1.0.0-alpha.beta', '1.0.0-beta') == -1
+                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:10: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+a = '1.0.0-alpha.beta', b = '1.0.0-beta'
+
+    def semver_compare(a: str, b: str) -&gt; int:
+        # Validate both are strings and parse
+        for name, ver in [('a', a), ('b', b)]:
+            if not isinstance(ver, str):
+                raise ValueError('bad version')
+&gt;           if (not _SEMVER.match(ver)
+                    ^^^^^^^
+                    or len(ver.split('.')[-1].split('-')[0]) == 0): # trailing '.' -&gt; empty patch
+E                   NameError: name '_SEMVER' is not defined
+
+solution.py:6: NameError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-125209.semver_compare.tests.test_solution" name="test_numeric_ids" time="0.000"><failure message="NameError: name '_SEMVER' is not defined">&gt;   def test_numeric_ids(): assert f('1.0.0-beta.2', '1.0.0-beta.11') == -1
+                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:11: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+a = '1.0.0-beta.2', b = '1.0.0-beta.11'
+
+    def semver_compare(a: str, b: str) -&gt; int:
+        # Validate both are strings and parse
+        for name, ver in [('a', a), ('b', b)]:
+            if not isinstance(ver, str):
+                raise ValueError('bad version')
+&gt;           if (not _SEMVER.match(ver)
+                    ^^^^^^^
+                    or len(ver.split('.')[-1].split('-')[0]) == 0): # trailing '.' -&gt; empty patch
+E                   NameError: name '_SEMVER' is not defined
+
+solution.py:6: NameError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-125209.semver_compare.tests.test_solution" name="test_bad_two_parts" time="0.000"><failure message="NameError: name '_SEMVER' is not defined">def test_bad_two_parts():
+&gt;       with pytest.raises(ValueError) as e: f('1.0', '1.0.0')
+                                             ^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:13: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+a = '1.0', b = '1.0.0'
+
+    def semver_compare(a: str, b: str) -&gt; int:
+        # Validate both are strings and parse
+        for name, ver in [('a', a), ('b', b)]:
+            if not isinstance(ver, str):
+                raise ValueError('bad version')
+&gt;           if (not _SEMVER.match(ver)
+                    ^^^^^^^
+                    or len(ver.split('.')[-1].split('-')[0]) == 0): # trailing '.' -&gt; empty patch
+E                   NameError: name '_SEMVER' is not defined
+
+solution.py:6: NameError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-125209.semver_compare.tests.test_solution" name="test_bad_leading_zero" time="0.001"><failure message="NameError: name '_SEMVER' is not defined">def test_bad_leading_zero():
+&gt;       with pytest.raises(ValueError): f('01.0.0', '1.0.0')
+                                        ^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:16: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+a = '01.0.0', b = '1.0.0'
+
+    def semver_compare(a: str, b: str) -&gt; int:
+        # Validate both are strings and parse
+        for name, ver in [('a', a), ('b', b)]:
+            if not isinstance(ver, str):
+                raise ValueError('bad version')
+&gt;           if (not _SEMVER.match(ver)
+                    ^^^^^^^
+                    or len(ver.split('.')[-1].split('-')[0]) == 0): # trailing '.' -&gt; empty patch
+E                   NameError: name '_SEMVER' is not defined
+
+solution.py:6: NameError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-125209.semver_compare.tests.test_solution" name="test_bad_pre_leading_zero" time="0.000"><failure message="NameError: name '_SEMVER' is not defined">def test_bad_pre_leading_zero():
+&gt;       with pytest.raises(ValueError): f('1.0.0-01', '1.0.0')
+                                        ^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:18: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+a = '1.0.0-01', b = '1.0.0'
+
+    def semver_compare(a: str, b: str) -&gt; int:
+        # Validate both are strings and parse
+        for name, ver in [('a', a), ('b', b)]:
+            if not isinstance(ver, str):
+                raise ValueError('bad version')
+&gt;           if (not _SEMVER.match(ver)
+                    ^^^^^^^
+                    or len(ver.split('.')[-1].split('-')[0]) == 0): # trailing '.' -&gt; empty patch
+E                   NameError: name '_SEMVER' is not defined
+
+solution.py:6: NameError</failure></testcase></testsuite></testsuites>

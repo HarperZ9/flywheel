@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="6" skipped="0" tests="6" time="0.242" timestamp="2026-07-13T20:19:17.319870-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-201327.josephus.tests.test_solution" name="test_single" time="0.001"><failure message="assert 1 == 0&#10; +  where 1 = f(1, 3)">def test_single():
+&gt;       assert f(1, 3) == 0
+E       assert 1 == 0
+E        +  where 1 = f(1, 3)
+
+tests\test_solution.py:4: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.josephus.tests.test_solution" name="test_k1" time="0.000"><failure message="assert 5 == 4&#10; +  where 5 = f(5, 1)">def test_k1():
+&gt;       assert f(5, 1) == 4
+E       assert 5 == 4
+E        +  where 5 = f(5, 1)
+
+tests\test_solution.py:6: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.josephus.tests.test_solution" name="test_classic" time="0.000"><failure message="assert 7 == 3&#10; +  where 7 = f(7, 3)">def test_classic():
+&gt;       assert f(7, 3) == 3
+E       assert 7 == 3
+E        +  where 7 = f(7, 3)
+
+tests\test_solution.py:8: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.josephus.tests.test_solution" name="test_two" time="0.000"><failure message="assert 1 == 0&#10; +  where 1 = f(2, 2)">def test_two():
+&gt;       assert f(2, 2) == 0
+E       assert 1 == 0
+E        +  where 1 = f(2, 2)
+
+tests\test_solution.py:10: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.josephus.tests.test_solution" name="test_bad_n" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_bad_n():
+&gt;       with pytest.raises(ValueError):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:12: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.josephus.tests.test_solution" name="test_bad_k" time="0.000"><failure message="ZeroDivisionError: integer modulo by zero">def test_bad_k():
+        with pytest.raises(ValueError):
+&gt;           f(3, 0)
+
+tests\test_solution.py:16: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+n = 3, k = 0
+
+    def josephus(n: int, k: int) -&gt; int:
+        """
+        Calculate the position of the survivor in a circle of 'n' people starting from person '0'.
+    
+        Parameters:
+        n (int): Number of people.
+        k (int): Number of steps per round to eliminate and count the survivors.
+    
+        Returns:
+        int: The number of the survivor based on the Josephus problem, or raises ValueError if either n or k are invalid.
+        """
+        if not 1 &lt;= n &lt; 30 and not 1 &lt;= k &lt; 21:
+            raise ValueError("Invalid parameters: 'n' must be between 1 and 29, and 'k' must be between 1 and 20.")
+    
+        # If anyone is the last person, it's impossible to find a survivor
+&gt;       if n == 1 or (n - 1) % k == 0:
+                     ^^^^^^^^^^^
+E       ZeroDivisionError: integer modulo by zero
+
+solution.py:16: ZeroDivisionError</failure></testcase></testsuite></testsuites>

@@ -1,0 +1,421 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="9" skipped="0" tests="10" time="0.268" timestamp="2026-07-13T19:44:02.677498-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-192539.turtle_walk_program.tests.test_solution" name="test_empty" time="0.001" /><testcase classname="artifacts.uplift.work_20260713-192539.turtle_walk_program.tests.test_solution" name="test_walk" time="0.001"><failure message="UnboundLocalError: cannot access local variable 'count_str' where it is not associated with a value">&gt;   def test_walk(): assert f('2FR3F') == (3, 2, 'E')
+                            ^^^^^^^^^^
+
+tests\test_solution.py:4: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+prog = '2FR3F'
+
+    def turtle(prog: str) -&gt; tuple:
+        def process_command(command: str):
+            if not command or not command[0].isdigit():
+                raise ValueError('bad command')
+    
+            count_str = ''
+            for i in range(len(command)):
+                if command[i] == 'F':
+                    nonlocal x, y, heading
+                    move(command[:i])
+                elif command[i] == 'B':
+                    nonlocal x, y, heading
+                    backward(command[:i])
+                elif command[i] == 'L':
+                    turn_left(command[:i])
+                elif command[i] == 'R':
+                    turn_right(command[:i])
+                else:
+                    raise ValueError('bad command')
+    
+            if count_str and not (len(command) - len(count_str) == 1):
+                if command[-2].isdigit() or command[-2] in ['L', 'R']:
+                    return
+                raise ValueError('dangling count')
+    
+            if command and not command.endswith('F'):
+                if i != len(command) - 1:
+                    raise ValueError('bad command')
+                return
+    
+        x, y, heading = 0, 0, 'N'
+    
+        for i in range(len(prog)):
+            if prog[i].isdigit() or (prog[i] == 'L' and not count_str):
+&gt;               count_str += prog[i]
+                ^^^^^^^^^
+E               UnboundLocalError: cannot access local variable 'count_str' where it is not associated with a value
+
+solution.py:35: UnboundLocalError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-192539.turtle_walk_program.tests.test_solution" name="test_backward" time="0.001"><failure message="UnboundLocalError: cannot access local variable 'count_str' where it is not associated with a value">&gt;   def test_backward(): assert f('B') == (0, -1, 'N')
+                                ^^^^^^
+
+tests\test_solution.py:5: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+prog = 'B'
+
+    def turtle(prog: str) -&gt; tuple:
+        def process_command(command: str):
+            if not command or not command[0].isdigit():
+                raise ValueError('bad command')
+    
+            count_str = ''
+            for i in range(len(command)):
+                if command[i] == 'F':
+                    nonlocal x, y, heading
+                    move(command[:i])
+                elif command[i] == 'B':
+                    nonlocal x, y, heading
+                    backward(command[:i])
+                elif command[i] == 'L':
+                    turn_left(command[:i])
+                elif command[i] == 'R':
+                    turn_right(command[:i])
+                else:
+                    raise ValueError('bad command')
+    
+            if count_str and not (len(command) - len(count_str) == 1):
+                if command[-2].isdigit() or command[-2] in ['L', 'R']:
+                    return
+                raise ValueError('dangling count')
+    
+            if command and not command.endswith('F'):
+                if i != len(command) - 1:
+                    raise ValueError('bad command')
+                return
+    
+        x, y, heading = 0, 0, 'N'
+    
+        for i in range(len(prog)):
+            if prog[i].isdigit() or (prog[i] == 'L' and not count_str):
+                count_str += prog[i]
+&gt;           elif count_str:
+                 ^^^^^^^^^
+E           UnboundLocalError: cannot access local variable 'count_str' where it is not associated with a value
+
+solution.py:36: UnboundLocalError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-192539.turtle_walk_program.tests.test_solution" name="test_double_left" time="0.000"><failure message="UnboundLocalError: cannot access local variable 'count_str' where it is not associated with a value">&gt;   def test_double_left(): assert f('2L') == (0, 0, 'S')
+                                   ^^^^^^^
+
+tests\test_solution.py:6: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+prog = '2L'
+
+    def turtle(prog: str) -&gt; tuple:
+        def process_command(command: str):
+            if not command or not command[0].isdigit():
+                raise ValueError('bad command')
+    
+            count_str = ''
+            for i in range(len(command)):
+                if command[i] == 'F':
+                    nonlocal x, y, heading
+                    move(command[:i])
+                elif command[i] == 'B':
+                    nonlocal x, y, heading
+                    backward(command[:i])
+                elif command[i] == 'L':
+                    turn_left(command[:i])
+                elif command[i] == 'R':
+                    turn_right(command[:i])
+                else:
+                    raise ValueError('bad command')
+    
+            if count_str and not (len(command) - len(count_str) == 1):
+                if command[-2].isdigit() or command[-2] in ['L', 'R']:
+                    return
+                raise ValueError('dangling count')
+    
+            if command and not command.endswith('F'):
+                if i != len(command) - 1:
+                    raise ValueError('bad command')
+                return
+    
+        x, y, heading = 0, 0, 'N'
+    
+        for i in range(len(prog)):
+            if prog[i].isdigit() or (prog[i] == 'L' and not count_str):
+&gt;               count_str += prog[i]
+                ^^^^^^^^^
+E               UnboundLocalError: cannot access local variable 'count_str' where it is not associated with a value
+
+solution.py:35: UnboundLocalError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-192539.turtle_walk_program.tests.test_solution" name="test_multidigit" time="0.000"><failure message="UnboundLocalError: cannot access local variable 'count_str' where it is not associated with a value">&gt;   def test_multidigit(): assert f('10F') == (0, 10, 'N')
+                                  ^^^^^^^^
+
+tests\test_solution.py:7: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+prog = '10F'
+
+    def turtle(prog: str) -&gt; tuple:
+        def process_command(command: str):
+            if not command or not command[0].isdigit():
+                raise ValueError('bad command')
+    
+            count_str = ''
+            for i in range(len(command)):
+                if command[i] == 'F':
+                    nonlocal x, y, heading
+                    move(command[:i])
+                elif command[i] == 'B':
+                    nonlocal x, y, heading
+                    backward(command[:i])
+                elif command[i] == 'L':
+                    turn_left(command[:i])
+                elif command[i] == 'R':
+                    turn_right(command[:i])
+                else:
+                    raise ValueError('bad command')
+    
+            if count_str and not (len(command) - len(count_str) == 1):
+                if command[-2].isdigit() or command[-2] in ['L', 'R']:
+                    return
+                raise ValueError('dangling count')
+    
+            if command and not command.endswith('F'):
+                if i != len(command) - 1:
+                    raise ValueError('bad command')
+                return
+    
+        x, y, heading = 0, 0, 'N'
+    
+        for i in range(len(prog)):
+            if prog[i].isdigit() or (prog[i] == 'L' and not count_str):
+&gt;               count_str += prog[i]
+                ^^^^^^^^^
+E               UnboundLocalError: cannot access local variable 'count_str' where it is not associated with a value
+
+solution.py:35: UnboundLocalError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-192539.turtle_walk_program.tests.test_solution" name="test_full_circle" time="0.000"><failure message="UnboundLocalError: cannot access local variable 'count_str' where it is not associated with a value">&gt;   def test_full_circle(): assert f('LLLL') == (0, 0, 'N')
+                                   ^^^^^^^^^
+
+tests\test_solution.py:8: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+prog = 'LLLL'
+
+    def turtle(prog: str) -&gt; tuple:
+        def process_command(command: str):
+            if not command or not command[0].isdigit():
+                raise ValueError('bad command')
+    
+            count_str = ''
+            for i in range(len(command)):
+                if command[i] == 'F':
+                    nonlocal x, y, heading
+                    move(command[:i])
+                elif command[i] == 'B':
+                    nonlocal x, y, heading
+                    backward(command[:i])
+                elif command[i] == 'L':
+                    turn_left(command[:i])
+                elif command[i] == 'R':
+                    turn_right(command[:i])
+                else:
+                    raise ValueError('bad command')
+    
+            if count_str and not (len(command) - len(count_str) == 1):
+                if command[-2].isdigit() or command[-2] in ['L', 'R']:
+                    return
+                raise ValueError('dangling count')
+    
+            if command and not command.endswith('F'):
+                if i != len(command) - 1:
+                    raise ValueError('bad command')
+                return
+    
+        x, y, heading = 0, 0, 'N'
+    
+        for i in range(len(prog)):
+&gt;           if prog[i].isdigit() or (prog[i] == 'L' and not count_str):
+                                                            ^^^^^^^^^
+E           UnboundLocalError: cannot access local variable 'count_str' where it is not associated with a value
+
+solution.py:34: UnboundLocalError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-192539.turtle_walk_program.tests.test_solution" name="test_zero_count" time="0.000"><failure message="UnboundLocalError: cannot access local variable 'count_str' where it is not associated with a value">def test_zero_count():
+&gt;       with pytest.raises(ValueError) as e: f('0F')
+                                             ^^^^^^^
+
+tests\test_solution.py:10: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+prog = '0F'
+
+    def turtle(prog: str) -&gt; tuple:
+        def process_command(command: str):
+            if not command or not command[0].isdigit():
+                raise ValueError('bad command')
+    
+            count_str = ''
+            for i in range(len(command)):
+                if command[i] == 'F':
+                    nonlocal x, y, heading
+                    move(command[:i])
+                elif command[i] == 'B':
+                    nonlocal x, y, heading
+                    backward(command[:i])
+                elif command[i] == 'L':
+                    turn_left(command[:i])
+                elif command[i] == 'R':
+                    turn_right(command[:i])
+                else:
+                    raise ValueError('bad command')
+    
+            if count_str and not (len(command) - len(count_str) == 1):
+                if command[-2].isdigit() or command[-2] in ['L', 'R']:
+                    return
+                raise ValueError('dangling count')
+    
+            if command and not command.endswith('F'):
+                if i != len(command) - 1:
+                    raise ValueError('bad command')
+                return
+    
+        x, y, heading = 0, 0, 'N'
+    
+        for i in range(len(prog)):
+            if prog[i].isdigit() or (prog[i] == 'L' and not count_str):
+&gt;               count_str += prog[i]
+                ^^^^^^^^^
+E               UnboundLocalError: cannot access local variable 'count_str' where it is not associated with a value
+
+solution.py:35: UnboundLocalError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-192539.turtle_walk_program.tests.test_solution" name="test_leading_zero_count" time="0.000"><failure message="UnboundLocalError: cannot access local variable 'count_str' where it is not associated with a value">def test_leading_zero_count():
+&gt;       with pytest.raises(ValueError) as e: f('07F')
+                                             ^^^^^^^^
+
+tests\test_solution.py:13: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+prog = '07F'
+
+    def turtle(prog: str) -&gt; tuple:
+        def process_command(command: str):
+            if not command or not command[0].isdigit():
+                raise ValueError('bad command')
+    
+            count_str = ''
+            for i in range(len(command)):
+                if command[i] == 'F':
+                    nonlocal x, y, heading
+                    move(command[:i])
+                elif command[i] == 'B':
+                    nonlocal x, y, heading
+                    backward(command[:i])
+                elif command[i] == 'L':
+                    turn_left(command[:i])
+                elif command[i] == 'R':
+                    turn_right(command[:i])
+                else:
+                    raise ValueError('bad command')
+    
+            if count_str and not (len(command) - len(count_str) == 1):
+                if command[-2].isdigit() or command[-2] in ['L', 'R']:
+                    return
+                raise ValueError('dangling count')
+    
+            if command and not command.endswith('F'):
+                if i != len(command) - 1:
+                    raise ValueError('bad command')
+                return
+    
+        x, y, heading = 0, 0, 'N'
+    
+        for i in range(len(prog)):
+            if prog[i].isdigit() or (prog[i] == 'L' and not count_str):
+&gt;               count_str += prog[i]
+                ^^^^^^^^^
+E               UnboundLocalError: cannot access local variable 'count_str' where it is not associated with a value
+
+solution.py:35: UnboundLocalError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-192539.turtle_walk_program.tests.test_solution" name="test_dangling" time="0.000"><failure message="UnboundLocalError: cannot access local variable 'count_str' where it is not associated with a value">def test_dangling():
+&gt;       with pytest.raises(ValueError) as e: f('F12')
+                                             ^^^^^^^^
+
+tests\test_solution.py:16: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+prog = 'F12'
+
+    def turtle(prog: str) -&gt; tuple:
+        def process_command(command: str):
+            if not command or not command[0].isdigit():
+                raise ValueError('bad command')
+    
+            count_str = ''
+            for i in range(len(command)):
+                if command[i] == 'F':
+                    nonlocal x, y, heading
+                    move(command[:i])
+                elif command[i] == 'B':
+                    nonlocal x, y, heading
+                    backward(command[:i])
+                elif command[i] == 'L':
+                    turn_left(command[:i])
+                elif command[i] == 'R':
+                    turn_right(command[:i])
+                else:
+                    raise ValueError('bad command')
+    
+            if count_str and not (len(command) - len(count_str) == 1):
+                if command[-2].isdigit() or command[-2] in ['L', 'R']:
+                    return
+                raise ValueError('dangling count')
+    
+            if command and not command.endswith('F'):
+                if i != len(command) - 1:
+                    raise ValueError('bad command')
+                return
+    
+        x, y, heading = 0, 0, 'N'
+    
+        for i in range(len(prog)):
+            if prog[i].isdigit() or (prog[i] == 'L' and not count_str):
+                count_str += prog[i]
+&gt;           elif count_str:
+                 ^^^^^^^^^
+E           UnboundLocalError: cannot access local variable 'count_str' where it is not associated with a value
+
+solution.py:36: UnboundLocalError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-192539.turtle_walk_program.tests.test_solution" name="test_unknown" time="0.000"><failure message="UnboundLocalError: cannot access local variable 'count_str' where it is not associated with a value">def test_unknown():
+&gt;       with pytest.raises(ValueError) as e: f('FxF')
+                                             ^^^^^^^^
+
+tests\test_solution.py:19: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+prog = 'FxF'
+
+    def turtle(prog: str) -&gt; tuple:
+        def process_command(command: str):
+            if not command or not command[0].isdigit():
+                raise ValueError('bad command')
+    
+            count_str = ''
+            for i in range(len(command)):
+                if command[i] == 'F':
+                    nonlocal x, y, heading
+                    move(command[:i])
+                elif command[i] == 'B':
+                    nonlocal x, y, heading
+                    backward(command[:i])
+                elif command[i] == 'L':
+                    turn_left(command[:i])
+                elif command[i] == 'R':
+                    turn_right(command[:i])
+                else:
+                    raise ValueError('bad command')
+    
+            if count_str and not (len(command) - len(count_str) == 1):
+                if command[-2].isdigit() or command[-2] in ['L', 'R']:
+                    return
+                raise ValueError('dangling count')
+    
+            if command and not command.endswith('F'):
+                if i != len(command) - 1:
+                    raise ValueError('bad command')
+                return
+    
+        x, y, heading = 0, 0, 'N'
+    
+        for i in range(len(prog)):
+            if prog[i].isdigit() or (prog[i] == 'L' and not count_str):
+                count_str += prog[i]
+&gt;           elif count_str:
+                 ^^^^^^^^^
+E           UnboundLocalError: cannot access local variable 'count_str' where it is not associated with a value
+
+solution.py:36: UnboundLocalError</failure></testcase></testsuite></testsuites>

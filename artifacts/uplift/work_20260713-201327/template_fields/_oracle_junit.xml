@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="4" skipped="0" tests="8" time="0.186" timestamp="2026-07-13T20:22:29.257901-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-201327.template_fields.tests.test_solution" name="test_plain_text" time="0.001"><failure message="ValueError: Invalid template: Template contains unbalanced '{'} or missing closing character.">def test_plain_text():
+&gt;       assert parse_template_fields("hello") == [("text", "hello")]
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:6: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:40: in parse_template_fields
+    name, rest = extract_field(text)
+                 ^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+text = ''
+
+    def extract_field(text):
+        # Remove {{ and }} from the text
+        clean_text = re.sub(r'{{', '', text)
+        clean_text = re.sub('}}$', '', clean_text)
+    
+        if not clean_text:
+&gt;           raise ValueError("Invalid template: Template contains unbalanced '{'} or missing closing character.")
+E           ValueError: Invalid template: Template contains unbalanced '{'} or missing closing character.
+
+solution.py:21: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.template_fields.tests.test_solution" name="test_empty" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-201327.template_fields.tests.test_solution" name="test_fields" time="0.000"><failure message="ValueError: Invalid template: Template contains unbalanced '{'} or missing closing character.">def test_fields():
+&gt;       assert parse_template_fields("{a}") == [("field", "a")]
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:14: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:40: in parse_template_fields
+    name, rest = extract_field(text)
+                 ^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+text = ''
+
+    def extract_field(text):
+        # Remove {{ and }} from the text
+        clean_text = re.sub(r'{{', '', text)
+        clean_text = re.sub('}}$', '', clean_text)
+    
+        if not clean_text:
+&gt;           raise ValueError("Invalid template: Template contains unbalanced '{'} or missing closing character.")
+E           ValueError: Invalid template: Template contains unbalanced '{'} or missing closing character.
+
+solution.py:21: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.template_fields.tests.test_solution" name="test_name_charset_ok" time="0.000"><failure message="ValueError: Invalid field name: '{' must contain only letters, digits, or underscores.">def test_name_charset_ok():
+&gt;       assert parse_template_fields("{_a1}") == [("field", "_a1")]
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:24: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:40: in parse_template_fields
+    name, rest = extract_field(text)
+                 ^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+text = '_a1'
+
+    def extract_field(text):
+        # Remove {{ and }} from the text
+        clean_text = re.sub(r'{{', '', text)
+        clean_text = re.sub('}}$', '', clean_text)
+    
+        if not clean_text:
+            raise ValueError("Invalid template: Template contains unbalanced '{'} or missing closing character.")
+    
+        name, rest = clean_text.split('"', 1) if '}' in text else (text, "")
+    
+        # Ensure non-empty and start with an ASCII letter or underscore
+        if len(name) == 0 or not name[0].isalpha() or not name[0].islower():
+&gt;           raise ValueError("Invalid field name: '{' must contain only letters, digits, or underscores.")
+E           ValueError: Invalid field name: '{' must contain only letters, digits, or underscores.
+
+solution.py:27: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.template_fields.tests.test_solution" name="test_brace_escapes_merge_maximal" time="0.000"><failure message="ValueError: Invalid template: Template contains unbalanced '{'} or missing closing character.">def test_brace_escapes_merge_maximal():
+&gt;       assert parse_template_fields("{{") == [("text", "{")]
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:29: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:40: in parse_template_fields
+    name, rest = extract_field(text)
+                 ^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+text = ''
+
+    def extract_field(text):
+        # Remove {{ and }} from the text
+        clean_text = re.sub(r'{{', '', text)
+        clean_text = re.sub('}}$', '', clean_text)
+    
+        if not clean_text:
+&gt;           raise ValueError("Invalid template: Template contains unbalanced '{'} or missing closing character.")
+E           ValueError: Invalid template: Template contains unbalanced '{'} or missing closing character.
+
+solution.py:21: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.template_fields.tests.test_solution" name="test_bad_names_raise" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-201327.template_fields.tests.test_solution" name="test_unterminated_raises" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-201327.template_fields.tests.test_solution" name="test_stray_brace_raises" time="0.000" /></testsuite></testsuites>

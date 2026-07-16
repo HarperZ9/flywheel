@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="8" skipped="0" tests="8" time="0.233" timestamp="2026-07-14T13:19:33.056376-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260714-125209.largest_remainder_apportion.tests.test_solution" name="test_exact_no_remainder" time="0.001"><failure message="TypeError: can only concatenate list (not &quot;tuple&quot;) to list">def test_exact_no_remainder():
+&gt;       assert apportion([2, 3, 5], 10) == [2, 3, 5]
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:6: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+weights = [2, 3, 5], total = 10
+
+    def apportion(weights, total):
+        if not isinstance(total, int) or not weights or not all(isinstance(w, int) for w in weights):
+            raise ValueError("weights must be a non-empty list of ints and total an int")
+        if any(not v &gt;= 0 for v in (total,) + tuple(weights)):
+            raise ValueError("weights and total must be non-negative")
+&gt;       if any(isinstance(w, bool) for w in weights + (total,)):
+                                            ^^^^^^^^^^^^^^^^^^
+E       TypeError: can only concatenate list (not "tuple") to list
+
+solution.py:6: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-125209.largest_remainder_apportion.tests.test_solution" name="test_tie_broken_by_lowest_index" time="0.000"><failure message="TypeError: can only concatenate list (not &quot;tuple&quot;) to list">def test_tie_broken_by_lowest_index():
+&gt;       assert apportion([1, 1, 1], 100) == [34, 33, 33]
+               ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:11: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+weights = [1, 1, 1], total = 100
+
+    def apportion(weights, total):
+        if not isinstance(total, int) or not weights or not all(isinstance(w, int) for w in weights):
+            raise ValueError("weights must be a non-empty list of ints and total an int")
+        if any(not v &gt;= 0 for v in (total,) + tuple(weights)):
+            raise ValueError("weights and total must be non-negative")
+&gt;       if any(isinstance(w, bool) for w in weights + (total,)):
+                                            ^^^^^^^^^^^^^^^^^^
+E       TypeError: can only concatenate list (not "tuple") to list
+
+solution.py:6: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-125209.largest_remainder_apportion.tests.test_solution" name="test_largest_remainder_wins" time="0.000"><failure message="TypeError: can only concatenate list (not &quot;tuple&quot;) to list">def test_largest_remainder_wins():
+&gt;       assert apportion([500, 499, 1], 10) == [5, 5, 0]
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:16: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+weights = [500, 499, 1], total = 10
+
+    def apportion(weights, total):
+        if not isinstance(total, int) or not weights or not all(isinstance(w, int) for w in weights):
+            raise ValueError("weights must be a non-empty list of ints and total an int")
+        if any(not v &gt;= 0 for v in (total,) + tuple(weights)):
+            raise ValueError("weights and total must be non-negative")
+&gt;       if any(isinstance(w, bool) for w in weights + (total,)):
+                                            ^^^^^^^^^^^^^^^^^^
+E       TypeError: can only concatenate list (not "tuple") to list
+
+solution.py:6: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-125209.largest_remainder_apportion.tests.test_solution" name="test_zero_weight_never_gets_extra" time="0.000"><failure message="TypeError: can only concatenate list (not &quot;tuple&quot;) to list">def test_zero_weight_never_gets_extra():
+&gt;       assert apportion([0, 5], 7) == [0, 7]
+               ^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:21: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+weights = [0, 5], total = 7
+
+    def apportion(weights, total):
+        if not isinstance(total, int) or not weights or not all(isinstance(w, int) for w in weights):
+            raise ValueError("weights must be a non-empty list of ints and total an int")
+        if any(not v &gt;= 0 for v in (total,) + tuple(weights)):
+            raise ValueError("weights and total must be non-negative")
+&gt;       if any(isinstance(w, bool) for w in weights + (total,)):
+                                            ^^^^^^^^^^^^^^^^^^
+E       TypeError: can only concatenate list (not "tuple") to list
+
+solution.py:6: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-125209.largest_remainder_apportion.tests.test_solution" name="test_total_zero" time="0.000"><failure message="TypeError: can only concatenate list (not &quot;tuple&quot;) to list">def test_total_zero():
+&gt;       assert apportion([3, 2], 0) == [0, 0]
+               ^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:26: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+weights = [3, 2], total = 0
+
+    def apportion(weights, total):
+        if not isinstance(total, int) or not weights or not all(isinstance(w, int) for w in weights):
+            raise ValueError("weights must be a non-empty list of ints and total an int")
+        if any(not v &gt;= 0 for v in (total,) + tuple(weights)):
+            raise ValueError("weights and total must be non-negative")
+&gt;       if any(isinstance(w, bool) for w in weights + (total,)):
+                                            ^^^^^^^^^^^^^^^^^^
+E       TypeError: can only concatenate list (not "tuple") to list
+
+solution.py:6: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-125209.largest_remainder_apportion.tests.test_solution" name="test_sum_invariant_and_length" time="0.000"><failure message="TypeError: can only concatenate list (not &quot;tuple&quot;) to list">def test_sum_invariant_and_length():
+&gt;       out = apportion([3, 1, 4, 1, 5, 9, 2, 6], 1234)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:30: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+weights = [3, 1, 4, 1, 5, 9, ...], total = 1234
+
+    def apportion(weights, total):
+        if not isinstance(total, int) or not weights or not all(isinstance(w, int) for w in weights):
+            raise ValueError("weights must be a non-empty list of ints and total an int")
+        if any(not v &gt;= 0 for v in (total,) + tuple(weights)):
+            raise ValueError("weights and total must be non-negative")
+&gt;       if any(isinstance(w, bool) for w in weights + (total,)):
+                                            ^^^^^^^^^^^^^^^^^^
+E       TypeError: can only concatenate list (not "tuple") to list
+
+solution.py:6: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-125209.largest_remainder_apportion.tests.test_solution" name="test_no_mutation" time="0.000"><failure message="TypeError: can only concatenate list (not &quot;tuple&quot;) to list">def test_no_mutation():
+        w = [5, 3, 2]
+        snapshot = list(w)
+&gt;       apportion(w, 7)
+
+tests\test_solution.py:38: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+weights = [5, 3, 2], total = 7
+
+    def apportion(weights, total):
+        if not isinstance(total, int) or not weights or not all(isinstance(w, int) for w in weights):
+            raise ValueError("weights must be a non-empty list of ints and total an int")
+        if any(not v &gt;= 0 for v in (total,) + tuple(weights)):
+            raise ValueError("weights and total must be non-negative")
+&gt;       if any(isinstance(w, bool) for w in weights + (total,)):
+                                            ^^^^^^^^^^^^^^^^^^
+E       TypeError: can only concatenate list (not "tuple") to list
+
+solution.py:6: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-125209.largest_remainder_apportion.tests.test_solution" name="test_error_contracts" time="0.000"><failure message="TypeError: can only concatenate list (not &quot;tuple&quot;) to list">def test_error_contracts():
+        with pytest.raises(ValueError):
+            apportion([], 10)
+        with pytest.raises(ValueError):
+            apportion([-1, 2], 10)
+        with pytest.raises(ValueError):
+&gt;           apportion([0, 0], 10)
+
+tests\test_solution.py:48: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+weights = [0, 0], total = 10
+
+    def apportion(weights, total):
+        if not isinstance(total, int) or not weights or not all(isinstance(w, int) for w in weights):
+            raise ValueError("weights must be a non-empty list of ints and total an int")
+        if any(not v &gt;= 0 for v in (total,) + tuple(weights)):
+            raise ValueError("weights and total must be non-negative")
+&gt;       if any(isinstance(w, bool) for w in weights + (total,)):
+                                            ^^^^^^^^^^^^^^^^^^
+E       TypeError: can only concatenate list (not "tuple") to list
+
+solution.py:6: TypeError</failure></testcase></testsuite></testsuites>

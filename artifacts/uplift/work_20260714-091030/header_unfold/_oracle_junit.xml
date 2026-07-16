@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="4" skipped="0" tests="10" time="0.339" timestamp="2026-07-14T09:24:25.389288-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260714-091030.header_unfold.tests.test_solution" name="test_basic" time="0.001" /><testcase classname="artifacts.uplift.work_20260714-091030.header_unfold.tests.test_solution" name="test_unfolding" time="0.001"><failure message="ValueError: header lacks a colon or empty name">def test_unfolding():
+&gt;       assert unfold_headers(["Subject: hello", "\tworld", "X-A: 1"]) == [
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            ("subject", "hello world"),
+            ("x-a", "1"),
+        ]
+
+tests\test_solution.py:13: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+lines = ['Subject: hello', '\tworld', 'X-A: 1']
+
+    def unfold_headers(lines: list[str]) -&gt; list[tuple[str, str]]:
+        if not lines:
+            return []
+    
+        out = []
+        name: str | None = None
+        pieces: list[str] = []
+    
+        for line in lines:
+            stripped = line.strip()
+            if stripped and (stripped[0] == " " or stripped[0] == "\t"):
+                if name is None:
+                    raise ValueError("physical line starts with whitespace but no preceding header")
+                # continuation
+                piece = line.lstrip().strip()
+                if not piece:
+                    raise ValueError("continuation line has only whitespace content")
+                pieces.append(piece)
+            else:
+                if name is not None:
+                    out.append((name, " ".join(pieces)))
+                colon_pos = stripped.find(":")
+                if colon_pos == -1 or colon_pos == 0:
+&gt;                   raise ValueError("header lacks a colon or empty name")
+E                   ValueError: header lacks a colon or empty name
+
+solution.py:24: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-091030.header_unfold.tests.test_solution" name="test_value_whitespace_and_empty_value" time="0.001"><failure message="ValueError: header lacks a colon or empty name">def test_value_whitespace_and_empty_value():
+        assert unfold_headers(["A:   spaced   "]) == [("a", "spaced")]
+        assert unfold_headers(["A:"]) == [("a", "")]
+&gt;       assert unfold_headers(["A:", " x"]) == [("a", "x")]
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:23: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+lines = ['A:', ' x']
+
+    def unfold_headers(lines: list[str]) -&gt; list[tuple[str, str]]:
+        if not lines:
+            return []
+    
+        out = []
+        name: str | None = None
+        pieces: list[str] = []
+    
+        for line in lines:
+            stripped = line.strip()
+            if stripped and (stripped[0] == " " or stripped[0] == "\t"):
+                if name is None:
+                    raise ValueError("physical line starts with whitespace but no preceding header")
+                # continuation
+                piece = line.lstrip().strip()
+                if not piece:
+                    raise ValueError("continuation line has only whitespace content")
+                pieces.append(piece)
+            else:
+                if name is not None:
+                    out.append((name, " ".join(pieces)))
+                colon_pos = stripped.find(":")
+                if colon_pos == -1 or colon_pos == 0:
+&gt;                   raise ValueError("header lacks a colon or empty name")
+E                   ValueError: header lacks a colon or empty name
+
+solution.py:24: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-091030.header_unfold.tests.test_solution" name="test_case_and_duplicates" time="0.001" /><testcase classname="artifacts.uplift.work_20260714-091030.header_unfold.tests.test_solution" name="test_empty_input" time="0.001" /><testcase classname="artifacts.uplift.work_20260714-091030.header_unfold.tests.test_solution" name="test_no_mutation" time="0.001"><failure message="ValueError: header lacks a colon or empty name">def test_no_mutation():
+        lines = ["A: 1", " cont", "B: 2"]
+        snapshot = list(lines)
+&gt;       unfold_headers(lines)
+
+tests\test_solution.py:41: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+lines = ['A: 1', ' cont', 'B: 2']
+
+    def unfold_headers(lines: list[str]) -&gt; list[tuple[str, str]]:
+        if not lines:
+            return []
+    
+        out = []
+        name: str | None = None
+        pieces: list[str] = []
+    
+        for line in lines:
+            stripped = line.strip()
+            if stripped and (stripped[0] == " " or stripped[0] == "\t"):
+                if name is None:
+                    raise ValueError("physical line starts with whitespace but no preceding header")
+                # continuation
+                piece = line.lstrip().strip()
+                if not piece:
+                    raise ValueError("continuation line has only whitespace content")
+                pieces.append(piece)
+            else:
+                if name is not None:
+                    out.append((name, " ".join(pieces)))
+                colon_pos = stripped.find(":")
+                if colon_pos == -1 or colon_pos == 0:
+&gt;                   raise ValueError("header lacks a colon or empty name")
+E                   ValueError: header lacks a colon or empty name
+
+solution.py:24: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-091030.header_unfold.tests.test_solution" name="test_continuation_first_raises" time="0.001"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_continuation_first_raises():
+&gt;       with pytest.raises(ValueError):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:46: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260714-091030.header_unfold.tests.test_solution" name="test_missing_colon_raises" time="0.001" /><testcase classname="artifacts.uplift.work_20260714-091030.header_unfold.tests.test_solution" name="test_bad_name_raises" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-091030.header_unfold.tests.test_solution" name="test_blank_continuation_raises" time="0.000" /></testsuite></testsuites>

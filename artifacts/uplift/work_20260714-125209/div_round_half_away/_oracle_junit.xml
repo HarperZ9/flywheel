@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="3" skipped="0" tests="8" time="0.225" timestamp="2026-07-14T13:15:34.085284-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260714-125209.div_round_half_away.tests.test_solution" name="test_basic_rounding" time="0.001" /><testcase classname="artifacts.uplift.work_20260714-125209.div_round_half_away.tests.test_solution" name="test_ties_away_from_zero_positive" time="0.001"><failure message="assert 5 == 4&#10; +  where 5 = div_round_half_away(7, 2)">def test_ties_away_from_zero_positive():
+&gt;       assert div_round_half_away(7, 2) == 4
+E       assert 5 == 4
+E        +  where 5 = div_round_half_away(7, 2)
+
+tests\test_solution.py:13: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-125209.div_round_half_away.tests.test_solution" name="test_ties_away_from_zero_negative" time="0.000"><failure message="assert -5 == -4&#10; +  where -5 = div_round_half_away(-7, 2)">def test_ties_away_from_zero_negative():
+&gt;       assert div_round_half_away(-7, 2) == -4
+E       assert -5 == -4
+E        +  where -5 = div_round_half_away(-7, 2)
+
+tests\test_solution.py:20: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-125209.div_round_half_away.tests.test_solution" name="test_zero_numerator" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-125209.div_round_half_away.tests.test_solution" name="test_exact_division" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-125209.div_round_half_away.tests.test_solution" name="test_big_int_exactness" time="0.000"><failure message="assert 750000000000000000000000000001 == ((5 * (10 ** 29)) + 1)&#10; +  where 750000000000000000000000000001 = div_round_half_away(((10 ** 30) + 1), 2)">def test_big_int_exactness():
+        # (10**30 + 1) / 2 is an exact tie at 5*10**29 + 0.5 -&gt; away from zero
+&gt;       assert div_round_half_away(10**30 + 1, 2) == 5 * 10**29 + 1
+E       assert 750000000000000000000000000001 == ((5 * (10 ** 29)) + 1)
+E        +  where 750000000000000000000000000001 = div_round_half_away(((10 ** 30) + 1), 2)
+
+tests\test_solution.py:39: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-125209.div_round_half_away.tests.test_solution" name="test_zero_denominator_raises" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-125209.div_round_half_away.tests.test_solution" name="test_bool_and_non_int_raise" time="0.000" /></testsuite></testsuites>

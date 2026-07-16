@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="8" time="0.206" timestamp="2026-07-14T13:13:25.932987-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260714-125209.template_fields.tests.test_solution" name="test_plain_text" time="0.001" /><testcase classname="artifacts.uplift.work_20260714-125209.template_fields.tests.test_solution" name="test_empty" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-125209.template_fields.tests.test_solution" name="test_fields" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-125209.template_fields.tests.test_solution" name="test_name_charset_ok" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-125209.template_fields.tests.test_solution" name="test_brace_escapes_merge_maximal" time="0.001"><failure message="AssertionError: assert [('text', 'a'...'text', '}c')] == [('text', 'a{b}c')]&#10;  &#10;  At index 0 diff: ('text', 'a') != ('text', 'a{b}c')&#10;  Left contains 2 more items, first extra item: ('text', '{b')&#10;  Use -v to get more diff">def test_brace_escapes_merge_maximal():
+        assert parse_template_fields("{{") == [("text", "{")]
+&gt;       assert parse_template_fields("a{{b}}c") == [("text", "a{b}c")]
+E       AssertionError: assert [('text', 'a'...'text', '}c')] == [('text', 'a{b}c')]
+E         
+E         At index 0 diff: ('text', 'a') != ('text', 'a{b}c')
+E         Left contains 2 more items, first extra item: ('text', '{b')
+E         Use -v to get more diff
+
+tests\test_solution.py:30: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-125209.template_fields.tests.test_solution" name="test_bad_names_raise" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-125209.template_fields.tests.test_solution" name="test_unterminated_raises" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-125209.template_fields.tests.test_solution" name="test_stray_brace_raises" time="0.000" /></testsuite></testsuites>

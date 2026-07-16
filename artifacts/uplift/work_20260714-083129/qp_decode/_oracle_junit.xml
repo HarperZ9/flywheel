@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="10" skipped="0" tests="16" time="0.234" timestamp="2026-07-14T09:09:39.575016-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260714-083129.qp_decode.tests.test_solution" name="test_plain" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-083129.qp_decode.tests.test_solution" name="test_space" time="0.002"><failure message="AssertionError: assert 'aȋ' == 'a b'&#10;  &#10;  - a b&#10;  + aȋ">&gt;   def test_space(): assert f('a=20b') == 'a b'
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert 'aȋ' == 'a b'
+E     
+E     - a b
+E     + aȋ
+
+tests\test_solution.py:4: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.qp_decode.tests.test_solution" name="test_equals" time="0.001"><failure message="AssertionError: assert '\n' == '='&#10;  &#10;  Strings contain only whitespace, escaping them using repr()&#10;  - '='&#10;  + '\n'">&gt;   def test_equals(): assert f('=3D') == '='
+                       ^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert '\n' == '='
+E     
+E     Strings contain only whitespace, escaping them using repr()
+E     - '='
+E     + '\n'
+
+tests\test_solution.py:5: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.qp_decode.tests.test_solution" name="test_letters" time="0.000"><failure message="AssertionError: assert '\n42' == 'AB'&#10;  &#10;  - AB&#10;  + &#10;  + 42">&gt;   def test_letters(): assert f('=41=42') == 'AB'
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert '\n42' == 'AB'
+E     
+E     - AB
+E     + 
+E     + 42
+
+tests\test_solution.py:6: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.qp_decode.tests.test_solution" name="test_soft_lf" time="0.001"><failure message="ValueError: bad escape">&gt;   def test_soft_lf(): assert f('foo=\nbar') == 'foobar'
+                               ^^^^^^^^^^^^^^
+
+tests\test_solution.py:7: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+s = 'foo=\nbar'
+
+    def qp_decode(s):
+        if not isinstance(s, str):
+            raise ValueError('bad input')
+    
+        result = []
+        i = 0
+    
+        while i &lt; len(s):
+            if s[i] == '=':
+                j = i + 1
+                while j &lt; len(s) and s[j].isalnum():
+                    j += 1
+    
+                if j - i == 3:  # Check for two hex digits followed by equals sign (soft line break)
+                    result.append('\n')
+                    i = j + 1
+                    continue
+    
+                try:
+                    decoded_char = chr(int(s[i+1:j], 16))
+                except ValueError:
+&gt;                   raise ValueError('bad escape') from None
+E                   ValueError: bad escape
+
+solution.py:22: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.qp_decode.tests.test_solution" name="test_soft_crlf" time="0.000"><failure message="ValueError: bad escape">&gt;   def test_soft_crlf(): assert f('foo=\r\nbar') == 'foobar'
+                                 ^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:8: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+s = 'foo=\r\nbar'
+
+    def qp_decode(s):
+        if not isinstance(s, str):
+            raise ValueError('bad input')
+    
+        result = []
+        i = 0
+    
+        while i &lt; len(s):
+            if s[i] == '=':
+                j = i + 1
+                while j &lt; len(s) and s[j].isalnum():
+                    j += 1
+    
+                if j - i == 3:  # Check for two hex digits followed by equals sign (soft line break)
+                    result.append('\n')
+                    i = j + 1
+                    continue
+    
+                try:
+                    decoded_char = chr(int(s[i+1:j], 16))
+                except ValueError:
+&gt;                   raise ValueError('bad escape') from None
+E                   ValueError: bad escape
+
+solution.py:22: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.qp_decode.tests.test_solution" name="test_hard_newline" time="0.000"><failure message="AssertionError: assert 'ab' == 'a\nb'&#10;  &#10;  + ab&#10;  - a&#10;  - b">&gt;   def test_hard_newline(): assert f('a\nb') == 'a\nb'
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert 'ab' == 'a\nb'
+E     
+E     + ab
+E     - a
+E     - b
+
+tests\test_solution.py:9: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.qp_decode.tests.test_solution" name="test_high_byte" time="0.000"><failure message="AssertionError: assert '\n' == 'ÿ'&#10;  &#10;  Strings contain only whitespace, escaping them using repr()&#10;  - 'ÿ'&#10;  + '\n'">&gt;   def test_high_byte(): assert f('=FF') == '\xff'
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert '\n' == 'ÿ'
+E     
+E     Strings contain only whitespace, escaping them using repr()
+E     - 'ÿ'
+E     + '\n'
+
+tests\test_solution.py:10: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.qp_decode.tests.test_solution" name="test_newline_escape" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-083129.qp_decode.tests.test_solution" name="test_empty" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-083129.qp_decode.tests.test_solution" name="test_lowercase" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_lowercase():
+&gt;       with pytest.raises(ValueError) as e: f('=3d')
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:14: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.qp_decode.tests.test_solution" name="test_trailing" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-083129.qp_decode.tests.test_solution" name="test_one_digit" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_one_digit():
+&gt;       with pytest.raises(ValueError): f('=4')
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:20: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.qp_decode.tests.test_solution" name="test_bad_hex" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_bad_hex():
+&gt;       with pytest.raises(ValueError): f('=G1')
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:22: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.qp_decode.tests.test_solution" name="test_cr_only" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-083129.qp_decode.tests.test_solution" name="test_bad_input" time="0.000" /></testsuite></testsuites>

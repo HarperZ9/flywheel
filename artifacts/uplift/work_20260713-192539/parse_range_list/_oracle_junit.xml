@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="2" skipped="0" tests="7" time="0.198" timestamp="2026-07-13T19:33:22.511619-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-192539.parse_range_list.tests.test_solution" name="test_empty" time="0.001"><failure message="ValueError: invalid literal for int() with base 10: ''">def test_empty():
+&gt;       assert f('') == []
+               ^^^^^
+
+tests\test_solution.py:4: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+s = ''
+
+    def parse_range_list(s):
+        def process_range(range_str):
+            if '-' not in range_str:
+                return [int(range_str)]
+            start, end = map(int, range_str.split('-'))
+            return list(range(min(start, end), max(start, end) + 1))
+    
+        tokens = s.replace(' ', '').split(',')
+        parsed_list = []
+    
+        for token in tokens:
+            if '-' in token:
+                parsed_list.extend(process_range(token))
+            else:
+&gt;               parsed_list.append(int(token))
+                                   ^^^^^^^^^^
+E               ValueError: invalid literal for int() with base 10: ''
+
+solution.py:15: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-192539.parse_range_list.tests.test_solution" name="test_mixed" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-192539.parse_range_list.tests.test_solution" name="test_overlap" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-192539.parse_range_list.tests.test_solution" name="test_spaces" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-192539.parse_range_list.tests.test_solution" name="test_reversed_range" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_reversed_range():
+&gt;       with pytest.raises(ValueError):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:12: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260713-192539.parse_range_list.tests.test_solution" name="test_garbage" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-192539.parse_range_list.tests.test_solution" name="test_dangling" time="0.000" /></testsuite></testsuites>

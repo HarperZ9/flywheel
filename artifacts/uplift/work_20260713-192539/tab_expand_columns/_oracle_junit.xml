@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="3" skipped="0" tests="8" time="0.252" timestamp="2026-07-13T19:41:16.270469-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-192539.tab_expand_columns.tests.test_solution" name="test_basic" time="0.001" /><testcase classname="artifacts.uplift.work_20260713-192539.tab_expand_columns.tests.test_solution" name="test_tab_on_stop" time="0.001"><failure message="AssertionError: assert 'abcdb' == 'abcd    b'&#10;  &#10;  - abcd    b&#10;  + abcdb">&gt;   def test_tab_on_stop(): assert f('abcd\tb', 4) == 'abcd    b'
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert 'abcdb' == 'abcd    b'
+E     
+E     - abcd    b
+E     + abcdb
+
+tests\test_solution.py:4: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-192539.tab_expand_columns.tests.test_solution" name="test_two_tabs" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-192539.tab_expand_columns.tests.test_solution" name="test_newline_resets" time="0.001" /><testcase classname="artifacts.uplift.work_20260713-192539.tab_expand_columns.tests.test_solution" name="test_empty" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-192539.tab_expand_columns.tests.test_solution" name="test_stop_one" time="0.001"><failure message="AssertionError: assert '' == ' '&#10;  &#10;  Strings contain only whitespace, escaping them using repr()&#10;  - ' '&#10;  ?  -&#10;  + ''">&gt;   def test_stop_one(): assert f('\t', 1) == ' '
+                         ^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert '' == ' '
+E     
+E     Strings contain only whitespace, escaping them using repr()
+E     - ' '
+E     ?  -
+E     + ''
+
+tests\test_solution.py:8: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-192539.tab_expand_columns.tests.test_solution" name="test_bad_stop_zero" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-192539.tab_expand_columns.tests.test_solution" name="test_bad_stop_bool" time="0.001"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_bad_stop_bool():
+&gt;       with pytest.raises(ValueError): f('a', True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:13: Failed</failure></testcase></testsuite></testsuites>

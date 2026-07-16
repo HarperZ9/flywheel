@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="5" skipped="0" tests="10" time="0.227" timestamp="2026-07-13T20:31:09.869182-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-201327.ipv4_to_int.tests.test_solution" name="test_zero" time="0.001"><failure message="ValueError: Bad address">&gt;   def test_zero(): assert f('0.0.0.0') == 0
+                            ^^^^^^^^^^^^
+
+tests\test_solution.py:3: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+s = '0.0.0.0'
+
+    def ipv4_to_int(s):
+        """
+        Parses a strict dotted-quad IPv4 address and returns its 32-bit integer value.
+    
+        Args:
+            s (str): A strictly dotted-quad IPv4 address in the format '1.2.3.4'.
+    
+        Returns:
+            int: The 32-bit integer value of the parsed IPv4 address.
+        """
+        # Split the string into four parts by dots
+        if '.' not in s or len(s) != 8:
+&gt;           raise ValueError("Bad address")
+E           ValueError: Bad address
+
+solution.py:13: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.ipv4_to_int.tests.test_solution" name="test_broadcast" time="0.000"><failure message="ValueError: Bad address">&gt;   def test_broadcast(): assert f('255.255.255.255') == 4294967295
+                                 ^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:4: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+s = '255.255.255.255'
+
+    def ipv4_to_int(s):
+        """
+        Parses a strict dotted-quad IPv4 address and returns its 32-bit integer value.
+    
+        Args:
+            s (str): A strictly dotted-quad IPv4 address in the format '1.2.3.4'.
+    
+        Returns:
+            int: The 32-bit integer value of the parsed IPv4 address.
+        """
+        # Split the string into four parts by dots
+        if '.' not in s or len(s) != 8:
+&gt;           raise ValueError("Bad address")
+E           ValueError: Bad address
+
+solution.py:13: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.ipv4_to_int.tests.test_solution" name="test_sequential" time="0.000"><failure message="ValueError: Bad address">&gt;   def test_sequential(): assert f('1.2.3.4') == 16909060
+                                  ^^^^^^^^^^^^
+
+tests\test_solution.py:5: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+s = '1.2.3.4'
+
+    def ipv4_to_int(s):
+        """
+        Parses a strict dotted-quad IPv4 address and returns its 32-bit integer value.
+    
+        Args:
+            s (str): A strictly dotted-quad IPv4 address in the format '1.2.3.4'.
+    
+        Returns:
+            int: The 32-bit integer value of the parsed IPv4 address.
+        """
+        # Split the string into four parts by dots
+        if '.' not in s or len(s) != 8:
+&gt;           raise ValueError("Bad address")
+E           ValueError: Bad address
+
+solution.py:13: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.ipv4_to_int.tests.test_solution" name="test_common" time="0.000"><failure message="ValueError: Bad address">&gt;   def test_common(): assert f('192.168.0.1') == 3232235521
+                              ^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:6: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+s = '192.168.0.1'
+
+    def ipv4_to_int(s):
+        """
+        Parses a strict dotted-quad IPv4 address and returns its 32-bit integer value.
+    
+        Args:
+            s (str): A strictly dotted-quad IPv4 address in the format '1.2.3.4'.
+    
+        Returns:
+            int: The 32-bit integer value of the parsed IPv4 address.
+        """
+        # Split the string into four parts by dots
+        if '.' not in s or len(s) != 8:
+&gt;           raise ValueError("Bad address")
+E           ValueError: Bad address
+
+solution.py:13: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.ipv4_to_int.tests.test_solution" name="test_ten" time="0.001" /><testcase classname="artifacts.uplift.work_20260713-201327.ipv4_to_int.tests.test_solution" name="test_leading_zero" time="0.001"><failure message="AssertionError: assert 'Bad address' == 'bad address'&#10;  &#10;  - bad address&#10;  ? ^&#10;  + Bad address&#10;  ? ^">def test_leading_zero():
+        with pytest.raises(ValueError) as e: f('192.168.01.1')
+&gt;       assert str(e.value) == 'bad address'
+E       AssertionError: assert 'Bad address' == 'bad address'
+E         
+E         - bad address
+E         ? ^
+E         + Bad address
+E         ? ^
+
+tests\test_solution.py:10: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.ipv4_to_int.tests.test_solution" name="test_too_big" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-201327.ipv4_to_int.tests.test_solution" name="test_three_parts" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-201327.ipv4_to_int.tests.test_solution" name="test_empty_part" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-201327.ipv4_to_int.tests.test_solution" name="test_sign" time="0.000" /></testsuite></testsuites>

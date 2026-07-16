@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="6" skipped="0" tests="10" time="0.226" timestamp="2026-07-13T19:51:08.586629-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-192539.linked_cycle.tests.test_solution" name="test_empty" time="0.001" /><testcase classname="artifacts.uplift.work_20260713-192539.linked_cycle.tests.test_solution" name="test_terminates" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-192539.linked_cycle.tests.test_solution" name="test_self_loop" time="0.001"><failure message="assert False is True&#10; +  where False = f([0])">&gt;   def test_self_loop(): assert f([0]) is True
+                          ^^^^^^^^^^^^^^^^^^^^^
+E   assert False is True
+E    +  where False = f([0])
+
+tests\test_solution.py:5: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-192539.linked_cycle.tests.test_solution" name="test_chain" time="0.000"><failure message="assert True is False&#10; +  where True = f([1, 2, -1])">&gt;   def test_chain(): assert f([1, 2, -1]) is False
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   assert True is False
+E    +  where True = f([1, 2, -1])
+
+tests\test_solution.py:6: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-192539.linked_cycle.tests.test_solution" name="test_cycle" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-192539.linked_cycle.tests.test_solution" name="test_unreached_end" time="0.000"><failure message="assert True is False&#10; +  where True = f([1, -1, 1])">&gt;   def test_unreached_end(): assert f([1, -1, 1]) is False
+                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   assert True is False
+E    +  where True = f([1, -1, 1])
+
+tests\test_solution.py:8: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-192539.linked_cycle.tests.test_solution" name="test_reachable_cycle" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-192539.linked_cycle.tests.test_solution" name="test_out_of_range" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_out_of_range():
+&gt;       with pytest.raises(ValueError) as e: f([5])
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:11: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260713-192539.linked_cycle.tests.test_solution" name="test_below_neg_one" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_below_neg_one():
+&gt;       with pytest.raises(ValueError): f([-2])
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:14: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260713-192539.linked_cycle.tests.test_solution" name="test_bool" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_bool():
+&gt;       with pytest.raises(ValueError): f([True])
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:16: Failed</failure></testcase></testsuite></testsuites>

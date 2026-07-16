@@ -1,0 +1,320 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="9" skipped="0" tests="12" time="0.281" timestamp="2026-07-14T15:00:12.265222-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260714-140516.lcs_diff_ops.tests.test_solution" name="test_replace_middle" time="0.001"><failure message="NameError: name 'itertools' is not defined. Did you forget to import 'itertools'">def test_replace_middle():
+&gt;       assert f(['a', 'b', 'c'], ['a', 'x', 'c']) == [('equal', ['a']), ('delete', ['b']), ('insert', ['x']), ('equal', ['c'])]
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:4: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+a = ['a', 'b', 'c'], b = ['a', 'x', 'c']
+
+    def diff_ops(a, b):
+        if not isinstance(a, list) or not isinstance(b, list):
+            raise ValueError("bad input")
+        if any(not isinstance(x, str) for x in a + b):
+            raise ValueError("bad input")
+        if not a and not b:
+            return []
+        out = []
+        ia = ib = 0
+        while ia &lt; len(a) or ib &lt; len(b):
+            equal = False
+            try:
+                while a[ia] == b[ib]:
+                    ia += 1; ib += 1; equal = True
+            except IndexError: pass
+            if equal:
+                out.append(('equal', [a[ia-1]]))
+            else:
+                if ia &lt; len(a):
+                    out.append(('delete', [a[ia]])); ia += 1
+                    continue
+                if ib &lt; len(b):
+                    out.append(('insert', [b[ib]])); ib += 1; continue
+&gt;       return [(t, list(g)) for t, g in itertools.groupby([x[0] for x in out], lambda item: item[0])]
+                                         ^^^^^^^^^
+E       NameError: name 'itertools' is not defined. Did you forget to import 'itertools'
+
+solution.py:24: NameError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-140516.lcs_diff_ops.tests.test_solution" name="test_all_equal" time="0.001"><failure message="NameError: name 'itertools' is not defined. Did you forget to import 'itertools'">&gt;   def test_all_equal(): assert f(['a', 'b'], ['a', 'b']) == [('equal', ['a', 'b'])]
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:5: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+a = ['a', 'b'], b = ['a', 'b']
+
+    def diff_ops(a, b):
+        if not isinstance(a, list) or not isinstance(b, list):
+            raise ValueError("bad input")
+        if any(not isinstance(x, str) for x in a + b):
+            raise ValueError("bad input")
+        if not a and not b:
+            return []
+        out = []
+        ia = ib = 0
+        while ia &lt; len(a) or ib &lt; len(b):
+            equal = False
+            try:
+                while a[ia] == b[ib]:
+                    ia += 1; ib += 1; equal = True
+            except IndexError: pass
+            if equal:
+                out.append(('equal', [a[ia-1]]))
+            else:
+                if ia &lt; len(a):
+                    out.append(('delete', [a[ia]])); ia += 1
+                    continue
+                if ib &lt; len(b):
+                    out.append(('insert', [b[ib]])); ib += 1; continue
+&gt;       return [(t, list(g)) for t, g in itertools.groupby([x[0] for x in out], lambda item: item[0])]
+                                         ^^^^^^^^^
+E       NameError: name 'itertools' is not defined. Did you forget to import 'itertools'
+
+solution.py:24: NameError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-140516.lcs_diff_ops.tests.test_solution" name="test_both_empty" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-140516.lcs_diff_ops.tests.test_solution" name="test_insert_only" time="0.000"><failure message="NameError: name 'itertools' is not defined. Did you forget to import 'itertools'">&gt;   def test_insert_only(): assert f([], ['a', 'b']) == [('insert', ['a', 'b'])]
+                                   ^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:7: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+a = [], b = ['a', 'b']
+
+    def diff_ops(a, b):
+        if not isinstance(a, list) or not isinstance(b, list):
+            raise ValueError("bad input")
+        if any(not isinstance(x, str) for x in a + b):
+            raise ValueError("bad input")
+        if not a and not b:
+            return []
+        out = []
+        ia = ib = 0
+        while ia &lt; len(a) or ib &lt; len(b):
+            equal = False
+            try:
+                while a[ia] == b[ib]:
+                    ia += 1; ib += 1; equal = True
+            except IndexError: pass
+            if equal:
+                out.append(('equal', [a[ia-1]]))
+            else:
+                if ia &lt; len(a):
+                    out.append(('delete', [a[ia]])); ia += 1
+                    continue
+                if ib &lt; len(b):
+                    out.append(('insert', [b[ib]])); ib += 1; continue
+&gt;       return [(t, list(g)) for t, g in itertools.groupby([x[0] for x in out], lambda item: item[0])]
+                                         ^^^^^^^^^
+E       NameError: name 'itertools' is not defined. Did you forget to import 'itertools'
+
+solution.py:24: NameError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-140516.lcs_diff_ops.tests.test_solution" name="test_delete_only" time="0.000"><failure message="NameError: name 'itertools' is not defined. Did you forget to import 'itertools'">&gt;   def test_delete_only(): assert f(['a', 'b'], []) == [('delete', ['a', 'b'])]
+                                   ^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:8: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+a = ['a', 'b'], b = []
+
+    def diff_ops(a, b):
+        if not isinstance(a, list) or not isinstance(b, list):
+            raise ValueError("bad input")
+        if any(not isinstance(x, str) for x in a + b):
+            raise ValueError("bad input")
+        if not a and not b:
+            return []
+        out = []
+        ia = ib = 0
+        while ia &lt; len(a) or ib &lt; len(b):
+            equal = False
+            try:
+                while a[ia] == b[ib]:
+                    ia += 1; ib += 1; equal = True
+            except IndexError: pass
+            if equal:
+                out.append(('equal', [a[ia-1]]))
+            else:
+                if ia &lt; len(a):
+                    out.append(('delete', [a[ia]])); ia += 1
+                    continue
+                if ib &lt; len(b):
+                    out.append(('insert', [b[ib]])); ib += 1; continue
+&gt;       return [(t, list(g)) for t, g in itertools.groupby([x[0] for x in out], lambda item: item[0])]
+                                         ^^^^^^^^^
+E       NameError: name 'itertools' is not defined. Did you forget to import 'itertools'
+
+solution.py:24: NameError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-140516.lcs_diff_ops.tests.test_solution" name="test_disjoint" time="0.000"><failure message="NameError: name 'itertools' is not defined. Did you forget to import 'itertools'">def test_disjoint():
+&gt;       assert f(['a', 'b'], ['c', 'd']) == [('delete', ['a', 'b']), ('insert', ['c', 'd'])]
+               ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:10: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+a = ['a', 'b'], b = ['c', 'd']
+
+    def diff_ops(a, b):
+        if not isinstance(a, list) or not isinstance(b, list):
+            raise ValueError("bad input")
+        if any(not isinstance(x, str) for x in a + b):
+            raise ValueError("bad input")
+        if not a and not b:
+            return []
+        out = []
+        ia = ib = 0
+        while ia &lt; len(a) or ib &lt; len(b):
+            equal = False
+            try:
+                while a[ia] == b[ib]:
+                    ia += 1; ib += 1; equal = True
+            except IndexError: pass
+            if equal:
+                out.append(('equal', [a[ia-1]]))
+            else:
+                if ia &lt; len(a):
+                    out.append(('delete', [a[ia]])); ia += 1
+                    continue
+                if ib &lt; len(b):
+                    out.append(('insert', [b[ib]])); ib += 1; continue
+&gt;       return [(t, list(g)) for t, g in itertools.groupby([x[0] for x in out], lambda item: item[0])]
+                                         ^^^^^^^^^
+E       NameError: name 'itertools' is not defined. Did you forget to import 'itertools'
+
+solution.py:24: NameError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-140516.lcs_diff_ops.tests.test_solution" name="test_shift" time="0.000"><failure message="NameError: name 'itertools' is not defined. Did you forget to import 'itertools'">def test_shift():
+&gt;       assert f(['x', 'a'], ['a', 'y']) == [('delete', ['x']), ('equal', ['a']), ('insert', ['y'])]
+               ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:12: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+a = ['x', 'a'], b = ['a', 'y']
+
+    def diff_ops(a, b):
+        if not isinstance(a, list) or not isinstance(b, list):
+            raise ValueError("bad input")
+        if any(not isinstance(x, str) for x in a + b):
+            raise ValueError("bad input")
+        if not a and not b:
+            return []
+        out = []
+        ia = ib = 0
+        while ia &lt; len(a) or ib &lt; len(b):
+            equal = False
+            try:
+                while a[ia] == b[ib]:
+                    ia += 1; ib += 1; equal = True
+            except IndexError: pass
+            if equal:
+                out.append(('equal', [a[ia-1]]))
+            else:
+                if ia &lt; len(a):
+                    out.append(('delete', [a[ia]])); ia += 1
+                    continue
+                if ib &lt; len(b):
+                    out.append(('insert', [b[ib]])); ib += 1; continue
+&gt;       return [(t, list(g)) for t, g in itertools.groupby([x[0] for x in out], lambda item: item[0])]
+                                         ^^^^^^^^^
+E       NameError: name 'itertools' is not defined. Did you forget to import 'itertools'
+
+solution.py:24: NameError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-140516.lcs_diff_ops.tests.test_solution" name="test_tie_prefers_delete" time="0.000"><failure message="NameError: name 'itertools' is not defined. Did you forget to import 'itertools'">def test_tie_prefers_delete():
+&gt;       assert f(['a', 'b', 'a'], ['b', 'a', 'b']) == [('delete', ['a']), ('equal', ['b', 'a']), ('insert', ['b'])]
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:14: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+a = ['a', 'b', 'a'], b = ['b', 'a', 'b']
+
+    def diff_ops(a, b):
+        if not isinstance(a, list) or not isinstance(b, list):
+            raise ValueError("bad input")
+        if any(not isinstance(x, str) for x in a + b):
+            raise ValueError("bad input")
+        if not a and not b:
+            return []
+        out = []
+        ia = ib = 0
+        while ia &lt; len(a) or ib &lt; len(b):
+            equal = False
+            try:
+                while a[ia] == b[ib]:
+                    ia += 1; ib += 1; equal = True
+            except IndexError: pass
+            if equal:
+                out.append(('equal', [a[ia-1]]))
+            else:
+                if ia &lt; len(a):
+                    out.append(('delete', [a[ia]])); ia += 1
+                    continue
+                if ib &lt; len(b):
+                    out.append(('insert', [b[ib]])); ib += 1; continue
+&gt;       return [(t, list(g)) for t, g in itertools.groupby([x[0] for x in out], lambda item: item[0])]
+                                         ^^^^^^^^^
+E       NameError: name 'itertools' is not defined. Did you forget to import 'itertools'
+
+solution.py:24: NameError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-140516.lcs_diff_ops.tests.test_solution" name="test_append" time="0.000"><failure message="NameError: name 'itertools' is not defined. Did you forget to import 'itertools'">&gt;   def test_append(): assert f(['a'], ['a', 'b']) == [('equal', ['a']), ('insert', ['b'])]
+                              ^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:15: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+a = ['a'], b = ['a', 'b']
+
+    def diff_ops(a, b):
+        if not isinstance(a, list) or not isinstance(b, list):
+            raise ValueError("bad input")
+        if any(not isinstance(x, str) for x in a + b):
+            raise ValueError("bad input")
+        if not a and not b:
+            return []
+        out = []
+        ia = ib = 0
+        while ia &lt; len(a) or ib &lt; len(b):
+            equal = False
+            try:
+                while a[ia] == b[ib]:
+                    ia += 1; ib += 1; equal = True
+            except IndexError: pass
+            if equal:
+                out.append(('equal', [a[ia-1]]))
+            else:
+                if ia &lt; len(a):
+                    out.append(('delete', [a[ia]])); ia += 1
+                    continue
+                if ib &lt; len(b):
+                    out.append(('insert', [b[ib]])); ib += 1; continue
+&gt;       return [(t, list(g)) for t, g in itertools.groupby([x[0] for x in out], lambda item: item[0])]
+                                         ^^^^^^^^^
+E       NameError: name 'itertools' is not defined. Did you forget to import 'itertools'
+
+solution.py:24: NameError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-140516.lcs_diff_ops.tests.test_solution" name="test_prepend" time="0.000"><failure message="NameError: name 'itertools' is not defined. Did you forget to import 'itertools'">&gt;   def test_prepend(): assert f(['b'], ['a', 'b']) == [('insert', ['a']), ('equal', ['b'])]
+                               ^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:16: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+a = ['b'], b = ['a', 'b']
+
+    def diff_ops(a, b):
+        if not isinstance(a, list) or not isinstance(b, list):
+            raise ValueError("bad input")
+        if any(not isinstance(x, str) for x in a + b):
+            raise ValueError("bad input")
+        if not a and not b:
+            return []
+        out = []
+        ia = ib = 0
+        while ia &lt; len(a) or ib &lt; len(b):
+            equal = False
+            try:
+                while a[ia] == b[ib]:
+                    ia += 1; ib += 1; equal = True
+            except IndexError: pass
+            if equal:
+                out.append(('equal', [a[ia-1]]))
+            else:
+                if ia &lt; len(a):
+                    out.append(('delete', [a[ia]])); ia += 1
+                    continue
+                if ib &lt; len(b):
+                    out.append(('insert', [b[ib]])); ib += 1; continue
+&gt;       return [(t, list(g)) for t, g in itertools.groupby([x[0] for x in out], lambda item: item[0])]
+                                         ^^^^^^^^^
+E       NameError: name 'itertools' is not defined. Did you forget to import 'itertools'
+
+solution.py:24: NameError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-140516.lcs_diff_ops.tests.test_solution" name="test_bad_input_not_list" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-140516.lcs_diff_ops.tests.test_solution" name="test_bad_element" time="0.000" /></testsuite></testsuites>

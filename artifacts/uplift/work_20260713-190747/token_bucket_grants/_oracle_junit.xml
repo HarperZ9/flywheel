@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="5" skipped="0" tests="10" time="0.193" timestamp="2026-07-13T19:32:45.506854-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-190747.token_bucket_grants.tests.test_solution" name="test_same_ts_no_refill" time="0.001"><failure message="assert [False, False] == [True, False]&#10;  &#10;  At index 0 diff: False != True&#10;  Use -v to get more diff">&gt;   def test_same_ts_no_refill(): assert f(5, [(0, 3), (0, 3)]) == [True, False]
+                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   assert [False, False] == [True, False]
+E     
+E     At index 0 diff: False != True
+E     Use -v to get more diff
+
+tests\test_solution.py:3: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-190747.token_bucket_grants.tests.test_solution" name="test_refill" time="0.000"><failure message="assert [False, False] == [True, True]&#10;  &#10;  At index 0 diff: False != True&#10;  Use -v to get more diff">&gt;   def test_refill(): assert f(5, [(0, 3), (2, 3)]) == [True, True]
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   assert [False, False] == [True, True]
+E     
+E     At index 0 diff: False != True
+E     Use -v to get more diff
+
+tests\test_solution.py:4: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-190747.token_bucket_grants.tests.test_solution" name="test_over_capacity" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-190747.token_bucket_grants.tests.test_solution" name="test_partial_refill" time="0.000"><failure message="assert [False, False] == [True, False]&#10;  &#10;  At index 0 diff: False != True&#10;  Use -v to get more diff">&gt;   def test_partial_refill(): assert f(5, [(0, 5), (1, 5)]) == [True, False]
+                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   assert [False, False] == [True, False]
+E     
+E     At index 0 diff: False != True
+E     Use -v to get more diff
+
+tests\test_solution.py:6: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-190747.token_bucket_grants.tests.test_solution" name="test_refill_cap" time="0.000"><failure message="assert [True, False] == [True, True]&#10;  &#10;  At index 1 diff: False != True&#10;  Use -v to get more diff">&gt;   def test_refill_cap(): assert f(5, [(0, 1), (100, 5)]) == [True, True]
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   assert [True, False] == [True, True]
+E     
+E     At index 1 diff: False != True
+E     Use -v to get more diff
+
+tests\test_solution.py:7: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-190747.token_bucket_grants.tests.test_solution" name="test_empty" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-190747.token_bucket_grants.tests.test_solution" name="test_time_warp" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-190747.token_bucket_grants.tests.test_solution" name="test_bad_capacity" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-190747.token_bucket_grants.tests.test_solution" name="test_zero_amount" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_zero_amount():
+&gt;       with pytest.raises(ValueError) as e: f(5, [(0, 0)])
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:16: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260713-190747.token_bucket_grants.tests.test_solution" name="test_list_event" time="0.000" /></testsuite></testsuites>

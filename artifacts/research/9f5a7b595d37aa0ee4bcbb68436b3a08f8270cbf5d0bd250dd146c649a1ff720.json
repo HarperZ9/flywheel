@@ -1,0 +1,15 @@
+{
+ "block_reason": "likely block/challenge page (marker: 'cloudflare')",
+ "blocked": true,
+ "bytes": 151955,
+ "content_type": "text/html",
+ "final_url": "https://www.weco.ai/blog/first-evidence-of-recursive-self-improvement",
+ "note": "this snapshot is a BLOCK/CHALLENGE page, not the source: route around it (browser render, an alt endpoint like .json or raw, or paste the text). The bytes are frozen as evidence of the wall.",
+ "observed_urls": [
+  "https://www.weco.ai/blog/first-evidence-of-recursive-self-improvement"
+ ],
+ "path": "artifacts\\research\\9f5a7b595d37aa0ee4bcbb68436b3a08f8270cbf5d0bd250dd146c649a1ff720.bin",
+ "schema": "flywheel.web-snapshot/v1",
+ "sha256": "9f5a7b595d37aa0ee4bcbb68436b3a08f8270cbf5d0bd250dd146c649a1ff720",
+ "url": "https://www.weco.ai/blog/first-evidence-of-recursive-self-improvement"
+}

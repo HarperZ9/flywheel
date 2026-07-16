@@ -1,0 +1,319 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="9" skipped="0" tests="9" time="0.247" timestamp="2026-07-13T20:23:49.546741-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-201327.bucket_histogram_mixed.tests.test_solution" name="test_basic_half_open" time="0.001"><failure message="TypeError: cannot unpack non-iterable int object">def test_basic_half_open():
+&gt;       assert bucket_counts([0, 9, 10, 20], [0, 10, 20]) == [2, 2]
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:6: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+values = [0, 9, 10, 20], edges = [0, 10, 20]
+
+    def bucket_counts(values, edges):
+        """
+        Histograms an integer value into buckets defined by a set of edge intervals,
+        with mixed boundary semantics.
+    
+        Parameters:
+        values (list of int): The input values.
+        edges (list of tuple (int, int)): The edge intervals for which to create the histogram.
+    
+        Returns:
+        list: A list of counts representing each bucket's count. If n &lt; len(edges), then all
+              resulting lists are empty and return an empty list; otherwise they do contain elements.
+        """
+        if not edges or min(edges) &gt;= max(values):
+            raise ValueError("Invalid edge intervals")
+    
+        n = len(edges)
+        buckets = [edges[i] for i in range(n-1)]
+        bucket_counts = []
+    
+        boundary = 0
+        current_bucket = -1
+    
+&gt;       for index, (start, end) in enumerate(edges):
+                   ^^^^^^^^^^^^
+E       TypeError: cannot unpack non-iterable int object
+
+solution.py:26: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.bucket_histogram_mixed.tests.test_solution" name="test_last_bucket_inclusive_on_right" time="0.000"><failure message="TypeError: cannot unpack non-iterable int object">def test_last_bucket_inclusive_on_right():
+&gt;       assert bucket_counts([20], [0, 10, 20]) == [0, 1]
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:11: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+values = [20], edges = [0, 10, 20]
+
+    def bucket_counts(values, edges):
+        """
+        Histograms an integer value into buckets defined by a set of edge intervals,
+        with mixed boundary semantics.
+    
+        Parameters:
+        values (list of int): The input values.
+        edges (list of tuple (int, int)): The edge intervals for which to create the histogram.
+    
+        Returns:
+        list: A list of counts representing each bucket's count. If n &lt; len(edges), then all
+              resulting lists are empty and return an empty list; otherwise they do contain elements.
+        """
+        if not edges or min(edges) &gt;= max(values):
+            raise ValueError("Invalid edge intervals")
+    
+        n = len(edges)
+        buckets = [edges[i] for i in range(n-1)]
+        bucket_counts = []
+    
+        boundary = 0
+        current_bucket = -1
+    
+&gt;       for index, (start, end) in enumerate(edges):
+                   ^^^^^^^^^^^^
+E       TypeError: cannot unpack non-iterable int object
+
+solution.py:26: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.bucket_histogram_mixed.tests.test_solution" name="test_interior_edge_goes_right" time="0.000"><failure message="TypeError: cannot unpack non-iterable int object">def test_interior_edge_goes_right():
+&gt;       assert bucket_counts([5], [0, 5, 10]) == [0, 1]
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:16: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+values = [5], edges = [0, 5, 10]
+
+    def bucket_counts(values, edges):
+        """
+        Histograms an integer value into buckets defined by a set of edge intervals,
+        with mixed boundary semantics.
+    
+        Parameters:
+        values (list of int): The input values.
+        edges (list of tuple (int, int)): The edge intervals for which to create the histogram.
+    
+        Returns:
+        list: A list of counts representing each bucket's count. If n &lt; len(edges), then all
+              resulting lists are empty and return an empty list; otherwise they do contain elements.
+        """
+        if not edges or min(edges) &gt;= max(values):
+            raise ValueError("Invalid edge intervals")
+    
+        n = len(edges)
+        buckets = [edges[i] for i in range(n-1)]
+        bucket_counts = []
+    
+        boundary = 0
+        current_bucket = -1
+    
+&gt;       for index, (start, end) in enumerate(edges):
+                   ^^^^^^^^^^^^
+E       TypeError: cannot unpack non-iterable int object
+
+solution.py:26: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.bucket_histogram_mixed.tests.test_solution" name="test_single_bucket_closed_both_ends" time="0.000"><failure message="TypeError: cannot unpack non-iterable int object">def test_single_bucket_closed_both_ends():
+&gt;       assert bucket_counts([0, 10, 5], [0, 10]) == [3]
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:22: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+values = [0, 10, 5], edges = [0, 10]
+
+    def bucket_counts(values, edges):
+        """
+        Histograms an integer value into buckets defined by a set of edge intervals,
+        with mixed boundary semantics.
+    
+        Parameters:
+        values (list of int): The input values.
+        edges (list of tuple (int, int)): The edge intervals for which to create the histogram.
+    
+        Returns:
+        list: A list of counts representing each bucket's count. If n &lt; len(edges), then all
+              resulting lists are empty and return an empty list; otherwise they do contain elements.
+        """
+        if not edges or min(edges) &gt;= max(values):
+            raise ValueError("Invalid edge intervals")
+    
+        n = len(edges)
+        buckets = [edges[i] for i in range(n-1)]
+        bucket_counts = []
+    
+        boundary = 0
+        current_bucket = -1
+    
+&gt;       for index, (start, end) in enumerate(edges):
+                   ^^^^^^^^^^^^
+E       TypeError: cannot unpack non-iterable int object
+
+solution.py:26: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.bucket_histogram_mixed.tests.test_solution" name="test_empty_values" time="0.000"><failure message="ValueError: max() iterable argument is empty">def test_empty_values():
+&gt;       assert bucket_counts([], [1, 2, 3]) == [0, 0]
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:26: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+values = [], edges = [1, 2, 3]
+
+    def bucket_counts(values, edges):
+        """
+        Histograms an integer value into buckets defined by a set of edge intervals,
+        with mixed boundary semantics.
+    
+        Parameters:
+        values (list of int): The input values.
+        edges (list of tuple (int, int)): The edge intervals for which to create the histogram.
+    
+        Returns:
+        list: A list of counts representing each bucket's count. If n &lt; len(edges), then all
+              resulting lists are empty and return an empty list; otherwise they do contain elements.
+        """
+&gt;       if not edges or min(edges) &gt;= max(values):
+                                      ^^^^^^^^^^^
+E       ValueError: max() iterable argument is empty
+
+solution.py:16: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.bucket_histogram_mixed.tests.test_solution" name="test_out_of_range_raises" time="0.000"><failure message="TypeError: cannot unpack non-iterable int object">def test_out_of_range_raises():
+        with pytest.raises(ValueError):
+&gt;           bucket_counts([21], [0, 10, 20])
+
+tests\test_solution.py:31: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+values = [21], edges = [0, 10, 20]
+
+    def bucket_counts(values, edges):
+        """
+        Histograms an integer value into buckets defined by a set of edge intervals,
+        with mixed boundary semantics.
+    
+        Parameters:
+        values (list of int): The input values.
+        edges (list of tuple (int, int)): The edge intervals for which to create the histogram.
+    
+        Returns:
+        list: A list of counts representing each bucket's count. If n &lt; len(edges), then all
+              resulting lists are empty and return an empty list; otherwise they do contain elements.
+        """
+        if not edges or min(edges) &gt;= max(values):
+            raise ValueError("Invalid edge intervals")
+    
+        n = len(edges)
+        buckets = [edges[i] for i in range(n-1)]
+        bucket_counts = []
+    
+        boundary = 0
+        current_bucket = -1
+    
+&gt;       for index, (start, end) in enumerate(edges):
+                   ^^^^^^^^^^^^
+E       TypeError: cannot unpack non-iterable int object
+
+solution.py:26: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.bucket_histogram_mixed.tests.test_solution" name="test_bad_edges_raise" time="0.000"><failure message="TypeError: cannot unpack non-iterable int object">def test_bad_edges_raise():
+        with pytest.raises(ValueError):
+&gt;           bucket_counts([1], [0, 10, 10])
+
+tests\test_solution.py:38: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+values = [1], edges = [0, 10, 10]
+
+    def bucket_counts(values, edges):
+        """
+        Histograms an integer value into buckets defined by a set of edge intervals,
+        with mixed boundary semantics.
+    
+        Parameters:
+        values (list of int): The input values.
+        edges (list of tuple (int, int)): The edge intervals for which to create the histogram.
+    
+        Returns:
+        list: A list of counts representing each bucket's count. If n &lt; len(edges), then all
+              resulting lists are empty and return an empty list; otherwise they do contain elements.
+        """
+        if not edges or min(edges) &gt;= max(values):
+            raise ValueError("Invalid edge intervals")
+    
+        n = len(edges)
+        buckets = [edges[i] for i in range(n-1)]
+        bucket_counts = []
+    
+        boundary = 0
+        current_bucket = -1
+    
+&gt;       for index, (start, end) in enumerate(edges):
+                   ^^^^^^^^^^^^
+E       TypeError: cannot unpack non-iterable int object
+
+solution.py:26: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.bucket_histogram_mixed.tests.test_solution" name="test_bad_values_raise" time="0.001"><failure message="TypeError: cannot unpack non-iterable int object">def test_bad_values_raise():
+        with pytest.raises(ValueError):
+&gt;           bucket_counts([True], [0, 10])
+
+tests\test_solution.py:53: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+values = [True], edges = [0, 10]
+
+    def bucket_counts(values, edges):
+        """
+        Histograms an integer value into buckets defined by a set of edge intervals,
+        with mixed boundary semantics.
+    
+        Parameters:
+        values (list of int): The input values.
+        edges (list of tuple (int, int)): The edge intervals for which to create the histogram.
+    
+        Returns:
+        list: A list of counts representing each bucket's count. If n &lt; len(edges), then all
+              resulting lists are empty and return an empty list; otherwise they do contain elements.
+        """
+        if not edges or min(edges) &gt;= max(values):
+            raise ValueError("Invalid edge intervals")
+    
+        n = len(edges)
+        buckets = [edges[i] for i in range(n-1)]
+        bucket_counts = []
+    
+        boundary = 0
+        current_bucket = -1
+    
+&gt;       for index, (start, end) in enumerate(edges):
+                   ^^^^^^^^^^^^
+E       TypeError: cannot unpack non-iterable int object
+
+solution.py:26: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.bucket_histogram_mixed.tests.test_solution" name="test_no_mutation_of_inputs" time="0.000"><failure message="TypeError: cannot unpack non-iterable int object">def test_no_mutation_of_inputs():
+        values = [7, 2, 20, 2]
+        edges = [0, 10, 20]
+        v_snap = list(values)
+        e_snap = list(edges)
+&gt;       assert bucket_counts(values, edges) == [3, 1]
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:65: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+values = [7, 2, 20, 2], edges = [0, 10, 20]
+
+    def bucket_counts(values, edges):
+        """
+        Histograms an integer value into buckets defined by a set of edge intervals,
+        with mixed boundary semantics.
+    
+        Parameters:
+        values (list of int): The input values.
+        edges (list of tuple (int, int)): The edge intervals for which to create the histogram.
+    
+        Returns:
+        list: A list of counts representing each bucket's count. If n &lt; len(edges), then all
+              resulting lists are empty and return an empty list; otherwise they do contain elements.
+        """
+        if not edges or min(edges) &gt;= max(values):
+            raise ValueError("Invalid edge intervals")
+    
+        n = len(edges)
+        buckets = [edges[i] for i in range(n-1)]
+        bucket_counts = []
+    
+        boundary = 0
+        current_bucket = -1
+    
+&gt;       for index, (start, end) in enumerate(edges):
+                   ^^^^^^^^^^^^
+E       TypeError: cannot unpack non-iterable int object
+
+solution.py:26: TypeError</failure></testcase></testsuite></testsuites>

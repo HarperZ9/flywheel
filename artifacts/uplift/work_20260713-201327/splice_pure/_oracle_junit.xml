@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="8" skipped="0" tests="9" time="0.240" timestamp="2026-07-13T20:23:17.036058-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-201327.splice_pure.tests.test_solution" name="test_basic_replace_is_pure" time="0.001"><failure message="assert [1, 2, 3, 4] == [1, 9, 4]&#10;  &#10;  At index 1 diff: 2 != 9&#10;  Left contains one more item: 4&#10;  Use -v to get more diff">def test_basic_replace_is_pure():
+        items = [1, 2, 3, 4]
+        out = splice(items, 1, 3, [9])
+&gt;       assert out == [1, 9, 4]
+E       assert [1, 2, 3, 4] == [1, 9, 4]
+E         
+E         At index 1 diff: 2 != 9
+E         Left contains one more item: 4
+E         Use -v to get more diff
+
+tests\test_solution.py:8: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.splice_pure.tests.test_solution" name="test_start_greater_than_stop_inserts" time="0.001"><failure message="assert [1, 2, 3] == [1, 2, 9, 3]&#10;  &#10;  At index 2 diff: 3 != 9&#10;  Right contains one more item: 3&#10;  Use -v to get more diff">def test_start_greater_than_stop_inserts():
+&gt;       assert splice([1, 2, 3], 2, 1, [9]) == [1, 2, 9, 3]
+E       assert [1, 2, 3] == [1, 2, 9, 3]
+E         
+E         At index 2 diff: 3 != 9
+E         Right contains one more item: 3
+E         Use -v to get more diff
+
+tests\test_solution.py:14: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.splice_pure.tests.test_solution" name="test_out_of_range_clamps_instead_of_raising" time="0.001"><failure message="assert [1, 2, 3] == [7]&#10;  &#10;  At index 0 diff: 1 != 7&#10;  Left contains 2 more items, first extra item: 2&#10;  Use -v to get more diff">def test_out_of_range_clamps_instead_of_raising():
+&gt;       assert splice([1, 2, 3], -100, 100, [7]) == [7]
+E       assert [1, 2, 3] == [7]
+E         
+E         At index 0 diff: 1 != 7
+E         Left contains 2 more items, first extra item: 2
+E         Use -v to get more diff
+
+tests\test_solution.py:18: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.splice_pure.tests.test_solution" name="test_negative_indices_normalized" time="0.001"><failure message="assert [1, 2, 3, 4] == [1, 0, 4]&#10;  &#10;  At index 1 diff: 2 != 0&#10;  Left contains one more item: 4&#10;  Use -v to get more diff">def test_negative_indices_normalized():
+&gt;       assert splice([1, 2, 3, 4], -3, -1, [0]) == [1, 0, 4]
+E       assert [1, 2, 3, 4] == [1, 0, 4]
+E         
+E         At index 1 diff: 2 != 0
+E         Left contains one more item: 4
+E         Use -v to get more diff
+
+tests\test_solution.py:23: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.splice_pure.tests.test_solution" name="test_empty_replacement_deletes" time="0.000"><failure message="assert [1, 2, 3] == [3]&#10;  &#10;  At index 0 diff: 1 != 3&#10;  Left contains 2 more items, first extra item: 2&#10;  Use -v to get more diff">def test_empty_replacement_deletes():
+&gt;       assert splice([1, 2, 3], 0, 2, []) == [3]
+E       assert [1, 2, 3] == [3]
+E         
+E         At index 0 diff: 1 != 3
+E         Left contains 2 more items, first extra item: 2
+E         Use -v to get more diff
+
+tests\test_solution.py:27: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.splice_pure.tests.test_solution" name="test_bool_index_rejected" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_bool_index_rejected():
+&gt;       with pytest.raises(ValueError):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:31: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.splice_pure.tests.test_solution" name="test_non_int_index_rejected" time="0.001"><failure message="TypeError: start and stop must be integers">def test_non_int_index_rejected():
+        with pytest.raises(ValueError):
+&gt;           splice([1, 2], 0.0, 1, [])
+
+tests\test_solution.py:39: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+items = [1, 2], start = 0.0, stop = 1, replacement = []
+
+    def splice(items, start, stop, replacement):
+        if not isinstance(start, (int, bool)) or not isinstance(stop, (int, bool)):
+&gt;           raise TypeError("start and stop must be integers")
+E           TypeError: start and stop must be integers
+
+solution.py:3: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.splice_pure.tests.test_solution" name="test_non_list_replacement_rejected" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-201327.splice_pure.tests.test_solution" name="test_no_mutation_and_identity_of_replacement_elements" time="0.001"><failure message="AssertionError: assert [1, 2, 3] == [1, {'k': 1}, 3]&#10;  &#10;  At index 1 diff: 2 != {'k': 1}&#10;  Use -v to get more diff">def test_no_mutation_and_identity_of_replacement_elements():
+        items = [1, 2, 3]
+        obj = {"k": 1}
+        rep = [obj]
+        out = splice(items, 1, 2, rep)
+        assert items == [1, 2, 3]
+        assert rep == [obj]
+&gt;       assert out == [1, obj, 3]
+E       AssertionError: assert [1, 2, 3] == [1, {'k': 1}, 3]
+E         
+E         At index 1 diff: 2 != {'k': 1}
+E         Use -v to get more diff
+
+tests\test_solution.py:56: AssertionError</failure></testcase></testsuite></testsuites>

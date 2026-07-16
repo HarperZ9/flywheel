@@ -1,0 +1,215 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="5" skipped="0" tests="6" time="0.231" timestamp="2026-07-13T20:06:36.946241-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-195624.merge_sorted_streams.tests.test_solution" name="test_empty_outer" time="0.001" /><testcase classname="artifacts.uplift.work_20260713-195624.merge_sorted_streams.tests.test_solution" name="test_empty_inners" time="0.000"><failure message="NameError: name 'merged_set' is not defined">def test_empty_inners():
+&gt;       assert f([[], []]) == []
+               ^^^^^^^^^^^
+
+tests\test_solution.py:5: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+lists = [[], []]
+
+    def merge_sorted(lists):
+        # This function merges multiple sorted lists into one and returns a new list.
+        # It ensures that the merged list remains stable across different occurrences of elements.
+        """
+        :param lists: A list containing various pre-sorted integer lists.
+        :return: A new list containing all numbers from the original lists, sorted, and in their original order if possible.
+                 In case of an empty outer list or None input, the function returns None or an empty list.
+        """
+        if not lists:
+            return []
+    
+        # Assume that each inner list is already sorted.
+        for i in range(len(lists)):
+            current_list = lists[i]
+            left, right = 0, len(current_list) - 1
+    
+            while left &lt;= right:
+                min_index = i
+                if current_list[left] &lt; current_list[right]:
+                    min_index = left
+                else:
+                    min_index = right
+    
+                # If the left index of this inner list is smaller than or equal to the right index,
+                # then we can merge it with the next smallest value in our merged set.
+                if left == right:
+                    merged_set.add(current_list[left])
+                    break
+                elif current_list[left] &lt; current_list[right]:
+                    merged_set.add(current_list[left])
+                    left += 1
+                else:
+                    merged_set.add(current_list[right])
+                    right -= 1
+    
+&gt;       return list(merged_set)
+                    ^^^^^^^^^^
+E       NameError: name 'merged_set' is not defined
+
+solution.py:36: NameError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.merge_sorted_streams.tests.test_solution" name="test_two" time="0.000"><failure message="NameError: name 'merged_set' is not defined">def test_two():
+&gt;       assert f([[1,4,5],[1,3,4]]) == [1,1,3,4,4,5]
+               ^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:7: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+lists = [[1, 4, 5], [1, 3, 4]]
+
+    def merge_sorted(lists):
+        # This function merges multiple sorted lists into one and returns a new list.
+        # It ensures that the merged list remains stable across different occurrences of elements.
+        """
+        :param lists: A list containing various pre-sorted integer lists.
+        :return: A new list containing all numbers from the original lists, sorted, and in their original order if possible.
+                 In case of an empty outer list or None input, the function returns None or an empty list.
+        """
+        if not lists:
+            return []
+    
+        # Assume that each inner list is already sorted.
+        for i in range(len(lists)):
+            current_list = lists[i]
+            left, right = 0, len(current_list) - 1
+    
+            while left &lt;= right:
+                min_index = i
+                if current_list[left] &lt; current_list[right]:
+                    min_index = left
+                else:
+                    min_index = right
+    
+                # If the left index of this inner list is smaller than or equal to the right index,
+                # then we can merge it with the next smallest value in our merged set.
+                if left == right:
+                    merged_set.add(current_list[left])
+                    break
+                elif current_list[left] &lt; current_list[right]:
+&gt;                   merged_set.add(current_list[left])
+                    ^^^^^^^^^^
+E                   NameError: name 'merged_set' is not defined
+
+solution.py:30: NameError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.merge_sorted_streams.tests.test_solution" name="test_singletons" time="0.000"><failure message="NameError: name 'merged_set' is not defined">def test_singletons():
+&gt;       assert f([[2],[1],[3]]) == [1,2,3]
+               ^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:9: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+lists = [[2], [1], [3]]
+
+    def merge_sorted(lists):
+        # This function merges multiple sorted lists into one and returns a new list.
+        # It ensures that the merged list remains stable across different occurrences of elements.
+        """
+        :param lists: A list containing various pre-sorted integer lists.
+        :return: A new list containing all numbers from the original lists, sorted, and in their original order if possible.
+                 In case of an empty outer list or None input, the function returns None or an empty list.
+        """
+        if not lists:
+            return []
+    
+        # Assume that each inner list is already sorted.
+        for i in range(len(lists)):
+            current_list = lists[i]
+            left, right = 0, len(current_list) - 1
+    
+            while left &lt;= right:
+                min_index = i
+                if current_list[left] &lt; current_list[right]:
+                    min_index = left
+                else:
+                    min_index = right
+    
+                # If the left index of this inner list is smaller than or equal to the right index,
+                # then we can merge it with the next smallest value in our merged set.
+                if left == right:
+&gt;                   merged_set.add(current_list[left])
+                    ^^^^^^^^^^
+E                   NameError: name 'merged_set' is not defined
+
+solution.py:27: NameError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.merge_sorted_streams.tests.test_solution" name="test_one_list" time="0.001"><failure message="NameError: name 'merged_set' is not defined">def test_one_list():
+&gt;       assert f([[1,2,3]]) == [1,2,3]
+               ^^^^^^^^^^^^
+
+tests\test_solution.py:11: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+lists = [[1, 2, 3]]
+
+    def merge_sorted(lists):
+        # This function merges multiple sorted lists into one and returns a new list.
+        # It ensures that the merged list remains stable across different occurrences of elements.
+        """
+        :param lists: A list containing various pre-sorted integer lists.
+        :return: A new list containing all numbers from the original lists, sorted, and in their original order if possible.
+                 In case of an empty outer list or None input, the function returns None or an empty list.
+        """
+        if not lists:
+            return []
+    
+        # Assume that each inner list is already sorted.
+        for i in range(len(lists)):
+            current_list = lists[i]
+            left, right = 0, len(current_list) - 1
+    
+            while left &lt;= right:
+                min_index = i
+                if current_list[left] &lt; current_list[right]:
+                    min_index = left
+                else:
+                    min_index = right
+    
+                # If the left index of this inner list is smaller than or equal to the right index,
+                # then we can merge it with the next smallest value in our merged set.
+                if left == right:
+                    merged_set.add(current_list[left])
+                    break
+                elif current_list[left] &lt; current_list[right]:
+&gt;                   merged_set.add(current_list[left])
+                    ^^^^^^^^^^
+E                   NameError: name 'merged_set' is not defined
+
+solution.py:30: NameError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.merge_sorted_streams.tests.test_solution" name="test_interleaved" time="0.000"><failure message="NameError: name 'merged_set' is not defined">def test_interleaved():
+        a = list(range(0, 100, 2)); b = list(range(1, 100, 2))
+&gt;       assert f([a, b]) == list(range(100))
+               ^^^^^^^^^
+
+tests\test_solution.py:14: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+lists = [[0, 2, 4, 6, 8, 10, ...], [1, 3, 5, 7, 9, 11, ...]]
+
+    def merge_sorted(lists):
+        # This function merges multiple sorted lists into one and returns a new list.
+        # It ensures that the merged list remains stable across different occurrences of elements.
+        """
+        :param lists: A list containing various pre-sorted integer lists.
+        :return: A new list containing all numbers from the original lists, sorted, and in their original order if possible.
+                 In case of an empty outer list or None input, the function returns None or an empty list.
+        """
+        if not lists:
+            return []
+    
+        # Assume that each inner list is already sorted.
+        for i in range(len(lists)):
+            current_list = lists[i]
+            left, right = 0, len(current_list) - 1
+    
+            while left &lt;= right:
+                min_index = i
+                if current_list[left] &lt; current_list[right]:
+                    min_index = left
+                else:
+                    min_index = right
+    
+                # If the left index of this inner list is smaller than or equal to the right index,
+                # then we can merge it with the next smallest value in our merged set.
+                if left == right:
+                    merged_set.add(current_list[left])
+                    break
+                elif current_list[left] &lt; current_list[right]:
+&gt;                   merged_set.add(current_list[left])
+                    ^^^^^^^^^^
+E                   NameError: name 'merged_set' is not defined
+
+solution.py:30: NameError</failure></testcase></testsuite></testsuites>

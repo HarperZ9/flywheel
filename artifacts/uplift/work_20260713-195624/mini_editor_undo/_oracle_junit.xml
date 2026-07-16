@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="1" failures="0" skipped="0" tests="1" time="0.308" timestamp="2026-07-13T20:11:21.773143-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="" name="artifacts.uplift.work_20260713-195624.mini_editor_undo.tests.test_solution" time="0.000"><error message="collection failure">C:\Users\Zain\AppData\Local\Programs\Python\Python312\Lib\site-packages\_pytest\python.py:507: in importtestmodule
+    mod = import_path(
+C:\Users\Zain\AppData\Local\Programs\Python\Python312\Lib\site-packages\_pytest\pathlib.py:587: in import_path
+    importlib.import_module(module_name)
+C:\Users\Zain\AppData\Local\Programs\Python\Python312\Lib\importlib\__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+&lt;frozen importlib._bootstrap&gt;:1387: in _gcd_import
+    ???
+&lt;frozen importlib._bootstrap&gt;:1360: in _find_and_load
+    ???
+&lt;frozen importlib._bootstrap&gt;:1331: in _find_and_load_unlocked
+    ???
+&lt;frozen importlib._bootstrap&gt;:935: in _load_unlocked
+    ???
+C:\Users\Zain\AppData\Local\Programs\Python\Python312\Lib\site-packages\_pytest\assertion\rewrite.py:197: in exec_module
+    exec(co, module.__dict__)
+tests\test_solution.py:2: in &lt;module&gt;
+    from solution import edit
+E     File "C:\dev\local-model\artifacts\uplift\work_20260713-195624\mini_editor_undo\solution.py", line 11
+E       raise ValueError(f"Malformed type command: '{}'")
+E                                                    ^
+E   SyntaxError: f-string: valid expression required before '}'</error></testcase></testsuite></testsuites>

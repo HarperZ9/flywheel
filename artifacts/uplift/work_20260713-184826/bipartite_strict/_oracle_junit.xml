@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="6" skipped="0" tests="14" time="0.258" timestamp="2026-07-13T19:21:10.862607-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-184826.bipartite_strict.tests.test_solution" name="test_empty" time="0.001" /><testcase classname="artifacts.uplift.work_20260713-184826.bipartite_strict.tests.test_solution" name="test_single_edge" time="0.001"><failure message="assert False is True&#10; +  where False = f([{1}, {0}])">&gt;   def test_single_edge(): assert f([[1], [0]]) is True
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   assert False is True
+E    +  where False = f([{1}, {0}])
+
+tests\test_solution.py:4: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-184826.bipartite_strict.tests.test_solution" name="test_triangle" time="0.001" /><testcase classname="artifacts.uplift.work_20260713-184826.bipartite_strict.tests.test_solution" name="test_isolated" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-184826.bipartite_strict.tests.test_solution" name="test_self_loop" time="0.000"><failure message="assert True is False&#10; +  where True = f([{0}])">&gt;   def test_self_loop(): assert f([[0]]) is False
+                          ^^^^^^^^^^^^^^^^^^^^^^^^
+E   assert True is False
+E    +  where True = f([{0}])
+
+tests\test_solution.py:7: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-184826.bipartite_strict.tests.test_solution" name="test_even_cycle" time="0.001"><failure message="assert False is True&#10; +  where False = f([{1, 3}, {0, 2}, {1, 3}, {0, 2}])">&gt;   def test_even_cycle(): assert f([[1, 3], [0, 2], [1, 3], [2, 0]]) is True
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   assert False is True
+E    +  where False = f([{1, 3}, {0, 2}, {1, 3}, {0, 2}])
+
+tests\test_solution.py:8: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-184826.bipartite_strict.tests.test_solution" name="test_odd_component" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-184826.bipartite_strict.tests.test_solution" name="test_duplicate_neighbors" time="0.001"><failure message="assert False is True&#10; +  where False = f([{1}, {0}])">&gt;   def test_duplicate_neighbors(): assert f([[1, 1], [0]]) is True
+                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   assert False is True
+E    +  where False = f([{1}, {0}])
+
+tests\test_solution.py:10: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-184826.bipartite_strict.tests.test_solution" name="test_not_symmetric" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-184826.bipartite_strict.tests.test_solution" name="test_bad_neighbor_range" time="0.001"><failure message="AssertionError: assert 'not symmetric' == 'bad neighbor'&#10;  &#10;  - bad neighbor&#10;  + not symmetric">def test_bad_neighbor_range():
+        with pytest.raises(ValueError) as e: f([[5]])
+&gt;       assert str(e.value) == 'bad neighbor'
+E       AssertionError: assert 'not symmetric' == 'bad neighbor'
+E         
+E         - bad neighbor
+E         + not symmetric
+
+tests\test_solution.py:16: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-184826.bipartite_strict.tests.test_solution" name="test_bad_neighbor_bool" time="0.001"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_bad_neighbor_bool():
+&gt;       with pytest.raises(ValueError): f([[True], [0]])
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:18: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260713-184826.bipartite_strict.tests.test_solution" name="test_bad_neighbor_negative" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-184826.bipartite_strict.tests.test_solution" name="test_bad_adjacency_not_list" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-184826.bipartite_strict.tests.test_solution" name="test_bad_adjacency_entry" time="0.000" /></testsuite></testsuites>

@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="6" skipped="0" tests="9" time="0.227" timestamp="2026-07-13T19:09:34.828046-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-184826.varint_zigzag_decode.tests.test_solution" name="test_single_byte_values_zigzag" time="0.001"><failure message="assert [1] == [-1]&#10;  &#10;  At index 0 diff: 1 != -1&#10;  Use -v to get more diff">def test_single_byte_values_zigzag():
+        assert decode_varints([0]) == [0]
+&gt;       assert decode_varints([1]) == [-1]
+E       assert [1] == [-1]
+E         
+E         At index 0 diff: 1 != -1
+E         Use -v to get more diff
+
+tests\test_solution.py:7: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-184826.varint_zigzag_decode.tests.test_solution" name="test_multibyte_value" time="0.001"><failure message="assert [300] == [150]&#10;  &#10;  At index 0 diff: 300 != 150&#10;  Use -v to get more diff">def test_multibyte_value():
+        # bytes [0xAC, 0x02] -&gt; unsigned 300 -&gt; signed 150
+&gt;       assert decode_varints([0xAC, 0x02]) == [150]
+E       assert [300] == [150]
+E         
+E         At index 0 diff: 300 != 150
+E         Use -v to get more diff
+
+tests\test_solution.py:15: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-184826.varint_zigzag_decode.tests.test_solution" name="test_multiple_values_and_empty" time="0.000"><failure message="assert [300, 1, 0] == [150, -1, 0]&#10;  &#10;  At index 0 diff: 300 != 150&#10;  Use -v to get more diff">def test_multiple_values_and_empty():
+        assert decode_varints([]) == []
+&gt;       assert decode_varints([0xAC, 0x02, 0x01, 0x00]) == [150, -1, 0]
+E       assert [300, 1, 0] == [150, -1, 0]
+E         
+E         At index 0 diff: 300 != 150
+E         Use -v to get more diff
+
+tests\test_solution.py:20: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-184826.varint_zigzag_decode.tests.test_solution" name="test_five_byte_varint_ok" time="0.000"><failure message="assert [268435456] == [134217728]&#10;  &#10;  At index 0 diff: 268435456 != 134217728&#10;  Use -v to get more diff">def test_five_byte_varint_ok():
+        u = 1 &lt;&lt; 28
+&gt;       assert decode_varints([0x80, 0x80, 0x80, 0x80, 0x01]) == [u &gt;&gt; 1]
+E       assert [268435456] == [134217728]
+E         
+E         At index 0 diff: 268435456 != 134217728
+E         Use -v to get more diff
+
+tests\test_solution.py:25: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-184826.varint_zigzag_decode.tests.test_solution" name="test_truncated" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-184826.varint_zigzag_decode.tests.test_solution" name="test_too_long_even_when_stream_ends" time="0.000"><failure message="AssertionError: Regex pattern did not match.&#10;  Expected regex: 'too long'&#10;  Actual message: 'truncated'">data = [128, 128, 128, 128, 128]
+
+    def decode_varints(data):
+        if not all(isinstance(b, int) and 0 &lt;= b &lt;= 255 for b in data):
+            raise ValueError("bad byte")
+    
+        def varint_to_signed_int(byte_list):
+            n = 0
+            for i, b in enumerate(byte_list):
+                n |= (b &amp; 0x7F) &lt;&lt; (i * 7)
+                if not b &amp; 0x80:
+                    break
+            else:
+                raise ValueError("truncated")
+            if n &lt; (1 &lt;&lt; 31):
+                return n
+            else:
+                return -(1 &lt;&lt; 31) - n
+    
+        result = []
+        i = 0
+        while i &lt; len(data):
+            try:
+                varint = [data[i]]
+                i += 1
+                while data[i-1] &amp; 0x80:
+&gt;                   varint.append(data[i])
+                                  ^^^^^^^
+E                   IndexError: list index out of range
+
+solution.py:25: IndexError
+
+During handling of the above exception, another exception occurred:
+
+    def test_too_long_even_when_stream_ends():
+        with pytest.raises(ValueError, match="too long"):
+&gt;           decode_varints([0x80] * 5)
+
+tests\test_solution.py:37: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+data = [128, 128, 128, 128, 128]
+
+    def decode_varints(data):
+        if not all(isinstance(b, int) and 0 &lt;= b &lt;= 255 for b in data):
+            raise ValueError("bad byte")
+    
+        def varint_to_signed_int(byte_list):
+            n = 0
+            for i, b in enumerate(byte_list):
+                n |= (b &amp; 0x7F) &lt;&lt; (i * 7)
+                if not b &amp; 0x80:
+                    break
+            else:
+                raise ValueError("truncated")
+            if n &lt; (1 &lt;&lt; 31):
+                return n
+            else:
+                return -(1 &lt;&lt; 31) - n
+    
+        result = []
+        i = 0
+        while i &lt; len(data):
+            try:
+                varint = [data[i]]
+                i += 1
+                while data[i-1] &amp; 0x80:
+                    varint.append(data[i])
+                    i += 1
+                if len(varint) &gt; 5:
+                    raise ValueError("too long")
+                elif len(varint) &gt;= 2 and not (varint[-1] &amp; 0x7F):
+                    raise ValueError("overlong")
+            except IndexError:
+&gt;               raise ValueError("truncated")
+E               ValueError: truncated
+
+solution.py:32: ValueError
+
+During handling of the above exception, another exception occurred:
+
+    def test_too_long_even_when_stream_ends():
+&gt;       with pytest.raises(ValueError, match="too long"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AssertionError: Regex pattern did not match.
+E         Expected regex: 'too long'
+E         Actual message: 'truncated'
+
+tests\test_solution.py:36: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-184826.varint_zigzag_decode.tests.test_solution" name="test_overlong_noncanonical" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-184826.varint_zigzag_decode.tests.test_solution" name="test_bad_byte_checked_before_decoding" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_bad_byte_checked_before_decoding():
+        with pytest.raises(ValueError, match="bad byte"):
+            decode_varints([256])
+        with pytest.raises(ValueError, match="bad byte"):
+            decode_varints([-1])
+&gt;       with pytest.raises(ValueError, match="bad byte"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:54: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260713-184826.varint_zigzag_decode.tests.test_solution" name="test_no_mutation" time="0.000" /></testsuite></testsuites>

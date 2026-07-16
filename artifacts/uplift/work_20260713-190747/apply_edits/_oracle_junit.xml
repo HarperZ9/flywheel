@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="2" skipped="0" tests="8" time="0.225" timestamp="2026-07-13T19:26:01.595680-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-190747.apply_edits.tests.test_solution" name="test_sequential_ops_on_intermediate_state" time="0.001" /><testcase classname="artifacts.uplift.work_20260713-190747.apply_edits.tests.test_solution" name="test_insert_at_end_allowed" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-190747.apply_edits.tests.test_solution" name="test_insert_past_end_raises_index_error_not_clamped" time="0.001"><failure message="Failed: DID NOT RAISE &lt;class 'IndexError'&gt;">def test_insert_past_end_raises_index_error_not_clamped():
+&gt;       with pytest.raises(IndexError):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'IndexError'&gt;
+
+tests\test_solution.py:18: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260713-190747.apply_edits.tests.test_solution" name="test_negative_indices" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'IndexError'&gt;">def test_negative_indices():
+        assert apply_edits([1, 2, 3], [("replace", -1, 9)]) == [1, 2, 9]
+        assert apply_edits([1, 2, 3], [("insert", -3, 0)]) == [0, 1, 2, 3]
+&gt;       with pytest.raises(IndexError):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'IndexError'&gt;
+
+tests\test_solution.py:25: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260713-190747.apply_edits.tests.test_solution" name="test_unknown_op_raises_value_error" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-190747.apply_edits.tests.test_solution" name="test_malformed_op_raises_value_error" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-190747.apply_edits.tests.test_solution" name="test_input_untouched_even_when_error_midway" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-190747.apply_edits.tests.test_solution" name="test_delete_on_empty_raises" time="0.000" /></testsuite></testsuites>

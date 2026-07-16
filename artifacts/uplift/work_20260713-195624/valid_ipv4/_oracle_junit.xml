@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="5" skipped="0" tests="7" time="0.223" timestamp="2026-07-13T20:06:20.870782-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-195624.valid_ipv4.tests.test_solution" name="test_ok" time="0.001" /><testcase classname="artifacts.uplift.work_20260713-195624.valid_ipv4.tests.test_solution" name="test_zero" time="0.001"><failure message="TypeError: '&gt;=' not supported between instances of 'str' and 'int'">def test_zero():
+&gt;       assert f('0.0.0.0') is True
+               ^^^^^^^^^^^^
+
+tests\test_solution.py:5: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:20: in valid_ipv4
+    return len(segments) == 4 and all(int_part &gt;= 0 and int_part &lt;= 255 for int_part in segments)
+                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+.0 = &lt;list_iterator object at 0x0000025660EFD1E0&gt;
+
+&gt;   return len(segments) == 4 and all(int_part &gt;= 0 and int_part &lt;= 255 for int_part in segments)
+                                      ^^^^^^^^^^^^^
+E   TypeError: '&gt;=' not supported between instances of 'str' and 'int'
+
+solution.py:20: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.valid_ipv4.tests.test_solution" name="test_leading_zero" time="0.000"><failure message="AssertionError: assert True is False&#10; +  where True = f('192.168.01.1')">def test_leading_zero():
+&gt;       assert f('192.168.01.1') is False
+E       AssertionError: assert True is False
+E        +  where True = f('192.168.01.1')
+
+tests\test_solution.py:7: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.valid_ipv4.tests.test_solution" name="test_too_big" time="0.000"><failure message="AssertionError: assert True is False&#10; +  where True = f('256.1.1.1')">def test_too_big():
+&gt;       assert f('256.1.1.1') is False
+E       AssertionError: assert True is False
+E        +  where True = f('256.1.1.1')
+
+tests\test_solution.py:9: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.valid_ipv4.tests.test_solution" name="test_three_parts" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-195624.valid_ipv4.tests.test_solution" name="test_sign" time="0.001"><failure message="AssertionError: assert True is False&#10; +  where True = f('+1.2.3.4')">def test_sign():
+&gt;       assert f('+1.2.3.4') is False
+E       AssertionError: assert True is False
+E        +  where True = f('+1.2.3.4')
+
+tests\test_solution.py:13: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.valid_ipv4.tests.test_solution" name="test_empty_part" time="0.001"><failure message="AssertionError: assert True is False&#10; +  where True = f('1..2.3')">def test_empty_part():
+&gt;       assert f('1..2.3') is False
+E       AssertionError: assert True is False
+E        +  where True = f('1..2.3')
+
+tests\test_solution.py:15: AssertionError</failure></testcase></testsuite></testsuites>

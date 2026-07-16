@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="8" skipped="0" tests="8" time="0.205" timestamp="2026-07-13T19:03:30.425669-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-184826.canonical_decimal.tests.test_solution" name="test_integers" time="0.001"><failure message="ValueError: Invalid input">def test_integers():
+&gt;       assert canonical_decimal("42") == "42"
+               ^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:6: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+s = '42'
+
+    def canonical_decimal(s: str) -&gt; str:
+        # Check if input is a valid decimal number according to the grammar
+        if not (s and s[0] in "+-" or (s[0].isdigit() and '.' in s)):
+&gt;           raise ValueError("Invalid input")
+E           ValueError: Invalid input
+
+solution.py:4: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-184826.canonical_decimal.tests.test_solution" name="test_fractions" time="0.000"><failure message="ValueError: Invalid input">def test_fractions():
+&gt;       assert canonical_decimal("3.1400") == "3.14"
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:12: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+s = '3.1400'
+
+    def canonical_decimal(s: str) -&gt; str:
+        # Check if input is a valid decimal number according to the grammar
+        if not (s and s[0] in "+-" or (s[0].isdigit() and '.' in s)):
+            raise ValueError("Invalid input")
+    
+        sign = 1
+        integer_part = ""
+        fraction_part = ""
+        underscore_error = False
+    
+        i = 0
+        while i &lt; len(s):
+            if i == 0 and s[i] in "+-":
+                # Check for a sign at the start
+                sign = -1 if s[i] == '-' else 1
+                i += 1
+            elif s[i].isdigit():
+                # Check for digit in integer part or fraction part
+                if '.' not in (integer_part + fraction_part):
+                    integer_part += s[i]
+                else:
+                    fraction_part += s[i]
+            elif s[i] == '_':
+                # Check if underscore is valid
+                if i &gt; 0 and i &lt; len(s) - 1 and s[i-1].isdigit() and s[i+1].isdigit():
+                    pass
+                else:
+                    underscore_error = True
+                    break
+            else:
+                # Invalid character
+&gt;               raise ValueError("Invalid input")
+E               ValueError: Invalid input
+
+solution.py:32: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-184826.canonical_decimal.tests.test_solution" name="test_zero_normalization" time="0.000"><failure message="ValueError: Invalid input">def test_zero_normalization():
+&gt;       assert canonical_decimal("-0") == "0"
+               ^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:20: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+s = '-0'
+
+    def canonical_decimal(s: str) -&gt; str:
+        # Check if input is a valid decimal number according to the grammar
+        if not (s and s[0] in "+-" or (s[0].isdigit() and '.' in s)):
+            raise ValueError("Invalid input")
+    
+        sign = 1
+        integer_part = ""
+        fraction_part = ""
+        underscore_error = False
+    
+        i = 0
+        while i &lt; len(s):
+            if i == 0 and s[i] in "+-":
+                # Check for a sign at the start
+                sign = -1 if s[i] == '-' else 1
+                i += 1
+            elif s[i].isdigit():
+                # Check for digit in integer part or fraction part
+                if '.' not in (integer_part + fraction_part):
+                    integer_part += s[i]
+                else:
+                    fraction_part += s[i]
+            elif s[i] == '_':
+                # Check if underscore is valid
+                if i &gt; 0 and i &lt; len(s) - 1 and s[i-1].isdigit() and s[i+1].isdigit():
+                    pass
+                else:
+                    underscore_error = True
+                    break
+            else:
+                # Invalid character
+                raise ValueError("Invalid input")
+    
+            i += 1
+    
+        if underscore_error or not integer_part and not fraction_part:
+&gt;           raise ValueError("Invalid input")
+E           ValueError: Invalid input
+
+solution.py:37: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-184826.canonical_decimal.tests.test_solution" name="test_signs" time="0.000"><failure message="AssertionError: assert '2' == '12'&#10;  &#10;  - 12&#10;  + 2">def test_signs():
+&gt;       assert canonical_decimal("+12") == "12"
+E       AssertionError: assert '2' == '12'
+E         
+E         - 12
+E         + 2
+
+tests\test_solution.py:28: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-184826.canonical_decimal.tests.test_solution" name="test_underscores" time="0.000"><failure message="ValueError: Invalid input">def test_underscores():
+&gt;       assert canonical_decimal("1_000") == "1000"
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:35: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+s = '1_000'
+
+    def canonical_decimal(s: str) -&gt; str:
+        # Check if input is a valid decimal number according to the grammar
+        if not (s and s[0] in "+-" or (s[0].isdigit() and '.' in s)):
+&gt;           raise ValueError("Invalid input")
+E           ValueError: Invalid input
+
+solution.py:4: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-184826.canonical_decimal.tests.test_solution" name="test_bad_underscores_raise" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_bad_underscores_raise():
+        for bad in ["_1", "1_", "1__2", "1_.5", "1._5", "+_1", "1.5_"]:
+&gt;           with pytest.raises(ValueError):
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^
+E           Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:42: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260713-184826.canonical_decimal.tests.test_solution" name="test_no_digits_raise" time="0.000"><failure message="IndexError: string index out of range">def test_no_digits_raise():
+        for bad in ["", "+", "-", ".", "+.", "-."]:
+            with pytest.raises(ValueError):
+&gt;               canonical_decimal(bad)
+
+tests\test_solution.py:49: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+s = ''
+
+    def canonical_decimal(s: str) -&gt; str:
+        # Check if input is a valid decimal number according to the grammar
+&gt;       if not (s and s[0] in "+-" or (s[0].isdigit() and '.' in s)):
+                                       ^^^^
+E       IndexError: string index out of range
+
+solution.py:3: IndexError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-184826.canonical_decimal.tests.test_solution" name="test_bad_chars_raise" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_bad_chars_raise():
+        for bad in ["1a", " 1", "1 ", "1.2.3", "--1", "+-1", "1,000", "1e5"]:
+&gt;           with pytest.raises(ValueError):
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^
+E           Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:54: Failed</failure></testcase></testsuite></testsuites>

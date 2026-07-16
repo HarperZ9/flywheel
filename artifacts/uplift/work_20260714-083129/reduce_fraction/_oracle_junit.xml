@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="1" failures="0" skipped="0" tests="1" time="0.211" timestamp="2026-07-14T08:59:25.916251-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="" name="artifacts.uplift.work_20260714-083129.reduce_fraction.tests.test_solution" time="0.000"><error message="collection failure">tests\test_solution.py:2: in &lt;module&gt;
+    from solution import reduce_fraction as f
+solution.py:1: in &lt;module&gt;
+    def reduce_fraction(num: int, den: int) -&gt; Tuple[int, int]:
+                                               ^^^^^
+E   NameError: name 'Tuple' is not defined</error></testcase></testsuite></testsuites>

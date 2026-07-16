@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="6" skipped="0" tests="15" time="0.245" timestamp="2026-07-14T13:36:50.009248-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260714-125209.kth_combination.tests.test_solution" name="test_first" time="0.001"><failure message="ValueError: n must be a non-negative integer">&gt;   def test_first(): assert f(4, 2, 0) == [0, 1]
+                             ^^^^^^^^^^
+
+tests\test_solution.py:3: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+n = 4, k = 2, r = 0
+
+    def kth_combination(n, k, r):
+        if not isinstance(n, int) or isinstance(n, bool) or n &lt; 0:
+            raise ValueError("bad n")
+        if not isinstance(k, int) or isinstance(k, bool) or k &lt; 0 or k &gt; n:
+            raise ValueError("bad k")
+        total = comb(n, k)
+        if not isinstance(r, int) or isinstance(r, bool) or r &lt; 0 or r &gt;= total:
+            raise ValueError("bad rank")
+        result = []
+        available = list(range(n))
+        for _ in range(k):
+            chosen = None
+            for x in available:
+&gt;               left = comb(x + n - len(available) - 1, k - len(result) - 1)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E               ValueError: n must be a non-negative integer
+
+solution.py:16: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-125209.kth_combination.tests.test_solution" name="test_middle" time="0.000"><failure message="ValueError: n must be a non-negative integer">&gt;   def test_middle(): assert f(4, 2, 3) == [1, 2]
+                              ^^^^^^^^^^
+
+tests\test_solution.py:4: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+n = 4, k = 2, r = 3
+
+    def kth_combination(n, k, r):
+        if not isinstance(n, int) or isinstance(n, bool) or n &lt; 0:
+            raise ValueError("bad n")
+        if not isinstance(k, int) or isinstance(k, bool) or k &lt; 0 or k &gt; n:
+            raise ValueError("bad k")
+        total = comb(n, k)
+        if not isinstance(r, int) or isinstance(r, bool) or r &lt; 0 or r &gt;= total:
+            raise ValueError("bad rank")
+        result = []
+        available = list(range(n))
+        for _ in range(k):
+            chosen = None
+            for x in available:
+&gt;               left = comb(x + n - len(available) - 1, k - len(result) - 1)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E               ValueError: n must be a non-negative integer
+
+solution.py:16: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-125209.kth_combination.tests.test_solution" name="test_last" time="0.000"><failure message="ValueError: n must be a non-negative integer">&gt;   def test_last(): assert f(4, 2, 5) == [2, 3]
+                            ^^^^^^^^^^
+
+tests\test_solution.py:5: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+n = 4, k = 2, r = 5
+
+    def kth_combination(n, k, r):
+        if not isinstance(n, int) or isinstance(n, bool) or n &lt; 0:
+            raise ValueError("bad n")
+        if not isinstance(k, int) or isinstance(k, bool) or k &lt; 0 or k &gt; n:
+            raise ValueError("bad k")
+        total = comb(n, k)
+        if not isinstance(r, int) or isinstance(r, bool) or r &lt; 0 or r &gt;= total:
+            raise ValueError("bad rank")
+        result = []
+        available = list(range(n))
+        for _ in range(k):
+            chosen = None
+            for x in available:
+&gt;               left = comb(x + n - len(available) - 1, k - len(result) - 1)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E               ValueError: n must be a non-negative integer
+
+solution.py:16: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-125209.kth_combination.tests.test_solution" name="test_five_three" time="0.000"><failure message="ValueError: n must be a non-negative integer">&gt;   def test_five_three(): assert f(5, 3, 6) == [1, 2, 3]
+                                  ^^^^^^^^^^
+
+tests\test_solution.py:6: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+n = 5, k = 3, r = 6
+
+    def kth_combination(n, k, r):
+        if not isinstance(n, int) or isinstance(n, bool) or n &lt; 0:
+            raise ValueError("bad n")
+        if not isinstance(k, int) or isinstance(k, bool) or k &lt; 0 or k &gt; n:
+            raise ValueError("bad k")
+        total = comb(n, k)
+        if not isinstance(r, int) or isinstance(r, bool) or r &lt; 0 or r &gt;= total:
+            raise ValueError("bad rank")
+        result = []
+        available = list(range(n))
+        for _ in range(k):
+            chosen = None
+            for x in available:
+&gt;               left = comb(x + n - len(available) - 1, k - len(result) - 1)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E               ValueError: n must be a non-negative integer
+
+solution.py:16: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-125209.kth_combination.tests.test_solution" name="test_five_three_last" time="0.000"><failure message="ValueError: n must be a non-negative integer">&gt;   def test_five_three_last(): assert f(5, 3, 9) == [2, 3, 4]
+                                       ^^^^^^^^^^
+
+tests\test_solution.py:7: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+n = 5, k = 3, r = 9
+
+    def kth_combination(n, k, r):
+        if not isinstance(n, int) or isinstance(n, bool) or n &lt; 0:
+            raise ValueError("bad n")
+        if not isinstance(k, int) or isinstance(k, bool) or k &lt; 0 or k &gt; n:
+            raise ValueError("bad k")
+        total = comb(n, k)
+        if not isinstance(r, int) or isinstance(r, bool) or r &lt; 0 or r &gt;= total:
+            raise ValueError("bad rank")
+        result = []
+        available = list(range(n))
+        for _ in range(k):
+            chosen = None
+            for x in available:
+&gt;               left = comb(x + n - len(available) - 1, k - len(result) - 1)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E               ValueError: n must be a non-negative integer
+
+solution.py:16: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-125209.kth_combination.tests.test_solution" name="test_k_zero" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-125209.kth_combination.tests.test_solution" name="test_k_equals_n" time="0.000"><failure message="ValueError: n must be a non-negative integer">&gt;   def test_k_equals_n(): assert f(3, 3, 0) == [0, 1, 2]
+                                  ^^^^^^^^^^
+
+tests\test_solution.py:9: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+n = 3, k = 3, r = 0
+
+    def kth_combination(n, k, r):
+        if not isinstance(n, int) or isinstance(n, bool) or n &lt; 0:
+            raise ValueError("bad n")
+        if not isinstance(k, int) or isinstance(k, bool) or k &lt; 0 or k &gt; n:
+            raise ValueError("bad k")
+        total = comb(n, k)
+        if not isinstance(r, int) or isinstance(r, bool) or r &lt; 0 or r &gt;= total:
+            raise ValueError("bad rank")
+        result = []
+        available = list(range(n))
+        for _ in range(k):
+            chosen = None
+            for x in available:
+&gt;               left = comb(x + n - len(available) - 1, k - len(result) - 1)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E               ValueError: n must be a non-negative integer
+
+solution.py:16: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-125209.kth_combination.tests.test_solution" name="test_n_zero" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-125209.kth_combination.tests.test_solution" name="test_bad_n" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-125209.kth_combination.tests.test_solution" name="test_bool_n" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-125209.kth_combination.tests.test_solution" name="test_bad_k" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-125209.kth_combination.tests.test_solution" name="test_bool_k" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-125209.kth_combination.tests.test_solution" name="test_bad_rank_high" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-125209.kth_combination.tests.test_solution" name="test_bad_rank_neg" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-125209.kth_combination.tests.test_solution" name="test_k_zero_rank_one" time="0.000" /></testsuite></testsuites>
