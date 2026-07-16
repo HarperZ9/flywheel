@@ -1,15 +1,15 @@
 # Flywheel
 
 **The one platform.** Flywheel is the single local surface that replaces the
-whole category — routers, agents, harnesses, apps, and the tool family — and
+whole category (routers, agents, harnesses, apps, and the tool family) and
 closes the verified-inference loop: propose cheaply, verify with a real oracle,
 keep the re-checkable receipt, and feed it back as memory, context, and catalog
 for the next run. The loop, not the model, is where the correctness comes from.
 
-The trained model (`local-model`) is one lane inside Flywheel — the replaceable
+The trained model (`local-model`) is one part of Flywheel, the replaceable
 half. The flagship tools (`index`, `gather`, `crucible`, `forum`, `learn`,
-`telos`) are lanes too — each an organ of the reconcile, provisioned,
-health-checked, and surfaced through one gateway. Flywheel is the durable half:
+`telos`) are parts too, each provisioned, health-checked, and surfaced
+through one gateway. Flywheel is the durable half:
 the composer that binds them into one closed loop.
 
 ---
@@ -39,20 +39,20 @@ speaks the OpenAI API (`/v1/chat/completions`, `/v1/models`, streaming), and the
 
 ---
 
-## The lanes
+## The tool family
 
-Flywheel encompasses the tool family as lanes. Install them all, then see their
+Flywheel encompasses the whole tool family. Install it, then see its
 health through one surface:
 
 ```
 flywheel install --lanes all       # pip + npm install the flagship family
-flywheel lanes                     # roster: live / declared / missing per lane
-flywheel lanes                     # → 7 lanes; gather/crucible/index/forum live, ...
+flywheel lanes                     # roster: live / declared / missing per tool
+flywheel lanes                     # -> 7 tools; gather/crucible/index/forum live, ...
 ```
 
-Each lane is an organ with a role:
+Each tool has a role:
 
-| Lane | Role | Organ |
+| Tool | Role | Function |
 |---|---|---|
 | `gather` | research intake + provenance receipts | perception |
 | `crucible` | falsifiable verification + re-check | verification |
@@ -62,8 +62,8 @@ Each lane is an organ with a role:
 | `telos` | reconciliation + creative engine + doctors | reconciliation |
 | `local-model` | the trained 14B proposer + the harness | propose-verify |
 
-The lane roster is live at `GET /api/lanes` (add `?probe=true` for a live MCP
-handshake with each lane). A down lane never breaks the roster; it reports
+The roster is live at `GET /api/lanes` (add `?probe=true` for a live MCP
+handshake with each tool). A down tool never breaks the roster; it reports
 `missing` or `declared` honestly.
 
 ---
@@ -92,8 +92,8 @@ flywheel loop-status
 | **corpus → model** | `flywheel corpus-export` writes a verified training shard (start is a deliberate manual step) |
 
 Two invariants are load-bearing and never relaxed: **no receipt → no accept**,
-and **no learned model sits in the accept path** — an oracle the operator names
-does the deciding, never the proposer.
+and **no learned model sits in the accept path**: an oracle you name does
+the deciding, never the proposer.
 
 The folded-context → recall edge is closed too: when the agent compacts its
 history, the folded span is content-addressed into a fold index so a buried
@@ -110,7 +110,7 @@ Every route is same-origin JSON you can also `curl`:
 | `/site/index.html` | The shell: router, world, companion, studio, receipts, lanes |
 | `GET /api/endpoints` | The universal router roster, credential presence only |
 | `GET /api/endpoints/health` | Live probe of local tiers; hosted tiers report configured-or-not |
-| `GET /api/lanes` | The lane roster — live / declared / missing per flagship lane |
+| `GET /api/lanes` | The tool roster: live / declared / missing per flagship |
 | `POST /api/route` | Route to any provider; the scaffold fires per message: named sources frozen pre-answer, turn receipt chained |
 | `POST /api/agent` | Run a gated, witnessed tool loop (read/edit/run) over any provider |
 | `POST /v1/chat/completions` | Drop-in OpenAI-compatible; `model` names any provider; streams |
@@ -209,7 +209,7 @@ refuses to overclaim is a tool whose other claims you can trust.
 - To run the local model: a machine that can host a ~9 GB 4-bit model, via
   Ollama or the bundled server. A GPU helps but is not required.
 - To reach hosted providers: their API key in your environment.
-- To install the lanes: `pip` and `npm` on PATH.
+- To install the tool family: `pip` and `npm` on PATH.
 
 ## Documentation
 
