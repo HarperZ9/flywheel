@@ -5,6 +5,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:flywheel_desktop/client/gateway_client.dart';
 import 'package:flywheel_desktop/ide/agent_runs_panel.dart';
 import 'package:flywheel_desktop/theme/flywheel_theme.dart';
 import 'package:flywheel_desktop/widgets/agent_timeline.dart';
@@ -106,5 +107,49 @@ void main() {
     })));
     expect(
         find.textContaining('No step events were stored'), findsOneWidget);
+  });
+
+  testWidgets('a stored run surfaces its evidence: ttva null, countersign',
+      (tester) async {
+    await tester.pumpWidget(_wrap(StoredAgentRun(doc: const {
+      'run_id': 'ab12cd34ef56ab12',
+      'intact': true,
+      'final': 'answered',
+      'duration_s': 3.2,
+      'ttva_s': null, // nothing verified: the null stays visible
+      'run_receipt': {'chain_hash': 'e5333d5e6c2a5851'},
+    })));
+    expect(find.text('duration'), findsOneWidget);
+    expect(find.text('null: nothing verified'), findsOneWidget);
+    expect(find.text('countersigned'), findsOneWidget);
+  });
+
+  testWidgets('signing is offered only for an intact run that edited files',
+      (tester) async {
+    final client = GatewayClient();
+    const doc = {
+      'run_id': 'ab12cd34ef56ab12',
+      'intact': true,
+      'final': 'patched',
+      'review': {
+        'files_edited': ['lib/a.dart']
+      },
+    };
+    await tester
+        .pumpWidget(_wrap(StoredAgentRun(doc: doc, client: client)));
+    expect(find.text('SIGN THIS RUN'), findsOneWidget);
+    expect(find.text('lib/a.dart'), findsOneWidget);
+
+    // TAMPERED: attesting to a rewritten record is never even offered
+    await tester.pumpWidget(_wrap(StoredAgentRun(
+        doc: {...doc, 'intact': false}, client: client)));
+    expect(find.text('SIGN THIS RUN'), findsNothing);
+
+    // nothing edited: a sign-off would attest to nothing, so no panel
+    await tester.pumpWidget(_wrap(StoredAgentRun(
+        doc: {...doc, 'review': const {'files_edited': []}},
+        client: client)));
+    expect(find.text('SIGN THIS RUN'), findsNothing);
+    client.close();
   });
 }

@@ -193,7 +193,9 @@ class _AgentPanelState extends State<AgentPanel> {
         children: [
           Row(
             children: [
-              const Kicker('workspace agent', hot: true),
+              // one hot mark per view: while browsing history the sign flow
+              // (when offered) carries it, so the header calms down
+              Kicker('workspace agent', hot: !_pastOpen),
               const Spacer(),
               if (!widget.alive)
                 Text('engine offline',
@@ -260,7 +262,7 @@ class _AgentPanelState extends State<AgentPanel> {
       constraints: const BoxConstraints(maxHeight: 280),
       child: SingleChildScrollView(
         child: _stored != null
-            ? StoredAgentRun(doc: _stored!)
+            ? StoredAgentRun(doc: _stored!, client: widget.client)
             : AgentRunsList(runs: _pastRuns, onOpen: _openStored),
       ),
     );

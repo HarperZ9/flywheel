@@ -5,9 +5,12 @@
 
 import 'package:flutter/material.dart';
 
+import '../client/gateway_client.dart';
 import '../theme/flywheel_theme.dart';
 import '../widgets/agent_timeline.dart';
 import '../widgets/fw.dart';
+import '../widgets/run_evidence_card.dart';
+import '../widgets/sign_run_panel.dart';
 
 class AgentRunsList extends StatelessWidget {
   final List<Map<String, dynamic>> runs;
@@ -59,10 +62,23 @@ class AgentRunsList extends StatelessWidget {
 }
 
 /// One stored run: the TAMPERED banner first when the content-address fails,
-/// then the replayed trace, then the run's own done data and receipt id.
+/// then the replayed trace, the run's own done data, its evidence, and — for
+/// an intact run that edited files — the sign-this-run attestation. Signing
+/// a TAMPERED record is never offered; that would be the exact dishonesty
+/// the receipt exists to catch.
 class StoredAgentRun extends StatelessWidget {
   final Map<String, dynamic> doc;
-  const StoredAgentRun({super.key, required this.doc});
+
+  /// When provided, an intact run that edited files offers the sign flow.
+  final GatewayClient? client;
+  const StoredAgentRun({super.key, required this.doc, this.client});
+
+  bool get _editedFiles {
+    final review = doc['review'];
+    return review is Map &&
+        review['files_edited'] is List &&
+        (review['files_edited'] as List).isNotEmpty;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -92,6 +108,9 @@ class StoredAgentRun extends StatelessWidget {
         AgentTimeline(events: [
           {...doc, 'type': 'done'}
         ]),
+        const SizedBox(height: FwLayout.s2),
+        RunEvidenceCard(run: doc),
+        const SizedBox(height: FwLayout.s2),
         Row(
           children: [
             HashText('run', '${doc['run_id'] ?? ''}', keep: 16),
@@ -100,6 +119,10 @@ class StoredAgentRun extends StatelessWidget {
                 style: fwMono(t, size: 10, color: t.inkFaint)),
           ],
         ),
+        if (client != null && doc['intact'] == true && _editedFiles) ...[
+          const SizedBox(height: FwLayout.s3),
+          SignRunPanel(client: client!, run: doc),
+        ],
       ],
     );
   }
