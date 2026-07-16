@@ -72,6 +72,16 @@ class FoldIndex:
                  "content_sha256": _content_hash(self.spans[sh])}
                 for sh, s in ranked]
 
+    def browse(self, limit: int = 20) -> list:
+        """Up to ``limit`` stored spans, verbatim, so a reader can look at what
+        memory holds without phrasing a recall query. The store is content-
+        addressed (no timestamps), so this is a sample of what's held, not a
+        recency order; recall remains the way to find a specific span."""
+        n = max(1, min(int(limit or 20), 200))
+        return [{"span_hash": sh, "messages": msgs,
+                 "content_sha256": self._content.get(sh, _content_hash(msgs))}
+                for sh, msgs in list(self.spans.items())[:n]]
+
     def verify(self) -> dict:
         """Re-derive each span's content hash and report any whose stored
         content no longer matches what was banked. Catches a tampered
