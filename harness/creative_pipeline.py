@@ -17,7 +17,7 @@ import json
 
 SCHEMA = "flywheel.creative-pipeline/v1"
 
-SOURCES = ("plate", "wireframe", "harmonograph")
+SOURCES = ("plate", "wireframe", "harmonograph", "field")
 TRANSFORMS = ("dither", "pixel_sort", "film_frame")
 MAX_STAGES = 8
 
@@ -31,6 +31,18 @@ def _plate_rgb(args):
                     args.get("ground", "dark"))
     return g.convert("RGB"), {"op": "plate", "seed": int(args.get("seed", 58)),
                               "ground": args.get("ground", "dark")}
+
+
+def _field(args):
+    from .field_studio import field_study
+    img, receipt = field_study(
+        seed=int(args.get("seed", 58)),
+        width=int(args.get("width", 640)), height=int(args.get("height", 400)),
+        sources=int(args.get("sources", 3)),
+        levels=int(args.get("levels", 9)))
+    if img is None:
+        raise ValueError(receipt["error"])
+    return img, receipt
 
 
 def _wireframe(args):
@@ -102,6 +114,7 @@ def _film(img, args):
 
 
 _OPS = {"plate": _plate_rgb, "wireframe": _wireframe,
+        "field": _field,
         "harmonograph": _harmonograph,
         "dither": _raster("raster.ordered-dither"),
         "pixel_sort": _raster("raster.pixel-sort-rows"),
