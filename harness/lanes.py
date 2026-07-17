@@ -151,8 +151,9 @@ def _installed_version(lane: Lane) -> str | None:
                     return ln.split(":", 1)[1].strip()
             return None
         if lane.kind == "npm":
+            npm = "npm.cmd" if os.name == "nt" else "npm"
             r = subprocess.run(
-                ["npm", "ls", "-g", lane.install_name, "--depth=0", "--json"],
+                [npm, "ls", "-g", lane.install_name, "--depth=0", "--json"],
                 capture_output=True, text=True, timeout=20)
             deps = json.loads(r.stdout or "{}").get("dependencies", {})
             entry = deps.get(lane.install_name)
