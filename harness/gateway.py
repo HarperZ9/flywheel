@@ -2046,6 +2046,20 @@ class _Handler(BaseHTTPRequestHandler):
                 face_params=req.get("face_params")
                 if isinstance(req.get("face_params"), dict) else None)
             return self._json(out, 400 if out.get("refused") else 200)
+        if p == "/api/lanes/install":                  # one lane, installed on request
+            length = self._content_length()
+            if length is None:
+                return self._json({"error": "invalid or oversized Content-Length"}, 400)
+            try:
+                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
+            except Exception:
+                req = {}
+            name = str(req.get("name", "")).strip()
+            if not name:
+                return self._json({"error": "provide a lane 'name'"}, 400)
+            profile = str(req.get("profile", "package")).strip() or "package"
+            from harness.lanes import install_lane
+            return self._json(install_lane(name, profile=profile))
         if p == "/api/plugins/call":                   # one tool call on a registered plugin
             length = self._content_length()
             if length is None:
