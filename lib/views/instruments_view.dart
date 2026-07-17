@@ -49,12 +49,48 @@ class _InstrumentsViewState extends State<InstrumentsView> {
           'The engine is offline. The register appears when it runs.',
           command: 'flywheel up');
     }
-    if (_error != null) return FwEmpty('Register unavailable: $_error');
-    if (_doc == null) return const Center(child: SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)));
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(FwLayout.s5),
-      child: InstrumentList(_doc!),
-    );
+    final t = context.fw;
+    return Column(children: [
+      Container(
+        padding: const EdgeInsets.symmetric(
+            horizontal: FwLayout.s5, vertical: FwLayout.s3),
+        decoration:
+            BoxDecoration(border: Border(bottom: BorderSide(color: t.hairline))),
+        child: Row(children: [
+          Text('Instruments', style: Theme.of(context).textTheme.titleMedium),
+          const Spacer(),
+          if (_loading)
+            SizedBox(
+                width: 12,
+                height: 12,
+                child: CircularProgressIndicator(
+                    strokeWidth: 1.6, color: t.inkFaint))
+          else
+            TextButton.icon(
+              onPressed: () {
+                setState(() => _error = null);
+                _load();
+              },
+              icon: const Icon(Icons.refresh_rounded, size: 15),
+              label: const Text('Re-read'),
+            ),
+        ]),
+      ),
+      Expanded(
+        child: _error != null
+            ? FwEmpty('Register unavailable: $_error')
+            : _doc == null
+                ? const Center(
+                    child: SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2)))
+                : SingleChildScrollView(
+                    padding: const EdgeInsets.all(FwLayout.s5),
+                    child: InstrumentList(_doc!),
+                  ),
+      ),
+    ]);
   }
 }
 
