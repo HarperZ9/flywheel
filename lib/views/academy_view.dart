@@ -9,6 +9,7 @@ import '../client/gateway_client.dart';
 import '../theme/flywheel_theme.dart';
 import '../widgets/academy_lesson.dart';
 import '../widgets/fw.dart';
+import '../widgets/teachback_card.dart';
 
 class AcademyView extends StatefulWidget {
   final GatewayClient client;
@@ -76,6 +77,11 @@ class _AcademyViewState extends State<AcademyView> {
           'teach-back receipt.',
           style: Theme.of(context).textTheme.bodySmall,
         ),
+        const SizedBox(height: FwLayout.s4),
+        const Kicker('earn a receipt · the teach-back mints the eid a '
+            'lesson binds to'),
+        const SizedBox(height: FwLayout.s2),
+        TeachbackCard(client: widget.client),
         const SizedBox(height: FwLayout.s4),
         AcademyArc(
           _doc!,
