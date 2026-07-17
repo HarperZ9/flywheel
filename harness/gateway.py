@@ -2046,6 +2046,33 @@ class _Handler(BaseHTTPRequestHandler):
                 face_params=req.get("face_params")
                 if isinstance(req.get("face_params"), dict) else None)
             return self._json(out, 400 if out.get("refused") else 200)
+        if p == "/api/plugins/call":                   # one tool call on a registered plugin
+            length = self._content_length()
+            if length is None:
+                return self._json({"error": "invalid or oversized Content-Length"}, 400)
+            try:
+                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
+            except Exception:
+                req = {}
+            from harness.plugins import call_plugin
+            out = call_plugin(str(req.get("name", "")).strip(),
+                              str(req.get("tool", "")).strip(),
+                              req.get("arguments")
+                              if isinstance(req.get("arguments"), dict) else {})
+            return self._json(out, 400 if "error" in out else 200)
+        if p == "/api/telos/kernel":                   # run a bridged telos creative kernel
+            length = self._content_length()
+            if length is None:
+                return self._json({"error": "invalid or oversized Content-Length"}, 400)
+            try:
+                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
+            except Exception:
+                req = {}
+            from harness.telos_kernels import run_kernel
+            out = run_kernel(str(req.get("kernel", "")).strip(),
+                             req.get("args")
+                             if isinstance(req.get("args"), dict) else {})
+            return self._json(out, 400 if "error" in out else 200)
         if p == "/api/typeface/family":                # one seed, a product line of weights
             length = self._content_length()
             if length is None:
