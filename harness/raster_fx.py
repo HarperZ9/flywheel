@@ -94,7 +94,7 @@ def apply_fx(kernel: str, source: "dict | None" = None,
                 "refusals": [f"unknown source kind {kind!r}; use plate "
                              "or png_b64"]}
 
-    pixels = list(img.getdata())
+    pixels = list(img.tobytes())     # mode L: one byte per pixel, stable API
     payload = {"pixels": pixels, "width": img.width, "height": img.height,
                **(args or {})}
     out = run_kernel(kernel, payload, timeout=60.0)

@@ -2073,6 +2073,18 @@ class _Handler(BaseHTTPRequestHandler):
                              req.get("args")
                              if isinstance(req.get("args"), dict) else {})
             return self._json(out, 400 if "error" in out else 200)
+        if p == "/api/studio/pipeline":                # ordered stages, one chained receipt
+            length = self._content_length()
+            if length is None:
+                return self._json({"error": "invalid or oversized Content-Length"}, 400)
+            try:
+                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
+            except Exception:
+                req = {}
+            from harness.creative_pipeline import run_pipeline
+            out = run_pipeline(req.get("stages")
+                               if isinstance(req.get("stages"), list) else [])
+            return self._json(out, 400 if out.get("refused") else 200)
         if p == "/api/telos/raster":                   # dither / pixel-sort over a plate or PNG
             length = self._content_length()
             if length is None:
