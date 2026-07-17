@@ -154,11 +154,15 @@ class _TypefacePanelState extends State<TypefacePanel> {
             SizedBox(
               height: 130,
               width: double.infinity,
-              child: CustomPaint(
-                painter: SpecimenPainter(
-                    face['glyphs'] as Map<String, dynamic>? ?? const {},
-                    (face['metrics']?['x_height'] as num?)?.toDouble() ?? 500,
-                    t.ink),
+              // the painter must never bleed past its box: clip it
+              child: ClipRect(
+                child: CustomPaint(
+                  painter: SpecimenPainter(
+                      face['glyphs'] as Map<String, dynamic>? ?? const {},
+                      (face['metrics']?['x_height'] as num?)?.toDouble() ??
+                          500,
+                      t.ink),
+                ),
               ),
             ),
             const SizedBox(height: FwLayout.s2),
