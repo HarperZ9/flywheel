@@ -189,7 +189,16 @@ def mint(params: dict, seed: int = 0) -> dict:
             if stroke["role"] in ("bowl", "dot", "spine"):
                 # overshoot: round extremes reach past the line to look even
                 pts = [(x, y * (1.0 + p["overshoot"])) for x, y in pts]
-            for ring in _expand(pts, stroke["closed"], w_v, p["contrast"]):
+            rings = _expand(pts, stroke["closed"], w_v, p["contrast"])
+            if stroke["role"] == "dot":
+                # a dot is solid ink: keep the true outer ring, which is
+                # whichever offset did not invert under a pen wider than
+                # the dot itself
+                def _area(r):
+                    return abs(sum(x1 * y2 - x2 * y1 for (x1, y1), (x2, y2)
+                                   in zip(r, r[1:])))
+                rings = [max(rings, key=_area)]
+            for ring in rings:
                 contours.append(_round(ring))
         top = max(y for c in contours for _, y in c)
         # tracy-spacing: straight sides earn the full bearing, round sides
