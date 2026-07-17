@@ -15,7 +15,9 @@ import 'fw.dart';
 
 class BrandKitPanel extends StatefulWidget {
   final GatewayClient client;
-  const BrandKitPanel({super.key, required this.client});
+  /// The last minted face's params; the kit's faces derive from it.
+  final Map<String, dynamic>? faceParams;
+  const BrandKitPanel({super.key, required this.client, this.faceParams});
 
   @override
   State<BrandKitPanel> createState() => _BrandKitPanelState();
@@ -49,6 +51,7 @@ class _BrandKitPanelState extends State<BrandKitPanel> {
         _name.text.trim(),
         tagline: _tagline.text.trim(),
         seed: int.tryParse(_seed.text.trim()) ?? 58,
+        faceParams: widget.faceParams,
       );
       if (!mounted) return;
       setState(() {

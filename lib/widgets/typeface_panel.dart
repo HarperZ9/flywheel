@@ -25,7 +25,12 @@ Future<void> _defaultLoadFont(String family, Uint8List bytes) async {
 class TypefacePanel extends StatefulWidget {
   final MintFace onMint;
   final LoadFont? fontLoad;
-  const TypefacePanel({super.key, required this.onMint, this.fontLoad});
+
+  /// Fires with the exact params of a successful mint so sibling panels
+  /// (poster, brand kit) can wear the minted face for real.
+  final ValueChanged<Map<String, dynamic>>? onMinted;
+  const TypefacePanel(
+      {super.key, required this.onMint, this.fontLoad, this.onMinted});
 
   @override
   State<TypefacePanel> createState() => _TypefacePanelState();
@@ -94,6 +99,9 @@ class _TypefacePanelState extends State<TypefacePanel> {
     try {
       final r = await widget.onMint(Map<String, dynamic>.from(_p), _seed);
       if (mounted) setState(() => _face = r);
+      if (r['refused'] != true && r['error'] == null) {
+        widget.onMinted?.call({...Map<String, dynamic>.from(_p), 'seed': _seed});
+      }
     } catch (e) {
       if (mounted) setState(() => _error = '$e');
     } finally {

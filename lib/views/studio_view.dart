@@ -40,6 +40,9 @@ class StudioView extends StatefulWidget {
 class _StudioViewState extends State<StudioView> {
   int _seed = kApertureSeed;
 
+  /// The last successful mint's params; poster and brand kit wear it.
+  Map<String, dynamic>? _mintedFace;
+
   @override
   Widget build(BuildContext context) {
     final t = context.fw;
@@ -104,11 +107,14 @@ class _StudioViewState extends State<StudioView> {
           TypefacePanel(
             onMint: (params, seed) =>
                 widget.client!.typefaceMint(params, seed),
+            onMinted: (params) => setState(() => _mintedFace = params),
           ),
           const SizedBox(height: FwLayout.s5),
-          const Kicker('poster composer · the plate wears your minted face'),
+          Kicker(_mintedFace == null
+              ? 'poster composer · mint a face above and the plate wears it'
+              : 'poster composer · the plate wears your minted face'),
           const SizedBox(height: FwLayout.s3),
-          PosterPanel(client: widget.client!),
+          PosterPanel(client: widget.client!, faceParams: _mintedFace),
           const SizedBox(height: FwLayout.s5),
           const Kicker('telos engine · the plotter kernel, driven in place'),
           const SizedBox(height: FwLayout.s3),
@@ -128,7 +134,7 @@ class _StudioViewState extends State<StudioView> {
           const SizedBox(height: FwLayout.s5),
           const Kicker('brand kit · one seed, a whole identity'),
           const SizedBox(height: FwLayout.s3),
-          BrandKitPanel(client: widget.client!),
+          BrandKitPanel(client: widget.client!, faceParams: _mintedFace),
           const SizedBox(height: FwLayout.s5),
           const Kicker('prompt forge · a goal becomes a gated prompt'),
           const SizedBox(height: FwLayout.s3),

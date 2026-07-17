@@ -14,7 +14,11 @@ import 'fw.dart';
 
 class PosterPanel extends StatefulWidget {
   final GatewayClient client;
-  const PosterPanel({super.key, required this.client});
+
+  /// The last minted face's params: when present the plate genuinely wears
+  /// it (the engine re-mints the family for the poster's type).
+  final Map<String, dynamic>? faceParams;
+  const PosterPanel({super.key, required this.client, this.faceParams});
 
   @override
   State<PosterPanel> createState() => _PosterPanelState();
@@ -55,6 +59,7 @@ class _PosterPanelState extends State<PosterPanel> {
         format: _format,
         seed: int.tryParse(_seed.text.trim()) ?? 58,
         ground: _ground,
+        faceParams: widget.faceParams,
       );
       if (!mounted) return;
       setState(() {

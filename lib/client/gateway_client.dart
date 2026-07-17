@@ -211,7 +211,8 @@ class GatewayClient {
       String format = 'poster',
       int seed = 58,
       String ground = 'dark',
-      bool accent = true}) async {
+      bool accent = true,
+      Map<String, dynamic>? faceParams}) async {
     final r = await _http.post(
       Uri.parse('$baseUrl/api/studio/poster'),
       headers: {'Content-Type': 'application/json'},
@@ -222,6 +223,7 @@ class GatewayClient {
         'seed': seed,
         'ground': ground,
         'accent': accent,
+        if (faceParams != null) 'face_params': faceParams,
       }),
     );
     return _decode(r);
@@ -281,11 +283,18 @@ class GatewayClient {
 
   /// POST /api/studio/brandkit — one seed + a name -> a whole identity.
   Future<Map<String, dynamic>> brandKit(String name,
-      {String tagline = '', int seed = 58}) async {
+      {String tagline = '',
+      int seed = 58,
+      Map<String, dynamic>? faceParams}) async {
     final r = await _http.post(
       Uri.parse('$baseUrl/api/studio/brandkit'),
       headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'name': name, 'tagline': tagline, 'seed': seed}),
+      body: jsonEncode({
+        'name': name,
+        'tagline': tagline,
+        'seed': seed,
+        if (faceParams != null) 'face_params': faceParams,
+      }),
     );
     return _decode(r);
   }
