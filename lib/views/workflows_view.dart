@@ -9,6 +9,7 @@ import '../client/gateway_client.dart';
 import '../models/gateway_models.dart';
 import '../models/workflow_models.dart';
 import '../theme/flywheel_theme.dart';
+import '../widgets/composer_controls.dart';
 import '../widgets/fw.dart';
 import '../widgets/workflow_cards.dart';
 
@@ -277,37 +278,10 @@ class _WorkflowsViewState extends State<WorkflowsView> {
   }
 
   Widget _picker(String label, String? value, List<String> options,
-      ValueChanged<String?> onChanged) {
-    final t = context.fw;
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Kicker(label),
-        const SizedBox(width: FwLayout.s2),
-        DropdownButton<String>(
-          value: options.contains(value) ? value : null,
-          underline: const SizedBox(),
-          style: fwMono(t, size: 12, color: t.inkSoft),
-          items: [
-            for (final o in options) DropdownMenuItem(value: o, child: Text(o)),
-          ],
-          onChanged: onChanged,
-        ),
-      ],
-    );
-  }
+          ValueChanged<String?> onChanged) =>
+      LabeledPicker(
+          label: label, value: value, options: options, onChanged: onChanged);
 
-  Widget _gate(String label, bool value, ValueChanged<bool> onChanged) {
-    final t = context.fw;
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Checkbox(
-            value: value,
-            onChanged: (v) => onChanged(v ?? false),
-            visualDensity: VisualDensity.compact),
-        Text('allow $label', style: fwMono(t, size: 11.5, color: t.inkMuted)),
-      ],
-    );
-  }
+  Widget _gate(String label, bool value, ValueChanged<bool> onChanged) =>
+      GrantCheckbox(label: label, value: value, onChanged: onChanged);
 }
