@@ -127,6 +127,22 @@ class GatewayClient {
     return _decode(r);
   }
 
+  /// POST /api/typeface/variable — the family's weights as ONE variable font
+  /// with a wght axis; the response carries the .ttf and a receipt.
+  Future<Map<String, dynamic>> typefaceVariable(
+      Map<String, dynamic> params, int seed) async {
+    final r = await _http.post(
+      Uri.parse('$baseUrl/api/typeface/variable'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'params': params,
+        'seed': seed,
+        'family': 'Zentropy Mint $seed',
+      }),
+    );
+    return _decode(r);
+  }
+
   /// POST /api/learn/animate — a lesson rendered as a runnable manim scene.
   Future<Map<String, dynamic>> learnAnimate(
       Map<String, dynamic> lesson) async {
