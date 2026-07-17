@@ -14,10 +14,12 @@ import '../models/gateway_models.dart';
 import '../services/chat_store.dart';
 import '../services/settings.dart';
 import '../theme/flywheel_theme.dart';
+import 'agent_mode_pane.dart';
 import '../widgets/chat_composer.dart';
 import '../widgets/chat_sidebar.dart';
 import '../widgets/chat_thread.dart';
 import '../widgets/fw.dart';
+import '../widgets/mode_chip.dart';
 import '../widgets/model_picker.dart';
 
 class AgentView extends StatefulWidget {
@@ -42,6 +44,7 @@ class _AgentViewState extends State<AgentView> {
   List<EndpointRow> _endpoints = [];
   String? _model;
   bool _streaming = false;
+  bool _agentMode = false;
   StreamSubscription? _sub;
   int _seq = 0;
 
@@ -191,30 +194,40 @@ class _AgentViewState extends State<AgentView> {
     }
     final t = context.fw;
     return Row(children: [
-      ChatSidebar(
-        conversations: _conversations,
-        current: _current,
-        streaming: _streaming,
-        onNew: _newChat,
-        onSelect: _select,
-        onDelete: _delete,
-      ),
+      if (!_agentMode)
+        ChatSidebar(
+          conversations: _conversations,
+          current: _current,
+          streaming: _streaming,
+          onNew: _newChat,
+          onSelect: _select,
+          onDelete: _delete,
+        ),
       Expanded(
         child: Column(children: [
           _header(t),
           Expanded(
-            child: _current.isEmpty
-                ? _welcome(t)
-                : ChatThread(messages: _current.messages, controller: _scroll),
+            child: _agentMode
+                ? AgentModePane(
+                    client: widget.client,
+                    alive: widget.alive,
+                    settings: widget.settings)
+                : _current.isEmpty
+                    ? _welcome(t)
+                    : ChatThread(
+                        messages: _current.messages, controller: _scroll),
           ),
-          ChatComposer(
-            streaming: _streaming,
-            onSend: _send,
-            onStop: _stop,
-            hint: _model == null ? 'No model available…' : 'Message ${_model!}…',
-            savedPrompts: widget.settings.savedPrompts,
-            onSavePrompt: (t) => setState(() => widget.settings.savePrompt(t)),
-          ),
+          if (!_agentMode)
+            ChatComposer(
+              streaming: _streaming,
+              onSend: _send,
+              onStop: _stop,
+              hint:
+                  _model == null ? 'No model available…' : 'Message ${_model!}…',
+              savedPrompts: widget.settings.savedPrompts,
+              onSavePrompt: (t) =>
+                  setState(() => widget.settings.savePrompt(t)),
+            ),
         ]),
       ),
     ]);
@@ -228,7 +241,21 @@ class _AgentViewState extends State<AgentView> {
         child: Row(children: [
           Text('Chat', style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(width: FwLayout.s4),
-          if (_endpoints.isNotEmpty)
+          FwModeChip(
+              label: 'chat',
+              active: !_agentMode,
+              onTap: () {
+                if (!_streaming) setState(() => _agentMode = false);
+              }),
+          const SizedBox(width: FwLayout.s1),
+          FwModeChip(
+              label: 'agent',
+              active: _agentMode,
+              onTap: () {
+                if (!_streaming) setState(() => _agentMode = true);
+              }),
+          const SizedBox(width: FwLayout.s4),
+          if (!_agentMode && _endpoints.isNotEmpty)
             ModelPickerButton(
               endpoints: _endpoints,
               current: _model,
@@ -238,8 +265,15 @@ class _AgentViewState extends State<AgentView> {
           const Spacer(),
           Icon(Icons.verified_outlined, size: 13, color: t.inkFaint),
           const SizedBox(width: 5),
-          Text('every reply is witnessed',
-              style: fwMono(t, size: 10.5, color: t.inkFaint)),
+          Flexible(
+            child: Text(
+                _agentMode
+                    ? 'every run persists with its trace'
+                    : 'every reply is witnessed',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: fwMono(t, size: 10.5, color: t.inkFaint)),
+          ),
         ]),
       );
 

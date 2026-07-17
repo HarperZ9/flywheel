@@ -4,6 +4,7 @@
 // (~/.flywheel/lanes.json), overridable with FLYWHEEL_HOME. Stores only UI
 // state (theme mode); never credentials.
 
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -23,6 +24,12 @@ class DesktopSettings {
   /// shelf so nobody starts from a blank composer every time.
   List<Map<String, String>> savedPrompts;
 
+  /// Per-view divider positions for SplitPane, keyed by view name, so a
+  /// layout someone dragged into shape survives navigation and restarts.
+  Map<String, double> splitFractions;
+
+  Timer? _splitSaveDebounce;
+
   DesktopSettings(
       {this.themeMode = ThemeMode.system,
       List<String>? recentWorkspaces,
@@ -32,9 +39,24 @@ class DesktopSettings {
       this.groundPreset,
       this.uiScale = 1.0,
       this.railWidth = 172,
-      List<Map<String, String>>? savedPrompts})
+      List<Map<String, String>>? savedPrompts,
+      Map<String, double>? splitFractions})
       : recentWorkspaces = recentWorkspaces ?? [],
-        savedPrompts = savedPrompts ?? [];
+        savedPrompts = savedPrompts ?? [],
+        splitFractions = splitFractions ?? {};
+
+  double splitFraction(String view, double fallback) =>
+      splitFractions[view] ?? fallback;
+
+  /// Record a dragged divider position; the disk write is debounced because
+  /// a drag emits dozens of updates per second.
+  void setSplitFraction(String view, double fraction) {
+    splitFractions[view] = fraction;
+    _splitSaveDebounce?.cancel();
+    _splitSaveDebounce = Timer(const Duration(milliseconds: 400), save);
+  }
+
+  void cancelPendingSaves() => _splitSaveDebounce?.cancel();
 
   /// Save a prompt to the shelf (deduped by text, newest first, capped at 30).
   void savePrompt(String text) {
@@ -106,6 +128,13 @@ class DesktopSettings {
                     {'title': p['title'] as String, 'text': p['text'] as String}
               ]
             : [],
+        splitFractions: (j['split_fractions'] is Map)
+            ? {
+                for (final e in (j['split_fractions'] as Map).entries)
+                  if (e.value is num)
+                    '${e.key}': (e.value as num).toDouble().clamp(0.05, 0.95)
+              }
+            : {},
       );
     } catch (e) {
       // A corrupt settings file must never block launch; fall back to system.
@@ -133,6 +162,7 @@ class DesktopSettings {
         'ui_scale': uiScale,
         'rail_width': railWidth,
         'saved_prompts': savedPrompts,
+        'split_fractions': splitFractions,
       }));
     } catch (e) {
       debugPrint('settings save failed: $e');

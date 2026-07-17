@@ -16,6 +16,7 @@ import '../widgets/chat_composer.dart';
 import '../widgets/chat_thread.dart';
 import '../widgets/fw.dart';
 import '../widgets/model_picker.dart';
+import '../widgets/split_pane.dart';
 
 class CompareView extends StatefulWidget {
   final GatewayClient client;
@@ -182,11 +183,15 @@ class _CompareViewState extends State<CompareView> {
         ]),
       ),
       Expanded(
-        child: Row(children: [
-          Expanded(child: _pane(t, _left)),
-          Container(width: 1, color: t.hairline),
-          Expanded(child: _pane(t, _right)),
-        ]),
+        child: SplitPane(
+          axis: Axis.horizontal,
+          initialFraction: widget.settings.splitFraction('compare', 0.5),
+          minFraction: 0.25,
+          maxFraction: 0.75,
+          onFraction: (f) => widget.settings.setSplitFraction('compare', f),
+          first: _pane(t, _left),
+          second: _pane(t, _right),
+        ),
       ),
       ChatComposer(
         streaming: _busy,
