@@ -1050,6 +1050,26 @@ class _Handler(BaseHTTPRequestHandler):
         if p == "/api/instruments":                  # the evaluation-engineering register
             from harness.eval_engineering import instrument_register
             return self._json(instrument_register())
+        if p == "/api/typeface/gallery":             # the marketplace of published faces (metadata)
+            from urllib.parse import unquote_plus
+            limit = 60
+            for part in qs.split("&"):
+                if part.startswith("limit="):
+                    try:
+                        limit = int(unquote_plus(part[6:]))
+                    except ValueError:
+                        pass
+            from harness.typeface_gallery import gallery
+            return self._json(gallery(limit=limit))
+        if p == "/api/typeface/face":                # one published face, bytes included
+            from urllib.parse import unquote_plus
+            eid = ""
+            for part in qs.split("&"):
+                if part.startswith("eid="):
+                    eid = unquote_plus(part[4:])
+            from harness.typeface_gallery import fetch_face
+            out = fetch_face(eid)
+            return self._json(out, 404 if "error" in out else 200)
         if p == "/api/academy":                      # the curriculum, derived from the live code
             from harness.academy_pipeline import academy_curriculum
             return self._json(academy_curriculum())
@@ -2022,7 +2042,37 @@ class _Handler(BaseHTTPRequestHandler):
                 face["ttf_b64"] = base64.b64encode(
                     to_ttf(face, family=family)).decode("ascii")
                 face["ttf_family"] = family
+            if req.get("publish") and not face.get("refused"):
+                # file the face in the witnessed gallery so others can browse
+                # and reuse it; a refused face is never a product
+                from harness.typeface_gallery import publish_face
+                face["gallery"] = publish_face(
+                    face, family=str(req.get("family") or "Zentropy Mint"))
             return self._json(face)
+        if p == "/api/typeface/publish":               # file an already-minted face in the gallery
+            length = self._content_length()
+            if length is None:
+                return self._json({"error": "invalid or oversized Content-Length"}, 400)
+            try:
+                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
+            except Exception:
+                req = {}
+            from harness.typeface_forge import mint
+            from harness.typeface_ttf import to_ttf
+            from harness.typeface_gallery import publish_face
+            import base64
+            params = req.get("params") if isinstance(req.get("params"), dict) else {}
+            try:
+                seed = int(req.get("seed", 0))
+            except (TypeError, ValueError):
+                seed = 0
+            face = mint(params, seed=seed)
+            if not face.get("refused"):
+                family = str(req.get("family") or "Zentropy Mint")[:48]
+                face["ttf_b64"] = base64.b64encode(
+                    to_ttf(face, family=family)).decode("ascii")
+            out = publish_face(face, family=str(req.get("family") or "Zentropy Mint"))
+            return self._json(out, 400 if "error" in out else 200)
         if p == "/api/studio/poster":                  # plate + minted face + copy, one receipt
             length = self._content_length()
             if length is None:
