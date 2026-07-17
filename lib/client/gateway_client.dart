@@ -239,6 +239,22 @@ class GatewayClient {
     return _decode(r);
   }
 
+  /// POST /api/telos/raster — dither or pixel-sort over a plate or PNG;
+  /// the receipt carries the kernel's own hashes.
+  Future<Map<String, dynamic>> telosRaster(String kernel,
+      {Map<String, dynamic>? source, Map<String, dynamic>? args}) async {
+    final r = await _http.post(
+      Uri.parse('$baseUrl/api/telos/raster'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'kernel': kernel,
+        if (source != null) 'source': source,
+        if (args != null) 'args': args,
+      }),
+    );
+    return _decode(r);
+  }
+
   /// POST /api/studio/brandkit — one seed + a name -> a whole identity.
   Future<Map<String, dynamic>> brandKit(String name,
       {String tagline = '', int seed = 58}) async {
