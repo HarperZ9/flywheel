@@ -23,6 +23,8 @@ class WorkflowsView extends StatefulWidget {
 
 class _WorkflowsViewState extends State<WorkflowsView> {
   final _goal = TextEditingController();
+  final _root = TextEditingController();
+  final _testCmd = TextEditingController();
   List<ProfileManifest> _profiles = [];
   WorkflowRoster? _roster;
   List<EndpointRow> _endpoints = [];
@@ -52,6 +54,8 @@ class _WorkflowsViewState extends State<WorkflowsView> {
   @override
   void dispose() {
     _goal.dispose();
+    _root.dispose();
+    _testCmd.dispose();
     super.dispose();
   }
 
@@ -106,6 +110,8 @@ class _WorkflowsViewState extends State<WorkflowsView> {
         profile: _profile,
         allowWrite: _allowWrite,
         allowExec: _allowExec,
+        root: _root.text.trim(),
+        testCmd: _testCmd.text.trim(),
       );
       if (mounted) setState(() => _run = run);
       _load(); // the new run's receipt belongs in history immediately
@@ -239,6 +245,27 @@ class _WorkflowsViewState extends State<WorkflowsView> {
             style: const TextStyle(fontSize: 13.5),
             decoration: const InputDecoration(hintText: 'The goal…'),
           ),
+          const SizedBox(height: FwLayout.s2),
+          Row(children: [
+            Expanded(
+              child: TextField(
+                controller: _root,
+                style: fwMono(t, size: 12),
+                decoration: const InputDecoration(
+                    hintText: r'workspace root (optional), e.g. C:\dev\proj'),
+              ),
+            ),
+            const SizedBox(width: FwLayout.s3),
+            Expanded(
+              child: TextField(
+                controller: _testCmd,
+                style: fwMono(t, size: 12),
+                decoration: const InputDecoration(
+                    hintText: 'verify command, e.g. pytest -q — without it '
+                        'the verify stage can only say UNVERIFIABLE'),
+              ),
+            ),
+          ]),
           const SizedBox(height: FwLayout.s3),
           FilledButton(
             onPressed: _running ? null : _runWorkflow,
