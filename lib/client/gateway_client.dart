@@ -220,6 +220,17 @@ class GatewayClient {
     return _decode(r);
   }
 
+  /// POST /api/studio/brandkit — one seed + a name -> a whole identity.
+  Future<Map<String, dynamic>> brandKit(String name,
+      {String tagline = '', int seed = 58}) async {
+    final r = await _http.post(
+      Uri.parse('$baseUrl/api/studio/brandkit'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'name': name, 'tagline': tagline, 'seed': seed}),
+    );
+    return _decode(r);
+  }
+
   /// POST /api/studio/sound — the seeded chime study; the score is the receipt.
   Future<Map<String, dynamic>> studioSound(
       {int seed = 58, double duration = 24, double root = 220}) async {
