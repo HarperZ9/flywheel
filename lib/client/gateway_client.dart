@@ -255,6 +255,18 @@ class GatewayClient {
     return _decode(r);
   }
 
+  /// POST /api/studio/graph — a branching creative DAG; every node's chain
+  /// folds its inputs' chains, so the graph id witnesses everything.
+  Future<Map<String, dynamic>> studioGraph(List<Map<String, dynamic>> nodes,
+      List<Map<String, dynamic>> edges) async {
+    final r = await _http.post(
+      Uri.parse('$baseUrl/api/studio/graph'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'nodes': nodes, 'edges': edges}),
+    );
+    return _decode(r);
+  }
+
   /// POST /api/studio/pipeline — ordered creative stages, one chained
   /// receipt; the pipeline id witnesses the whole line in order.
   Future<Map<String, dynamic>> studioPipeline(
