@@ -8,15 +8,22 @@ import 'package:flutter/material.dart';
 import '../client/gateway_client.dart';
 import '../models/gateway_models.dart';
 import '../models/workflow_models.dart';
+import '../services/settings.dart';
 import '../theme/flywheel_theme.dart';
 import '../widgets/composer_controls.dart';
+import '../widgets/composer_results.dart';
 import '../widgets/fw.dart';
 import '../widgets/workflow_cards.dart';
 
 class WorkflowsView extends StatefulWidget {
   final GatewayClient client;
   final bool alive;
-  const WorkflowsView({super.key, required this.client, required this.alive});
+  final DesktopSettings settings;
+  const WorkflowsView(
+      {super.key,
+      required this.client,
+      required this.alive,
+      required this.settings});
 
   @override
   State<WorkflowsView> createState() => _WorkflowsViewState();
@@ -149,10 +156,12 @@ class _WorkflowsViewState extends State<WorkflowsView> {
           command: 'flywheel up');
     }
     final t = context.fw;
-    return ViewScroll(
-      children: [
-        const SectionHeader('Workflows', kicker: 'staged, receipted, any endpoint'),
-        const SizedBox(height: FwLayout.s3),
+    return ComposerResults(
+      settings: widget.settings,
+      viewKey: 'workflows',
+      header: const SectionHeader('Workflows',
+          kicker: 'staged, receipted, any endpoint'),
+      composer: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
         Text(
           'A profile binds an operating discipline onto the same substrate; '
           'the endpoint is a runtime choice. Older model generations run the '
@@ -162,14 +171,10 @@ class _WorkflowsViewState extends State<WorkflowsView> {
         ),
         const SizedBox(height: FwLayout.s4),
         _composer(t),
-        if (_error != null) ...[
-          const SizedBox(height: FwLayout.s3),
-          HonestNull('The run failed: $_error'),
-        ],
-        if (_run != null) ...[
-          const SizedBox(height: FwLayout.s4),
-          WorkflowRunCard(run: _run!),
-        ],
+      ]),
+      results: [
+        if (_error != null) HonestNull('The run failed: $_error'),
+        if (_run != null) WorkflowRunCard(run: _run!),
         if ((_roster?.runs.isNotEmpty ?? false)) ...[
           const SizedBox(height: FwLayout.s5),
           const Kicker('recent runs · persisted receipts, tap for the trace'),

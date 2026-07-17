@@ -8,7 +8,9 @@ import 'package:flutter/material.dart';
 
 import '../client/gateway_client.dart';
 import '../models/science_models.dart';
+import '../services/settings.dart';
 import '../theme/flywheel_theme.dart';
+import '../widgets/composer_results.dart';
 import '../widgets/fw.dart';
 import '../widgets/plan_cards.dart';
 import '../widgets/science_composer.dart';
@@ -17,7 +19,12 @@ import '../widgets/science_history.dart';
 class ScienceView extends StatefulWidget {
   final GatewayClient client;
   final bool alive;
-  const ScienceView({super.key, required this.client, required this.alive});
+  final DesktopSettings settings;
+  const ScienceView(
+      {super.key,
+      required this.client,
+      required this.alive,
+      required this.settings});
 
   @override
   State<ScienceView> createState() => _ScienceViewState();
@@ -127,11 +134,12 @@ class _ScienceViewState extends State<ScienceView> {
     }
     final t = context.fw;
     final r = _run;
-    return ViewScroll(
-      children: [
-        const SectionHeader('Science',
-            kicker: 'evidence, spec, judgment, one chain'),
-        const SizedBox(height: FwLayout.s3),
+    return ComposerResults(
+      settings: widget.settings,
+      viewKey: 'science',
+      header: const SectionHeader('Science',
+          kicker: 'evidence, spec, judgment, one chain'),
+      composer: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
         Text(
           'Ask a question: gather brings sources with provenance, the forge '
           'prices it as a research spec, and crucible judges your stated '
@@ -141,16 +149,13 @@ class _ScienceViewState extends State<ScienceView> {
         ),
         const SizedBox(height: FwLayout.s4),
         _composer(t),
-        if (_error != null) ...[
-          const SizedBox(height: FwLayout.s3),
-          HonestNull('Failed: $_error'),
-        ],
-        if (_storedOk == false) ...[
-          const SizedBox(height: FwLayout.s3),
+      ]),
+      results: [
+        if (_error != null) HonestNull('Failed: $_error'),
+        if (_storedOk == false)
           const HonestNull(
               'This stored run failed re-verification: its content no '
               'longer matches its chain hash. It is served as TAMPERED.'),
-        ],
         if (r != null) ..._result(t, r),
         if (_history.isNotEmpty) ...[
           const SizedBox(height: FwLayout.s5),

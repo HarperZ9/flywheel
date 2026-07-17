@@ -320,9 +320,11 @@ class _FlywheelShellState extends State<FlywheelShell> {
       case 'Companion':
         return CompanionView(client: _client, alive: _gatewayAlive);
       case 'Plan':
-        return PlanView(client: _client, alive: _gatewayAlive);
+        return PlanView(
+            client: _client, alive: _gatewayAlive, settings: widget.settings);
       case 'Workflows':
-        return WorkflowsView(client: _client, alive: _gatewayAlive);
+        return WorkflowsView(
+            client: _client, alive: _gatewayAlive, settings: widget.settings);
       case 'Studio':
         return StudioView(
             world: _world,
@@ -340,7 +342,8 @@ class _FlywheelShellState extends State<FlywheelShell> {
       case 'Feeds':
         return FeedsView(client: _client, alive: _gatewayAlive);
       case 'Discourse':
-        return DiscourseView(client: _client, alive: _gatewayAlive);
+        return DiscourseView(
+            client: _client, alive: _gatewayAlive, settings: widget.settings);
       case 'Academy':
         return AcademyView(client: _client, alive: _gatewayAlive);
       case 'Receipts':
@@ -352,7 +355,8 @@ class _FlywheelShellState extends State<FlywheelShell> {
       case 'Instruments':
         return InstrumentsView(client: _client, alive: _gatewayAlive);
       case 'Science':
-        return ScienceView(client: _client, alive: _gatewayAlive);
+        return ScienceView(
+            client: _client, alive: _gatewayAlive, settings: widget.settings);
       case 'World':
         return WorldView(
             world: _world, alive: _gatewayAlive, client: _client);

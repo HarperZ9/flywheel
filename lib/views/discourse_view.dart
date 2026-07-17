@@ -10,7 +10,9 @@ import 'package:flutter/material.dart';
 
 import '../client/gateway_client.dart';
 import '../models/discourse.dart';
+import '../services/settings.dart';
 import '../theme/flywheel_theme.dart';
+import '../widgets/composer_results.dart';
 import '../widgets/discourse_cards.dart';
 import '../widgets/discourse_recent.dart';
 import '../widgets/fw.dart';
@@ -18,7 +20,12 @@ import '../widgets/fw.dart';
 class DiscourseView extends StatefulWidget {
   final GatewayClient client;
   final bool alive;
-  const DiscourseView({super.key, required this.client, required this.alive});
+  final DesktopSettings settings;
+  const DiscourseView(
+      {super.key,
+      required this.client,
+      required this.alive,
+      required this.settings});
 
   @override
   State<DiscourseView> createState() => _DiscourseViewState();
@@ -100,53 +107,54 @@ class _DiscourseViewState extends State<DiscourseView> {
       return const FwEmpty('The engine is offline.', command: 'flywheel app --port 8799');
     }
     final d = _digest;
-    return ViewScroll(children: [
-      SectionHeader('Discourse',
+    return ComposerResults(
+      settings: widget.settings,
+      viewKey: 'discourse',
+      header: SectionHeader('Discourse',
           kicker: 'PERCEPTION',
           trailing: FilledButton(
             onPressed: _loading ? null : _synthesize,
             child: Text(_loading ? 'Synthesizing…' : 'Synthesize'),
           )),
-      const SizedBox(height: FwLayout.s3),
-      TextField(
-        controller: _corpus,
-        onSubmitted: (_) => _synthesize(),
-        decoration: const InputDecoration(
-          labelText: 'Corpus',
-          hintText: 'a gather corpus directory, or a JSON list of rows',
+      composer: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        TextField(
+          controller: _corpus,
+          onSubmitted: (_) => _synthesize(),
+          decoration: const InputDecoration(
+            labelText: 'Corpus',
+            hintText: 'a gather corpus directory, or a JSON list of rows',
+          ),
         ),
-      ),
-      const SizedBox(height: FwLayout.s3),
-      _corpusPicker(context),
-      const SizedBox(height: FwLayout.s5),
-      SectionHeader('Scheduled', kicker: 'DAEMON DIGESTS'),
-      const SizedBox(height: FwLayout.s3),
-      DiscourseRecent(client: widget.client),
-      if (_error != null) ...[
-        const SizedBox(height: FwLayout.s4),
-        HonestNull(_error!),
-      ],
-      if (d != null) ...[
-        const SizedBox(height: FwLayout.s5),
-        _summary(context, d),
-        if (d.contested.isNotEmpty) ...[
-          const SizedBox(height: FwLayout.s5),
-          SectionHeader('Contested', kicker: 'TOPICS THE CROWD IS SPLIT ON'),
-          const SizedBox(height: FwLayout.s3),
-          contestedSection(context, d),
-        ],
-        const SizedBox(height: FwLayout.s5),
-        SectionHeader('Themes', kicker: 'RANKED BY WEIGHT'),
         const SizedBox(height: FwLayout.s3),
-        if (d.themes.isEmpty)
-          const HonestNull('No themes: the corpus held no discourse items.')
-        else
-          for (final t in d.themes.take(24)) ...[
-            discourseThemeCard(context, t),
+        _corpusPicker(context),
+        const SizedBox(height: FwLayout.s5),
+        SectionHeader('Scheduled', kicker: 'DAEMON DIGESTS'),
+        const SizedBox(height: FwLayout.s3),
+        DiscourseRecent(client: widget.client),
+      ]),
+      results: [
+        if (_error != null) HonestNull(_error!),
+        if (d != null) ...[
+          _summary(context, d),
+          if (d.contested.isNotEmpty) ...[
+            const SizedBox(height: FwLayout.s5),
+            SectionHeader('Contested', kicker: 'TOPICS THE CROWD IS SPLIT ON'),
             const SizedBox(height: FwLayout.s3),
+            contestedSection(context, d),
           ],
+          const SizedBox(height: FwLayout.s5),
+          SectionHeader('Themes', kicker: 'RANKED BY WEIGHT'),
+          const SizedBox(height: FwLayout.s3),
+          if (d.themes.isEmpty)
+            const HonestNull('No themes: the corpus held no discourse items.')
+          else
+            for (final t in d.themes.take(24)) ...[
+              discourseThemeCard(context, t),
+              const SizedBox(height: FwLayout.s3),
+            ],
+        ],
       ],
-    ]);
+    );
   }
 
   Widget _corpusPicker(BuildContext context) {
