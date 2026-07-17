@@ -2146,6 +2146,24 @@ class _Handler(BaseHTTPRequestHandler):
                 seed=seed,
                 family=str(req.get("family") or "Zentropy Mint")[:48])
             return self._json(out, 400 if out.get("refused") else 200)
+        if p == "/api/typeface/variable":              # the family as ONE variable font (wght axis)
+            length = self._content_length()
+            if length is None:
+                return self._json({"error": "invalid or oversized Content-Length"}, 400)
+            try:
+                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
+            except Exception:
+                req = {}
+            from harness.typeface_family import mint_variable_family
+            try:
+                seed = int(req.get("seed", 58))
+            except (TypeError, ValueError):
+                seed = 58
+            out = mint_variable_family(
+                req.get("params") if isinstance(req.get("params"), dict) else None,
+                seed=seed,
+                family=str(req.get("family") or "Zentropy Mint")[:48])
+            return self._json(out, 400 if out.get("refused") else 200)
         if p == "/api/studio/brandkit":                # one seed + a name -> a whole identity
             length = self._content_length()
             if length is None:

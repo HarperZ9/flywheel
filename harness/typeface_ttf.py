@@ -74,10 +74,11 @@ def _cmap(table_map: "dict[int, int]") -> bytes:
     return struct.pack(">HHHHL", 0, 1, 3, 1, 12) + sub
 
 
-def _name(family: str, style: str = "Regular") -> bytes:
+def _name(family: str, style: str = "Regular", extra=None) -> bytes:
     recs = [(1, family), (2, style), (3, f"{family} {style}"),
             (4, f"{family} {style}"),
             (6, family.replace(" ", "") + "-" + style.replace(" ", ""))]
+    recs += list(extra or [])  # named-instance subfamily records (id >= 256)
     stored = b""
     entries = b""
     for nid, s in recs:
@@ -87,6 +88,31 @@ def _name(family: str, style: str = "Regular") -> bytes:
         stored += enc
     return struct.pack(">HHH", 0, len(recs), 6 + 12 * len(recs)) \
         + entries + stored
+
+
+def _sfnt(tables: "dict[bytes, bytes]") -> bytes:
+    """Assemble a directory of tables into a checksummed sfnt font."""
+    import math
+    tags = sorted(tables)
+    n = len(tags)
+    p2 = 2 ** int(math.log2(n))
+    header = struct.pack(">LHHHH", 0x00010000, n, p2 * 16,
+                         int(math.log2(p2)), (n - p2) * 16)
+    offset = 12 + 16 * n
+    dir_b = b""
+    body = b""
+    offsets = {}
+    for tag in tags:
+        data = tables[tag]
+        offsets[tag] = offset
+        dir_b += struct.pack(">4sLLL", tag, _checksum(data), offset,
+                             len(data))
+        body += _pad4(data)
+        offset += len(_pad4(data))
+    font = header + dir_b + body
+    adjust = (0xB1B0AFBA - _checksum(font)) & 0xFFFFFFFF
+    hoff = offsets[b"head"] + 8
+    return font[:hoff] + struct.pack(">L", adjust) + font[hoff + 4:]
 
 
 def to_ttf(face: dict, family: str = "Zentropy Mint",
@@ -180,24 +206,4 @@ def to_ttf(face: dict, family: str = "Zentropy Mint",
         for l, r, v in pairs:
             sub += struct.pack(">HHh", l, r, v)
         tables[b"kern"] = struct.pack(">HH", 0, 1) + sub
-    tags = sorted(tables)
-    n = len(tags)
-    import math
-    p2 = 2 ** int(math.log2(n))
-    header = struct.pack(">LHHHH", 0x00010000, n, p2 * 16,
-                         int(math.log2(p2)), (n - p2) * 16)
-    offset = 12 + 16 * n
-    dir_b = b""
-    body = b""
-    offsets = {}
-    for tag in tags:
-        data = tables[tag]
-        offsets[tag] = offset
-        dir_b += struct.pack(">4sLLL", tag, _checksum(data), offset,
-                             len(data))
-        body += _pad4(data)
-        offset += len(_pad4(data))
-    font = header + dir_b + body
-    adjust = (0xB1B0AFBA - _checksum(font)) & 0xFFFFFFFF
-    hoff = offsets[b"head"] + 8
-    return font[:hoff] + struct.pack(">L", adjust) + font[hoff + 4:]
+    return _sfnt(tables)
