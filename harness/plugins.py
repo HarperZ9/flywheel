@@ -115,6 +115,38 @@ def remove_mcp(name: str) -> dict:
     return {"removed": name, "n_custom": len(kept)}
 
 
+def call_plugin(name: str, tool: str, arguments: "dict | None" = None,
+                timeout: float = 45.0) -> dict:
+    """Spawn a registered plugin's server and call ONE tool. Admission is
+    the same as probing: lanes and registered custom servers only, so this
+    route never launches an arbitrary command. The result is the server's
+    own answer under its own name, never an assumption."""
+    if name == "tools":
+        return {"error": "the builtin tool set runs inside gated agent "
+                         "runs, not through this route"}
+    if name in LANES:
+        command = resolve_mcp_command(name)
+        kind = "lane"
+    else:
+        entry = next((e for e in _load_custom() if e.get("name") == name), None)
+        if entry is None:
+            return {"error": f"no plugin named '{name}'"}
+        if not entry.get("enabled", True):
+            return {"error": f"plugin '{name}' is disabled; enable it first"}
+        command = entry.get("command", [])
+        kind = "mcp"
+    from .mcp_client import MCPClient, MCPError
+    try:
+        with MCPClient(command, timeout=timeout,
+                       client_name="flywheel-plugins") as c:
+            c.start()
+            out = c.call_text(tool, arguments or {})
+            return {"name": name, "kind": kind, "tool": tool, "result": out}
+    except (MCPError, FileNotFoundError, OSError) as e:
+        return {"error": f"{type(e).__name__}: {e}", "name": name,
+                "tool": tool}
+
+
 def probe_plugin(name: str, timeout: float = 20.0) -> dict:
     """Spawn the plugin's server and report its real tools. Lanes and custom
     mcp plugins probe alike; builtins list their gated set directly."""
