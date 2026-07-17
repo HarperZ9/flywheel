@@ -33,6 +33,21 @@ DiffLineStyle diffLineStyle(FwTokens t, DiffKind kind) => switch (kind) {
 Color diffCountColor(FwTokens t, {required bool added}) =>
     added ? t.inkMuted : t.inkFaint;
 
+/// The bottom-sheet wrapper the code lane opens after a run: the diff panel
+/// at 70% height with the change-request callback threaded through.
+void showDiffSheet(BuildContext context, List<FileDiff> diffs,
+    void Function(FileDiff diff, String anchor, String note) onRequest) {
+  showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: context.fw.ground,
+    builder: (ctx) => SizedBox(
+      height: MediaQuery.of(ctx).size.height * 0.7,
+      child: DiffViewPanel(diffs: diffs, onRequest: onRequest),
+    ),
+  );
+}
+
 class DiffViewPanel extends StatelessWidget {
   final List<FileDiff> diffs;
 

@@ -15,6 +15,7 @@ import '../ide/editor_pane.dart';
 import '../ide/tab_bar.dart';
 import '../ide/file_tree.dart';
 import '../ide/highlighter.dart';
+import '../ide/lint_index_sheet.dart';
 import '../ide/lsp_config.dart';
 import '../ide/workspace.dart' as ws;
 import '../services/settings.dart';
@@ -186,27 +187,25 @@ class _CodeViewState extends State<CodeView> {
   }
 
   void _showDiffs() {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: context.fw.ground,
-      builder: (ctx) => SizedBox(
-        height: MediaQuery.of(ctx).size.height * 0.7,
-        child: DiffViewPanel(
-          diffs: _diffs,
-          onRequest: (d, anchor, note) {
-            final prefix = _agentGoal.text.trim().isEmpty
-                ? ''
-                : '${_agentGoal.text.trimRight()}\n';
-            _agentGoal.text =
-                '${prefix}CHANGE REQUEST [${d.path} @ $anchor]: $note';
-            Navigator.of(ctx).pop();
-            setState(() => _status =
-                'change request anchored to ${d.path} @ $anchor');
-          },
-        ),
-      ),
-    );
+    showDiffSheet(context, _diffs, (d, anchor, note) {
+      final prefix = _agentGoal.text.trim().isEmpty
+          ? ''
+          : '${_agentGoal.text.trimRight()}\n';
+      _agentGoal.text = '${prefix}CHANGE REQUEST [${d.path} @ $anchor]: $note';
+      Navigator.of(context).pop();
+      setState(
+          () => _status = 'change request anchored to ${d.path} @ $anchor');
+    });
+  }
+
+  /// Open a file and land the cursor on a 1-indexed line (lint findings).
+  void _openAt(String path, int line) {
+    _openFile(path);
+    if (_active < 0 || _active >= _open.length) return;
+    final opened = _open[_active];
+    opened.controller.selection = TextSelection.collapsed(
+        offset: offsetOf(opened.controller.text, line - 1, 0));
+    setState(() => _status = '${opened.name}:$line');
   }
 
   @override
@@ -261,39 +260,17 @@ class _CodeViewState extends State<CodeView> {
                         },
                       ),
               ),
-              if (_status != null || _diffs.isNotEmpty)
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: FwLayout.s4, vertical: 4),
-                  child: Row(
-                    children: [
-                      if (_status != null)
-                        Expanded(
-                          child: Text(_status!,
-                              overflow: TextOverflow.ellipsis,
-                              style:
-                                  fwMono(t, size: 10.5, color: t.inkFaint)),
-                        )
-                      else
-                        const Spacer(),
-                      if (_diffs.isNotEmpty)
-                        MouseRegion(
-                          cursor: SystemMouseCursors.click,
-                          child: GestureDetector(
-                            onTap: _showDiffs,
-                            child: Text(
-                                'view changes (${_diffs.length} file'
-                                '${_diffs.length == 1 ? '' : 's'})',
-                                style: fwMono(t, size: 10.5, color: t.drift)
-                                    .copyWith(
-                                        decoration:
-                                            TextDecoration.underline)),
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
+              EditorQualityBar(
+                status: _status,
+                diffCount: _diffs.length,
+                onLint: () => showLintIndexSheet(
+                    context, widget.client, _root!, _openAt,
+                    index: false),
+                onIndex: () => showLintIndexSheet(
+                    context, widget.client, _root!, _openAt,
+                    index: true),
+                onShowDiffs: _showDiffs,
+              ),
             ],
         ),
         second: SingleChildScrollView(
