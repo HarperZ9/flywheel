@@ -28,7 +28,7 @@ class PipelinePanel extends StatefulWidget {
 class _PipelinePanelState extends State<PipelinePanel> {
   final _seed = TextEditingController(text: '58');
   final _title = TextEditingController(text: 'order out of disorder');
-  List<Map<String, dynamic>> _stages = [
+  final List<Map<String, dynamic>> _stages = [
     {'op': 'wireframe', 'primitive': 'orbit-sphere'},
     {'op': 'dither', 'levels': 3},
     {'op': 'film_frame'},

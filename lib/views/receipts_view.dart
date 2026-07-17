@@ -14,7 +14,12 @@ import '../widgets/fw.dart';
 class ReceiptsView extends StatefulWidget {
   final GatewayClient client;
   final bool alive;
-  const ReceiptsView({super.key, required this.client, required this.alive});
+
+  /// A 64-hex leaf handed in from another view (a tapped hash): the view
+  /// proves its inclusion on arrival.
+  final String? focusLeaf;
+  const ReceiptsView(
+      {super.key, required this.client, required this.alive, this.focusLeaf});
 
   @override
   State<ReceiptsView> createState() => _ReceiptsViewState();
@@ -25,16 +30,62 @@ class _ReceiptsViewState extends State<ReceiptsView> {
   String? _error;
   bool _loading = false;
 
+  Map<String, dynamic>? _proof;
+  String? _proofLeaf, _proofError;
+  bool _proving = false;
+
   @override
   void initState() {
     super.initState();
     _load();
+    if (widget.focusLeaf != null) _prove(widget.focusLeaf!);
   }
 
   @override
   void didUpdateWidget(ReceiptsView old) {
     super.didUpdateWidget(old);
     if (!old.alive && widget.alive) _load();
+    if (widget.focusLeaf != null && widget.focusLeaf != old.focusLeaf) {
+      _prove(widget.focusLeaf!);
+    }
+  }
+
+  Future<void> _prove(String leaf) async {
+    leaf = leaf.trim();
+    setState(() {
+      _proving = true;
+      _proofLeaf = leaf;
+      _proofError = null;
+      _proof = null;
+    });
+    if (leaf.length != 64) {
+      setState(() {
+        _proving = false;
+        _proofError = 'a Merkle leaf is a 64-hex sha256; this hash '
+            '(${leaf.length} chars) is a different kind of receipt';
+      });
+      return;
+    }
+    try {
+      final r = await widget.client.receiptsProof(leaf);
+      if (mounted) {
+        setState(() {
+          if (r['error'] != null) {
+            _proofError = '${r['error']}';
+          } else {
+            _proof = r;
+          }
+          _proving = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _proofError = '$e';
+          _proving = false;
+        });
+      }
+    }
   }
 
   Future<void> _load() async {
@@ -117,6 +168,12 @@ class _ReceiptsViewState extends State<ReceiptsView> {
             children: [for (final r in l.catalog) _catalogRow(t, r)],
           ),
         ),
+        if (_proofLeaf != null) ...[
+          const SizedBox(height: FwLayout.s5),
+          const Kicker('inclusion proof · re-walkable offline', hot: true),
+          const SizedBox(height: FwLayout.s3),
+          _proofPanel(t),
+        ],
         const SizedBox(height: FwLayout.s5),
         const Kicker('envelopes · proof of accepted verified work'),
         const SizedBox(height: FwLayout.s3),
@@ -167,20 +224,75 @@ class _ReceiptsViewState extends State<ReceiptsView> {
   }
 
   Widget _envelopeRow(FwTokens t, EnvelopeReceipt e) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: FwLayout.s2 + 2),
-      decoration: BoxDecoration(
-          border: Border(bottom: BorderSide(color: t.hairline))),
-      child: Row(
+    final selected = _proofLeaf == e.sha256;
+    return InkWell(
+      onTap: e.sha256.length == 64 ? () => _prove(e.sha256) : null,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: FwLayout.s2 + 2),
+        decoration: BoxDecoration(
+            color: selected ? t.drift.withValues(alpha: 0.06) : null,
+            border: Border(bottom: BorderSide(color: t.hairline))),
+        child: Row(
+          children: [
+            VerdictPill(e.verdict, status: envelopeStatus(e.verdict)),
+            const SizedBox(width: FwLayout.s3),
+            Expanded(child: Text(e.name, style: fwMono(t, size: 12))),
+            if (e.taskId.isNotEmpty)
+              Text(e.taskId, style: fwMono(t, size: 11, color: t.inkMuted)),
+            const SizedBox(width: FwLayout.s4),
+            Text(e.sha256.substring(0, 12.clamp(0, e.sha256.length)),
+                style: fwMono(t,
+                    size: 11,
+                    color: e.sha256.length == 64 ? t.drift : t.inkFaint)),
+            if (e.sha256.length == 64) ...[
+              const SizedBox(width: 4),
+              Icon(Icons.verified_outlined, size: 13, color: t.drift),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _proofPanel(FwTokens t) {
+    return HairlineCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          VerdictPill(e.verdict, status: envelopeStatus(e.verdict)),
-          const SizedBox(width: FwLayout.s3),
-          Expanded(child: Text(e.name, style: fwMono(t, size: 12))),
-          if (e.taskId.isNotEmpty)
-            Text(e.taskId, style: fwMono(t, size: 11, color: t.inkMuted)),
-          const SizedBox(width: FwLayout.s4),
-          Text(e.sha256.substring(0, 12.clamp(0, e.sha256.length)),
-              style: fwMono(t, size: 11, color: t.inkFaint)),
+          SelectableText('leaf  ${_proofLeaf ?? ''}',
+              style: fwMono(t, size: 11.5, color: t.inkMuted)),
+          const SizedBox(height: FwLayout.s2),
+          if (_proving)
+            Row(children: [
+              const SizedBox(
+                  width: 14,
+                  height: 14,
+                  child: CircularProgressIndicator(strokeWidth: 2)),
+              const SizedBox(width: FwLayout.s2),
+              Text('walking the log…',
+                  style: fwMono(t, size: 11.5, color: t.inkMuted)),
+            ])
+          else if (_proofError != null)
+            HonestNull(_proofError!)
+          else if (_proof != null) ...[
+            Row(children: [
+              const VerdictPill('included', status: 'verified'),
+              const SizedBox(width: FwLayout.s2),
+              Text('index ${_proof!['index'] ?? '?'} of '
+                  '${_proof!['tree_size'] ?? _proof!['n'] ?? '?'}',
+                  style: fwMono(t, size: 11.5, color: t.inkMuted)),
+            ]),
+            const SizedBox(height: FwLayout.s2),
+            SelectableText('merkle root  ${_proof!['merkle_root'] ?? ''}',
+                style: fwMono(t, size: 11, color: t.inkSoft)),
+            if (_proof!['audit_path'] is List) ...[
+              const SizedBox(height: FwLayout.s2),
+              Text('${(_proof!['audit_path'] as List).length} sibling hashes '
+                  'on the path; recompute the root from the leaf to re-verify '
+                  'offline',
+                  style: fwMono(t, size: 10.5, color: t.inkFaint)),
+            ],
+          ],
         ],
       ),
     );

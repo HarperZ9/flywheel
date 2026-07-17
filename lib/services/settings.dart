@@ -17,6 +17,7 @@ class DesktopSettings {
   String? monoFamily; // null = canon default (Conso)
   String? groundPreset; // null = canon default (Ceramic)
   double uiScale;
+  double railWidth; // width of the expanded side rail, drag-adjustable
 
   /// Reusable prompts the user saved, newest first: [{title, text}]. A small
   /// shelf so nobody starts from a blank composer every time.
@@ -30,6 +31,7 @@ class DesktopSettings {
       this.monoFamily,
       this.groundPreset,
       this.uiScale = 1.0,
+      this.railWidth = 172,
       List<Map<String, String>>? savedPrompts})
       : recentWorkspaces = recentWorkspaces ?? [],
         savedPrompts = savedPrompts ?? [];
@@ -92,6 +94,9 @@ class DesktopSettings {
         uiScale: j['ui_scale'] is num
             ? (j['ui_scale'] as num).toDouble().clamp(0.8, 1.4)
             : 1.0,
+        railWidth: j['rail_width'] is num
+            ? (j['rail_width'] as num).toDouble().clamp(148.0, 320.0)
+            : 172,
         savedPrompts: (j['saved_prompts'] is List)
             ? [
                 for (final p in j['saved_prompts'] as List)
@@ -126,6 +131,7 @@ class DesktopSettings {
         if (monoFamily != null) 'mono_family': monoFamily,
         if (groundPreset != null) 'ground_preset': groundPreset,
         'ui_scale': uiScale,
+        'rail_width': railWidth,
         'saved_prompts': savedPrompts,
       }));
     } catch (e) {

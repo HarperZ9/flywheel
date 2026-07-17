@@ -341,6 +341,14 @@ class GatewayClient {
     return ReceiptsLedger.fromJson(_decode(r));
   }
 
+  /// GET /api/receipts/proof — prove one receipt (a 64-hex leaf) is in the
+  /// Merkle log, with the audit path anyone can re-walk offline.
+  Future<Map<String, dynamic>> receiptsProof(String leaf) async {
+    final r = await _http.get(Uri.parse(
+        '$baseUrl/api/receipts/proof?leaf=${Uri.encodeQueryComponent(leaf)}'));
+    return _decode(r);
+  }
+
   /// GET /api/profiles — the profile manifests over the one substrate.
   Future<List<ProfileManifest>> profiles() async {
     final r = await _http.get(Uri.parse('$baseUrl/api/profiles'));

@@ -8,6 +8,7 @@
 import 'package:flutter/material.dart';
 
 import '../theme/flywheel_theme.dart';
+import 'flywheel_nav.dart';
 
 /// Mono uppercase section label. Drift color marks the view's one hot
 /// section; default is faint ink.
@@ -121,22 +122,43 @@ class HashText extends StatelessWidget {
   final String label;
   final String hash;
   final int keep;
-  const HashText(this.label, this.hash, {super.key, this.keep = 24});
+
+  /// When true, the hash becomes a doorway: tapping it opens the Receipts
+  /// ledger with this leaf pre-loaded to prove its inclusion. The whole
+  /// receipt economy stops dead-ending in text you can only select.
+  final bool linkToReceipts;
+  const HashText(this.label, this.hash,
+      {super.key, this.keep = 24, this.linkToReceipts = false});
 
   @override
   Widget build(BuildContext context) {
     final t = context.fw;
     final short = hash.length > keep ? '${hash.substring(0, keep)}…' : hash;
+    final canLink = linkToReceipts &&
+        hash.length >= 8 &&
+        FlywheelNav.of(context) != null;
+    final valueStyle = fwMono(t, size: 12, weight: FontWeight.w600).copyWith(
+        color: canLink ? t.drift : null,
+        decoration: canLink ? TextDecoration.underline : null,
+        decorationColor: canLink ? t.drift.withValues(alpha: 0.4) : null);
+    final value = canLink
+        ? MouseRegion(
+            cursor: SystemMouseCursors.click,
+            child: GestureDetector(
+              onTap: () => FlywheelNav.jump(context, 'Receipts', arg: hash),
+              child: Text(short,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: valueStyle),
+            ),
+          )
+        : SelectableText(short, maxLines: 1, style: valueStyle);
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         Text(label, style: fwMono(t, size: 11.5, color: t.inkFaint)),
         const SizedBox(width: FwLayout.s2),
-        Flexible(
-          child: SelectableText(short,
-              maxLines: 1,
-              style: fwMono(t, size: 12, weight: FontWeight.w600)),
-        ),
+        Flexible(child: value),
       ],
     );
   }

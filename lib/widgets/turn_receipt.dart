@@ -46,7 +46,7 @@ class TurnReceiptCard extends StatelessWidget {
             if ('${receipt[key] ?? ''}'.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.only(bottom: 2),
-                child: HashText(label, '${receipt[key]}'),
+                child: HashText(label, '${receipt[key]}', linkToReceipts: true),
               ),
           if (failover.isNotEmpty) ...[
             const SizedBox(height: FwLayout.s2),

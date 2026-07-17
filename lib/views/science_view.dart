@@ -289,7 +289,7 @@ class _ScienceViewState extends State<ScienceView> {
       if (r.plan != null)
         ForgedPlanCard(plan: r.plan!),
       const SizedBox(height: FwLayout.s3),
-      HashText('chain', r.chainHash),
+      HashText('chain', r.chainHash, linkToReceipts: true),
     ];
   }
 }

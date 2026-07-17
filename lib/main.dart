@@ -14,6 +14,7 @@ import 'models/gateway_models.dart';
 import 'services/gateway_process.dart';
 import 'services/settings.dart';
 import 'theme/flywheel_theme.dart';
+import 'widgets/flywheel_nav.dart';
 import 'views/agent_view.dart';
 import 'views/academy_view.dart';
 import 'views/code_view.dart';
@@ -131,6 +132,26 @@ class _FlywheelShellState extends State<FlywheelShell> {
   Timer? _timer;
 
   late bool _railCollapsed = widget.settings.railCollapsed;
+  late double _railWidth = widget.settings.railWidth;
+
+  // A payload handed to a destination when another view jumped here; the
+  // target reads it once on arrival, then it clears.
+  Object? _pendingArg;
+
+  void _goTo(String label, {Object? arg}) {
+    final i = _destinations.indexWhere((d) => d.label == label);
+    if (i < 0) return;
+    setState(() {
+      _selectedIndex = i;
+      _pendingArg = arg;
+    });
+  }
+
+  Object? _takeArg() {
+    final a = _pendingArg;
+    _pendingArg = null;
+    return a;
+  }
 
   // Grouped by what the user came to DO, not by how the engine is built. The rail
   // opens on Chat; the accountability surfaces live under Advanced, present for
@@ -236,7 +257,9 @@ class _FlywheelShellState extends State<FlywheelShell> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Column(
+      body: FlywheelNav(
+        goTo: _goTo,
+        child: Column(
         children: [
           Expanded(
             child: Row(
@@ -248,6 +271,12 @@ class _FlywheelShellState extends State<FlywheelShell> {
                   themeMode: widget.themeMode,
                   onToggleTheme: widget.onToggleTheme,
                   collapsed: _railCollapsed,
+                  width: _railWidth,
+                  onResize: (w) => setState(() {
+                    _railWidth = w;
+                    widget.settings.railWidth = w;
+                    widget.settings.save();
+                  }),
                   onToggleCollapse: () => setState(() {
                     _railCollapsed = !_railCollapsed;
                     widget.settings.railCollapsed = _railCollapsed;
@@ -271,6 +300,7 @@ class _FlywheelShellState extends State<FlywheelShell> {
           ),
         ],
       ),
+    ),
     );
   }
 
@@ -314,13 +344,18 @@ class _FlywheelShellState extends State<FlywheelShell> {
       case 'Academy':
         return AcademyView(client: _client, alive: _gatewayAlive);
       case 'Receipts':
-        return ReceiptsView(client: _client, alive: _gatewayAlive);
+        final arg = _takeArg();
+        return ReceiptsView(
+            client: _client,
+            alive: _gatewayAlive,
+            focusLeaf: arg is String ? arg : null);
       case 'Instruments':
         return InstrumentsView(client: _client, alive: _gatewayAlive);
       case 'Science':
         return ScienceView(client: _client, alive: _gatewayAlive);
       case 'World':
-        return WorldView(world: _world, alive: _gatewayAlive);
+        return WorldView(
+            world: _world, alive: _gatewayAlive, client: _client);
       case 'Lanes':
         return LanesView(
             roster: _roster, alive: _gatewayAlive, onProbe: _probeLanes);
