@@ -74,9 +74,10 @@ def _cmap(table_map: "dict[int, int]") -> bytes:
     return struct.pack(">HHHHL", 0, 1, 3, 1, 12) + sub
 
 
-def _name(family: str) -> bytes:
-    recs = [(1, family), (2, "Regular"), (3, f"{family} Regular"),
-            (4, f"{family} Regular"), (6, family.replace(" ", "") + "-Regular")]
+def _name(family: str, style: str = "Regular") -> bytes:
+    recs = [(1, family), (2, style), (3, f"{family} {style}"),
+            (4, f"{family} {style}"),
+            (6, family.replace(" ", "") + "-" + style.replace(" ", ""))]
     stored = b""
     entries = b""
     for nid, s in recs:
@@ -88,7 +89,8 @@ def _name(family: str) -> bytes:
         + entries + stored
 
 
-def to_ttf(face: dict, family: str = "Zentropy Mint") -> bytes:
+def to_ttf(face: dict, family: str = "Zentropy Mint",
+           style: str = "Regular") -> bytes:
     """A minted face document -> TrueType font bytes."""
     gsrc = face["glyphs"]
     order = [".notdef", "space"] + sorted(gsrc)
@@ -144,7 +146,7 @@ def to_ttf(face: dict, family: str = "Zentropy Mint") -> bytes:
     hmtx_b = b"".join(struct.pack(">Hh", a, l) for a, l in hmtx)
     loca_b = struct.pack(f">{len(loca)}L", *loca)
     cmap_b = _cmap(cmap_map)
-    name_b = _name(family)
+    name_b = _name(family, style)
     post = struct.pack(">LLhhLLLLLL", 0x00030000, 0, -75, 50, 0, 0, 0, 0,
                        0, 0)
     xh = int(face.get("metrics", {}).get("x_height", 500))

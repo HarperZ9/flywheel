@@ -2046,6 +2046,42 @@ class _Handler(BaseHTTPRequestHandler):
                 face_params=req.get("face_params")
                 if isinstance(req.get("face_params"), dict) else None)
             return self._json(out, 400 if out.get("refused") else 200)
+        if p == "/api/typeface/family":                # one seed, a product line of weights
+            length = self._content_length()
+            if length is None:
+                return self._json({"error": "invalid or oversized Content-Length"}, 400)
+            try:
+                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
+            except Exception:
+                req = {}
+            from harness.typeface_family import mint_family
+            try:
+                seed = int(req.get("seed", 58))
+            except (TypeError, ValueError):
+                seed = 58
+            out = mint_family(
+                req.get("params") if isinstance(req.get("params"), dict) else None,
+                seed=seed,
+                family=str(req.get("family") or "Zentropy Mint")[:48])
+            return self._json(out, 400 if out.get("refused") else 200)
+        if p == "/api/studio/brandkit":                # one seed + a name -> a whole identity
+            length = self._content_length()
+            if length is None:
+                return self._json({"error": "invalid or oversized Content-Length"}, 400)
+            try:
+                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
+            except Exception:
+                req = {}
+            from harness.brand_kit import mint_kit
+            try:
+                seed = int(req.get("seed", 58))
+            except (TypeError, ValueError):
+                seed = 58
+            out = mint_kit(str(req.get("name", "")), seed=seed,
+                           tagline=str(req.get("tagline", "")),
+                           face_params=req.get("face_params")
+                           if isinstance(req.get("face_params"), dict) else None)
+            return self._json(out, 400 if out.get("refused") else 200)
         if p == "/api/studio/sound":                   # the seeded chime study, score = receipt
             length = self._content_length()
             if length is None:
