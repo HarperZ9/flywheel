@@ -127,6 +127,29 @@ class GatewayClient {
     return _decode(r);
   }
 
+  /// POST /api/typeface/publish — file a minted face in the witnessed gallery.
+  Future<Map<String, dynamic>> typefacePublish(
+      Map<String, dynamic> params, int seed, {String family = ''}) async {
+    final r = await _http.post(
+      Uri.parse('$baseUrl/api/typeface/publish'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'params': params,
+        'seed': seed,
+        if (family.isNotEmpty) 'family': family,
+      }),
+    );
+    return _decode(r);
+  }
+
+  /// GET /api/typeface/gallery — the marketplace listing (metadata only).
+  Future<Map<String, dynamic>> typefaceGallery({int limit = 60}) =>
+      getJson('/api/typeface/gallery?limit=$limit');
+
+  /// GET /api/typeface/face — one published face with its .ttf bytes.
+  Future<Map<String, dynamic>> typefaceFace(String eid) =>
+      getJson('/api/typeface/face?eid=$eid');
+
   /// POST /api/typeface/variable — the family's weights as ONE variable font
   /// with a wght axis; the response carries the .ttf and a receipt.
   Future<Map<String, dynamic>> typefaceVariable(

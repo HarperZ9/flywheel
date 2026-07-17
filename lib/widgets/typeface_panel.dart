@@ -16,11 +16,17 @@ typedef MintFace = Future<Map<String, dynamic>> Function(
     Map<String, dynamic> params, int seed);
 typedef LoadFont = Future<void> Function(String family, Uint8List bytes);
 
-Future<void> _defaultLoadFont(String family, Uint8List bytes) async {
+/// Register a TrueType font under a family name so widgets can render with it.
+/// Shared so the gallery card can wear a fetched face the same way the forge
+/// wears a freshly minted one.
+Future<void> loadFontFamily(String family, Uint8List bytes) async {
   final loader = FontLoader(family)
     ..addFont(Future.value(ByteData.view(bytes.buffer)));
   await loader.load();
 }
+
+Future<void> _defaultLoadFont(String family, Uint8List bytes) =>
+    loadFontFamily(family, bytes);
 
 class TypefacePanel extends StatefulWidget {
   final MintFace onMint;

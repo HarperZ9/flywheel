@@ -25,6 +25,7 @@ import '../widgets/poster_panel.dart';
 import '../widgets/raster_fx_panel.dart';
 import '../widgets/sound_panel.dart';
 import '../widgets/typeface_panel.dart';
+import '../widgets/face_gallery_card.dart';
 import '../widgets/variable_family_card.dart';
 
 class StudioView extends StatefulWidget {
@@ -114,6 +115,10 @@ class _StudioViewState extends State<StudioView> {
           const SizedBox(height: FwLayout.s3),
           VariableFamilyCard(
               client: widget.client!, faceParams: _mintedFace),
+          const SizedBox(height: FwLayout.s3),
+          const Kicker('face gallery · publish, browse, wear a minted face'),
+          const SizedBox(height: FwLayout.s3),
+          FaceGalleryCard(client: widget.client!, benchFace: _mintedFace),
           const SizedBox(height: FwLayout.s5),
           Kicker(_mintedFace == null
               ? 'poster composer · mint a face above and the plate wears it'
