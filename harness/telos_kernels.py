@@ -17,11 +17,14 @@ from .lanes import LANES, REPO
 
 SCHEMA = "flywheel.telos-kernel-run/v1"
 
-# kernels bridged so far: the pure-JSON geometry pair. The raster pair
-# wants pixel buffers; that seam is named, not faked.
+# the bridged kernels: the geometry pair and the raster pair. Raster
+# pixel buffers ride stdin, never argv, so size is bounded by memory
+# rather than a command line.
 KERNELS = {
     "plotter.harmonograph-path": "harmonographPath",
     "lighting.cluster-light-bins": "clusterLightBins",
+    "raster.ordered-dither": "orderedDither",
+    "raster.pixel-sort-rows": "pixelSortRows",
 }
 
 
@@ -46,12 +49,16 @@ def run_kernel(kernel: str, args: "dict | None" = None,
                          "cannot run without the lane"}
     shim = (
         f"import {{ {fn} }} from {json.dumps(mod.resolve().as_uri())};\n"
-        "const args = JSON.parse(process.argv[1] || '{}');\n"
-        f"process.stdout.write(JSON.stringify({fn}(args)));\n")
+        "import { readFileSync } from 'node:fs';\n"
+        "const args = JSON.parse(readFileSync(0, 'utf8') || '{}');\n"
+        f"const out = {fn}(args);\n"
+        # typed arrays stringify as index maps; hand back a plain array
+        "if (out && out.output) out.output = Array.from(out.output);\n"
+        "process.stdout.write(JSON.stringify(out));\n")
     try:
         r = subprocess.run(
-            ["node", "--input-type=module", "-e", shim,
-             json.dumps(args or {})],
+            ["node", "--input-type=module", "-e", shim],
+            input=json.dumps(args or {}),
             capture_output=True, text=True, timeout=timeout)
     except FileNotFoundError:
         return {"error": "node is not on PATH; the telos kernels run in node"}
