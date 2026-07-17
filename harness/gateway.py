@@ -2023,6 +2023,29 @@ class _Handler(BaseHTTPRequestHandler):
                     to_ttf(face, family=family)).decode("ascii")
                 face["ttf_family"] = family
             return self._json(face)
+        if p == "/api/studio/poster":                  # plate + minted face + copy, one receipt
+            length = self._content_length()
+            if length is None:
+                return self._json({"error": "invalid or oversized Content-Length"}, 400)
+            try:
+                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
+            except Exception:
+                req = {}
+            from harness.design_studio import compose
+            try:
+                seed = int(req.get("seed", 58))
+            except (TypeError, ValueError):
+                seed = 58
+            out = compose(
+                str(req.get("title", "")),
+                subtitle=str(req.get("subtitle", "")),
+                fmt=str(req.get("format", "poster")),
+                seed=seed,
+                ground=str(req.get("ground", "dark")),
+                accent=bool(req.get("accent", True)),
+                face_params=req.get("face_params")
+                if isinstance(req.get("face_params"), dict) else None)
+            return self._json(out, 400 if out.get("refused") else 200)
         if p == "/api/marketplace/add":                # a user catalog entry (env-var NAMES only)
             length = self._content_length()
             if length is None:

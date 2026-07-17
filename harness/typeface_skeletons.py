@@ -218,4 +218,104 @@ def build(params: dict) -> dict:
         {"pts": _line(0.04, 0.0, 0.90 * w, 0.0),
          "role": "crossbar", "closed": False}]}
 
+    # digits: figure height rides above the x-height, one style DNA
+    fh = 1.28                      # figure height in x-heights
+    dr = 0.40 * w                  # digit bowl radius
+    dcx = dr + 0.02
+
+    def dbowl(cy, ry, t0=0.0, t1=2 * math.pi):
+        return {"pts": _superellipse(dcx, cy, dr, ry, n, t0=t0, t1=t1),
+                "role": "bowl", "closed": abs((t1 - t0) - 2 * math.pi) < 1e-9}
+
+    g["0"] = {"advance": 2 * dr + 0.04, "strokes": [
+        {"pts": _superellipse(dcx, fh / 2, dr, fh / 2, n),
+         "role": "bowl", "closed": True}]}
+
+    g["1"] = {"advance": 0.46 * w, "strokes": [
+        stem(0.30 * w, 0.0, fh),
+        diag(0.10 * w, fh - 0.22, 0.30 * w, fh)]}
+
+    # 2: the shoulder sweeps clockwise over the top, falls to the corner,
+    # and the bar closes the floor
+    _2_arc = _superellipse(0.42 * w, fh - 0.36, 0.38 * w, 0.36,
+                           min(n, 2.2), t0=0.85 * math.pi,
+                           t1=-0.25 * math.pi)
+    _2_spine = _2_arc + _line(_2_arc[-1][0], _2_arc[-1][1], 0.06 * w, 0.0)[1:]
+    g["2"] = {"advance": 0.88 * w, "strokes": [
+        {"pts": _2_spine, "role": "spine", "closed": False},
+        {"pts": _line(0.06 * w, 0.0, 0.84 * w, 0.0),
+         "role": "crossbar", "closed": False}]}
+
+    # 3: two right-opening arcs meeting at the waist, both clockwise
+    g["3"] = {"advance": 0.86 * w, "strokes": [
+        {"pts": _superellipse(0.40 * w, fh - 0.33, 0.34 * w, 0.33,
+                              min(n, 2.2), t0=0.80 * math.pi,
+                              t1=-0.45 * math.pi),
+         "role": "bowl", "closed": False},
+        {"pts": _superellipse(0.40 * w, 0.36, 0.38 * w, 0.36,
+                              min(n, 2.2), t0=0.52 * math.pi,
+                              t1=-0.85 * math.pi),
+         "role": "bowl", "closed": False}]}
+
+    g["4"] = {"advance": 0.92 * w, "strokes": [
+        diag(0.58 * w, fh, 0.04, 0.38),
+        {"pts": _line(0.04, 0.38, 0.86 * w, 0.38),
+         "role": "crossbar", "closed": False},
+        stem(0.58 * w, 0.0, fh)]}
+
+    # 5: flag, flagpole, then a clockwise bowl opening back to the left
+    g["5"] = {"advance": 0.86 * w, "strokes": [
+        {"pts": _line(0.72 * w, fh, 0.10 * w, fh),
+         "role": "crossbar", "closed": False},
+        stem(0.10 * w, fh - 0.52, fh),
+        {"pts": _superellipse(0.38 * w, 0.40, 0.40 * w, 0.40,
+                              min(n, 2.2), t0=0.70 * math.pi,
+                              t1=-0.90 * math.pi),
+         "role": "bowl", "closed": False}]}
+
+    g["6"] = {"advance": 0.88 * w, "strokes": [
+        {"pts": _superellipse(0.42 * w, 0.40, 0.40 * w, 0.40, n),
+         "role": "bowl", "closed": True},
+        {"pts": _superellipse(0.52 * w, fh - 0.52, 0.50 * w, 0.52,
+                              min(n, 2.2), t0=0.55 * math.pi,
+                              t1=1.0 * math.pi),
+         "role": "spine", "closed": False}]}
+
+    g["7"] = {"advance": 0.84 * w, "strokes": [
+        {"pts": _line(0.04, fh, 0.80 * w, fh),
+         "role": "crossbar", "closed": False},
+        diag(0.80 * w, fh, 0.26 * w, 0.0)]}
+
+    g["8"] = {"advance": 0.88 * w, "strokes": [
+        {"pts": _superellipse(0.42 * w, fh - 0.31, 0.34 * w, 0.31, n),
+         "role": "bowl", "closed": True},
+        {"pts": _superellipse(0.42 * w, 0.36, 0.40 * w, 0.36, n),
+         "role": "bowl", "closed": True}]}
+
+    g["9"] = {"advance": 0.88 * w, "strokes": [
+        {"pts": _superellipse(0.42 * w, fh - 0.40, 0.40 * w, 0.40, n),
+         "role": "bowl", "closed": True},
+        {"pts": _superellipse(0.32 * w, 0.52, 0.50 * w, 0.52,
+                              min(n, 2.2), t0=-0.45 * math.pi,
+                              t1=0.0)},
+         ]}
+
+    g["9"]["strokes"][1]["role"] = "spine"
+    g["9"]["strokes"][1]["closed"] = False
+
+    # the minimum punctuation a working face owes its user
+    g["."] = {"advance": 0.26 * w, "strokes": [
+        {"pts": _superellipse(0.13 * w, 0.075, 0.075, 0.075, 2.0),
+         "role": "dot", "closed": True}]}
+
+    g[","] = {"advance": 0.26 * w, "strokes": [
+        {"pts": _superellipse(0.13 * w, 0.075, 0.075, 0.075, 2.0),
+         "role": "dot", "closed": True},
+        {"pts": _line(0.13 * w, 0.0, 0.06 * w, -0.16),
+         "role": "tail", "closed": False}]}
+
+    g["-"] = {"advance": 0.52 * w, "strokes": [
+        {"pts": _line(0.06 * w, 0.5, 0.46 * w, 0.5),
+         "role": "crossbar", "closed": False}]}
+
     return g
