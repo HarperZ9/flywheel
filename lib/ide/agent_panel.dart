@@ -11,10 +11,10 @@ import 'package:flutter/material.dart';
 import '../client/gateway_client.dart';
 import '../models/gateway_models.dart';
 import '../theme/flywheel_theme.dart';
-import '../widgets/agent_timeline.dart';
 import '../widgets/fw.dart';
 import 'agent_gates.dart';
 import 'agent_runs_panel.dart';
+import 'live_run_tail.dart';
 
 class AgentPanel extends StatefulWidget {
   final GatewayClient client;
@@ -243,13 +243,8 @@ class _AgentPanelState extends State<AgentPanel> {
             ],
             if (_events.isNotEmpty) ...[
               const SizedBox(height: FwLayout.s2),
-              ConstrainedBox(
-                constraints: const BoxConstraints(maxHeight: 240),
-                child: SingleChildScrollView(
-                  controller: _scroll,
-                  child: AgentTimeline(events: _events),
-                ),
-              ),
+              LiveRunTail(
+                  events: _events, scroll: _scroll, client: widget.client),
             ],
           ],
         ],
