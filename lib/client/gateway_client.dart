@@ -227,6 +227,18 @@ class GatewayClient {
     return _decode(r);
   }
 
+  /// POST /api/telos/kernel — run a bridged telos creative kernel; the
+  /// answer (points, bounds, receipt hashes) is the kernel's own.
+  Future<Map<String, dynamic>> telosKernel(
+      String kernel, Map<String, dynamic> args) async {
+    final r = await _http.post(
+      Uri.parse('$baseUrl/api/telos/kernel'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'kernel': kernel, 'args': args}),
+    );
+    return _decode(r);
+  }
+
   /// POST /api/studio/brandkit — one seed + a name -> a whole identity.
   Future<Map<String, dynamic>> brandKit(String name,
       {String tagline = '', int seed = 58}) async {

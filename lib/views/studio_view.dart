@@ -16,6 +16,7 @@ import '../theme/flywheel_theme.dart';
 import '../widgets/aperture.dart';
 import '../widgets/brand_kit_panel.dart';
 import '../widgets/forge_panel.dart';
+import '../widgets/harmonograph_panel.dart';
 import '../widgets/fw.dart';
 import '../widgets/poster_panel.dart';
 import '../widgets/sound_panel.dart';
@@ -40,6 +41,7 @@ class _StudioViewState extends State<StudioView> {
   Widget build(BuildContext context) {
     final t = context.fw;
     return ViewScroll(
+      storageKey: 'studio',
       children: [
         const SectionHeader('Studio', kicker: 'creation with provenance'),
         const SizedBox(height: FwLayout.s3),
@@ -104,6 +106,10 @@ class _StudioViewState extends State<StudioView> {
           const Kicker('poster composer · the plate wears your minted face'),
           const SizedBox(height: FwLayout.s3),
           PosterPanel(client: widget.client!),
+          const SizedBox(height: FwLayout.s5),
+          const Kicker('telos engine · the plotter kernel, driven in place'),
+          const SizedBox(height: FwLayout.s3),
+          HarmonographPanel(client: widget.client!),
           const SizedBox(height: FwLayout.s5),
           const Kicker('brand kit · one seed, a whole identity'),
           const SizedBox(height: FwLayout.s3),

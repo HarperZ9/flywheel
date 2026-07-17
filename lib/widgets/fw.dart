@@ -238,13 +238,17 @@ class SectionHeader extends StatelessWidget {
 }
 
 /// The standard view scaffold: padded scrollable column with a header.
+/// `storageKey` makes the scroll offset durable across rebuilds, so a
+/// background poll never yanks a long view back to the top.
 class ViewScroll extends StatelessWidget {
   final List<Widget> children;
-  const ViewScroll({super.key, required this.children});
+  final String? storageKey;
+  const ViewScroll({super.key, this.storageKey, required this.children});
 
   @override
   Widget build(BuildContext context) {
     return ListView(
+      key: storageKey == null ? null : PageStorageKey<String>(storageKey!),
       padding: const EdgeInsets.symmetric(
           horizontal: FwLayout.s6, vertical: FwLayout.s5),
       children: children,
