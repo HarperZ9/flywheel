@@ -232,7 +232,7 @@ class _ScienceViewState extends State<ScienceView> {
         const SizedBox(height: FwLayout.s3),
       ],
       if (r.plan != null)
-        ForgedPlanCard(plan: r.plan!),
+        ForgedPlanCard(plan: r.plan!, recheck: widget.client.forgeRecheck),
       const SizedBox(height: FwLayout.s3),
       HashText('chain', r.chainHash, linkToReceipts: true),
     ];

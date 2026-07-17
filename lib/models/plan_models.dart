@@ -27,6 +27,7 @@ class ForgedPlan {
   final bool wellPosed; // did the goal state its own criterion?
   final List<PlanGate> gates;
   final String prompt; // the full rendered PRP
+  final String prpId; // the server-held forge seal's id; drives the recheck
   final String? error;
 
   const ForgedPlan(
@@ -37,6 +38,7 @@ class ForgedPlan {
       required this.wellPosed,
       required this.gates,
       required this.prompt,
+      this.prpId = '',
       this.error});
 
   factory ForgedPlan.fromJson(Map<String, dynamic> j) => ForgedPlan(
@@ -52,6 +54,7 @@ class ForgedPlan {
             .map(PlanGate.fromJson)
             .toList(),
         prompt: j['prompt'] ?? '',
+        prpId: j['prp_id'] ?? '',
         error: j['error'],
       );
 }

@@ -177,7 +177,10 @@ class _PlanViewState extends State<PlanView> {
         ],
         if (_plan != null) ...[
           const SizedBox(height: FwLayout.s4),
-          ForgedPlanCard(plan: _plan!, profile: _activeProfile),
+          ForgedPlanCard(
+              plan: _plan!,
+              profile: _activeProfile,
+              recheck: widget.client.forgeRecheck),
         ],
         if (_run != null) ...[
           const SizedBox(height: FwLayout.s4),

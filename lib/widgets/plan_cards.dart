@@ -13,7 +13,12 @@ import 'fw.dart';
 class ForgedPlanCard extends StatelessWidget {
   final ForgedPlan plan;
   final ProfileManifest? profile;
-  const ForgedPlanCard({super.key, required this.plan, this.profile});
+
+  /// POST /api/forge/recheck against the server-held seal; when provided
+  /// and the plan carries its prp_id, the card offers the drift check.
+  final Future<Map<String, dynamic>> Function(String prpId)? recheck;
+  const ForgedPlanCard(
+      {super.key, required this.plan, this.profile, this.recheck});
 
   @override
   Widget build(BuildContext context) {
@@ -75,6 +80,10 @@ class ForgedPlanCard extends StatelessWidget {
             ],
           ),
         ),
+        if (recheck != null && plan.prpId.isNotEmpty) ...[
+          const SizedBox(height: FwLayout.s3),
+          RecheckRow(prpId: plan.prpId, recheck: recheck!),
+        ],
         const SizedBox(height: FwLayout.s3),
         HairlineCard(
           recessed: true,
@@ -83,5 +92,64 @@ class ForgedPlanCard extends StatelessWidget {
         ),
       ],
     );
+  }
+}
+
+/// The Y-chain drift check, in place: one tap re-hashes the sealed arms
+/// against the server-held seal and says moved or held per arm.
+class RecheckRow extends StatefulWidget {
+  final String prpId;
+  final Future<Map<String, dynamic>> Function(String prpId) recheck;
+  const RecheckRow({super.key, required this.prpId, required this.recheck});
+
+  @override
+  State<RecheckRow> createState() => _RecheckRowState();
+}
+
+class _RecheckRowState extends State<RecheckRow> {
+  bool _busy = false;
+  Map<String, dynamic>? _out;
+
+  Future<void> _run() async {
+    if (_busy) return;
+    setState(() => _busy = true);
+    try {
+      final r = await widget.recheck(widget.prpId);
+      if (mounted) setState(() => _out = r);
+    } catch (e) {
+      if (mounted) setState(() => _out = {'error': '$e'});
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.fw;
+    final out = _out;
+    final arms = out?['arms'] is Map<String, dynamic>
+        ? out!['arms'] as Map<String, dynamic>
+        : const <String, dynamic>{};
+    return Row(children: [
+      OutlinedButton(
+        onPressed: _busy ? null : _run,
+        child: Text(_busy ? 'Rechecking…' : 'Re-check seal'),
+      ),
+      const SizedBox(width: FwLayout.s3),
+      if (out?['error'] != null)
+        Expanded(child: HonestNull('${out!['error']}'))
+      else ...[
+        for (final e in arms.entries) ...[
+          VerdictPill(
+              '${e.key} ${(e.value as Map)['moved'] == true ? 'moved' : 'held'}',
+              status:
+                  (e.value as Map)['moved'] == true ? 'drift' : 'verified'),
+          const SizedBox(width: FwLayout.s2),
+        ],
+        if (out != null && arms.isEmpty)
+          Text('no arms on the seal to check',
+              style: fwMono(t, size: 11, color: t.inkFaint)),
+      ],
+    ]);
   }
 }
