@@ -52,9 +52,18 @@ def _node_seal_content(node) -> str:
                      str(node.source_hash), str(getattr(node, "tier", ""))])
 
 
+def _card_seal_content(node, *, author: str, provenance: str, freshness: str,
+                       scan_status: str) -> str:
+    """The signed bytes cover the node AND the card's own trust verdicts:
+    a freshness or scan_status the key holder never sealed must not verify."""
+    return "|".join([_node_seal_content(node), str(author), str(provenance),
+                     str(freshness), str(scan_status)])
+
+
 def make_trustcard(node, key: bytes, *, author: str, freshness: str = "UNVERIFIABLE",
                    scan_status: str = "unscanned") -> TrustCard:
-    content = _node_seal_content(node)
+    content = _card_seal_content(node, author=author, provenance=node.provenance,
+                                 freshness=freshness, scan_status=scan_status)
     return TrustCard(
         node_id=node.id, author=author, provenance=node.provenance,
         source_ref=node.source_ref, freshness=freshness, scan_status=scan_status,
@@ -62,8 +71,13 @@ def make_trustcard(node, key: bytes, *, author: str, freshness: str = "UNVERIFIA
 
 
 def verify_trustcard(node, card: TrustCard, key: bytes) -> str:
-    """MATCH (signature valid over the current node), TAMPERED (signature present
-    but no longer valid — the node or card changed), UNSIGNED (no signature)."""
+    """MATCH (signature valid over the current node and the card's own trust
+    fields), TAMPERED (signature present but no longer valid — the node or any
+    card field changed), UNSIGNED (no signature)."""
     if not card.signature:
         return "UNSIGNED"
-    return "MATCH" if verify_sig(_node_seal_content(node), card.signature, key) else "TAMPERED"
+    content = _card_seal_content(node, author=card.author,
+                                 provenance=card.provenance,
+                                 freshness=card.freshness,
+                                 scan_status=card.scan_status)
+    return "MATCH" if verify_sig(content, card.signature, key) else "TAMPERED"

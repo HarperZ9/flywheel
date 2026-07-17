@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="6" skipped="0" tests="12" time="0.219" timestamp="2026-07-13T19:33:54.863540-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-190747.cron_field_expand.tests.test_solution" name="test_star" time="0.001" /><testcase classname="artifacts.uplift.work_20260713-190747.cron_field_expand.tests.test_solution" name="test_star_step" time="0.000"><failure message="ValueError: bad field">fld = '*/15'
+
+    def parse_field(fld):
+        items = fld.split(',')
+        result = set()
+        for item in items:
+            if not item or any(c not in '0123456789*/-' for c in item):
+                raise ValueError('bad field')
+            try:
+&gt;               result.update(parse_item(item, lo, hi))
+                              ^^^^^^^^^^^^^^^^^^^^^^^^
+
+solution.py:42: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:29: in parse_item
+    return expand_step(item, lo, hi)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+n_k = '*/15', lo = 0, hi = 59
+
+    def expand_step(n_k, lo, hi):
+        a, b = n_k.split('/')
+        step = int(b)
+&gt;       value = int(a)
+                ^^^^^^
+E       ValueError: invalid literal for int() with base 10: '*'
+
+solution.py:16: ValueError
+
+The above exception was the direct cause of the following exception:
+
+&gt;   def test_star_step(): assert f('*/15', 0, 59) == [0, 15, 30, 45]
+                                 ^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:4: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:47: in cron_field
+    return parse_field(field)
+           ^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+fld = '*/15'
+
+    def parse_field(fld):
+        items = fld.split(',')
+        result = set()
+        for item in items:
+            if not item or any(c not in '0123456789*/-' for c in item):
+                raise ValueError('bad field')
+            try:
+                result.update(parse_item(item, lo, hi))
+            except ValueError as e:
+&gt;               raise ValueError('bad field') from e
+E               ValueError: bad field
+
+solution.py:44: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-190747.cron_field_expand.tests.test_solution" name="test_range_step" time="0.000"><failure message="ValueError: bad field">fld = '3-7/2'
+
+    def parse_field(fld):
+        items = fld.split(',')
+        result = set()
+        for item in items:
+            if not item or any(c not in '0123456789*/-' for c in item):
+                raise ValueError('bad field')
+            try:
+&gt;               result.update(parse_item(item, lo, hi))
+                              ^^^^^^^^^^^^^^^^^^^^^^^^
+
+solution.py:42: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:29: in parse_item
+    return expand_step(item, lo, hi)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+n_k = '3-7/2', lo = 0, hi = 59
+
+    def expand_step(n_k, lo, hi):
+        a, b = n_k.split('/')
+        step = int(b)
+&gt;       value = int(a)
+                ^^^^^^
+E       ValueError: invalid literal for int() with base 10: '3-7'
+
+solution.py:16: ValueError
+
+The above exception was the direct cause of the following exception:
+
+&gt;   def test_range_step(): assert f('3-7/2', 0, 59) == [3, 5, 7]
+                                  ^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:5: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:47: in cron_field
+    return parse_field(field)
+           ^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+fld = '3-7/2'
+
+    def parse_field(fld):
+        items = fld.split(',')
+        result = set()
+        for item in items:
+            if not item or any(c not in '0123456789*/-' for c in item):
+                raise ValueError('bad field')
+            try:
+                result.update(parse_item(item, lo, hi))
+            except ValueError as e:
+&gt;               raise ValueError('bad field') from e
+E               ValueError: bad field
+
+solution.py:44: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-190747.cron_field_expand.tests.test_solution" name="test_list_dedup" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-190747.cron_field_expand.tests.test_solution" name="test_mixed" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-190747.cron_field_expand.tests.test_solution" name="test_leading_zero_value" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-190747.cron_field_expand.tests.test_solution" name="test_step_on_value" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_step_on_value():
+&gt;       with pytest.raises(ValueError) as e: f('5/2', 0, 59)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:10: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260713-190747.cron_field_expand.tests.test_solution" name="test_reversed_range" time="0.000"><failure message="AssertionError: assert 'bad field' == 'bad range'&#10;  &#10;  - bad range&#10;  + bad field">def test_reversed_range():
+        with pytest.raises(ValueError) as e: f('7-3', 0, 59)
+&gt;       assert str(e.value) == 'bad range'
+E       AssertionError: assert 'bad field' == 'bad range'
+E         
+E         - bad range
+E         + bad field
+
+tests\test_solution.py:14: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-190747.cron_field_expand.tests.test_solution" name="test_out_of_range" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_out_of_range():
+&gt;       with pytest.raises(ValueError) as e: f('0-99', 0, 59)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:16: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260713-190747.cron_field_expand.tests.test_solution" name="test_zero_step" time="0.000"><failure message="AssertionError: assert 'bad field' == 'bad step'&#10;  &#10;  - bad step&#10;  + bad field">def test_zero_step():
+        with pytest.raises(ValueError) as e: f('*/0', 0, 59)
+&gt;       assert str(e.value) == 'bad step'
+E       AssertionError: assert 'bad field' == 'bad step'
+E         
+E         - bad step
+E         + bad field
+
+tests\test_solution.py:20: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-190747.cron_field_expand.tests.test_solution" name="test_bad_bounds" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-190747.cron_field_expand.tests.test_solution" name="test_empty_field" time="0.000" /></testsuite></testsuites>

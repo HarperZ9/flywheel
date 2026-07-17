@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="2" skipped="0" tests="8" time="0.371" timestamp="2026-07-14T09:27:23.063134-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260714-091030.div_round_half_away.tests.test_solution" name="test_basic_rounding" time="0.001" /><testcase classname="artifacts.uplift.work_20260714-091030.div_round_half_away.tests.test_solution" name="test_ties_away_from_zero_positive" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-091030.div_round_half_away.tests.test_solution" name="test_ties_away_from_zero_negative" time="0.001"><failure message="assert -5 == -4&#10; +  where -5 = div_round_half_away(7, -2)">def test_ties_away_from_zero_negative():
+        assert div_round_half_away(-7, 2) == -4
+&gt;       assert div_round_half_away(7, -2) == -4
+E       assert -5 == -4
+E        +  where -5 = div_round_half_away(7, -2)
+
+tests\test_solution.py:21: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-091030.div_round_half_away.tests.test_solution" name="test_zero_numerator" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-091030.div_round_half_away.tests.test_solution" name="test_exact_division" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-091030.div_round_half_away.tests.test_solution" name="test_big_int_exactness" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-091030.div_round_half_away.tests.test_solution" name="test_zero_denominator_raises" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-091030.div_round_half_away.tests.test_solution" name="test_bool_and_non_int_raise" time="0.001"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_bool_and_non_int_raise():
+&gt;       with pytest.raises(ValueError):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:55: Failed</failure></testcase></testsuite></testsuites>

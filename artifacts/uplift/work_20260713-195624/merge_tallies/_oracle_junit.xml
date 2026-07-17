@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="8" skipped="0" tests="8" time="0.228" timestamp="2026-07-13T20:10:08.198819-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-195624.merge_tallies.tests.test_solution" name="test_sums_counts" time="0.001"><failure message="AssertionError: assert ({'a': 3, 'b'...: 5, 'b': 1})) == {'a': 5, 'b': 1}&#10;  &#10;  Use -v to get more diff">def test_sums_counts():
+&gt;       assert merge_tallies({"a": 2, "b": 1}, {"a": 3}) == {"a": 5, "b": 1}
+E       AssertionError: assert ({'a': 3, 'b'...: 5, 'b': 1})) == {'a': 5, 'b': 1}
+E         
+E         Use -v to get more diff
+
+tests\test_solution.py:6: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.merge_tallies.tests.test_solution" name="test_drops_zero_totals" time="0.001"><failure message="AssertionError: assert ({'a': -2, 'b...: 0, 'b': 1})) == {'b': 1}&#10;  &#10;  Use -v to get more diff">def test_drops_zero_totals():
+        out = merge_tallies({"a": 2, "b": 1}, {"a": -2, "c": 0})
+&gt;       assert out == {"b": 1}
+E       AssertionError: assert ({'a': -2, 'b...: 0, 'b': 1})) == {'b': 1}
+E         
+E         Use -v to get more diff
+
+tests\test_solution.py:11: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.merge_tallies.tests.test_solution" name="test_zero_only_in_a_dropped" time="0.001"><failure message="AssertionError: assert ({'a': 0, 'b'...: 0, 'b': 2})) == {'b': 2}&#10;  &#10;  Use -v to get more diff">def test_zero_only_in_a_dropped():
+&gt;       assert merge_tallies({"a": 0}, {"b": 2}) == {"b": 2}
+E       AssertionError: assert ({'a': 0, 'b'...: 0, 'b': 2})) == {'b': 2}
+E         
+E         Use -v to get more diff
+
+tests\test_solution.py:15: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.merge_tallies.tests.test_solution" name="test_key_order_a_then_b_only" time="0.001"><failure message="AssertionError: assert [{'w': 4, 'x'...: 3, 'w': 4})] == ['x', 'y', 'z', 'w']&#10;  &#10;  At index 0 diff: {'x': 1, 'y': 1, 'z': 3, 'w': 4} != 'x'&#10;  Right contains 2 more items, first extra item: 'z'&#10;  Use -v to get more diff">def test_key_order_a_then_b_only():
+        out = merge_tallies({"x": 1, "y": 2}, {"z": 3, "y": 1, "w": 4})
+&gt;       assert list(out) == ["x", "y", "z", "w"]
+E       AssertionError: assert [{'w': 4, 'x'...: 3, 'w': 4})] == ['x', 'y', 'z', 'w']
+E         
+E         At index 0 diff: {'x': 1, 'y': 1, 'z': 3, 'w': 4} != 'x'
+E         Right contains 2 more items, first extra item: 'z'
+E         Use -v to get more diff
+
+tests\test_solution.py:20: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.merge_tallies.tests.test_solution" name="test_inputs_not_mutated_and_new_dict" time="0.001"><failure message="AssertionError: assert ({'a': 1}, de...'&gt;, {'a': 1})) == {'a': 1}&#10;  &#10;  Use -v to get more diff">def test_inputs_not_mutated_and_new_dict():
+        a = {"a": 1}
+        b = {}
+        out = merge_tallies(a, b)
+&gt;       assert out == {"a": 1}
+E       AssertionError: assert ({'a': 1}, de...'&gt;, {'a': 1})) == {'a': 1}
+E         
+E         Use -v to get more diff
+
+tests\test_solution.py:28: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.merge_tallies.tests.test_solution" name="test_rejects_bool_count" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_rejects_bool_count():
+&gt;       with pytest.raises(ValueError):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:34: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.merge_tallies.tests.test_solution" name="test_rejects_float_count" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_rejects_float_count():
+&gt;       with pytest.raises(ValueError):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:39: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.merge_tallies.tests.test_solution" name="test_negative_totals_kept" time="0.000"><failure message="AssertionError: assert ({'a': 1}, de...&gt;, {'a': -2})) == {'a': -2}&#10;  &#10;  Use -v to get more diff">def test_negative_totals_kept():
+&gt;       assert merge_tallies({"a": -3}, {"a": 1}) == {"a": -2}
+E       AssertionError: assert ({'a': 1}, de...&gt;, {'a': -2})) == {'a': -2}
+E         
+E         Use -v to get more diff
+
+tests\test_solution.py:44: AssertionError</failure></testcase></testsuite></testsuites>

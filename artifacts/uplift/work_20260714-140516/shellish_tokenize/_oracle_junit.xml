@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="6" skipped="0" tests="9" time="0.238" timestamp="2026-07-14T14:23:28.953235-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260714-140516.shellish_tokenize.tests.test_solution" name="test_whitespace_split" time="0.001"><failure message="AssertionError: assert ['abc'] == ['a', 'b', 'c']&#10;  &#10;  At index 0 diff: 'abc' != 'a'&#10;  Right contains 2 more items, first extra item: 'b'&#10;  Use -v to get more diff">def test_whitespace_split():
+&gt;       assert tokenize_quoted("a b\tc") == ["a", "b", "c"]
+E       AssertionError: assert ['abc'] == ['a', 'b', 'c']
+E         
+E         At index 0 diff: 'abc' != 'a'
+E         Right contains 2 more items, first extra item: 'b'
+E         Use -v to get more diff
+
+tests\test_solution.py:6: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-140516.shellish_tokenize.tests.test_solution" name="test_empty_and_blank" time="0.001"><failure message="AssertionError: assert [''] == []&#10;  &#10;  Left contains one more item: ''&#10;  Use -v to get more diff">def test_empty_and_blank():
+&gt;       assert tokenize_quoted("") == []
+E       AssertionError: assert [''] == []
+E         
+E         Left contains one more item: ''
+E         Use -v to get more diff
+
+tests\test_solution.py:11: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-140516.shellish_tokenize.tests.test_solution" name="test_double_quotes" time="0.000"><failure message="AssertionError: assert ['xa by'] == ['x', 'a b', 'y']&#10;  &#10;  At index 0 diff: 'xa by' != 'x'&#10;  Right contains 2 more items, first extra item: 'a b'&#10;  Use -v to get more diff">def test_double_quotes():
+        assert tokenize_quoted('"a b"') == ["a b"]
+&gt;       assert tokenize_quoted('x "a b" y') == ["x", "a b", "y"]
+E       AssertionError: assert ['xa by'] == ['x', 'a b', 'y']
+E         
+E         At index 0 diff: 'xa by' != 'x'
+E         Right contains 2 more items, first extra item: 'a b'
+E         Use -v to get more diff
+
+tests\test_solution.py:17: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-140516.shellish_tokenize.tests.test_solution" name="test_double_quote_escapes" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-140516.shellish_tokenize.tests.test_solution" name="test_single_quotes_literal" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-140516.shellish_tokenize.tests.test_solution" name="test_concatenation" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-140516.shellish_tokenize.tests.test_solution" name="test_empty_token_from_quotes" time="0.000"><failure message="AssertionError: assert ['ab'] == ['a', '', 'b']&#10;  &#10;  At index 0 diff: 'ab' != 'a'&#10;  Right contains 2 more items, first extra item: ''&#10;  Use -v to get more diff">def test_empty_token_from_quotes():
+        assert tokenize_quoted('""') == [""]
+&gt;       assert tokenize_quoted("a '' b") == ["a", "", "b"]
+E       AssertionError: assert ['ab'] == ['a', '', 'b']
+E         
+E         At index 0 diff: 'ab' != 'a'
+E         Right contains 2 more items, first extra item: ''
+E         Use -v to get more diff
+
+tests\test_solution.py:38: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-140516.shellish_tokenize.tests.test_solution" name="test_bare_backslash_escapes" time="0.000"><failure message="ValueError: unescaped backslash at index 1">def test_bare_backslash_escapes():
+&gt;       assert tokenize_quoted("a\\ b") == ["a b"]
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:42: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+s = 'a\\ b'
+
+    def tokenize_quoted(s: str) -&gt; list[str]:
+        out = []
+        buf = []  # current uncommitted literal span accumulating inside a quoted segment or after an escape
+        esc = False
+        dq = sq = bq = False
+        i = 0
+        while i &lt; len(s):
+            c = s[i]
+            if esc:
+                if c == '"' and not (dq or sq):            # \"
+                    buf.append('"')
+                elif c == "\\" and not (dq or sq):         # \\
+                    buf.append("\\")
+                else:                                       # any other escaped char literal in the span
+                    buf.append(c)
+                esc = False
+            elif dq:
+                if c == '"':
+                    out.append("".join(buf)); buf.clear()
+                    dq = False
+                elif c == "\\":
+                    esc = True
+                else:
+                    buf.append(c)                          # any unescaped char in a double-quote span is literal
+            elif sq:
+                if c == "'":
+                    out.append("".join(buf)); buf.clear()
+                    sq = False
+                else:                                       # single quotes have no escapes, so every other char is literal
+                    buf.append(c)
+            elif bq:
+                if c == '"':                                # \" ends a double-quote segment (only while in `bq`)
+                    out.append("".join(buf)); buf.clear()
+                    bq = False; i += 1                     # step past the trailing quote on exit
+                else:                                       # any unescaped char during `` is literal across spans
+                    buf.append(c)
+            elif c == "\\":
+                if i + 1 &lt; len(s) and s[i+1] in "\"'":     # \", \' escape a double/single quote outside quotes
+                    buf.append(s[i+1]); esc = False; i += 1
+                else:                                       # lone backslash not followed by a known escaped char raises
+&gt;                   raise ValueError(f"unescaped backslash at index {i}")
+E                   ValueError: unescaped backslash at index 1
+
+solution.py:41: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-140516.shellish_tokenize.tests.test_solution" name="test_error_contracts" time="0.001"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_error_contracts():
+        with pytest.raises(ValueError):
+            tokenize_quoted('"abc')
+        with pytest.raises(ValueError):
+            tokenize_quoted("'abc")
+        with pytest.raises(ValueError):
+            tokenize_quoted('"a\\"')
+&gt;       with pytest.raises(ValueError):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:53: Failed</failure></testcase></testsuite></testsuites>

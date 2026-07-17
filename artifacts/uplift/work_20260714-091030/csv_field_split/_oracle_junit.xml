@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="5" skipped="0" tests="8" time="0.236" timestamp="2026-07-14T09:22:09.280938-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260714-091030.csv_field_split.tests.test_solution" name="test_basic_and_empty_fields" time="0.001"><failure message="AssertionError: assert ['a', '', 'b', '', 'c'] == ['a', 'b', 'c']&#10;  &#10;  At index 1 diff: '' != 'b'&#10;  Left contains 2 more items, first extra item: ''&#10;  Use -v to get more diff">def test_basic_and_empty_fields():
+&gt;       assert split_csv_line("a,b,c") == ["a", "b", "c"]
+E       AssertionError: assert ['a', '', 'b', '', 'c'] == ['a', 'b', 'c']
+E         
+E         At index 1 diff: '' != 'b'
+E         Left contains 2 more items, first extra item: ''
+E         Use -v to get more diff
+
+tests\test_solution.py:6: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-091030.csv_field_split.tests.test_solution" name="test_empty_line_single_empty_field" time="0.001"><failure message="AssertionError: assert [] == ['']&#10;  &#10;  Right contains one more item: ''&#10;  Use -v to get more diff">def test_empty_line_single_empty_field():
+&gt;       assert split_csv_line("") == [""]
+E       AssertionError: assert [] == ['']
+E         
+E         Right contains one more item: ''
+E         Use -v to get more diff
+
+tests\test_solution.py:11: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-091030.csv_field_split.tests.test_solution" name="test_trailing_and_leading_comma" time="0.000"><failure message="AssertionError: assert [''] == ['', '']&#10;  &#10;  Right contains one more item: ''&#10;  Use -v to get more diff">def test_trailing_and_leading_comma():
+        assert split_csv_line("a,") == ["a", ""]
+        assert split_csv_line(",a") == ["", "a"]
+&gt;       assert split_csv_line(",") == ["", ""]
+E       AssertionError: assert [''] == ['', '']
+E         
+E         Right contains one more item: ''
+E         Use -v to get more diff
+
+tests\test_solution.py:17: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-091030.csv_field_split.tests.test_solution" name="test_quoted_field_with_comma_and_escaped_quote" time="0.000"><failure message="AssertionError: assert ['a,b', '', 'c'] == ['a,b', 'c']&#10;  &#10;  At index 1 diff: '' != 'c'&#10;  Left contains one more item: 'c'&#10;  Use -v to get more diff">def test_quoted_field_with_comma_and_escaped_quote():
+&gt;       assert split_csv_line('"a,b",c') == ["a,b", "c"]
+E       AssertionError: assert ['a,b', '', 'c'] == ['a,b', 'c']
+E         
+E         At index 1 diff: '' != 'c'
+E         Left contains one more item: 'c'
+E         Use -v to get more diff
+
+tests\test_solution.py:21: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-091030.csv_field_split.tests.test_solution" name="test_whitespace_is_not_stripped" time="0.001"><failure message="AssertionError: assert [' a ', '', ' b '] == [' a ', ' b ']&#10;  &#10;  At index 1 diff: '' != ' b '&#10;  Left contains one more item: ' b '&#10;  Use -v to get more diff">def test_whitespace_is_not_stripped():
+&gt;       assert split_csv_line(" a , b ") == [" a ", " b "]
+E       AssertionError: assert [' a ', '', ' b '] == [' a ', ' b ']
+E         
+E         At index 1 diff: '' != ' b '
+E         Left contains one more item: ' b '
+E         Use -v to get more diff
+
+tests\test_solution.py:28: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-091030.csv_field_split.tests.test_solution" name="test_quote_in_unquoted_field_raises" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-091030.csv_field_split.tests.test_solution" name="test_unterminated_quote_raises" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-091030.csv_field_split.tests.test_solution" name="test_junk_after_closing_quote_raises" time="0.000" /></testsuite></testsuites>

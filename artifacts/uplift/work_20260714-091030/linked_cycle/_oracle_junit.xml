@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="6" skipped="0" tests="10" time="0.240" timestamp="2026-07-14T09:40:22.862040-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260714-091030.linked_cycle.tests.test_solution" name="test_empty" time="0.001"><failure message="IndexError: list index out of range">&gt;   def test_empty(): assert f([]) is False
+                             ^^^^^
+
+tests\test_solution.py:3: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+nxt = []
+
+    def has_cycle(nxt):
+        for i, v in enumerate(nxt):
+            if not isinstance(v, int) or v != bool(v) or (v &gt; -1 and v &gt;= len(nxt)):
+                raise ValueError('bad link')
+        seen = set()
+        cur = 0
+        while True:
+&gt;           if nxt[cur] == -1:
+               ^^^^^^^^
+E           IndexError: list index out of range
+
+solution.py:8: IndexError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-091030.linked_cycle.tests.test_solution" name="test_terminates" time="0.000"><failure message="ValueError: bad link">&gt;   def test_terminates(): assert f([-1]) is False
+                                  ^^^^^^^
+
+tests\test_solution.py:4: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+nxt = [-1]
+
+    def has_cycle(nxt):
+        for i, v in enumerate(nxt):
+            if not isinstance(v, int) or v != bool(v) or (v &gt; -1 and v &gt;= len(nxt)):
+&gt;               raise ValueError('bad link')
+E               ValueError: bad link
+
+solution.py:4: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-091030.linked_cycle.tests.test_solution" name="test_self_loop" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-091030.linked_cycle.tests.test_solution" name="test_chain" time="0.000"><failure message="ValueError: bad link">&gt;   def test_chain(): assert f([1, 2, -1]) is False
+                             ^^^^^^^^^^^^^
+
+tests\test_solution.py:6: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+nxt = [1, 2, -1]
+
+    def has_cycle(nxt):
+        for i, v in enumerate(nxt):
+            if not isinstance(v, int) or v != bool(v) or (v &gt; -1 and v &gt;= len(nxt)):
+&gt;               raise ValueError('bad link')
+E               ValueError: bad link
+
+solution.py:4: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-091030.linked_cycle.tests.test_solution" name="test_cycle" time="0.001"><failure message="ValueError: bad link">&gt;   def test_cycle(): assert f([1, 2, 0]) is True
+                             ^^^^^^^^^^^^
+
+tests\test_solution.py:7: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+nxt = [1, 2, 0]
+
+    def has_cycle(nxt):
+        for i, v in enumerate(nxt):
+            if not isinstance(v, int) or v != bool(v) or (v &gt; -1 and v &gt;= len(nxt)):
+&gt;               raise ValueError('bad link')
+E               ValueError: bad link
+
+solution.py:4: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-091030.linked_cycle.tests.test_solution" name="test_unreached_end" time="0.001"><failure message="ValueError: bad link">&gt;   def test_unreached_end(): assert f([1, -1, 1]) is False
+                                     ^^^^^^^^^^^^^
+
+tests\test_solution.py:8: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+nxt = [1, -1, 1]
+
+    def has_cycle(nxt):
+        for i, v in enumerate(nxt):
+            if not isinstance(v, int) or v != bool(v) or (v &gt; -1 and v &gt;= len(nxt)):
+&gt;               raise ValueError('bad link')
+E               ValueError: bad link
+
+solution.py:4: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-091030.linked_cycle.tests.test_solution" name="test_reachable_cycle" time="0.001"><failure message="ValueError: bad link">&gt;   def test_reachable_cycle(): assert f([2, 2, 1]) is True
+                                       ^^^^^^^^^^^^
+
+tests\test_solution.py:9: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+nxt = [2, 2, 1]
+
+    def has_cycle(nxt):
+        for i, v in enumerate(nxt):
+            if not isinstance(v, int) or v != bool(v) or (v &gt; -1 and v &gt;= len(nxt)):
+&gt;               raise ValueError('bad link')
+E               ValueError: bad link
+
+solution.py:4: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-091030.linked_cycle.tests.test_solution" name="test_out_of_range" time="0.001" /><testcase classname="artifacts.uplift.work_20260714-091030.linked_cycle.tests.test_solution" name="test_below_neg_one" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-091030.linked_cycle.tests.test_solution" name="test_bool" time="0.001" /></testsuite></testsuites>

@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="7" skipped="0" tests="9" time="0.226" timestamp="2026-07-13T19:22:33.504652-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-190747.shellish_tokenize.tests.test_solution" name="test_whitespace_split" time="0.001" /><testcase classname="artifacts.uplift.work_20260713-190747.shellish_tokenize.tests.test_solution" name="test_empty_and_blank" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-190747.shellish_tokenize.tests.test_solution" name="test_double_quotes" time="0.001"><failure message="AssertionError: assert ['a b', ''] == ['a b']&#10;  &#10;  Left contains one more item: ''&#10;  Use -v to get more diff">def test_double_quotes():
+&gt;       assert tokenize_quoted('"a b"') == ["a b"]
+E       AssertionError: assert ['a b', ''] == ['a b']
+E         
+E         Left contains one more item: ''
+E         Use -v to get more diff
+
+tests\test_solution.py:16: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-190747.shellish_tokenize.tests.test_solution" name="test_double_quote_escapes" time="0.001"><failure message="assert ['a\\&quot;b', ''] == ['a&quot;b']&#10;  &#10;  At index 0 diff: 'a\\&quot;b' != 'a&quot;b'&#10;  Left contains one more item: ''&#10;  Use -v to get more diff">def test_double_quote_escapes():
+&gt;       assert tokenize_quoted('"a\\"b"') == ['a"b']
+E       assert ['a\\"b', ''] == ['a"b']
+E         
+E         At index 0 diff: 'a\\"b' != 'a"b'
+E         Left contains one more item: ''
+E         Use -v to get more diff
+
+tests\test_solution.py:21: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-190747.shellish_tokenize.tests.test_solution" name="test_single_quotes_literal" time="0.001"><failure message="AssertionError: assert ['a b', ''] == ['a b']&#10;  &#10;  Left contains one more item: ''&#10;  Use -v to get more diff">def test_single_quotes_literal():
+&gt;       assert tokenize_quoted("'a b'") == ["a b"]
+E       AssertionError: assert ['a b', ''] == ['a b']
+E         
+E         Left contains one more item: ''
+E         Use -v to get more diff
+
+tests\test_solution.py:26: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-190747.shellish_tokenize.tests.test_solution" name="test_concatenation" time="0.000"><failure message="AssertionError: assert ['a', 'b c', 'd'] == ['ab cd']&#10;  &#10;  At index 0 diff: 'a' != 'ab cd'&#10;  Left contains 2 more items, first extra item: 'b c'&#10;  Use -v to get more diff">def test_concatenation():
+&gt;       assert tokenize_quoted('a"b c"d') == ["ab cd"]
+E       AssertionError: assert ['a', 'b c', 'd'] == ['ab cd']
+E         
+E         At index 0 diff: 'a' != 'ab cd'
+E         Left contains 2 more items, first extra item: 'b c'
+E         Use -v to get more diff
+
+tests\test_solution.py:32: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-190747.shellish_tokenize.tests.test_solution" name="test_empty_token_from_quotes" time="0.000"><failure message="ValueError: Unterminated double-quoted segment">def test_empty_token_from_quotes():
+&gt;       assert tokenize_quoted('""') == [""]
+               ^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:37: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+s = '""'
+
+    def tokenize_quoted(s: str) -&gt; list[str]:
+        tokens = []
+        i = 0
+        n = len(s)
+    
+        while i &lt; n:
+            # Skip leading spaces and tabs
+            if s[i].isspace():
+                i += 1
+                continue
+    
+            # Check for double-quoted segments
+            if s[i] == '"':
+                start = i + 1
+                i += 1
+    
+                # Consume escaped characters and check for unterminated quote
+                while i &lt; n:
+                    c = s[i]
+                    if c == '"':
+                        if i &gt; start and s[i-1] != '\\':
+                            break
+                        elif i == start and (i+1 == n or not s[i+1].isspace()):
+&gt;                           raise ValueError("Unterminated double-quoted segment")
+E                           ValueError: Unterminated double-quoted segment
+
+solution.py:24: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-190747.shellish_tokenize.tests.test_solution" name="test_bare_backslash_escapes" time="0.000"><failure message="AssertionError: assert ['a\\', 'b'] == ['a b']&#10;  &#10;  At index 0 diff: 'a\\' != 'a b'&#10;  Left contains one more item: 'b'&#10;  Use -v to get more diff">def test_bare_backslash_escapes():
+&gt;       assert tokenize_quoted("a\\ b") == ["a b"]
+E       AssertionError: assert ['a\\', 'b'] == ['a b']
+E         
+E         At index 0 diff: 'a\\' != 'a b'
+E         Left contains one more item: 'b'
+E         Use -v to get more diff
+
+tests\test_solution.py:42: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-190747.shellish_tokenize.tests.test_solution" name="test_error_contracts" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_error_contracts():
+&gt;       with pytest.raises(ValueError):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:47: Failed</failure></testcase></testsuite></testsuites>

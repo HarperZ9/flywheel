@@ -6,9 +6,17 @@ to a run that cannot be cheaply re-executed like pytest:
 
   1. witness_matches   — recheck_witness == MATCH (the reference_passes analogue:
                          the datum re-derives independently, no forum trust).
-  2. oracle_can_fail   — flipping a recorded grade input makes the re-check DRIFT.
-                         A grade with no inputs, or one whose flip changes nothing,
-                         verifies nothing and is REJECTED (the load-bearing gate).
+  2. oracle_can_fail   — the load-bearing gate, three clauses. (a) flipping a
+                         recorded grade input makes the re-check DRIFT (the reward
+                         is bound to its inputs); (b) every grade input is backed
+                         by a hash-chained entry with the same actor+kind (a check
+                         outside the witnessed record is fabricated); (c) every
+                         grader actor carries a recorded ok=false counter-example
+                         (in this row, elsewhere in the batch, or in a supplied
+                         refusal witness). A grader never seen to refuse anything
+                         is a rubber stamp: flip arithmetic alone proves only that
+                         reward is a function of its inputs, never that the grader
+                         can fail. No counter-example, no admission.
   3. grade_independent — the graders are disjoint from the producers AND the answer
                          is not verbatim in the prompt (the no_solution_leak
                          analogue: a self-graded or leaked datum is REJECTED).
@@ -28,6 +36,7 @@ from __future__ import annotations
 
 import copy
 import hashlib
+from collections import Counter
 from typing import Any
 
 from .trajectory_intake import recheck_witness
@@ -44,16 +53,46 @@ def _content_key(row: dict[str, Any]) -> str:
     return hashlib.sha256((_norm(row.get("prompt", "")) + "\x1f" + _norm(answer)).encode()).hexdigest()
 
 
-def _can_fail(row: dict[str, Any]) -> bool:
-    """A grade CAN fail iff flipping a recorded grade input makes the re-check
-    DRIFT. No inputs, or a flip that changes nothing, means it verifies nothing."""
+def _chain_backed(row: dict[str, Any]) -> tuple[bool, str]:
+    """Every grade input must be backed by a hash-chained entry with the same
+    actor+kind, with multiplicity. Payload bodies are not shipped, so the ok
+    bit cannot be re-read; actor+kind+count is what the sealed chain can bind.
+    An input with no chained entry is a fabricated check."""
+    inputs = row.get("oracle", {}).get("grade_inputs", [])
+    entries = Counter((e.get("actor"), e.get("kind"))
+                      for e in row.get("trajectory", {}).get("entries", []))
+    needed = Counter((g.get("actor"), g.get("kind")) for g in inputs)
+    for (actor, kind), n in needed.items():
+        if entries[(actor, kind)] < n:
+            return False, f"grade input {actor}/{kind} has no hash-chained entry backing it"
+    return True, ""
+
+
+def _can_fail(row: dict[str, Any],
+              refusal_witness: set[str] | None = None) -> tuple[bool, str]:
+    """The load-bearing gate. (a) flipping a recorded input makes the re-check
+    DRIFT (reward bound to inputs); (b) every input is chain-backed; (c) every
+    grader actor has a recorded ok=false counter-example, in-row or witnessed.
+    Flip arithmetic alone is a tautology: it proves reward is a function of its
+    inputs, never that the grader can emit ok=false on bad work."""
     inputs = row.get("oracle", {}).get("grade_inputs", [])
     if not inputs:
-        return False
+        return False, "no flippable input"
     probe = copy.deepcopy(row)
     g0 = probe["oracle"]["grade_inputs"][0]
     g0["ok"] = not bool(g0.get("ok"))
-    return recheck_witness(probe)["witness"] == "DRIFT"
+    if recheck_witness(probe)["witness"] != "DRIFT":
+        return False, "flipping a recorded input changes nothing"
+    backed, reason = _chain_backed(row)
+    if not backed:
+        return False, reason
+    witnessed = set(refusal_witness or set())
+    witnessed |= {g.get("actor") for g in inputs if g.get("ok") is False}
+    for actor in {g.get("actor") for g in inputs}:
+        if actor not in witnessed:
+            return False, (f"grader {actor!r} has no recorded refusal "
+                           f"(rubber stamp until a counter-example exists)")
+    return True, ""
 
 
 def _is_independent(row: dict[str, Any]) -> bool:
@@ -69,9 +108,12 @@ def _is_independent(row: dict[str, Any]) -> bool:
 
 
 def screen_trajectory(row: dict[str, Any], existing: set[str] | None = None,
-                      *, min_checks: int = MIN_CHECKS) -> dict[str, Any]:
+                      *, min_checks: int = MIN_CHECKS,
+                      grader_refusals: set[str] | None = None) -> dict[str, Any]:
     """Screen one exported row against the six gates. `existing` is the set of
-    already-admitted keys (task_id and content keys). Returns the gate verdicts
+    already-admitted keys (task_id and content keys). `grader_refusals` is the
+    refusal witness: grader actors with a recorded ok=false counter-example
+    (from this batch or previously admitted data). Returns the gate verdicts
     and whether the row is admitted (all gates PASS)."""
     existing = existing or set()
     gates: dict[str, str] = {}
@@ -80,8 +122,9 @@ def screen_trajectory(row: dict[str, Any], existing: set[str] | None = None,
     gates["witness_matches"] = ("PASS" if v1["witness"] == "MATCH"
                                 else f"FAIL: witness {v1['witness']} ({'; '.join(v1['reasons'])})")
 
-    gates["oracle_can_fail"] = ("PASS" if _can_fail(row)
-                                else "FAIL: grade cannot fail (no flippable input) — verifies nothing")
+    can_fail, why = _can_fail(row, grader_refusals)
+    gates["oracle_can_fail"] = ("PASS" if can_fail
+                                else f"FAIL: {why} — verifies nothing")
 
     gates["grade_independent"] = ("PASS" if _is_independent(row)
                                   else "FAIL: self-graded or answer leaked into prompt")
@@ -107,15 +150,25 @@ def screen_trajectory(row: dict[str, Any], existing: set[str] | None = None,
 
 
 def curate_trajectories(rows: list[dict[str, Any]],
-                        existing: set[str] | None = None) -> dict[str, Any]:
-    """Screen a batch. Reports admitted/rejected and the honest recirculation
+                        existing: set[str] | None = None,
+                        *, grader_refusals: set[str] | None = None) -> dict[str, Any]:
+    """Screen a batch. The refusal witness is built first: every chain-backed
+    ok=false input anywhere in the batch (plus any supplied history) witnesses
+    that its grader CAN refuse, so an all-pass row is admissible only alongside
+    that evidence. Reports admitted/rejected and the honest recirculation
     ceiling 1/(1-r) where r is the fraction rejected purely as duplicates."""
+    refusals: set[str] = set(grader_refusals or set())
+    for row in rows:
+        if _chain_backed(row)[0]:
+            refusals |= {g.get("actor")
+                         for g in row.get("oracle", {}).get("grade_inputs", [])
+                         if g.get("ok") is False}
     seen: set[str] = set(existing or set())
     admitted: list[dict[str, Any]] = []
     rejected: list[dict[str, Any]] = []
     dup_rejections = 0
     for row in rows:
-        r = screen_trajectory(row, seen)
+        r = screen_trajectory(row, seen, grader_refusals=refusals)
         if r["admitted"]:
             admitted.append(r)
             seen.add(r["task_id"])
@@ -138,6 +191,7 @@ def curate_trajectories(rows: list[dict[str, Any]],
         "ceiling_note": ("1/(1-r), r = dup rejections / submitted. Recirculation "
                          "amortizes; it never compounds on novel coverage. Dedup is "
                          "prompt+answer identity, so this under-counts novelty."),
+        "grader_refusals_witnessed": sorted(refusals),
         "admitted_rows": admitted,
         "rejected_rows": rejected,
     }

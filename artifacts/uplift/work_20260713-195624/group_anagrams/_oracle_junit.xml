@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="1" failures="0" skipped="0" tests="1" time="0.226" timestamp="2026-07-13T20:21:37.505647-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="" name="artifacts.uplift.work_20260713-195624.group_anagrams.tests.test_solution" time="0.000"><error message="collection failure">tests\test_solution.py:2: in &lt;module&gt;
+    from solution import group_anagrams as f
+solution.py:36: in &lt;module&gt;
+    print(group_anagrams(words_list))  # Output: [('cat', 'dog'), ('god', 'tac')]
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^
+solution.py:25: in group_anagrams
+    anagrams_dict = get_anagram_pairs(words)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^
+solution.py:20: in get_anagram_pairs
+    a, b = [char * (len(chars) // len(word)) + word[char] for char in chars if chars.count(char) == 1]
+                                               ^^^^^^^^^^
+E   TypeError: string indices must be integers, not 'str'</error></testcase></testsuite></testsuites>

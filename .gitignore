@@ -13,6 +13,10 @@ __pycache__/
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
+
+# --- PyInstaller build artifacts (the release exe lives in artifacts/exe/) ---
+build/
+dist/
 *.egg-info/
 .venv/
 venv/
@@ -48,3 +52,8 @@ artifacts/exe/
 
 # --- benchmark/screen scratch (never commit) ---
 .screen-run/
+
+# --- machine-local run root (keeps absolute paths out of shipped source) ---
+# One line naming this machine's training/run root (e.g. E:/local-model-run).
+# Read by harness/run_paths.py; never shipped, so the source stays path-clean.
+.flywheel-run-root

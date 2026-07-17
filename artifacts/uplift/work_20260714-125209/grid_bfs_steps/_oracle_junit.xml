@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="3" skipped="0" tests="16" time="0.215" timestamp="2026-07-14T13:39:11.132002-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260714-125209.grid_bfs_steps.tests.test_solution" name="test_open_two" time="0.001" /><testcase classname="artifacts.uplift.work_20260714-125209.grid_bfs_steps.tests.test_solution" name="test_single_open" time="0.001"><failure message="assert -1 == 0&#10; +  where -1 = f([[0]])">&gt;   def test_single_open(): assert f([[0]]) == 0
+                            ^^^^^^^^^^^^^^^^^^^^
+E   assert -1 == 0
+E    +  where -1 = f([[0]])
+
+tests\test_solution.py:4: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-125209.grid_bfs_steps.tests.test_solution" name="test_single_wall" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-125209.grid_bfs_steps.tests.test_solution" name="test_blocked" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-125209.grid_bfs_steps.tests.test_solution" name="test_detour" time="0.001" /><testcase classname="artifacts.uplift.work_20260714-125209.grid_bfs_steps.tests.test_solution" name="test_row" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-125209.grid_bfs_steps.tests.test_solution" name="test_start_wall" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-125209.grid_bfs_steps.tests.test_solution" name="test_goal_wall" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-125209.grid_bfs_steps.tests.test_solution" name="test_ragged" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-125209.grid_bfs_steps.tests.test_solution" name="test_ragged_before_cell" time="0.001"><failure message="AssertionError: assert 'bad cell at (0,1): 2' == 'ragged'&#10;  &#10;  - ragged&#10;  + bad cell at (0,1): 2">def test_ragged_before_cell():
+        with pytest.raises(ValueError) as e: f([[0, 2], [0]])
+&gt;       assert str(e.value) == 'ragged'
+E       AssertionError: assert 'bad cell at (0,1): 2' == 'ragged'
+E         
+E         - ragged
+E         + bad cell at (0,1): 2
+
+tests\test_solution.py:16: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-125209.grid_bfs_steps.tests.test_solution" name="test_bad_cell_two" time="0.001"><failure message="AssertionError: assert 'bad cell at (0,1): 2' == 'bad cell'&#10;  &#10;  - bad cell&#10;  + bad cell at (0,1): 2">def test_bad_cell_two():
+        with pytest.raises(ValueError) as e: f([[0, 2]])
+&gt;       assert str(e.value) == 'bad cell'
+E       AssertionError: assert 'bad cell at (0,1): 2' == 'bad cell'
+E         
+E         - bad cell
+E         + bad cell at (0,1): 2
+
+tests\test_solution.py:19: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-125209.grid_bfs_steps.tests.test_solution" name="test_bad_cell_bool" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-125209.grid_bfs_steps.tests.test_solution" name="test_bad_grid_empty" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-125209.grid_bfs_steps.tests.test_solution" name="test_bad_grid_empty_row" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-125209.grid_bfs_steps.tests.test_solution" name="test_bad_grid_not_list" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-125209.grid_bfs_steps.tests.test_solution" name="test_bad_grid_flat" time="0.000" /></testsuite></testsuites>

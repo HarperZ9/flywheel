@@ -1,0 +1,219 @@
+{
+ "schema": "flywheel.ablation.self-criterion/v2",
+ "model_ref": "ollama:qwen2.5:7b",
+ "n_tasks": 10,
+ "temps": [
+  0.0,
+  0.4,
+  0.8,
+  1.1
+ ],
+ "registry": "tasks_hard.HARD_REGISTRY",
+ "headroom_screen": "",
+ "single_shot": {
+  "passed": 8,
+  "rate": 0.8
+ },
+ "verified_external": {
+  "passed": 9,
+  "rate": 0.9,
+  "lift_over_single": 0.1
+ },
+ "verified_self": {
+  "passed": 9,
+  "rate": 0.9,
+  "lift_over_single": 0.1
+ },
+ "verified_consensus": {
+  "passed": 8,
+  "rate": 0.8,
+  "lift_over_single": 0.0,
+  "fraction_of_external_lift_recovered": 0.0,
+  "note": "oracle-FREE: behavioral clustering on a pre-decided input battery; the model authors nothing"
+ },
+ "consensus_feasibility": {
+  "rescued_by_external": 1,
+  "rescued_with_2plus_correct": 1,
+  "note": "an oracle-free selector can only reach rescues with >=2 correct candidates; this is its hard ceiling"
+ },
+ "self_tests_broken": 1,
+ "compute": {
+  "gen_seconds": 50.7,
+  "verify_seconds": 125.8,
+  "verified_cost_multiple": 4,
+  "note": "verified arms spend len(temps)x generation; single spends 1x"
+ },
+ "verdict": "lift SURVIVES self-authored selection: it was DIVERSITY, not externalization",
+ "per_task": [
+  {
+   "task_id": "merge_intervals",
+   "single": true,
+   "ext": true,
+   "self": true,
+   "cons": true,
+   "hidden_pass": [
+    true,
+    true,
+    true,
+    false
+   ],
+   "correct_count": 3,
+   "self_test_broken": false,
+   "gen_s": 6.05,
+   "ver_s": 12.45
+  },
+  {
+   "task_id": "roman_to_int",
+   "single": true,
+   "ext": true,
+   "self": true,
+   "cons": true,
+   "hidden_pass": [
+    true,
+    true,
+    true,
+    true
+   ],
+   "correct_count": 4,
+   "self_test_broken": false,
+   "gen_s": 5.38,
+   "ver_s": 12.36
+  },
+  {
+   "task_id": "is_balanced",
+   "single": true,
+   "ext": true,
+   "self": true,
+   "cons": true,
+   "hidden_pass": [
+    true,
+    true,
+    true,
+    true
+   ],
+   "correct_count": 4,
+   "self_test_broken": false,
+   "gen_s": 3.33,
+   "ver_s": 12.75
+  },
+  {
+   "task_id": "two_sum",
+   "single": false,
+   "ext": true,
+   "self": true,
+   "cons": false,
+   "hidden_pass": [
+    false,
+    true,
+    true,
+    true
+   ],
+   "correct_count": 3,
+   "self_test_broken": false,
+   "gen_s": 2.94,
+   "ver_s": 11.2
+  },
+  {
+   "task_id": "run_length_encode",
+   "single": true,
+   "ext": true,
+   "self": true,
+   "cons": true,
+   "hidden_pass": [
+    true,
+    true,
+    true,
+    true
+   ],
+   "correct_count": 4,
+   "self_test_broken": false,
+   "gen_s": 4.67,
+   "ver_s": 11.25
+  },
+  {
+   "task_id": "flatten_nested",
+   "single": true,
+   "ext": true,
+   "self": true,
+   "cons": true,
+   "hidden_pass": [
+    true,
+    true,
+    true,
+    true
+   ],
+   "correct_count": 4,
+   "self_test_broken": false,
+   "gen_s": 3.03,
+   "ver_s": 12.02
+  },
+  {
+   "task_id": "my_atoi",
+   "single": false,
+   "ext": false,
+   "self": false,
+   "cons": false,
+   "hidden_pass": [
+    false,
+    false,
+    false,
+    false
+   ],
+   "correct_count": 0,
+   "self_test_broken": true,
+   "gen_s": 9.06,
+   "ver_s": 12.78
+  },
+  {
+   "task_id": "spiral_order",
+   "single": true,
+   "ext": true,
+   "self": true,
+   "cons": true,
+   "hidden_pass": [
+    true,
+    true,
+    false,
+    false
+   ],
+   "correct_count": 2,
+   "self_test_broken": false,
+   "gen_s": 9.3,
+   "ver_s": 16.22
+  },
+  {
+   "task_id": "longest_common_prefix",
+   "single": true,
+   "ext": true,
+   "self": true,
+   "cons": true,
+   "hidden_pass": [
+    true,
+    true,
+    true,
+    true
+   ],
+   "correct_count": 4,
+   "self_test_broken": false,
+   "gen_s": 3.05,
+   "ver_s": 12.5
+  },
+  {
+   "task_id": "binary_search",
+   "single": true,
+   "ext": true,
+   "self": true,
+   "cons": true,
+   "hidden_pass": [
+    true,
+    true,
+    true,
+    true
+   ],
+   "correct_count": 4,
+   "self_test_broken": false,
+   "gen_s": 3.89,
+   "ver_s": 12.22
+  }
+ ]
+}

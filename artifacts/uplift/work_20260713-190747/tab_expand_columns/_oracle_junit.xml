@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="6" skipped="0" tests="8" time="0.240" timestamp="2026-07-13T19:30:20.352167-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-190747.tab_expand_columns.tests.test_solution" name="test_basic" time="0.001"><failure message="AssertionError: assert 'a\tb' == 'a   b'&#10;  &#10;  - a   b&#10;  + a&#09;b">&gt;   def test_basic(): assert f('a\tb', 4) == 'a   b'
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert 'a\tb' == 'a   b'
+E     
+E     - a   b
+E     + a	b
+
+tests\test_solution.py:3: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-190747.tab_expand_columns.tests.test_solution" name="test_tab_on_stop" time="0.001"><failure message="AssertionError: assert 'abcd\tb' == 'abcd    b'&#10;  &#10;  - abcd    b&#10;  + abcd&#09;b">&gt;   def test_tab_on_stop(): assert f('abcd\tb', 4) == 'abcd    b'
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert 'abcd\tb' == 'abcd    b'
+E     
+E     - abcd    b
+E     + abcd	b
+
+tests\test_solution.py:4: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-190747.tab_expand_columns.tests.test_solution" name="test_two_tabs" time="0.000"><failure message="AssertionError: assert 'ab\tc\td' == 'ab  c   d'&#10;  &#10;  - ab  c   d&#10;  + ab&#09;c&#09;d">&gt;   def test_two_tabs(): assert f('ab\tc\td', 4) == 'ab  c   d'
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert 'ab\tc\td' == 'ab  c   d'
+E     
+E     - ab  c   d
+E     + ab	c	d
+
+tests\test_solution.py:5: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-190747.tab_expand_columns.tests.test_solution" name="test_newline_resets" time="0.001"><failure message="AssertionError: assert 'a\nb\tc' == 'a\nb   c'&#10;  &#10;    a&#10;  - b   c&#10;  + b&#09;c">&gt;   def test_newline_resets(): assert f('a\nb\tc', 4) == 'a\nb   c'
+                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert 'a\nb\tc' == 'a\nb   c'
+E     
+E       a
+E     - b   c
+E     + b	c
+
+tests\test_solution.py:6: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-190747.tab_expand_columns.tests.test_solution" name="test_empty" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-190747.tab_expand_columns.tests.test_solution" name="test_stop_one" time="0.000"><failure message="AssertionError: assert '\t' == ' '&#10;  &#10;  Strings contain only whitespace, escaping them using repr()&#10;  - ' '&#10;  + '\t'">&gt;   def test_stop_one(): assert f('\t', 1) == ' '
+                         ^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert '\t' == ' '
+E     
+E     Strings contain only whitespace, escaping them using repr()
+E     - ' '
+E     + '\t'
+
+tests\test_solution.py:8: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-190747.tab_expand_columns.tests.test_solution" name="test_bad_stop_zero" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-190747.tab_expand_columns.tests.test_solution" name="test_bad_stop_bool" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_bad_stop_bool():
+&gt;       with pytest.raises(ValueError): f('a', True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:13: Failed</failure></testcase></testsuite></testsuites>

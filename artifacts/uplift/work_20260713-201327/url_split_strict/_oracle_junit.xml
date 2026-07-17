@@ -1,0 +1,752 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="19" skipped="0" tests="20" time="0.709" timestamp="2026-07-13T20:35:30.816632-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-201327.url_split_strict.tests.test_solution" name="test_basic" time="0.001"><failure message="re.error: unbalanced parenthesis at position 26">&gt;   def test_basic(): assert f('http://example.com/a/b?x=1') == ('http', 'example.com', None, '/a/b', 'x=1')
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:3: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:11: in split_url
+    regex = re.compile(r'^(?:https?://)'  # scheme: http or https
+C:\Users\Zain\AppData\Local\Programs\Python\Python312\Lib\re\__init__.py:228: in compile
+    return _compile(pattern, flags)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\Zain\AppData\Local\Programs\Python\Python312\Lib\re\__init__.py:307: in _compile
+    p = _compiler.compile(pattern, flags)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\Zain\AppData\Local\Programs\Python\Python312\Lib\re\_compiler.py:750: in compile
+    p = _parser.parse(p, flags)
+        ^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+str = '^(?:https?://)(?:\\.[^/]*)@)?([^/]+)?:(.*)(?:/?[^\\?]*)?$', flags = 0
+state = &lt;re._parser.State object at 0x0000024CA914E3F0&gt;
+
+    def parse(str, flags=0, state=None):
+        # parse 're' pattern into list of (opcode, argument) tuples
+    
+        source = Tokenizer(str)
+    
+        if state is None:
+            state = State()
+        state.flags = flags
+        state.str = str
+    
+        p = _parse_sub(source, state, flags &amp; SRE_FLAG_VERBOSE, 0)
+        p.state.flags = fix_flags(str, p.state.flags)
+    
+        if source.next is not None:
+            assert source.next == ")"
+&gt;           raise source.error("unbalanced parenthesis")
+E           re.error: unbalanced parenthesis at position 26
+
+C:\Users\Zain\AppData\Local\Programs\Python\Python312\Lib\re\_parser.py:984: error</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.url_split_strict.tests.test_solution" name="test_no_path" time="0.001"><failure message="re.error: unbalanced parenthesis at position 26">&gt;   def test_no_path(): assert f('http://example.com') == ('http', 'example.com', None, '/', None)
+                               ^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:4: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:11: in split_url
+    regex = re.compile(r'^(?:https?://)'  # scheme: http or https
+C:\Users\Zain\AppData\Local\Programs\Python\Python312\Lib\re\__init__.py:228: in compile
+    return _compile(pattern, flags)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\Zain\AppData\Local\Programs\Python\Python312\Lib\re\__init__.py:307: in _compile
+    p = _compiler.compile(pattern, flags)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\Zain\AppData\Local\Programs\Python\Python312\Lib\re\_compiler.py:750: in compile
+    p = _parser.parse(p, flags)
+        ^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+str = '^(?:https?://)(?:\\.[^/]*)@)?([^/]+)?:(.*)(?:/?[^\\?]*)?$', flags = 0
+state = &lt;re._parser.State object at 0x0000024CA912EC00&gt;
+
+    def parse(str, flags=0, state=None):
+        # parse 're' pattern into list of (opcode, argument) tuples
+    
+        source = Tokenizer(str)
+    
+        if state is None:
+            state = State()
+        state.flags = flags
+        state.str = str
+    
+        p = _parse_sub(source, state, flags &amp; SRE_FLAG_VERBOSE, 0)
+        p.state.flags = fix_flags(str, p.state.flags)
+    
+        if source.next is not None:
+            assert source.next == ")"
+&gt;           raise source.error("unbalanced parenthesis")
+E           re.error: unbalanced parenthesis at position 26
+
+C:\Users\Zain\AppData\Local\Programs\Python\Python312\Lib\re\_parser.py:984: error</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.url_split_strict.tests.test_solution" name="test_port" time="0.001"><failure message="re.error: unbalanced parenthesis at position 26">&gt;   def test_port(): assert f('https://a.b:8080/x') == ('https', 'a.b', 8080, '/x', None)
+                            ^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:5: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:11: in split_url
+    regex = re.compile(r'^(?:https?://)'  # scheme: http or https
+C:\Users\Zain\AppData\Local\Programs\Python\Python312\Lib\re\__init__.py:228: in compile
+    return _compile(pattern, flags)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\Zain\AppData\Local\Programs\Python\Python312\Lib\re\__init__.py:307: in _compile
+    p = _compiler.compile(pattern, flags)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\Zain\AppData\Local\Programs\Python\Python312\Lib\re\_compiler.py:750: in compile
+    p = _parser.parse(p, flags)
+        ^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+str = '^(?:https?://)(?:\\.[^/]*)@)?([^/]+)?:(.*)(?:/?[^\\?]*)?$', flags = 0
+state = &lt;re._parser.State object at 0x0000024CA912D4F0&gt;
+
+    def parse(str, flags=0, state=None):
+        # parse 're' pattern into list of (opcode, argument) tuples
+    
+        source = Tokenizer(str)
+    
+        if state is None:
+            state = State()
+        state.flags = flags
+        state.str = str
+    
+        p = _parse_sub(source, state, flags &amp; SRE_FLAG_VERBOSE, 0)
+        p.state.flags = fix_flags(str, p.state.flags)
+    
+        if source.next is not None:
+            assert source.next == ")"
+&gt;           raise source.error("unbalanced parenthesis")
+E           re.error: unbalanced parenthesis at position 26
+
+C:\Users\Zain\AppData\Local\Programs\Python\Python312\Lib\re\_parser.py:984: error</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.url_split_strict.tests.test_solution" name="test_query_no_path" time="0.000"><failure message="re.error: unbalanced parenthesis at position 26">&gt;   def test_query_no_path(): assert f('ftp://h?x=2') == ('ftp', 'h', None, '/', 'x=2')
+                                     ^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:6: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:11: in split_url
+    regex = re.compile(r'^(?:https?://)'  # scheme: http or https
+C:\Users\Zain\AppData\Local\Programs\Python\Python312\Lib\re\__init__.py:228: in compile
+    return _compile(pattern, flags)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\Zain\AppData\Local\Programs\Python\Python312\Lib\re\__init__.py:307: in _compile
+    p = _compiler.compile(pattern, flags)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\Zain\AppData\Local\Programs\Python\Python312\Lib\re\_compiler.py:750: in compile
+    p = _parser.parse(p, flags)
+        ^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+str = '^(?:https?://)(?:\\.[^/]*)@)?([^/]+)?:(.*)(?:/?[^\\?]*)?$', flags = 0
+state = &lt;re._parser.State object at 0x0000024CA912CEF0&gt;
+
+    def parse(str, flags=0, state=None):
+        # parse 're' pattern into list of (opcode, argument) tuples
+    
+        source = Tokenizer(str)
+    
+        if state is None:
+            state = State()
+        state.flags = flags
+        state.str = str
+    
+        p = _parse_sub(source, state, flags &amp; SRE_FLAG_VERBOSE, 0)
+        p.state.flags = fix_flags(str, p.state.flags)
+    
+        if source.next is not None:
+            assert source.next == ")"
+&gt;           raise source.error("unbalanced parenthesis")
+E           re.error: unbalanced parenthesis at position 26
+
+C:\Users\Zain\AppData\Local\Programs\Python\Python312\Lib\re\_parser.py:984: error</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.url_split_strict.tests.test_solution" name="test_empty_query" time="0.001"><failure message="re.error: unbalanced parenthesis at position 26">&gt;   def test_empty_query(): assert f('http://h/p?') == ('http', 'h', None, '/p', '')
+                                   ^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:7: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:11: in split_url
+    regex = re.compile(r'^(?:https?://)'  # scheme: http or https
+C:\Users\Zain\AppData\Local\Programs\Python\Python312\Lib\re\__init__.py:228: in compile
+    return _compile(pattern, flags)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\Zain\AppData\Local\Programs\Python\Python312\Lib\re\__init__.py:307: in _compile
+    p = _compiler.compile(pattern, flags)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\Zain\AppData\Local\Programs\Python\Python312\Lib\re\_compiler.py:750: in compile
+    p = _parser.parse(p, flags)
+        ^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+str = '^(?:https?://)(?:\\.[^/]*)@)?([^/]+)?:(.*)(?:/?[^\\?]*)?$', flags = 0
+state = &lt;re._parser.State object at 0x0000024CA912E270&gt;
+
+    def parse(str, flags=0, state=None):
+        # parse 're' pattern into list of (opcode, argument) tuples
+    
+        source = Tokenizer(str)
+    
+        if state is None:
+            state = State()
+        state.flags = flags
+        state.str = str
+    
+        p = _parse_sub(source, state, flags &amp; SRE_FLAG_VERBOSE, 0)
+        p.state.flags = fix_flags(str, p.state.flags)
+    
+        if source.next is not None:
+            assert source.next == ")"
+&gt;           raise source.error("unbalanced parenthesis")
+E           re.error: unbalanced parenthesis at position 26
+
+C:\Users\Zain\AppData\Local\Programs\Python\Python312\Lib\re\_parser.py:984: error</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.url_split_strict.tests.test_solution" name="test_second_qmark" time="0.000"><failure message="re.error: unbalanced parenthesis at position 26">&gt;   def test_second_qmark(): assert f('http://h/p?a?b') == ('http', 'h', None, '/p', 'a?b')
+                                    ^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:8: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:11: in split_url
+    regex = re.compile(r'^(?:https?://)'  # scheme: http or https
+C:\Users\Zain\AppData\Local\Programs\Python\Python312\Lib\re\__init__.py:228: in compile
+    return _compile(pattern, flags)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\Zain\AppData\Local\Programs\Python\Python312\Lib\re\__init__.py:307: in _compile
+    p = _compiler.compile(pattern, flags)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\Zain\AppData\Local\Programs\Python\Python312\Lib\re\_compiler.py:750: in compile
+    p = _parser.parse(p, flags)
+        ^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+str = '^(?:https?://)(?:\\.[^/]*)@)?([^/]+)?:(.*)(?:/?[^\\?]*)?$', flags = 0
+state = &lt;re._parser.State object at 0x0000024CA8F99100&gt;
+
+    def parse(str, flags=0, state=None):
+        # parse 're' pattern into list of (opcode, argument) tuples
+    
+        source = Tokenizer(str)
+    
+        if state is None:
+            state = State()
+        state.flags = flags
+        state.str = str
+    
+        p = _parse_sub(source, state, flags &amp; SRE_FLAG_VERBOSE, 0)
+        p.state.flags = fix_flags(str, p.state.flags)
+    
+        if source.next is not None:
+            assert source.next == ")"
+&gt;           raise source.error("unbalanced parenthesis")
+E           re.error: unbalanced parenthesis at position 26
+
+C:\Users\Zain\AppData\Local\Programs\Python\Python312\Lib\re\_parser.py:984: error</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.url_split_strict.tests.test_solution" name="test_port_zero" time="0.001"><failure message="re.error: unbalanced parenthesis at position 26">&gt;   def test_port_zero(): assert f('http://h:0/') == ('http', 'h', 0, '/', None)
+                                 ^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:9: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:11: in split_url
+    regex = re.compile(r'^(?:https?://)'  # scheme: http or https
+C:\Users\Zain\AppData\Local\Programs\Python\Python312\Lib\re\__init__.py:228: in compile
+    return _compile(pattern, flags)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\Zain\AppData\Local\Programs\Python\Python312\Lib\re\__init__.py:307: in _compile
+    p = _compiler.compile(pattern, flags)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\Zain\AppData\Local\Programs\Python\Python312\Lib\re\_compiler.py:750: in compile
+    p = _parser.parse(p, flags)
+        ^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+str = '^(?:https?://)(?:\\.[^/]*)@)?([^/]+)?:(.*)(?:/?[^\\?]*)?$', flags = 0
+state = &lt;re._parser.State object at 0x0000024CA8F9B290&gt;
+
+    def parse(str, flags=0, state=None):
+        # parse 're' pattern into list of (opcode, argument) tuples
+    
+        source = Tokenizer(str)
+    
+        if state is None:
+            state = State()
+        state.flags = flags
+        state.str = str
+    
+        p = _parse_sub(source, state, flags &amp; SRE_FLAG_VERBOSE, 0)
+        p.state.flags = fix_flags(str, p.state.flags)
+    
+        if source.next is not None:
+            assert source.next == ")"
+&gt;           raise source.error("unbalanced parenthesis")
+E           re.error: unbalanced parenthesis at position 26
+
+C:\Users\Zain\AppData\Local\Programs\Python\Python312\Lib\re\_parser.py:984: error</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.url_split_strict.tests.test_solution" name="test_max_port" time="0.000"><failure message="re.error: unbalanced parenthesis at position 26">&gt;   def test_max_port(): assert f('http://h:65535') == ('http', 'h', 65535, '/', None)
+                                ^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:10: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:11: in split_url
+    regex = re.compile(r'^(?:https?://)'  # scheme: http or https
+C:\Users\Zain\AppData\Local\Programs\Python\Python312\Lib\re\__init__.py:228: in compile
+    return _compile(pattern, flags)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\Zain\AppData\Local\Programs\Python\Python312\Lib\re\__init__.py:307: in _compile
+    p = _compiler.compile(pattern, flags)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\Zain\AppData\Local\Programs\Python\Python312\Lib\re\_compiler.py:750: in compile
+    p = _parser.parse(p, flags)
+        ^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+str = '^(?:https?://)(?:\\.[^/]*)@)?([^/]+)?:(.*)(?:/?[^\\?]*)?$', flags = 0
+state = &lt;re._parser.State object at 0x0000024CA912CC50&gt;
+
+    def parse(str, flags=0, state=None):
+        # parse 're' pattern into list of (opcode, argument) tuples
+    
+        source = Tokenizer(str)
+    
+        if state is None:
+            state = State()
+        state.flags = flags
+        state.str = str
+    
+        p = _parse_sub(source, state, flags &amp; SRE_FLAG_VERBOSE, 0)
+        p.state.flags = fix_flags(str, p.state.flags)
+    
+        if source.next is not None:
+            assert source.next == ")"
+&gt;           raise source.error("unbalanced parenthesis")
+E           re.error: unbalanced parenthesis at position 26
+
+C:\Users\Zain\AppData\Local\Programs\Python\Python312\Lib\re\_parser.py:984: error</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.url_split_strict.tests.test_solution" name="test_scheme_chars" time="0.001"><failure message="re.error: unbalanced parenthesis at position 26">&gt;   def test_scheme_chars(): assert f('a+b-c.1://h') == ('a+b-c.1', 'h', None, '/', None)
+                                    ^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:11: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:11: in split_url
+    regex = re.compile(r'^(?:https?://)'  # scheme: http or https
+C:\Users\Zain\AppData\Local\Programs\Python\Python312\Lib\re\__init__.py:228: in compile
+    return _compile(pattern, flags)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\Zain\AppData\Local\Programs\Python\Python312\Lib\re\__init__.py:307: in _compile
+    p = _compiler.compile(pattern, flags)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\Zain\AppData\Local\Programs\Python\Python312\Lib\re\_compiler.py:750: in compile
+    p = _parser.parse(p, flags)
+        ^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+str = '^(?:https?://)(?:\\.[^/]*)@)?([^/]+)?:(.*)(?:/?[^\\?]*)?$', flags = 0
+state = &lt;re._parser.State object at 0x0000024CA8F9AB70&gt;
+
+    def parse(str, flags=0, state=None):
+        # parse 're' pattern into list of (opcode, argument) tuples
+    
+        source = Tokenizer(str)
+    
+        if state is None:
+            state = State()
+        state.flags = flags
+        state.str = str
+    
+        p = _parse_sub(source, state, flags &amp; SRE_FLAG_VERBOSE, 0)
+        p.state.flags = fix_flags(str, p.state.flags)
+    
+        if source.next is not None:
+            assert source.next == ")"
+&gt;           raise source.error("unbalanced parenthesis")
+E           re.error: unbalanced parenthesis at position 26
+
+C:\Users\Zain\AppData\Local\Programs\Python\Python312\Lib\re\_parser.py:984: error</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.url_split_strict.tests.test_solution" name="test_no_scheme" time="0.000"><failure message="re.error: unbalanced parenthesis at position 26">def test_no_scheme():
+&gt;       with pytest.raises(ValueError) as e: f('example.com/a')
+                                             ^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:13: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:11: in split_url
+    regex = re.compile(r'^(?:https?://)'  # scheme: http or https
+C:\Users\Zain\AppData\Local\Programs\Python\Python312\Lib\re\__init__.py:228: in compile
+    return _compile(pattern, flags)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\Zain\AppData\Local\Programs\Python\Python312\Lib\re\__init__.py:307: in _compile
+    p = _compiler.compile(pattern, flags)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\Zain\AppData\Local\Programs\Python\Python312\Lib\re\_compiler.py:750: in compile
+    p = _parser.parse(p, flags)
+        ^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+str = '^(?:https?://)(?:\\.[^/]*)@)?([^/]+)?:(.*)(?:/?[^\\?]*)?$', flags = 0
+state = &lt;re._parser.State object at 0x0000024CA8F9ADE0&gt;
+
+    def parse(str, flags=0, state=None):
+        # parse 're' pattern into list of (opcode, argument) tuples
+    
+        source = Tokenizer(str)
+    
+        if state is None:
+            state = State()
+        state.flags = flags
+        state.str = str
+    
+        p = _parse_sub(source, state, flags &amp; SRE_FLAG_VERBOSE, 0)
+        p.state.flags = fix_flags(str, p.state.flags)
+    
+        if source.next is not None:
+            assert source.next == ")"
+&gt;           raise source.error("unbalanced parenthesis")
+E           re.error: unbalanced parenthesis at position 26
+
+C:\Users\Zain\AppData\Local\Programs\Python\Python312\Lib\re\_parser.py:984: error</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.url_split_strict.tests.test_solution" name="test_bad_scheme_upper" time="0.000"><failure message="re.error: unbalanced parenthesis at position 26">def test_bad_scheme_upper():
+&gt;       with pytest.raises(ValueError) as e: f('Http://h')
+                                             ^^^^^^^^^^^^^
+
+tests\test_solution.py:16: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:11: in split_url
+    regex = re.compile(r'^(?:https?://)'  # scheme: http or https
+C:\Users\Zain\AppData\Local\Programs\Python\Python312\Lib\re\__init__.py:228: in compile
+    return _compile(pattern, flags)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\Zain\AppData\Local\Programs\Python\Python312\Lib\re\__init__.py:307: in _compile
+    p = _compiler.compile(pattern, flags)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\Zain\AppData\Local\Programs\Python\Python312\Lib\re\_compiler.py:750: in compile
+    p = _parser.parse(p, flags)
+        ^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+str = '^(?:https?://)(?:\\.[^/]*)@)?([^/]+)?:(.*)(?:/?[^\\?]*)?$', flags = 0
+state = &lt;re._parser.State object at 0x0000024CA8F9B890&gt;
+
+    def parse(str, flags=0, state=None):
+        # parse 're' pattern into list of (opcode, argument) tuples
+    
+        source = Tokenizer(str)
+    
+        if state is None:
+            state = State()
+        state.flags = flags
+        state.str = str
+    
+        p = _parse_sub(source, state, flags &amp; SRE_FLAG_VERBOSE, 0)
+        p.state.flags = fix_flags(str, p.state.flags)
+    
+        if source.next is not None:
+            assert source.next == ")"
+&gt;           raise source.error("unbalanced parenthesis")
+E           re.error: unbalanced parenthesis at position 26
+
+C:\Users\Zain\AppData\Local\Programs\Python\Python312\Lib\re\_parser.py:984: error</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.url_split_strict.tests.test_solution" name="test_bad_scheme_empty" time="0.001"><failure message="re.error: unbalanced parenthesis at position 26">def test_bad_scheme_empty():
+&gt;       with pytest.raises(ValueError): f('://h')
+                                        ^^^^^^^^^
+
+tests\test_solution.py:19: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:11: in split_url
+    regex = re.compile(r'^(?:https?://)'  # scheme: http or https
+C:\Users\Zain\AppData\Local\Programs\Python\Python312\Lib\re\__init__.py:228: in compile
+    return _compile(pattern, flags)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\Zain\AppData\Local\Programs\Python\Python312\Lib\re\__init__.py:307: in _compile
+    p = _compiler.compile(pattern, flags)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\Zain\AppData\Local\Programs\Python\Python312\Lib\re\_compiler.py:750: in compile
+    p = _parser.parse(p, flags)
+        ^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+str = '^(?:https?://)(?:\\.[^/]*)@)?([^/]+)?:(.*)(?:/?[^\\?]*)?$', flags = 0
+state = &lt;re._parser.State object at 0x0000024CA914F440&gt;
+
+    def parse(str, flags=0, state=None):
+        # parse 're' pattern into list of (opcode, argument) tuples
+    
+        source = Tokenizer(str)
+    
+        if state is None:
+            state = State()
+        state.flags = flags
+        state.str = str
+    
+        p = _parse_sub(source, state, flags &amp; SRE_FLAG_VERBOSE, 0)
+        p.state.flags = fix_flags(str, p.state.flags)
+    
+        if source.next is not None:
+            assert source.next == ")"
+&gt;           raise source.error("unbalanced parenthesis")
+E           re.error: unbalanced parenthesis at position 26
+
+C:\Users\Zain\AppData\Local\Programs\Python\Python312\Lib\re\_parser.py:984: error</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.url_split_strict.tests.test_solution" name="test_bad_scheme_digit_first" time="0.001"><failure message="re.error: unbalanced parenthesis at position 26">def test_bad_scheme_digit_first():
+&gt;       with pytest.raises(ValueError): f('1ab://h')
+                                        ^^^^^^^^^^^^
+
+tests\test_solution.py:21: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:11: in split_url
+    regex = re.compile(r'^(?:https?://)'  # scheme: http or https
+C:\Users\Zain\AppData\Local\Programs\Python\Python312\Lib\re\__init__.py:228: in compile
+    return _compile(pattern, flags)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\Zain\AppData\Local\Programs\Python\Python312\Lib\re\__init__.py:307: in _compile
+    p = _compiler.compile(pattern, flags)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\Zain\AppData\Local\Programs\Python\Python312\Lib\re\_compiler.py:750: in compile
+    p = _parser.parse(p, flags)
+        ^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+str = '^(?:https?://)(?:\\.[^/]*)@)?([^/]+)?:(.*)(?:/?[^\\?]*)?$', flags = 0
+state = &lt;re._parser.State object at 0x0000024CA914DE20&gt;
+
+    def parse(str, flags=0, state=None):
+        # parse 're' pattern into list of (opcode, argument) tuples
+    
+        source = Tokenizer(str)
+    
+        if state is None:
+            state = State()
+        state.flags = flags
+        state.str = str
+    
+        p = _parse_sub(source, state, flags &amp; SRE_FLAG_VERBOSE, 0)
+        p.state.flags = fix_flags(str, p.state.flags)
+    
+        if source.next is not None:
+            assert source.next == ")"
+&gt;           raise source.error("unbalanced parenthesis")
+E           re.error: unbalanced parenthesis at position 26
+
+C:\Users\Zain\AppData\Local\Programs\Python\Python312\Lib\re\_parser.py:984: error</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.url_split_strict.tests.test_solution" name="test_bad_host_empty" time="0.000"><failure message="re.error: unbalanced parenthesis at position 26">def test_bad_host_empty():
+&gt;       with pytest.raises(ValueError) as e: f('http://')
+                                             ^^^^^^^^^^^^
+
+tests\test_solution.py:23: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:11: in split_url
+    regex = re.compile(r'^(?:https?://)'  # scheme: http or https
+C:\Users\Zain\AppData\Local\Programs\Python\Python312\Lib\re\__init__.py:228: in compile
+    return _compile(pattern, flags)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\Zain\AppData\Local\Programs\Python\Python312\Lib\re\__init__.py:307: in _compile
+    p = _compiler.compile(pattern, flags)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\Zain\AppData\Local\Programs\Python\Python312\Lib\re\_compiler.py:750: in compile
+    p = _parser.parse(p, flags)
+        ^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+str = '^(?:https?://)(?:\\.[^/]*)@)?([^/]+)?:(.*)(?:/?[^\\?]*)?$', flags = 0
+state = &lt;re._parser.State object at 0x0000024CA914D700&gt;
+
+    def parse(str, flags=0, state=None):
+        # parse 're' pattern into list of (opcode, argument) tuples
+    
+        source = Tokenizer(str)
+    
+        if state is None:
+            state = State()
+        state.flags = flags
+        state.str = str
+    
+        p = _parse_sub(source, state, flags &amp; SRE_FLAG_VERBOSE, 0)
+        p.state.flags = fix_flags(str, p.state.flags)
+    
+        if source.next is not None:
+            assert source.next == ")"
+&gt;           raise source.error("unbalanced parenthesis")
+E           re.error: unbalanced parenthesis at position 26
+
+C:\Users\Zain\AppData\Local\Programs\Python\Python312\Lib\re\_parser.py:984: error</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.url_split_strict.tests.test_solution" name="test_bad_host_upper" time="0.000"><failure message="re.error: unbalanced parenthesis at position 26">def test_bad_host_upper():
+&gt;       with pytest.raises(ValueError): f('http://EXample.com')
+                                        ^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:26: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:11: in split_url
+    regex = re.compile(r'^(?:https?://)'  # scheme: http or https
+C:\Users\Zain\AppData\Local\Programs\Python\Python312\Lib\re\__init__.py:228: in compile
+    return _compile(pattern, flags)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\Zain\AppData\Local\Programs\Python\Python312\Lib\re\__init__.py:307: in _compile
+    p = _compiler.compile(pattern, flags)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\Zain\AppData\Local\Programs\Python\Python312\Lib\re\_compiler.py:750: in compile
+    p = _parser.parse(p, flags)
+        ^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+str = '^(?:https?://)(?:\\.[^/]*)@)?([^/]+)?:(.*)(?:/?[^\\?]*)?$', flags = 0
+state = &lt;re._parser.State object at 0x0000024CA91E11F0&gt;
+
+    def parse(str, flags=0, state=None):
+        # parse 're' pattern into list of (opcode, argument) tuples
+    
+        source = Tokenizer(str)
+    
+        if state is None:
+            state = State()
+        state.flags = flags
+        state.str = str
+    
+        p = _parse_sub(source, state, flags &amp; SRE_FLAG_VERBOSE, 0)
+        p.state.flags = fix_flags(str, p.state.flags)
+    
+        if source.next is not None:
+            assert source.next == ")"
+&gt;           raise source.error("unbalanced parenthesis")
+E           re.error: unbalanced parenthesis at position 26
+
+C:\Users\Zain\AppData\Local\Programs\Python\Python312\Lib\re\_parser.py:984: error</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.url_split_strict.tests.test_solution" name="test_bad_port_leading_zero" time="0.000"><failure message="re.error: unbalanced parenthesis at position 26">def test_bad_port_leading_zero():
+&gt;       with pytest.raises(ValueError) as e: f('http://h:080')
+                                             ^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:28: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:11: in split_url
+    regex = re.compile(r'^(?:https?://)'  # scheme: http or https
+C:\Users\Zain\AppData\Local\Programs\Python\Python312\Lib\re\__init__.py:228: in compile
+    return _compile(pattern, flags)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\Zain\AppData\Local\Programs\Python\Python312\Lib\re\__init__.py:307: in _compile
+    p = _compiler.compile(pattern, flags)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\Zain\AppData\Local\Programs\Python\Python312\Lib\re\_compiler.py:750: in compile
+    p = _parser.parse(p, flags)
+        ^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+str = '^(?:https?://)(?:\\.[^/]*)@)?([^/]+)?:(.*)(?:/?[^\\?]*)?$', flags = 0
+state = &lt;re._parser.State object at 0x0000024CA91E0500&gt;
+
+    def parse(str, flags=0, state=None):
+        # parse 're' pattern into list of (opcode, argument) tuples
+    
+        source = Tokenizer(str)
+    
+        if state is None:
+            state = State()
+        state.flags = flags
+        state.str = str
+    
+        p = _parse_sub(source, state, flags &amp; SRE_FLAG_VERBOSE, 0)
+        p.state.flags = fix_flags(str, p.state.flags)
+    
+        if source.next is not None:
+            assert source.next == ")"
+&gt;           raise source.error("unbalanced parenthesis")
+E           re.error: unbalanced parenthesis at position 26
+
+C:\Users\Zain\AppData\Local\Programs\Python\Python312\Lib\re\_parser.py:984: error</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.url_split_strict.tests.test_solution" name="test_bad_port_too_big" time="0.000"><failure message="re.error: unbalanced parenthesis at position 26">def test_bad_port_too_big():
+&gt;       with pytest.raises(ValueError): f('http://h:65536')
+                                        ^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:31: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:11: in split_url
+    regex = re.compile(r'^(?:https?://)'  # scheme: http or https
+C:\Users\Zain\AppData\Local\Programs\Python\Python312\Lib\re\__init__.py:228: in compile
+    return _compile(pattern, flags)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\Zain\AppData\Local\Programs\Python\Python312\Lib\re\__init__.py:307: in _compile
+    p = _compiler.compile(pattern, flags)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\Zain\AppData\Local\Programs\Python\Python312\Lib\re\_compiler.py:750: in compile
+    p = _parser.parse(p, flags)
+        ^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+str = '^(?:https?://)(?:\\.[^/]*)@)?([^/]+)?:(.*)(?:/?[^\\?]*)?$', flags = 0
+state = &lt;re._parser.State object at 0x0000024CA914D130&gt;
+
+    def parse(str, flags=0, state=None):
+        # parse 're' pattern into list of (opcode, argument) tuples
+    
+        source = Tokenizer(str)
+    
+        if state is None:
+            state = State()
+        state.flags = flags
+        state.str = str
+    
+        p = _parse_sub(source, state, flags &amp; SRE_FLAG_VERBOSE, 0)
+        p.state.flags = fix_flags(str, p.state.flags)
+    
+        if source.next is not None:
+            assert source.next == ")"
+&gt;           raise source.error("unbalanced parenthesis")
+E           re.error: unbalanced parenthesis at position 26
+
+C:\Users\Zain\AppData\Local\Programs\Python\Python312\Lib\re\_parser.py:984: error</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.url_split_strict.tests.test_solution" name="test_bad_port_empty" time="0.000"><failure message="re.error: unbalanced parenthesis at position 26">def test_bad_port_empty():
+&gt;       with pytest.raises(ValueError): f('http://h:')
+                                        ^^^^^^^^^^^^^^
+
+tests\test_solution.py:33: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:11: in split_url
+    regex = re.compile(r'^(?:https?://)'  # scheme: http or https
+C:\Users\Zain\AppData\Local\Programs\Python\Python312\Lib\re\__init__.py:228: in compile
+    return _compile(pattern, flags)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\Zain\AppData\Local\Programs\Python\Python312\Lib\re\__init__.py:307: in _compile
+    p = _compiler.compile(pattern, flags)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\Zain\AppData\Local\Programs\Python\Python312\Lib\re\_compiler.py:750: in compile
+    p = _parser.parse(p, flags)
+        ^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+str = '^(?:https?://)(?:\\.[^/]*)@)?([^/]+)?:(.*)(?:/?[^\\?]*)?$', flags = 0
+state = &lt;re._parser.State object at 0x0000024CA91E1E50&gt;
+
+    def parse(str, flags=0, state=None):
+        # parse 're' pattern into list of (opcode, argument) tuples
+    
+        source = Tokenizer(str)
+    
+        if state is None:
+            state = State()
+        state.flags = flags
+        state.str = str
+    
+        p = _parse_sub(source, state, flags &amp; SRE_FLAG_VERBOSE, 0)
+        p.state.flags = fix_flags(str, p.state.flags)
+    
+        if source.next is not None:
+            assert source.next == ")"
+&gt;           raise source.error("unbalanced parenthesis")
+E           re.error: unbalanced parenthesis at position 26
+
+C:\Users\Zain\AppData\Local\Programs\Python\Python312\Lib\re\_parser.py:984: error</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.url_split_strict.tests.test_solution" name="test_bad_port_second_colon" time="0.001"><failure message="re.error: unbalanced parenthesis at position 26">def test_bad_port_second_colon():
+&gt;       with pytest.raises(ValueError): f('http://h:1:2')
+                                        ^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:35: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:11: in split_url
+    regex = re.compile(r'^(?:https?://)'  # scheme: http or https
+C:\Users\Zain\AppData\Local\Programs\Python\Python312\Lib\re\__init__.py:228: in compile
+    return _compile(pattern, flags)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\Zain\AppData\Local\Programs\Python\Python312\Lib\re\__init__.py:307: in _compile
+    p = _compiler.compile(pattern, flags)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\Zain\AppData\Local\Programs\Python\Python312\Lib\re\_compiler.py:750: in compile
+    p = _parser.parse(p, flags)
+        ^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+str = '^(?:https?://)(?:\\.[^/]*)@)?([^/]+)?:(.*)(?:/?[^\\?]*)?$', flags = 0
+state = &lt;re._parser.State object at 0x0000024CA91E39E0&gt;
+
+    def parse(str, flags=0, state=None):
+        # parse 're' pattern into list of (opcode, argument) tuples
+    
+        source = Tokenizer(str)
+    
+        if state is None:
+            state = State()
+        state.flags = flags
+        state.str = str
+    
+        p = _parse_sub(source, state, flags &amp; SRE_FLAG_VERBOSE, 0)
+        p.state.flags = fix_flags(str, p.state.flags)
+    
+        if source.next is not None:
+            assert source.next == ")"
+&gt;           raise source.error("unbalanced parenthesis")
+E           re.error: unbalanced parenthesis at position 26
+
+C:\Users\Zain\AppData\Local\Programs\Python\Python312\Lib\re\_parser.py:984: error</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.url_split_strict.tests.test_solution" name="test_bad_url" time="0.000" /></testsuite></testsuites>

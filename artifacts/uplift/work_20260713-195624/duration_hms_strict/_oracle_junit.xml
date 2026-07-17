@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="1" failures="0" skipped="0" tests="1" time="0.252" timestamp="2026-07-13T20:08:10.673129-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="" name="artifacts.uplift.work_20260713-195624.duration_hms_strict.tests.test_solution" time="0.000"><error message="collection failure">tests\test_solution.py:2: in &lt;module&gt;
+    from solution import parse_duration_strict
+solution.py:32: in &lt;module&gt;
+    print(parse_duration_strict("123s"))   # Output: 780
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+solution.py:23: in parse_duration_strict
+    return _parse_duration(s)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:13: in _parse_duration
+    components = [int(i.strip().split(' ')[1]) if i else 1 for i in duration.split(' ')]
+                      ^^^^^^^^^^^^^^^^^^^^^^^
+E   IndexError: list index out of range</error></testcase></testsuite></testsuites>

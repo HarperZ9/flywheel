@@ -1,0 +1,876 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="8" skipped="0" tests="10" time="0.260" timestamp="2026-07-13T20:14:35.649846-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-195624.token_bucket_grants.tests.test_solution" name="test_same_ts_no_refill" time="0.001"><failure message="IndexError">capacity = 5, events = [(0, 3), (0, 3)]
+
+    def grant_requests(capacity, events):
+        """
+        Simulates a token-bucket rate limiter and returns a list of bools indicating whether each request was granted.
+    
+        Each event is an (timestamp, amount) tuple. The timestamp must be non-decreasing.
+    
+        1. Validates that the capacity is at least 1.
+        2. If events are not provided, or if they are a list and none of its elements match the correct format,
+           raises ValueError('bad capacity') or IndexError
+        3. The list of events must be non-empty for this function to work.
+    
+        Parameters:
+        - capacity: An int representing the number of tokens the bucket can hold.
+        - events: A list of (timestamp, amount) tuples, as described in the problem description.
+    
+        Returns:
+        - A list of bools where True indicates the request was granted and False otherwise.
+        """
+        if not isinstance(capacity, int) or capacity &lt;= 0:
+            raise ValueError('bad capacity')
+    
+        if not events:
+            return []
+    
+        if type(events) != list or len(events) == 0:
+            raise IndexError
+    
+        for event in events:
+            try:
+                timestamp = max(event[0], events[-1][0])
+                amount = min(capacity, event[1])
+    
+                # Validate the timestamp
+                if not (timestamp &gt;= events[0][0] and events[0][0] &lt;= timestamp &lt; events[-1][0]):
+&gt;                   raise ValueError('time warp')
+E                   ValueError: time warp
+
+solution.py:37: ValueError
+
+During handling of the above exception, another exception occurred:
+
+&gt;   def test_same_ts_no_refill(): assert f(5, [(0, 3), (0, 3)]) == [True, False]
+                                         ^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:3: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+capacity = 5, events = [(0, 3), (0, 3)]
+
+    def grant_requests(capacity, events):
+        """
+        Simulates a token-bucket rate limiter and returns a list of bools indicating whether each request was granted.
+    
+        Each event is an (timestamp, amount) tuple. The timestamp must be non-decreasing.
+    
+        1. Validates that the capacity is at least 1.
+        2. If events are not provided, or if they are a list and none of its elements match the correct format,
+           raises ValueError('bad capacity') or IndexError
+        3. The list of events must be non-empty for this function to work.
+    
+        Parameters:
+        - capacity: An int representing the number of tokens the bucket can hold.
+        - events: A list of (timestamp, amount) tuples, as described in the problem description.
+    
+        Returns:
+        - A list of bools where True indicates the request was granted and False otherwise.
+        """
+        if not isinstance(capacity, int) or capacity &lt;= 0:
+            raise ValueError('bad capacity')
+    
+        if not events:
+            return []
+    
+        if type(events) != list or len(events) == 0:
+            raise IndexError
+    
+        for event in events:
+            try:
+                timestamp = max(event[0], events[-1][0])
+                amount = min(capacity, event[1])
+    
+                # Validate the timestamp
+                if not (timestamp &gt;= events[0][0] and events[0][0] &lt;= timestamp &lt; events[-1][0]):
+                    raise ValueError('time warp')
+    
+                # Determine if a new bucket is needed
+                bucket_size = capacity // math.ceil(timestamp / events[0][0])
+                if amount &gt; bucket_size:
+                    return [True]
+    
+                # Apply the refill in decreasing order of timestamps
+                for i in range(events.index(event) + 1, len(events)):
+                    prev_timestamp = events[i - 1][0]
+    
+                    # If we need to add more tokens up to the current timestamp
+                    if amount &gt; bucket_size * (prev_timestamp // timestamp):
+                        return [False]
+    
+                    remaining_tokens = max(bucket_size - amount, 0)
+                    amount -= min(remaining_tokens, bucket_size)
+    
+                # Grant the request, removing the required amount of tokens
+                return [True] + [False] * (capacity - amount)
+            except (IndexError, ValueError):
+&gt;               raise IndexError
+E               IndexError
+
+solution.py:58: IndexError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.token_bucket_grants.tests.test_solution" name="test_refill" time="0.000"><failure message="IndexError">capacity = 5, events = [(0, 3), (2, 3)]
+
+    def grant_requests(capacity, events):
+        """
+        Simulates a token-bucket rate limiter and returns a list of bools indicating whether each request was granted.
+    
+        Each event is an (timestamp, amount) tuple. The timestamp must be non-decreasing.
+    
+        1. Validates that the capacity is at least 1.
+        2. If events are not provided, or if they are a list and none of its elements match the correct format,
+           raises ValueError('bad capacity') or IndexError
+        3. The list of events must be non-empty for this function to work.
+    
+        Parameters:
+        - capacity: An int representing the number of tokens the bucket can hold.
+        - events: A list of (timestamp, amount) tuples, as described in the problem description.
+    
+        Returns:
+        - A list of bools where True indicates the request was granted and False otherwise.
+        """
+        if not isinstance(capacity, int) or capacity &lt;= 0:
+            raise ValueError('bad capacity')
+    
+        if not events:
+            return []
+    
+        if type(events) != list or len(events) == 0:
+            raise IndexError
+    
+        for event in events:
+            try:
+                timestamp = max(event[0], events[-1][0])
+                amount = min(capacity, event[1])
+    
+                # Validate the timestamp
+                if not (timestamp &gt;= events[0][0] and events[0][0] &lt;= timestamp &lt; events[-1][0]):
+&gt;                   raise ValueError('time warp')
+E                   ValueError: time warp
+
+solution.py:37: ValueError
+
+During handling of the above exception, another exception occurred:
+
+&gt;   def test_refill(): assert f(5, [(0, 3), (2, 3)]) == [True, True]
+                              ^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:4: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+capacity = 5, events = [(0, 3), (2, 3)]
+
+    def grant_requests(capacity, events):
+        """
+        Simulates a token-bucket rate limiter and returns a list of bools indicating whether each request was granted.
+    
+        Each event is an (timestamp, amount) tuple. The timestamp must be non-decreasing.
+    
+        1. Validates that the capacity is at least 1.
+        2. If events are not provided, or if they are a list and none of its elements match the correct format,
+           raises ValueError('bad capacity') or IndexError
+        3. The list of events must be non-empty for this function to work.
+    
+        Parameters:
+        - capacity: An int representing the number of tokens the bucket can hold.
+        - events: A list of (timestamp, amount) tuples, as described in the problem description.
+    
+        Returns:
+        - A list of bools where True indicates the request was granted and False otherwise.
+        """
+        if not isinstance(capacity, int) or capacity &lt;= 0:
+            raise ValueError('bad capacity')
+    
+        if not events:
+            return []
+    
+        if type(events) != list or len(events) == 0:
+            raise IndexError
+    
+        for event in events:
+            try:
+                timestamp = max(event[0], events[-1][0])
+                amount = min(capacity, event[1])
+    
+                # Validate the timestamp
+                if not (timestamp &gt;= events[0][0] and events[0][0] &lt;= timestamp &lt; events[-1][0]):
+                    raise ValueError('time warp')
+    
+                # Determine if a new bucket is needed
+                bucket_size = capacity // math.ceil(timestamp / events[0][0])
+                if amount &gt; bucket_size:
+                    return [True]
+    
+                # Apply the refill in decreasing order of timestamps
+                for i in range(events.index(event) + 1, len(events)):
+                    prev_timestamp = events[i - 1][0]
+    
+                    # If we need to add more tokens up to the current timestamp
+                    if amount &gt; bucket_size * (prev_timestamp // timestamp):
+                        return [False]
+    
+                    remaining_tokens = max(bucket_size - amount, 0)
+                    amount -= min(remaining_tokens, bucket_size)
+    
+                # Grant the request, removing the required amount of tokens
+                return [True] + [False] * (capacity - amount)
+            except (IndexError, ValueError):
+&gt;               raise IndexError
+E               IndexError
+
+solution.py:58: IndexError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.token_bucket_grants.tests.test_solution" name="test_over_capacity" time="0.000"><failure message="IndexError">capacity = 3, events = [(0, 4)]
+
+    def grant_requests(capacity, events):
+        """
+        Simulates a token-bucket rate limiter and returns a list of bools indicating whether each request was granted.
+    
+        Each event is an (timestamp, amount) tuple. The timestamp must be non-decreasing.
+    
+        1. Validates that the capacity is at least 1.
+        2. If events are not provided, or if they are a list and none of its elements match the correct format,
+           raises ValueError('bad capacity') or IndexError
+        3. The list of events must be non-empty for this function to work.
+    
+        Parameters:
+        - capacity: An int representing the number of tokens the bucket can hold.
+        - events: A list of (timestamp, amount) tuples, as described in the problem description.
+    
+        Returns:
+        - A list of bools where True indicates the request was granted and False otherwise.
+        """
+        if not isinstance(capacity, int) or capacity &lt;= 0:
+            raise ValueError('bad capacity')
+    
+        if not events:
+            return []
+    
+        if type(events) != list or len(events) == 0:
+            raise IndexError
+    
+        for event in events:
+            try:
+                timestamp = max(event[0], events[-1][0])
+                amount = min(capacity, event[1])
+    
+                # Validate the timestamp
+                if not (timestamp &gt;= events[0][0] and events[0][0] &lt;= timestamp &lt; events[-1][0]):
+&gt;                   raise ValueError('time warp')
+E                   ValueError: time warp
+
+solution.py:37: ValueError
+
+During handling of the above exception, another exception occurred:
+
+&gt;   def test_over_capacity(): assert f(3, [(0, 4)]) == [False]
+                                     ^^^^^^^^^^^^^^
+
+tests\test_solution.py:5: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+capacity = 3, events = [(0, 4)]
+
+    def grant_requests(capacity, events):
+        """
+        Simulates a token-bucket rate limiter and returns a list of bools indicating whether each request was granted.
+    
+        Each event is an (timestamp, amount) tuple. The timestamp must be non-decreasing.
+    
+        1. Validates that the capacity is at least 1.
+        2. If events are not provided, or if they are a list and none of its elements match the correct format,
+           raises ValueError('bad capacity') or IndexError
+        3. The list of events must be non-empty for this function to work.
+    
+        Parameters:
+        - capacity: An int representing the number of tokens the bucket can hold.
+        - events: A list of (timestamp, amount) tuples, as described in the problem description.
+    
+        Returns:
+        - A list of bools where True indicates the request was granted and False otherwise.
+        """
+        if not isinstance(capacity, int) or capacity &lt;= 0:
+            raise ValueError('bad capacity')
+    
+        if not events:
+            return []
+    
+        if type(events) != list or len(events) == 0:
+            raise IndexError
+    
+        for event in events:
+            try:
+                timestamp = max(event[0], events[-1][0])
+                amount = min(capacity, event[1])
+    
+                # Validate the timestamp
+                if not (timestamp &gt;= events[0][0] and events[0][0] &lt;= timestamp &lt; events[-1][0]):
+                    raise ValueError('time warp')
+    
+                # Determine if a new bucket is needed
+                bucket_size = capacity // math.ceil(timestamp / events[0][0])
+                if amount &gt; bucket_size:
+                    return [True]
+    
+                # Apply the refill in decreasing order of timestamps
+                for i in range(events.index(event) + 1, len(events)):
+                    prev_timestamp = events[i - 1][0]
+    
+                    # If we need to add more tokens up to the current timestamp
+                    if amount &gt; bucket_size * (prev_timestamp // timestamp):
+                        return [False]
+    
+                    remaining_tokens = max(bucket_size - amount, 0)
+                    amount -= min(remaining_tokens, bucket_size)
+    
+                # Grant the request, removing the required amount of tokens
+                return [True] + [False] * (capacity - amount)
+            except (IndexError, ValueError):
+&gt;               raise IndexError
+E               IndexError
+
+solution.py:58: IndexError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.token_bucket_grants.tests.test_solution" name="test_partial_refill" time="0.000"><failure message="IndexError">capacity = 5, events = [(0, 5), (1, 5)]
+
+    def grant_requests(capacity, events):
+        """
+        Simulates a token-bucket rate limiter and returns a list of bools indicating whether each request was granted.
+    
+        Each event is an (timestamp, amount) tuple. The timestamp must be non-decreasing.
+    
+        1. Validates that the capacity is at least 1.
+        2. If events are not provided, or if they are a list and none of its elements match the correct format,
+           raises ValueError('bad capacity') or IndexError
+        3. The list of events must be non-empty for this function to work.
+    
+        Parameters:
+        - capacity: An int representing the number of tokens the bucket can hold.
+        - events: A list of (timestamp, amount) tuples, as described in the problem description.
+    
+        Returns:
+        - A list of bools where True indicates the request was granted and False otherwise.
+        """
+        if not isinstance(capacity, int) or capacity &lt;= 0:
+            raise ValueError('bad capacity')
+    
+        if not events:
+            return []
+    
+        if type(events) != list or len(events) == 0:
+            raise IndexError
+    
+        for event in events:
+            try:
+                timestamp = max(event[0], events[-1][0])
+                amount = min(capacity, event[1])
+    
+                # Validate the timestamp
+                if not (timestamp &gt;= events[0][0] and events[0][0] &lt;= timestamp &lt; events[-1][0]):
+&gt;                   raise ValueError('time warp')
+E                   ValueError: time warp
+
+solution.py:37: ValueError
+
+During handling of the above exception, another exception occurred:
+
+&gt;   def test_partial_refill(): assert f(5, [(0, 5), (1, 5)]) == [True, False]
+                                      ^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:6: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+capacity = 5, events = [(0, 5), (1, 5)]
+
+    def grant_requests(capacity, events):
+        """
+        Simulates a token-bucket rate limiter and returns a list of bools indicating whether each request was granted.
+    
+        Each event is an (timestamp, amount) tuple. The timestamp must be non-decreasing.
+    
+        1. Validates that the capacity is at least 1.
+        2. If events are not provided, or if they are a list and none of its elements match the correct format,
+           raises ValueError('bad capacity') or IndexError
+        3. The list of events must be non-empty for this function to work.
+    
+        Parameters:
+        - capacity: An int representing the number of tokens the bucket can hold.
+        - events: A list of (timestamp, amount) tuples, as described in the problem description.
+    
+        Returns:
+        - A list of bools where True indicates the request was granted and False otherwise.
+        """
+        if not isinstance(capacity, int) or capacity &lt;= 0:
+            raise ValueError('bad capacity')
+    
+        if not events:
+            return []
+    
+        if type(events) != list or len(events) == 0:
+            raise IndexError
+    
+        for event in events:
+            try:
+                timestamp = max(event[0], events[-1][0])
+                amount = min(capacity, event[1])
+    
+                # Validate the timestamp
+                if not (timestamp &gt;= events[0][0] and events[0][0] &lt;= timestamp &lt; events[-1][0]):
+                    raise ValueError('time warp')
+    
+                # Determine if a new bucket is needed
+                bucket_size = capacity // math.ceil(timestamp / events[0][0])
+                if amount &gt; bucket_size:
+                    return [True]
+    
+                # Apply the refill in decreasing order of timestamps
+                for i in range(events.index(event) + 1, len(events)):
+                    prev_timestamp = events[i - 1][0]
+    
+                    # If we need to add more tokens up to the current timestamp
+                    if amount &gt; bucket_size * (prev_timestamp // timestamp):
+                        return [False]
+    
+                    remaining_tokens = max(bucket_size - amount, 0)
+                    amount -= min(remaining_tokens, bucket_size)
+    
+                # Grant the request, removing the required amount of tokens
+                return [True] + [False] * (capacity - amount)
+            except (IndexError, ValueError):
+&gt;               raise IndexError
+E               IndexError
+
+solution.py:58: IndexError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.token_bucket_grants.tests.test_solution" name="test_refill_cap" time="0.000"><failure message="IndexError">capacity = 5, events = [(0, 1), (100, 5)]
+
+    def grant_requests(capacity, events):
+        """
+        Simulates a token-bucket rate limiter and returns a list of bools indicating whether each request was granted.
+    
+        Each event is an (timestamp, amount) tuple. The timestamp must be non-decreasing.
+    
+        1. Validates that the capacity is at least 1.
+        2. If events are not provided, or if they are a list and none of its elements match the correct format,
+           raises ValueError('bad capacity') or IndexError
+        3. The list of events must be non-empty for this function to work.
+    
+        Parameters:
+        - capacity: An int representing the number of tokens the bucket can hold.
+        - events: A list of (timestamp, amount) tuples, as described in the problem description.
+    
+        Returns:
+        - A list of bools where True indicates the request was granted and False otherwise.
+        """
+        if not isinstance(capacity, int) or capacity &lt;= 0:
+            raise ValueError('bad capacity')
+    
+        if not events:
+            return []
+    
+        if type(events) != list or len(events) == 0:
+            raise IndexError
+    
+        for event in events:
+            try:
+                timestamp = max(event[0], events[-1][0])
+                amount = min(capacity, event[1])
+    
+                # Validate the timestamp
+                if not (timestamp &gt;= events[0][0] and events[0][0] &lt;= timestamp &lt; events[-1][0]):
+&gt;                   raise ValueError('time warp')
+E                   ValueError: time warp
+
+solution.py:37: ValueError
+
+During handling of the above exception, another exception occurred:
+
+&gt;   def test_refill_cap(): assert f(5, [(0, 1), (100, 5)]) == [True, True]
+                                  ^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:7: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+capacity = 5, events = [(0, 1), (100, 5)]
+
+    def grant_requests(capacity, events):
+        """
+        Simulates a token-bucket rate limiter and returns a list of bools indicating whether each request was granted.
+    
+        Each event is an (timestamp, amount) tuple. The timestamp must be non-decreasing.
+    
+        1. Validates that the capacity is at least 1.
+        2. If events are not provided, or if they are a list and none of its elements match the correct format,
+           raises ValueError('bad capacity') or IndexError
+        3. The list of events must be non-empty for this function to work.
+    
+        Parameters:
+        - capacity: An int representing the number of tokens the bucket can hold.
+        - events: A list of (timestamp, amount) tuples, as described in the problem description.
+    
+        Returns:
+        - A list of bools where True indicates the request was granted and False otherwise.
+        """
+        if not isinstance(capacity, int) or capacity &lt;= 0:
+            raise ValueError('bad capacity')
+    
+        if not events:
+            return []
+    
+        if type(events) != list or len(events) == 0:
+            raise IndexError
+    
+        for event in events:
+            try:
+                timestamp = max(event[0], events[-1][0])
+                amount = min(capacity, event[1])
+    
+                # Validate the timestamp
+                if not (timestamp &gt;= events[0][0] and events[0][0] &lt;= timestamp &lt; events[-1][0]):
+                    raise ValueError('time warp')
+    
+                # Determine if a new bucket is needed
+                bucket_size = capacity // math.ceil(timestamp / events[0][0])
+                if amount &gt; bucket_size:
+                    return [True]
+    
+                # Apply the refill in decreasing order of timestamps
+                for i in range(events.index(event) + 1, len(events)):
+                    prev_timestamp = events[i - 1][0]
+    
+                    # If we need to add more tokens up to the current timestamp
+                    if amount &gt; bucket_size * (prev_timestamp // timestamp):
+                        return [False]
+    
+                    remaining_tokens = max(bucket_size - amount, 0)
+                    amount -= min(remaining_tokens, bucket_size)
+    
+                # Grant the request, removing the required amount of tokens
+                return [True] + [False] * (capacity - amount)
+            except (IndexError, ValueError):
+&gt;               raise IndexError
+E               IndexError
+
+solution.py:58: IndexError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.token_bucket_grants.tests.test_solution" name="test_empty" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-195624.token_bucket_grants.tests.test_solution" name="test_time_warp" time="0.000"><failure message="IndexError">capacity = 5, events = [(1, 1), (0, 1)]
+
+    def grant_requests(capacity, events):
+        """
+        Simulates a token-bucket rate limiter and returns a list of bools indicating whether each request was granted.
+    
+        Each event is an (timestamp, amount) tuple. The timestamp must be non-decreasing.
+    
+        1. Validates that the capacity is at least 1.
+        2. If events are not provided, or if they are a list and none of its elements match the correct format,
+           raises ValueError('bad capacity') or IndexError
+        3. The list of events must be non-empty for this function to work.
+    
+        Parameters:
+        - capacity: An int representing the number of tokens the bucket can hold.
+        - events: A list of (timestamp, amount) tuples, as described in the problem description.
+    
+        Returns:
+        - A list of bools where True indicates the request was granted and False otherwise.
+        """
+        if not isinstance(capacity, int) or capacity &lt;= 0:
+            raise ValueError('bad capacity')
+    
+        if not events:
+            return []
+    
+        if type(events) != list or len(events) == 0:
+            raise IndexError
+    
+        for event in events:
+            try:
+                timestamp = max(event[0], events[-1][0])
+                amount = min(capacity, event[1])
+    
+                # Validate the timestamp
+                if not (timestamp &gt;= events[0][0] and events[0][0] &lt;= timestamp &lt; events[-1][0]):
+&gt;                   raise ValueError('time warp')
+E                   ValueError: time warp
+
+solution.py:37: ValueError
+
+During handling of the above exception, another exception occurred:
+
+    def test_time_warp():
+&gt;       with pytest.raises(ValueError) as e: f(5, [(1, 1), (0, 1)])
+                                             ^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:10: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+capacity = 5, events = [(1, 1), (0, 1)]
+
+    def grant_requests(capacity, events):
+        """
+        Simulates a token-bucket rate limiter and returns a list of bools indicating whether each request was granted.
+    
+        Each event is an (timestamp, amount) tuple. The timestamp must be non-decreasing.
+    
+        1. Validates that the capacity is at least 1.
+        2. If events are not provided, or if they are a list and none of its elements match the correct format,
+           raises ValueError('bad capacity') or IndexError
+        3. The list of events must be non-empty for this function to work.
+    
+        Parameters:
+        - capacity: An int representing the number of tokens the bucket can hold.
+        - events: A list of (timestamp, amount) tuples, as described in the problem description.
+    
+        Returns:
+        - A list of bools where True indicates the request was granted and False otherwise.
+        """
+        if not isinstance(capacity, int) or capacity &lt;= 0:
+            raise ValueError('bad capacity')
+    
+        if not events:
+            return []
+    
+        if type(events) != list or len(events) == 0:
+            raise IndexError
+    
+        for event in events:
+            try:
+                timestamp = max(event[0], events[-1][0])
+                amount = min(capacity, event[1])
+    
+                # Validate the timestamp
+                if not (timestamp &gt;= events[0][0] and events[0][0] &lt;= timestamp &lt; events[-1][0]):
+                    raise ValueError('time warp')
+    
+                # Determine if a new bucket is needed
+                bucket_size = capacity // math.ceil(timestamp / events[0][0])
+                if amount &gt; bucket_size:
+                    return [True]
+    
+                # Apply the refill in decreasing order of timestamps
+                for i in range(events.index(event) + 1, len(events)):
+                    prev_timestamp = events[i - 1][0]
+    
+                    # If we need to add more tokens up to the current timestamp
+                    if amount &gt; bucket_size * (prev_timestamp // timestamp):
+                        return [False]
+    
+                    remaining_tokens = max(bucket_size - amount, 0)
+                    amount -= min(remaining_tokens, bucket_size)
+    
+                # Grant the request, removing the required amount of tokens
+                return [True] + [False] * (capacity - amount)
+            except (IndexError, ValueError):
+&gt;               raise IndexError
+E               IndexError
+
+solution.py:58: IndexError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.token_bucket_grants.tests.test_solution" name="test_bad_capacity" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-195624.token_bucket_grants.tests.test_solution" name="test_zero_amount" time="0.000"><failure message="IndexError">capacity = 5, events = [(0, 0)]
+
+    def grant_requests(capacity, events):
+        """
+        Simulates a token-bucket rate limiter and returns a list of bools indicating whether each request was granted.
+    
+        Each event is an (timestamp, amount) tuple. The timestamp must be non-decreasing.
+    
+        1. Validates that the capacity is at least 1.
+        2. If events are not provided, or if they are a list and none of its elements match the correct format,
+           raises ValueError('bad capacity') or IndexError
+        3. The list of events must be non-empty for this function to work.
+    
+        Parameters:
+        - capacity: An int representing the number of tokens the bucket can hold.
+        - events: A list of (timestamp, amount) tuples, as described in the problem description.
+    
+        Returns:
+        - A list of bools where True indicates the request was granted and False otherwise.
+        """
+        if not isinstance(capacity, int) or capacity &lt;= 0:
+            raise ValueError('bad capacity')
+    
+        if not events:
+            return []
+    
+        if type(events) != list or len(events) == 0:
+            raise IndexError
+    
+        for event in events:
+            try:
+                timestamp = max(event[0], events[-1][0])
+                amount = min(capacity, event[1])
+    
+                # Validate the timestamp
+                if not (timestamp &gt;= events[0][0] and events[0][0] &lt;= timestamp &lt; events[-1][0]):
+&gt;                   raise ValueError('time warp')
+E                   ValueError: time warp
+
+solution.py:37: ValueError
+
+During handling of the above exception, another exception occurred:
+
+    def test_zero_amount():
+&gt;       with pytest.raises(ValueError) as e: f(5, [(0, 0)])
+                                             ^^^^^^^^^^^^^^
+
+tests\test_solution.py:16: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+capacity = 5, events = [(0, 0)]
+
+    def grant_requests(capacity, events):
+        """
+        Simulates a token-bucket rate limiter and returns a list of bools indicating whether each request was granted.
+    
+        Each event is an (timestamp, amount) tuple. The timestamp must be non-decreasing.
+    
+        1. Validates that the capacity is at least 1.
+        2. If events are not provided, or if they are a list and none of its elements match the correct format,
+           raises ValueError('bad capacity') or IndexError
+        3. The list of events must be non-empty for this function to work.
+    
+        Parameters:
+        - capacity: An int representing the number of tokens the bucket can hold.
+        - events: A list of (timestamp, amount) tuples, as described in the problem description.
+    
+        Returns:
+        - A list of bools where True indicates the request was granted and False otherwise.
+        """
+        if not isinstance(capacity, int) or capacity &lt;= 0:
+            raise ValueError('bad capacity')
+    
+        if not events:
+            return []
+    
+        if type(events) != list or len(events) == 0:
+            raise IndexError
+    
+        for event in events:
+            try:
+                timestamp = max(event[0], events[-1][0])
+                amount = min(capacity, event[1])
+    
+                # Validate the timestamp
+                if not (timestamp &gt;= events[0][0] and events[0][0] &lt;= timestamp &lt; events[-1][0]):
+                    raise ValueError('time warp')
+    
+                # Determine if a new bucket is needed
+                bucket_size = capacity // math.ceil(timestamp / events[0][0])
+                if amount &gt; bucket_size:
+                    return [True]
+    
+                # Apply the refill in decreasing order of timestamps
+                for i in range(events.index(event) + 1, len(events)):
+                    prev_timestamp = events[i - 1][0]
+    
+                    # If we need to add more tokens up to the current timestamp
+                    if amount &gt; bucket_size * (prev_timestamp // timestamp):
+                        return [False]
+    
+                    remaining_tokens = max(bucket_size - amount, 0)
+                    amount -= min(remaining_tokens, bucket_size)
+    
+                # Grant the request, removing the required amount of tokens
+                return [True] + [False] * (capacity - amount)
+            except (IndexError, ValueError):
+&gt;               raise IndexError
+E               IndexError
+
+solution.py:58: IndexError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.token_bucket_grants.tests.test_solution" name="test_list_event" time="0.000"><failure message="IndexError">capacity = 5, events = [[0, 1]]
+
+    def grant_requests(capacity, events):
+        """
+        Simulates a token-bucket rate limiter and returns a list of bools indicating whether each request was granted.
+    
+        Each event is an (timestamp, amount) tuple. The timestamp must be non-decreasing.
+    
+        1. Validates that the capacity is at least 1.
+        2. If events are not provided, or if they are a list and none of its elements match the correct format,
+           raises ValueError('bad capacity') or IndexError
+        3. The list of events must be non-empty for this function to work.
+    
+        Parameters:
+        - capacity: An int representing the number of tokens the bucket can hold.
+        - events: A list of (timestamp, amount) tuples, as described in the problem description.
+    
+        Returns:
+        - A list of bools where True indicates the request was granted and False otherwise.
+        """
+        if not isinstance(capacity, int) or capacity &lt;= 0:
+            raise ValueError('bad capacity')
+    
+        if not events:
+            return []
+    
+        if type(events) != list or len(events) == 0:
+            raise IndexError
+    
+        for event in events:
+            try:
+                timestamp = max(event[0], events[-1][0])
+                amount = min(capacity, event[1])
+    
+                # Validate the timestamp
+                if not (timestamp &gt;= events[0][0] and events[0][0] &lt;= timestamp &lt; events[-1][0]):
+&gt;                   raise ValueError('time warp')
+E                   ValueError: time warp
+
+solution.py:37: ValueError
+
+During handling of the above exception, another exception occurred:
+
+    def test_list_event():
+&gt;       with pytest.raises(ValueError): f(5, [[0, 1]])
+                                        ^^^^^^^^^^^^^^
+
+tests\test_solution.py:19: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+capacity = 5, events = [[0, 1]]
+
+    def grant_requests(capacity, events):
+        """
+        Simulates a token-bucket rate limiter and returns a list of bools indicating whether each request was granted.
+    
+        Each event is an (timestamp, amount) tuple. The timestamp must be non-decreasing.
+    
+        1. Validates that the capacity is at least 1.
+        2. If events are not provided, or if they are a list and none of its elements match the correct format,
+           raises ValueError('bad capacity') or IndexError
+        3. The list of events must be non-empty for this function to work.
+    
+        Parameters:
+        - capacity: An int representing the number of tokens the bucket can hold.
+        - events: A list of (timestamp, amount) tuples, as described in the problem description.
+    
+        Returns:
+        - A list of bools where True indicates the request was granted and False otherwise.
+        """
+        if not isinstance(capacity, int) or capacity &lt;= 0:
+            raise ValueError('bad capacity')
+    
+        if not events:
+            return []
+    
+        if type(events) != list or len(events) == 0:
+            raise IndexError
+    
+        for event in events:
+            try:
+                timestamp = max(event[0], events[-1][0])
+                amount = min(capacity, event[1])
+    
+                # Validate the timestamp
+                if not (timestamp &gt;= events[0][0] and events[0][0] &lt;= timestamp &lt; events[-1][0]):
+                    raise ValueError('time warp')
+    
+                # Determine if a new bucket is needed
+                bucket_size = capacity // math.ceil(timestamp / events[0][0])
+                if amount &gt; bucket_size:
+                    return [True]
+    
+                # Apply the refill in decreasing order of timestamps
+                for i in range(events.index(event) + 1, len(events)):
+                    prev_timestamp = events[i - 1][0]
+    
+                    # If we need to add more tokens up to the current timestamp
+                    if amount &gt; bucket_size * (prev_timestamp // timestamp):
+                        return [False]
+    
+                    remaining_tokens = max(bucket_size - amount, 0)
+                    amount -= min(remaining_tokens, bucket_size)
+    
+                # Grant the request, removing the required amount of tokens
+                return [True] + [False] * (capacity - amount)
+            except (IndexError, ValueError):
+&gt;               raise IndexError
+E               IndexError
+
+solution.py:58: IndexError</failure></testcase></testsuite></testsuites>

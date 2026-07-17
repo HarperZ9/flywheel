@@ -1,4 +1,4 @@
-"""oracle.py — the verifier adapter (HARNESS.md §verifier-registry).
+"""oracle.py: the verifier adapter (HARNESS.md §verifier-registry).
 
 The oracle is the ONLY thing that accepts. No learned model in the accept path
 (C2 invariant). M1 ships PytestOracle; M2 promotes SeedOracle (native, via
@@ -87,6 +87,15 @@ def _pytest_canonical(workdir: Path) -> str:
     return "\n".join(sorted(outcomes))
 
 
+def _pytest_ran_a_real_pass(workdir: Path) -> bool:
+    """True iff the junit record shows at least one testcase that actually
+    PASSED. pytest exits 0 when every collected test was SKIPPED, so a green
+    exit code alone can mean zero executed assertions; that run verified
+    nothing and must not read as a pass."""
+    canon = _pytest_canonical(workdir)
+    return any(line.endswith("=PASS") for line in canon.splitlines())
+
+
 def canonical_hash(oracle_type: str, workdir: Path, rc: int) -> str:
     if oracle_type == "pytest":
         canon = _pytest_canonical(workdir)
@@ -98,11 +107,12 @@ def canonical_hash(oracle_type: str, workdir: Path, rc: int) -> str:
 class PytestOracle:
     oracle_type = "pytest"
 
-    def __init__(self, timeout: int = 60):
+    def __init__(self, timeout: int = 60, *, cmd_attr: str = "oracle_cmd"):
         self.timeout = timeout
+        self.cmd_attr = cmd_attr        # which Task command to run (oracle_cmd | held_out_cmd)
 
     def _cmd(self, task: Task) -> str:
-        return f"{task.oracle_cmd} --junitxml={JUNIT_NAME} -q"
+        return f"{getattr(task, self.cmd_attr)} --junitxml={JUNIT_NAME} -q"
 
     def verify(self, candidate: str, task: Task) -> OracleResult:
         cpath = task.candidate_full()
@@ -130,7 +140,8 @@ class PytestOracle:
                 out = b""
             rc = 124
         return OracleResult(
-            passed=rc == 0, cmd=cmd,
+            passed=rc == 0 and _pytest_ran_a_real_pass(Path(task.workdir)),
+            cmd=cmd,
             output_hash=canonical_hash("pytest", Path(task.workdir), rc),
             stdout_excerpt=_excerpt(out), rc=rc)
 

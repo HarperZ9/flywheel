@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="10" time="0.221" timestamp="2026-07-14T13:24:47.269777-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260714-125209.turtle_walk_program.tests.test_solution" name="test_empty" time="0.001" /><testcase classname="artifacts.uplift.work_20260714-125209.turtle_walk_program.tests.test_solution" name="test_walk" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-125209.turtle_walk_program.tests.test_solution" name="test_backward" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-125209.turtle_walk_program.tests.test_solution" name="test_double_left" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-125209.turtle_walk_program.tests.test_solution" name="test_multidigit" time="0.000"><failure message="ValueError: bad count">&gt;   def test_multidigit(): assert f('10F') == (0, 10, 'N')
+                                  ^^^^^^^^
+
+tests\test_solution.py:7: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+prog = '10F'
+
+    def turtle(prog):
+        x = y = 0
+        heading = 'N'
+        hdg = {'N': lambda a, b: (a, b + 1), 'E': lambda a, b: (a + 1, b),
+               'S': lambda a, b: (a, b - 1), 'W': lambda a, b: (a - 1, b)}
+        turn = {'N': {'L': 'W', 'R': 'E'}, 'E': {'L': 'N', 'R': 'S'},
+                'S': {'L': 'E', 'R': 'W'}, 'W': {'L': 'S', 'R': 'N'}}
+        i, n = 0, len(prog)
+        while i &lt; n:
+            d_start = i
+            while i &lt; n and prog[i] in '0123456789':
+                if prog[i] == '0':
+&gt;                   raise ValueError('bad count')
+E                   ValueError: bad count
+
+solution.py:13: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-125209.turtle_walk_program.tests.test_solution" name="test_full_circle" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-125209.turtle_walk_program.tests.test_solution" name="test_zero_count" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-125209.turtle_walk_program.tests.test_solution" name="test_leading_zero_count" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-125209.turtle_walk_program.tests.test_solution" name="test_dangling" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-125209.turtle_walk_program.tests.test_solution" name="test_unknown" time="0.000" /></testsuite></testsuites>

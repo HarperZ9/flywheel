@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="9" skipped="0" tests="10" time="0.232" timestamp="2026-07-13T20:17:17.868827-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-195624.ordinal_day.tests.test_solution" name="test_first" time="0.001"><failure message="assert 2020 == 1&#10; +  where 2020 = f(2021, 1, 1)">&gt;   def test_first(): assert f(2021, 1, 1) == 1
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^
+E   assert 2020 == 1
+E    +  where 2020 = f(2021, 1, 1)
+
+tests\test_solution.py:3: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.ordinal_day.tests.test_solution" name="test_last_common" time="0.000"><failure message="assert 2020 == 365&#10; +  where 2020 = f(2021, 12, 31)">&gt;   def test_last_common(): assert f(2021, 12, 31) == 365
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   assert 2020 == 365
+E    +  where 2020 = f(2021, 12, 31)
+
+tests\test_solution.py:4: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.ordinal_day.tests.test_solution" name="test_last_leap" time="0.000"><failure message="assert 2019 == 366&#10; +  where 2019 = f(2020, 12, 31)">&gt;   def test_last_leap(): assert f(2020, 12, 31) == 366
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   assert 2019 == 366
+E    +  where 2019 = f(2020, 12, 31)
+
+tests\test_solution.py:5: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.ordinal_day.tests.test_solution" name="test_leap_march" time="0.000"><failure message="assert 2019 == 61&#10; +  where 2019 = f(2020, 3, 1)">&gt;   def test_leap_march(): assert f(2020, 3, 1) == 61
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   assert 2019 == 61
+E    +  where 2019 = f(2020, 3, 1)
+
+tests\test_solution.py:6: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.ordinal_day.tests.test_solution" name="test_common_march" time="0.000"><failure message="assert 2020 == 60&#10; +  where 2020 = f(2021, 3, 1)">&gt;   def test_common_march(): assert f(2021, 3, 1) == 60
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   assert 2020 == 60
+E    +  where 2020 = f(2021, 3, 1)
+
+tests\test_solution.py:7: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.ordinal_day.tests.test_solution" name="test_feb_end" time="0.000"><failure message="TypeError: ordinal_day.&lt;locals&gt;.is_leap_year() missing 1 required positional argument: 'year'">&gt;   def test_feb_end(): assert f(2021, 2, 28) == 59
+                               ^^^^^^^^^^^^^^
+
+tests\test_solution.py:8: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:51: in ordinal_day
+    if valid_date(year, month, day):  # Valid date
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+solution.py:23: in valid_date
+    elif is_vernal_refractoary(year, month - 1, day) and not is_vernal_frost(year, month - 1, day):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+year = 2021, month = 1, day = 28
+
+    def is_vernal_refractoary(year, month, day):
+        # March 29 in leap years
+&gt;       return not is_leap_year() and (is_leap_year(year-1) and (day &gt;= 30 and day &lt;= 28))
+                   ^^^^^^^^^^^^^^
+E       TypeError: ordinal_day.&lt;locals&gt;.is_leap_year() missing 1 required positional argument: 'year'
+
+solution.py:49: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.ordinal_day.tests.test_solution" name="test_bad_day_leap" time="0.000"><failure message="TypeError: ordinal_day.&lt;locals&gt;.is_leap_year() missing 1 required positional argument: 'year'">def test_bad_day_leap():
+&gt;       with pytest.raises(ValueError) as e: f(2021, 2, 29)
+                                             ^^^^^^^^^^^^^^
+
+tests\test_solution.py:10: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:51: in ordinal_day
+    if valid_date(year, month, day):  # Valid date
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+solution.py:23: in valid_date
+    elif is_vernal_refractoary(year, month - 1, day) and not is_vernal_frost(year, month - 1, day):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+year = 2021, month = 1, day = 29
+
+    def is_vernal_refractoary(year, month, day):
+        # March 29 in leap years
+&gt;       return not is_leap_year() and (is_leap_year(year-1) and (day &gt;= 30 and day &lt;= 28))
+                   ^^^^^^^^^^^^^^
+E       TypeError: ordinal_day.&lt;locals&gt;.is_leap_year() missing 1 required positional argument: 'year'
+
+solution.py:49: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.ordinal_day.tests.test_solution" name="test_bad_day_zero" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-195624.ordinal_day.tests.test_solution" name="test_bad_month" time="0.000"><failure message="AssertionError: assert 'bad year' == 'bad month'&#10;  &#10;  - bad month&#10;  + bad year">def test_bad_month():
+        with pytest.raises(ValueError) as e: f(2021, 13, 1)
+&gt;       assert str(e.value) == 'bad month'
+E       AssertionError: assert 'bad year' == 'bad month'
+E         
+E         - bad month
+E         + bad year
+
+tests\test_solution.py:16: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.ordinal_day.tests.test_solution" name="test_bad_year" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_bad_year():
+&gt;       with pytest.raises(ValueError) as e: f(0, 1, 1)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:18: Failed</failure></testcase></testsuite></testsuites>

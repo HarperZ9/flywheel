@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="8" skipped="0" tests="9" time="0.284" timestamp="2026-07-14T14:40:49.988829-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260714-140516.days_between.tests.test_solution" name="test_same" time="0.001"><failure message="TypeError: unsupported operand type(s) for +: 'range' and 'bool'">&gt;   def test_same(): assert f((1970, 1, 1), (1970, 1, 1)) == 0
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:3: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:12: in days_between
+    return since_epoch(*b)-since_epoch(*a)
+           ^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+y = 1970, m = 1, d = 1
+
+    def since_epoch(y,m,d):
+&gt;       m0=sum(calendar.monthrange(yy,mm)[1]for yy in range(1,y)+(m&gt;1) for mm in range(1,(m if m==1 else 13))) \
+                                                      ^^^^^^^^^^^^^^^^
+            +sum(int((yy%4==0 and yy%100!=0)or yy%400==0)for yy in range(1,y))
+E       TypeError: unsupported operand type(s) for +: 'range' and 'bool'
+
+solution.py:9: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-140516.days_between.tests.test_solution" name="test_next" time="0.001"><failure message="TypeError: unsupported operand type(s) for +: 'range' and 'bool'">&gt;   def test_next(): assert f((1970, 1, 1), (1970, 1, 2)) == 1
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:4: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:12: in days_between
+    return since_epoch(*b)-since_epoch(*a)
+           ^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+y = 1970, m = 1, d = 2
+
+    def since_epoch(y,m,d):
+&gt;       m0=sum(calendar.monthrange(yy,mm)[1]for yy in range(1,y)+(m&gt;1) for mm in range(1,(m if m==1 else 13))) \
+                                                      ^^^^^^^^^^^^^^^^
+            +sum(int((yy%4==0 and yy%100!=0)or yy%400==0)for yy in range(1,y))
+E       TypeError: unsupported operand type(s) for +: 'range' and 'bool'
+
+solution.py:9: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-140516.days_between.tests.test_solution" name="test_prev" time="0.000"><failure message="TypeError: unsupported operand type(s) for +: 'range' and 'bool'">&gt;   def test_prev(): assert f((1970, 1, 2), (1970, 1, 1)) == -1
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:5: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:12: in days_between
+    return since_epoch(*b)-since_epoch(*a)
+           ^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+y = 1970, m = 1, d = 1
+
+    def since_epoch(y,m,d):
+&gt;       m0=sum(calendar.monthrange(yy,mm)[1]for yy in range(1,y)+(m&gt;1) for mm in range(1,(m if m==1 else 13))) \
+                                                      ^^^^^^^^^^^^^^^^
+            +sum(int((yy%4==0 and yy%100!=0)or yy%400==0)for yy in range(1,y))
+E       TypeError: unsupported operand type(s) for +: 'range' and 'bool'
+
+solution.py:9: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-140516.days_between.tests.test_solution" name="test_leap_cross" time="0.000"><failure message="TypeError: unsupported operand type(s) for +: 'range' and 'bool'">&gt;   def test_leap_cross(): assert f((2020, 2, 28), (2020, 3, 1)) == 2
+                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:6: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:12: in days_between
+    return since_epoch(*b)-since_epoch(*a)
+           ^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+y = 2020, m = 3, d = 1
+
+    def since_epoch(y,m,d):
+&gt;       m0=sum(calendar.monthrange(yy,mm)[1]for yy in range(1,y)+(m&gt;1) for mm in range(1,(m if m==1 else 13))) \
+                                                      ^^^^^^^^^^^^^^^^
+            +sum(int((yy%4==0 and yy%100!=0)or yy%400==0)for yy in range(1,y))
+E       TypeError: unsupported operand type(s) for +: 'range' and 'bool'
+
+solution.py:9: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-140516.days_between.tests.test_solution" name="test_common_cross" time="0.001"><failure message="TypeError: unsupported operand type(s) for +: 'range' and 'bool'">&gt;   def test_common_cross(): assert f((2019, 2, 28), (2019, 3, 1)) == 1
+                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:7: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:12: in days_between
+    return since_epoch(*b)-since_epoch(*a)
+           ^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+y = 2019, m = 3, d = 1
+
+    def since_epoch(y,m,d):
+&gt;       m0=sum(calendar.monthrange(yy,mm)[1]for yy in range(1,y)+(m&gt;1) for mm in range(1,(m if m==1 else 13))) \
+                                                      ^^^^^^^^^^^^^^^^
+            +sum(int((yy%4==0 and yy%100!=0)or yy%400==0)for yy in range(1,y))
+E       TypeError: unsupported operand type(s) for +: 'range' and 'bool'
+
+solution.py:9: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-140516.days_between.tests.test_solution" name="test_leap_year_span" time="0.000"><failure message="TypeError: unsupported operand type(s) for +: 'range' and 'bool'">&gt;   def test_leap_year_span(): assert f((2000, 1, 1), (2001, 1, 1)) == 366
+                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:8: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:12: in days_between
+    return since_epoch(*b)-since_epoch(*a)
+           ^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+y = 2001, m = 1, d = 1
+
+    def since_epoch(y,m,d):
+&gt;       m0=sum(calendar.monthrange(yy,mm)[1]for yy in range(1,y)+(m&gt;1) for mm in range(1,(m if m==1 else 13))) \
+                                                      ^^^^^^^^^^^^^^^^
+            +sum(int((yy%4==0 and yy%100!=0)or yy%400==0)for yy in range(1,y))
+E       TypeError: unsupported operand type(s) for +: 'range' and 'bool'
+
+solution.py:9: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-140516.days_between.tests.test_solution" name="test_bad_date" time="0.000"><failure message="TypeError: unsupported operand type(s) for +: 'range' and 'bool'">def test_bad_date():
+&gt;       with pytest.raises(ValueError) as e: f((2021, 2, 29), (2021, 3, 1))
+                                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:10: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:12: in days_between
+    return since_epoch(*b)-since_epoch(*a)
+           ^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+y = 2021, m = 3, d = 1
+
+    def since_epoch(y,m,d):
+&gt;       m0=sum(calendar.monthrange(yy,mm)[1]for yy in range(1,y)+(m&gt;1) for mm in range(1,(m if m==1 else 13))) \
+                                                      ^^^^^^^^^^^^^^^^
+            +sum(int((yy%4==0 and yy%100!=0)or yy%400==0)for yy in range(1,y))
+E       TypeError: unsupported operand type(s) for +: 'range' and 'bool'
+
+solution.py:9: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-140516.days_between.tests.test_solution" name="test_not_tuple" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-140516.days_between.tests.test_solution" name="test_bool" time="0.000"><failure message="TypeError: unsupported operand type(s) for +: 'range' and 'bool'">def test_bool():
+&gt;       with pytest.raises(ValueError): f((1970, 1, 1), (1970, 1, True))
+                                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:15: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:12: in days_between
+    return since_epoch(*b)-since_epoch(*a)
+           ^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+y = 1970, m = 1, d = True
+
+    def since_epoch(y,m,d):
+&gt;       m0=sum(calendar.monthrange(yy,mm)[1]for yy in range(1,y)+(m&gt;1) for mm in range(1,(m if m==1 else 13))) \
+                                                      ^^^^^^^^^^^^^^^^
+            +sum(int((yy%4==0 and yy%100!=0)or yy%400==0)for yy in range(1,y))
+E       TypeError: unsupported operand type(s) for +: 'range' and 'bool'
+
+solution.py:9: TypeError</failure></testcase></testsuite></testsuites>

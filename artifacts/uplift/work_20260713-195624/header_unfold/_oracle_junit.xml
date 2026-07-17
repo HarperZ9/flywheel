@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="9" skipped="0" tests="10" time="0.245" timestamp="2026-07-13T20:09:30.539209-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-195624.header_unfold.tests.test_solution" name="test_basic" time="0.001"><failure message="AssertionError: assert &lt;generator ob...0017125E7E560&gt; == [('host', 'ex...'text/plain')]&#10;  &#10;  Use -v to get more diff">def test_basic():
+&gt;       assert unfold_headers(["Host: example.com", "Content-Type: text/plain"]) == [
+            ("host", "example.com"),
+            ("content-type", "text/plain"),
+        ]
+E       AssertionError: assert &lt;generator ob...0017125E7E560&gt; == [('host', 'ex...'text/plain')]
+E         
+E         Use -v to get more diff
+
+tests\test_solution.py:6: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.header_unfold.tests.test_solution" name="test_unfolding" time="0.000"><failure message="AssertionError: assert &lt;generator ob...0017125E7E200&gt; == [('subject', ... ('x-a', '1')]&#10;  &#10;  Use -v to get more diff">def test_unfolding():
+&gt;       assert unfold_headers(["Subject: hello", "\tworld", "X-A: 1"]) == [
+            ("subject", "hello world"),
+            ("x-a", "1"),
+        ]
+E       AssertionError: assert &lt;generator ob...0017125E7E200&gt; == [('subject', ... ('x-a', '1')]
+E         
+E         Use -v to get more diff
+
+tests\test_solution.py:13: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.header_unfold.tests.test_solution" name="test_value_whitespace_and_empty_value" time="0.000"><failure message="AssertionError: assert &lt;generator ob...0017125E7E320&gt; == [('a', 'spaced')]&#10;  &#10;  Use -v to get more diff">def test_value_whitespace_and_empty_value():
+&gt;       assert unfold_headers(["A:   spaced   "]) == [("a", "spaced")]
+E       AssertionError: assert &lt;generator ob...0017125E7E320&gt; == [('a', 'spaced')]
+E         
+E         Use -v to get more diff
+
+tests\test_solution.py:21: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.header_unfold.tests.test_solution" name="test_case_and_duplicates" time="0.000"><failure message="AssertionError: assert &lt;generator ob...0017125E7E7A0&gt; == [('foo', '1')... ('foo', '3')]&#10;  &#10;  Use -v to get more diff">def test_case_and_duplicates():
+&gt;       assert unfold_headers(["FOO: 1", "foo: 2", "FoO: 3"]) == [
+            ("foo", "1"),
+            ("foo", "2"),
+            ("foo", "3"),
+        ]
+E       AssertionError: assert &lt;generator ob...0017125E7E7A0&gt; == [('foo', '1')... ('foo', '3')]
+E         
+E         Use -v to get more diff
+
+tests\test_solution.py:27: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.header_unfold.tests.test_solution" name="test_empty_input" time="0.000"><failure message="assert &lt;generator ob...0017125E7E200&gt; == []&#10;  &#10;  Use -v to get more diff">def test_empty_input():
+&gt;       assert unfold_headers([]) == []
+E       assert &lt;generator ob...0017125E7E200&gt; == []
+E         
+E         Use -v to get more diff
+
+tests\test_solution.py:35: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.header_unfold.tests.test_solution" name="test_no_mutation" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-195624.header_unfold.tests.test_solution" name="test_continuation_first_raises" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_continuation_first_raises():
+&gt;       with pytest.raises(ValueError):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:46: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.header_unfold.tests.test_solution" name="test_missing_colon_raises" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_missing_colon_raises():
+&gt;       with pytest.raises(ValueError):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:53: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.header_unfold.tests.test_solution" name="test_bad_name_raises" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_bad_name_raises():
+        for bad in [[": v"], ["a b: v"], ["a_b: v"], ["Host : v"]]:
+&gt;           with pytest.raises(ValueError):
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^
+E           Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:61: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.header_unfold.tests.test_solution" name="test_blank_continuation_raises" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_blank_continuation_raises():
+&gt;       with pytest.raises(ValueError):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:66: Failed</failure></testcase></testsuite></testsuites>

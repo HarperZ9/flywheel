@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="7" skipped="0" tests="7" time="0.238" timestamp="2026-07-13T20:12:18.217602-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-195624.format_signed_duration.tests.test_solution" name="test_zero" time="0.001"><failure message="UnboundLocalError: cannot access local variable 'minute' where it is not associated with a value">def test_zero():
+&gt;       assert format_duration(0) == "0:00"
+               ^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:6: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+seconds = 0
+
+    def format_duration(seconds):
+&gt;       if not isinstance(seconds, int) or not isinstance(minute, int) or not isinstance(second, int):
+                                                          ^^^^^^
+E       UnboundLocalError: cannot access local variable 'minute' where it is not associated with a value
+
+solution.py:2: UnboundLocalError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.format_signed_duration.tests.test_solution" name="test_minutes_form_below_threshold" time="0.000"><failure message="UnboundLocalError: cannot access local variable 'minute' where it is not associated with a value">def test_minutes_form_below_threshold():
+&gt;       assert format_duration(59) == "0:59"
+               ^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:10: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+seconds = 59
+
+    def format_duration(seconds):
+&gt;       if not isinstance(seconds, int) or not isinstance(minute, int) or not isinstance(second, int):
+                                                          ^^^^^^
+E       UnboundLocalError: cannot access local variable 'minute' where it is not associated with a value
+
+solution.py:2: UnboundLocalError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.format_signed_duration.tests.test_solution" name="test_threshold_exactly_3600_uses_hours_form" time="0.000"><failure message="UnboundLocalError: cannot access local variable 'minute' where it is not associated with a value">def test_threshold_exactly_3600_uses_hours_form():
+&gt;       assert format_duration(3600) == "1:00:00"
+               ^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:17: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+seconds = 3600
+
+    def format_duration(seconds):
+&gt;       if not isinstance(seconds, int) or not isinstance(minute, int) or not isinstance(second, int):
+                                                          ^^^^^^
+E       UnboundLocalError: cannot access local variable 'minute' where it is not associated with a value
+
+solution.py:2: UnboundLocalError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.format_signed_duration.tests.test_solution" name="test_negative_values" time="0.000"><failure message="UnboundLocalError: cannot access local variable 'minute' where it is not associated with a value">def test_negative_values():
+&gt;       assert format_duration(-59) == "-0:59"
+               ^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:23: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+seconds = -59
+
+    def format_duration(seconds):
+&gt;       if not isinstance(seconds, int) or not isinstance(minute, int) or not isinstance(second, int):
+                                                          ^^^^^^
+E       UnboundLocalError: cannot access local variable 'minute' where it is not associated with a value
+
+solution.py:2: UnboundLocalError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.format_signed_duration.tests.test_solution" name="test_large_hours_unpadded" time="0.000"><failure message="UnboundLocalError: cannot access local variable 'minute' where it is not associated with a value">def test_large_hours_unpadded():
+&gt;       assert format_duration(360000) == "100:00:00"
+               ^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:30: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+seconds = 360000
+
+    def format_duration(seconds):
+&gt;       if not isinstance(seconds, int) or not isinstance(minute, int) or not isinstance(second, int):
+                                                          ^^^^^^
+E       UnboundLocalError: cannot access local variable 'minute' where it is not associated with a value
+
+solution.py:2: UnboundLocalError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.format_signed_duration.tests.test_solution" name="test_component_padding" time="0.000"><failure message="UnboundLocalError: cannot access local variable 'minute' where it is not associated with a value">def test_component_padding():
+&gt;       assert format_duration(7325) == "2:02:05"
+               ^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:36: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+seconds = 7325
+
+    def format_duration(seconds):
+&gt;       if not isinstance(seconds, int) or not isinstance(minute, int) or not isinstance(second, int):
+                                                          ^^^^^^
+E       UnboundLocalError: cannot access local variable 'minute' where it is not associated with a value
+
+solution.py:2: UnboundLocalError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.format_signed_duration.tests.test_solution" name="test_error_contracts" time="0.000"><failure message="UnboundLocalError: cannot access local variable 'minute' where it is not associated with a value">def test_error_contracts():
+        with pytest.raises(ValueError):
+&gt;           format_duration(True)
+
+tests\test_solution.py:42: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+seconds = True
+
+    def format_duration(seconds):
+&gt;       if not isinstance(seconds, int) or not isinstance(minute, int) or not isinstance(second, int):
+                                                          ^^^^^^
+E       UnboundLocalError: cannot access local variable 'minute' where it is not associated with a value
+
+solution.py:2: UnboundLocalError</failure></testcase></testsuite></testsuites>

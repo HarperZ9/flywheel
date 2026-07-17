@@ -1,0 +1,265 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="5" skipped="0" tests="12" time="0.204" timestamp="2026-07-14T09:34:10.677702-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260714-091030.cron_field_expand.tests.test_solution" name="test_star" time="0.001" /><testcase classname="artifacts.uplift.work_20260714-091030.cron_field_expand.tests.test_solution" name="test_star_step" time="0.000"><failure message="ValueError: bad field">&gt;   def test_star_step(): assert f('*/15', 0, 59) == [0, 15, 30, 45]
+                                 ^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:4: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+field = '*/15', lo = 0, hi = 59
+
+    def cron_field(field, lo, hi):
+        if not isinstance(lo, int) or not isinstance(hi, int) or lo &gt; hi:
+            raise ValueError("bad bounds")
+        out = set()
+        for item in field.split(","):
+            if not item:
+                raise ValueError("bad field")
+            if item == "*":
+                out.update(range(lo, hi + 1))
+                continue
+            step = None
+            slash_idx = item.find("/")
+            if slash_idx &gt;= 0:
+                step_part = item[slash_idx+1:]
+                if not step_part or (step_part[0] in "0" and len(step_part) &gt; 1):
+                    raise ValueError("bad field")
+                try:
+                    step = int(step_part)
+                except ValueError:
+                    raise ValueError("bad field")
+                if step &lt;= 0:
+                    raise ValueError("bad step")
+                item = item[:slash_idx]
+            parts = item.split("-")
+            if len(parts) == 1:
+                num_part = parts[0]
+                if slash_idx &gt;= 0:
+&gt;                   raise ValueError("bad field")
+E                   ValueError: bad field
+
+solution.py:28: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-091030.cron_field_expand.tests.test_solution" name="test_range_step" time="0.001"><failure message="UnboundLocalError: cannot access local variable 'num_part' where it is not associated with a value">&gt;   def test_range_step(): assert f('3-7/2', 0, 59) == [3, 5, 7]
+                                  ^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:5: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+field = '3-7/2', lo = 0, hi = 59
+
+    def cron_field(field, lo, hi):
+        if not isinstance(lo, int) or not isinstance(hi, int) or lo &gt; hi:
+            raise ValueError("bad bounds")
+        out = set()
+        for item in field.split(","):
+            if not item:
+                raise ValueError("bad field")
+            if item == "*":
+                out.update(range(lo, hi + 1))
+                continue
+            step = None
+            slash_idx = item.find("/")
+            if slash_idx &gt;= 0:
+                step_part = item[slash_idx+1:]
+                if not step_part or (step_part[0] in "0" and len(step_part) &gt; 1):
+                    raise ValueError("bad field")
+                try:
+                    step = int(step_part)
+                except ValueError:
+                    raise ValueError("bad field")
+                if step &lt;= 0:
+                    raise ValueError("bad step")
+                item = item[:slash_idx]
+            parts = item.split("-")
+            if len(parts) == 1:
+                num_part = parts[0]
+                if slash_idx &gt;= 0:
+                    raise ValueError("bad field")
+            elif len(parts) == 2 and parts[1]:
+                lo_str, hi_str = parts
+                try:
+                    parsed_lo = int(lo_str)
+                except ValueError:
+                    raise ValueError("bad field")
+                try:
+                    parsed_hi = int(parts[1])
+                except ValueError:
+                    raise ValueError("bad field")
+                if (lo_str[0] in "0" and len(lo_str) &gt; 1) or \
+                   (hi_str[0] in "0" and len(hi_str) &gt; 1):
+                    raise ValueError("bad field")
+            else:
+                raise ValueError("bad field")
+            try:
+&gt;               n = int(num_part)
+                        ^^^^^^^^
+E               UnboundLocalError: cannot access local variable 'num_part' where it is not associated with a value
+
+solution.py:45: UnboundLocalError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-091030.cron_field_expand.tests.test_solution" name="test_list_dedup" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-091030.cron_field_expand.tests.test_solution" name="test_mixed" time="0.000"><failure message="UnboundLocalError: cannot access local variable 'num_part' where it is not associated with a value">&gt;   def test_mixed(): assert f('10-12,1', 0, 59) == [1, 10, 11, 12]
+                             ^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:7: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+field = '10-12,1', lo = 0, hi = 59
+
+    def cron_field(field, lo, hi):
+        if not isinstance(lo, int) or not isinstance(hi, int) or lo &gt; hi:
+            raise ValueError("bad bounds")
+        out = set()
+        for item in field.split(","):
+            if not item:
+                raise ValueError("bad field")
+            if item == "*":
+                out.update(range(lo, hi + 1))
+                continue
+            step = None
+            slash_idx = item.find("/")
+            if slash_idx &gt;= 0:
+                step_part = item[slash_idx+1:]
+                if not step_part or (step_part[0] in "0" and len(step_part) &gt; 1):
+                    raise ValueError("bad field")
+                try:
+                    step = int(step_part)
+                except ValueError:
+                    raise ValueError("bad field")
+                if step &lt;= 0:
+                    raise ValueError("bad step")
+                item = item[:slash_idx]
+            parts = item.split("-")
+            if len(parts) == 1:
+                num_part = parts[0]
+                if slash_idx &gt;= 0:
+                    raise ValueError("bad field")
+            elif len(parts) == 2 and parts[1]:
+                lo_str, hi_str = parts
+                try:
+                    parsed_lo = int(lo_str)
+                except ValueError:
+                    raise ValueError("bad field")
+                try:
+                    parsed_hi = int(parts[1])
+                except ValueError:
+                    raise ValueError("bad field")
+                if (lo_str[0] in "0" and len(lo_str) &gt; 1) or \
+                   (hi_str[0] in "0" and len(hi_str) &gt; 1):
+                    raise ValueError("bad field")
+            else:
+                raise ValueError("bad field")
+            try:
+&gt;               n = int(num_part)
+                        ^^^^^^^^
+E               UnboundLocalError: cannot access local variable 'num_part' where it is not associated with a value
+
+solution.py:45: UnboundLocalError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-091030.cron_field_expand.tests.test_solution" name="test_leading_zero_value" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-091030.cron_field_expand.tests.test_solution" name="test_step_on_value" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-091030.cron_field_expand.tests.test_solution" name="test_reversed_range" time="0.000"><failure message="UnboundLocalError: cannot access local variable 'num_part' where it is not associated with a value">def test_reversed_range():
+&gt;       with pytest.raises(ValueError) as e: f('7-3', 0, 59)
+                                             ^^^^^^^^^^^^^^^
+
+tests\test_solution.py:13: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+field = '7-3', lo = 0, hi = 59
+
+    def cron_field(field, lo, hi):
+        if not isinstance(lo, int) or not isinstance(hi, int) or lo &gt; hi:
+            raise ValueError("bad bounds")
+        out = set()
+        for item in field.split(","):
+            if not item:
+                raise ValueError("bad field")
+            if item == "*":
+                out.update(range(lo, hi + 1))
+                continue
+            step = None
+            slash_idx = item.find("/")
+            if slash_idx &gt;= 0:
+                step_part = item[slash_idx+1:]
+                if not step_part or (step_part[0] in "0" and len(step_part) &gt; 1):
+                    raise ValueError("bad field")
+                try:
+                    step = int(step_part)
+                except ValueError:
+                    raise ValueError("bad field")
+                if step &lt;= 0:
+                    raise ValueError("bad step")
+                item = item[:slash_idx]
+            parts = item.split("-")
+            if len(parts) == 1:
+                num_part = parts[0]
+                if slash_idx &gt;= 0:
+                    raise ValueError("bad field")
+            elif len(parts) == 2 and parts[1]:
+                lo_str, hi_str = parts
+                try:
+                    parsed_lo = int(lo_str)
+                except ValueError:
+                    raise ValueError("bad field")
+                try:
+                    parsed_hi = int(parts[1])
+                except ValueError:
+                    raise ValueError("bad field")
+                if (lo_str[0] in "0" and len(lo_str) &gt; 1) or \
+                   (hi_str[0] in "0" and len(hi_str) &gt; 1):
+                    raise ValueError("bad field")
+            else:
+                raise ValueError("bad field")
+            try:
+&gt;               n = int(num_part)
+                        ^^^^^^^^
+E               UnboundLocalError: cannot access local variable 'num_part' where it is not associated with a value
+
+solution.py:45: UnboundLocalError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-091030.cron_field_expand.tests.test_solution" name="test_out_of_range" time="0.000"><failure message="UnboundLocalError: cannot access local variable 'num_part' where it is not associated with a value">def test_out_of_range():
+&gt;       with pytest.raises(ValueError) as e: f('0-99', 0, 59)
+                                             ^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:16: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+field = '0-99', lo = 0, hi = 59
+
+    def cron_field(field, lo, hi):
+        if not isinstance(lo, int) or not isinstance(hi, int) or lo &gt; hi:
+            raise ValueError("bad bounds")
+        out = set()
+        for item in field.split(","):
+            if not item:
+                raise ValueError("bad field")
+            if item == "*":
+                out.update(range(lo, hi + 1))
+                continue
+            step = None
+            slash_idx = item.find("/")
+            if slash_idx &gt;= 0:
+                step_part = item[slash_idx+1:]
+                if not step_part or (step_part[0] in "0" and len(step_part) &gt; 1):
+                    raise ValueError("bad field")
+                try:
+                    step = int(step_part)
+                except ValueError:
+                    raise ValueError("bad field")
+                if step &lt;= 0:
+                    raise ValueError("bad step")
+                item = item[:slash_idx]
+            parts = item.split("-")
+            if len(parts) == 1:
+                num_part = parts[0]
+                if slash_idx &gt;= 0:
+                    raise ValueError("bad field")
+            elif len(parts) == 2 and parts[1]:
+                lo_str, hi_str = parts
+                try:
+                    parsed_lo = int(lo_str)
+                except ValueError:
+                    raise ValueError("bad field")
+                try:
+                    parsed_hi = int(parts[1])
+                except ValueError:
+                    raise ValueError("bad field")
+                if (lo_str[0] in "0" and len(lo_str) &gt; 1) or \
+                   (hi_str[0] in "0" and len(hi_str) &gt; 1):
+                    raise ValueError("bad field")
+            else:
+                raise ValueError("bad field")
+            try:
+&gt;               n = int(num_part)
+                        ^^^^^^^^
+E               UnboundLocalError: cannot access local variable 'num_part' where it is not associated with a value
+
+solution.py:45: UnboundLocalError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-091030.cron_field_expand.tests.test_solution" name="test_zero_step" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-091030.cron_field_expand.tests.test_solution" name="test_bad_bounds" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-091030.cron_field_expand.tests.test_solution" name="test_empty_field" time="0.000" /></testsuite></testsuites>

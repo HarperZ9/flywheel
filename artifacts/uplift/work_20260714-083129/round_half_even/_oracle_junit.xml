@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="7" skipped="0" tests="11" time="0.214" timestamp="2026-07-14T08:59:03.933530-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260714-083129.round_half_even.tests.test_solution" name="test_half_down" time="0.001"><failure message="assert 1 == 0&#10; +  where 1 = f(1, 2)">&gt;   def test_half_down(): assert f(1, 2) == 0
+                          ^^^^^^^^^^^^^^^^^^^
+E   assert 1 == 0
+E    +  where 1 = f(1, 2)
+
+tests\test_solution.py:3: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.round_half_even.tests.test_solution" name="test_half_up" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-083129.round_half_even.tests.test_solution" name="test_half_even" time="0.000"><failure message="assert 3 == 2&#10; +  where 3 = f(5, 2)">&gt;   def test_half_even(): assert f(5, 2) == 2
+                          ^^^^^^^^^^^^^^^^^^^
+E   assert 3 == 2
+E    +  where 3 = f(5, 2)
+
+tests\test_solution.py:5: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.round_half_even.tests.test_solution" name="test_over" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-083129.round_half_even.tests.test_solution" name="test_third" time="0.000"><failure message="assert 1 == 0&#10; +  where 1 = f(1, 3)">&gt;   def test_third(): assert f(1, 3) == 0
+                      ^^^^^^^^^^^^^^^^^^^
+E   assert 1 == 0
+E    +  where 1 = f(1, 3)
+
+tests\test_solution.py:7: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.round_half_even.tests.test_solution" name="test_neg_half" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-083129.round_half_even.tests.test_solution" name="test_neg_three_half" time="0.001"><failure message="assert -1 == -2&#10; +  where -1 = f(-3, 2)">&gt;   def test_neg_three_half(): assert f(-3, 2) == -2
+                               ^^^^^^^^^^^^^^^^^^^^^
+E   assert -1 == -2
+E    +  where -1 = f(-3, 2)
+
+tests\test_solution.py:9: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.round_half_even.tests.test_solution" name="test_exact" time="0.000"><failure message="assert 3 == 2&#10; +  where 3 = f(4, 2)">&gt;   def test_exact(): assert f(4, 2) == 2
+                      ^^^^^^^^^^^^^^^^^^^
+E   assert 3 == 2
+E    +  where 3 = f(4, 2)
+
+tests\test_solution.py:10: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.round_half_even.tests.test_solution" name="test_neg_den" time="0.001"><failure message="assert -3 == -2&#10; +  where -3 = f(5, -2)">&gt;   def test_neg_den(): assert f(5, -2) == -2
+                        ^^^^^^^^^^^^^^^^^^^^^
+E   assert -3 == -2
+E    +  where -3 = f(5, -2)
+
+tests\test_solution.py:11: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.round_half_even.tests.test_solution" name="test_div_zero" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-083129.round_half_even.tests.test_solution" name="test_bad_arg" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_bad_arg():
+&gt;       with pytest.raises(ValueError) as e: f(True, 2)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:16: Failed</failure></testcase></testsuite></testsuites>

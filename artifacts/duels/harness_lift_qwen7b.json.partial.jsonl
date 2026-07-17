@@ -1,0 +1,10 @@
+{"task_id": "merge_intervals", "single": true, "ext": true, "self": true, "cons": true, "hidden_pass": [true, true, true, false], "correct_count": 3, "self_test_broken": false, "gen_s": 6.05, "ver_s": 12.45}
+{"task_id": "roman_to_int", "single": true, "ext": true, "self": true, "cons": true, "hidden_pass": [true, true, true, true], "correct_count": 4, "self_test_broken": false, "gen_s": 5.38, "ver_s": 12.36}
+{"task_id": "is_balanced", "single": true, "ext": true, "self": true, "cons": true, "hidden_pass": [true, true, true, true], "correct_count": 4, "self_test_broken": false, "gen_s": 3.33, "ver_s": 12.75}
+{"task_id": "two_sum", "single": false, "ext": true, "self": true, "cons": false, "hidden_pass": [false, true, true, true], "correct_count": 3, "self_test_broken": false, "gen_s": 2.94, "ver_s": 11.2}
+{"task_id": "run_length_encode", "single": true, "ext": true, "self": true, "cons": true, "hidden_pass": [true, true, true, true], "correct_count": 4, "self_test_broken": false, "gen_s": 4.67, "ver_s": 11.25}
+{"task_id": "flatten_nested", "single": true, "ext": true, "self": true, "cons": true, "hidden_pass": [true, true, true, true], "correct_count": 4, "self_test_broken": false, "gen_s": 3.03, "ver_s": 12.02}
+{"task_id": "my_atoi", "single": false, "ext": false, "self": false, "cons": false, "hidden_pass": [false, false, false, false], "correct_count": 0, "self_test_broken": true, "gen_s": 9.06, "ver_s": 12.78}
+{"task_id": "spiral_order", "single": true, "ext": true, "self": true, "cons": true, "hidden_pass": [true, true, false, false], "correct_count": 2, "self_test_broken": false, "gen_s": 9.3, "ver_s": 16.22}
+{"task_id": "longest_common_prefix", "single": true, "ext": true, "self": true, "cons": true, "hidden_pass": [true, true, true, true], "correct_count": 4, "self_test_broken": false, "gen_s": 3.05, "ver_s": 12.5}
+{"task_id": "binary_search", "single": true, "ext": true, "self": true, "cons": true, "hidden_pass": [true, true, true, true], "correct_count": 4, "self_test_broken": false, "gen_s": 3.89, "ver_s": 12.22}

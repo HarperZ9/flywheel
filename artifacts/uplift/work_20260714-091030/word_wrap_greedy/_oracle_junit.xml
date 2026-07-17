@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="7" skipped="0" tests="9" time="0.227" timestamp="2026-07-14T09:31:25.945555-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260714-091030.word_wrap_greedy.tests.test_solution" name="test_greedy" time="0.001"><failure message="AssertionError: assert ['the   quick'] == ['the quick', 'brown fox']&#10;  &#10;  At index 0 diff: 'the   quick' != 'the quick'&#10;  Right contains one more item: 'brown fox'&#10;  Use -v to get more diff">&gt;   def test_greedy(): assert f('the quick brown fox', 10) == ['the quick', 'brown fox']
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert ['the   quick'] == ['the quick', 'brown fox']
+E     
+E     At index 0 diff: 'the   quick' != 'the quick'
+E     Right contains one more item: 'brown fox'
+E     Use -v to get more diff
+
+tests\test_solution.py:3: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-091030.word_wrap_greedy.tests.test_solution" name="test_exact_fit" time="0.001"><failure message="AssertionError: assert [] == ['aa bb']&#10;  &#10;  Right contains one more item: 'aa bb'&#10;  Use -v to get more diff">&gt;   def test_exact_fit(): assert f('aa bb', 5) == ['aa bb']
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert [] == ['aa bb']
+E     
+E     Right contains one more item: 'aa bb'
+E     Use -v to get more diff
+
+tests\test_solution.py:4: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-091030.word_wrap_greedy.tests.test_solution" name="test_no_fit" time="0.000"><failure message="AssertionError: assert ['aa'] == ['aa', 'bb']&#10;  &#10;  Right contains one more item: 'bb'&#10;  Use -v to get more diff">&gt;   def test_no_fit(): assert f('aa bb', 4) == ['aa', 'bb']
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert ['aa'] == ['aa', 'bb']
+E     
+E     Right contains one more item: 'bb'
+E     Use -v to get more diff
+
+tests\test_solution.py:5: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-091030.word_wrap_greedy.tests.test_solution" name="test_long_word" time="0.000"><failure message="AssertionError: assert ['abc', 'def', 'gh'] == ['abc', 'def', 'gh', 'xy']&#10;  &#10;  Right contains one more item: 'xy'&#10;  Use -v to get more diff">&gt;   def test_long_word(): assert f('abcdefgh xy', 3) == ['abc', 'def', 'gh', 'xy']
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert ['abc', 'def', 'gh'] == ['abc', 'def', 'gh', 'xy']
+E     
+E     Right contains one more item: 'xy'
+E     Use -v to get more diff
+
+tests\test_solution.py:6: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-091030.word_wrap_greedy.tests.test_solution" name="test_remainder_joins" time="0.001"><failure message="AssertionError: assert ['abc', 'd'] == ['abc', 'd x']&#10;  &#10;  At index 1 diff: 'd' != 'd x'&#10;  Use -v to get more diff">&gt;   def test_remainder_joins(): assert f('abcd x', 3) == ['abc', 'd x']
+                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert ['abc', 'd'] == ['abc', 'd x']
+E     
+E     At index 1 diff: 'd' != 'd x'
+E     Use -v to get more diff
+
+tests\test_solution.py:7: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-091030.word_wrap_greedy.tests.test_solution" name="test_whitespace_only" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-091030.word_wrap_greedy.tests.test_solution" name="test_single_word" time="0.001"><failure message="AssertionError: assert [] == ['hi']&#10;  &#10;  Right contains one more item: 'hi'&#10;  Use -v to get more diff">&gt;   def test_single_word(): assert f('hi', 10) == ['hi']
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert [] == ['hi']
+E     
+E     Right contains one more item: 'hi'
+E     Use -v to get more diff
+
+tests\test_solution.py:9: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-091030.word_wrap_greedy.tests.test_solution" name="test_bad_width_zero" time="0.001" /><testcase classname="artifacts.uplift.work_20260714-091030.word_wrap_greedy.tests.test_solution" name="test_bad_width_bool" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_bad_width_bool():
+&gt;       with pytest.raises(ValueError): f('a', True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:14: Failed</failure></testcase></testsuite></testsuites>

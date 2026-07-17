@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="6" skipped="0" tests="8" time="0.235" timestamp="2026-07-13T20:14:20.600314-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-195624.covered_integer_count.tests.test_solution" name="test_overlap" time="0.001"><failure message="ValueError: 4 is not in list">&gt;   def test_overlap(): assert f([[1, 3], [2, 5]]) == 5
+                               ^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:3: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+intervals = [[1, 3], [2, 5]]
+
+    def count_covered(intervals):
+        """
+        Count how many distinct integers are covered by a list of closed integer intervals.
+    
+        :param intervals: A list of intervals in ARBITRARY order and may overlap, nest, duplicate or touch each other.
+        :type intervals: List[List[int]]
+    
+        :return: The number of distinct integers covered by the given intervals.
+        """
+        if not intervals:
+            return 0
+        for interval in intervals:
+            start = min(interval[0], interval[1])
+            end = max(interval[0], interval[1])
+            total_covered = sum([start, end])
+            if total_covered &gt; 0 and (end - start) &gt; 1:
+                break
+&gt;       return len(intervals) - intervals.index(total_covered)
+                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       ValueError: 4 is not in list
+
+solution.py:18: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.covered_integer_count.tests.test_solution" name="test_adjacent" time="0.000"><failure message="ValueError: 7 is not in list">&gt;   def test_adjacent(): assert f([[1, 2], [3, 4]]) == 4
+                                ^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:4: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+intervals = [[1, 2], [3, 4]]
+
+    def count_covered(intervals):
+        """
+        Count how many distinct integers are covered by a list of closed integer intervals.
+    
+        :param intervals: A list of intervals in ARBITRARY order and may overlap, nest, duplicate or touch each other.
+        :type intervals: List[List[int]]
+    
+        :return: The number of distinct integers covered by the given intervals.
+        """
+        if not intervals:
+            return 0
+        for interval in intervals:
+            start = min(interval[0], interval[1])
+            end = max(interval[0], interval[1])
+            total_covered = sum([start, end])
+            if total_covered &gt; 0 and (end - start) &gt; 1:
+                break
+&gt;       return len(intervals) - intervals.index(total_covered)
+                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       ValueError: 7 is not in list
+
+solution.py:18: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.covered_integer_count.tests.test_solution" name="test_empty" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-195624.covered_integer_count.tests.test_solution" name="test_duplicates" time="0.000"><failure message="ValueError: 2 is not in list">&gt;   def test_duplicates(): assert f([[1, 1], [1, 1]]) == 1
+                                  ^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:6: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+intervals = [[1, 1], [1, 1]]
+
+    def count_covered(intervals):
+        """
+        Count how many distinct integers are covered by a list of closed integer intervals.
+    
+        :param intervals: A list of intervals in ARBITRARY order and may overlap, nest, duplicate or touch each other.
+        :type intervals: List[List[int]]
+    
+        :return: The number of distinct integers covered by the given intervals.
+        """
+        if not intervals:
+            return 0
+        for interval in intervals:
+            start = min(interval[0], interval[1])
+            end = max(interval[0], interval[1])
+            total_covered = sum([start, end])
+            if total_covered &gt; 0 and (end - start) &gt; 1:
+                break
+&gt;       return len(intervals) - intervals.index(total_covered)
+                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       ValueError: 2 is not in list
+
+solution.py:18: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.covered_integer_count.tests.test_solution" name="test_negative" time="0.000"><failure message="ValueError: 20 is not in list">&gt;   def test_negative(): assert f([[-5, -3], [10, 10]]) == 4
+                                ^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:7: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+intervals = [[-5, -3], [10, 10]]
+
+    def count_covered(intervals):
+        """
+        Count how many distinct integers are covered by a list of closed integer intervals.
+    
+        :param intervals: A list of intervals in ARBITRARY order and may overlap, nest, duplicate or touch each other.
+        :type intervals: List[List[int]]
+    
+        :return: The number of distinct integers covered by the given intervals.
+        """
+        if not intervals:
+            return 0
+        for interval in intervals:
+            start = min(interval[0], interval[1])
+            end = max(interval[0], interval[1])
+            total_covered = sum([start, end])
+            if total_covered &gt; 0 and (end - start) &gt; 1:
+                break
+&gt;       return len(intervals) - intervals.index(total_covered)
+                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       ValueError: 20 is not in list
+
+solution.py:18: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.covered_integer_count.tests.test_solution" name="test_no_mutation" time="0.000"><failure message="ValueError: 12 is not in list">def test_no_mutation():
+        g = [[5, 7], [1, 2]]
+&gt;       assert f(g) == 5
+               ^^^^
+
+tests\test_solution.py:10: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+intervals = [[5, 7], [1, 2]]
+
+    def count_covered(intervals):
+        """
+        Count how many distinct integers are covered by a list of closed integer intervals.
+    
+        :param intervals: A list of intervals in ARBITRARY order and may overlap, nest, duplicate or touch each other.
+        :type intervals: List[List[int]]
+    
+        :return: The number of distinct integers covered by the given intervals.
+        """
+        if not intervals:
+            return 0
+        for interval in intervals:
+            start = min(interval[0], interval[1])
+            end = max(interval[0], interval[1])
+            total_covered = sum([start, end])
+            if total_covered &gt; 0 and (end - start) &gt; 1:
+                break
+&gt;       return len(intervals) - intervals.index(total_covered)
+                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       ValueError: 12 is not in list
+
+solution.py:18: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.covered_integer_count.tests.test_solution" name="test_inverted" time="0.001"><failure message="AssertionError: assert '4 is not in list' == 'bad interval'&#10;  &#10;  - bad interval&#10;  + 4 is not in list">def test_inverted():
+        with pytest.raises(ValueError) as e: f([[3, 1]])
+&gt;       assert str(e.value) == 'bad interval'
+E       AssertionError: assert '4 is not in list' == 'bad interval'
+E         
+E         - bad interval
+E         + 4 is not in list
+
+tests\test_solution.py:14: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.covered_integer_count.tests.test_solution" name="test_bool_bound" time="0.000" /></testsuite></testsuites>

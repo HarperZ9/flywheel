@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="4" skipped="0" tests="12" time="0.244" timestamp="2026-07-14T09:50:33.963055-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260714-091030.lcs_diff_ops.tests.test_solution" name="test_replace_middle" time="0.001"><failure message="AttributeError: 'list' object has no attribute 'get'">def test_replace_middle():
+&gt;       assert f(['a', 'b', 'c'], ['a', 'x', 'c']) == [('equal', ['a']), ('delete', ['b']), ('insert', ['x']), ('equal', ['c'])]
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:4: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+a = ['a', 'b', 'c'], b = ['a', 'x', 'c']
+
+    def diff_ops(a, b):
+        if not isinstance(a, list) or not isinstance(b, list):
+            raise ValueError('bad input')
+        ia = 0
+        ja = len(a)
+        ib = 0
+        jb = len(b)
+        out: list[tuple[str, list]] = []
+        while ia &lt; ja and ib &lt; jb:
+            if a[ia] == b[ib]:
+                ctag, citms = 'equal', [a[ia]]
+                ia += 1
+                ib += 1
+                while ia &lt; ja and ib &lt; jb and a[ia] == b[ib]:
+                    citms.append(a[ia])
+                    ia += 1
+                    ib += 1
+            else:
+                ctag, citms = 'delete', [a[ia]]
+                ia += 1
+                try_2 = _try_minimal(a, ia, b, ib)
+                if not try_2 or len(try_2) &gt;= (jb - ib):
+                    ia -= 1
+                    ib -= 1
+                    ctag = 'insert'
+                    citms = [b[ib]]
+                    ib += 1
+&gt;                   while ib &lt; jb and a.get(ia, None) != b[ib]:
+                                      ^^^^^
+E                   AttributeError: 'list' object has no attribute 'get'
+
+solution.py:28: AttributeError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-091030.lcs_diff_ops.tests.test_solution" name="test_all_equal" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-091030.lcs_diff_ops.tests.test_solution" name="test_both_empty" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-091030.lcs_diff_ops.tests.test_solution" name="test_insert_only" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-091030.lcs_diff_ops.tests.test_solution" name="test_delete_only" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-091030.lcs_diff_ops.tests.test_solution" name="test_disjoint" time="0.000"><failure message="AttributeError: 'list' object has no attribute 'get'">def test_disjoint():
+&gt;       assert f(['a', 'b'], ['c', 'd']) == [('delete', ['a', 'b']), ('insert', ['c', 'd'])]
+               ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:10: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+a = ['a', 'b'], b = ['c', 'd']
+
+    def diff_ops(a, b):
+        if not isinstance(a, list) or not isinstance(b, list):
+            raise ValueError('bad input')
+        ia = 0
+        ja = len(a)
+        ib = 0
+        jb = len(b)
+        out: list[tuple[str, list]] = []
+        while ia &lt; ja and ib &lt; jb:
+            if a[ia] == b[ib]:
+                ctag, citms = 'equal', [a[ia]]
+                ia += 1
+                ib += 1
+                while ia &lt; ja and ib &lt; jb and a[ia] == b[ib]:
+                    citms.append(a[ia])
+                    ia += 1
+                    ib += 1
+            else:
+                ctag, citms = 'delete', [a[ia]]
+                ia += 1
+                try_2 = _try_minimal(a, ia, b, ib)
+                if not try_2 or len(try_2) &gt;= (jb - ib):
+                    ia -= 1
+                    ib -= 1
+                    ctag = 'insert'
+                    citms = [b[ib]]
+                    ib += 1
+&gt;                   while ib &lt; jb and a.get(ia, None) != b[ib]:
+                                      ^^^^^
+E                   AttributeError: 'list' object has no attribute 'get'
+
+solution.py:28: AttributeError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-091030.lcs_diff_ops.tests.test_solution" name="test_shift" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-091030.lcs_diff_ops.tests.test_solution" name="test_tie_prefers_delete" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-091030.lcs_diff_ops.tests.test_solution" name="test_append" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-091030.lcs_diff_ops.tests.test_solution" name="test_prepend" time="0.000"><failure message="AttributeError: 'list' object has no attribute 'get'">&gt;   def test_prepend(): assert f(['b'], ['a', 'b']) == [('insert', ['a']), ('equal', ['b'])]
+                               ^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:16: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+a = ['b'], b = ['a', 'b']
+
+    def diff_ops(a, b):
+        if not isinstance(a, list) or not isinstance(b, list):
+            raise ValueError('bad input')
+        ia = 0
+        ja = len(a)
+        ib = 0
+        jb = len(b)
+        out: list[tuple[str, list]] = []
+        while ia &lt; ja and ib &lt; jb:
+            if a[ia] == b[ib]:
+                ctag, citms = 'equal', [a[ia]]
+                ia += 1
+                ib += 1
+                while ia &lt; ja and ib &lt; jb and a[ia] == b[ib]:
+                    citms.append(a[ia])
+                    ia += 1
+                    ib += 1
+            else:
+                ctag, citms = 'delete', [a[ia]]
+                ia += 1
+                try_2 = _try_minimal(a, ia, b, ib)
+                if not try_2 or len(try_2) &gt;= (jb - ib):
+                    ia -= 1
+                    ib -= 1
+                    ctag = 'insert'
+                    citms = [b[ib]]
+                    ib += 1
+&gt;                   while ib &lt; jb and a.get(ia, None) != b[ib]:
+                                      ^^^^^
+E                   AttributeError: 'list' object has no attribute 'get'
+
+solution.py:28: AttributeError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-091030.lcs_diff_ops.tests.test_solution" name="test_bad_input_not_list" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-091030.lcs_diff_ops.tests.test_solution" name="test_bad_element" time="0.001"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_bad_element():
+&gt;       with pytest.raises(ValueError) as e: f([1], [])
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:21: Failed</failure></testcase></testsuite></testsuites>

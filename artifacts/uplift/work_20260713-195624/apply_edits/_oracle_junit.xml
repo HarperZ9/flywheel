@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="1" failures="0" skipped="0" tests="1" time="0.268" timestamp="2026-07-13T20:10:18.100167-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="" name="artifacts.uplift.work_20260713-195624.apply_edits.tests.test_solution" time="0.000"><error message="collection failure">tests\test_solution.py:2: in &lt;module&gt;
+    from solution import apply_edits
+solution.py:51: in &lt;module&gt;
+    check_operations()
+solution.py:47: in check_operations
+    assert apply_edits([1, 2], [("insert", 5, "a"), ("delete", 0), ("replace", 4, "b ")]) == [1, 4, 6]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+solution.py:23: in apply_edits
+    raise ValueError("Invalid operation: only 'insert', 'delete' and 'replace' operations allowed")
+E   ValueError: Invalid operation: only 'insert', 'delete' and 'replace' operations allowed</error></testcase></testsuite></testsuites>

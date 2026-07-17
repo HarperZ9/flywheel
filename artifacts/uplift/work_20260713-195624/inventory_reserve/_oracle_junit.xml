@@ -1,0 +1,256 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="11" skipped="0" tests="14" time="0.284" timestamp="2026-07-13T20:25:14.764442-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-195624.inventory_reserve.tests.test_solution" name="test_basic" time="0.001"><failure message="ValueError: too many values to unpack (expected 2)">def test_basic():
+&gt;       assert f({'w': 5}, [('reserve', 'w', 2)]) == [('w', 2)]
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:4: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+stock = {'w': 5}, ops = [('reserve', 'w', 2)]
+
+    def reserve_trace(stock, ops):
+        def validate_and_reserve(item, qty, stock):
+            if not isinstance(item, str) or not isinstance(qty, (int, bool)):
+                raise ValueError('bad stock')
+            available_stock = int(stock[item])
+            try:
+                res_item = 'reserve' + item
+                new_reserved_count = max(0, available_stock - qty)
+            except KeyError:
+                raise ValueError(f'the {item} key is unknown in the stock dict')
+            if not isinstance(new_reserved_count, (int, bool)):
+                raise ValueError('bad qty')
+            try:
+                stock[new_reserved_item] = new_reserved_count
+            except TypeError as e:
+                raise ValueError(str(e))
+    
+        def validate_and_cancel(item, qty):
+            for op in ops:
+                try:
+                    if op[0] == 'cancel':
+                        validate_and_reserve(item, -qty, stock)
+                    else:
+                        raise ValueError(f'wrong operation: {op}')
+                except (ValueError, TypeError) as e:
+                    raise ValueError(str(e))
+    
+        results = []
+        for operation in ops:
+&gt;           item, qty = operation
+            ^^^^^^^^^
+E           ValueError: too many values to unpack (expected 2)
+
+solution.py:30: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.inventory_reserve.tests.test_solution" name="test_accumulate_and_sort" time="0.001"><failure message="ValueError: too many values to unpack (expected 2)">def test_accumulate_and_sort():
+&gt;       assert f({'b': 4, 'a': 4}, [('reserve', 'b', 1), ('reserve', 'a', 2), ('reserve', 'b', 1)]) == [('a', 2), ('b', 2)]
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:6: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+stock = {'a': 4, 'b': 4}
+ops = [('reserve', 'b', 1), ('reserve', 'a', 2), ('reserve', 'b', 1)]
+
+    def reserve_trace(stock, ops):
+        def validate_and_reserve(item, qty, stock):
+            if not isinstance(item, str) or not isinstance(qty, (int, bool)):
+                raise ValueError('bad stock')
+            available_stock = int(stock[item])
+            try:
+                res_item = 'reserve' + item
+                new_reserved_count = max(0, available_stock - qty)
+            except KeyError:
+                raise ValueError(f'the {item} key is unknown in the stock dict')
+            if not isinstance(new_reserved_count, (int, bool)):
+                raise ValueError('bad qty')
+            try:
+                stock[new_reserved_item] = new_reserved_count
+            except TypeError as e:
+                raise ValueError(str(e))
+    
+        def validate_and_cancel(item, qty):
+            for op in ops:
+                try:
+                    if op[0] == 'cancel':
+                        validate_and_reserve(item, -qty, stock)
+                    else:
+                        raise ValueError(f'wrong operation: {op}')
+                except (ValueError, TypeError) as e:
+                    raise ValueError(str(e))
+    
+        results = []
+        for operation in ops:
+&gt;           item, qty = operation
+            ^^^^^^^^^
+E           ValueError: too many values to unpack (expected 2)
+
+solution.py:30: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.inventory_reserve.tests.test_solution" name="test_cancel_to_zero_excluded" time="0.001"><failure message="ValueError: too many values to unpack (expected 2)">def test_cancel_to_zero_excluded():
+&gt;       assert f({'w': 5}, [('reserve', 'w', 3), ('cancel', 'w', 3)]) == []
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:8: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+stock = {'w': 5}, ops = [('reserve', 'w', 3), ('cancel', 'w', 3)]
+
+    def reserve_trace(stock, ops):
+        def validate_and_reserve(item, qty, stock):
+            if not isinstance(item, str) or not isinstance(qty, (int, bool)):
+                raise ValueError('bad stock')
+            available_stock = int(stock[item])
+            try:
+                res_item = 'reserve' + item
+                new_reserved_count = max(0, available_stock - qty)
+            except KeyError:
+                raise ValueError(f'the {item} key is unknown in the stock dict')
+            if not isinstance(new_reserved_count, (int, bool)):
+                raise ValueError('bad qty')
+            try:
+                stock[new_reserved_item] = new_reserved_count
+            except TypeError as e:
+                raise ValueError(str(e))
+    
+        def validate_and_cancel(item, qty):
+            for op in ops:
+                try:
+                    if op[0] == 'cancel':
+                        validate_and_reserve(item, -qty, stock)
+                    else:
+                        raise ValueError(f'wrong operation: {op}')
+                except (ValueError, TypeError) as e:
+                    raise ValueError(str(e))
+    
+        results = []
+        for operation in ops:
+&gt;           item, qty = operation
+            ^^^^^^^^^
+E           ValueError: too many values to unpack (expected 2)
+
+solution.py:30: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.inventory_reserve.tests.test_solution" name="test_reserve_exactly_available" time="0.000"><failure message="ValueError: too many values to unpack (expected 2)">def test_reserve_exactly_available():
+&gt;       assert f({'w': 5}, [('reserve', 'w', 5)]) == [('w', 5)]
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:10: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+stock = {'w': 5}, ops = [('reserve', 'w', 5)]
+
+    def reserve_trace(stock, ops):
+        def validate_and_reserve(item, qty, stock):
+            if not isinstance(item, str) or not isinstance(qty, (int, bool)):
+                raise ValueError('bad stock')
+            available_stock = int(stock[item])
+            try:
+                res_item = 'reserve' + item
+                new_reserved_count = max(0, available_stock - qty)
+            except KeyError:
+                raise ValueError(f'the {item} key is unknown in the stock dict')
+            if not isinstance(new_reserved_count, (int, bool)):
+                raise ValueError('bad qty')
+            try:
+                stock[new_reserved_item] = new_reserved_count
+            except TypeError as e:
+                raise ValueError(str(e))
+    
+        def validate_and_cancel(item, qty):
+            for op in ops:
+                try:
+                    if op[0] == 'cancel':
+                        validate_and_reserve(item, -qty, stock)
+                    else:
+                        raise ValueError(f'wrong operation: {op}')
+                except (ValueError, TypeError) as e:
+                    raise ValueError(str(e))
+    
+        results = []
+        for operation in ops:
+&gt;           item, qty = operation
+            ^^^^^^^^^
+E           ValueError: too many values to unpack (expected 2)
+
+solution.py:30: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.inventory_reserve.tests.test_solution" name="test_no_ops" time="0.001" /><testcase classname="artifacts.uplift.work_20260713-195624.inventory_reserve.tests.test_solution" name="test_not_enough_message" time="0.001"><failure message="AssertionError: assert 'too many val... (expected 2)' == 'not enough widget'&#10;  &#10;  - not enough widget&#10;  + too many values to unpack (expected 2)">def test_not_enough_message():
+        with pytest.raises(ValueError) as e:
+            f({'widget': 3}, [('reserve', 'widget', 2), ('reserve', 'widget', 2)])
+&gt;       assert str(e.value) == 'not enough widget'
+E       AssertionError: assert 'too many val... (expected 2)' == 'not enough widget'
+E         
+E         - not enough widget
+E         + too many values to unpack (expected 2)
+
+tests\test_solution.py:16: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.inventory_reserve.tests.test_solution" name="test_over_cancel" time="0.001"><failure message="AssertionError: assert 'too many val... (expected 2)' == 'over-cancel'&#10;  &#10;  - over-cancel&#10;  + too many values to unpack (expected 2)">def test_over_cancel():
+        with pytest.raises(ValueError) as e:
+            f({'w': 5}, [('reserve', 'w', 1), ('cancel', 'w', 2)])
+&gt;       assert str(e.value) == 'over-cancel'
+E       AssertionError: assert 'too many val... (expected 2)' == 'over-cancel'
+E         
+E         - over-cancel
+E         + too many values to unpack (expected 2)
+
+tests\test_solution.py:20: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.inventory_reserve.tests.test_solution" name="test_unknown_item" time="0.001"><failure message="AssertionError: assert 'too many val... (expected 2)' == 'unknown item'&#10;  &#10;  - unknown item&#10;  + too many values to unpack (expected 2)">def test_unknown_item():
+        with pytest.raises(ValueError) as e: f({'w': 1}, [('reserve', 'x', 1)])
+&gt;       assert str(e.value) == 'unknown item'
+E       AssertionError: assert 'too many val... (expected 2)' == 'unknown item'
+E         
+E         - unknown item
+E         + too many values to unpack (expected 2)
+
+tests\test_solution.py:23: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.inventory_reserve.tests.test_solution" name="test_bad_qty_zero" time="0.001"><failure message="AssertionError: assert 'too many val... (expected 2)' == 'bad qty'&#10;  &#10;  - bad qty&#10;  + too many values to unpack (expected 2)">def test_bad_qty_zero():
+        with pytest.raises(ValueError) as e: f({'w': 1}, [('reserve', 'w', 0)])
+&gt;       assert str(e.value) == 'bad qty'
+E       AssertionError: assert 'too many val... (expected 2)' == 'bad qty'
+E         
+E         - bad qty
+E         + too many values to unpack (expected 2)
+
+tests\test_solution.py:26: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.inventory_reserve.tests.test_solution" name="test_bad_qty_bool" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-195624.inventory_reserve.tests.test_solution" name="test_bad_op" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-195624.inventory_reserve.tests.test_solution" name="test_bad_stock_bool_value" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_bad_stock_bool_value():
+&gt;       with pytest.raises(ValueError) as e: f({'w': True}, [])
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:33: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.inventory_reserve.tests.test_solution" name="test_bad_stock_negative" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_bad_stock_negative():
+&gt;       with pytest.raises(ValueError): f({'w': -1}, [])
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:36: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.inventory_reserve.tests.test_solution" name="test_no_mutation" time="0.000"><failure message="ValueError: too many values to unpack (expected 2)">def test_no_mutation():
+        s = {'w': 5}
+&gt;       f(s, [('reserve', 'w', 2)])
+
+tests\test_solution.py:39: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+stock = {'w': 5}, ops = [('reserve', 'w', 2)]
+
+    def reserve_trace(stock, ops):
+        def validate_and_reserve(item, qty, stock):
+            if not isinstance(item, str) or not isinstance(qty, (int, bool)):
+                raise ValueError('bad stock')
+            available_stock = int(stock[item])
+            try:
+                res_item = 'reserve' + item
+                new_reserved_count = max(0, available_stock - qty)
+            except KeyError:
+                raise ValueError(f'the {item} key is unknown in the stock dict')
+            if not isinstance(new_reserved_count, (int, bool)):
+                raise ValueError('bad qty')
+            try:
+                stock[new_reserved_item] = new_reserved_count
+            except TypeError as e:
+                raise ValueError(str(e))
+    
+        def validate_and_cancel(item, qty):
+            for op in ops:
+                try:
+                    if op[0] == 'cancel':
+                        validate_and_reserve(item, -qty, stock)
+                    else:
+                        raise ValueError(f'wrong operation: {op}')
+                except (ValueError, TypeError) as e:
+                    raise ValueError(str(e))
+    
+        results = []
+        for operation in ops:
+&gt;           item, qty = operation
+            ^^^^^^^^^
+E           ValueError: too many values to unpack (expected 2)
+
+solution.py:30: ValueError</failure></testcase></testsuite></testsuites>

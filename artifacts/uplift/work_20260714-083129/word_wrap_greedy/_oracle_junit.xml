@@ -1,0 +1,251 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="8" skipped="0" tests="9" time="0.222" timestamp="2026-07-14T08:47:26.122575-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260714-083129.word_wrap_greedy.tests.test_solution" name="test_greedy" time="0.001"><failure message="IndexError: list assignment index out of range">&gt;   def test_greedy(): assert f('the quick brown fox', 10) == ['the quick', 'brown fox']
+                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:3: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+s = 'the quick brown fox', width = 10
+
+    def wrap_text(s, width):
+        if not isinstance(width, int) or width &lt; 1:
+            raise ValueError('bad width')
+    
+        words = s.split()
+        lines = []
+        current_line = []
+    
+        for word in words:
+            if len(word) &gt; width:
+                # If the word is longer than the line's remaining space, start a new line
+                while word:
+                    chunk, word = word[:width], word[width:]
+                    current_line.append(chunk)
+                    lines.append(' '.join(current_line))
+                    current_line = []
+                    if not word:
+                        break
+            else:
+                # Append words to the current line until no more can fit on it
+                remaining_space = width - len(' '.join(current_line) + ' ') if current_line else width
+                while word and remaining_space &gt;= 1:
+                    remaining_space -= len(word) + 1
+                    word = f"{word} " if not current_line else f" {word}"
+                    current_line.append(word)
+    
+        # Handle the last line, which may be incomplete
+&gt;       lines[-1] = ' '.join(current_line)
+        ^^^^^^^^^
+E       IndexError: list assignment index out of range
+
+solution.py:28: IndexError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.word_wrap_greedy.tests.test_solution" name="test_exact_fit" time="0.000"><failure message="IndexError: list assignment index out of range">&gt;   def test_exact_fit(): assert f('aa bb', 5) == ['aa bb']
+                                 ^^^^^^^^^^^^^
+
+tests\test_solution.py:4: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+s = 'aa bb', width = 5
+
+    def wrap_text(s, width):
+        if not isinstance(width, int) or width &lt; 1:
+            raise ValueError('bad width')
+    
+        words = s.split()
+        lines = []
+        current_line = []
+    
+        for word in words:
+            if len(word) &gt; width:
+                # If the word is longer than the line's remaining space, start a new line
+                while word:
+                    chunk, word = word[:width], word[width:]
+                    current_line.append(chunk)
+                    lines.append(' '.join(current_line))
+                    current_line = []
+                    if not word:
+                        break
+            else:
+                # Append words to the current line until no more can fit on it
+                remaining_space = width - len(' '.join(current_line) + ' ') if current_line else width
+                while word and remaining_space &gt;= 1:
+                    remaining_space -= len(word) + 1
+                    word = f"{word} " if not current_line else f" {word}"
+                    current_line.append(word)
+    
+        # Handle the last line, which may be incomplete
+&gt;       lines[-1] = ' '.join(current_line)
+        ^^^^^^^^^
+E       IndexError: list assignment index out of range
+
+solution.py:28: IndexError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.word_wrap_greedy.tests.test_solution" name="test_no_fit" time="0.000"><failure message="IndexError: list assignment index out of range">&gt;   def test_no_fit(): assert f('aa bb', 4) == ['aa', 'bb']
+                              ^^^^^^^^^^^^^
+
+tests\test_solution.py:5: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+s = 'aa bb', width = 4
+
+    def wrap_text(s, width):
+        if not isinstance(width, int) or width &lt; 1:
+            raise ValueError('bad width')
+    
+        words = s.split()
+        lines = []
+        current_line = []
+    
+        for word in words:
+            if len(word) &gt; width:
+                # If the word is longer than the line's remaining space, start a new line
+                while word:
+                    chunk, word = word[:width], word[width:]
+                    current_line.append(chunk)
+                    lines.append(' '.join(current_line))
+                    current_line = []
+                    if not word:
+                        break
+            else:
+                # Append words to the current line until no more can fit on it
+                remaining_space = width - len(' '.join(current_line) + ' ') if current_line else width
+                while word and remaining_space &gt;= 1:
+                    remaining_space -= len(word) + 1
+                    word = f"{word} " if not current_line else f" {word}"
+                    current_line.append(word)
+    
+        # Handle the last line, which may be incomplete
+&gt;       lines[-1] = ' '.join(current_line)
+        ^^^^^^^^^
+E       IndexError: list assignment index out of range
+
+solution.py:28: IndexError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.word_wrap_greedy.tests.test_solution" name="test_long_word" time="0.000"><failure message="AssertionError: assert ['abc', 'def', 'xy '] == ['abc', 'def', 'gh', 'xy']&#10;  &#10;  At index 2 diff: 'xy ' != 'gh'&#10;  Right contains one more item: 'xy'&#10;  Use -v to get more diff">&gt;   def test_long_word(): assert f('abcdefgh xy', 3) == ['abc', 'def', 'gh', 'xy']
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert ['abc', 'def', 'xy '] == ['abc', 'def', 'gh', 'xy']
+E     
+E     At index 2 diff: 'xy ' != 'gh'
+E     Right contains one more item: 'xy'
+E     Use -v to get more diff
+
+tests\test_solution.py:6: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.word_wrap_greedy.tests.test_solution" name="test_remainder_joins" time="0.000"><failure message="AssertionError: assert ['abc', 'x   x '] == ['abc', 'd x']&#10;  &#10;  At index 1 diff: 'x   x ' != 'd x'&#10;  Use -v to get more diff">&gt;   def test_remainder_joins(): assert f('abcd x', 3) == ['abc', 'd x']
+                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert ['abc', 'x   x '] == ['abc', 'd x']
+E     
+E     At index 1 diff: 'x   x ' != 'd x'
+E     Use -v to get more diff
+
+tests\test_solution.py:7: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.word_wrap_greedy.tests.test_solution" name="test_whitespace_only" time="0.001"><failure message="IndexError: list assignment index out of range">&gt;   def test_whitespace_only(): assert f(' \t ', 5) == []
+                                       ^^^^^^^^^^^^
+
+tests\test_solution.py:8: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+s = ' \t ', width = 5
+
+    def wrap_text(s, width):
+        if not isinstance(width, int) or width &lt; 1:
+            raise ValueError('bad width')
+    
+        words = s.split()
+        lines = []
+        current_line = []
+    
+        for word in words:
+            if len(word) &gt; width:
+                # If the word is longer than the line's remaining space, start a new line
+                while word:
+                    chunk, word = word[:width], word[width:]
+                    current_line.append(chunk)
+                    lines.append(' '.join(current_line))
+                    current_line = []
+                    if not word:
+                        break
+            else:
+                # Append words to the current line until no more can fit on it
+                remaining_space = width - len(' '.join(current_line) + ' ') if current_line else width
+                while word and remaining_space &gt;= 1:
+                    remaining_space -= len(word) + 1
+                    word = f"{word} " if not current_line else f" {word}"
+                    current_line.append(word)
+    
+        # Handle the last line, which may be incomplete
+&gt;       lines[-1] = ' '.join(current_line)
+        ^^^^^^^^^
+E       IndexError: list assignment index out of range
+
+solution.py:28: IndexError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.word_wrap_greedy.tests.test_solution" name="test_single_word" time="0.000"><failure message="IndexError: list assignment index out of range">&gt;   def test_single_word(): assert f('hi', 10) == ['hi']
+                                   ^^^^^^^^^^^
+
+tests\test_solution.py:9: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+s = 'hi', width = 10
+
+    def wrap_text(s, width):
+        if not isinstance(width, int) or width &lt; 1:
+            raise ValueError('bad width')
+    
+        words = s.split()
+        lines = []
+        current_line = []
+    
+        for word in words:
+            if len(word) &gt; width:
+                # If the word is longer than the line's remaining space, start a new line
+                while word:
+                    chunk, word = word[:width], word[width:]
+                    current_line.append(chunk)
+                    lines.append(' '.join(current_line))
+                    current_line = []
+                    if not word:
+                        break
+            else:
+                # Append words to the current line until no more can fit on it
+                remaining_space = width - len(' '.join(current_line) + ' ') if current_line else width
+                while word and remaining_space &gt;= 1:
+                    remaining_space -= len(word) + 1
+                    word = f"{word} " if not current_line else f" {word}"
+                    current_line.append(word)
+    
+        # Handle the last line, which may be incomplete
+&gt;       lines[-1] = ' '.join(current_line)
+        ^^^^^^^^^
+E       IndexError: list assignment index out of range
+
+solution.py:28: IndexError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.word_wrap_greedy.tests.test_solution" name="test_bad_width_zero" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-083129.word_wrap_greedy.tests.test_solution" name="test_bad_width_bool" time="0.000"><failure message="IndexError: list assignment index out of range">def test_bad_width_bool():
+&gt;       with pytest.raises(ValueError): f('a', True)
+                                        ^^^^^^^^^^^^
+
+tests\test_solution.py:14: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+s = 'a', width = True
+
+    def wrap_text(s, width):
+        if not isinstance(width, int) or width &lt; 1:
+            raise ValueError('bad width')
+    
+        words = s.split()
+        lines = []
+        current_line = []
+    
+        for word in words:
+            if len(word) &gt; width:
+                # If the word is longer than the line's remaining space, start a new line
+                while word:
+                    chunk, word = word[:width], word[width:]
+                    current_line.append(chunk)
+                    lines.append(' '.join(current_line))
+                    current_line = []
+                    if not word:
+                        break
+            else:
+                # Append words to the current line until no more can fit on it
+                remaining_space = width - len(' '.join(current_line) + ' ') if current_line else width
+                while word and remaining_space &gt;= 1:
+                    remaining_space -= len(word) + 1
+                    word = f"{word} " if not current_line else f" {word}"
+                    current_line.append(word)
+    
+        # Handle the last line, which may be incomplete
+&gt;       lines[-1] = ' '.join(current_line)
+        ^^^^^^^^^
+E       IndexError: list assignment index out of range
+
+solution.py:28: IndexError</failure></testcase></testsuite></testsuites>

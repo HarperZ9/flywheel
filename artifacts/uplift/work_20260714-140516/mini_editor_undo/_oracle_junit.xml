@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="3" skipped="0" tests="10" time="0.212" timestamp="2026-07-14T14:30:11.351732-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260714-140516.mini_editor_undo.tests.test_solution" name="test_type_and_cursor" time="0.001" /><testcase classname="artifacts.uplift.work_20260714-140516.mini_editor_undo.tests.test_solution" name="test_insert_middle_and_clamping" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-140516.mini_editor_undo.tests.test_solution" name="test_type_payload_may_contain_spaces" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-140516.mini_editor_undo.tests.test_solution" name="test_backspace_partial" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-140516.mini_editor_undo.tests.test_solution" name="test_undo_restores_cursor_too" time="0.001"><failure message="AssertionError: assert ('abcd', 4) == ('ab', 2)&#10;  &#10;  At index 0 diff: 'abcd' != 'ab'&#10;  Use -v to get more diff">def test_undo_restores_cursor_too():
+        # cursor motion after the undone edit is discarded
+&gt;       assert edit(["type ab", "type cd", "left 3", "undo"]) == ("ab", 2)
+E       AssertionError: assert ('abcd', 4) == ('ab', 2)
+E         
+E         At index 0 diff: 'abcd' != 'ab'
+E         Use -v to get more diff
+
+tests\test_solution.py:25: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-140516.mini_editor_undo.tests.test_solution" name="test_undo_skips_noop_backspace" time="0.000"><failure message="AssertionError: assert ('ab', 0) == ('', 0)&#10;  &#10;  At index 0 diff: 'ab' != ''&#10;  Use -v to get more diff">def test_undo_skips_noop_backspace():
+        # a backspace that deleted nothing is never an undo target
+&gt;       assert edit(["type ab", "left 2", "backspace 1", "undo"]) == ("", 0)
+E       AssertionError: assert ('ab', 0) == ('', 0)
+E         
+E         At index 0 diff: 'ab' != ''
+E         Use -v to get more diff
+
+tests\test_solution.py:30: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-140516.mini_editor_undo.tests.test_solution" name="test_undo_on_empty_stack_is_noop" time="0.000"><failure message="ValueError">def test_undo_on_empty_stack_is_noop():
+&gt;       assert edit(["undo", "undo"]) == ("", 0)
+               ^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:34: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+commands = ['undo', 'undo']
+
+    def edit(commands):
+        stack = []
+        text = ""
+        cursor = 0
+    
+        for cmd in commands:
+            args = cmd.split(maxsplit=1)
+            verb = args[0]
+    
+            if verb == "type":
+                if len(args) &lt; 2 or not args[1]:
+                    raise ValueError
+                stack.append((text, cursor))
+                payload = args[1]
+                text = text[:cursor] + payload + text[cursor:]
+                cursor += len(payload)
+            elif verb in ("left", "right"):
+                if len(args) != 2 or not args[1].isdigit() or int(args[1]) &lt;= 0:
+                    raise ValueError
+                n = int(args[1])
+                stack.append((text, cursor))
+                if verb == "left":
+                    cursor = max(0, cursor - n)
+                else:
+                    cursor = min(len(text), cursor + n)
+            elif verb == "backspace":
+                if len(args) != 2 or not args[1].isdigit() or int(args[1]) &lt;= 0:
+                    raise ValueError
+                deletions = min(cursor, int(args[1]))
+                stack.append((text, cursor))
+                text = text[:cursor - deletions] + text[cursor:]
+                cursor -= deletions
+            elif verb == "undo":
+                if len(args) &gt; 1 or not stack:
+&gt;                   raise ValueError
+E                   ValueError
+
+solution.py:35: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-140516.mini_editor_undo.tests.test_solution" name="test_undo_twice_pops_two_edits" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-140516.mini_editor_undo.tests.test_solution" name="test_malformed_commands_raise" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-140516.mini_editor_undo.tests.test_solution" name="test_no_mutation" time="0.000" /></testsuite></testsuites>

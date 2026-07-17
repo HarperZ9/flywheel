@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="2" skipped="0" tests="6" time="0.228" timestamp="2026-07-14T08:39:42.319869-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260714-083129.topo_sort.tests.test_solution" name="test_empty" time="0.001" /><testcase classname="artifacts.uplift.work_20260714-083129.topo_sort.tests.test_solution" name="test_chain" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-083129.topo_sort.tests.test_solution" name="test_diamond" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-083129.topo_sort.tests.test_solution" name="test_cycle" time="0.000"><failure message="assert [] is None&#10; +  where [] = f(2, [[0, 1], [1, 0]])">def test_cycle():
+&gt;       assert f(2, [[0,1],[1,0]]) is None
+E       assert [] is None
+E        +  where [] = f(2, [[0, 1], [1, 0]])
+
+tests\test_solution.py:15: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.topo_sort.tests.test_solution" name="test_self_loop" time="0.000"><failure message="assert [] is None&#10; +  where [] = f(1, [[0, 0]])">def test_self_loop():
+&gt;       assert f(1, [[0,0]]) is None
+E       assert [] is None
+E        +  where [] = f(1, [[0, 0]])
+
+tests\test_solution.py:17: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.topo_sort.tests.test_solution" name="test_isolated" time="0.000" /></testsuite></testsuites>

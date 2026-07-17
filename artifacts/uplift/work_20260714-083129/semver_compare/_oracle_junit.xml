@@ -1,0 +1,206 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="11" skipped="0" tests="12" time="0.243" timestamp="2026-07-14T08:57:07.931937-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260714-083129.semver_compare.tests.test_solution" name="test_equal" time="0.001"><failure message="NameError: name 'cmp' is not defined">&gt;   def test_equal(): assert f('1.0.0', '1.0.0') == 0
+                             ^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:3: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:33: in semver_compare
+    cmp_result = compare_parts(v1_parsed[i], v2_parsed[i])
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+part1 = 1, part2 = 1
+
+    def compare_parts(part1, part2):
+        if isinstance(part1, int) and isinstance(part2, int):
+&gt;           return cmp(part1, part2)
+                   ^^^
+E           NameError: name 'cmp' is not defined
+
+solution.py:10: NameError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.semver_compare.tests.test_solution" name="test_major" time="0.000"><failure message="NameError: name 'cmp' is not defined">&gt;   def test_major(): assert f('1.0.0', '2.0.0') == -1
+                             ^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:4: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:33: in semver_compare
+    cmp_result = compare_parts(v1_parsed[i], v2_parsed[i])
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+part1 = 1, part2 = 2
+
+    def compare_parts(part1, part2):
+        if isinstance(part1, int) and isinstance(part2, int):
+&gt;           return cmp(part1, part2)
+                   ^^^
+E           NameError: name 'cmp' is not defined
+
+solution.py:10: NameError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.semver_compare.tests.test_solution" name="test_major_gt" time="0.001"><failure message="NameError: name 'cmp' is not defined">&gt;   def test_major_gt(): assert f('2.0.0', '1.0.0') == 1
+                                ^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:5: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:33: in semver_compare
+    cmp_result = compare_parts(v1_parsed[i], v2_parsed[i])
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+part1 = 2, part2 = 1
+
+    def compare_parts(part1, part2):
+        if isinstance(part1, int) and isinstance(part2, int):
+&gt;           return cmp(part1, part2)
+                   ^^^
+E           NameError: name 'cmp' is not defined
+
+solution.py:10: NameError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.semver_compare.tests.test_solution" name="test_patch" time="0.000"><failure message="NameError: name 'cmp' is not defined">&gt;   def test_patch(): assert f('1.0.0', '1.0.1') == -1
+                             ^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:6: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:33: in semver_compare
+    cmp_result = compare_parts(v1_parsed[i], v2_parsed[i])
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+part1 = 1, part2 = 1
+
+    def compare_parts(part1, part2):
+        if isinstance(part1, int) and isinstance(part2, int):
+&gt;           return cmp(part1, part2)
+                   ^^^
+E           NameError: name 'cmp' is not defined
+
+solution.py:10: NameError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.semver_compare.tests.test_solution" name="test_pre_lt_release" time="0.000"><failure message="ValueError: invalid literal for int() with base 10: '0-alpha'">&gt;   def test_pre_lt_release(): assert f('1.0.0-alpha', '1.0.0') == -1
+                                      ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:7: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:28: in semver_compare
+    v1_parsed = parse_version(a)
+                ^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+ver = '1.0.0-alpha'
+
+    def parse_version(ver):
+        parts = ver.split('.')
+        for i in range(len(parts)):
+&gt;           parts[i] = int(parts[i])
+                       ^^^^^^^^^^^^^
+E           ValueError: invalid literal for int() with base 10: '0-alpha'
+
+solution.py:5: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.semver_compare.tests.test_solution" name="test_more_ids" time="0.000"><failure message="ValueError: invalid literal for int() with base 10: '0-alpha'">&gt;   def test_more_ids(): assert f('1.0.0-alpha', '1.0.0-alpha.1') == -1
+                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:8: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:28: in semver_compare
+    v1_parsed = parse_version(a)
+                ^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+ver = '1.0.0-alpha'
+
+    def parse_version(ver):
+        parts = ver.split('.')
+        for i in range(len(parts)):
+&gt;           parts[i] = int(parts[i])
+                       ^^^^^^^^^^^^^
+E           ValueError: invalid literal for int() with base 10: '0-alpha'
+
+solution.py:5: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.semver_compare.tests.test_solution" name="test_numeric_lt_alpha" time="0.000"><failure message="ValueError: invalid literal for int() with base 10: '0-alpha'">&gt;   def test_numeric_lt_alpha(): assert f('1.0.0-alpha.1', '1.0.0-alpha.beta') == -1
+                                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:9: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:28: in semver_compare
+    v1_parsed = parse_version(a)
+                ^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+ver = '1.0.0-alpha.1'
+
+    def parse_version(ver):
+        parts = ver.split('.')
+        for i in range(len(parts)):
+&gt;           parts[i] = int(parts[i])
+                       ^^^^^^^^^^^^^
+E           ValueError: invalid literal for int() with base 10: '0-alpha'
+
+solution.py:5: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.semver_compare.tests.test_solution" name="test_ascii_order" time="0.000"><failure message="ValueError: invalid literal for int() with base 10: '0-alpha'">&gt;   def test_ascii_order(): assert f('1.0.0-alpha.beta', '1.0.0-beta') == -1
+                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:10: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:28: in semver_compare
+    v1_parsed = parse_version(a)
+                ^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+ver = '1.0.0-alpha.beta'
+
+    def parse_version(ver):
+        parts = ver.split('.')
+        for i in range(len(parts)):
+&gt;           parts[i] = int(parts[i])
+                       ^^^^^^^^^^^^^
+E           ValueError: invalid literal for int() with base 10: '0-alpha'
+
+solution.py:5: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.semver_compare.tests.test_solution" name="test_numeric_ids" time="0.001"><failure message="ValueError: invalid literal for int() with base 10: '0-beta'">&gt;   def test_numeric_ids(): assert f('1.0.0-beta.2', '1.0.0-beta.11') == -1
+                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:11: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:28: in semver_compare
+    v1_parsed = parse_version(a)
+                ^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+ver = '1.0.0-beta.2'
+
+    def parse_version(ver):
+        parts = ver.split('.')
+        for i in range(len(parts)):
+&gt;           parts[i] = int(parts[i])
+                       ^^^^^^^^^^^^^
+E           ValueError: invalid literal for int() with base 10: '0-beta'
+
+solution.py:5: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.semver_compare.tests.test_solution" name="test_bad_two_parts" time="0.000"><failure message="NameError: name 'cmp' is not defined">def test_bad_two_parts():
+&gt;       with pytest.raises(ValueError) as e: f('1.0', '1.0.0')
+                                             ^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:13: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:33: in semver_compare
+    cmp_result = compare_parts(v1_parsed[i], v2_parsed[i])
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+part1 = 1, part2 = 1
+
+    def compare_parts(part1, part2):
+        if isinstance(part1, int) and isinstance(part2, int):
+&gt;           return cmp(part1, part2)
+                   ^^^
+E           NameError: name 'cmp' is not defined
+
+solution.py:10: NameError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.semver_compare.tests.test_solution" name="test_bad_leading_zero" time="0.000"><failure message="NameError: name 'cmp' is not defined">def test_bad_leading_zero():
+&gt;       with pytest.raises(ValueError): f('01.0.0', '1.0.0')
+                                        ^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:16: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:33: in semver_compare
+    cmp_result = compare_parts(v1_parsed[i], v2_parsed[i])
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+part1 = 1, part2 = 1
+
+    def compare_parts(part1, part2):
+        if isinstance(part1, int) and isinstance(part2, int):
+&gt;           return cmp(part1, part2)
+                   ^^^
+E           NameError: name 'cmp' is not defined
+
+solution.py:10: NameError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.semver_compare.tests.test_solution" name="test_bad_pre_leading_zero" time="0.000" /></testsuite></testsuites>

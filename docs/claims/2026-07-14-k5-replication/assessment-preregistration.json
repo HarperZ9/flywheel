@@ -1,0 +1,12 @@
+{
+ "thesis_seal": "c76b332fd483cb925ac2d88fe58cdd990b32a27bae583d0ed1054d1859e81ef4",
+ "assessment_seal": "58bf076dfed9c62cf9b138ad9a8cdc4000b2afb3202fb60078f141a768e402bf",
+ "claims": 3,
+ "unverifiable": 3,
+ "claim_sha256": {
+  "c-repl-nonnull": "5b544e56a42f514a09f9a8ef058e5707a9a36d60d1d7bd0262cf033784c4b602",
+  "c-repl-interval": "b8b82c74f8a20cf6dcf7e3e4dd434d6149368afafc98c678316b5820486a98bb",
+  "c-repl-het-beats-iid": "a7453183736ca89a53b9a3af2b37ec25a603d308693d7f68ba89b6e719dfccab"
+ },
+ "note": "sealed before the replication run was launched; the run started immediately after this seal; adjudicate by the same mechanical rule, tie within 0.001 named as a possible outcome for the rivals"
+}

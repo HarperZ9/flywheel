@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="6" skipped="0" tests="9" time="0.242" timestamp="2026-07-13T19:37:57.866956-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-192539.bucket_histogram_mixed.tests.test_solution" name="test_basic_half_open" time="0.001"><failure message="assert [2, 1] == [2, 2]&#10;  &#10;  At index 1 diff: 1 != 2&#10;  Use -v to get more diff">def test_basic_half_open():
+&gt;       assert bucket_counts([0, 9, 10, 20], [0, 10, 20]) == [2, 2]
+E       assert [2, 1] == [2, 2]
+E         
+E         At index 1 diff: 1 != 2
+E         Use -v to get more diff
+
+tests\test_solution.py:6: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-192539.bucket_histogram_mixed.tests.test_solution" name="test_last_bucket_inclusive_on_right" time="0.001"><failure message="assert [0, 0] == [0, 1]&#10;  &#10;  At index 1 diff: 0 != 1&#10;  Use -v to get more diff">def test_last_bucket_inclusive_on_right():
+&gt;       assert bucket_counts([20], [0, 10, 20]) == [0, 1]
+E       assert [0, 0] == [0, 1]
+E         
+E         At index 1 diff: 0 != 1
+E         Use -v to get more diff
+
+tests\test_solution.py:11: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-192539.bucket_histogram_mixed.tests.test_solution" name="test_interior_edge_goes_right" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-192539.bucket_histogram_mixed.tests.test_solution" name="test_single_bucket_closed_both_ends" time="0.000"><failure message="assert [2] == [3]&#10;  &#10;  At index 0 diff: 2 != 3&#10;  Use -v to get more diff">def test_single_bucket_closed_both_ends():
+&gt;       assert bucket_counts([0, 10, 5], [0, 10]) == [3]
+E       assert [2] == [3]
+E         
+E         At index 0 diff: 2 != 3
+E         Use -v to get more diff
+
+tests\test_solution.py:22: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-192539.bucket_histogram_mixed.tests.test_solution" name="test_empty_values" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-192539.bucket_histogram_mixed.tests.test_solution" name="test_out_of_range_raises" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-192539.bucket_histogram_mixed.tests.test_solution" name="test_bad_edges_raise" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_bad_edges_raise():
+&gt;       with pytest.raises(ValueError):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:37: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260713-192539.bucket_histogram_mixed.tests.test_solution" name="test_bad_values_raise" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_bad_values_raise():
+&gt;       with pytest.raises(ValueError):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:52: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260713-192539.bucket_histogram_mixed.tests.test_solution" name="test_no_mutation_of_inputs" time="0.001"><failure message="assert [3, 0] == [3, 1]&#10;  &#10;  At index 1 diff: 0 != 1&#10;  Use -v to get more diff">def test_no_mutation_of_inputs():
+        values = [7, 2, 20, 2]
+        edges = [0, 10, 20]
+        v_snap = list(values)
+        e_snap = list(edges)
+&gt;       assert bucket_counts(values, edges) == [3, 1]
+E       assert [3, 0] == [3, 1]
+E         
+E         At index 1 diff: 0 != 1
+E         Use -v to get more diff
+
+tests\test_solution.py:65: AssertionError</failure></testcase></testsuite></testsuites>

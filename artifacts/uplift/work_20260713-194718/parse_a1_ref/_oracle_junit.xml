@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="6" skipped="0" tests="11" time="0.221" timestamp="2026-07-13T20:07:54.117900-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-194718.parse_a1_ref.tests.test_solution" name="test_a1" time="0.001"><failure message="ValueError: bad ref">&gt;   def test_a1(): assert f('A1') == (1, 1)
+                          ^^^^^^^
+
+tests\test_solution.py:3: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+ref = 'A1'
+
+    def parse_a1(ref):
+        if not isinstance(ref, str) or len(ref) == 0:
+            raise ValueError('bad ref')
+    
+        row_str, col_str = ref[:-len(ref.split('.')[0])] if '.' in ref else ref
+        if any(c.isdigit() for c in col_str + row_str):
+&gt;           raise ValueError('bad ref')
+E           ValueError: bad ref
+
+solution.py:7: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.parse_a1_ref.tests.test_solution" name="test_b2" time="0.000"><failure message="ValueError: bad ref">&gt;   def test_b2(): assert f('B2') == (2, 2)
+                          ^^^^^^^
+
+tests\test_solution.py:4: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+ref = 'B2'
+
+    def parse_a1(ref):
+        if not isinstance(ref, str) or len(ref) == 0:
+            raise ValueError('bad ref')
+    
+        row_str, col_str = ref[:-len(ref.split('.')[0])] if '.' in ref else ref
+        if any(c.isdigit() for c in col_str + row_str):
+&gt;           raise ValueError('bad ref')
+E           ValueError: bad ref
+
+solution.py:7: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.parse_a1_ref.tests.test_solution" name="test_z10" time="0.000"><failure message="ValueError: too many values to unpack (expected 2)">&gt;   def test_z10(): assert f('Z10') == (10, 26)
+                           ^^^^^^^^
+
+tests\test_solution.py:5: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+ref = 'Z10'
+
+    def parse_a1(ref):
+        if not isinstance(ref, str) or len(ref) == 0:
+            raise ValueError('bad ref')
+    
+&gt;       row_str, col_str = ref[:-len(ref.split('.')[0])] if '.' in ref else ref
+        ^^^^^^^^^^^^^^^^
+E       ValueError: too many values to unpack (expected 2)
+
+solution.py:5: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.parse_a1_ref.tests.test_solution" name="test_aa1" time="0.000"><failure message="ValueError: too many values to unpack (expected 2)">&gt;   def test_aa1(): assert f('AA1') == (1, 27)
+                           ^^^^^^^^
+
+tests\test_solution.py:6: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+ref = 'AA1'
+
+    def parse_a1(ref):
+        if not isinstance(ref, str) or len(ref) == 0:
+            raise ValueError('bad ref')
+    
+&gt;       row_str, col_str = ref[:-len(ref.split('.')[0])] if '.' in ref else ref
+        ^^^^^^^^^^^^^^^^
+E       ValueError: too many values to unpack (expected 2)
+
+solution.py:5: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.parse_a1_ref.tests.test_solution" name="test_ab100" time="0.000"><failure message="ValueError: too many values to unpack (expected 2)">&gt;   def test_ab100(): assert f('AB100') == (100, 28)
+                             ^^^^^^^^^^
+
+tests\test_solution.py:7: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+ref = 'AB100'
+
+    def parse_a1(ref):
+        if not isinstance(ref, str) or len(ref) == 0:
+            raise ValueError('bad ref')
+    
+&gt;       row_str, col_str = ref[:-len(ref.split('.')[0])] if '.' in ref else ref
+        ^^^^^^^^^^^^^^^^
+E       ValueError: too many values to unpack (expected 2)
+
+solution.py:5: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.parse_a1_ref.tests.test_solution" name="test_no_digits" time="0.000"><failure message="TypeError: object of type 'reversed' has no len()">def test_no_digits():
+&gt;       with pytest.raises(ValueError) as e: f('AB')
+                                             ^^^^^^^
+
+tests\test_solution.py:9: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+ref = 'AB'
+
+    def parse_a1(ref):
+        if not isinstance(ref, str) or len(ref) == 0:
+            raise ValueError('bad ref')
+    
+        row_str, col_str = ref[:-len(ref.split('.')[0])] if '.' in ref else ref
+        if any(c.isdigit() for c in col_str + row_str):
+            raise ValueError('bad ref')
+    
+        if not all(c.isupper() for c in col_str) or not col_str[0].isalpha():
+            raise ValueError('bad ref')
+    
+        col_value = 0
+        for char in reversed(col_str):
+&gt;           col_value += (ord(char.upper()) - ord('A') + 1) * (26 ** len(reversed(col_str)))
+                                                                     ^^^^^^^^^^^^^^^^^^^^^^
+E           TypeError: object of type 'reversed' has no len()
+
+solution.py:14: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.parse_a1_ref.tests.test_solution" name="test_no_letters" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-194718.parse_a1_ref.tests.test_solution" name="test_lowercase" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-194718.parse_a1_ref.tests.test_solution" name="test_leading_zero" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-194718.parse_a1_ref.tests.test_solution" name="test_zero_row" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-194718.parse_a1_ref.tests.test_solution" name="test_letters_after_digits" time="0.000" /></testsuite></testsuites>

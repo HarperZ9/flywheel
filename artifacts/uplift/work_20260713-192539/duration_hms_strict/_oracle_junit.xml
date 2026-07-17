@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="5" skipped="0" tests="8" time="0.221" timestamp="2026-07-13T19:35:06.551319-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-192539.duration_hms_strict.tests.test_solution" name="test_full_form" time="0.001"><failure message="ValueError: Invalid duration format">def test_full_form():
+&gt;       assert parse_duration_strict("1h30m15s") == 5415
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:6: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+s = '1h30m15s'
+
+    def parse_duration_strict(s: str) -&gt; int:
+        if not s:
+            raise ValueError("Input string cannot be empty")
+    
+        components = []
+        part = ""
+        for char in s:
+            if char.isdigit() or (char == '-' and part):
+                part += char
+                continue
+    
+            # Check for the last digit of a component, which is invalid if it's not 0-9.
+            if part:
+                if any(part[i] == '-' for i in range(1, len(part))):
+                    raise ValueError("Invalid duration format")
+                if int(part) &lt; 0 or (part and not char.isdigit()):
+&gt;                   raise ValueError("Invalid duration format")
+E                   ValueError: Invalid duration format
+
+solution.py:17: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-192539.duration_hms_strict.tests.test_solution" name="test_single_units" time="0.000"><failure message="ValueError: Invalid duration format">def test_single_units():
+&gt;       assert parse_duration_strict("2h") == 7200
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:11: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+s = '2h'
+
+    def parse_duration_strict(s: str) -&gt; int:
+        if not s:
+            raise ValueError("Input string cannot be empty")
+    
+        components = []
+        part = ""
+        for char in s:
+            if char.isdigit() or (char == '-' and part):
+                part += char
+                continue
+    
+            # Check for the last digit of a component, which is invalid if it's not 0-9.
+            if part:
+                if any(part[i] == '-' for i in range(1, len(part))):
+                    raise ValueError("Invalid duration format")
+                if int(part) &lt; 0 or (part and not char.isdigit()):
+&gt;                   raise ValueError("Invalid duration format")
+E                   ValueError: Invalid duration format
+
+solution.py:17: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-192539.duration_hms_strict.tests.test_solution" name="test_leading_component_unbounded" time="0.000"><failure message="ValueError: Invalid duration format">def test_leading_component_unbounded():
+&gt;       assert parse_duration_strict("90m") == 5400
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:17: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+s = '90m'
+
+    def parse_duration_strict(s: str) -&gt; int:
+        if not s:
+            raise ValueError("Input string cannot be empty")
+    
+        components = []
+        part = ""
+        for char in s:
+            if char.isdigit() or (char == '-' and part):
+                part += char
+                continue
+    
+            # Check for the last digit of a component, which is invalid if it's not 0-9.
+            if part:
+                if any(part[i] == '-' for i in range(1, len(part))):
+                    raise ValueError("Invalid duration format")
+                if int(part) &lt; 0 or (part and not char.isdigit()):
+&gt;                   raise ValueError("Invalid duration format")
+E                   ValueError: Invalid duration format
+
+solution.py:17: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-192539.duration_hms_strict.tests.test_solution" name="test_zero_values" time="0.001"><failure message="ValueError: Invalid duration format">def test_zero_values():
+&gt;       assert parse_duration_strict("0s") == 0
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:24: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+s = '0s'
+
+    def parse_duration_strict(s: str) -&gt; int:
+        if not s:
+            raise ValueError("Input string cannot be empty")
+    
+        components = []
+        part = ""
+        for char in s:
+            if char.isdigit() or (char == '-' and part):
+                part += char
+                continue
+    
+            # Check for the last digit of a component, which is invalid if it's not 0-9.
+            if part:
+                if any(part[i] == '-' for i in range(1, len(part))):
+                    raise ValueError("Invalid duration format")
+                if int(part) &lt; 0 or (part and not char.isdigit()):
+&gt;                   raise ValueError("Invalid duration format")
+E                   ValueError: Invalid duration format
+
+solution.py:17: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-192539.duration_hms_strict.tests.test_solution" name="test_order_and_duplicate_raise" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-192539.duration_hms_strict.tests.test_solution" name="test_range_raise" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-192539.duration_hms_strict.tests.test_solution" name="test_leading_zero_raise" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-192539.duration_hms_strict.tests.test_solution" name="test_malformed_raise" time="0.001"><failure message="UnboundLocalError: cannot access local variable 'units_map' where it is not associated with a value">def test_malformed_raise():
+        for bad in ["", "h", "5", "5x", "5M", "5m3", "1.5h", "-5m", " 5m", "5m ", "5 m"]:
+            with pytest.raises(ValueError):
+&gt;               parse_duration_strict(bad)
+
+tests\test_solution.py:50: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+s = 'h'
+
+    def parse_duration_strict(s: str) -&gt; int:
+        if not s:
+            raise ValueError("Input string cannot be empty")
+    
+        components = []
+        part = ""
+        for char in s:
+            if char.isdigit() or (char == '-' and part):
+                part += char
+                continue
+    
+            # Check for the last digit of a component, which is invalid if it's not 0-9.
+            if part:
+                if any(part[i] == '-' for i in range(1, len(part))):
+                    raise ValueError("Invalid duration format")
+                if int(part) &lt; 0 or (part and not char.isdigit()):
+                    raise ValueError("Invalid duration format")
+    
+                components.append(int(part))
+                part = ""
+    
+            # Check for a unit
+            if len(part):
+                if not ('h' &lt;= char.lower() &lt;= 's'):
+                    raise ValueError("Invalid character in the string")
+                if char.islower():
+                    units_map = {'h': 3600, 'm': 60, 's': 1}
+                    components.append(components[-1] // units_map[char])
+                    components[-2] %= units_map[char]
+            else:
+                # The first component can have any value
+&gt;               if char.lower() not in units_map:
+                                       ^^^^^^^^^
+E               UnboundLocalError: cannot access local variable 'units_map' where it is not associated with a value
+
+solution.py:32: UnboundLocalError</failure></testcase></testsuite></testsuites>

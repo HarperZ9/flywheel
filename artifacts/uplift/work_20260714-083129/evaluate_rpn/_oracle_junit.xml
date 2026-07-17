@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="6" time="0.213" timestamp="2026-07-14T08:40:13.107601-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260714-083129.evaluate_rpn.tests.test_solution" name="test_simple" time="0.001" /><testcase classname="artifacts.uplift.work_20260714-083129.evaluate_rpn.tests.test_solution" name="test_trunc_toward_zero" time="0.001"><failure message="AssertionError: assert -4 == -3&#10; +  where -4 = f(['-7', '2', '/'])">def test_trunc_toward_zero():
+&gt;       assert f(['-7','2','/']) == -3
+E       AssertionError: assert -4 == -3
+E        +  where -4 = f(['-7', '2', '/'])
+
+tests\test_solution.py:6: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.evaluate_rpn.tests.test_solution" name="test_nested" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-083129.evaluate_rpn.tests.test_solution" name="test_too_few" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-083129.evaluate_rpn.tests.test_solution" name="test_leftover" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-083129.evaluate_rpn.tests.test_solution" name="test_div0" time="0.000" /></testsuite></testsuites>

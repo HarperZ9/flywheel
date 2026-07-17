@@ -1,0 +1,218 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="7" skipped="0" tests="9" time="0.271" timestamp="2026-07-14T14:35:49.690595-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260714-140516.interval_subtract.tests.test_solution" name="test_middle_bite" time="0.001"><failure message="TypeError: sorted expected 1 argument, got 2">&gt;   def test_middle_bite(): assert f([[1, 10]], [[3, 5]]) == [[1, 2], [6, 10]]
+                                   ^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:3: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+a = [[1, 10]], b = [[3, 5]]
+
+    def interval_subtract(a, b):
+        def valid(intervals):
+            for s, e in intervals:
+                if not (isinstance(s, int) and isinstance(e, int) and s &lt;= e):
+                    raise ValueError('bad interval')
+        valid(a)
+        valid(b)
+        if not a:
+            return []
+        out = []
+        bi = 0
+        n = len(b)
+        for ai in range(len(a)):
+            as0, as1 = a[ai]
+            while bi &lt; n and b[bi][1] &lt; as0:      # skip b fully before this a piece
+                bi += 1
+            running_start = None
+            cur_s, cur_e = as0, as1
+            done = False                                     # one pass over a's endpoints
+&gt;           for x in sorted(as0, as1):
+                     ^^^^^^^^^^^^^^^^
+E           TypeError: sorted expected 1 argument, got 2
+
+solution.py:20: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-140516.interval_subtract.tests.test_solution" name="test_one_b_two_a" time="0.000"><failure message="TypeError: sorted expected 1 argument, got 2">&gt;   def test_one_b_two_a(): assert f([[1, 3], [6, 9]], [[2, 7]]) == [[1, 1], [8, 9]]
+                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:4: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+a = [[1, 3], [6, 9]], b = [[2, 7]]
+
+    def interval_subtract(a, b):
+        def valid(intervals):
+            for s, e in intervals:
+                if not (isinstance(s, int) and isinstance(e, int) and s &lt;= e):
+                    raise ValueError('bad interval')
+        valid(a)
+        valid(b)
+        if not a:
+            return []
+        out = []
+        bi = 0
+        n = len(b)
+        for ai in range(len(a)):
+            as0, as1 = a[ai]
+            while bi &lt; n and b[bi][1] &lt; as0:      # skip b fully before this a piece
+                bi += 1
+            running_start = None
+            cur_s, cur_e = as0, as1
+            done = False                                     # one pass over a's endpoints
+&gt;           for x in sorted(as0, as1):
+                     ^^^^^^^^^^^^^^^^
+E           TypeError: sorted expected 1 argument, got 2
+
+solution.py:20: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-140516.interval_subtract.tests.test_solution" name="test_exact_removal" time="0.001"><failure message="TypeError: sorted expected 1 argument, got 2">&gt;   def test_exact_removal(): assert f([[1, 5]], [[1, 5]]) == []
+                                     ^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:5: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+a = [[1, 5]], b = [[1, 5]]
+
+    def interval_subtract(a, b):
+        def valid(intervals):
+            for s, e in intervals:
+                if not (isinstance(s, int) and isinstance(e, int) and s &lt;= e):
+                    raise ValueError('bad interval')
+        valid(a)
+        valid(b)
+        if not a:
+            return []
+        out = []
+        bi = 0
+        n = len(b)
+        for ai in range(len(a)):
+            as0, as1 = a[ai]
+            while bi &lt; n and b[bi][1] &lt; as0:      # skip b fully before this a piece
+                bi += 1
+            running_start = None
+            cur_s, cur_e = as0, as1
+            done = False                                     # one pass over a's endpoints
+&gt;           for x in sorted(as0, as1):
+                     ^^^^^^^^^^^^^^^^
+E           TypeError: sorted expected 1 argument, got 2
+
+solution.py:20: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-140516.interval_subtract.tests.test_solution" name="test_empty_b" time="0.000"><failure message="TypeError: sorted expected 1 argument, got 2">&gt;   def test_empty_b(): assert f([[1, 5]], []) == [[1, 5]]
+                               ^^^^^^^^^^^^^^^
+
+tests\test_solution.py:6: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+a = [[1, 5]], b = []
+
+    def interval_subtract(a, b):
+        def valid(intervals):
+            for s, e in intervals:
+                if not (isinstance(s, int) and isinstance(e, int) and s &lt;= e):
+                    raise ValueError('bad interval')
+        valid(a)
+        valid(b)
+        if not a:
+            return []
+        out = []
+        bi = 0
+        n = len(b)
+        for ai in range(len(a)):
+            as0, as1 = a[ai]
+            while bi &lt; n and b[bi][1] &lt; as0:      # skip b fully before this a piece
+                bi += 1
+            running_start = None
+            cur_s, cur_e = as0, as1
+            done = False                                     # one pass over a's endpoints
+&gt;           for x in sorted(as0, as1):
+                     ^^^^^^^^^^^^^^^^
+E           TypeError: sorted expected 1 argument, got 2
+
+solution.py:20: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-140516.interval_subtract.tests.test_solution" name="test_empty_a" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-140516.interval_subtract.tests.test_solution" name="test_touching" time="0.000"><failure message="TypeError: sorted expected 1 argument, got 2">&gt;   def test_touching(): assert f([[1, 5]], [[5, 9]]) == [[1, 4]]
+                                ^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:8: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+a = [[1, 5]], b = [[5, 9]]
+
+    def interval_subtract(a, b):
+        def valid(intervals):
+            for s, e in intervals:
+                if not (isinstance(s, int) and isinstance(e, int) and s &lt;= e):
+                    raise ValueError('bad interval')
+        valid(a)
+        valid(b)
+        if not a:
+            return []
+        out = []
+        bi = 0
+        n = len(b)
+        for ai in range(len(a)):
+            as0, as1 = a[ai]
+            while bi &lt; n and b[bi][1] &lt; as0:      # skip b fully before this a piece
+                bi += 1
+            running_start = None
+            cur_s, cur_e = as0, as1
+            done = False                                     # one pass over a's endpoints
+&gt;           for x in sorted(as0, as1):
+                     ^^^^^^^^^^^^^^^^
+E           TypeError: sorted expected 1 argument, got 2
+
+solution.py:20: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-140516.interval_subtract.tests.test_solution" name="test_b_between" time="0.000"><failure message="TypeError: sorted expected 1 argument, got 2">&gt;   def test_b_between(): assert f([[0, 3], [5, 8]], [[4, 4]]) == [[0, 3], [5, 8]]
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:9: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+a = [[0, 3], [5, 8]], b = [[4, 4]]
+
+    def interval_subtract(a, b):
+        def valid(intervals):
+            for s, e in intervals:
+                if not (isinstance(s, int) and isinstance(e, int) and s &lt;= e):
+                    raise ValueError('bad interval')
+        valid(a)
+        valid(b)
+        if not a:
+            return []
+        out = []
+        bi = 0
+        n = len(b)
+        for ai in range(len(a)):
+            as0, as1 = a[ai]
+            while bi &lt; n and b[bi][1] &lt; as0:      # skip b fully before this a piece
+                bi += 1
+            running_start = None
+            cur_s, cur_e = as0, as1
+            done = False                                     # one pass over a's endpoints
+&gt;           for x in sorted(as0, as1):
+                     ^^^^^^^^^^^^^^^^
+E           TypeError: sorted expected 1 argument, got 2
+
+solution.py:20: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-140516.interval_subtract.tests.test_solution" name="test_b_spans_all" time="0.000"><failure message="TypeError: sorted expected 1 argument, got 2">&gt;   def test_b_spans_all(): assert f([[1, 2], [4, 5]], [[0, 10]]) == []
+                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:10: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+a = [[1, 2], [4, 5]], b = [[0, 10]]
+
+    def interval_subtract(a, b):
+        def valid(intervals):
+            for s, e in intervals:
+                if not (isinstance(s, int) and isinstance(e, int) and s &lt;= e):
+                    raise ValueError('bad interval')
+        valid(a)
+        valid(b)
+        if not a:
+            return []
+        out = []
+        bi = 0
+        n = len(b)
+        for ai in range(len(a)):
+            as0, as1 = a[ai]
+            while bi &lt; n and b[bi][1] &lt; as0:      # skip b fully before this a piece
+                bi += 1
+            running_start = None
+            cur_s, cur_e = as0, as1
+            done = False                                     # one pass over a's endpoints
+&gt;           for x in sorted(as0, as1):
+                     ^^^^^^^^^^^^^^^^
+E           TypeError: sorted expected 1 argument, got 2
+
+solution.py:20: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-140516.interval_subtract.tests.test_solution" name="test_bad_interval" time="0.000" /></testsuite></testsuites>

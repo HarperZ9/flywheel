@@ -31,10 +31,14 @@ class MapElitesArchive:
     def __init__(self, descriptor_fn: Callable[[str], tuple]):
         self._descriptor = descriptor_fn
         self.cells: dict[tuple, ArchiveEntry] = {}
+        self.total_added = 0            # every candidate presented, kept or not:
+                                        # fixation is niches-vs-candidates, so the
+                                        # total is needed to compute it at all
 
     def add(self, candidate: str, fitness: float, source: str = "") -> bool:
         """Place candidate in its behavior niche; keep the best per cell.
         Returns True if this candidate displaced a prior entry (improved its niche)."""
+        self.total_added += 1
         b = self._descriptor(candidate)
         existing = self.cells.get(b)
         if existing is None or fitness > existing.fitness:
@@ -62,10 +66,16 @@ class MapElitesArchive:
         return len(self.cells)
 
     def fixation_ratio(self) -> float:
-        """0.0 = fully diverse (every entry a unique niche); 1.0 = total
-        fixation (all candidates collapsed to one cell). The early-fixation
-        signal the Swansea gallery design counters."""
-        return 0.0 if self.coverage() > 0 else 1.0
+        """0.0 = fully diverse (every candidate landed in its own niche);
+        approaching 1.0 = fixation (many candidates collapsed into few cells).
+        Measured as 1 - niches/candidates, so 1000 candidates in one niche reads
+        0.999 while N candidates in N niches read 0.0. The empty archive is 0.0
+        (no candidates is not fixation), never 1.0 -- the old check returned 1.0
+        for exactly the one state that is NOT fixation and 0.0 for every
+        collapse."""
+        if self.total_added <= 0:
+            return 0.0
+        return 1.0 - self.coverage() / self.total_added
 
 
 def length_bucket_descriptor(candidate: str, buckets: tuple = (10, 40, 120)) -> tuple:

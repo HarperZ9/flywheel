@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="4" skipped="0" tests="9" time="0.260" timestamp="2026-07-14T09:30:05.230940-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260714-091030.varint_zigzag_decode.tests.test_solution" name="test_single_byte_values_zigzag" time="0.001" /><testcase classname="artifacts.uplift.work_20260714-091030.varint_zigzag_decode.tests.test_solution" name="test_multibyte_value" time="0.001" /><testcase classname="artifacts.uplift.work_20260714-091030.varint_zigzag_decode.tests.test_solution" name="test_multiple_values_and_empty" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-091030.varint_zigzag_decode.tests.test_solution" name="test_five_byte_varint_ok" time="0.001"><failure message="ValueError: overlong">def test_five_byte_varint_ok():
+        u = 1 &lt;&lt; 28
+&gt;       assert decode_varints([0x80, 0x80, 0x80, 0x80, 0x01]) == [u &gt;&gt; 1]
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:25: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+data = [128, 128, 128, 128, 1]
+
+    def decode_varints(data):
+        if not all(isinstance(b, int) and 0 &lt;= b &lt;= 255 for b in data):
+            raise ValueError("bad byte")
+    
+        result = []
+        i = 0
+        while i &lt; len(data):
+            u = 0
+            shift = 0
+    
+            # Count how many bytes this varint spans
+            start = i
+            num_bytes = 0
+    
+            while i &lt; len(data) and (data[i] &amp; 0x80) != 0:
+                if num_bytes &gt;= 5:
+                    raise ValueError("too long")
+                u |= ((data[i] &amp; 0x7F) &lt;&lt; shift)
+                shift += 7
+                i += 1
+                num_bytes += 1
+    
+            # Check for truncated input (varint still needs more bytes but we're at end)
+            if i == len(data):
+                raise ValueError("truncated")
+    
+            # Add the final byte
+            u |= ((data[i] &amp; 0x7F) &lt;&lt; shift)
+            i += 1
+            num_bytes += 1
+    
+            # Check for overlong encoding: any but first byte is 0x00
+            if num_bytes &gt; 1 and all(data[start + j] == 0x80 for j in range(num_bytes - 1)):
+&gt;               raise ValueError("overlong")
+E               ValueError: overlong
+
+solution.py:36: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-091030.varint_zigzag_decode.tests.test_solution" name="test_truncated" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-091030.varint_zigzag_decode.tests.test_solution" name="test_too_long_even_when_stream_ends" time="0.001"><failure message="AssertionError: Regex pattern did not match.&#10;  Expected regex: 'too long'&#10;  Actual message: 'truncated'">def test_too_long_even_when_stream_ends():
+        with pytest.raises(ValueError, match="too long"):
+&gt;           decode_varints([0x80] * 5)
+
+tests\test_solution.py:37: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+data = [128, 128, 128, 128, 128]
+
+    def decode_varints(data):
+        if not all(isinstance(b, int) and 0 &lt;= b &lt;= 255 for b in data):
+            raise ValueError("bad byte")
+    
+        result = []
+        i = 0
+        while i &lt; len(data):
+            u = 0
+            shift = 0
+    
+            # Count how many bytes this varint spans
+            start = i
+            num_bytes = 0
+    
+            while i &lt; len(data) and (data[i] &amp; 0x80) != 0:
+                if num_bytes &gt;= 5:
+                    raise ValueError("too long")
+                u |= ((data[i] &amp; 0x7F) &lt;&lt; shift)
+                shift += 7
+                i += 1
+                num_bytes += 1
+    
+            # Check for truncated input (varint still needs more bytes but we're at end)
+            if i == len(data):
+&gt;               raise ValueError("truncated")
+E               ValueError: truncated
+
+solution.py:27: ValueError
+
+During handling of the above exception, another exception occurred:
+
+    def test_too_long_even_when_stream_ends():
+&gt;       with pytest.raises(ValueError, match="too long"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AssertionError: Regex pattern did not match.
+E         Expected regex: 'too long'
+E         Actual message: 'truncated'
+
+tests\test_solution.py:36: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-091030.varint_zigzag_decode.tests.test_solution" name="test_overlong_noncanonical" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_overlong_noncanonical():
+        with pytest.raises(ValueError, match="overlong"):
+            decode_varints([0x80, 0x00])
+&gt;       with pytest.raises(ValueError, match="overlong"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:45: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260714-091030.varint_zigzag_decode.tests.test_solution" name="test_bad_byte_checked_before_decoding" time="0.001"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_bad_byte_checked_before_decoding():
+        with pytest.raises(ValueError, match="bad byte"):
+            decode_varints([256])
+        with pytest.raises(ValueError, match="bad byte"):
+            decode_varints([-1])
+&gt;       with pytest.raises(ValueError, match="bad byte"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:54: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260714-091030.varint_zigzag_decode.tests.test_solution" name="test_no_mutation" time="0.000" /></testsuite></testsuites>

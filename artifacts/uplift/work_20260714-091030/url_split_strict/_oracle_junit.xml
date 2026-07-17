@@ -1,0 +1,416 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="11" skipped="0" tests="20" time="0.336" timestamp="2026-07-14T09:48:51.772917-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260714-091030.url_split_strict.tests.test_solution" name="test_basic" time="0.001"><failure message="AssertionError: assert ('http', 'exa...le.com', None) == ('http', 'exa...'/a/b', 'x=1')&#10;  &#10;  At index 3 diff: 'example.com' != '/a/b'&#10;  Use -v to get more diff">&gt;   def test_basic(): assert f('http://example.com/a/b?x=1') == ('http', 'example.com', None, '/a/b', 'x=1')
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert ('http', 'exa...le.com', None) == ('http', 'exa...'/a/b', 'x=1')
+E     
+E     At index 3 diff: 'example.com' != '/a/b'
+E     Use -v to get more diff
+
+tests\test_solution.py:3: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-091030.url_split_strict.tests.test_solution" name="test_no_path" time="0.001" /><testcase classname="artifacts.uplift.work_20260714-091030.url_split_strict.tests.test_solution" name="test_port" time="0.000"><failure message="NameError: name 'colong' is not defined">&gt;   def test_port(): assert f('https://a.b:8080/x') == ('https', 'a.b', 8080, '/x', None)
+                            ^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:5: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+url = 'https://a.b:8080/x'
+
+    def split_url(url):
+        if not isinstance(url, str):
+            raise ValueError("bad url")
+        try:
+            colon_slash = url.index("://")
+            scheme = url[:colon_slash]
+        except ValueError:
+            raise ValueError("no scheme") from None
+        if (
+            scheme and scheme[0].isascii() and scheme.islower()
+            and all(
+                c.isascii()
+                and (c.isalnum() or c in "+-.")
+                for c in scheme[1:]
+            )
+        ):
+            rest = url[colon_slash + 3 :]
+        else:
+            raise ValueError("bad scheme")
+        qm = rest.find("?")
+        slash = rest.find("/")
+        if qm != -1 and (slash == -1 or qm &lt; slash):
+            path = "/" if slash == -1 else rest[:slash]
+            query = "" if rest[qm + 1 :] == "" else rest[qm + 1 :]
+            authority = rest[:qm]
+        elif slash == -1:
+            path = "/"
+            query = None
+            authority = rest
+        else:
+            path = rest[:slash]
+            query = None
+            authority = rest[:slash]
+        if ":" in authority:
+            host, colon, port_text = authority.partition(":")
+            if not (
+                host
+                and all(
+                    c.isascii() and (c.isalnum() or c in "-.")
+                    for c in host
+                )
+            ):
+                raise ValueError("bad host")
+&gt;           if colong == 0 or any(c != "0" for c in port_text[1:]):
+               ^^^^^^
+E           NameError: name 'colong' is not defined
+
+solution.py:44: NameError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-091030.url_split_strict.tests.test_solution" name="test_query_no_path" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-091030.url_split_strict.tests.test_solution" name="test_empty_query" time="0.001"><failure message="AssertionError: assert ('http', 'h', None, 'h', None) == ('http', 'h', None, '/p', '')&#10;  &#10;  At index 3 diff: 'h' != '/p'&#10;  Use -v to get more diff">&gt;   def test_empty_query(): assert f('http://h/p?') == ('http', 'h', None, '/p', '')
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert ('http', 'h', None, 'h', None) == ('http', 'h', None, '/p', '')
+E     
+E     At index 3 diff: 'h' != '/p'
+E     Use -v to get more diff
+
+tests\test_solution.py:7: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-091030.url_split_strict.tests.test_solution" name="test_second_qmark" time="0.001"><failure message="AssertionError: assert ('http', 'h', None, 'h', None) == ('http', 'h',..., '/p', 'a?b')&#10;  &#10;  At index 3 diff: 'h' != '/p'&#10;  Use -v to get more diff">&gt;   def test_second_qmark(): assert f('http://h/p?a?b') == ('http', 'h', None, '/p', 'a?b')
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert ('http', 'h', None, 'h', None) == ('http', 'h',..., '/p', 'a?b')
+E     
+E     At index 3 diff: 'h' != '/p'
+E     Use -v to get more diff
+
+tests\test_solution.py:8: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-091030.url_split_strict.tests.test_solution" name="test_port_zero" time="0.000"><failure message="NameError: name 'colong' is not defined">&gt;   def test_port_zero(): assert f('http://h:0/') == ('http', 'h', 0, '/', None)
+                                 ^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:9: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+url = 'http://h:0/'
+
+    def split_url(url):
+        if not isinstance(url, str):
+            raise ValueError("bad url")
+        try:
+            colon_slash = url.index("://")
+            scheme = url[:colon_slash]
+        except ValueError:
+            raise ValueError("no scheme") from None
+        if (
+            scheme and scheme[0].isascii() and scheme.islower()
+            and all(
+                c.isascii()
+                and (c.isalnum() or c in "+-.")
+                for c in scheme[1:]
+            )
+        ):
+            rest = url[colon_slash + 3 :]
+        else:
+            raise ValueError("bad scheme")
+        qm = rest.find("?")
+        slash = rest.find("/")
+        if qm != -1 and (slash == -1 or qm &lt; slash):
+            path = "/" if slash == -1 else rest[:slash]
+            query = "" if rest[qm + 1 :] == "" else rest[qm + 1 :]
+            authority = rest[:qm]
+        elif slash == -1:
+            path = "/"
+            query = None
+            authority = rest
+        else:
+            path = rest[:slash]
+            query = None
+            authority = rest[:slash]
+        if ":" in authority:
+            host, colon, port_text = authority.partition(":")
+            if not (
+                host
+                and all(
+                    c.isascii() and (c.isalnum() or c in "-.")
+                    for c in host
+                )
+            ):
+                raise ValueError("bad host")
+&gt;           if colong == 0 or any(c != "0" for c in port_text[1:]):
+               ^^^^^^
+E           NameError: name 'colong' is not defined
+
+solution.py:44: NameError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-091030.url_split_strict.tests.test_solution" name="test_max_port" time="0.000"><failure message="NameError: name 'colong' is not defined">&gt;   def test_max_port(): assert f('http://h:65535') == ('http', 'h', 65535, '/', None)
+                                ^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:10: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+url = 'http://h:65535'
+
+    def split_url(url):
+        if not isinstance(url, str):
+            raise ValueError("bad url")
+        try:
+            colon_slash = url.index("://")
+            scheme = url[:colon_slash]
+        except ValueError:
+            raise ValueError("no scheme") from None
+        if (
+            scheme and scheme[0].isascii() and scheme.islower()
+            and all(
+                c.isascii()
+                and (c.isalnum() or c in "+-.")
+                for c in scheme[1:]
+            )
+        ):
+            rest = url[colon_slash + 3 :]
+        else:
+            raise ValueError("bad scheme")
+        qm = rest.find("?")
+        slash = rest.find("/")
+        if qm != -1 and (slash == -1 or qm &lt; slash):
+            path = "/" if slash == -1 else rest[:slash]
+            query = "" if rest[qm + 1 :] == "" else rest[qm + 1 :]
+            authority = rest[:qm]
+        elif slash == -1:
+            path = "/"
+            query = None
+            authority = rest
+        else:
+            path = rest[:slash]
+            query = None
+            authority = rest[:slash]
+        if ":" in authority:
+            host, colon, port_text = authority.partition(":")
+            if not (
+                host
+                and all(
+                    c.isascii() and (c.isalnum() or c in "-.")
+                    for c in host
+                )
+            ):
+                raise ValueError("bad host")
+&gt;           if colong == 0 or any(c != "0" for c in port_text[1:]):
+               ^^^^^^
+E           NameError: name 'colong' is not defined
+
+solution.py:44: NameError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-091030.url_split_strict.tests.test_solution" name="test_scheme_chars" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-091030.url_split_strict.tests.test_solution" name="test_no_scheme" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-091030.url_split_strict.tests.test_solution" name="test_bad_scheme_upper" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-091030.url_split_strict.tests.test_solution" name="test_bad_scheme_empty" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-091030.url_split_strict.tests.test_solution" name="test_bad_scheme_digit_first" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-091030.url_split_strict.tests.test_solution" name="test_bad_host_empty" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-091030.url_split_strict.tests.test_solution" name="test_bad_host_upper" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_bad_host_upper():
+&gt;       with pytest.raises(ValueError): f('http://EXample.com')
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:26: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260714-091030.url_split_strict.tests.test_solution" name="test_bad_port_leading_zero" time="0.000"><failure message="NameError: name 'colong' is not defined">def test_bad_port_leading_zero():
+&gt;       with pytest.raises(ValueError) as e: f('http://h:080')
+                                             ^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:28: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+url = 'http://h:080'
+
+    def split_url(url):
+        if not isinstance(url, str):
+            raise ValueError("bad url")
+        try:
+            colon_slash = url.index("://")
+            scheme = url[:colon_slash]
+        except ValueError:
+            raise ValueError("no scheme") from None
+        if (
+            scheme and scheme[0].isascii() and scheme.islower()
+            and all(
+                c.isascii()
+                and (c.isalnum() or c in "+-.")
+                for c in scheme[1:]
+            )
+        ):
+            rest = url[colon_slash + 3 :]
+        else:
+            raise ValueError("bad scheme")
+        qm = rest.find("?")
+        slash = rest.find("/")
+        if qm != -1 and (slash == -1 or qm &lt; slash):
+            path = "/" if slash == -1 else rest[:slash]
+            query = "" if rest[qm + 1 :] == "" else rest[qm + 1 :]
+            authority = rest[:qm]
+        elif slash == -1:
+            path = "/"
+            query = None
+            authority = rest
+        else:
+            path = rest[:slash]
+            query = None
+            authority = rest[:slash]
+        if ":" in authority:
+            host, colon, port_text = authority.partition(":")
+            if not (
+                host
+                and all(
+                    c.isascii() and (c.isalnum() or c in "-.")
+                    for c in host
+                )
+            ):
+                raise ValueError("bad host")
+&gt;           if colong == 0 or any(c != "0" for c in port_text[1:]):
+               ^^^^^^
+E           NameError: name 'colong' is not defined
+
+solution.py:44: NameError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-091030.url_split_strict.tests.test_solution" name="test_bad_port_too_big" time="0.001"><failure message="NameError: name 'colong' is not defined">def test_bad_port_too_big():
+&gt;       with pytest.raises(ValueError): f('http://h:65536')
+                                        ^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:31: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+url = 'http://h:65536'
+
+    def split_url(url):
+        if not isinstance(url, str):
+            raise ValueError("bad url")
+        try:
+            colon_slash = url.index("://")
+            scheme = url[:colon_slash]
+        except ValueError:
+            raise ValueError("no scheme") from None
+        if (
+            scheme and scheme[0].isascii() and scheme.islower()
+            and all(
+                c.isascii()
+                and (c.isalnum() or c in "+-.")
+                for c in scheme[1:]
+            )
+        ):
+            rest = url[colon_slash + 3 :]
+        else:
+            raise ValueError("bad scheme")
+        qm = rest.find("?")
+        slash = rest.find("/")
+        if qm != -1 and (slash == -1 or qm &lt; slash):
+            path = "/" if slash == -1 else rest[:slash]
+            query = "" if rest[qm + 1 :] == "" else rest[qm + 1 :]
+            authority = rest[:qm]
+        elif slash == -1:
+            path = "/"
+            query = None
+            authority = rest
+        else:
+            path = rest[:slash]
+            query = None
+            authority = rest[:slash]
+        if ":" in authority:
+            host, colon, port_text = authority.partition(":")
+            if not (
+                host
+                and all(
+                    c.isascii() and (c.isalnum() or c in "-.")
+                    for c in host
+                )
+            ):
+                raise ValueError("bad host")
+&gt;           if colong == 0 or any(c != "0" for c in port_text[1:]):
+               ^^^^^^
+E           NameError: name 'colong' is not defined
+
+solution.py:44: NameError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-091030.url_split_strict.tests.test_solution" name="test_bad_port_empty" time="0.000"><failure message="NameError: name 'colong' is not defined">def test_bad_port_empty():
+&gt;       with pytest.raises(ValueError): f('http://h:')
+                                        ^^^^^^^^^^^^^^
+
+tests\test_solution.py:33: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+url = 'http://h:'
+
+    def split_url(url):
+        if not isinstance(url, str):
+            raise ValueError("bad url")
+        try:
+            colon_slash = url.index("://")
+            scheme = url[:colon_slash]
+        except ValueError:
+            raise ValueError("no scheme") from None
+        if (
+            scheme and scheme[0].isascii() and scheme.islower()
+            and all(
+                c.isascii()
+                and (c.isalnum() or c in "+-.")
+                for c in scheme[1:]
+            )
+        ):
+            rest = url[colon_slash + 3 :]
+        else:
+            raise ValueError("bad scheme")
+        qm = rest.find("?")
+        slash = rest.find("/")
+        if qm != -1 and (slash == -1 or qm &lt; slash):
+            path = "/" if slash == -1 else rest[:slash]
+            query = "" if rest[qm + 1 :] == "" else rest[qm + 1 :]
+            authority = rest[:qm]
+        elif slash == -1:
+            path = "/"
+            query = None
+            authority = rest
+        else:
+            path = rest[:slash]
+            query = None
+            authority = rest[:slash]
+        if ":" in authority:
+            host, colon, port_text = authority.partition(":")
+            if not (
+                host
+                and all(
+                    c.isascii() and (c.isalnum() or c in "-.")
+                    for c in host
+                )
+            ):
+                raise ValueError("bad host")
+&gt;           if colong == 0 or any(c != "0" for c in port_text[1:]):
+               ^^^^^^
+E           NameError: name 'colong' is not defined
+
+solution.py:44: NameError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-091030.url_split_strict.tests.test_solution" name="test_bad_port_second_colon" time="0.000"><failure message="NameError: name 'colong' is not defined">def test_bad_port_second_colon():
+&gt;       with pytest.raises(ValueError): f('http://h:1:2')
+                                        ^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:35: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+url = 'http://h:1:2'
+
+    def split_url(url):
+        if not isinstance(url, str):
+            raise ValueError("bad url")
+        try:
+            colon_slash = url.index("://")
+            scheme = url[:colon_slash]
+        except ValueError:
+            raise ValueError("no scheme") from None
+        if (
+            scheme and scheme[0].isascii() and scheme.islower()
+            and all(
+                c.isascii()
+                and (c.isalnum() or c in "+-.")
+                for c in scheme[1:]
+            )
+        ):
+            rest = url[colon_slash + 3 :]
+        else:
+            raise ValueError("bad scheme")
+        qm = rest.find("?")
+        slash = rest.find("/")
+        if qm != -1 and (slash == -1 or qm &lt; slash):
+            path = "/" if slash == -1 else rest[:slash]
+            query = "" if rest[qm + 1 :] == "" else rest[qm + 1 :]
+            authority = rest[:qm]
+        elif slash == -1:
+            path = "/"
+            query = None
+            authority = rest
+        else:
+            path = rest[:slash]
+            query = None
+            authority = rest[:slash]
+        if ":" in authority:
+            host, colon, port_text = authority.partition(":")
+            if not (
+                host
+                and all(
+                    c.isascii() and (c.isalnum() or c in "-.")
+                    for c in host
+                )
+            ):
+                raise ValueError("bad host")
+&gt;           if colong == 0 or any(c != "0" for c in port_text[1:]):
+               ^^^^^^
+E           NameError: name 'colong' is not defined
+
+solution.py:44: NameError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-091030.url_split_strict.tests.test_solution" name="test_bad_url" time="0.000" /></testsuite></testsuites>

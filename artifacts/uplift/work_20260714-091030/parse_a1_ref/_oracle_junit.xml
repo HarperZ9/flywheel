@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="4" skipped="0" tests="11" time="0.316" timestamp="2026-07-14T09:40:12.120125-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260714-091030.parse_a1_ref.tests.test_solution" name="test_a1" time="0.001" /><testcase classname="artifacts.uplift.work_20260714-091030.parse_a1_ref.tests.test_solution" name="test_b2" time="0.001" /><testcase classname="artifacts.uplift.work_20260714-091030.parse_a1_ref.tests.test_solution" name="test_z10" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-091030.parse_a1_ref.tests.test_solution" name="test_aa1" time="0.001"><failure message="assert (1, 1) == (1, 27)&#10;  &#10;  At index 1 diff: 1 != 27&#10;  Use -v to get more diff">&gt;   def test_aa1(): assert f('AA1') == (1, 27)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   assert (1, 1) == (1, 27)
+E     
+E     At index 1 diff: 1 != 27
+E     Use -v to get more diff
+
+tests\test_solution.py:6: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-091030.parse_a1_ref.tests.test_solution" name="test_ab100" time="0.001"><failure message="assert (100, 27) == (100, 28)&#10;  &#10;  At index 1 diff: 27 != 28&#10;  Use -v to get more diff">&gt;   def test_ab100(): assert f('AB100') == (100, 28)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   assert (100, 27) == (100, 28)
+E     
+E     At index 1 diff: 27 != 28
+E     Use -v to get more diff
+
+tests\test_solution.py:7: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-091030.parse_a1_ref.tests.test_solution" name="test_no_digits" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-091030.parse_a1_ref.tests.test_solution" name="test_no_letters" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-091030.parse_a1_ref.tests.test_solution" name="test_lowercase" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-091030.parse_a1_ref.tests.test_solution" name="test_leading_zero" time="0.001"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_leading_zero():
+&gt;       with pytest.raises(ValueError): f('A01')
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:16: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260714-091030.parse_a1_ref.tests.test_solution" name="test_zero_row" time="0.001" /><testcase classname="artifacts.uplift.work_20260714-091030.parse_a1_ref.tests.test_solution" name="test_letters_after_digits" time="0.001"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_letters_after_digits():
+&gt;       with pytest.raises(ValueError): f('A1B')
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:20: Failed</failure></testcase></testsuite></testsuites>

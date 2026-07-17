@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="2" skipped="0" tests="9" time="0.188" timestamp="2026-07-14T08:58:53.224468-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260714-083129.csv_quote.tests.test_solution" name="test_plain" time="0.001" /><testcase classname="artifacts.uplift.work_20260714-083129.csv_quote.tests.test_solution" name="test_comma" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-083129.csv_quote.tests.test_solution" name="test_quote" time="0.001"><failure message="assert '&quot;a&quot;b&quot;' == '&quot;a&quot;&quot;b&quot;'&#10;  &#10;  - &quot;a&quot;&quot;b&quot;&#10;  ?    -&#10;  + &quot;a&quot;b&quot;">&gt;   def test_quote(): assert f('a"b') == '"a""b"'
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   assert '"a"b"' == '"a""b"'
+E     
+E     - "a""b"
+E     ?    -
+E     + "a"b"
+
+tests\test_solution.py:5: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.csv_quote.tests.test_solution" name="test_newline" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-083129.csv_quote.tests.test_solution" name="test_empty" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-083129.csv_quote.tests.test_solution" name="test_only_quote" time="0.000"><failure message="assert '&quot;&quot;&quot;' == '&quot;&quot;&quot;&quot;'&#10;  &#10;  - &quot;&quot;&quot;&quot;&#10;  ?    -&#10;  + &quot;&quot;&quot;">&gt;   def test_only_quote(): assert f('"') == '""""'
+                           ^^^^^^^^^^^^^^^^^^^^^^^
+E   assert '"""' == '""""'
+E     
+E     - """"
+E     ?    -
+E     + """
+
+tests\test_solution.py:8: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.csv_quote.tests.test_solution" name="test_space_plain" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-083129.csv_quote.tests.test_solution" name="test_carriage" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-083129.csv_quote.tests.test_solution" name="test_bad_field" time="0.000" /></testsuite></testsuites>

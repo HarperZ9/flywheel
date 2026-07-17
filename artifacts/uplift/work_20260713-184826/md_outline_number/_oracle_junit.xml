@@ -1,0 +1,181 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="7" skipped="0" tests="15" time="0.245" timestamp="2026-07-13T19:25:36.700638-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-184826.md_outline_number.tests.test_solution" name="test_basic" time="0.001"><failure message="ValueError: bad nesting">def test_basic():
+&gt;       assert f(['# A', '## B', '## C', '# D']) == ['1 A', '1.1 B', '1.2 C', '2 D']
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:4: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+lines = ['# A', '## B', '## C', '# D']
+
+    def outline_number(lines):
+        if not all(isinstance(line, str) for line in lines):
+            raise ValueError('bad input')
+    
+        def is_header(line):
+            if len(line) == 0 or line[0] != '#':
+                return False
+            hash_count = line.count('#', 0, 1)
+            if hash_count &lt; 1 or hash_count &gt; 6:
+                return False
+            title = line.strip()
+            return len(title) &gt; 0 and title[0] != ' '
+    
+        counter = [0] * 7
+    
+        for line in lines:
+            if not is_header(line):
+                continue
+    
+            level = line.count('#', 0, 1)
+            if any(c &gt;= i for i, c in enumerate(counter[:level])):
+&gt;               raise ValueError('bad nesting')
+E               ValueError: bad nesting
+
+solution.py:22: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-184826.md_outline_number.tests.test_solution" name="test_deep_reset" time="0.000"><failure message="ValueError: bad nesting">def test_deep_reset():
+&gt;       assert f(['# A', '## B', '### C', '## D', '### E']) == ['1 A', '1.1 B', '1.1.1 C', '1.2 D', '1.2.1 E']
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:6: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+lines = ['# A', '## B', '### C', '## D', '### E']
+
+    def outline_number(lines):
+        if not all(isinstance(line, str) for line in lines):
+            raise ValueError('bad input')
+    
+        def is_header(line):
+            if len(line) == 0 or line[0] != '#':
+                return False
+            hash_count = line.count('#', 0, 1)
+            if hash_count &lt; 1 or hash_count &gt; 6:
+                return False
+            title = line.strip()
+            return len(title) &gt; 0 and title[0] != ' '
+    
+        counter = [0] * 7
+    
+        for line in lines:
+            if not is_header(line):
+                continue
+    
+            level = line.count('#', 0, 1)
+            if any(c &gt;= i for i, c in enumerate(counter[:level])):
+&gt;               raise ValueError('bad nesting')
+E               ValueError: bad nesting
+
+solution.py:22: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-184826.md_outline_number.tests.test_solution" name="test_ignore_nonheaders" time="0.000"><failure message="ValueError: bad nesting">def test_ignore_nonheaders():
+&gt;       assert f(['text', '# A', 'more', '## B']) == ['1 A', '1.1 B']
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:8: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+lines = ['text', '# A', 'more', '## B']
+
+    def outline_number(lines):
+        if not all(isinstance(line, str) for line in lines):
+            raise ValueError('bad input')
+    
+        def is_header(line):
+            if len(line) == 0 or line[0] != '#':
+                return False
+            hash_count = line.count('#', 0, 1)
+            if hash_count &lt; 1 or hash_count &gt; 6:
+                return False
+            title = line.strip()
+            return len(title) &gt; 0 and title[0] != ' '
+    
+        counter = [0] * 7
+    
+        for line in lines:
+            if not is_header(line):
+                continue
+    
+            level = line.count('#', 0, 1)
+            if any(c &gt;= i for i, c in enumerate(counter[:level])):
+&gt;               raise ValueError('bad nesting')
+E               ValueError: bad nesting
+
+solution.py:22: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-184826.md_outline_number.tests.test_solution" name="test_empty" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-184826.md_outline_number.tests.test_solution" name="test_no_headers" time="0.001" /><testcase classname="artifacts.uplift.work_20260713-184826.md_outline_number.tests.test_solution" name="test_jump_shallow" time="0.000"><failure message="ValueError: bad nesting">def test_jump_shallow():
+&gt;       assert f(['# A', '## B', '### C', '# D']) == ['1 A', '1.1 B', '1.1.1 C', '2 D']
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:12: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+lines = ['# A', '## B', '### C', '# D']
+
+    def outline_number(lines):
+        if not all(isinstance(line, str) for line in lines):
+            raise ValueError('bad input')
+    
+        def is_header(line):
+            if len(line) == 0 or line[0] != '#':
+                return False
+            hash_count = line.count('#', 0, 1)
+            if hash_count &lt; 1 or hash_count &gt; 6:
+                return False
+            title = line.strip()
+            return len(title) &gt; 0 and title[0] != ' '
+    
+        counter = [0] * 7
+    
+        for line in lines:
+            if not is_header(line):
+                continue
+    
+            level = line.count('#', 0, 1)
+            if any(c &gt;= i for i, c in enumerate(counter[:level])):
+&gt;               raise ValueError('bad nesting')
+E               ValueError: bad nesting
+
+solution.py:22: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-184826.md_outline_number.tests.test_solution" name="test_title_with_hash" time="0.000"><failure message="ValueError: bad nesting">&gt;   def test_title_with_hash(): assert f(['# A # B']) == ['1 A # B']
+                                       ^^^^^^^^^^^^^^
+
+tests\test_solution.py:13: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+lines = ['# A # B']
+
+    def outline_number(lines):
+        if not all(isinstance(line, str) for line in lines):
+            raise ValueError('bad input')
+    
+        def is_header(line):
+            if len(line) == 0 or line[0] != '#':
+                return False
+            hash_count = line.count('#', 0, 1)
+            if hash_count &lt; 1 or hash_count &gt; 6:
+                return False
+            title = line.strip()
+            return len(title) &gt; 0 and title[0] != ' '
+    
+        counter = [0] * 7
+    
+        for line in lines:
+            if not is_header(line):
+                continue
+    
+            level = line.count('#', 0, 1)
+            if any(c &gt;= i for i, c in enumerate(counter[:level])):
+&gt;               raise ValueError('bad nesting')
+E               ValueError: bad nesting
+
+solution.py:22: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-184826.md_outline_number.tests.test_solution" name="test_first_not_level1" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-184826.md_outline_number.tests.test_solution" name="test_skip_level" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-184826.md_outline_number.tests.test_solution" name="test_seven_hashes" time="0.001"><failure message="AssertionError: assert 'bad nesting' == 'bad header'&#10;  &#10;  - bad header&#10;  + bad nesting">def test_seven_hashes():
+        with pytest.raises(ValueError) as e: f(['####### X'])
+&gt;       assert str(e.value) == 'bad header'
+E       AssertionError: assert 'bad nesting' == 'bad header'
+E         
+E         - bad header
+E         + bad nesting
+
+tests\test_solution.py:22: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-184826.md_outline_number.tests.test_solution" name="test_no_space" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-184826.md_outline_number.tests.test_solution" name="test_empty_title" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-184826.md_outline_number.tests.test_solution" name="test_double_space" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-184826.md_outline_number.tests.test_solution" name="test_bad_input" time="0.000"><failure message="AssertionError: assert 'bad nesting' == 'bad input'&#10;  &#10;  - bad input&#10;  + bad nesting">def test_bad_input():
+        with pytest.raises(ValueError) as e: f('# A')
+&gt;       assert str(e.value) == 'bad input'
+E       AssertionError: assert 'bad nesting' == 'bad input'
+E         
+E         - bad input
+E         + bad nesting
+
+tests\test_solution.py:31: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-184826.md_outline_number.tests.test_solution" name="test_bad_element" time="0.000" /></testsuite></testsuites>

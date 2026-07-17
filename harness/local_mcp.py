@@ -68,8 +68,10 @@ def _call(params: dict) -> dict:
             ex = ToolExecutor(root=args.get("root", "."),
                               gate=ToolGate(allow_write=bool(args.get("allow_write")),
                                             allow_exec=bool(args.get("allow_exec"))))
+            from harness import tool_receipts
             r = run_agent(_agent(args), args["goal"], ex, SessionLedger(),
-                          max_steps=int(args.get("max_steps", 6)))
+                          max_steps=int(args.get("max_steps", 6)),
+                          sign_key=tool_receipts.new_session_key())
             return _text({"final": r["final"], "steps": r["steps"],
                           "verified": r["verified"], "checkpoint": r["checkpoint"]})
         return {"content": [{"type": "text", "text": f"unknown tool {name!r}"}], "isError": True}

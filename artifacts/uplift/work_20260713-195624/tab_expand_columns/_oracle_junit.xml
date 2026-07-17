@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="1" failures="0" skipped="0" tests="1" time="0.255" timestamp="2026-07-13T20:12:52.857574-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="" name="artifacts.uplift.work_20260713-195624.tab_expand_columns.tests.test_solution" time="0.000"><error message="collection failure">tests\test_solution.py:2: in &lt;module&gt;
+    from solution import expand_tabs as f
+solution.py:21: in &lt;module&gt;
+    print(expand_tabs("Hello\tWorld", 4))  # Expected output: "  Hello \t    World"
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+solution.py:14: in expand_tabs
+    raise ValueError('bad stop')
+E   ValueError: bad stop</error></testcase></testsuite></testsuites>

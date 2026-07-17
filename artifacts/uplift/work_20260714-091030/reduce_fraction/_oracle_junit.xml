@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="2" skipped="0" tests="9" time="0.204" timestamp="2026-07-14T09:36:47.740008-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260714-091030.reduce_fraction.tests.test_solution" name="test_basic" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-091030.reduce_fraction.tests.test_solution" name="test_neg_num" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-091030.reduce_fraction.tests.test_solution" name="test_neg_den" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-091030.reduce_fraction.tests.test_solution" name="test_both_neg" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-091030.reduce_fraction.tests.test_solution" name="test_zero" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-091030.reduce_fraction.tests.test_solution" name="test_already" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-091030.reduce_fraction.tests.test_solution" name="test_reduce_int" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-091030.reduce_fraction.tests.test_solution" name="test_div_zero" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_div_zero():
+&gt;       with pytest.raises(ValueError) as e: f(1, 0)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:11: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260714-091030.reduce_fraction.tests.test_solution" name="test_bad_arg" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_bad_arg():
+&gt;       with pytest.raises(ValueError) as e: f(True, 2)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:14: Failed</failure></testcase></testsuite></testsuites>

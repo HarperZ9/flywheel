@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="6" skipped="0" tests="8" time="0.233" timestamp="2026-07-13T19:55:44.822866-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-194718.template_fields.tests.test_solution" name="test_plain_text" time="0.001"><failure message="AssertionError: assert [] == [('text', 'hello')]&#10;  &#10;  Right contains one more item: ('text', 'hello')&#10;  Use -v to get more diff">def test_plain_text():
+&gt;       assert parse_template_fields("hello") == [("text", "hello")]
+E       AssertionError: assert [] == [('text', 'hello')]
+E         
+E         Right contains one more item: ('text', 'hello')
+E         Use -v to get more diff
+
+tests\test_solution.py:6: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.template_fields.tests.test_solution" name="test_empty" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-194718.template_fields.tests.test_solution" name="test_fields" time="0.001"><failure message="AssertionError: assert [('field', 'f0')] == [('field', 'a')]&#10;  &#10;  At index 0 diff: ('field', 'f0') != ('field', 'a')&#10;  Use -v to get more diff">def test_fields():
+&gt;       assert parse_template_fields("{a}") == [("field", "a")]
+E       AssertionError: assert [('field', 'f0')] == [('field', 'a')]
+E         
+E         At index 0 diff: ('field', 'f0') != ('field', 'a')
+E         Use -v to get more diff
+
+tests\test_solution.py:14: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.template_fields.tests.test_solution" name="test_name_charset_ok" time="0.001"><failure message="AssertionError: assert [('field', 'f0')] == [('field', '_a1')]&#10;  &#10;  At index 0 diff: ('field', 'f0') != ('field', '_a1')&#10;  Use -v to get more diff">def test_name_charset_ok():
+&gt;       assert parse_template_fields("{_a1}") == [("field", "_a1")]
+E       AssertionError: assert [('field', 'f0')] == [('field', '_a1')]
+E         
+E         At index 0 diff: ('field', 'f0') != ('field', '_a1')
+E         Use -v to get more diff
+
+tests\test_solution.py:24: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.template_fields.tests.test_solution" name="test_brace_escapes_merge_maximal" time="0.001"><failure message="ValueError: ValueError: Unterminated field at the end of string">def test_brace_escapes_merge_maximal():
+&gt;       assert parse_template_fields("{{") == [("text", "{")]
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:29: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+s = '{{'
+
+    def parse_template_fields(s: str) -&gt; list[tuple[str, str]]:
+        if not s:
+            return []
+    
+        result = []
+        current_chunk = ('text', '')
+        field_index = 0
+    
+        for i, char in enumerate(s):
+            if current_chunk[0] == 'field':
+                if char != '}':
+                    continue
+                # Terminate field
+                if result and not s[i:].startswith('}'):
+                    raise ValueError(f"ValueError: Unterminated field at index {i}")
+                field_value = current_chunk[1]
+                result.append(current_chunk)
+                current_chunk = ('text', '')
+                field_index += 1
+            elif current_chunk[0] == 'text':
+                if char != '{':
+                    continue
+                # Start new or continue existing chunk
+                if s[i:].startswith('{{'):
+                    # Escape brace escape case
+                    result.append(current_chunk)
+                    current_chunk = ('text', '')
+                else:
+                    current_chunk = ('field', f'f{field_index}')
+            elif current_chunk[0] == 'text':
+                if char != '}' or not s[i:].startswith('}}'):
+                    continue
+                # Terminate text chunk
+                result.append(current_chunk)
+                current_chunk = ('text', '')
+    
+        if current_chunk[0] == 'field':
+&gt;           raise ValueError(f"ValueError: Unterminated field at the end of string")
+E           ValueError: ValueError: Unterminated field at the end of string
+
+solution.py:38: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.template_fields.tests.test_solution" name="test_bad_names_raise" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_bad_names_raise():
+        for bad in ["{}", "{1a}", "{a-b}", "{a b}", "{a.b}"]:
+&gt;           with pytest.raises(ValueError):
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^
+E           Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:41: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.template_fields.tests.test_solution" name="test_unterminated_raises" time="0.001" /><testcase classname="artifacts.uplift.work_20260713-194718.template_fields.tests.test_solution" name="test_stray_brace_raises" time="0.001"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_stray_brace_raises():
+        for bad in ["}", "a}b", "{a}}"]:
+&gt;           with pytest.raises(ValueError):
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^
+E           Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:53: Failed</failure></testcase></testsuite></testsuites>

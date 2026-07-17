@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="8" skipped="0" tests="10" time="0.208" timestamp="2026-07-13T20:21:07.571922-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-195624.linked_cycle.tests.test_solution" name="test_empty" time="0.001" /><testcase classname="artifacts.uplift.work_20260713-195624.linked_cycle.tests.test_solution" name="test_terminates" time="0.001"><failure message="assert True is False&#10; +  where True = f([-1])">&gt;   def test_terminates(): assert f([-1]) is False
+                           ^^^^^^^^^^^^^^^^^^^^^^^
+E   assert True is False
+E    +  where True = f([-1])
+
+tests\test_solution.py:4: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.linked_cycle.tests.test_solution" name="test_self_loop" time="0.000"><failure message="IndexError: list index out of range">&gt;   def test_self_loop(): assert f([0]) is True
+                                 ^^^^^^
+
+tests\test_solution.py:5: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+nxt = [0]
+
+    def has_cycle(nxt):
+        # Check if n is an empty list, return False
+        if not nxt:
+            return False
+    
+        for i in range(len(nxt)):
+            val = nxt[i]
+            if val == -1:  # Node has a link pointing to itself (cycle)
+                break
+            # Move to the node with the next link
+&gt;           nxt = [val, nxt[nxt.index(val) + 1]]
+                        ^^^^^^^^^^^^^^^^^^^^^^^
+E           IndexError: list index out of range
+
+solution.py:11: IndexError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.linked_cycle.tests.test_solution" name="test_chain" time="0.000"><failure message="IndexError: list index out of range">&gt;   def test_chain(): assert f([1, 2, -1]) is False
+                             ^^^^^^^^^^^^^
+
+tests\test_solution.py:6: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+nxt = [1, 2]
+
+    def has_cycle(nxt):
+        # Check if n is an empty list, return False
+        if not nxt:
+            return False
+    
+        for i in range(len(nxt)):
+            val = nxt[i]
+            if val == -1:  # Node has a link pointing to itself (cycle)
+                break
+            # Move to the node with the next link
+&gt;           nxt = [val, nxt[nxt.index(val) + 1]]
+                        ^^^^^^^^^^^^^^^^^^^^^^^
+E           IndexError: list index out of range
+
+solution.py:11: IndexError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.linked_cycle.tests.test_solution" name="test_cycle" time="0.000"><failure message="IndexError: list index out of range">&gt;   def test_cycle(): assert f([1, 2, 0]) is True
+                             ^^^^^^^^^^^^
+
+tests\test_solution.py:7: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+nxt = [1, 2]
+
+    def has_cycle(nxt):
+        # Check if n is an empty list, return False
+        if not nxt:
+            return False
+    
+        for i in range(len(nxt)):
+            val = nxt[i]
+            if val == -1:  # Node has a link pointing to itself (cycle)
+                break
+            # Move to the node with the next link
+&gt;           nxt = [val, nxt[nxt.index(val) + 1]]
+                        ^^^^^^^^^^^^^^^^^^^^^^^
+E           IndexError: list index out of range
+
+solution.py:11: IndexError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.linked_cycle.tests.test_solution" name="test_unreached_end" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-195624.linked_cycle.tests.test_solution" name="test_reachable_cycle" time="0.000"><failure message="IndexError: list index out of range">&gt;   def test_reachable_cycle(): assert f([2, 2, 1]) is True
+                                       ^^^^^^^^^^^^
+
+tests\test_solution.py:9: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+nxt = [2, 2]
+
+    def has_cycle(nxt):
+        # Check if n is an empty list, return False
+        if not nxt:
+            return False
+    
+        for i in range(len(nxt)):
+&gt;           val = nxt[i]
+                  ^^^^^^
+E           IndexError: list index out of range
+
+solution.py:7: IndexError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.linked_cycle.tests.test_solution" name="test_out_of_range" time="0.000"><failure message="IndexError: list index out of range">def test_out_of_range():
+&gt;       with pytest.raises(ValueError) as e: f([5])
+                                             ^^^^^^
+
+tests\test_solution.py:11: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+nxt = [5]
+
+    def has_cycle(nxt):
+        # Check if n is an empty list, return False
+        if not nxt:
+            return False
+    
+        for i in range(len(nxt)):
+            val = nxt[i]
+            if val == -1:  # Node has a link pointing to itself (cycle)
+                break
+            # Move to the node with the next link
+&gt;           nxt = [val, nxt[nxt.index(val) + 1]]
+                        ^^^^^^^^^^^^^^^^^^^^^^^
+E           IndexError: list index out of range
+
+solution.py:11: IndexError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.linked_cycle.tests.test_solution" name="test_below_neg_one" time="0.001"><failure message="IndexError: list index out of range">def test_below_neg_one():
+&gt;       with pytest.raises(ValueError): f([-2])
+                                        ^^^^^^^
+
+tests\test_solution.py:14: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+nxt = [-2]
+
+    def has_cycle(nxt):
+        # Check if n is an empty list, return False
+        if not nxt:
+            return False
+    
+        for i in range(len(nxt)):
+            val = nxt[i]
+            if val == -1:  # Node has a link pointing to itself (cycle)
+                break
+            # Move to the node with the next link
+&gt;           nxt = [val, nxt[nxt.index(val) + 1]]
+                        ^^^^^^^^^^^^^^^^^^^^^^^
+E           IndexError: list index out of range
+
+solution.py:11: IndexError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.linked_cycle.tests.test_solution" name="test_bool" time="0.000"><failure message="IndexError: list index out of range">def test_bool():
+&gt;       with pytest.raises(ValueError): f([True])
+                                        ^^^^^^^^^
+
+tests\test_solution.py:16: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+nxt = [True]
+
+    def has_cycle(nxt):
+        # Check if n is an empty list, return False
+        if not nxt:
+            return False
+    
+        for i in range(len(nxt)):
+            val = nxt[i]
+            if val == -1:  # Node has a link pointing to itself (cycle)
+                break
+            # Move to the node with the next link
+&gt;           nxt = [val, nxt[nxt.index(val) + 1]]
+                        ^^^^^^^^^^^^^^^^^^^^^^^
+E           IndexError: list index out of range
+
+solution.py:11: IndexError</failure></testcase></testsuite></testsuites>

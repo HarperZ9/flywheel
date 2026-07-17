@@ -1,0 +1,2952 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="4" skipped="0" tests="11" time="0.786" timestamp="2026-07-13T19:49:54.760255-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-192539.glob_match.tests.test_solution" name="test_star_ext" time="0.001"><failure message="AssertionError: assert False is True&#10; +  where False = f('*.txt', 'file.txt')">&gt;   def test_star_ext(): assert f('*.txt', 'file.txt') is True
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert False is True
+E    +  where False = f('*.txt', 'file.txt')
+
+tests\test_solution.py:3: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-192539.glob_match.tests.test_solution" name="test_star_ext_no" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-192539.glob_match.tests.test_solution" name="test_question" time="0.000"><failure message="AssertionError: assert False is True&#10; +  where False = f('?at', 'cat')">&gt;   def test_question(): assert f('?at', 'cat') is True
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert False is True
+E    +  where False = f('?at', 'cat')
+
+tests\test_solution.py:5: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-192539.glob_match.tests.test_solution" name="test_question_zero" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-192539.glob_match.tests.test_solution" name="test_star_empty" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-192539.glob_match.tests.test_solution" name="test_star_between" time="0.001"><failure message="RecursionError: maximum recursion depth exceeded">&gt;   def test_star_between(): assert f('a*b', 'ab') is True
+                                    ^^^^^^^^^^^^^^
+
+tests\test_solution.py:8: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:32: in glob_match
+    return _match(pattern, name)
+           ^^^^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+solution.py:30: in _match
+    return _match(p, n, i, j)
+           ^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+p = 'a*b', n = 'ab', i = 968, j = 2
+
+    def _match(p, n, i=0, j=0):
+        # If pattern is exhausted and the name is also fully matched
+        if i == len(p):
+            return j == len(n)
+    
+        # Check for star '*'
+        next_star = False
+        while i &lt; len(p) and p[i] != '*' and not (next_star or (p[i] == "*" and p[i-1] != "*")):
+            if j &gt;= len(n) or (p[i] != "." and p[i] != n[j]):
+                return False
+            i, j = i + 1, j + 1
+    
+        # If we encountered a star '*' then it needs to be handled specially.
+        next_star = True
+    
+        # If there is already a previous star '*'
+        if not next_star and p[i] == "*":
+            return _match(p, n, i + 1, j) or (j &lt; len(n) and _match(p, n, i, j + 1))
+    
+        # Move to the next character in pattern
+        i += 1
+    
+        if not next_star:
+            i -= 1
+    
+&gt;       return _match(p, n, i, j)
+               ^^^^^^^^^^^^^^^^^^
+E       RecursionError: maximum recursion depth exceeded
+
+solution.py:30: RecursionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-192539.glob_match.tests.test_solution" name="test_star_middle" time="0.000"><failure message="AssertionError: assert False is True&#10; +  where False = f('a*b', 'aXXb')">&gt;   def test_star_middle(): assert f('a*b', 'aXXb') is True
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert False is True
+E    +  where False = f('a*b', 'aXXb')
+
+tests\test_solution.py:9: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-192539.glob_match.tests.test_solution" name="test_star_no_tail" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-192539.glob_match.tests.test_solution" name="test_empty_both" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-192539.glob_match.tests.test_solution" name="test_empty_pattern" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-192539.glob_match.tests.test_solution" name="test_bad_input" time="0.001" /></testsuite></testsuites>

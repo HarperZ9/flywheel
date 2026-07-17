@@ -135,3 +135,26 @@ def test_serve_messages_route_returns_typed_error_for_bad_request():
     payload = json.loads(h.wfile.getvalue())
     assert payload["type"] == "error"
     assert payload["error"]["type"] == "invalid_request_error"
+
+
+def test_receipt_flags_a_served_model_that_differs_from_requested():
+    from harness.messages_api import make_receipt
+    # provider served a different model than requested: the receipt must
+    # carry model_mismatch, not silently trust the requested name
+    gen = {"text": "hi", "seed": 0, "prompt_hash": "h",
+           "served_model": "gpt-4o-mini-2024"}
+    r = make_receipt({"prompt": "x", "seed": 0}, gen, "enterprise:gpt-5")
+    assert r["model_mismatch"] == {"requested": "enterprise:gpt-5",
+                                   "served": "gpt-4o-mini-2024"}
+
+
+def test_receipt_matching_served_model_has_no_mismatch():
+    from harness.messages_api import make_receipt
+    gen = {"text": "hi", "seed": 0, "prompt_hash": "h",
+           "served_model": "gpt-5"}
+    r = make_receipt({"prompt": "x", "seed": 0}, gen, "enterprise:gpt-5")
+    assert "model_mismatch" not in r
+    # absent served_model (local/stub) never fabricates a mismatch
+    r2 = make_receipt({"prompt": "x", "seed": 0},
+                      {"text": "hi", "seed": 0, "prompt_hash": "h"}, "stub")
+    assert "model_mismatch" not in r2

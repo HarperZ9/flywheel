@@ -1,0 +1,247 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="13" skipped="0" tests="15" time="0.239" timestamp="2026-07-14T09:10:29.833727-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260714-083129.md_outline_number.tests.test_solution" name="test_basic" time="0.001"><failure message="TypeError: can only concatenate str (not &quot;int&quot;) to str">def test_basic():
+&gt;       assert f(['# A', '## B', '## C', '# D']) == ['1 A', '1.1 B', '1.2 C', '2 D']
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:4: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:49: in outline_number
+    if not is_valid_header(line, max(counter)):
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+line = '# A', current_level = 0
+
+    def is_valid_header(line, current_level):
+        if len(line) &gt; 7 or line[0] != "#":
+            raise ValueError('bad header')
+        level = line.count("#")
+        if level &gt; current_level + 1:
+            return False
+    
+        # Ensure there's exactly one space after the hashes
+        if not line.startswith(level * "#" + " "):
+            return False
+    
+&gt;       title = line[level * "#" + " ".__len__():].strip()
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: can only concatenate str (not "int") to str
+
+solution.py:13: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.md_outline_number.tests.test_solution" name="test_deep_reset" time="0.000"><failure message="TypeError: can only concatenate str (not &quot;int&quot;) to str">def test_deep_reset():
+&gt;       assert f(['# A', '## B', '### C', '## D', '### E']) == ['1 A', '1.1 B', '1.1.1 C', '1.2 D', '1.2.1 E']
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:6: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:49: in outline_number
+    if not is_valid_header(line, max(counter)):
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+line = '# A', current_level = 0
+
+    def is_valid_header(line, current_level):
+        if len(line) &gt; 7 or line[0] != "#":
+            raise ValueError('bad header')
+        level = line.count("#")
+        if level &gt; current_level + 1:
+            return False
+    
+        # Ensure there's exactly one space after the hashes
+        if not line.startswith(level * "#" + " "):
+            return False
+    
+&gt;       title = line[level * "#" + " ".__len__():].strip()
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: can only concatenate str (not "int") to str
+
+solution.py:13: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.md_outline_number.tests.test_solution" name="test_ignore_nonheaders" time="0.000"><failure message="ValueError: bad header">def test_ignore_nonheaders():
+&gt;       assert f(['text', '# A', 'more', '## B']) == ['1 A', '1.1 B']
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:8: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:49: in outline_number
+    if not is_valid_header(line, max(counter)):
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+line = 'text', current_level = 0
+
+    def is_valid_header(line, current_level):
+        if len(line) &gt; 7 or line[0] != "#":
+&gt;           raise ValueError('bad header')
+E           ValueError: bad header
+
+solution.py:4: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.md_outline_number.tests.test_solution" name="test_empty" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-083129.md_outline_number.tests.test_solution" name="test_no_headers" time="0.000"><failure message="ValueError: bad header">&gt;   def test_no_headers(): assert f(['just', 'text']) == []
+                                  ^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:10: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:49: in outline_number
+    if not is_valid_header(line, max(counter)):
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+line = 'just', current_level = 0
+
+    def is_valid_header(line, current_level):
+        if len(line) &gt; 7 or line[0] != "#":
+&gt;           raise ValueError('bad header')
+E           ValueError: bad header
+
+solution.py:4: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.md_outline_number.tests.test_solution" name="test_jump_shallow" time="0.000"><failure message="TypeError: can only concatenate str (not &quot;int&quot;) to str">def test_jump_shallow():
+&gt;       assert f(['# A', '## B', '### C', '# D']) == ['1 A', '1.1 B', '1.1.1 C', '2 D']
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:12: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:49: in outline_number
+    if not is_valid_header(line, max(counter)):
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+line = '# A', current_level = 0
+
+    def is_valid_header(line, current_level):
+        if len(line) &gt; 7 or line[0] != "#":
+            raise ValueError('bad header')
+        level = line.count("#")
+        if level &gt; current_level + 1:
+            return False
+    
+        # Ensure there's exactly one space after the hashes
+        if not line.startswith(level * "#" + " "):
+            return False
+    
+&gt;       title = line[level * "#" + " ".__len__():].strip()
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: can only concatenate str (not "int") to str
+
+solution.py:13: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.md_outline_number.tests.test_solution" name="test_title_with_hash" time="0.000"><failure message="AssertionError: assert [] == ['1 A # B']&#10;  &#10;  Right contains one more item: '1 A # B'&#10;  Use -v to get more diff">&gt;   def test_title_with_hash(): assert f(['# A # B']) == ['1 A # B']
+                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert [] == ['1 A # B']
+E     
+E     Right contains one more item: '1 A # B'
+E     Use -v to get more diff
+
+tests\test_solution.py:13: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.md_outline_number.tests.test_solution" name="test_first_not_level1" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_first_not_level1():
+&gt;       with pytest.raises(ValueError) as e: f(['## A'])
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:15: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.md_outline_number.tests.test_solution" name="test_skip_level" time="0.000"><failure message="TypeError: can only concatenate str (not &quot;int&quot;) to str">def test_skip_level():
+&gt;       with pytest.raises(ValueError) as e: f(['# A', '### C'])
+                                             ^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:18: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:49: in outline_number
+    if not is_valid_header(line, max(counter)):
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+line = '# A', current_level = 0
+
+    def is_valid_header(line, current_level):
+        if len(line) &gt; 7 or line[0] != "#":
+            raise ValueError('bad header')
+        level = line.count("#")
+        if level &gt; current_level + 1:
+            return False
+    
+        # Ensure there's exactly one space after the hashes
+        if not line.startswith(level * "#" + " "):
+            return False
+    
+&gt;       title = line[level * "#" + " ".__len__():].strip()
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: can only concatenate str (not "int") to str
+
+solution.py:13: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.md_outline_number.tests.test_solution" name="test_seven_hashes" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-083129.md_outline_number.tests.test_solution" name="test_no_space" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_no_space():
+&gt;       with pytest.raises(ValueError): f(['#title'])
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:24: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.md_outline_number.tests.test_solution" name="test_empty_title" time="0.000"><failure message="TypeError: can only concatenate str (not &quot;int&quot;) to str">def test_empty_title():
+&gt;       with pytest.raises(ValueError): f(['# '])
+                                        ^^^^^^^^^
+
+tests\test_solution.py:26: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:49: in outline_number
+    if not is_valid_header(line, max(counter)):
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+line = '# ', current_level = 0
+
+    def is_valid_header(line, current_level):
+        if len(line) &gt; 7 or line[0] != "#":
+            raise ValueError('bad header')
+        level = line.count("#")
+        if level &gt; current_level + 1:
+            return False
+    
+        # Ensure there's exactly one space after the hashes
+        if not line.startswith(level * "#" + " "):
+            return False
+    
+&gt;       title = line[level * "#" + " ".__len__():].strip()
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: can only concatenate str (not "int") to str
+
+solution.py:13: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.md_outline_number.tests.test_solution" name="test_double_space" time="0.000"><failure message="TypeError: can only concatenate str (not &quot;int&quot;) to str">def test_double_space():
+&gt;       with pytest.raises(ValueError): f(['#  x'])
+                                        ^^^^^^^^^^^
+
+tests\test_solution.py:28: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:49: in outline_number
+    if not is_valid_header(line, max(counter)):
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+line = '#  x', current_level = 0
+
+    def is_valid_header(line, current_level):
+        if len(line) &gt; 7 or line[0] != "#":
+            raise ValueError('bad header')
+        level = line.count("#")
+        if level &gt; current_level + 1:
+            return False
+    
+        # Ensure there's exactly one space after the hashes
+        if not line.startswith(level * "#" + " "):
+            return False
+    
+&gt;       title = line[level * "#" + " ".__len__():].strip()
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: can only concatenate str (not "int") to str
+
+solution.py:13: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.md_outline_number.tests.test_solution" name="test_bad_input" time="0.001"><failure message="AssertionError: assert 'bad header' == 'bad input'&#10;  &#10;  - bad input&#10;  + bad header">def test_bad_input():
+        with pytest.raises(ValueError) as e: f('# A')
+&gt;       assert str(e.value) == 'bad input'
+E       AssertionError: assert 'bad header' == 'bad input'
+E         
+E         - bad input
+E         + bad header
+
+tests\test_solution.py:31: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.md_outline_number.tests.test_solution" name="test_bad_element" time="0.000"><failure message="TypeError: object of type 'int' has no len()">def test_bad_element():
+&gt;       with pytest.raises(ValueError): f([1])
+                                        ^^^^^^
+
+tests\test_solution.py:33: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:49: in outline_number
+    if not is_valid_header(line, max(counter)):
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+line = 1, current_level = 0
+
+    def is_valid_header(line, current_level):
+&gt;       if len(line) &gt; 7 or line[0] != "#":
+           ^^^^^^^^^
+E       TypeError: object of type 'int' has no len()
+
+solution.py:3: TypeError</failure></testcase></testsuite></testsuites>

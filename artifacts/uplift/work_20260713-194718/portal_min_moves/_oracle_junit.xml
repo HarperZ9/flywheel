@@ -1,0 +1,346 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="10" skipped="0" tests="19" time="0.261" timestamp="2026-07-13T20:11:17.019412-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-194718.portal_min_moves.tests.test_solution" name="test_plain_walk" time="0.001"><failure message="ValueError: no path">&gt;   def test_plain_walk(): assert f(10, [], 0, 9) == 9
+                                  ^^^^^^^^^^^^^^^
+
+tests\test_solution.py:3: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+n = 10, portals = [], start = 0, goal = 9
+
+    def portal_moves(n, portals, start, goal):
+        if not isinstance(n, int) or n &lt; 1:
+            raise ValueError('bad n')
+    
+        if not (0 &lt;= start &lt; n and 0 &lt;= goal &lt; n):
+            raise ValueError('bad cell')
+    
+        if start == goal:
+            return 0
+    
+        # Check for invalid portals
+        visited = [False] * n
+        def has_duplicate_portals(portals, index=0):
+            if index &gt;= len(portals):
+                return False
+    
+            entry, exit = portals[index]
+    
+            # Skip duplicates and already visited entries.
+            if visited[entry]:
+                return True
+            elif visited[exit]:
+                return True
+            else:
+                visited[entry] = True
+    
+            # Only check the valid portal that matches our current index.
+            next_index = (index + 1) % len(portals)
+            return has_duplicate_portals(portals, next_index)
+    
+        if has_duplicate_portals(portals):
+            raise ValueError('duplicate portal')
+    
+        # Check all portals to find valid path
+        for entry, exit in portals:
+            visited[entry] = True
+    
+            if entry == start and (exit == goal or has_duplicate_portals([(exit, e) for e in range(n)], 0)):
+                return 1
+            elif entry != start and (visited[goal]):
+                return 2
+    
+        # If the above failed, no valid path exists.
+&gt;       raise ValueError('no path')
+E       ValueError: no path
+
+solution.py:44: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.portal_min_moves.tests.test_solution" name="test_direct_portal" time="0.000"><failure message="ValueError: duplicate portal">&gt;   def test_direct_portal(): assert f(10, [(0, 9)], 0, 9) == 1
+                                     ^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:4: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+n = 10, portals = [(0, 9)], start = 0, goal = 9
+
+    def portal_moves(n, portals, start, goal):
+        if not isinstance(n, int) or n &lt; 1:
+            raise ValueError('bad n')
+    
+        if not (0 &lt;= start &lt; n and 0 &lt;= goal &lt; n):
+            raise ValueError('bad cell')
+    
+        if start == goal:
+            return 0
+    
+        # Check for invalid portals
+        visited = [False] * n
+        def has_duplicate_portals(portals, index=0):
+            if index &gt;= len(portals):
+                return False
+    
+            entry, exit = portals[index]
+    
+            # Skip duplicates and already visited entries.
+            if visited[entry]:
+                return True
+            elif visited[exit]:
+                return True
+            else:
+                visited[entry] = True
+    
+            # Only check the valid portal that matches our current index.
+            next_index = (index + 1) % len(portals)
+            return has_duplicate_portals(portals, next_index)
+    
+        if has_duplicate_portals(portals):
+&gt;           raise ValueError('duplicate portal')
+E           ValueError: duplicate portal
+
+solution.py:32: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.portal_min_moves.tests.test_solution" name="test_walk_then_portal" time="0.000"><failure message="ValueError: duplicate portal">&gt;   def test_walk_then_portal(): assert f(10, [(1, 8)], 0, 9) == 3
+                                        ^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:5: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+n = 10, portals = [(1, 8)], start = 0, goal = 9
+
+    def portal_moves(n, portals, start, goal):
+        if not isinstance(n, int) or n &lt; 1:
+            raise ValueError('bad n')
+    
+        if not (0 &lt;= start &lt; n and 0 &lt;= goal &lt; n):
+            raise ValueError('bad cell')
+    
+        if start == goal:
+            return 0
+    
+        # Check for invalid portals
+        visited = [False] * n
+        def has_duplicate_portals(portals, index=0):
+            if index &gt;= len(portals):
+                return False
+    
+            entry, exit = portals[index]
+    
+            # Skip duplicates and already visited entries.
+            if visited[entry]:
+                return True
+            elif visited[exit]:
+                return True
+            else:
+                visited[entry] = True
+    
+            # Only check the valid portal that matches our current index.
+            next_index = (index + 1) % len(portals)
+            return has_duplicate_portals(portals, next_index)
+    
+        if has_duplicate_portals(portals):
+&gt;           raise ValueError('duplicate portal')
+E           ValueError: duplicate portal
+
+solution.py:32: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.portal_min_moves.tests.test_solution" name="test_same_cell" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-194718.portal_min_moves.tests.test_solution" name="test_one_cell" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-194718.portal_min_moves.tests.test_solution" name="test_backward_portal_useless" time="0.000"><failure message="ValueError: duplicate portal">&gt;   def test_backward_portal_useless(): assert f(10, [(9, 0)], 0, 9) == 9
+                                               ^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:8: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+n = 10, portals = [(9, 0)], start = 0, goal = 9
+
+    def portal_moves(n, portals, start, goal):
+        if not isinstance(n, int) or n &lt; 1:
+            raise ValueError('bad n')
+    
+        if not (0 &lt;= start &lt; n and 0 &lt;= goal &lt; n):
+            raise ValueError('bad cell')
+    
+        if start == goal:
+            return 0
+    
+        # Check for invalid portals
+        visited = [False] * n
+        def has_duplicate_portals(portals, index=0):
+            if index &gt;= len(portals):
+                return False
+    
+            entry, exit = portals[index]
+    
+            # Skip duplicates and already visited entries.
+            if visited[entry]:
+                return True
+            elif visited[exit]:
+                return True
+            else:
+                visited[entry] = True
+    
+            # Only check the valid portal that matches our current index.
+            next_index = (index + 1) % len(portals)
+            return has_duplicate_portals(portals, next_index)
+    
+        if has_duplicate_portals(portals):
+&gt;           raise ValueError('duplicate portal')
+E           ValueError: duplicate portal
+
+solution.py:32: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.portal_min_moves.tests.test_solution" name="test_one_way" time="0.000"><failure message="ValueError: duplicate portal">&gt;   def test_one_way(): assert f(10, [(0, 5)], 5, 0) == 5
+                               ^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:9: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+n = 10, portals = [(0, 5)], start = 5, goal = 0
+
+    def portal_moves(n, portals, start, goal):
+        if not isinstance(n, int) or n &lt; 1:
+            raise ValueError('bad n')
+    
+        if not (0 &lt;= start &lt; n and 0 &lt;= goal &lt; n):
+            raise ValueError('bad cell')
+    
+        if start == goal:
+            return 0
+    
+        # Check for invalid portals
+        visited = [False] * n
+        def has_duplicate_portals(portals, index=0):
+            if index &gt;= len(portals):
+                return False
+    
+            entry, exit = portals[index]
+    
+            # Skip duplicates and already visited entries.
+            if visited[entry]:
+                return True
+            elif visited[exit]:
+                return True
+            else:
+                visited[entry] = True
+    
+            # Only check the valid portal that matches our current index.
+            next_index = (index + 1) % len(portals)
+            return has_duplicate_portals(portals, next_index)
+    
+        if has_duplicate_portals(portals):
+&gt;           raise ValueError('duplicate portal')
+E           ValueError: duplicate portal
+
+solution.py:32: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.portal_min_moves.tests.test_solution" name="test_self_portal" time="0.000"><failure message="ValueError: duplicate portal">&gt;   def test_self_portal(): assert f(6, [(2, 2)], 0, 5) == 5
+                                   ^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:10: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+n = 6, portals = [(2, 2)], start = 0, goal = 5
+
+    def portal_moves(n, portals, start, goal):
+        if not isinstance(n, int) or n &lt; 1:
+            raise ValueError('bad n')
+    
+        if not (0 &lt;= start &lt; n and 0 &lt;= goal &lt; n):
+            raise ValueError('bad cell')
+    
+        if start == goal:
+            return 0
+    
+        # Check for invalid portals
+        visited = [False] * n
+        def has_duplicate_portals(portals, index=0):
+            if index &gt;= len(portals):
+                return False
+    
+            entry, exit = portals[index]
+    
+            # Skip duplicates and already visited entries.
+            if visited[entry]:
+                return True
+            elif visited[exit]:
+                return True
+            else:
+                visited[entry] = True
+    
+            # Only check the valid portal that matches our current index.
+            next_index = (index + 1) % len(portals)
+            return has_duplicate_portals(portals, next_index)
+    
+        if has_duplicate_portals(portals):
+&gt;           raise ValueError('duplicate portal')
+E           ValueError: duplicate portal
+
+solution.py:32: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.portal_min_moves.tests.test_solution" name="test_best_of_two" time="0.000"><failure message="ValueError: duplicate portal">&gt;   def test_best_of_two(): assert f(10, [(3, 9), (1, 7)], 0, 9) == 4
+                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:11: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+n = 10, portals = [(3, 9), (1, 7)], start = 0, goal = 9
+
+    def portal_moves(n, portals, start, goal):
+        if not isinstance(n, int) or n &lt; 1:
+            raise ValueError('bad n')
+    
+        if not (0 &lt;= start &lt; n and 0 &lt;= goal &lt; n):
+            raise ValueError('bad cell')
+    
+        if start == goal:
+            return 0
+    
+        # Check for invalid portals
+        visited = [False] * n
+        def has_duplicate_portals(portals, index=0):
+            if index &gt;= len(portals):
+                return False
+    
+            entry, exit = portals[index]
+    
+            # Skip duplicates and already visited entries.
+            if visited[entry]:
+                return True
+            elif visited[exit]:
+                return True
+            else:
+                visited[entry] = True
+    
+            # Only check the valid portal that matches our current index.
+            next_index = (index + 1) % len(portals)
+            return has_duplicate_portals(portals, next_index)
+    
+        if has_duplicate_portals(portals):
+&gt;           raise ValueError('duplicate portal')
+E           ValueError: duplicate portal
+
+solution.py:32: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.portal_min_moves.tests.test_solution" name="test_duplicate_entry" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-194718.portal_min_moves.tests.test_solution" name="test_duplicate_identical" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-194718.portal_min_moves.tests.test_solution" name="test_bad_portal_list" time="0.001"><failure message="AssertionError: assert 'duplicate portal' == 'bad portal'&#10;  &#10;  - bad portal&#10;  + duplicate portal">def test_bad_portal_list():
+        with pytest.raises(ValueError) as e: f(10, [[1, 2]], 0, 9)
+&gt;       assert str(e.value) == 'bad portal'
+E       AssertionError: assert 'duplicate portal' == 'bad portal'
+E         
+E         - bad portal
+E         + duplicate portal
+
+tests\test_solution.py:20: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.portal_min_moves.tests.test_solution" name="test_bad_portal_range" time="0.000"><failure message="IndexError: list index out of range">def test_bad_portal_range():
+&gt;       with pytest.raises(ValueError): f(10, [(1, 10)], 0, 9)
+                                        ^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:22: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:31: in portal_moves
+    if has_duplicate_portals(portals):
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+portals = [(1, 10)], index = 0
+
+    def has_duplicate_portals(portals, index=0):
+        if index &gt;= len(portals):
+            return False
+    
+        entry, exit = portals[index]
+    
+        # Skip duplicates and already visited entries.
+        if visited[entry]:
+            return True
+&gt;       elif visited[exit]:
+             ^^^^^^^^^^^^^
+E       IndexError: list index out of range
+
+solution.py:22: IndexError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.portal_min_moves.tests.test_solution" name="test_bad_portal_bool" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-194718.portal_min_moves.tests.test_solution" name="test_bad_portal_not_list" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-194718.portal_min_moves.tests.test_solution" name="test_bad_n" time="0.001" /><testcase classname="artifacts.uplift.work_20260713-194718.portal_min_moves.tests.test_solution" name="test_bad_n_bool" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_bad_n_bool():
+&gt;       with pytest.raises(ValueError): f(True, [], 0, 0)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:31: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.portal_min_moves.tests.test_solution" name="test_bad_cell_range" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-194718.portal_min_moves.tests.test_solution" name="test_bad_cell_bool" time="0.000" /></testsuite></testsuites>

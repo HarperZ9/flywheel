@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="2" skipped="0" tests="9" time="0.219" timestamp="2026-07-14T09:39:42.849232-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260714-091030.matrix_transpose.tests.test_solution" name="test_basic" time="0.001" /><testcase classname="artifacts.uplift.work_20260714-091030.matrix_transpose.tests.test_solution" name="test_column" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-091030.matrix_transpose.tests.test_solution" name="test_square" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-091030.matrix_transpose.tests.test_solution" name="test_no_rows" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-091030.matrix_transpose.tests.test_solution" name="test_empty_rows" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-091030.matrix_transpose.tests.test_solution" name="test_single" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-091030.matrix_transpose.tests.test_solution" name="test_ragged" time="0.001"><failure message="AssertionError: assert 'bad matrix' == 'ragged'&#10;  &#10;  - ragged&#10;  + bad matrix">def test_ragged():
+        with pytest.raises(ValueError) as e: f([[1, 2], [3]])
+&gt;       assert str(e.value) == 'ragged'
+E       AssertionError: assert 'bad matrix' == 'ragged'
+E         
+E         - ragged
+E         + bad matrix
+
+tests\test_solution.py:11: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-091030.matrix_transpose.tests.test_solution" name="test_bad_row" time="0.000"><failure message="TypeError: object of type 'int' has no len()">def test_bad_row():
+&gt;       with pytest.raises(ValueError) as e: f([1, 2])
+                                             ^^^^^^^^^
+
+tests\test_solution.py:13: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+m = [1, 2]
+
+    def transpose(m):
+        if not isinstance(m, list):
+            raise ValueError('bad matrix')
+        if not m:
+            return []
+&gt;       first_len = len(m[0])
+                    ^^^^^^^^^
+E       TypeError: object of type 'int' has no len()
+
+solution.py:6: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-091030.matrix_transpose.tests.test_solution" name="test_bad_matrix" time="0.000" /></testsuite></testsuites>

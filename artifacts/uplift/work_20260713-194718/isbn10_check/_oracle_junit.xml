@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="4" skipped="0" tests="7" time="0.169" timestamp="2026-07-13T20:03:59.676016-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-194718.isbn10_check.tests.test_solution" name="test_valid_digits" time="0.001"><failure message="TypeError: unsupported operand type(s) for +: 'int' and 'str'">&gt;   def test_valid_digits(): assert f('0306406152') is True
+                                    ^^^^^^^^^^^^^^^
+
+tests\test_solution.py:3: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+s = '0306406152'
+
+    def isbn10_check(s):
+        if not isinstance(s, str) or len(s) != 10:
+            raise ValueError('bad isbn')
+    
+        digits = list(s)
+    
+        for i in range(9):
+            if not digits[i].isdigit():
+                raise ValueError('bad isbn')
+    
+            num = int(digits[i])
+            weight = 10 - i
+            if num &gt; 9:
+                raise ValueError('bad isbn')
+    
+            if num == 10 and digits[i] != 'X':
+                return False
+    
+        if digits[9].lower() in ['x', '']:
+            return False
+    
+&gt;       digit_sum = sum(num * weight for num, weight in zip(digits, range(10, 0, -1)))
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: unsupported operand type(s) for +: 'int' and 'str'
+
+solution.py:22: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.isbn10_check.tests.test_solution" name="test_valid_x" time="0.000"><failure message="AssertionError: assert False is True&#10; +  where False = f('048665088X')">&gt;   def test_valid_x(): assert f('048665088X') is True
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert False is True
+E    +  where False = f('048665088X')
+
+tests\test_solution.py:4: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.isbn10_check.tests.test_solution" name="test_invalid" time="0.000"><failure message="TypeError: unsupported operand type(s) for +: 'int' and 'str'">&gt;   def test_invalid(): assert f('0306406153') is False
+                               ^^^^^^^^^^^^^^^
+
+tests\test_solution.py:5: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+s = '0306406153'
+
+    def isbn10_check(s):
+        if not isinstance(s, str) or len(s) != 10:
+            raise ValueError('bad isbn')
+    
+        digits = list(s)
+    
+        for i in range(9):
+            if not digits[i].isdigit():
+                raise ValueError('bad isbn')
+    
+            num = int(digits[i])
+            weight = 10 - i
+            if num &gt; 9:
+                raise ValueError('bad isbn')
+    
+            if num == 10 and digits[i] != 'X':
+                return False
+    
+        if digits[9].lower() in ['x', '']:
+            return False
+    
+&gt;       digit_sum = sum(num * weight for num, weight in zip(digits, range(10, 0, -1)))
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: unsupported operand type(s) for +: 'int' and 'str'
+
+solution.py:22: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.isbn10_check.tests.test_solution" name="test_bad_length" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-194718.isbn10_check.tests.test_solution" name="test_lower_x" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_lower_x():
+&gt;       with pytest.raises(ValueError): f('048665088x')
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:10: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.isbn10_check.tests.test_solution" name="test_x_not_last" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-194718.isbn10_check.tests.test_solution" name="test_not_str" time="0.000" /></testsuite></testsuites>

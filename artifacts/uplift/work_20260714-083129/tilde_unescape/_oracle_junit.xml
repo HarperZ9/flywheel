@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="8" skipped="0" tests="8" time="0.242" timestamp="2026-07-14T08:46:29.335506-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260714-083129.tilde_unescape.tests.test_solution" name="test_plain_and_simple_escapes" time="0.001"><failure message="AssertionError: assert &lt;generator object untilde at 0x00000208D5D56130&gt; == ''&#10; +  where &lt;generator object untilde at 0x00000208D5D56130&gt; = untilde('')">def test_plain_and_simple_escapes():
+&gt;       assert untilde("") == ""
+E       AssertionError: assert &lt;generator object untilde at 0x00000208D5D56130&gt; == ''
+E        +  where &lt;generator object untilde at 0x00000208D5D56130&gt; = untilde('')
+
+tests\test_solution.py:6: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.tilde_unescape.tests.test_solution" name="test_hex_escape_exactly_two_digits" time="0.001"><failure message="AssertionError: assert &lt;generator object untilde at 0x00000208D5D56AC0&gt; == 'A'&#10; +  where &lt;generator object untilde at 0x00000208D5D56AC0&gt; = untilde('~x41')">def test_hex_escape_exactly_two_digits():
+&gt;       assert untilde("~x41") == "A"
+E       AssertionError: assert &lt;generator object untilde at 0x00000208D5D56AC0&gt; == 'A'
+E        +  where &lt;generator object untilde at 0x00000208D5D56AC0&gt; = untilde('~x41')
+
+tests\test_solution.py:14: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.tilde_unescape.tests.test_solution" name="test_hex_may_produce_control_chars" time="0.001"><failure message="AssertionError: assert &lt;generator object untilde at 0x00000208D5D57120&gt; == '\x00'&#10; +  where &lt;generator object untilde at 0x00000208D5D57120&gt; = untilde('~x00')">def test_hex_may_produce_control_chars():
+&gt;       assert untilde("~x00") == "\x00"
+E       AssertionError: assert &lt;generator object untilde at 0x00000208D5D57120&gt; == '\x00'
+E        +  where &lt;generator object untilde at 0x00000208D5D57120&gt; = untilde('~x00')
+
+tests\test_solution.py:21: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.tilde_unescape.tests.test_solution" name="test_dangling_escape" time="0.001"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_dangling_escape():
+&gt;       with pytest.raises(ValueError, match="dangling escape"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:26: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.tilde_unescape.tests.test_solution" name="test_bad_escape_case_sensitive" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_bad_escape_case_sensitive():
+&gt;       with pytest.raises(ValueError, match="bad escape"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:31: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.tilde_unescape.tests.test_solution" name="test_bad_hex" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_bad_hex():
+&gt;       with pytest.raises(ValueError, match="bad hex"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:40: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.tilde_unescape.tests.test_solution" name="test_raw_control_forbidden" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_raw_control_forbidden():
+&gt;       with pytest.raises(ValueError, match="raw control"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:51: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.tilde_unescape.tests.test_solution" name="test_first_error_in_scan_order_wins" time="0.001"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_first_error_in_scan_order_wins():
+&gt;       with pytest.raises(ValueError, match="raw control"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:58: Failed</failure></testcase></testsuite></testsuites>

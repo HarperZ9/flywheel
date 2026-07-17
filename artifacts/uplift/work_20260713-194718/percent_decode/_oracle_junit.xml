@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="10" skipped="0" tests="10" time="0.240" timestamp="2026-07-13T20:06:13.821932-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-194718.percent_decode.tests.test_solution" name="test_space" time="0.001"><failure message="AssertionError: assert &lt;generator object percent_decode at 0x0000023DC3A934C0&gt; == 'a b'&#10; +  where &lt;generator object percent_decode at 0x0000023DC3A934C0&gt; = f('a%20b')">&gt;   def test_space(): assert f('a%20b') == 'a b'
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert &lt;generator object percent_decode at 0x0000023DC3A934C0&gt; == 'a b'
+E    +  where &lt;generator object percent_decode at 0x0000023DC3A934C0&gt; = f('a%20b')
+
+tests\test_solution.py:3: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.percent_decode.tests.test_solution" name="test_upper_hex" time="0.001"><failure message="AssertionError: assert &lt;generator object percent_decode at 0x0000023DC3A93970&gt; == 'A'&#10; +  where &lt;generator object percent_decode at 0x0000023DC3A93970&gt; = f('%41')">&gt;   def test_upper_hex(): assert f('%41') == 'A'
+                          ^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert &lt;generator object percent_decode at 0x0000023DC3A93970&gt; == 'A'
+E    +  where &lt;generator object percent_decode at 0x0000023DC3A93970&gt; = f('%41')
+
+tests\test_solution.py:4: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.percent_decode.tests.test_solution" name="test_percent_literal" time="0.000"><failure message="AssertionError: assert &lt;generator object percent_decode at 0x0000023DC3C44130&gt; == '100%'&#10; +  where &lt;generator object percent_decode at 0x0000023DC3C44130&gt; = f('100%25')">&gt;   def test_percent_literal(): assert f('100%25') == '100%'
+                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert &lt;generator object percent_decode at 0x0000023DC3C44130&gt; == '100%'
+E    +  where &lt;generator object percent_decode at 0x0000023DC3C44130&gt; = f('100%25')
+
+tests\test_solution.py:5: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.percent_decode.tests.test_solution" name="test_plus_literal" time="0.000"><failure message="AssertionError: assert &lt;generator object percent_decode at 0x0000023DC3C445E0&gt; == 'a+b'&#10; +  where &lt;generator object percent_decode at 0x0000023DC3C445E0&gt; = f('a+b')">&gt;   def test_plus_literal(): assert f('a+b') == 'a+b'
+                             ^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert &lt;generator object percent_decode at 0x0000023DC3C445E0&gt; == 'a+b'
+E    +  where &lt;generator object percent_decode at 0x0000023DC3C445E0&gt; = f('a+b')
+
+tests\test_solution.py:6: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.percent_decode.tests.test_solution" name="test_plain" time="0.000"><failure message="AssertionError: assert &lt;generator object percent_decode at 0x0000023DC3C45120&gt; == 'hello'&#10; +  where &lt;generator object percent_decode at 0x0000023DC3C45120&gt; = f('hello')">&gt;   def test_plain(): assert f('hello') == 'hello'
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert &lt;generator object percent_decode at 0x0000023DC3C45120&gt; == 'hello'
+E    +  where &lt;generator object percent_decode at 0x0000023DC3C45120&gt; = f('hello')
+
+tests\test_solution.py:7: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.percent_decode.tests.test_solution" name="test_mixed_case" time="0.000"><failure message="AssertionError: assert &lt;generator object percent_decode at 0x0000023DC3C446D0&gt; == '//'&#10; +  where &lt;generator object percent_decode at 0x0000023DC3C446D0&gt; = f('%2F%2f')">&gt;   def test_mixed_case(): assert f('%2F%2f') == '//'
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert &lt;generator object percent_decode at 0x0000023DC3C446D0&gt; == '//'
+E    +  where &lt;generator object percent_decode at 0x0000023DC3C446D0&gt; = f('%2F%2f')
+
+tests\test_solution.py:8: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.percent_decode.tests.test_solution" name="test_short_escape" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_short_escape():
+&gt;       with pytest.raises(ValueError) as e: f('a%2')
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:10: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.percent_decode.tests.test_solution" name="test_nonhex" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_nonhex():
+&gt;       with pytest.raises(ValueError) as e: f('%2g')
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:13: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.percent_decode.tests.test_solution" name="test_non_ascii" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_non_ascii():
+&gt;       with pytest.raises(ValueError) as e: f('%80')
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:16: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.percent_decode.tests.test_solution" name="test_lone_percent" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_lone_percent():
+&gt;       with pytest.raises(ValueError): f('%')
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:19: Failed</failure></testcase></testsuite></testsuites>

@@ -1,0 +1,191 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="7" skipped="0" tests="10" time="0.244" timestamp="2026-07-13T19:38:15.625741-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-192539.mini_editor_undo.tests.test_solution" name="test_type_and_cursor" time="0.001" /><testcase classname="artifacts.uplift.work_20260713-192539.mini_editor_undo.tests.test_solution" name="test_insert_middle_and_clamping" time="0.001"><failure message="ValueError: Invalid cursor movement: length of text is 2">def test_insert_middle_and_clamping():
+&gt;       assert edit(["type bc", "left 99", "type a"]) == ("abc", 1)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:11: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+commands = ['type bc', 'left 99', 'type a']
+
+    def edit(commands):
+        text = ""
+        cursor = 0
+    
+        for command in commands:
+            if command.startswith("type"):
+                _, payload = command.split(' ', 1)
+                non_empty_payload = len(payload.strip())
+                if not non_empty_payload:
+                    raise ValueError(f"Malformed command: {command}")
+                text += payload
+                cursor += non_empty_payload
+            elif command.startswith("left") or command.startswith("right"):
+                _, direction_str = command.split(' ', 1)
+                try:
+                    direction = int(direction_str)
+                except ValueError:
+                    raise ValueError(f"Malformed command: {command}")
+    
+                if abs(direction) &gt; len(text):
+&gt;                   raise ValueError(f"Invalid cursor movement: length of text is {len(text)}")
+E                   ValueError: Invalid cursor movement: length of text is 2
+
+solution.py:21: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-192539.mini_editor_undo.tests.test_solution" name="test_type_payload_may_contain_spaces" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-192539.mini_editor_undo.tests.test_solution" name="test_backspace_partial" time="0.000"><failure message="ValueError: Malformed command: left 2">def test_backspace_partial():
+&gt;       assert edit(["type abc", "left 2", "backspace 5"]) == ("bc", 0)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:20: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+commands = ['type abc', 'left 2', 'backspace 5']
+
+    def edit(commands):
+        text = ""
+        cursor = 0
+    
+        for command in commands:
+            if command.startswith("type"):
+                _, payload = command.split(' ', 1)
+                non_empty_payload = len(payload.strip())
+                if not non_empty_payload:
+                    raise ValueError(f"Malformed command: {command}")
+                text += payload
+                cursor += non_empty_payload
+            elif command.startswith("left") or command.startswith("right"):
+                _, direction_str = command.split(' ', 1)
+                try:
+                    direction = int(direction_str)
+                except ValueError:
+                    raise ValueError(f"Malformed command: {command}")
+    
+                if abs(direction) &gt; len(text):
+                    raise ValueError(f"Invalid cursor movement: length of text is {len(text)}")
+    
+                if direction != 0 and (command.startswith("left") or direction &lt; 0):
+&gt;                   raise ValueError(f"Malformed command: {command}")
+E                   ValueError: Malformed command: left 2
+
+solution.py:24: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-192539.mini_editor_undo.tests.test_solution" name="test_undo_restores_cursor_too" time="0.000"><failure message="ValueError: Malformed command: left 3">def test_undo_restores_cursor_too():
+        # cursor motion after the undone edit is discarded
+&gt;       assert edit(["type ab", "type cd", "left 3", "undo"]) == ("ab", 2)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:25: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+commands = ['type ab', 'type cd', 'left 3', 'undo']
+
+    def edit(commands):
+        text = ""
+        cursor = 0
+    
+        for command in commands:
+            if command.startswith("type"):
+                _, payload = command.split(' ', 1)
+                non_empty_payload = len(payload.strip())
+                if not non_empty_payload:
+                    raise ValueError(f"Malformed command: {command}")
+                text += payload
+                cursor += non_empty_payload
+            elif command.startswith("left") or command.startswith("right"):
+                _, direction_str = command.split(' ', 1)
+                try:
+                    direction = int(direction_str)
+                except ValueError:
+                    raise ValueError(f"Malformed command: {command}")
+    
+                if abs(direction) &gt; len(text):
+                    raise ValueError(f"Invalid cursor movement: length of text is {len(text)}")
+    
+                if direction != 0 and (command.startswith("left") or direction &lt; 0):
+&gt;                   raise ValueError(f"Malformed command: {command}")
+E                   ValueError: Malformed command: left 3
+
+solution.py:24: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-192539.mini_editor_undo.tests.test_solution" name="test_undo_skips_noop_backspace" time="0.000"><failure message="ValueError: Malformed command: left 2">def test_undo_skips_noop_backspace():
+        # a backspace that deleted nothing is never an undo target
+&gt;       assert edit(["type ab", "left 2", "backspace 1", "undo"]) == ("", 0)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:30: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+commands = ['type ab', 'left 2', 'backspace 1', 'undo']
+
+    def edit(commands):
+        text = ""
+        cursor = 0
+    
+        for command in commands:
+            if command.startswith("type"):
+                _, payload = command.split(' ', 1)
+                non_empty_payload = len(payload.strip())
+                if not non_empty_payload:
+                    raise ValueError(f"Malformed command: {command}")
+                text += payload
+                cursor += non_empty_payload
+            elif command.startswith("left") or command.startswith("right"):
+                _, direction_str = command.split(' ', 1)
+                try:
+                    direction = int(direction_str)
+                except ValueError:
+                    raise ValueError(f"Malformed command: {command}")
+    
+                if abs(direction) &gt; len(text):
+                    raise ValueError(f"Invalid cursor movement: length of text is {len(text)}")
+    
+                if direction != 0 and (command.startswith("left") or direction &lt; 0):
+&gt;                   raise ValueError(f"Malformed command: {command}")
+E                   ValueError: Malformed command: left 2
+
+solution.py:24: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-192539.mini_editor_undo.tests.test_solution" name="test_undo_on_empty_stack_is_noop" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-192539.mini_editor_undo.tests.test_solution" name="test_undo_twice_pops_two_edits" time="0.000"><failure message="AssertionError: assert ('ab', 2) == ('', 0)&#10;  &#10;  At index 0 diff: 'ab' != ''&#10;  Use -v to get more diff">def test_undo_twice_pops_two_edits():
+&gt;       assert edit(["type a", "type b", "undo", "undo"]) == ("", 0)
+E       AssertionError: assert ('ab', 2) == ('', 0)
+E         
+E         At index 0 diff: 'ab' != ''
+E         Use -v to get more diff
+
+tests\test_solution.py:38: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-192539.mini_editor_undo.tests.test_solution" name="test_malformed_commands_raise" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_malformed_commands_raise():
+        for bad in (["delete 1"], ["type"], ["type "], ["left"], ["left 0"],
+                    ["left -2"], ["left 2x"], ["left 2 3"], ["undo 2"],
+                    ["backspace 0"], ["right +3"]):
+&gt;           with pytest.raises(ValueError):
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^
+E           Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:45: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260713-192539.mini_editor_undo.tests.test_solution" name="test_no_mutation" time="0.000"><failure message="ValueError: Malformed command: left 1">def test_no_mutation():
+        cmds = ["type ab", "left 1", "undo"]
+        snapshot = list(cmds)
+&gt;       edit(cmds)
+
+tests\test_solution.py:52: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+commands = ['type ab', 'left 1', 'undo']
+
+    def edit(commands):
+        text = ""
+        cursor = 0
+    
+        for command in commands:
+            if command.startswith("type"):
+                _, payload = command.split(' ', 1)
+                non_empty_payload = len(payload.strip())
+                if not non_empty_payload:
+                    raise ValueError(f"Malformed command: {command}")
+                text += payload
+                cursor += non_empty_payload
+            elif command.startswith("left") or command.startswith("right"):
+                _, direction_str = command.split(' ', 1)
+                try:
+                    direction = int(direction_str)
+                except ValueError:
+                    raise ValueError(f"Malformed command: {command}")
+    
+                if abs(direction) &gt; len(text):
+                    raise ValueError(f"Invalid cursor movement: length of text is {len(text)}")
+    
+                if direction != 0 and (command.startswith("left") or direction &lt; 0):
+&gt;                   raise ValueError(f"Malformed command: {command}")
+E                   ValueError: Malformed command: left 1
+
+solution.py:24: ValueError</failure></testcase></testsuite></testsuites>

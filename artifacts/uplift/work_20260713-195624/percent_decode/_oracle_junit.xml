@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="8" skipped="0" tests="10" time="0.222" timestamp="2026-07-13T20:18:56.395955-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-195624.percent_decode.tests.test_solution" name="test_space" time="0.001"><failure message="AssertionError: assert 'a%20b' == 'a b'&#10;  &#10;  - a b&#10;  + a%20b">&gt;   def test_space(): assert f('a%20b') == 'a b'
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert 'a%20b' == 'a b'
+E     
+E     - a b
+E     + a%20b
+
+tests\test_solution.py:3: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.percent_decode.tests.test_solution" name="test_upper_hex" time="0.001"><failure message="AssertionError: assert '%41' == 'A'&#10;  &#10;  - A&#10;  + %41">&gt;   def test_upper_hex(): assert f('%41') == 'A'
+                          ^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert '%41' == 'A'
+E     
+E     - A
+E     + %41
+
+tests\test_solution.py:4: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.percent_decode.tests.test_solution" name="test_percent_literal" time="0.000"><failure message="AssertionError: assert '100%25' == '100%'&#10;  &#10;  - 100%&#10;  + 100%25&#10;  ?     ++">&gt;   def test_percent_literal(): assert f('100%25') == '100%'
+                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert '100%25' == '100%'
+E     
+E     - 100%
+E     + 100%25
+E     ?     ++
+
+tests\test_solution.py:5: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.percent_decode.tests.test_solution" name="test_plus_literal" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-195624.percent_decode.tests.test_solution" name="test_plain" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-195624.percent_decode.tests.test_solution" name="test_mixed_case" time="0.001"><failure message="AssertionError: assert '%2F%2f' == '//'&#10;  &#10;  - //&#10;  + %2F%2f">&gt;   def test_mixed_case(): assert f('%2F%2f') == '//'
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert '%2F%2f' == '//'
+E     
+E     - //
+E     + %2F%2f
+
+tests\test_solution.py:8: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.percent_decode.tests.test_solution" name="test_short_escape" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_short_escape():
+&gt;       with pytest.raises(ValueError) as e: f('a%2')
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:10: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.percent_decode.tests.test_solution" name="test_nonhex" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_nonhex():
+&gt;       with pytest.raises(ValueError) as e: f('%2g')
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:13: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.percent_decode.tests.test_solution" name="test_non_ascii" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_non_ascii():
+&gt;       with pytest.raises(ValueError) as e: f('%80')
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:16: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.percent_decode.tests.test_solution" name="test_lone_percent" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_lone_percent():
+&gt;       with pytest.raises(ValueError): f('%')
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:19: Failed</failure></testcase></testsuite></testsuites>

@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="8" skipped="0" tests="9" time="0.248" timestamp="2026-07-13T19:10:01.365837-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-184826.identifier_words.tests.test_solution" name="test_acronym_then_word" time="0.001"><failure message="AssertionError: assert ['HT', 'TT', 'TP', 'PS', '2N'] == ['HTTP', 'Ser..., '2', 'Node']&#10;  &#10;  At index 0 diff: 'HT' != 'HTTP'&#10;  Left contains one more item: '2N'&#10;  Use -v to get more diff">&gt;   def test_acronym_then_word(): assert f('HTTPServer2Node') == ['HTTP', 'Server', '2', 'Node']
+                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert ['HT', 'TT', 'TP', 'PS', '2N'] == ['HTTP', 'Ser..., '2', 'Node']
+E     
+E     At index 0 diff: 'HT' != 'HTTP'
+E     Left contains one more item: '2N'
+E     Use -v to get more diff
+
+tests\test_solution.py:3: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-184826.identifier_words.tests.test_solution" name="test_camel_acronym" time="0.001"><failure message="AssertionError: assert ['eJ', 'JS', ...X', 'XM', ...] == ['parse', 'JSON', '2', 'XML']&#10;  &#10;  At index 0 diff: 'eJ' != 'parse'&#10;  Left contains 3 more items, first extra item: '2X'&#10;  Use -v to get more diff">&gt;   def test_camel_acronym(): assert f('parseJSON2XML') == ['parse', 'JSON', '2', 'XML']
+                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert ['eJ', 'JS', ...X', 'XM', ...] == ['parse', 'JSON', '2', 'XML']
+E     
+E     At index 0 diff: 'eJ' != 'parse'
+E     Left contains 3 more items, first extra item: '2X'
+E     Use -v to get more diff
+
+tests\test_solution.py:4: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-184826.identifier_words.tests.test_solution" name="test_snake" time="0.001"><failure message="AssertionError: assert [] == ['snake', 'case', 'two']&#10;  &#10;  Right contains 3 more items, first extra item: 'snake'&#10;  Use -v to get more diff">&gt;   def test_snake(): assert f('snake_case_two') == ['snake', 'case', 'two']
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert [] == ['snake', 'case', 'two']
+E     
+E     Right contains 3 more items, first extra item: 'snake'
+E     Use -v to get more diff
+
+tests\test_solution.py:5: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-184826.identifier_words.tests.test_solution" name="test_underscore_trim" time="0.000"><failure message="AssertionError: assert [] == ['x']&#10;  &#10;  Right contains one more item: 'x'&#10;  Use -v to get more diff">&gt;   def test_underscore_trim(): assert f('__x__') == ['x']
+                                ^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert [] == ['x']
+E     
+E     Right contains one more item: 'x'
+E     Use -v to get more diff
+
+tests\test_solution.py:6: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-184826.identifier_words.tests.test_solution" name="test_empty" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-184826.identifier_words.tests.test_solution" name="test_two_caps_then_lower" time="0.000"><failure message="AssertionError: assert ['AB'] == ['A', 'Bc']&#10;  &#10;  At index 0 diff: 'AB' != 'A'&#10;  Right contains one more item: 'Bc'&#10;  Use -v to get more diff">&gt;   def test_two_caps_then_lower(): assert f('ABc') == ['A', 'Bc']
+                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert ['AB'] == ['A', 'Bc']
+E     
+E     At index 0 diff: 'AB' != 'A'
+E     Right contains one more item: 'Bc'
+E     Use -v to get more diff
+
+tests\test_solution.py:8: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-184826.identifier_words.tests.test_solution" name="test_plain" time="0.000"><failure message="AssertionError: assert [] == ['simple']&#10;  &#10;  Right contains one more item: 'simple'&#10;  Use -v to get more diff">&gt;   def test_plain(): assert f('simple') == ['simple']
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert [] == ['simple']
+E     
+E     Right contains one more item: 'simple'
+E     Use -v to get more diff
+
+tests\test_solution.py:9: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-184826.identifier_words.tests.test_solution" name="test_single_cap_then_digit" time="0.000"><failure message="AssertionError: assert [] == ['A', '1', 'a']&#10;  &#10;  Right contains 3 more items, first extra item: 'A'&#10;  Use -v to get more diff">&gt;   def test_single_cap_then_digit(): assert f('A1a') == ['A', '1', 'a']
+                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert [] == ['A', '1', 'a']
+E     
+E     Right contains 3 more items, first extra item: 'A'
+E     Use -v to get more diff
+
+tests\test_solution.py:10: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-184826.identifier_words.tests.test_solution" name="test_bad_char" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_bad_char():
+&gt;       with pytest.raises(ValueError) as e: f('a-b')
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:12: Failed</failure></testcase></testsuite></testsuites>

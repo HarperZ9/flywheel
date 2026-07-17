@@ -42,11 +42,49 @@ def test_noop_or_syntax_error_fails(tmp_path):
     assert not orc.verify_dense("def broken(:", task).passed
 
 
+def test_crashing_candidate_never_passes_even_on_empty_expected(tmp_path):
+    # expected='' is a legitimate produce-nothing task; a candidate that dies
+    # at import time also prints nothing. Empty-matches-empty must not hand
+    # reward 1.0 to code that never ran to completion.
+    task = _exec_task(tmp_path, "")
+    orc = PythonExecutorOracle(expected="")
+    r = orc.verify_dense("raise RuntimeError('never ran')", task)
+    assert not r.passed and r.reward == 0.0
+    # and a clean no-output run still passes
+    ok = orc.verify_dense("x = 1", task)
+    assert ok.passed and ok.reward == 1.0
+
+
+def test_right_answer_then_crash_fails(tmp_path):
+    task = _exec_task(tmp_path, "42")
+    orc = PythonExecutorOracle(expected="42")
+    r = orc.verify_dense("print(42)\nraise SystemExit(3)", task)
+    assert not r.passed and r.reward == 0.0
+
+
 def test_timeout_fails_gracefully(tmp_path):
     task = _exec_task(tmp_path, "done")
     orc = PythonExecutorOracle(expected="done", timeout=2)
     r = orc.verify_dense("import time; time.sleep(10); print('done')", task)
-    assert not r.passed and "timeout" in r.output_hash
+    assert not r.passed and r.status == "timeout"
+
+
+def test_failure_class_is_named_not_smuggled_in_the_output_hash(tmp_path):
+    """The four failure classes must be distinguishable from the receipt
+    without string-parsing output_hash: a timeout is not a wrong answer, and a
+    crash is not a mismatch. output_hash stays a pure output witness."""
+    task = _exec_task(tmp_path, "42")
+    orc = PythonExecutorOracle(expected="42", timeout=2)
+    assert orc.verify_dense("print(42)", task).status == "match"
+    assert orc.verify_dense("print(7)", task).status == "mismatch"
+    # rc != 0 with the right stdout is a nonzero_exit, never a match
+    crash = orc.verify_dense("print(42)\nraise SystemExit(3)", task)
+    assert crash.status == "nonzero_exit" and not crash.passed
+    assert orc.verify_dense("import time; time.sleep(10)", task).status == "timeout"
+    # output_hash carries no failure-class label: it is empty when nothing ran
+    # to completion, and a returncode:stdout witness otherwise
+    to = orc.verify_dense("import time; time.sleep(10)", task)
+    assert to.output_hash == "" and to.status == "timeout"
 
 
 def test_mcts_climbs_quantitative_task_via_executor(tmp_path):

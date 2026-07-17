@@ -1,0 +1,407 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="10" skipped="0" tests="20" time="0.268" timestamp="2026-07-13T19:24:19.997424-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-184826.url_split_strict.tests.test_solution" name="test_basic" time="0.001"><failure message="ValueError: bad host">&gt;   def test_basic(): assert f('http://example.com/a/b?x=1') == ('http', 'example.com', None, '/a/b', 'x=1')
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:3: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+url = 'http://example.com/a/b?x=1'
+
+    def split_url(url):
+        if not isinstance(url, str):
+            raise ValueError('bad url')
+    
+        parts = url.split('://', 1)
+        if len(parts) == 2:
+            scheme, rest = parts
+        else:
+            raise ValueError('no scheme')
+    
+        if not scheme or not scheme[0].islower() or not all(c.isalnum() or c in '+-. ' for c in scheme[1:]):
+            raise ValueError('bad scheme')
+    
+        authority, path = '', '/'
+        rest, query = rest.split('?', 1) if '?' in rest else (rest, '')
+        if '#' in query:
+            query, _ = query.split('#', 1)
+    
+        if '//' in rest:
+            authority, path = rest.lstrip('/').split('/', 1)
+    
+        if ':' in authority:
+            host, port_str = authority.rsplit(':', 1)
+            try:
+                port = int(port_str)
+                if port &lt; 0 or port &gt; 65535 or (port == 0 and len(host) != 0):
+                    raise ValueError
+            except ValueError:
+                raise ValueError('bad port')
+        else:
+            host, port = authority, None
+    
+        if not host or not all(c.isalnum() or c in '-.' for c in host.replace('[', '').replace(']', '')):
+&gt;           raise ValueError('bad host')
+E           ValueError: bad host
+
+solution.py:34: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-184826.url_split_strict.tests.test_solution" name="test_no_path" time="0.000"><failure message="ValueError: bad host">&gt;   def test_no_path(): assert f('http://example.com') == ('http', 'example.com', None, '/', None)
+                               ^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:4: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+url = 'http://example.com'
+
+    def split_url(url):
+        if not isinstance(url, str):
+            raise ValueError('bad url')
+    
+        parts = url.split('://', 1)
+        if len(parts) == 2:
+            scheme, rest = parts
+        else:
+            raise ValueError('no scheme')
+    
+        if not scheme or not scheme[0].islower() or not all(c.isalnum() or c in '+-. ' for c in scheme[1:]):
+            raise ValueError('bad scheme')
+    
+        authority, path = '', '/'
+        rest, query = rest.split('?', 1) if '?' in rest else (rest, '')
+        if '#' in query:
+            query, _ = query.split('#', 1)
+    
+        if '//' in rest:
+            authority, path = rest.lstrip('/').split('/', 1)
+    
+        if ':' in authority:
+            host, port_str = authority.rsplit(':', 1)
+            try:
+                port = int(port_str)
+                if port &lt; 0 or port &gt; 65535 or (port == 0 and len(host) != 0):
+                    raise ValueError
+            except ValueError:
+                raise ValueError('bad port')
+        else:
+            host, port = authority, None
+    
+        if not host or not all(c.isalnum() or c in '-.' for c in host.replace('[', '').replace(']', '')):
+&gt;           raise ValueError('bad host')
+E           ValueError: bad host
+
+solution.py:34: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-184826.url_split_strict.tests.test_solution" name="test_port" time="0.000"><failure message="ValueError: bad host">&gt;   def test_port(): assert f('https://a.b:8080/x') == ('https', 'a.b', 8080, '/x', None)
+                            ^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:5: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+url = 'https://a.b:8080/x'
+
+    def split_url(url):
+        if not isinstance(url, str):
+            raise ValueError('bad url')
+    
+        parts = url.split('://', 1)
+        if len(parts) == 2:
+            scheme, rest = parts
+        else:
+            raise ValueError('no scheme')
+    
+        if not scheme or not scheme[0].islower() or not all(c.isalnum() or c in '+-. ' for c in scheme[1:]):
+            raise ValueError('bad scheme')
+    
+        authority, path = '', '/'
+        rest, query = rest.split('?', 1) if '?' in rest else (rest, '')
+        if '#' in query:
+            query, _ = query.split('#', 1)
+    
+        if '//' in rest:
+            authority, path = rest.lstrip('/').split('/', 1)
+    
+        if ':' in authority:
+            host, port_str = authority.rsplit(':', 1)
+            try:
+                port = int(port_str)
+                if port &lt; 0 or port &gt; 65535 or (port == 0 and len(host) != 0):
+                    raise ValueError
+            except ValueError:
+                raise ValueError('bad port')
+        else:
+            host, port = authority, None
+    
+        if not host or not all(c.isalnum() or c in '-.' for c in host.replace('[', '').replace(']', '')):
+&gt;           raise ValueError('bad host')
+E           ValueError: bad host
+
+solution.py:34: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-184826.url_split_strict.tests.test_solution" name="test_query_no_path" time="0.000"><failure message="ValueError: bad host">&gt;   def test_query_no_path(): assert f('ftp://h?x=2') == ('ftp', 'h', None, '/', 'x=2')
+                                     ^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:6: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+url = 'ftp://h?x=2'
+
+    def split_url(url):
+        if not isinstance(url, str):
+            raise ValueError('bad url')
+    
+        parts = url.split('://', 1)
+        if len(parts) == 2:
+            scheme, rest = parts
+        else:
+            raise ValueError('no scheme')
+    
+        if not scheme or not scheme[0].islower() or not all(c.isalnum() or c in '+-. ' for c in scheme[1:]):
+            raise ValueError('bad scheme')
+    
+        authority, path = '', '/'
+        rest, query = rest.split('?', 1) if '?' in rest else (rest, '')
+        if '#' in query:
+            query, _ = query.split('#', 1)
+    
+        if '//' in rest:
+            authority, path = rest.lstrip('/').split('/', 1)
+    
+        if ':' in authority:
+            host, port_str = authority.rsplit(':', 1)
+            try:
+                port = int(port_str)
+                if port &lt; 0 or port &gt; 65535 or (port == 0 and len(host) != 0):
+                    raise ValueError
+            except ValueError:
+                raise ValueError('bad port')
+        else:
+            host, port = authority, None
+    
+        if not host or not all(c.isalnum() or c in '-.' for c in host.replace('[', '').replace(']', '')):
+&gt;           raise ValueError('bad host')
+E           ValueError: bad host
+
+solution.py:34: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-184826.url_split_strict.tests.test_solution" name="test_empty_query" time="0.000"><failure message="ValueError: bad host">&gt;   def test_empty_query(): assert f('http://h/p?') == ('http', 'h', None, '/p', '')
+                                   ^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:7: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+url = 'http://h/p?'
+
+    def split_url(url):
+        if not isinstance(url, str):
+            raise ValueError('bad url')
+    
+        parts = url.split('://', 1)
+        if len(parts) == 2:
+            scheme, rest = parts
+        else:
+            raise ValueError('no scheme')
+    
+        if not scheme or not scheme[0].islower() or not all(c.isalnum() or c in '+-. ' for c in scheme[1:]):
+            raise ValueError('bad scheme')
+    
+        authority, path = '', '/'
+        rest, query = rest.split('?', 1) if '?' in rest else (rest, '')
+        if '#' in query:
+            query, _ = query.split('#', 1)
+    
+        if '//' in rest:
+            authority, path = rest.lstrip('/').split('/', 1)
+    
+        if ':' in authority:
+            host, port_str = authority.rsplit(':', 1)
+            try:
+                port = int(port_str)
+                if port &lt; 0 or port &gt; 65535 or (port == 0 and len(host) != 0):
+                    raise ValueError
+            except ValueError:
+                raise ValueError('bad port')
+        else:
+            host, port = authority, None
+    
+        if not host or not all(c.isalnum() or c in '-.' for c in host.replace('[', '').replace(']', '')):
+&gt;           raise ValueError('bad host')
+E           ValueError: bad host
+
+solution.py:34: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-184826.url_split_strict.tests.test_solution" name="test_second_qmark" time="0.000"><failure message="ValueError: bad host">&gt;   def test_second_qmark(): assert f('http://h/p?a?b') == ('http', 'h', None, '/p', 'a?b')
+                                    ^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:8: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+url = 'http://h/p?a?b'
+
+    def split_url(url):
+        if not isinstance(url, str):
+            raise ValueError('bad url')
+    
+        parts = url.split('://', 1)
+        if len(parts) == 2:
+            scheme, rest = parts
+        else:
+            raise ValueError('no scheme')
+    
+        if not scheme or not scheme[0].islower() or not all(c.isalnum() or c in '+-. ' for c in scheme[1:]):
+            raise ValueError('bad scheme')
+    
+        authority, path = '', '/'
+        rest, query = rest.split('?', 1) if '?' in rest else (rest, '')
+        if '#' in query:
+            query, _ = query.split('#', 1)
+    
+        if '//' in rest:
+            authority, path = rest.lstrip('/').split('/', 1)
+    
+        if ':' in authority:
+            host, port_str = authority.rsplit(':', 1)
+            try:
+                port = int(port_str)
+                if port &lt; 0 or port &gt; 65535 or (port == 0 and len(host) != 0):
+                    raise ValueError
+            except ValueError:
+                raise ValueError('bad port')
+        else:
+            host, port = authority, None
+    
+        if not host or not all(c.isalnum() or c in '-.' for c in host.replace('[', '').replace(']', '')):
+&gt;           raise ValueError('bad host')
+E           ValueError: bad host
+
+solution.py:34: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-184826.url_split_strict.tests.test_solution" name="test_port_zero" time="0.000"><failure message="ValueError: bad host">&gt;   def test_port_zero(): assert f('http://h:0/') == ('http', 'h', 0, '/', None)
+                                 ^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:9: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+url = 'http://h:0/'
+
+    def split_url(url):
+        if not isinstance(url, str):
+            raise ValueError('bad url')
+    
+        parts = url.split('://', 1)
+        if len(parts) == 2:
+            scheme, rest = parts
+        else:
+            raise ValueError('no scheme')
+    
+        if not scheme or not scheme[0].islower() or not all(c.isalnum() or c in '+-. ' for c in scheme[1:]):
+            raise ValueError('bad scheme')
+    
+        authority, path = '', '/'
+        rest, query = rest.split('?', 1) if '?' in rest else (rest, '')
+        if '#' in query:
+            query, _ = query.split('#', 1)
+    
+        if '//' in rest:
+            authority, path = rest.lstrip('/').split('/', 1)
+    
+        if ':' in authority:
+            host, port_str = authority.rsplit(':', 1)
+            try:
+                port = int(port_str)
+                if port &lt; 0 or port &gt; 65535 or (port == 0 and len(host) != 0):
+                    raise ValueError
+            except ValueError:
+                raise ValueError('bad port')
+        else:
+            host, port = authority, None
+    
+        if not host or not all(c.isalnum() or c in '-.' for c in host.replace('[', '').replace(']', '')):
+&gt;           raise ValueError('bad host')
+E           ValueError: bad host
+
+solution.py:34: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-184826.url_split_strict.tests.test_solution" name="test_max_port" time="0.000"><failure message="ValueError: bad host">&gt;   def test_max_port(): assert f('http://h:65535') == ('http', 'h', 65535, '/', None)
+                                ^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:10: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+url = 'http://h:65535'
+
+    def split_url(url):
+        if not isinstance(url, str):
+            raise ValueError('bad url')
+    
+        parts = url.split('://', 1)
+        if len(parts) == 2:
+            scheme, rest = parts
+        else:
+            raise ValueError('no scheme')
+    
+        if not scheme or not scheme[0].islower() or not all(c.isalnum() or c in '+-. ' for c in scheme[1:]):
+            raise ValueError('bad scheme')
+    
+        authority, path = '', '/'
+        rest, query = rest.split('?', 1) if '?' in rest else (rest, '')
+        if '#' in query:
+            query, _ = query.split('#', 1)
+    
+        if '//' in rest:
+            authority, path = rest.lstrip('/').split('/', 1)
+    
+        if ':' in authority:
+            host, port_str = authority.rsplit(':', 1)
+            try:
+                port = int(port_str)
+                if port &lt; 0 or port &gt; 65535 or (port == 0 and len(host) != 0):
+                    raise ValueError
+            except ValueError:
+                raise ValueError('bad port')
+        else:
+            host, port = authority, None
+    
+        if not host or not all(c.isalnum() or c in '-.' for c in host.replace('[', '').replace(']', '')):
+&gt;           raise ValueError('bad host')
+E           ValueError: bad host
+
+solution.py:34: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-184826.url_split_strict.tests.test_solution" name="test_scheme_chars" time="0.000"><failure message="ValueError: bad host">&gt;   def test_scheme_chars(): assert f('a+b-c.1://h') == ('a+b-c.1', 'h', None, '/', None)
+                                    ^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:11: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+url = 'a+b-c.1://h'
+
+    def split_url(url):
+        if not isinstance(url, str):
+            raise ValueError('bad url')
+    
+        parts = url.split('://', 1)
+        if len(parts) == 2:
+            scheme, rest = parts
+        else:
+            raise ValueError('no scheme')
+    
+        if not scheme or not scheme[0].islower() or not all(c.isalnum() or c in '+-. ' for c in scheme[1:]):
+            raise ValueError('bad scheme')
+    
+        authority, path = '', '/'
+        rest, query = rest.split('?', 1) if '?' in rest else (rest, '')
+        if '#' in query:
+            query, _ = query.split('#', 1)
+    
+        if '//' in rest:
+            authority, path = rest.lstrip('/').split('/', 1)
+    
+        if ':' in authority:
+            host, port_str = authority.rsplit(':', 1)
+            try:
+                port = int(port_str)
+                if port &lt; 0 or port &gt; 65535 or (port == 0 and len(host) != 0):
+                    raise ValueError
+            except ValueError:
+                raise ValueError('bad port')
+        else:
+            host, port = authority, None
+    
+        if not host or not all(c.isalnum() or c in '-.' for c in host.replace('[', '').replace(']', '')):
+&gt;           raise ValueError('bad host')
+E           ValueError: bad host
+
+solution.py:34: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-184826.url_split_strict.tests.test_solution" name="test_no_scheme" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-184826.url_split_strict.tests.test_solution" name="test_bad_scheme_upper" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-184826.url_split_strict.tests.test_solution" name="test_bad_scheme_empty" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-184826.url_split_strict.tests.test_solution" name="test_bad_scheme_digit_first" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-184826.url_split_strict.tests.test_solution" name="test_bad_host_empty" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-184826.url_split_strict.tests.test_solution" name="test_bad_host_upper" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-184826.url_split_strict.tests.test_solution" name="test_bad_port_leading_zero" time="0.001"><failure message="AssertionError: assert 'bad host' == 'bad port'&#10;  &#10;  - bad port&#10;  ?     ^ ^&#10;  + bad host&#10;  ?     ^ ^">def test_bad_port_leading_zero():
+        with pytest.raises(ValueError) as e: f('http://h:080')
+&gt;       assert str(e.value) == 'bad port'
+E       AssertionError: assert 'bad host' == 'bad port'
+E         
+E         - bad port
+E         ?     ^ ^
+E         + bad host
+E         ?     ^ ^
+
+tests\test_solution.py:29: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-184826.url_split_strict.tests.test_solution" name="test_bad_port_too_big" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-184826.url_split_strict.tests.test_solution" name="test_bad_port_empty" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-184826.url_split_strict.tests.test_solution" name="test_bad_port_second_colon" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-184826.url_split_strict.tests.test_solution" name="test_bad_url" time="0.000" /></testsuite></testsuites>

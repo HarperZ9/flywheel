@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="7" time="0.221" timestamp="2026-07-14T08:39:22.528343-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260714-083129.parse_range_list.tests.test_solution" name="test_empty" time="0.001"><failure message="ValueError: Malformed token: ''">s = ''
+
+    def parse_range_list(s):
+        def to_integers(range_str):
+            start, end = None, None
+            if '-' in range_str:
+                parts = range_str.split('-')
+                start = int(parts[0].strip())
+                end = int(parts[1].strip()) + 1  # Inclusive end of the range
+            else:
+                return [int(range_str.strip())]
+            if start &gt; end or (end - start) &lt; 1:
+                raise ValueError(f"Invalid range: '{range_str}'")
+            return list(range(start, end))
+    
+        tokens = s.replace(' ', '').split(',')
+        result = []
+        for token in tokens:
+            try:
+&gt;               integers = to_integers(token.strip())
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+solution.py:18: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+range_str = ''
+
+    def to_integers(range_str):
+        start, end = None, None
+        if '-' in range_str:
+            parts = range_str.split('-')
+            start = int(parts[0].strip())
+            end = int(parts[1].strip()) + 1  # Inclusive end of the range
+        else:
+&gt;           return [int(range_str.strip())]
+                    ^^^^^^^^^^^^^^^^^^^^^^
+E           ValueError: invalid literal for int() with base 10: ''
+
+solution.py:9: ValueError
+
+The above exception was the direct cause of the following exception:
+
+    def test_empty():
+&gt;       assert f('') == []
+               ^^^^^
+
+tests\test_solution.py:4: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+s = ''
+
+    def parse_range_list(s):
+        def to_integers(range_str):
+            start, end = None, None
+            if '-' in range_str:
+                parts = range_str.split('-')
+                start = int(parts[0].strip())
+                end = int(parts[1].strip()) + 1  # Inclusive end of the range
+            else:
+                return [int(range_str.strip())]
+            if start &gt; end or (end - start) &lt; 1:
+                raise ValueError(f"Invalid range: '{range_str}'")
+            return list(range(start, end))
+    
+        tokens = s.replace(' ', '').split(',')
+        result = []
+        for token in tokens:
+            try:
+                integers = to_integers(token.strip())
+                result.extend(integers)
+            except Exception as e:
+&gt;               raise ValueError(f"Malformed token: '{token}'") from e
+E               ValueError: Malformed token: ''
+
+solution.py:21: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.parse_range_list.tests.test_solution" name="test_mixed" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-083129.parse_range_list.tests.test_solution" name="test_overlap" time="0.001" /><testcase classname="artifacts.uplift.work_20260714-083129.parse_range_list.tests.test_solution" name="test_spaces" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-083129.parse_range_list.tests.test_solution" name="test_reversed_range" time="0.001" /><testcase classname="artifacts.uplift.work_20260714-083129.parse_range_list.tests.test_solution" name="test_garbage" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-083129.parse_range_list.tests.test_solution" name="test_dangling" time="0.000" /></testsuite></testsuites>

@@ -1,0 +1,207 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="13" skipped="0" tests="15" time="0.266" timestamp="2026-07-14T09:02:51.526191-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260714-083129.kth_combination.tests.test_solution" name="test_first" time="0.001"><failure message="NameError: name 'binomial_coefficient' is not defined">&gt;   def test_first(): assert f(4, 2, 0) == [0, 1]
+                             ^^^^^^^^^^
+
+tests\test_solution.py:3: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+n = 4, k = 2, r = 0
+
+    def kth_combination(n: int, k: int, r: int) -&gt; list:
+        if not (0 &lt;= k &lt;= n):
+            raise ValueError('bad k')
+    
+&gt;       if not (0 &lt;= r &lt; binomial_coefficient(n, k)):
+                         ^^^^^^^^^^^^^^^^^^^^
+E       NameError: name 'binomial_coefficient' is not defined
+
+solution.py:5: NameError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.kth_combination.tests.test_solution" name="test_middle" time="0.000"><failure message="NameError: name 'binomial_coefficient' is not defined">&gt;   def test_middle(): assert f(4, 2, 3) == [1, 2]
+                              ^^^^^^^^^^
+
+tests\test_solution.py:4: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+n = 4, k = 2, r = 3
+
+    def kth_combination(n: int, k: int, r: int) -&gt; list:
+        if not (0 &lt;= k &lt;= n):
+            raise ValueError('bad k')
+    
+&gt;       if not (0 &lt;= r &lt; binomial_coefficient(n, k)):
+                         ^^^^^^^^^^^^^^^^^^^^
+E       NameError: name 'binomial_coefficient' is not defined
+
+solution.py:5: NameError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.kth_combination.tests.test_solution" name="test_last" time="0.000"><failure message="NameError: name 'binomial_coefficient' is not defined">&gt;   def test_last(): assert f(4, 2, 5) == [2, 3]
+                            ^^^^^^^^^^
+
+tests\test_solution.py:5: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+n = 4, k = 2, r = 5
+
+    def kth_combination(n: int, k: int, r: int) -&gt; list:
+        if not (0 &lt;= k &lt;= n):
+            raise ValueError('bad k')
+    
+&gt;       if not (0 &lt;= r &lt; binomial_coefficient(n, k)):
+                         ^^^^^^^^^^^^^^^^^^^^
+E       NameError: name 'binomial_coefficient' is not defined
+
+solution.py:5: NameError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.kth_combination.tests.test_solution" name="test_five_three" time="0.001"><failure message="NameError: name 'binomial_coefficient' is not defined">&gt;   def test_five_three(): assert f(5, 3, 6) == [1, 2, 3]
+                                  ^^^^^^^^^^
+
+tests\test_solution.py:6: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+n = 5, k = 3, r = 6
+
+    def kth_combination(n: int, k: int, r: int) -&gt; list:
+        if not (0 &lt;= k &lt;= n):
+            raise ValueError('bad k')
+    
+&gt;       if not (0 &lt;= r &lt; binomial_coefficient(n, k)):
+                         ^^^^^^^^^^^^^^^^^^^^
+E       NameError: name 'binomial_coefficient' is not defined
+
+solution.py:5: NameError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.kth_combination.tests.test_solution" name="test_five_three_last" time="0.000"><failure message="NameError: name 'binomial_coefficient' is not defined">&gt;   def test_five_three_last(): assert f(5, 3, 9) == [2, 3, 4]
+                                       ^^^^^^^^^^
+
+tests\test_solution.py:7: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+n = 5, k = 3, r = 9
+
+    def kth_combination(n: int, k: int, r: int) -&gt; list:
+        if not (0 &lt;= k &lt;= n):
+            raise ValueError('bad k')
+    
+&gt;       if not (0 &lt;= r &lt; binomial_coefficient(n, k)):
+                         ^^^^^^^^^^^^^^^^^^^^
+E       NameError: name 'binomial_coefficient' is not defined
+
+solution.py:5: NameError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.kth_combination.tests.test_solution" name="test_k_zero" time="0.000"><failure message="NameError: name 'binomial_coefficient' is not defined">&gt;   def test_k_zero(): assert f(3, 0, 0) == []
+                              ^^^^^^^^^^
+
+tests\test_solution.py:8: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+n = 3, k = 0, r = 0
+
+    def kth_combination(n: int, k: int, r: int) -&gt; list:
+        if not (0 &lt;= k &lt;= n):
+            raise ValueError('bad k')
+    
+&gt;       if not (0 &lt;= r &lt; binomial_coefficient(n, k)):
+                         ^^^^^^^^^^^^^^^^^^^^
+E       NameError: name 'binomial_coefficient' is not defined
+
+solution.py:5: NameError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.kth_combination.tests.test_solution" name="test_k_equals_n" time="0.000"><failure message="NameError: name 'binomial_coefficient' is not defined">&gt;   def test_k_equals_n(): assert f(3, 3, 0) == [0, 1, 2]
+                                  ^^^^^^^^^^
+
+tests\test_solution.py:9: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+n = 3, k = 3, r = 0
+
+    def kth_combination(n: int, k: int, r: int) -&gt; list:
+        if not (0 &lt;= k &lt;= n):
+            raise ValueError('bad k')
+    
+&gt;       if not (0 &lt;= r &lt; binomial_coefficient(n, k)):
+                         ^^^^^^^^^^^^^^^^^^^^
+E       NameError: name 'binomial_coefficient' is not defined
+
+solution.py:5: NameError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.kth_combination.tests.test_solution" name="test_n_zero" time="0.000"><failure message="NameError: name 'binomial_coefficient' is not defined">&gt;   def test_n_zero(): assert f(0, 0, 0) == []
+                              ^^^^^^^^^^
+
+tests\test_solution.py:10: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+n = 0, k = 0, r = 0
+
+    def kth_combination(n: int, k: int, r: int) -&gt; list:
+        if not (0 &lt;= k &lt;= n):
+            raise ValueError('bad k')
+    
+&gt;       if not (0 &lt;= r &lt; binomial_coefficient(n, k)):
+                         ^^^^^^^^^^^^^^^^^^^^
+E       NameError: name 'binomial_coefficient' is not defined
+
+solution.py:5: NameError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.kth_combination.tests.test_solution" name="test_bad_n" time="0.001"><failure message="AssertionError: assert 'bad k' == 'bad n'&#10;  &#10;  - bad n&#10;  ?     ^&#10;  + bad k&#10;  ?     ^">def test_bad_n():
+        with pytest.raises(ValueError) as e: f(-1, 0, 0)
+&gt;       assert str(e.value) == 'bad n'
+E       AssertionError: assert 'bad k' == 'bad n'
+E         
+E         - bad n
+E         ?     ^
+E         + bad k
+E         ?     ^
+
+tests\test_solution.py:13: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.kth_combination.tests.test_solution" name="test_bool_n" time="0.000"><failure message="NameError: name 'binomial_coefficient' is not defined">def test_bool_n():
+&gt;       with pytest.raises(ValueError) as e: f(True, 1, 0)
+                                             ^^^^^^^^^^^^^
+
+tests\test_solution.py:15: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+n = True, k = 1, r = 0
+
+    def kth_combination(n: int, k: int, r: int) -&gt; list:
+        if not (0 &lt;= k &lt;= n):
+            raise ValueError('bad k')
+    
+&gt;       if not (0 &lt;= r &lt; binomial_coefficient(n, k)):
+                         ^^^^^^^^^^^^^^^^^^^^
+E       NameError: name 'binomial_coefficient' is not defined
+
+solution.py:5: NameError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.kth_combination.tests.test_solution" name="test_bad_k" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-083129.kth_combination.tests.test_solution" name="test_bool_k" time="0.000"><failure message="NameError: name 'binomial_coefficient' is not defined">def test_bool_k():
+&gt;       with pytest.raises(ValueError) as e: f(2, True, 0)
+                                             ^^^^^^^^^^^^^
+
+tests\test_solution.py:21: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+n = 2, k = True, r = 0
+
+    def kth_combination(n: int, k: int, r: int) -&gt; list:
+        if not (0 &lt;= k &lt;= n):
+            raise ValueError('bad k')
+    
+&gt;       if not (0 &lt;= r &lt; binomial_coefficient(n, k)):
+                         ^^^^^^^^^^^^^^^^^^^^
+E       NameError: name 'binomial_coefficient' is not defined
+
+solution.py:5: NameError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.kth_combination.tests.test_solution" name="test_bad_rank_high" time="0.000"><failure message="NameError: name 'binomial_coefficient' is not defined">def test_bad_rank_high():
+&gt;       with pytest.raises(ValueError) as e: f(4, 2, 6)
+                                             ^^^^^^^^^^
+
+tests\test_solution.py:24: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+n = 4, k = 2, r = 6
+
+    def kth_combination(n: int, k: int, r: int) -&gt; list:
+        if not (0 &lt;= k &lt;= n):
+            raise ValueError('bad k')
+    
+&gt;       if not (0 &lt;= r &lt; binomial_coefficient(n, k)):
+                         ^^^^^^^^^^^^^^^^^^^^
+E       NameError: name 'binomial_coefficient' is not defined
+
+solution.py:5: NameError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.kth_combination.tests.test_solution" name="test_bad_rank_neg" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-083129.kth_combination.tests.test_solution" name="test_k_zero_rank_one" time="0.001"><failure message="NameError: name 'binomial_coefficient' is not defined">def test_k_zero_rank_one():
+&gt;       with pytest.raises(ValueError) as e: f(3, 0, 1)
+                                             ^^^^^^^^^^
+
+tests\test_solution.py:30: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+n = 3, k = 0, r = 1
+
+    def kth_combination(n: int, k: int, r: int) -&gt; list:
+        if not (0 &lt;= k &lt;= n):
+            raise ValueError('bad k')
+    
+&gt;       if not (0 &lt;= r &lt; binomial_coefficient(n, k)):
+                         ^^^^^^^^^^^^^^^^^^^^
+E       NameError: name 'binomial_coefficient' is not defined
+
+solution.py:5: NameError</failure></testcase></testsuite></testsuites>

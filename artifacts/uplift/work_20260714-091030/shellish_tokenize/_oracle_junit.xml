@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="2" skipped="0" tests="9" time="0.513" timestamp="2026-07-14T09:24:02.936314-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260714-091030.shellish_tokenize.tests.test_solution" name="test_whitespace_split" time="0.002" /><testcase classname="artifacts.uplift.work_20260714-091030.shellish_tokenize.tests.test_solution" name="test_empty_and_blank" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-091030.shellish_tokenize.tests.test_solution" name="test_double_quotes" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-091030.shellish_tokenize.tests.test_solution" name="test_double_quote_escapes" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-091030.shellish_tokenize.tests.test_solution" name="test_single_quotes_literal" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-091030.shellish_tokenize.tests.test_solution" name="test_concatenation" time="0.001"><failure message="AssertionError: assert ['a', 'b c', 'd'] == ['ab cd']&#10;  &#10;  At index 0 diff: 'a' != 'ab cd'&#10;  Left contains 2 more items, first extra item: 'b c'&#10;  Use -v to get more diff">def test_concatenation():
+&gt;       assert tokenize_quoted('a"b c"d') == ["ab cd"]
+E       AssertionError: assert ['a', 'b c', 'd'] == ['ab cd']
+E         
+E         At index 0 diff: 'a' != 'ab cd'
+E         Left contains 2 more items, first extra item: 'b c'
+E         Use -v to get more diff
+
+tests\test_solution.py:32: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-091030.shellish_tokenize.tests.test_solution" name="test_empty_token_from_quotes" time="0.001"><failure message="AssertionError: assert [] == ['']&#10;  &#10;  Right contains one more item: ''&#10;  Use -v to get more diff">def test_empty_token_from_quotes():
+&gt;       assert tokenize_quoted('""') == [""]
+E       AssertionError: assert [] == ['']
+E         
+E         Right contains one more item: ''
+E         Use -v to get more diff
+
+tests\test_solution.py:37: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-091030.shellish_tokenize.tests.test_solution" name="test_bare_backslash_escapes" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-091030.shellish_tokenize.tests.test_solution" name="test_error_contracts" time="0.000" /></testsuite></testsuites>

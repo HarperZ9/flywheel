@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="1" failures="0" skipped="0" tests="1" time="0.283" timestamp="2026-07-14T14:20:27.646165-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="" name="artifacts.uplift.work_20260714-140516.duration_hms_strict.tests.test_solution" time="0.000"><error message="collection failure">tests\test_solution.py:2: in &lt;module&gt;
+    from solution import parse_duration_strict
+solution.py:50: in &lt;module&gt;
+    assert got == want, f"{dur} -&gt; {got}, expected {want}"
+           ^^^^^^^^^^^
+E   AssertionError: 1h -&gt; 0, expected 3600</error></testcase></testsuite></testsuites>

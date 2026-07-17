@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="6" skipped="0" tests="7" time="0.221" timestamp="2026-07-13T20:28:34.914794-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-201327.isbn10_check.tests.test_solution" name="test_valid_digits" time="0.001"><failure message="AssertionError: assert False is True&#10; +  where False = f('0306406152')">&gt;   def test_valid_digits(): assert f('0306406152') is True
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert False is True
+E    +  where False = f('0306406152')
+
+tests\test_solution.py:3: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.isbn10_check.tests.test_solution" name="test_valid_x" time="0.001"><failure message="AssertionError: assert False is True&#10; +  where False = f('048665088X')">&gt;   def test_valid_x(): assert f('048665088X') is True
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert False is True
+E    +  where False = f('048665088X')
+
+tests\test_solution.py:4: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.isbn10_check.tests.test_solution" name="test_invalid" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-201327.isbn10_check.tests.test_solution" name="test_bad_length" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_bad_length():
+&gt;       with pytest.raises(ValueError) as e: f('123')
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:7: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.isbn10_check.tests.test_solution" name="test_lower_x" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_lower_x():
+&gt;       with pytest.raises(ValueError): f('048665088x')
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:10: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.isbn10_check.tests.test_solution" name="test_x_not_last" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_x_not_last():
+&gt;       with pytest.raises(ValueError): f('X306406152')
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:12: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.isbn10_check.tests.test_solution" name="test_not_str" time="0.000"><failure message="AttributeError: 'int' object has no attribute 'isdigit'">def test_not_str():
+&gt;       with pytest.raises(ValueError): f(123)
+                                        ^^^^^^
+
+tests\test_solution.py:14: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+s = 123
+
+    def isbn10_check(s):
+        """
+        Check if the given ISBN-10 string is valid.
+    
+        Parameters:
+        s (str): The ten-digit ISBN-10 barcode.
+    
+        Returns:
+        bool: True if the input is a valid ISBN-10, False otherwise.
+        """
+        # Define the weight for each digit in the first nine places
+        weight = 9
+    
+        # Define the checks based on their positions and values to check the first nine digits
+        first_digits = "246870"
+    
+        # Check if all required characters are present
+&gt;       if not (s.isdigit() and s.isalpha()):
+                ^^^^^^^^^
+E       AttributeError: 'int' object has no attribute 'isdigit'
+
+solution.py:18: AttributeError</failure></testcase></testsuite></testsuites>

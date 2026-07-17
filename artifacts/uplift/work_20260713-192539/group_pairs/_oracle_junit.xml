@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="8" time="0.199" timestamp="2026-07-13T19:36:47.410779-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-192539.group_pairs.tests.test_solution" name="test_groups_in_first_seen_key_order" time="0.001" /><testcase classname="artifacts.uplift.work_20260713-192539.group_pairs.tests.test_solution" name="test_duplicate_pairs_kept" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-192539.group_pairs.tests.test_solution" name="test_value_identity_preserved" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-192539.group_pairs.tests.test_solution" name="test_rejects_list_entry" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-192539.group_pairs.tests.test_solution" name="test_rejects_wrong_length_tuple" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-192539.group_pairs.tests.test_solution" name="test_rejects_tuple_subclass" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_rejects_tuple_subclass():
+        class T(tuple):
+            pass
+    
+&gt;       with pytest.raises(ValueError):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:38: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260713-192539.group_pairs.tests.test_solution" name="test_input_not_mutated" time="0.001" /><testcase classname="artifacts.uplift.work_20260713-192539.group_pairs.tests.test_solution" name="test_empty" time="0.000" /></testsuite></testsuites>

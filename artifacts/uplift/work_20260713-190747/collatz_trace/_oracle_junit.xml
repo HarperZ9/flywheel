@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="2" skipped="0" tests="14" time="0.240" timestamp="2026-07-13T19:41:03.327368-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-190747.collatz_trace.tests.test_solution" name="test_one" time="0.001" /><testcase classname="artifacts.uplift.work_20260713-190747.collatz_trace.tests.test_solution" name="test_two" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-190747.collatz_trace.tests.test_solution" name="test_six" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-190747.collatz_trace.tests.test_solution" name="test_exact_budget" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-190747.collatz_trace.tests.test_solution" name="test_budget_short" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-190747.collatz_trace.tests.test_solution" name="test_zero_budget" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-190747.collatz_trace.tests.test_solution" name="test_seven" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-190747.collatz_trace.tests.test_solution" name="test_seven_short" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-190747.collatz_trace.tests.test_solution" name="test_bad_start_zero" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-190747.collatz_trace.tests.test_solution" name="test_bad_start_bool" time="0.001"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_bad_start_bool():
+&gt;       with pytest.raises(ValueError) as e: f(True, 5)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:20: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260713-190747.collatz_trace.tests.test_solution" name="test_bad_start_float" time="0.001" /><testcase classname="artifacts.uplift.work_20260713-190747.collatz_trace.tests.test_solution" name="test_bad_limit" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-190747.collatz_trace.tests.test_solution" name="test_bad_limit_bool" time="0.000"><failure message="RuntimeError: limit exceeded">def test_bad_limit_bool():
+&gt;       with pytest.raises(ValueError) as e: f(5, True)
+                                             ^^^^^^^^^^
+
+tests\test_solution.py:29: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+n = 5, limit = True
+
+    def collatz_trace(n, limit):
+        if not isinstance(n, int) or n &lt; 1:
+            raise ValueError('bad start')
+        if not isinstance(limit, int) or limit &lt; 0:
+            raise ValueError('bad limit')
+    
+        steps = []
+        value = n
+        steps.append(value)
+    
+        while value != 1 and len(steps) - 1 &lt; limit:  # -1 because steps includes the initial n
+            if value % 2 == 0:
+                value //= 2
+            else:
+                value = 3 * value + 1
+            steps.append(value)
+    
+        if value != 1:
+&gt;           raise RuntimeError('limit exceeded')
+E           RuntimeError: limit exceeded
+
+solution.py:19: RuntimeError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-190747.collatz_trace.tests.test_solution" name="test_start_before_limit" time="0.000" /></testsuite></testsuites>

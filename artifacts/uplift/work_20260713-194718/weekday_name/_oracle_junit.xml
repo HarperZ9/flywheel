@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="8" skipped="0" tests="8" time="0.250" timestamp="2026-07-13T20:04:30.422235-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-194718.weekday_name.tests.test_solution" name="test_millennium" time="0.001"><failure message="AssertionError: assert 'Sunday' == 'Saturday'&#10;  &#10;  - Saturday&#10;  + Sunday">&gt;   def test_millennium(): assert f(2000, 1, 1) == 'Saturday'
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert 'Sunday' == 'Saturday'
+E     
+E     - Saturday
+E     + Sunday
+
+tests\test_solution.py:3: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.weekday_name.tests.test_solution" name="test_2021" time="0.001"><failure message="AssertionError: assert 'Saturday' == 'Friday'&#10;  &#10;  - Friday&#10;  + Saturday">&gt;   def test_2021(): assert f(2021, 1, 1) == 'Friday'
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert 'Saturday' == 'Friday'
+E     
+E     - Friday
+E     + Saturday
+
+tests\test_solution.py:4: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.weekday_name.tests.test_solution" name="test_epoch" time="0.001"><failure message="AssertionError: assert 'Friday' == 'Thursday'&#10;  &#10;  - Thursday&#10;  + Friday">&gt;   def test_epoch(): assert f(1970, 1, 1) == 'Thursday'
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert 'Friday' == 'Thursday'
+E     
+E     - Thursday
+E     + Friday
+
+tests\test_solution.py:5: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.weekday_name.tests.test_solution" name="test_leap_2024" time="0.001"><failure message="AssertionError: assert 'Friday' == 'Thursday'&#10;  &#10;  - Thursday&#10;  + Friday">&gt;   def test_leap_2024(): assert f(2024, 2, 29) == 'Thursday'
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert 'Friday' == 'Thursday'
+E     
+E     - Thursday
+E     + Friday
+
+tests\test_solution.py:6: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.weekday_name.tests.test_solution" name="test_leap_2016" time="0.001"><failure message="AssertionError: assert 'Tuesday' == 'Monday'&#10;  &#10;  - Monday&#10;  + Tuesday">&gt;   def test_leap_2016(): assert f(2016, 2, 29) == 'Monday'
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert 'Tuesday' == 'Monday'
+E     
+E     - Monday
+E     + Tuesday
+
+tests\test_solution.py:7: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.weekday_name.tests.test_solution" name="test_bad_day" time="0.001"><failure message="AssertionError: assert 'bad day: day...nge for month' == 'bad day'&#10;  &#10;  - bad day&#10;  + bad day: day is out of range for month">def test_bad_day():
+        with pytest.raises(ValueError) as e: f(2021, 2, 29)
+&gt;       assert str(e.value) == 'bad day'
+E       AssertionError: assert 'bad day: day...nge for month' == 'bad day'
+E         
+E         - bad day
+E         + bad day: day is out of range for month
+
+tests\test_solution.py:10: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.weekday_name.tests.test_solution" name="test_bad_month" time="0.001"><failure message="AssertionError: assert 'month must b...e of 1 to 12.' == 'bad month'&#10;  &#10;  - bad month&#10;  + month must be in the range of 1 to 12.">def test_bad_month():
+        with pytest.raises(ValueError) as e: f(2021, 0, 1)
+&gt;       assert str(e.value) == 'bad month'
+E       AssertionError: assert 'month must b...e of 1 to 12.' == 'bad month'
+E         
+E         - bad month
+E         + month must be in the range of 1 to 12.
+
+tests\test_solution.py:13: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.weekday_name.tests.test_solution" name="test_bad_year" time="0.001"><failure message="AssertionError: assert 'year must be...re than 2999.' == 'bad year'&#10;  &#10;  - bad year&#10;  + year must be at least 1 and no more than 2999.">def test_bad_year():
+        with pytest.raises(ValueError) as e: f(0, 1, 1)
+&gt;       assert str(e.value) == 'bad year'
+E       AssertionError: assert 'year must be...re than 2999.' == 'bad year'
+E         
+E         - bad year
+E         + year must be at least 1 and no more than 2999.
+
+tests\test_solution.py:16: AssertionError</failure></testcase></testsuite></testsuites>

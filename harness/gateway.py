@@ -1,0 +1,2391 @@
+"""gateway.py — the superapp's one origin (SUPERAPP.md increment 2, zero-dep).
+
+A single stdlib HTTP server that unifies the shell and its live state:
+
+  static           the showcase shell + demos + artifacts, one origin, so the
+                   page's fetches (increment 1) hit same-origin paths.
+  /api/endpoints/health   the unified endpoint roster. LOCAL tiers (serve.py,
+                   ollama) get a real health probe; ENTERPRISE providers report
+                   a credential-present BOOLEAN only, never a key value and
+                   never a network call (SUPERAPP boundary: env-presence, not
+                   secrets).
+  /api/world       v0 of the projected world both person and model read: the
+                   flagship spine roster plus a receipt catalog with a root hash
+                   over the cataloged files. Tamper one byte of a receipt and
+                   the root hash moves.
+  /v1/*, /generate proxied to serve.py so the local model is reachable through
+                   the same origin.
+
+Two falsifiers (the verifier must be able to fail):
+  - kill serve.py: the local 14B tier in /api/endpoints/health must flip to
+    unhealthy on the next request. If it stays healthy, the probe is fake.
+  - touch a cataloged receipt: /api/world root_hash must change. If it does
+    not, the catalog is not actually reading the files.
+
+Usage:
+  python harness/gateway.py --port 8799 --root .   # serve the repo
+"""
+from __future__ import annotations
+
+import argparse
+import hashlib
+import json
+import os
+import sys
+import urllib.parse
+import urllib.request
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from pathlib import Path
+
+REPO = Path(__file__).resolve().parent.parent
+# Ensure `from harness.X import ...` resolves even when run as `python
+# harness/gateway.py` (script mode puts harness/ on the path, not the repo root),
+# so the on-demand endpoint_registry / context_forge imports work in both modes.
+if str(REPO) not in sys.path:
+    sys.path.insert(0, str(REPO))
+
+from harness.run_paths import run_root_default
+
+
+def _resolve_credential(key_env: str) -> str:
+    """Env first, OS keychain second; '' when neither. Import is lazy so a
+    stripped deployment without keychain.py still serves env-only."""
+    try:
+        from harness.keychain import resolve_credential
+        return resolve_credential(key_env)
+    except Exception:
+        return os.environ.get(key_env or "", "")
+
+# Receipt catalog: in-repo, re-checkable artifacts that define the world state.
+# Relative to the served root. Missing files are reported honestly as absent.
+RECEIPT_CATALOG = (
+    "artifacts/flywheel-local-coder-14b-benchmark-ci.json",
+    "artifacts/flywheel-local-coder-14b-benchmark-m7-hard-scorecard.json",
+    "artifacts/exe/model_release_readiness.local.json",
+    "tasks/curated/hard_v2.jsonl",
+    "demos/index.json",
+)
+
+# The flagship spine. Flywheel is the platform; the rest are lanes inside it
+# (organs of the reconcile), not peers. local-model is the trained-model lane.
+SPINE = ("flywheel", "local-model", "telos", "index", "forum", "gather",
+         "crucible", "learn", "mneme", "relay", "plexus")
+
+
+def _probe(url: str, timeout: float = 2.0) -> tuple[bool, dict]:
+    """GET a local health URL. Returns (healthy, parsed_json_or_empty).
+    Any error is unhealthy — a down endpoint must read as down."""
+    try:
+        with urllib.request.urlopen(url, timeout=timeout) as r:
+            body = r.read().decode("utf-8", "replace")
+        try:
+            return True, json.loads(body)
+        except Exception:
+            return True, {}
+    except Exception:
+        return False, {}
+
+
+def endpoint_roster(serve_url: str, ollama_url: str) -> dict:
+    """Local tiers get a live probe; enterprise providers report credential
+    presence only (no network, no value)."""
+    local = []
+    ok, info = _probe(serve_url.rstrip("/") + "/health")
+    local.append({"name": "flywheel-serve", "tier": "local", "kind": "serve",
+                  "healthy": ok, "model_ref": info.get("model_ref", "")})
+    ok, info = _probe(ollama_url.rstrip("/") + "/api/version")
+    local.append({"name": "flywheel-ollama", "tier": "local", "kind": "ollama",
+                  "healthy": ok, "version": info.get("version", "")})
+
+    enterprise = []
+    try:
+        from harness.endpoints import PROVIDERS
+    except Exception:
+        try:
+            from endpoints import PROVIDERS  # standalone run
+        except Exception:
+            PROVIDERS = {}
+    for name, spec in PROVIDERS.items():
+        key_env = spec.get("key", "")
+        enterprise.append({
+            "name": name, "tier": "enterprise", "model": spec.get("model", ""),
+            "credential_present": bool(key_env and _resolve_credential(key_env)),
+            "key_env": key_env,   # the NAME only, never the value
+        })
+    healthy_local = sum(1 for e in local if e["healthy"])
+    return {"schema": "flywheel.endpoint-roster/v1",
+            "local": local, "enterprise": enterprise,
+            "local_healthy": healthy_local, "local_total": len(local),
+            "enterprise_configured": sum(1 for e in enterprise if e["credential_present"])}
+
+
+def world_state(root: Path, catalog=RECEIPT_CATALOG) -> dict:
+    """The projected world v0: spine roster + receipt catalog with a root hash.
+    Root hash is a sha256 over sorted 'path:filehash' lines, so any file change
+    (or appearance/disappearance) moves it."""
+    receipts = []
+    lines = []
+    for rel in catalog:
+        p = (root / rel)
+        if p.is_file():
+            h = hashlib.sha256(p.read_bytes()).hexdigest()
+            receipts.append({"path": rel, "sha256": h, "size": p.stat().st_size,
+                             "present": True})
+        else:
+            h = "MISSING"
+            receipts.append({"path": rel, "sha256": h, "present": False})
+        lines.append(f"{rel}:{h}")
+    root_hash = hashlib.sha256("\n".join(sorted(lines)).encode()).hexdigest()
+    return {"schema": "flywheel.world/v0",
+            "spine": list(SPINE),
+            "receipts": receipts,
+            "receipt_count": len(receipts),
+            "present_count": sum(1 for r in receipts if r["present"]),
+            "root_hash": root_hash}
+
+
+def receipts_ledger(root: Path, run_root: Path | str) -> dict:
+    """The receipts ledger: the in-repo receipt catalog (re-hashed on every
+    read) plus the accepted proof envelopes under the run root. Every entry
+    is re-checkable — catalog entries by re-hashing the file, envelopes by
+    their recorded content hash. An unreadable envelope is reported as
+    UNREADABLE, never dropped."""
+    catalog = world_state(root)["receipts"]
+    env_dir = Path(run_root) / "envelopes"
+    envelopes = []
+    if env_dir.is_dir():
+        for p in sorted(env_dir.glob("*.json")):
+            entry = {"name": p.name, "size": p.stat().st_size,
+                     "sha256": hashlib.sha256(p.read_bytes()).hexdigest()}
+            try:
+                doc = json.loads(p.read_text(encoding="utf-8"))
+                entry["verdict"] = str(doc.get("verdict", "?"))
+                entry["task_id"] = str(doc.get("task_id", ""))
+            except Exception:
+                entry["verdict"] = "UNREADABLE"
+                entry["task_id"] = ""
+            envelopes.append(entry)
+    passes = sum(1 for e in envelopes if e["verdict"] == "PASS")
+    # a Merkle commitment over the ordered envelope hashes: a stranger can
+    # prove one receipt is in this log without holding the whole ledger
+    from harness.transparency_log import merkle_root
+    leaves = [e["sha256"] for e in envelopes]
+    root_hash = merkle_root(leaves) if leaves else ""
+    return {"schema": "flywheel.receipts/v1",
+            "catalog": catalog,
+            "catalog_present": sum(1 for r in catalog if r["present"]),
+            "envelopes": envelopes,
+            "envelope_count": len(envelopes),
+            "pass_count": passes,
+            "merkle_root": root_hash,
+            "merkle_note": "root over the ordered envelope hashes; GET "
+                           "/api/receipts/proof?leaf=<sha256> returns an "
+                           "inclusion proof re-checkable offline"}
+
+
+def _workspace_root_allowlist() -> "list[str]":
+    """Permitted workspace-root prefixes, normalized for prefix comparison.
+    Read from FLYWHEEL_WORKSPACE_ROOTS (os.pathsep-separated). Empty = open
+    resolution (any existing directory), preserving the prior default; set it
+    to confine agent runs to named trees."""
+    import os
+    raw = os.environ.get("FLYWHEEL_WORKSPACE_ROOTS", "")
+    roots = []
+    for part in raw.split(os.pathsep):
+        part = part.strip()
+        if not part:
+            continue
+        try:
+            roots.append(str(Path(part).expanduser().resolve()))
+        except (OSError, ValueError):
+            continue
+    return roots
+
+
+def _qs_value(qs: str, key: str) -> str:
+    """First value for `key` in a raw query string, '' when absent."""
+    for part in qs.split("&"):
+        if part.startswith(key + "="):
+            return part[len(key) + 1:]
+    return ""
+
+
+def _qs_int(qs: str, key: str, default: int) -> int:
+    try:
+        return int(_qs_value(qs, key))
+    except ValueError:
+        return default
+
+
+def _resolve_workspace_root(requested, default: Path) -> "tuple[Path, str | None]":
+    """Resolve the workspace root an agent run operates in. The caller may
+    name any EXISTING directory (the desktop IDE points at an open project);
+    the ToolExecutor then sandboxes reads and gated writes to that root. A
+    missing or non-directory path is refused, never silently substituted.
+
+    When FLYWHEEL_WORKSPACE_ROOTS is set, existence is not enough: the resolved
+    root must equal or sit under an allowlisted prefix, else it is refused BY
+    NAME. Existence is not authorization -- without this a request could scope
+    the executor to a home or credentials directory just by naming it."""
+    if not requested:
+        return default, None
+    try:
+        p = Path(str(requested)).expanduser().resolve()
+    except (OSError, ValueError) as e:
+        return default, f"invalid root: {e}"
+    if not p.is_dir():
+        return default, f"root is not an existing directory: {requested}"
+    allow = _workspace_root_allowlist()
+    if allow:
+        rp = str(p)
+        if not any(rp == a or rp.startswith(a + os.sep) for a in allow):
+            return default, (f"root is not under an allowlisted workspace "
+                             f"prefix: {requested}")
+    return p, None
+
+
+def _unified_roster() -> dict:
+    """The full universal-router roster (endpoint_registry): every provider,
+    credential-presence only. Graceful if the module is unavailable."""
+    try:
+        from harness.endpoint_registry import unified_roster
+    except Exception:
+        try:
+            from endpoint_registry import unified_roster  # standalone run
+        except Exception as e:
+            return {"error": f"endpoint_registry unavailable: {e}"}
+    try:
+        return unified_roster()
+    except Exception as e:                    # a runtime failure must degrade, not crash the handler
+        return {"error": f"unified_roster failed: {e}"}
+
+
+def _projected_world(root: Path) -> dict:
+    """The full projected world (world.py: roster + findings + cursor, root-hashed).
+    Falls back to the inline v0 receipt catalog if world.py is unavailable."""
+    try:
+        from harness.world import project_world
+        return project_world(repo_root=root)
+    except Exception:
+        return world_state(root)
+
+
+def _training_status(run_root: str) -> dict:
+    """Read-only 32B supervisor status (training_lane): log-derived state +
+    screen liveness + checkpoint progress. Graceful if the module is unavailable."""
+    try:
+        from harness.training_lane import training_status
+    except Exception:
+        try:
+            from training_lane import training_status  # standalone run
+        except Exception as e:
+            return {"error": f"training_lane unavailable: {e}"}
+    try:
+        return training_status(run_root)
+    except Exception as e:                    # e.g. an unreadable/locked log -> honest error, no crash
+        return {"error": f"training_status failed: {e}"}
+
+
+def _countersign_run(result: dict) -> dict:
+    """Build 5 from the dossier (the Sello requirement): the receiving side
+    countersigns. The gateway, not the agent, writes the run's summary into
+    the verifiable store, so the evidence trail does not depend on the
+    agent's own honesty. Store failure is named, never silent."""
+    import hashlib as _h
+    summary = {
+        "checkpoint": str(result.get("checkpoint", "")),
+        "verified": bool(result.get("verified")),
+        "integrity_clean": bool((result.get("integrity") or {}).get("clean")),
+        "review_sha256": _h.sha256(json.dumps(
+            result.get("review") or {}, sort_keys=True).encode()).hexdigest(),
+        "manifest_sha256": _h.sha256(json.dumps(
+            result.get("context_manifest") or {},
+            sort_keys=True).encode()).hexdigest(),
+        "high_risk_edits": len((result.get("risk_review") or {})
+                               .get("demands") or []),
+    }
+    try:
+        from harness.store import put_entity
+        stored = put_entity("agent-run", summary)
+        return {**summary, "stored": stored.get("eid", ""),
+                "chain_hash": stored.get("chain_hash", "")}
+    except Exception as e:
+        return {**summary, "stored": f"store unavailable: {type(e).__name__}"}
+
+
+def _countersign_workflow(doc: dict) -> dict:
+    """The workflow analogue of _countersign_run: the gateway banks the staged
+    run's identity into the verifiable store, so a workflow gets the same
+    receiving-side witness every other run surface gets, not only a loose
+    receipt file. Store failure is named, never silent."""
+    summary = {
+        "kind": "workflow-run",
+        "workflow": str(doc.get("workflow", "")),
+        "endpoint": str(doc.get("endpoint", "")),
+        "status": str(doc.get("status", "")),
+        "chain_hash": str(doc.get("chain_hash", "")),
+        "n_steps": len(doc.get("steps") or []),
+    }
+    try:
+        from harness.store import put_entity
+        stored = put_entity("workflow-run", summary)
+        return {**summary, "stored": stored.get("eid", ""),
+                "store_chain_hash": stored.get("chain_hash", "")}
+    except Exception as e:
+        return {**summary, "stored": f"store unavailable: {type(e).__name__}"}
+
+
+def persist_forge_seal(run_root, goal: str, *, intent_sha256: str = "",
+                       architecture_sha256: str = "") -> str:
+    """Persist the Y-chain seal SERVER-SIDE at forge time and return its
+    prp_id. The recheck later reads these hashes from disk, so the checked
+    party never supplies its own criterion."""
+    import hashlib as _h
+    import time as _t
+    body = f"{goal}\x1f{intent_sha256}\x1f{architecture_sha256}"
+    prp_id = _h.sha256(body.encode("utf-8")).hexdigest()[:16]
+    forge_dir = Path(run_root) / "forge"
+    forge_dir.mkdir(parents=True, exist_ok=True)
+    (forge_dir / f"{prp_id}.json").write_text(json.dumps({
+        "schema": "flywheel.forge-seal/v1", "prp_id": prp_id, "goal": goal,
+        "intent_sha256": intent_sha256,
+        "architecture_sha256": architecture_sha256,
+        "sealed_at": _t.time(),
+    }, sort_keys=True), encoding="utf-8")
+    return prp_id
+
+
+def forge_recheck(run_root, prp_id: str, req: dict) -> dict:
+    """The Y-chain drift check against the SERVER-HELD seal. The caller
+    supplies only current sources; the sealed hashes come from disk."""
+    import hashlib as _h
+    pid = str(prp_id or "").strip().lower()
+    if len(pid) != 16 or any(c not in "0123456789abcdef" for c in pid):
+        return {"error": "provide 'prp_id' (16 hex) from the forge response; "
+                         "sealed hashes are read from the server-side seal"}
+    path = Path(run_root) / "forge" / f"{pid}.json"
+    if not path.is_file():
+        return {"error": f"no forge seal on record for prp_id {pid!r}; "
+                         "a recheck needs the seal minted at forge time"}
+    seal = json.loads(path.read_text(encoding="utf-8"))
+    out = {"schema": "flywheel.prp-recheck/v2", "prp_id": pid,
+           "seal_path": str(path), "arms": {}}
+    for arm in ("intent", "architecture"):
+        sealed = str(seal.get(f"{arm}_sha256", ""))
+        current = req.get(f"{arm}_source")
+        if not sealed or current is None:
+            continue
+        if not str(current).strip():
+            return {"error": f"empty {arm}_source: an empty arm cannot be "
+                             "drift-checked (empty-vs-empty is moved:false "
+                             "for an arm that never existed)"}
+        now = _h.sha256(str(current).encode()).hexdigest()
+        out["arms"][arm] = {"sealed_sha256": sealed,
+                            "current_sha256": now,
+                            "moved": now != sealed}
+    if not out["arms"]:
+        return {"error": "no comparable arm: supply <arm>_source for an arm "
+                         "the seal actually recorded"}
+    hashes = [a["current_sha256"] for a in out["arms"].values()]
+    if len(hashes) == 2 and hashes[0] == hashes[1]:
+        # one string hashed twice is a test that cannot fail: name it,
+        # report no verdict
+        out["degenerate"] = True
+        out["note"] = ("degenerate Y-chain: both arms carry identical "
+                       "content, so the two-arm drift comparison decides "
+                       "nothing; no any_moved verdict is reported")
+        return out
+    out["any_moved"] = any(a["moved"] for a in out["arms"].values())
+    out["note"] = ("the Y-chain drift check against the server-held seal: "
+                   "an arm whose current text no longer hashes to the value "
+                   "sealed at forge time moved after the forge")
+    return out
+
+
+def _forge(goal: str, **kw) -> dict:
+    """Goal -> a verified PRP (context_forge): criterion-bearing spec + validation
+    gates + confidence grounded in external-checkability. The studio front door."""
+    try:
+        from harness.context_forge import forge_prp
+    except Exception:
+        try:
+            from context_forge import forge_prp
+        except Exception as e:
+            return {"error": f"context_forge unavailable: {e}"}
+    try:
+        return forge_prp(goal, **kw).to_dict()
+    except Exception as e:                    # a malformed goal must not crash the handler
+        return {"error": f"forge failed: {e}"}
+
+
+class _MemoryProofCache:
+    """The seat's verified-result cache for the gateway's lifetime: duck-typed
+    .get(key)/.put(key, value). ONLY oracle-verified (LOCAL_VERIFIED) answers are
+    ever written here (the seat's _maybe_cache gate) -- a consensus or escalate
+    result is never cached as if it were verified. In-process by design: nothing
+    is persisted to disk without the config-driven store the packaging increment
+    introduces (SUPERAPP storage discipline)."""
+
+    def __init__(self):
+        self.store: dict = {}
+
+    def get(self, key):
+        return self.store.get(key)
+
+    def put(self, key, value):
+        self.store[key] = value
+
+
+# One seat for the gateway's lifetime, so the proof cache and the routing ledger
+# ACCUMULATE across requests (the cache-hit falsifier needs a repeated ask to hit).
+_COMPANION_SEAT = None
+
+
+def _companion_task(prompt: str, solution_sig: str = ""):
+    """A duck-typed Task the seat/selector consume: they read .task_id/.prompt
+    (routing + key) and .max_new_tokens/.system (generation). Content-addressed
+    id so the same prompt keys the same cache slot."""
+    from types import SimpleNamespace
+    tid = hashlib.sha256(f"{prompt}|{solution_sig}".encode()).hexdigest()[:16]
+    return SimpleNamespace(task_id=tid, prompt=prompt, max_new_tokens=512, system="")
+
+
+def get_companion_seat(serve_url: str):
+    """Lazily build the gateway's single CompanionSeat over the local 14B (serve).
+    No oracle on this generic route: without something to verify against, the seat
+    can only reach consensus or escalate -- it never manufactures a PASS. A caller
+    with a real oracle uses the seat directly. Graceful: returns None if the seat
+    cannot be constructed (the route then reports the reason honestly)."""
+    global _COMPANION_SEAT
+    if _COMPANION_SEAT is not None:
+        return _COMPANION_SEAT
+    try:
+        from harness.companion import CompanionSeat
+        from harness.proposer import ServeProposer
+    except Exception:
+        return None
+    _COMPANION_SEAT = CompanionSeat(
+        ServeProposer(base_url=serve_url), oracle=None, cache=_MemoryProofCache(),
+        escalation_endpoint="anthropic", initial_n=4, max_n=16)
+    return _COMPANION_SEAT
+
+
+def companion_answer(seat, prompt: str, solution_sig: str = "") -> dict:
+    """Route one task through the seat and shape a JSON response. The frontier tier
+    is only NAMED on escalate (escalate_to); it is never called from here -- routing
+    to it is the caller's gated action, so a cache hit provably triggers no frontier
+    call (SUPERAPP increment-5 falsifier)."""
+    res = seat.answer(_companion_task(prompt, solution_sig), solution_sig=solution_sig)
+    out = res.to_dict()
+    out["text"] = res.text
+    out["best_effort_text"] = res.best_effort_text
+    out["ledger_len"] = len(seat.ledger)
+    return out
+
+
+# One ledger for the gateway's lifetime so every routed call across every provider
+# chains into ONE tamper-evident record (the audit trail no other router keeps).
+_ROUTER_LEDGER = None
+
+
+def _router_ledger():
+    global _ROUTER_LEDGER
+    if _ROUTER_LEDGER is None:
+        try:
+            from harness.local_session import SessionLedger
+        except Exception:
+            try:
+                from local_session import SessionLedger
+            except Exception:
+                return None
+        _ROUTER_LEDGER = SessionLedger()
+    return _ROUTER_LEDGER
+
+
+def route_answer(prompt: str, endpoint: str, proposer, *, credential: str = "local-none") -> dict:
+    """Send ONE prompt to a chosen provider's proposer and mint a re-checkable
+    receipt binding the response to the endpoint and its model_ref. This is the
+    universal router other routers are, plus the verify layer they are not: the
+    receipt_id recomputes from (request, prompt, model_ref, response), and provider
+    provenance rides the receipt. Same call shape for a local model or any hosted
+    provider -- one path behind all of them."""
+    from harness.messages_api import make_receipt
+    out = proposer.generate(prompt, seed=0, temperature=0.0, max_new_tokens=512, system="")
+    gen = {"text": out.text, "seed": getattr(out, "seed", 0),
+           "prompt_hash": getattr(out, "prompt_hash", "")}
+    receipt = make_receipt(
+        {"prompt": prompt, "system": "", "max_new_tokens": 512, "temperature": 0.0, "seed": 0},
+        gen, out.model_ref)
+    return {"schema": "flywheel.route-result/v1", "endpoint": endpoint,
+            "model_ref": out.model_ref, "text": out.text, "receipt": receipt,
+            "credential": credential}
+
+
+def route_request(prompt: str, endpoint: str) -> tuple[dict, int]:
+    """Validate + route a request to a named endpoint. Returns (body, http_code).
+    Credential PRESENCE gate: an endpoint with no key present is refused honestly
+    (never a silent local fallback), and no key value is ever read or returned."""
+    roster = _unified_roster()
+    entry = next((e for e in roster.get("endpoints", []) if e["name"] == endpoint), None)
+    if entry is None:
+        usable = roster.get("usable_names", [])
+        return {"error": f"unknown endpoint {endpoint!r}", "usable": usable}, 404
+    if entry.get("credential") == "absent":
+        return {"error": f"endpoint {endpoint!r} has no credential present; set its API "
+                f"key in the environment (presence only, never read here)",
+                "credential": "absent"}, 400
+    try:
+        from harness.endpoint_registry import make_endpoint_proposer
+    except Exception:
+        from endpoint_registry import make_endpoint_proposer
+    try:
+        prop = make_endpoint_proposer(endpoint, ledger=_router_ledger())
+    except Exception as e:
+        return {"error": f"cannot build a proposer for {endpoint!r}: {e}"}, 502
+    try:
+        return route_answer(prompt, endpoint, prop, credential=entry.get("credential", "")), 200
+    except Exception as e:
+        return {"error": f"provider call failed: {e}"}, 502
+
+
+# --- OpenAI-compatible surface: /v1/chat/completions + /v1/models ---------------
+# Any OpenAI SDK or client can point its base_url at this gateway and route to ANY
+# provider by naming it in `model` ("anthropic", "openai:gpt-4o", or a local name),
+# getting back a standard ChatCompletion PLUS an `x_receipt` extension OpenAI clients
+# ignore. This is the drop-in compatibility that makes Flywheel a better router: the
+# same wire protocol every tool already speaks, plus the verify layer none of them have.
+
+def _flatten_messages(messages) -> tuple[str, str]:
+    """OpenAI messages -> (system, prompt). System turns concatenate. A single user
+    turn passes through as the bare prompt (unchanged). A multi-turn conversation is
+    rendered as a labelled transcript ending with an open `Assistant:` turn, so the
+    model sees the history instead of only the last line. Content may be a string or
+    the OpenAI content-parts array. (Structured passthrough to a provider's own chat
+    template is a future refinement; the proposer seam is single-prompt today.)"""
+    system, convo = "", []
+    for m in messages or []:
+        role = m.get("role", "")
+        content = m.get("content", "")
+        if isinstance(content, list):
+            content = "".join(p.get("text", "") for p in content if isinstance(p, dict))
+        content = content or ""
+        if role == "system":
+            system = (system + "\n" + content).strip() if system else content
+        elif role in ("user", "assistant", "tool"):
+            convo.append((role, content))
+    if len(convo) <= 1:
+        return system, (convo[0][1] if convo else "")
+    label = {"user": "User", "assistant": "Assistant", "tool": "Tool"}
+    lines = [f"{label.get(r, 'User')}: {c}" for r, c in convo]
+    lines.append("Assistant:")
+    return system, "\n\n".join(lines)
+
+
+def _resolve_proposer(model: str, serve_url: str):
+    """Pick the proposer for an OpenAI `model` string. Returns
+    (proposer, error, code). Empty / a local alias -> the local serve model; a
+    roster endpoint name or `name:model` -> that provider (credential-gated,
+    honest error if absent); anything else -> 404."""
+    m = (model or "").strip()
+    if m in ("", "flywheel", "flywheel-serve", "serve", "default", "local", "auto"):
+        try:
+            from harness.proposer import ServeProposer
+        except Exception:
+            from proposer import ServeProposer
+        return ServeProposer(base_url=serve_url), None, 200
+    name = m.split(":", 1)[0]
+    sub = m.split(":", 1)[1] if ":" in m else None
+    roster = _unified_roster()
+    entry = next((e for e in roster.get("endpoints", []) if e["name"] == name), None)
+    if entry is None:
+        return None, f"unknown model {m!r}; see GET /v1/models", 404
+    if entry.get("credential") == "absent":
+        return None, f"model {name!r} has no credential present; set its API key in the environment", 400
+    try:
+        from harness.endpoint_registry import make_endpoint_proposer
+    except Exception:
+        from endpoint_registry import make_endpoint_proposer
+    try:
+        return make_endpoint_proposer(name, model=sub, ledger=_router_ledger()), None, 200
+    except Exception as e:
+        return None, f"cannot build proposer for {name!r}: {e}", 502
+
+
+def _chat_receipt(prompt, system, max_tokens, temperature, seed, out):
+    from harness.messages_api import make_receipt
+    gen = {"text": out.text, "seed": getattr(out, "seed", seed),
+           "prompt_hash": getattr(out, "prompt_hash", ""),
+           "served_model": getattr(out, "served_model", "")}
+    return make_receipt({"prompt": prompt, "system": system, "max_new_tokens": max_tokens,
+                         "temperature": temperature, "seed": seed}, gen, out.model_ref)
+
+
+def openai_embeddings(req: dict):
+    """POST /v1/embeddings, routed to an embeddings-capable provider named by the
+    `model` field ("openai" or "openai:text-embedding-3-small"). Flywheel forwards
+    the request with the provider's key (present-only, from the env, never stored or
+    logged), so any OpenAI embeddings client works through the same surface. Flywheel
+    is zero-dep and computes no embeddings itself; it routes. Returns (body, code)."""
+    import urllib.error
+
+    from harness import providers
+    model = str(req.get("model", ""))
+    name = model.split(":", 1)[0] or "openai"
+    spec = providers.REGISTRY.get(name)
+    if spec is None or getattr(spec, "local", False):
+        return {"error": {"message": f"no hosted embeddings provider '{name}'; "
+                          "name one from GET /api/endpoints", "type": "invalid_request_error"}}, 400
+    key = _resolve_credential(spec.api_key_env or "")
+    if spec.api_key_env and not key:
+        return {"error": {"message": f"missing credential for '{name}'",
+                          "type": "invalid_request_error"}}, 400
+    fwd = dict(req)
+    fwd.pop("adaptive", None)
+    if ":" in model:
+        fwd["model"] = model.split(":", 1)[1]
+    headers = {"Content-Type": "application/json"}
+    if key:
+        headers["Authorization"] = f"Bearer {key}"
+    request = urllib.request.Request(spec.base_url.rstrip("/") + "/embeddings",
+                                     data=json.dumps(fwd).encode(), method="POST", headers=headers)
+    try:
+        with urllib.request.urlopen(request, timeout=60) as r:
+            return json.loads(r.read() or b"{}"), r.status
+    except urllib.error.HTTPError as e:
+        try:
+            return json.loads(e.read() or b"{}"), e.code
+        except Exception:
+            return {"error": {"message": f"provider returned {e.code}"}}, e.code
+    except Exception as e:
+        return {"error": {"message": f"embeddings upstream unreachable: {type(e).__name__}"}}, 502
+
+
+_ROUTER_STATS = None
+
+
+def get_router_stats():
+    """Lazily-loaded persisted router stats (under the run root). Read-only callers
+    use snapshot(); the failover path records outcomes when adaptive routing is on."""
+    global _ROUTER_STATS
+    if _ROUTER_STATS is None:
+        from harness.router_stats import RouterStats
+        from harness.run_paths import run_root_default
+        _ROUTER_STATS = RouterStats(Path(run_root_default()) / "router_stats.json")
+    return _ROUTER_STATS
+
+
+def openai_chat(req: dict, serve_url: str):
+    """Core of POST /v1/chat/completions (non-stream). Returns (body, code, receipt,
+    text, model_ref). On error, receipt/text/model_ref are None.
+
+    Failover: a comma-separated `model` ("openai,anthropic,serve") is a fallback
+    chain, tried in order until one succeeds. The winning provider and any skipped
+    ones are recorded on the receipt (routed_via / failover_from), so the record
+    stays honest about which model actually answered. The reliability layer other
+    routers charge for, in the open."""
+    import time
+    system, prompt = _flatten_messages(req.get("messages", []))
+    if not prompt:
+        return {"error": {"message": "messages must include a user turn", "type": "invalid_request_error"}}, 400, None, None, None
+    temperature = float(req.get("temperature", 0.0))
+    max_tokens = int(req.get("max_tokens", 512))
+    seed = int(req.get("seed", 0))
+    candidates = [m.strip() for m in str(req.get("model", "")).split(",") if m.strip()] or [""]
+    # Opt-in adaptive routing: reorder the failover chain best-first by observed
+    # success/cost and record each outcome. Off by default, so an explicit order is
+    # honored. Routing only -- the oracle still decides what is accepted.
+    adaptive = bool(req.get("adaptive"))
+    routing = None
+    if adaptive:
+        rs = get_router_stats()
+        requested = [c or "flywheel" for c in candidates]
+        # capture the justification BEFORE ordering, so the receipt carries the
+        # stats that picked the order (router_stats' own audit promise)
+        routing = {"adaptive": True, "requested": requested,
+                   "scores": {c: round(rs.score(c), 4) for c in requested},
+                   "circuit_open": [c for c in requested if rs.is_circuit_open(c)]}
+        candidates = rs.order(candidates)
+        routing["order"] = [c or "flywheel" for c in candidates]
+    tried, last_err, last_code = [], "no provider resolved", 502
+    resolution_failures = []
+    for cand in candidates:
+        t0 = time.time()
+        proposer, err, code = _resolve_proposer(cand, serve_url)
+        if err is not None:
+            # a resolution failure (typo'd name, credential absent on THIS
+            # host, config error) is NOT the provider failing: never charge it
+            # to the provider's success_rate / circuit. Tracked separately.
+            last_err, last_code = err, code
+            tried.append((cand or "flywheel") + ": unavailable")
+            resolution_failures.append({"provider": cand or "flywheel", "reason": err})
+            continue
+        try:
+            out = proposer.generate(prompt, seed=seed, temperature=temperature,
+                                    max_new_tokens=max_tokens, system=system)
+        except Exception as e:
+            last_err, last_code = f"provider call failed: {e}", 502
+            tried.append((cand or "flywheel") + ": error")
+            if adaptive:
+                get_router_stats().record(cand or "flywheel", False, time.time() - t0)
+            continue
+        if adaptive:
+            get_router_stats().record(cand or "flywheel", True, time.time() - t0)
+        receipt = _chat_receipt(prompt, system, max_tokens, temperature, seed, out)
+        receipt["routed_via"] = cand or "flywheel"
+        if routing is not None:
+            receipt["routing"] = routing
+        if resolution_failures:
+            receipt["resolution_failures"] = resolution_failures
+        if tried:
+            receipt["failover_from"] = tried       # honest: which providers were skipped, and why
+        body = {"id": "chatcmpl-" + receipt["receipt_id"], "object": "chat.completion",
+                "created": int(time.time()), "model": out.model_ref,
+                "choices": [{"index": 0, "message": {"role": "assistant", "content": out.text},
+                             "finish_reason": "stop"}],
+                "usage": {"prompt_tokens": len(prompt.split()),
+                          "completion_tokens": len(str(out.text).split()),
+                          "total_tokens": len(prompt.split()) + len(str(out.text).split())},
+                "x_receipt": receipt}
+        return body, 200, receipt, out.text, out.model_ref
+    detail = "; ".join(tried) if tried else last_err
+    return {"error": {"message": f"all providers failed ({detail})", "type": "api_error"},
+            "failover_from": tried}, last_code, None, None, None
+
+
+def openai_models() -> dict:
+    """GET /v1/models: the roster as OpenAI model objects, so a client's model
+    picker lists every provider it can route to. `flywheel` is the verified local seat."""
+    roster = _unified_roster()
+    data = [{"id": "flywheel", "object": "model", "created": 0, "owned_by": "flywheel"}]
+    for e in roster.get("endpoints", []):
+        data.append({"id": e["name"], "object": "model", "created": 0,
+                     "owned_by": e.get("source", "flywheel")})
+    return {"object": "list", "data": data}
+
+
+class _Handler(BaseHTTPRequestHandler):
+    root = REPO
+    serve_url = "http://127.0.0.1:8765"
+    ollama_url = "http://127.0.0.1:11434"
+    run_root = run_root_default()
+
+    MAX_BODY = 32 * 1024 * 1024               # 32 MiB ceiling on any request body
+    cors = False                              # opt-in (--cors) so browser OpenAI clients can call in
+
+    def log_message(self, *a):  # quiet
+        pass
+
+    def _cors(self):
+        """Emit permissive CORS headers only when the operator opted in with --cors.
+        Off by default: the gateway binds 127.0.0.1, and enabling CORS lets any web
+        page in the browser reach it, so it is a deliberate choice, not a default."""
+        if self.cors:
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+            self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization")
+
+    def do_OPTIONS(self):                     # CORS preflight
+        self.send_response(204)
+        self._cors()
+        self.send_header("Content-Length", "0")
+        self.end_headers()
+
+    def _content_length(self):
+        """Parse Content-Length defensively: a non-numeric, negative, or oversized
+        value returns None so the caller answers 400 instead of the handler thread
+        dying on an uncaught ValueError or reading unbounded bytes into memory."""
+        try:
+            n = int(self.headers.get("Content-Length", 0))
+        except (TypeError, ValueError):
+            return None
+        return None if n < 0 or n > self.MAX_BODY else n
+
+    def _json(self, obj, code=200):
+        body = json.dumps(obj).encode()
+        self.send_response(code)
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Length", str(len(body)))
+        self._cors()
+        self.end_headers()
+        self.wfile.write(body)
+
+    def _sse_chat(self, req: dict):
+        """Stream a chat completion as OpenAI Server-Sent Events. The verified or
+        routed answer is produced whole (a receipt is a hash over the FULL response,
+        so we stand behind what we stream), then delivered as chat.completion.chunk
+        deltas ending with [DONE]. Any OpenAI streaming client consumes it as-is."""
+        import time
+        from harness.scaffold import scaffold_answer, scaffold_turn
+        # hash and freeze what the model was ACTUALLY sent (the flattened
+        # prompt), not a naive join of raw content that reprs content-parts
+        _sys, _prompt = _flatten_messages(req.get("messages", []))
+        env = scaffold_turn("\n".join(x for x in (_sys, _prompt) if x))
+        body, code, receipt, text, model_ref = openai_chat(req, self.serve_url)
+        if code != 200:
+            return self._json(body, code)          # errors are plain JSON, not a stream
+        # the answer is produced whole before streaming, so the turn
+        # receipt exists before the first chunk leaves (built at emit time
+        # below with provenance)
+        cid = "chatcmpl-" + receipt["receipt_id"]
+        created = int(time.time())
+        self.send_response(200)
+        self.send_header("Content-Type", "text/event-stream")
+        self.send_header("Cache-Control", "no-cache")
+        self.send_header("Connection", "keep-alive")
+        self._cors()
+        self.end_headers()
+
+        def emit(choice, extra=None):
+            obj = {"id": cid, "object": "chat.completion.chunk", "created": created,
+                   "model": model_ref, "choices": [choice]}
+            if extra:
+                obj.update(extra)
+            self.wfile.write(("data: " + json.dumps(obj) + "\n\n").encode())
+            self.wfile.flush()
+
+        try:
+            emit({"index": 0, "delta": {"role": "assistant"}, "finish_reason": None})
+            import re
+            for piece in (re.findall(r"\S+\s*", str(text)) or [str(text)]):
+                emit({"index": 0, "delta": {"content": piece}, "finish_reason": None})
+            scaffold_doc = scaffold_answer(
+                str(text or ""), env,
+                provenance={"endpoint": "v1", "model_ref": str(model_ref)})
+            emit({"index": 0, "delta": {}, "finish_reason": "stop"},
+                 {"x_receipt": receipt, "x_scaffold": scaffold_doc})
+            self.wfile.write(b"data: [DONE]\n\n")
+            self.wfile.flush()
+        except Exception:
+            pass                                   # client hung up mid-stream; nothing to do
+
+    def _sse_agent(self, req: dict, goal: str, endpoint: str):
+        """Stream the agentic tool loop as Server-Sent Events: each assistant turn,
+        tool call, and tool result is emitted as it happens, then a final `done`
+        event carries the witnessed result (verdict + integrity)."""
+        try:
+            max_steps = max(1, min(int(req.get("max_steps", 6)), 12))
+        except (TypeError, ValueError):
+            max_steps = 6
+        self.send_response(200)
+        self.send_header("Content-Type", "text/event-stream")
+        self.send_header("Cache-Control", "no-cache")
+        self.send_header("Connection", "keep-alive")
+        self._cors()
+        self.end_headers()
+
+        events: list = []
+
+        def emit(evt):
+            # tee: the stream shows the process live, the run root keeps it —
+            # a streamed run lands in history exactly like a posted one
+            events.append(evt)
+            try:
+                self.wfile.write(("data: " + json.dumps(evt) + "\n\n").encode())
+                self.wfile.flush()
+            except Exception:
+                pass
+
+        from harness.router_agent import run_router_agent
+        from harness.scaffold import scaffold_answer, scaffold_turn
+        env = scaffold_turn(goal)
+        root, root_err = _resolve_workspace_root(req.get("root"), self.root)
+        if root_err:
+            emit({"type": "error", "error": root_err})
+            try:
+                self.wfile.write(b"data: [DONE]\n\n")
+                self.wfile.flush()
+            except Exception:
+                pass
+            return
+        try:
+            result = run_router_agent(
+                goal, endpoint, root=str(root),
+                allow_write=bool(req.get("allow_write", False)),
+                allow_exec=bool(req.get("allow_exec", False)),
+                max_steps=max_steps, test_cmd=(req.get("test_cmd") or None),
+                model=(req.get("model") or None),
+                compact_budget=int(req.get("compact_budget", 0) or 0), on_event=emit)
+            # countersign ONCE, before persistence, so the stored doc and the
+            # done event carry the same receipt (the store banks one witness)
+            run_receipt = _countersign_run(result)
+            run_id, receipt_note = None, None
+            try:
+                from harness.eval_store import save_agent_run, trim_events
+                run_id = save_agent_run(
+                    self.run_root,
+                    dict(result, goal_excerpt=goal[:200],
+                         events=trim_events(events),
+                         run_receipt=run_receipt))["run_id"]
+            except Exception as e:
+                receipt_note = f"run not persisted: {type(e).__name__}: {e}"
+            emit({"type": "done", "run_id": run_id,
+                  **({"receipt_note": receipt_note} if receipt_note else {}),
+                  "final": result.get("final"), "steps": result.get("steps"),
+                  "verified": result.get("verified"), "integrity": result.get("integrity"),
+                  # the reviewability projection + checkpoint ride the done
+                  # event so the surface can offer a sign-this-run attestation
+                  "review": result.get("review"),
+                  "checkpoint": result.get("checkpoint"),
+                  # the window manifest: what the model actually saw
+                  "context_manifest": result.get("context_manifest"),
+                  "risk_review": result.get("risk_review"),
+                  "provenance": result.get("provenance"),
+                  "duration_s": result.get("duration_s"),
+                  "ttva_s": result.get("ttva_s"),
+                  "scaffold": scaffold_answer(str(result.get("final") or ""),
+                                              env),
+                  "run_receipt": run_receipt})
+        except Exception as e:
+            emit({"type": "error", "error": f"{type(e).__name__}: {e}"})
+            # a failed run is the one most worth inspecting afterward: it
+            # lands in history as ERROR carrying every event up to and
+            # including the error itself, instead of vanishing with the stream
+            try:
+                from harness.eval_store import save_agent_run, trim_events
+                save_agent_run(
+                    self.run_root,
+                    {"goal_excerpt": goal[:200], "endpoint": endpoint,
+                     "status": "ERROR",
+                     "error": f"{type(e).__name__}: {e}",
+                     "events": trim_events(events)})
+            except Exception:
+                pass  # the stream already carries the primary error
+        try:
+            self.wfile.write(b"data: [DONE]\n\n")
+            self.wfile.flush()
+        except Exception:
+            pass
+
+    def _proxy(self, target: str):
+        length = self._content_length()
+        if length is None:
+            return self._json({"error": "invalid or oversized Content-Length"}, 400)
+        data = self.rfile.read(length) if length else None
+        req = urllib.request.Request(target, data=data, method=self.command,
+                                     headers={"Content-Type": "application/json"})
+        try:
+            with urllib.request.urlopen(req, timeout=300) as r:
+                body = r.read()
+                code = r.status
+        except Exception as exc:
+            return self._json({"error": f"upstream unreachable: {exc}"}, 502)
+        self.send_response(code)
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
+    def _static(self, path: str):
+        rel = path.lstrip("/") or "site/index.html"
+        target = (self.root / rel).resolve()
+        # path-traversal guard: must stay inside root
+        if self.root.resolve() not in target.parents and target != self.root.resolve():
+            return self._json({"error": "forbidden"}, 403)
+        if target.is_dir():
+            target = target / "index.html"
+        if not target.is_file():
+            return self._json({"error": "not found"}, 404)
+        ctype = {"html": "text/html", "js": "text/javascript", "css": "text/css",
+                 "json": "application/json", "svg": "image/svg+xml"}.get(
+                     target.suffix.lstrip("."), "application/octet-stream")
+        body = target.read_bytes()
+        self.send_response(200)
+        self.send_header("Content-Type", ctype)
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
+    def _safe_500(self, e):
+        """Any uncaught handler error becomes a clean 500, never a dropped
+        connection or a stderr traceback. Only the exception TYPE is surfaced, so a
+        stack path never leaks to the client."""
+        try:
+            self._json({"error": {"message": f"internal error: {type(e).__name__}",
+                                  "type": "api_error"}}, 500)
+        except Exception:
+            pass                                   # headers already partly sent; nothing safe to do
+
+    def do_GET(self):
+        try:
+            self._get()
+        except Exception as e:
+            self._safe_500(e)
+
+    def do_POST(self):
+        try:
+            self._post()
+        except Exception as e:
+            self._safe_500(e)
+
+    def _get(self):
+        p = self.path.split("?", 1)[0]
+        qs = self.path.split("?", 1)[1] if "?" in self.path else ""
+        if p == "/api/endpoints/health":
+            return self._json(endpoint_roster(self.serve_url, self.ollama_url))
+        if p == "/api/endpoints":
+            return self._json(_unified_roster())     # full universal-router roster
+        if p == "/api/world":
+            return self._json(_projected_world(self.root))
+        if p == "/api/lanes":                        # the lane roster (umbrella layer)
+            from harness.lanes import lane_roster
+            probe = "probe=true" in qs or "probe=1" in qs
+            return self._json(lane_roster(probe=probe))
+        if p == "/api/training/status":
+            return self._json(_training_status(self.run_root))
+        if p == "/api/train/duel":                    # verified-inference duel summary (read-only)
+            from harness.train_surface import duel_summary
+            return self._json(duel_summary())
+        if p == "/api/train/loop":                    # the loop-closure self-audit (on demand)
+            from harness.train_surface import loop_status
+            try:
+                return self._json(loop_status())
+            except Exception as e:
+                return self._json({"error": f"{type(e).__name__}: {e}"}, 502)
+        if p == "/api/loops":                        # which candidate loops close? measured, not drawn
+            from harness.loops import measure_all_loops
+            return self._json(measure_all_loops())
+        if p == "/api/tension":                      # measurement disagreements, kept re-checkable
+            from harness.tension_ledger import tension_ledger
+            return self._json(tension_ledger())
+        if p == "/api/instruments":                  # the evaluation-engineering register
+            from harness.eval_engineering import instrument_register
+            return self._json(instrument_register())
+        if p == "/api/typeface/gallery":             # the marketplace of published faces (metadata)
+            from urllib.parse import unquote_plus
+            limit = 60
+            for part in qs.split("&"):
+                if part.startswith("limit="):
+                    try:
+                        limit = int(unquote_plus(part[6:]))
+                    except ValueError:
+                        pass
+            from harness.typeface_gallery import gallery
+            return self._json(gallery(limit=limit))
+        if p == "/api/typeface/face":                # one published face, bytes included
+            from urllib.parse import unquote_plus
+            eid = ""
+            for part in qs.split("&"):
+                if part.startswith("eid="):
+                    eid = unquote_plus(part[4:])
+            from harness.typeface_gallery import fetch_face
+            out = fetch_face(eid)
+            return self._json(out, 404 if "error" in out else 200)
+        if p == "/api/academy":                      # the curriculum, derived from the live code
+            from harness.academy_pipeline import academy_curriculum
+            return self._json(academy_curriculum())
+        if p == "/api/frontier":                     # the RAM/compute frontier, measured here
+            from harness.frontier import frontier_table
+            from harness.store import get_entity, query_entities
+            probes = []
+            seen = set()
+            for meta in query_entities(kind="capability"):
+                e = get_entity(meta["eid"])
+                if e and isinstance(e.get("data"), dict):
+                    ep = e["data"].get("endpoint", "")
+                    if ep and ep not in seen:      # newest probe per endpoint
+                        seen.add(ep)
+                        probes.append(e["data"])
+            return self._json(frontier_table(self.root, probes=probes))
+        if p == "/api/retention":                    # what is still held, not what was once shown
+            from harness.retention import retention_due
+            days = 3.0
+            for part in qs.split("&"):
+                if part.startswith("days="):
+                    try:
+                        days = max(0.0, float(part[5:]))
+                    except ValueError:
+                        days = 3.0
+            return self._json(retention_due(days=days))
+        if p == "/api/comprehension":                # ownership from checked evidence, not blame
+            from urllib.parse import unquote_plus
+            from harness.comprehension_ledger import comprehension_ledger
+            project = None
+            for part in qs.split("&"):
+                if part.startswith("project="):
+                    project = unquote_plus(part[8:]) or None
+            return self._json(comprehension_ledger(project=project))
+        if p == "/api/readiness":                    # release readiness, measured not felt
+            from harness.release_readiness import readiness_report
+            return self._json(readiness_report())
+        if p == "/api/credo":                        # the belief, content-addressed and retrievable
+            from harness.credo import credo_doc
+            return self._json(credo_doc())
+        if p == "/api/feeds":                        # cross-domain live feeds through gather
+            from urllib.parse import unquote_plus
+            from harness.live_feeds import live_feeds
+            domain = None
+            for part in qs.split("&"):
+                if part.startswith("domain="):
+                    domain = unquote_plus(part[7:]) or None
+            return self._json(live_feeds(domain=domain))
+        if p == "/api/uplift":                       # bare-vs-wrapped uplift bench (read-only roster)
+            from harness.uplift_bench import bench_summary
+            return self._json(bench_summary(self.root))
+        if p == "/api/graph":                        # cross-surface knowledge graph + context plan
+            from urllib.parse import unquote_plus
+            from harness.knowledge_graph import gateway_graph
+            budget = None
+            with_index = False
+            query = None
+            for part in qs.split("&"):
+                if part.startswith("budget="):
+                    try:
+                        budget = int(part[7:])
+                    except ValueError:
+                        budget = None
+                if part == "index=true":
+                    with_index = True
+                if part.startswith("q="):
+                    query = unquote_plus(part[2:])
+            return self._json(gateway_graph(self.root, self.run_root,
+                                            with_index=with_index,
+                                            budget=budget, query=query))
+        if p == "/api/receipts":                     # the receipts ledger (catalog + envelopes)
+            return self._json(receipts_ledger(self.root, self.run_root))
+        if p == "/api/receipts/proof":               # prove one receipt is in the log
+            leaf = ""
+            for part in qs.split("&"):
+                if part.startswith("leaf="):
+                    leaf = part[5:].strip()
+            if len(leaf) != 64:
+                return self._json({"error": "provide 'leaf' (a 64-hex "
+                                            "envelope sha256)"}, 400)
+            from harness.transparency_log import (inclusion_proof,
+                                                  merkle_root)
+            led = receipts_ledger(self.root, self.run_root)
+            leaves = [e["sha256"] for e in led["envelopes"]]
+            if leaf not in leaves:
+                return self._json({"error": "leaf not in the receipts log",
+                                   "leaf": leaf, "merkle_root":
+                                   led["merkle_root"]}, 404)
+            idx = leaves.index(leaf)
+            return self._json({"schema": "flywheel.receipts-proof/v1",
+                               "leaf": leaf,
+                               "merkle_root": merkle_root(leaves),
+                               "proof": inclusion_proof(leaves, idx),
+                               "note": "verify offline with "
+                                       "transparency_log.verify_inclusion("
+                                       "leaf, proof, merkle_root)"})
+        if p == "/api/profiles":                     # profile manifests over the one substrate
+            from harness.profiles import profile_roster
+            return self._json(profile_roster())
+        if p == "/api/workflows":                    # workflow definitions + recent runs
+            from harness.workflows import workflow_roster
+            return self._json(workflow_roster(self.run_root))
+        if p == "/api/workflow/run":                 # one run's stored trace, chain-reverified
+            from harness.workflows import workflow_run_detail
+            return self._json(workflow_run_detail(
+                self.run_root, _qs_value(qs, "chain")))
+        if p == "/api/science/runs":                 # eval history, chain-reverified
+            from harness.eval_store import science_runs
+            return self._json(science_runs(
+                self.run_root, limit=_qs_int(qs, "limit", 20)))
+        if p == "/api/science/run":                  # one stored science run
+            from harness.eval_store import science_run_detail
+            return self._json(science_run_detail(
+                self.run_root, _qs_value(qs, "chain")))
+        if p == "/api/agent/runs":                   # agent-run history, content-addressed
+            from harness.eval_store import agent_runs
+            return self._json(agent_runs(
+                self.run_root, limit=_qs_int(qs, "limit", 20)))
+        if p == "/api/agent/run":                    # one stored agent run
+            from harness.eval_store import agent_run_detail
+            return self._json(agent_run_detail(
+                self.run_root, _qs_value(qs, "id")))
+        if p == "/api/memory":                       # durable memory stats (fold index)
+            from harness.memory_api import memory_stats
+            return self._json(memory_stats(self.run_root))
+        if p == "/api/memory/list":                  # browse stored spans, verbatim
+            from harness.memory_api import memory_list
+            limit = 20
+            for part in qs.split("&"):
+                if part.startswith("limit="):
+                    try:
+                        limit = int(part[6:])
+                    except ValueError:
+                        limit = 20
+            return self._json(memory_list(self.run_root, limit=limit))
+        if p == "/api/plugins":                      # every mounted capability, one manifest shape
+            from harness.plugins import plugin_roster
+            return self._json(plugin_roster())
+        if p == "/api/parity":                       # the capability matrix, witnessed not asserted
+            from harness.parity import parity_matrix
+            return self._json(parity_matrix())
+        if p == "/api/projects":                     # the registered project/directory roster
+            from harness.projects import project_roster
+            return self._json(project_roster())
+        if p == "/api/store":                        # verifiable substrate stats
+            from harness.store import stats
+            return self._json(stats())
+        if p == "/api/store/verify":                 # walk the chain AND re-check the records
+            from harness.store import verify_chain, verify_records
+            chain = verify_chain()
+            records = verify_records()
+            return self._json({"schema": "flywheel.store-verify/v1",
+                               "ok": bool(chain.get("ok"))
+                               and bool(records.get("ok")),
+                               "chain": chain, "records": records,
+                               "note": "ok requires BOTH the ledger chain "
+                                       "and the records it attests; a "
+                                       "tampered entity fails records even "
+                                       "when the chain still verifies"})
+        if p == "/api/store/audit":                  # the hash-chained audit tail
+            from harness.store import audit_tail
+            n = 50
+            for part in qs.split("&"):
+                if part.startswith("n="):
+                    try:
+                        n = int(part[2:])
+                    except ValueError:
+                        n = 50
+            return self._json({"schema": "flywheel.store-audit/v1",
+                               "entries": audit_tail(n)})
+        if p == "/api/marketplace":                  # curated catalog over the plugin registry
+            from harness.marketplace import marketplace_catalog
+            return self._json(marketplace_catalog())
+        if p == "/api/keychain":                     # credential names + presence, never values
+            from harness.keychain import credential_source, keychain_available
+            try:
+                from harness.endpoints import PROVIDERS
+            except Exception:
+                PROVIDERS = {}
+            names = sorted({s.get("key", "") for s in PROVIDERS.values()
+                            if s.get("key")})
+            return self._json({
+                "schema": "flywheel.keychain/v1",
+                "available": keychain_available(),
+                "entries": [{"name": n, "source": credential_source(n)}
+                            for n in names],
+                "note": "presence and source only; values never leave "
+                        "resolution inside a routed call"})
+        if p == "/api/plugins/probe":                # spawn a plugin's server, report its real tools
+            from harness.plugins import probe_plugin
+            name = ""
+            for part in qs.split("&"):
+                if part.startswith("name="):
+                    name = urllib.parse.unquote(part[5:])
+            if not name:
+                return self._json({"error": "provide ?name="}, 400)
+            return self._json(probe_plugin(name))
+        if p == "/api/router/stats":                 # observed per-provider success/cost
+            return self._json(get_router_stats().snapshot())
+        if p == "/v1/models":                        # OpenAI-compatible model list (the roster)
+            return self._json(openai_models())
+        if p.startswith("/v1/") or p == "/generate" or p == "/health":
+            return self._proxy(self.serve_url.rstrip("/") + p)
+        return self._static(p)
+
+    def _post(self):
+        p = self.path.split("?", 1)[0]
+        if p == "/v1/chat/completions":              # OpenAI-compatible, routes to ANY provider
+            length = self._content_length()
+            if length is None:
+                return self._json({"error": {"message": "invalid or oversized Content-Length",
+                                             "type": "invalid_request_error"}}, 400)
+            try:
+                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
+            except Exception:
+                req = {}
+            if req.get("stream"):
+                return self._sse_chat(req)
+            from harness.scaffold import scaffold_answer, scaffold_turn
+            # hash and freeze the flattened prompt the model was actually
+            # sent, so the turn receipt is reproducible by a stranger
+            _sys, _prompt = _flatten_messages(req.get("messages", []))
+            env = scaffold_turn("\n".join(x for x in (_sys, _prompt) if x))
+            body, code, _r, _t, _m = openai_chat(req, self.serve_url)
+            if code == 200 and isinstance(body, dict):
+                try:
+                    content = body["choices"][0]["message"]["content"]
+                except (KeyError, IndexError, TypeError):
+                    content = ""
+                # extension field: OpenAI clients ignore unknown keys
+                body["flywheel_scaffold"] = scaffold_answer(
+                    str(content or ""), env,
+                    provenance={"endpoint": "v1",
+                                "model_ref": str(body.get("model") or "")})
+            return self._json(body, code)
+        if p == "/v1/embeddings":                    # OpenAI-compatible, routed to a provider
+            length = self._content_length()
+            if length is None:
+                return self._json({"error": {"message": "invalid or oversized Content-Length",
+                                             "type": "invalid_request_error"}}, 400)
+            try:
+                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
+            except Exception:
+                req = {}
+            body, code = openai_embeddings(req)
+            return self._json(body, code)
+        if p.startswith("/v1/") or p == "/generate":
+            return self._proxy(self.serve_url.rstrip("/") + p)
+        if p == "/api/forge":                        # goal -> verified PRP (the studio)
+            length = self._content_length()
+            if length is None:
+                return self._json({"error": "invalid or oversized Content-Length"}, 400)
+            try:
+                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
+            except Exception:
+                req = {}
+            goal = (req.get("goal") or "").strip()
+            if not goal:
+                return self._json({"error": "provide a non-empty 'goal'"}, 400)
+            doc = _forge(
+                goal, examples=req.get("examples"),
+                documentation=req.get("documentation"),
+                context=req.get("context", ""),
+                intent_source=str(req.get("intent_source", "")),
+                architecture_source=str(req.get("architecture_source", "")))
+            if "error" not in doc:
+                # seal the Y-chain server-side so the later drift recheck
+                # never trusts the checked party for the sealed half
+                doc["prp_id"] = persist_forge_seal(
+                    self.run_root, goal,
+                    intent_sha256=str(doc.get("intent_sha256", "")),
+                    architecture_sha256=str(doc.get("architecture_sha256", "")))
+            return self._json(doc)
+        if p == "/api/academy/complete":             # bind a passed receipt to a lesson
+            length = self._content_length()
+            if length is None:
+                return self._json({"error": "invalid or oversized Content-Length"}, 400)
+            try:
+                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
+            except Exception:
+                req = {}
+            lesson_id = str(req.get("lesson_id", "")).strip()
+            eid = str(req.get("comprehension_eid", "")).strip()
+            if not lesson_id or not eid:
+                return self._json({"error": "provide 'lesson_id' and "
+                                            "'comprehension_eid'"}, 400)
+            from harness.academy_pipeline import academy_complete
+            doc = academy_complete(lesson_id, eid)
+            return self._json(doc, 200 if doc.get("bound") else 400)
+        if p == "/api/forge/recheck":                # did an arm drift since the forge?
+            length = self._content_length()
+            if length is None:
+                return self._json({"error": "invalid or oversized Content-Length"}, 400)
+            try:
+                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
+            except Exception:
+                req = {}
+            if req.get("intent_sha256") or req.get("architecture_sha256"):
+                return self._json(
+                    {"error": "caller-supplied sealed hashes are refused: "
+                              "the checked party must not author its own "
+                              "criterion. Provide 'prp_id' from the forge "
+                              "response; the seal is read server-side"}, 400)
+            out = forge_recheck(self.run_root, req.get("prp_id", ""), req)
+            return self._json(out, 400 if "error" in out else 200)
+        if p == "/api/science":                       # evidence -> spec -> witnessed judgment, one chain
+            length = self._content_length()
+            if length is None:
+                return self._json({"error": "invalid or oversized Content-Length"}, 400)
+            try:
+                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
+            except Exception:
+                req = {}
+            question = (req.get("question") or "").strip()
+            if not question:
+                return self._json({"error": "provide a non-empty 'question'"}, 400)
+            from harness.science_bench import science_run
+            try:
+                max_sources = max(1, min(int(req.get("max_sources", 4)), 10))
+            except (TypeError, ValueError):
+                max_sources = 4
+            claims = req.get("claims") if isinstance(req.get("claims"), list) else None
+            measurements = (req.get("measurements")
+                            if isinstance(req.get("measurements"), list) else None)
+            from pathlib import Path as _P
+            doc = science_run(
+                question, claims=claims, measurements=measurements,
+                max_sources=max_sources,
+                workdir=_P(self.run_root) / "science")
+            # history is best-effort: a full disk never blocks the answer,
+            # but an unpersisted run says so instead of pretending
+            try:
+                from harness.eval_store import save_science_run
+                doc["receipt_path"] = save_science_run(
+                    self.run_root, doc)["receipt_path"]
+            except Exception as e:
+                doc["receipt_note"] = (
+                    f"run not persisted: {type(e).__name__}: {e}")
+            return self._json(doc)
+        if p == "/api/retrieve":                      # retrieval that cites its evidence
+            length = self._content_length()
+            if length is None:
+                return self._json({"error": "invalid or oversized Content-Length"}, 400)
+            try:
+                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
+            except Exception:
+                req = {}
+            query = (req.get("query") or "").strip()
+            if not query:
+                return self._json({"error": "provide a non-empty 'query'"}, 400)
+            root, err = _resolve_workspace_root(req.get("root"), self.root)
+            if err:
+                return self._json({"error": err}, 400)
+            try:
+                k = max(1, min(int(req.get("k", 8)), 50))
+            except (TypeError, ValueError):
+                k = 8
+            from harness.bm25_retrieval import build_index, search
+            index = build_index(root)
+            return self._json({"schema": "flywheel.retrieval/v1",
+                               "query": query,
+                               "hits": search(index, query, k=k),
+                               "indexed_files": index["files"],
+                               "skipped": index["skipped"]})
+        if p == "/api/snapshot":                      # the citation, frozen: bytes as the receipt
+            length = self._content_length()
+            if length is None:
+                return self._json({"error": "invalid or oversized Content-Length"}, 400)
+            try:
+                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
+            except Exception:
+                req = {}
+            url = (req.get("url") or "").strip()
+            if not url.startswith(("http://", "https://")):
+                return self._json({"error": "provide an http(s) 'url'"}, 400)
+            from pathlib import Path as _P
+            from harness.web_snapshot import snapshot_url
+            doc = snapshot_url(url, _P(self.run_root) / "snapshots")
+            if "error" not in doc:
+                try:
+                    from harness.store import put_entity
+                    doc["stored"] = put_entity("web-snapshot", doc).get("eid", "")
+                except Exception as e:
+                    doc["stored"] = f"store unavailable: {type(e).__name__}"
+            return self._json(doc)
+        if p == "/api/import":                        # arrive with your whole setup, keep the proof
+            length = self._content_length()
+            if length is None:
+                return self._json({"error": "invalid or oversized Content-Length"}, 400)
+            try:
+                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
+            except Exception:
+                req = {}
+            root, err = _resolve_workspace_root(req.get("root"), self.root)
+            if err:
+                return self._json({"error": err}, 400)
+            from harness.import_adapters import import_config
+            doc = import_config(root)
+            try:
+                from harness.store import put_entity
+                doc["stored"] = put_entity("import-manifest", doc).get("eid", "")
+            except Exception as e:
+                doc["stored"] = f"store unavailable: {type(e).__name__}"
+            return self._json(doc)
+        if p == "/api/lean":                          # the apex oracle: the kernel decides
+            length = self._content_length()
+            if length is None:
+                return self._json({"error": "invalid or oversized Content-Length"}, 400)
+            try:
+                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
+            except Exception:
+                req = {}
+            code = req.get("code") or ""
+            if not code.strip():
+                return self._json({"error": "provide non-empty 'code'"}, 400)
+            from harness.lean_oracle import lean_check
+            doc = lean_check(code)
+            try:
+                from harness.store import put_entity
+                doc["stored"] = put_entity("lean", doc).get("eid", "")
+            except Exception as e:
+                doc["stored"] = f"store unavailable: {type(e).__name__}"
+            return self._json(doc)
+        if p == "/api/invent":                        # generation under witness: propose, judge, keep
+            length = self._content_length()
+            if length is None:
+                return self._json({"error": "invalid or oversized Content-Length"}, 400)
+            try:
+                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
+            except Exception:
+                req = {}
+            k = req.get("k", 12)
+            if not isinstance(k, int) or isinstance(k, bool) or not 1 <= k <= 50:
+                return self._json({"error": "provide integer 'k' in 1..50"}, 400)
+            offset = req.get("offset", 0)
+            if not isinstance(offset, int) or isinstance(offset, bool) or offset < 0:
+                return self._json({"error": "'offset' must be a non-negative integer"}, 400)
+            from harness.conjecture_forge import forge_round
+            return self._json(forge_round(k, offset=offset))
+        if p == "/api/scaffold":                      # the full turn guarantee for external wrappers
+            length = self._content_length()
+            if length is None:
+                return self._json({"error": "invalid or oversized Content-Length"}, 400)
+            try:
+                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
+            except Exception:
+                req = {}
+            prompt = str(req.get("prompt") or "")
+            answer = str(req.get("answer") or "")
+            if not prompt and not answer:
+                return self._json({"error": "provide 'prompt' and/or 'answer'"}, 400)
+            from harness.scaffold import scaffold_answer, scaffold_turn
+            env = scaffold_turn(prompt)
+            cites = req.get("citations")
+            doc = scaffold_answer(answer, env,
+                                  citations=cites if isinstance(cites, list)
+                                  else None)
+            return self._json(doc)
+        if p == "/api/suite":                         # can this acceptance suite refuse wrong code?
+            length = self._content_length()
+            if length is None:
+                return self._json({"error": "invalid or oversized Content-Length"}, 400)
+            try:
+                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
+            except Exception:
+                req = {}
+            path = (req.get("path") or "").strip()
+            if not path:
+                return self._json({"error": "provide a project 'path'"}, 400)
+            mm = req.get("max_mutants", 5)
+            if not isinstance(mm, int) or isinstance(mm, bool) or not 1 <= mm <= 20:
+                return self._json({"error": "'max_mutants' must be an integer in 1..20"}, 400)
+            from harness.suite_audit import audit_suite
+            doc = audit_suite(path, oracle_cmd=str(
+                req.get("oracle_cmd", "python -m pytest tests/ -q")),
+                max_mutants=mm)
+            return self._json(doc, 400 if "error" in doc else 200)
+        if p == "/api/tension":                       # bank a measurement pair with frozen sources
+            length = self._content_length()
+            if length is None:
+                return self._json({"error": "invalid or oversized Content-Length"}, 400)
+            try:
+                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
+            except Exception:
+                req = {}
+            if not isinstance(req.get("a"), dict) or not isinstance(req.get("b"), dict):
+                return self._json({"error": "provide measurement objects 'a' and 'b'"}, 400)
+            from harness.tension_ledger import bank_tension
+            doc = bank_tension(req["a"], req["b"])
+            return self._json(doc, 400 if "error" in doc else 200)
+        if p == "/api/capability":                    # probe a model on THIS machine
+            length = self._content_length()
+            if length is None:
+                return self._json({"error": "invalid or oversized Content-Length"}, 400)
+            try:
+                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
+            except Exception:
+                req = {}
+            endpoint = (req.get("endpoint") or "").strip()
+            if not endpoint:
+                return self._json({"error": "provide a non-empty 'endpoint'"}, 400)
+            from harness.frontier import capability_probe
+            doc = capability_probe(endpoint)
+            if "error" not in doc:
+                if isinstance(req.get("disk_gb"), (int, float)):
+                    doc["disk_gb"] = float(req["disk_gb"])
+                    doc["disk_gb_source"] = "declared by caller"
+                try:
+                    from harness.store import put_entity
+                    doc["stored"] = put_entity("capability", doc).get("eid", "")
+                except Exception as e:
+                    doc["stored"] = f"store unavailable: {type(e).__name__}"
+            return self._json(doc)
+        if p == "/api/retention":                     # bank an unaided retest outcome, linked
+            length = self._content_length()
+            if length is None:
+                return self._json({"error": "invalid or oversized Content-Length"}, 400)
+            try:
+                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
+            except Exception:
+                req = {}
+            original = (req.get("original") or "").strip()
+            if not original or not isinstance(req.get("passed"), bool):
+                return self._json({"error": "provide 'original' (entity id) "
+                                            "and boolean 'passed'"}, 400)
+            from harness.retention import retention_record
+            return self._json(retention_record(
+                original, req["passed"], note=str(req.get("note", ""))))
+        if p == "/api/explain":                       # the teach-back as a receipt (engagement, mechanical)
+            length = self._content_length()
+            if length is None:
+                return self._json({"error": "invalid or oversized Content-Length"}, 400)
+            try:
+                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
+            except Exception:
+                req = {}
+            diff = req.get("diff") or ""
+            explanation = req.get("explanation") or ""
+            if not diff.strip() or not explanation.strip():
+                return self._json({"error": "provide 'diff' and 'explanation'"}, 400)
+            from harness.explanation_gate import explanation_receipt
+            try:
+                threshold = min(1.0, max(0.1, float(req.get("threshold", 0.6))))
+            except (TypeError, ValueError):
+                threshold = 0.6
+            doc = explanation_receipt(diff, explanation, threshold=threshold,
+                                      reviewer=str(req.get("reviewer", "")))
+            try:
+                from harness.store import put_entity
+                doc["stored"] = put_entity("comprehension", doc).get("eid", "")
+            except Exception as e:
+                doc["stored"] = f"store unavailable: {type(e).__name__}"
+            return self._json(doc)
+        if p == "/api/attest":                        # ownership made checkable: sign-off bound to the walk
+            length = self._content_length()
+            if length is None:
+                return self._json({"error": "invalid or oversized Content-Length"}, 400)
+            try:
+                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
+            except Exception:
+                req = {}
+            run_eid = (req.get("run_eid") or "").strip()
+            review = req.get("review") if isinstance(req.get("review"), dict) else None
+            files = req.get("reviewed_files")
+            if not run_eid or review is None or not isinstance(files, list):
+                return self._json({"error": "provide 'run_eid' (a banked "
+                                            "agent-run entity), 'review' (the "
+                                            "run's review doc, verified "
+                                            "against the banked hash), and "
+                                            "'reviewed_files' (a list); an "
+                                            "inline run doc is not accepted "
+                                            "because an attestation binds to "
+                                            "a run that actually happened"}, 400)
+            from harness.attestation import attest_banked
+            doc = attest_banked(run_eid, review, files,
+                                note=str(req.get("note", "")),
+                                reviewer=str(req.get("reviewer", "")))
+            if "error" in doc:
+                return self._json(doc, 409)
+            try:
+                from harness.store import put_entity
+                stored = put_entity("attestation", doc,
+                                    project=str(req.get("project", "")))
+                doc["stored"] = stored.get("eid", "")
+                doc["store_chain_hash"] = stored.get("chain_hash", "")
+            except Exception as e:                    # storing must not void the attestation
+                doc["stored"] = f"store unavailable: {type(e).__name__}"
+            return self._json(doc)
+        if p == "/api/route":                         # universal router: send to ANY provider, with a receipt
+            length = self._content_length()
+            if length is None:
+                return self._json({"error": "invalid or oversized Content-Length"}, 400)
+            try:
+                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
+            except Exception:
+                req = {}
+            prompt = (req.get("prompt") or "").strip()
+            endpoint = (req.get("endpoint") or "").strip()
+            if not prompt or not endpoint:
+                return self._json({"error": "provide non-empty 'prompt' and 'endpoint'"}, 400)
+            # the organs fire on every message: pre-pass freezes named
+            # sources, post-pass chains the turn receipt (scaffold.py)
+            from harness.scaffold import scaffold_answer, scaffold_turn
+            env = scaffold_turn(prompt)
+            body, code = route_request(prompt, endpoint)
+            if code == 200 and isinstance(body, dict):
+                body["scaffold"] = scaffold_answer(
+                    str(body.get("text", "")), env,
+                    provenance={"endpoint": endpoint,
+                                "model_ref": str(body.get("model_ref")
+                                                 or endpoint)})
+            return self._json(body, code)
+        if p == "/api/companion":                     # the seat: answer local, escalate the hard slice
+            length = self._content_length()
+            if length is None:
+                return self._json({"error": "invalid or oversized Content-Length"}, 400)
+            try:
+                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
+            except Exception:
+                req = {}
+            prompt = (req.get("prompt") or "").strip()
+            if not prompt:
+                return self._json({"error": "provide a non-empty 'prompt'"}, 400)
+            seat = get_companion_seat(self.serve_url)
+            if seat is None:
+                return self._json({"error": "companion seat unavailable"}, 503)
+            from harness.scaffold import scaffold_answer, scaffold_turn
+            env = scaffold_turn(prompt)
+            body = companion_answer(seat, prompt, req.get("solution_sig", ""))
+            body["scaffold"] = scaffold_answer(
+                str(body.get("text", "")), env,
+                provenance={"endpoint": "companion",
+                            "model_ref": str(body.get("model_ref")
+                                             or body.get("source") or "")})
+            return self._json(body)
+        if p == "/api/agent":                          # the agentic tool loop over ANY provider
+            length = self._content_length()
+            if length is None:
+                return self._json({"error": "invalid or oversized Content-Length"}, 400)
+            try:
+                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
+            except Exception:
+                req = {}
+            goal = (req.get("goal") or "").strip()
+            endpoint = (req.get("endpoint") or "").strip()
+            if not goal or not endpoint:
+                return self._json({"error": "provide non-empty 'goal' and 'endpoint'"}, 400)
+            if req.get("stream"):
+                return self._sse_agent(req, goal, endpoint)
+            effort = None
+            if req.get("effort"):
+                from harness.effort import resolve_effort
+                effort = resolve_effort(str(req["effort"]))
+            try:
+                max_steps = max(1, min(int(req.get("max_steps",
+                                            (effort or {}).get("max_steps", 6))), 12))
+            except (TypeError, ValueError):
+                max_steps = 6
+            root, err = _resolve_workspace_root(req.get("root"), self.root)
+            if err:
+                return self._json({"error": err}, 400)
+            # freeze the goal's named sources BEFORE the agent runs, so the
+            # pre-pass is a pre-pass (not an after-the-fact re-freeze)
+            from harness.scaffold import scaffold_answer as _sa, \
+                scaffold_turn as _st
+            env = _st(goal)
+            from harness.router_agent import run_router_agent
+            events: list = []
+            try:
+                result = run_router_agent(
+                    goal, endpoint, root=str(root),
+                    allow_write=bool(req.get("allow_write", False)),
+                    allow_exec=bool(req.get("allow_exec", False)),
+                    max_steps=max_steps, test_cmd=(req.get("test_cmd") or None),
+                    model=(req.get("model") or None),
+                    compact_budget=int(req.get("compact_budget", 0) or 0),
+                    on_event=events.append)
+            except Exception as e:
+                # failed runs land in history too, with their partial trace
+                try:
+                    from harness.eval_store import save_agent_run, trim_events
+                    save_agent_run(
+                        self.run_root,
+                        {"goal_excerpt": goal[:200], "endpoint": endpoint,
+                         "status": "ERROR",
+                         "error": f"{type(e).__name__}: {e}",
+                         "events": trim_events(events)})
+                except Exception:
+                    pass  # the 502 already carries the primary error
+                return self._json({"error": f"{type(e).__name__}: {e}"}, 502)
+            if effort is not None:
+                # stamp what was ENFORCED, not the nominal dial: a caller
+                # max_steps override past the dial, and this route not fanning
+                # out n_candidates, must show in the receipt
+                from harness.effort import stamp_applied
+                result["effort"] = stamp_applied(effort, max_steps_applied=max_steps,
+                                                 n_candidates_applied=False)
+            result["scaffold"] = _sa(
+                str(result.get("final") or ""), env,
+                provenance={"endpoint": endpoint,
+                            "model_ref": str(req.get("model") or endpoint)})
+            result["run_receipt"] = _countersign_run(result)
+            try:
+                from harness.eval_store import save_agent_run, trim_events
+                result["run_id"] = save_agent_run(
+                    self.run_root,
+                    dict(result, goal_excerpt=goal[:200],
+                         events=trim_events(events)))["run_id"]
+            except Exception as e:
+                result["receipt_note"] = (
+                    f"run not persisted: {type(e).__name__}: {e}")
+            return self._json(result)
+        if p == "/api/workflow":                       # staged run with a chained receipt, any endpoint
+            length = self._content_length()
+            if length is None:
+                return self._json({"error": "invalid or oversized Content-Length"}, 400)
+            try:
+                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
+            except Exception:
+                req = {}
+            goal = (req.get("goal") or "").strip()
+            workflow = (req.get("workflow") or "").strip()
+            if not goal or not workflow:
+                return self._json({"error": "provide 'workflow' and a non-empty 'goal'"}, 400)
+            from harness.profiles import get_profile
+            from harness.workflows import run_workflow
+            profile = get_profile((req.get("profile") or "").strip()) or {}
+            root, err = _resolve_workspace_root(req.get("root"), self.root)
+            if err:
+                return self._json({"error": err}, 400)
+            try:
+                doc = run_workflow(
+                    workflow, goal, (req.get("endpoint") or "serve").strip(),
+                    root=str(root),
+                    allow_write=bool(req.get("allow_write", False)),
+                    allow_exec=bool(req.get("allow_exec", False)),
+                    allow_mcp=bool(req.get("allow_mcp", False)),
+                    test_cmd=(req.get("test_cmd") or None),
+                    system=profile.get("system", ""),
+                    run_root=self.run_root)
+            except Exception as e:
+                return self._json({"error": f"workflow failed: {type(e).__name__}: {e}"}, 502)
+            doc["run_countersign"] = _countersign_workflow(doc)
+            return self._json(doc)
+        if p == "/api/memory/recall":                  # verbatim recall from the fold index
+            length = self._content_length()
+            if length is None:
+                return self._json({"error": "invalid or oversized Content-Length"}, 400)
+            try:
+                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
+            except Exception:
+                req = {}
+            query = (req.get("query") or "").strip()
+            if not query:
+                return self._json({"error": "provide a non-empty 'query'"}, 400)
+            from harness.memory_api import memory_recall
+            return self._json(memory_recall(self.run_root, query,
+                                            req.get("top_k", 5)))
+        if p == "/api/plugins/register":               # register a custom MCP server by argv
+            length = self._content_length()
+            if length is None:
+                return self._json({"error": "invalid or oversized Content-Length"}, 400)
+            try:
+                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
+            except Exception:
+                req = {}
+            from harness.plugins import register_mcp
+            out = register_mcp(req.get("name", ""), req.get("command", []),
+                               (req.get("detail") or "").strip())
+            return self._json(out, 400 if "error" in out else 200)
+        if p == "/api/keychain/set":                   # store a secret in the OS keychain
+            length = self._content_length()
+            if length is None:
+                return self._json({"error": "invalid or oversized Content-Length"}, 400)
+            try:
+                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
+            except Exception:
+                req = {}
+            from harness.keychain import keychain_set
+            out = keychain_set((req.get("name") or "").strip(),
+                               req.get("value") or "")
+            # The secret is now only in the OS store; nothing here logs or
+            # echoes it, and `req` goes out of scope with this request.
+            return self._json(out, 400 if "error" in out else 200)
+        if p == "/api/keychain/delete":                # remove a stored secret
+            length = self._content_length()
+            if length is None:
+                return self._json({"error": "invalid or oversized Content-Length"}, 400)
+            try:
+                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
+            except Exception:
+                req = {}
+            from harness.keychain import keychain_delete
+            out = keychain_delete((req.get("name") or "").strip())
+            return self._json(out, 400 if "error" in out else 200)
+        if p == "/api/store/entity":                   # store a content-addressed entity
+            length = self._content_length()
+            if length is None:
+                return self._json({"error": "invalid or oversized Content-Length"}, 400)
+            try:
+                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
+            except Exception:
+                req = {}
+            from harness.store import put_entity
+            out = put_entity((req.get("kind") or "").strip(),
+                             req.get("data") or {},
+                             project=(req.get("project") or "").strip())
+            return self._json(out, 400 if "error" in out else 200)
+        if p == "/api/store/query":                    # query entities by kind/project
+            length = self._content_length()
+            if length is None:
+                return self._json({"error": "invalid or oversized Content-Length"}, 400)
+            try:
+                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
+            except Exception:
+                req = {}
+            from harness.store import query_entities
+            rows = query_entities(kind=(req.get("kind") or None),
+                                  project=(req.get("project") or None),
+                                  limit=int(req.get("limit", 200) or 200))
+            return self._json({"schema": "flywheel.store-query/v1",
+                               "entities": rows, "n": len(rows)})
+        if p == "/api/projects/add":                   # register a project directory
+            length = self._content_length()
+            if length is None:
+                return self._json({"error": "invalid or oversized Content-Length"}, 400)
+            try:
+                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
+            except Exception:
+                req = {}
+            from harness.projects import add_project
+            out = add_project((req.get("root") or "").strip(),
+                              (req.get("name") or "").strip())
+            return self._json(out, 400 if "error" in out else 200)
+        if p == "/api/projects/remove":                # unregister a project directory
+            length = self._content_length()
+            if length is None:
+                return self._json({"error": "invalid or oversized Content-Length"}, 400)
+            try:
+                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
+            except Exception:
+                req = {}
+            from harness.projects import remove_project
+            out = remove_project((req.get("root") or "").strip())
+            return self._json(out, 400 if "error" in out else 200)
+        if p == "/api/lint":                           # native receipt-carrying linter over a project
+            length = self._content_length()
+            if length is None:
+                return self._json({"error": "invalid or oversized Content-Length"}, 400)
+            try:
+                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
+            except Exception:
+                req = {}
+            root, err = _resolve_workspace_root(req.get("root"), self.root)
+            if err:
+                return self._json({"error": err}, 400)
+            from harness.linter import lint_project
+            paths = req.get("paths") if isinstance(req.get("paths"), list) else None
+            out = lint_project(str(root), paths)
+            return self._json(out, 400 if "error" in out else 200)
+        if p == "/api/index":                          # drive the index engine over a project root
+            length = self._content_length()
+            if length is None:
+                return self._json({"error": "invalid or oversized Content-Length"}, 400)
+            try:
+                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
+            except Exception:
+                req = {}
+            root, err = _resolve_workspace_root(req.get("root"), self.root)
+            if err:
+                return self._json({"error": err}, 400)
+            view = (req.get("view") or "summary").strip()
+            if view == "summary":
+                from harness.index_bridge import index_summary
+                return self._json(index_summary(str(root)))
+            from harness.index_bridge import index_view
+            out = index_view(str(root), view)
+            return self._json(out, 400 if "error" in out else 200)
+        if p == "/api/discourse":                      # drive the chorus satellite over a gathered corpus
+            length = self._content_length()
+            if length is None:
+                return self._json({"error": "invalid or oversized Content-Length"}, 400)
+            try:
+                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
+            except Exception:
+                req = {}
+            from harness.chorus_bridge import discourse_digest
+            out = discourse_digest((req.get("corpus") or "").strip())
+            return self._json(out, 400 if "error" in out else 200)
+        if p == "/api/discourse/corpora":              # discover gather corpora as discourse sources
+            length = self._content_length()
+            if length is None:
+                return self._json({"error": "invalid or oversized Content-Length"}, 400)
+            try:
+                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
+            except Exception:
+                req = {}
+            from harness.chorus_bridge import list_corpora
+            out = list_corpora((req.get("root") or "").strip())
+            return self._json(out, 400 if "error" in out else 200)
+        if p == "/api/learn/animate":                  # a lesson -> a runnable manim scene (academy)
+            length = self._content_length()
+            if length is None:
+                return self._json({"error": "invalid or oversized Content-Length"}, 400)
+            try:
+                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
+            except Exception:
+                req = {}
+            from harness.manim_lesson import lesson_to_manim, scene_name, manimgl_available
+            lesson = req.get("lesson") if isinstance(req.get("lesson"), dict) else {}
+            return self._json({"schema": "flywheel.learn-animation/v1",
+                               "scene": scene_name(lesson),
+                               "source": lesson_to_manim(lesson),
+                               "renderable": manimgl_available()})
+        if p == "/api/discourse/digests":              # what the chorus daemon has synthesized
+            length = self._content_length()
+            if length is None:
+                return self._json({"error": "invalid or oversized Content-Length"}, 400)
+            try:
+                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
+            except Exception:
+                req = {}
+            from harness.chorus_bridge import recent_digests
+            limit = req.get("limit")
+            out = recent_digests((req.get("store") or "").strip(),
+                                 limit=int(limit) if isinstance(limit, int) else 20)
+            return self._json(out, 400 if "error" in out else 200)
+        if p == "/api/robustness/inject":              # measure the gated tool loop's injection containment
+            length = self._content_length()
+            if length is None:
+                return self._json({"error": "invalid or oversized Content-Length"}, 400)
+            try:
+                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
+            except Exception:
+                req = {}
+            from harness.injection_probe import probe
+            return self._json(probe(allow_write=bool(req.get("allow_write")),
+                                    allow_exec=bool(req.get("allow_exec"))))
+        if p == "/api/marketplace/install":            # catalog entry -> plugin registry
+            length = self._content_length()
+            if length is None:
+                return self._json({"error": "invalid or oversized Content-Length"}, 400)
+            try:
+                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
+            except Exception:
+                req = {}
+            from harness.marketplace import install_from_catalog
+            out = install_from_catalog((req.get("name") or "").strip())
+            return self._json(out, 400 if "error" in out else 200)
+        if p == "/api/typeface":                       # mint a parametric face under witness
+            length = self._content_length()
+            if length is None:
+                return self._json({"error": "invalid or oversized Content-Length"}, 400)
+            try:
+                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
+            except Exception:
+                req = {}
+            from harness.typeface_forge import mint
+            params = req.get("params") if isinstance(req.get("params"), dict) else {}
+            try:
+                seed = int(req.get("seed", 0))
+            except (TypeError, ValueError):
+                seed = 0
+            face = mint(params, seed=seed)
+            if req.get("ttf") and not face.get("refused"):
+                # the minted outlines as an installable TrueType file
+                import base64
+                from harness.typeface_ttf import to_ttf
+                family = str(req.get("family") or "Zentropy Mint")[:48]
+                face["ttf_b64"] = base64.b64encode(
+                    to_ttf(face, family=family)).decode("ascii")
+                face["ttf_family"] = family
+            if req.get("publish") and not face.get("refused"):
+                # file the face in the witnessed gallery so others can browse
+                # and reuse it; a refused face is never a product
+                from harness.typeface_gallery import publish_face
+                face["gallery"] = publish_face(
+                    face, family=str(req.get("family") or "Zentropy Mint"))
+            return self._json(face)
+        if p == "/api/typeface/publish":               # file an already-minted face in the gallery
+            length = self._content_length()
+            if length is None:
+                return self._json({"error": "invalid or oversized Content-Length"}, 400)
+            try:
+                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
+            except Exception:
+                req = {}
+            from harness.typeface_forge import mint
+            from harness.typeface_ttf import to_ttf
+            from harness.typeface_gallery import publish_face
+            import base64
+            params = req.get("params") if isinstance(req.get("params"), dict) else {}
+            try:
+                seed = int(req.get("seed", 0))
+            except (TypeError, ValueError):
+                seed = 0
+            face = mint(params, seed=seed)
+            if not face.get("refused"):
+                family = str(req.get("family") or "Zentropy Mint")[:48]
+                face["ttf_b64"] = base64.b64encode(
+                    to_ttf(face, family=family)).decode("ascii")
+            out = publish_face(face, family=str(req.get("family") or "Zentropy Mint"))
+            return self._json(out, 400 if "error" in out else 200)
+        if p == "/api/studio/poster":                  # plate + minted face + copy, one receipt
+            length = self._content_length()
+            if length is None:
+                return self._json({"error": "invalid or oversized Content-Length"}, 400)
+            try:
+                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
+            except Exception:
+                req = {}
+            from harness.design_studio import compose
+            try:
+                seed = int(req.get("seed", 58))
+            except (TypeError, ValueError):
+                seed = 58
+            try:
+                density = float(req.get("density", 1.0))
+            except (TypeError, ValueError):
+                density = 1.0
+            out = compose(
+                str(req.get("title", "")),
+                subtitle=str(req.get("subtitle", "")),
+                fmt=str(req.get("format", "poster")),
+                seed=seed,
+                ground=str(req.get("ground", "dark")),
+                accent=bool(req.get("accent", True)),
+                face_params=req.get("face_params")
+                if isinstance(req.get("face_params"), dict) else None,
+                orb=str(req.get("orb", "auto")),
+                density=density,
+                want_svg=bool(req.get("svg")),
+                want_pdf=bool(req.get("pdf")))
+            return self._json(out, 400 if out.get("refused") else 200)
+        if p == "/api/lanes/install":                  # one lane, installed on request
+            length = self._content_length()
+            if length is None:
+                return self._json({"error": "invalid or oversized Content-Length"}, 400)
+            try:
+                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
+            except Exception:
+                req = {}
+            name = str(req.get("name", "")).strip()
+            if not name:
+                return self._json({"error": "provide a lane 'name'"}, 400)
+            profile = str(req.get("profile", "package")).strip() or "package"
+            from harness.lanes import install_lane
+            return self._json(install_lane(name, profile=profile))
+        if p == "/api/plugins/call":                   # one tool call on a registered plugin
+            length = self._content_length()
+            if length is None:
+                return self._json({"error": "invalid or oversized Content-Length"}, 400)
+            try:
+                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
+            except Exception:
+                req = {}
+            from harness.plugins import call_plugin
+            out = call_plugin(str(req.get("name", "")).strip(),
+                              str(req.get("tool", "")).strip(),
+                              req.get("arguments")
+                              if isinstance(req.get("arguments"), dict) else {})
+            return self._json(out, 400 if "error" in out else 200)
+        if p == "/api/telos/kernel":                   # run a bridged telos creative kernel
+            length = self._content_length()
+            if length is None:
+                return self._json({"error": "invalid or oversized Content-Length"}, 400)
+            try:
+                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
+            except Exception:
+                req = {}
+            from harness.telos_kernels import run_kernel
+            out = run_kernel(str(req.get("kernel", "")).strip(),
+                             req.get("args")
+                             if isinstance(req.get("args"), dict) else {})
+            return self._json(out, 400 if "error" in out else 200)
+        if p == "/api/studio/graph":                   # branching creative DAG, Merkle receipt
+            length = self._content_length()
+            if length is None:
+                return self._json({"error": "invalid or oversized Content-Length"}, 400)
+            try:
+                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
+            except Exception:
+                req = {}
+            from harness.creative_graph import run_graph
+            out = run_graph(req.get("nodes")
+                            if isinstance(req.get("nodes"), list) else [],
+                            req.get("edges")
+                            if isinstance(req.get("edges"), list) else [])
+            return self._json(out, 400 if out.get("refused") else 200)
+        if p == "/api/studio/pipeline":                # ordered stages, one chained receipt
+            length = self._content_length()
+            if length is None:
+                return self._json({"error": "invalid or oversized Content-Length"}, 400)
+            try:
+                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
+            except Exception:
+                req = {}
+            from harness.creative_pipeline import run_pipeline
+            out = run_pipeline(req.get("stages")
+                               if isinstance(req.get("stages"), list) else [])
+            return self._json(out, 400 if out.get("refused") else 200)
+        if p == "/api/telos/raster":                   # dither / pixel-sort over a plate or PNG
+            length = self._content_length()
+            if length is None:
+                return self._json({"error": "invalid or oversized Content-Length"}, 400)
+            try:
+                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
+            except Exception:
+                req = {}
+            from harness.raster_fx import apply_fx
+            out = apply_fx(str(req.get("kernel", "")).strip(),
+                           req.get("source")
+                           if isinstance(req.get("source"), dict) else None,
+                           req.get("args")
+                           if isinstance(req.get("args"), dict) else None)
+            return self._json(out, 400 if out.get("refused") else 200)
+        if p == "/api/typeface/family":                # one seed, a product line of weights
+            length = self._content_length()
+            if length is None:
+                return self._json({"error": "invalid or oversized Content-Length"}, 400)
+            try:
+                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
+            except Exception:
+                req = {}
+            from harness.typeface_family import mint_family
+            try:
+                seed = int(req.get("seed", 58))
+            except (TypeError, ValueError):
+                seed = 58
+            out = mint_family(
+                req.get("params") if isinstance(req.get("params"), dict) else None,
+                seed=seed,
+                family=str(req.get("family") or "Zentropy Mint")[:48])
+            return self._json(out, 400 if out.get("refused") else 200)
+        if p == "/api/typeface/variable":              # the family as ONE variable font (wght axis)
+            length = self._content_length()
+            if length is None:
+                return self._json({"error": "invalid or oversized Content-Length"}, 400)
+            try:
+                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
+            except Exception:
+                req = {}
+            from harness.typeface_family import mint_variable_family
+            try:
+                seed = int(req.get("seed", 58))
+            except (TypeError, ValueError):
+                seed = 58
+            out = mint_variable_family(
+                req.get("params") if isinstance(req.get("params"), dict) else None,
+                seed=seed,
+                family=str(req.get("family") or "Zentropy Mint")[:48])
+            return self._json(out, 400 if out.get("refused") else 200)
+        if p == "/api/studio/brandkit":                # one seed + a name -> a whole identity
+            length = self._content_length()
+            if length is None:
+                return self._json({"error": "invalid or oversized Content-Length"}, 400)
+            try:
+                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
+            except Exception:
+                req = {}
+            from harness.brand_kit import mint_kit
+            try:
+                seed = int(req.get("seed", 58))
+            except (TypeError, ValueError):
+                seed = 58
+            out = mint_kit(str(req.get("name", "")), seed=seed,
+                           tagline=str(req.get("tagline", "")),
+                           face_params=req.get("face_params")
+                           if isinstance(req.get("face_params"), dict) else None)
+            return self._json(out, 400 if out.get("refused") else 200)
+        if p == "/api/studio/sound":                   # the seeded chime study, score = receipt
+            length = self._content_length()
+            if length is None:
+                return self._json({"error": "invalid or oversized Content-Length"}, 400)
+            try:
+                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
+            except Exception:
+                req = {}
+            from harness.sound_studio import compose_sound
+            def _num(key, default):
+                try:
+                    return float(req.get(key, default))
+                except (TypeError, ValueError):
+                    return default
+            out = compose_sound(seed=int(_num("seed", 58)),
+                                duration=_num("duration", 24.0),
+                                root=_num("root", 220.0))
+            return self._json(out, 400 if out.get("refused") else 200)
+        if p == "/api/marketplace/add":                # a user catalog entry (env-var NAMES only)
+            length = self._content_length()
+            if length is None:
+                return self._json({"error": "invalid or oversized Content-Length"}, 400)
+            try:
+                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
+            except Exception:
+                req = {}
+            from harness.marketplace import add_user_entry
+            out = add_user_entry(
+                str(req.get("name", "")),
+                req.get("command") if isinstance(req.get("command"), list) else [],
+                detail=str(req.get("detail", "")),
+                requires=req.get("requires")
+                if isinstance(req.get("requires"), list) else [])
+            return self._json(out, 400 if "error" in out else 200)
+        if p == "/api/marketplace/remove":             # drop a user catalog entry
+            length = self._content_length()
+            if length is None:
+                return self._json({"error": "invalid or oversized Content-Length"}, 400)
+            try:
+                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
+            except Exception:
+                req = {}
+            from harness.marketplace import remove_user_entry
+            out = remove_user_entry(str(req.get("name", "")))
+            return self._json(out, 400 if "error" in out else 200)
+        if p == "/api/plugins/toggle":                 # enable/disable a custom plugin
+            length = self._content_length()
+            if length is None:
+                return self._json({"error": "invalid or oversized Content-Length"}, 400)
+            try:
+                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
+            except Exception:
+                req = {}
+            from harness.plugins import toggle_mcp
+            out = toggle_mcp(req.get("name", ""), bool(req.get("enabled", True)))
+            return self._json(out, 400 if "error" in out else 200)
+        if p == "/api/plugins/remove":                 # remove a custom plugin
+            length = self._content_length()
+            if length is None:
+                return self._json({"error": "invalid or oversized Content-Length"}, 400)
+            try:
+                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
+            except Exception:
+                req = {}
+            from harness.plugins import remove_mcp
+            out = remove_mcp(req.get("name", ""))
+            return self._json(out, 400 if "error" in out else 200)
+        if p == "/api/lsp":                            # editor intelligence over any LSP server
+            length = self._content_length()
+            if length is None:
+                return self._json({"error": "invalid or oversized Content-Length"}, 400)
+            try:
+                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
+            except Exception:
+                req = {}
+            root, err = _resolve_workspace_root(req.get("root"), self.root)
+            if err:
+                return self._json({"error": err}, 400)
+            method = (req.get("method") or "definition").strip()
+            if method == "diagnostics":
+                from harness.lsp_diagnostics import lsp_diagnostics
+                out = lsp_diagnostics(
+                    req.get("command", []), str(root),
+                    (req.get("file") or "").strip(), req.get("text") or "",
+                    (req.get("language_id") or "plaintext").strip())
+            else:
+                from harness.lsp_bridge import lsp_query
+                out = lsp_query(
+                    req.get("command", []), str(root),
+                    (req.get("file") or "").strip(), req.get("text") or "",
+                    (req.get("language_id") or "plaintext").strip(),
+                    method,
+                    int(req.get("line", 0) or 0),
+                    int(req.get("character", 0) or 0))
+            return self._json(out, 400 if "error" in out else 200)
+        if p == "/api/memory/note":                    # durable content-addressed note
+            length = self._content_length()
+            if length is None:
+                return self._json({"error": "invalid or oversized Content-Length"}, 400)
+            try:
+                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
+            except Exception:
+                req = {}
+            content = (req.get("content") or "").strip()
+            if not content:
+                return self._json({"error": "provide non-empty 'content'"}, 400)
+            from harness.memory_api import memory_note
+            return self._json(memory_note(self.run_root, content,
+                                          (req.get("role") or "note").strip() or "note"))
+        return self._json({"error": "not found"}, 404)
+
+
+def main(argv=None) -> int:
+    ap = argparse.ArgumentParser(description="flywheel superapp gateway (one origin)")
+    ap.add_argument("--port", type=int, default=8799)
+    ap.add_argument("--root", default=str(REPO))
+    ap.add_argument("--serve-url", default="http://127.0.0.1:8765")
+    ap.add_argument("--ollama-url", default="http://127.0.0.1:11434")
+    ap.add_argument("--run-root", default=run_root_default())
+    ap.add_argument("--cors", action="store_true",
+                    help="allow cross-origin browser clients (off by default; the gateway is local)")
+    a = ap.parse_args(argv)
+    _Handler.root = Path(a.root).resolve()
+    _Handler.serve_url = a.serve_url
+    _Handler.ollama_url = a.ollama_url
+    _Handler.run_root = a.run_root
+    _Handler.cors = a.cors
+    httpd = ThreadingHTTPServer(("127.0.0.1", a.port), _Handler)
+    print(f"flywheel gateway: http://127.0.0.1:{a.port}  root={_Handler.root}")
+    print(f"  shell     http://127.0.0.1:{a.port}/site/index.html")
+    print(f"  world     http://127.0.0.1:{a.port}/api/world")
+    print(f"  health    http://127.0.0.1:{a.port}/api/endpoints/health")
+    print(f"  router    http://127.0.0.1:{a.port}/api/endpoints    (all providers)")
+    print(f"  studio    POST /api/forge {{'goal': ...}}            (goal -> verified PRP)")
+    print(f"  route     POST /api/route {{'prompt':...,'endpoint':...}} (any provider + a receipt)")
+    print(f"  companion POST /api/companion {{'prompt': ...}}      (answer local, escalate hard)")
+    print(f"  agent     POST /api/agent {{'goal':...,'endpoint':...}} (gated tool loop over ANY provider, witnessed)")
+    print(f"  training  http://127.0.0.1:{a.port}/api/training/status  (read-only supervisor status)")
+    print(f"  stats     http://127.0.0.1:{a.port}/api/router/stats  (adaptive-routing scoreboard)")
+    print(f"  openai    POST /v1/chat/completions  +  GET /v1/models  (drop-in, model=any provider, stream ok)")
+    try:
+        httpd.serve_forever()
+    except KeyboardInterrupt:
+        pass
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

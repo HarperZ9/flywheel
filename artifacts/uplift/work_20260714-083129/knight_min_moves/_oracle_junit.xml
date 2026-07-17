@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="8" skipped="0" tests="14" time="0.226" timestamp="2026-07-14T09:04:41.677044-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260714-083129.knight_min_moves.tests.test_solution" name="test_one_move" time="0.001" /><testcase classname="artifacts.uplift.work_20260714-083129.knight_min_moves.tests.test_solution" name="test_same_cell" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-083129.knight_min_moves.tests.test_solution" name="test_one_by_one" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-083129.knight_min_moves.tests.test_solution" name="test_corner_to_corner" time="0.002"><failure message="assert 266 == 6&#10; +  where 266 = f(8, (0, 0), (7, 7))">&gt;   def test_corner_to_corner(): assert f(8, (0, 0), (7, 7)) == 6
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   assert 266 == 6
+E    +  where 266 = f(8, (0, 0), (7, 7))
+
+tests\test_solution.py:6: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.knight_min_moves.tests.test_solution" name="test_five_board" time="0.001"><failure message="assert 70 == 4&#10; +  where 70 = f(5, (0, 0), (4, 4))">&gt;   def test_five_board(): assert f(5, (0, 0), (4, 4)) == 4
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   assert 70 == 4
+E    +  where 70 = f(5, (0, 0), (4, 4))
+
+tests\test_solution.py:7: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.knight_min_moves.tests.test_solution" name="test_three_corner" time="0.001"><failure message="assert 58 == 4&#10; +  where 58 = f(3, (0, 0), (2, 2))">&gt;   def test_three_corner(): assert f(3, (0, 0), (2, 2)) == 4
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   assert 58 == 4
+E    +  where 58 = f(3, (0, 0), (2, 2))
+
+tests\test_solution.py:8: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.knight_min_moves.tests.test_solution" name="test_center_isolated" time="0.001"><failure message="assert 3 == -1&#10; +  where 3 = f(3, (1, 1), (0, 0))">&gt;   def test_center_isolated(): assert f(3, (1, 1), (0, 0)) == -1
+                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   assert 3 == -1
+E    +  where 3 = f(3, (1, 1), (0, 0))
+
+tests\test_solution.py:9: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.knight_min_moves.tests.test_solution" name="test_two_board_unreachable" time="0.000"><failure message="assert 4 == -1&#10; +  where 4 = f(2, (0, 0), (1, 1))">&gt;   def test_two_board_unreachable(): assert f(2, (0, 0), (1, 1)) == -1
+                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   assert 4 == -1
+E    +  where 4 = f(2, (0, 0), (1, 1))
+
+tests\test_solution.py:10: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.knight_min_moves.tests.test_solution" name="test_bad_board_zero" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-083129.knight_min_moves.tests.test_solution" name="test_bad_board_bool" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_bad_board_bool():
+&gt;       with pytest.raises(ValueError): f(True, (0, 0), (0, 0))
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:15: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.knight_min_moves.tests.test_solution" name="test_bad_cell_list" time="0.000"><failure message="TypeError: unhashable type: 'list'">def test_bad_cell_list():
+&gt;       with pytest.raises(ValueError) as e: f(8, [0, 0], (0, 0))
+                                             ^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:17: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+n = 8, start = [0, 0], goal = (0, 0)
+
+    def knight_moves(n, start, goal):
+        if not isinstance(n, int) or n &lt;= 0:
+            raise ValueError('bad board')
+    
+        (sx, sy) = start
+        (gx, gy) = goal
+    
+        if sx &lt; 0 or sx &gt;= n or sy &lt; 0 or sy &gt;= n or \
+           gx &lt; 0 or gx &gt;= n or gy &lt; 0 or gy &gt;= n:
+            raise ValueError('bad cell')
+    
+        # A knight can jump up to 3 squares in one direction
+        def can_reach(x1, y1, x2, y2):
+            return abs(x1 - x2) &lt;= 2 and abs(y1 - y2) &lt;= 2
+    
+        if start == goal:
+            return 0
+    
+        visited = set()
+    
+        queue = [[start]]
+        steps = 0
+    
+        while queue:
+            path = queue.pop(0)
+    
+            node = path[-1]
+    
+&gt;           if node in visited:
+               ^^^^^^^^^^^^^^^
+E           TypeError: unhashable type: 'list'
+
+solution.py:29: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.knight_min_moves.tests.test_solution" name="test_bad_cell_range" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-083129.knight_min_moves.tests.test_solution" name="test_bad_cell_bool" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_bad_cell_bool():
+&gt;       with pytest.raises(ValueError): f(8, (0, True), (0, 0))
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:22: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.knight_min_moves.tests.test_solution" name="test_bad_cell_len" time="0.000" /></testsuite></testsuites>

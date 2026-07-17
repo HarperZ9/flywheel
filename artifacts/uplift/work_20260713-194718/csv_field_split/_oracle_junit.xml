@@ -1,0 +1,190 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="8" skipped="0" tests="8" time="0.237" timestamp="2026-07-13T19:54:52.878477-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-194718.csv_field_split.tests.test_solution" name="test_basic_and_empty_fields" time="0.001"><failure message="TypeError: cannot unpack non-iterable NoneType object">def test_basic_and_empty_fields():
+&gt;       assert split_csv_line("a,b,c") == ["a", "b", "c"]
+               ^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:6: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+line = 'a,b,c'
+
+    def split_csv_line(line: str) -&gt; list[str]:
+        def parse_field(fields, start):
+            i = start
+            while i &lt; len(line):
+                ch = line[i]
+                if ch == ',' and (i == start or not (line[i-1].isalpha() and not line[i-1].isspace())) and fields:
+                    return fields, i + 1
+                elif ch == '"':
+                    new_fields, end = _parse_quoted_field(fields, i)
+                    return new_fields, end
+                elif ch.isspace():
+                    if fields and (i == start or not (line[i-1].isalpha() and not line[i-1].isspace())):
+                        break
+                    else:
+                        while i &lt; len(line) and line[i].isspace():
+                            i += 1
+                        return fields, i
+                elif ch == ',' and (i == start or (not (line[i-1].isalpha() and not line[i-1].isspace()))):
+                    return fields, i + 1
+                else:
+                    i += 1
+    
+        def _parse_quoted_field(fields, start):
+            quote_escape = False
+            escape_count = 0
+            for i in range(start, len(line)):
+                ch = line[i]
+                if not quote_escape and (ch == '"' or escape_count &gt; 0):
+                    if ch == '"':
+                        if escape_count:
+                            escape_count -= 1
+                        else:
+                            return fields + [line[start:i+1][1:-1]], i + 1
+                    elif ch == ',' and line[i-1] != '\\':
+                        break
+                    else:
+                        escape_count = 2 if ch == '"' else 0
+                quote_escape = not (quote_escape and ch == '"')
+            raise ValueError("Unterminated quoted field")
+    
+&gt;       fields, _ = parse_field([], 0)
+        ^^^^^^^^^
+E       TypeError: cannot unpack non-iterable NoneType object
+
+solution.py:41: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.csv_field_split.tests.test_solution" name="test_empty_line_single_empty_field" time="0.001"><failure message="TypeError: cannot unpack non-iterable NoneType object">def test_empty_line_single_empty_field():
+&gt;       assert split_csv_line("") == [""]
+               ^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:11: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+line = ''
+
+    def split_csv_line(line: str) -&gt; list[str]:
+        def parse_field(fields, start):
+            i = start
+            while i &lt; len(line):
+                ch = line[i]
+                if ch == ',' and (i == start or not (line[i-1].isalpha() and not line[i-1].isspace())) and fields:
+                    return fields, i + 1
+                elif ch == '"':
+                    new_fields, end = _parse_quoted_field(fields, i)
+                    return new_fields, end
+                elif ch.isspace():
+                    if fields and (i == start or not (line[i-1].isalpha() and not line[i-1].isspace())):
+                        break
+                    else:
+                        while i &lt; len(line) and line[i].isspace():
+                            i += 1
+                        return fields, i
+                elif ch == ',' and (i == start or (not (line[i-1].isalpha() and not line[i-1].isspace()))):
+                    return fields, i + 1
+                else:
+                    i += 1
+    
+        def _parse_quoted_field(fields, start):
+            quote_escape = False
+            escape_count = 0
+            for i in range(start, len(line)):
+                ch = line[i]
+                if not quote_escape and (ch == '"' or escape_count &gt; 0):
+                    if ch == '"':
+                        if escape_count:
+                            escape_count -= 1
+                        else:
+                            return fields + [line[start:i+1][1:-1]], i + 1
+                    elif ch == ',' and line[i-1] != '\\':
+                        break
+                    else:
+                        escape_count = 2 if ch == '"' else 0
+                quote_escape = not (quote_escape and ch == '"')
+            raise ValueError("Unterminated quoted field")
+    
+&gt;       fields, _ = parse_field([], 0)
+        ^^^^^^^^^
+E       TypeError: cannot unpack non-iterable NoneType object
+
+solution.py:41: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.csv_field_split.tests.test_solution" name="test_trailing_and_leading_comma" time="0.000"><failure message="TypeError: cannot unpack non-iterable NoneType object">def test_trailing_and_leading_comma():
+&gt;       assert split_csv_line("a,") == ["a", ""]
+               ^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:15: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+line = 'a,'
+
+    def split_csv_line(line: str) -&gt; list[str]:
+        def parse_field(fields, start):
+            i = start
+            while i &lt; len(line):
+                ch = line[i]
+                if ch == ',' and (i == start or not (line[i-1].isalpha() and not line[i-1].isspace())) and fields:
+                    return fields, i + 1
+                elif ch == '"':
+                    new_fields, end = _parse_quoted_field(fields, i)
+                    return new_fields, end
+                elif ch.isspace():
+                    if fields and (i == start or not (line[i-1].isalpha() and not line[i-1].isspace())):
+                        break
+                    else:
+                        while i &lt; len(line) and line[i].isspace():
+                            i += 1
+                        return fields, i
+                elif ch == ',' and (i == start or (not (line[i-1].isalpha() and not line[i-1].isspace()))):
+                    return fields, i + 1
+                else:
+                    i += 1
+    
+        def _parse_quoted_field(fields, start):
+            quote_escape = False
+            escape_count = 0
+            for i in range(start, len(line)):
+                ch = line[i]
+                if not quote_escape and (ch == '"' or escape_count &gt; 0):
+                    if ch == '"':
+                        if escape_count:
+                            escape_count -= 1
+                        else:
+                            return fields + [line[start:i+1][1:-1]], i + 1
+                    elif ch == ',' and line[i-1] != '\\':
+                        break
+                    else:
+                        escape_count = 2 if ch == '"' else 0
+                quote_escape = not (quote_escape and ch == '"')
+            raise ValueError("Unterminated quoted field")
+    
+&gt;       fields, _ = parse_field([], 0)
+        ^^^^^^^^^
+E       TypeError: cannot unpack non-iterable NoneType object
+
+solution.py:41: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.csv_field_split.tests.test_solution" name="test_quoted_field_with_comma_and_escaped_quote" time="0.001"><failure message="AssertionError: assert [''] == ['a,b', 'c']&#10;  &#10;  At index 0 diff: '' != 'a,b'&#10;  Right contains one more item: 'c'&#10;  Use -v to get more diff">def test_quoted_field_with_comma_and_escaped_quote():
+&gt;       assert split_csv_line('"a,b",c') == ["a,b", "c"]
+E       AssertionError: assert [''] == ['a,b', 'c']
+E         
+E         At index 0 diff: '' != 'a,b'
+E         Right contains one more item: 'c'
+E         Use -v to get more diff
+
+tests\test_solution.py:21: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.csv_field_split.tests.test_solution" name="test_whitespace_is_not_stripped" time="0.000"><failure message="AssertionError: assert [] == [' a ', ' b ']&#10;  &#10;  Right contains 2 more items, first extra item: ' a '&#10;  Use -v to get more diff">def test_whitespace_is_not_stripped():
+&gt;       assert split_csv_line(" a , b ") == [" a ", " b "]
+E       AssertionError: assert [] == [' a ', ' b ']
+E         
+E         Right contains 2 more items, first extra item: ' a '
+E         Use -v to get more diff
+
+tests\test_solution.py:28: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.csv_field_split.tests.test_solution" name="test_quote_in_unquoted_field_raises" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_quote_in_unquoted_field_raises():
+&gt;       with pytest.raises(ValueError):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:33: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.csv_field_split.tests.test_solution" name="test_unterminated_quote_raises" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_unterminated_quote_raises():
+&gt;       with pytest.raises(ValueError):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:40: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.csv_field_split.tests.test_solution" name="test_junk_after_closing_quote_raises" time="0.001"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_junk_after_closing_quote_raises():
+&gt;       with pytest.raises(ValueError):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:49: Failed</failure></testcase></testsuite></testsuites>

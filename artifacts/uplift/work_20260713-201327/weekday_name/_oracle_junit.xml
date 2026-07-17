@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="8" skipped="0" tests="8" time="0.235" timestamp="2026-07-13T20:29:00.697924-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-201327.weekday_name.tests.test_solution" name="test_millennium" time="0.001"><failure message="ValueError: year is not an integer or in range [1, 31]">&gt;   def test_millennium(): assert f(2000, 1, 1) == 'Saturday'
+                                  ^^^^^^^^^^^^^
+
+tests\test_solution.py:3: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+year = 2000, month = 1, day = 1
+
+    def weekday_name(year: int, month: int, day: int) -&gt; str:
+        """
+        Returns the English weekday name for a proleptic Gregorian date.
+    
+        Args:
+            year (int): The year of the date.
+            month (int): The month of the date.
+            day (int): The day of the date.
+    
+        Raises:
+            ValueError: If the year, month, or day are out of range or if any other problem occurs.
+        """
+    
+        # Check if the year, month, and day values are valid
+        if not isinstance(year, int) or not (1 &lt;= year &lt;= 31):
+&gt;           raise ValueError(f'year is not an integer or in range [1, 31]')
+E           ValueError: year is not an integer or in range [1, 31]
+
+solution.py:16: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.weekday_name.tests.test_solution" name="test_2021" time="0.000"><failure message="ValueError: year is not an integer or in range [1, 31]">&gt;   def test_2021(): assert f(2021, 1, 1) == 'Friday'
+                            ^^^^^^^^^^^^^
+
+tests\test_solution.py:4: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+year = 2021, month = 1, day = 1
+
+    def weekday_name(year: int, month: int, day: int) -&gt; str:
+        """
+        Returns the English weekday name for a proleptic Gregorian date.
+    
+        Args:
+            year (int): The year of the date.
+            month (int): The month of the date.
+            day (int): The day of the date.
+    
+        Raises:
+            ValueError: If the year, month, or day are out of range or if any other problem occurs.
+        """
+    
+        # Check if the year, month, and day values are valid
+        if not isinstance(year, int) or not (1 &lt;= year &lt;= 31):
+&gt;           raise ValueError(f'year is not an integer or in range [1, 31]')
+E           ValueError: year is not an integer or in range [1, 31]
+
+solution.py:16: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.weekday_name.tests.test_solution" name="test_epoch" time="0.001"><failure message="ValueError: year is not an integer or in range [1, 31]">&gt;   def test_epoch(): assert f(1970, 1, 1) == 'Thursday'
+                             ^^^^^^^^^^^^^
+
+tests\test_solution.py:5: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+year = 1970, month = 1, day = 1
+
+    def weekday_name(year: int, month: int, day: int) -&gt; str:
+        """
+        Returns the English weekday name for a proleptic Gregorian date.
+    
+        Args:
+            year (int): The year of the date.
+            month (int): The month of the date.
+            day (int): The day of the date.
+    
+        Raises:
+            ValueError: If the year, month, or day are out of range or if any other problem occurs.
+        """
+    
+        # Check if the year, month, and day values are valid
+        if not isinstance(year, int) or not (1 &lt;= year &lt;= 31):
+&gt;           raise ValueError(f'year is not an integer or in range [1, 31]')
+E           ValueError: year is not an integer or in range [1, 31]
+
+solution.py:16: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.weekday_name.tests.test_solution" name="test_leap_2024" time="0.000"><failure message="ValueError: year is not an integer or in range [1, 31]">&gt;   def test_leap_2024(): assert f(2024, 2, 29) == 'Thursday'
+                                 ^^^^^^^^^^^^^^
+
+tests\test_solution.py:6: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+year = 2024, month = 2, day = 29
+
+    def weekday_name(year: int, month: int, day: int) -&gt; str:
+        """
+        Returns the English weekday name for a proleptic Gregorian date.
+    
+        Args:
+            year (int): The year of the date.
+            month (int): The month of the date.
+            day (int): The day of the date.
+    
+        Raises:
+            ValueError: If the year, month, or day are out of range or if any other problem occurs.
+        """
+    
+        # Check if the year, month, and day values are valid
+        if not isinstance(year, int) or not (1 &lt;= year &lt;= 31):
+&gt;           raise ValueError(f'year is not an integer or in range [1, 31]')
+E           ValueError: year is not an integer or in range [1, 31]
+
+solution.py:16: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.weekday_name.tests.test_solution" name="test_leap_2016" time="0.000"><failure message="ValueError: year is not an integer or in range [1, 31]">&gt;   def test_leap_2016(): assert f(2016, 2, 29) == 'Monday'
+                                 ^^^^^^^^^^^^^^
+
+tests\test_solution.py:7: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+year = 2016, month = 2, day = 29
+
+    def weekday_name(year: int, month: int, day: int) -&gt; str:
+        """
+        Returns the English weekday name for a proleptic Gregorian date.
+    
+        Args:
+            year (int): The year of the date.
+            month (int): The month of the date.
+            day (int): The day of the date.
+    
+        Raises:
+            ValueError: If the year, month, or day are out of range or if any other problem occurs.
+        """
+    
+        # Check if the year, month, and day values are valid
+        if not isinstance(year, int) or not (1 &lt;= year &lt;= 31):
+&gt;           raise ValueError(f'year is not an integer or in range [1, 31]')
+E           ValueError: year is not an integer or in range [1, 31]
+
+solution.py:16: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.weekday_name.tests.test_solution" name="test_bad_day" time="0.001"><failure message="AssertionError: assert 'year is not ...range [1, 31]' == 'bad day'&#10;  &#10;  - bad day&#10;  + year is not an integer or in range [1, 31]">def test_bad_day():
+        with pytest.raises(ValueError) as e: f(2021, 2, 29)
+&gt;       assert str(e.value) == 'bad day'
+E       AssertionError: assert 'year is not ...range [1, 31]' == 'bad day'
+E         
+E         - bad day
+E         + year is not an integer or in range [1, 31]
+
+tests\test_solution.py:10: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.weekday_name.tests.test_solution" name="test_bad_month" time="0.001"><failure message="AssertionError: assert 'year is not ...range [1, 31]' == 'bad month'&#10;  &#10;  - bad month&#10;  + year is not an integer or in range [1, 31]">def test_bad_month():
+        with pytest.raises(ValueError) as e: f(2021, 0, 1)
+&gt;       assert str(e.value) == 'bad month'
+E       AssertionError: assert 'year is not ...range [1, 31]' == 'bad month'
+E         
+E         - bad month
+E         + year is not an integer or in range [1, 31]
+
+tests\test_solution.py:13: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.weekday_name.tests.test_solution" name="test_bad_year" time="0.001"><failure message="AssertionError: assert 'year is not ...range [1, 31]' == 'bad year'&#10;  &#10;  - bad year&#10;  + year is not an integer or in range [1, 31]">def test_bad_year():
+        with pytest.raises(ValueError) as e: f(0, 1, 1)
+&gt;       assert str(e.value) == 'bad year'
+E       AssertionError: assert 'year is not ...range [1, 31]' == 'bad year'
+E         
+E         - bad year
+E         + year is not an integer or in range [1, 31]
+
+tests\test_solution.py:16: AssertionError</failure></testcase></testsuite></testsuites>

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="2" skipped="0" tests="6" time="0.182" timestamp="2026-07-13T19:53:52.577341-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-194718.rle_decode.tests.test_solution" name="test_empty" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-194718.rle_decode.tests.test_solution" name="test_simple" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-194718.rle_decode.tests.test_solution" name="test_multidigit" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-194718.rle_decode.tests.test_solution" name="test_no_count" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-194718.rle_decode.tests.test_solution" name="test_trailing_count" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_trailing_count():
+&gt;       with pytest.raises(ValueError):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:13: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.rle_decode.tests.test_solution" name="test_zero_count" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_zero_count():
+&gt;       with pytest.raises(ValueError):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:16: Failed</failure></testcase></testsuite></testsuites>

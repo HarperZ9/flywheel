@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="1" failures="0" skipped="0" tests="1" time="0.271" timestamp="2026-07-14T13:05:16.733965-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="" name="artifacts.uplift.work_20260714-125209.first_missing_positive.tests.test_solution" time="0.000"><error message="collection failure">tests\test_solution.py:1: in &lt;module&gt;
+    from solution import first_missing_positive as f
+solution.py:1: in &lt;module&gt;
+    def first_missing_positive(nums: List[int]) -&gt; int:
+                                     ^^^^
+E   NameError: name 'List' is not defined</error></testcase></testsuite></testsuites>
