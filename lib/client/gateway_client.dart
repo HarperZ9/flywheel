@@ -188,6 +188,38 @@ class GatewayClient {
     return _decode(r);
   }
 
+  /// POST /api/forge/recheck — has an arm drifted since the forge sealed it?
+  Future<Map<String, dynamic>> forgeRecheck(String prpId) async {
+    final r = await _http.post(
+      Uri.parse('$baseUrl/api/forge/recheck'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'prp_id': prpId}),
+    );
+    return _decode(r);
+  }
+
+  /// POST /api/studio/poster — plate + minted face + copy under one receipt.
+  Future<Map<String, dynamic>> studioPoster(String title,
+      {String subtitle = '',
+      String format = 'poster',
+      int seed = 58,
+      String ground = 'dark',
+      bool accent = true}) async {
+    final r = await _http.post(
+      Uri.parse('$baseUrl/api/studio/poster'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'title': title,
+        'subtitle': subtitle,
+        'format': format,
+        'seed': seed,
+        'ground': ground,
+        'accent': accent,
+      }),
+    );
+    return _decode(r);
+  }
+
   /// POST /api/forge — turn a plain goal into a structured prompt with gates.
   Future<Map<String, dynamic>> forge(String goal,
       {String? context, List<String>? examples}) async {

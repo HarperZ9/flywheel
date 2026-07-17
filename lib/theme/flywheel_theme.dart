@@ -62,8 +62,10 @@ ThemeData _themeFrom(FwTokens t, Brightness brightness) {
     extensions: [t],
     colorScheme: ColorScheme(
       brightness: brightness,
-      primary: t.drift,
-      onPrimary: brightness == Brightness.light ? Colors.white : t.ground,
+      // neutral controls are INK on the ground: verdict colors are spent
+      // only where a verdict is being stated, never on a slider or button
+      primary: t.ink,
+      onPrimary: t.ground,
       secondary: t.verified,
       onSecondary: brightness == Brightness.light ? Colors.white : t.ground,
       error: t.drift,
@@ -84,9 +86,8 @@ ThemeData _themeFrom(FwTokens t, Brightness brightness) {
     ),
     filledButtonTheme: FilledButtonThemeData(
       style: FilledButton.styleFrom(
-        backgroundColor: t.drift,
-        foregroundColor:
-            brightness == Brightness.light ? Colors.white : t.ground,
+        backgroundColor: t.ink,
+        foregroundColor: t.ground,
         textStyle: TextStyle(
             fontFamily: t.textFamily,
             fontWeight: FontWeight.w600,

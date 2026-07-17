@@ -14,7 +14,9 @@ import '../client/gateway_client.dart';
 import '../models/gateway_models.dart';
 import '../theme/flywheel_theme.dart';
 import '../widgets/aperture.dart';
+import '../widgets/forge_panel.dart';
 import '../widgets/fw.dart';
+import '../widgets/poster_panel.dart';
 import '../widgets/typeface_panel.dart';
 
 class StudioView extends StatefulWidget {
@@ -96,6 +98,14 @@ class _StudioViewState extends State<StudioView> {
             onMint: (params, seed) =>
                 widget.client!.typefaceMint(params, seed),
           ),
+          const SizedBox(height: FwLayout.s5),
+          const Kicker('poster composer · the plate wears your minted face'),
+          const SizedBox(height: FwLayout.s3),
+          PosterPanel(client: widget.client!),
+          const SizedBox(height: FwLayout.s5),
+          const Kicker('prompt forge · a goal becomes a gated prompt'),
+          const SizedBox(height: FwLayout.s3),
+          ForgePanel(client: widget.client!),
         ],
         const SizedBox(height: FwLayout.s5),
         const Kicker('music'),
