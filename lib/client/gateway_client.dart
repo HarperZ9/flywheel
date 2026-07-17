@@ -255,6 +255,18 @@ class GatewayClient {
     return _decode(r);
   }
 
+  /// POST /api/studio/pipeline — ordered creative stages, one chained
+  /// receipt; the pipeline id witnesses the whole line in order.
+  Future<Map<String, dynamic>> studioPipeline(
+      List<Map<String, dynamic>> stages) async {
+    final r = await _http.post(
+      Uri.parse('$baseUrl/api/studio/pipeline'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'stages': stages}),
+    );
+    return _decode(r);
+  }
+
   /// POST /api/studio/brandkit — one seed + a name -> a whole identity.
   Future<Map<String, dynamic>> brandKit(String name,
       {String tagline = '', int seed = 58}) async {

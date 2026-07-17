@@ -18,6 +18,7 @@ import '../widgets/brand_kit_panel.dart';
 import '../widgets/forge_panel.dart';
 import '../widgets/harmonograph_panel.dart';
 import '../widgets/fw.dart';
+import '../widgets/pipeline_panel.dart';
 import '../widgets/poster_panel.dart';
 import '../widgets/raster_fx_panel.dart';
 import '../widgets/sound_panel.dart';
@@ -115,6 +116,10 @@ class _StudioViewState extends State<StudioView> {
           const Kicker('telos engine · raster kernels over the plate'),
           const SizedBox(height: FwLayout.s3),
           RasterFxPanel(client: widget.client!),
+          const SizedBox(height: FwLayout.s5),
+          const Kicker('the creative line · stages that chain'),
+          const SizedBox(height: FwLayout.s3),
+          PipelinePanel(client: widget.client!),
           const SizedBox(height: FwLayout.s5),
           const Kicker('brand kit · one seed, a whole identity'),
           const SizedBox(height: FwLayout.s3),
