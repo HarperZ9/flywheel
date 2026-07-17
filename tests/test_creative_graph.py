@@ -127,3 +127,40 @@ def test_named_refusals_at_every_fence():
          {"id": "t2", "op": "film_frame"}],
         [{"from": "t1", "to": "t2"},
          {"from": "t2", "to": "t1"}])["refusals"][0]
+
+
+def test_a_second_identical_run_is_served_from_the_chain_keyed_cache():
+    from harness.creative_graph import _CACHE
+    _CACHE.clear()
+    nodes = [{"id": "p", "op": "plate", "args": {"seed": 58, "width": 96,
+                                                 "height": 64}},
+             {"id": "d", "op": "dither", "args": {}}]
+    edges = [{"from": "p", "to": "d"}]
+    cold = run_graph(nodes, edges)
+    warm = run_graph(nodes, edges)
+    assert cold["receipt"]["cache_hits"] == 0
+    assert warm["receipt"]["cache_hits"] == 2
+    # a hit must not move a single hash: the witness is byte-identical
+    assert warm["receipt"]["graph_id"] == cold["receipt"]["graph_id"]
+    assert warm["outputs"] == cold["outputs"]
+
+
+def test_reseeding_one_branch_invalidates_exactly_its_descendants():
+    from harness.creative_graph import _CACHE
+    _CACHE.clear()
+    def spec(seed_b):
+        return ([{"id": "a", "op": "plate",
+                  "args": {"seed": 58, "width": 96, "height": 64}},
+                 {"id": "b", "op": "plate",
+                  "args": {"seed": seed_b, "width": 96, "height": 64}},
+                 {"id": "db", "op": "dither", "args": {}},
+                 {"id": "m", "op": "beside", "args": {}}],
+                [{"from": "b", "to": "db"},
+                 {"from": "a", "to": "m"}, {"from": "db", "to": "m"}])
+    run_graph(*spec(59))                      # cold fill
+    out = run_graph(*spec(60))                # reseed only branch b
+    by = {n["id"]: n for n in out["receipt"]["nodes"]}
+    assert by["a"]["cached"] is True          # untouched branch: cache holds
+    assert by["b"]["cached"] is False         # reseeded source recomputes
+    assert by["db"]["cached"] is False        # its descendant recomputes
+    assert by["m"]["cached"] is False         # the join sees a moved input

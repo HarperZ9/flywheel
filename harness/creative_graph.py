@@ -24,6 +24,22 @@ from .creative_pipeline import SOURCES
 SCHEMA = "flywheel.creative-graph/v1"
 MAX_NODES = 24
 
+# Chain-keyed memoization: every op here is seeded and deterministic, so a
+# node's output is fully determined by its spec (op + args) and its upstream
+# specs. The key is that lineage hash; reseeding one branch moves the keys of
+# exactly its descendants, so the cache invalidates precisely where the
+# Merkle chains say the work changed. Receipts are byte-identical on a hit
+# (the hit is recorded BESIDE the receipt, never inside it), so a cached run
+# hashes exactly like a cold one.
+_CACHE: dict = {}
+_CACHE_CAP = 48
+
+
+def _cache_put(key: str, png: bytes, receipt_json: str):
+    if len(_CACHE) >= _CACHE_CAP:
+        _CACHE.pop(next(iter(_CACHE)))  # oldest insertion out first
+    _CACHE[key] = (png, receipt_json)
+
 MERGES = ("blend", "beside", "difference", "multiply")
 TRANSFORMS = ("dither", "pixel_sort", "film_frame")
 
@@ -129,12 +145,26 @@ def run_graph(nodes: list, edges: list) -> dict:
 
     images: dict = {}
     chains: dict = {}
+    spec_keys: dict = {}
     trail = []
+    cache_hits = 0
     for nid in order:
         node = byid[nid]
         op, args = node["op"], node["args"]
+        spec = hashlib.sha256(json.dumps(
+            {"op": op, "args": args}, sort_keys=True).encode()).hexdigest()
+        spec_keys[nid] = hashlib.sha256((":".join(
+            [*sorted(spec_keys[u] for u in inputs[nid]), spec]
+        )).encode()).hexdigest()
+        hit = _CACHE.get(spec_keys[nid])
+        cached = hit is not None
         try:
-            if op in SOURCES:
+            if cached:
+                from PIL import Image
+                img = Image.open(io.BytesIO(hit[0]))
+                receipt = json.loads(hit[1])
+                cache_hits += 1
+            elif op in SOURCES:
                 img, receipt = _LINE_OPS[op](args)
             elif op in TRANSFORMS:
                 img, receipt = _LINE_OPS[op](images[inputs[nid][0]], args)
@@ -145,6 +175,11 @@ def run_graph(nodes: list, edges: list) -> dict:
             return {"refused": True,
                     "refusals": [f"node {nid!r} ({op}): {e}"]}
         images[nid] = img
+        if not cached:
+            buf = io.BytesIO()
+            img.convert("RGB").save(buf, "PNG")
+            _cache_put(spec_keys[nid], buf.getvalue(),
+                       json.dumps(receipt, sort_keys=True))
         node_sha = hashlib.sha256(
             json.dumps(receipt, sort_keys=True).encode()).hexdigest()
         upstream = sorted(chains[u] for u in inputs[nid])
@@ -152,6 +187,7 @@ def run_graph(nodes: list, edges: list) -> dict:
             (":".join([*upstream, node_sha])).encode()).hexdigest()
         trail.append({"id": nid, **receipt, "node_sha256": node_sha,
                       "chain": chains[nid][:16],
+                      "cached": cached,
                       "inputs": list(inputs[nid])})
 
     # sinks: nodes nothing consumes; their images are the graph's outputs
@@ -170,6 +206,7 @@ def run_graph(nodes: list, edges: list) -> dict:
             "outputs": outputs,
             "receipt": {"schema": SCHEMA,
                         "n_nodes": len(order),
+                        "cache_hits": cache_hits,
                         "sinks": sinks,
                         "nodes": trail,
                         "graph_id": graph_id,
