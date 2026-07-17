@@ -2086,6 +2086,10 @@ class _Handler(BaseHTTPRequestHandler):
                 seed = int(req.get("seed", 58))
             except (TypeError, ValueError):
                 seed = 58
+            try:
+                density = float(req.get("density", 1.0))
+            except (TypeError, ValueError):
+                density = 1.0
             out = compose(
                 str(req.get("title", "")),
                 subtitle=str(req.get("subtitle", "")),
@@ -2094,7 +2098,11 @@ class _Handler(BaseHTTPRequestHandler):
                 ground=str(req.get("ground", "dark")),
                 accent=bool(req.get("accent", True)),
                 face_params=req.get("face_params")
-                if isinstance(req.get("face_params"), dict) else None)
+                if isinstance(req.get("face_params"), dict) else None,
+                orb=str(req.get("orb", "auto")),
+                density=density,
+                want_svg=bool(req.get("svg")),
+                want_pdf=bool(req.get("pdf")))
             return self._json(out, 400 if out.get("refused") else 200)
         if p == "/api/lanes/install":                  # one lane, installed on request
             length = self._content_length()

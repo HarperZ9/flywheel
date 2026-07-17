@@ -69,9 +69,21 @@ def _scanlines(Image, ImageDraw, img, ground, step=6, alpha=10):
     return Image.alpha_composite(img, overlay)
 
 
+# composition presets: where the orb sits and how dense the line-work is
+ORBS = {
+    "auto": None,                                  # portrait/landscape logic
+    "center": ((0.5, 0.45), 0.30, 4200),
+    "high": ((0.5, 0.30), 0.27, 4200),
+    "right": ((0.72, 0.46), 0.34, 4200),
+    "quiet": ((0.82, 0.22), 0.16, 2600),
+}
+
+
 def compose(title: str, subtitle: str = "", fmt: str = "poster",
             seed: int = 58, ground: str = "dark", accent: bool = True,
-            face_params: dict | None = None) -> dict:
+            face_params: dict | None = None, orb: str = "auto",
+            density: float = 1.0, want_svg: bool = False,
+            want_pdf: bool = False) -> dict:
     """Title + subtitle on a seeded plate, typeset in the seed's own face."""
     try:
         from PIL import Image, ImageDraw, ImageFilter, ImageFont
@@ -93,6 +105,11 @@ def compose(title: str, subtitle: str = "", fmt: str = "poster",
         return {"refused": True,
                 "refusals": [f"unknown ground {ground!r}; grounds: "
                              f"{', '.join(sorted(GROUNDS))}"]}
+    if orb not in ORBS:
+        return {"refused": True,
+                "refusals": [f"unknown orb preset {orb!r}; presets: "
+                             f"{', '.join(sorted(ORBS))}"]}
+    density = max(0.4, min(2.0, float(density)))
 
     face = mint({**DEFAULTS, **(face_params or {})}, seed=seed)
     if face["refused"]:
@@ -114,13 +131,18 @@ def compose(title: str, subtitle: str = "", fmt: str = "poster",
     draw = ImageDraw.Draw(img, "RGBA")
     rng = random.Random(seed)
     portrait = H >= W
-    orb = (0.5, 0.34) if portrait else (0.74, 0.46)
-    r_frac = 0.30 if portrait else 0.34
-    _aperture(draw, w * orb[0], h * orb[1], min(w, h) * r_frac,
-              g["ink"], rng, strokes=4200, ss=ss)
+    if ORBS[orb] is None:
+        orb_at = (0.5, 0.34) if portrait else (0.74, 0.46)
+        r_frac = 0.30 if portrait else 0.34
+        base_strokes = 4200
+    else:
+        orb_at, r_frac, base_strokes = ORBS[orb]
+    strokes = int(base_strokes * density)
+    _aperture(draw, w * orb_at[0], h * orb_at[1], min(w, h) * r_frac,
+              g["ink"], rng, strokes=strokes, ss=ss)
     if accent:
         r = min(w, h) * r_frac
-        cx, cy = w * orb[0], h * orb[1]
+        cx, cy = w * orb_at[0], h * orb_at[1]
         start = rng.uniform(0, 360)
         draw.arc((cx - r, cy - r, cx + r, cy + r), start, start + 34,
                  fill=g["accent"] + (215,), width=ss * 2)
@@ -157,6 +179,8 @@ def compose(title: str, subtitle: str = "", fmt: str = "poster",
     img.save(buf, "PNG")
     png = buf.getvalue()
 
+    out = {"refused": False, "refusals": [],
+           "png_b64": base64.b64encode(png).decode("ascii")}
     receipt = {
         "schema": SCHEMA,
         "seed": seed,
@@ -164,11 +188,50 @@ def compose(title: str, subtitle: str = "", fmt: str = "poster",
         "size": [W, H],
         "ground": ground,
         "accent": bool(accent),
+        "orb": orb,
+        "density": round(density, 3),
         "copy_sha256": copy_sha,
         "face_mint_id": mint_id,
         "png_sha256": hashlib.sha256(png).hexdigest(),
         "note": "plate, face, and copy compose deterministically: re-run "
                 "with the same inputs and the hashes hold",
     }
-    return {"refused": False, "refusals": [], "receipt": receipt,
-            "png_b64": base64.b64encode(png).decode("ascii")}
+
+    # A print-ready PDF: the composed plate at 150 dpi, standard for a poster
+    # heading to a printer. Same pixels as the PNG, wrapped for print.
+    if want_pdf:
+        import re
+        pbuf = io.BytesIO()
+        img.save(pbuf, "PDF", resolution=150.0)
+        # PIL stamps a live /CreationDate; pin it to a fixed epoch (same byte
+        # length, so the xref offsets hold) to keep the studio's promise: the
+        # same inputs make the same bytes, PDF included.
+        pdf = re.sub(rb"D:\d{14}", b"D:20240101000000", pbuf.getvalue())
+        out["pdf_b64"] = base64.b64encode(pdf).decode("ascii")
+        receipt["pdf_sha256"] = hashlib.sha256(pdf).hexdigest()
+
+    # A scalable SVG container: the composition embedded at the poster's
+    # viewBox so it scales without re-rasterizing on the page. Honest about
+    # what it is: the plate's line-work is raster, so this wraps the render
+    # rather than re-deriving it as vector paths.
+    if want_svg:
+        data_uri = "data:image/png;base64," + out["png_b64"]
+        svg = (
+            f'<svg xmlns="http://www.w3.org/2000/svg" '
+            f'width="{W}" height="{H}" viewBox="0 0 {W} {H}">'
+            f'<title>{_xesc(title)}</title>'
+            f'<image href="{data_uri}" x="0" y="0" '
+            f'width="{W}" height="{H}"/></svg>'
+        ).encode("utf-8")
+        out["svg_b64"] = base64.b64encode(svg).decode("ascii")
+        receipt["svg_sha256"] = hashlib.sha256(svg).hexdigest()
+        receipt["svg_note"] = ("scalable container around the raster "
+                               "composition, not vector line-work")
+
+    out["receipt"] = receipt
+    return out
+
+
+def _xesc(s: str) -> str:
+    return (s.replace("&", "&amp;").replace("<", "&lt;")
+            .replace(">", "&gt;").replace('"', "&quot;"))
