@@ -358,7 +358,14 @@ class _FlywheelShellState extends State<FlywheelShell> {
             world: _world, alive: _gatewayAlive, client: _client);
       case 'Lanes':
         return LanesView(
-            roster: _roster, alive: _gatewayAlive, onProbe: _probeLanes);
+            roster: _roster,
+            alive: _gatewayAlive,
+            onProbe: _probeLanes,
+            onInstall: (name) async {
+              final r = await _client.installLane(name);
+              _probeLanes(); // the roster re-reports itself after an install
+              return r;
+            });
       case 'Train':
         return TrainView(client: _client, alive: _gatewayAlive);
       case 'Uplift':

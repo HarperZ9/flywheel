@@ -16,9 +16,14 @@ class LanesView extends StatelessWidget {
   final LaneRoster? roster;
   final bool alive;
   final VoidCallback? onProbe;
+  final Future<Map<String, dynamic>> Function(String name)? onInstall;
 
   const LanesView(
-      {super.key, this.roster, required this.alive, this.onProbe});
+      {super.key,
+      this.roster,
+      required this.alive,
+      this.onProbe,
+      this.onInstall});
 
   @override
   Widget build(BuildContext context) {
@@ -74,7 +79,7 @@ class LanesView extends StatelessWidget {
           for (final lane in lanes)
             Padding(
               padding: const EdgeInsets.only(bottom: FwLayout.s3),
-              child: LaneCard(lane: lane),
+              child: LaneCard(lane: lane, onInstall: onInstall),
             ),
         ],
       );
@@ -86,11 +91,11 @@ class LanesView extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Expanded(child: LaneCard(lane: lanes[i])),
+            Expanded(child: LaneCard(lane: lanes[i], onInstall: onInstall)),
             const SizedBox(width: FwLayout.s3),
             Expanded(
               child: i + 1 < lanes.length
-                  ? LaneCard(lane: lanes[i + 1])
+                  ? LaneCard(lane: lanes[i + 1], onInstall: onInstall)
                   : const SizedBox(),
             ),
           ],
@@ -103,7 +108,18 @@ class LanesView extends StatelessWidget {
 
 class LaneCard extends StatelessWidget {
   final Lane lane;
-  const LaneCard({super.key, required this.lane});
+  final Future<Map<String, dynamic>> Function(String name)? onInstall;
+  const LaneCard({super.key, required this.lane, this.onInstall});
+
+  Future<void> _install(BuildContext context) async {
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.showSnackBar(SnackBar(content: Text('Installing ${lane.name}…')));
+    final r = await onInstall!(lane.name);
+    messenger.showSnackBar(SnackBar(
+        content: Text(r['installed'] == true
+            ? '${lane.name} installed: ${r['detail'] ?? 'ok'}'
+            : '${lane.name} install failed: ${r['detail'] ?? r['error'] ?? '?'}')));
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -142,6 +158,12 @@ class LaneCard extends StatelessWidget {
                     style: fwMono(t, size: 11, color: t.inkFaint)),
               ],
               const Spacer(),
+              if (onInstall != null && lane.installedVersion == null) ...[
+                TextButton(
+                    onPressed: () => _install(context),
+                    child: const Text('Install')),
+                const SizedBox(width: FwLayout.s2),
+              ],
               if (id != null)
                 Text(id.surface,
                     style: fwMono(t, size: 11, color: t.inkMuted)),

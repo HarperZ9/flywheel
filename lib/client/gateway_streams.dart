@@ -153,6 +153,18 @@ extension GatewayStreamsAndPlugins on GatewayClient {
     return _decode(r);
   }
 
+  /// POST /api/lanes/install — install one lane on request. A down lane
+  /// finally has remediation from the surface that reports it down.
+  Future<Map<String, dynamic>> installLane(String name,
+      {String profile = 'package'}) async {
+    final r = await _http.post(
+      Uri.parse('$baseUrl/api/lanes/install'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'name': name, 'profile': profile}),
+    );
+    return _decode(r);
+  }
+
   /// POST /api/plugins/call — one tool call on a registered plugin, args and
   /// result verbatim. The probe shows what a server offers; this runs it.
   Future<Map<String, dynamic>> callPlugin(
