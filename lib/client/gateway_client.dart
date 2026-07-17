@@ -347,6 +347,17 @@ class GatewayClient {
     return _decode(r);
   }
 
+  /// Generic POST returning decoded JSON, for small parameterless verbs.
+  Future<Map<String, dynamic>> postJson(
+      String path, Map<String, dynamic> body) async {
+    final r = await _http.post(
+      Uri.parse('$baseUrl$path'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(body),
+    );
+    return _decode(r);
+  }
+
   /// GET /api/receipts — the receipts ledger (catalog + proof envelopes).
   Future<ReceiptsLedger> receipts() async {
     final r = await _http.get(Uri.parse('$baseUrl/api/receipts'));
