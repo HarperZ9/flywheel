@@ -153,6 +153,25 @@ extension GatewayStreamsAndPlugins on GatewayClient {
     return _decode(r);
   }
 
+  /// POST /api/explain — the teach-back graded mechanically: the explanation
+  /// must name the changed files, cover the key changed identifiers, and be
+  /// in your own words (pasting the diff back cannot pass). The receipt
+  /// lands in the comprehension ledger.
+  Future<Map<String, dynamic>> explain(String diff, String explanation,
+      {double threshold = 0.6, String reviewer = ''}) async {
+    final r = await _http.post(
+      Uri.parse('$baseUrl/api/explain'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'diff': diff,
+        'explanation': explanation,
+        'threshold': threshold,
+        if (reviewer.isNotEmpty) 'reviewer': reviewer,
+      }),
+    );
+    return _decode(r);
+  }
+
   /// POST /api/retention — bank an unaided retest outcome, linked to the
   /// original evidence in the verifiable store.
   Future<Map<String, dynamic>> retentionRecord(String original, bool passed,
