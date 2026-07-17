@@ -152,13 +152,14 @@ class ProfileManifestCard extends StatelessWidget {
 
 class PastRunRow extends StatelessWidget {
   final Map<String, dynamic> run;
-  const PastRunRow({super.key, required this.run});
+  final VoidCallback? onTap;
+  const PastRunRow({super.key, required this.run, this.onTap});
 
   @override
   Widget build(BuildContext context) {
     final t = context.fw;
     final status = '${run['status'] ?? '?'}';
-    return Container(
+    final row = Container(
       padding: const EdgeInsets.symmetric(vertical: FwLayout.s2),
       decoration: BoxDecoration(
           border: Border(bottom: BorderSide(color: t.hairline))),
@@ -181,5 +182,6 @@ class PastRunRow extends StatelessWidget {
         ],
       ),
     );
+    return onTap == null ? row : InkWell(onTap: onTap, child: row);
   }
 }

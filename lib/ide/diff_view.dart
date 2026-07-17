@@ -1,11 +1,52 @@
-// diff_view.dart — renders file diffs in the verdict language: added lines
-// carry the verified tint, removed lines the drift tint, context recedes.
+// diff_view.dart — renders file diffs in the INK ramp, never the verdict
+// palette. A diff is raw, unaccepted, unreviewed text; painting an added line
+// in verified-green would assert a verdict the engine never made. Added lines
+// are present (ink), removed lines recede (faint ink), distinguished by the
+// +/- glyph and a neutral ground tint. Color stays a verdict only.
 
 import 'package:flutter/material.dart';
 
 import '../theme/flywheel_theme.dart';
 import '../widgets/fw.dart';
 import 'diff.dart';
+
+/// The style for one diff line: a glyph, an ink-ramp color, and a neutral
+/// ground tint. Pure and verdict-free so a stranger (and a test) can confirm
+/// no verdict color leaks into raw code.
+class DiffLineStyle {
+  final String marker;
+  final Color color;
+  final Color background;
+  const DiffLineStyle(this.marker, this.color, this.background);
+}
+
+DiffLineStyle diffLineStyle(FwTokens t, DiffKind kind) => switch (kind) {
+      // added: the substance, full ink, on a faint neutral wash
+      DiffKind.add => DiffLineStyle('+', t.ink, t.ink.withValues(alpha: 0.04)),
+      // removed: receding, faint ink, no ground
+      DiffKind.del => DiffLineStyle('−', t.inkFaint, Colors.transparent),
+      DiffKind.same => DiffLineStyle(' ', t.inkFaint, Colors.transparent),
+    };
+
+/// The +/- count color: ink ramp, never a verdict. Added reads present
+/// (inkMuted), removed reads receding (inkFaint); the glyph carries the sign.
+Color diffCountColor(FwTokens t, {required bool added}) =>
+    added ? t.inkMuted : t.inkFaint;
+
+/// The bottom-sheet wrapper the code lane opens after a run: the diff panel
+/// at 70% height with the change-request callback threaded through.
+void showDiffSheet(BuildContext context, List<FileDiff> diffs,
+    void Function(FileDiff diff, String anchor, String note) onRequest) {
+  showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: context.fw.ground,
+    builder: (ctx) => SizedBox(
+      height: MediaQuery.of(ctx).size.height * 0.7,
+      child: DiffViewPanel(diffs: diffs, onRequest: onRequest),
+    ),
+  );
+}
 
 class DiffViewPanel extends StatelessWidget {
   final List<FileDiff> diffs;
@@ -61,10 +102,12 @@ class DiffViewPanel extends StatelessWidget {
                             fwMono(t, size: 11.5, weight: FontWeight.w600)),
                   ),
                   Text('+${d.added}',
-                      style: fwMono(t, size: 11, color: t.verified)),
+                      style: fwMono(t,
+                          size: 11, color: diffCountColor(t, added: true))),
                   const SizedBox(width: 6),
                   Text('−${d.removed}',
-                      style: fwMono(t, size: 11, color: t.drift)),
+                      style: fwMono(t,
+                          size: 11, color: diffCountColor(t, added: false))),
                   if (onRequest != null)
                     Builder(builder: (context) {
                       return IconButton(
@@ -137,18 +180,12 @@ class DiffViewPanel extends StatelessWidget {
   }
 
   Widget _line(FwTokens t, DiffLine l) {
-    final (marker, color, bg) = switch (l.kind) {
-      DiffKind.add => ('+', t.verified, t.verified.withValues(alpha: 0.08)),
-      DiffKind.del => ('−', t.drift, t.drift.withValues(alpha: 0.08)),
-      DiffKind.same => (' ', t.inkFaint, Colors.transparent),
-    };
+    final s = diffLineStyle(t, l.kind);
     return Container(
-      color: bg,
+      color: s.background,
       padding: const EdgeInsets.symmetric(horizontal: FwLayout.s3),
-      child: Text('$marker ${l.text}',
-          style: fwMono(t,
-              size: 11.5,
-              color: l.kind == DiffKind.same ? t.inkFaint : t.inkSoft)),
+      child: Text('${s.marker} ${l.text}',
+          style: fwMono(t, size: 11.5, color: s.color)),
     );
   }
 }

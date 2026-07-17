@@ -10,6 +10,7 @@ import '../theme/flywheel_theme.dart';
 import '../widgets/fw.dart';
 
 const _domains = [
+  'all',
   'science',
   'programming',
   'art',
@@ -32,6 +33,9 @@ class _FeedsViewState extends State<FeedsView> {
   bool _loading = false;
   List<Map<String, dynamic>> _items = [];
   Map<String, String> _errors = {};
+  Map<String, dynamic> _roster = {};
+  String _note = '';
+  final Map<String, String> _frozen = {}; // url -> snapshot outcome
   String? _error;
   bool _fetched = false;
 
@@ -42,7 +46,8 @@ class _FeedsViewState extends State<FeedsView> {
       _error = null;
     });
     try {
-      final doc = await widget.client.feeds(domain: _domain);
+      final doc = await widget.client
+          .feeds(domain: _domain == 'all' ? null : _domain);
       if (mounted) {
         setState(() {
           _fetched = true;
@@ -53,12 +58,29 @@ class _FeedsViewState extends State<FeedsView> {
               ? (doc['errors'] as Map<String, dynamic>)
                   .map((k, v) => MapEntry(k, '$v'))
               : {};
+          _roster = doc['roster'] is Map<String, dynamic>
+              ? doc['roster'] as Map<String, dynamic>
+              : {};
+          _note = '${doc['note'] ?? ''}';
         });
       }
     } catch (e) {
       if (mounted) setState(() => _error = '$e');
     } finally {
       if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  /// Freeze one cited item: bytes fetched, hashed, stored with an eid.
+  Future<void> _freeze(String url) async {
+    setState(() => _frozen[url] = 'freezing…');
+    try {
+      final doc = await widget.client.snapshotUrl(url);
+      setState(() => _frozen[url] = doc['error'] != null
+          ? 'failed: ${doc['error']}'
+          : 'frozen · ${doc['stored'] ?? doc['sha256'] ?? 'stored'}');
+    } catch (e) {
+      setState(() => _frozen[url] = 'failed: $e');
     }
   }
 
@@ -104,6 +126,16 @@ class _FeedsViewState extends State<FeedsView> {
           ],
         ),
         const SizedBox(height: FwLayout.s4),
+        if (_roster.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(bottom: FwLayout.s2),
+            child: Text(
+                'roster: ${_roster.values.whereType<List>().fold<int>(0, (n, l) => n + l.length)} '
+                'feeds across ${_roster.length} domain'
+                '${_roster.length == 1 ? '' : 's'}'
+                '${_note.isNotEmpty ? ' · $_note' : ''}',
+                style: fwMono(t, size: 10.5, color: t.inkFaint)),
+          ),
         if (_error != null) HonestNull('Failed: $_error'),
         for (final e in _errors.entries)
           Padding(
@@ -111,7 +143,7 @@ class _FeedsViewState extends State<FeedsView> {
             child: HonestNull('feed "${e.key}" failed: ${e.value}'),
           ),
         if (_fetched && _items.isEmpty && _errors.isEmpty && _error == null)
-          const HonestNull('The fetch returned no items — an empty feed is '
+          const HonestNull('The fetch returned no items. An empty feed is '
               'a result, not a blank.'),
         if (_items.isNotEmpty)
           HairlineCard(
@@ -139,9 +171,21 @@ class _FeedsViewState extends State<FeedsView> {
                               SelectableText('${i['url']}',
                                   style: fwMono(t, size: 10.5,
                                       color: t.inkMuted)),
+                            if ('${i['sha256'] ?? ''}'.isNotEmpty)
+                              HashText('sha256', '${i['sha256']}',
+                                  linkToReceipts: true),
                           ],
                         ),
                       ),
+                      if ('${i['url']}'.isNotEmpty)
+                        _frozen['${i['url']}'] != null
+                            ? Text(_frozen['${i['url']}']!,
+                                style: fwMono(t, size: 10.5,
+                                    color: t.inkMuted))
+                            : TextButton(
+                                onPressed: () => _freeze('${i['url']}'),
+                                child: const Text('freeze'),
+                              ),
                     ],
                   ),
                 ),

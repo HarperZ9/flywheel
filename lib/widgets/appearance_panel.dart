@@ -86,6 +86,8 @@ class _AppearanceFormState extends State<_AppearanceForm> {
         _fontRow(t, 'mono', s.monoFamily, kMonoChoices, 'Conso',
             (v) => _apply(() => s.monoFamily = v)),
         const SizedBox(height: FwLayout.s4),
+        _groundRow(t, s),
+        const SizedBox(height: FwLayout.s4),
         Row(children: [
           const Kicker('ui scale'),
           Expanded(
@@ -107,6 +109,7 @@ class _AppearanceFormState extends State<_AppearanceForm> {
               onPressed: () => _apply(() {
                 s.textFamily = null;
                 s.monoFamily = null;
+                s.groundPreset = null;
                 s.uiScale = 1.0;
               }),
               child: const Text('Reset to canon'),
@@ -120,6 +123,58 @@ class _AppearanceFormState extends State<_AppearanceForm> {
         ),
       ],
     );
+  }
+
+  /// Ground presets as swatch chips: the neutral is the user's, the verdict
+  /// colors are not. Ceramic (the canon) is stored as null.
+  Widget _groundRow(FwTokens t, DesktopSettings s) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    final current = s.groundPreset ?? 'Ceramic';
+    return Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      const SizedBox(width: 56, child: Kicker('ground')),
+      const SizedBox(width: FwLayout.s3),
+      Expanded(
+        child: Wrap(
+          spacing: FwLayout.s2,
+          runSpacing: FwLayout.s2,
+          children: [
+            for (final name in kGroundThemes.keys)
+              InkWell(
+                borderRadius: BorderRadius.circular(FwLayout.radiusSmall),
+                onTap: () => _apply(() =>
+                    s.groundPreset = name == 'Ceramic' ? null : name),
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(FwLayout.radiusSmall),
+                    border: Border.all(
+                        color: current == name ? t.drift : t.line,
+                        width: current == name ? 1.5 : 1),
+                  ),
+                  child: Row(mainAxisSize: MainAxisSize.min, children: [
+                    Container(
+                      width: 12,
+                      height: 12,
+                      decoration: BoxDecoration(
+                        color: Color(kGroundThemes[name]![dark ? 2 : 0]),
+                        shape: BoxShape.circle,
+                        border: Border.all(color: t.line),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(name == 'Ceramic' ? 'Ceramic (canon)' : name,
+                        style: fwMono(t,
+                            size: 11.5,
+                            color:
+                                current == name ? t.ink : t.inkSoft)),
+                  ]),
+                ),
+              ),
+          ],
+        ),
+      ),
+    ]);
   }
 
   Widget _fontRow(FwTokens t, String label, String? value,

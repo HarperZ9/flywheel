@@ -10,17 +10,31 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import '../client/gateway_client.dart';
 import '../models/gateway_models.dart';
 import '../theme/flywheel_theme.dart';
 import '../widgets/aperture.dart';
+import '../widgets/brand_kit_panel.dart';
+import '../widgets/forge_panel.dart';
+import '../widgets/harmonograph_panel.dart';
 import '../widgets/fw.dart';
+import '../widgets/graph_editor.dart';
+import '../widgets/graph_panel.dart';
+import '../widgets/pipeline_panel.dart';
+import '../widgets/poster_panel.dart';
+import '../widgets/raster_fx_panel.dart';
+import '../widgets/sound_panel.dart';
+import '../widgets/typeface_panel.dart';
+import '../widgets/face_gallery_card.dart';
+import '../widgets/variable_family_card.dart';
 
 class StudioView extends StatefulWidget {
   final WorldDoc? world;
   final LaneRoster? roster;
   final bool alive;
+  final GatewayClient? client;
   const StudioView(
-      {super.key, this.world, this.roster, required this.alive});
+      {super.key, this.world, this.roster, required this.alive, this.client});
 
   @override
   State<StudioView> createState() => _StudioViewState();
@@ -29,10 +43,14 @@ class StudioView extends StatefulWidget {
 class _StudioViewState extends State<StudioView> {
   int _seed = kApertureSeed;
 
+  /// The last successful mint's params; poster and brand kit wear it.
+  Map<String, dynamic>? _mintedFace;
+
   @override
   Widget build(BuildContext context) {
     final t = context.fw;
     return ViewScroll(
+      storageKey: 'studio',
       children: [
         const SectionHeader('Studio', kicker: 'creation with provenance'),
         const SizedBox(height: FwLayout.s3),
@@ -85,13 +103,67 @@ class _StudioViewState extends State<StudioView> {
         const Kicker('the loop · drawn from live state'),
         const SizedBox(height: FwLayout.s3),
         _loopSchematic(context),
-        const SizedBox(height: FwLayout.s5),
-        const Kicker('music'),
-        const SizedBox(height: FwLayout.s3),
-        const HonestNull(
-            'The music lane is declared, not shipped: no generator is wired '
-            'yet, so nothing here pretends to play. The creative engine\'s '
-            'witnessed-scene contract is the intended seam.'),
+        if (widget.client != null) ...[
+          const SizedBox(height: FwLayout.s5),
+          const Kicker('typeface forge · parametric type'),
+          const SizedBox(height: FwLayout.s3),
+          TypefacePanel(
+            onMint: (params, seed) =>
+                widget.client!.typefaceMint(params, seed),
+            onMinted: (params) => setState(() => _mintedFace = params),
+          ),
+          const SizedBox(height: FwLayout.s3),
+          VariableFamilyCard(
+              client: widget.client!, faceParams: _mintedFace),
+          const SizedBox(height: FwLayout.s3),
+          const Kicker('face gallery · publish, browse, wear a minted face'),
+          const SizedBox(height: FwLayout.s3),
+          FaceGalleryCard(client: widget.client!, benchFace: _mintedFace),
+          const SizedBox(height: FwLayout.s5),
+          Kicker(_mintedFace == null
+              ? 'poster composer · mint a face above and the plate wears it'
+              : 'poster composer · the plate wears your minted face'),
+          const SizedBox(height: FwLayout.s3),
+          PosterPanel(client: widget.client!, faceParams: _mintedFace),
+          const SizedBox(height: FwLayout.s5),
+          const Kicker('telos engine · the plotter kernel, driven in place'),
+          const SizedBox(height: FwLayout.s3),
+          HarmonographPanel(client: widget.client!),
+          const SizedBox(height: FwLayout.s5),
+          const Kicker('telos engine · raster kernels over the plate'),
+          const SizedBox(height: FwLayout.s3),
+          RasterFxPanel(client: widget.client!),
+          const SizedBox(height: FwLayout.s5),
+          const Kicker('the creative line · stages that chain'),
+          const SizedBox(height: FwLayout.s3),
+          PipelinePanel(client: widget.client!),
+          const SizedBox(height: FwLayout.s5),
+          const Kicker('the creative graph · branches that testify'),
+          const SizedBox(height: FwLayout.s3),
+          GraphPanel(client: widget.client!),
+          const SizedBox(height: FwLayout.s3),
+          const Kicker('the node canvas · author a graph by hand'),
+          const SizedBox(height: FwLayout.s3),
+          GraphEditor(client: widget.client!),
+          const SizedBox(height: FwLayout.s5),
+          const Kicker('brand kit · one seed, a whole identity'),
+          const SizedBox(height: FwLayout.s3),
+          BrandKitPanel(client: widget.client!, faceParams: _mintedFace),
+          const SizedBox(height: FwLayout.s5),
+          const Kicker('prompt forge · a goal becomes a gated prompt'),
+          const SizedBox(height: FwLayout.s3),
+          ForgePanel(client: widget.client!),
+          const SizedBox(height: FwLayout.s5),
+          const Kicker('music · the seeded chime study'),
+          const SizedBox(height: FwLayout.s3),
+          SoundPanel(client: widget.client!),
+        ] else ...[
+          const SizedBox(height: FwLayout.s5),
+          const Kicker('music'),
+          const SizedBox(height: FwLayout.s3),
+          const HonestNull(
+              'The engine is offline; the chime study composes when it runs.'),
+        ],
       ],
     );
   }

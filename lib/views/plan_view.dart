@@ -10,8 +10,10 @@ import 'package:flutter/material.dart';
 import '../client/gateway_client.dart';
 import '../models/gateway_models.dart';
 import '../models/plan_models.dart';
+import '../services/settings.dart';
 import '../models/workflow_models.dart';
 import '../theme/flywheel_theme.dart';
+import '../widgets/composer_results.dart';
 import '../widgets/fw.dart';
 import '../widgets/plan_cards.dart';
 import '../widgets/workflow_cards.dart';
@@ -19,7 +21,12 @@ import '../widgets/workflow_cards.dart';
 class PlanView extends StatefulWidget {
   final GatewayClient client;
   final bool alive;
-  const PlanView({super.key, required this.client, required this.alive});
+  final DesktopSettings settings;
+  const PlanView(
+      {super.key,
+      required this.client,
+      required this.alive,
+      required this.settings});
 
   @override
   State<PlanView> createState() => _PlanViewState();
@@ -158,10 +165,11 @@ class _PlanViewState extends State<PlanView> {
           command: 'flywheel up');
     }
     final t = context.fw;
-    return ViewScroll(
-      children: [
-        const SectionHeader('Plan', kicker: 'spec first, receipt after'),
-        const SizedBox(height: FwLayout.s3),
+    return ComposerResults(
+      settings: widget.settings,
+      viewKey: 'plan',
+      header: const SectionHeader('Plan', kicker: 'spec first, receipt after'),
+      composer: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
         Text(
           'The forge turns a goal into a plan whose validation gates are '
           'marked by what an external oracle can actually run; confidence is '
@@ -171,14 +179,14 @@ class _PlanViewState extends State<PlanView> {
         ),
         const SizedBox(height: FwLayout.s4),
         _composer(t),
-        if (_error != null) ...[
-          const SizedBox(height: FwLayout.s3),
-          HonestNull('Failed: $_error'),
-        ],
-        if (_plan != null) ...[
-          const SizedBox(height: FwLayout.s4),
-          ForgedPlanCard(plan: _plan!, profile: _activeProfile),
-        ],
+      ]),
+      results: [
+        if (_error != null) HonestNull('Failed: $_error'),
+        if (_plan != null)
+          ForgedPlanCard(
+              plan: _plan!,
+              profile: _activeProfile,
+              recheck: widget.client.forgeRecheck),
         if (_run != null) ...[
           const SizedBox(height: FwLayout.s4),
           WorkflowRunCard(run: _run!),

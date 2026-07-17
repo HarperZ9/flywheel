@@ -75,6 +75,108 @@ class GatewayClient {
     return _decode(r);
   }
 
+  /// GET /api/instruments — the evaluation-engineering register.
+  Future<Map<String, dynamic>> instruments() async {
+    final r = await _http.get(Uri.parse('$baseUrl/api/instruments'));
+    return _decode(r);
+  }
+
+  /// GET /api/academy — the curriculum derived from the live code.
+  Future<Map<String, dynamic>> academy() async {
+    final r = await _http.get(Uri.parse('$baseUrl/api/academy'));
+    return _decode(r);
+  }
+
+  /// Run a lesson's declared GET check against the gateway. Returns the
+  /// status code and a short body excerpt so the verdict stays inspectable.
+  Future<(int, String)> runLessonCheck(String path) async {
+    final r = await _http.get(Uri.parse('$baseUrl$path'));
+    final body =
+        r.body.length > 240 ? '${r.body.substring(0, 240)}…' : r.body;
+    return (r.statusCode, body);
+  }
+
+  /// POST /api/academy/complete — bind a passed comprehension receipt to a
+  /// lesson; completion is a re-checkable receipt, never prose.
+  Future<Map<String, dynamic>> academyComplete(
+      String lessonId, String comprehensionEid) async {
+    final r = await _http.post(
+      Uri.parse('$baseUrl/api/academy/complete'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(
+          {'lesson_id': lessonId, 'comprehension_eid': comprehensionEid}),
+    );
+    return _decode(r);
+  }
+
+  /// POST /api/typeface — mint a parametric face; outlines + receipt back.
+  Future<Map<String, dynamic>> typefaceMint(
+      Map<String, dynamic> params, int seed) async {
+    final r = await _http.post(
+      Uri.parse('$baseUrl/api/typeface'),
+      headers: {'Content-Type': 'application/json'},
+      // every mint carries its font file, so the face is wearable the
+      // moment it exists
+      body: jsonEncode({
+        'params': params,
+        'seed': seed,
+        'ttf': true,
+        'family': 'Zentropy Mint $seed',
+      }),
+    );
+    return _decode(r);
+  }
+
+  /// POST /api/typeface/publish — file a minted face in the witnessed gallery.
+  Future<Map<String, dynamic>> typefacePublish(
+      Map<String, dynamic> params, int seed, {String family = ''}) async {
+    final r = await _http.post(
+      Uri.parse('$baseUrl/api/typeface/publish'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'params': params,
+        'seed': seed,
+        if (family.isNotEmpty) 'family': family,
+      }),
+    );
+    return _decode(r);
+  }
+
+  /// GET /api/typeface/gallery — the marketplace listing (metadata only).
+  Future<Map<String, dynamic>> typefaceGallery({int limit = 60}) =>
+      getJson('/api/typeface/gallery?limit=$limit');
+
+  /// GET /api/typeface/face — one published face with its .ttf bytes.
+  Future<Map<String, dynamic>> typefaceFace(String eid) =>
+      getJson('/api/typeface/face?eid=$eid');
+
+  /// POST /api/typeface/variable — the family's weights as ONE variable font
+  /// with a wght axis; the response carries the .ttf and a receipt.
+  Future<Map<String, dynamic>> typefaceVariable(
+      Map<String, dynamic> params, int seed) async {
+    final r = await _http.post(
+      Uri.parse('$baseUrl/api/typeface/variable'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'params': params,
+        'seed': seed,
+        'family': 'Zentropy Mint $seed',
+      }),
+    );
+    return _decode(r);
+  }
+
+  /// POST /api/learn/animate — a lesson rendered as a runnable manim scene.
+  Future<Map<String, dynamic>> learnAnimate(
+      Map<String, dynamic> lesson) async {
+    final r = await _http.post(
+      Uri.parse('$baseUrl/api/learn/animate'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'lesson': lesson}),
+    );
+    return _decode(r);
+  }
+
   /// POST /api/companion — answer locally, escalate the hard slice.
   Future<CompanionResult> companion(String prompt, {String? solutionSig}) async {
     final r = await _http.post(
@@ -94,6 +196,155 @@ class GatewayClient {
       Uri.parse('$baseUrl/api/route'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({'prompt': prompt, 'endpoint': endpoint}),
+    );
+    return _decode(r);
+  }
+
+  /// POST /api/discourse — drive the chorus satellite over a gathered comment
+  /// corpus (a gather corpus directory or a JSON row list) and return chorus's
+  /// own weighted, clustered, re-checkable discourse digest verbatim.
+  Future<Map<String, dynamic>> discourse(String corpus) async {
+    final r = await _http.post(
+      Uri.parse('$baseUrl/api/discourse'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'corpus': corpus}),
+    );
+    return _decode(r);
+  }
+
+  /// POST /api/discourse/corpora — discover gather corpora under a root, so a
+  /// gathered run can be picked as a discourse source without typing its path.
+  Future<Map<String, dynamic>> discourseCorpora(String root) async {
+    final r = await _http.post(
+      Uri.parse('$baseUrl/api/discourse/corpora'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'root': root}),
+    );
+    return _decode(r);
+  }
+
+  /// POST /api/discourse/digests — what the chorus daemon has synthesized on a
+  /// schedule, newest first, so the app can show it without re-running anything.
+  Future<Map<String, dynamic>> discourseDigests(String store, {int limit = 20}) async {
+    final r = await _http.post(
+      Uri.parse('$baseUrl/api/discourse/digests'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'store': store, 'limit': limit}),
+    );
+    return _decode(r);
+  }
+
+  /// POST /api/forge/recheck — has an arm drifted since the forge sealed it?
+  Future<Map<String, dynamic>> forgeRecheck(String prpId) async {
+    final r = await _http.post(
+      Uri.parse('$baseUrl/api/forge/recheck'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'prp_id': prpId}),
+    );
+    return _decode(r);
+  }
+
+  /// POST /api/studio/poster — plate + minted face + copy under one receipt.
+  Future<Map<String, dynamic>> studioPoster(String title,
+      {String subtitle = '',
+      String format = 'poster',
+      int seed = 58,
+      String ground = 'dark',
+      bool accent = true,
+      Map<String, dynamic>? faceParams}) async {
+    final r = await _http.post(
+      Uri.parse('$baseUrl/api/studio/poster'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'title': title,
+        'subtitle': subtitle,
+        'format': format,
+        'seed': seed,
+        'ground': ground,
+        'accent': accent,
+        if (faceParams != null) 'face_params': faceParams,
+      }),
+    );
+    return _decode(r);
+  }
+
+  /// POST /api/telos/kernel — run a bridged telos creative kernel; the
+  /// answer (points, bounds, receipt hashes) is the kernel's own.
+  Future<Map<String, dynamic>> telosKernel(
+      String kernel, Map<String, dynamic> args) async {
+    final r = await _http.post(
+      Uri.parse('$baseUrl/api/telos/kernel'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'kernel': kernel, 'args': args}),
+    );
+    return _decode(r);
+  }
+
+  /// POST /api/telos/raster — dither or pixel-sort over a plate or PNG;
+  /// the receipt carries the kernel's own hashes.
+  Future<Map<String, dynamic>> telosRaster(String kernel,
+      {Map<String, dynamic>? source, Map<String, dynamic>? args}) async {
+    final r = await _http.post(
+      Uri.parse('$baseUrl/api/telos/raster'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'kernel': kernel,
+        if (source != null) 'source': source,
+        if (args != null) 'args': args,
+      }),
+    );
+    return _decode(r);
+  }
+
+  /// POST /api/studio/graph — a branching creative DAG; every node's chain
+  /// folds its inputs' chains, so the graph id witnesses everything.
+  Future<Map<String, dynamic>> studioGraph(List<Map<String, dynamic>> nodes,
+      List<Map<String, dynamic>> edges) async {
+    final r = await _http.post(
+      Uri.parse('$baseUrl/api/studio/graph'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'nodes': nodes, 'edges': edges}),
+    );
+    return _decode(r);
+  }
+
+  /// POST /api/studio/pipeline — ordered creative stages, one chained
+  /// receipt; the pipeline id witnesses the whole line in order.
+  Future<Map<String, dynamic>> studioPipeline(
+      List<Map<String, dynamic>> stages) async {
+    final r = await _http.post(
+      Uri.parse('$baseUrl/api/studio/pipeline'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'stages': stages}),
+    );
+    return _decode(r);
+  }
+
+  /// POST /api/studio/brandkit — one seed + a name -> a whole identity.
+  Future<Map<String, dynamic>> brandKit(String name,
+      {String tagline = '',
+      int seed = 58,
+      Map<String, dynamic>? faceParams}) async {
+    final r = await _http.post(
+      Uri.parse('$baseUrl/api/studio/brandkit'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'name': name,
+        'tagline': tagline,
+        'seed': seed,
+        if (faceParams != null) 'face_params': faceParams,
+      }),
+    );
+    return _decode(r);
+  }
+
+  /// POST /api/studio/sound — the seeded chime study; the score is the receipt.
+  Future<Map<String, dynamic>> studioSound(
+      {int seed = 58, double duration = 24, double root = 220}) async {
+    final r = await _http.post(
+      Uri.parse('$baseUrl/api/studio/sound'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'seed': seed, 'duration': duration, 'root': root}),
     );
     return _decode(r);
   }
@@ -144,10 +395,29 @@ class GatewayClient {
     return _decode(r);
   }
 
+  /// Generic POST returning decoded JSON, for small parameterless verbs.
+  Future<Map<String, dynamic>> postJson(
+      String path, Map<String, dynamic> body) async {
+    final r = await _http.post(
+      Uri.parse('$baseUrl$path'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(body),
+    );
+    return _decode(r);
+  }
+
   /// GET /api/receipts — the receipts ledger (catalog + proof envelopes).
   Future<ReceiptsLedger> receipts() async {
     final r = await _http.get(Uri.parse('$baseUrl/api/receipts'));
     return ReceiptsLedger.fromJson(_decode(r));
+  }
+
+  /// GET /api/receipts/proof — prove one receipt (a 64-hex leaf) is in the
+  /// Merkle log, with the audit path anyone can re-walk offline.
+  Future<Map<String, dynamic>> receiptsProof(String leaf) async {
+    final r = await _http.get(Uri.parse(
+        '$baseUrl/api/receipts/proof?leaf=${Uri.encodeQueryComponent(leaf)}'));
+    return _decode(r);
   }
 
   /// GET /api/profiles — the profile manifests over the one substrate.
@@ -208,6 +478,32 @@ class GatewayClient {
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({'query': query, 'top_k': topK}),
     );
+    return _decode(r);
+  }
+
+  /// GET /api/science/runs — persisted science history, chain-reverified.
+  Future<Map<String, dynamic>> scienceRuns({int limit = 20}) =>
+      getJson('/api/science/runs?limit=$limit');
+
+  /// GET /api/science/run — one stored science run by chain prefix.
+  Future<Map<String, dynamic>> scienceRunDetail(String chain) =>
+      getJson('/api/science/run?chain=$chain');
+
+  /// GET /api/workflow/run — one stored per-stage trace, chain-reverified.
+  Future<Map<String, dynamic>> workflowRunDetail(String chain) =>
+      getJson('/api/workflow/run?chain=$chain');
+
+  /// GET /api/agent/runs — persisted agent runs, content-addressed.
+  Future<Map<String, dynamic>> agentRuns({int limit = 20}) =>
+      getJson('/api/agent/runs?limit=$limit');
+
+  /// GET /api/agent/run — one stored agent run with its trace events.
+  Future<Map<String, dynamic>> agentRunDetail(String id) =>
+      getJson('/api/agent/run?id=$id');
+
+  /// GET /api/memory/list — browse stored spans verbatim (no query).
+  Future<Map<String, dynamic>> memoryList({int limit = 20}) async {
+    final r = await _http.get(Uri.parse('$baseUrl/api/memory/list?limit=$limit'));
     return _decode(r);
   }
 

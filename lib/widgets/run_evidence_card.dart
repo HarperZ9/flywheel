@@ -47,7 +47,9 @@ class RunEvidenceCard extends StatelessWidget {
               ? 'no high-tier edits'
               : '${(risk['demands'] as List).length} high-tier '
                   'edit(s) demand a full walk',
-          (risk['demands'] as List?)?.isEmpty ?? true ? null : 'drift'
+          // a pending high-tier demand is not a DRIFT verdict (which means a
+          // re-check diverged): it is unwalked, the honest null
+          (risk['demands'] as List?)?.isEmpty ?? true ? null : 'unverifiable'
         ),
       if (workspace.isNotEmpty)
         (

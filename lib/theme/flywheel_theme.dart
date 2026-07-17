@@ -14,16 +14,43 @@ export 'tokens.dart';
 const kTextFamily = 'Hanken Grotesk';
 const kMonoFamily = 'Conso';
 
-/// Theme builders. The canon pair is the default; a user-chosen family
-/// rides the tokens so every widget follows without re-plumbing.
-ThemeData flywheelLightTheme({String? textFamily, String? monoFamily}) =>
+/// Ground themes: the NEUTRAL only. Each entry is
+/// [lightGround, lightGround2, darkGround, darkGround2]; ink and the verdict
+/// colors never change, so color still only ever means a verdict. 'Ceramic' is
+/// the canon default. Personalization that keeps the surface readable.
+const kGroundThemes = <String, List<int>>{
+  'Ceramic': [0xFFF4F3EF, 0xFFECEAE4, 0xFF0B0E0F, 0xFF121617],
+  'Paper': [0xFFFBFAF8, 0xFFF1EFEA, 0xFF141414, 0xFF1C1C1C],
+  'Slate': [0xFFEDEFF2, 0xFFE1E5E9, 0xFF0C0F13, 0xFF141A22],
+  'Sand': [0xFFF5F0E7, 0xFFECE5D8, 0xFF13110C, 0xFF1C1913],
+  'Mist': [0xFFEEF1F0, 0xFFE2E7E5, 0xFF0B0F0E, 0xFF121816],
+};
+
+FwTokens _withGround(FwTokens t, String? preset, bool dark) {
+  final p = kGroundThemes[preset];
+  if (p == null) return t;
+  return t.copyWith(ground: Color(p[dark ? 2 : 0]), ground2: Color(p[dark ? 3 : 1]));
+}
+
+/// Theme builders. The canon pair and ground are the defaults; a user-chosen
+/// family or ground rides the tokens so every widget follows without re-plumbing.
+ThemeData flywheelLightTheme(
+        {String? textFamily, String? monoFamily, String? groundPreset}) =>
     _themeFrom(
-        FwTokens.light.copyWith(
-            textFamily: textFamily, monoFamily: monoFamily),
+        _withGround(
+            FwTokens.light
+                .copyWith(textFamily: textFamily, monoFamily: monoFamily),
+            groundPreset,
+            false),
         Brightness.light);
-ThemeData flywheelDarkTheme({String? textFamily, String? monoFamily}) =>
+ThemeData flywheelDarkTheme(
+        {String? textFamily, String? monoFamily, String? groundPreset}) =>
     _themeFrom(
-        FwTokens.dark.copyWith(textFamily: textFamily, monoFamily: monoFamily),
+        _withGround(
+            FwTokens.dark
+                .copyWith(textFamily: textFamily, monoFamily: monoFamily),
+            groundPreset,
+            true),
         Brightness.dark);
 
 ThemeData _themeFrom(FwTokens t, Brightness brightness) {
@@ -35,8 +62,10 @@ ThemeData _themeFrom(FwTokens t, Brightness brightness) {
     extensions: [t],
     colorScheme: ColorScheme(
       brightness: brightness,
-      primary: t.drift,
-      onPrimary: brightness == Brightness.light ? Colors.white : t.ground,
+      // neutral controls are INK on the ground: verdict colors are spent
+      // only where a verdict is being stated, never on a slider or button
+      primary: t.ink,
+      onPrimary: t.ground,
       secondary: t.verified,
       onSecondary: brightness == Brightness.light ? Colors.white : t.ground,
       error: t.drift,
@@ -57,9 +86,8 @@ ThemeData _themeFrom(FwTokens t, Brightness brightness) {
     ),
     filledButtonTheme: FilledButtonThemeData(
       style: FilledButton.styleFrom(
-        backgroundColor: t.drift,
-        foregroundColor:
-            brightness == Brightness.light ? Colors.white : t.ground,
+        backgroundColor: t.ink,
+        foregroundColor: t.ground,
         textStyle: TextStyle(
             fontFamily: t.textFamily,
             fontWeight: FontWeight.w600,
@@ -136,11 +164,13 @@ TextTheme _textTheme(FwTokens t) {
 
 /// The mono data style: the mono family with tabular figures, for hashes,
 /// counts, versions, and table cells. Size and color overridable per use.
+/// A readability floor of 11 holds app-wide: captions asked for smaller
+/// render at 11, so no data string is ever squint-sized.
 TextStyle fwMono(FwTokens t,
     {double size = 12.5, Color? color, FontWeight weight = FontWeight.w400}) {
   return TextStyle(
     fontFamily: t.monoFamily,
-    fontSize: size,
+    fontSize: size < 11 ? 11 : size,
     fontWeight: weight,
     color: color ?? t.inkSoft,
     fontFeatures: const [FontFeature.tabularFigures()],
@@ -148,10 +178,11 @@ TextStyle fwMono(FwTokens t,
 }
 
 /// The kicker style: mono uppercase, wide-tracked. The section voice.
+/// Same readability floor as fwMono, scaled for the tracked uppercase.
 TextStyle fwKicker(FwTokens t, {Color? color, double size = 10.5}) {
   return TextStyle(
     fontFamily: t.monoFamily,
-    fontSize: size,
+    fontSize: size < 9.5 ? 9.5 : size,
     fontWeight: FontWeight.w600,
     letterSpacing: 2.2,
     color: color ?? t.inkFaint,

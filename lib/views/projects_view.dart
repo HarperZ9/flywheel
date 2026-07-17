@@ -151,9 +151,18 @@ class _ProjectsViewState extends State<ProjectsView> {
               onVerify: () async {
                 final v = await widget.client.storeVerify();
                 if (mounted) {
+                  // the gateway nests the two walks: chain (ledger links)
+                  // and records (content re-hash); read both defensively.
+                  final chain =
+                      v['chain'] is Map ? v['chain'] as Map : const {};
+                  final records =
+                      v['records'] is Map ? v['records'] as Map : const {};
                   setState(() => _error = v['ok'] == true
-                      ? 'audit chain verified: ${v['checked']} entries'
-                      : 'CHAIN BROKEN at ${v['broken_at']}: ${v['reason']}');
+                      ? 'audit chain verified: ${chain['checked'] ?? 0} '
+                          'entries, ${records['checked'] ?? 0} records '
+                          're-checked against their hashes'
+                      : 'CHAIN BROKEN at ${chain['broken_at'] ?? '?'}: '
+                          '${chain['reason'] ?? 'a record no longer matches its hash'}');
                 }
               }),
         ],

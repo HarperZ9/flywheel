@@ -120,7 +120,11 @@ class _UpliftViewState extends State<UpliftView> {
                     child: Text(d.provider,
                         style: Theme.of(context).textTheme.titleMedium)),
                 VerdictPill(
-                    d.includesZero ? 'no uplift claimed' : 'uplift measured',
+                    d.includesZero
+                        ? 'no uplift claimed'
+                        : (d.isRegression
+                            ? 'regression measured'
+                            : 'uplift measured'),
                     status: d.verdict),
               ]),
               const SizedBox(height: FwLayout.s2),

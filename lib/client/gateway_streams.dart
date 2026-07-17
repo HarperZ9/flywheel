@@ -53,6 +53,52 @@ extension GatewayStreamsAndPlugins on GatewayClient {
     }
   }
 
+  /// POST /v1/chat/completions with stream:true — a conversational turn over any
+  /// endpoint in the roster. Yields `{type:'delta', content:'…'}` as the answer
+  /// arrives and a final `{type:'done', receipt:{…}}` carrying the turn's
+  /// re-derivable receipt. Malformed frames are skipped, never fatal.
+  Stream<Map<String, dynamic>> chatStream(
+      List<Map<String, String>> messages, String model) async* {
+    final req = http.Request('POST', Uri.parse('$baseUrl/v1/chat/completions'))
+      ..headers['Content-Type'] = 'application/json'
+      ..body = jsonEncode({'model': model, 'messages': messages, 'stream': true});
+    final res = await _http.send(req);
+    if (res.statusCode != 200) {
+      throw GatewayException('gateway returned ${res.statusCode}');
+    }
+    var buffer = '';
+    await for (final chunk in res.stream.transform(utf8.decoder)) {
+      buffer += chunk;
+      while (true) {
+        final sep = buffer.indexOf('\n\n');
+        if (sep < 0) break;
+        final frame = buffer.substring(0, sep);
+        buffer = buffer.substring(sep + 2);
+        for (final line in frame.split('\n')) {
+          if (!line.startsWith('data: ')) continue;
+          final payload = line.substring(6).trim();
+          if (payload == '[DONE]') return;
+          try {
+            final obj = jsonDecode(payload) as Map<String, dynamic>;
+            final choices = obj['choices'];
+            final delta = (choices is List && choices.isNotEmpty)
+                ? (choices.first as Map<String, dynamic>)['delta']
+                : null;
+            final content = (delta is Map) ? delta['content'] : null;
+            if (content is String && content.isNotEmpty) {
+              yield {'type': 'delta', 'content': content};
+            }
+            if (obj['x_receipt'] is Map<String, dynamic>) {
+              yield {'type': 'done', 'receipt': obj['x_receipt']};
+            }
+          } catch (_) {
+            // a malformed frame is skipped, never fatal to the stream
+          }
+        }
+      }
+    }
+  }
+
   /// GET /api/plugins — every mounted capability, one manifest shape.
   Future<Map<String, dynamic>> plugins() async {
     final r = await _http.get(Uri.parse('$baseUrl/api/plugins'));
@@ -107,6 +153,60 @@ extension GatewayStreamsAndPlugins on GatewayClient {
     return _decode(r);
   }
 
+  /// POST /api/lanes/install — install one lane on request. A down lane
+  /// finally has remediation from the surface that reports it down.
+  Future<Map<String, dynamic>> installLane(String name,
+      {String profile = 'package'}) async {
+    final r = await _http.post(
+      Uri.parse('$baseUrl/api/lanes/install'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'name': name, 'profile': profile}),
+    );
+    return _decode(r);
+  }
+
+  /// POST /api/plugins/call — one tool call on a registered plugin, args and
+  /// result verbatim. The probe shows what a server offers; this runs it.
+  Future<Map<String, dynamic>> callPlugin(
+      String name, String tool, Map<String, dynamic> arguments) async {
+    final r = await _http.post(
+      Uri.parse('$baseUrl/api/plugins/call'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'name': name, 'tool': tool, 'arguments': arguments}),
+    );
+    return _decode(r);
+  }
+
+  /// POST /api/snapshot — the citation, frozen: the page's bytes fetched,
+  /// hashed, and stored so the reference outlives the live web.
+  Future<Map<String, dynamic>> snapshotUrl(String url) async {
+    final r = await _http.post(
+      Uri.parse('$baseUrl/api/snapshot'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'url': url}),
+    );
+    return _decode(r);
+  }
+
+  /// POST /api/explain — the teach-back graded mechanically: the explanation
+  /// must name the changed files, cover the key changed identifiers, and be
+  /// in your own words (pasting the diff back cannot pass). The receipt
+  /// lands in the comprehension ledger.
+  Future<Map<String, dynamic>> explain(String diff, String explanation,
+      {double threshold = 0.6, String reviewer = ''}) async {
+    final r = await _http.post(
+      Uri.parse('$baseUrl/api/explain'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'diff': diff,
+        'explanation': explanation,
+        'threshold': threshold,
+        if (reviewer.isNotEmpty) 'reviewer': reviewer,
+      }),
+    );
+    return _decode(r);
+  }
+
   /// POST /api/retention — bank an unaided retest outcome, linked to the
   /// original evidence in the verifiable store.
   Future<Map<String, dynamic>> retentionRecord(String original, bool passed,
@@ -125,13 +225,17 @@ extension GatewayStreamsAndPlugins on GatewayClient {
 
   /// POST /api/science — evidence, gated spec, witnessed claim verdicts.
   Future<Map<String, dynamic>> science(String question,
-      {List<Map<String, String>>? claims, int maxSources = 4}) async {
+      {List<Map<String, String>>? claims,
+      List<Map<String, dynamic>>? measurements,
+      int maxSources = 4}) async {
     final r = await _http.post(
       Uri.parse('$baseUrl/api/science'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({
         'question': question,
         if (claims != null && claims.isNotEmpty) 'claims': claims,
+        if (measurements != null && measurements.isNotEmpty)
+          'measurements': measurements,
         'max_sources': maxSources,
       }),
     );
@@ -265,6 +369,34 @@ extension GatewayStreamsAndPlugins on GatewayClient {
   Future<Map<String, dynamic>> installFromCatalog(String name) async {
     final r = await _http.post(
       Uri.parse('$baseUrl/api/marketplace/install'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'name': name}),
+    );
+    return _decode(r);
+  }
+
+  /// POST /api/marketplace/add — save a user entry into the catalog.
+  /// `requires` lists env var NAMES only; the engine refuses values.
+  Future<Map<String, dynamic>> marketplaceAdd(
+      String name, List<String> command,
+      {String detail = '', List<String> requires = const []}) async {
+    final r = await _http.post(
+      Uri.parse('$baseUrl/api/marketplace/add'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'name': name,
+        'command': command,
+        'detail': detail,
+        'requires': requires,
+      }),
+    );
+    return _decode(r);
+  }
+
+  /// POST /api/marketplace/remove — drop a user catalog entry.
+  Future<Map<String, dynamic>> marketplaceRemove(String name) async {
+    final r = await _http.post(
+      Uri.parse('$baseUrl/api/marketplace/remove'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({'name': name}),
     );

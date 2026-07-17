@@ -14,18 +14,23 @@ import 'models/gateway_models.dart';
 import 'services/gateway_process.dart';
 import 'services/settings.dart';
 import 'theme/flywheel_theme.dart';
+import 'widgets/flywheel_nav.dart';
 import 'views/agent_view.dart';
+import 'views/academy_view.dart';
 import 'views/code_view.dart';
+import 'views/compare_view.dart';
 import 'views/companion_view.dart';
 import 'views/endpoints_view.dart';
 import 'views/family_view.dart';
 import 'views/feeds_view.dart';
 import 'views/graph_view.dart';
+import 'views/instruments_view.dart';
 import 'views/lanes_view.dart';
 import 'views/lint_view.dart';
 import 'views/memory_view.dart';
 import 'views/plan_view.dart';
 import 'views/plugins_view.dart';
+import 'views/discourse_view.dart';
 import 'views/projects_view.dart';
 import 'views/receipts_view.dart';
 import 'views/science_view.dart';
@@ -76,9 +81,13 @@ class _FlywheelAppState extends State<FlywheelApp> {
       title: 'Flywheel',
       debugShowCheckedModeBanner: false,
       theme: flywheelLightTheme(
-          textFamily: s.textFamily, monoFamily: s.monoFamily),
+          textFamily: s.textFamily,
+          monoFamily: s.monoFamily,
+          groundPreset: s.groundPreset),
       darkTheme: flywheelDarkTheme(
-          textFamily: s.textFamily, monoFamily: s.monoFamily),
+          textFamily: s.textFamily,
+          monoFamily: s.monoFamily,
+          groundPreset: s.groundPreset),
       themeMode: _mode,
       builder: (context, child) => MediaQuery(
         data: MediaQuery.of(context).copyWith(
@@ -123,28 +132,56 @@ class _FlywheelShellState extends State<FlywheelShell> {
   Timer? _timer;
 
   late bool _railCollapsed = widget.settings.railCollapsed;
+  late double _railWidth = widget.settings.railWidth;
 
+  // A payload handed to a destination when another view jumped here; the
+  // target reads it once on arrival, then it clears.
+  Object? _pendingArg;
+
+  void _goTo(String label, {Object? arg}) {
+    final i = _destinations.indexWhere((d) => d.label == label);
+    if (i < 0) return;
+    setState(() {
+      _selectedIndex = i;
+      _pendingArg = arg;
+    });
+  }
+
+  Object? _takeArg() {
+    final a = _pendingArg;
+    _pendingArg = null;
+    return a;
+  }
+
+  // Grouped by what the user came to DO, not by how the engine is built. The rail
+  // opens on Chat; the accountability surfaces live under Advanced, present for
+  // those who want them, out of the newcomer's way. Views are mapped by label
+  // (below), so this order can change freely without touching the mapping.
   static const _destinations = [
-    RailDestination('Projects', abbr: 'PR'),
-    RailDestination('Plan', abbr: 'PN'),
-    RailDestination('Lanes', abbr: 'LN'),
-    RailDestination('Family', abbr: 'FA'),
-    RailDestination('Code', abbr: 'CO'),
-    RailDestination('Lint', abbr: 'LT'),
-    RailDestination('World', abbr: 'WD'),
-    RailDestination('Graph', abbr: 'GR'),
-    RailDestination('Feeds', abbr: 'FD'),
-    RailDestination('Receipts', abbr: 'RC'),
-    RailDestination('Companion', abbr: 'CM'),
-    RailDestination('Agent', abbr: 'AG'),
-    RailDestination('Workflows', abbr: 'WF'),
-    RailDestination('Studio', abbr: 'ST'),
-    RailDestination('Science', abbr: 'SC'),
-    RailDestination('Train', abbr: 'TR'),
-    RailDestination('Uplift', abbr: 'UP'),
-    RailDestination('Memory', abbr: 'ME'),
-    RailDestination('Plugins', abbr: 'PL'),
-    RailDestination('Endpoints', abbr: 'EP'),
+    RailDestination('Chat', abbr: 'CH', group: 'Start'),
+    RailDestination('Compare', abbr: 'CP', group: 'Start'),
+    RailDestination('Models', abbr: 'MD', group: 'Start'),
+    RailDestination('Code', abbr: 'CO', group: 'Do'),
+    RailDestination('Companion', abbr: 'CN', group: 'Do'),
+    RailDestination('Plan', abbr: 'PN', group: 'Do'),
+    RailDestination('Workflows', abbr: 'WF', group: 'Do'),
+    RailDestination('Studio', abbr: 'ST', group: 'Do'),
+    RailDestination('Lint', abbr: 'LT', group: 'Do'),
+    RailDestination('Memory', abbr: 'ME', group: 'Know'),
+    RailDestination('Graph', abbr: 'GR', group: 'Know'),
+    RailDestination('Projects', abbr: 'PR', group: 'Know'),
+    RailDestination('Feeds', abbr: 'FD', group: 'Know'),
+    RailDestination('Discourse', abbr: 'DS', group: 'Know'),
+    RailDestination('Academy', abbr: 'AY', group: 'Know'),
+    RailDestination('Receipts', abbr: 'RC', group: 'Advanced'),
+    RailDestination('Instruments', abbr: 'IS', group: 'Advanced'),
+    RailDestination('Science', abbr: 'SC', group: 'Advanced'),
+    RailDestination('World', abbr: 'WD', group: 'Advanced'),
+    RailDestination('Lanes', abbr: 'LN', group: 'Advanced'),
+    RailDestination('Train', abbr: 'TR', group: 'Advanced'),
+    RailDestination('Uplift', abbr: 'UP', group: 'Advanced'),
+    RailDestination('Family', abbr: 'FA', group: 'Advanced'),
+    RailDestination('Plugins', abbr: 'PL', group: 'Advanced'),
   ];
 
   @override
@@ -220,7 +257,9 @@ class _FlywheelShellState extends State<FlywheelShell> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Column(
+      body: FlywheelNav(
+        goTo: _goTo,
+        child: Column(
         children: [
           Expanded(
             child: Row(
@@ -232,6 +271,12 @@ class _FlywheelShellState extends State<FlywheelShell> {
                   themeMode: widget.themeMode,
                   onToggleTheme: widget.onToggleTheme,
                   collapsed: _railCollapsed,
+                  width: _railWidth,
+                  onResize: (w) => setState(() {
+                    _railWidth = w;
+                    widget.settings.railWidth = w;
+                    widget.settings.save();
+                  }),
                   onToggleCollapse: () => setState(() {
                     _railCollapsed = !_railCollapsed;
                     widget.settings.railCollapsed = _railCollapsed;
@@ -255,54 +300,84 @@ class _FlywheelShellState extends State<FlywheelShell> {
           ),
         ],
       ),
+    ),
     );
   }
 
   Widget _activeView() {
-    switch (_selectedIndex) {
-      case 0:
-        return ProjectsView(client: _client, alive: _gatewayAlive);
-      case 1:
-        return PlanView(client: _client, alive: _gatewayAlive);
-      case 2:
-        return LanesView(
-            roster: _roster, alive: _gatewayAlive, onProbe: _probeLanes);
-      case 3:
-        return FamilyView(client: _client, alive: _gatewayAlive);
-      case 4:
+    switch (_destinations[_selectedIndex].label) {
+      case 'Chat':
+        return AgentView(
+            client: _client, alive: _gatewayAlive, settings: widget.settings);
+      case 'Compare':
+        return CompareView(
+            client: _client, alive: _gatewayAlive, settings: widget.settings);
+      case 'Models':
+        return EndpointsView(client: _client, alive: _gatewayAlive);
+      case 'Code':
         return CodeView(
             client: _client, alive: _gatewayAlive, settings: widget.settings);
-      case 5:
-        return LintView(client: _client, alive: _gatewayAlive);
-      case 6:
-        return WorldView(world: _world, alive: _gatewayAlive);
-      case 7:
-        return GraphView(client: _client, alive: _gatewayAlive);
-      case 8:
-        return FeedsView(client: _client, alive: _gatewayAlive);
-      case 9:
-        return ReceiptsView(client: _client, alive: _gatewayAlive);
-      case 10:
+      case 'Companion':
         return CompanionView(client: _client, alive: _gatewayAlive);
-      case 11:
-        return AgentView(client: _client, alive: _gatewayAlive);
-      case 12:
-        return WorkflowsView(client: _client, alive: _gatewayAlive);
-      case 13:
+      case 'Plan':
+        return PlanView(
+            client: _client, alive: _gatewayAlive, settings: widget.settings);
+      case 'Workflows':
+        return WorkflowsView(
+            client: _client, alive: _gatewayAlive, settings: widget.settings);
+      case 'Studio':
         return StudioView(
-            world: _world, roster: _roster, alive: _gatewayAlive);
-      case 14:
-        return ScienceView(client: _client, alive: _gatewayAlive);
-      case 15:
-        return TrainView(client: _client, alive: _gatewayAlive);
-      case 16:
-        return UpliftView(client: _client, alive: _gatewayAlive);
-      case 17:
+            world: _world,
+            roster: _roster,
+            alive: _gatewayAlive,
+            client: _client);
+      case 'Lint':
+        return LintView(client: _client, alive: _gatewayAlive);
+      case 'Memory':
         return MemoryView(client: _client, alive: _gatewayAlive);
-      case 18:
+      case 'Graph':
+        return GraphView(client: _client, alive: _gatewayAlive);
+      case 'Projects':
+        return ProjectsView(client: _client, alive: _gatewayAlive);
+      case 'Feeds':
+        return FeedsView(client: _client, alive: _gatewayAlive);
+      case 'Discourse':
+        return DiscourseView(
+            client: _client, alive: _gatewayAlive, settings: widget.settings);
+      case 'Academy':
+        return AcademyView(client: _client, alive: _gatewayAlive);
+      case 'Receipts':
+        final arg = _takeArg();
+        return ReceiptsView(
+            client: _client,
+            alive: _gatewayAlive,
+            focusLeaf: arg is String ? arg : null);
+      case 'Instruments':
+        return InstrumentsView(client: _client, alive: _gatewayAlive);
+      case 'Science':
+        return ScienceView(
+            client: _client, alive: _gatewayAlive, settings: widget.settings);
+      case 'World':
+        return WorldView(
+            world: _world, alive: _gatewayAlive, client: _client);
+      case 'Lanes':
+        return LanesView(
+            roster: _roster,
+            alive: _gatewayAlive,
+            onProbe: _probeLanes,
+            onInstall: (name) async {
+              final r = await _client.installLane(name);
+              _probeLanes(); // the roster re-reports itself after an install
+              return r;
+            });
+      case 'Train':
+        return TrainView(client: _client, alive: _gatewayAlive);
+      case 'Uplift':
+        return UpliftView(client: _client, alive: _gatewayAlive);
+      case 'Family':
+        return FamilyView(client: _client, alive: _gatewayAlive);
+      case 'Plugins':
         return PluginsView(client: _client, alive: _gatewayAlive);
-      case 19:
-        return EndpointsView(client: _client, alive: _gatewayAlive);
       default:
         return const FwEmpty('Unknown view');
     }

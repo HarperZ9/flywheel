@@ -8,7 +8,8 @@ import 'fw.dart';
 
 class ProbeResult extends StatelessWidget {
   final Map<String, dynamic> probe;
-  const ProbeResult({super.key, required this.probe});
+  final ValueChanged<String>? onCallTool;
+  const ProbeResult({super.key, required this.probe, this.onCallTool});
 
   @override
   Widget build(BuildContext context) {
@@ -41,15 +42,19 @@ class ProbeResult extends StatelessWidget {
             runSpacing: 4,
             children: [
               for (final tool in tools)
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: t.ground2,
-                    borderRadius: BorderRadius.circular(4),
-                    border: Border.all(color: t.hairline),
+                InkWell(
+                  onTap: onCallTool == null ? null : () => onCallTool!(tool),
+                  borderRadius: BorderRadius.circular(4),
+                  child: Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: t.ground2,
+                      borderRadius: BorderRadius.circular(4),
+                      border: Border.all(color: t.hairline),
+                    ),
+                    child: Text(tool, style: fwMono(t, size: 10)),
                   ),
-                  child: Text(tool, style: fwMono(t, size: 10)),
                 ),
             ],
           ),

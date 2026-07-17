@@ -1,7 +1,10 @@
 // agent_panel.dart — the agent docked under the editor, scoped to the open
-// workspace. Same gated loop as everywhere else: write and exec are grants
-// the user makes here, the run is witnessed, and the integrity verdict is
-// shown, not implied. After a run the Code view reloads clean files.
+// workspace. Same gated loop as everywhere else, now revealed as it runs:
+// every assistant turn, tool call, and tool verdict streams into the
+// timeline live, and every finished run lands in past runs with its trace.
+// Detach is honest: it stops the watching, never the gated run.
+
+import 'dart:async';
 
 import 'package:flutter/material.dart';
 
@@ -9,6 +12,9 @@ import '../client/gateway_client.dart';
 import '../models/gateway_models.dart';
 import '../theme/flywheel_theme.dart';
 import '../widgets/fw.dart';
+import 'agent_gates.dart';
+import 'agent_runs_panel.dart';
+import 'live_run_tail.dart';
 
 class AgentPanel extends StatefulWidget {
   final GatewayClient client;
@@ -40,13 +46,19 @@ class AgentPanel extends StatefulWidget {
 class _AgentPanelState extends State<AgentPanel> {
   late final TextEditingController _goal =
       widget.goalController ?? TextEditingController();
+  final _scroll = ScrollController();
   List<EndpointRow> _endpoints = [];
   String? _endpoint;
   bool _allowWrite = true; // an IDE agent exists to edit; still a visible grant
   bool _allowExec = false;
   bool _attachContext = true;
   bool _running = false;
-  Map<String, dynamic>? _result;
+  bool _detached = false;
+  List<Map<String, dynamic>> _events = [];
+  StreamSubscription<Map<String, dynamic>>? _sub;
+  bool _pastOpen = false;
+  List<Map<String, dynamic>> _pastRuns = [];
+  Map<String, dynamic>? _stored; // an opened past run
   String? _error;
 
   @override
@@ -57,6 +69,8 @@ class _AgentPanelState extends State<AgentPanel> {
 
   @override
   void dispose() {
+    _sub?.cancel();
+    _scroll.dispose();
     if (widget.goalController == null) _goal.dispose();
     super.dispose();
   }
@@ -74,7 +88,7 @@ class _AgentPanelState extends State<AgentPanel> {
     } catch (_) {}
   }
 
-  Future<void> _run() async {
+  void _run() {
     var goal = _goal.text.trim();
     if (goal.isEmpty || _endpoint == null || _running) return;
     if (_attachContext && widget.activeFile != null) {
@@ -86,21 +100,81 @@ class _AgentPanelState extends State<AgentPanel> {
     widget.onRunStarted();
     setState(() {
       _running = true;
-      _result = null;
+      _detached = false;
+      _events = [];
+      _stored = null;
       _error = null;
     });
-    try {
-      final r = await widget.client.agent(goal, _endpoint!,
-          maxSteps: 10,
-          allowWrite: _allowWrite,
-          allowExec: _allowExec,
-          root: widget.workspaceRoot);
-      if (mounted) setState(() => _result = r);
+    _sub = widget.client
+        .agentStream(goal, _endpoint!,
+            maxSteps: 10,
+            allowWrite: _allowWrite,
+            allowExec: _allowExec,
+            root: widget.workspaceRoot)
+        .listen(_onEvent, onError: (e) {
+      if (mounted) {
+        setState(() {
+          _error = '$e';
+          _running = false;
+        });
+      }
       widget.onRunFinished();
+    }, onDone: () {
+      if (mounted) setState(() => _running = false);
+    });
+  }
+
+  void _onEvent(Map<String, dynamic> e) {
+    if (!mounted) return;
+    setState(() => _events = [..._events, e]);
+    if (e['type'] == 'done') {
+      widget.onRunFinished();
+      if (_pastOpen) _loadPastRuns();
+    }
+    // follow the tail so the newest step is always in view
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_scroll.hasClients) return;
+      final end = _scroll.position.maxScrollExtent;
+      if (MediaQuery.of(context).disableAnimations) {
+        _scroll.jumpTo(end);
+      } else {
+        _scroll.animateTo(end,
+            duration: const Duration(milliseconds: 180),
+            curve: Curves.easeOutQuart);
+      }
+    });
+  }
+
+  /// Stops the watching, never the run: the gated loop finishes in the
+  /// engine and its trace lands in past runs.
+  void _detach() {
+    _sub?.cancel();
+    setState(() {
+      _running = false;
+      _detached = true;
+    });
+    widget.onRunFinished();
+  }
+
+  Future<void> _loadPastRuns() async {
+    try {
+      final r = await widget.client.agentRuns(limit: 10);
+      if (mounted) {
+        setState(() => _pastRuns = ((r['runs'] ?? []) as List)
+            .whereType<Map<String, dynamic>>()
+            .toList());
+      }
     } catch (e) {
       if (mounted) setState(() => _error = '$e');
-    } finally {
-      if (mounted) setState(() => _running = false);
+    }
+  }
+
+  Future<void> _openStored(Map<String, dynamic> row) async {
+    try {
+      final doc = await widget.client.agentRunDetail('${row['run_id'] ?? ''}');
+      if (mounted) setState(() => _stored = doc);
+    } catch (e) {
+      if (mounted) setState(() => _error = '$e');
     }
   }
 
@@ -119,120 +193,103 @@ class _AgentPanelState extends State<AgentPanel> {
         children: [
           Row(
             children: [
-              const Kicker('workspace agent', hot: true),
+              // one hot mark per view: while browsing history the sign flow
+              // (when offered) carries it, so the header calms down
+              Kicker('workspace agent', hot: !_pastOpen),
               const Spacer(),
               if (!widget.alive)
                 Text('engine offline',
-                    style: fwMono(t, size: 10.5, color: t.drift)),
-            ],
-          ),
-          const SizedBox(height: FwLayout.s2),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: _goal,
-                  maxLines: 2,
-                  minLines: 1,
-                  enabled: widget.alive,
-                  style: const TextStyle(fontSize: 13),
-                  decoration: const InputDecoration(
-                      hintText: 'Change this workspace…'),
-                  onSubmitted: (_) => _run(),
+                    style: fwMono(t, size: 10.5, color: t.drift))
+              else
+                TextButton(
+                  onPressed: () {
+                    setState(() {
+                      _pastOpen = !_pastOpen;
+                      _stored = null;
+                    });
+                    if (_pastOpen) _loadPastRuns();
+                  },
+                  child: Text(_pastOpen ? 'live' : 'past runs',
+                      style: fwMono(t, size: 11, color: t.inkMuted)),
                 ),
-              ),
-              const SizedBox(width: FwLayout.s2),
-              FilledButton(
-                onPressed: widget.alive && !_running ? _run : null,
-                child: Text(_running ? 'Running…' : 'Run'),
-              ),
             ],
           ),
           const SizedBox(height: FwLayout.s2),
-          Wrap(
-            spacing: FwLayout.s3,
-            runSpacing: FwLayout.s1,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: [
-              DropdownButton<String>(
-                value: _endpoint,
-                underline: const SizedBox(),
-                style: fwMono(t, size: 11.5, color: t.inkSoft),
-                items: [
-                  for (final e in _endpoints)
-                    DropdownMenuItem(
-                        value: e.name,
-                        child: Text(
-                            '${e.name}${e.hasCredential ? '' : ' (no key)'}')),
-                ],
-                onChanged: (v) => setState(() => _endpoint = v),
-              ),
-              _toggle('write', _allowWrite, (v) => setState(() => _allowWrite = v)),
-              _toggle('exec', _allowExec, (v) => setState(() => _allowExec = v)),
-              _toggle('attach file', _attachContext,
-                  (v) => setState(() => _attachContext = v)),
+          if (_pastOpen)
+            _pastSection()
+          else ...[
+            _composerRow(),
+            const SizedBox(height: FwLayout.s2),
+            AgentGates(
+              endpoints: _endpoints,
+              endpoint: _endpoint,
+              allowWrite: _allowWrite,
+              allowExec: _allowExec,
+              attachContext: _attachContext,
+              onEndpoint: (v) => setState(() => _endpoint = v),
+              onWrite: (v) => setState(() => _allowWrite = v),
+              onExec: (v) => setState(() => _allowExec = v),
+              onAttach: (v) => setState(() => _attachContext = v),
+            ),
+            if (_error != null) ...[
+              const SizedBox(height: FwLayout.s2),
+              HonestNull('The run failed: $_error'),
             ],
-          ),
-          if (_error != null) ...[
-            const SizedBox(height: FwLayout.s2),
-            HonestNull('The run failed: $_error'),
-          ],
-          if (_result != null) ...[
-            const SizedBox(height: FwLayout.s2),
-            _resultStrip(t, _result!),
+            if (_detached) ...[
+              const SizedBox(height: FwLayout.s2),
+              const HonestNull(
+                  'Detached. The gated run continues in the engine and lands '
+                  'under past runs with its full trace.'),
+            ],
+            if (_events.isNotEmpty) ...[
+              const SizedBox(height: FwLayout.s2),
+              LiveRunTail(
+                  events: _events, scroll: _scroll, client: widget.client),
+            ],
           ],
         ],
       ),
     );
   }
 
-  Widget _toggle(String label, bool value, ValueChanged<bool> onChanged) {
-    final t = context.fw;
+  Widget _pastSection() {
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxHeight: 280),
+      child: SingleChildScrollView(
+        child: _stored != null
+            ? StoredAgentRun(doc: _stored!, client: widget.client)
+            : AgentRunsList(runs: _pastRuns, onOpen: _openStored),
+      ),
+    );
+  }
+
+  Widget _composerRow() {
     return Row(
-      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SizedBox(
-          height: 28,
-          width: 28,
-          child: Checkbox(
-              value: value,
-              onChanged: (v) => onChanged(v ?? false),
-              visualDensity: VisualDensity.compact),
+        Expanded(
+          child: TextField(
+            controller: _goal,
+            maxLines: 2,
+            minLines: 1,
+            enabled: widget.alive,
+            style: const TextStyle(fontSize: 13),
+            decoration:
+                const InputDecoration(hintText: 'Change this workspace…'),
+            onSubmitted: (_) => _run(),
+          ),
         ),
-        Text(label, style: fwMono(t, size: 11, color: t.inkMuted)),
+        const SizedBox(width: FwLayout.s2),
+        if (_running) ...[
+          OutlinedButton(onPressed: _detach, child: const Text('Detach')),
+          const SizedBox(width: FwLayout.s2),
+        ],
+        FilledButton(
+          onPressed: widget.alive && !_running ? _run : null,
+          child: Text(_running ? 'Running…' : 'Run'),
+        ),
       ],
     );
   }
 
-  Widget _resultStrip(FwTokens t, Map<String, dynamic> r) {
-    final integrity = r['integrity'];
-    final clean = integrity is Map ? integrity['clean'] == true : null;
-    return Container(
-      constraints: const BoxConstraints(maxHeight: 160),
-      child: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Wrap(
-              spacing: FwLayout.s2,
-              runSpacing: FwLayout.s1,
-              children: [
-                VerdictPill('${r['steps'] ?? '?'} steps',
-                    status: 'unverifiable'),
-                if (r['verified'] == true)
-                  const VerdictPill('ledger verified', status: 'verified'),
-                if (clean != null)
-                  VerdictPill(clean ? 'integrity clean' : 'integrity flagged',
-                      status: clean ? 'verified' : 'drift'),
-              ],
-            ),
-            const SizedBox(height: FwLayout.s2),
-            SelectableText('${r['final'] ?? ''}',
-                style: fwMono(t, size: 11.5).copyWith(height: 1.5)),
-          ],
-        ),
-      ),
-    );
-  }
 }

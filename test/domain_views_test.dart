@@ -1,6 +1,7 @@
 // Uplift + Science models: intervals and verdicts arrive computed by the
 // engine and render as-is; includes_zero is the honest null and must
 // survive parsing. Offline states name the command, like every surface.
+import 'package:flywheel_desktop/services/settings.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -87,7 +88,7 @@ void main() {
 
   for (final (name, view) in [
     ('Uplift', (GatewayClient c) => UpliftView(client: c, alive: false)),
-    ('Science', (GatewayClient c) => ScienceView(client: c, alive: false)),
+    ('Science', (GatewayClient c) => ScienceView(client: c, alive: false, settings: DesktopSettings())),
     ('Feeds', (GatewayClient c) => FeedsView(client: c, alive: false)),
     ('Family', (GatewayClient c) => FamilyView(client: c, alive: false)),
   ]) {

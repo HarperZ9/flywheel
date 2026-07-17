@@ -5,44 +5,117 @@
 
 import 'package:flutter/material.dart';
 
+import '../client/gateway_client.dart';
 import '../models/gateway_models.dart';
+import '../models/render_status.dart';
 import '../theme/flywheel_theme.dart';
 import '../widgets/fw.dart';
 
-class WorldView extends StatelessWidget {
+class WorldView extends StatefulWidget {
   final WorldDoc? world;
   final bool alive;
+  final GatewayClient? client;
 
-  const WorldView({super.key, this.world, required this.alive});
+  const WorldView(
+      {super.key, this.world, required this.alive, this.client});
+
+  @override
+  State<WorldView> createState() => _WorldViewState();
+}
+
+class _WorldViewState extends State<WorldView> {
+  WorldDoc? _world;
+  String? _priorRoot; // the root hash before the last re-read
+  bool _rereading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _world = widget.world;
+  }
+
+  @override
+  void didUpdateWidget(WorldView old) {
+    super.didUpdateWidget(old);
+    // adopt the shell's polled world only until the user re-reads here
+    if (_priorRoot == null && widget.world != null) _world = widget.world;
+  }
+
+  Future<void> _reread() async {
+    final client = widget.client;
+    if (client == null || _rereading) return;
+    setState(() => _rereading = true);
+    final before = _world?.rootHash;
+    try {
+      final fresh = await client.projectedWorld();
+      if (mounted) {
+        setState(() {
+          _priorRoot = before;
+          _world = fresh;
+        });
+      }
+    } catch (_) {
+      // a failed re-read leaves the prior projection standing
+    } finally {
+      if (mounted) setState(() => _rereading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    if (!alive) {
+    if (!widget.alive) {
       return const FwEmpty(
           'The engine is offline. The projected world appears when it runs.',
           command: 'flywheel up');
     }
-    if (world == null) {
+    final w = _world;
+    if (w == null) {
       return const Center(child: CircularProgressIndicator(strokeWidth: 2));
     }
-    final w = world!;
     final t = context.fw;
+    final rootMoved = _priorRoot != null && _priorRoot != w.rootHash;
     final items = (w.findings['items'] is List)
         ? List<Map<String, dynamic>>.from(
             (w.findings['items'] as List).whereType<Map<String, dynamic>>())
         : <Map<String, dynamic>>[];
     return ViewScroll(
+      storageKey: 'world',
       children: [
-        const SectionHeader('World', kicker: 'the projected state'),
+        SectionHeader('World',
+            kicker: 'the projected state',
+            trailing: widget.client == null
+                ? null
+                : OutlinedButton(
+                    onPressed: _rereading ? null : _reread,
+                    child: Text(_rereading ? 'Reading…' : 'Re-read'),
+                  )),
         const SizedBox(height: FwLayout.s4),
         _rootCard(context, w),
+        if (_priorRoot != null) ...[
+          const SizedBox(height: FwLayout.s2),
+          Row(children: [
+            VerdictPill(rootMoved ? 'root moved' : 'root held',
+                status: rootMoved ? 'drift' : 'verified'),
+            const SizedBox(width: FwLayout.s2),
+            Expanded(
+              child: Text(
+                  rootMoved
+                      ? 'a cataloged receipt changed since the last read; '
+                          'the projection is not what it was'
+                      : 're-read recomputed the same root: nothing cataloged '
+                          'has changed',
+                  style: fwMono(t, size: 11, color: t.inkMuted)),
+            ),
+          ]),
+        ],
         const SizedBox(height: FwLayout.s3),
         AdaptiveTiles(
           children: [
             StatTile(
                 label: 'measured',
                 value: '${w.findings['measured'] ?? 0}',
-                status: 'verified'),
+                status: countStatus(
+                    int.tryParse('${w.findings['measured'] ?? 0}') ?? 0)),
             StatTile(
                 label: 'pending',
                 value: '${w.findings['pending'] ?? 0}',
@@ -133,10 +206,10 @@ class WorldView extends StatelessWidget {
           Text('Projected world',
               style: Theme.of(context).textTheme.titleLarge),
           const SizedBox(height: FwLayout.s3),
-          HashText('root_hash', w.rootHash, keep: 40),
+          HashText('root_hash', w.rootHash, keep: 40, linkToReceipts: true),
           if (w.merkleRoot != null) ...[
             const SizedBox(height: FwLayout.s1),
-            HashText('merkle_root', w.merkleRoot!, keep: 40),
+            HashText('merkle_root', w.merkleRoot!, keep: 40, linkToReceipts: true),
           ],
           const SizedBox(height: FwLayout.s3),
           Text(

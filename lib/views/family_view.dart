@@ -9,6 +9,8 @@ import 'package:flutter/material.dart';
 import '../client/gateway_client.dart';
 import '../theme/flywheel_theme.dart';
 import '../widgets/fw.dart';
+import '../widgets/mode_chip.dart';
+import '../widgets/teachback_card.dart';
 
 class FamilyView extends StatefulWidget {
   final GatewayClient client;
@@ -39,13 +41,15 @@ class _FamilyViewState extends State<FamilyView> {
     if (!old.alive && widget.alive) _load();
   }
 
+  int _days = 3; // the retention window is a choice, not a constant
+
   Future<void> _load() async {
     if (!widget.alive) return;
     try {
       final results = await Future.wait([
         widget.client.getJson('/api/readiness'),
         widget.client.getJson('/api/comprehension'),
-        widget.client.getJson('/api/retention?days=3'),
+        widget.client.getJson('/api/retention?days=$_days'),
         widget.client.getJson('/api/store/verify'),
       ]);
       if (mounted) {
@@ -159,9 +163,26 @@ class _FamilyViewState extends State<FamilyView> {
             ]),
           ),
         ],
+        const SizedBox(height: FwLayout.s4),
+        const Kicker('teach-back · the ledger\'s write'),
+        const SizedBox(height: FwLayout.s2),
+        TeachbackCard(client: widget.client, onStored: _load),
         if (_retention != null) ...[
           const SizedBox(height: FwLayout.s4),
-          const Kicker('retention · due for an unaided retest'),
+          Row(children: [
+            const Kicker('retention · due for an unaided retest'),
+            const SizedBox(width: FwLayout.s3),
+            for (final d in const [3, 7, 30]) ...[
+              FwModeChip(
+                  label: '${d}d',
+                  active: _days == d,
+                  onTap: () {
+                    setState(() => _days = d);
+                    _load();
+                  }),
+              const SizedBox(width: FwLayout.s1),
+            ],
+          ]),
           const SizedBox(height: FwLayout.s2),
           if ((_retention!['due'] as List).isEmpty)
             Text('Nothing due. What was demonstrated recently still counts '

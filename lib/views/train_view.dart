@@ -6,6 +6,7 @@
 import 'package:flutter/material.dart';
 
 import '../client/gateway_client.dart';
+import '../models/render_status.dart';
 import '../theme/flywheel_theme.dart';
 import '../widgets/charts.dart';
 import '../widgets/fw.dart';
@@ -24,6 +25,7 @@ class _TrainViewState extends State<TrainView> {
   Map<String, dynamic>? _duel;
   Map<String, dynamic>? _training;
   Map<String, dynamic>? _loop;
+  Map<String, dynamic>? _uplift;
   bool _auditing = false;
   String? _error;
 
@@ -45,11 +47,13 @@ class _TrainViewState extends State<TrainView> {
       final results = await Future.wait([
         widget.client.getJson('/api/train/duel'),
         widget.client.trainingStatus(),
+        widget.client.upliftSummary(),
       ]);
       if (mounted) {
         setState(() {
           _duel = results[0];
           _training = results[1];
+          _uplift = results[2];
           _error = null;
         });
       }
@@ -93,7 +97,11 @@ class _TrainViewState extends State<TrainView> {
           HonestNull(_error!),
         ],
         const SizedBox(height: FwLayout.s4),
-        const Kicker('verified-inference duel', hot: true),
+        const Kicker('uplift · paired bare-vs-wrapped lane', hot: true),
+        const SizedBox(height: FwLayout.s3),
+        _upliftPanel(t),
+        const SizedBox(height: FwLayout.s5),
+        const Kicker('verified-inference duel'),
         const SizedBox(height: FwLayout.s3),
         _duelPanel(t),
         if (_training != null && _training!['error'] == null) ...[
@@ -116,6 +124,50 @@ class _TrainViewState extends State<TrainView> {
         const SizedBox(height: FwLayout.s3),
         _loopPanel(t),
       ],
+    );
+  }
+
+  /// The persisted paired-arm bench runs. This lane supersedes the duel by
+  /// the duel's own note; the payload was fetched-then-ignored before.
+  Widget _upliftPanel(FwTokens t) {
+    final u = _uplift;
+    if (u == null) return const HonestNull('Uplift summary unavailable.');
+    final runs = ((u['runs'] ?? []) as List)
+        .whereType<Map<String, dynamic>>()
+        .toList();
+    if (runs.isEmpty) {
+      return HonestNull('${u['note'] ?? 'No uplift bench artifact yet.'}');
+    }
+    return HairlineCard(
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        for (final r in runs)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 3),
+            child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              SizedBox(
+                  width: 210,
+                  child: Text('${r['path']}',
+                      style: fwMono(t, size: 10.5, color: t.inkFaint))),
+              const SizedBox(width: FwLayout.s3),
+              Expanded(
+                child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                          '${r['comparison_key']}'
+                          ' · ${((r['providers'] ?? []) as List).join(', ')}',
+                          style: fwMono(t, size: 11.5)),
+                      for (final d in ((r['deltas'] ?? []) as List)
+                          .whereType<Map<String, dynamic>>())
+                        Text(
+                            '${d['provider'] ?? d['key'] ?? ''} '
+                            '${d.entries.where((e) => e.value is num).map((e) => '${e.key} ${e.value}').join(' · ')}',
+                            style: fwMono(t, size: 10.5, color: t.inkMuted)),
+                    ]),
+              ),
+            ]),
+          ),
+      ]),
     );
   }
 
@@ -145,15 +197,22 @@ class _TrainViewState extends State<TrainView> {
             ],
           ),
           const SizedBox(height: FwLayout.s3),
-          _arm(t, 'raw single-shot', single, 'drift'),
+          // the two arm bars are rate MAGNITUDES the reader compares, not
+          // verdicts: neutral ink, never green-by-identity. The one verdict in
+          // this view is the interval-gated lift pill below.
+          _arm(t, 'raw single-shot', single, 'unverifiable'),
           const SizedBox(height: FwLayout.s2),
-          _arm(t, 'Flywheel verified', verified, 'verified'),
+          _arm(t, 'Flywheel verified', verified, 'unverifiable'),
           const SizedBox(height: FwLayout.s3),
           Row(
             children: [
               VerdictPill(
                   'harness lift ${lift >= 0 ? '+' : ''}${(lift * 100).toStringAsFixed(0)} pts',
-                  status: lift > 0 ? 'verified' : 'drift'),
+                  // a bare point estimate carries no interval: the duel summary
+                  // emits no separation from zero, so the lift is the honest
+                  // null, never a green win. The powered n=110 lane supersedes.
+                  status: liftStatus(lift,
+                      includesZero: d['lift_includes_zero'] as bool?)),
               const SizedBox(width: FwLayout.s3),
               if (rescued.isNotEmpty)
                 Expanded(

@@ -10,7 +10,12 @@ import 'aperture.dart';
 class RailDestination {
   final String label;
   final String abbr;
-  const RailDestination(this.label, {this.abbr = ''});
+
+  /// The goal group this destination belongs to (Start / Do / Know / Advanced).
+  /// The rail draws a section header when the group changes, so the nav reads as
+  /// "what did you come to do", not a flat wall of subsystems.
+  final String group;
+  const RailDestination(this.label, {this.abbr = '', this.group = ''});
   String get code => abbr.isNotEmpty
       ? abbr
       : (label.length >= 2 ? label.substring(0, 2) : label).toUpperCase();
@@ -23,6 +28,8 @@ class SideRail extends StatelessWidget {
   final ThemeMode themeMode;
   final VoidCallback onToggleTheme;
   final bool collapsed;
+  final double width;
+  final ValueChanged<double>? onResize;
   final VoidCallback onToggleCollapse;
   final VoidCallback? onOpenAppearance;
 
@@ -34,6 +41,8 @@ class SideRail extends StatelessWidget {
     required this.themeMode,
     required this.onToggleTheme,
     required this.collapsed,
+    this.width = 172,
+    this.onResize,
     required this.onToggleCollapse,
     this.onOpenAppearance,
   });
@@ -41,9 +50,12 @@ class SideRail extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = context.fw;
-    return AnimatedContainer(
-      duration: FwLayout.transition,
-      width: collapsed ? 52 : 172,
+    final w = collapsed ? 52.0 : width.clamp(148.0, 320.0);
+    final rail = AnimatedContainer(
+      duration: onResize != null && !collapsed
+          ? Duration.zero      // no easing while the user is dragging
+          : FwLayout.transition,
+      width: w,
       decoration: BoxDecoration(
         color: t.ground2,
         border: Border(right: BorderSide(color: t.line)),
@@ -56,7 +68,18 @@ class SideRail extends StatelessWidget {
             child: ListView(
               padding: const EdgeInsets.symmetric(vertical: FwLayout.s1),
               children: [
-                for (var i = 0; i < destinations.length; i++)
+                for (var i = 0; i < destinations.length; i++) ...[
+                  if (_startsGroup(i)) ...[
+                    if (collapsed)
+                      Container(
+                        height: 1,
+                        margin: const EdgeInsets.fromLTRB(
+                            FwLayout.s3, FwLayout.s3, FwLayout.s3, FwLayout.s2),
+                        color: t.hairline,
+                      )
+                    else
+                      _GroupHeader(destinations[i].group, first: i == 0),
+                  ],
                   _RailItem(
                     index: i,
                     dest: destinations[i],
@@ -64,6 +87,7 @@ class SideRail extends StatelessWidget {
                     collapsed: collapsed,
                     onTap: () => onSelect(i),
                   ),
+                ],
               ],
             ),
           ),
@@ -71,7 +95,31 @@ class SideRail extends StatelessWidget {
         ],
       ),
     );
+    if (collapsed || onResize == null) return rail;
+    // a drag handle on the right edge widens or narrows the rail
+    return Stack(children: [
+      rail,
+      Positioned(
+        right: 0,
+        top: 0,
+        bottom: 0,
+        width: 6,
+        child: MouseRegion(
+          cursor: SystemMouseCursors.resizeLeftRight,
+          child: GestureDetector(
+            behavior: HitTestBehavior.translucent,
+            onHorizontalDragUpdate: (d) =>
+                onResize!((w + d.delta.dx).clamp(148.0, 320.0)),
+            child: const SizedBox.expand(),
+          ),
+        ),
+      ),
+    ]);
   }
+
+  bool _startsGroup(int i) =>
+      destinations[i].group.isNotEmpty &&
+      (i == 0 || destinations[i - 1].group != destinations[i].group);
 
   Widget _header(FwTokens t) {
     return Padding(
@@ -217,7 +265,7 @@ class _RailItemState extends State<_RailItem> {
           width: 2.5,
           height: 14,
           decoration: BoxDecoration(
-            color: selected ? t.drift : Colors.transparent,
+            color: selected ? t.ink : Colors.transparent, // selection = ink emphasis, not a verdict
             borderRadius: BorderRadius.circular(2),
           ),
         ),
@@ -236,14 +284,10 @@ class _RailItemState extends State<_RailItem> {
           width: 2.5,
           height: 13,
           decoration: BoxDecoration(
-            color: selected ? t.drift : Colors.transparent,
+            color: selected ? t.ink : Colors.transparent, // selection = ink emphasis, not a verdict
             borderRadius: BorderRadius.circular(2),
           ),
         ),
-        const SizedBox(width: FwLayout.s2),
-        Text('0${widget.index + 1}',
-            style: fwKicker(t,
-                size: 9, color: selected ? t.inkMuted : t.inkFaint)),
         const SizedBox(width: FwLayout.s2),
         Expanded(
           child: Text(widget.dest.label,
@@ -254,6 +298,23 @@ class _RailItemState extends State<_RailItem> {
                   color: selected ? t.ink : t.inkMuted)),
         ),
       ],
+    );
+  }
+}
+
+class _GroupHeader extends StatelessWidget {
+  final String label;
+  final bool first;
+  const _GroupHeader(this.label, {this.first = false});
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.fw;
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+          FwLayout.s3, first ? FwLayout.s2 : FwLayout.s4, FwLayout.s3, 5),
+      child: Text(label.toUpperCase(),
+          style: fwKicker(t, size: 9, color: t.inkFaint)),
     );
   }
 }

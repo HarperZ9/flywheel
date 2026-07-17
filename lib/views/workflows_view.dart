@@ -8,14 +8,22 @@ import 'package:flutter/material.dart';
 import '../client/gateway_client.dart';
 import '../models/gateway_models.dart';
 import '../models/workflow_models.dart';
+import '../services/settings.dart';
 import '../theme/flywheel_theme.dart';
+import '../widgets/composer_controls.dart';
+import '../widgets/composer_results.dart';
 import '../widgets/fw.dart';
 import '../widgets/workflow_cards.dart';
 
 class WorkflowsView extends StatefulWidget {
   final GatewayClient client;
   final bool alive;
-  const WorkflowsView({super.key, required this.client, required this.alive});
+  final DesktopSettings settings;
+  const WorkflowsView(
+      {super.key,
+      required this.client,
+      required this.alive,
+      required this.settings});
 
   @override
   State<WorkflowsView> createState() => _WorkflowsViewState();
@@ -23,6 +31,8 @@ class WorkflowsView extends StatefulWidget {
 
 class _WorkflowsViewState extends State<WorkflowsView> {
   final _goal = TextEditingController();
+  final _root = TextEditingController();
+  final _testCmd = TextEditingController();
   List<ProfileManifest> _profiles = [];
   WorkflowRoster? _roster;
   List<EndpointRow> _endpoints = [];
@@ -33,6 +43,8 @@ class _WorkflowsViewState extends State<WorkflowsView> {
   bool _allowExec = false;
   bool _running = false;
   WorkflowRun? _run;
+  WorkflowRun? _trace; // a STORED run opened from history
+  bool? _traceOk;
   String? _error;
 
   @override
@@ -50,6 +62,8 @@ class _WorkflowsViewState extends State<WorkflowsView> {
   @override
   void dispose() {
     _goal.dispose();
+    _root.dispose();
+    _testCmd.dispose();
     super.dispose();
   }
 
@@ -104,12 +118,33 @@ class _WorkflowsViewState extends State<WorkflowsView> {
         profile: _profile,
         allowWrite: _allowWrite,
         allowExec: _allowExec,
+        root: _root.text.trim(),
+        testCmd: _testCmd.text.trim(),
       );
       if (mounted) setState(() => _run = run);
+      _load(); // the new run's receipt belongs in history immediately
     } catch (e) {
       if (mounted) setState(() => _error = '$e');
     } finally {
       if (mounted) setState(() => _running = false);
+    }
+  }
+
+  /// Open one stored run's full per-stage trace, chain-reverified at read.
+  Future<void> _openTrace(Map<String, dynamic> row) async {
+    final chain = '${row['chain_hash'] ?? ''}';
+    if (chain.length < 4) return;
+    try {
+      final doc = await widget.client.workflowRunDetail(chain);
+      if (mounted) {
+        setState(() {
+          _trace = WorkflowRun.fromJson(doc);
+          _traceOk = doc['chain_ok'] == true;
+          _error = null;
+        });
+      }
+    } catch (e) {
+      if (mounted) setState(() => _error = '$e');
     }
   }
 
@@ -121,10 +156,12 @@ class _WorkflowsViewState extends State<WorkflowsView> {
           command: 'flywheel up');
     }
     final t = context.fw;
-    return ViewScroll(
-      children: [
-        const SectionHeader('Workflows', kicker: 'staged, receipted, any endpoint'),
-        const SizedBox(height: FwLayout.s3),
+    return ComposerResults(
+      settings: widget.settings,
+      viewKey: 'workflows',
+      header: const SectionHeader('Workflows',
+          kicker: 'staged, receipted, any endpoint'),
+      composer: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
         Text(
           'A profile binds an operating discipline onto the same substrate; '
           'the endpoint is a runtime choice. Older model generations run the '
@@ -134,25 +171,36 @@ class _WorkflowsViewState extends State<WorkflowsView> {
         ),
         const SizedBox(height: FwLayout.s4),
         _composer(t),
-        if (_error != null) ...[
-          const SizedBox(height: FwLayout.s3),
-          HonestNull('The run failed: $_error'),
-        ],
-        if (_run != null) ...[
-          const SizedBox(height: FwLayout.s4),
-          WorkflowRunCard(run: _run!),
-        ],
+      ]),
+      results: [
+        if (_error != null) HonestNull('The run failed: $_error'),
+        if (_run != null) WorkflowRunCard(run: _run!),
         if ((_roster?.runs.isNotEmpty ?? false)) ...[
           const SizedBox(height: FwLayout.s5),
-          const Kicker('recent runs · persisted receipts'),
+          const Kicker('recent runs · persisted receipts, tap for the trace'),
           const SizedBox(height: FwLayout.s3),
           HairlineCard(
             padding: const EdgeInsets.symmetric(
                 horizontal: FwLayout.s4, vertical: FwLayout.s2),
             child: Column(
-              children: [for (final r in _roster!.runs) PastRunRow(run: r)],
+              children: [
+                for (final r in _roster!.runs)
+                  PastRunRow(run: r, onTap: () => _openTrace(r)),
+              ],
             ),
           ),
+        ],
+        if (_trace != null) ...[
+          const SizedBox(height: FwLayout.s4),
+          const Kicker('stored trace · re-verified at read'),
+          const SizedBox(height: FwLayout.s3),
+          if (_traceOk == false) ...[
+            const HonestNull(
+                'This receipt failed re-verification: its content no longer '
+                'matches its chain hash. It is served as TAMPERED.'),
+            const SizedBox(height: FwLayout.s3),
+          ],
+          WorkflowRunCard(run: _trace!),
         ],
       ],
     );
@@ -203,6 +251,27 @@ class _WorkflowsViewState extends State<WorkflowsView> {
             style: const TextStyle(fontSize: 13.5),
             decoration: const InputDecoration(hintText: 'The goal…'),
           ),
+          const SizedBox(height: FwLayout.s2),
+          Row(children: [
+            Expanded(
+              child: TextField(
+                controller: _root,
+                style: fwMono(t, size: 12),
+                decoration: const InputDecoration(
+                    hintText: r'workspace root (optional), e.g. C:\dev\proj'),
+              ),
+            ),
+            const SizedBox(width: FwLayout.s3),
+            Expanded(
+              child: TextField(
+                controller: _testCmd,
+                style: fwMono(t, size: 12),
+                decoration: const InputDecoration(
+                    hintText: 'verify command, e.g. pytest -q — without it '
+                        'the verify stage can only say UNVERIFIABLE'),
+              ),
+            ),
+          ]),
           const SizedBox(height: FwLayout.s3),
           FilledButton(
             onPressed: _running ? null : _runWorkflow,
@@ -214,37 +283,10 @@ class _WorkflowsViewState extends State<WorkflowsView> {
   }
 
   Widget _picker(String label, String? value, List<String> options,
-      ValueChanged<String?> onChanged) {
-    final t = context.fw;
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Kicker(label),
-        const SizedBox(width: FwLayout.s2),
-        DropdownButton<String>(
-          value: options.contains(value) ? value : null,
-          underline: const SizedBox(),
-          style: fwMono(t, size: 12, color: t.inkSoft),
-          items: [
-            for (final o in options) DropdownMenuItem(value: o, child: Text(o)),
-          ],
-          onChanged: onChanged,
-        ),
-      ],
-    );
-  }
+          ValueChanged<String?> onChanged) =>
+      LabeledPicker(
+          label: label, value: value, options: options, onChanged: onChanged);
 
-  Widget _gate(String label, bool value, ValueChanged<bool> onChanged) {
-    final t = context.fw;
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Checkbox(
-            value: value,
-            onChanged: (v) => onChanged(v ?? false),
-            visualDensity: VisualDensity.compact),
-        Text('allow $label', style: fwMono(t, size: 11.5, color: t.inkMuted)),
-      ],
-    );
-  }
+  Widget _gate(String label, bool value, ValueChanged<bool> onChanged) =>
+      GrantCheckbox(label: label, value: value, onChanged: onChanged);
 }

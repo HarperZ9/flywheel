@@ -8,6 +8,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flywheel_desktop/client/gateway_client.dart';
 import 'package:flywheel_desktop/models/attestation_models.dart';
 import 'package:flywheel_desktop/theme/flywheel_theme.dart';
+import 'package:flywheel_desktop/widgets/fw.dart';
 import 'package:flywheel_desktop/widgets/run_evidence_card.dart';
 import 'package:flywheel_desktop/widgets/sign_run_panel.dart';
 
@@ -45,6 +46,34 @@ void main() {
     expect(find.textContaining('null: nothing verified'), findsOneWidget);
     expect(find.textContaining('1 reads'), findsOneWidget);
     expect(find.textContaining('unchanged'), findsOneWidget);
+  });
+
+  testWidgets('a pending high-tier demand is unverifiable, not drift',
+      (tester) async {
+    const run = {
+      'duration_s': 1.0,
+      'ttva_s': null,
+      'risk_review': {
+        'demands': [
+          {'path': 'g.py', 'tier': 'high'}
+        ]
+      },
+      'workspace': {'changed': false},
+    };
+    await tester.pumpWidget(MaterialApp(
+      theme: flywheelLightTheme(),
+      home: const Scaffold(
+          body: SingleChildScrollView(child: RunEvidenceCard(run: run))),
+    ));
+    await tester.pump();
+    // the risk row is present; its marker is the honest null, never a drift
+    // verdict (drift means a re-check diverged, not that a walk is pending)
+    final dots = tester
+        .widgetList<VerdictDot>(find.byType(VerdictDot))
+        .map((d) => d.status)
+        .toList();
+    expect(dots, contains('unverifiable'));
+    expect(dots, isNot(contains('drift')));
   });
 
   test('Attestation parses standing, coverage, and store receipt', () {
@@ -104,6 +133,63 @@ void main() {
     // Walking the demanded file unlocks signing.
     await tester.tap(find.byType(Checkbox).first); // g.py listed first
     await tester.pump();
+    expect(tester.widget<FilledButton>(sign).onPressed, isNotNull);
+  });
+
+  test('Attestation surfaces the overclaimed dishonest signal', () {
+    final a = Attestation.fromJson(const {
+      'standing': 'partial',
+      'coverage': 0.5,
+      'reviewed': ['a.py'],
+      'unreviewed': [],
+      'overclaimed': ['x.py'],
+      'sha256': 'x',
+    });
+    expect(a.overclaimed, ['x.py']);
+    expect(a.verdict, 'unverifiable'); // an overclaim is never verified
+  });
+
+  testWidgets('an unparseable risk_review fails CLOSED, not open',
+      (tester) async {
+    // The engine flagged risk in a shape the client did not parse (demands as
+    // a Map, not a List). The client cannot prove the demands were met, so the
+    // destructive Sign control must stay disabled, never enable on a shape miss.
+    const risky = {
+      'checkpoint': 'xyz',
+      'review': {
+        'files_edited': ['g.py'],
+      },
+      'risk_review': {
+        'demands': {'g.py': 'high'}, // a Map, not a List: unrecognized shape
+      },
+    };
+    await tester.pumpWidget(MaterialApp(
+      theme: flywheelLightTheme(),
+      home: Scaffold(
+        body: SingleChildScrollView(
+          child: SignRunPanel(client: GatewayClient(), run: risky),
+        ),
+      ),
+    ));
+    await tester.pump();
+    final sign = find.widgetWithText(FilledButton, 'Sign');
+    expect(tester.widget<FilledButton>(sign).onPressed, isNull,
+        reason: 'an unparseable risk review must gate the sign button closed');
+  });
+
+  testWidgets('a run with no risk_review can be signed once walked',
+      (tester) async {
+    await tester.pumpWidget(MaterialApp(
+      theme: flywheelLightTheme(),
+      home: Scaffold(
+        body: SingleChildScrollView(
+          child: SignRunPanel(client: GatewayClient(), run: _run),
+        ),
+      ),
+    ));
+    await tester.pump();
+    // no risk_review key at all: nothing demanded, walking is optional
+    final sign = find.widgetWithText(FilledButton, 'Sign');
     expect(tester.widget<FilledButton>(sign).onPressed, isNotNull);
   });
 

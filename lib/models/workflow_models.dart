@@ -60,9 +60,12 @@ class WorkflowDef {
   factory WorkflowDef.fromJson(Map<String, dynamic> j) => WorkflowDef(
         name: j['name'] ?? '',
         description: j['description'] ?? '',
-        stepNames: ((j['steps'] ?? []) as List)
-            .map((s) => '${(s as Map<String, dynamic>)['name']}')
-            .toList(),
+        stepNames: (j['steps'] is List)
+            ? (j['steps'] as List)
+                .whereType<Map<String, dynamic>>()
+                .map((s) => '${s['name'] ?? ''}')
+                .toList()
+            : const [],
       );
 }
 
@@ -112,11 +115,15 @@ class WorkflowStep {
         integrityClean: j['integrity_clean'],
       );
 
-  /// Maps the step status onto the verdict palette.
+  /// Maps the step status onto the verdict palette. DONE means the step RAN,
+  /// not that an external check accepted it, so only VERIFIED earns the accept
+  /// color; FAILED/ERROR/TAMPERED are drift (a receipt that failed its read-
+  /// time re-verification is a detected lie, never a neutral null); DONE,
+  /// UNVERIFIABLE, and any absent/unknown status are the honest null.
   String get verdict => switch (status) {
-        'VERIFIED' || 'DONE' => 'verified',
-        'UNVERIFIABLE' => 'unverifiable',
-        _ => 'drift',
+        'VERIFIED' => 'verified',
+        'DRIFT' || 'FAILED' || 'ERROR' || 'TAMPERED' => 'drift',
+        _ => 'unverifiable',
       };
 }
 
@@ -148,9 +155,12 @@ class WorkflowRun {
         error: j['error'],
       );
 
+  /// COMPLETED means every stage executed, not that the run was verified: only
+  /// VERIFIED earns the accept color. FAILED/ERROR/TAMPERED are drift;
+  /// COMPLETED, UNVERIFIED, and any absent/unknown status are the honest null.
   String get verdict => switch (status) {
-        'VERIFIED' || 'COMPLETED' => 'verified',
-        'UNVERIFIED' => 'unverifiable',
-        _ => 'drift',
+        'VERIFIED' => 'verified',
+        'DRIFT' || 'FAILED' || 'ERROR' || 'TAMPERED' => 'drift',
+        _ => 'unverifiable',
       };
 }

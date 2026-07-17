@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import '../client/gateway_client.dart';
 import '../models/endpoint_models.dart';
 import '../models/gateway_models.dart';
+import '../models/render_status.dart';
 import '../theme/flywheel_theme.dart';
 import '../widgets/charts.dart';
 import '../widgets/fw.dart';
@@ -108,7 +109,7 @@ class _EndpointsViewState extends State<EndpointsView> {
                 child: StatTile(
                     label: 'local healthy',
                     value: '${h.localHealthy}/${h.localTotal}',
-                    status: h.localHealthy > 0 ? 'verified' : 'drift')),
+                    status: fractionStatus(h.localHealthy, h.localTotal))),
             const SizedBox(width: FwLayout.s3),
             Expanded(
                 child: StatTile(

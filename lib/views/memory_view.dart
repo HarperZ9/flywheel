@@ -22,19 +22,37 @@ class _MemoryViewState extends State<MemoryView> {
   final _note = TextEditingController();
   Map<String, dynamic>? _stats;
   List<Map<String, dynamic>> _results = [];
+  List<Map<String, dynamic>> _browse = [];
   bool _searched = false;
   String? _error;
 
   @override
   void initState() {
     super.initState();
-    _loadStats();
+    _load();
   }
 
   @override
   void didUpdateWidget(MemoryView old) {
     super.didUpdateWidget(old);
-    if (!old.alive && widget.alive) _loadStats();
+    if (!old.alive && widget.alive) _load();
+  }
+
+  Future<void> _load() async {
+    await _loadStats();
+    await _loadBrowse();
+  }
+
+  Future<void> _loadBrowse() async {
+    if (!widget.alive) return;
+    try {
+      final r = await widget.client.memoryList(limit: 30);
+      if (mounted) {
+        setState(() => _browse = ((r['spans'] ?? []) as List)
+            .whereType<Map<String, dynamic>>()
+            .toList());
+      }
+    } catch (_) {/* stats error already surfaced */}
   }
 
   @override
@@ -84,7 +102,7 @@ class _MemoryViewState extends State<MemoryView> {
     try {
       await widget.client.memoryNote(text);
       _note.clear();
-      _loadStats();
+      _load();
     } catch (e) {
       if (mounted) setState(() => _error = '$e');
     }
@@ -157,6 +175,16 @@ class _MemoryViewState extends State<MemoryView> {
         else
           for (final r in _results) _resultCard(t, r),
         const SizedBox(height: FwLayout.s5),
+        Kicker('stored · ${_browse.length} span${_browse.length == 1 ? '' : 's'}, '
+            'browse without a query'),
+        const SizedBox(height: FwLayout.s3),
+        if (_browse.isEmpty)
+          const HonestNull(
+              'Nothing stored yet. Notes you add and spans the loop folds '
+              'appear here, verbatim, each bound to its content hash.')
+        else
+          for (final r in _browse) _resultCard(t, r),
+        const SizedBox(height: FwLayout.s5),
         const Kicker('add a note'),
         const SizedBox(height: FwLayout.s3),
         Row(
@@ -198,8 +226,9 @@ class _MemoryViewState extends State<MemoryView> {
               children: [
                 HashText('span', '${r['span_hash'] ?? ''}', keep: 20),
                 const Spacer(),
-                Text('score ${r['score'] ?? ''}',
-                    style: fwMono(t, size: 10.5, color: t.inkFaint)),
+                if (r['score'] != null)
+                  Text('score ${r['score']}',
+                      style: fwMono(t, size: 10.5, color: t.inkFaint)),
               ],
             ),
           ],
