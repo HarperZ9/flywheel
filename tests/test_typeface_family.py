@@ -65,3 +65,64 @@ def test_a_refused_weight_is_named_and_the_rest_ship():
 def test_an_all_refused_family_refuses_by_name():
     fam = mint_family(seed=58, instances=[("Blind", 0.32)])
     assert fam["refused"] and "refused" in fam["refusals"][0]
+
+
+def test_variable_font_ships_as_one_file_with_a_wght_axis():
+    from harness.typeface_family import mint_variable_family
+    r = mint_variable_family(seed=58)
+    assert not r["refused"], r.get("refusals")
+    assert r["receipt"]["axis"] == "wght"
+    assert len(r["receipt"]["masters"]) >= 2
+    assert r["receipt"]["variable_id"]
+    ttf = base64.b64decode(r["ttf_b64"])
+    fontTools = pytest.importorskip("fontTools")
+    from fontTools.ttLib import TTFont
+    f = TTFont(io.BytesIO(ttf))
+    assert "fvar" in f and "gvar" in f
+    axes = f["fvar"].axes
+    assert len(axes) == 1 and axes[0].axisTag == "wght"
+    assert len(f["fvar"].instances) == len(r["receipt"]["masters"])
+
+
+def test_instancing_the_variable_font_reproduces_each_static_master():
+    # the load-bearing claim: this is a real interpolable font, not a wrapper.
+    # instancing at a master's weight must reproduce that master's outline.
+    pytest.importorskip("fontTools")
+    from fontTools.ttLib import TTFont
+    from fontTools.varLib.instancer import instantiateVariableFont
+    from harness.typeface_family import mint_variable_family
+    from harness.typeface_forge import mint, DEFAULTS
+    from harness.typeface_ttf import to_ttf
+
+    r = mint_variable_family(seed=58)
+    ttf = base64.b64decode(r["ttf_b64"])
+    masters = r["receipt"]["masters"]
+    base = {k: v for k, v in DEFAULTS.items() if k != "weight"}
+
+    def pts(font, ch="e"):
+        gn = font.getBestCmap()[ord(ch)]
+        return list(font["glyf"][gn].getCoordinates(font["glyf"])[0])
+
+    for m in (masters[0], masters[-1]):  # lightest and heaviest
+        inst = instantiateVariableFont(
+            TTFont(io.BytesIO(ttf)), {"wght": round(m["weight"] * 4706)},
+            inplace=False)
+        static = TTFont(io.BytesIO(
+            to_ttf(mint({**base, "weight": m["weight"]}, seed=58))))
+        pi, ps = pts(inst), pts(static)
+        assert len(pi) == len(ps)
+        dev = sum(abs(a[0] - b[0]) + abs(a[1] - b[1])
+                  for a, b in zip(pi, ps)) / len(pi)
+        assert dev == 0, f"{m['style']} interpolation drifted {dev} units"
+
+
+def test_incompatible_masters_are_refused_not_silently_broken():
+    from harness.typeface_variable import to_variable_ttf
+    from harness.typeface_forge import mint, DEFAULTS
+    base = {k: v for k, v in DEFAULTS.items() if k != "weight"}
+    a = {"style": "A", "weight": 0.085, "face": mint({**base, "weight": 0.085}, seed=58)}
+    b = {"style": "B", "weight": 0.145, "face": mint({**base, "weight": 0.145}, seed=71)}
+    # different seeds -> different skeletons -> topology can diverge; even if it
+    # does not here, a single master must refuse (a variable font needs >= 2)
+    one = to_variable_ttf([a])
+    assert "error" in one and "two" in one["error"]

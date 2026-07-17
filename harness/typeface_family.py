@@ -76,3 +76,45 @@ def mint_family(params: dict | None = None, seed: int = 58,
         json.dumps(family_doc, sort_keys=True).encode()).hexdigest()[:16]
     return {"refused": False, "refusals": [], "receipt": family_doc,
             "instances": shipped}
+
+
+def mint_variable_family(params: dict | None = None, seed: int = 58,
+                         family: str = "Zentropy Mint",
+                         instances: "list[tuple[str, float]] | None" = None
+                         ) -> dict:
+    """Mint the family's weights as MASTERS and ship them as ONE variable
+    font with a `wght` axis. The masters share a seed, so they interpolate;
+    the writer verifies that rather than assuming it."""
+    base = {**DEFAULTS, **(params or {})}
+    base.pop("weight", None)
+    rows = list(instances or INSTANCES)
+    masters, refused = [], []
+    for style, weight in rows:
+        face = mint({**base, "weight": float(weight)}, seed=seed)
+        if face["refused"]:
+            refused.append({"style": str(style), "weight": float(weight),
+                            "refusals": face["refusals"]})
+            continue
+        masters.append({"style": str(style), "weight": float(weight),
+                        "face": face})
+    if len(masters) < 2:
+        return {"refused": True,
+                "refusals": ["a variable font needs at least two surviving "
+                             "masters"], "refused_instances": refused}
+    from .typeface_variable import to_variable_ttf
+    out = to_variable_ttf(masters, family=family)
+    if "error" in out:
+        return {"refused": True, "refusals": [out["error"]],
+                "refused_instances": refused}
+    ttf = out["ttf"]
+    doc = {"schema": "flywheel.typeface-variable/v1", "family": family,
+           "seed": int(seed), "axis": "wght",
+           "masters": [{"style": m["style"], "weight": m["weight"],
+                        "mint_id": m["face"]["receipt"]["mint_id"]}
+                       for m in masters],
+           "refused_instances": refused,
+           "ttf_sha256": hashlib.sha256(ttf).hexdigest()}
+    doc["variable_id"] = hashlib.sha256(
+        json.dumps(doc, sort_keys=True).encode()).hexdigest()[:16]
+    return {"refused": False, "refusals": [], "receipt": doc,
+            "ttf_b64": base64.b64encode(ttf).decode("ascii")}
