@@ -11,6 +11,7 @@ import '../models/science_models.dart';
 import '../theme/flywheel_theme.dart';
 import '../widgets/fw.dart';
 import '../widgets/plan_cards.dart';
+import '../widgets/science_composer.dart';
 import '../widgets/science_history.dart';
 
 class ScienceView extends StatefulWidget {
@@ -22,18 +23,9 @@ class ScienceView extends StatefulWidget {
   State<ScienceView> createState() => _ScienceViewState();
 }
 
-class _Claim {
-  final text = TextEditingController();
-  final falsification = TextEditingController();
-  void dispose() {
-    text.dispose();
-    falsification.dispose();
-  }
-}
-
 class _ScienceViewState extends State<ScienceView> {
   final _question = TextEditingController();
-  final List<_Claim> _claims = [];
+  final List<ScienceClaim> _claims = [];
   bool _running = false;
   ScienceRun? _run;
   bool? _storedOk; // chain re-check when _run came from history
@@ -104,15 +96,14 @@ class _ScienceViewState extends State<ScienceView> {
     try {
       final claims = [
         for (final (i, c) in _claims.indexed)
-          if (c.text.text.trim().isNotEmpty)
-            {
-              'id': 'c${i + 1}',
-              'text': c.text.text.trim(),
-              'falsification': c.falsification.text.trim(),
-            }
+          if (c.claimJson(i) != null) c.claimJson(i)!
       ];
-      final r = ScienceRun.fromJson(
-          await widget.client.science(q, claims: claims));
+      final measurements = [
+        for (final (i, c) in _claims.indexed)
+          if (c.measurementJson(i) != null) c.measurementJson(i)!
+      ];
+      final r = ScienceRun.fromJson(await widget.client
+          .science(q, claims: claims, measurements: measurements));
       if (mounted) {
         setState(() {
           _run = r;
@@ -173,61 +164,15 @@ class _ScienceViewState extends State<ScienceView> {
   }
 
   Widget _composer(FwTokens t) {
-    return HairlineCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          TextField(
-            controller: _question,
-            maxLines: 2,
-            minLines: 1,
-            style: const TextStyle(fontSize: 13.5),
-            decoration: const InputDecoration(
-                hintText: 'The research question…'),
-          ),
-          const SizedBox(height: FwLayout.s3),
-          for (final (i, c) in _claims.indexed) ...[
-            Row(children: [
-              Text('c${i + 1}', style: fwMono(t, size: 11, color: t.inkFaint)),
-              const SizedBox(width: FwLayout.s2),
-              Expanded(
-                child: TextField(
-                  controller: c.text,
-                  style: const TextStyle(fontSize: 12.5),
-                  decoration: const InputDecoration(hintText: 'Claim…'),
-                ),
-              ),
-              const SizedBox(width: FwLayout.s2),
-              Expanded(
-                child: TextField(
-                  controller: c.falsification,
-                  style: const TextStyle(fontSize: 12.5),
-                  decoration: const InputDecoration(
-                      hintText: 'What would falsify it…'),
-                ),
-              ),
-              IconButton(
-                icon: const Icon(Icons.close, size: 14),
-                onPressed: () => setState(() {
-                  _claims.removeAt(i).dispose();
-                }),
-              ),
-            ]),
-            const SizedBox(height: FwLayout.s2),
-          ],
-          Row(children: [
-            OutlinedButton(
-              onPressed: () => setState(() => _claims.add(_Claim())),
-              child: const Text('Add claim'),
-            ),
-            const SizedBox(width: FwLayout.s3),
-            FilledButton(
-              onPressed: _running ? null : _runScience,
-              child: Text(_running ? 'Running…' : 'Run'),
-            ),
-          ]),
-        ],
-      ),
+    return ScienceComposer(
+      question: _question,
+      claims: _claims,
+      running: _running,
+      onAddClaim: () => setState(() => _claims.add(ScienceClaim())),
+      onRemoveClaim: (i) => setState(() => _claims.removeAt(i).dispose()),
+      onToggleMeasured: (i) =>
+          setState(() => _claims[i].measured = !_claims[i].measured),
+      onRun: _runScience,
     );
   }
 

@@ -171,13 +171,17 @@ extension GatewayStreamsAndPlugins on GatewayClient {
 
   /// POST /api/science — evidence, gated spec, witnessed claim verdicts.
   Future<Map<String, dynamic>> science(String question,
-      {List<Map<String, String>>? claims, int maxSources = 4}) async {
+      {List<Map<String, String>>? claims,
+      List<Map<String, dynamic>>? measurements,
+      int maxSources = 4}) async {
     final r = await _http.post(
       Uri.parse('$baseUrl/api/science'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({
         'question': question,
         if (claims != null && claims.isNotEmpty) 'claims': claims,
+        if (measurements != null && measurements.isNotEmpty)
+          'measurements': measurements,
         'max_sources': maxSources,
       }),
     );
