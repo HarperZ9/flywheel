@@ -17,6 +17,7 @@ import '../widgets/aperture.dart';
 import '../widgets/forge_panel.dart';
 import '../widgets/fw.dart';
 import '../widgets/poster_panel.dart';
+import '../widgets/sound_panel.dart';
 import '../widgets/typeface_panel.dart';
 
 class StudioView extends StatefulWidget {
@@ -106,14 +107,17 @@ class _StudioViewState extends State<StudioView> {
           const Kicker('prompt forge · a goal becomes a gated prompt'),
           const SizedBox(height: FwLayout.s3),
           ForgePanel(client: widget.client!),
+          const SizedBox(height: FwLayout.s5),
+          const Kicker('music · the seeded chime study'),
+          const SizedBox(height: FwLayout.s3),
+          SoundPanel(client: widget.client!),
+        ] else ...[
+          const SizedBox(height: FwLayout.s5),
+          const Kicker('music'),
+          const SizedBox(height: FwLayout.s3),
+          const HonestNull(
+              'The engine is offline; the chime study composes when it runs.'),
         ],
-        const SizedBox(height: FwLayout.s5),
-        const Kicker('music'),
-        const SizedBox(height: FwLayout.s3),
-        const HonestNull(
-            'The music lane is declared, not shipped: no generator is wired '
-            'yet, so nothing here pretends to play. The creative engine\'s '
-            'witnessed-scene contract is the intended seam.'),
       ],
     );
   }

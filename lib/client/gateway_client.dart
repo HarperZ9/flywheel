@@ -220,6 +220,17 @@ class GatewayClient {
     return _decode(r);
   }
 
+  /// POST /api/studio/sound — the seeded chime study; the score is the receipt.
+  Future<Map<String, dynamic>> studioSound(
+      {int seed = 58, double duration = 24, double root = 220}) async {
+    final r = await _http.post(
+      Uri.parse('$baseUrl/api/studio/sound'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'seed': seed, 'duration': duration, 'root': root}),
+    );
+    return _decode(r);
+  }
+
   /// POST /api/forge — turn a plain goal into a structured prompt with gates.
   Future<Map<String, dynamic>> forge(String goal,
       {String? context, List<String>? examples}) async {
