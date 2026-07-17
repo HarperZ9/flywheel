@@ -153,6 +153,17 @@ extension GatewayStreamsAndPlugins on GatewayClient {
     return _decode(r);
   }
 
+  /// POST /api/snapshot — the citation, frozen: the page's bytes fetched,
+  /// hashed, and stored so the reference outlives the live web.
+  Future<Map<String, dynamic>> snapshotUrl(String url) async {
+    final r = await _http.post(
+      Uri.parse('$baseUrl/api/snapshot'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'url': url}),
+    );
+    return _decode(r);
+  }
+
   /// POST /api/explain — the teach-back graded mechanically: the explanation
   /// must name the changed files, cover the key changed identifiers, and be
   /// in your own words (pasting the diff back cannot pass). The receipt
