@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="3" skipped="0" tests="9" time="0.240" timestamp="2026-07-13T20:31:39.867742-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-201327.manhattan_tour.tests.test_solution" name="test_pair" time="0.001" /><testcase classname="artifacts.uplift.work_20260713-201327.manhattan_tour.tests.test_solution" name="test_empty" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-201327.manhattan_tour.tests.test_solution" name="test_single" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-201327.manhattan_tour.tests.test_solution" name="test_l_shape" time="0.001" /><testcase classname="artifacts.uplift.work_20260713-201327.manhattan_tour.tests.test_solution" name="test_negative" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-201327.manhattan_tour.tests.test_solution" name="test_round_trip" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-201327.manhattan_tour.tests.test_solution" name="test_bad_list" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_bad_list():
+&gt;       with pytest.raises(ValueError) as e: f([[0, 0]])
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:10: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.manhattan_tour.tests.test_solution" name="test_bad_len" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_bad_len():
+&gt;       with pytest.raises(ValueError): f([(0, 0, 0)])
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:13: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.manhattan_tour.tests.test_solution" name="test_bool_coord" time="0.001"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_bool_coord():
+&gt;       with pytest.raises(ValueError): f([(0, True)])
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:15: Failed</failure></testcase></testsuite></testsuites>

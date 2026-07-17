@@ -1,0 +1,618 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="9" skipped="0" tests="10" time="0.266" timestamp="2026-07-14T13:11:40.094615-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260714-125209.header_unfold.tests.test_solution" name="test_basic" time="0.001"><failure message="UnboundLocalError: cannot access local variable 'v_part' where it is not associated with a value">def test_basic():
+&gt;       assert unfold_headers(["Host: example.com", "Content-Type: text/plain"]) == [
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            ("host", "example.com"),
+            ("content-type", "text/plain"),
+        ]
+
+tests\test_solution.py:6: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+lines = ['Host: example.com', 'Content-Type: text/plain']
+
+    def unfold_headers(lines: list[str]) -&gt; list[tuple[str, str]]:
+        if not all(isinstance(line, str) for line in lines):
+            raise TypeError("unfold_headers: all elements of `lines` must be strings")
+    
+        def is_valid_name(s: str) -&gt; bool:
+            return s and all(c.isalnum() or c == "-" for c in s)
+    
+        headers = []
+        current_name: str | None = None
+        value_parts: list[str] = []
+        had_non_ws_continuation = False
+    
+        for raw_line in lines:
+            if not isinstance(raw_line, str):
+                raise TypeError("unfold_headers: all elements of `lines` must be strings")
+    
+            stripped = raw_line.lstrip()
+    
+            if raw_line == "":
+                # Empty line -- continue unfolding (RFC 7230/5322 allow empty headers)
+                continue
+    
+            continuation = stripped.startswith((" ", "\t"))
+            colon_pos = stripped.find(":")
+    
+            if current_name is None:
+                if continuation:
+                    raise ValueError("unfold_headers: physical line starts with whitespace; no preceding header name")
+    
+                if colon_pos == -1:
+                    raise ValueError(f"unfold_headers: no colon in header line (empty after stripping): {repr(raw_line)}")
+    
+                before_colon = stripped[:colon_pos].strip()
+    
+                # Validate header name -- RFC 7230, 7230#section-3.2: token ABNF,
+                #    case-insensitive comparisons; no spaces before/after colon.
+                if not is_valid_name(before_colon):
+                    raise ValueError(
+                        f"unfold_headers: invalid header name (non-token): {repr(before_colon)}"
+                    )
+    
+                current_name = before_colon.lower()
+                value_parts = [stripped[colon_pos + 1 :].strip()]
+            else:
+                # Continuation of a logical line
+                if not continuation:
+                    raise ValueError("unfold_headers: mixed header lines without continuations")
+    
+                v_part = stripped[1:].lstrip()  # strip leading WS on the line itself
+    
+                if v_part and all(c.isspace() for c in v_part):
+                    had_non_ws_continuation = False
+                    continue  # purely whitespace continuation -- skip
+    
+&gt;           value_parts.append(v_part)
+                               ^^^^^^
+E           UnboundLocalError: cannot access local variable 'v_part' where it is not associated with a value
+
+solution.py:55: UnboundLocalError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-125209.header_unfold.tests.test_solution" name="test_unfolding" time="0.001"><failure message="UnboundLocalError: cannot access local variable 'v_part' where it is not associated with a value">def test_unfolding():
+&gt;       assert unfold_headers(["Subject: hello", "\tworld", "X-A: 1"]) == [
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            ("subject", "hello world"),
+            ("x-a", "1"),
+        ]
+
+tests\test_solution.py:13: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+lines = ['Subject: hello', '\tworld', 'X-A: 1']
+
+    def unfold_headers(lines: list[str]) -&gt; list[tuple[str, str]]:
+        if not all(isinstance(line, str) for line in lines):
+            raise TypeError("unfold_headers: all elements of `lines` must be strings")
+    
+        def is_valid_name(s: str) -&gt; bool:
+            return s and all(c.isalnum() or c == "-" for c in s)
+    
+        headers = []
+        current_name: str | None = None
+        value_parts: list[str] = []
+        had_non_ws_continuation = False
+    
+        for raw_line in lines:
+            if not isinstance(raw_line, str):
+                raise TypeError("unfold_headers: all elements of `lines` must be strings")
+    
+            stripped = raw_line.lstrip()
+    
+            if raw_line == "":
+                # Empty line -- continue unfolding (RFC 7230/5322 allow empty headers)
+                continue
+    
+            continuation = stripped.startswith((" ", "\t"))
+            colon_pos = stripped.find(":")
+    
+            if current_name is None:
+                if continuation:
+                    raise ValueError("unfold_headers: physical line starts with whitespace; no preceding header name")
+    
+                if colon_pos == -1:
+                    raise ValueError(f"unfold_headers: no colon in header line (empty after stripping): {repr(raw_line)}")
+    
+                before_colon = stripped[:colon_pos].strip()
+    
+                # Validate header name -- RFC 7230, 7230#section-3.2: token ABNF,
+                #    case-insensitive comparisons; no spaces before/after colon.
+                if not is_valid_name(before_colon):
+                    raise ValueError(
+                        f"unfold_headers: invalid header name (non-token): {repr(before_colon)}"
+                    )
+    
+                current_name = before_colon.lower()
+                value_parts = [stripped[colon_pos + 1 :].strip()]
+            else:
+                # Continuation of a logical line
+                if not continuation:
+                    raise ValueError("unfold_headers: mixed header lines without continuations")
+    
+                v_part = stripped[1:].lstrip()  # strip leading WS on the line itself
+    
+                if v_part and all(c.isspace() for c in v_part):
+                    had_non_ws_continuation = False
+                    continue  # purely whitespace continuation -- skip
+    
+&gt;           value_parts.append(v_part)
+                               ^^^^^^
+E           UnboundLocalError: cannot access local variable 'v_part' where it is not associated with a value
+
+solution.py:55: UnboundLocalError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-125209.header_unfold.tests.test_solution" name="test_value_whitespace_and_empty_value" time="0.000"><failure message="UnboundLocalError: cannot access local variable 'v_part' where it is not associated with a value">def test_value_whitespace_and_empty_value():
+&gt;       assert unfold_headers(["A:   spaced   "]) == [("a", "spaced")]
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:21: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+lines = ['A:   spaced   ']
+
+    def unfold_headers(lines: list[str]) -&gt; list[tuple[str, str]]:
+        if not all(isinstance(line, str) for line in lines):
+            raise TypeError("unfold_headers: all elements of `lines` must be strings")
+    
+        def is_valid_name(s: str) -&gt; bool:
+            return s and all(c.isalnum() or c == "-" for c in s)
+    
+        headers = []
+        current_name: str | None = None
+        value_parts: list[str] = []
+        had_non_ws_continuation = False
+    
+        for raw_line in lines:
+            if not isinstance(raw_line, str):
+                raise TypeError("unfold_headers: all elements of `lines` must be strings")
+    
+            stripped = raw_line.lstrip()
+    
+            if raw_line == "":
+                # Empty line -- continue unfolding (RFC 7230/5322 allow empty headers)
+                continue
+    
+            continuation = stripped.startswith((" ", "\t"))
+            colon_pos = stripped.find(":")
+    
+            if current_name is None:
+                if continuation:
+                    raise ValueError("unfold_headers: physical line starts with whitespace; no preceding header name")
+    
+                if colon_pos == -1:
+                    raise ValueError(f"unfold_headers: no colon in header line (empty after stripping): {repr(raw_line)}")
+    
+                before_colon = stripped[:colon_pos].strip()
+    
+                # Validate header name -- RFC 7230, 7230#section-3.2: token ABNF,
+                #    case-insensitive comparisons; no spaces before/after colon.
+                if not is_valid_name(before_colon):
+                    raise ValueError(
+                        f"unfold_headers: invalid header name (non-token): {repr(before_colon)}"
+                    )
+    
+                current_name = before_colon.lower()
+                value_parts = [stripped[colon_pos + 1 :].strip()]
+            else:
+                # Continuation of a logical line
+                if not continuation:
+                    raise ValueError("unfold_headers: mixed header lines without continuations")
+    
+                v_part = stripped[1:].lstrip()  # strip leading WS on the line itself
+    
+                if v_part and all(c.isspace() for c in v_part):
+                    had_non_ws_continuation = False
+                    continue  # purely whitespace continuation -- skip
+    
+&gt;           value_parts.append(v_part)
+                               ^^^^^^
+E           UnboundLocalError: cannot access local variable 'v_part' where it is not associated with a value
+
+solution.py:55: UnboundLocalError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-125209.header_unfold.tests.test_solution" name="test_case_and_duplicates" time="0.000"><failure message="UnboundLocalError: cannot access local variable 'v_part' where it is not associated with a value">def test_case_and_duplicates():
+&gt;       assert unfold_headers(["FOO: 1", "foo: 2", "FoO: 3"]) == [
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            ("foo", "1"),
+            ("foo", "2"),
+            ("foo", "3"),
+        ]
+
+tests\test_solution.py:27: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+lines = ['FOO: 1', 'foo: 2', 'FoO: 3']
+
+    def unfold_headers(lines: list[str]) -&gt; list[tuple[str, str]]:
+        if not all(isinstance(line, str) for line in lines):
+            raise TypeError("unfold_headers: all elements of `lines` must be strings")
+    
+        def is_valid_name(s: str) -&gt; bool:
+            return s and all(c.isalnum() or c == "-" for c in s)
+    
+        headers = []
+        current_name: str | None = None
+        value_parts: list[str] = []
+        had_non_ws_continuation = False
+    
+        for raw_line in lines:
+            if not isinstance(raw_line, str):
+                raise TypeError("unfold_headers: all elements of `lines` must be strings")
+    
+            stripped = raw_line.lstrip()
+    
+            if raw_line == "":
+                # Empty line -- continue unfolding (RFC 7230/5322 allow empty headers)
+                continue
+    
+            continuation = stripped.startswith((" ", "\t"))
+            colon_pos = stripped.find(":")
+    
+            if current_name is None:
+                if continuation:
+                    raise ValueError("unfold_headers: physical line starts with whitespace; no preceding header name")
+    
+                if colon_pos == -1:
+                    raise ValueError(f"unfold_headers: no colon in header line (empty after stripping): {repr(raw_line)}")
+    
+                before_colon = stripped[:colon_pos].strip()
+    
+                # Validate header name -- RFC 7230, 7230#section-3.2: token ABNF,
+                #    case-insensitive comparisons; no spaces before/after colon.
+                if not is_valid_name(before_colon):
+                    raise ValueError(
+                        f"unfold_headers: invalid header name (non-token): {repr(before_colon)}"
+                    )
+    
+                current_name = before_colon.lower()
+                value_parts = [stripped[colon_pos + 1 :].strip()]
+            else:
+                # Continuation of a logical line
+                if not continuation:
+                    raise ValueError("unfold_headers: mixed header lines without continuations")
+    
+                v_part = stripped[1:].lstrip()  # strip leading WS on the line itself
+    
+                if v_part and all(c.isspace() for c in v_part):
+                    had_non_ws_continuation = False
+                    continue  # purely whitespace continuation -- skip
+    
+&gt;           value_parts.append(v_part)
+                               ^^^^^^
+E           UnboundLocalError: cannot access local variable 'v_part' where it is not associated with a value
+
+solution.py:55: UnboundLocalError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-125209.header_unfold.tests.test_solution" name="test_empty_input" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-125209.header_unfold.tests.test_solution" name="test_no_mutation" time="0.000"><failure message="UnboundLocalError: cannot access local variable 'v_part' where it is not associated with a value">def test_no_mutation():
+        lines = ["A: 1", " cont", "B: 2"]
+        snapshot = list(lines)
+&gt;       unfold_headers(lines)
+
+tests\test_solution.py:41: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+lines = ['A: 1', ' cont', 'B: 2']
+
+    def unfold_headers(lines: list[str]) -&gt; list[tuple[str, str]]:
+        if not all(isinstance(line, str) for line in lines):
+            raise TypeError("unfold_headers: all elements of `lines` must be strings")
+    
+        def is_valid_name(s: str) -&gt; bool:
+            return s and all(c.isalnum() or c == "-" for c in s)
+    
+        headers = []
+        current_name: str | None = None
+        value_parts: list[str] = []
+        had_non_ws_continuation = False
+    
+        for raw_line in lines:
+            if not isinstance(raw_line, str):
+                raise TypeError("unfold_headers: all elements of `lines` must be strings")
+    
+            stripped = raw_line.lstrip()
+    
+            if raw_line == "":
+                # Empty line -- continue unfolding (RFC 7230/5322 allow empty headers)
+                continue
+    
+            continuation = stripped.startswith((" ", "\t"))
+            colon_pos = stripped.find(":")
+    
+            if current_name is None:
+                if continuation:
+                    raise ValueError("unfold_headers: physical line starts with whitespace; no preceding header name")
+    
+                if colon_pos == -1:
+                    raise ValueError(f"unfold_headers: no colon in header line (empty after stripping): {repr(raw_line)}")
+    
+                before_colon = stripped[:colon_pos].strip()
+    
+                # Validate header name -- RFC 7230, 7230#section-3.2: token ABNF,
+                #    case-insensitive comparisons; no spaces before/after colon.
+                if not is_valid_name(before_colon):
+                    raise ValueError(
+                        f"unfold_headers: invalid header name (non-token): {repr(before_colon)}"
+                    )
+    
+                current_name = before_colon.lower()
+                value_parts = [stripped[colon_pos + 1 :].strip()]
+            else:
+                # Continuation of a logical line
+                if not continuation:
+                    raise ValueError("unfold_headers: mixed header lines without continuations")
+    
+                v_part = stripped[1:].lstrip()  # strip leading WS on the line itself
+    
+                if v_part and all(c.isspace() for c in v_part):
+                    had_non_ws_continuation = False
+                    continue  # purely whitespace continuation -- skip
+    
+&gt;           value_parts.append(v_part)
+                               ^^^^^^
+E           UnboundLocalError: cannot access local variable 'v_part' where it is not associated with a value
+
+solution.py:55: UnboundLocalError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-125209.header_unfold.tests.test_solution" name="test_continuation_first_raises" time="0.000"><failure message="UnboundLocalError: cannot access local variable 'v_part' where it is not associated with a value">def test_continuation_first_raises():
+        with pytest.raises(ValueError):
+&gt;           unfold_headers([" x: 1"])
+
+tests\test_solution.py:47: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+lines = [' x: 1']
+
+    def unfold_headers(lines: list[str]) -&gt; list[tuple[str, str]]:
+        if not all(isinstance(line, str) for line in lines):
+            raise TypeError("unfold_headers: all elements of `lines` must be strings")
+    
+        def is_valid_name(s: str) -&gt; bool:
+            return s and all(c.isalnum() or c == "-" for c in s)
+    
+        headers = []
+        current_name: str | None = None
+        value_parts: list[str] = []
+        had_non_ws_continuation = False
+    
+        for raw_line in lines:
+            if not isinstance(raw_line, str):
+                raise TypeError("unfold_headers: all elements of `lines` must be strings")
+    
+            stripped = raw_line.lstrip()
+    
+            if raw_line == "":
+                # Empty line -- continue unfolding (RFC 7230/5322 allow empty headers)
+                continue
+    
+            continuation = stripped.startswith((" ", "\t"))
+            colon_pos = stripped.find(":")
+    
+            if current_name is None:
+                if continuation:
+                    raise ValueError("unfold_headers: physical line starts with whitespace; no preceding header name")
+    
+                if colon_pos == -1:
+                    raise ValueError(f"unfold_headers: no colon in header line (empty after stripping): {repr(raw_line)}")
+    
+                before_colon = stripped[:colon_pos].strip()
+    
+                # Validate header name -- RFC 7230, 7230#section-3.2: token ABNF,
+                #    case-insensitive comparisons; no spaces before/after colon.
+                if not is_valid_name(before_colon):
+                    raise ValueError(
+                        f"unfold_headers: invalid header name (non-token): {repr(before_colon)}"
+                    )
+    
+                current_name = before_colon.lower()
+                value_parts = [stripped[colon_pos + 1 :].strip()]
+            else:
+                # Continuation of a logical line
+                if not continuation:
+                    raise ValueError("unfold_headers: mixed header lines without continuations")
+    
+                v_part = stripped[1:].lstrip()  # strip leading WS on the line itself
+    
+                if v_part and all(c.isspace() for c in v_part):
+                    had_non_ws_continuation = False
+                    continue  # purely whitespace continuation -- skip
+    
+&gt;           value_parts.append(v_part)
+                               ^^^^^^
+E           UnboundLocalError: cannot access local variable 'v_part' where it is not associated with a value
+
+solution.py:55: UnboundLocalError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-125209.header_unfold.tests.test_solution" name="test_missing_colon_raises" time="0.001"><failure message="UnboundLocalError: cannot access local variable 'v_part' where it is not associated with a value">def test_missing_colon_raises():
+        with pytest.raises(ValueError):
+            unfold_headers(["abc"])
+        with pytest.raises(ValueError):
+&gt;           unfold_headers(["A: 1", ""])
+
+tests\test_solution.py:56: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+lines = ['A: 1', '']
+
+    def unfold_headers(lines: list[str]) -&gt; list[tuple[str, str]]:
+        if not all(isinstance(line, str) for line in lines):
+            raise TypeError("unfold_headers: all elements of `lines` must be strings")
+    
+        def is_valid_name(s: str) -&gt; bool:
+            return s and all(c.isalnum() or c == "-" for c in s)
+    
+        headers = []
+        current_name: str | None = None
+        value_parts: list[str] = []
+        had_non_ws_continuation = False
+    
+        for raw_line in lines:
+            if not isinstance(raw_line, str):
+                raise TypeError("unfold_headers: all elements of `lines` must be strings")
+    
+            stripped = raw_line.lstrip()
+    
+            if raw_line == "":
+                # Empty line -- continue unfolding (RFC 7230/5322 allow empty headers)
+                continue
+    
+            continuation = stripped.startswith((" ", "\t"))
+            colon_pos = stripped.find(":")
+    
+            if current_name is None:
+                if continuation:
+                    raise ValueError("unfold_headers: physical line starts with whitespace; no preceding header name")
+    
+                if colon_pos == -1:
+                    raise ValueError(f"unfold_headers: no colon in header line (empty after stripping): {repr(raw_line)}")
+    
+                before_colon = stripped[:colon_pos].strip()
+    
+                # Validate header name -- RFC 7230, 7230#section-3.2: token ABNF,
+                #    case-insensitive comparisons; no spaces before/after colon.
+                if not is_valid_name(before_colon):
+                    raise ValueError(
+                        f"unfold_headers: invalid header name (non-token): {repr(before_colon)}"
+                    )
+    
+                current_name = before_colon.lower()
+                value_parts = [stripped[colon_pos + 1 :].strip()]
+            else:
+                # Continuation of a logical line
+                if not continuation:
+                    raise ValueError("unfold_headers: mixed header lines without continuations")
+    
+                v_part = stripped[1:].lstrip()  # strip leading WS on the line itself
+    
+                if v_part and all(c.isspace() for c in v_part):
+                    had_non_ws_continuation = False
+                    continue  # purely whitespace continuation -- skip
+    
+&gt;           value_parts.append(v_part)
+                               ^^^^^^
+E           UnboundLocalError: cannot access local variable 'v_part' where it is not associated with a value
+
+solution.py:55: UnboundLocalError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-125209.header_unfold.tests.test_solution" name="test_bad_name_raises" time="0.000"><failure message="UnboundLocalError: cannot access local variable 'v_part' where it is not associated with a value">def test_bad_name_raises():
+        for bad in [[": v"], ["a b: v"], ["a_b: v"], ["Host : v"]]:
+            with pytest.raises(ValueError):
+&gt;               unfold_headers(bad)
+
+tests\test_solution.py:62: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+lines = ['Host : v']
+
+    def unfold_headers(lines: list[str]) -&gt; list[tuple[str, str]]:
+        if not all(isinstance(line, str) for line in lines):
+            raise TypeError("unfold_headers: all elements of `lines` must be strings")
+    
+        def is_valid_name(s: str) -&gt; bool:
+            return s and all(c.isalnum() or c == "-" for c in s)
+    
+        headers = []
+        current_name: str | None = None
+        value_parts: list[str] = []
+        had_non_ws_continuation = False
+    
+        for raw_line in lines:
+            if not isinstance(raw_line, str):
+                raise TypeError("unfold_headers: all elements of `lines` must be strings")
+    
+            stripped = raw_line.lstrip()
+    
+            if raw_line == "":
+                # Empty line -- continue unfolding (RFC 7230/5322 allow empty headers)
+                continue
+    
+            continuation = stripped.startswith((" ", "\t"))
+            colon_pos = stripped.find(":")
+    
+            if current_name is None:
+                if continuation:
+                    raise ValueError("unfold_headers: physical line starts with whitespace; no preceding header name")
+    
+                if colon_pos == -1:
+                    raise ValueError(f"unfold_headers: no colon in header line (empty after stripping): {repr(raw_line)}")
+    
+                before_colon = stripped[:colon_pos].strip()
+    
+                # Validate header name -- RFC 7230, 7230#section-3.2: token ABNF,
+                #    case-insensitive comparisons; no spaces before/after colon.
+                if not is_valid_name(before_colon):
+                    raise ValueError(
+                        f"unfold_headers: invalid header name (non-token): {repr(before_colon)}"
+                    )
+    
+                current_name = before_colon.lower()
+                value_parts = [stripped[colon_pos + 1 :].strip()]
+            else:
+                # Continuation of a logical line
+                if not continuation:
+                    raise ValueError("unfold_headers: mixed header lines without continuations")
+    
+                v_part = stripped[1:].lstrip()  # strip leading WS on the line itself
+    
+                if v_part and all(c.isspace() for c in v_part):
+                    had_non_ws_continuation = False
+                    continue  # purely whitespace continuation -- skip
+    
+&gt;           value_parts.append(v_part)
+                               ^^^^^^
+E           UnboundLocalError: cannot access local variable 'v_part' where it is not associated with a value
+
+solution.py:55: UnboundLocalError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-125209.header_unfold.tests.test_solution" name="test_blank_continuation_raises" time="0.000"><failure message="UnboundLocalError: cannot access local variable 'v_part' where it is not associated with a value">def test_blank_continuation_raises():
+        with pytest.raises(ValueError):
+&gt;           unfold_headers(["A: 1", "   "])
+
+tests\test_solution.py:67: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+lines = ['A: 1', '   ']
+
+    def unfold_headers(lines: list[str]) -&gt; list[tuple[str, str]]:
+        if not all(isinstance(line, str) for line in lines):
+            raise TypeError("unfold_headers: all elements of `lines` must be strings")
+    
+        def is_valid_name(s: str) -&gt; bool:
+            return s and all(c.isalnum() or c == "-" for c in s)
+    
+        headers = []
+        current_name: str | None = None
+        value_parts: list[str] = []
+        had_non_ws_continuation = False
+    
+        for raw_line in lines:
+            if not isinstance(raw_line, str):
+                raise TypeError("unfold_headers: all elements of `lines` must be strings")
+    
+            stripped = raw_line.lstrip()
+    
+            if raw_line == "":
+                # Empty line -- continue unfolding (RFC 7230/5322 allow empty headers)
+                continue
+    
+            continuation = stripped.startswith((" ", "\t"))
+            colon_pos = stripped.find(":")
+    
+            if current_name is None:
+                if continuation:
+                    raise ValueError("unfold_headers: physical line starts with whitespace; no preceding header name")
+    
+                if colon_pos == -1:
+                    raise ValueError(f"unfold_headers: no colon in header line (empty after stripping): {repr(raw_line)}")
+    
+                before_colon = stripped[:colon_pos].strip()
+    
+                # Validate header name -- RFC 7230, 7230#section-3.2: token ABNF,
+                #    case-insensitive comparisons; no spaces before/after colon.
+                if not is_valid_name(before_colon):
+                    raise ValueError(
+                        f"unfold_headers: invalid header name (non-token): {repr(before_colon)}"
+                    )
+    
+                current_name = before_colon.lower()
+                value_parts = [stripped[colon_pos + 1 :].strip()]
+            else:
+                # Continuation of a logical line
+                if not continuation:
+                    raise ValueError("unfold_headers: mixed header lines without continuations")
+    
+                v_part = stripped[1:].lstrip()  # strip leading WS on the line itself
+    
+                if v_part and all(c.isspace() for c in v_part):
+                    had_non_ws_continuation = False
+                    continue  # purely whitespace continuation -- skip
+    
+&gt;           value_parts.append(v_part)
+                               ^^^^^^
+E           UnboundLocalError: cannot access local variable 'v_part' where it is not associated with a value
+
+solution.py:55: UnboundLocalError</failure></testcase></testsuite></testsuites>

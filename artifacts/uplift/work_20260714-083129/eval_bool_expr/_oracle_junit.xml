@@ -1,0 +1,798 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="10" skipped="0" tests="13" time="0.257" timestamp="2026-07-14T08:59:55.535424-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260714-083129.eval_bool_expr.tests.test_solution" name="test_true" time="0.001"><failure message="ValueError: bad expr">expr = 'T'
+
+    def eval_bool(expr):
+        def parse_expr(index=0):
+            if index == len(expr) or expr[index] == 't':
+                return True, index + 1
+            elif expr[index] == 'f':
+                return False, index + 1
+            else:
+                raise ValueError('bad expr')
+    
+        def evaluate(group_start_index, group_end_index):
+            sub_expr = expr[group_start_index:group_end_index]
+            if not any(sub in sub_expr for sub in ['and', 'or', 'not']):
+                return parse_expr(index=group_start_index)
+    
+            operator_position = max([(sub_expr.index(op), op) for op in ['and', 'or']][0] if len([op for op in ['and', 'or'] if op in sub_expr]) &gt; 1 else -1, key=lambda k: (k, sub_expr[k-1:k].strip() and sub_expr[k+1:k+2]) is not None)
+    
+            left = evaluate(group_start_index, operator_position) if operator_position != -1 else parse_expr(index=group_start_index)
+    
+            op = 'and' if sub_expr[operator_position] == '&amp;' else ('or' if sub_expr[operator_position] == '|' else 'not')
+            right = evaluate(operator_position + 1, group_end_index - 1)
+    
+            return (left if op != 'not' or not left else not left), group_end_index
+    
+        try:
+&gt;           return evaluate(0, len(expr))
+                   ^^^^^^^^^^^^^^^^^^^^^^
+
+solution.py:25: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:13: in evaluate
+    return parse_expr(index=group_start_index)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+index = 0
+
+    def parse_expr(index=0):
+        if index == len(expr) or expr[index] == 't':
+            return True, index + 1
+        elif expr[index] == 'f':
+            return False, index + 1
+        else:
+&gt;           raise ValueError('bad expr')
+E           ValueError: bad expr
+
+solution.py:8: ValueError
+
+The above exception was the direct cause of the following exception:
+
+&gt;   def test_true(): assert f('T') is True
+                            ^^^^^^
+
+tests\test_solution.py:3: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+expr = 'T'
+
+    def eval_bool(expr):
+        def parse_expr(index=0):
+            if index == len(expr) or expr[index] == 't':
+                return True, index + 1
+            elif expr[index] == 'f':
+                return False, index + 1
+            else:
+                raise ValueError('bad expr')
+    
+        def evaluate(group_start_index, group_end_index):
+            sub_expr = expr[group_start_index:group_end_index]
+            if not any(sub in sub_expr for sub in ['and', 'or', 'not']):
+                return parse_expr(index=group_start_index)
+    
+            operator_position = max([(sub_expr.index(op), op) for op in ['and', 'or']][0] if len([op for op in ['and', 'or'] if op in sub_expr]) &gt; 1 else -1, key=lambda k: (k, sub_expr[k-1:k].strip() and sub_expr[k+1:k+2]) is not None)
+    
+            left = evaluate(group_start_index, operator_position) if operator_position != -1 else parse_expr(index=group_start_index)
+    
+            op = 'and' if sub_expr[operator_position] == '&amp;' else ('or' if sub_expr[operator_position] == '|' else 'not')
+            right = evaluate(operator_position + 1, group_end_index - 1)
+    
+            return (left if op != 'not' or not left else not left), group_end_index
+    
+        try:
+            return evaluate(0, len(expr))
+        except Exception as e:
+&gt;           raise ValueError('bad expr') from e
+E           ValueError: bad expr
+
+solution.py:27: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.eval_bool_expr.tests.test_solution" name="test_false" time="0.000"><failure message="ValueError: bad expr">expr = 'F'
+
+    def eval_bool(expr):
+        def parse_expr(index=0):
+            if index == len(expr) or expr[index] == 't':
+                return True, index + 1
+            elif expr[index] == 'f':
+                return False, index + 1
+            else:
+                raise ValueError('bad expr')
+    
+        def evaluate(group_start_index, group_end_index):
+            sub_expr = expr[group_start_index:group_end_index]
+            if not any(sub in sub_expr for sub in ['and', 'or', 'not']):
+                return parse_expr(index=group_start_index)
+    
+            operator_position = max([(sub_expr.index(op), op) for op in ['and', 'or']][0] if len([op for op in ['and', 'or'] if op in sub_expr]) &gt; 1 else -1, key=lambda k: (k, sub_expr[k-1:k].strip() and sub_expr[k+1:k+2]) is not None)
+    
+            left = evaluate(group_start_index, operator_position) if operator_position != -1 else parse_expr(index=group_start_index)
+    
+            op = 'and' if sub_expr[operator_position] == '&amp;' else ('or' if sub_expr[operator_position] == '|' else 'not')
+            right = evaluate(operator_position + 1, group_end_index - 1)
+    
+            return (left if op != 'not' or not left else not left), group_end_index
+    
+        try:
+&gt;           return evaluate(0, len(expr))
+                   ^^^^^^^^^^^^^^^^^^^^^^
+
+solution.py:25: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:13: in evaluate
+    return parse_expr(index=group_start_index)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+index = 0
+
+    def parse_expr(index=0):
+        if index == len(expr) or expr[index] == 't':
+            return True, index + 1
+        elif expr[index] == 'f':
+            return False, index + 1
+        else:
+&gt;           raise ValueError('bad expr')
+E           ValueError: bad expr
+
+solution.py:8: ValueError
+
+The above exception was the direct cause of the following exception:
+
+&gt;   def test_false(): assert f('F') is False
+                             ^^^^^^
+
+tests\test_solution.py:4: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+expr = 'F'
+
+    def eval_bool(expr):
+        def parse_expr(index=0):
+            if index == len(expr) or expr[index] == 't':
+                return True, index + 1
+            elif expr[index] == 'f':
+                return False, index + 1
+            else:
+                raise ValueError('bad expr')
+    
+        def evaluate(group_start_index, group_end_index):
+            sub_expr = expr[group_start_index:group_end_index]
+            if not any(sub in sub_expr for sub in ['and', 'or', 'not']):
+                return parse_expr(index=group_start_index)
+    
+            operator_position = max([(sub_expr.index(op), op) for op in ['and', 'or']][0] if len([op for op in ['and', 'or'] if op in sub_expr]) &gt; 1 else -1, key=lambda k: (k, sub_expr[k-1:k].strip() and sub_expr[k+1:k+2]) is not None)
+    
+            left = evaluate(group_start_index, operator_position) if operator_position != -1 else parse_expr(index=group_start_index)
+    
+            op = 'and' if sub_expr[operator_position] == '&amp;' else ('or' if sub_expr[operator_position] == '|' else 'not')
+            right = evaluate(operator_position + 1, group_end_index - 1)
+    
+            return (left if op != 'not' or not left else not left), group_end_index
+    
+        try:
+            return evaluate(0, len(expr))
+        except Exception as e:
+&gt;           raise ValueError('bad expr') from e
+E           ValueError: bad expr
+
+solution.py:27: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.eval_bool_expr.tests.test_solution" name="test_and" time="0.000"><failure message="ValueError: bad expr">expr = 'T&amp;F'
+
+    def eval_bool(expr):
+        def parse_expr(index=0):
+            if index == len(expr) or expr[index] == 't':
+                return True, index + 1
+            elif expr[index] == 'f':
+                return False, index + 1
+            else:
+                raise ValueError('bad expr')
+    
+        def evaluate(group_start_index, group_end_index):
+            sub_expr = expr[group_start_index:group_end_index]
+            if not any(sub in sub_expr for sub in ['and', 'or', 'not']):
+                return parse_expr(index=group_start_index)
+    
+            operator_position = max([(sub_expr.index(op), op) for op in ['and', 'or']][0] if len([op for op in ['and', 'or'] if op in sub_expr]) &gt; 1 else -1, key=lambda k: (k, sub_expr[k-1:k].strip() and sub_expr[k+1:k+2]) is not None)
+    
+            left = evaluate(group_start_index, operator_position) if operator_position != -1 else parse_expr(index=group_start_index)
+    
+            op = 'and' if sub_expr[operator_position] == '&amp;' else ('or' if sub_expr[operator_position] == '|' else 'not')
+            right = evaluate(operator_position + 1, group_end_index - 1)
+    
+            return (left if op != 'not' or not left else not left), group_end_index
+    
+        try:
+&gt;           return evaluate(0, len(expr))
+                   ^^^^^^^^^^^^^^^^^^^^^^
+
+solution.py:25: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:13: in evaluate
+    return parse_expr(index=group_start_index)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+index = 0
+
+    def parse_expr(index=0):
+        if index == len(expr) or expr[index] == 't':
+            return True, index + 1
+        elif expr[index] == 'f':
+            return False, index + 1
+        else:
+&gt;           raise ValueError('bad expr')
+E           ValueError: bad expr
+
+solution.py:8: ValueError
+
+The above exception was the direct cause of the following exception:
+
+&gt;   def test_and(): assert f('T&amp;F') is False
+                           ^^^^^^^^
+
+tests\test_solution.py:5: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+expr = 'T&amp;F'
+
+    def eval_bool(expr):
+        def parse_expr(index=0):
+            if index == len(expr) or expr[index] == 't':
+                return True, index + 1
+            elif expr[index] == 'f':
+                return False, index + 1
+            else:
+                raise ValueError('bad expr')
+    
+        def evaluate(group_start_index, group_end_index):
+            sub_expr = expr[group_start_index:group_end_index]
+            if not any(sub in sub_expr for sub in ['and', 'or', 'not']):
+                return parse_expr(index=group_start_index)
+    
+            operator_position = max([(sub_expr.index(op), op) for op in ['and', 'or']][0] if len([op for op in ['and', 'or'] if op in sub_expr]) &gt; 1 else -1, key=lambda k: (k, sub_expr[k-1:k].strip() and sub_expr[k+1:k+2]) is not None)
+    
+            left = evaluate(group_start_index, operator_position) if operator_position != -1 else parse_expr(index=group_start_index)
+    
+            op = 'and' if sub_expr[operator_position] == '&amp;' else ('or' if sub_expr[operator_position] == '|' else 'not')
+            right = evaluate(operator_position + 1, group_end_index - 1)
+    
+            return (left if op != 'not' or not left else not left), group_end_index
+    
+        try:
+            return evaluate(0, len(expr))
+        except Exception as e:
+&gt;           raise ValueError('bad expr') from e
+E           ValueError: bad expr
+
+solution.py:27: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.eval_bool_expr.tests.test_solution" name="test_or" time="0.000"><failure message="ValueError: bad expr">expr = 'T|F'
+
+    def eval_bool(expr):
+        def parse_expr(index=0):
+            if index == len(expr) or expr[index] == 't':
+                return True, index + 1
+            elif expr[index] == 'f':
+                return False, index + 1
+            else:
+                raise ValueError('bad expr')
+    
+        def evaluate(group_start_index, group_end_index):
+            sub_expr = expr[group_start_index:group_end_index]
+            if not any(sub in sub_expr for sub in ['and', 'or', 'not']):
+                return parse_expr(index=group_start_index)
+    
+            operator_position = max([(sub_expr.index(op), op) for op in ['and', 'or']][0] if len([op for op in ['and', 'or'] if op in sub_expr]) &gt; 1 else -1, key=lambda k: (k, sub_expr[k-1:k].strip() and sub_expr[k+1:k+2]) is not None)
+    
+            left = evaluate(group_start_index, operator_position) if operator_position != -1 else parse_expr(index=group_start_index)
+    
+            op = 'and' if sub_expr[operator_position] == '&amp;' else ('or' if sub_expr[operator_position] == '|' else 'not')
+            right = evaluate(operator_position + 1, group_end_index - 1)
+    
+            return (left if op != 'not' or not left else not left), group_end_index
+    
+        try:
+&gt;           return evaluate(0, len(expr))
+                   ^^^^^^^^^^^^^^^^^^^^^^
+
+solution.py:25: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:13: in evaluate
+    return parse_expr(index=group_start_index)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+index = 0
+
+    def parse_expr(index=0):
+        if index == len(expr) or expr[index] == 't':
+            return True, index + 1
+        elif expr[index] == 'f':
+            return False, index + 1
+        else:
+&gt;           raise ValueError('bad expr')
+E           ValueError: bad expr
+
+solution.py:8: ValueError
+
+The above exception was the direct cause of the following exception:
+
+&gt;   def test_or(): assert f('T|F') is True
+                          ^^^^^^^^
+
+tests\test_solution.py:6: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+expr = 'T|F'
+
+    def eval_bool(expr):
+        def parse_expr(index=0):
+            if index == len(expr) or expr[index] == 't':
+                return True, index + 1
+            elif expr[index] == 'f':
+                return False, index + 1
+            else:
+                raise ValueError('bad expr')
+    
+        def evaluate(group_start_index, group_end_index):
+            sub_expr = expr[group_start_index:group_end_index]
+            if not any(sub in sub_expr for sub in ['and', 'or', 'not']):
+                return parse_expr(index=group_start_index)
+    
+            operator_position = max([(sub_expr.index(op), op) for op in ['and', 'or']][0] if len([op for op in ['and', 'or'] if op in sub_expr]) &gt; 1 else -1, key=lambda k: (k, sub_expr[k-1:k].strip() and sub_expr[k+1:k+2]) is not None)
+    
+            left = evaluate(group_start_index, operator_position) if operator_position != -1 else parse_expr(index=group_start_index)
+    
+            op = 'and' if sub_expr[operator_position] == '&amp;' else ('or' if sub_expr[operator_position] == '|' else 'not')
+            right = evaluate(operator_position + 1, group_end_index - 1)
+    
+            return (left if op != 'not' or not left else not left), group_end_index
+    
+        try:
+            return evaluate(0, len(expr))
+        except Exception as e:
+&gt;           raise ValueError('bad expr') from e
+E           ValueError: bad expr
+
+solution.py:27: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.eval_bool_expr.tests.test_solution" name="test_not" time="0.000"><failure message="ValueError: bad expr">expr = '!T'
+
+    def eval_bool(expr):
+        def parse_expr(index=0):
+            if index == len(expr) or expr[index] == 't':
+                return True, index + 1
+            elif expr[index] == 'f':
+                return False, index + 1
+            else:
+                raise ValueError('bad expr')
+    
+        def evaluate(group_start_index, group_end_index):
+            sub_expr = expr[group_start_index:group_end_index]
+            if not any(sub in sub_expr for sub in ['and', 'or', 'not']):
+                return parse_expr(index=group_start_index)
+    
+            operator_position = max([(sub_expr.index(op), op) for op in ['and', 'or']][0] if len([op for op in ['and', 'or'] if op in sub_expr]) &gt; 1 else -1, key=lambda k: (k, sub_expr[k-1:k].strip() and sub_expr[k+1:k+2]) is not None)
+    
+            left = evaluate(group_start_index, operator_position) if operator_position != -1 else parse_expr(index=group_start_index)
+    
+            op = 'and' if sub_expr[operator_position] == '&amp;' else ('or' if sub_expr[operator_position] == '|' else 'not')
+            right = evaluate(operator_position + 1, group_end_index - 1)
+    
+            return (left if op != 'not' or not left else not left), group_end_index
+    
+        try:
+&gt;           return evaluate(0, len(expr))
+                   ^^^^^^^^^^^^^^^^^^^^^^
+
+solution.py:25: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:13: in evaluate
+    return parse_expr(index=group_start_index)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+index = 0
+
+    def parse_expr(index=0):
+        if index == len(expr) or expr[index] == 't':
+            return True, index + 1
+        elif expr[index] == 'f':
+            return False, index + 1
+        else:
+&gt;           raise ValueError('bad expr')
+E           ValueError: bad expr
+
+solution.py:8: ValueError
+
+The above exception was the direct cause of the following exception:
+
+&gt;   def test_not(): assert f('!T') is False
+                           ^^^^^^^
+
+tests\test_solution.py:7: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+expr = '!T'
+
+    def eval_bool(expr):
+        def parse_expr(index=0):
+            if index == len(expr) or expr[index] == 't':
+                return True, index + 1
+            elif expr[index] == 'f':
+                return False, index + 1
+            else:
+                raise ValueError('bad expr')
+    
+        def evaluate(group_start_index, group_end_index):
+            sub_expr = expr[group_start_index:group_end_index]
+            if not any(sub in sub_expr for sub in ['and', 'or', 'not']):
+                return parse_expr(index=group_start_index)
+    
+            operator_position = max([(sub_expr.index(op), op) for op in ['and', 'or']][0] if len([op for op in ['and', 'or'] if op in sub_expr]) &gt; 1 else -1, key=lambda k: (k, sub_expr[k-1:k].strip() and sub_expr[k+1:k+2]) is not None)
+    
+            left = evaluate(group_start_index, operator_position) if operator_position != -1 else parse_expr(index=group_start_index)
+    
+            op = 'and' if sub_expr[operator_position] == '&amp;' else ('or' if sub_expr[operator_position] == '|' else 'not')
+            right = evaluate(operator_position + 1, group_end_index - 1)
+    
+            return (left if op != 'not' or not left else not left), group_end_index
+    
+        try:
+            return evaluate(0, len(expr))
+        except Exception as e:
+&gt;           raise ValueError('bad expr') from e
+E           ValueError: bad expr
+
+solution.py:27: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.eval_bool_expr.tests.test_solution" name="test_not_precedence" time="0.000"><failure message="ValueError: bad expr">expr = '!F&amp;T'
+
+    def eval_bool(expr):
+        def parse_expr(index=0):
+            if index == len(expr) or expr[index] == 't':
+                return True, index + 1
+            elif expr[index] == 'f':
+                return False, index + 1
+            else:
+                raise ValueError('bad expr')
+    
+        def evaluate(group_start_index, group_end_index):
+            sub_expr = expr[group_start_index:group_end_index]
+            if not any(sub in sub_expr for sub in ['and', 'or', 'not']):
+                return parse_expr(index=group_start_index)
+    
+            operator_position = max([(sub_expr.index(op), op) for op in ['and', 'or']][0] if len([op for op in ['and', 'or'] if op in sub_expr]) &gt; 1 else -1, key=lambda k: (k, sub_expr[k-1:k].strip() and sub_expr[k+1:k+2]) is not None)
+    
+            left = evaluate(group_start_index, operator_position) if operator_position != -1 else parse_expr(index=group_start_index)
+    
+            op = 'and' if sub_expr[operator_position] == '&amp;' else ('or' if sub_expr[operator_position] == '|' else 'not')
+            right = evaluate(operator_position + 1, group_end_index - 1)
+    
+            return (left if op != 'not' or not left else not left), group_end_index
+    
+        try:
+&gt;           return evaluate(0, len(expr))
+                   ^^^^^^^^^^^^^^^^^^^^^^
+
+solution.py:25: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:13: in evaluate
+    return parse_expr(index=group_start_index)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+index = 0
+
+    def parse_expr(index=0):
+        if index == len(expr) or expr[index] == 't':
+            return True, index + 1
+        elif expr[index] == 'f':
+            return False, index + 1
+        else:
+&gt;           raise ValueError('bad expr')
+E           ValueError: bad expr
+
+solution.py:8: ValueError
+
+The above exception was the direct cause of the following exception:
+
+&gt;   def test_not_precedence(): assert f('!F&amp;T') is True
+                                      ^^^^^^^^^
+
+tests\test_solution.py:8: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+expr = '!F&amp;T'
+
+    def eval_bool(expr):
+        def parse_expr(index=0):
+            if index == len(expr) or expr[index] == 't':
+                return True, index + 1
+            elif expr[index] == 'f':
+                return False, index + 1
+            else:
+                raise ValueError('bad expr')
+    
+        def evaluate(group_start_index, group_end_index):
+            sub_expr = expr[group_start_index:group_end_index]
+            if not any(sub in sub_expr for sub in ['and', 'or', 'not']):
+                return parse_expr(index=group_start_index)
+    
+            operator_position = max([(sub_expr.index(op), op) for op in ['and', 'or']][0] if len([op for op in ['and', 'or'] if op in sub_expr]) &gt; 1 else -1, key=lambda k: (k, sub_expr[k-1:k].strip() and sub_expr[k+1:k+2]) is not None)
+    
+            left = evaluate(group_start_index, operator_position) if operator_position != -1 else parse_expr(index=group_start_index)
+    
+            op = 'and' if sub_expr[operator_position] == '&amp;' else ('or' if sub_expr[operator_position] == '|' else 'not')
+            right = evaluate(operator_position + 1, group_end_index - 1)
+    
+            return (left if op != 'not' or not left else not left), group_end_index
+    
+        try:
+            return evaluate(0, len(expr))
+        except Exception as e:
+&gt;           raise ValueError('bad expr') from e
+E           ValueError: bad expr
+
+solution.py:27: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.eval_bool_expr.tests.test_solution" name="test_and_before_or" time="0.000"><failure message="ValueError: bad expr">expr = 'T|F&amp;F'
+
+    def eval_bool(expr):
+        def parse_expr(index=0):
+            if index == len(expr) or expr[index] == 't':
+                return True, index + 1
+            elif expr[index] == 'f':
+                return False, index + 1
+            else:
+                raise ValueError('bad expr')
+    
+        def evaluate(group_start_index, group_end_index):
+            sub_expr = expr[group_start_index:group_end_index]
+            if not any(sub in sub_expr for sub in ['and', 'or', 'not']):
+                return parse_expr(index=group_start_index)
+    
+            operator_position = max([(sub_expr.index(op), op) for op in ['and', 'or']][0] if len([op for op in ['and', 'or'] if op in sub_expr]) &gt; 1 else -1, key=lambda k: (k, sub_expr[k-1:k].strip() and sub_expr[k+1:k+2]) is not None)
+    
+            left = evaluate(group_start_index, operator_position) if operator_position != -1 else parse_expr(index=group_start_index)
+    
+            op = 'and' if sub_expr[operator_position] == '&amp;' else ('or' if sub_expr[operator_position] == '|' else 'not')
+            right = evaluate(operator_position + 1, group_end_index - 1)
+    
+            return (left if op != 'not' or not left else not left), group_end_index
+    
+        try:
+&gt;           return evaluate(0, len(expr))
+                   ^^^^^^^^^^^^^^^^^^^^^^
+
+solution.py:25: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:13: in evaluate
+    return parse_expr(index=group_start_index)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+index = 0
+
+    def parse_expr(index=0):
+        if index == len(expr) or expr[index] == 't':
+            return True, index + 1
+        elif expr[index] == 'f':
+            return False, index + 1
+        else:
+&gt;           raise ValueError('bad expr')
+E           ValueError: bad expr
+
+solution.py:8: ValueError
+
+The above exception was the direct cause of the following exception:
+
+&gt;   def test_and_before_or(): assert f('T|F&amp;F') is True
+                                     ^^^^^^^^^^
+
+tests\test_solution.py:9: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+expr = 'T|F&amp;F'
+
+    def eval_bool(expr):
+        def parse_expr(index=0):
+            if index == len(expr) or expr[index] == 't':
+                return True, index + 1
+            elif expr[index] == 'f':
+                return False, index + 1
+            else:
+                raise ValueError('bad expr')
+    
+        def evaluate(group_start_index, group_end_index):
+            sub_expr = expr[group_start_index:group_end_index]
+            if not any(sub in sub_expr for sub in ['and', 'or', 'not']):
+                return parse_expr(index=group_start_index)
+    
+            operator_position = max([(sub_expr.index(op), op) for op in ['and', 'or']][0] if len([op for op in ['and', 'or'] if op in sub_expr]) &gt; 1 else -1, key=lambda k: (k, sub_expr[k-1:k].strip() and sub_expr[k+1:k+2]) is not None)
+    
+            left = evaluate(group_start_index, operator_position) if operator_position != -1 else parse_expr(index=group_start_index)
+    
+            op = 'and' if sub_expr[operator_position] == '&amp;' else ('or' if sub_expr[operator_position] == '|' else 'not')
+            right = evaluate(operator_position + 1, group_end_index - 1)
+    
+            return (left if op != 'not' or not left else not left), group_end_index
+    
+        try:
+            return evaluate(0, len(expr))
+        except Exception as e:
+&gt;           raise ValueError('bad expr') from e
+E           ValueError: bad expr
+
+solution.py:27: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.eval_bool_expr.tests.test_solution" name="test_parens" time="0.000"><failure message="ValueError: bad expr">expr = '(T|F)&amp;F'
+
+    def eval_bool(expr):
+        def parse_expr(index=0):
+            if index == len(expr) or expr[index] == 't':
+                return True, index + 1
+            elif expr[index] == 'f':
+                return False, index + 1
+            else:
+                raise ValueError('bad expr')
+    
+        def evaluate(group_start_index, group_end_index):
+            sub_expr = expr[group_start_index:group_end_index]
+            if not any(sub in sub_expr for sub in ['and', 'or', 'not']):
+                return parse_expr(index=group_start_index)
+    
+            operator_position = max([(sub_expr.index(op), op) for op in ['and', 'or']][0] if len([op for op in ['and', 'or'] if op in sub_expr]) &gt; 1 else -1, key=lambda k: (k, sub_expr[k-1:k].strip() and sub_expr[k+1:k+2]) is not None)
+    
+            left = evaluate(group_start_index, operator_position) if operator_position != -1 else parse_expr(index=group_start_index)
+    
+            op = 'and' if sub_expr[operator_position] == '&amp;' else ('or' if sub_expr[operator_position] == '|' else 'not')
+            right = evaluate(operator_position + 1, group_end_index - 1)
+    
+            return (left if op != 'not' or not left else not left), group_end_index
+    
+        try:
+&gt;           return evaluate(0, len(expr))
+                   ^^^^^^^^^^^^^^^^^^^^^^
+
+solution.py:25: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:13: in evaluate
+    return parse_expr(index=group_start_index)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+index = 0
+
+    def parse_expr(index=0):
+        if index == len(expr) or expr[index] == 't':
+            return True, index + 1
+        elif expr[index] == 'f':
+            return False, index + 1
+        else:
+&gt;           raise ValueError('bad expr')
+E           ValueError: bad expr
+
+solution.py:8: ValueError
+
+The above exception was the direct cause of the following exception:
+
+&gt;   def test_parens(): assert f('(T|F)&amp;F') is False
+                              ^^^^^^^^^^^^
+
+tests\test_solution.py:10: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+expr = '(T|F)&amp;F'
+
+    def eval_bool(expr):
+        def parse_expr(index=0):
+            if index == len(expr) or expr[index] == 't':
+                return True, index + 1
+            elif expr[index] == 'f':
+                return False, index + 1
+            else:
+                raise ValueError('bad expr')
+    
+        def evaluate(group_start_index, group_end_index):
+            sub_expr = expr[group_start_index:group_end_index]
+            if not any(sub in sub_expr for sub in ['and', 'or', 'not']):
+                return parse_expr(index=group_start_index)
+    
+            operator_position = max([(sub_expr.index(op), op) for op in ['and', 'or']][0] if len([op for op in ['and', 'or'] if op in sub_expr]) &gt; 1 else -1, key=lambda k: (k, sub_expr[k-1:k].strip() and sub_expr[k+1:k+2]) is not None)
+    
+            left = evaluate(group_start_index, operator_position) if operator_position != -1 else parse_expr(index=group_start_index)
+    
+            op = 'and' if sub_expr[operator_position] == '&amp;' else ('or' if sub_expr[operator_position] == '|' else 'not')
+            right = evaluate(operator_position + 1, group_end_index - 1)
+    
+            return (left if op != 'not' or not left else not left), group_end_index
+    
+        try:
+            return evaluate(0, len(expr))
+        except Exception as e:
+&gt;           raise ValueError('bad expr') from e
+E           ValueError: bad expr
+
+solution.py:27: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.eval_bool_expr.tests.test_solution" name="test_not_group" time="0.001"><failure message="ValueError: bad expr">expr = '!(T&amp;F)'
+
+    def eval_bool(expr):
+        def parse_expr(index=0):
+            if index == len(expr) or expr[index] == 't':
+                return True, index + 1
+            elif expr[index] == 'f':
+                return False, index + 1
+            else:
+                raise ValueError('bad expr')
+    
+        def evaluate(group_start_index, group_end_index):
+            sub_expr = expr[group_start_index:group_end_index]
+            if not any(sub in sub_expr for sub in ['and', 'or', 'not']):
+                return parse_expr(index=group_start_index)
+    
+            operator_position = max([(sub_expr.index(op), op) for op in ['and', 'or']][0] if len([op for op in ['and', 'or'] if op in sub_expr]) &gt; 1 else -1, key=lambda k: (k, sub_expr[k-1:k].strip() and sub_expr[k+1:k+2]) is not None)
+    
+            left = evaluate(group_start_index, operator_position) if operator_position != -1 else parse_expr(index=group_start_index)
+    
+            op = 'and' if sub_expr[operator_position] == '&amp;' else ('or' if sub_expr[operator_position] == '|' else 'not')
+            right = evaluate(operator_position + 1, group_end_index - 1)
+    
+            return (left if op != 'not' or not left else not left), group_end_index
+    
+        try:
+&gt;           return evaluate(0, len(expr))
+                   ^^^^^^^^^^^^^^^^^^^^^^
+
+solution.py:25: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:13: in evaluate
+    return parse_expr(index=group_start_index)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+index = 0
+
+    def parse_expr(index=0):
+        if index == len(expr) or expr[index] == 't':
+            return True, index + 1
+        elif expr[index] == 'f':
+            return False, index + 1
+        else:
+&gt;           raise ValueError('bad expr')
+E           ValueError: bad expr
+
+solution.py:8: ValueError
+
+The above exception was the direct cause of the following exception:
+
+&gt;   def test_not_group(): assert f('!(T&amp;F)') is True
+                                 ^^^^^^^^^^^
+
+tests\test_solution.py:11: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+expr = '!(T&amp;F)'
+
+    def eval_bool(expr):
+        def parse_expr(index=0):
+            if index == len(expr) or expr[index] == 't':
+                return True, index + 1
+            elif expr[index] == 'f':
+                return False, index + 1
+            else:
+                raise ValueError('bad expr')
+    
+        def evaluate(group_start_index, group_end_index):
+            sub_expr = expr[group_start_index:group_end_index]
+            if not any(sub in sub_expr for sub in ['and', 'or', 'not']):
+                return parse_expr(index=group_start_index)
+    
+            operator_position = max([(sub_expr.index(op), op) for op in ['and', 'or']][0] if len([op for op in ['and', 'or'] if op in sub_expr]) &gt; 1 else -1, key=lambda k: (k, sub_expr[k-1:k].strip() and sub_expr[k+1:k+2]) is not None)
+    
+            left = evaluate(group_start_index, operator_position) if operator_position != -1 else parse_expr(index=group_start_index)
+    
+            op = 'and' if sub_expr[operator_position] == '&amp;' else ('or' if sub_expr[operator_position] == '|' else 'not')
+            right = evaluate(operator_position + 1, group_end_index - 1)
+    
+            return (left if op != 'not' or not left else not left), group_end_index
+    
+        try:
+            return evaluate(0, len(expr))
+        except Exception as e:
+&gt;           raise ValueError('bad expr') from e
+E           ValueError: bad expr
+
+solution.py:27: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.eval_bool_expr.tests.test_solution" name="test_bad_char" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-083129.eval_bool_expr.tests.test_solution" name="test_unbalanced" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-083129.eval_bool_expr.tests.test_solution" name="test_trailing" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-083129.eval_bool_expr.tests.test_solution" name="test_empty" time="0.001"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_empty():
+&gt;       with pytest.raises(ValueError): f('')
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:20: Failed</failure></testcase></testsuite></testsuites>

@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="4" skipped="0" tests="10" time="0.255" timestamp="2026-07-14T08:54:07.343168-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260714-083129.token_bucket_grants.tests.test_solution" name="test_same_ts_no_refill" time="0.001" /><testcase classname="artifacts.uplift.work_20260714-083129.token_bucket_grants.tests.test_solution" name="test_refill" time="0.001"><failure message="ValueError: time warp">&gt;   def test_refill(): assert f(5, [(0, 3), (2, 3)]) == [True, True]
+                              ^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:4: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+capacity = 5, events = [(0, 3), (2, 3)]
+
+    def grant_requests(capacity, events):
+        if not isinstance(capacity, int) or capacity &lt; 1:
+            raise ValueError('bad capacity')
+    
+        bucket = [capacity]
+        for i in range(len(events)):
+            timestamp, amount = events[i]
+            if timestamp &lt; events[i-1][0]:
+&gt;               raise ValueError('time warp')
+E               ValueError: time warp
+
+solution.py:9: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.token_bucket_grants.tests.test_solution" name="test_over_capacity" time="0.001" /><testcase classname="artifacts.uplift.work_20260714-083129.token_bucket_grants.tests.test_solution" name="test_partial_refill" time="0.000"><failure message="ValueError: time warp">&gt;   def test_partial_refill(): assert f(5, [(0, 5), (1, 5)]) == [True, False]
+                                      ^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:6: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+capacity = 5, events = [(0, 5), (1, 5)]
+
+    def grant_requests(capacity, events):
+        if not isinstance(capacity, int) or capacity &lt; 1:
+            raise ValueError('bad capacity')
+    
+        bucket = [capacity]
+        for i in range(len(events)):
+            timestamp, amount = events[i]
+            if timestamp &lt; events[i-1][0]:
+&gt;               raise ValueError('time warp')
+E               ValueError: time warp
+
+solution.py:9: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.token_bucket_grants.tests.test_solution" name="test_refill_cap" time="0.000"><failure message="ValueError: time warp">&gt;   def test_refill_cap(): assert f(5, [(0, 1), (100, 5)]) == [True, True]
+                                  ^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:7: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+capacity = 5, events = [(0, 1), (100, 5)]
+
+    def grant_requests(capacity, events):
+        if not isinstance(capacity, int) or capacity &lt; 1:
+            raise ValueError('bad capacity')
+    
+        bucket = [capacity]
+        for i in range(len(events)):
+            timestamp, amount = events[i]
+            if timestamp &lt; events[i-1][0]:
+&gt;               raise ValueError('time warp')
+E               ValueError: time warp
+
+solution.py:9: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.token_bucket_grants.tests.test_solution" name="test_empty" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-083129.token_bucket_grants.tests.test_solution" name="test_time_warp" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-083129.token_bucket_grants.tests.test_solution" name="test_bad_capacity" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-083129.token_bucket_grants.tests.test_solution" name="test_zero_amount" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-083129.token_bucket_grants.tests.test_solution" name="test_list_event" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_list_event():
+&gt;       with pytest.raises(ValueError): f(5, [[0, 1]])
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:19: Failed</failure></testcase></testsuite></testsuites>

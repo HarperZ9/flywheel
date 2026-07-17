@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="5" skipped="0" tests="9" time="0.209" timestamp="2026-07-13T19:07:21.848054-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-184826.add_months_clamp.tests.test_solution" name="test_clamp_to_shorter_month" time="0.001" /><testcase classname="artifacts.uplift.work_20260713-184826.add_months_clamp.tests.test_solution" name="test_leap_day_plus_year_clamps" time="0.001"><failure message="assert (2025, 2, 29) == (2025, 2, 28)&#10;  &#10;  At index 2 diff: 29 != 28&#10;  Use -v to get more diff">def test_leap_day_plus_year_clamps():
+&gt;       assert add_months(2024, 2, 29, 12) == (2025, 2, 28)
+E       assert (2025, 2, 29) == (2025, 2, 28)
+E         
+E         At index 2 diff: 29 != 28
+E         Use -v to get more diff
+
+tests\test_solution.py:12: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-184826.add_months_clamp.tests.test_solution" name="test_negative_n_and_year_carry" time="0.001"><failure message="assert (2023, 0, 10) == (2022, 12, 10)&#10;  &#10;  At index 0 diff: 2023 != 2022&#10;  Use -v to get more diff">def test_negative_n_and_year_carry():
+        assert add_months(2023, 12, 15, -13) == (2022, 11, 15)
+        assert add_months(2024, 3, 31, -1) == (2024, 2, 29)
+&gt;       assert add_months(2023, 1, 10, -1) == (2022, 12, 10)
+E       assert (2023, 0, 10) == (2022, 12, 10)
+E         
+E         At index 0 diff: 2023 != 2022
+E         Use -v to get more diff
+
+tests\test_solution.py:19: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-184826.add_months_clamp.tests.test_solution" name="test_zero_n_identity" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-184826.add_months_clamp.tests.test_solution" name="test_century_leap_rules" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-184826.add_months_clamp.tests.test_solution" name="test_years_beyond_datetime_range" time="0.000"><failure message="assert (1000000, 2, 28) == (1000000, 2, 29)&#10;  &#10;  At index 2 diff: 28 != 29&#10;  Use -v to get more diff">def test_years_beyond_datetime_range():
+        # year 1000000 is divisible by 400 -&gt; leap; datetime caps at 9999
+&gt;       assert add_months(999999, 12, 31, 2) == (1000000, 2, 29)
+E       assert (1000000, 2, 28) == (1000000, 2, 29)
+E         
+E         At index 2 diff: 28 != 29
+E         Use -v to get more diff
+
+tests\test_solution.py:34: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-184826.add_months_clamp.tests.test_solution" name="test_invalid_input_date_raises" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_invalid_input_date_raises():
+&gt;       with pytest.raises(ValueError):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:40: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260713-184826.add_months_clamp.tests.test_solution" name="test_result_year_below_one_raises" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_result_year_below_one_raises():
+&gt;       with pytest.raises(ValueError):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:53: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260713-184826.add_months_clamp.tests.test_solution" name="test_bool_and_non_int_raise" time="0.000" /></testsuite></testsuites>

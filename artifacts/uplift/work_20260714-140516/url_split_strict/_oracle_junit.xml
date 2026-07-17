@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="12" skipped="0" tests="20" time="0.272" timestamp="2026-07-14T14:58:15.264937-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260714-140516.url_split_strict.tests.test_solution" name="test_basic" time="0.001"><failure message="AssertionError: assert 'http' == ('http', 'example.com', None, '/a/b', 'x=1')&#10; +  where 'http' = f('http://example.com/a/b?x=1')">&gt;   def test_basic(): assert f('http://example.com/a/b?x=1') == ('http', 'example.com', None, '/a/b', 'x=1')
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert 'http' == ('http', 'example.com', None, '/a/b', 'x=1')
+E    +  where 'http' = f('http://example.com/a/b?x=1')
+
+tests\test_solution.py:3: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-140516.url_split_strict.tests.test_solution" name="test_no_path" time="0.001"><failure message="AssertionError: assert 'http' == ('http', 'example.com', None, '/', None)&#10; +  where 'http' = f('http://example.com')">&gt;   def test_no_path(): assert f('http://example.com') == ('http', 'example.com', None, '/', None)
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert 'http' == ('http', 'example.com', None, '/', None)
+E    +  where 'http' = f('http://example.com')
+
+tests\test_solution.py:4: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-140516.url_split_strict.tests.test_solution" name="test_port" time="0.001"><failure message="AssertionError: assert 'https' == ('https', 'a.b', 8080, '/x', None)&#10; +  where 'https' = f('https://a.b:8080/x')">&gt;   def test_port(): assert f('https://a.b:8080/x') == ('https', 'a.b', 8080, '/x', None)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert 'https' == ('https', 'a.b', 8080, '/x', None)
+E    +  where 'https' = f('https://a.b:8080/x')
+
+tests\test_solution.py:5: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-140516.url_split_strict.tests.test_solution" name="test_query_no_path" time="0.001"><failure message="AssertionError: assert 'ftp' == ('ftp', 'h', None, '/', 'x=2')&#10; +  where 'ftp' = f('ftp://h?x=2')">&gt;   def test_query_no_path(): assert f('ftp://h?x=2') == ('ftp', 'h', None, '/', 'x=2')
+                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert 'ftp' == ('ftp', 'h', None, '/', 'x=2')
+E    +  where 'ftp' = f('ftp://h?x=2')
+
+tests\test_solution.py:6: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-140516.url_split_strict.tests.test_solution" name="test_empty_query" time="0.000"><failure message="AssertionError: assert 'http' == ('http', 'h', None, '/p', '')&#10; +  where 'http' = f('http://h/p?')">&gt;   def test_empty_query(): assert f('http://h/p?') == ('http', 'h', None, '/p', '')
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert 'http' == ('http', 'h', None, '/p', '')
+E    +  where 'http' = f('http://h/p?')
+
+tests\test_solution.py:7: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-140516.url_split_strict.tests.test_solution" name="test_second_qmark" time="0.000"><failure message="AssertionError: assert 'http' == ('http', 'h', None, '/p', 'a?b')&#10; +  where 'http' = f('http://h/p?a?b')">&gt;   def test_second_qmark(): assert f('http://h/p?a?b') == ('http', 'h', None, '/p', 'a?b')
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert 'http' == ('http', 'h', None, '/p', 'a?b')
+E    +  where 'http' = f('http://h/p?a?b')
+
+tests\test_solution.py:8: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-140516.url_split_strict.tests.test_solution" name="test_port_zero" time="0.000"><failure message="AssertionError: assert 'http' == ('http', 'h', 0, '/', None)&#10; +  where 'http' = f('http://h:0/')">&gt;   def test_port_zero(): assert f('http://h:0/') == ('http', 'h', 0, '/', None)
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert 'http' == ('http', 'h', 0, '/', None)
+E    +  where 'http' = f('http://h:0/')
+
+tests\test_solution.py:9: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-140516.url_split_strict.tests.test_solution" name="test_max_port" time="0.000"><failure message="AssertionError: assert 'http' == ('http', 'h', 65535, '/', None)&#10; +  where 'http' = f('http://h:65535')">&gt;   def test_max_port(): assert f('http://h:65535') == ('http', 'h', 65535, '/', None)
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert 'http' == ('http', 'h', 65535, '/', None)
+E    +  where 'http' = f('http://h:65535')
+
+tests\test_solution.py:10: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-140516.url_split_strict.tests.test_solution" name="test_scheme_chars" time="0.000"><failure message="ValueError: bad scheme">&gt;   def test_scheme_chars(): assert f('a+b-c.1://h') == ('a+b-c.1', 'h', None, '/', None)
+                                    ^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:11: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+url = 'a+b-c.1://h'
+
+    def split_url(url):
+        if not isinstance(url, str):
+            raise ValueError('bad url')
+    
+        # Find scheme: everything before first ://
+        colon_slash_slash = '://'
+        scheme_end = url.find(colon_slash_slash)
+    
+        if scheme_end == -1:
+            raise ValueError('no scheme')
+    
+        scheme = url[:scheme_end]
+    
+        if not scheme:
+            raise ValueError('bad scheme')
+    
+        # Scheme validation: first char lowercase letter, rest a-z0-9+-.
+        if not (ord(scheme[0]) &gt;= ord('a') and ord(scheme[0]) &lt;= ord('z')):
+            raise ValueError('bad scheme')
+    
+        for c in scheme[1:]:
+            allowed = [ord('a'), ord('z')] + \
+                      [ord('0'), ord('9')] + \
+                      [ord('+'), ord('-'), ord('.')]
+            if not ((ord(c) &gt;= allowed[0] and ord(c) &lt;= allowed[1]) or
+                    (ord(c) &gt;= allowed[2] and ord(c) &lt;= allowed[3]) or
+                    (ord(c) == allowed[4])):
+&gt;               raise ValueError('bad scheme')
+E               ValueError: bad scheme
+
+solution.py:28: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-140516.url_split_strict.tests.test_solution" name="test_no_scheme" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-140516.url_split_strict.tests.test_solution" name="test_bad_scheme_upper" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-140516.url_split_strict.tests.test_solution" name="test_bad_scheme_empty" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-140516.url_split_strict.tests.test_solution" name="test_bad_scheme_digit_first" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-140516.url_split_strict.tests.test_solution" name="test_bad_host_empty" time="0.001"><failure message="AssertionError: assert 'no authority' == 'bad host'&#10;  &#10;  - bad host&#10;  + no authority">def test_bad_host_empty():
+        with pytest.raises(ValueError) as e: f('http://')
+&gt;       assert str(e.value) == 'bad host'
+E       AssertionError: assert 'no authority' == 'bad host'
+E         
+E         - bad host
+E         + no authority
+
+tests\test_solution.py:24: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-140516.url_split_strict.tests.test_solution" name="test_bad_host_upper" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-140516.url_split_strict.tests.test_solution" name="test_bad_port_leading_zero" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-140516.url_split_strict.tests.test_solution" name="test_bad_port_too_big" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_bad_port_too_big():
+&gt;       with pytest.raises(ValueError): f('http://h:65536')
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:31: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260714-140516.url_split_strict.tests.test_solution" name="test_bad_port_empty" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_bad_port_empty():
+&gt;       with pytest.raises(ValueError): f('http://h:')
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:33: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260714-140516.url_split_strict.tests.test_solution" name="test_bad_port_second_colon" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-140516.url_split_strict.tests.test_solution" name="test_bad_url" time="0.000" /></testsuite></testsuites>

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="1" failures="0" skipped="0" tests="1" time="0.243" timestamp="2026-07-13T20:30:45.141358-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="" name="artifacts.uplift.work_20260713-201327.summarize_ranges.tests.test_solution" time="0.000"><error message="collection failure">tests\test_solution.py:2: in &lt;module&gt;
+    from solution import summarize_ranges as f
+solution.py:56: in &lt;module&gt;
+    print(summarize_ranges(nums))  # Output: ['0-1', '3-4', '5']
+          ^^^^^^^^^^^^^^^^^^^^^^
+solution.py:18: in summarize_ranges
+    if num &lt; result[-1][0]:
+             ^^^^^^^^^^
+E   IndexError: list index out of range</error></testcase></testsuite></testsuites>

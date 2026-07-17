@@ -1,4 +1,4 @@
-"""task_curator.py — admission gates for the N>=100 hard set.
+"""task_curator.py: admission gates for the N>=100 hard set.
 
 The uplift question stays open until a hard set exists where single-shot does
 not saturate (FLAGSHIP-PLAN.md, lane #7), and curation is the slow part. The
@@ -64,13 +64,25 @@ def _solution_hash(spec: TaskSpec) -> str:
 
 
 def _stub_solution(solution: str) -> str | None:
-    """Replace every top-level function body with `return None`. If there is no
-    top-level def to stub, return None (caller fails closed)."""
-    lines = solution.splitlines()
-    defs = [ln for ln in lines if ln.startswith("def ") and ln.rstrip().endswith(":")]
-    if not defs:
+    """Replace every top-level function body with `return None`, KEEPING
+    imports, module-level constants, classes, and helpers. The stub must fail
+    the hidden tests through the suite's discrimination, never through an
+    ImportError on a symbol the stub dropped (that scores a vacuous suite as
+    discriminating). No top-level def to stub, or unparsable source, returns
+    None (caller fails closed)."""
+    import ast
+    try:
+        tree = ast.parse(solution)
+    except SyntaxError:
         return None
-    return "\n".join(f"{d}\n    return None" for d in defs) + "\n"
+    stubbed = False
+    for node in tree.body:
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            node.body = [ast.Return(value=ast.Constant(value=None))]
+            stubbed = True
+    if not stubbed:
+        return None
+    return ast.unparse(ast.fix_missing_locations(tree)) + "\n"
 
 
 def _run_with(spec: TaskSpec, work_root: Path, solution_text: str,
@@ -80,20 +92,31 @@ def _run_with(spec: TaskSpec, work_root: Path, solution_text: str,
     it never expected and can spin forever; that must reject the probe, not
     kill the batch (learned from a batch-3 admission crash)."""
     import subprocess
-    from .oracle import clear_bytecode, run_env
+    from .oracle import _kill_tree, clear_bytecode, run_env
     from .task import load_task
     work = work_root / f"{spec.task_id}-{tag}"
     materialize(spec, work)
     task = load_task(work, workdir=work / "wd")
     task.candidate_full().write_text(solution_text, encoding="utf-8")
     clear_bytecode(Path(task.workdir))
+    # Popen + tree-kill, NOT subprocess.run(timeout=): on Windows with
+    # shell=True, run() kills only cmd.exe on timeout — the pytest
+    # grandchild survives holding the stdout pipe and the post-kill drain
+    # blocks forever (the exact defect oracle.py documents and fixes; this
+    # site had the old pattern and hung the full suite).
+    proc = subprocess.Popen(spec.oracle_cmd, cwd=task.workdir, shell=True,
+                            env=run_env(), stdout=subprocess.PIPE,
+                            stderr=subprocess.PIPE)
     try:
-        r = subprocess.run(spec.oracle_cmd, cwd=task.workdir, shell=True,
-                           capture_output=True, env=run_env(),
-                           timeout=ORACLE_TIMEOUT)
+        proc.communicate(timeout=ORACLE_TIMEOUT)
     except subprocess.TimeoutExpired:
+        _kill_tree(proc)
+        try:
+            proc.communicate(timeout=10)
+        except Exception:
+            pass
         return False
-    return r.returncode == 0
+    return proc.returncode == 0
 
 
 def _behavioral_dup(spec: TaskSpec, other: TaskSpec,
@@ -239,7 +262,9 @@ def seed_batch(batch: list[TaskSpec], registry_path: str | Path) -> dict:
     from .tasks_expert import EXPERT_REGISTRY
     from .tasks_hard import HARD_REGISTRY
     from .tasks_lib import REGISTRY
-    existing = list(REGISTRY) + list(HARD_REGISTRY) + list(EXPERT_REGISTRY)
+    from .tasks_physics import PHYSICS_REGISTRY
+    existing = (list(REGISTRY) + list(HARD_REGISTRY) + list(EXPERT_REGISTRY)
+                + list(PHYSICS_REGISTRY))
     if Path(registry_path).exists():
         existing += load_registry(registry_path)
     with tempfile.TemporaryDirectory() as wr:

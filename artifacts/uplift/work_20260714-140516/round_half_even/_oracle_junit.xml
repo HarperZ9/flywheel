@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="3" skipped="0" tests="11" time="0.248" timestamp="2026-07-14T14:42:54.255477-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260714-140516.round_half_even.tests.test_solution" name="test_half_down" time="0.001" /><testcase classname="artifacts.uplift.work_20260714-140516.round_half_even.tests.test_solution" name="test_half_up" time="0.001"><failure message="assert 0 == 2&#10; +  where 0 = f(3, 2)">&gt;   def test_half_up(): assert f(3, 2) == 2
+                        ^^^^^^^^^^^^^^^^^^^
+E   assert 0 == 2
+E    +  where 0 = f(3, 2)
+
+tests\test_solution.py:4: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-140516.round_half_even.tests.test_solution" name="test_half_even" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-140516.round_half_even.tests.test_solution" name="test_over" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-140516.round_half_even.tests.test_solution" name="test_third" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-140516.round_half_even.tests.test_solution" name="test_neg_half" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-140516.round_half_even.tests.test_solution" name="test_neg_three_half" time="0.000"><failure message="assert 0 == -2&#10; +  where 0 = f(-3, 2)">&gt;   def test_neg_three_half(): assert f(-3, 2) == -2
+                               ^^^^^^^^^^^^^^^^^^^^^
+E   assert 0 == -2
+E    +  where 0 = f(-3, 2)
+
+tests\test_solution.py:9: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-140516.round_half_even.tests.test_solution" name="test_exact" time="0.001"><failure message="assert 1 == 2&#10; +  where 1 = f(4, 2)">&gt;   def test_exact(): assert f(4, 2) == 2
+                      ^^^^^^^^^^^^^^^^^^^
+E   assert 1 == 2
+E    +  where 1 = f(4, 2)
+
+tests\test_solution.py:10: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-140516.round_half_even.tests.test_solution" name="test_neg_den" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-140516.round_half_even.tests.test_solution" name="test_div_zero" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-140516.round_half_even.tests.test_solution" name="test_bad_arg" time="0.000" /></testsuite></testsuites>

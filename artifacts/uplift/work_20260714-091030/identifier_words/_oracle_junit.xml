@@ -1,0 +1,169 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="6" skipped="0" tests="9" time="0.239" timestamp="2026-07-14T09:31:53.705856-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260714-091030.identifier_words.tests.test_solution" name="test_acronym_then_word" time="0.001"><failure message="ValueError: bad char">&gt;   def test_acronym_then_word(): assert f('HTTPServer2Node') == ['HTTP', 'Server', '2', 'Node']
+                                         ^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:3: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+s = 'HTTPServer2Node'
+
+    def split_identifier(s):
+        if not s:
+            return []
+        out = []
+        i = 0
+        while i &lt; len(s):
+            if s[i] == '_':
+                if out and out[-1].endswith('__'):
+                    raise ValueError('bad char')
+                j = i + 1
+                while j &lt; len(s) and s[j] == '_':
+                    j += 1
+                if out:
+                    if not any(c in 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789' for c in s[i:j]):
+                        raise ValueError('bad char')
+                    if out[-1]:
+                        out[-1] += '_' * (j - i)
+                i = j
+            elif s[i].isalnum():
+                j = i + 1
+                while j &lt; len(s) and s[j].isalnum():
+                    j += 1
+                word = s[i:j]
+                if not any(c in 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789' for c in word):
+                    raise ValueError('bad char')
+                first_uppers = start_upper(word)
+                if len(first_uppers) == 1 and first_uppers[0] &gt; 0:
+                    a, b = word[:first_uppers[0]], word[first_uppers[0]:]
+                    if out:
+                        if out[-1].endswith('_'):
+                            out[-1] += a
+                        elif any(c in 'abcdefghijklmnopqrstuvwxyz' for c in out[-1]):
+                            out[-1] += '_' + a
+                        else:
+                            out[-1] += a
+                    else:
+                        out.append(a)
+                    i = j - len(word) + first_uppers[0]
+                elif len(first_uppers) &gt; 2 or len(first_uppers) == 2 and (first_uppers[1] != first_uppers[0] + 1):
+                    if not out or not any(c in 'abcdefghijklmnopqrstuvwxyz' for c in out[-1]):
+&gt;                       raise ValueError('bad char')
+E                       ValueError: bad char
+
+solution.py:41: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-091030.identifier_words.tests.test_solution" name="test_camel_acronym" time="0.000"><failure message="ValueError: bad char">&gt;   def test_camel_acronym(): assert f('parseJSON2XML') == ['parse', 'JSON', '2', 'XML']
+                                     ^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:4: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+s = 'parseJSON2XML'
+
+    def split_identifier(s):
+        if not s:
+            return []
+        out = []
+        i = 0
+        while i &lt; len(s):
+            if s[i] == '_':
+                if out and out[-1].endswith('__'):
+                    raise ValueError('bad char')
+                j = i + 1
+                while j &lt; len(s) and s[j] == '_':
+                    j += 1
+                if out:
+                    if not any(c in 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789' for c in s[i:j]):
+                        raise ValueError('bad char')
+                    if out[-1]:
+                        out[-1] += '_' * (j - i)
+                i = j
+            elif s[i].isalnum():
+                j = i + 1
+                while j &lt; len(s) and s[j].isalnum():
+                    j += 1
+                word = s[i:j]
+                if not any(c in 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789' for c in word):
+                    raise ValueError('bad char')
+                first_uppers = start_upper(word)
+                if len(first_uppers) == 1 and first_uppers[0] &gt; 0:
+                    a, b = word[:first_uppers[0]], word[first_uppers[0]:]
+                    if out:
+                        if out[-1].endswith('_'):
+                            out[-1] += a
+                        elif any(c in 'abcdefghijklmnopqrstuvwxyz' for c in out[-1]):
+                            out[-1] += '_' + a
+                        else:
+                            out[-1] += a
+                    else:
+                        out.append(a)
+                    i = j - len(word) + first_uppers[0]
+                elif len(first_uppers) &gt; 2 or len(first_uppers) == 2 and (first_uppers[1] != first_uppers[0] + 1):
+                    if not out or not any(c in 'abcdefghijklmnopqrstuvwxyz' for c in out[-1]):
+&gt;                       raise ValueError('bad char')
+E                       ValueError: bad char
+
+solution.py:41: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-091030.identifier_words.tests.test_solution" name="test_snake" time="0.001"><failure message="ValueError: bad char">&gt;   def test_snake(): assert f('snake_case_two') == ['snake', 'case', 'two']
+                             ^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:5: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+s = 'snake_case_two'
+
+    def split_identifier(s):
+        if not s:
+            return []
+        out = []
+        i = 0
+        while i &lt; len(s):
+            if s[i] == '_':
+                if out and out[-1].endswith('__'):
+                    raise ValueError('bad char')
+                j = i + 1
+                while j &lt; len(s) and s[j] == '_':
+                    j += 1
+                if out:
+                    if not any(c in 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789' for c in s[i:j]):
+&gt;                       raise ValueError('bad char')
+E                       ValueError: bad char
+
+solution.py:15: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-091030.identifier_words.tests.test_solution" name="test_underscore_trim" time="0.000"><failure message="ValueError: bad char">&gt;   def test_underscore_trim(): assert f('__x__') == ['x']
+                                       ^^^^^^^^^^
+
+tests\test_solution.py:6: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+s = '__x__'
+
+    def split_identifier(s):
+        if not s:
+            return []
+        out = []
+        i = 0
+        while i &lt; len(s):
+            if s[i] == '_':
+                if out and out[-1].endswith('__'):
+                    raise ValueError('bad char')
+                j = i + 1
+                while j &lt; len(s) and s[j] == '_':
+                    j += 1
+                if out:
+                    if not any(c in 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789' for c in s[i:j]):
+&gt;                       raise ValueError('bad char')
+E                       ValueError: bad char
+
+solution.py:15: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-091030.identifier_words.tests.test_solution" name="test_empty" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-091030.identifier_words.tests.test_solution" name="test_two_caps_then_lower" time="0.001"><failure message="AssertionError: assert ['ABc'] == ['A', 'Bc']&#10;  &#10;  At index 0 diff: 'ABc' != 'A'&#10;  Right contains one more item: 'Bc'&#10;  Use -v to get more diff">&gt;   def test_two_caps_then_lower(): assert f('ABc') == ['A', 'Bc']
+                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert ['ABc'] == ['A', 'Bc']
+E     
+E     At index 0 diff: 'ABc' != 'A'
+E     Right contains one more item: 'Bc'
+E     Use -v to get more diff
+
+tests\test_solution.py:8: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-091030.identifier_words.tests.test_solution" name="test_plain" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-091030.identifier_words.tests.test_solution" name="test_single_cap_then_digit" time="0.000"><failure message="AssertionError: assert ['A1a'] == ['A', '1', 'a']&#10;  &#10;  At index 0 diff: 'A1a' != 'A'&#10;  Right contains 2 more items, first extra item: '1'&#10;  Use -v to get more diff">&gt;   def test_single_cap_then_digit(): assert f('A1a') == ['A', '1', 'a']
+                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert ['A1a'] == ['A', '1', 'a']
+E     
+E     At index 0 diff: 'A1a' != 'A'
+E     Right contains 2 more items, first extra item: '1'
+E     Use -v to get more diff
+
+tests\test_solution.py:10: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-091030.identifier_words.tests.test_solution" name="test_bad_char" time="0.000" /></testsuite></testsuites>

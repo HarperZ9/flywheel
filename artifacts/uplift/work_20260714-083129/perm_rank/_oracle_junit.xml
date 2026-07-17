@@ -1,0 +1,295 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="6" skipped="0" tests="12" time="0.217" timestamp="2026-07-14T09:02:35.846568-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260714-083129.perm_rank.tests.test_solution" name="test_empty" time="0.001" /><testcase classname="artifacts.uplift.work_20260714-083129.perm_rank.tests.test_solution" name="test_single" time="0.000"><failure message="TypeError: unsupported operand type(s) for +=: 'int' and 'NoneType'">&gt;   def test_single(): assert f([0]) == 0
+                              ^^^^^^
+
+tests\test_solution.py:4: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:41: in perm_rank
+    rank_helper(perm_ranks, 0, [], 1)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+perm_ranks = [0], index = 0, prev = [], count = 1
+
+    def rank_helper(perm_ranks, index, prev, count):
+        if index == n:
+            perm_ranks.append(count)
+            return
+    
+        for value in range(len(perm)):
+            if value not in perm_ranks:
+                new_perm = perm[:]
+                new_perm[index] = value
+                if is_smaller(new_perm[:index + 1], prev) and len(set(new_perm)) == n:
+&gt;                   count += rank_helper(perm_ranks, index + 1, new_perm, 0)
+E                   TypeError: unsupported operand type(s) for +=: 'int' and 'NoneType'
+
+solution.py:36: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.perm_rank.tests.test_solution" name="test_identity" time="0.001"><failure message="IndexError: list index out of range">&gt;   def test_identity(): assert f([0, 1, 2]) == 0
+                                ^^^^^^^^^^^^
+
+tests\test_solution.py:5: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+perm = [0, 1, 2]
+
+    def perm_rank(perm):
+        if not isinstance(perm, list):
+            raise ValueError('bad input')
+    
+        for element in perm:
+            if not isinstance(element, int) or (isinstance(element, bool)):
+                raise ValueError('bad element')
+    
+        n = len(perm)
+        missing_values = [x for x in range(n) if x not in perm]
+        extra_values = [x for x in perm if x &gt;= n]
+    
+        if any(missing_values + extra_values):
+            raise ValueError('not a permutation')
+    
+        def is_smaller(sublist1, sublist2):
+            for item1, item2 in zip(sublist1, sublist2):
+                if item1 &lt; item2:
+                    return True
+                elif item1 &gt; item2:
+                    return False
+            if len(sublist1) == len(sublist2):
+                return False
+            return True
+    
+        def rank_helper(perm_ranks, index, prev, count):
+            if index == n:
+                perm_ranks.append(count)
+                return
+    
+            for value in range(len(perm)):
+                if value not in perm_ranks:
+                    new_perm = perm[:]
+                    new_perm[index] = value
+                    if is_smaller(new_perm[:index + 1], prev) and len(set(new_perm)) == n:
+                        count += rank_helper(perm_ranks, index + 1, new_perm, 0)
+            return count
+    
+        perm.sort()
+        perm_ranks = []
+        rank_helper(perm_ranks, 0, [], 1)
+    
+&gt;       return perm_ranks[-1] - 1
+               ^^^^^^^^^^^^^^
+E       IndexError: list index out of range
+
+solution.py:43: IndexError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.perm_rank.tests.test_solution" name="test_reversed" time="0.001"><failure message="IndexError: list index out of range">&gt;   def test_reversed(): assert f([2, 1, 0]) == 5
+                                ^^^^^^^^^^^^
+
+tests\test_solution.py:6: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+perm = [0, 1, 2]
+
+    def perm_rank(perm):
+        if not isinstance(perm, list):
+            raise ValueError('bad input')
+    
+        for element in perm:
+            if not isinstance(element, int) or (isinstance(element, bool)):
+                raise ValueError('bad element')
+    
+        n = len(perm)
+        missing_values = [x for x in range(n) if x not in perm]
+        extra_values = [x for x in perm if x &gt;= n]
+    
+        if any(missing_values + extra_values):
+            raise ValueError('not a permutation')
+    
+        def is_smaller(sublist1, sublist2):
+            for item1, item2 in zip(sublist1, sublist2):
+                if item1 &lt; item2:
+                    return True
+                elif item1 &gt; item2:
+                    return False
+            if len(sublist1) == len(sublist2):
+                return False
+            return True
+    
+        def rank_helper(perm_ranks, index, prev, count):
+            if index == n:
+                perm_ranks.append(count)
+                return
+    
+            for value in range(len(perm)):
+                if value not in perm_ranks:
+                    new_perm = perm[:]
+                    new_perm[index] = value
+                    if is_smaller(new_perm[:index + 1], prev) and len(set(new_perm)) == n:
+                        count += rank_helper(perm_ranks, index + 1, new_perm, 0)
+            return count
+    
+        perm.sort()
+        perm_ranks = []
+        rank_helper(perm_ranks, 0, [], 1)
+    
+&gt;       return perm_ranks[-1] - 1
+               ^^^^^^^^^^^^^^
+E       IndexError: list index out of range
+
+solution.py:43: IndexError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.perm_rank.tests.test_solution" name="test_middle" time="0.000"><failure message="IndexError: list index out of range">&gt;   def test_middle(): assert f([1, 0, 2]) == 2
+                              ^^^^^^^^^^^^
+
+tests\test_solution.py:7: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+perm = [0, 1, 2]
+
+    def perm_rank(perm):
+        if not isinstance(perm, list):
+            raise ValueError('bad input')
+    
+        for element in perm:
+            if not isinstance(element, int) or (isinstance(element, bool)):
+                raise ValueError('bad element')
+    
+        n = len(perm)
+        missing_values = [x for x in range(n) if x not in perm]
+        extra_values = [x for x in perm if x &gt;= n]
+    
+        if any(missing_values + extra_values):
+            raise ValueError('not a permutation')
+    
+        def is_smaller(sublist1, sublist2):
+            for item1, item2 in zip(sublist1, sublist2):
+                if item1 &lt; item2:
+                    return True
+                elif item1 &gt; item2:
+                    return False
+            if len(sublist1) == len(sublist2):
+                return False
+            return True
+    
+        def rank_helper(perm_ranks, index, prev, count):
+            if index == n:
+                perm_ranks.append(count)
+                return
+    
+            for value in range(len(perm)):
+                if value not in perm_ranks:
+                    new_perm = perm[:]
+                    new_perm[index] = value
+                    if is_smaller(new_perm[:index + 1], prev) and len(set(new_perm)) == n:
+                        count += rank_helper(perm_ranks, index + 1, new_perm, 0)
+            return count
+    
+        perm.sort()
+        perm_ranks = []
+        rank_helper(perm_ranks, 0, [], 1)
+    
+&gt;       return perm_ranks[-1] - 1
+               ^^^^^^^^^^^^^^
+E       IndexError: list index out of range
+
+solution.py:43: IndexError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.perm_rank.tests.test_solution" name="test_middle2" time="0.000"><failure message="IndexError: list index out of range">&gt;   def test_middle2(): assert f([1, 2, 0]) == 3
+                               ^^^^^^^^^^^^
+
+tests\test_solution.py:8: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+perm = [0, 1, 2]
+
+    def perm_rank(perm):
+        if not isinstance(perm, list):
+            raise ValueError('bad input')
+    
+        for element in perm:
+            if not isinstance(element, int) or (isinstance(element, bool)):
+                raise ValueError('bad element')
+    
+        n = len(perm)
+        missing_values = [x for x in range(n) if x not in perm]
+        extra_values = [x for x in perm if x &gt;= n]
+    
+        if any(missing_values + extra_values):
+            raise ValueError('not a permutation')
+    
+        def is_smaller(sublist1, sublist2):
+            for item1, item2 in zip(sublist1, sublist2):
+                if item1 &lt; item2:
+                    return True
+                elif item1 &gt; item2:
+                    return False
+            if len(sublist1) == len(sublist2):
+                return False
+            return True
+    
+        def rank_helper(perm_ranks, index, prev, count):
+            if index == n:
+                perm_ranks.append(count)
+                return
+    
+            for value in range(len(perm)):
+                if value not in perm_ranks:
+                    new_perm = perm[:]
+                    new_perm[index] = value
+                    if is_smaller(new_perm[:index + 1], prev) and len(set(new_perm)) == n:
+                        count += rank_helper(perm_ranks, index + 1, new_perm, 0)
+            return count
+    
+        perm.sort()
+        perm_ranks = []
+        rank_helper(perm_ranks, 0, [], 1)
+    
+&gt;       return perm_ranks[-1] - 1
+               ^^^^^^^^^^^^^^
+E       IndexError: list index out of range
+
+solution.py:43: IndexError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.perm_rank.tests.test_solution" name="test_larger" time="0.000"><failure message="IndexError: list index out of range">&gt;   def test_larger(): assert f([3, 1, 4, 2, 0]) == 83
+                              ^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:9: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+perm = [0, 1, 2, 3, 4]
+
+    def perm_rank(perm):
+        if not isinstance(perm, list):
+            raise ValueError('bad input')
+    
+        for element in perm:
+            if not isinstance(element, int) or (isinstance(element, bool)):
+                raise ValueError('bad element')
+    
+        n = len(perm)
+        missing_values = [x for x in range(n) if x not in perm]
+        extra_values = [x for x in perm if x &gt;= n]
+    
+        if any(missing_values + extra_values):
+            raise ValueError('not a permutation')
+    
+        def is_smaller(sublist1, sublist2):
+            for item1, item2 in zip(sublist1, sublist2):
+                if item1 &lt; item2:
+                    return True
+                elif item1 &gt; item2:
+                    return False
+            if len(sublist1) == len(sublist2):
+                return False
+            return True
+    
+        def rank_helper(perm_ranks, index, prev, count):
+            if index == n:
+                perm_ranks.append(count)
+                return
+    
+            for value in range(len(perm)):
+                if value not in perm_ranks:
+                    new_perm = perm[:]
+                    new_perm[index] = value
+                    if is_smaller(new_perm[:index + 1], prev) and len(set(new_perm)) == n:
+                        count += rank_helper(perm_ranks, index + 1, new_perm, 0)
+            return count
+    
+        perm.sort()
+        perm_ranks = []
+        rank_helper(perm_ranks, 0, [], 1)
+    
+&gt;       return perm_ranks[-1] - 1
+               ^^^^^^^^^^^^^^
+E       IndexError: list index out of range
+
+solution.py:43: IndexError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.perm_rank.tests.test_solution" name="test_missing" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-083129.perm_rank.tests.test_solution" name="test_duplicate" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-083129.perm_rank.tests.test_solution" name="test_bad_element" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-083129.perm_rank.tests.test_solution" name="test_bool_element" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-083129.perm_rank.tests.test_solution" name="test_bad_input" time="0.000" /></testsuite></testsuites>

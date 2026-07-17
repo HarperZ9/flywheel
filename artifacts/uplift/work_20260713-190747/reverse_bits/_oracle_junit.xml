@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="7" skipped="0" tests="10" time="0.209" timestamp="2026-07-13T19:37:01.441337-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-190747.reverse_bits.tests.test_solution" name="test_one_eight" time="0.001"><failure message="ValueError: bad arg">&gt;   def test_one_eight(): assert f(1, 8) == 128
+                                 ^^^^^^^
+
+tests\test_solution.py:3: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+n = 1, width = 8
+
+    def reverse_bits(n, width):
+        if not isinstance(n, int) or not isinstance(width, int) or bool(n) or bool(width):
+&gt;           raise ValueError('bad arg')
+E           ValueError: bad arg
+
+solution.py:3: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-190747.reverse_bits.tests.test_solution" name="test_ten_four" time="0.000"><failure message="ValueError: bad arg">&gt;   def test_ten_four(): assert f(0b1010, 4) == 0b0101
+                                ^^^^^^^^^^^^
+
+tests\test_solution.py:4: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+n = 10, width = 4
+
+    def reverse_bits(n, width):
+        if not isinstance(n, int) or not isinstance(width, int) or bool(n) or bool(width):
+&gt;           raise ValueError('bad arg')
+E           ValueError: bad arg
+
+solution.py:3: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-190747.reverse_bits.tests.test_solution" name="test_zero" time="0.000"><failure message="ValueError: bad arg">&gt;   def test_zero(): assert f(0, 4) == 0
+                            ^^^^^^^
+
+tests\test_solution.py:5: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+n = 0, width = 4
+
+    def reverse_bits(n, width):
+        if not isinstance(n, int) or not isinstance(width, int) or bool(n) or bool(width):
+&gt;           raise ValueError('bad arg')
+E           ValueError: bad arg
+
+solution.py:3: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-190747.reverse_bits.tests.test_solution" name="test_six_three" time="0.000"><failure message="ValueError: bad arg">&gt;   def test_six_three(): assert f(0b110, 3) == 0b011
+                                 ^^^^^^^^^^^
+
+tests\test_solution.py:6: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+n = 6, width = 3
+
+    def reverse_bits(n, width):
+        if not isinstance(n, int) or not isinstance(width, int) or bool(n) or bool(width):
+&gt;           raise ValueError('bad arg')
+E           ValueError: bad arg
+
+solution.py:3: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-190747.reverse_bits.tests.test_solution" name="test_one_one" time="0.000"><failure message="ValueError: bad arg">&gt;   def test_one_one(): assert f(1, 1) == 1
+                               ^^^^^^^
+
+tests\test_solution.py:7: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+n = 1, width = 1
+
+    def reverse_bits(n, width):
+        if not isinstance(n, int) or not isinstance(width, int) or bool(n) or bool(width):
+&gt;           raise ValueError('bad arg')
+E           ValueError: bad arg
+
+solution.py:3: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-190747.reverse_bits.tests.test_solution" name="test_all_ones" time="0.000"><failure message="ValueError: bad arg">&gt;   def test_all_ones(): assert f(0b1111, 4) == 0b1111
+                                ^^^^^^^^^^^^
+
+tests\test_solution.py:8: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+n = 15, width = 4
+
+    def reverse_bits(n, width):
+        if not isinstance(n, int) or not isinstance(width, int) or bool(n) or bool(width):
+&gt;           raise ValueError('bad arg')
+E           ValueError: bad arg
+
+solution.py:3: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-190747.reverse_bits.tests.test_solution" name="test_overflow" time="0.001"><failure message="AssertionError: assert 'bad arg' == 'overflow'&#10;  &#10;  - overflow&#10;  + bad arg">def test_overflow():
+        with pytest.raises(ValueError) as e: f(16, 4)
+&gt;       assert str(e.value) == 'overflow'
+E       AssertionError: assert 'bad arg' == 'overflow'
+E         
+E         - overflow
+E         + bad arg
+
+tests\test_solution.py:11: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-190747.reverse_bits.tests.test_solution" name="test_bad_width" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-190747.reverse_bits.tests.test_solution" name="test_bad_neg" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-190747.reverse_bits.tests.test_solution" name="test_bool" time="0.000" /></testsuite></testsuites>

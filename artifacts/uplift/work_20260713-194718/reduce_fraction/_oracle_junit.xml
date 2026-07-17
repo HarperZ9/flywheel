@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="7" skipped="0" tests="9" time="0.191" timestamp="2026-07-13T20:06:42.370551-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-194718.reduce_fraction.tests.test_solution" name="test_basic" time="0.001"><failure message="NameError: name 'math' is not defined. Did you forget to import 'math'">&gt;   def test_basic(): assert f(4, 8) == (1, 2)
+                             ^^^^^^^
+
+tests\test_solution.py:3: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+num = 4, den = 8
+
+    def reduce_fraction(num: int, den: int) -&gt; tuple:
+        if type(num) != int or type(den) != int:
+            raise ValueError('bad arg')
+        if den == 0:
+            raise ValueError('div by zero')
+    
+        # Ensure denominator is positive
+        sign = -1 if num &lt; 0 else 1
+    
+        abs_num, abs_den = abs(num), abs(den)
+    
+&gt;       gcd = math.gcd(abs_num, abs_den)
+              ^^^^
+E       NameError: name 'math' is not defined. Did you forget to import 'math'
+
+solution.py:12: NameError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.reduce_fraction.tests.test_solution" name="test_neg_num" time="0.000"><failure message="NameError: name 'math' is not defined. Did you forget to import 'math'">&gt;   def test_neg_num(): assert f(-4, 8) == (-1, 2)
+                               ^^^^^^^^
+
+tests\test_solution.py:4: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+num = -4, den = 8
+
+    def reduce_fraction(num: int, den: int) -&gt; tuple:
+        if type(num) != int or type(den) != int:
+            raise ValueError('bad arg')
+        if den == 0:
+            raise ValueError('div by zero')
+    
+        # Ensure denominator is positive
+        sign = -1 if num &lt; 0 else 1
+    
+        abs_num, abs_den = abs(num), abs(den)
+    
+&gt;       gcd = math.gcd(abs_num, abs_den)
+              ^^^^
+E       NameError: name 'math' is not defined. Did you forget to import 'math'
+
+solution.py:12: NameError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.reduce_fraction.tests.test_solution" name="test_neg_den" time="0.000"><failure message="NameError: name 'math' is not defined. Did you forget to import 'math'">&gt;   def test_neg_den(): assert f(4, -8) == (-1, 2)
+                               ^^^^^^^^
+
+tests\test_solution.py:5: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+num = 4, den = -8
+
+    def reduce_fraction(num: int, den: int) -&gt; tuple:
+        if type(num) != int or type(den) != int:
+            raise ValueError('bad arg')
+        if den == 0:
+            raise ValueError('div by zero')
+    
+        # Ensure denominator is positive
+        sign = -1 if num &lt; 0 else 1
+    
+        abs_num, abs_den = abs(num), abs(den)
+    
+&gt;       gcd = math.gcd(abs_num, abs_den)
+              ^^^^
+E       NameError: name 'math' is not defined. Did you forget to import 'math'
+
+solution.py:12: NameError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.reduce_fraction.tests.test_solution" name="test_both_neg" time="0.000"><failure message="NameError: name 'math' is not defined. Did you forget to import 'math'">&gt;   def test_both_neg(): assert f(-4, -8) == (1, 2)
+                                ^^^^^^^^^
+
+tests\test_solution.py:6: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+num = -4, den = -8
+
+    def reduce_fraction(num: int, den: int) -&gt; tuple:
+        if type(num) != int or type(den) != int:
+            raise ValueError('bad arg')
+        if den == 0:
+            raise ValueError('div by zero')
+    
+        # Ensure denominator is positive
+        sign = -1 if num &lt; 0 else 1
+    
+        abs_num, abs_den = abs(num), abs(den)
+    
+&gt;       gcd = math.gcd(abs_num, abs_den)
+              ^^^^
+E       NameError: name 'math' is not defined. Did you forget to import 'math'
+
+solution.py:12: NameError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.reduce_fraction.tests.test_solution" name="test_zero" time="0.000"><failure message="NameError: name 'math' is not defined. Did you forget to import 'math'">&gt;   def test_zero(): assert f(0, 5) == (0, 1)
+                            ^^^^^^^
+
+tests\test_solution.py:7: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+num = 0, den = 5
+
+    def reduce_fraction(num: int, den: int) -&gt; tuple:
+        if type(num) != int or type(den) != int:
+            raise ValueError('bad arg')
+        if den == 0:
+            raise ValueError('div by zero')
+    
+        # Ensure denominator is positive
+        sign = -1 if num &lt; 0 else 1
+    
+        abs_num, abs_den = abs(num), abs(den)
+    
+&gt;       gcd = math.gcd(abs_num, abs_den)
+              ^^^^
+E       NameError: name 'math' is not defined. Did you forget to import 'math'
+
+solution.py:12: NameError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.reduce_fraction.tests.test_solution" name="test_already" time="0.000"><failure message="NameError: name 'math' is not defined. Did you forget to import 'math'">&gt;   def test_already(): assert f(7, 1) == (7, 1)
+                               ^^^^^^^
+
+tests\test_solution.py:8: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+num = 7, den = 1
+
+    def reduce_fraction(num: int, den: int) -&gt; tuple:
+        if type(num) != int or type(den) != int:
+            raise ValueError('bad arg')
+        if den == 0:
+            raise ValueError('div by zero')
+    
+        # Ensure denominator is positive
+        sign = -1 if num &lt; 0 else 1
+    
+        abs_num, abs_den = abs(num), abs(den)
+    
+&gt;       gcd = math.gcd(abs_num, abs_den)
+              ^^^^
+E       NameError: name 'math' is not defined. Did you forget to import 'math'
+
+solution.py:12: NameError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.reduce_fraction.tests.test_solution" name="test_reduce_int" time="0.000"><failure message="NameError: name 'math' is not defined. Did you forget to import 'math'">&gt;   def test_reduce_int(): assert f(6, 3) == (2, 1)
+                                  ^^^^^^^
+
+tests\test_solution.py:9: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+num = 6, den = 3
+
+    def reduce_fraction(num: int, den: int) -&gt; tuple:
+        if type(num) != int or type(den) != int:
+            raise ValueError('bad arg')
+        if den == 0:
+            raise ValueError('div by zero')
+    
+        # Ensure denominator is positive
+        sign = -1 if num &lt; 0 else 1
+    
+        abs_num, abs_den = abs(num), abs(den)
+    
+&gt;       gcd = math.gcd(abs_num, abs_den)
+              ^^^^
+E       NameError: name 'math' is not defined. Did you forget to import 'math'
+
+solution.py:12: NameError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.reduce_fraction.tests.test_solution" name="test_div_zero" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-194718.reduce_fraction.tests.test_solution" name="test_bad_arg" time="0.000" /></testsuite></testsuites>

@@ -33,12 +33,16 @@ def test_unanimous_pass_accepts_and_records_votes():
     assert "ACCEPT" in r.accountability_receipt()
 
 
-def test_one_dissenter_vetoes_under_unanimity():
+def test_one_objector_vetoes_under_unanimity():
     # 2 of 3 pass, but unanimity is required -> a single peer's objection blocks.
+    # The skeptic's FAIL is recorded in the votes (the objection is answerable);
+    # the dissenters-from-the-outcome are the two who wanted to accept.
     q = QuorumOracle([P("a"), P("b"), F("skeptic")], unanimous=True)
     r = q.verify("x", None)
-    assert r.passed is False, "one honest dissenter must veto under unanimity"
-    assert "skeptic" in r.dissenters
+    assert r.passed is False, "one honest objection must veto under unanimity"
+    objection = next(v for v in r.votes if v["type"] == "skeptic")
+    assert objection["passed"] is False        # the veto is on the record
+    assert set(r.dissenters) == {"a", "b"}     # against the REJECT outcome
 
 
 def test_majority_lets_the_crowd_decide():
@@ -72,3 +76,65 @@ def test_is_an_oracle_result():
 def test_empty_quorum_rejected_at_construction():
     with pytest.raises(ValueError):
         QuorumOracle([])
+
+
+class IdOracle:
+    """A verifier with an explicit identity: its own output_hash and model_ref."""
+    def __init__(self, name, passes, ref, ohash):
+        self.oracle_type = name
+        self.model_ref = ref
+        self._p, self._h = passes, ohash
+    def verify(self, candidate, task):
+        return OracleResult(passed=self._p, cmd=self.oracle_type,
+                            output_hash=self._h, stdout_excerpt="", rc=0)
+
+
+def test_stacked_ballot_is_visible_in_the_receipt():
+    # One verifier counted twice must NOT look identical to two independent
+    # peers: the receipt carries each member's identity so a stranger can
+    # see the stacked ballot.
+    same = IdOracle("judge", True, "endpoint-A", "same-hash")
+    stacked = QuorumOracle([same, same], threshold=0.5)
+    two_independent = QuorumOracle(
+        [IdOracle("judge", True, "endpoint-A", "hash-1"),
+         IdOracle("peer", True, "endpoint-B", "hash-2")], threshold=0.5)
+    rs = stacked.verify("x", None)
+    ri = two_independent.verify("x", None)
+    # each vote carries identity
+    assert all("output_hash" in v and "ref" in v for v in rs.votes)
+    # the stacked pair shares one identity; the receipt says so
+    assert rs.distinct_members == 1
+    assert ri.distinct_members == 2
+    # and the two receipts are not byte-identical
+    assert rs.output_hash != ri.output_hash
+
+
+def test_same_endpoint_under_two_names_is_flagged():
+    # Two oracle_type names hitting the SAME endpoint (same model_ref) are one
+    # voice, not two: the receipt flags the collision.
+    q = QuorumOracle([IdOracle("a", True, "endpoint-X", "h1"),
+                      IdOracle("b", True, "endpoint-X", "h2")], threshold=0.5)
+    r = q.verify("x", None)
+    assert r.distinct_members == 1     # one endpoint, one voice
+
+
+def test_learned_member_is_refused_at_construction():
+    class LearnedJudge:
+        oracle_type = "llm-judge"
+        learned = True
+        def verify(self, c, t):
+            return OracleResult(passed=True, cmd="", output_hash="h",
+                                stdout_excerpt="", rc=0)
+    with pytest.raises(ValueError) as e:
+        QuorumOracle([P("code"), LearnedJudge()])
+    assert "learned" in str(e.value).lower()
+
+
+def test_dissenters_are_against_the_outcome_not_the_bare_majority():
+    # threshold 0.6, n=5, 3 pass: needed = floor(3)+1 = 4, so the OUTCOME is
+    # REJECT even though 3/5 is a bare majority. The dissenters (voices against
+    # the outcome) are the PASS voters, not the FAIL voters.
+    q = QuorumOracle([P("a"), P("b"), P("c"), F("d"), F("e")], threshold=0.6)
+    r = q.verify("x", None)
+    assert r.passed is False           # supermajority not reached
+    assert set(r.dissenters) == {"a", "b", "c"}  # the outvoted PASS minority

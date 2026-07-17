@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="7" skipped="0" tests="8" time="0.216" timestamp="2026-07-14T08:44:21.181659-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260714-083129.sat_add_nbit.tests.test_solution" name="test_no_clamp_within_range" time="0.001"><failure message="assert 255 == 0&#10; +  where 255 = sat_add(-5, 5, 8)">def test_no_clamp_within_range():
+        assert sat_add(3, 4, 8) == 7
+        assert sat_add(100, 27, 8) == 127
+        assert sat_add(-100, -28, 8) == -128
+&gt;       assert sat_add(-5, 5, 8) == 0
+E       assert 255 == 0
+E        +  where 255 = sat_add(-5, 5, 8)
+
+tests\test_solution.py:9: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.sat_add_nbit.tests.test_solution" name="test_clamp_high" time="0.001"><failure message="assert 200 == 127&#10; +  where 200 = sat_add(100, 100, 8)">def test_clamp_high():
+&gt;       assert sat_add(100, 100, 8) == 127
+E       assert 200 == 127
+E        +  where 200 = sat_add(100, 100, 8)
+
+tests\test_solution.py:13: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.sat_add_nbit.tests.test_solution" name="test_clamp_low" time="0.000"><failure message="assert -200 == -128&#10; +  where -200 = sat_add(-100, -100, 8)">def test_clamp_low():
+&gt;       assert sat_add(-100, -100, 8) == -128
+E       assert -200 == -128
+E        +  where -200 = sat_add(-100, -100, 8)
+
+tests\test_solution.py:19: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.sat_add_nbit.tests.test_solution" name="test_bits_one_edge" time="0.000"><failure message="assert -2 == -1&#10; +  where -2 = sat_add(-1, -1, 1)">def test_bits_one_edge():
+        assert sat_add(0, 0, 1) == 0
+        assert sat_add(0, -1, 1) == -1
+&gt;       assert sat_add(-1, -1, 1) == -1
+E       assert -2 == -1
+E        +  where -2 = sat_add(-1, -1, 1)
+
+tests\test_solution.py:26: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.sat_add_nbit.tests.test_solution" name="test_bits_invalid_raises" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-083129.sat_add_nbit.tests.test_solution" name="test_operand_out_of_range_raises" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_operand_out_of_range_raises():
+&gt;       with pytest.raises(ValueError):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:37: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.sat_add_nbit.tests.test_solution" name="test_bool_rejected" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_bool_rejected():
+&gt;       with pytest.raises(ValueError):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:46: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.sat_add_nbit.tests.test_solution" name="test_non_int_rejected" time="0.000"><failure message="TypeError: '&lt;' not supported between instances of 'str' and 'int'">def test_non_int_rejected():
+        with pytest.raises(ValueError):
+            sat_add(1.0, 2, 8)
+        with pytest.raises(ValueError):
+&gt;           sat_add(1, 2, "8")
+
+tests\test_solution.py:58: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+a = 1, b = 2, bits = '8'
+
+    def sat_add(a: int, b: int, bits: int) -&gt; int:
+        if not isinstance(a, int) or not isinstance(b, int):
+            raise ValueError("Both arguments must be integers.")
+    
+        if a &gt;= 0 and b &lt; 0 and (a - b &lt;= 2**(bits-1)) != (b &lt;= 2**(bits-1)):
+            return -(2**bits)
+    
+        if a &lt; 0 and b &gt;= 0 and (a + b &lt; 2**(bits-1)):
+            return 2**bits - 1
+    
+&gt;       if bits &lt; 1:
+           ^^^^^^^^
+E       TypeError: '&lt;' not supported between instances of 'str' and 'int'
+
+solution.py:11: TypeError</failure></testcase></testsuite></testsuites>

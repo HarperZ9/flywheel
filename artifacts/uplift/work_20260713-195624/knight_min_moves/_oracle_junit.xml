@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="1" failures="0" skipped="0" tests="1" time="0.283" timestamp="2026-07-13T20:23:42.039941-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="" name="artifacts.uplift.work_20260713-195624.knight_min_moves.tests.test_solution" time="0.000"><error message="collection failure">tests\test_solution.py:2: in &lt;module&gt;
+    from solution import knight_moves as f
+solution.py:59: in &lt;module&gt;
+    print(knight_moves(4, (0, 0), (3, 6)))  # Output: 7
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+solution.py:20: in knight_moves
+    n, start = map(int, (n, start))
+    ^^^^^^^^
+E   TypeError: int() argument must be a string, a bytes-like object or a real number, not 'tuple'</error></testcase></testsuite></testsuites>

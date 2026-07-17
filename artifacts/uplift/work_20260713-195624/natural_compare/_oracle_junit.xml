@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="4" skipped="0" tests="9" time="0.196" timestamp="2026-07-13T20:17:48.712129-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-195624.natural_compare.tests.test_solution" name="test_numeric" time="0.001" /><testcase classname="artifacts.uplift.work_20260713-195624.natural_compare.tests.test_solution" name="test_numeric_gt" time="0.001"><failure message="AssertionError: assert -1 == 1&#10; +  where -1 = f('a10', 'a2')">&gt;   def test_numeric_gt(): assert f('a10', 'a2') == 1
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert -1 == 1
+E    +  where -1 = f('a10', 'a2')
+
+tests\test_solution.py:4: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.natural_compare.tests.test_solution" name="test_file" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-195624.natural_compare.tests.test_solution" name="test_equal" time="0.000"><failure message="TypeError: object of type 'int' has no len()">&gt;   def test_equal(): assert f('abc', 'abc') == 0
+                             ^^^^^^^^^^^^^^^
+
+tests\test_solution.py:6: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:48: in natural_compare
+    len_a = sum(len(char) &gt; 0 for char in a_run)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+.0 = &lt;collections._deque_iterator object at 0x000002BDFE8E25C0&gt;
+
+&gt;   len_a = sum(len(char) &gt; 0 for char in a_run)
+                ^^^^^^^^^
+E   TypeError: object of type 'int' has no len()
+
+solution.py:48: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.natural_compare.tests.test_solution" name="test_prefix" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-195624.natural_compare.tests.test_solution" name="test_leading_zero" time="0.001"><failure message="TypeError: object of type 'int' has no len()">&gt;   def test_leading_zero(): assert f('01', '1') == 1
+                                    ^^^^^^^^^^^^
+
+tests\test_solution.py:8: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:48: in natural_compare
+    len_a = sum(len(char) &gt; 0 for char in a_run)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+.0 = &lt;collections._deque_iterator object at 0x000002BDFE8E2E30&gt;
+
+&gt;   len_a = sum(len(char) &gt; 0 for char in a_run)
+                ^^^^^^^^^
+E   TypeError: object of type 'int' has no len()
+
+solution.py:48: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.natural_compare.tests.test_solution" name="test_digit_before_alpha" time="0.000"><failure message="TypeError: object of type 'int' has no len()">&gt;   def test_digit_before_alpha(): assert f('1', 'a') == -1
+                                          ^^^^^^^^^^^
+
+tests\test_solution.py:9: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:48: in natural_compare
+    len_a = sum(len(char) &gt; 0 for char in a_run)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+.0 = &lt;collections._deque_iterator object at 0x000002BDFE8E3970&gt;
+
+&gt;   len_a = sum(len(char) &gt; 0 for char in a_run)
+                ^^^^^^^^^
+E   TypeError: object of type 'int' has no len()
+
+solution.py:48: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.natural_compare.tests.test_solution" name="test_plain_alpha" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-195624.natural_compare.tests.test_solution" name="test_bad_input" time="0.000" /></testsuite></testsuites>

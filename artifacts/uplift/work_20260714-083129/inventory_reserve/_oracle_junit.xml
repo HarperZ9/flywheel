@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="9" skipped="0" tests="14" time="0.216" timestamp="2026-07-14T09:09:11.599889-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260714-083129.inventory_reserve.tests.test_solution" name="test_basic" time="0.001"><failure message="ValueError: not enough w">def test_basic():
+&gt;       assert f({'w': 5}, [('reserve', 'w', 2)]) == [('w', 2)]
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:4: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+stock = {'w': 5}, ops = [('reserve', 'w', 2)]
+
+    def reserve_trace(stock, ops):
+        if not isinstance(stock, dict) or not all(isinstance(val, int) and val &gt;= 0 for val in stock.values()):
+            raise ValueError('bad stock')
+    
+        final_reservations = []
+    
+        for op in ops:
+            if len(op) != 3 or op[0] not in ['reserve', 'cancel'] or not isinstance(op[2], int) or op[2] &lt; 1 or op[1] not in stock:
+                raise ValueError('bad op')
+    
+            item, qty = op[1], op[2]
+    
+            if op[0] == 'reserve':
+                current_reservations = stock[item]
+    
+                if qty &gt; (stock[item] - current_reservations):
+                    msg = f'not enough {item}'
+&gt;                   raise ValueError(msg)
+E                   ValueError: not enough w
+
+solution.py:18: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.inventory_reserve.tests.test_solution" name="test_accumulate_and_sort" time="0.000"><failure message="ValueError: not enough b">def test_accumulate_and_sort():
+&gt;       assert f({'b': 4, 'a': 4}, [('reserve', 'b', 1), ('reserve', 'a', 2), ('reserve', 'b', 1)]) == [('a', 2), ('b', 2)]
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:6: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+stock = {'a': 4, 'b': 4}
+ops = [('reserve', 'b', 1), ('reserve', 'a', 2), ('reserve', 'b', 1)]
+
+    def reserve_trace(stock, ops):
+        if not isinstance(stock, dict) or not all(isinstance(val, int) and val &gt;= 0 for val in stock.values()):
+            raise ValueError('bad stock')
+    
+        final_reservations = []
+    
+        for op in ops:
+            if len(op) != 3 or op[0] not in ['reserve', 'cancel'] or not isinstance(op[2], int) or op[2] &lt; 1 or op[1] not in stock:
+                raise ValueError('bad op')
+    
+            item, qty = op[1], op[2]
+    
+            if op[0] == 'reserve':
+                current_reservations = stock[item]
+    
+                if qty &gt; (stock[item] - current_reservations):
+                    msg = f'not enough {item}'
+&gt;                   raise ValueError(msg)
+E                   ValueError: not enough b
+
+solution.py:18: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.inventory_reserve.tests.test_solution" name="test_cancel_to_zero_excluded" time="0.000"><failure message="ValueError: not enough w">def test_cancel_to_zero_excluded():
+&gt;       assert f({'w': 5}, [('reserve', 'w', 3), ('cancel', 'w', 3)]) == []
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:8: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+stock = {'w': 5}, ops = [('reserve', 'w', 3), ('cancel', 'w', 3)]
+
+    def reserve_trace(stock, ops):
+        if not isinstance(stock, dict) or not all(isinstance(val, int) and val &gt;= 0 for val in stock.values()):
+            raise ValueError('bad stock')
+    
+        final_reservations = []
+    
+        for op in ops:
+            if len(op) != 3 or op[0] not in ['reserve', 'cancel'] or not isinstance(op[2], int) or op[2] &lt; 1 or op[1] not in stock:
+                raise ValueError('bad op')
+    
+            item, qty = op[1], op[2]
+    
+            if op[0] == 'reserve':
+                current_reservations = stock[item]
+    
+                if qty &gt; (stock[item] - current_reservations):
+                    msg = f'not enough {item}'
+&gt;                   raise ValueError(msg)
+E                   ValueError: not enough w
+
+solution.py:18: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.inventory_reserve.tests.test_solution" name="test_reserve_exactly_available" time="0.000"><failure message="ValueError: not enough w">def test_reserve_exactly_available():
+&gt;       assert f({'w': 5}, [('reserve', 'w', 5)]) == [('w', 5)]
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:10: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+stock = {'w': 5}, ops = [('reserve', 'w', 5)]
+
+    def reserve_trace(stock, ops):
+        if not isinstance(stock, dict) or not all(isinstance(val, int) and val &gt;= 0 for val in stock.values()):
+            raise ValueError('bad stock')
+    
+        final_reservations = []
+    
+        for op in ops:
+            if len(op) != 3 or op[0] not in ['reserve', 'cancel'] or not isinstance(op[2], int) or op[2] &lt; 1 or op[1] not in stock:
+                raise ValueError('bad op')
+    
+            item, qty = op[1], op[2]
+    
+            if op[0] == 'reserve':
+                current_reservations = stock[item]
+    
+                if qty &gt; (stock[item] - current_reservations):
+                    msg = f'not enough {item}'
+&gt;                   raise ValueError(msg)
+E                   ValueError: not enough w
+
+solution.py:18: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.inventory_reserve.tests.test_solution" name="test_no_ops" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-083129.inventory_reserve.tests.test_solution" name="test_not_enough_message" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-083129.inventory_reserve.tests.test_solution" name="test_over_cancel" time="0.000"><failure message="AssertionError: assert 'not enough w' == 'over-cancel'&#10;  &#10;  - over-cancel&#10;  + not enough w">def test_over_cancel():
+        with pytest.raises(ValueError) as e:
+            f({'w': 5}, [('reserve', 'w', 1), ('cancel', 'w', 2)])
+&gt;       assert str(e.value) == 'over-cancel'
+E       AssertionError: assert 'not enough w' == 'over-cancel'
+E         
+E         - over-cancel
+E         + not enough w
+
+tests\test_solution.py:20: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.inventory_reserve.tests.test_solution" name="test_unknown_item" time="0.001"><failure message="AssertionError: assert 'bad op' == 'unknown item'&#10;  &#10;  - unknown item&#10;  + bad op">def test_unknown_item():
+        with pytest.raises(ValueError) as e: f({'w': 1}, [('reserve', 'x', 1)])
+&gt;       assert str(e.value) == 'unknown item'
+E       AssertionError: assert 'bad op' == 'unknown item'
+E         
+E         - unknown item
+E         + bad op
+
+tests\test_solution.py:23: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.inventory_reserve.tests.test_solution" name="test_bad_qty_zero" time="0.001"><failure message="AssertionError: assert 'bad op' == 'bad qty'&#10;  &#10;  - bad qty&#10;  + bad op">def test_bad_qty_zero():
+        with pytest.raises(ValueError) as e: f({'w': 1}, [('reserve', 'w', 0)])
+&gt;       assert str(e.value) == 'bad qty'
+E       AssertionError: assert 'bad op' == 'bad qty'
+E         
+E         - bad qty
+E         + bad op
+
+tests\test_solution.py:26: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.inventory_reserve.tests.test_solution" name="test_bad_qty_bool" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-083129.inventory_reserve.tests.test_solution" name="test_bad_op" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-083129.inventory_reserve.tests.test_solution" name="test_bad_stock_bool_value" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_bad_stock_bool_value():
+&gt;       with pytest.raises(ValueError) as e: f({'w': True}, [])
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:33: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.inventory_reserve.tests.test_solution" name="test_bad_stock_negative" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-083129.inventory_reserve.tests.test_solution" name="test_no_mutation" time="0.000"><failure message="ValueError: not enough w">def test_no_mutation():
+        s = {'w': 5}
+&gt;       f(s, [('reserve', 'w', 2)])
+
+tests\test_solution.py:39: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+stock = {'w': 5}, ops = [('reserve', 'w', 2)]
+
+    def reserve_trace(stock, ops):
+        if not isinstance(stock, dict) or not all(isinstance(val, int) and val &gt;= 0 for val in stock.values()):
+            raise ValueError('bad stock')
+    
+        final_reservations = []
+    
+        for op in ops:
+            if len(op) != 3 or op[0] not in ['reserve', 'cancel'] or not isinstance(op[2], int) or op[2] &lt; 1 or op[1] not in stock:
+                raise ValueError('bad op')
+    
+            item, qty = op[1], op[2]
+    
+            if op[0] == 'reserve':
+                current_reservations = stock[item]
+    
+                if qty &gt; (stock[item] - current_reservations):
+                    msg = f'not enough {item}'
+&gt;                   raise ValueError(msg)
+E                   ValueError: not enough w
+
+solution.py:18: ValueError</failure></testcase></testsuite></testsuites>

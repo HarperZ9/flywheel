@@ -1,0 +1,180 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="8" skipped="0" tests="8" time="0.241" timestamp="2026-07-13T19:35:55.578187-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-192539.canonical_decimal.tests.test_solution" name="test_integers" time="0.001"><failure message="TypeError: 'bool' object is not iterable">def test_integers():
+&gt;       assert canonical_decimal("42") == "42"
+               ^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:6: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+s = '42'
+
+    def canonical_decimal(s: str) -&gt; str:
+        # Check if input is None or empty string, raise ValueError
+        if not s:
+            raise ValueError("Input cannot be None or empty")
+    
+        # Split the input into sign and rest, handle leading +
+        pos_or_neg, rest = next((i, j) for i, j in [(s[0], s[1:]), (None, s)] if j)
+    
+        # Remove underscores and validate digits
+&gt;       valid_rest = ''.join(i for i, is_sep in zip(rest, '_' in rest) if not i.isspace() and not i.isdigit() or (i == '.' and not any(j.isdigit() or j == '.' for j in rest[1:])))
+                                                ^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: 'bool' object is not iterable
+
+solution.py:10: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-192539.canonical_decimal.tests.test_solution" name="test_fractions" time="0.000"><failure message="TypeError: 'bool' object is not iterable">def test_fractions():
+&gt;       assert canonical_decimal("3.1400") == "3.14"
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:12: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+s = '3.1400'
+
+    def canonical_decimal(s: str) -&gt; str:
+        # Check if input is None or empty string, raise ValueError
+        if not s:
+            raise ValueError("Input cannot be None or empty")
+    
+        # Split the input into sign and rest, handle leading +
+        pos_or_neg, rest = next((i, j) for i, j in [(s[0], s[1:]), (None, s)] if j)
+    
+        # Remove underscores and validate digits
+&gt;       valid_rest = ''.join(i for i, is_sep in zip(rest, '_' in rest) if not i.isspace() and not i.isdigit() or (i == '.' and not any(j.isdigit() or j == '.' for j in rest[1:])))
+                                                ^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: 'bool' object is not iterable
+
+solution.py:10: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-192539.canonical_decimal.tests.test_solution" name="test_zero_normalization" time="0.000"><failure message="TypeError: 'bool' object is not iterable">def test_zero_normalization():
+&gt;       assert canonical_decimal("-0") == "0"
+               ^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:20: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+s = '-0'
+
+    def canonical_decimal(s: str) -&gt; str:
+        # Check if input is None or empty string, raise ValueError
+        if not s:
+            raise ValueError("Input cannot be None or empty")
+    
+        # Split the input into sign and rest, handle leading +
+        pos_or_neg, rest = next((i, j) for i, j in [(s[0], s[1:]), (None, s)] if j)
+    
+        # Remove underscores and validate digits
+&gt;       valid_rest = ''.join(i for i, is_sep in zip(rest, '_' in rest) if not i.isspace() and not i.isdigit() or (i == '.' and not any(j.isdigit() or j == '.' for j in rest[1:])))
+                                                ^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: 'bool' object is not iterable
+
+solution.py:10: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-192539.canonical_decimal.tests.test_solution" name="test_signs" time="0.000"><failure message="TypeError: 'bool' object is not iterable">def test_signs():
+&gt;       assert canonical_decimal("+12") == "12"
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:28: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+s = '+12'
+
+    def canonical_decimal(s: str) -&gt; str:
+        # Check if input is None or empty string, raise ValueError
+        if not s:
+            raise ValueError("Input cannot be None or empty")
+    
+        # Split the input into sign and rest, handle leading +
+        pos_or_neg, rest = next((i, j) for i, j in [(s[0], s[1:]), (None, s)] if j)
+    
+        # Remove underscores and validate digits
+&gt;       valid_rest = ''.join(i for i, is_sep in zip(rest, '_' in rest) if not i.isspace() and not i.isdigit() or (i == '.' and not any(j.isdigit() or j == '.' for j in rest[1:])))
+                                                ^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: 'bool' object is not iterable
+
+solution.py:10: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-192539.canonical_decimal.tests.test_solution" name="test_underscores" time="0.000"><failure message="TypeError: 'bool' object is not iterable">def test_underscores():
+&gt;       assert canonical_decimal("1_000") == "1000"
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:35: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+s = '1_000'
+
+    def canonical_decimal(s: str) -&gt; str:
+        # Check if input is None or empty string, raise ValueError
+        if not s:
+            raise ValueError("Input cannot be None or empty")
+    
+        # Split the input into sign and rest, handle leading +
+        pos_or_neg, rest = next((i, j) for i, j in [(s[0], s[1:]), (None, s)] if j)
+    
+        # Remove underscores and validate digits
+&gt;       valid_rest = ''.join(i for i, is_sep in zip(rest, '_' in rest) if not i.isspace() and not i.isdigit() or (i == '.' and not any(j.isdigit() or j == '.' for j in rest[1:])))
+                                                ^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: 'bool' object is not iterable
+
+solution.py:10: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-192539.canonical_decimal.tests.test_solution" name="test_bad_underscores_raise" time="0.000"><failure message="TypeError: 'bool' object is not iterable">def test_bad_underscores_raise():
+        for bad in ["_1", "1_", "1__2", "1_.5", "1._5", "+_1", "1.5_"]:
+            with pytest.raises(ValueError):
+&gt;               canonical_decimal(bad)
+
+tests\test_solution.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+s = '_1'
+
+    def canonical_decimal(s: str) -&gt; str:
+        # Check if input is None or empty string, raise ValueError
+        if not s:
+            raise ValueError("Input cannot be None or empty")
+    
+        # Split the input into sign and rest, handle leading +
+        pos_or_neg, rest = next((i, j) for i, j in [(s[0], s[1:]), (None, s)] if j)
+    
+        # Remove underscores and validate digits
+&gt;       valid_rest = ''.join(i for i, is_sep in zip(rest, '_' in rest) if not i.isspace() and not i.isdigit() or (i == '.' and not any(j.isdigit() or j == '.' for j in rest[1:])))
+                                                ^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: 'bool' object is not iterable
+
+solution.py:10: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-192539.canonical_decimal.tests.test_solution" name="test_no_digits_raise" time="0.001"><failure message="TypeError: 'bool' object is not iterable">def test_no_digits_raise():
+        for bad in ["", "+", "-", ".", "+.", "-."]:
+            with pytest.raises(ValueError):
+&gt;               canonical_decimal(bad)
+
+tests\test_solution.py:49: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+s = '+'
+
+    def canonical_decimal(s: str) -&gt; str:
+        # Check if input is None or empty string, raise ValueError
+        if not s:
+            raise ValueError("Input cannot be None or empty")
+    
+        # Split the input into sign and rest, handle leading +
+        pos_or_neg, rest = next((i, j) for i, j in [(s[0], s[1:]), (None, s)] if j)
+    
+        # Remove underscores and validate digits
+&gt;       valid_rest = ''.join(i for i, is_sep in zip(rest, '_' in rest) if not i.isspace() and not i.isdigit() or (i == '.' and not any(j.isdigit() or j == '.' for j in rest[1:])))
+                                                ^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: 'bool' object is not iterable
+
+solution.py:10: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-192539.canonical_decimal.tests.test_solution" name="test_bad_chars_raise" time="0.000"><failure message="TypeError: 'bool' object is not iterable">def test_bad_chars_raise():
+        for bad in ["1a", " 1", "1 ", "1.2.3", "--1", "+-1", "1,000", "1e5"]:
+            with pytest.raises(ValueError):
+&gt;               canonical_decimal(bad)
+
+tests\test_solution.py:55: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+s = '1a'
+
+    def canonical_decimal(s: str) -&gt; str:
+        # Check if input is None or empty string, raise ValueError
+        if not s:
+            raise ValueError("Input cannot be None or empty")
+    
+        # Split the input into sign and rest, handle leading +
+        pos_or_neg, rest = next((i, j) for i, j in [(s[0], s[1:]), (None, s)] if j)
+    
+        # Remove underscores and validate digits
+&gt;       valid_rest = ''.join(i for i, is_sep in zip(rest, '_' in rest) if not i.isspace() and not i.isdigit() or (i == '.' and not any(j.isdigit() or j == '.' for j in rest[1:])))
+                                                ^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: 'bool' object is not iterable
+
+solution.py:10: TypeError</failure></testcase></testsuite></testsuites>

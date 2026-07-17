@@ -1,0 +1,223 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="11" skipped="0" tests="13" time="0.339" timestamp="2026-07-14T14:44:13.166675-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260714-140516.eval_bool_expr.tests.test_solution" name="test_true" time="0.001"><failure message="UnboundLocalError: cannot access local variable 'j' where it is not associated with a value">&gt;   def test_true(): assert f('T') is True
+                            ^^^^^^
+
+tests\test_solution.py:3: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:72: in eval_bool
+    rv, consumed = parse(t, 0)
+                   ^^^^^^^^^^^
+solution.py:60: in parse
+    term()
+solution.py:49: in term
+    if t[j] == '&amp;' or (v is None and not value()[1]):
+                                         ^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    def value():
+&gt;       tok = t[j]
+                ^
+E       UnboundLocalError: cannot access local variable 'j' where it is not associated with a value
+
+solution.py:29: UnboundLocalError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-140516.eval_bool_expr.tests.test_solution" name="test_false" time="0.001"><failure message="UnboundLocalError: cannot access local variable 'j' where it is not associated with a value">&gt;   def test_false(): assert f('F') is False
+                             ^^^^^^
+
+tests\test_solution.py:4: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:72: in eval_bool
+    rv, consumed = parse(t, 0)
+                   ^^^^^^^^^^^
+solution.py:60: in parse
+    term()
+solution.py:49: in term
+    if t[j] == '&amp;' or (v is None and not value()[1]):
+                                         ^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    def value():
+&gt;       tok = t[j]
+                ^
+E       UnboundLocalError: cannot access local variable 'j' where it is not associated with a value
+
+solution.py:29: UnboundLocalError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-140516.eval_bool_expr.tests.test_solution" name="test_and" time="0.000"><failure message="UnboundLocalError: cannot access local variable 'j' where it is not associated with a value">&gt;   def test_and(): assert f('T&amp;F') is False
+                           ^^^^^^^^
+
+tests\test_solution.py:5: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:72: in eval_bool
+    rv, consumed = parse(t, 0)
+                   ^^^^^^^^^^^
+solution.py:60: in parse
+    term()
+solution.py:49: in term
+    if t[j] == '&amp;' or (v is None and not value()[1]):
+                                         ^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    def value():
+&gt;       tok = t[j]
+                ^
+E       UnboundLocalError: cannot access local variable 'j' where it is not associated with a value
+
+solution.py:29: UnboundLocalError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-140516.eval_bool_expr.tests.test_solution" name="test_or" time="0.000"><failure message="UnboundLocalError: cannot access local variable 'j' where it is not associated with a value">&gt;   def test_or(): assert f('T|F') is True
+                          ^^^^^^^^
+
+tests\test_solution.py:6: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:72: in eval_bool
+    rv, consumed = parse(t, 0)
+                   ^^^^^^^^^^^
+solution.py:60: in parse
+    term()
+solution.py:49: in term
+    if t[j] == '&amp;' or (v is None and not value()[1]):
+                                         ^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    def value():
+&gt;       tok = t[j]
+                ^
+E       UnboundLocalError: cannot access local variable 'j' where it is not associated with a value
+
+solution.py:29: UnboundLocalError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-140516.eval_bool_expr.tests.test_solution" name="test_not" time="0.001"><failure message="UnboundLocalError: cannot access local variable 'j' where it is not associated with a value">&gt;   def test_not(): assert f('!T') is False
+                           ^^^^^^^
+
+tests\test_solution.py:7: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:72: in eval_bool
+    rv, consumed = parse(t, 0)
+                   ^^^^^^^^^^^
+solution.py:60: in parse
+    term()
+solution.py:49: in term
+    if t[j] == '&amp;' or (v is None and not value()[1]):
+                                         ^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    def value():
+&gt;       tok = t[j]
+                ^
+E       UnboundLocalError: cannot access local variable 'j' where it is not associated with a value
+
+solution.py:29: UnboundLocalError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-140516.eval_bool_expr.tests.test_solution" name="test_not_precedence" time="0.000"><failure message="UnboundLocalError: cannot access local variable 'j' where it is not associated with a value">&gt;   def test_not_precedence(): assert f('!F&amp;T') is True
+                                      ^^^^^^^^^
+
+tests\test_solution.py:8: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:72: in eval_bool
+    rv, consumed = parse(t, 0)
+                   ^^^^^^^^^^^
+solution.py:60: in parse
+    term()
+solution.py:49: in term
+    if t[j] == '&amp;' or (v is None and not value()[1]):
+                                         ^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    def value():
+&gt;       tok = t[j]
+                ^
+E       UnboundLocalError: cannot access local variable 'j' where it is not associated with a value
+
+solution.py:29: UnboundLocalError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-140516.eval_bool_expr.tests.test_solution" name="test_and_before_or" time="0.001"><failure message="UnboundLocalError: cannot access local variable 'j' where it is not associated with a value">&gt;   def test_and_before_or(): assert f('T|F&amp;F') is True
+                                     ^^^^^^^^^^
+
+tests\test_solution.py:9: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:72: in eval_bool
+    rv, consumed = parse(t, 0)
+                   ^^^^^^^^^^^
+solution.py:60: in parse
+    term()
+solution.py:49: in term
+    if t[j] == '&amp;' or (v is None and not value()[1]):
+                                         ^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    def value():
+&gt;       tok = t[j]
+                ^
+E       UnboundLocalError: cannot access local variable 'j' where it is not associated with a value
+
+solution.py:29: UnboundLocalError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-140516.eval_bool_expr.tests.test_solution" name="test_parens" time="0.001"><failure message="UnboundLocalError: cannot access local variable 'j' where it is not associated with a value">&gt;   def test_parens(): assert f('(T|F)&amp;F') is False
+                              ^^^^^^^^^^^^
+
+tests\test_solution.py:10: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:72: in eval_bool
+    rv, consumed = parse(t, 0)
+                   ^^^^^^^^^^^
+solution.py:60: in parse
+    term()
+solution.py:49: in term
+    if t[j] == '&amp;' or (v is None and not value()[1]):
+                                         ^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    def value():
+&gt;       tok = t[j]
+                ^
+E       UnboundLocalError: cannot access local variable 'j' where it is not associated with a value
+
+solution.py:29: UnboundLocalError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-140516.eval_bool_expr.tests.test_solution" name="test_not_group" time="0.000"><failure message="UnboundLocalError: cannot access local variable 'j' where it is not associated with a value">&gt;   def test_not_group(): assert f('!(T&amp;F)') is True
+                                 ^^^^^^^^^^^
+
+tests\test_solution.py:11: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:72: in eval_bool
+    rv, consumed = parse(t, 0)
+                   ^^^^^^^^^^^
+solution.py:60: in parse
+    term()
+solution.py:49: in term
+    if t[j] == '&amp;' or (v is None and not value()[1]):
+                                         ^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    def value():
+&gt;       tok = t[j]
+                ^
+E       UnboundLocalError: cannot access local variable 'j' where it is not associated with a value
+
+solution.py:29: UnboundLocalError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-140516.eval_bool_expr.tests.test_solution" name="test_bad_char" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-140516.eval_bool_expr.tests.test_solution" name="test_unbalanced" time="0.001"><failure message="UnboundLocalError: cannot access local variable 'j' where it is not associated with a value">def test_unbalanced():
+&gt;       with pytest.raises(ValueError): f('(T')
+                                        ^^^^^^^
+
+tests\test_solution.py:16: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:72: in eval_bool
+    rv, consumed = parse(t, 0)
+                   ^^^^^^^^^^^
+solution.py:60: in parse
+    term()
+solution.py:49: in term
+    if t[j] == '&amp;' or (v is None and not value()[1]):
+                                         ^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    def value():
+&gt;       tok = t[j]
+                ^
+E       UnboundLocalError: cannot access local variable 'j' where it is not associated with a value
+
+solution.py:29: UnboundLocalError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-140516.eval_bool_expr.tests.test_solution" name="test_trailing" time="0.000"><failure message="UnboundLocalError: cannot access local variable 'j' where it is not associated with a value">def test_trailing():
+&gt;       with pytest.raises(ValueError): f('TT')
+                                        ^^^^^^^
+
+tests\test_solution.py:18: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:72: in eval_bool
+    rv, consumed = parse(t, 0)
+                   ^^^^^^^^^^^
+solution.py:60: in parse
+    term()
+solution.py:49: in term
+    if t[j] == '&amp;' or (v is None and not value()[1]):
+                                         ^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    def value():
+&gt;       tok = t[j]
+                ^
+E       UnboundLocalError: cannot access local variable 'j' where it is not associated with a value
+
+solution.py:29: UnboundLocalError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-140516.eval_bool_expr.tests.test_solution" name="test_empty" time="0.000" /></testsuite></testsuites>

@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="5" skipped="0" tests="5" time="0.197" timestamp="2026-07-13T20:05:05.569101-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-195624.matrix_rotate_inplace.tests.test_solution" name="test_empty" time="0.001"><failure message="assert None == []&#10; +  where None = f([])">def test_empty():
+&gt;       assert f([]) == []
+E       assert None == []
+E        +  where None = f([])
+
+tests\test_solution.py:3: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.matrix_rotate_inplace.tests.test_solution" name="test_one" time="0.000"><failure message="assert None == [[7]]&#10; +  where None = f([[7]])">def test_one():
+&gt;       assert f([[7]]) == [[7]]
+E       assert None == [[7]]
+E        +  where None = f([[7]])
+
+tests\test_solution.py:5: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.matrix_rotate_inplace.tests.test_solution" name="test_two" time="0.000"><failure message="assert None == [[3, 1], [4, 2]]&#10; +  where None = f([[4, 3], [2, 1]])">def test_two():
+&gt;       assert f([[1,2],[3,4]]) == [[3,1],[4,2]]
+E       assert None == [[3, 1], [4, 2]]
+E        +  where None = f([[4, 3], [2, 1]])
+
+tests\test_solution.py:7: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.matrix_rotate_inplace.tests.test_solution" name="test_three" time="0.001"><failure message="assert None == [[7, 4, 1], [8, 5, 2], [9, 6, 3]]&#10; +  where None = f([[9, 6, 7], [2, 5, 8], [3, 4, 1]])">def test_three():
+&gt;       assert f([[1,2,3],[4,5,6],[7,8,9]]) == [[7,4,1],[8,5,2],[9,6,3]]
+E       assert None == [[7, 4, 1], [8, 5, 2], [9, 6, 3]]
+E        +  where None = f([[9, 6, 7], [2, 5, 8], [3, 4, 1]])
+
+tests\test_solution.py:9: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.matrix_rotate_inplace.tests.test_solution" name="test_in_place" time="0.000"><failure message="assert None is [[4, 3], [2, 1]]&#10; +  where None = f([[4, 3], [2, 1]])">def test_in_place():
+        m=[[1,2],[3,4]]
+&gt;       assert f(m) is m
+E       assert None is [[4, 3], [2, 1]]
+E        +  where None = f([[4, 3], [2, 1]])
+
+tests\test_solution.py:12: AssertionError</failure></testcase></testsuite></testsuites>

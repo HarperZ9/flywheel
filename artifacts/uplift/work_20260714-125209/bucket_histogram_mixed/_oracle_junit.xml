@@ -1,0 +1,273 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="7" skipped="0" tests="9" time="0.278" timestamp="2026-07-14T13:16:15.438400-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260714-125209.bucket_histogram_mixed.tests.test_solution" name="test_basic_half_open" time="0.001"><failure message="IndexError: list index out of range">def test_basic_half_open():
+&gt;       assert bucket_counts([0, 9, 10, 20], [0, 10, 20]) == [2, 2]
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:6: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+values = [0, 9, 10, 20], edges = [0, 10, 20]
+
+    def bucket_counts(values, edges):
+        if len(edges) &lt; 2 or any(not isinstance(e, int) for e in edges):
+            raise ValueError("edges must be a list of at least 2 non-bool ints")
+        if not all(isinstance(v, int) for v in values):
+            raise ValueError("values must be a list of non-bool ints")
+        if len(edges) != len(set(edges)):
+            raise ValueError("edges must have no duplicate entries")
+        if any(a &gt;= b for a, b in zip(edges, edges[1:])):
+            raise ValueError("edges must be strictly increasing")
+    
+        min_edge = edges[0]
+        max_edge = edges[-1]
+        counts = [0] * (len(edges) - 1)
+        last_bucket_index = len(counts) - 1
+    
+        for v in values:
+            if v &lt; min_edge or v &gt; max_edge:
+                raise ValueError(f"value {v} exceeds edge range [{min_edge}, {max_edge}]")
+            # Find the bucket index by binary search into edges
+            lo, hi = 0, len(edges) - 1
+            while lo &lt; hi:
+                mid = (lo + hi) // 2
+                if v &gt;= edges[mid]:
+                    lo = mid + 1
+                else:
+                    hi = mid
+            # lo is the first bucket index for which values[lo] &lt;= v
+            if v == max_edge and lo &gt; last_bucket_index:
+                lo -= 1
+&gt;           counts[lo] += 1
+            ^^^^^^^^^^
+E           IndexError: list index out of range
+
+solution.py:30: IndexError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-125209.bucket_histogram_mixed.tests.test_solution" name="test_last_bucket_inclusive_on_right" time="0.000"><failure message="IndexError: list index out of range">def test_last_bucket_inclusive_on_right():
+        assert bucket_counts([20], [0, 10, 20]) == [0, 1]
+&gt;       assert bucket_counts([19, 20], [0, 10, 20]) == [0, 2]
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:12: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+values = [19, 20], edges = [0, 10, 20]
+
+    def bucket_counts(values, edges):
+        if len(edges) &lt; 2 or any(not isinstance(e, int) for e in edges):
+            raise ValueError("edges must be a list of at least 2 non-bool ints")
+        if not all(isinstance(v, int) for v in values):
+            raise ValueError("values must be a list of non-bool ints")
+        if len(edges) != len(set(edges)):
+            raise ValueError("edges must have no duplicate entries")
+        if any(a &gt;= b for a, b in zip(edges, edges[1:])):
+            raise ValueError("edges must be strictly increasing")
+    
+        min_edge = edges[0]
+        max_edge = edges[-1]
+        counts = [0] * (len(edges) - 1)
+        last_bucket_index = len(counts) - 1
+    
+        for v in values:
+            if v &lt; min_edge or v &gt; max_edge:
+                raise ValueError(f"value {v} exceeds edge range [{min_edge}, {max_edge}]")
+            # Find the bucket index by binary search into edges
+            lo, hi = 0, len(edges) - 1
+            while lo &lt; hi:
+                mid = (lo + hi) // 2
+                if v &gt;= edges[mid]:
+                    lo = mid + 1
+                else:
+                    hi = mid
+            # lo is the first bucket index for which values[lo] &lt;= v
+            if v == max_edge and lo &gt; last_bucket_index:
+                lo -= 1
+&gt;           counts[lo] += 1
+            ^^^^^^^^^^
+E           IndexError: list index out of range
+
+solution.py:30: IndexError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-125209.bucket_histogram_mixed.tests.test_solution" name="test_interior_edge_goes_right" time="0.000"><failure message="IndexError: list index out of range">def test_interior_edge_goes_right():
+&gt;       assert bucket_counts([5], [0, 5, 10]) == [0, 1]
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:16: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+values = [5], edges = [0, 5, 10]
+
+    def bucket_counts(values, edges):
+        if len(edges) &lt; 2 or any(not isinstance(e, int) for e in edges):
+            raise ValueError("edges must be a list of at least 2 non-bool ints")
+        if not all(isinstance(v, int) for v in values):
+            raise ValueError("values must be a list of non-bool ints")
+        if len(edges) != len(set(edges)):
+            raise ValueError("edges must have no duplicate entries")
+        if any(a &gt;= b for a, b in zip(edges, edges[1:])):
+            raise ValueError("edges must be strictly increasing")
+    
+        min_edge = edges[0]
+        max_edge = edges[-1]
+        counts = [0] * (len(edges) - 1)
+        last_bucket_index = len(counts) - 1
+    
+        for v in values:
+            if v &lt; min_edge or v &gt; max_edge:
+                raise ValueError(f"value {v} exceeds edge range [{min_edge}, {max_edge}]")
+            # Find the bucket index by binary search into edges
+            lo, hi = 0, len(edges) - 1
+            while lo &lt; hi:
+                mid = (lo + hi) // 2
+                if v &gt;= edges[mid]:
+                    lo = mid + 1
+                else:
+                    hi = mid
+            # lo is the first bucket index for which values[lo] &lt;= v
+            if v == max_edge and lo &gt; last_bucket_index:
+                lo -= 1
+&gt;           counts[lo] += 1
+            ^^^^^^^^^^
+E           IndexError: list index out of range
+
+solution.py:30: IndexError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-125209.bucket_histogram_mixed.tests.test_solution" name="test_single_bucket_closed_both_ends" time="0.000"><failure message="IndexError: list index out of range">def test_single_bucket_closed_both_ends():
+&gt;       assert bucket_counts([0, 10, 5], [0, 10]) == [3]
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:22: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+values = [0, 10, 5], edges = [0, 10]
+
+    def bucket_counts(values, edges):
+        if len(edges) &lt; 2 or any(not isinstance(e, int) for e in edges):
+            raise ValueError("edges must be a list of at least 2 non-bool ints")
+        if not all(isinstance(v, int) for v in values):
+            raise ValueError("values must be a list of non-bool ints")
+        if len(edges) != len(set(edges)):
+            raise ValueError("edges must have no duplicate entries")
+        if any(a &gt;= b for a, b in zip(edges, edges[1:])):
+            raise ValueError("edges must be strictly increasing")
+    
+        min_edge = edges[0]
+        max_edge = edges[-1]
+        counts = [0] * (len(edges) - 1)
+        last_bucket_index = len(counts) - 1
+    
+        for v in values:
+            if v &lt; min_edge or v &gt; max_edge:
+                raise ValueError(f"value {v} exceeds edge range [{min_edge}, {max_edge}]")
+            # Find the bucket index by binary search into edges
+            lo, hi = 0, len(edges) - 1
+            while lo &lt; hi:
+                mid = (lo + hi) // 2
+                if v &gt;= edges[mid]:
+                    lo = mid + 1
+                else:
+                    hi = mid
+            # lo is the first bucket index for which values[lo] &lt;= v
+            if v == max_edge and lo &gt; last_bucket_index:
+                lo -= 1
+&gt;           counts[lo] += 1
+            ^^^^^^^^^^
+E           IndexError: list index out of range
+
+solution.py:30: IndexError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-125209.bucket_histogram_mixed.tests.test_solution" name="test_empty_values" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-125209.bucket_histogram_mixed.tests.test_solution" name="test_out_of_range_raises" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-125209.bucket_histogram_mixed.tests.test_solution" name="test_bad_edges_raise" time="0.001"><failure message="IndexError: list index out of range">def test_bad_edges_raise():
+        with pytest.raises(ValueError):
+            bucket_counts([1], [0, 10, 10])
+        with pytest.raises(ValueError):
+            bucket_counts([1], [5, 3])
+        with pytest.raises(ValueError):
+            bucket_counts([1], [7])
+        with pytest.raises(ValueError):
+            bucket_counts([1], [])
+        with pytest.raises(ValueError):
+&gt;           bucket_counts([0], [False, 5])
+
+tests\test_solution.py:46: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+values = [0], edges = [False, 5]
+
+    def bucket_counts(values, edges):
+        if len(edges) &lt; 2 or any(not isinstance(e, int) for e in edges):
+            raise ValueError("edges must be a list of at least 2 non-bool ints")
+        if not all(isinstance(v, int) for v in values):
+            raise ValueError("values must be a list of non-bool ints")
+        if len(edges) != len(set(edges)):
+            raise ValueError("edges must have no duplicate entries")
+        if any(a &gt;= b for a, b in zip(edges, edges[1:])):
+            raise ValueError("edges must be strictly increasing")
+    
+        min_edge = edges[0]
+        max_edge = edges[-1]
+        counts = [0] * (len(edges) - 1)
+        last_bucket_index = len(counts) - 1
+    
+        for v in values:
+            if v &lt; min_edge or v &gt; max_edge:
+                raise ValueError(f"value {v} exceeds edge range [{min_edge}, {max_edge}]")
+            # Find the bucket index by binary search into edges
+            lo, hi = 0, len(edges) - 1
+            while lo &lt; hi:
+                mid = (lo + hi) // 2
+                if v &gt;= edges[mid]:
+                    lo = mid + 1
+                else:
+                    hi = mid
+            # lo is the first bucket index for which values[lo] &lt;= v
+            if v == max_edge and lo &gt; last_bucket_index:
+                lo -= 1
+&gt;           counts[lo] += 1
+            ^^^^^^^^^^
+E           IndexError: list index out of range
+
+solution.py:30: IndexError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-125209.bucket_histogram_mixed.tests.test_solution" name="test_bad_values_raise" time="0.001"><failure message="IndexError: list index out of range">def test_bad_values_raise():
+        with pytest.raises(ValueError):
+&gt;           bucket_counts([True], [0, 10])
+
+tests\test_solution.py:53: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+values = [True], edges = [0, 10]
+
+    def bucket_counts(values, edges):
+        if len(edges) &lt; 2 or any(not isinstance(e, int) for e in edges):
+            raise ValueError("edges must be a list of at least 2 non-bool ints")
+        if not all(isinstance(v, int) for v in values):
+            raise ValueError("values must be a list of non-bool ints")
+        if len(edges) != len(set(edges)):
+            raise ValueError("edges must have no duplicate entries")
+        if any(a &gt;= b for a, b in zip(edges, edges[1:])):
+            raise ValueError("edges must be strictly increasing")
+    
+        min_edge = edges[0]
+        max_edge = edges[-1]
+        counts = [0] * (len(edges) - 1)
+        last_bucket_index = len(counts) - 1
+    
+        for v in values:
+            if v &lt; min_edge or v &gt; max_edge:
+                raise ValueError(f"value {v} exceeds edge range [{min_edge}, {max_edge}]")
+            # Find the bucket index by binary search into edges
+            lo, hi = 0, len(edges) - 1
+            while lo &lt; hi:
+                mid = (lo + hi) // 2
+                if v &gt;= edges[mid]:
+                    lo = mid + 1
+                else:
+                    hi = mid
+            # lo is the first bucket index for which values[lo] &lt;= v
+            if v == max_edge and lo &gt; last_bucket_index:
+                lo -= 1
+&gt;           counts[lo] += 1
+            ^^^^^^^^^^
+E           IndexError: list index out of range
+
+solution.py:30: IndexError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-125209.bucket_histogram_mixed.tests.test_solution" name="test_no_mutation_of_inputs" time="0.001"><failure message="assert [0, 4] == [3, 1]&#10;  &#10;  At index 0 diff: 0 != 3&#10;  Use -v to get more diff">def test_no_mutation_of_inputs():
+        values = [7, 2, 20, 2]
+        edges = [0, 10, 20]
+        v_snap = list(values)
+        e_snap = list(edges)
+&gt;       assert bucket_counts(values, edges) == [3, 1]
+E       assert [0, 4] == [3, 1]
+E         
+E         At index 0 diff: 0 != 3
+E         Use -v to get more diff
+
+tests\test_solution.py:65: AssertionError</failure></testcase></testsuite></testsuites>

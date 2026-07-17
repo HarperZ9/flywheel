@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="10" time="0.192" timestamp="2026-07-13T19:13:40.108616-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-184826.int_to_base.tests.test_solution" name="test_hex" time="0.001" /><testcase classname="artifacts.uplift.work_20260713-184826.int_to_base.tests.test_solution" name="test_zero" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-184826.int_to_base.tests.test_solution" name="test_binary" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-184826.int_to_base.tests.test_solution" name="test_negative" time="0.001"><failure message="AssertionError: assert '1f' == '-1f'&#10;  &#10;  - -1f&#10;  ? -&#10;  + 1f">&gt;   def test_negative(): assert f(-31, 16) == '-1f'
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert '1f' == '-1f'
+E     
+E     - -1f
+E     ? -
+E     + 1f
+
+tests\test_solution.py:6: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-184826.int_to_base.tests.test_solution" name="test_top_digit" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-184826.int_to_base.tests.test_solution" name="test_rollover" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-184826.int_to_base.tests.test_solution" name="test_bad_base_low" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-184826.int_to_base.tests.test_solution" name="test_bad_base_high" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-184826.int_to_base.tests.test_solution" name="test_bad_base_bool" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-184826.int_to_base.tests.test_solution" name="test_bad_number_bool" time="0.000" /></testsuite></testsuites>

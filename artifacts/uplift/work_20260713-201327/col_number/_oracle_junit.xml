@@ -1,0 +1,185 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="7" skipped="0" tests="9" time="0.210" timestamp="2026-07-13T20:28:21.339619-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-201327.col_number.tests.test_solution" name="test_a" time="0.001"><failure message="ValueError: Input is a non-1-based column label, only A-Z are supported.">&gt;   def test_a(): assert f('A') == 1
+                         ^^^^^^
+
+tests\test_solution.py:3: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+s = 'A'
+
+    def col_number(s: str) -&gt; int:
+        """
+        Convert a column label from 1-based to 26-base format.
+    
+        Parameters:
+            s (str): A spreadsheet column label consisting of uppercase ASCII letters A-Z or digits 0-9, each represented by 7 characters.
+    
+        Returns:
+            int: The corresponding 26-base index value for the input label. If the input is an empty string, ValueError is raised.
+    
+        Raises:
+            ValueError: If the input is not a valid one-based column label format (contains non-digit or letters).
+        """
+        if not s:  # Check if it's an empty string
+            raise ValueError("Bad label")
+    
+        for i in range(len(s)):
+            if not s[i].islower() and s[i] &gt;= 'A' and s[i] &lt;= 'Z':
+&gt;               raise ValueError(f"Input is a non-1-based column label, only A-Z are supported.")
+E               ValueError: Input is a non-1-based column label, only A-Z are supported.
+
+solution.py:19: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.col_number.tests.test_solution" name="test_z" time="0.000"><failure message="ValueError: Input is a non-1-based column label, only A-Z are supported.">&gt;   def test_z(): assert f('Z') == 26
+                         ^^^^^^
+
+tests\test_solution.py:4: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+s = 'Z'
+
+    def col_number(s: str) -&gt; int:
+        """
+        Convert a column label from 1-based to 26-base format.
+    
+        Parameters:
+            s (str): A spreadsheet column label consisting of uppercase ASCII letters A-Z or digits 0-9, each represented by 7 characters.
+    
+        Returns:
+            int: The corresponding 26-base index value for the input label. If the input is an empty string, ValueError is raised.
+    
+        Raises:
+            ValueError: If the input is not a valid one-based column label format (contains non-digit or letters).
+        """
+        if not s:  # Check if it's an empty string
+            raise ValueError("Bad label")
+    
+        for i in range(len(s)):
+            if not s[i].islower() and s[i] &gt;= 'A' and s[i] &lt;= 'Z':
+&gt;               raise ValueError(f"Input is a non-1-based column label, only A-Z are supported.")
+E               ValueError: Input is a non-1-based column label, only A-Z are supported.
+
+solution.py:19: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.col_number.tests.test_solution" name="test_aa" time="0.000"><failure message="ValueError: Input is a non-1-based column label, only A-Z are supported.">&gt;   def test_aa(): assert f('AA') == 27
+                          ^^^^^^^
+
+tests\test_solution.py:5: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+s = 'AA'
+
+    def col_number(s: str) -&gt; int:
+        """
+        Convert a column label from 1-based to 26-base format.
+    
+        Parameters:
+            s (str): A spreadsheet column label consisting of uppercase ASCII letters A-Z or digits 0-9, each represented by 7 characters.
+    
+        Returns:
+            int: The corresponding 26-base index value for the input label. If the input is an empty string, ValueError is raised.
+    
+        Raises:
+            ValueError: If the input is not a valid one-based column label format (contains non-digit or letters).
+        """
+        if not s:  # Check if it's an empty string
+            raise ValueError("Bad label")
+    
+        for i in range(len(s)):
+            if not s[i].islower() and s[i] &gt;= 'A' and s[i] &lt;= 'Z':
+&gt;               raise ValueError(f"Input is a non-1-based column label, only A-Z are supported.")
+E               ValueError: Input is a non-1-based column label, only A-Z are supported.
+
+solution.py:19: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.col_number.tests.test_solution" name="test_az" time="0.000"><failure message="ValueError: Input is a non-1-based column label, only A-Z are supported.">&gt;   def test_az(): assert f('AZ') == 52
+                          ^^^^^^^
+
+tests\test_solution.py:6: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+s = 'AZ'
+
+    def col_number(s: str) -&gt; int:
+        """
+        Convert a column label from 1-based to 26-base format.
+    
+        Parameters:
+            s (str): A spreadsheet column label consisting of uppercase ASCII letters A-Z or digits 0-9, each represented by 7 characters.
+    
+        Returns:
+            int: The corresponding 26-base index value for the input label. If the input is an empty string, ValueError is raised.
+    
+        Raises:
+            ValueError: If the input is not a valid one-based column label format (contains non-digit or letters).
+        """
+        if not s:  # Check if it's an empty string
+            raise ValueError("Bad label")
+    
+        for i in range(len(s)):
+            if not s[i].islower() and s[i] &gt;= 'A' and s[i] &lt;= 'Z':
+&gt;               raise ValueError(f"Input is a non-1-based column label, only A-Z are supported.")
+E               ValueError: Input is a non-1-based column label, only A-Z are supported.
+
+solution.py:19: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.col_number.tests.test_solution" name="test_zz" time="0.000"><failure message="ValueError: Input is a non-1-based column label, only A-Z are supported.">&gt;   def test_zz(): assert f('ZZ') == 702
+                          ^^^^^^^
+
+tests\test_solution.py:7: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+s = 'ZZ'
+
+    def col_number(s: str) -&gt; int:
+        """
+        Convert a column label from 1-based to 26-base format.
+    
+        Parameters:
+            s (str): A spreadsheet column label consisting of uppercase ASCII letters A-Z or digits 0-9, each represented by 7 characters.
+    
+        Returns:
+            int: The corresponding 26-base index value for the input label. If the input is an empty string, ValueError is raised.
+    
+        Raises:
+            ValueError: If the input is not a valid one-based column label format (contains non-digit or letters).
+        """
+        if not s:  # Check if it's an empty string
+            raise ValueError("Bad label")
+    
+        for i in range(len(s)):
+            if not s[i].islower() and s[i] &gt;= 'A' and s[i] &lt;= 'Z':
+&gt;               raise ValueError(f"Input is a non-1-based column label, only A-Z are supported.")
+E               ValueError: Input is a non-1-based column label, only A-Z are supported.
+
+solution.py:19: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.col_number.tests.test_solution" name="test_aaa" time="0.000"><failure message="ValueError: Input is a non-1-based column label, only A-Z are supported.">&gt;   def test_aaa(): assert f('AAA') == 703
+                           ^^^^^^^^
+
+tests\test_solution.py:8: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+s = 'AAA'
+
+    def col_number(s: str) -&gt; int:
+        """
+        Convert a column label from 1-based to 26-base format.
+    
+        Parameters:
+            s (str): A spreadsheet column label consisting of uppercase ASCII letters A-Z or digits 0-9, each represented by 7 characters.
+    
+        Returns:
+            int: The corresponding 26-base index value for the input label. If the input is an empty string, ValueError is raised.
+    
+        Raises:
+            ValueError: If the input is not a valid one-based column label format (contains non-digit or letters).
+        """
+        if not s:  # Check if it's an empty string
+            raise ValueError("Bad label")
+    
+        for i in range(len(s)):
+            if not s[i].islower() and s[i] &gt;= 'A' and s[i] &lt;= 'Z':
+&gt;               raise ValueError(f"Input is a non-1-based column label, only A-Z are supported.")
+E               ValueError: Input is a non-1-based column label, only A-Z are supported.
+
+solution.py:19: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.col_number.tests.test_solution" name="test_empty" time="0.001"><failure message="AssertionError: assert 'Bad label' == 'bad label'&#10;  &#10;  - bad label&#10;  ? ^&#10;  + Bad label&#10;  ? ^">def test_empty():
+        with pytest.raises(ValueError) as e: f('')
+&gt;       assert str(e.value) == 'bad label'
+E       AssertionError: assert 'Bad label' == 'bad label'
+E         
+E         - bad label
+E         ? ^
+E         + Bad label
+E         ? ^
+
+tests\test_solution.py:11: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.col_number.tests.test_solution" name="test_lower" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-201327.col_number.tests.test_solution" name="test_digit" time="0.000" /></testsuite></testsuites>

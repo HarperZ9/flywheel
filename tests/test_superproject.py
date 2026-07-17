@@ -19,8 +19,8 @@ def test_five_organs_each_with_flagship_and_native_modules():
 def test_spine_is_closed_no_dangling_route():
     s = spine()
     assert s["closed"] is True                 # every route target is itself a flagship
-    assert s["reconciler"] == "telos"
-    assert s["routes"]["telos"] == "telos"      # telos reconciles the five-tool workflow
+    assert s["reconciler"] == "flywheel"        # Flywheel is the platform/reconciler
+    assert s["routes"]["telos"] == "telos"      # telos self-routes (the reconciliation lane)
 
 
 def test_probe_live_all_five_when_doctors_healthy():
@@ -41,7 +41,7 @@ def test_roster_counts_spine_plus_extended():
     from harness.superproject import roster
     r = roster()
     assert r["n_spine"] == 5                          # the MCP-live spine
-    assert r["n_extended"] >= 5                       # more than five flagships total
-    assert r["total_flagships"] > 5, "the roster is larger than the MCP spine"
+    # The operator's ratified roster (2026-07-13): 5 spine + 9 extended.
+    assert r["total_flagships"] == 14, "there are 14 flagships"
     # spine flagships are not double-counted in extended
     assert not (set(r["spine_live"]) & set(r["extended_declared"]))

@@ -1,0 +1,309 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="11" skipped="0" tests="19" time="0.261" timestamp="2026-07-14T09:06:37.258844-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260714-083129.portal_min_moves.tests.test_solution" name="test_plain_walk" time="0.001"><failure message="UnboundLocalError: cannot access local variable 'entry' where it is not associated with a value">&gt;   def test_plain_walk(): assert f(10, [], 0, 9) == 9
+                                  ^^^^^^^^^^^^^^^
+
+tests\test_solution.py:3: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+n = 9, portals = [], start = 0, goal = 9
+
+    def portal_moves(n, portals, start, goal):
+        # Validate input parameters
+        if not isinstance(n, int) or n &lt; 1:
+            raise ValueError('bad n')
+    
+        if not (0 &lt;= start &lt; n and 0 &lt;= goal &lt; n):
+            raise ValueError('bad cell')
+    
+        if start == goal:
+            return 0
+    
+        portals = [tuple(portal) for portal in portals]  # Ensure portals are tuples
+        unique_portals_set = set()
+    
+        for entry, exit_ in portals:
+            port_entry = (entry,)
+            port_exit = (exit_,)
+    
+            if n not in (port_entry or port_exit):
+                raise ValueError('bad portal')
+    
+            if port_entry in (port_exit,) and len(port_entry) == 1:  # Check for duplicate portals
+                raise ValueError('duplicate portal')
+    
+            unique_portals_set.add(port_entry)
+    
+        n = n - 1  # Offset n to account for zero-based indexing
+    
+        # Initialize the board with 'unvisited' and calculate the minimum moves
+        board = [0] * (n + 2)  # Extra slots to handle edge cases
+        min_moves, visited, queue = [float('inf')] * (n + 2), set(), [(start, -1)]
+    
+        while queue:
+            current_position, previous_move_distance = queue.pop(0)
+    
+            if board[current_position] &gt; 0:  # Skip already explored positions
+                continue
+    
+            board[current_position] = min_moves[current_position] = visited.add(current_position) or 0 + (previous_move_distance != -1)
+    
+            for position in (current_position - previous_move_distance + 1, current_position + previous_move_distance):
+&gt;               if min_moves[position] &gt; min(board[current_position], board[entry] + abs(position - entry)):
+                                                                            ^^^^^
+E               UnboundLocalError: cannot access local variable 'entry' where it is not associated with a value
+
+solution.py:42: UnboundLocalError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.portal_min_moves.tests.test_solution" name="test_direct_portal" time="0.000"><failure message="ValueError: bad portal">&gt;   def test_direct_portal(): assert f(10, [(0, 9)], 0, 9) == 1
+                                     ^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:4: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+n = 10, portals = [(0, 9)], start = 0, goal = 9
+
+    def portal_moves(n, portals, start, goal):
+        # Validate input parameters
+        if not isinstance(n, int) or n &lt; 1:
+            raise ValueError('bad n')
+    
+        if not (0 &lt;= start &lt; n and 0 &lt;= goal &lt; n):
+            raise ValueError('bad cell')
+    
+        if start == goal:
+            return 0
+    
+        portals = [tuple(portal) for portal in portals]  # Ensure portals are tuples
+        unique_portals_set = set()
+    
+        for entry, exit_ in portals:
+            port_entry = (entry,)
+            port_exit = (exit_,)
+    
+            if n not in (port_entry or port_exit):
+&gt;               raise ValueError('bad portal')
+E               ValueError: bad portal
+
+solution.py:20: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.portal_min_moves.tests.test_solution" name="test_walk_then_portal" time="0.000"><failure message="ValueError: bad portal">&gt;   def test_walk_then_portal(): assert f(10, [(1, 8)], 0, 9) == 3
+                                        ^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:5: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+n = 10, portals = [(1, 8)], start = 0, goal = 9
+
+    def portal_moves(n, portals, start, goal):
+        # Validate input parameters
+        if not isinstance(n, int) or n &lt; 1:
+            raise ValueError('bad n')
+    
+        if not (0 &lt;= start &lt; n and 0 &lt;= goal &lt; n):
+            raise ValueError('bad cell')
+    
+        if start == goal:
+            return 0
+    
+        portals = [tuple(portal) for portal in portals]  # Ensure portals are tuples
+        unique_portals_set = set()
+    
+        for entry, exit_ in portals:
+            port_entry = (entry,)
+            port_exit = (exit_,)
+    
+            if n not in (port_entry or port_exit):
+&gt;               raise ValueError('bad portal')
+E               ValueError: bad portal
+
+solution.py:20: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.portal_min_moves.tests.test_solution" name="test_same_cell" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-083129.portal_min_moves.tests.test_solution" name="test_one_cell" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-083129.portal_min_moves.tests.test_solution" name="test_backward_portal_useless" time="0.000"><failure message="ValueError: bad portal">&gt;   def test_backward_portal_useless(): assert f(10, [(9, 0)], 0, 9) == 9
+                                               ^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:8: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+n = 10, portals = [(9, 0)], start = 0, goal = 9
+
+    def portal_moves(n, portals, start, goal):
+        # Validate input parameters
+        if not isinstance(n, int) or n &lt; 1:
+            raise ValueError('bad n')
+    
+        if not (0 &lt;= start &lt; n and 0 &lt;= goal &lt; n):
+            raise ValueError('bad cell')
+    
+        if start == goal:
+            return 0
+    
+        portals = [tuple(portal) for portal in portals]  # Ensure portals are tuples
+        unique_portals_set = set()
+    
+        for entry, exit_ in portals:
+            port_entry = (entry,)
+            port_exit = (exit_,)
+    
+            if n not in (port_entry or port_exit):
+&gt;               raise ValueError('bad portal')
+E               ValueError: bad portal
+
+solution.py:20: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.portal_min_moves.tests.test_solution" name="test_one_way" time="0.000"><failure message="ValueError: bad portal">&gt;   def test_one_way(): assert f(10, [(0, 5)], 5, 0) == 5
+                               ^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:9: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+n = 10, portals = [(0, 5)], start = 5, goal = 0
+
+    def portal_moves(n, portals, start, goal):
+        # Validate input parameters
+        if not isinstance(n, int) or n &lt; 1:
+            raise ValueError('bad n')
+    
+        if not (0 &lt;= start &lt; n and 0 &lt;= goal &lt; n):
+            raise ValueError('bad cell')
+    
+        if start == goal:
+            return 0
+    
+        portals = [tuple(portal) for portal in portals]  # Ensure portals are tuples
+        unique_portals_set = set()
+    
+        for entry, exit_ in portals:
+            port_entry = (entry,)
+            port_exit = (exit_,)
+    
+            if n not in (port_entry or port_exit):
+&gt;               raise ValueError('bad portal')
+E               ValueError: bad portal
+
+solution.py:20: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.portal_min_moves.tests.test_solution" name="test_self_portal" time="0.000"><failure message="ValueError: bad portal">&gt;   def test_self_portal(): assert f(6, [(2, 2)], 0, 5) == 5
+                                   ^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:10: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+n = 6, portals = [(2, 2)], start = 0, goal = 5
+
+    def portal_moves(n, portals, start, goal):
+        # Validate input parameters
+        if not isinstance(n, int) or n &lt; 1:
+            raise ValueError('bad n')
+    
+        if not (0 &lt;= start &lt; n and 0 &lt;= goal &lt; n):
+            raise ValueError('bad cell')
+    
+        if start == goal:
+            return 0
+    
+        portals = [tuple(portal) for portal in portals]  # Ensure portals are tuples
+        unique_portals_set = set()
+    
+        for entry, exit_ in portals:
+            port_entry = (entry,)
+            port_exit = (exit_,)
+    
+            if n not in (port_entry or port_exit):
+&gt;               raise ValueError('bad portal')
+E               ValueError: bad portal
+
+solution.py:20: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.portal_min_moves.tests.test_solution" name="test_best_of_two" time="0.001"><failure message="ValueError: bad portal">&gt;   def test_best_of_two(): assert f(10, [(3, 9), (1, 7)], 0, 9) == 4
+                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:11: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+n = 10, portals = [(3, 9), (1, 7)], start = 0, goal = 9
+
+    def portal_moves(n, portals, start, goal):
+        # Validate input parameters
+        if not isinstance(n, int) or n &lt; 1:
+            raise ValueError('bad n')
+    
+        if not (0 &lt;= start &lt; n and 0 &lt;= goal &lt; n):
+            raise ValueError('bad cell')
+    
+        if start == goal:
+            return 0
+    
+        portals = [tuple(portal) for portal in portals]  # Ensure portals are tuples
+        unique_portals_set = set()
+    
+        for entry, exit_ in portals:
+            port_entry = (entry,)
+            port_exit = (exit_,)
+    
+            if n not in (port_entry or port_exit):
+&gt;               raise ValueError('bad portal')
+E               ValueError: bad portal
+
+solution.py:20: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.portal_min_moves.tests.test_solution" name="test_duplicate_entry" time="0.001"><failure message="AssertionError: assert 'bad portal' == 'duplicate portal'&#10;  &#10;  - duplicate portal&#10;  + bad portal">def test_duplicate_entry():
+        with pytest.raises(ValueError) as e: f(10, [(1, 2), (1, 3)], 0, 9)
+&gt;       assert str(e.value) == 'duplicate portal'
+E       AssertionError: assert 'bad portal' == 'duplicate portal'
+E         
+E         - duplicate portal
+E         + bad portal
+
+tests\test_solution.py:14: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.portal_min_moves.tests.test_solution" name="test_duplicate_identical" time="0.000"><failure message="AssertionError: assert 'bad portal' == 'duplicate portal'&#10;  &#10;  - duplicate portal&#10;  + bad portal">def test_duplicate_identical():
+        with pytest.raises(ValueError) as e: f(10, [(1, 2), (1, 2)], 0, 9)
+&gt;       assert str(e.value) == 'duplicate portal'
+E       AssertionError: assert 'bad portal' == 'duplicate portal'
+E         
+E         - duplicate portal
+E         + bad portal
+
+tests\test_solution.py:17: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.portal_min_moves.tests.test_solution" name="test_bad_portal_list" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-083129.portal_min_moves.tests.test_solution" name="test_bad_portal_range" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-083129.portal_min_moves.tests.test_solution" name="test_bad_portal_bool" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-083129.portal_min_moves.tests.test_solution" name="test_bad_portal_not_list" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-083129.portal_min_moves.tests.test_solution" name="test_bad_n" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-083129.portal_min_moves.tests.test_solution" name="test_bad_n_bool" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_bad_n_bool():
+&gt;       with pytest.raises(ValueError): f(True, [], 0, 0)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:31: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.portal_min_moves.tests.test_solution" name="test_bad_cell_range" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-083129.portal_min_moves.tests.test_solution" name="test_bad_cell_bool" time="0.000"><failure message="UnboundLocalError: cannot access local variable 'entry' where it is not associated with a value">def test_bad_cell_bool():
+&gt;       with pytest.raises(ValueError): f(5, [], True, 0)
+                                        ^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:36: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+n = 4, portals = [], start = True, goal = 0
+
+    def portal_moves(n, portals, start, goal):
+        # Validate input parameters
+        if not isinstance(n, int) or n &lt; 1:
+            raise ValueError('bad n')
+    
+        if not (0 &lt;= start &lt; n and 0 &lt;= goal &lt; n):
+            raise ValueError('bad cell')
+    
+        if start == goal:
+            return 0
+    
+        portals = [tuple(portal) for portal in portals]  # Ensure portals are tuples
+        unique_portals_set = set()
+    
+        for entry, exit_ in portals:
+            port_entry = (entry,)
+            port_exit = (exit_,)
+    
+            if n not in (port_entry or port_exit):
+                raise ValueError('bad portal')
+    
+            if port_entry in (port_exit,) and len(port_entry) == 1:  # Check for duplicate portals
+                raise ValueError('duplicate portal')
+    
+            unique_portals_set.add(port_entry)
+    
+        n = n - 1  # Offset n to account for zero-based indexing
+    
+        # Initialize the board with 'unvisited' and calculate the minimum moves
+        board = [0] * (n + 2)  # Extra slots to handle edge cases
+        min_moves, visited, queue = [float('inf')] * (n + 2), set(), [(start, -1)]
+    
+        while queue:
+            current_position, previous_move_distance = queue.pop(0)
+    
+            if board[current_position] &gt; 0:  # Skip already explored positions
+                continue
+    
+            board[current_position] = min_moves[current_position] = visited.add(current_position) or 0 + (previous_move_distance != -1)
+    
+            for position in (current_position - previous_move_distance + 1, current_position + previous_move_distance):
+&gt;               if min_moves[position] &gt; min(board[current_position], board[entry] + abs(position - entry)):
+                                                                            ^^^^^
+E               UnboundLocalError: cannot access local variable 'entry' where it is not associated with a value
+
+solution.py:42: UnboundLocalError</failure></testcase></testsuite></testsuites>

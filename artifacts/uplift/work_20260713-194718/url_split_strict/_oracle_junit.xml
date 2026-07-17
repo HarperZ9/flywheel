@@ -1,0 +1,205 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="12" skipped="0" tests="20" time="0.282" timestamp="2026-07-13T20:12:42.203233-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-194718.url_split_strict.tests.test_solution" name="test_basic" time="0.001"><failure message="ValueError: no scheme">&gt;   def test_basic(): assert f('http://example.com/a/b?x=1') == ('http', 'example.com', None, '/a/b', 'x=1')
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:3: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+url = 'http://example.com/a/b?x=1'
+
+    def split_url(url):
+        if not isinstance(url, str):
+            raise ValueError('bad url')
+    
+        scheme_end = url.find(':/')
+        port_start = next((i for i, char in enumerate(url[scheme_end:]) if char == '/'), len(url))
+        authority_end = min(port_start, url.rfind('?'))
+    
+        if ':' not in url[:scheme_end]:
+&gt;           raise ValueError('no scheme')
+E           ValueError: no scheme
+
+solution.py:10: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.url_split_strict.tests.test_solution" name="test_no_path" time="0.000"><failure message="ValueError: no scheme">&gt;   def test_no_path(): assert f('http://example.com') == ('http', 'example.com', None, '/', None)
+                               ^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:4: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+url = 'http://example.com'
+
+    def split_url(url):
+        if not isinstance(url, str):
+            raise ValueError('bad url')
+    
+        scheme_end = url.find(':/')
+        port_start = next((i for i, char in enumerate(url[scheme_end:]) if char == '/'), len(url))
+        authority_end = min(port_start, url.rfind('?'))
+    
+        if ':' not in url[:scheme_end]:
+&gt;           raise ValueError('no scheme')
+E           ValueError: no scheme
+
+solution.py:10: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.url_split_strict.tests.test_solution" name="test_port" time="0.000"><failure message="ValueError: no scheme">&gt;   def test_port(): assert f('https://a.b:8080/x') == ('https', 'a.b', 8080, '/x', None)
+                            ^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:5: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+url = 'https://a.b:8080/x'
+
+    def split_url(url):
+        if not isinstance(url, str):
+            raise ValueError('bad url')
+    
+        scheme_end = url.find(':/')
+        port_start = next((i for i, char in enumerate(url[scheme_end:]) if char == '/'), len(url))
+        authority_end = min(port_start, url.rfind('?'))
+    
+        if ':' not in url[:scheme_end]:
+&gt;           raise ValueError('no scheme')
+E           ValueError: no scheme
+
+solution.py:10: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.url_split_strict.tests.test_solution" name="test_query_no_path" time="0.000"><failure message="ValueError: no scheme">&gt;   def test_query_no_path(): assert f('ftp://h?x=2') == ('ftp', 'h', None, '/', 'x=2')
+                                     ^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:6: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+url = 'ftp://h?x=2'
+
+    def split_url(url):
+        if not isinstance(url, str):
+            raise ValueError('bad url')
+    
+        scheme_end = url.find(':/')
+        port_start = next((i for i, char in enumerate(url[scheme_end:]) if char == '/'), len(url))
+        authority_end = min(port_start, url.rfind('?'))
+    
+        if ':' not in url[:scheme_end]:
+&gt;           raise ValueError('no scheme')
+E           ValueError: no scheme
+
+solution.py:10: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.url_split_strict.tests.test_solution" name="test_empty_query" time="0.001"><failure message="ValueError: no scheme">&gt;   def test_empty_query(): assert f('http://h/p?') == ('http', 'h', None, '/p', '')
+                                   ^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:7: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+url = 'http://h/p?'
+
+    def split_url(url):
+        if not isinstance(url, str):
+            raise ValueError('bad url')
+    
+        scheme_end = url.find(':/')
+        port_start = next((i for i, char in enumerate(url[scheme_end:]) if char == '/'), len(url))
+        authority_end = min(port_start, url.rfind('?'))
+    
+        if ':' not in url[:scheme_end]:
+&gt;           raise ValueError('no scheme')
+E           ValueError: no scheme
+
+solution.py:10: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.url_split_strict.tests.test_solution" name="test_second_qmark" time="0.000"><failure message="ValueError: no scheme">&gt;   def test_second_qmark(): assert f('http://h/p?a?b') == ('http', 'h', None, '/p', 'a?b')
+                                    ^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:8: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+url = 'http://h/p?a?b'
+
+    def split_url(url):
+        if not isinstance(url, str):
+            raise ValueError('bad url')
+    
+        scheme_end = url.find(':/')
+        port_start = next((i for i, char in enumerate(url[scheme_end:]) if char == '/'), len(url))
+        authority_end = min(port_start, url.rfind('?'))
+    
+        if ':' not in url[:scheme_end]:
+&gt;           raise ValueError('no scheme')
+E           ValueError: no scheme
+
+solution.py:10: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.url_split_strict.tests.test_solution" name="test_port_zero" time="0.000"><failure message="ValueError: no scheme">&gt;   def test_port_zero(): assert f('http://h:0/') == ('http', 'h', 0, '/', None)
+                                 ^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:9: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+url = 'http://h:0/'
+
+    def split_url(url):
+        if not isinstance(url, str):
+            raise ValueError('bad url')
+    
+        scheme_end = url.find(':/')
+        port_start = next((i for i, char in enumerate(url[scheme_end:]) if char == '/'), len(url))
+        authority_end = min(port_start, url.rfind('?'))
+    
+        if ':' not in url[:scheme_end]:
+&gt;           raise ValueError('no scheme')
+E           ValueError: no scheme
+
+solution.py:10: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.url_split_strict.tests.test_solution" name="test_max_port" time="0.000"><failure message="ValueError: no scheme">&gt;   def test_max_port(): assert f('http://h:65535') == ('http', 'h', 65535, '/', None)
+                                ^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:10: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+url = 'http://h:65535'
+
+    def split_url(url):
+        if not isinstance(url, str):
+            raise ValueError('bad url')
+    
+        scheme_end = url.find(':/')
+        port_start = next((i for i, char in enumerate(url[scheme_end:]) if char == '/'), len(url))
+        authority_end = min(port_start, url.rfind('?'))
+    
+        if ':' not in url[:scheme_end]:
+&gt;           raise ValueError('no scheme')
+E           ValueError: no scheme
+
+solution.py:10: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.url_split_strict.tests.test_solution" name="test_scheme_chars" time="0.000"><failure message="ValueError: no scheme">&gt;   def test_scheme_chars(): assert f('a+b-c.1://h') == ('a+b-c.1', 'h', None, '/', None)
+                                    ^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:11: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+url = 'a+b-c.1://h'
+
+    def split_url(url):
+        if not isinstance(url, str):
+            raise ValueError('bad url')
+    
+        scheme_end = url.find(':/')
+        port_start = next((i for i, char in enumerate(url[scheme_end:]) if char == '/'), len(url))
+        authority_end = min(port_start, url.rfind('?'))
+    
+        if ':' not in url[:scheme_end]:
+&gt;           raise ValueError('no scheme')
+E           ValueError: no scheme
+
+solution.py:10: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.url_split_strict.tests.test_solution" name="test_no_scheme" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-194718.url_split_strict.tests.test_solution" name="test_bad_scheme_upper" time="0.001"><failure message="AssertionError: assert 'no scheme' == 'bad scheme'&#10;  &#10;  - bad scheme&#10;  + no scheme">def test_bad_scheme_upper():
+        with pytest.raises(ValueError) as e: f('Http://h')
+&gt;       assert str(e.value) == 'bad scheme'
+E       AssertionError: assert 'no scheme' == 'bad scheme'
+E         
+E         - bad scheme
+E         + no scheme
+
+tests\test_solution.py:17: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.url_split_strict.tests.test_solution" name="test_bad_scheme_empty" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-194718.url_split_strict.tests.test_solution" name="test_bad_scheme_digit_first" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-194718.url_split_strict.tests.test_solution" name="test_bad_host_empty" time="0.000"><failure message="AssertionError: assert 'no scheme' == 'bad host'&#10;  &#10;  - bad host&#10;  + no scheme">def test_bad_host_empty():
+        with pytest.raises(ValueError) as e: f('http://')
+&gt;       assert str(e.value) == 'bad host'
+E       AssertionError: assert 'no scheme' == 'bad host'
+E         
+E         - bad host
+E         + no scheme
+
+tests\test_solution.py:24: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.url_split_strict.tests.test_solution" name="test_bad_host_upper" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-194718.url_split_strict.tests.test_solution" name="test_bad_port_leading_zero" time="0.000"><failure message="AssertionError: assert 'no scheme' == 'bad port'&#10;  &#10;  - bad port&#10;  + no scheme">def test_bad_port_leading_zero():
+        with pytest.raises(ValueError) as e: f('http://h:080')
+&gt;       assert str(e.value) == 'bad port'
+E       AssertionError: assert 'no scheme' == 'bad port'
+E         
+E         - bad port
+E         + no scheme
+
+tests\test_solution.py:29: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.url_split_strict.tests.test_solution" name="test_bad_port_too_big" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-194718.url_split_strict.tests.test_solution" name="test_bad_port_empty" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-194718.url_split_strict.tests.test_solution" name="test_bad_port_second_colon" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-194718.url_split_strict.tests.test_solution" name="test_bad_url" time="0.000" /></testsuite></testsuites>

@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="8" skipped="0" tests="16" time="0.274" timestamp="2026-07-13T19:45:53.313882-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-190747.qp_decode.tests.test_solution" name="test_plain" time="0.001" /><testcase classname="artifacts.uplift.work_20260713-190747.qp_decode.tests.test_solution" name="test_space" time="0.001"><failure message="AssertionError: assert 'a 0b' == 'a b'&#10;  &#10;  - a b&#10;  + a 0b&#10;  ?   +">&gt;   def test_space(): assert f('a=20b') == 'a b'
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert 'a 0b' == 'a b'
+E     
+E     - a b
+E     + a 0b
+E     ?   +
+
+tests\test_solution.py:4: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-190747.qp_decode.tests.test_solution" name="test_equals" time="0.001"><failure message="AssertionError: assert '=D' == '='&#10;  &#10;  - =&#10;  + =D">&gt;   def test_equals(): assert f('=3D') == '='
+                       ^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert '=D' == '='
+E     
+E     - =
+E     + =D
+
+tests\test_solution.py:5: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-190747.qp_decode.tests.test_solution" name="test_letters" time="0.001"><failure message="AssertionError: assert 'A1B2' == 'AB'&#10;  &#10;  - AB&#10;  + A1B2">&gt;   def test_letters(): assert f('=41=42') == 'AB'
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert 'A1B2' == 'AB'
+E     
+E     - AB
+E     + A1B2
+
+tests\test_solution.py:6: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-190747.qp_decode.tests.test_solution" name="test_soft_lf" time="0.000"><failure message="ValueError: bad escape">&gt;   def test_soft_lf(): assert f('foo=\nbar') == 'foobar'
+                               ^^^^^^^^^^^^^^
+
+tests\test_solution.py:7: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+s = 'foo=\nbar'
+
+    def qp_decode(s):
+        if not isinstance(s, str):
+            raise ValueError('bad input')
+    
+        output = []
+        i = 0
+    
+        while i &lt; len(s):
+            c = s[i]
+    
+            if c == '=':
+                i += 1
+                if i == len(s):
+                    raise ValueError('bad escape')
+    
+                hex_digit1 = s[i]
+                i += 1
+                if i == len(s) or not (hex_digit1.isdigit() or 'A' &lt;= hex_digit1.upper() &lt;= 'F'):
+&gt;                   raise ValueError('bad escape')
+E                   ValueError: bad escape
+
+solution.py:19: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-190747.qp_decode.tests.test_solution" name="test_soft_crlf" time="0.001"><failure message="ValueError: bad escape">&gt;   def test_soft_crlf(): assert f('foo=\r\nbar') == 'foobar'
+                                 ^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:8: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+s = 'foo=\r\nbar'
+
+    def qp_decode(s):
+        if not isinstance(s, str):
+            raise ValueError('bad input')
+    
+        output = []
+        i = 0
+    
+        while i &lt; len(s):
+            c = s[i]
+    
+            if c == '=':
+                i += 1
+                if i == len(s):
+                    raise ValueError('bad escape')
+    
+                hex_digit1 = s[i]
+                i += 1
+                if i == len(s) or not (hex_digit1.isdigit() or 'A' &lt;= hex_digit1.upper() &lt;= 'F'):
+&gt;                   raise ValueError('bad escape')
+E                   ValueError: bad escape
+
+solution.py:19: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-190747.qp_decode.tests.test_solution" name="test_hard_newline" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-190747.qp_decode.tests.test_solution" name="test_high_byte" time="0.002"><failure message="AssertionError: assert 'ÿF' == 'ÿ'&#10;  &#10;  - ÿ&#10;  + ÿF">&gt;   def test_high_byte(): assert f('=FF') == '\xff'
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert 'ÿF' == 'ÿ'
+E     
+E     - ÿ
+E     + ÿF
+
+tests\test_solution.py:10: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-190747.qp_decode.tests.test_solution" name="test_newline_escape" time="0.001"><failure message="AssertionError: assert '\nA' == '\n'&#10;  &#10;  Strings contain only whitespace, escaping them using repr()&#10;  - '\n'&#10;  + '\nA'&#10;  ?    +">&gt;   def test_newline_escape(): assert f('=0A') == '\n'
+                               ^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert '\nA' == '\n'
+E     
+E     Strings contain only whitespace, escaping them using repr()
+E     - '\n'
+E     + '\nA'
+E     ?    +
+
+tests\test_solution.py:11: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-190747.qp_decode.tests.test_solution" name="test_empty" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-190747.qp_decode.tests.test_solution" name="test_lowercase" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_lowercase():
+&gt;       with pytest.raises(ValueError) as e: f('=3d')
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:14: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260713-190747.qp_decode.tests.test_solution" name="test_trailing" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-190747.qp_decode.tests.test_solution" name="test_one_digit" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-190747.qp_decode.tests.test_solution" name="test_bad_hex" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-190747.qp_decode.tests.test_solution" name="test_cr_only" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-190747.qp_decode.tests.test_solution" name="test_bad_input" time="0.000" /></testsuite></testsuites>

@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="8" skipped="0" tests="9" time="0.205" timestamp="2026-07-13T20:20:09.326509-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-195624.sliding_windows.tests.test_solution" name="test_step_one" time="0.001"><failure message="assert [] == [[1, 2], [2, 3], [3, 4]]&#10;  &#10;  Right contains 3 more items, first extra item: [1, 2]&#10;  Use -v to get more diff">&gt;   def test_step_one(): assert f([1, 2, 3, 4], 2, 1) == [[1, 2], [2, 3], [3, 4]]
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   assert [] == [[1, 2], [2, 3], [3, 4]]
+E     
+E     Right contains 3 more items, first extra item: [1, 2]
+E     Use -v to get more diff
+
+tests\test_solution.py:3: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.sliding_windows.tests.test_solution" name="test_step_two" time="0.001"><failure message="assert [] == [[1, 2], [3, 4]]&#10;  &#10;  Right contains 2 more items, first extra item: [1, 2]&#10;  Use -v to get more diff">&gt;   def test_step_two(): assert f([1, 2, 3, 4, 5], 2, 2) == [[1, 2], [3, 4]]
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   assert [] == [[1, 2], [3, 4]]
+E     
+E     Right contains 2 more items, first extra item: [1, 2]
+E     Use -v to get more diff
+
+tests\test_solution.py:4: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.sliding_windows.tests.test_solution" name="test_full" time="0.000"><failure message="assert [[1], [1]] == [[1, 2, 3]]&#10;  &#10;  At index 0 diff: [1] != [1, 2, 3]&#10;  Left contains one more item: [1]&#10;  Use -v to get more diff">&gt;   def test_full(): assert f([1, 2, 3], 3, 1) == [[1, 2, 3]]
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   assert [[1], [1]] == [[1, 2, 3]]
+E     
+E     At index 0 diff: [1] != [1, 2, 3]
+E     Left contains one more item: [1]
+E     Use -v to get more diff
+
+tests\test_solution.py:5: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.sliding_windows.tests.test_solution" name="test_too_big" time="0.001"><failure message="assert [[]] == []&#10;  &#10;  Left contains one more item: []&#10;  Use -v to get more diff">&gt;   def test_too_big(): assert f([1, 2], 3, 1) == []
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   assert [[]] == []
+E     
+E     Left contains one more item: []
+E     Use -v to get more diff
+
+tests\test_solution.py:6: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.sliding_windows.tests.test_solution" name="test_overlap" time="0.001"><failure message="assert [[1, 2, 3], [2, 3], [3], []] == [[1, 2, 3], [3, 4, 5]]&#10;  &#10;  At index 1 diff: [2, 3] != [3, 4, 5]&#10;  Left contains 2 more items, first extra item: [3]&#10;  Use -v to get more diff">&gt;   def test_overlap(): assert f([1, 2, 3, 4, 5], 3, 2) == [[1, 2, 3], [3, 4, 5]]
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   assert [[1, 2, 3], [2, 3], [3], []] == [[1, 2, 3], [3, 4, 5]]
+E     
+E     At index 1 diff: [2, 3] != [3, 4, 5]
+E     Left contains 2 more items, first extra item: [3]
+E     Use -v to get more diff
+
+tests\test_solution.py:7: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.sliding_windows.tests.test_solution" name="test_empty" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-195624.sliding_windows.tests.test_solution" name="test_bad_size" time="0.001"><failure message="AssertionError: assert 'Invalid valu...size and step' == 'bad size'&#10;  &#10;  - bad size&#10;  + Invalid values for size and step">def test_bad_size():
+        with pytest.raises(ValueError) as e: f([1], 0, 1)
+&gt;       assert str(e.value) == 'bad size'
+E       AssertionError: assert 'Invalid valu...size and step' == 'bad size'
+E         
+E         - bad size
+E         + Invalid values for size and step
+
+tests\test_solution.py:11: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.sliding_windows.tests.test_solution" name="test_bad_step" time="0.001"><failure message="AssertionError: assert 'Invalid valu...size and step' == 'bad step'&#10;  &#10;  - bad step&#10;  + Invalid values for size and step">def test_bad_step():
+        with pytest.raises(ValueError) as e: f([1], 1, 0)
+&gt;       assert str(e.value) == 'bad step'
+E       AssertionError: assert 'Invalid valu...size and step' == 'bad step'
+E         
+E         - bad step
+E         + Invalid values for size and step
+
+tests\test_solution.py:14: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.sliding_windows.tests.test_solution" name="test_bad_input" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_bad_input():
+&gt;       with pytest.raises(ValueError) as e: f('ab', 1, 1)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:16: Failed</failure></testcase></testsuite></testsuites>

@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="6" skipped="0" tests="8" time="0.241" timestamp="2026-07-13T19:39:18.320028-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-192539.largest_remainder_apportion.tests.test_solution" name="test_exact_no_remainder" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-192539.largest_remainder_apportion.tests.test_solution" name="test_tie_broken_by_lowest_index" time="0.001"><failure message="assert [33, 34, 33] == [34, 33, 33]&#10;  &#10;  At index 0 diff: 33 != 34&#10;  Use -v to get more diff">def test_tie_broken_by_lowest_index():
+&gt;       assert apportion([1, 1, 1], 100) == [34, 33, 33]
+E       assert [33, 34, 33] == [34, 33, 33]
+E         
+E         At index 0 diff: 33 != 34
+E         Use -v to get more diff
+
+tests\test_solution.py:11: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-192539.largest_remainder_apportion.tests.test_solution" name="test_largest_remainder_wins" time="0.000"><failure message="IndexError: list index out of range">def test_largest_remainder_wins():
+&gt;       assert apportion([500, 499, 1], 10) == [5, 5, 0]
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:16: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+weights = [500, 499, 1], total = 10
+
+    def apportion(weights, total):
+        if not all(isinstance(w, int) and w &gt;= 0 for w in weights) or any(w == 0 for w in weights) or not isinstance(total, int) or total &lt; 0:
+            raise ValueError("weights must be a non-empty list of non-bool ints, each &gt;= 0 with at least one positive entry; total must be a non-bool int &gt;= 0.")
+    
+        s = sum(weights)
+        shares = [w * total // s for w in weights]  # Each share starts as the floor of its quota
+    
+        remainder = total - sum(shares)  # Total to be distributed among entries with the largest remainders
+        sorted_weights_remainders = sorted((w, (w * total) % s) for w in weights)
+    
+        for _ in range(remainder):
+&gt;           shares[sorted_weights_remainders[-1][0]] += 1
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           IndexError: list index out of range
+
+solution.py:12: IndexError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-192539.largest_remainder_apportion.tests.test_solution" name="test_zero_weight_never_gets_extra" time="0.000"><failure message="ValueError: weights must be a non-empty list of non-bool ints, each &gt;= 0 with at least one positive entry; total must be a non-bool int &gt;= 0.">def test_zero_weight_never_gets_extra():
+&gt;       assert apportion([0, 5], 7) == [0, 7]
+               ^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:21: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+weights = [0, 5], total = 7
+
+    def apportion(weights, total):
+        if not all(isinstance(w, int) and w &gt;= 0 for w in weights) or any(w == 0 for w in weights) or not isinstance(total, int) or total &lt; 0:
+&gt;           raise ValueError("weights must be a non-empty list of non-bool ints, each &gt;= 0 with at least one positive entry; total must be a non-bool int &gt;= 0.")
+E           ValueError: weights must be a non-empty list of non-bool ints, each &gt;= 0 with at least one positive entry; total must be a non-bool int &gt;= 0.
+
+solution.py:3: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-192539.largest_remainder_apportion.tests.test_solution" name="test_total_zero" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-192539.largest_remainder_apportion.tests.test_solution" name="test_sum_invariant_and_length" time="0.000"><failure message="IndexError: list index out of range">def test_sum_invariant_and_length():
+&gt;       out = apportion([3, 1, 4, 1, 5, 9, 2, 6], 1234)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:30: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+weights = [3, 1, 4, 1, 5, 9, ...], total = 1234
+
+    def apportion(weights, total):
+        if not all(isinstance(w, int) and w &gt;= 0 for w in weights) or any(w == 0 for w in weights) or not isinstance(total, int) or total &lt; 0:
+            raise ValueError("weights must be a non-empty list of non-bool ints, each &gt;= 0 with at least one positive entry; total must be a non-bool int &gt;= 0.")
+    
+        s = sum(weights)
+        shares = [w * total // s for w in weights]  # Each share starts as the floor of its quota
+    
+        remainder = total - sum(shares)  # Total to be distributed among entries with the largest remainders
+        sorted_weights_remainders = sorted((w, (w * total) % s) for w in weights)
+    
+        for _ in range(remainder):
+&gt;           shares[sorted_weights_remainders[-1][0]] += 1
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           IndexError: list index out of range
+
+solution.py:12: IndexError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-192539.largest_remainder_apportion.tests.test_solution" name="test_no_mutation" time="0.000"><failure message="IndexError: list index out of range">def test_no_mutation():
+        w = [5, 3, 2]
+        snapshot = list(w)
+&gt;       apportion(w, 7)
+
+tests\test_solution.py:38: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+weights = [5, 3, 2], total = 7
+
+    def apportion(weights, total):
+        if not all(isinstance(w, int) and w &gt;= 0 for w in weights) or any(w == 0 for w in weights) or not isinstance(total, int) or total &lt; 0:
+            raise ValueError("weights must be a non-empty list of non-bool ints, each &gt;= 0 with at least one positive entry; total must be a non-bool int &gt;= 0.")
+    
+        s = sum(weights)
+        shares = [w * total // s for w in weights]  # Each share starts as the floor of its quota
+    
+        remainder = total - sum(shares)  # Total to be distributed among entries with the largest remainders
+        sorted_weights_remainders = sorted((w, (w * total) % s) for w in weights)
+    
+        for _ in range(remainder):
+&gt;           shares[sorted_weights_remainders[-1][0]] += 1
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           IndexError: list index out of range
+
+solution.py:12: IndexError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-192539.largest_remainder_apportion.tests.test_solution" name="test_error_contracts" time="0.001"><failure message="IndexError: list index out of range">def test_error_contracts():
+        with pytest.raises(ValueError):
+&gt;           apportion([], 10)
+
+tests\test_solution.py:44: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+weights = [], total = 10
+
+    def apportion(weights, total):
+        if not all(isinstance(w, int) and w &gt;= 0 for w in weights) or any(w == 0 for w in weights) or not isinstance(total, int) or total &lt; 0:
+            raise ValueError("weights must be a non-empty list of non-bool ints, each &gt;= 0 with at least one positive entry; total must be a non-bool int &gt;= 0.")
+    
+        s = sum(weights)
+        shares = [w * total // s for w in weights]  # Each share starts as the floor of its quota
+    
+        remainder = total - sum(shares)  # Total to be distributed among entries with the largest remainders
+        sorted_weights_remainders = sorted((w, (w * total) % s) for w in weights)
+    
+        for _ in range(remainder):
+&gt;           shares[sorted_weights_remainders[-1][0]] += 1
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           IndexError: list index out of range
+
+solution.py:12: IndexError</failure></testcase></testsuite></testsuites>

@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="6" skipped="0" tests="12" time="0.205" timestamp="2026-07-13T19:19:08.335957-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-184826.perm_rank.tests.test_solution" name="test_empty" time="0.001"><failure message="ValueError: min() iterable argument is empty">&gt;   def test_empty(): assert f([]) == 0
+                             ^^^^^
+
+tests\test_solution.py:3: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+perm = []
+
+    def perm_rank(perm):
+        if not isinstance(perm, list):
+            raise ValueError('bad input')
+    
+        if any(not isinstance(x, int) for x in perm):
+            raise ValueError('bad element')
+    
+&gt;       if len(perm) != len(set(perm)) or min(perm) &lt; 0 or max(perm) &gt;= len(perm):
+                                          ^^^^^^^^^
+E       ValueError: min() iterable argument is empty
+
+solution.py:8: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-184826.perm_rank.tests.test_solution" name="test_single" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-184826.perm_rank.tests.test_solution" name="test_identity" time="0.000"><failure message="assert 3 == 0&#10; +  where 3 = f([0, 1, 2])">&gt;   def test_identity(): assert f([0, 1, 2]) == 0
+                         ^^^^^^^^^^^^^^^^^^^^^^^^
+E   assert 3 == 0
+E    +  where 3 = f([0, 1, 2])
+
+tests\test_solution.py:5: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-184826.perm_rank.tests.test_solution" name="test_reversed" time="0.000"><failure message="assert 0 == 5&#10; +  where 0 = f([2, 1, 0])">&gt;   def test_reversed(): assert f([2, 1, 0]) == 5
+                         ^^^^^^^^^^^^^^^^^^^^^^^^
+E   assert 0 == 5
+E    +  where 0 = f([2, 1, 0])
+
+tests\test_solution.py:6: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-184826.perm_rank.tests.test_solution" name="test_middle" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-184826.perm_rank.tests.test_solution" name="test_middle2" time="0.001"><failure message="assert 1 == 3&#10; +  where 1 = f([1, 2, 0])">&gt;   def test_middle2(): assert f([1, 2, 0]) == 3
+                        ^^^^^^^^^^^^^^^^^^^^^^^^
+E   assert 1 == 3
+E    +  where 1 = f([1, 2, 0])
+
+tests\test_solution.py:8: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-184826.perm_rank.tests.test_solution" name="test_larger" time="0.000"><failure message="assert 5 == 83&#10; +  where 5 = f([3, 1, 4, 2, 0])">&gt;   def test_larger(): assert f([3, 1, 4, 2, 0]) == 83
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   assert 5 == 83
+E    +  where 5 = f([3, 1, 4, 2, 0])
+
+tests\test_solution.py:9: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-184826.perm_rank.tests.test_solution" name="test_missing" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-184826.perm_rank.tests.test_solution" name="test_duplicate" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-184826.perm_rank.tests.test_solution" name="test_bad_element" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-184826.perm_rank.tests.test_solution" name="test_bool_element" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_bool_element():
+&gt;       with pytest.raises(ValueError) as e: f([True, 0])
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:20: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260713-184826.perm_rank.tests.test_solution" name="test_bad_input" time="0.000" /></testsuite></testsuites>

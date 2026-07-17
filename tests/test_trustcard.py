@@ -53,3 +53,18 @@ def test_unsigned_card_is_unsigned():
     card = make_trustcard(n, KEY, author="op")
     blank = replace(card, signature="")
     assert verify_trustcard(n, blank, KEY) == "UNSIGNED"
+
+
+def test_edited_card_trust_fields_are_tampered():
+    # The signature must cover the card's OWN trust verdicts, not just the
+    # node: a freshness flipped DRIFT->MATCH or a scan_status flipped
+    # unscanned->clean is a forged trust rendering and must read TAMPERED.
+    n = _node()
+    card = make_trustcard(n, KEY, author="op", freshness="DRIFT",
+                          scan_status="unscanned")
+    assert verify_trustcard(n, card, KEY) == "MATCH"
+    assert verify_trustcard(n, replace(card, freshness="MATCH"), KEY) == "TAMPERED"
+    assert verify_trustcard(n, replace(card, scan_status="clean"), KEY) == "TAMPERED"
+    assert verify_trustcard(n, replace(card, author="someone-else"), KEY) == "TAMPERED"
+    flipped = "UNVERIFIABLE" if card.provenance == "SEALED" else "SEALED"
+    assert verify_trustcard(n, replace(card, provenance=flipped), KEY) == "TAMPERED"

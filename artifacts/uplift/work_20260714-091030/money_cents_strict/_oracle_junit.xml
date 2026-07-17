@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="3" skipped="0" tests="12" time="0.175" timestamp="2026-07-14T09:33:50.966663-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260714-091030.money_cents_strict.tests.test_solution" name="test_grouped" time="0.001"><failure message="ValueError: bad amount">&gt;   def test_grouped(): assert f('1,234.56') == 123456
+                               ^^^^^^^^^^^^^
+
+tests\test_solution.py:3: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+s = '1,234.56'
+
+    def parse_money(s):
+        if not isinstance(s, str) or not s.strip():
+            raise ValueError('bad amount')
+        s = s.strip()
+        neg = False
+        if s and s[0] == '-':
+            if len(s) == 1:
+                raise ValueError('bad amount')
+            if s[1] in '.,':
+                raise ValueError('bad amount')
+            s, neg = s[1:], True
+    
+        p = s.find('.')
+        if p &lt; 0:
+            if not all(c in '0123456789' for c in s):
+                raise ValueError('bad amount')
+            int_part = s
+            frac_part = '00'
+        else:
+            if len(s) == p + 1:  # no digits after '.'
+                raise ValueError('bad amount')
+            if not (s[-3] == '.' and all(c in '0123456789' for c in s[:p])):
+&gt;               raise ValueError('bad amount')
+E               ValueError: bad amount
+
+solution.py:23: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-091030.money_cents_strict.tests.test_solution" name="test_cents_only" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-091030.money_cents_strict.tests.test_solution" name="test_negative" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-091030.money_cents_strict.tests.test_solution" name="test_million" time="0.000"><failure message="ValueError: bad amount">&gt;   def test_million(): assert f('1,000,000') == 100000000
+                               ^^^^^^^^^^^^^^
+
+tests\test_solution.py:6: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+s = '1,000,000'
+
+    def parse_money(s):
+        if not isinstance(s, str) or not s.strip():
+            raise ValueError('bad amount')
+        s = s.strip()
+        neg = False
+        if s and s[0] == '-':
+            if len(s) == 1:
+                raise ValueError('bad amount')
+            if s[1] in '.,':
+                raise ValueError('bad amount')
+            s, neg = s[1:], True
+    
+        p = s.find('.')
+        if p &lt; 0:
+            if not all(c in '0123456789' for c in s):
+&gt;               raise ValueError('bad amount')
+E               ValueError: bad amount
+
+solution.py:16: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-091030.money_cents_strict.tests.test_solution" name="test_negative_zero" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-091030.money_cents_strict.tests.test_solution" name="test_zero" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-091030.money_cents_strict.tests.test_solution" name="test_leading_zeros" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_leading_zeros():
+&gt;       with pytest.raises(ValueError) as e: f('007')
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:10: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260714-091030.money_cents_strict.tests.test_solution" name="test_bad_group" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-091030.money_cents_strict.tests.test_solution" name="test_no_integer_part" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-091030.money_cents_strict.tests.test_solution" name="test_one_decimal" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-091030.money_cents_strict.tests.test_solution" name="test_plus" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-091030.money_cents_strict.tests.test_solution" name="test_zero_grouped" time="0.000" /></testsuite></testsuites>

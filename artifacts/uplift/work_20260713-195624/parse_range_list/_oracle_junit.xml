@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="4" skipped="0" tests="7" time="0.192" timestamp="2026-07-13T20:04:37.963958-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-195624.parse_range_list.tests.test_solution" name="test_empty" time="0.001"><failure message="ValueError: not enough values to unpack (expected 6, got 1)">def test_empty():
+&gt;       assert f('') == []
+               ^^^^^
+
+tests\test_solution.py:4: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+s = ''
+
+    def parse_range_list(s):
+        """
+        Parse a string like '1-3,5,7-9' into the sorted deduplicated list of integers it denotes ([1,2,3,5,7,8,9]).
+        Ranges are inclusive and may overlap each other or single values. Whitespace around commas/tokens is allowed.
+        An empty or whitespace-only string returns [].
+    
+        Args:
+            s (str): A string in the format 'num1,num2,...' where num1... can be integers with ranges [1..N].
+    
+        Returns:
+            list: The sorted deduplicated list of integers.
+        """
+        # Split the input string by commas
+        elements = s.split(',')
+    
+        # Define a set to store unique numbers
+        unique_numbers_set = set()
+    
+        # Process each element in the split list
+        for element in elements:
+&gt;           num, _, _, _, _, _ = element.strip().split('-')
+            ^^^^^^^^^^^^^^^^^^
+E           ValueError: not enough values to unpack (expected 6, got 1)
+
+solution.py:21: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.parse_range_list.tests.test_solution" name="test_mixed" time="0.000"><failure message="ValueError: not enough values to unpack (expected 6, got 2)">def test_mixed():
+&gt;       assert f('1-3,5,7-9') == [1,2,3,5,7,8,9]
+               ^^^^^^^^^^^^^^
+
+tests\test_solution.py:6: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+s = '1-3,5,7-9'
+
+    def parse_range_list(s):
+        """
+        Parse a string like '1-3,5,7-9' into the sorted deduplicated list of integers it denotes ([1,2,3,5,7,8,9]).
+        Ranges are inclusive and may overlap each other or single values. Whitespace around commas/tokens is allowed.
+        An empty or whitespace-only string returns [].
+    
+        Args:
+            s (str): A string in the format 'num1,num2,...' where num1... can be integers with ranges [1..N].
+    
+        Returns:
+            list: The sorted deduplicated list of integers.
+        """
+        # Split the input string by commas
+        elements = s.split(',')
+    
+        # Define a set to store unique numbers
+        unique_numbers_set = set()
+    
+        # Process each element in the split list
+        for element in elements:
+&gt;           num, _, _, _, _, _ = element.strip().split('-')
+            ^^^^^^^^^^^^^^^^^^
+E           ValueError: not enough values to unpack (expected 6, got 2)
+
+solution.py:21: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.parse_range_list.tests.test_solution" name="test_overlap" time="0.000"><failure message="ValueError: not enough values to unpack (expected 6, got 2)">def test_overlap():
+&gt;       assert f('1-4,3-6,4') == [1,2,3,4,5,6]
+               ^^^^^^^^^^^^^^
+
+tests\test_solution.py:8: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+s = '1-4,3-6,4'
+
+    def parse_range_list(s):
+        """
+        Parse a string like '1-3,5,7-9' into the sorted deduplicated list of integers it denotes ([1,2,3,5,7,8,9]).
+        Ranges are inclusive and may overlap each other or single values. Whitespace around commas/tokens is allowed.
+        An empty or whitespace-only string returns [].
+    
+        Args:
+            s (str): A string in the format 'num1,num2,...' where num1... can be integers with ranges [1..N].
+    
+        Returns:
+            list: The sorted deduplicated list of integers.
+        """
+        # Split the input string by commas
+        elements = s.split(',')
+    
+        # Define a set to store unique numbers
+        unique_numbers_set = set()
+    
+        # Process each element in the split list
+        for element in elements:
+&gt;           num, _, _, _, _, _ = element.strip().split('-')
+            ^^^^^^^^^^^^^^^^^^
+E           ValueError: not enough values to unpack (expected 6, got 2)
+
+solution.py:21: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.parse_range_list.tests.test_solution" name="test_spaces" time="0.000"><failure message="ValueError: not enough values to unpack (expected 6, got 1)">def test_spaces():
+&gt;       assert f(' 2 , 4-5 ') == [2,4,5]
+               ^^^^^^^^^^^^^^
+
+tests\test_solution.py:10: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+s = ' 2 , 4-5 '
+
+    def parse_range_list(s):
+        """
+        Parse a string like '1-3,5,7-9' into the sorted deduplicated list of integers it denotes ([1,2,3,5,7,8,9]).
+        Ranges are inclusive and may overlap each other or single values. Whitespace around commas/tokens is allowed.
+        An empty or whitespace-only string returns [].
+    
+        Args:
+            s (str): A string in the format 'num1,num2,...' where num1... can be integers with ranges [1..N].
+    
+        Returns:
+            list: The sorted deduplicated list of integers.
+        """
+        # Split the input string by commas
+        elements = s.split(',')
+    
+        # Define a set to store unique numbers
+        unique_numbers_set = set()
+    
+        # Process each element in the split list
+        for element in elements:
+&gt;           num, _, _, _, _, _ = element.strip().split('-')
+            ^^^^^^^^^^^^^^^^^^
+E           ValueError: not enough values to unpack (expected 6, got 1)
+
+solution.py:21: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.parse_range_list.tests.test_solution" name="test_reversed_range" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-195624.parse_range_list.tests.test_solution" name="test_garbage" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-195624.parse_range_list.tests.test_solution" name="test_dangling" time="0.000" /></testsuite></testsuites>

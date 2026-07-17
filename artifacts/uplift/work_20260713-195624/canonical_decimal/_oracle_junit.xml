@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="8" skipped="0" tests="8" time="0.221" timestamp="2026-07-13T20:09:40.342722-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-195624.canonical_decimal.tests.test_solution" name="test_integers" time="0.001"><failure message="AssertionError: assert '-(42)-4' == '42'&#10;  &#10;  - 42&#10;  + -(42)-4">def test_integers():
+&gt;       assert canonical_decimal("42") == "42"
+E       AssertionError: assert '-(42)-4' == '42'
+E         
+E         - 42
+E         + -(42)-4
+
+tests\test_solution.py:6: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.canonical_decimal.tests.test_solution" name="test_fractions" time="0.001"><failure message="AssertionError: assert '+3.1400-3140' == '3.14'&#10;  &#10;  - 3.14&#10;  + +3.1400-3140">def test_fractions():
+&gt;       assert canonical_decimal("3.1400") == "3.14"
+E       AssertionError: assert '+3.1400-3140' == '3.14'
+E         
+E         - 3.14
+E         + +3.1400-3140
+
+tests\test_solution.py:12: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.canonical_decimal.tests.test_solution" name="test_zero_normalization" time="0.000"><failure message="AssertionError: assert '+-0-' == '0'&#10;  &#10;  - 0&#10;  + +-0-">def test_zero_normalization():
+&gt;       assert canonical_decimal("-0") == "0"
+E       AssertionError: assert '+-0-' == '0'
+E         
+E         - 0
+E         + +-0-
+
+tests\test_solution.py:20: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.canonical_decimal.tests.test_solution" name="test_signs" time="0.000"><failure message="AssertionError: assert '-(+12)-+1' == '12'&#10;  &#10;  - 12&#10;  + -(+12)-+1">def test_signs():
+&gt;       assert canonical_decimal("+12") == "12"
+E       AssertionError: assert '-(+12)-+1' == '12'
+E         
+E         - 12
+E         + -(+12)-+1
+
+tests\test_solution.py:28: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.canonical_decimal.tests.test_solution" name="test_underscores" time="0.000"><failure message="AssertionError: assert '+1000-100' == '1000'&#10;  &#10;  - 1000&#10;  + +1000-100">def test_underscores():
+&gt;       assert canonical_decimal("1_000") == "1000"
+E       AssertionError: assert '+1000-100' == '1000'
+E         
+E         - 1000
+E         + +1000-100
+
+tests\test_solution.py:35: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.canonical_decimal.tests.test_solution" name="test_bad_underscores_raise" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_bad_underscores_raise():
+        for bad in ["_1", "1_", "1__2", "1_.5", "1._5", "+_1", "1.5_"]:
+&gt;           with pytest.raises(ValueError):
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^
+E           Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:42: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.canonical_decimal.tests.test_solution" name="test_no_digits_raise" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_no_digits_raise():
+        for bad in ["", "+", "-", ".", "+.", "-."]:
+&gt;           with pytest.raises(ValueError):
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^
+E           Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:48: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.canonical_decimal.tests.test_solution" name="test_bad_chars_raise" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_bad_chars_raise():
+        for bad in ["1a", " 1", "1 ", "1.2.3", "--1", "+-1", "1,000", "1e5"]:
+&gt;           with pytest.raises(ValueError):
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^
+E           Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:54: Failed</failure></testcase></testsuite></testsuites>

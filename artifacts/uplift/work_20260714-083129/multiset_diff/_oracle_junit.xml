@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="5" skipped="0" tests="8" time="0.319" timestamp="2026-07-14T09:01:07.043345-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260714-083129.multiset_diff.tests.test_solution" name="test_basic" time="0.001"><failure message="assert [0, 2] == [1, 2]&#10;  &#10;  At index 0 diff: 0 != 1&#10;  Use -v to get more diff">&gt;   def test_basic(): assert f([1, 1, 2, 3], [1, 3]) == [1, 2]
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   assert [0, 2] == [1, 2]
+E     
+E     At index 0 diff: 0 != 1
+E     Use -v to get more diff
+
+tests\test_solution.py:3: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.multiset_diff.tests.test_solution" name="test_repeat" time="0.001"><failure message="assert [] == [1, 1]&#10;  &#10;  Right contains 2 more items, first extra item: 1&#10;  Use -v to get more diff">&gt;   def test_repeat(): assert f([1, 1, 1], [1]) == [1, 1]
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   assert [] == [1, 1]
+E     
+E     Right contains 2 more items, first extra item: 1
+E     Use -v to get more diff
+
+tests\test_solution.py:4: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.multiset_diff.tests.test_solution" name="test_disjoint" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-083129.multiset_diff.tests.test_solution" name="test_all_removed" time="0.001"><failure message="assert [0, 0] == []&#10;  &#10;  Left contains 2 more items, first extra item: 0&#10;  Use -v to get more diff">&gt;   def test_all_removed(): assert f([1, 2], [1, 2, 3]) == []
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   assert [0, 0] == []
+E     
+E     Left contains 2 more items, first extra item: 0
+E     Use -v to get more diff
+
+tests\test_solution.py:6: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.multiset_diff.tests.test_solution" name="test_empty_a" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-083129.multiset_diff.tests.test_solution" name="test_sorted_out" time="0.001"><failure message="assert [1, 3, 4] == [1, 2, 2, 3]&#10;  &#10;  At index 1 diff: 3 != 2&#10;  Right contains one more item: 3&#10;  Use -v to get more diff">&gt;   def test_sorted_out(): assert f([3, 1, 2, 2], []) == [1, 2, 2, 3]
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   assert [1, 3, 4] == [1, 2, 2, 3]
+E     
+E     At index 1 diff: 3 != 2
+E     Right contains one more item: 3
+E     Use -v to get more diff
+
+tests\test_solution.py:8: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.multiset_diff.tests.test_solution" name="test_bad_item_bool" time="0.001"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_bad_item_bool():
+&gt;       with pytest.raises(ValueError) as e: f([True], [])
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:10: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.multiset_diff.tests.test_solution" name="test_bad_item_float" time="0.000" /></testsuite></testsuites>

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="1" failures="0" skipped="0" tests="1" time="0.232" timestamp="2026-07-13T20:31:24.850716-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="" name="artifacts.uplift.work_20260713-201327.parse_a1_ref.tests.test_solution" time="0.000"><error message="collection failure">tests\test_solution.py:2: in &lt;module&gt;
+    from solution import parse_a1 as f
+solution.py:29: in &lt;module&gt;
+    print(parse_a1("A1"))  # Output: (1, 0)
+          ^^^^^^^^^^^^^^
+solution.py:26: in parse_a1
+    raise ValueError('bad ref')
+E   ValueError: bad ref</error></testcase></testsuite></testsuites>

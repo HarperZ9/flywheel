@@ -1,0 +1,55 @@
+{
+ "schema": "flywheel.uplift-bench/v1",
+ "comparison_key": "uplift:tasks_hard",
+ "n_candidates": 3,
+ "rows": [
+  {
+   "n_tasks": 110,
+   "passes": 9,
+   "graded": 110,
+   "unverifiable": 0,
+   "pass_rate": 0.0818,
+   "wilson_95": [
+    0.0436,
+    0.1482
+   ],
+   "latency_ms_mean": 3253.459,
+   "candidates_mean": 1.0,
+   "provider": "ollama:qwen2.5:3b",
+   "arm": "bare",
+   "n_candidates": 1,
+   "evidence": "live"
+  },
+  {
+   "n_tasks": 110,
+   "passes": 21,
+   "graded": 110,
+   "unverifiable": 0,
+   "pass_rate": 0.1909,
+   "wilson_95": [
+    0.1284,
+    0.2743
+   ],
+   "latency_ms_mean": 11004.858,
+   "candidates_mean": 2.791,
+   "provider": "ollama:qwen2.5:3b",
+   "arm": "wrapped",
+   "n_candidates": 3,
+   "evidence": "live"
+  }
+ ],
+ "deltas": [
+  {
+   "provider": "ollama:qwen2.5:3b",
+   "uplift": 0.1091,
+   "newcombe_95": [
+    0.0179,
+    0.2008
+   ],
+   "includes_zero": false,
+   "latency_overhead_ms": 7751.399,
+   "note": "measured uplift: the interval excludes zero"
+  }
+ ],
+ "note": "synthetic rows never enter comparison; the wrapped arm wins only through the external oracle; overhead is reported because the wrapper costs time"
+}

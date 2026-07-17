@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="8" skipped="0" tests="13" time="0.227" timestamp="2026-07-13T20:32:42.989822-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-201327.longest_digit_run.tests.test_solution" name="test_zero" time="0.001" /><testcase classname="artifacts.uplift.work_20260713-201327.longest_digit_run.tests.test_solution" name="test_single" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-201327.longest_digit_run.tests.test_solution" name="test_basic" time="0.001"><failure message="assert (0, 1, 11222) == (2, 3, 2)&#10;  &#10;  At index 0 diff: 0 != 2&#10;  Use -v to get more diff">&gt;   def test_basic(): assert f(11222) == (2, 3, 2)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   assert (0, 1, 11222) == (2, 3, 2)
+E     
+E     At index 0 diff: 0 != 2
+E     Use -v to get more diff
+
+tests\test_solution.py:5: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.longest_digit_run.tests.test_solution" name="test_front" time="0.000"><failure message="assert (0, 1, 22211) == (0, 3, 2)&#10;  &#10;  At index 1 diff: 1 != 3&#10;  Use -v to get more diff">&gt;   def test_front(): assert f(22211) == (0, 3, 2)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   assert (0, 1, 22211) == (0, 3, 2)
+E     
+E     At index 1 diff: 1 != 3
+E     Use -v to get more diff
+
+tests\test_solution.py:6: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.longest_digit_run.tests.test_solution" name="test_tie_leftmost" time="0.000"><failure message="assert (0, 1, 1122) == (0, 2, 1)&#10;  &#10;  At index 1 diff: 1 != 2&#10;  Use -v to get more diff">&gt;   def test_tie_leftmost(): assert f(1122) == (0, 2, 1)
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   assert (0, 1, 1122) == (0, 2, 1)
+E     
+E     At index 1 diff: 1 != 2
+E     Use -v to get more diff
+
+tests\test_solution.py:7: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.longest_digit_run.tests.test_solution" name="test_zeros" time="0.000"><failure message="assert (0, 1, 1000) == (1, 3, 0)&#10;  &#10;  At index 0 diff: 0 != 1&#10;  Use -v to get more diff">&gt;   def test_zeros(): assert f(1000) == (1, 3, 0)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   assert (0, 1, 1000) == (1, 3, 0)
+E     
+E     At index 0 diff: 0 != 1
+E     Use -v to get more diff
+
+tests\test_solution.py:8: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.longest_digit_run.tests.test_solution" name="test_alternating" time="0.000"><failure message="assert (0, 1, 121212) == (0, 1, 1)&#10;  &#10;  At index 2 diff: 121212 != 1&#10;  Use -v to get more diff">&gt;   def test_alternating(): assert f(121212) == (0, 1, 1)
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   assert (0, 1, 121212) == (0, 1, 1)
+E     
+E     At index 2 diff: 121212 != 1
+E     Use -v to get more diff
+
+tests\test_solution.py:9: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.longest_digit_run.tests.test_solution" name="test_three_way_tie" time="0.000"><failure message="assert (0, 1, 9998887776) == (0, 3, 9)&#10;  &#10;  At index 1 diff: 1 != 3&#10;  Use -v to get more diff">&gt;   def test_three_way_tie(): assert f(9998887776) == (0, 3, 9)
+                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   assert (0, 1, 9998887776) == (0, 3, 9)
+E     
+E     At index 1 diff: 1 != 3
+E     Use -v to get more diff
+
+tests\test_solution.py:10: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.longest_digit_run.tests.test_solution" name="test_late_win" time="0.000"><failure message="assert (0, 1, 12333) == (2, 3, 3)&#10;  &#10;  At index 0 diff: 0 != 2&#10;  Use -v to get more diff">&gt;   def test_late_win(): assert f(12333) == (2, 3, 3)
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   assert (0, 1, 12333) == (2, 3, 3)
+E     
+E     At index 0 diff: 0 != 2
+E     Use -v to get more diff
+
+tests\test_solution.py:11: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.longest_digit_run.tests.test_solution" name="test_is_tuple" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-201327.longest_digit_run.tests.test_solution" name="test_negative" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-201327.longest_digit_run.tests.test_solution" name="test_bool" time="0.001"><failure message="assert &quot;invalid lite...se 10: 'True'&quot; == 'bad number'&#10;  &#10;  - bad number&#10;  + invalid literal for int() with base 10: 'True'">def test_bool():
+        with pytest.raises(ValueError) as e: f(True)
+&gt;       assert str(e.value) == 'bad number'
+E       assert "invalid lite...se 10: 'True'" == 'bad number'
+E         
+E         - bad number
+E         + invalid literal for int() with base 10: 'True'
+
+tests\test_solution.py:18: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.longest_digit_run.tests.test_solution" name="test_string" time="0.000" /></testsuite></testsuites>

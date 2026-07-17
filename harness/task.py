@@ -30,6 +30,7 @@ class Task:
     max_new_tokens: int = 512
     temperature: float = 0.0
     seed: int = 0
+    held_out_cmd: str = ""            # a second oracle command the model never sees (held-out tier)
     retrieved: list[Retrieved] = field(default_factory=list)
 
     def workdir_path(self) -> Path:
@@ -65,4 +66,5 @@ def load_task(task_dir: str | Path, *, workdir: str | Path | None = None) -> Tas
         max_new_tokens=meta.get("max_new_tokens", 512),
         temperature=meta.get("temperature", 0.0),
         seed=meta.get("seed", 0),
+        held_out_cmd=meta.get("held_out_cmd", ""),
     )

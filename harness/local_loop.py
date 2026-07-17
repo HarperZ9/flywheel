@@ -11,13 +11,52 @@ from __future__ import annotations
 
 import json
 
+from . import integrity, tool_receipts
 from .local_session import SessionLedger
 from .local_tools import TOOLS_SYSTEM, ToolExecutor, parse_tool_calls
 
 
+def _edit_fingerprint(name, args, res, executor) -> "dict | None":
+    """For a mutating tool, the post-edit content hash of the target path(s),
+    so the receipt binds this edit to a specific file state. Best-effort:
+    an unreadable target yields no fingerprint, never a fake one."""
+    import hashlib
+    import os
+    if name not in ("write_file", "edit_file", "apply_patch"):
+        return None
+    root = getattr(executor, "root", None)
+    if not root:
+        return None
+    paths = []
+    if name in ("write_file", "edit_file") and args.get("path"):
+        paths = [str(args["path"])]
+    elif name == "apply_patch":
+        patch = str(args.get("patch") or args.get("diff") or "")
+        paths = [ln[6:].strip() for ln in patch.splitlines()
+                 if ln.startswith("+++ b/")]
+    files = {}
+    for p in paths:
+        try:
+            data = open(os.path.join(root, p), "rb").read()
+            files[p] = hashlib.sha256(data).hexdigest()
+        except OSError:
+            continue
+    return {"edited": files} if files else None
+
+
+def _result_meta(name, res, sign_key, extra=None) -> dict:
+    meta = {"tool": name, "ok": res.ok}
+    if extra:
+        meta.update(extra)
+    if sign_key is not None:           # per-run HMAC: authenticity of each tool call
+        meta["sig"] = tool_receipts.sign_result(sign_key, res)
+    return meta
+
+
 def run_agent(agent, goal: str, executor: ToolExecutor,
               ledger: "SessionLedger | None" = None, *, max_steps: int = 6,
-              test_cmd: "str | None" = None) -> dict:
+              test_cmd: "str | None" = None, sign_key: "bytes | None" = None,
+              canaries: "list | None" = None, on_event=None) -> dict:
     """Run the goal to completion (or max_steps). Returns the final answer, the
     step count, and the ledger checkpoint + verify verdict.
 
@@ -27,8 +66,19 @@ def run_agent(agent, goal: str, executor: ToolExecutor,
     then carries `tests_pass`, and the whole edit->test->repair trajectory is
     witnessed in the ledger — a provable "made the tests green"."""
     ledger = ledger if ledger is not None else SessionLedger()
+
+    def _emit(**e):                                  # stream loop progress; never let it break the loop
+        if on_event is not None:
+            try:
+                on_event(e)
+            except Exception:
+                pass
+
     if TOOLS_SYSTEM not in agent.system:
         agent.system = agent.system + "\n\n" + TOOLS_SYSTEM
+    ext_sys = executor.external_tools_system() if hasattr(executor, "external_tools_system") else ""
+    if ext_sys and ext_sys not in agent.system:
+        agent.system = agent.system + "\n\n" + ext_sys
 
     ledger.append("user", goal)
     message = goal
@@ -38,19 +88,29 @@ def run_agent(agent, goal: str, executor: ToolExecutor,
         ledger.append("assistant", text, {
             "backend": resp.get("backend"),
             "receipt": resp.get("x_receipt", {}).get("receipt_id")})
+        _emit(type="assistant", step=step, text=text)
 
-        calls = parse_tool_calls(text)
+        from .tool_rescue import rescue_tool_calls
+        calls, repairs = rescue_tool_calls(text)
+        for rep in repairs:
+            # a repaired emission is a fact of the run, never a silent fix
+            ledger.append("tool_rescue", json.dumps(rep, sort_keys=True))
+            _emit(type="tool_rescue", transform=rep["transform"])
         if not calls:
             if not test_cmd:
-                return _done(text, step, ledger)
+                return _done(text, step, ledger,
+                             system=agent.system, goal=goal)
             res = executor.execute("run", {"cmd": test_cmd})
             ledger.append("tool_call", f"run {json.dumps({'cmd': test_cmd}, sort_keys=True)}")
-            ledger.append("tool_result", res.output, {"tool": "run", "ok": res.ok, "gate": "test"})
+            ledger.append("tool_result", res.output, _result_meta("run", res, sign_key, {"gate": "test"}))
+            _emit(type="tool_result", name="run", ok=res.ok, output=res.output[:500])
             if res.output.startswith("[gate]"):
                 return _done(text, step, ledger, tests_pass=False,
-                             note="test gate set but exec is disabled (pass --allow-exec)")
+                             note="test gate set but exec is disabled (pass --allow-exec)",
+                             system=agent.system, goal=goal)
             if res.ok:
-                return _done(text, step, ledger, tests_pass=True)
+                return _done(text, step, ledger, tests_pass=True,
+                             system=agent.system, goal=goal)
             message = (f"The tests still FAIL:\n{res.output}\n\nFix the root cause and "
                        "continue; do not give a final answer until the tests pass.")
             continue
@@ -59,7 +119,30 @@ def run_agent(agent, goal: str, executor: ToolExecutor,
         for name, args in calls:
             res = executor.execute(name, args)
             ledger.append("tool_call", f"{name} {json.dumps(args, sort_keys=True)}")
-            ledger.append("tool_result", res.output, {"tool": name, "ok": res.ok})
+            # a mutating tool's receipt carries the post-edit file hash, so
+            # a stranger can bind this specific edit to a specific file state
+            extra = _edit_fingerprint(name, args, res, executor) \
+                if res.ok else None
+            ledger.append("tool_result", res.output,
+                          _result_meta(name, res, sign_key, extra))
+            _emit(type="tool_call", name=name, args=args)
+            _emit(type="tool_result", name=name, ok=res.ok, output=res.output[:500])
+            # canary tripwire: a decoy resource surfacing in a tool output is a
+            # HARD access signal (our detection, not the model refusing).
+            # Contain the run and stop; do not trust the model to have stopped.
+            if canaries:
+                from .canary_tripwire import scan_for_canary
+                hit = scan_for_canary(res.output, canaries)
+                if hit is not None:
+                    ledger.append("canary_trip", json.dumps(
+                        {"label": hit["label"], "tool": name}, sort_keys=True))
+                    _emit(type="canary_trip", label=hit["label"], tool=name)
+                    return _done("[contained] a canary (decoy resource) was "
+                                 f"read via {name}; the run was stopped by "
+                                 "the tripwire", step, ledger, tests_pass=False,
+                                 note=f"canary '{hit['label']}' tripped; "
+                                      "contain and investigate",
+                                 system=agent.system, goal=goal)
             observations.append(f"TOOL {name} -> {'ok' if res.ok else 'FAIL'}:\n{res.output}")
 
         message = ("TOOL RESULTS:\n" + "\n\n".join(observations) +
@@ -67,15 +150,47 @@ def run_agent(agent, goal: str, executor: ToolExecutor,
                    "answer with no TOOL line.")
 
     return _done("[max_steps reached without a final answer]", max_steps, ledger,
-                 tests_pass=(False if test_cmd else None))
+                 tests_pass=(False if test_cmd else None),
+                 system=agent.system, goal=goal)
 
 
-def _done(final: str, steps: int, ledger: SessionLedger, *, tests_pass=None, note="") -> dict:
+def _environment() -> dict:
+    """Runtime identity pinned into every run doc (landscape import 2:
+    environments-as-code, receipts-first). Named, so a re-run can state
+    whether it matched."""
+    import platform
+    import sys
+    return {"python": sys.version.split()[0],
+            "platform": platform.platform(),
+            "machine": platform.machine()}
+
+
+def _done(final: str, steps: int, ledger: SessionLedger, *, tests_pass=None,
+          note="", system: str = "", goal: str = "") -> dict:
+    from .context_manifest import context_manifest
+    from .risk_review import risk_review
+    from .run_review import run_review
     out = {"final": final, "steps": steps,
            "checkpoint": ledger.checkpoint(), "verified": ledger.verify(),
-           "entries": len(ledger.entries), "ledger": ledger}
+           "entries": len(ledger.entries), "ledger": ledger,
+           # the reviewability projection: what a senior reviewer checks
+           # first, derived from the witnessed ledger, shipped with the run
+           "review": run_review(ledger.entries),
+           # the window manifest: what the model actually saw, replayable
+           "context_manifest": context_manifest(
+               ledger.entries, system=system, goal=goal),
+           # risk tiers per edit; high tiers name the receipt they demand
+           "risk_review": risk_review(ledger.entries),
+           # runtime identity: acceptance re-runs in a NAMED environment
+           "environment": _environment()}
+    # Trajectory-integrity verdict: did the agent edit the file that grades it, or
+    # write test-neutralizing code? Surfaced re-checkably so a tampered "green" is
+    # visible, not silently accepted (reward-hacking guard, keeps the C2 invariant).
+    out["integrity"] = integrity.integrity_report(integrity.trajectory_integrity(ledger))
     if tests_pass is not None:
         out["tests_pass"] = tests_pass
+        # a pass is only trusted if the trajectory did not tamper with the check
+        out["tests_pass_trusted"] = bool(tests_pass) and out["integrity"]["clean"]
     if note:
         out["note"] = note
     return out

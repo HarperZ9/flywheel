@@ -1,0 +1,59 @@
+{
+ "schema": "flywheel.uplift-bench/v1",
+ "comparison_key": "uplift:hard_v2",
+ "n_candidates": 5,
+ "oracle": {
+  "name": "oracle",
+  "source_sha256": "0b898a620223a06eeeee4244bd6e6935c53eecd4b742d9d220bdd5a96d91a89d"
+ },
+ "rows": [
+  {
+   "n_tasks": 110,
+   "passes": 11,
+   "graded": 110,
+   "unverifiable": 0,
+   "pass_rate": 0.1,
+   "wilson_95": [
+    0.0568,
+    0.1702
+   ],
+   "latency_ms_mean": 4079.188,
+   "candidates_mean": 1.0,
+   "provider": "ollama:qwen2.5:3b",
+   "arm": "bare",
+   "n_candidates": 1,
+   "evidence": "live"
+  },
+  {
+   "n_tasks": 110,
+   "passes": 23,
+   "graded": 110,
+   "unverifiable": 0,
+   "pass_rate": 0.2091,
+   "wilson_95": [
+    0.1436,
+    0.2943
+   ],
+   "latency_ms_mean": 17194.845,
+   "candidates_mean": 4.391,
+   "provider": "ollama:qwen2.5:3b",
+   "arm": "wrapped",
+   "n_candidates": 5,
+   "evidence": "live"
+  }
+ ],
+ "deltas": [
+  {
+   "provider": "ollama:qwen2.5:3b",
+   "uplift": 0.1091,
+   "newcombe_95": [
+    0.013,
+    0.2046
+   ],
+   "includes_zero": false,
+   "latency_overhead_ms": 13115.657,
+   "note": "measured uplift: the interval excludes zero"
+  }
+ ],
+ "note": "synthetic rows never enter comparison; the wrapped arm wins only through the external oracle; overhead is reported because the wrapper costs time"
+}

@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="7" skipped="0" tests="9" time="0.282" timestamp="2026-07-14T13:23:55.066895-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260714-125209.interval_subtract.tests.test_solution" name="test_middle_bite" time="0.001"><failure message="assert [[4, 10], [1, 10]] == [[1, 2], [6, 10]]&#10;  &#10;  At index 0 diff: [4, 10] != [1, 2]&#10;  Use -v to get more diff">&gt;   def test_middle_bite(): assert f([[1, 10]], [[3, 5]]) == [[1, 2], [6, 10]]
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   assert [[4, 10], [1, 10]] == [[1, 2], [6, 10]]
+E     
+E     At index 0 diff: [4, 10] != [1, 2]
+E     Use -v to get more diff
+
+tests\test_solution.py:3: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-125209.interval_subtract.tests.test_solution" name="test_one_b_two_a" time="0.001"><failure message="assert [[3, 3], [7, 9], [6, 9]] == [[1, 1], [8, 9]]&#10;  &#10;  At index 0 diff: [3, 3] != [1, 1]&#10;  Left contains one more item: [6, 9]&#10;  Use -v to get more diff">&gt;   def test_one_b_two_a(): assert f([[1, 3], [6, 9]], [[2, 7]]) == [[1, 1], [8, 9]]
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   assert [[3, 3], [7, 9], [6, 9]] == [[1, 1], [8, 9]]
+E     
+E     At index 0 diff: [3, 3] != [1, 1]
+E     Left contains one more item: [6, 9]
+E     Use -v to get more diff
+
+tests\test_solution.py:4: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-125209.interval_subtract.tests.test_solution" name="test_exact_removal" time="0.001"><failure message="assert [[2, 5]] == []&#10;  &#10;  Left contains one more item: [2, 5]&#10;  Use -v to get more diff">&gt;   def test_exact_removal(): assert f([[1, 5]], [[1, 5]]) == []
+                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   assert [[2, 5]] == []
+E     
+E     Left contains one more item: [2, 5]
+E     Use -v to get more diff
+
+tests\test_solution.py:5: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-125209.interval_subtract.tests.test_solution" name="test_empty_b" time="0.001"><failure message="assert [] == [[1, 5]]&#10;  &#10;  Right contains one more item: [1, 5]&#10;  Use -v to get more diff">&gt;   def test_empty_b(): assert f([[1, 5]], []) == [[1, 5]]
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   assert [] == [[1, 5]]
+E     
+E     Right contains one more item: [1, 5]
+E     Use -v to get more diff
+
+tests\test_solution.py:6: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-125209.interval_subtract.tests.test_solution" name="test_empty_a" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-125209.interval_subtract.tests.test_solution" name="test_touching" time="0.001"><failure message="assert [[6, 5]] == [[1, 4]]&#10;  &#10;  At index 0 diff: [6, 5] != [1, 4]&#10;  Use -v to get more diff">&gt;   def test_touching(): assert f([[1, 5]], [[5, 9]]) == [[1, 4]]
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   assert [[6, 5]] == [[1, 4]]
+E     
+E     At index 0 diff: [6, 5] != [1, 4]
+E     Use -v to get more diff
+
+tests\test_solution.py:8: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-125209.interval_subtract.tests.test_solution" name="test_b_between" time="0.001"><failure message="assert [[5, 4], [6, 8], [5, 8]] == [[0, 3], [5, 8]]&#10;  &#10;  At index 0 diff: [5, 4] != [0, 3]&#10;  Left contains one more item: [5, 8]&#10;  Use -v to get more diff">&gt;   def test_b_between(): assert f([[0, 3], [5, 8]], [[4, 4]]) == [[0, 3], [5, 8]]
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   assert [[5, 4], [6, 8], [5, 8]] == [[0, 3], [5, 8]]
+E     
+E     At index 0 diff: [5, 4] != [0, 3]
+E     Left contains one more item: [5, 8]
+E     Use -v to get more diff
+
+tests\test_solution.py:9: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-125209.interval_subtract.tests.test_solution" name="test_b_spans_all" time="0.001"><failure message="assert [[2, 2], [5, 5]] == []&#10;  &#10;  Left contains 2 more items, first extra item: [2, 2]&#10;  Use -v to get more diff">&gt;   def test_b_spans_all(): assert f([[1, 2], [4, 5]], [[0, 10]]) == []
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   assert [[2, 2], [5, 5]] == []
+E     
+E     Left contains 2 more items, first extra item: [2, 2]
+E     Use -v to get more diff
+
+tests\test_solution.py:10: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-125209.interval_subtract.tests.test_solution" name="test_bad_interval" time="0.000" /></testsuite></testsuites>

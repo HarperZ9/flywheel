@@ -1,0 +1,8 @@
+{
+  "title": "Verified inference measurably uplifts local models on the 110-task hard lane",
+  "claims": [
+    {"id": "c-3b", "text": "wrapped beats bare for qwen2.5:3b on hard_v2: the Newcombe 95% interval on the uplift excludes zero", "falsification": "the interval's lower bound is at or below zero"},
+    {"id": "c-7b", "text": "wrapped beats bare for qwen2.5:7b on hard_v2: the Newcombe 95% interval on the uplift excludes zero", "falsification": "the interval's lower bound is at or below zero"},
+    {"id": "c-05b", "text": "wrapped beats bare for qwen2.5:0.5b on hard_v2: the Newcombe 95% interval on the uplift excludes zero", "falsification": "the interval's lower bound is at or below zero"}
+  ]
+}

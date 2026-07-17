@@ -1,0 +1,178 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="5" skipped="0" tests="5" time="0.201" timestamp="2026-07-13T18:40:34.820317-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-183535.spiral_order.tests.test_solution" name="test_3x3" time="0.001"><failure message="ValueError: The given input is an invalid square matrix">def test_3x3():
+&gt;       assert f([[1,2,3],[4,5,6],[7,8,9]]) == [1,2,3,6,9,8,7,4,5]
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:3: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+matrix = [[1, 2, 3], [4, 5, 6], [7, 8, 9]]
+
+    def spiral_order(matrix):
+        """
+        This function takes a 2D matrix (list of lists) as input.
+        It returns all elements of the matrix sorted in clockwise spiral order starting from the top-left corner.
+    
+        Parameters:
+            - matrix: A 2D list of integers representing a square matrix
+    
+        Returns:
+            - A list of integers representing the elements of the matrix in clockwise spiral order
+        """
+        n = len(matrix)
+    
+        if not (0 &lt;= n &lt;= 1):
+&gt;           raise ValueError("The given input is an invalid square matrix")
+E           ValueError: The given input is an invalid square matrix
+
+solution.py:15: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-183535.spiral_order.tests.test_solution" name="test_2x2" time="0.000"><failure message="ValueError: The given input is an invalid square matrix">def test_2x2():
+&gt;       assert f([[1,2],[3,4]]) == [1,2,4,3]
+               ^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:5: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+matrix = [[1, 2], [3, 4]]
+
+    def spiral_order(matrix):
+        """
+        This function takes a 2D matrix (list of lists) as input.
+        It returns all elements of the matrix sorted in clockwise spiral order starting from the top-left corner.
+    
+        Parameters:
+            - matrix: A 2D list of integers representing a square matrix
+    
+        Returns:
+            - A list of integers representing the elements of the matrix in clockwise spiral order
+        """
+        n = len(matrix)
+    
+        if not (0 &lt;= n &lt;= 1):
+&gt;           raise ValueError("The given input is an invalid square matrix")
+E           ValueError: The given input is an invalid square matrix
+
+solution.py:15: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-183535.spiral_order.tests.test_solution" name="test_1x1" time="0.000"><failure message="ValueError: too many values to unpack (expected 2)">def test_1x1():
+&gt;       assert f([[1]]) == [1]
+               ^^^^^^^^
+
+tests\test_solution.py:7: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+matrix = [[1]]
+
+    def spiral_order(matrix):
+        """
+        This function takes a 2D matrix (list of lists) as input.
+        It returns all elements of the matrix sorted in clockwise spiral order starting from the top-left corner.
+    
+        Parameters:
+            - matrix: A 2D list of integers representing a square matrix
+    
+        Returns:
+            - A list of integers representing the elements of the matrix in clockwise spiral order
+        """
+        n = len(matrix)
+    
+        if not (0 &lt;= n &lt;= 1):
+            raise ValueError("The given input is an invalid square matrix")
+    
+        def direction(x, y, d):
+            """
+            Helper function to check if a move is valid and to get the next position based on the current point.
+    
+            Parameters:
+                - x: The current row position
+                - y: The current column position
+                - d: The direction of movement (N, S, E, W)
+    
+            Returns:
+                - A tuple representing the next position based on the current move
+            """
+            if d == "N":
+                return [y + 1] * 20, [x]
+            elif d == "S":
+                return [y - 1], [x]
+            elif d == "E":
+                return [x + 1], [y]
+            else: # W
+                return [x - 1], [y]
+    
+        left, top = 0, 0
+        right, bottom = n-1, len(matrix)-1
+    
+        result = []
+    
+        while True:
+            if not (left &lt;= right and top &lt;= bottom):
+                break
+    
+            move = direction(left, top, "N")
+&gt;           r, c = move[0]
+            ^^^^
+E           ValueError: too many values to unpack (expected 2)
+
+solution.py:48: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-183535.spiral_order.tests.test_solution" name="test_empty" time="0.001"><failure message="assert None == []&#10; +  where None = f([])">def test_empty():
+&gt;       assert f([]) == []
+E       assert None == []
+E        +  where None = f([])
+
+tests\test_solution.py:9: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-183535.spiral_order.tests.test_solution" name="test_row" time="0.000"><failure message="ValueError: too many values to unpack (expected 2)">def test_row():
+&gt;       assert f([[1,2,3,4]]) == [1,2,3,4]
+               ^^^^^^^^^^^^^^
+
+tests\test_solution.py:11: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+matrix = [[1, 2, 3, 4]]
+
+    def spiral_order(matrix):
+        """
+        This function takes a 2D matrix (list of lists) as input.
+        It returns all elements of the matrix sorted in clockwise spiral order starting from the top-left corner.
+    
+        Parameters:
+            - matrix: A 2D list of integers representing a square matrix
+    
+        Returns:
+            - A list of integers representing the elements of the matrix in clockwise spiral order
+        """
+        n = len(matrix)
+    
+        if not (0 &lt;= n &lt;= 1):
+            raise ValueError("The given input is an invalid square matrix")
+    
+        def direction(x, y, d):
+            """
+            Helper function to check if a move is valid and to get the next position based on the current point.
+    
+            Parameters:
+                - x: The current row position
+                - y: The current column position
+                - d: The direction of movement (N, S, E, W)
+    
+            Returns:
+                - A tuple representing the next position based on the current move
+            """
+            if d == "N":
+                return [y + 1] * 20, [x]
+            elif d == "S":
+                return [y - 1], [x]
+            elif d == "E":
+                return [x + 1], [y]
+            else: # W
+                return [x - 1], [y]
+    
+        left, top = 0, 0
+        right, bottom = n-1, len(matrix)-1
+    
+        result = []
+    
+        while True:
+            if not (left &lt;= right and top &lt;= bottom):
+                break
+    
+            move = direction(left, top, "N")
+&gt;           r, c = move[0]
+            ^^^^
+E           ValueError: too many values to unpack (expected 2)
+
+solution.py:48: ValueError</failure></testcase></testsuite></testsuites>

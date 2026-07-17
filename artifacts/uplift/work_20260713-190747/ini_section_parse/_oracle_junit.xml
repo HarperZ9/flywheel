@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="3" skipped="0" tests="17" time="0.353" timestamp="2026-07-13T19:46:14.843797-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-190747.ini_section_parse.tests.test_solution" name="test_basic" time="0.001" /><testcase classname="artifacts.uplift.work_20260713-190747.ini_section_parse.tests.test_solution" name="test_two_sections" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-190747.ini_section_parse.tests.test_solution" name="test_comments_blank" time="0.001" /><testcase classname="artifacts.uplift.work_20260713-190747.ini_section_parse.tests.test_solution" name="test_whitespace" time="0.001" /><testcase classname="artifacts.uplift.work_20260713-190747.ini_section_parse.tests.test_solution" name="test_value_with_equals" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-190747.ini_section_parse.tests.test_solution" name="test_empty_value" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-190747.ini_section_parse.tests.test_solution" name="test_empty_section_body" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-190747.ini_section_parse.tests.test_solution" name="test_empty_text" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-190747.ini_section_parse.tests.test_solution" name="test_same_key_other_section" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-190747.ini_section_parse.tests.test_solution" name="test_no_section" time="0.001"><failure message="TypeError: argument of type 'NoneType' is not iterable">def test_no_section():
+&gt;       with pytest.raises(ValueError) as e: f('k=v')
+                                             ^^^^^^^^
+
+tests\test_solution.py:22: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+text = 'k=v'
+
+    def parse_ini(text):
+        if not isinstance(text, str):
+            raise ValueError('bad input')
+    
+        lines = text.splitlines()
+        result = {}
+        current_section = None
+    
+        for line in lines:
+            stripped_line = line.strip()
+    
+            if not stripped_line or stripped_line.startswith(';') or stripped_line.startswith('#'):
+                continue
+    
+            if stripped_line[0] == '[' and stripped_line[-1] == ']':
+                section_name = stripped_line[1:-1].strip()
+                if not section_name.isalnum() or '_' in section_name:
+                    raise ValueError('bad section')
+                if section_name in result:
+                    raise ValueError('duplicate section')
+                current_section = {}
+                result[section_name] = current_section
+            elif '=' in stripped_line:
+                key, value = stripped_line.split('=', 1)
+                key = key.strip()
+                value = value.strip()
+    
+                if not key.isalnum() or '_' in key or not key:
+                    raise ValueError('bad line')
+&gt;               if key in current_section:
+                   ^^^^^^^^^^^^^^^^^^^^^^
+E               TypeError: argument of type 'NoneType' is not iterable
+
+solution.py:30: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-190747.ini_section_parse.tests.test_solution" name="test_duplicate_key" time="0.001" /><testcase classname="artifacts.uplift.work_20260713-190747.ini_section_parse.tests.test_solution" name="test_duplicate_section" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-190747.ini_section_parse.tests.test_solution" name="test_bad_section_unclosed" time="0.001"><failure message="AssertionError: assert 'no section' == 'bad section'&#10;  &#10;  - bad section&#10;  ? ^^^&#10;  + no section&#10;  ? ^^">def test_bad_section_unclosed():
+        with pytest.raises(ValueError) as e: f('[s')
+&gt;       assert str(e.value) == 'bad section'
+E       AssertionError: assert 'no section' == 'bad section'
+E         
+E         - bad section
+E         ? ^^^
+E         + no section
+E         ? ^^
+
+tests\test_solution.py:32: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-190747.ini_section_parse.tests.test_solution" name="test_bad_section_empty" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-190747.ini_section_parse.tests.test_solution" name="test_bad_line_no_equals" time="0.001"><failure message="AssertionError: assert 'no section' == 'bad line'&#10;  &#10;  - bad line&#10;  + no section">def test_bad_line_no_equals():
+        with pytest.raises(ValueError) as e: f('[s]\nnovalue')
+&gt;       assert str(e.value) == 'bad line'
+E       AssertionError: assert 'no section' == 'bad line'
+E         
+E         - bad line
+E         + no section
+
+tests\test_solution.py:37: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-190747.ini_section_parse.tests.test_solution" name="test_bad_key_char" time="0.001" /><testcase classname="artifacts.uplift.work_20260713-190747.ini_section_parse.tests.test_solution" name="test_bad_input" time="0.000" /></testsuite></testsuites>

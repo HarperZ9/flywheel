@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="6" time="0.195" timestamp="2026-07-13T19:19:41.136106-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-190747.rle_decode.tests.test_solution" name="test_empty" time="0.001" /><testcase classname="artifacts.uplift.work_20260713-190747.rle_decode.tests.test_solution" name="test_simple" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-190747.rle_decode.tests.test_solution" name="test_multidigit" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-190747.rle_decode.tests.test_solution" name="test_no_count" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-190747.rle_decode.tests.test_solution" name="test_trailing_count" time="0.000"><failure message="IndexError: string index out of range">def test_trailing_count():
+        with pytest.raises(ValueError):
+&gt;           f('3a2')
+
+tests\test_solution.py:14: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+s = '3a2'
+
+    def rle_decode(s: str) -&gt; str:
+        if not s:
+            return ""
+    
+        decoded_str = []
+        i = 0
+        while i &lt; len(s):
+            if not s[i].isdigit():
+                raise ValueError("Count must be a positive integer")
+    
+            count_start = i
+            # Find the end of the count
+            while i + 1 &lt; len(s) and s[i + 1].isdigit():
+                i += 1
+    
+            count = int(s[count_start:i+1])
+            if count == 0:
+                raise ValueError("Count cannot be zero")
+    
+&gt;           char = s[i + 1]
+                   ^^^^^^^^
+E           IndexError: string index out of range
+
+solution.py:20: IndexError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-190747.rle_decode.tests.test_solution" name="test_zero_count" time="0.000" /></testsuite></testsuites>

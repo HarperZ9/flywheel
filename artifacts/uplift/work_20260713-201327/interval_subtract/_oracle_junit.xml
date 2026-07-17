@@ -1,0 +1,449 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="9" skipped="0" tests="9" time="0.265" timestamp="2026-07-13T20:25:29.430457-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-201327.interval_subtract.tests.test_solution" name="test_middle_bite" time="0.001"><failure message="NameError: name 'end_b' is not defined">&gt;   def test_middle_bite(): assert f([[1, 10]], [[3, 5]]) == [[1, 2], [6, 10]]
+                                   ^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:3: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+a = [[1, 10]], b = [[3, 5]]
+
+    def interval_subtract(a, b):
+        """
+        Subtract two closed integer interval lists.
+    
+        Parameters:
+        a (list): A list of pairs [start_i, end_i] representing all integers from start_i to end_i.
+                The intervals are sorted by their 'start' value.
+    
+        b (list): A list of pairs [start_j, end_j] representing all integers from start_j to end_j.
+                    The intervals are also sorted by their 'end' value.
+    
+        Returns:
+        a - int list
+        b - int list
+        """
+    
+        # Filter out empty lists and return []
+        if not a and not b:
+            return []
+        elif not a:
+            return [a, b]
+        elif not b:
+            return [a, range(max(a[0], b[0]), min(b[1], a[-1]))]
+        else:
+            # Calculate the difference of intervals
+            result = []
+    
+            def calculate_diff(start_a, end_a, start_b, end_b):
+                if start_a &gt; end_b or start_b &lt; start_a:
+                    raise ValueError('bad interval')
+    
+                max_start_end = (max(end_a, start_b), min(end_a, end_b))
+                max_end_start = (max(start_a, end_b), min(start_a, end_b))
+    
+                result.append(max_start_end)
+                if max_end_start[0] == max_end_start[1]:
+                    return
+                else:
+                    next_max_end_start = find_next_max_diff(min(end_a, end_b), start_a, b)
+                    result.append(next_max_end_start)
+                    calculate_diff(start_b, next_max_end_start, (max(max_end_start[0], start_b),
+                                                                max_end_start[1]), b)
+    
+            def find_next_max_diff(a, b):
+                if a[1] == min(b[1], a[1]):
+                    return (a[0], b[1])
+                else:
+                    return False
+    
+&gt;           calculate_diff(max(a[0], b[0]), min(a[-1], end_b), max(b[-1], end_a),
+                                                       ^^^^^
+                          range(min(end_a, end_b), max(max(a[0], end_b), a[-1])))
+E           NameError: name 'end_b' is not defined
+
+solution.py:50: NameError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.interval_subtract.tests.test_solution" name="test_one_b_two_a" time="0.000"><failure message="NameError: name 'end_b' is not defined">&gt;   def test_one_b_two_a(): assert f([[1, 3], [6, 9]], [[2, 7]]) == [[1, 1], [8, 9]]
+                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:4: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+a = [[1, 3], [6, 9]], b = [[2, 7]]
+
+    def interval_subtract(a, b):
+        """
+        Subtract two closed integer interval lists.
+    
+        Parameters:
+        a (list): A list of pairs [start_i, end_i] representing all integers from start_i to end_i.
+                The intervals are sorted by their 'start' value.
+    
+        b (list): A list of pairs [start_j, end_j] representing all integers from start_j to end_j.
+                    The intervals are also sorted by their 'end' value.
+    
+        Returns:
+        a - int list
+        b - int list
+        """
+    
+        # Filter out empty lists and return []
+        if not a and not b:
+            return []
+        elif not a:
+            return [a, b]
+        elif not b:
+            return [a, range(max(a[0], b[0]), min(b[1], a[-1]))]
+        else:
+            # Calculate the difference of intervals
+            result = []
+    
+            def calculate_diff(start_a, end_a, start_b, end_b):
+                if start_a &gt; end_b or start_b &lt; start_a:
+                    raise ValueError('bad interval')
+    
+                max_start_end = (max(end_a, start_b), min(end_a, end_b))
+                max_end_start = (max(start_a, end_b), min(start_a, end_b))
+    
+                result.append(max_start_end)
+                if max_end_start[0] == max_end_start[1]:
+                    return
+                else:
+                    next_max_end_start = find_next_max_diff(min(end_a, end_b), start_a, b)
+                    result.append(next_max_end_start)
+                    calculate_diff(start_b, next_max_end_start, (max(max_end_start[0], start_b),
+                                                                max_end_start[1]), b)
+    
+            def find_next_max_diff(a, b):
+                if a[1] == min(b[1], a[1]):
+                    return (a[0], b[1])
+                else:
+                    return False
+    
+&gt;           calculate_diff(max(a[0], b[0]), min(a[-1], end_b), max(b[-1], end_a),
+                                                       ^^^^^
+                          range(min(end_a, end_b), max(max(a[0], end_b), a[-1])))
+E           NameError: name 'end_b' is not defined
+
+solution.py:50: NameError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.interval_subtract.tests.test_solution" name="test_exact_removal" time="0.000"><failure message="NameError: name 'end_b' is not defined">&gt;   def test_exact_removal(): assert f([[1, 5]], [[1, 5]]) == []
+                                     ^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:5: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+a = [[1, 5]], b = [[1, 5]]
+
+    def interval_subtract(a, b):
+        """
+        Subtract two closed integer interval lists.
+    
+        Parameters:
+        a (list): A list of pairs [start_i, end_i] representing all integers from start_i to end_i.
+                The intervals are sorted by their 'start' value.
+    
+        b (list): A list of pairs [start_j, end_j] representing all integers from start_j to end_j.
+                    The intervals are also sorted by their 'end' value.
+    
+        Returns:
+        a - int list
+        b - int list
+        """
+    
+        # Filter out empty lists and return []
+        if not a and not b:
+            return []
+        elif not a:
+            return [a, b]
+        elif not b:
+            return [a, range(max(a[0], b[0]), min(b[1], a[-1]))]
+        else:
+            # Calculate the difference of intervals
+            result = []
+    
+            def calculate_diff(start_a, end_a, start_b, end_b):
+                if start_a &gt; end_b or start_b &lt; start_a:
+                    raise ValueError('bad interval')
+    
+                max_start_end = (max(end_a, start_b), min(end_a, end_b))
+                max_end_start = (max(start_a, end_b), min(start_a, end_b))
+    
+                result.append(max_start_end)
+                if max_end_start[0] == max_end_start[1]:
+                    return
+                else:
+                    next_max_end_start = find_next_max_diff(min(end_a, end_b), start_a, b)
+                    result.append(next_max_end_start)
+                    calculate_diff(start_b, next_max_end_start, (max(max_end_start[0], start_b),
+                                                                max_end_start[1]), b)
+    
+            def find_next_max_diff(a, b):
+                if a[1] == min(b[1], a[1]):
+                    return (a[0], b[1])
+                else:
+                    return False
+    
+&gt;           calculate_diff(max(a[0], b[0]), min(a[-1], end_b), max(b[-1], end_a),
+                                                       ^^^^^
+                          range(min(end_a, end_b), max(max(a[0], end_b), a[-1])))
+E           NameError: name 'end_b' is not defined
+
+solution.py:50: NameError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.interval_subtract.tests.test_solution" name="test_empty_b" time="0.000"><failure message="IndexError: list index out of range">&gt;   def test_empty_b(): assert f([[1, 5]], []) == [[1, 5]]
+                               ^^^^^^^^^^^^^^^
+
+tests\test_solution.py:6: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+a = [[1, 5]], b = []
+
+    def interval_subtract(a, b):
+        """
+        Subtract two closed integer interval lists.
+    
+        Parameters:
+        a (list): A list of pairs [start_i, end_i] representing all integers from start_i to end_i.
+                The intervals are sorted by their 'start' value.
+    
+        b (list): A list of pairs [start_j, end_j] representing all integers from start_j to end_j.
+                    The intervals are also sorted by their 'end' value.
+    
+        Returns:
+        a - int list
+        b - int list
+        """
+    
+        # Filter out empty lists and return []
+        if not a and not b:
+            return []
+        elif not a:
+            return [a, b]
+        elif not b:
+&gt;           return [a, range(max(a[0], b[0]), min(b[1], a[-1]))]
+                                       ^^^^
+E           IndexError: list index out of range
+
+solution.py:23: IndexError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.interval_subtract.tests.test_solution" name="test_empty_a" time="0.001"><failure message="assert [[], [[1, 2]]] == []&#10;  &#10;  Left contains 2 more items, first extra item: []&#10;  Use -v to get more diff">&gt;   def test_empty_a(): assert f([], [[1, 2]]) == []
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   assert [[], [[1, 2]]] == []
+E     
+E     Left contains 2 more items, first extra item: []
+E     Use -v to get more diff
+
+tests\test_solution.py:7: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.interval_subtract.tests.test_solution" name="test_touching" time="0.000"><failure message="NameError: name 'end_b' is not defined">&gt;   def test_touching(): assert f([[1, 5]], [[5, 9]]) == [[1, 4]]
+                                ^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:8: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+a = [[1, 5]], b = [[5, 9]]
+
+    def interval_subtract(a, b):
+        """
+        Subtract two closed integer interval lists.
+    
+        Parameters:
+        a (list): A list of pairs [start_i, end_i] representing all integers from start_i to end_i.
+                The intervals are sorted by their 'start' value.
+    
+        b (list): A list of pairs [start_j, end_j] representing all integers from start_j to end_j.
+                    The intervals are also sorted by their 'end' value.
+    
+        Returns:
+        a - int list
+        b - int list
+        """
+    
+        # Filter out empty lists and return []
+        if not a and not b:
+            return []
+        elif not a:
+            return [a, b]
+        elif not b:
+            return [a, range(max(a[0], b[0]), min(b[1], a[-1]))]
+        else:
+            # Calculate the difference of intervals
+            result = []
+    
+            def calculate_diff(start_a, end_a, start_b, end_b):
+                if start_a &gt; end_b or start_b &lt; start_a:
+                    raise ValueError('bad interval')
+    
+                max_start_end = (max(end_a, start_b), min(end_a, end_b))
+                max_end_start = (max(start_a, end_b), min(start_a, end_b))
+    
+                result.append(max_start_end)
+                if max_end_start[0] == max_end_start[1]:
+                    return
+                else:
+                    next_max_end_start = find_next_max_diff(min(end_a, end_b), start_a, b)
+                    result.append(next_max_end_start)
+                    calculate_diff(start_b, next_max_end_start, (max(max_end_start[0], start_b),
+                                                                max_end_start[1]), b)
+    
+            def find_next_max_diff(a, b):
+                if a[1] == min(b[1], a[1]):
+                    return (a[0], b[1])
+                else:
+                    return False
+    
+&gt;           calculate_diff(max(a[0], b[0]), min(a[-1], end_b), max(b[-1], end_a),
+                                                       ^^^^^
+                          range(min(end_a, end_b), max(max(a[0], end_b), a[-1])))
+E           NameError: name 'end_b' is not defined
+
+solution.py:50: NameError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.interval_subtract.tests.test_solution" name="test_b_between" time="0.000"><failure message="NameError: name 'end_b' is not defined">&gt;   def test_b_between(): assert f([[0, 3], [5, 8]], [[4, 4]]) == [[0, 3], [5, 8]]
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:9: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+a = [[0, 3], [5, 8]], b = [[4, 4]]
+
+    def interval_subtract(a, b):
+        """
+        Subtract two closed integer interval lists.
+    
+        Parameters:
+        a (list): A list of pairs [start_i, end_i] representing all integers from start_i to end_i.
+                The intervals are sorted by their 'start' value.
+    
+        b (list): A list of pairs [start_j, end_j] representing all integers from start_j to end_j.
+                    The intervals are also sorted by their 'end' value.
+    
+        Returns:
+        a - int list
+        b - int list
+        """
+    
+        # Filter out empty lists and return []
+        if not a and not b:
+            return []
+        elif not a:
+            return [a, b]
+        elif not b:
+            return [a, range(max(a[0], b[0]), min(b[1], a[-1]))]
+        else:
+            # Calculate the difference of intervals
+            result = []
+    
+            def calculate_diff(start_a, end_a, start_b, end_b):
+                if start_a &gt; end_b or start_b &lt; start_a:
+                    raise ValueError('bad interval')
+    
+                max_start_end = (max(end_a, start_b), min(end_a, end_b))
+                max_end_start = (max(start_a, end_b), min(start_a, end_b))
+    
+                result.append(max_start_end)
+                if max_end_start[0] == max_end_start[1]:
+                    return
+                else:
+                    next_max_end_start = find_next_max_diff(min(end_a, end_b), start_a, b)
+                    result.append(next_max_end_start)
+                    calculate_diff(start_b, next_max_end_start, (max(max_end_start[0], start_b),
+                                                                max_end_start[1]), b)
+    
+            def find_next_max_diff(a, b):
+                if a[1] == min(b[1], a[1]):
+                    return (a[0], b[1])
+                else:
+                    return False
+    
+&gt;           calculate_diff(max(a[0], b[0]), min(a[-1], end_b), max(b[-1], end_a),
+                                                       ^^^^^
+                          range(min(end_a, end_b), max(max(a[0], end_b), a[-1])))
+E           NameError: name 'end_b' is not defined
+
+solution.py:50: NameError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.interval_subtract.tests.test_solution" name="test_b_spans_all" time="0.001"><failure message="NameError: name 'end_b' is not defined">&gt;   def test_b_spans_all(): assert f([[1, 2], [4, 5]], [[0, 10]]) == []
+                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:10: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+a = [[1, 2], [4, 5]], b = [[0, 10]]
+
+    def interval_subtract(a, b):
+        """
+        Subtract two closed integer interval lists.
+    
+        Parameters:
+        a (list): A list of pairs [start_i, end_i] representing all integers from start_i to end_i.
+                The intervals are sorted by their 'start' value.
+    
+        b (list): A list of pairs [start_j, end_j] representing all integers from start_j to end_j.
+                    The intervals are also sorted by their 'end' value.
+    
+        Returns:
+        a - int list
+        b - int list
+        """
+    
+        # Filter out empty lists and return []
+        if not a and not b:
+            return []
+        elif not a:
+            return [a, b]
+        elif not b:
+            return [a, range(max(a[0], b[0]), min(b[1], a[-1]))]
+        else:
+            # Calculate the difference of intervals
+            result = []
+    
+            def calculate_diff(start_a, end_a, start_b, end_b):
+                if start_a &gt; end_b or start_b &lt; start_a:
+                    raise ValueError('bad interval')
+    
+                max_start_end = (max(end_a, start_b), min(end_a, end_b))
+                max_end_start = (max(start_a, end_b), min(start_a, end_b))
+    
+                result.append(max_start_end)
+                if max_end_start[0] == max_end_start[1]:
+                    return
+                else:
+                    next_max_end_start = find_next_max_diff(min(end_a, end_b), start_a, b)
+                    result.append(next_max_end_start)
+                    calculate_diff(start_b, next_max_end_start, (max(max_end_start[0], start_b),
+                                                                max_end_start[1]), b)
+    
+            def find_next_max_diff(a, b):
+                if a[1] == min(b[1], a[1]):
+                    return (a[0], b[1])
+                else:
+                    return False
+    
+&gt;           calculate_diff(max(a[0], b[0]), min(a[-1], end_b), max(b[-1], end_a),
+                                                       ^^^^^
+                          range(min(end_a, end_b), max(max(a[0], end_b), a[-1])))
+E           NameError: name 'end_b' is not defined
+
+solution.py:50: NameError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.interval_subtract.tests.test_solution" name="test_bad_interval" time="0.000"><failure message="IndexError: list index out of range">def test_bad_interval():
+&gt;       with pytest.raises(ValueError) as e: f([[5, 1]], [])
+                                             ^^^^^^^^^^^^^^^
+
+tests\test_solution.py:12: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+a = [[5, 1]], b = []
+
+    def interval_subtract(a, b):
+        """
+        Subtract two closed integer interval lists.
+    
+        Parameters:
+        a (list): A list of pairs [start_i, end_i] representing all integers from start_i to end_i.
+                The intervals are sorted by their 'start' value.
+    
+        b (list): A list of pairs [start_j, end_j] representing all integers from start_j to end_j.
+                    The intervals are also sorted by their 'end' value.
+    
+        Returns:
+        a - int list
+        b - int list
+        """
+    
+        # Filter out empty lists and return []
+        if not a and not b:
+            return []
+        elif not a:
+            return [a, b]
+        elif not b:
+&gt;           return [a, range(max(a[0], b[0]), min(b[1], a[-1]))]
+                                       ^^^^
+E           IndexError: list index out of range
+
+solution.py:23: IndexError</failure></testcase></testsuite></testsuites>

@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="10" skipped="0" tests="15" time="0.206" timestamp="2026-07-13T20:08:56.714990-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-194718.kth_combination.tests.test_solution" name="test_first" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-194718.kth_combination.tests.test_solution" name="test_middle" time="0.001"><failure message="assert [0, 1] == [1, 2]&#10;  &#10;  At index 0 diff: 0 != 1&#10;  Use -v to get more diff">&gt;   def test_middle(): assert f(4, 2, 3) == [1, 2]
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   assert [0, 1] == [1, 2]
+E     
+E     At index 0 diff: 0 != 1
+E     Use -v to get more diff
+
+tests\test_solution.py:4: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.kth_combination.tests.test_solution" name="test_last" time="0.000"><failure message="assert [0, 1] == [2, 3]&#10;  &#10;  At index 0 diff: 0 != 2&#10;  Use -v to get more diff">&gt;   def test_last(): assert f(4, 2, 5) == [2, 3]
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   assert [0, 1] == [2, 3]
+E     
+E     At index 0 diff: 0 != 2
+E     Use -v to get more diff
+
+tests\test_solution.py:5: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.kth_combination.tests.test_solution" name="test_five_three" time="0.000"><failure message="assert [0, 1] == [1, 2, 3]&#10;  &#10;  At index 0 diff: 0 != 1&#10;  Right contains one more item: 3&#10;  Use -v to get more diff">&gt;   def test_five_three(): assert f(5, 3, 6) == [1, 2, 3]
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   assert [0, 1] == [1, 2, 3]
+E     
+E     At index 0 diff: 0 != 1
+E     Right contains one more item: 3
+E     Use -v to get more diff
+
+tests\test_solution.py:6: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.kth_combination.tests.test_solution" name="test_five_three_last" time="0.000"><failure message="assert [0, 1] == [2, 3, 4]&#10;  &#10;  At index 0 diff: 0 != 2&#10;  Right contains one more item: 4&#10;  Use -v to get more diff">&gt;   def test_five_three_last(): assert f(5, 3, 9) == [2, 3, 4]
+                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   assert [0, 1] == [2, 3, 4]
+E     
+E     At index 0 diff: 0 != 2
+E     Right contains one more item: 4
+E     Use -v to get more diff
+
+tests\test_solution.py:7: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.kth_combination.tests.test_solution" name="test_k_zero" time="0.000"><failure message="assert [0, 1] == []&#10;  &#10;  Left contains 2 more items, first extra item: 0&#10;  Use -v to get more diff">&gt;   def test_k_zero(): assert f(3, 0, 0) == []
+                       ^^^^^^^^^^^^^^^^^^^^^^^
+E   assert [0, 1] == []
+E     
+E     Left contains 2 more items, first extra item: 0
+E     Use -v to get more diff
+
+tests\test_solution.py:8: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.kth_combination.tests.test_solution" name="test_k_equals_n" time="0.000"><failure message="assert [0, 1] == [0, 1, 2]&#10;  &#10;  Right contains one more item: 2&#10;  Use -v to get more diff">&gt;   def test_k_equals_n(): assert f(3, 3, 0) == [0, 1, 2]
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   assert [0, 1] == [0, 1, 2]
+E     
+E     Right contains one more item: 2
+E     Use -v to get more diff
+
+tests\test_solution.py:9: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.kth_combination.tests.test_solution" name="test_n_zero" time="0.000"><failure message="assert [0, 1] == []&#10;  &#10;  Left contains 2 more items, first extra item: 0&#10;  Use -v to get more diff">&gt;   def test_n_zero(): assert f(0, 0, 0) == []
+                       ^^^^^^^^^^^^^^^^^^^^^^^
+E   assert [0, 1] == []
+E     
+E     Left contains 2 more items, first extra item: 0
+E     Use -v to get more diff
+
+tests\test_solution.py:10: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.kth_combination.tests.test_solution" name="test_bad_n" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-194718.kth_combination.tests.test_solution" name="test_bool_n" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_bool_n():
+&gt;       with pytest.raises(ValueError) as e: f(True, 1, 0)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:15: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.kth_combination.tests.test_solution" name="test_bad_k" time="0.000"><failure message="AssertionError: assert 'bad rank' == 'bad k'&#10;  &#10;  - bad k&#10;  + bad rank&#10;  ?     +++">def test_bad_k():
+        with pytest.raises(ValueError) as e: f(3, 4, 0)
+&gt;       assert str(e.value) == 'bad k'
+E       AssertionError: assert 'bad rank' == 'bad k'
+E         
+E         - bad k
+E         + bad rank
+E         ?     +++
+
+tests\test_solution.py:19: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.kth_combination.tests.test_solution" name="test_bool_k" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_bool_k():
+&gt;       with pytest.raises(ValueError) as e: f(2, True, 0)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:21: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.kth_combination.tests.test_solution" name="test_bad_rank_high" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-194718.kth_combination.tests.test_solution" name="test_bad_rank_neg" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-194718.kth_combination.tests.test_solution" name="test_k_zero_rank_one" time="0.000" /></testsuite></testsuites>

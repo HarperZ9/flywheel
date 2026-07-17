@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="9" time="0.232" timestamp="2026-07-14T09:27:51.787777-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260714-091030.bucket_histogram_mixed.tests.test_solution" name="test_basic_half_open" time="0.001" /><testcase classname="artifacts.uplift.work_20260714-091030.bucket_histogram_mixed.tests.test_solution" name="test_last_bucket_inclusive_on_right" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-091030.bucket_histogram_mixed.tests.test_solution" name="test_interior_edge_goes_right" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-091030.bucket_histogram_mixed.tests.test_solution" name="test_single_bucket_closed_both_ends" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-091030.bucket_histogram_mixed.tests.test_solution" name="test_empty_values" time="0.001"><failure message="ValueError: min() iterable argument is empty">def test_empty_values():
+&gt;       assert bucket_counts([], [1, 2, 3]) == [0, 0]
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:26: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+values = [], edges = [1, 2, 3]
+
+    def bucket_counts(values, edges):
+        if len(edges) &lt; 2 or not all(isinstance(e, int) and not isinstance(e, bool) for e in edges):
+            raise ValueError("edges must be a list of at least 2 non-bool ints")
+        if any(edges[i] &gt;= edges[i + 1] for i in range(len(edges) - 1)):
+            raise ValueError("edges must be strictly increasing integers")
+        counts = [0] * (len(edges) - 1)
+&gt;       lb, ub = min(values), max(values)
+                 ^^^^^^^^^^^
+E       ValueError: min() iterable argument is empty
+
+solution.py:7: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-091030.bucket_histogram_mixed.tests.test_solution" name="test_out_of_range_raises" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-091030.bucket_histogram_mixed.tests.test_solution" name="test_bad_edges_raise" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-091030.bucket_histogram_mixed.tests.test_solution" name="test_bad_values_raise" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-091030.bucket_histogram_mixed.tests.test_solution" name="test_no_mutation_of_inputs" time="0.000" /></testsuite></testsuites>

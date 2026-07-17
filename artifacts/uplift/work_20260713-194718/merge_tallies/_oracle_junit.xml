@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="2" skipped="0" tests="8" time="0.196" timestamp="2026-07-13T19:56:02.921513-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-194718.merge_tallies.tests.test_solution" name="test_sums_counts" time="0.001" /><testcase classname="artifacts.uplift.work_20260713-194718.merge_tallies.tests.test_solution" name="test_drops_zero_totals" time="0.001"><failure message="AssertionError: assert {'a': 0, 'b': 1, 'c': 0} == {'b': 1}&#10;  &#10;  Omitting 1 identical items, use -vv to show&#10;  Left contains 2 more items:&#10;  {'a': 0, 'c': 0}&#10;  Use -v to get more diff">def test_drops_zero_totals():
+        out = merge_tallies({"a": 2, "b": 1}, {"a": -2, "c": 0})
+&gt;       assert out == {"b": 1}
+E       AssertionError: assert {'a': 0, 'b': 1, 'c': 0} == {'b': 1}
+E         
+E         Omitting 1 identical items, use -vv to show
+E         Left contains 2 more items:
+E         {'a': 0, 'c': 0}
+E         Use -v to get more diff
+
+tests\test_solution.py:11: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.merge_tallies.tests.test_solution" name="test_zero_only_in_a_dropped" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-194718.merge_tallies.tests.test_solution" name="test_key_order_a_then_b_only" time="0.001"><failure message="AssertionError: assert ['w', 'x', 'y', 'z'] == ['x', 'y', 'z', 'w']&#10;  &#10;  At index 0 diff: 'w' != 'x'&#10;  Use -v to get more diff">def test_key_order_a_then_b_only():
+        out = merge_tallies({"x": 1, "y": 2}, {"z": 3, "y": 1, "w": 4})
+&gt;       assert list(out) == ["x", "y", "z", "w"]
+E       AssertionError: assert ['w', 'x', 'y', 'z'] == ['x', 'y', 'z', 'w']
+E         
+E         At index 0 diff: 'w' != 'x'
+E         Use -v to get more diff
+
+tests\test_solution.py:20: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.merge_tallies.tests.test_solution" name="test_inputs_not_mutated_and_new_dict" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-194718.merge_tallies.tests.test_solution" name="test_rejects_bool_count" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-194718.merge_tallies.tests.test_solution" name="test_rejects_float_count" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-194718.merge_tallies.tests.test_solution" name="test_negative_totals_kept" time="0.000" /></testsuite></testsuites>

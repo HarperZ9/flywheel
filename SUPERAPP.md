@@ -4,7 +4,9 @@
 > (showcase, packaged-app, companion, endpoints, training, projected-world).
 > Spec only. Nothing here is committed, published, or launched by this document.
 
-Last updated: 2026-07-09. Source commit context: ff8b781 (packaged), af5feda (showcase).
+Last updated: 2026-07-11 (session 8: increments 3/4/5 + subsystem c + shell views
+shipped; adversarial closure review closed 7 findings). Source commit context:
+ff8b781 (packaged), af5feda (showcase).
 
 ---
 
@@ -79,7 +81,9 @@ NEW
 - Receipt uniformity in `serve.py`: mint the same `make_receipt` on `/chat/completions` and `/generate` (today only `/v1/messages` has it), and bind `model_profiles.artifact_sha256` into the receipt so a receipt proves WHICH weights served it.
 - Ledger-everything: append every endpoint call, including EnterpriseProposer calls, into a `SessionLedger` chain (today only agent turns chain).
 - Gemini key fix in `harness/endpoints.py` (~line 149): move the API key from the URL query string to the `x-goog-api-key` header.
-- `harness/companion.py`: the companion seat (see increment 5): proof-cache hit → local oracle-checked attempt → escalate to frontier only on oracle failure. Escalation is oracle-outcome-driven, not a learned difficulty predictor; no learned authority enters the accept path.
+- `harness/selector.py` + `harness/adaptive_select.py` (BUILT 2026-07-10): the selection+escalation CORE the seat mounts on. `select()` prefers the external oracle (highest trust, the measured 23% arm), falls back to deterministic behavioral consensus with an honest confidence gate, and emits a re-checkable `SelectionReceipt`. `AdaptiveSelector` implements the measured lever: generate → select → RAISE N (double the candidate budget) → escalate only when budget is exhausted below confidence. Escalation is a pure confidence threshold, not a learned difficulty predictor; no learned authority enters the accept path.
+- `harness/companion.py` (remaining): the thin wrapper that adds the proof-cache lookup and the chained-ledger routing record around the selection core above. Proof-cache hit → answer locally; miss → `AdaptiveSelector.select()`; its ESCALATE verdict (not a guess) is what routes to the frontier tier.
+- `harness/findings.py` (BUILT 2026-07-10): the receipt-bound findings composer -- scans run artifacts, binds every metric to a source hash, emits a root-hashed `flywheel.findings/v1` doc with honest "pending" for incomplete runs. The seat and shell render it; `verify_findings` detects staleness.
 
 ### (b) Training lane: safe operable wrapper honoring RAM gates and STOP flags
 
@@ -145,7 +149,21 @@ NEW
 Each increment ships alone, behind nothing, and states the observation that
 would prove it broken.
 
-**Increment 1: the shell goes live on receipts it already has** (one session).
+**Increment 1: the shell goes live on receipts it already has. SHIPPED, extended
+2026-07-11.** Beyond the receipt-bound benchmark/gallery/status views, the shell
+now renders the whole surface when served through the gateway: the universal
+router roster (`/api/endpoints`, 20 endpoints with presence-only credentials), a
+32B training-status card (`/api/training/status`), the projected-world spine +
+root hash (`/api/world`), and two live try-it panels -- the companion (`POST
+/api/companion`) and the studio/forge (`POST /api/forge`). All new panels are
+hidden on a static `file://` open and revealed only when the gateway answers, so
+the page never shows dead controls offline. Verified live at the DOM level: 20
+roster rows, spine `crucible · forum · gather · index · telos`, training `stopped`,
+companion escalates honestly (serve down -> "Route to: anthropic, named not
+called"), forge returns confidence 6/10 with real gates. Passes publish_lint
+--strict clean. (This work surfaced + fixed a regression: the `/api/world`
+upgrade to `project_world` changed `spine` from a list to a `{organs, flagships,
+routes}` dict, which had silently broken the `#live` render.)
 Build `demos/index.json` generation, add the shell data layer fetching
 `artifacts/flywheel-local-coder-14b-benchmark-ci.json` and
 `artifacts/exe/model_release_readiness.local.json` /
@@ -156,44 +174,92 @@ and reload; if the page still shows the old hand-typed number, increment 1 is
 broken. Drop a new `demos/<name>/transcript.json` and regenerate; if the
 gallery does not show it, broken.
 
-**Increment 2: one gateway, one origin, one entry point.** `harness/gateway.py`
-plus the `app` subcommand in `run_harness_cli.py`: static serving, proxy to
-serve.py:8765, `/api/endpoints/health` (unified roster via
-`endpoint_registry.py`), `/api/world` v0 (spine roster + receipt catalog with
-root hash). *Falsifier:* kill serve.py; if the Endpoints view still shows the
-14B tier healthy on next refresh, broken. Touch one byte of a cataloged
-receipt file; if `/api/world` returns the same root_hash, broken.
+**Increment 2: one gateway, one origin, one entry point. SHIPPED 2026-07-10.**
+`harness/gateway.py` (zero-dep stdlib server) plus the `app` subcommand in
+`run_harness_cli.py` (`harness app --port 8799`): same-origin static serving of
+the shell/demos/artifacts, proxy of `/v1/*` + `/generate` + `/health` to
+serve.py:8765, `/api/endpoints/health` (local tiers get a live probe;
+enterprise providers report a credential-present BOOLEAN from `endpoints.py`'s
+`PROVIDERS`, never a value), and `/api/world` v0 (spine roster + receipt catalog
+with a sha256 root hash over the cataloged files). Both falsifiers hold: a down
+local endpoint reads unhealthy (probe fails closed), and touching a cataloged
+receipt moves the root hash (6 gateway tests + the two falsifiers, live-smoked:
+serve+ollama healthy, no key value leaked, shell served 200). *Original
+falsifier spec:* kill serve.py -> the 14B tier must flip unhealthy; tamper a
+receipt byte -> root_hash must change.
 
-**Increment 3: receipts uniform across every endpoint.** Mint receipts on
-`/chat/completions` and `/generate`; bind `artifact_sha256` from
-`model_profiles.py` into serve receipts; move the Gemini key to the header;
-chain every endpoint call (including enterprise proposer calls) into a
-`SessionLedger`. *Falsifier:* recompute a `/chat/completions` receipt_id from
-its recorded parts; mismatch means broken. Flip one byte in a stored ledger
-entry; if `verify()` still passes, broken. Serve a different GGUF; if the
-receipt's weights hash does not change, broken.
+**Increment 3: receipts uniform across every endpoint.** The ROSTER + BRIDGE half
+is BUILT (`harness/endpoint_registry.py`, 2026-07-11, 7/7 tests): `unified_roster()`
+enumerates all 20 endpoints (14 OpenAI-compat providers + local serve/ollama/vllm/
+sglang/lmstudio/llamacpp + native Anthropic/Gemini + claude/codex CLI tiers) with
+credential-PRESENCE booleans (never a value), and `BackendProposer` bridges any
+native backend into a verified Proposer so EVERY endpoint feeds the same oracle+
+witness+receipt path -- provider provenance rides `model_ref` into the receipt.
+Two more parts DONE 2026-07-11: (a) the Gemini key moved OUT of the URL query
+string into the `x-goog-api-key` HEADER (a query-string key leaks into access
+logs / proxy logs / history; a falsifier asserts a canary key value never appears
+in the request URL and does appear in the header). (b) `LedgeredProposer` in
+`endpoint_registry.py` chains EVERY endpoint call -- serve, OpenAI-compat, native
+Anthropic/Gemini, CLI, or the enterprise bridge -- into one tamper-evident
+`SessionLedger`: each entry commits to `(endpoint, model_ref, seed, prompt_sha,
+response_sha)`, never the prompt/response TEXT and never a key; `make_endpoint_
+proposer(..., ledger=...)` opts any endpoint into it. Falsifiers hold: flip one
+byte of a recorded entry and `verify()` fails; a prompt canary never appears in
+the serialized ledger. Third part DONE 2026-07-11: (c) serve's `/chat/completions` and
+`/generate` now MINT the same content-addressed `make_receipt` that `/v1/messages`
+already did -- an `X-Receipt-Id` header plus an `x_receipt` body block -- and bind
+an optional weights fingerprint (`SERVE_ARTIFACT_SHA256`, the `artifact_sha256`
+from `model_profiles.py`) so a receipt proves which weights served it; the served
+`MODEL_REF` is already in the receipt_id, so a different GGUF moves the id even
+without the fingerprint. 7 falsifier tests (no GPU: the receipt is a pure function
+of request parts + response + weights ref) prove the id recomputes from its parts,
+moves when the response or weights ref changes, and the fingerprint binds when
+configured / is honestly absent when not. ONLY the live end-to-end round-trip
+(serve.py running the 14B, a real POST returning the header) remains -- that needs
+the model on GPU; the minting logic and its falsifier are shipped.
 
-**Increment 4: the training lane in the shell, safety intact.**
-`harness/training_lane.py` status + `/api/training/status` + gated
-start/graceful-stop actions with typed operator confirmation, double-launch
-guard, post-training receipt action wired to `dataset/receipt.py`.
-*Falsifier:* issue start twice; if a second `train32b` supervisor spawns,
-broken. Create STOP_32B via the shell during a RAM-wait; if the supervisor log
-does not record the stop, broken. If the status endpoint ever disagrees with
-`wsl screen -ls` about liveness, broken. If any exposed parameter can lower
-the 22 GB gate or alter seq_len/epochs, broken by design review, reject the
-patch.
+**Increment 4: the training lane in the shell, safety intact. STATUS HALF SHIPPED
+2026-07-11.** `harness/training_lane.py` (read-only) + `GET /api/training/status`
+are built and live: the status doc composes the log-derived `state`
+(stopped|waiting-for-RAM|training|completed|gave-up|unknown, parsed from the
+supervisor's own regex-stable lines), the screen-liveness probe, and checkpoint
+progress vs the 2,019-step target. The subsystem falsifier holds BY CONSTRUCTION:
+liveness is the `wsl screen -ls` probe and ONLY that probe (`screen_alive`), so the
+status can never disagree with screen about whether the run is alive; the
+log-derived `state` is a separate descriptor and a divergence sets `reconciled=
+False` (e.g. an in-flight attempt with a dead screen -> crashed without a terminal
+line). The `would_double_launch` guard is built and pure (refuses when a screen is
+alive OR unprobed OR the lock exists -- fail safe). 19 falsifier tests + 1 gateway
+route test; live-smoked (no run -> honest `stopped`, no crash). DELIBERATELY
+DEFERRED as an operator-gated surface, NOT built here: the start / graceful-stop /
+hard-stop ACTIONS and the post-training receipt action. Building status-only first
+honors the ordering rationale -- the most dangerous subsystem exposes read-only
+truth before any control. *Action-half falsifiers (when built):* issue start twice
+-> a second `train32b` supervisor must be refused; create STOP_32B via the shell
+during a RAM-wait -> the supervisor log must record the stop; any exposed parameter
+that can lower the 22 GB gate or alter seq_len/epochs is broken by design review.
 
-**Increment 5: the companion seat.** `harness/companion.py` behind the
-gateway's OpenAI-compatible route (and as an MCP tool, the lone optional
-edge): proof-cache hit answers locally at ~0 cost with the stored receipt;
-cache miss goes to the local 14B first with the oracle check; only an
-oracle-failed local attempt escalates to the frontier tier; every routing
-decision lands in the chained ledger with the failed attempt's receipt
-attached. *Falsifier:* submit a task whose fact is already proof-cached; if
-any frontier call appears in the ledger, broken. Submit a task the local model
-fails; if escalation occurs without a ledgered failed-local receipt preceding
-it, broken.
+**Increment 5: the companion seat. SHIPPED 2026-07-11.** The selection+escalation
+CORE was built and measured (`harness/selector.py`, `harness/adaptive_select.py`,
+2026-07-10); `harness/companion.py` (2026-07-11) is the routing seat on top of it,
+and it is wired behind the gateway at `POST /api/companion`. Cheapest-first: a
+proof-cache hit answers at ~0 cost with the stored receipt; a miss goes to
+`AdaptiveSelector.select()` over the local 14B (`ServeProposer`); only an ESCALATE
+verdict (budget exhausted below confidence -- a threshold, not a learned guess)
+NAMES the frontier tier in `escalate_to`, never calling it inline. Only an
+oracle-verified `PASS` (`local-verified`) is written to the cache; a
+`CONSENSUS_PASS` (`local-consensus`) is flagged as agreement, not verification, and
+never cached. The gateway holds ONE seat for its lifetime so the cache and routing
+ledger accumulate across requests. *Falsifiers, both live:* a cached fact answers
+`source=cache` with no `escalate` row in the ledger (no frontier call); a local
+failure escalates with `text=None`, `escalate_to` named, `best_effort_text`
+preserved, and the ledgered failed-local `SelectionReceipt` (`verdict=ESCALATE`,
+`candidates_used>0`) as the evidence preceding it. 9/9 companion falsifiers + 3
+gateway companion falsifiers; live-smoked over the wire (serve down -> honest
+escalate, no crash; `/api/world` root-hashed; `/api/endpoints` 20/9). What remains
+is the OPTIONAL MCP-tool edge and, from increment 3, per-endpoint receipt minting
+on the serve routes (so a `local-verified` cache entry carries a weights-bound
+receipt end to end).
 
 Ordering rationale: 1 needs no new backend and makes drift impossible on day
 one; 2 creates the entry point everything else mounts on; 3 makes the receipt
@@ -215,6 +281,17 @@ What the superapp is NOT, and the gates that stay closed:
   not replicated; the health roster reports env-presence booleans, never
   values; receipts and ledgers never contain secrets. `.env` never ships (the
   package secret-scan doctor already enforces this; keep it in the gate).
+- **Every shipped surface passes the publish gate.** `harness/publish_lint.py`
+  (zero-dep) is the pre-publish check on the shipped-posture flip: it fails on
+  secrets and build-machine paths leaking into a product doc, and warns on
+  developer-register language ("Status: staged", operator-gate speak) and stale
+  claims. It is the scan-and-report mechanism copied from behavior-transform.io's
+  pressure_scan and re-based on a product ruleset — the WARDEN red-team
+  vocabulary is deliberately NOT imported. Verifier-can-fail: `--selftest` fires
+  a falsifier (a dirty doc must raise every category, a clean doc none). The 14B
+  HF page and the site both pass it clean today; internal docs (STATE.md, the
+  records tree) correctly fail it, which is why they never become product
+  surfaces.
 - **No capability-uplift claims.** The M7 +10% lift did not reproduce and is
   unearned. The surface markets what is real: receipts, pass parity,
   availability on the operator's schedule, and local cost. The showcase's

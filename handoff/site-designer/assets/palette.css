@@ -1,0 +1,49 @@
+/* Flywheel design tokens, in the ecosystem Design and Voice Canon
+   ("precision instrument, reserved energy"). Source of truth:
+   portfolio-site/system/system.css (owned by the parallel design session; this
+   mirrors it). Two faces only. Color ONLY ever means a verdict. Ceramic ground,
+   dark ink; a near-black dark counterpart. No em-dashes in this file. */
+
+:root {
+  /* ceramic ground + ink ramp */
+  --void:#f4f3ef;   --void-2:#eceae4;   --panel:rgba(255,255,255,.62);
+  --bone:#0b0c0e;   --ink-soft:#24272c; --ink-muted:#43474e; --ink-faint:#6c707a;
+  /* THE THREE VERDICTS plus ink, and nothing else:
+     verified = the accept path and passes; drift = caution, honest nulls,
+     escalation, and the single restrained accent; unverifiable = the third state. */
+  --verified:#1f7a52;   --drift:#3a2bd6;   --drift-soft:#5a4ce0;   --unverifiable:#6c707a;
+  --line:rgba(11,12,14,.14); --hairline:rgba(11,12,14,.08);
+}
+
+/* dark counterpart (the near-black world), same verdict semantics, marks brightened */
+:root[data-theme="dark"] {
+  --void:#0b0e0f;   --void-2:#121617;   --panel:rgba(255,255,255,.045);
+  --bone:#eef1ee;   --ink-soft:#cfd5d1; --ink-muted:#9aa39c; --ink-faint:#7b857e;
+  --verified:#5fae93;   --drift:#a99cf5;   --drift-soft:#c3bcf7;   --unverifiable:#9aa39c;
+  --line:rgba(238,241,238,.16); --hairline:rgba(238,241,238,.10);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    --void:#0b0e0f;   --void-2:#121617;   --panel:rgba(255,255,255,.045);
+    --bone:#eef1ee;   --ink-soft:#cfd5d1; --ink-muted:#9aa39c; --ink-faint:#7b857e;
+    --verified:#5fae93;   --drift:#a99cf5;   --drift-soft:#c3bcf7;   --unverifiable:#9aa39c;
+    --line:rgba(238,241,238,.16); --hairline:rgba(238,241,238,.10);
+  }
+}
+
+/* Type: TWO FACES, no more. Hanken Grotesk carries every text role; Conso carries
+   data, labels, and code. Hierarchy comes from weight and size, never a third face.
+   Both self-hosted as woff2 (see site/assets/fonts). */
+/* --display: "Hanken Grotesk", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; */
+/* --body:    "Hanken Grotesk", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; */
+/* --mono:    "Conso", "JetBrains Mono", ui-monospace, "SFMono-Regular", monospace; */
+
+/* Rules that make this the canon, not decoration:
+   - Color is a VERDICT, never an accent-per-item. Verified green marks the accept
+     path and passes; drift iris marks caution, honest nulls, and escalation, and is
+     the ONE restrained accent (kickers, links, the primary action). At most one hot
+     mark per view.
+   - Text sits on a calm ceramic ground. Cards are ground tints with a hairline,
+     never glass, never backdrop-blur. Generative energy is contained to heroes and
+     galleries, and recedes to a hairline where words are read.
+   - The shipping shell (site/index.html) is the reference implementation. Match it. */

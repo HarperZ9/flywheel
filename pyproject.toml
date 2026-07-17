@@ -1,0 +1,45 @@
+# pyproject.toml -- Flywheel: the one platform.
+#
+# Flywheel is the umbrella surface that encompasses routing, verification,
+# the lane layer (the flagship tool family), memory/context/catalog, and the
+# closed verified-inference loop. `local-model` is the trained-model lane
+# inside it. See README.md and PROJECT.md.
+#
+# Zero runtime dependencies is a load-bearing invariant (mirrors the flagship
+# tools and SUPERAPP.md "stdlib only"). The heavy optional backends -- torch,
+# transformers, bitsandbytes, peft -- belong to the local-serve lane and are
+# never required to import the package or run the gateway/lanes/loop-status.
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "flywheel"
+version = "0.1.0"
+description = "The one platform: routing, verification, the lane layer, memory/context/catalog, and the closed verified-inference loop."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "FSL-1.1-MIT" }
+authors = [{ name = "Zain" }]
+dependencies = []
+
+[project.scripts]
+# The single surface command. Dispatches to the existing run_harness_cli
+# front controller plus the new lane/loop subcommands.
+flywheel = "harness.cli_entry:main"
+
+[tool.setuptools]
+# Explicit package + data discovery. Keep py_modules minimal.
+py-modules = []
+
+[tool.setuptools.packages.find]
+include = ["harness*"]
+exclude = ["tests*", "scripts*", "dataset*", "train*", "site*", "demos*"]
+
+[tool.pytest.ini_options]
+# Phase 0: a per-test timeout so no single test can wedge the suite. The full
+# collection is ~1178 tests; 60s is generous for a unit test and surfaces any
+# smoke/integration test that should be marked and split out.
+addopts = "--timeout=60 --timeout-method=thread -q"
+testpaths = ["tests"]

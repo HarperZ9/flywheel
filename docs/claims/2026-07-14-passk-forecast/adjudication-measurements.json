@@ -1,0 +1,31 @@
+{
+ "measurements": [
+  {
+   "claim": "c-14b-k5-interval",
+   "deviation": 0.066,
+   "tolerance": 0.071,
+   "method": "measured wrapped best-of-5 = 66/110 = 0.6000; sealed band [0.595, 0.737] midpoint 0.666 half-width 0.071; deviation 0.066 <= 0.071 -> inside. Claim sha 633c6a73... binds the sealed text.",
+   "evidence": [
+    "artifacts/uplift/uplift_hard_v2_20260714-125209.json"
+   ]
+  },
+  {
+   "claim": "c-14b-k5-het-beats-iid",
+   "deviation": 0.0,
+   "tolerance": 0.001,
+   "method": "err(het)=|0.600-0.666|=0.066 < err(iid)=|0.600-0.759|=0.159; the heterogeneous forecast wins by 0.093. Claim sha 4e655d64... Tolerance 0.001 is a tie band: rivals within it would both match; beyond it the loser drifts.",
+   "evidence": [
+    "artifacts/uplift/uplift_hard_v2_20260714-125209.json"
+   ]
+  },
+  {
+   "claim": "c-14b-k5-iid-beats-het",
+   "deviation": 0.093,
+   "tolerance": 0.001,
+   "method": "err(iid)=0.159 > err(het)=0.066 by 0.093; the registered rival is falsified, per the frozen no-rescue rule. Claim sha 9b91597e... Tolerance 0.001 is a tie band: rivals within it would both match; beyond it the loser drifts.",
+   "evidence": [
+    "artifacts/uplift/uplift_hard_v2_20260714-125209.json"
+   ]
+  }
+ ]
+}

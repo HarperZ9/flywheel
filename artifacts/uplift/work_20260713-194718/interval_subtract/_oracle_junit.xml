@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="6" skipped="0" tests="9" time="0.211" timestamp="2026-07-13T20:00:11.615601-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-194718.interval_subtract.tests.test_solution" name="test_middle_bite" time="0.001"><failure message="assert [[1, 10]] == [[1, 2], [6, 10]]&#10;  &#10;  At index 0 diff: [1, 10] != [1, 2]&#10;  Right contains one more item: [6, 10]&#10;  Use -v to get more diff">&gt;   def test_middle_bite(): assert f([[1, 10]], [[3, 5]]) == [[1, 2], [6, 10]]
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   assert [[1, 10]] == [[1, 2], [6, 10]]
+E     
+E     At index 0 diff: [1, 10] != [1, 2]
+E     Right contains one more item: [6, 10]
+E     Use -v to get more diff
+
+tests\test_solution.py:3: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.interval_subtract.tests.test_solution" name="test_one_b_two_a" time="0.001"><failure message="assert [[2, 3], [6, 9]] == [[1, 1], [8, 9]]&#10;  &#10;  At index 0 diff: [2, 3] != [1, 1]&#10;  Use -v to get more diff">&gt;   def test_one_b_two_a(): assert f([[1, 3], [6, 9]], [[2, 7]]) == [[1, 1], [8, 9]]
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   assert [[2, 3], [6, 9]] == [[1, 1], [8, 9]]
+E     
+E     At index 0 diff: [2, 3] != [1, 1]
+E     Use -v to get more diff
+
+tests\test_solution.py:4: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.interval_subtract.tests.test_solution" name="test_exact_removal" time="0.000"><failure message="assert [[1, 5]] == []&#10;  &#10;  Left contains one more item: [1, 5]&#10;  Use -v to get more diff">&gt;   def test_exact_removal(): assert f([[1, 5]], [[1, 5]]) == []
+                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   assert [[1, 5]] == []
+E     
+E     Left contains one more item: [1, 5]
+E     Use -v to get more diff
+
+tests\test_solution.py:5: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.interval_subtract.tests.test_solution" name="test_empty_b" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-194718.interval_subtract.tests.test_solution" name="test_empty_a" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-194718.interval_subtract.tests.test_solution" name="test_touching" time="0.000"><failure message="assert [[5, 5]] == [[1, 4]]&#10;  &#10;  At index 0 diff: [5, 5] != [1, 4]&#10;  Use -v to get more diff">&gt;   def test_touching(): assert f([[1, 5]], [[5, 9]]) == [[1, 4]]
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   assert [[5, 5]] == [[1, 4]]
+E     
+E     At index 0 diff: [5, 5] != [1, 4]
+E     Use -v to get more diff
+
+tests\test_solution.py:8: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.interval_subtract.tests.test_solution" name="test_b_between" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-194718.interval_subtract.tests.test_solution" name="test_b_spans_all" time="0.000"><failure message="assert [[1, 2], [4, 5]] == []&#10;  &#10;  Left contains 2 more items, first extra item: [1, 2]&#10;  Use -v to get more diff">&gt;   def test_b_spans_all(): assert f([[1, 2], [4, 5]], [[0, 10]]) == []
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   assert [[1, 2], [4, 5]] == []
+E     
+E     Left contains 2 more items, first extra item: [1, 2]
+E     Use -v to get more diff
+
+tests\test_solution.py:10: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.interval_subtract.tests.test_solution" name="test_bad_interval" time="0.001"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_bad_interval():
+&gt;       with pytest.raises(ValueError) as e: f([[5, 1]], [])
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:12: Failed</failure></testcase></testsuite></testsuites>

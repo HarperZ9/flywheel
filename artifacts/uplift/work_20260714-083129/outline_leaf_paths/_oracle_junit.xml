@@ -1,0 +1,285 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="7" skipped="0" tests="9" time="0.252" timestamp="2026-07-14T08:46:13.935936-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260714-083129.outline_leaf_paths.tests.test_solution" name="test_forest_and_leaf_order" time="0.001"><failure message="KeyError: -1">def test_forest_and_leaf_order():
+        lines = ["a", "  b", "    c", "  d", "e"]
+&gt;       assert outline_paths(lines) == ["a/b/c", "a/d", "e"]
+               ^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:7: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+lines = ['a', '  b', '    c', '  d', 'e']
+
+    def outline_paths(lines):
+        if not lines or all(line.strip() == '' for line in lines):
+            return []
+    
+        level_map = {}
+        current_level = 0
+    
+        for i, line in enumerate(lines):
+            stripped_line = line.lstrip()
+    
+            if stripped_line:
+                if any(char == '\t' for char in stripped_line):
+                    raise ValueError("tab in indent")
+    
+                num_spaces = len(stripped_line) - len(stripped_line.lstrip())
+    
+                if i &gt; 0 and num_spaces % 2 != 0:
+                    raise ValueError("odd indent")
+    
+                level = num_spaces // 2
+                while level &gt;= current_level + 1:
+                    try:
+                        level_map[current_level].append([])
+                    except KeyError:
+                        level_map[current_level] = [None, []]
+                    current_level += 1
+    
+&gt;               if i &gt; 0 and level &lt; len(level_map[current_level - 1][1]):
+                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E               KeyError: -1
+
+solution.py:28: KeyError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.outline_leaf_paths.tests.test_solution" name="test_blank_and_whitespace_lines_skipped_without_breaking_levels" time="0.001"><failure message="KeyError: -1">def test_blank_and_whitespace_lines_skipped_without_breaking_levels():
+        lines = ["a", "", "   ", "\t", "  b"]
+&gt;       assert outline_paths(lines) == ["a/b"]
+               ^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:12: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+lines = ['a', '', '   ', '\t', '  b']
+
+    def outline_paths(lines):
+        if not lines or all(line.strip() == '' for line in lines):
+            return []
+    
+        level_map = {}
+        current_level = 0
+    
+        for i, line in enumerate(lines):
+            stripped_line = line.lstrip()
+    
+            if stripped_line:
+                if any(char == '\t' for char in stripped_line):
+                    raise ValueError("tab in indent")
+    
+                num_spaces = len(stripped_line) - len(stripped_line.lstrip())
+    
+                if i &gt; 0 and num_spaces % 2 != 0:
+                    raise ValueError("odd indent")
+    
+                level = num_spaces // 2
+                while level &gt;= current_level + 1:
+                    try:
+                        level_map[current_level].append([])
+                    except KeyError:
+                        level_map[current_level] = [None, []]
+                    current_level += 1
+    
+&gt;               if i &gt; 0 and level &lt; len(level_map[current_level - 1][1]):
+                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E               KeyError: -1
+
+solution.py:28: KeyError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.outline_leaf_paths.tests.test_solution" name="test_trailing_ws_stripped_inner_spaces_kept" time="0.000"><failure message="KeyError: -1">def test_trailing_ws_stripped_inner_spaces_kept():
+        lines = ["top node  ", "  child x "]
+&gt;       assert outline_paths(lines) == ["top node/child x"]
+               ^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:17: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+lines = ['top node  ', '  child x ']
+
+    def outline_paths(lines):
+        if not lines or all(line.strip() == '' for line in lines):
+            return []
+    
+        level_map = {}
+        current_level = 0
+    
+        for i, line in enumerate(lines):
+            stripped_line = line.lstrip()
+    
+            if stripped_line:
+                if any(char == '\t' for char in stripped_line):
+                    raise ValueError("tab in indent")
+    
+                num_spaces = len(stripped_line) - len(stripped_line.lstrip())
+    
+                if i &gt; 0 and num_spaces % 2 != 0:
+                    raise ValueError("odd indent")
+    
+                level = num_spaces // 2
+                while level &gt;= current_level + 1:
+                    try:
+                        level_map[current_level].append([])
+                    except KeyError:
+                        level_map[current_level] = [None, []]
+                    current_level += 1
+    
+&gt;               if i &gt; 0 and level &lt; len(level_map[current_level - 1][1]):
+                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E               KeyError: -1
+
+solution.py:28: KeyError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.outline_leaf_paths.tests.test_solution" name="test_empty_and_all_blank" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-083129.outline_leaf_paths.tests.test_solution" name="test_indent_jump_including_indented_first_line" time="0.000"><failure message="KeyError: -1">def test_indent_jump_including_indented_first_line():
+        with pytest.raises(ValueError, match="indent jump"):
+&gt;           outline_paths(["a", "    b"])
+
+tests\test_solution.py:27: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+lines = ['a', '    b']
+
+    def outline_paths(lines):
+        if not lines or all(line.strip() == '' for line in lines):
+            return []
+    
+        level_map = {}
+        current_level = 0
+    
+        for i, line in enumerate(lines):
+            stripped_line = line.lstrip()
+    
+            if stripped_line:
+                if any(char == '\t' for char in stripped_line):
+                    raise ValueError("tab in indent")
+    
+                num_spaces = len(stripped_line) - len(stripped_line.lstrip())
+    
+                if i &gt; 0 and num_spaces % 2 != 0:
+                    raise ValueError("odd indent")
+    
+                level = num_spaces // 2
+                while level &gt;= current_level + 1:
+                    try:
+                        level_map[current_level].append([])
+                    except KeyError:
+                        level_map[current_level] = [None, []]
+                    current_level += 1
+    
+&gt;               if i &gt; 0 and level &lt; len(level_map[current_level - 1][1]):
+                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E               KeyError: -1
+
+solution.py:28: KeyError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.outline_leaf_paths.tests.test_solution" name="test_odd_indent" time="0.001"><failure message="KeyError: -1">def test_odd_indent():
+        with pytest.raises(ValueError, match="odd indent"):
+&gt;           outline_paths(["a", "   b"])
+
+tests\test_solution.py:34: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+lines = ['a', '   b']
+
+    def outline_paths(lines):
+        if not lines or all(line.strip() == '' for line in lines):
+            return []
+    
+        level_map = {}
+        current_level = 0
+    
+        for i, line in enumerate(lines):
+            stripped_line = line.lstrip()
+    
+            if stripped_line:
+                if any(char == '\t' for char in stripped_line):
+                    raise ValueError("tab in indent")
+    
+                num_spaces = len(stripped_line) - len(stripped_line.lstrip())
+    
+                if i &gt; 0 and num_spaces % 2 != 0:
+                    raise ValueError("odd indent")
+    
+                level = num_spaces // 2
+                while level &gt;= current_level + 1:
+                    try:
+                        level_map[current_level].append([])
+                    except KeyError:
+                        level_map[current_level] = [None, []]
+                    current_level += 1
+    
+&gt;               if i &gt; 0 and level &lt; len(level_map[current_level - 1][1]):
+                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E               KeyError: -1
+
+solution.py:28: KeyError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.outline_leaf_paths.tests.test_solution" name="test_tab_in_indent_checked_before_width" time="0.001"><failure message="KeyError: -1">def test_tab_in_indent_checked_before_width():
+        with pytest.raises(ValueError, match="tab in indent"):
+&gt;           outline_paths(["a", " \tb"])
+
+tests\test_solution.py:39: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+lines = ['a', ' \tb']
+
+    def outline_paths(lines):
+        if not lines or all(line.strip() == '' for line in lines):
+            return []
+    
+        level_map = {}
+        current_level = 0
+    
+        for i, line in enumerate(lines):
+            stripped_line = line.lstrip()
+    
+            if stripped_line:
+                if any(char == '\t' for char in stripped_line):
+                    raise ValueError("tab in indent")
+    
+                num_spaces = len(stripped_line) - len(stripped_line.lstrip())
+    
+                if i &gt; 0 and num_spaces % 2 != 0:
+                    raise ValueError("odd indent")
+    
+                level = num_spaces // 2
+                while level &gt;= current_level + 1:
+                    try:
+                        level_map[current_level].append([])
+                    except KeyError:
+                        level_map[current_level] = [None, []]
+                    current_level += 1
+    
+&gt;               if i &gt; 0 and level &lt; len(level_map[current_level - 1][1]):
+                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E               KeyError: -1
+
+solution.py:28: KeyError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.outline_leaf_paths.tests.test_solution" name="test_slash_in_name" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-083129.outline_leaf_paths.tests.test_solution" name="test_no_mutation" time="0.000"><failure message="KeyError: -1">def test_no_mutation():
+        lines = ["a", "  b"]
+        snap = list(lines)
+&gt;       outline_paths(lines)
+
+tests\test_solution.py:50: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+lines = ['a', '  b']
+
+    def outline_paths(lines):
+        if not lines or all(line.strip() == '' for line in lines):
+            return []
+    
+        level_map = {}
+        current_level = 0
+    
+        for i, line in enumerate(lines):
+            stripped_line = line.lstrip()
+    
+            if stripped_line:
+                if any(char == '\t' for char in stripped_line):
+                    raise ValueError("tab in indent")
+    
+                num_spaces = len(stripped_line) - len(stripped_line.lstrip())
+    
+                if i &gt; 0 and num_spaces % 2 != 0:
+                    raise ValueError("odd indent")
+    
+                level = num_spaces // 2
+                while level &gt;= current_level + 1:
+                    try:
+                        level_map[current_level].append([])
+                    except KeyError:
+                        level_map[current_level] = [None, []]
+                    current_level += 1
+    
+&gt;               if i &gt; 0 and level &lt; len(level_map[current_level - 1][1]):
+                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E               KeyError: -1
+
+solution.py:28: KeyError</failure></testcase></testsuite></testsuites>

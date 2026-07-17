@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="9" skipped="0" tests="12" time="0.356" timestamp="2026-07-14T13:44:40.254067-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260714-125209.lcs_diff_ops.tests.test_solution" name="test_replace_middle" time="0.001"><failure message="AssertionError: assert [('e', ['a'])...', 'c', 'c'])] == [('equal', ['...qual', ['c'])]&#10;  &#10;  At index 0 diff: ('e', ['a']) != ('equal', ['a'])&#10;  Right contains 2 more items, first extra item: ('insert', ['x'])&#10;  Use -v to get more diff">def test_replace_middle():
+&gt;       assert f(['a', 'b', 'c'], ['a', 'x', 'c']) == [('equal', ['a']), ('delete', ['b']), ('insert', ['x']), ('equal', ['c'])]
+E       AssertionError: assert [('e', ['a'])...', 'c', 'c'])] == [('equal', ['...qual', ['c'])]
+E         
+E         At index 0 diff: ('e', ['a']) != ('equal', ['a'])
+E         Right contains 2 more items, first extra item: ('insert', ['x'])
+E         Use -v to get more diff
+
+tests\test_solution.py:4: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-125209.lcs_diff_ops.tests.test_solution" name="test_all_equal" time="0.001"><failure message="AssertionError: assert [('e', ['a', 'b'])] == [('equal', ['a', 'b'])]&#10;  &#10;  At index 0 diff: ('e', ['a', 'b']) != ('equal', ['a', 'b'])&#10;  Use -v to get more diff">&gt;   def test_all_equal(): assert f(['a', 'b'], ['a', 'b']) == [('equal', ['a', 'b'])]
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert [('e', ['a', 'b'])] == [('equal', ['a', 'b'])]
+E     
+E     At index 0 diff: ('e', ['a', 'b']) != ('equal', ['a', 'b'])
+E     Use -v to get more diff
+
+tests\test_solution.py:5: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-125209.lcs_diff_ops.tests.test_solution" name="test_both_empty" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-125209.lcs_diff_ops.tests.test_solution" name="test_insert_only" time="0.001"><failure message="UnboundLocalError: cannot access local variable 'tag' where it is not associated with a value">&gt;   def test_insert_only(): assert f([], ['a', 'b']) == [('insert', ['a', 'b'])]
+                                   ^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:7: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+a = [], b = ['a', 'b']
+
+    def diff_ops(a, b):
+        if not isinstance(a, list) or not isinstance(b, list):
+            raise ValueError("bad input")
+        if any(not isinstance(x, str) for x in a + b):
+            raise ValueError("bad input")
+        # The walk-and-coalesce rule above: a delete is chosen when it keeps the
+        # remainder both minimal and monotone. Monotonicity ensures that inserting
+        # an element early never preempts a later delete, so deletions stay ordered.
+        out = []
+        ia, ja = 0, 0
+        while ia &lt; len(a) or ja &lt; len(b):
+            if ia == len(a):                    # b still has input: all inserts
+                seg = ["i", b[ja:]]
+                ja = len(b)
+            elif ja == len(b):                  # a still has input: all deletes
+                seg = ["d", a[ia:]]
+                ia = len(a)
+            else:
+                if a[ia] == b[ja]:              # equal: pair, advance both
+                    tag, run = "e", [a[ia]]
+                    ia += 1; ja += 1
+                elif a[ia] not in set(b[ja:]):  # can't appear in remainder -&gt; insert before delete
+                    tag, run = "i", [b[ja]];    # (insert monotone implies minimal)
+                    ja += 1
+                else:
+                    tag, run = "d", [a[ia]]     # remainder still has it: choose delete to keep min
+                    ia += 1
+            if out and out[-1][0] == tag:
+                out[-1][1].extend(run)          # coalesce same-tag runs into one
+            else:
+&gt;               out.append([tag, run])
+                            ^^^
+E               UnboundLocalError: cannot access local variable 'tag' where it is not associated with a value
+
+solution.py:31: UnboundLocalError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-125209.lcs_diff_ops.tests.test_solution" name="test_delete_only" time="0.001"><failure message="UnboundLocalError: cannot access local variable 'tag' where it is not associated with a value">&gt;   def test_delete_only(): assert f(['a', 'b'], []) == [('delete', ['a', 'b'])]
+                                   ^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:8: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+a = ['a', 'b'], b = []
+
+    def diff_ops(a, b):
+        if not isinstance(a, list) or not isinstance(b, list):
+            raise ValueError("bad input")
+        if any(not isinstance(x, str) for x in a + b):
+            raise ValueError("bad input")
+        # The walk-and-coalesce rule above: a delete is chosen when it keeps the
+        # remainder both minimal and monotone. Monotonicity ensures that inserting
+        # an element early never preempts a later delete, so deletions stay ordered.
+        out = []
+        ia, ja = 0, 0
+        while ia &lt; len(a) or ja &lt; len(b):
+            if ia == len(a):                    # b still has input: all inserts
+                seg = ["i", b[ja:]]
+                ja = len(b)
+            elif ja == len(b):                  # a still has input: all deletes
+                seg = ["d", a[ia:]]
+                ia = len(a)
+            else:
+                if a[ia] == b[ja]:              # equal: pair, advance both
+                    tag, run = "e", [a[ia]]
+                    ia += 1; ja += 1
+                elif a[ia] not in set(b[ja:]):  # can't appear in remainder -&gt; insert before delete
+                    tag, run = "i", [b[ja]];    # (insert monotone implies minimal)
+                    ja += 1
+                else:
+                    tag, run = "d", [a[ia]]     # remainder still has it: choose delete to keep min
+                    ia += 1
+            if out and out[-1][0] == tag:
+                out[-1][1].extend(run)          # coalesce same-tag runs into one
+            else:
+&gt;               out.append([tag, run])
+                            ^^^
+E               UnboundLocalError: cannot access local variable 'tag' where it is not associated with a value
+
+solution.py:31: UnboundLocalError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-125209.lcs_diff_ops.tests.test_solution" name="test_disjoint" time="0.001"><failure message="AssertionError: assert [('i', ['c', 'd', 'd'])] == [('delete', [..., ['c', 'd'])]&#10;  &#10;  At index 0 diff: ('i', ['c', 'd', 'd']) != ('delete', ['a', 'b'])&#10;  Right contains one more item: ('insert', ['c', 'd'])&#10;  Use -v to get more diff">def test_disjoint():
+&gt;       assert f(['a', 'b'], ['c', 'd']) == [('delete', ['a', 'b']), ('insert', ['c', 'd'])]
+E       AssertionError: assert [('i', ['c', 'd', 'd'])] == [('delete', [..., ['c', 'd'])]
+E         
+E         At index 0 diff: ('i', ['c', 'd', 'd']) != ('delete', ['a', 'b'])
+E         Right contains one more item: ('insert', ['c', 'd'])
+E         Use -v to get more diff
+
+tests\test_solution.py:10: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-125209.lcs_diff_ops.tests.test_solution" name="test_shift" time="0.001"><failure message="AssertionError: assert [('i', ['a', 'y', 'y'])] == [('delete', [...sert', ['y'])]&#10;  &#10;  At index 0 diff: ('i', ['a', 'y', 'y']) != ('delete', ['x'])&#10;  Right contains 2 more items, first extra item: ('equal', ['a'])&#10;  Use -v to get more diff">def test_shift():
+&gt;       assert f(['x', 'a'], ['a', 'y']) == [('delete', ['x']), ('equal', ['a']), ('insert', ['y'])]
+E       AssertionError: assert [('i', ['a', 'y', 'y'])] == [('delete', [...sert', ['y'])]
+E         
+E         At index 0 diff: ('i', ['a', 'y', 'y']) != ('delete', ['x'])
+E         Right contains 2 more items, first extra item: ('equal', ['a'])
+E         Use -v to get more diff
+
+tests\test_solution.py:12: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-125209.lcs_diff_ops.tests.test_solution" name="test_tie_prefers_delete" time="0.001"><failure message="AssertionError: assert [('d', ['a'])...', 'a', 'a'])] == [('delete', [...sert', ['b'])]&#10;  &#10;  At index 0 diff: ('d', ['a']) != ('delete', ['a'])&#10;  Right contains one more item: ('insert', ['b'])&#10;  Use -v to get more diff">def test_tie_prefers_delete():
+&gt;       assert f(['a', 'b', 'a'], ['b', 'a', 'b']) == [('delete', ['a']), ('equal', ['b', 'a']), ('insert', ['b'])]
+E       AssertionError: assert [('d', ['a'])...', 'a', 'a'])] == [('delete', [...sert', ['b'])]
+E         
+E         At index 0 diff: ('d', ['a']) != ('delete', ['a'])
+E         Right contains one more item: ('insert', ['b'])
+E         Use -v to get more diff
+
+tests\test_solution.py:14: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-125209.lcs_diff_ops.tests.test_solution" name="test_append" time="0.001"><failure message="AssertionError: assert [('e', ['a', 'a'])] == [('equal', ['...sert', ['b'])]&#10;  &#10;  At index 0 diff: ('e', ['a', 'a']) != ('equal', ['a'])&#10;  Right contains one more item: ('insert', ['b'])&#10;  Use -v to get more diff">&gt;   def test_append(): assert f(['a'], ['a', 'b']) == [('equal', ['a']), ('insert', ['b'])]
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert [('e', ['a', 'a'])] == [('equal', ['...sert', ['b'])]
+E     
+E     At index 0 diff: ('e', ['a', 'a']) != ('equal', ['a'])
+E     Right contains one more item: ('insert', ['b'])
+E     Use -v to get more diff
+
+tests\test_solution.py:15: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-125209.lcs_diff_ops.tests.test_solution" name="test_prepend" time="0.001"><failure message="AssertionError: assert [('d', ['b', 'b'])] == [('insert', [...qual', ['b'])]&#10;  &#10;  At index 0 diff: ('d', ['b', 'b']) != ('insert', ['a'])&#10;  Right contains one more item: ('equal', ['b'])&#10;  Use -v to get more diff">&gt;   def test_prepend(): assert f(['b'], ['a', 'b']) == [('insert', ['a']), ('equal', ['b'])]
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert [('d', ['b', 'b'])] == [('insert', [...qual', ['b'])]
+E     
+E     At index 0 diff: ('d', ['b', 'b']) != ('insert', ['a'])
+E     Right contains one more item: ('equal', ['b'])
+E     Use -v to get more diff
+
+tests\test_solution.py:16: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-125209.lcs_diff_ops.tests.test_solution" name="test_bad_input_not_list" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-125209.lcs_diff_ops.tests.test_solution" name="test_bad_element" time="0.000" /></testsuite></testsuites>

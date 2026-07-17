@@ -174,8 +174,35 @@ def _endpoint_gate_rows(data: dict[str, Any], path_text: str) -> list[dict[str, 
     return metric_rows
 
 
+def _quality_duel_rows(data: dict[str, Any], path_text: str) -> list[dict[str, Any]]:
+    rows = data.get("rows") if isinstance(data.get("rows"), list) else []
+    key = str(data.get("comparison_key", "quality_duel"))
+    metric_rows = []
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        if row.get("evidence") != "live":
+            continue  # synthetic (injected-proposer) rows never enter comparison
+        if not row.get("graded"):
+            continue  # nothing measured, nothing compared
+        metric_rows.append(_metric_row(
+            artifact_path=path_text,
+            schema=str(data.get("schema", "")),
+            benchmark_id="quality_duel",
+            comparison_key=key,
+            row=row,
+            pass_rate=row.get("pass_rate", 0.0),
+            quality_score=row.get("quality_score", row.get("pass_rate", 0.0)),
+            latency_ms=row.get("latency_ms", 0.0),
+            failure_class=row.get("failure_class", ""),
+        ))
+    return metric_rows
+
+
 def metric_rows_from_artifact(data: dict[str, Any], path_text: str) -> list[dict[str, Any]]:
     schema = str(data.get("schema", ""))
+    if schema == "flywheel.quality-duel-scorecard/v1":
+        return _quality_duel_rows(data, path_text)
     if schema == "m7-source-mined-scorecard/v1":
         return _m7_rows(data, path_text, benchmark_id="m7_source_mined")
     if schema == "m7-governed-agent-scorecard/v1":

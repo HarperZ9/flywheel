@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="5" skipped="0" tests="8" time="0.227" timestamp="2026-07-13T19:21:12.945715-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-190747.duration_hms_strict.tests.test_solution" name="test_full_form" time="0.001"><failure message="ValueError: Number with no unit after it">def test_full_form():
+&gt;       assert parse_duration_strict("1h30m15s") == 5415
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:6: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+s = '1h30m15s'
+
+    def parse_duration_strict(s: str) -&gt; int:
+        if not s:
+            raise ValueError("Empty string")
+    
+        units = {'h': 3600, 'm': 60, 's': 1}
+        total_seconds = 0
+        current_unit = None
+    
+        for i, char in enumerate(s):
+            if char.isdigit():
+                if current_unit is None:
+&gt;                   raise ValueError("Number with no unit after it")
+E                   ValueError: Number with no unit after it
+
+solution.py:12: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-190747.duration_hms_strict.tests.test_solution" name="test_single_units" time="0.000"><failure message="ValueError: Number with no unit after it">def test_single_units():
+&gt;       assert parse_duration_strict("2h") == 7200
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:11: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+s = '2h'
+
+    def parse_duration_strict(s: str) -&gt; int:
+        if not s:
+            raise ValueError("Empty string")
+    
+        units = {'h': 3600, 'm': 60, 's': 1}
+        total_seconds = 0
+        current_unit = None
+    
+        for i, char in enumerate(s):
+            if char.isdigit():
+                if current_unit is None:
+&gt;                   raise ValueError("Number with no unit after it")
+E                   ValueError: Number with no unit after it
+
+solution.py:12: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-190747.duration_hms_strict.tests.test_solution" name="test_leading_component_unbounded" time="0.000"><failure message="ValueError: Number with no unit after it">def test_leading_component_unbounded():
+&gt;       assert parse_duration_strict("90m") == 5400
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:17: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+s = '90m'
+
+    def parse_duration_strict(s: str) -&gt; int:
+        if not s:
+            raise ValueError("Empty string")
+    
+        units = {'h': 3600, 'm': 60, 's': 1}
+        total_seconds = 0
+        current_unit = None
+    
+        for i, char in enumerate(s):
+            if char.isdigit():
+                if current_unit is None:
+&gt;                   raise ValueError("Number with no unit after it")
+E                   ValueError: Number with no unit after it
+
+solution.py:12: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-190747.duration_hms_strict.tests.test_solution" name="test_zero_values" time="0.000"><failure message="ValueError: Number with no unit after it">def test_zero_values():
+&gt;       assert parse_duration_strict("0s") == 0
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:24: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+s = '0s'
+
+    def parse_duration_strict(s: str) -&gt; int:
+        if not s:
+            raise ValueError("Empty string")
+    
+        units = {'h': 3600, 'm': 60, 's': 1}
+        total_seconds = 0
+        current_unit = None
+    
+        for i, char in enumerate(s):
+            if char.isdigit():
+                if current_unit is None:
+&gt;                   raise ValueError("Number with no unit after it")
+E                   ValueError: Number with no unit after it
+
+solution.py:12: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-190747.duration_hms_strict.tests.test_solution" name="test_order_and_duplicate_raise" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-190747.duration_hms_strict.tests.test_solution" name="test_range_raise" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-190747.duration_hms_strict.tests.test_solution" name="test_leading_zero_raise" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-190747.duration_hms_strict.tests.test_solution" name="test_malformed_raise" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_malformed_raise():
+        for bad in ["", "h", "5", "5x", "5M", "5m3", "1.5h", "-5m", " 5m", "5m ", "5 m"]:
+&gt;           with pytest.raises(ValueError):
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^
+E           Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:49: Failed</failure></testcase></testsuite></testsuites>

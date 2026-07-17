@@ -1,0 +1,197 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="10" skipped="0" tests="12" time="0.336" timestamp="2026-07-13T20:12:00.991471-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-194718.ring_buffer_trace.tests.test_solution" name="test_overwrite" time="0.001"><failure message="UnboundLocalError: cannot access local variable 'v' where it is not associated with a value">def test_overwrite():
+&gt;       assert f(2, [('write', 1), ('write', 2), ('write', 3), ('read',), ('read',)]) == [None, None, 1, 2, 3]
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:4: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+capacity = 2
+ops = [('write', 1), ('write', 2), ('write', 3), ('read',), ('read',)]
+
+    def ring_buffer(capacity, ops):
+        if not isinstance(capacity, int) or capacity &lt; 1:
+            raise ValueError('bad capacity')
+    
+        buffer = []
+        outputs = []
+    
+        for op in ops:
+&gt;           if op == ('write', v := next(iter(v))) if isinstance(op, tuple) else (op[0], None if len(op) != 1 else next(iter(op))):
+                                              ^
+E           UnboundLocalError: cannot access local variable 'v' where it is not associated with a value
+
+solution.py:9: UnboundLocalError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.ring_buffer_trace.tests.test_solution" name="test_peek" time="0.001"><failure message="UnboundLocalError: cannot access local variable 'v' where it is not associated with a value">def test_peek():
+&gt;       assert f(3, [('write', 7), ('peek',), ('read',)]) == [None, 7, 7]
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:6: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+capacity = 3, ops = [('write', 7), ('peek',), ('read',)]
+
+    def ring_buffer(capacity, ops):
+        if not isinstance(capacity, int) or capacity &lt; 1:
+            raise ValueError('bad capacity')
+    
+        buffer = []
+        outputs = []
+    
+        for op in ops:
+&gt;           if op == ('write', v := next(iter(v))) if isinstance(op, tuple) else (op[0], None if len(op) != 1 else next(iter(op))):
+                                              ^
+E           UnboundLocalError: cannot access local variable 'v' where it is not associated with a value
+
+solution.py:9: UnboundLocalError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.ring_buffer_trace.tests.test_solution" name="test_capacity_one" time="0.001"><failure message="UnboundLocalError: cannot access local variable 'v' where it is not associated with a value">def test_capacity_one():
+&gt;       assert f(1, [('write', 1), ('write', 2), ('read',)]) == [None, 1, 2]
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:8: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+capacity = 1, ops = [('write', 1), ('write', 2), ('read',)]
+
+    def ring_buffer(capacity, ops):
+        if not isinstance(capacity, int) or capacity &lt; 1:
+            raise ValueError('bad capacity')
+    
+        buffer = []
+        outputs = []
+    
+        for op in ops:
+&gt;           if op == ('write', v := next(iter(v))) if isinstance(op, tuple) else (op[0], None if len(op) != 1 else next(iter(op))):
+                                              ^
+E           UnboundLocalError: cannot access local variable 'v' where it is not associated with a value
+
+solution.py:9: UnboundLocalError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.ring_buffer_trace.tests.test_solution" name="test_fifo_order" time="0.001"><failure message="UnboundLocalError: cannot access local variable 'v' where it is not associated with a value">def test_fifo_order():
+&gt;       assert f(3, [('write', 1), ('write', 2), ('read',), ('write', 3), ('read',), ('read',)]) == [None, None, 1, None, 2, 3]
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:10: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+capacity = 3
+ops = [('write', 1), ('write', 2), ('read',), ('write', 3), ('read',), ('read',)]
+
+    def ring_buffer(capacity, ops):
+        if not isinstance(capacity, int) or capacity &lt; 1:
+            raise ValueError('bad capacity')
+    
+        buffer = []
+        outputs = []
+    
+        for op in ops:
+&gt;           if op == ('write', v := next(iter(v))) if isinstance(op, tuple) else (op[0], None if len(op) != 1 else next(iter(op))):
+                                              ^
+E           UnboundLocalError: cannot access local variable 'v' where it is not associated with a value
+
+solution.py:9: UnboundLocalError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.ring_buffer_trace.tests.test_solution" name="test_empty_ops" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-194718.ring_buffer_trace.tests.test_solution" name="test_read_empty" time="0.001"><failure message="UnboundLocalError: cannot access local variable 'v' where it is not associated with a value">def test_read_empty():
+&gt;       with pytest.raises(ValueError) as e: f(2, [('read',)])
+                                             ^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:14: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+capacity = 2, ops = [('read',)]
+
+    def ring_buffer(capacity, ops):
+        if not isinstance(capacity, int) or capacity &lt; 1:
+            raise ValueError('bad capacity')
+    
+        buffer = []
+        outputs = []
+    
+        for op in ops:
+&gt;           if op == ('write', v := next(iter(v))) if isinstance(op, tuple) else (op[0], None if len(op) != 1 else next(iter(op))):
+                                              ^
+E           UnboundLocalError: cannot access local variable 'v' where it is not associated with a value
+
+solution.py:9: UnboundLocalError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.ring_buffer_trace.tests.test_solution" name="test_peek_empty" time="0.001"><failure message="UnboundLocalError: cannot access local variable 'v' where it is not associated with a value">def test_peek_empty():
+&gt;       with pytest.raises(ValueError): f(2, [('peek',)])
+                                        ^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:17: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+capacity = 2, ops = [('peek',)]
+
+    def ring_buffer(capacity, ops):
+        if not isinstance(capacity, int) or capacity &lt; 1:
+            raise ValueError('bad capacity')
+    
+        buffer = []
+        outputs = []
+    
+        for op in ops:
+&gt;           if op == ('write', v := next(iter(v))) if isinstance(op, tuple) else (op[0], None if len(op) != 1 else next(iter(op))):
+                                              ^
+E           UnboundLocalError: cannot access local variable 'v' where it is not associated with a value
+
+solution.py:9: UnboundLocalError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.ring_buffer_trace.tests.test_solution" name="test_read_after_drain" time="0.001"><failure message="UnboundLocalError: cannot access local variable 'v' where it is not associated with a value">def test_read_after_drain():
+&gt;       with pytest.raises(ValueError): f(2, [('write', 1), ('read',), ('read',)])
+                                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:19: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+capacity = 2, ops = [('write', 1), ('read',), ('read',)]
+
+    def ring_buffer(capacity, ops):
+        if not isinstance(capacity, int) or capacity &lt; 1:
+            raise ValueError('bad capacity')
+    
+        buffer = []
+        outputs = []
+    
+        for op in ops:
+&gt;           if op == ('write', v := next(iter(v))) if isinstance(op, tuple) else (op[0], None if len(op) != 1 else next(iter(op))):
+                                              ^
+E           UnboundLocalError: cannot access local variable 'v' where it is not associated with a value
+
+solution.py:9: UnboundLocalError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.ring_buffer_trace.tests.test_solution" name="test_bad_capacity" time="0.001" /><testcase classname="artifacts.uplift.work_20260713-194718.ring_buffer_trace.tests.test_solution" name="test_bad_capacity_bool" time="0.001"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_bad_capacity_bool():
+&gt;       with pytest.raises(ValueError): f(True, [])
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:24: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.ring_buffer_trace.tests.test_solution" name="test_bad_op" time="0.001"><failure message="UnboundLocalError: cannot access local variable 'v' where it is not associated with a value">def test_bad_op():
+&gt;       with pytest.raises(ValueError) as e: f(2, [('write',)])
+                                             ^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:26: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+capacity = 2, ops = [('write',)]
+
+    def ring_buffer(capacity, ops):
+        if not isinstance(capacity, int) or capacity &lt; 1:
+            raise ValueError('bad capacity')
+    
+        buffer = []
+        outputs = []
+    
+        for op in ops:
+&gt;           if op == ('write', v := next(iter(v))) if isinstance(op, tuple) else (op[0], None if len(op) != 1 else next(iter(op))):
+                                              ^
+E           UnboundLocalError: cannot access local variable 'v' where it is not associated with a value
+
+solution.py:9: UnboundLocalError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.ring_buffer_trace.tests.test_solution" name="test_bad_op_unknown" time="0.001"><failure message="UnboundLocalError: cannot access local variable 'v' where it is not associated with a value">def test_bad_op_unknown():
+&gt;       with pytest.raises(ValueError): f(2, [('pop',)])
+                                        ^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:29: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+capacity = 2, ops = [('pop',)]
+
+    def ring_buffer(capacity, ops):
+        if not isinstance(capacity, int) or capacity &lt; 1:
+            raise ValueError('bad capacity')
+    
+        buffer = []
+        outputs = []
+    
+        for op in ops:
+&gt;           if op == ('write', v := next(iter(v))) if isinstance(op, tuple) else (op[0], None if len(op) != 1 else next(iter(op))):
+                                              ^
+E           UnboundLocalError: cannot access local variable 'v' where it is not associated with a value
+
+solution.py:9: UnboundLocalError</failure></testcase></testsuite></testsuites>

@@ -19,14 +19,24 @@ import json
 import os
 import re
 import subprocess
+import threading
 from dataclasses import dataclass, field
+from pathlib import Path
+
+_EXTERNAL_TIMEOUT = 120   # bound on an external/MCP tool call, seconds
 
 _TOOL_LINE = re.compile(r"^\s*TOOL\s+(\w+)\s+(\{.*\})\s*$")
 
 # Commands refused even when exec is allowed. Not a security boundary against a
 # determined operator — a guardrail against a small model wrecking the tree.
+# The rm/rmdir entries are order-INDEPENDENT: a recursive-force delete is refused
+# however its flags are spelled (-rf, -fr, -r -f, -Rf, --recursive --force, and
+# the Windows `rmdir /q /s`), because pinning one literal ordering let the other
+# spellings slip the gate. The lookaheads scan the argument span up to the next
+# command separator so a later `; safe` cannot mask an earlier destructive verb.
 _DENY = re.compile(
-    r"\b(rm\s+-rf|rmdir\s+/s|del\s+/|format\s|mkfs|dd\s+if=|shutdown|reboot|"
+    r"\b(rm\s+(?=[^|;&\n]*(?:-\w*r|--recursive))(?=[^|;&\n]*(?:-\w*f|--force))|"
+    r"rmdir\s+(?=[^|;&\n]*/s)|del\s+/|format\s|mkfs|dd\s+if=|shutdown|reboot|"
     r":\(\)\s*\{|curl[^|]*\|\s*(sh|bash)|wget[^|]*\|\s*(sh|bash)|>\s*/dev/sd)",
     re.IGNORECASE)
 
@@ -44,9 +54,10 @@ class ToolGate:
     """Default-deny for anything that writes or executes."""
     allow_write: bool = False
     allow_exec: bool = False
+    allow_mcp: bool = False        # outbound calls to external MCP tool servers
 
     def check(self, name: str, args: dict) -> "str | None":
-        if name in ("write_file", "edit_file") and not self.allow_write:
+        if name in ("write_file", "edit_file", "apply_patch") and not self.allow_write:
             return "write disabled (pass --allow-write)"
         if name in ("run",):
             if not self.allow_exec:
@@ -82,14 +93,151 @@ def _safe_path(root: str, path: str) -> "str | None":
     return None
 
 
+def _within(root_abs: str, f) -> bool:
+    """True iff f's REAL path is the root or under it. Confining the search base
+    is not enough: rglob follows a symlink or junction INSIDE the tree whose
+    target lives outside it, so every candidate is re-confined before it is read
+    or listed (the base check saw only the link, not where it points)."""
+    rp = os.path.realpath(str(f))
+    return rp == root_abs or rp.startswith(root_abs + os.sep)
+
+
+def _strip_ab(path: str) -> str:
+    return path[2:] if path[:2] in ("a/", "b/") else path
+
+
+def _apply_hunks(old_lines: list, body: list) -> "tuple[bool, list | str]":
+    """Apply one file's hunks strictly. Every context/removed line must match."""
+    new_lines, cursor, i = [], 0, 0
+    while i < len(body):
+        if not body[i].startswith("@@"):
+            i += 1
+            continue
+        m = re.match(r"@@ -(\d+)(?:,\d+)? \+\d+(?:,\d+)? @@", body[i])
+        if not m:
+            return False, f"bad hunk header: {body[i][:40]}"
+        start = int(m.group(1)) - 1
+        start = max(start, 0)
+        if start < cursor or start > len(old_lines):
+            return False, f"hunk at {start + 1} out of range"
+        new_lines.extend(old_lines[cursor:start])
+        cursor = start
+        i += 1
+        while i < len(body) and not body[i].startswith("@@"):
+            h = body[i]
+            i += 1
+            if h == "" or h.startswith("\\"):        # split artifact / "no newline" marker
+                continue
+            tag, text = h[0], h[1:]
+            if tag == " ":
+                if cursor >= len(old_lines) or old_lines[cursor] != text:
+                    return False, f"context mismatch at line {cursor + 1}"
+                new_lines.append(old_lines[cursor])
+                cursor += 1
+            elif tag == "-":
+                if cursor >= len(old_lines) or old_lines[cursor] != text:
+                    return False, f"removed-line mismatch at line {cursor + 1}"
+                cursor += 1
+            elif tag == "+":
+                new_lines.append(text)
+    new_lines.extend(old_lines[cursor:])
+    return True, new_lines
+
+
+def _apply_unified_diff(root: str, patch: str) -> "tuple[bool, str]":
+    """Apply a unified diff (LF, one or more file sections) strictly under root. On
+    ANY hunk mismatch the whole patch is refused (verified before a byte is written),
+    so a stale diff never corrupts a file. New files (--- /dev/null) are created."""
+    lines = patch.replace("\r\n", "\n").split("\n")
+    i, sections = 0, []
+    while i < len(lines):
+        if (lines[i].startswith("--- ") and i + 1 < len(lines)
+                and lines[i + 1].startswith("+++ ")):
+            old_hdr, new_hdr, j, body = lines[i], lines[i + 1], i + 2, []
+            while j < len(lines) and not (lines[j].startswith("--- ") and j + 1 < len(lines)
+                                          and lines[j + 1].startswith("+++ ")):
+                body.append(lines[j])
+                j += 1
+            sections.append((old_hdr, new_hdr, body))
+            i = j
+        else:
+            i += 1
+    if not sections:
+        return False, "no file sections in patch"
+    writes, names = [], []
+    for old_hdr, new_hdr, body in sections:
+        rel = _strip_ab(new_hdr[4:].strip())
+        target = _safe_path(root, rel)
+        if target is None:
+            return False, f"path escapes root: {rel}"
+        is_new = "/dev/null" in old_hdr
+        try:
+            old_lines = [] if is_new else Path(target).read_text(encoding="utf-8").split("\n")
+        except OSError:
+            old_lines = []
+        ok, result = _apply_hunks(old_lines, body)
+        if not ok:
+            return False, f"{rel}: {result}"
+        writes.append((target, "\n".join(result)))
+        names.append(rel)
+    for target, content in writes:                  # only after every hunk verified
+        os.makedirs(os.path.dirname(target) or ".", exist_ok=True)
+        with open(target, "w", encoding="utf-8") as f:
+            f.write(content)
+    return True, f"applied {len(writes)} file(s): " + ", ".join(names)
+
+
 @dataclass
 class ToolExecutor:
     root: str = "."
     gate: ToolGate = field(default_factory=ToolGate)
     max_output: int = 4000
     runner: "callable" = None      # inject for tests; default = subprocess
+    external: dict = field(default_factory=dict)   # name -> {"fn": args->(ok,str), "description": str}
+
+    def external_tools_system(self) -> str:
+        """Advertise registered external (MCP) tools to the model, in the same
+        TOOL protocol. Empty when none are registered."""
+        if not self.external:
+            return ""
+        lines = ["Additional tools (same TOOL protocol, one call per line):"]
+        for name, spec in sorted(self.external.items()):
+            desc = (spec.get("description", "") or "").splitlines()[0][:100]
+            lines.append(f'TOOL {name} {{...}}   # {desc}')
+        return "\n".join(lines)
 
     def execute(self, name: str, args: dict) -> ToolResult:
+        if name in self.external:
+            # an external tool must not shadow a gated builtin (e.g. an
+            # external 'run' running ahead of the write/exec gate)
+            if getattr(self, f"_t_{name}", None) is not None:
+                return ToolResult(name, args, False,
+                                  f"[gate] external tool {name!r} shadows a "
+                                  "gated builtin and is refused")
+            if not self.gate.allow_mcp:
+                return ToolResult(name, args, False,
+                                  "[gate] external/MCP tools disabled (pass allow_mcp)")
+            # a hung external/MCP tool must not hang the loop: bound it and
+            # name a timeout as its own witnessed failure
+            box: dict = {}
+
+            def _call():
+                try:
+                    box["r"] = self.external[name]["fn"](args)
+                except Exception as e:
+                    box["e"] = e
+            th = threading.Thread(target=_call, daemon=True)
+            th.start()
+            th.join(timeout=_EXTERNAL_TIMEOUT)
+            if th.is_alive():
+                return ToolResult(name, args, False,
+                                  f"[timeout] external tool {name!r} exceeded "
+                                  f"{_EXTERNAL_TIMEOUT}s")
+            if "e" in box:                               # an external server must never crash the loop
+                e = box["e"]
+                return ToolResult(name, args, False, f"[error] {type(e).__name__}: {e}")
+            ok, out = box["r"]
+            return ToolResult(name, args, bool(ok), str(out)[: self.max_output])
         denied = self.gate.check(name, args)
         if denied:
             return ToolResult(name, args, False, f"[gate] {denied}")
@@ -155,10 +303,69 @@ class ToolExecutor:
         cmd = args.get("cmd", "")
         if self.runner is not None:
             return self.runner(cmd, self.root)
-        proc = subprocess.run(cmd, shell=True, cwd=self.root, capture_output=True,
-                              text=True, timeout=120)
+        try:
+            proc = subprocess.run(cmd, shell=True, cwd=self.root,
+                                  capture_output=True, text=True, timeout=120)
+        except subprocess.TimeoutExpired as e:
+            # a timeout is its own failure class, not a test failure: name it
+            # and keep the partial output rather than discarding it
+            partial = ((e.stdout or "") if isinstance(e.stdout, str)
+                       else (e.stdout or b"").decode("utf-8", "replace")) + \
+                      ((e.stderr or "") if isinstance(e.stderr, str)
+                       else (e.stderr or b"").decode("utf-8", "replace"))
+            return False, f"[timeout after 120s]\n{partial}"
         out = (proc.stdout or "") + (proc.stderr or "")
         return proc.returncode == 0, f"[exit {proc.returncode}]\n{out}"
+
+    def _t_grep(self, args) -> "tuple[bool, str]":
+        pattern = args.get("pattern", "")
+        if not pattern:
+            return False, "[error] grep needs a 'pattern'"
+        try:
+            rx = re.compile(pattern)
+        except re.error as e:
+            return False, f"[error] bad regex: {e}"
+        base = _safe_path(self.root, args.get("path", "."))
+        if base is None:
+            return False, "[error] path escapes root"
+        root_abs = os.path.realpath(self.root)
+        p = Path(base)
+        files = [p] if p.is_file() else p.rglob(args.get("glob", "*"))
+        hits = []
+        for f in files:
+            if not f.is_file():
+                continue
+            if not _within(root_abs, f):        # a symlink/junction may resolve
+                continue                        # outside the tree: never read it
+            try:
+                text = f.read_text(encoding="utf-8", errors="replace")
+            except OSError:
+                continue
+            for n, line in enumerate(text.splitlines(), 1):
+                if rx.search(line):
+                    rel = os.path.relpath(str(f), root_abs).replace("\\", "/")
+                    hits.append(f"{rel}:{n}:{line[:200]}")
+                    if len(hits) >= 200:
+                        return True, "\n".join(hits) + "\n... (truncated at 200 matches)"
+        return True, "\n".join(hits) if hits else "(no matches)"
+
+    def _t_glob(self, args) -> "tuple[bool, str]":
+        root_abs = os.path.realpath(self.root)
+        matches = []
+        for f in Path(root_abs).rglob(args.get("pattern", "*")):
+            if not _within(root_abs, f):        # do not even list an escaped path
+                continue
+            matches.append(os.path.relpath(str(f), root_abs).replace("\\", "/"))
+            if len(matches) >= 500:
+                break
+        return True, "\n".join(sorted(matches)) if matches else "(no matches)"
+
+    def _t_apply_patch(self, args) -> "tuple[bool, str]":
+        patch = args.get("patch") or args.get("diff") or ""
+        if not patch.strip():
+            return False, "[error] apply_patch needs a unified diff in 'patch'"
+        ok, msg = _apply_unified_diff(self.root, patch)
+        return ok, msg if ok else f"[error] {msg}"
 
 
 TOOLS_SYSTEM = (
@@ -169,6 +376,9 @@ TOOLS_SYSTEM = (
     'TOOL edit_file {"path": "<path>", "old": "<exact text>", "new": "<replacement>"}\n'
     'TOOL write_file {"path": "<path>", "content": "<text>"}\n'
     'TOOL run {"cmd": "<shell command>"}\n'
+    'TOOL grep {"pattern": "<regex>", "path": "<dir>", "glob": "*.py"}\n'
+    'TOOL glob {"pattern": "**/*.py"}\n'
+    'TOOL apply_patch {"patch": "<unified diff>"}\n'
     "Prefer repo_map then read_file to locate code, and edit_file (the 'old' text "
     "must be unique) over write_file for changes. After you receive the tool "
     "results, continue. When you have the final answer and need no more tools, "

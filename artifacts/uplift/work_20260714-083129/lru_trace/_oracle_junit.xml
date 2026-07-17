@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="7" skipped="0" tests="11" time="0.226" timestamp="2026-07-14T09:08:08.766058-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260714-083129.lru_trace.tests.test_solution" name="test_basic_eviction" time="0.001"><failure message="ValueError: bad op">def test_basic_eviction():
+&gt;       assert f(2, [('put', 'a', 1), ('put', 'b', 2), ('put', 'c', 3), ('get', 'a'), ('get', 'b'), ('get', 'c')]) == [None, 2, 3]
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:4: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+capacity = 2
+ops = [('put', 'a', 1), ('put', 'b', 2), ('put', 'c', 3), ('get', 'a'), ('get', 'b'), ('get', 'c')]
+
+    def lru_trace(capacity, ops):
+        if not isinstance(capacity, int) or type(capacity) == bool or capacity &lt; 1:
+            raise ValueError('bad capacity')
+    
+        result = []
+        cache = {}
+    
+        for op in ops:
+            if len(op) != 2:
+&gt;               raise ValueError('bad op')
+E               ValueError: bad op
+
+solution.py:10: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.lru_trace.tests.test_solution" name="test_get_refreshes" time="0.000"><failure message="ValueError: bad op">def test_get_refreshes():
+&gt;       assert f(2, [('put', 'a', 1), ('put', 'b', 2), ('get', 'a'), ('put', 'c', 3), ('get', 'b'), ('get', 'a'), ('get', 'c')]) == [1, None, 1, 3]
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:6: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+capacity = 2
+ops = [('put', 'a', 1), ('put', 'b', 2), ('get', 'a'), ('put', 'c', 3), ('get', 'b'), ('get', 'a'), ...]
+
+    def lru_trace(capacity, ops):
+        if not isinstance(capacity, int) or type(capacity) == bool or capacity &lt; 1:
+            raise ValueError('bad capacity')
+    
+        result = []
+        cache = {}
+    
+        for op in ops:
+            if len(op) != 2:
+&gt;               raise ValueError('bad op')
+E               ValueError: bad op
+
+solution.py:10: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.lru_trace.tests.test_solution" name="test_put_updates_no_evict" time="0.000"><failure message="ValueError: bad op">def test_put_updates_no_evict():
+&gt;       assert f(2, [('put', 'a', 1), ('put', 'b', 2), ('put', 'a', 9), ('put', 'c', 3), ('get', 'a'), ('get', 'b'), ('get', 'c')]) == [9, None, 3]
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:8: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+capacity = 2
+ops = [('put', 'a', 1), ('put', 'b', 2), ('put', 'a', 9), ('put', 'c', 3), ('get', 'a'), ('get', 'b'), ...]
+
+    def lru_trace(capacity, ops):
+        if not isinstance(capacity, int) or type(capacity) == bool or capacity &lt; 1:
+            raise ValueError('bad capacity')
+    
+        result = []
+        cache = {}
+    
+        for op in ops:
+            if len(op) != 2:
+&gt;               raise ValueError('bad op')
+E               ValueError: bad op
+
+solution.py:10: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.lru_trace.tests.test_solution" name="test_miss_no_recency" time="0.000"><failure message="ValueError: bad op">def test_miss_no_recency():
+&gt;       assert f(2, [('put', 'a', 1), ('put', 'b', 2), ('get', 'zz'), ('put', 'c', 3), ('get', 'a'), ('get', 'b')]) == [None, None, 2]
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:10: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+capacity = 2
+ops = [('put', 'a', 1), ('put', 'b', 2), ('get', 'zz'), ('put', 'c', 3), ('get', 'a'), ('get', 'b')]
+
+    def lru_trace(capacity, ops):
+        if not isinstance(capacity, int) or type(capacity) == bool or capacity &lt; 1:
+            raise ValueError('bad capacity')
+    
+        result = []
+        cache = {}
+    
+        for op in ops:
+            if len(op) != 2:
+&gt;               raise ValueError('bad op')
+E               ValueError: bad op
+
+solution.py:10: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.lru_trace.tests.test_solution" name="test_capacity_one" time="0.000"><failure message="ValueError: bad op">def test_capacity_one():
+&gt;       assert f(1, [('put', 'a', 1), ('put', 'b', 2), ('get', 'a'), ('get', 'b')]) == [None, 2]
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:12: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+capacity = 1
+ops = [('put', 'a', 1), ('put', 'b', 2), ('get', 'a'), ('get', 'b')]
+
+    def lru_trace(capacity, ops):
+        if not isinstance(capacity, int) or type(capacity) == bool or capacity &lt; 1:
+            raise ValueError('bad capacity')
+    
+        result = []
+        cache = {}
+    
+        for op in ops:
+            if len(op) != 2:
+&gt;               raise ValueError('bad op')
+E               ValueError: bad op
+
+solution.py:10: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.lru_trace.tests.test_solution" name="test_empty_ops" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-083129.lru_trace.tests.test_solution" name="test_bad_capacity_zero" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-083129.lru_trace.tests.test_solution" name="test_bad_capacity_bool" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-083129.lru_trace.tests.test_solution" name="test_bad_op_shape" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-083129.lru_trace.tests.test_solution" name="test_bad_op_name" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_bad_op_name():
+&gt;       with pytest.raises(ValueError): f(2, [('del', 'a')])
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:24: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.lru_trace.tests.test_solution" name="test_bad_op_list" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_bad_op_list():
+&gt;       with pytest.raises(ValueError): f(2, [['get', 'a']])
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:26: Failed</failure></testcase></testsuite></testsuites>

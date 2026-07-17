@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="5" skipped="0" tests="9" time="0.252" timestamp="2026-07-14T09:32:21.039648-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260714-091030.interval_subtract.tests.test_solution" name="test_middle_bite" time="0.001"><failure message="TypeError: '&gt;' not supported between instances of 'int' and 'NoneType'">&gt;   def test_middle_bite(): assert f([[1, 10]], [[3, 5]]) == [[1, 2], [6, 10]]
+                                   ^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:3: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+a = [[1, 10]], b = [[3, 5]]
+
+    def interval_subtract(a, b):
+        def valid(iv):
+            if iv and iv[0] &gt; iv[1]:
+                raise ValueError('bad interval')
+            return iv
+    
+        a = [valid(x) for x in a]
+        b = [valid(x) for x in b]
+        if not a:
+            return []
+        out = []
+        i, j = 0, 0
+        lo, hi = None, None
+        while i &lt; len(a):
+            ax, ay = a[i][0], a[i][1]
+            while j &lt; len(b) and b[j][1] &lt; ax:
+                j += 1
+            if j == len(b):
+                if lo is None:
+                    lo = ax
+                hi = max(hi or (ax - 1), ay)
+                i += 1
+                continue
+            bx, by = b[j][0], b[j][1]
+            if ay &lt; bx:
+                if lo is None:
+                    lo = ax
+                hi = max(hi or (ax - 1), ay)
+                out.append([lo, hi])
+                lo, hi = None, None
+                i += 1
+                continue
+            jx = max(ax, bx)
+            jy = min(ay, by)
+            if lo is not None:
+                out.append([lo, jx - 1])
+            if ay == jy:   # a[i] consumed exactly; may consume b[j]
+                i += 1
+                if by == ay:
+                    j += 1
+                continue
+            if bx &lt;= ax and by &gt;= ay:
+                raise ValueError('overlap')   # disjoint + sorted -&gt; impossible here
+&gt;           if jx &gt; lo:                 # some of the already-pinned a[i] remains
+               ^^^^^^^
+E           TypeError: '&gt;' not supported between instances of 'int' and 'NoneType'
+
+solution.py:44: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-091030.interval_subtract.tests.test_solution" name="test_one_b_two_a" time="0.001"><failure message="TypeError: '&gt;' not supported between instances of 'int' and 'NoneType'">&gt;   def test_one_b_two_a(): assert f([[1, 3], [6, 9]], [[2, 7]]) == [[1, 1], [8, 9]]
+                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:4: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+a = [[1, 3], [6, 9]], b = [[2, 7]]
+
+    def interval_subtract(a, b):
+        def valid(iv):
+            if iv and iv[0] &gt; iv[1]:
+                raise ValueError('bad interval')
+            return iv
+    
+        a = [valid(x) for x in a]
+        b = [valid(x) for x in b]
+        if not a:
+            return []
+        out = []
+        i, j = 0, 0
+        lo, hi = None, None
+        while i &lt; len(a):
+            ax, ay = a[i][0], a[i][1]
+            while j &lt; len(b) and b[j][1] &lt; ax:
+                j += 1
+            if j == len(b):
+                if lo is None:
+                    lo = ax
+                hi = max(hi or (ax - 1), ay)
+                i += 1
+                continue
+            bx, by = b[j][0], b[j][1]
+            if ay &lt; bx:
+                if lo is None:
+                    lo = ax
+                hi = max(hi or (ax - 1), ay)
+                out.append([lo, hi])
+                lo, hi = None, None
+                i += 1
+                continue
+            jx = max(ax, bx)
+            jy = min(ay, by)
+            if lo is not None:
+                out.append([lo, jx - 1])
+            if ay == jy:   # a[i] consumed exactly; may consume b[j]
+                i += 1
+                if by == ay:
+                    j += 1
+                continue
+            if bx &lt;= ax and by &gt;= ay:
+                raise ValueError('overlap')   # disjoint + sorted -&gt; impossible here
+&gt;           if jx &gt; lo:                 # some of the already-pinned a[i] remains
+               ^^^^^^^
+E           TypeError: '&gt;' not supported between instances of 'int' and 'NoneType'
+
+solution.py:44: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-091030.interval_subtract.tests.test_solution" name="test_exact_removal" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-091030.interval_subtract.tests.test_solution" name="test_empty_b" time="0.001"><failure message="assert [] == [[1, 5]]&#10;  &#10;  Right contains one more item: [1, 5]&#10;  Use -v to get more diff">&gt;   def test_empty_b(): assert f([[1, 5]], []) == [[1, 5]]
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   assert [] == [[1, 5]]
+E     
+E     Right contains one more item: [1, 5]
+E     Use -v to get more diff
+
+tests\test_solution.py:6: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-091030.interval_subtract.tests.test_solution" name="test_empty_a" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-091030.interval_subtract.tests.test_solution" name="test_touching" time="0.000"><failure message="assert [] == [[1, 4]]&#10;  &#10;  Right contains one more item: [1, 4]&#10;  Use -v to get more diff">&gt;   def test_touching(): assert f([[1, 5]], [[5, 9]]) == [[1, 4]]
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   assert [] == [[1, 4]]
+E     
+E     Right contains one more item: [1, 4]
+E     Use -v to get more diff
+
+tests\test_solution.py:8: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-091030.interval_subtract.tests.test_solution" name="test_b_between" time="0.001"><failure message="assert [[0, 3]] == [[0, 3], [5, 8]]&#10;  &#10;  Right contains one more item: [5, 8]&#10;  Use -v to get more diff">&gt;   def test_b_between(): assert f([[0, 3], [5, 8]], [[4, 4]]) == [[0, 3], [5, 8]]
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   assert [[0, 3]] == [[0, 3], [5, 8]]
+E     
+E     Right contains one more item: [5, 8]
+E     Use -v to get more diff
+
+tests\test_solution.py:9: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-091030.interval_subtract.tests.test_solution" name="test_b_spans_all" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-091030.interval_subtract.tests.test_solution" name="test_bad_interval" time="0.000" /></testsuite></testsuites>

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="3" skipped="0" tests="9" time="0.226" timestamp="2026-07-14T13:20:32.586391-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260714-125209.word_wrap_greedy.tests.test_solution" name="test_greedy" time="0.001" /><testcase classname="artifacts.uplift.work_20260714-125209.word_wrap_greedy.tests.test_solution" name="test_exact_fit" time="0.001"><failure message="AssertionError: assert ['aa ', 'bb'] == ['aa bb']&#10;  &#10;  At index 0 diff: 'aa ' != 'aa bb'&#10;  Left contains one more item: 'bb'&#10;  Use -v to get more diff">&gt;   def test_exact_fit(): assert f('aa bb', 5) == ['aa bb']
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert ['aa ', 'bb'] == ['aa bb']
+E     
+E     At index 0 diff: 'aa ' != 'aa bb'
+E     Left contains one more item: 'bb'
+E     Use -v to get more diff
+
+tests\test_solution.py:4: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-125209.word_wrap_greedy.tests.test_solution" name="test_no_fit" time="0.001"><failure message="AssertionError: assert ['aa ', 'bb'] == ['aa', 'bb']&#10;  &#10;  At index 0 diff: 'aa ' != 'aa'&#10;  Use -v to get more diff">&gt;   def test_no_fit(): assert f('aa bb', 4) == ['aa', 'bb']
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert ['aa ', 'bb'] == ['aa', 'bb']
+E     
+E     At index 0 diff: 'aa ' != 'aa'
+E     Use -v to get more diff
+
+tests\test_solution.py:5: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-125209.word_wrap_greedy.tests.test_solution" name="test_long_word" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-125209.word_wrap_greedy.tests.test_solution" name="test_remainder_joins" time="0.000"><failure message="AssertionError: assert ['abc', 'd', 'x'] == ['abc', 'd x']&#10;  &#10;  At index 1 diff: 'd' != 'd x'&#10;  Left contains one more item: 'x'&#10;  Use -v to get more diff">&gt;   def test_remainder_joins(): assert f('abcd x', 3) == ['abc', 'd x']
+                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert ['abc', 'd', 'x'] == ['abc', 'd x']
+E     
+E     At index 1 diff: 'd' != 'd x'
+E     Left contains one more item: 'x'
+E     Use -v to get more diff
+
+tests\test_solution.py:7: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-125209.word_wrap_greedy.tests.test_solution" name="test_whitespace_only" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-125209.word_wrap_greedy.tests.test_solution" name="test_single_word" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-125209.word_wrap_greedy.tests.test_solution" name="test_bad_width_zero" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-125209.word_wrap_greedy.tests.test_solution" name="test_bad_width_bool" time="0.000" /></testsuite></testsuites>

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="2" skipped="0" tests="9" time="0.569" timestamp="2026-07-13T19:49:22.821555-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-192539.top_k_frequent.tests.test_solution" name="test_basic" time="0.001" /><testcase classname="artifacts.uplift.work_20260713-192539.top_k_frequent.tests.test_solution" name="test_all_tie" time="0.001" /><testcase classname="artifacts.uplift.work_20260713-192539.top_k_frequent.tests.test_solution" name="test_k_exceeds" time="0.001" /><testcase classname="artifacts.uplift.work_20260713-192539.top_k_frequent.tests.test_solution" name="test_empty" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-192539.top_k_frequent.tests.test_solution" name="test_k_zero" time="0.001" /><testcase classname="artifacts.uplift.work_20260713-192539.top_k_frequent.tests.test_solution" name="test_tie_break" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-192539.top_k_frequent.tests.test_solution" name="test_bad_k" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-192539.top_k_frequent.tests.test_solution" name="test_bad_item" time="0.001"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_bad_item():
+&gt;       with pytest.raises(ValueError) as e: f([1, 2], 1)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:13: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260713-192539.top_k_frequent.tests.test_solution" name="test_bool_k" time="0.001"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_bool_k():
+&gt;       with pytest.raises(ValueError): f([], True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:16: Failed</failure></testcase></testsuite></testsuites>

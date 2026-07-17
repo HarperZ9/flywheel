@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="6" skipped="0" tests="9" time="0.228" timestamp="2026-07-13T19:56:28.742870-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-194718.purge_in_place.tests.test_solution" name="test_removes_and_counts" time="0.001"><failure message="assert 0 == 4">def test_removes_and_counts():
+        items = [1, 2, 3, 2, 4, 2]
+        n = purge_in_place(items, [2, 4])
+&gt;       assert n == 4
+E       assert 0 == 4
+
+tests\test_solution.py:8: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.purge_in_place.tests.test_solution" name="test_in_place_mutation_visible_to_alias" time="0.001"><failure message="assert [1, 2, 3] == [1, 3]&#10;  &#10;  At index 1 diff: 2 != 3&#10;  Left contains one more item: 3&#10;  Use -v to get more diff">def test_in_place_mutation_visible_to_alias():
+        items = [1, 2, 3]
+        alias = items
+        result = purge_in_place(items, [2])
+&gt;       assert alias == [1, 3]
+E       assert [1, 2, 3] == [1, 3]
+E         
+E         At index 1 diff: 2 != 3
+E         Left contains one more item: 3
+E         Use -v to get more diff
+
+tests\test_solution.py:16: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.purge_in_place.tests.test_solution" name="test_type_strict_int_target_ignores_bool_and_float" time="0.000"><failure message="assert [1, True, 0, False, 1.0] == [True, 0, False, 1.0]&#10;  &#10;  At index 1 diff: True != 0&#10;  Left contains one more item: 1.0&#10;  Use -v to get more diff">def test_type_strict_int_target_ignores_bool_and_float():
+        items = [1, True, 0, False, 1.0]
+        n = purge_in_place(items, [1])
+&gt;       assert items == [True, 0, False, 1.0]
+E       assert [1, True, 0, False, 1.0] == [True, 0, False, 1.0]
+E         
+E         At index 1 diff: True != 0
+E         Left contains one more item: 1.0
+E         Use -v to get more diff
+
+tests\test_solution.py:23: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.purge_in_place.tests.test_solution" name="test_type_strict_bool_target_ignores_int" time="0.001"><failure message="assert [1, True, 1.0] == [1, 1.0]&#10;  &#10;  Left contains one more item: 1.0&#10;  Use -v to get more diff">def test_type_strict_bool_target_ignores_int():
+        items = [1, True, 1.0]
+        n = purge_in_place(items, [True])
+&gt;       assert items == [1, 1.0]
+E       assert [1, True, 1.0] == [1, 1.0]
+E         
+E         Left contains one more item: 1.0
+E         Use -v to get more diff
+
+tests\test_solution.py:30: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.purge_in_place.tests.test_solution" name="test_type_strict_float_target_ignores_int" time="0.001"><failure message="assert 0 == 1&#10; +  where 0 = purge_in_place([1.0, 1], [1.0])">def test_type_strict_float_target_ignores_int():
+        items = [1.0, 1]
+&gt;       assert purge_in_place(items, [1.0]) == 1
+E       assert 0 == 1
+E        +  where 0 = purge_in_place([1.0, 1], [1.0])
+
+tests\test_solution.py:36: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.purge_in_place.tests.test_solution" name="test_aliasing_raises_and_leaves_list_alone" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-194718.purge_in_place.tests.test_solution" name="test_targets_not_mutated" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-194718.purge_in_place.tests.test_solution" name="test_empty_targets" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-194718.purge_in_place.tests.test_solution" name="test_order_of_survivors_preserved" time="0.000"><failure message="assert [5, 9, 5, 3, 9, 7] == [5, 5, 3, 7]&#10;  &#10;  At index 1 diff: 9 != 5&#10;  Left contains 2 more items, first extra item: 9&#10;  Use -v to get more diff">def test_order_of_survivors_preserved():
+        items = [5, 9, 5, 3, 9, 7]
+        purge_in_place(items, [9])
+&gt;       assert items == [5, 5, 3, 7]
+E       assert [5, 9, 5, 3, 9, 7] == [5, 5, 3, 7]
+E         
+E         At index 1 diff: 9 != 5
+E         Left contains 2 more items, first extra item: 9
+E         Use -v to get more diff
+
+tests\test_solution.py:63: AssertionError</failure></testcase></testsuite></testsuites>

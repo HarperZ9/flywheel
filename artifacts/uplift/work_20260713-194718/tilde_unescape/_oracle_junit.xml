@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="7" skipped="0" tests="8" time="0.238" timestamp="2026-07-13T19:58:15.915817-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-194718.tilde_unescape.tests.test_solution" name="test_plain_and_simple_escapes" time="0.001"><failure message="ValueError: dangling escape">def test_plain_and_simple_escapes():
+        assert untilde("") == ""
+        assert untilde("ab") == "ab"
+        assert untilde("a~nb~tc") == "a\nb\tc"
+&gt;       assert untilde("~~") == "~"
+               ^^^^^^^^^^^^^
+
+tests\test_solution.py:9: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+s = '~~'
+
+    def untilde(s: str) -&gt; str:
+        def decode_char():
+            if s.startswith("~n"):
+                return "\n"
+            elif s.startswith("~t"):
+                return "\t"
+            elif s.startswith("~x") and len(s) &gt;= 3 and all(c in "0123456789abcdefABCDEF" for c in s[2:]):
+                hex_val = int(s[2:], base=16)
+                return chr(hex_val)
+            else:
+                raise ValueError("bad escape")
+    
+        result = []
+        i = 0
+        while i &lt; len(s):
+            if s[i:i+2] == "~n":
+                result.append("\n")
+                i += 2
+            elif s[i:i+2] == "~t":
+                result.append("\t")
+                i += 2
+            elif s[i:i+2] == "~x":
+                hex_val = decode_char()
+                result.append(hex_val)
+                i += len(hex_val)
+            else:
+                result.append(s[i])
+                i += 1
+        if s.endswith('~'):
+&gt;           raise ValueError("dangling escape")
+E           ValueError: dangling escape
+
+solution.py:30: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.tilde_unescape.tests.test_solution" name="test_hex_escape_exactly_two_digits" time="0.001"><failure message="AssertionError: assert 'Ax41' == 'A'&#10;  &#10;  - A&#10;  + Ax41">def test_hex_escape_exactly_two_digits():
+&gt;       assert untilde("~x41") == "A"
+E       AssertionError: assert 'Ax41' == 'A'
+E         
+E         - A
+E         + Ax41
+
+tests\test_solution.py:14: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.tilde_unescape.tests.test_solution" name="test_hex_may_produce_control_chars" time="0.001"><failure message="AssertionError: assert '\x00x00' == '\x00'&#10;  &#10;  - #x00&#10;  + #x00x00">def test_hex_may_produce_control_chars():
+&gt;       assert untilde("~x00") == "\x00"
+E       AssertionError: assert '\x00x00' == '\x00'
+E         
+E         - #x00
+E         + #x00x00
+
+tests\test_solution.py:21: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.tilde_unescape.tests.test_solution" name="test_dangling_escape" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-194718.tilde_unescape.tests.test_solution" name="test_bad_escape_case_sensitive" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_bad_escape_case_sensitive():
+&gt;       with pytest.raises(ValueError, match="bad escape"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:31: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.tilde_unescape.tests.test_solution" name="test_bad_hex" time="0.001"><failure message="AssertionError: Regex pattern did not match.&#10;  Expected regex: 'bad hex'&#10;  Actual message: 'bad escape'">def test_bad_hex():
+        with pytest.raises(ValueError, match="bad hex"):
+&gt;           untilde("~x")
+
+tests\test_solution.py:41: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:23: in untilde
+    hex_val = decode_char()
+              ^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    def decode_char():
+        if s.startswith("~n"):
+            return "\n"
+        elif s.startswith("~t"):
+            return "\t"
+        elif s.startswith("~x") and len(s) &gt;= 3 and all(c in "0123456789abcdefABCDEF" for c in s[2:]):
+            hex_val = int(s[2:], base=16)
+            return chr(hex_val)
+        else:
+&gt;           raise ValueError("bad escape")
+E           ValueError: bad escape
+
+solution.py:11: ValueError
+
+During handling of the above exception, another exception occurred:
+
+    def test_bad_hex():
+&gt;       with pytest.raises(ValueError, match="bad hex"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AssertionError: Regex pattern did not match.
+E         Expected regex: 'bad hex'
+E         Actual message: 'bad escape'
+
+tests\test_solution.py:40: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.tilde_unescape.tests.test_solution" name="test_raw_control_forbidden" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_raw_control_forbidden():
+&gt;       with pytest.raises(ValueError, match="raw control"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:51: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260713-194718.tilde_unescape.tests.test_solution" name="test_first_error_in_scan_order_wins" time="0.000"><failure message="AssertionError: Regex pattern did not match.&#10;  Expected regex: 'raw control'&#10;  Actual message: 'dangling escape'">def test_first_error_in_scan_order_wins():
+        with pytest.raises(ValueError, match="raw control"):
+&gt;           untilde("a\n~")  # raw control at index 1 beats dangling ~ at end
+            ^^^^^^^^^^^^^^^
+
+tests\test_solution.py:59: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+s = 'a\n~'
+
+    def untilde(s: str) -&gt; str:
+        def decode_char():
+            if s.startswith("~n"):
+                return "\n"
+            elif s.startswith("~t"):
+                return "\t"
+            elif s.startswith("~x") and len(s) &gt;= 3 and all(c in "0123456789abcdefABCDEF" for c in s[2:]):
+                hex_val = int(s[2:], base=16)
+                return chr(hex_val)
+            else:
+                raise ValueError("bad escape")
+    
+        result = []
+        i = 0
+        while i &lt; len(s):
+            if s[i:i+2] == "~n":
+                result.append("\n")
+                i += 2
+            elif s[i:i+2] == "~t":
+                result.append("\t")
+                i += 2
+            elif s[i:i+2] == "~x":
+                hex_val = decode_char()
+                result.append(hex_val)
+                i += len(hex_val)
+            else:
+                result.append(s[i])
+                i += 1
+        if s.endswith('~'):
+&gt;           raise ValueError("dangling escape")
+E           ValueError: dangling escape
+
+solution.py:30: ValueError
+
+During handling of the above exception, another exception occurred:
+
+    def test_first_error_in_scan_order_wins():
+&gt;       with pytest.raises(ValueError, match="raw control"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AssertionError: Regex pattern did not match.
+E         Expected regex: 'raw control'
+E         Actual message: 'dangling escape'
+
+tests\test_solution.py:58: AssertionError</failure></testcase></testsuite></testsuites>

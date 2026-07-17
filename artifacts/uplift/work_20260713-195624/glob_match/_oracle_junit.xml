@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="7" skipped="0" tests="11" time="0.220" timestamp="2026-07-13T20:20:00.079419-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-195624.glob_match.tests.test_solution" name="test_star_ext" time="0.001"><failure message="AssertionError: assert False is True&#10; +  where False = f('*.txt', 'file.txt')">&gt;   def test_star_ext(): assert f('*.txt', 'file.txt') is True
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert False is True
+E    +  where False = f('*.txt', 'file.txt')
+
+tests\test_solution.py:3: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.glob_match.tests.test_solution" name="test_star_ext_no" time="0.000"><failure message="AssertionError: assert True is False&#10; +  where True = f('*.txt', 'file.py')">&gt;   def test_star_ext_no(): assert f('*.txt', 'file.py') is False
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert True is False
+E    +  where True = f('*.txt', 'file.py')
+
+tests\test_solution.py:4: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.glob_match.tests.test_solution" name="test_question" time="0.000"><failure message="AssertionError: assert False is True&#10; +  where False = f('?at', 'cat')">&gt;   def test_question(): assert f('?at', 'cat') is True
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert False is True
+E    +  where False = f('?at', 'cat')
+
+tests\test_solution.py:5: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.glob_match.tests.test_solution" name="test_question_zero" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-195624.glob_match.tests.test_solution" name="test_star_empty" time="0.000"><failure message="AssertionError: assert False is True&#10; +  where False = f('*', '')">&gt;   def test_star_empty(): assert f('*', '') is True
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert False is True
+E    +  where False = f('*', '')
+
+tests\test_solution.py:7: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.glob_match.tests.test_solution" name="test_star_between" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-195624.glob_match.tests.test_solution" name="test_star_middle" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-195624.glob_match.tests.test_solution" name="test_star_no_tail" time="0.001"><failure message="AssertionError: assert True is False&#10; +  where True = f('a*b', 'aXX')">&gt;   def test_star_no_tail(): assert f('a*b', 'aXX') is False
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert True is False
+E    +  where True = f('a*b', 'aXX')
+
+tests\test_solution.py:10: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.glob_match.tests.test_solution" name="test_empty_both" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-195624.glob_match.tests.test_solution" name="test_empty_pattern" time="0.000"><failure message="AssertionError: assert True is False&#10; +  where True = f('', 'x')">&gt;   def test_empty_pattern(): assert f('', 'x') is False
+                              ^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert True is False
+E    +  where True = f('', 'x')
+
+tests\test_solution.py:12: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.glob_match.tests.test_solution" name="test_bad_input" time="0.000"><failure message="TypeError: can only concatenate str (not &quot;int&quot;) to str">def test_bad_input():
+&gt;       with pytest.raises(ValueError) as e: f(1, 'a')
+                                             ^^^^^^^^^
+
+tests\test_solution.py:14: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+pattern = 1, name = 'a'
+
+    def glob_match(pattern: str, name: str) -&gt; bool:
+        """
+        Check if the given name matches the specified glob pattern.
+    
+        Parameters:
+        pattern (str): A glob pattern that includes wildcards like '/*', '?'.
+        name (str): The name to match against the pattern.
+    
+        Returns:
+        bool: True if the name matches the pattern, False otherwise.
+        """
+        # Convert patterns to a regular expression for easier matching
+&gt;       regex_pattern = re.compile(r'/' + pattern)
+                                   ^^^^^^^^^^^^^^
+E       TypeError: can only concatenate str (not "int") to str
+
+solution.py:15: TypeError</failure></testcase></testsuite></testsuites>

@@ -24,6 +24,7 @@ import urllib.request
 from dataclasses import dataclass, field
 from typing import Callable, Optional, Protocol
 
+from . import compaction
 from .messages_api import make_receipt, translate_response
 
 # A transport is (method, url, body_bytes_or_none, timeout) -> (status, parsed_json).
@@ -200,13 +201,34 @@ def available_backends(*, serve_url: str = SERVE_URL, ollama_url: str = OLLAMA_U
 
 def select_backend(backends: list[Backend], prefer: str = "auto") -> Optional[Backend]:
     """First healthy backend. prefer names one to force (still health-gated)."""
+    return select_backend_receipted(backends, prefer)[0]
+
+
+def select_backend_receipted(backends: list[Backend],
+                             prefer: str = "auto") -> tuple:
+    """The same decision, with its record (landscape import 5): every
+    candidate probed, its health verdict, the winner, and why -- routing
+    as an auditable claim instead of a black box. Probing stops at the
+    first healthy backend; unprobed candidates are not invented."""
     ordered = backends
     if prefer != "auto":
         ordered = [b for b in backends if b.name == prefer]
+    probed: list = []
+    chosen = None
     for b in ordered:
-        if b.health():
-            return b
-    return None
+        healthy = bool(b.health())
+        probed.append({"name": b.name, "healthy": healthy})
+        if healthy:
+            chosen = b
+            break
+    receipt = {"schema": "flywheel.routing-receipt/v1",
+               "prefer": prefer,
+               "candidates": probed,
+               "chosen": chosen.name if chosen else None,
+               "note": ("first healthy candidate wins, in roster order"
+                        if chosen else
+                        "no healthy backend among the candidates probed")}
+    return chosen, receipt
 
 
 @dataclass
@@ -221,9 +243,51 @@ class LocalAgent:
     temperature: float = 0.0
     seed: int = 0
     history: list[dict] = field(default_factory=list)
+    compact_budget: int = 0                       # 0 = off; token budget that triggers a fold
+    compact_keep_recent: int = 6
+    summarize: Optional[Callable] = None          # inject a model summarizer; None = extractive
+    last_compaction: Optional[dict] = None
+    fold_index: "FoldIndex | None" = None         # Gap B: recall facts from folded spans
 
     def live_backend(self) -> Optional[Backend]:
         return select_backend(self.backends, self.prefer)
+
+    def _maybe_compact(self) -> None:
+        """Opt-in context compaction: when compact_budget is set, fold the middle
+        of the history to fit the budget before prompting. A no-op when the budget
+        is 0, so behaviour is unchanged unless a caller asks for it. Records the
+        re-checkable receipt on last_compaction. Gap B: when a fold_index is
+        attached, the folded span is content-addressed into it so its facts are
+        recallable later instead of discarded."""
+        if not self.compact_budget or len(self.history) <= 1:
+            return
+        original = list(self.history)
+        res = compaction.compact(
+            self.history, token_budget=self.compact_budget,
+            keep_recent=self.compact_keep_recent,
+            summarize=self.summarize or compaction.lexrank_summary)
+        if res.compacted:
+            self.history = res.messages
+            self.last_compaction = res.receipt
+            # Gap B: index the folded span for recall before it is lost.
+            if self.fold_index is not None:
+                try:
+                    from .fold_index import index_compaction as _index_compaction
+                    _index_compaction(self.fold_index, original, res)
+                except Exception:
+                    pass  # recall is best-effort; never block a turn on the index
+
+    def recall_context(self, query: str, top_k: int = 3) -> list[dict]:
+        """Gap B: recall folded facts relevant to `query` and return them as
+        message turns ready to splice into history. Returns [] when no fold_index
+        is attached or nothing matches -- a no-op that degrades gracefully."""
+        if self.fold_index is None:
+            return []
+        try:
+            hits = self.fold_index.recall(query, top_k=top_k)
+        except Exception:
+            return []
+        return [{"role": "system", "content": f"[recalled from folded context] {h}"} for h in hits]
 
     def _healthy(self) -> list:
         return [b for b in self.backends
@@ -244,6 +308,7 @@ class LocalAgent:
         """One turn. Tries healthy backends in order; the first that returns a
         completion wins. Raises BackendError only if every backend fails."""
         self.history.append({"role": "user", "content": user_text})
+        self._maybe_compact()
         healthy = self._healthy()
         if not healthy:
             raise BackendError("no local backend is healthy (start serve.py or ollama)")
@@ -263,6 +328,7 @@ class LocalAgent:
         first healthy backend that supports streaming; falls back to send() (whole
         answer as one chunk) if none does. Same receipt as send()."""
         self.history.append({"role": "user", "content": user_text})
+        self._maybe_compact()
         for b in self._healthy():
             stream_fn = getattr(b, "chat_stream", None)
             if stream_fn is None:

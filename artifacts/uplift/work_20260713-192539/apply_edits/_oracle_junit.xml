@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="8" skipped="0" tests="8" time="0.205" timestamp="2026-07-13T19:36:39.932157-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-192539.apply_edits.tests.test_solution" name="test_sequential_ops_on_intermediate_state" time="0.001"><failure message="ValueError: Operations must be tuples with exactly 3 elements">def test_sequential_ops_on_intermediate_state():
+        items = [1, 2, 3]
+&gt;       out = apply_edits(items, [("insert", 1, 9), ("delete", 0), ("replace", 2, 7)])
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:7: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+items = [1, 2, 3], ops = [('insert', 1, 9), ('delete', 0), ('replace', 2, 7)]
+
+    def apply_edits(items, ops):
+        if not all(isinstance(op, tuple) and len(op) == 3 for op in ops):
+&gt;           raise ValueError("Operations must be tuples with exactly 3 elements")
+E           ValueError: Operations must be tuples with exactly 3 elements
+
+solution.py:3: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-192539.apply_edits.tests.test_solution" name="test_insert_at_end_allowed" time="0.000"><failure message="TypeError: 'tuple' object cannot be interpreted as an integer">def test_insert_at_end_allowed():
+&gt;       assert apply_edits([1], [("insert", 1, 5)]) == [1, 5]
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:14: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:24: in apply_edits
+    _apply_op(new_items, op_name, (index_or_index, value))
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+to_edit = [1], op_name = 'insert', index_or_value = (1, 5)
+
+    def _apply_op(to_edit, op_name, index_or_value):
+        nonlocal items
+        match op_name:
+            case "insert":
+&gt;               to_edit.insert(index_or_value, value)
+E               TypeError: 'tuple' object cannot be interpreted as an integer
+
+solution.py:9: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-192539.apply_edits.tests.test_solution" name="test_insert_past_end_raises_index_error_not_clamped" time="0.000"><failure message="TypeError: 'tuple' object cannot be interpreted as an integer">def test_insert_past_end_raises_index_error_not_clamped():
+        with pytest.raises(IndexError):
+&gt;           apply_edits([1], [("insert", 3, 5)])
+
+tests\test_solution.py:19: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:24: in apply_edits
+    _apply_op(new_items, op_name, (index_or_index, value))
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+to_edit = [1], op_name = 'insert', index_or_value = (3, 5)
+
+    def _apply_op(to_edit, op_name, index_or_value):
+        nonlocal items
+        match op_name:
+            case "insert":
+&gt;               to_edit.insert(index_or_value, value)
+E               TypeError: 'tuple' object cannot be interpreted as an integer
+
+solution.py:9: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-192539.apply_edits.tests.test_solution" name="test_negative_indices" time="0.000"><failure message="TypeError: 'tuple' object cannot be interpreted as an integer">def test_negative_indices():
+        assert apply_edits([1, 2, 3], [("replace", -1, 9)]) == [1, 2, 9]
+&gt;       assert apply_edits([1, 2, 3], [("insert", -3, 0)]) == [0, 1, 2, 3]
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:24: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:24: in apply_edits
+    _apply_op(new_items, op_name, (index_or_index, value))
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+to_edit = [1, 2, 3], op_name = 'insert', index_or_value = (-3, 0)
+
+    def _apply_op(to_edit, op_name, index_or_value):
+        nonlocal items
+        match op_name:
+            case "insert":
+&gt;               to_edit.insert(index_or_value, value)
+E               TypeError: 'tuple' object cannot be interpreted as an integer
+
+solution.py:9: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-192539.apply_edits.tests.test_solution" name="test_unknown_op_raises_value_error" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_unknown_op_raises_value_error():
+&gt;       with pytest.raises(ValueError):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:30: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260713-192539.apply_edits.tests.test_solution" name="test_malformed_op_raises_value_error" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_malformed_op_raises_value_error():
+        with pytest.raises(ValueError):
+            apply_edits([1], [["insert", 0, 5]])
+&gt;       with pytest.raises(ValueError):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:37: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260713-192539.apply_edits.tests.test_solution" name="test_input_untouched_even_when_error_midway" time="0.000"><failure message="ValueError: Operations must be tuples with exactly 3 elements">def test_input_untouched_even_when_error_midway():
+        items = [1, 2]
+        with pytest.raises(IndexError):
+&gt;           apply_edits(items, [("insert", 0, 9), ("delete", 5)])
+
+tests\test_solution.py:46: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+items = [1, 2], ops = [('insert', 0, 9), ('delete', 5)]
+
+    def apply_edits(items, ops):
+        if not all(isinstance(op, tuple) and len(op) == 3 for op in ops):
+&gt;           raise ValueError("Operations must be tuples with exactly 3 elements")
+E           ValueError: Operations must be tuples with exactly 3 elements
+
+solution.py:3: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-192539.apply_edits.tests.test_solution" name="test_delete_on_empty_raises" time="0.000"><failure message="ValueError: Operations must be tuples with exactly 3 elements">def test_delete_on_empty_raises():
+        with pytest.raises(IndexError):
+&gt;           apply_edits([], [("delete", 0)])
+
+tests\test_solution.py:52: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+items = [], ops = [('delete', 0)]
+
+    def apply_edits(items, ops):
+        if not all(isinstance(op, tuple) and len(op) == 3 for op in ops):
+&gt;           raise ValueError("Operations must be tuples with exactly 3 elements")
+E           ValueError: Operations must be tuples with exactly 3 elements
+
+solution.py:3: ValueError</failure></testcase></testsuite></testsuites>

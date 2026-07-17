@@ -1,0 +1,187 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="9" skipped="0" tests="11" time="0.214" timestamp="2026-07-14T08:54:24.609879-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260714-083129.stopwatch_fsm.tests.test_solution" name="test_empty" time="0.001" /><testcase classname="artifacts.uplift.work_20260714-083129.stopwatch_fsm.tests.test_solution" name="test_one_segment" time="0.001"><failure message="TypeError: '&lt;=' not supported between instances of 'int' and 'NoneType'">&gt;   def test_one_segment(): assert f([(0, 'start'), (5, 'stop')]) == (5, [])
+                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:4: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+events = [(0, 'start'), (5, 'stop')]
+
+    def stopwatch(events):
+        if not all(isinstance(event, tuple) and len(event) == 2 for event in events):
+            raise ValueError('bad event')
+    
+        total = 0
+        laps = []
+        previous_time = None
+    
+        running = False
+        current_segment_start_time = None
+    
+        for timestamp, op in events:
+            if not isinstance(timestamp, int) or isinstance(op, bool):
+                raise ValueError('bad event')
+    
+&gt;           if len(events) &gt; 1 and timestamp &lt;= previous_time:
+                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           TypeError: '&lt;=' not supported between instances of 'int' and 'NoneType'
+
+solution.py:16: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.stopwatch_fsm.tests.test_solution" name="test_laps" time="0.000"><failure message="TypeError: '&lt;=' not supported between instances of 'int' and 'NoneType'">&gt;   def test_laps(): assert f([(0, 'start'), (3, 'lap'), (5, 'stop'), (7, 'start'), (9, 'lap'), (10, 'stop')]) == (8, [3, 7])
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:5: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+events = [(0, 'start'), (3, 'lap'), (5, 'stop'), (7, 'start'), (9, 'lap'), (10, 'stop')]
+
+    def stopwatch(events):
+        if not all(isinstance(event, tuple) and len(event) == 2 for event in events):
+            raise ValueError('bad event')
+    
+        total = 0
+        laps = []
+        previous_time = None
+    
+        running = False
+        current_segment_start_time = None
+    
+        for timestamp, op in events:
+            if not isinstance(timestamp, int) or isinstance(op, bool):
+                raise ValueError('bad event')
+    
+&gt;           if len(events) &gt; 1 and timestamp &lt;= previous_time:
+                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           TypeError: '&lt;=' not supported between instances of 'int' and 'NoneType'
+
+solution.py:16: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.stopwatch_fsm.tests.test_solution" name="test_reset" time="0.000"><failure message="TypeError: '&lt;=' not supported between instances of 'int' and 'NoneType'">&gt;   def test_reset(): assert f([(0, 'start'), (5, 'stop'), (6, 'reset'), (7, 'start'), (9, 'stop')]) == (2, [])
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:6: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+events = [(0, 'start'), (5, 'stop'), (6, 'reset'), (7, 'start'), (9, 'stop')]
+
+    def stopwatch(events):
+        if not all(isinstance(event, tuple) and len(event) == 2 for event in events):
+            raise ValueError('bad event')
+    
+        total = 0
+        laps = []
+        previous_time = None
+    
+        running = False
+        current_segment_start_time = None
+    
+        for timestamp, op in events:
+            if not isinstance(timestamp, int) or isinstance(op, bool):
+                raise ValueError('bad event')
+    
+&gt;           if len(events) &gt; 1 and timestamp &lt;= previous_time:
+                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           TypeError: '&lt;=' not supported between instances of 'int' and 'NoneType'
+
+solution.py:16: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.stopwatch_fsm.tests.test_solution" name="test_running_at_end" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-083129.stopwatch_fsm.tests.test_solution" name="test_double_start" time="0.000"><failure message="TypeError: '&lt;=' not supported between instances of 'int' and 'NoneType'">def test_double_start():
+&gt;       with pytest.raises(ValueError) as e: f([(0, 'start'), (1, 'start')])
+                                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:9: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+events = [(0, 'start'), (1, 'start')]
+
+    def stopwatch(events):
+        if not all(isinstance(event, tuple) and len(event) == 2 for event in events):
+            raise ValueError('bad event')
+    
+        total = 0
+        laps = []
+        previous_time = None
+    
+        running = False
+        current_segment_start_time = None
+    
+        for timestamp, op in events:
+            if not isinstance(timestamp, int) or isinstance(op, bool):
+                raise ValueError('bad event')
+    
+&gt;           if len(events) &gt; 1 and timestamp &lt;= previous_time:
+                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           TypeError: '&lt;=' not supported between instances of 'int' and 'NoneType'
+
+solution.py:16: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.stopwatch_fsm.tests.test_solution" name="test_stop_stopped" time="0.001"><failure message="AssertionError: assert 'already running' == 'not running'&#10;  &#10;  - not running&#10;  + already running">def test_stop_stopped():
+        with pytest.raises(ValueError) as e: f([(0, 'stop')])
+&gt;       assert str(e.value) == 'not running'
+E       AssertionError: assert 'already running' == 'not running'
+E         
+E         - not running
+E         + already running
+
+tests\test_solution.py:13: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.stopwatch_fsm.tests.test_solution" name="test_lap_stopped" time="0.000"><failure message="AssertionError: assert 'already running' == 'not running'&#10;  &#10;  - not running&#10;  + already running">def test_lap_stopped():
+        with pytest.raises(ValueError) as e: f([(0, 'lap')])
+&gt;       assert str(e.value) == 'not running'
+E       AssertionError: assert 'already running' == 'not running'
+E         
+E         - not running
+E         + already running
+
+tests\test_solution.py:16: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.stopwatch_fsm.tests.test_solution" name="test_reset_running" time="0.000"><failure message="TypeError: '&lt;=' not supported between instances of 'int' and 'NoneType'">def test_reset_running():
+&gt;       with pytest.raises(ValueError) as e: f([(0, 'start'), (1, 'reset')])
+                                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:18: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+events = [(0, 'start'), (1, 'reset')]
+
+    def stopwatch(events):
+        if not all(isinstance(event, tuple) and len(event) == 2 for event in events):
+            raise ValueError('bad event')
+    
+        total = 0
+        laps = []
+        previous_time = None
+    
+        running = False
+        current_segment_start_time = None
+    
+        for timestamp, op in events:
+            if not isinstance(timestamp, int) or isinstance(op, bool):
+                raise ValueError('bad event')
+    
+&gt;           if len(events) &gt; 1 and timestamp &lt;= previous_time:
+                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           TypeError: '&lt;=' not supported between instances of 'int' and 'NoneType'
+
+solution.py:16: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.stopwatch_fsm.tests.test_solution" name="test_time_warp" time="0.000"><failure message="TypeError: '&lt;=' not supported between instances of 'int' and 'NoneType'">def test_time_warp():
+&gt;       with pytest.raises(ValueError) as e: f([(0, 'start'), (0, 'stop')])
+                                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:21: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+events = [(0, 'start'), (0, 'stop')]
+
+    def stopwatch(events):
+        if not all(isinstance(event, tuple) and len(event) == 2 for event in events):
+            raise ValueError('bad event')
+    
+        total = 0
+        laps = []
+        previous_time = None
+    
+        running = False
+        current_segment_start_time = None
+    
+        for timestamp, op in events:
+            if not isinstance(timestamp, int) or isinstance(op, bool):
+                raise ValueError('bad event')
+    
+&gt;           if len(events) &gt; 1 and timestamp &lt;= previous_time:
+                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           TypeError: '&lt;=' not supported between instances of 'int' and 'NoneType'
+
+solution.py:16: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.stopwatch_fsm.tests.test_solution" name="test_bad_op" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_bad_op():
+&gt;       with pytest.raises(ValueError) as e: f([(0, 'go')])
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:24: Failed</failure></testcase></testsuite></testsuites>

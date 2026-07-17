@@ -1,0 +1,726 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="17" skipped="0" tests="19" time="0.305" timestamp="2026-07-13T20:34:33.448735-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-201327.portal_min_moves.tests.test_solution" name="test_plain_walk" time="0.001"><failure message="IndexError: list index out of range">&gt;   def test_plain_walk(): assert f(10, [], 0, 9) == 9
+                                  ^^^^^^^^^^^^^^^
+
+tests\test_solution.py:3: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+n = 10, portals = [], start = 0, goal = 9
+
+    def portal_moves(n, portals, start, goal):
+        if n &lt;= 1:
+            raise ValueError('bad n')
+    
+        def calculate_min_steps(start_node, end_node, portal_locations):
+            if start_node == end_node:
+                return 0
+    
+            min_steps = float("inf")
+    
+            for i in range(len(portals)):
+                entry, exit = portals[i]
+                next_nodes = []
+    
+                # Explore neighboring cells and check the validity
+                for j in range(n):
+                    if (j - goal &lt; 0 or start_node == portal_locations[goal][0] + j) \
+                            and (j &gt; 0 and end_node == portal_locations[start_node][1]):
+                        next_nodes.append(portals[i])
+    
+                    elif (j - goal == 0 or start_node == portal_locations[j][0]) \
+                          and (start_node &lt; portals[i][0] or end_node &lt;= portals[i][1]):
+                        continue
+    
+                # Calculate the minimum steps required for each valid neighbor
+                if next_nodes:
+                    min_steps = min(min_steps, sum([abs(portal[1] - portal[2]) + calculate_min_steps(j, next_node, next_nodes)
+                                                   for j in range(len(next_nodes))]))
+    
+            return min_steps
+    
+        portals_sorted = sorted(portals)
+&gt;       start_node, goal_node = portals_sorted[start], portals_sorted[goal]
+                                ^^^^^^^^^^^^^^^^^^^^^
+E       IndexError: list index out of range
+
+solution.py:33: IndexError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.portal_min_moves.tests.test_solution" name="test_direct_portal" time="0.000"><failure message="IndexError: list index out of range">&gt;   def test_direct_portal(): assert f(10, [(0, 9)], 0, 9) == 1
+                                     ^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:4: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+n = 10, portals = [(0, 9)], start = 0, goal = 9
+
+    def portal_moves(n, portals, start, goal):
+        if n &lt;= 1:
+            raise ValueError('bad n')
+    
+        def calculate_min_steps(start_node, end_node, portal_locations):
+            if start_node == end_node:
+                return 0
+    
+            min_steps = float("inf")
+    
+            for i in range(len(portals)):
+                entry, exit = portals[i]
+                next_nodes = []
+    
+                # Explore neighboring cells and check the validity
+                for j in range(n):
+                    if (j - goal &lt; 0 or start_node == portal_locations[goal][0] + j) \
+                            and (j &gt; 0 and end_node == portal_locations[start_node][1]):
+                        next_nodes.append(portals[i])
+    
+                    elif (j - goal == 0 or start_node == portal_locations[j][0]) \
+                          and (start_node &lt; portals[i][0] or end_node &lt;= portals[i][1]):
+                        continue
+    
+                # Calculate the minimum steps required for each valid neighbor
+                if next_nodes:
+                    min_steps = min(min_steps, sum([abs(portal[1] - portal[2]) + calculate_min_steps(j, next_node, next_nodes)
+                                                   for j in range(len(next_nodes))]))
+    
+            return min_steps
+    
+        portals_sorted = sorted(portals)
+&gt;       start_node, goal_node = portals_sorted[start], portals_sorted[goal]
+                                                       ^^^^^^^^^^^^^^^^^^^^
+E       IndexError: list index out of range
+
+solution.py:33: IndexError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.portal_min_moves.tests.test_solution" name="test_walk_then_portal" time="0.000"><failure message="IndexError: list index out of range">&gt;   def test_walk_then_portal(): assert f(10, [(1, 8)], 0, 9) == 3
+                                        ^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:5: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+n = 10, portals = [(1, 8)], start = 0, goal = 9
+
+    def portal_moves(n, portals, start, goal):
+        if n &lt;= 1:
+            raise ValueError('bad n')
+    
+        def calculate_min_steps(start_node, end_node, portal_locations):
+            if start_node == end_node:
+                return 0
+    
+            min_steps = float("inf")
+    
+            for i in range(len(portals)):
+                entry, exit = portals[i]
+                next_nodes = []
+    
+                # Explore neighboring cells and check the validity
+                for j in range(n):
+                    if (j - goal &lt; 0 or start_node == portal_locations[goal][0] + j) \
+                            and (j &gt; 0 and end_node == portal_locations[start_node][1]):
+                        next_nodes.append(portals[i])
+    
+                    elif (j - goal == 0 or start_node == portal_locations[j][0]) \
+                          and (start_node &lt; portals[i][0] or end_node &lt;= portals[i][1]):
+                        continue
+    
+                # Calculate the minimum steps required for each valid neighbor
+                if next_nodes:
+                    min_steps = min(min_steps, sum([abs(portal[1] - portal[2]) + calculate_min_steps(j, next_node, next_nodes)
+                                                   for j in range(len(next_nodes))]))
+    
+            return min_steps
+    
+        portals_sorted = sorted(portals)
+&gt;       start_node, goal_node = portals_sorted[start], portals_sorted[goal]
+                                                       ^^^^^^^^^^^^^^^^^^^^
+E       IndexError: list index out of range
+
+solution.py:33: IndexError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.portal_min_moves.tests.test_solution" name="test_same_cell" time="0.000"><failure message="IndexError: list index out of range">&gt;   def test_same_cell(): assert f(5, [], 3, 3) == 0
+                                 ^^^^^^^^^^^^^^
+
+tests\test_solution.py:6: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+n = 5, portals = [], start = 3, goal = 3
+
+    def portal_moves(n, portals, start, goal):
+        if n &lt;= 1:
+            raise ValueError('bad n')
+    
+        def calculate_min_steps(start_node, end_node, portal_locations):
+            if start_node == end_node:
+                return 0
+    
+            min_steps = float("inf")
+    
+            for i in range(len(portals)):
+                entry, exit = portals[i]
+                next_nodes = []
+    
+                # Explore neighboring cells and check the validity
+                for j in range(n):
+                    if (j - goal &lt; 0 or start_node == portal_locations[goal][0] + j) \
+                            and (j &gt; 0 and end_node == portal_locations[start_node][1]):
+                        next_nodes.append(portals[i])
+    
+                    elif (j - goal == 0 or start_node == portal_locations[j][0]) \
+                          and (start_node &lt; portals[i][0] or end_node &lt;= portals[i][1]):
+                        continue
+    
+                # Calculate the minimum steps required for each valid neighbor
+                if next_nodes:
+                    min_steps = min(min_steps, sum([abs(portal[1] - portal[2]) + calculate_min_steps(j, next_node, next_nodes)
+                                                   for j in range(len(next_nodes))]))
+    
+            return min_steps
+    
+        portals_sorted = sorted(portals)
+&gt;       start_node, goal_node = portals_sorted[start], portals_sorted[goal]
+                                ^^^^^^^^^^^^^^^^^^^^^
+E       IndexError: list index out of range
+
+solution.py:33: IndexError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.portal_min_moves.tests.test_solution" name="test_one_cell" time="0.000"><failure message="ValueError: bad n">&gt;   def test_one_cell(): assert f(1, [], 0, 0) == 0
+                                ^^^^^^^^^^^^^^
+
+tests\test_solution.py:7: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+n = 1, portals = [], start = 0, goal = 0
+
+    def portal_moves(n, portals, start, goal):
+        if n &lt;= 1:
+&gt;           raise ValueError('bad n')
+E           ValueError: bad n
+
+solution.py:3: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.portal_min_moves.tests.test_solution" name="test_backward_portal_useless" time="0.000"><failure message="IndexError: list index out of range">&gt;   def test_backward_portal_useless(): assert f(10, [(9, 0)], 0, 9) == 9
+                                               ^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:8: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+n = 10, portals = [(9, 0)], start = 0, goal = 9
+
+    def portal_moves(n, portals, start, goal):
+        if n &lt;= 1:
+            raise ValueError('bad n')
+    
+        def calculate_min_steps(start_node, end_node, portal_locations):
+            if start_node == end_node:
+                return 0
+    
+            min_steps = float("inf")
+    
+            for i in range(len(portals)):
+                entry, exit = portals[i]
+                next_nodes = []
+    
+                # Explore neighboring cells and check the validity
+                for j in range(n):
+                    if (j - goal &lt; 0 or start_node == portal_locations[goal][0] + j) \
+                            and (j &gt; 0 and end_node == portal_locations[start_node][1]):
+                        next_nodes.append(portals[i])
+    
+                    elif (j - goal == 0 or start_node == portal_locations[j][0]) \
+                          and (start_node &lt; portals[i][0] or end_node &lt;= portals[i][1]):
+                        continue
+    
+                # Calculate the minimum steps required for each valid neighbor
+                if next_nodes:
+                    min_steps = min(min_steps, sum([abs(portal[1] - portal[2]) + calculate_min_steps(j, next_node, next_nodes)
+                                                   for j in range(len(next_nodes))]))
+    
+            return min_steps
+    
+        portals_sorted = sorted(portals)
+&gt;       start_node, goal_node = portals_sorted[start], portals_sorted[goal]
+                                                       ^^^^^^^^^^^^^^^^^^^^
+E       IndexError: list index out of range
+
+solution.py:33: IndexError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.portal_min_moves.tests.test_solution" name="test_one_way" time="0.000"><failure message="IndexError: list index out of range">&gt;   def test_one_way(): assert f(10, [(0, 5)], 5, 0) == 5
+                               ^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:9: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+n = 10, portals = [(0, 5)], start = 5, goal = 0
+
+    def portal_moves(n, portals, start, goal):
+        if n &lt;= 1:
+            raise ValueError('bad n')
+    
+        def calculate_min_steps(start_node, end_node, portal_locations):
+            if start_node == end_node:
+                return 0
+    
+            min_steps = float("inf")
+    
+            for i in range(len(portals)):
+                entry, exit = portals[i]
+                next_nodes = []
+    
+                # Explore neighboring cells and check the validity
+                for j in range(n):
+                    if (j - goal &lt; 0 or start_node == portal_locations[goal][0] + j) \
+                            and (j &gt; 0 and end_node == portal_locations[start_node][1]):
+                        next_nodes.append(portals[i])
+    
+                    elif (j - goal == 0 or start_node == portal_locations[j][0]) \
+                          and (start_node &lt; portals[i][0] or end_node &lt;= portals[i][1]):
+                        continue
+    
+                # Calculate the minimum steps required for each valid neighbor
+                if next_nodes:
+                    min_steps = min(min_steps, sum([abs(portal[1] - portal[2]) + calculate_min_steps(j, next_node, next_nodes)
+                                                   for j in range(len(next_nodes))]))
+    
+            return min_steps
+    
+        portals_sorted = sorted(portals)
+&gt;       start_node, goal_node = portals_sorted[start], portals_sorted[goal]
+                                ^^^^^^^^^^^^^^^^^^^^^
+E       IndexError: list index out of range
+
+solution.py:33: IndexError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.portal_min_moves.tests.test_solution" name="test_self_portal" time="0.000"><failure message="IndexError: list index out of range">&gt;   def test_self_portal(): assert f(6, [(2, 2)], 0, 5) == 5
+                                   ^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:10: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+n = 6, portals = [(2, 2)], start = 0, goal = 5
+
+    def portal_moves(n, portals, start, goal):
+        if n &lt;= 1:
+            raise ValueError('bad n')
+    
+        def calculate_min_steps(start_node, end_node, portal_locations):
+            if start_node == end_node:
+                return 0
+    
+            min_steps = float("inf")
+    
+            for i in range(len(portals)):
+                entry, exit = portals[i]
+                next_nodes = []
+    
+                # Explore neighboring cells and check the validity
+                for j in range(n):
+                    if (j - goal &lt; 0 or start_node == portal_locations[goal][0] + j) \
+                            and (j &gt; 0 and end_node == portal_locations[start_node][1]):
+                        next_nodes.append(portals[i])
+    
+                    elif (j - goal == 0 or start_node == portal_locations[j][0]) \
+                          and (start_node &lt; portals[i][0] or end_node &lt;= portals[i][1]):
+                        continue
+    
+                # Calculate the minimum steps required for each valid neighbor
+                if next_nodes:
+                    min_steps = min(min_steps, sum([abs(portal[1] - portal[2]) + calculate_min_steps(j, next_node, next_nodes)
+                                                   for j in range(len(next_nodes))]))
+    
+            return min_steps
+    
+        portals_sorted = sorted(portals)
+&gt;       start_node, goal_node = portals_sorted[start], portals_sorted[goal]
+                                                       ^^^^^^^^^^^^^^^^^^^^
+E       IndexError: list index out of range
+
+solution.py:33: IndexError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.portal_min_moves.tests.test_solution" name="test_best_of_two" time="0.000"><failure message="IndexError: list index out of range">&gt;   def test_best_of_two(): assert f(10, [(3, 9), (1, 7)], 0, 9) == 4
+                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:11: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+n = 10, portals = [(3, 9), (1, 7)], start = 0, goal = 9
+
+    def portal_moves(n, portals, start, goal):
+        if n &lt;= 1:
+            raise ValueError('bad n')
+    
+        def calculate_min_steps(start_node, end_node, portal_locations):
+            if start_node == end_node:
+                return 0
+    
+            min_steps = float("inf")
+    
+            for i in range(len(portals)):
+                entry, exit = portals[i]
+                next_nodes = []
+    
+                # Explore neighboring cells and check the validity
+                for j in range(n):
+                    if (j - goal &lt; 0 or start_node == portal_locations[goal][0] + j) \
+                            and (j &gt; 0 and end_node == portal_locations[start_node][1]):
+                        next_nodes.append(portals[i])
+    
+                    elif (j - goal == 0 or start_node == portal_locations[j][0]) \
+                          and (start_node &lt; portals[i][0] or end_node &lt;= portals[i][1]):
+                        continue
+    
+                # Calculate the minimum steps required for each valid neighbor
+                if next_nodes:
+                    min_steps = min(min_steps, sum([abs(portal[1] - portal[2]) + calculate_min_steps(j, next_node, next_nodes)
+                                                   for j in range(len(next_nodes))]))
+    
+            return min_steps
+    
+        portals_sorted = sorted(portals)
+&gt;       start_node, goal_node = portals_sorted[start], portals_sorted[goal]
+                                                       ^^^^^^^^^^^^^^^^^^^^
+E       IndexError: list index out of range
+
+solution.py:33: IndexError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.portal_min_moves.tests.test_solution" name="test_duplicate_entry" time="0.000"><failure message="IndexError: list index out of range">def test_duplicate_entry():
+&gt;       with pytest.raises(ValueError) as e: f(10, [(1, 2), (1, 3)], 0, 9)
+                                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:13: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+n = 10, portals = [(1, 2), (1, 3)], start = 0, goal = 9
+
+    def portal_moves(n, portals, start, goal):
+        if n &lt;= 1:
+            raise ValueError('bad n')
+    
+        def calculate_min_steps(start_node, end_node, portal_locations):
+            if start_node == end_node:
+                return 0
+    
+            min_steps = float("inf")
+    
+            for i in range(len(portals)):
+                entry, exit = portals[i]
+                next_nodes = []
+    
+                # Explore neighboring cells and check the validity
+                for j in range(n):
+                    if (j - goal &lt; 0 or start_node == portal_locations[goal][0] + j) \
+                            and (j &gt; 0 and end_node == portal_locations[start_node][1]):
+                        next_nodes.append(portals[i])
+    
+                    elif (j - goal == 0 or start_node == portal_locations[j][0]) \
+                          and (start_node &lt; portals[i][0] or end_node &lt;= portals[i][1]):
+                        continue
+    
+                # Calculate the minimum steps required for each valid neighbor
+                if next_nodes:
+                    min_steps = min(min_steps, sum([abs(portal[1] - portal[2]) + calculate_min_steps(j, next_node, next_nodes)
+                                                   for j in range(len(next_nodes))]))
+    
+            return min_steps
+    
+        portals_sorted = sorted(portals)
+&gt;       start_node, goal_node = portals_sorted[start], portals_sorted[goal]
+                                                       ^^^^^^^^^^^^^^^^^^^^
+E       IndexError: list index out of range
+
+solution.py:33: IndexError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.portal_min_moves.tests.test_solution" name="test_duplicate_identical" time="0.000"><failure message="IndexError: list index out of range">def test_duplicate_identical():
+&gt;       with pytest.raises(ValueError) as e: f(10, [(1, 2), (1, 2)], 0, 9)
+                                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:16: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+n = 10, portals = [(1, 2), (1, 2)], start = 0, goal = 9
+
+    def portal_moves(n, portals, start, goal):
+        if n &lt;= 1:
+            raise ValueError('bad n')
+    
+        def calculate_min_steps(start_node, end_node, portal_locations):
+            if start_node == end_node:
+                return 0
+    
+            min_steps = float("inf")
+    
+            for i in range(len(portals)):
+                entry, exit = portals[i]
+                next_nodes = []
+    
+                # Explore neighboring cells and check the validity
+                for j in range(n):
+                    if (j - goal &lt; 0 or start_node == portal_locations[goal][0] + j) \
+                            and (j &gt; 0 and end_node == portal_locations[start_node][1]):
+                        next_nodes.append(portals[i])
+    
+                    elif (j - goal == 0 or start_node == portal_locations[j][0]) \
+                          and (start_node &lt; portals[i][0] or end_node &lt;= portals[i][1]):
+                        continue
+    
+                # Calculate the minimum steps required for each valid neighbor
+                if next_nodes:
+                    min_steps = min(min_steps, sum([abs(portal[1] - portal[2]) + calculate_min_steps(j, next_node, next_nodes)
+                                                   for j in range(len(next_nodes))]))
+    
+            return min_steps
+    
+        portals_sorted = sorted(portals)
+&gt;       start_node, goal_node = portals_sorted[start], portals_sorted[goal]
+                                                       ^^^^^^^^^^^^^^^^^^^^
+E       IndexError: list index out of range
+
+solution.py:33: IndexError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.portal_min_moves.tests.test_solution" name="test_bad_portal_list" time="0.000"><failure message="IndexError: list index out of range">def test_bad_portal_list():
+&gt;       with pytest.raises(ValueError) as e: f(10, [[1, 2]], 0, 9)
+                                             ^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:19: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+n = 10, portals = [[1, 2]], start = 0, goal = 9
+
+    def portal_moves(n, portals, start, goal):
+        if n &lt;= 1:
+            raise ValueError('bad n')
+    
+        def calculate_min_steps(start_node, end_node, portal_locations):
+            if start_node == end_node:
+                return 0
+    
+            min_steps = float("inf")
+    
+            for i in range(len(portals)):
+                entry, exit = portals[i]
+                next_nodes = []
+    
+                # Explore neighboring cells and check the validity
+                for j in range(n):
+                    if (j - goal &lt; 0 or start_node == portal_locations[goal][0] + j) \
+                            and (j &gt; 0 and end_node == portal_locations[start_node][1]):
+                        next_nodes.append(portals[i])
+    
+                    elif (j - goal == 0 or start_node == portal_locations[j][0]) \
+                          and (start_node &lt; portals[i][0] or end_node &lt;= portals[i][1]):
+                        continue
+    
+                # Calculate the minimum steps required for each valid neighbor
+                if next_nodes:
+                    min_steps = min(min_steps, sum([abs(portal[1] - portal[2]) + calculate_min_steps(j, next_node, next_nodes)
+                                                   for j in range(len(next_nodes))]))
+    
+            return min_steps
+    
+        portals_sorted = sorted(portals)
+&gt;       start_node, goal_node = portals_sorted[start], portals_sorted[goal]
+                                                       ^^^^^^^^^^^^^^^^^^^^
+E       IndexError: list index out of range
+
+solution.py:33: IndexError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.portal_min_moves.tests.test_solution" name="test_bad_portal_range" time="0.000"><failure message="IndexError: list index out of range">def test_bad_portal_range():
+&gt;       with pytest.raises(ValueError): f(10, [(1, 10)], 0, 9)
+                                        ^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:22: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+n = 10, portals = [(1, 10)], start = 0, goal = 9
+
+    def portal_moves(n, portals, start, goal):
+        if n &lt;= 1:
+            raise ValueError('bad n')
+    
+        def calculate_min_steps(start_node, end_node, portal_locations):
+            if start_node == end_node:
+                return 0
+    
+            min_steps = float("inf")
+    
+            for i in range(len(portals)):
+                entry, exit = portals[i]
+                next_nodes = []
+    
+                # Explore neighboring cells and check the validity
+                for j in range(n):
+                    if (j - goal &lt; 0 or start_node == portal_locations[goal][0] + j) \
+                            and (j &gt; 0 and end_node == portal_locations[start_node][1]):
+                        next_nodes.append(portals[i])
+    
+                    elif (j - goal == 0 or start_node == portal_locations[j][0]) \
+                          and (start_node &lt; portals[i][0] or end_node &lt;= portals[i][1]):
+                        continue
+    
+                # Calculate the minimum steps required for each valid neighbor
+                if next_nodes:
+                    min_steps = min(min_steps, sum([abs(portal[1] - portal[2]) + calculate_min_steps(j, next_node, next_nodes)
+                                                   for j in range(len(next_nodes))]))
+    
+            return min_steps
+    
+        portals_sorted = sorted(portals)
+&gt;       start_node, goal_node = portals_sorted[start], portals_sorted[goal]
+                                                       ^^^^^^^^^^^^^^^^^^^^
+E       IndexError: list index out of range
+
+solution.py:33: IndexError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.portal_min_moves.tests.test_solution" name="test_bad_portal_bool" time="0.000"><failure message="IndexError: list index out of range">def test_bad_portal_bool():
+&gt;       with pytest.raises(ValueError): f(10, [(1, True)], 0, 9)
+                                        ^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:24: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+n = 10, portals = [(1, True)], start = 0, goal = 9
+
+    def portal_moves(n, portals, start, goal):
+        if n &lt;= 1:
+            raise ValueError('bad n')
+    
+        def calculate_min_steps(start_node, end_node, portal_locations):
+            if start_node == end_node:
+                return 0
+    
+            min_steps = float("inf")
+    
+            for i in range(len(portals)):
+                entry, exit = portals[i]
+                next_nodes = []
+    
+                # Explore neighboring cells and check the validity
+                for j in range(n):
+                    if (j - goal &lt; 0 or start_node == portal_locations[goal][0] + j) \
+                            and (j &gt; 0 and end_node == portal_locations[start_node][1]):
+                        next_nodes.append(portals[i])
+    
+                    elif (j - goal == 0 or start_node == portal_locations[j][0]) \
+                          and (start_node &lt; portals[i][0] or end_node &lt;= portals[i][1]):
+                        continue
+    
+                # Calculate the minimum steps required for each valid neighbor
+                if next_nodes:
+                    min_steps = min(min_steps, sum([abs(portal[1] - portal[2]) + calculate_min_steps(j, next_node, next_nodes)
+                                                   for j in range(len(next_nodes))]))
+    
+            return min_steps
+    
+        portals_sorted = sorted(portals)
+&gt;       start_node, goal_node = portals_sorted[start], portals_sorted[goal]
+                                                       ^^^^^^^^^^^^^^^^^^^^
+E       IndexError: list index out of range
+
+solution.py:33: IndexError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.portal_min_moves.tests.test_solution" name="test_bad_portal_not_list" time="0.000"><failure message="IndexError: list index out of range">def test_bad_portal_not_list():
+&gt;       with pytest.raises(ValueError): f(10, 'x', 0, 9)
+                                        ^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:26: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+n = 10, portals = 'x', start = 0, goal = 9
+
+    def portal_moves(n, portals, start, goal):
+        if n &lt;= 1:
+            raise ValueError('bad n')
+    
+        def calculate_min_steps(start_node, end_node, portal_locations):
+            if start_node == end_node:
+                return 0
+    
+            min_steps = float("inf")
+    
+            for i in range(len(portals)):
+                entry, exit = portals[i]
+                next_nodes = []
+    
+                # Explore neighboring cells and check the validity
+                for j in range(n):
+                    if (j - goal &lt; 0 or start_node == portal_locations[goal][0] + j) \
+                            and (j &gt; 0 and end_node == portal_locations[start_node][1]):
+                        next_nodes.append(portals[i])
+    
+                    elif (j - goal == 0 or start_node == portal_locations[j][0]) \
+                          and (start_node &lt; portals[i][0] or end_node &lt;= portals[i][1]):
+                        continue
+    
+                # Calculate the minimum steps required for each valid neighbor
+                if next_nodes:
+                    min_steps = min(min_steps, sum([abs(portal[1] - portal[2]) + calculate_min_steps(j, next_node, next_nodes)
+                                                   for j in range(len(next_nodes))]))
+    
+            return min_steps
+    
+        portals_sorted = sorted(portals)
+&gt;       start_node, goal_node = portals_sorted[start], portals_sorted[goal]
+                                                       ^^^^^^^^^^^^^^^^^^^^
+E       IndexError: list index out of range
+
+solution.py:33: IndexError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.portal_min_moves.tests.test_solution" name="test_bad_n" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-201327.portal_min_moves.tests.test_solution" name="test_bad_n_bool" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-201327.portal_min_moves.tests.test_solution" name="test_bad_cell_range" time="0.000"><failure message="IndexError: list index out of range">def test_bad_cell_range():
+&gt;       with pytest.raises(ValueError) as e: f(5, [], 5, 0)
+                                             ^^^^^^^^^^^^^^
+
+tests\test_solution.py:33: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+n = 5, portals = [], start = 5, goal = 0
+
+    def portal_moves(n, portals, start, goal):
+        if n &lt;= 1:
+            raise ValueError('bad n')
+    
+        def calculate_min_steps(start_node, end_node, portal_locations):
+            if start_node == end_node:
+                return 0
+    
+            min_steps = float("inf")
+    
+            for i in range(len(portals)):
+                entry, exit = portals[i]
+                next_nodes = []
+    
+                # Explore neighboring cells and check the validity
+                for j in range(n):
+                    if (j - goal &lt; 0 or start_node == portal_locations[goal][0] + j) \
+                            and (j &gt; 0 and end_node == portal_locations[start_node][1]):
+                        next_nodes.append(portals[i])
+    
+                    elif (j - goal == 0 or start_node == portal_locations[j][0]) \
+                          and (start_node &lt; portals[i][0] or end_node &lt;= portals[i][1]):
+                        continue
+    
+                # Calculate the minimum steps required for each valid neighbor
+                if next_nodes:
+                    min_steps = min(min_steps, sum([abs(portal[1] - portal[2]) + calculate_min_steps(j, next_node, next_nodes)
+                                                   for j in range(len(next_nodes))]))
+    
+            return min_steps
+    
+        portals_sorted = sorted(portals)
+&gt;       start_node, goal_node = portals_sorted[start], portals_sorted[goal]
+                                ^^^^^^^^^^^^^^^^^^^^^
+E       IndexError: list index out of range
+
+solution.py:33: IndexError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.portal_min_moves.tests.test_solution" name="test_bad_cell_bool" time="0.000"><failure message="IndexError: list index out of range">def test_bad_cell_bool():
+&gt;       with pytest.raises(ValueError): f(5, [], True, 0)
+                                        ^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:36: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+n = 5, portals = [], start = True, goal = 0
+
+    def portal_moves(n, portals, start, goal):
+        if n &lt;= 1:
+            raise ValueError('bad n')
+    
+        def calculate_min_steps(start_node, end_node, portal_locations):
+            if start_node == end_node:
+                return 0
+    
+            min_steps = float("inf")
+    
+            for i in range(len(portals)):
+                entry, exit = portals[i]
+                next_nodes = []
+    
+                # Explore neighboring cells and check the validity
+                for j in range(n):
+                    if (j - goal &lt; 0 or start_node == portal_locations[goal][0] + j) \
+                            and (j &gt; 0 and end_node == portal_locations[start_node][1]):
+                        next_nodes.append(portals[i])
+    
+                    elif (j - goal == 0 or start_node == portal_locations[j][0]) \
+                          and (start_node &lt; portals[i][0] or end_node &lt;= portals[i][1]):
+                        continue
+    
+                # Calculate the minimum steps required for each valid neighbor
+                if next_nodes:
+                    min_steps = min(min_steps, sum([abs(portal[1] - portal[2]) + calculate_min_steps(j, next_node, next_nodes)
+                                                   for j in range(len(next_nodes))]))
+    
+            return min_steps
+    
+        portals_sorted = sorted(portals)
+&gt;       start_node, goal_node = portals_sorted[start], portals_sorted[goal]
+                                ^^^^^^^^^^^^^^^^^^^^^
+E       IndexError: list index out of range
+
+solution.py:33: IndexError</failure></testcase></testsuite></testsuites>

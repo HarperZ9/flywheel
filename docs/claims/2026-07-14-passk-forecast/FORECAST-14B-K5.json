@@ -1,0 +1,679 @@
+{
+ "schema": "flywheel.passk-forecast/v1",
+ "k": 5,
+ "source_artifact": "uplift_hard_v2_20260714-091030.json",
+ "n_tasks": 110,
+ "expected_pass_rate": 0.6659,
+ "interval_95": [
+  0.5952,
+  0.7365
+ ],
+ "per_task": [
+  {
+   "task_id": "interval_intersection",
+   "n": 1,
+   "c": 1,
+   "q": 0.958984
+  },
+  {
+   "task_id": "search_rotated",
+   "n": 2,
+   "c": 1,
+   "q": 0.871094
+  },
+  {
+   "task_id": "parse_range_list",
+   "n": 1,
+   "c": 1,
+   "q": 0.958984
+  },
+  {
+   "task_id": "sliding_window_max",
+   "n": 3,
+   "c": 1,
+   "q": 0.790527
+  },
+  {
+   "task_id": "topo_sort",
+   "n": 3,
+   "c": 0,
+   "q": 0.371582
+  },
+  {
+   "task_id": "rle_decode",
+   "n": 1,
+   "c": 1,
+   "q": 0.958984
+  },
+  {
+   "task_id": "matrix_rotate_inplace",
+   "n": 1,
+   "c": 1,
+   "q": 0.958984
+  },
+  {
+   "task_id": "evaluate_rpn",
+   "n": 3,
+   "c": 1,
+   "q": 0.790527
+  },
+  {
+   "task_id": "lis_length",
+   "n": 1,
+   "c": 1,
+   "q": 0.958984
+  },
+  {
+   "task_id": "valid_ipv4",
+   "n": 1,
+   "c": 1,
+   "q": 0.958984
+  },
+  {
+   "task_id": "josephus",
+   "n": 1,
+   "c": 1,
+   "q": 0.958984
+  },
+  {
+   "task_id": "merge_sorted_streams",
+   "n": 1,
+   "c": 1,
+   "q": 0.958984
+  },
+  {
+   "task_id": "first_missing_positive",
+   "n": 3,
+   "c": 0,
+   "q": 0.371582
+  },
+  {
+   "task_id": "count_islands",
+   "n": 3,
+   "c": 1,
+   "q": 0.790527
+  },
+  {
+   "task_id": "csv_field_split",
+   "n": 3,
+   "c": 0,
+   "q": 0.371582
+  },
+  {
+   "task_id": "duration_hms_strict",
+   "n": 3,
+   "c": 0,
+   "q": 0.371582
+  },
+  {
+   "task_id": "shellish_tokenize",
+   "n": 3,
+   "c": 0,
+   "q": 0.371582
+  },
+  {
+   "task_id": "header_unfold",
+   "n": 3,
+   "c": 0,
+   "q": 0.371582
+  },
+  {
+   "task_id": "canonical_decimal",
+   "n": 3,
+   "c": 0,
+   "q": 0.371582
+  },
+  {
+   "task_id": "template_fields",
+   "n": 3,
+   "c": 0,
+   "q": 0.371582
+  },
+  {
+   "task_id": "partition_three_inplace",
+   "n": 3,
+   "c": 0,
+   "q": 0.371582
+  },
+  {
+   "task_id": "merge_tallies",
+   "n": 2,
+   "c": 1,
+   "q": 0.871094
+  },
+  {
+   "task_id": "apply_edits",
+   "n": 3,
+   "c": 0,
+   "q": 0.371582
+  },
+  {
+   "task_id": "group_pairs",
+   "n": 1,
+   "c": 1,
+   "q": 0.958984
+  },
+  {
+   "task_id": "purge_in_place",
+   "n": 1,
+   "c": 1,
+   "q": 0.958984
+  },
+  {
+   "task_id": "splice_pure",
+   "n": 3,
+   "c": 0,
+   "q": 0.371582
+  },
+  {
+   "task_id": "sat_add_nbit",
+   "n": 1,
+   "c": 1,
+   "q": 0.958984
+  },
+  {
+   "task_id": "div_round_half_away",
+   "n": 3,
+   "c": 0,
+   "q": 0.371582
+  },
+  {
+   "task_id": "add_months_clamp",
+   "n": 1,
+   "c": 1,
+   "q": 0.958984
+  },
+  {
+   "task_id": "bucket_histogram_mixed",
+   "n": 3,
+   "c": 0,
+   "q": 0.371582
+  },
+  {
+   "task_id": "mini_editor_undo",
+   "n": 3,
+   "c": 0,
+   "q": 0.371582
+  },
+  {
+   "task_id": "frame_checksum_decode",
+   "n": 1,
+   "c": 1,
+   "q": 0.958984
+  },
+  {
+   "task_id": "kv_event_fold",
+   "n": 3,
+   "c": 0,
+   "q": 0.371582
+  },
+  {
+   "task_id": "outline_leaf_paths",
+   "n": 3,
+   "c": 0,
+   "q": 0.371582
+  },
+  {
+   "task_id": "tilde_unescape",
+   "n": 3,
+   "c": 0,
+   "q": 0.371582
+  },
+  {
+   "task_id": "largest_remainder_apportion",
+   "n": 3,
+   "c": 0,
+   "q": 0.371582
+  },
+  {
+   "task_id": "format_signed_duration",
+   "n": 1,
+   "c": 1,
+   "q": 0.958984
+  },
+  {
+   "task_id": "varint_zigzag_decode",
+   "n": 3,
+   "c": 0,
+   "q": 0.371582
+  },
+  {
+   "task_id": "word_wrap_greedy",
+   "n": 3,
+   "c": 0,
+   "q": 0.371582
+  },
+  {
+   "task_id": "identifier_words",
+   "n": 3,
+   "c": 0,
+   "q": 0.371582
+  },
+  {
+   "task_id": "tab_expand_columns",
+   "n": 1,
+   "c": 1,
+   "q": 0.958984
+  },
+  {
+   "task_id": "interval_subtract",
+   "n": 3,
+   "c": 0,
+   "q": 0.371582
+  },
+  {
+   "task_id": "rect_overlap_area",
+   "n": 1,
+   "c": 1,
+   "q": 0.958984
+  },
+  {
+   "task_id": "covered_integer_count",
+   "n": 2,
+   "c": 1,
+   "q": 0.871094
+  },
+  {
+   "task_id": "turtle_walk_program",
+   "n": 3,
+   "c": 0,
+   "q": 0.371582
+  },
+  {
+   "task_id": "token_bucket_grants",
+   "n": 3,
+   "c": 0,
+   "q": 0.371582
+  },
+  {
+   "task_id": "stopwatch_fsm",
+   "n": 1,
+   "c": 1,
+   "q": 0.958984
+  },
+  {
+   "task_id": "matrix_shape_strict",
+   "n": 3,
+   "c": 0,
+   "q": 0.371582
+  },
+  {
+   "task_id": "money_cents_strict",
+   "n": 3,
+   "c": 0,
+   "q": 0.371582
+  },
+  {
+   "task_id": "cron_field_expand",
+   "n": 3,
+   "c": 0,
+   "q": 0.371582
+  },
+  {
+   "task_id": "int_to_base",
+   "n": 1,
+   "c": 1,
+   "q": 0.958984
+  },
+  {
+   "task_id": "parse_base",
+   "n": 1,
+   "c": 1,
+   "q": 0.958984
+  },
+  {
+   "task_id": "roman_encode",
+   "n": 1,
+   "c": 1,
+   "q": 0.958984
+  },
+  {
+   "task_id": "col_label",
+   "n": 1,
+   "c": 1,
+   "q": 0.958984
+  },
+  {
+   "task_id": "col_number",
+   "n": 1,
+   "c": 1,
+   "q": 0.958984
+  },
+  {
+   "task_id": "luhn_valid",
+   "n": 1,
+   "c": 1,
+   "q": 0.958984
+  },
+  {
+   "task_id": "isbn10_check",
+   "n": 1,
+   "c": 1,
+   "q": 0.958984
+  },
+  {
+   "task_id": "days_in_month",
+   "n": 1,
+   "c": 1,
+   "q": 0.958984
+  },
+  {
+   "task_id": "ordinal_day",
+   "n": 1,
+   "c": 1,
+   "q": 0.958984
+  },
+  {
+   "task_id": "weekday_name",
+   "n": 3,
+   "c": 0,
+   "q": 0.371582
+  },
+  {
+   "task_id": "days_between",
+   "n": 3,
+   "c": 0,
+   "q": 0.371582
+  },
+  {
+   "task_id": "semver_compare",
+   "n": 3,
+   "c": 0,
+   "q": 0.371582
+  },
+  {
+   "task_id": "natural_compare",
+   "n": 3,
+   "c": 0,
+   "q": 0.371582
+  },
+  {
+   "task_id": "percent_decode",
+   "n": 1,
+   "c": 1,
+   "q": 0.958984
+  },
+  {
+   "task_id": "csv_quote",
+   "n": 1,
+   "c": 1,
+   "q": 0.958984
+  },
+  {
+   "task_id": "round_half_even",
+   "n": 3,
+   "c": 0,
+   "q": 0.371582
+  },
+  {
+   "task_id": "reverse_bits",
+   "n": 3,
+   "c": 0,
+   "q": 0.371582
+  },
+  {
+   "task_id": "reduce_fraction",
+   "n": 3,
+   "c": 0,
+   "q": 0.371582
+  },
+  {
+   "task_id": "top_k_frequent",
+   "n": 1,
+   "c": 1,
+   "q": 0.958984
+  },
+  {
+   "task_id": "uniq_counts",
+   "n": 1,
+   "c": 1,
+   "q": 0.958984
+  },
+  {
+   "task_id": "eval_bool_expr",
+   "n": 3,
+   "c": 0,
+   "q": 0.371582
+  },
+  {
+   "task_id": "glob_match",
+   "n": 3,
+   "c": 0,
+   "q": 0.371582
+  },
+  {
+   "task_id": "sliding_windows",
+   "n": 1,
+   "c": 1,
+   "q": 0.958984
+  },
+  {
+   "task_id": "summarize_ranges",
+   "n": 3,
+   "c": 0,
+   "q": 0.371582
+  },
+  {
+   "task_id": "matrix_transpose",
+   "n": 3,
+   "c": 0,
+   "q": 0.371582
+  },
+  {
+   "task_id": "json_string_escape",
+   "n": 1,
+   "c": 1,
+   "q": 0.958984
+  },
+  {
+   "task_id": "normalize_path",
+   "n": 1,
+   "c": 1,
+   "q": 0.958984
+  },
+  {
+   "task_id": "ipv4_to_int",
+   "n": 1,
+   "c": 1,
+   "q": 0.958984
+  },
+  {
+   "task_id": "multiset_diff",
+   "n": 1,
+   "c": 1,
+   "q": 0.958984
+  },
+  {
+   "task_id": "parse_a1_ref",
+   "n": 3,
+   "c": 0,
+   "q": 0.371582
+  },
+  {
+   "task_id": "linked_cycle",
+   "n": 3,
+   "c": 0,
+   "q": 0.371582
+  },
+  {
+   "task_id": "manhattan_tour",
+   "n": 3,
+   "c": 0,
+   "q": 0.371582
+  },
+  {
+   "task_id": "parse_kv_pairs",
+   "n": 3,
+   "c": 0,
+   "q": 0.371582
+  },
+  {
+   "task_id": "rotate_list",
+   "n": 1,
+   "c": 1,
+   "q": 0.958984
+  },
+  {
+   "task_id": "group_anagrams",
+   "n": 1,
+   "c": 1,
+   "q": 0.958984
+  },
+  {
+   "task_id": "stock_spans",
+   "n": 3,
+   "c": 1,
+   "q": 0.790527
+  },
+  {
+   "task_id": "perm_rank",
+   "n": 3,
+   "c": 0,
+   "q": 0.371582
+  },
+  {
+   "task_id": "gray_rank",
+   "n": 3,
+   "c": 1,
+   "q": 0.790527
+  },
+  {
+   "task_id": "kth_combination",
+   "n": 3,
+   "c": 1,
+   "q": 0.790527
+  },
+  {
+   "task_id": "look_and_say_bounded",
+   "n": 1,
+   "c": 1,
+   "q": 0.958984
+  },
+  {
+   "task_id": "longest_digit_run",
+   "n": 3,
+   "c": 0,
+   "q": 0.371582
+  },
+  {
+   "task_id": "collatz_trace",
+   "n": 3,
+   "c": 1,
+   "q": 0.790527
+  },
+  {
+   "task_id": "knight_min_moves",
+   "n": 1,
+   "c": 1,
+   "q": 0.958984
+  },
+  {
+   "task_id": "grid_bfs_steps",
+   "n": 3,
+   "c": 0,
+   "q": 0.371582
+  },
+  {
+   "task_id": "union_component_count",
+   "n": 1,
+   "c": 1,
+   "q": 0.958984
+  },
+  {
+   "task_id": "bipartite_strict",
+   "n": 3,
+   "c": 0,
+   "q": 0.371582
+  },
+  {
+   "task_id": "portal_min_moves",
+   "n": 3,
+   "c": 0,
+   "q": 0.371582
+  },
+  {
+   "task_id": "spread_radius",
+   "n": 3,
+   "c": 0,
+   "q": 0.371582
+  },
+  {
+   "task_id": "lru_trace",
+   "n": 1,
+   "c": 1,
+   "q": 0.958984
+  },
+  {
+   "task_id": "min_stack_trace",
+   "n": 3,
+   "c": 1,
+   "q": 0.790527
+  },
+  {
+   "task_id": "ring_buffer_trace",
+   "n": 3,
+   "c": 0,
+   "q": 0.371582
+  },
+  {
+   "task_id": "k_smallest_names",
+   "n": 1,
+   "c": 1,
+   "q": 0.958984
+  },
+  {
+   "task_id": "bank_ledger",
+   "n": 1,
+   "c": 1,
+   "q": 0.958984
+  },
+  {
+   "task_id": "inventory_reserve",
+   "n": 2,
+   "c": 1,
+   "q": 0.871094
+  },
+  {
+   "task_id": "url_split_strict",
+   "n": 3,
+   "c": 0,
+   "q": 0.371582
+  },
+  {
+   "task_id": "qp_decode",
+   "n": 1,
+   "c": 1,
+   "q": 0.958984
+  },
+  {
+   "task_id": "ini_section_parse",
+   "n": 1,
+   "c": 1,
+   "q": 0.958984
+  },
+  {
+   "task_id": "lcs_diff_ops",
+   "n": 3,
+   "c": 0,
+   "q": 0.371582
+  },
+  {
+   "task_id": "fletcher16_checksum",
+   "n": 1,
+   "c": 1,
+   "q": 0.958984
+  },
+  {
+   "task_id": "md_outline_number",
+   "n": 3,
+   "c": 0,
+   "q": 0.371582
+  }
+ ],
+ "iid_baseline": {
+  "pooled_p": 0.24786324786324787,
+  "expected_pass_rate": 0.7593
+ },
+ "note": "sealed before any such run exists; fresh-draw framing (not keep-the-pool); tasks independent by assumption; adjudicate BOTH this and the iid baseline against the real run -- whichever errs more is the falsified one",
+ "seal": "5fdaadfce7ccd521e567d0bfdee26940d051eea6807359527f8b2291fd8f2bc8"
+}

@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="9" time="0.191" timestamp="2026-07-13T20:31:54.614156-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-201327.rotate_list.tests.test_solution" name="test_basic" time="0.001" /><testcase classname="artifacts.uplift.work_20260713-201327.rotate_list.tests.test_solution" name="test_zero" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-201327.rotate_list.tests.test_solution" name="test_full_wrap" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-201327.rotate_list.tests.test_solution" name="test_over_wrap" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-201327.rotate_list.tests.test_solution" name="test_negative" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-201327.rotate_list.tests.test_solution" name="test_empty" time="0.000"><failure message="ZeroDivisionError: integer modulo by zero">&gt;   def test_empty(): assert f([], 5) == []
+                             ^^^^^^^^
+
+tests\test_solution.py:8: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+items = [], k = 5
+
+    def rotate(items: list, k: int) -&gt; list:
+        """
+        Rotate the given list items to the right by k positions.
+    
+        Args:
+        - items: A list representing the original rotated list.
+        - k: An integer representing the number of times to rotate the list elements to the right.
+          It's taken modulo the length of the list, so k is adjusted accordingly and wraps around.
+    
+        Returns:
+        - A new list that has been rotated by k positions.
+    
+        Raises:
+        - ValueError: If items is not a list or if k is not an integer.
+        - ValueError: If k is negative or greater than the length of the input list.
+        """
+        if not isinstance(items, list):
+            raise ValueError('bad input')
+        if type(k) != int:
+            raise ValueError('bad shift')
+    
+        # Adjust k for modulo length
+&gt;       adjusted_k = k % len(items)
+                     ^^^^^^^^^^^^^^
+E       ZeroDivisionError: integer modulo by zero
+
+solution.py:23: ZeroDivisionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.rotate_list.tests.test_solution" name="test_no_mutation" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-201327.rotate_list.tests.test_solution" name="test_bad_input" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-201327.rotate_list.tests.test_solution" name="test_bad_shift" time="0.001" /></testsuite></testsuites>

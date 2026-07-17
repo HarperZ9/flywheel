@@ -1,0 +1,13 @@
+{
+ "bytes": 480830,
+ "content_type": "text/html",
+ "final_url": "https://github.com/memvid/memvid",
+ "note": "the hash IS the receipt: any quotation from this source is re-checkable against these bytes offline",
+ "observed_urls": [
+  "https://github.com/memvid/memvid"
+ ],
+ "path": "artifacts\\research\\5a792cb258822cbc95d62ccfe16c2492869a552c1fe79a6713f1fedb184b86dd.bin",
+ "schema": "flywheel.web-snapshot/v1",
+ "sha256": "5a792cb258822cbc95d62ccfe16c2492869a552c1fe79a6713f1fedb184b86dd",
+ "url": "https://github.com/memvid/memvid"
+}

@@ -1,0 +1,242 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="10" skipped="0" tests="10" time="0.269" timestamp="2026-07-14T13:17:08.230443-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260714-125209.mini_editor_undo.tests.test_solution" name="test_type_and_cursor" time="0.001"><failure message="ValueError: non-numeric argument in command: 'type hello'">def test_type_and_cursor():
+&gt;       assert edit(["type hello"]) == ("hello", 5)
+               ^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:6: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+commands = ['type hello']
+
+    def edit(commands):
+        buf = []
+        pos = 0
+        _log = []                # each entry is [oldbuf[:], oldpos, cmd] -- cmd is exactly what was parsed
+        def _record():
+            _log.append([buf[:] if buf else [], pos, None])
+        for c in commands:
+            _record(); _log[-1][2] = c
+            cs = c.split(maxsplit=1)
+            if len(cs) != 2: raise ValueError("malformed command: " + repr(c))
+            a, b = cs
+            try:
+                n = int(b); k = max(0, min(pos, n))
+            except Exception:
+&gt;               raise ValueError("non-numeric argument in command: " + repr(c)) from None
+E               ValueError: non-numeric argument in command: 'type hello'
+
+solution.py:15: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-125209.mini_editor_undo.tests.test_solution" name="test_insert_middle_and_clamping" time="0.000"><failure message="ValueError: non-numeric argument in command: 'type bc'">def test_insert_middle_and_clamping():
+&gt;       assert edit(["type bc", "left 99", "type a"]) == ("abc", 1)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:11: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+commands = ['type bc', 'left 99', 'type a']
+
+    def edit(commands):
+        buf = []
+        pos = 0
+        _log = []                # each entry is [oldbuf[:], oldpos, cmd] -- cmd is exactly what was parsed
+        def _record():
+            _log.append([buf[:] if buf else [], pos, None])
+        for c in commands:
+            _record(); _log[-1][2] = c
+            cs = c.split(maxsplit=1)
+            if len(cs) != 2: raise ValueError("malformed command: " + repr(c))
+            a, b = cs
+            try:
+                n = int(b); k = max(0, min(pos, n))
+            except Exception:
+&gt;               raise ValueError("non-numeric argument in command: " + repr(c)) from None
+E               ValueError: non-numeric argument in command: 'type bc'
+
+solution.py:15: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-125209.mini_editor_undo.tests.test_solution" name="test_type_payload_may_contain_spaces" time="0.000"><failure message="ValueError: non-numeric argument in command: 'type a b'">def test_type_payload_may_contain_spaces():
+&gt;       assert edit(["type a b"]) == ("a b", 3)
+               ^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:16: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+commands = ['type a b']
+
+    def edit(commands):
+        buf = []
+        pos = 0
+        _log = []                # each entry is [oldbuf[:], oldpos, cmd] -- cmd is exactly what was parsed
+        def _record():
+            _log.append([buf[:] if buf else [], pos, None])
+        for c in commands:
+            _record(); _log[-1][2] = c
+            cs = c.split(maxsplit=1)
+            if len(cs) != 2: raise ValueError("malformed command: " + repr(c))
+            a, b = cs
+            try:
+                n = int(b); k = max(0, min(pos, n))
+            except Exception:
+&gt;               raise ValueError("non-numeric argument in command: " + repr(c)) from None
+E               ValueError: non-numeric argument in command: 'type a b'
+
+solution.py:15: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-125209.mini_editor_undo.tests.test_solution" name="test_backspace_partial" time="0.000"><failure message="ValueError: non-numeric argument in command: 'type abc'">def test_backspace_partial():
+&gt;       assert edit(["type abc", "left 2", "backspace 5"]) == ("bc", 0)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:20: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+commands = ['type abc', 'left 2', 'backspace 5']
+
+    def edit(commands):
+        buf = []
+        pos = 0
+        _log = []                # each entry is [oldbuf[:], oldpos, cmd] -- cmd is exactly what was parsed
+        def _record():
+            _log.append([buf[:] if buf else [], pos, None])
+        for c in commands:
+            _record(); _log[-1][2] = c
+            cs = c.split(maxsplit=1)
+            if len(cs) != 2: raise ValueError("malformed command: " + repr(c))
+            a, b = cs
+            try:
+                n = int(b); k = max(0, min(pos, n))
+            except Exception:
+&gt;               raise ValueError("non-numeric argument in command: " + repr(c)) from None
+E               ValueError: non-numeric argument in command: 'type abc'
+
+solution.py:15: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-125209.mini_editor_undo.tests.test_solution" name="test_undo_restores_cursor_too" time="0.000"><failure message="ValueError: non-numeric argument in command: 'type ab'">def test_undo_restores_cursor_too():
+        # cursor motion after the undone edit is discarded
+&gt;       assert edit(["type ab", "type cd", "left 3", "undo"]) == ("ab", 2)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:25: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+commands = ['type ab', 'type cd', 'left 3', 'undo']
+
+    def edit(commands):
+        buf = []
+        pos = 0
+        _log = []                # each entry is [oldbuf[:], oldpos, cmd] -- cmd is exactly what was parsed
+        def _record():
+            _log.append([buf[:] if buf else [], pos, None])
+        for c in commands:
+            _record(); _log[-1][2] = c
+            cs = c.split(maxsplit=1)
+            if len(cs) != 2: raise ValueError("malformed command: " + repr(c))
+            a, b = cs
+            try:
+                n = int(b); k = max(0, min(pos, n))
+            except Exception:
+&gt;               raise ValueError("non-numeric argument in command: " + repr(c)) from None
+E               ValueError: non-numeric argument in command: 'type ab'
+
+solution.py:15: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-125209.mini_editor_undo.tests.test_solution" name="test_undo_skips_noop_backspace" time="0.000"><failure message="ValueError: non-numeric argument in command: 'type ab'">def test_undo_skips_noop_backspace():
+        # a backspace that deleted nothing is never an undo target
+&gt;       assert edit(["type ab", "left 2", "backspace 1", "undo"]) == ("", 0)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:30: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+commands = ['type ab', 'left 2', 'backspace 1', 'undo']
+
+    def edit(commands):
+        buf = []
+        pos = 0
+        _log = []                # each entry is [oldbuf[:], oldpos, cmd] -- cmd is exactly what was parsed
+        def _record():
+            _log.append([buf[:] if buf else [], pos, None])
+        for c in commands:
+            _record(); _log[-1][2] = c
+            cs = c.split(maxsplit=1)
+            if len(cs) != 2: raise ValueError("malformed command: " + repr(c))
+            a, b = cs
+            try:
+                n = int(b); k = max(0, min(pos, n))
+            except Exception:
+&gt;               raise ValueError("non-numeric argument in command: " + repr(c)) from None
+E               ValueError: non-numeric argument in command: 'type ab'
+
+solution.py:15: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-125209.mini_editor_undo.tests.test_solution" name="test_undo_on_empty_stack_is_noop" time="0.001"><failure message="ValueError: malformed command: 'undo'">def test_undo_on_empty_stack_is_noop():
+&gt;       assert edit(["undo", "undo"]) == ("", 0)
+               ^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:34: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+commands = ['undo', 'undo']
+
+    def edit(commands):
+        buf = []
+        pos = 0
+        _log = []                # each entry is [oldbuf[:], oldpos, cmd] -- cmd is exactly what was parsed
+        def _record():
+            _log.append([buf[:] if buf else [], pos, None])
+        for c in commands:
+            _record(); _log[-1][2] = c
+            cs = c.split(maxsplit=1)
+&gt;           if len(cs) != 2: raise ValueError("malformed command: " + repr(c))
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           ValueError: malformed command: 'undo'
+
+solution.py:10: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-125209.mini_editor_undo.tests.test_solution" name="test_undo_twice_pops_two_edits" time="0.000"><failure message="ValueError: non-numeric argument in command: 'type a'">def test_undo_twice_pops_two_edits():
+&gt;       assert edit(["type a", "type b", "undo", "undo"]) == ("", 0)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:38: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+commands = ['type a', 'type b', 'undo', 'undo']
+
+    def edit(commands):
+        buf = []
+        pos = 0
+        _log = []                # each entry is [oldbuf[:], oldpos, cmd] -- cmd is exactly what was parsed
+        def _record():
+            _log.append([buf[:] if buf else [], pos, None])
+        for c in commands:
+            _record(); _log[-1][2] = c
+            cs = c.split(maxsplit=1)
+            if len(cs) != 2: raise ValueError("malformed command: " + repr(c))
+            a, b = cs
+            try:
+                n = int(b); k = max(0, min(pos, n))
+            except Exception:
+&gt;               raise ValueError("non-numeric argument in command: " + repr(c)) from None
+E               ValueError: non-numeric argument in command: 'type a'
+
+solution.py:15: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-125209.mini_editor_undo.tests.test_solution" name="test_malformed_commands_raise" time="0.001"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_malformed_commands_raise():
+        for bad in (["delete 1"], ["type"], ["type "], ["left"], ["left 0"],
+                    ["left -2"], ["left 2x"], ["left 2 3"], ["undo 2"],
+                    ["backspace 0"], ["right +3"]):
+&gt;           with pytest.raises(ValueError):
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^
+E           Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:45: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260714-125209.mini_editor_undo.tests.test_solution" name="test_no_mutation" time="0.000"><failure message="ValueError: non-numeric argument in command: 'type ab'">def test_no_mutation():
+        cmds = ["type ab", "left 1", "undo"]
+        snapshot = list(cmds)
+&gt;       edit(cmds)
+
+tests\test_solution.py:52: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+commands = ['type ab', 'left 1', 'undo']
+
+    def edit(commands):
+        buf = []
+        pos = 0
+        _log = []                # each entry is [oldbuf[:], oldpos, cmd] -- cmd is exactly what was parsed
+        def _record():
+            _log.append([buf[:] if buf else [], pos, None])
+        for c in commands:
+            _record(); _log[-1][2] = c
+            cs = c.split(maxsplit=1)
+            if len(cs) != 2: raise ValueError("malformed command: " + repr(c))
+            a, b = cs
+            try:
+                n = int(b); k = max(0, min(pos, n))
+            except Exception:
+&gt;               raise ValueError("non-numeric argument in command: " + repr(c)) from None
+E               ValueError: non-numeric argument in command: 'type ab'
+
+solution.py:15: ValueError</failure></testcase></testsuite></testsuites>

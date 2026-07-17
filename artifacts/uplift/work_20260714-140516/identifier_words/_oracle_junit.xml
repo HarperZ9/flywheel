@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="5" skipped="0" tests="9" time="0.224" timestamp="2026-07-14T14:35:07.376434-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260714-140516.identifier_words.tests.test_solution" name="test_acronym_then_word" time="0.001"><failure message="AssertionError: assert ['HTTPServer', '2', 'Node'] == ['HTTP', 'Ser..., '2', 'Node']&#10;  &#10;  At index 0 diff: 'HTTPServer' != 'HTTP'&#10;  Right contains one more item: 'Node'&#10;  Use -v to get more diff">&gt;   def test_acronym_then_word(): assert f('HTTPServer2Node') == ['HTTP', 'Server', '2', 'Node']
+                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert ['HTTPServer', '2', 'Node'] == ['HTTP', 'Ser..., '2', 'Node']
+E     
+E     At index 0 diff: 'HTTPServer' != 'HTTP'
+E     Right contains one more item: 'Node'
+E     Use -v to get more diff
+
+tests\test_solution.py:3: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-140516.identifier_words.tests.test_solution" name="test_camel_acronym" time="0.001"><failure message="AssertionError: assert ['parseJSON', '2', 'XML'] == ['parse', 'JSON', '2', 'XML']&#10;  &#10;  At index 0 diff: 'parseJSON' != 'parse'&#10;  Right contains one more item: 'XML'&#10;  Use -v to get more diff">&gt;   def test_camel_acronym(): assert f('parseJSON2XML') == ['parse', 'JSON', '2', 'XML']
+                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert ['parseJSON', '2', 'XML'] == ['parse', 'JSON', '2', 'XML']
+E     
+E     At index 0 diff: 'parseJSON' != 'parse'
+E     Right contains one more item: 'XML'
+E     Use -v to get more diff
+
+tests\test_solution.py:4: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-140516.identifier_words.tests.test_solution" name="test_snake" time="0.000"><failure message="AssertionError: assert ['snake_case_two'] == ['snake', 'case', 'two']&#10;  &#10;  At index 0 diff: 'snake_case_two' != 'snake'&#10;  Right contains 2 more items, first extra item: 'case'&#10;  Use -v to get more diff">&gt;   def test_snake(): assert f('snake_case_two') == ['snake', 'case', 'two']
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert ['snake_case_two'] == ['snake', 'case', 'two']
+E     
+E     At index 0 diff: 'snake_case_two' != 'snake'
+E     Right contains 2 more items, first extra item: 'case'
+E     Use -v to get more diff
+
+tests\test_solution.py:5: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-140516.identifier_words.tests.test_solution" name="test_underscore_trim" time="0.000"><failure message="AssertionError: assert ['x__'] == ['x']&#10;  &#10;  At index 0 diff: 'x__' != 'x'&#10;  Use -v to get more diff">&gt;   def test_underscore_trim(): assert f('__x__') == ['x']
+                                ^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert ['x__'] == ['x']
+E     
+E     At index 0 diff: 'x__' != 'x'
+E     Use -v to get more diff
+
+tests\test_solution.py:6: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-140516.identifier_words.tests.test_solution" name="test_empty" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-140516.identifier_words.tests.test_solution" name="test_two_caps_then_lower" time="0.000"><failure message="AssertionError: assert ['ABc'] == ['A', 'Bc']&#10;  &#10;  At index 0 diff: 'ABc' != 'A'&#10;  Right contains one more item: 'Bc'&#10;  Use -v to get more diff">&gt;   def test_two_caps_then_lower(): assert f('ABc') == ['A', 'Bc']
+                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert ['ABc'] == ['A', 'Bc']
+E     
+E     At index 0 diff: 'ABc' != 'A'
+E     Right contains one more item: 'Bc'
+E     Use -v to get more diff
+
+tests\test_solution.py:8: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-140516.identifier_words.tests.test_solution" name="test_plain" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-140516.identifier_words.tests.test_solution" name="test_single_cap_then_digit" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-140516.identifier_words.tests.test_solution" name="test_bad_char" time="0.000" /></testsuite></testsuites>

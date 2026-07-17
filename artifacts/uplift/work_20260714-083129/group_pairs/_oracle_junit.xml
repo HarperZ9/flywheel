@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="4" skipped="0" tests="8" time="0.214" timestamp="2026-07-14T08:43:42.542701-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260714-083129.group_pairs.tests.test_solution" name="test_groups_in_first_seen_key_order" time="0.001"><failure message="AssertionError: assert {'a': [2], 'b': [1], 'c': [4]} == {'a': [2, 5],... 3], 'c': [4]}&#10;  &#10;  Omitting 1 identical items, use -vv to show&#10;  Differing items:&#10;  {'b': [1]} != {'b': [1, 3]}&#10;  {'a': [2]} != {'a': [2, 5]}&#10;  Use -v to get more diff">def test_groups_in_first_seen_key_order():
+        out = group_pairs([("b", 1), ("a", 2), ("b", 3), ("c", 4), ("a", 5)])
+&gt;       assert out == {"b": [1, 3], "a": [2, 5], "c": [4]}
+E       AssertionError: assert {'a': [2], 'b': [1], 'c': [4]} == {'a': [2, 5],... 3], 'c': [4]}
+E         
+E         Omitting 1 identical items, use -vv to show
+E         Differing items:
+E         {'b': [1]} != {'b': [1, 3]}
+E         {'a': [2]} != {'a': [2, 5]}
+E         Use -v to get more diff
+
+tests\test_solution.py:7: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.group_pairs.tests.test_solution" name="test_duplicate_pairs_kept" time="0.001"><failure message="AssertionError: assert {'k': [1]} == {'k': [1, 1]}&#10;  &#10;  Differing items:&#10;  {'k': [1]} != {'k': [1, 1]}&#10;  Use -v to get more diff">def test_duplicate_pairs_kept():
+&gt;       assert group_pairs([("k", 1), ("k", 1)]) == {"k": [1, 1]}
+E       AssertionError: assert {'k': [1]} == {'k': [1, 1]}
+E         
+E         Differing items:
+E         {'k': [1]} != {'k': [1, 1]}
+E         Use -v to get more diff
+
+tests\test_solution.py:12: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.group_pairs.tests.test_solution" name="test_value_identity_preserved" time="0.000"><failure message="IndexError: list index out of range">def test_value_identity_preserved():
+        v1, v2 = [1, 2], {"x": 1}
+        out = group_pairs([("a", v1), ("a", v2)])
+        assert out["a"][0] is v1
+&gt;       assert out["a"][1] is v2
+               ^^^^^^^^^^^
+E       IndexError: list index out of range
+
+tests\test_solution.py:19: IndexError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.group_pairs.tests.test_solution" name="test_rejects_list_entry" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-083129.group_pairs.tests.test_solution" name="test_rejects_wrong_length_tuple" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-083129.group_pairs.tests.test_solution" name="test_rejects_tuple_subclass" time="0.001"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_rejects_tuple_subclass():
+        class T(tuple):
+            pass
+    
+&gt;       with pytest.raises(ValueError):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:38: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.group_pairs.tests.test_solution" name="test_input_not_mutated" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-083129.group_pairs.tests.test_solution" name="test_empty" time="0.000" /></testsuite></testsuites>

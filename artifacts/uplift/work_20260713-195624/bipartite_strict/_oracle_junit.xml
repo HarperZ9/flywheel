@@ -1,0 +1,209 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="10" skipped="0" tests="14" time="0.263" timestamp="2026-07-13T20:24:07.871403-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-195624.bipartite_strict.tests.test_solution" name="test_empty" time="0.001"><failure message="ValueError: bad adjacency">&gt;   def test_empty(): assert f([]) is True
+                             ^^^^^
+
+tests\test_solution.py:3: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+adj = []
+
+    def is_bipartite(adj):
+        """
+        Check if an undirected graph is bipartite.
+    
+        Args:
+            adj: An adjacency list for the graph represented as a string.
+    
+        Returns:
+            A boolean indicating whether the graph is bipartite (True) or not.
+        """
+        from collections import deque
+        # Validation checks
+        if not isinstance(adj, str) or not all(isinstance(row, list) and len(row) == len(adj) for row in adj):
+&gt;           raise ValueError('bad adjacency')
+E           ValueError: bad adjacency
+
+solution.py:14: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.bipartite_strict.tests.test_solution" name="test_single_edge" time="0.000"><failure message="ValueError: bad adjacency">&gt;   def test_single_edge(): assert f([[1], [0]]) is True
+                                   ^^^^^^^^^^^^^
+
+tests\test_solution.py:4: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+adj = [[1], [0]]
+
+    def is_bipartite(adj):
+        """
+        Check if an undirected graph is bipartite.
+    
+        Args:
+            adj: An adjacency list for the graph represented as a string.
+    
+        Returns:
+            A boolean indicating whether the graph is bipartite (True) or not.
+        """
+        from collections import deque
+        # Validation checks
+        if not isinstance(adj, str) or not all(isinstance(row, list) and len(row) == len(adj) for row in adj):
+&gt;           raise ValueError('bad adjacency')
+E           ValueError: bad adjacency
+
+solution.py:14: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.bipartite_strict.tests.test_solution" name="test_triangle" time="0.000"><failure message="ValueError: bad adjacency">&gt;   def test_triangle(): assert f([[1, 2], [0, 2], [0, 1]]) is False
+                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:5: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+adj = [[1, 2], [0, 2], [0, 1]]
+
+    def is_bipartite(adj):
+        """
+        Check if an undirected graph is bipartite.
+    
+        Args:
+            adj: An adjacency list for the graph represented as a string.
+    
+        Returns:
+            A boolean indicating whether the graph is bipartite (True) or not.
+        """
+        from collections import deque
+        # Validation checks
+        if not isinstance(adj, str) or not all(isinstance(row, list) and len(row) == len(adj) for row in adj):
+&gt;           raise ValueError('bad adjacency')
+E           ValueError: bad adjacency
+
+solution.py:14: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.bipartite_strict.tests.test_solution" name="test_isolated" time="0.000"><failure message="ValueError: bad adjacency">&gt;   def test_isolated(): assert f([[], [], []]) is True
+                                ^^^^^^^^^^^^^^^
+
+tests\test_solution.py:6: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+adj = [[], [], []]
+
+    def is_bipartite(adj):
+        """
+        Check if an undirected graph is bipartite.
+    
+        Args:
+            adj: An adjacency list for the graph represented as a string.
+    
+        Returns:
+            A boolean indicating whether the graph is bipartite (True) or not.
+        """
+        from collections import deque
+        # Validation checks
+        if not isinstance(adj, str) or not all(isinstance(row, list) and len(row) == len(adj) for row in adj):
+&gt;           raise ValueError('bad adjacency')
+E           ValueError: bad adjacency
+
+solution.py:14: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.bipartite_strict.tests.test_solution" name="test_self_loop" time="0.000"><failure message="ValueError: bad adjacency">&gt;   def test_self_loop(): assert f([[0]]) is False
+                                 ^^^^^^^^
+
+tests\test_solution.py:7: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+adj = [[0]]
+
+    def is_bipartite(adj):
+        """
+        Check if an undirected graph is bipartite.
+    
+        Args:
+            adj: An adjacency list for the graph represented as a string.
+    
+        Returns:
+            A boolean indicating whether the graph is bipartite (True) or not.
+        """
+        from collections import deque
+        # Validation checks
+        if not isinstance(adj, str) or not all(isinstance(row, list) and len(row) == len(adj) for row in adj):
+&gt;           raise ValueError('bad adjacency')
+E           ValueError: bad adjacency
+
+solution.py:14: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.bipartite_strict.tests.test_solution" name="test_even_cycle" time="0.000"><failure message="ValueError: bad adjacency">&gt;   def test_even_cycle(): assert f([[1, 3], [0, 2], [1, 3], [2, 0]]) is True
+                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:8: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+adj = [[1, 3], [0, 2], [1, 3], [2, 0]]
+
+    def is_bipartite(adj):
+        """
+        Check if an undirected graph is bipartite.
+    
+        Args:
+            adj: An adjacency list for the graph represented as a string.
+    
+        Returns:
+            A boolean indicating whether the graph is bipartite (True) or not.
+        """
+        from collections import deque
+        # Validation checks
+        if not isinstance(adj, str) or not all(isinstance(row, list) and len(row) == len(adj) for row in adj):
+&gt;           raise ValueError('bad adjacency')
+E           ValueError: bad adjacency
+
+solution.py:14: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.bipartite_strict.tests.test_solution" name="test_odd_component" time="0.000"><failure message="ValueError: bad adjacency">&gt;   def test_odd_component(): assert f([[1], [0], [3, 4], [2, 4], [2, 3]]) is False
+                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:9: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+adj = [[1], [0], [3, 4], [2, 4], [2, 3]]
+
+    def is_bipartite(adj):
+        """
+        Check if an undirected graph is bipartite.
+    
+        Args:
+            adj: An adjacency list for the graph represented as a string.
+    
+        Returns:
+            A boolean indicating whether the graph is bipartite (True) or not.
+        """
+        from collections import deque
+        # Validation checks
+        if not isinstance(adj, str) or not all(isinstance(row, list) and len(row) == len(adj) for row in adj):
+&gt;           raise ValueError('bad adjacency')
+E           ValueError: bad adjacency
+
+solution.py:14: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.bipartite_strict.tests.test_solution" name="test_duplicate_neighbors" time="0.000"><failure message="ValueError: bad adjacency">&gt;   def test_duplicate_neighbors(): assert f([[1, 1], [0]]) is True
+                                           ^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:10: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+adj = [[1, 1], [0]]
+
+    def is_bipartite(adj):
+        """
+        Check if an undirected graph is bipartite.
+    
+        Args:
+            adj: An adjacency list for the graph represented as a string.
+    
+        Returns:
+            A boolean indicating whether the graph is bipartite (True) or not.
+        """
+        from collections import deque
+        # Validation checks
+        if not isinstance(adj, str) or not all(isinstance(row, list) and len(row) == len(adj) for row in adj):
+&gt;           raise ValueError('bad adjacency')
+E           ValueError: bad adjacency
+
+solution.py:14: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.bipartite_strict.tests.test_solution" name="test_not_symmetric" time="0.001"><failure message="AssertionError: assert 'bad adjacency' == 'not symmetric'&#10;  &#10;  - not symmetric&#10;  + bad adjacency">def test_not_symmetric():
+        with pytest.raises(ValueError) as e: f([[1], []])
+&gt;       assert str(e.value) == 'not symmetric'
+E       AssertionError: assert 'bad adjacency' == 'not symmetric'
+E         
+E         - not symmetric
+E         + bad adjacency
+
+tests\test_solution.py:13: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.bipartite_strict.tests.test_solution" name="test_bad_neighbor_range" time="0.001"><failure message="AssertionError: assert 'bad adjacency' == 'bad neighbor'&#10;  &#10;  - bad neighbor&#10;  + bad adjacency">def test_bad_neighbor_range():
+        with pytest.raises(ValueError) as e: f([[5]])
+&gt;       assert str(e.value) == 'bad neighbor'
+E       AssertionError: assert 'bad adjacency' == 'bad neighbor'
+E         
+E         - bad neighbor
+E         + bad adjacency
+
+tests\test_solution.py:16: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.bipartite_strict.tests.test_solution" name="test_bad_neighbor_bool" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-195624.bipartite_strict.tests.test_solution" name="test_bad_neighbor_negative" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-195624.bipartite_strict.tests.test_solution" name="test_bad_adjacency_not_list" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-195624.bipartite_strict.tests.test_solution" name="test_bad_adjacency_entry" time="0.000" /></testsuite></testsuites>

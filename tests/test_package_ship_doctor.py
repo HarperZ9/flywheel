@@ -2,6 +2,8 @@ import hashlib
 import json
 import zipfile
 
+import pytest
+
 from scripts.run_package_ship_doctor import REQUIRED_BUNDLE_FILES, build_doctor, render_markdown
 
 
@@ -42,6 +44,12 @@ def test_package_ship_doctor_accepts_complete_metadata_bundle(tmp_path):
         },
         "config/tool_integration_contract.local.json": {
             "schema": "harness.tool-integration-contract/v1",
+        },
+        "config/model_endpoint_gate.local.json": {
+            "schema": "harness.model-endpoint-gate/v1",
+        },
+        "config/tool_operator_guide.local.json": {
+            "schema": "harness.tool-operator-guide/v1",
         },
         "config/tool_readiness.local.json": {
             "schema": "harness.tool-readiness/v1",

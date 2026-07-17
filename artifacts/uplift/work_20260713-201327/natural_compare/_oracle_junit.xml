@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="5" skipped="0" tests="9" time="0.229" timestamp="2026-07-13T20:29:23.815634-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-201327.natural_compare.tests.test_solution" name="test_numeric" time="0.001"><failure message="AssertionError: assert 1 == -1&#10; +  where 1 = f('a2', 'a10')">&gt;   def test_numeric(): assert f('a2', 'a10') == -1
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert 1 == -1
+E    +  where 1 = f('a2', 'a10')
+
+tests\test_solution.py:3: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.natural_compare.tests.test_solution" name="test_numeric_gt" time="0.000"><failure message="IndexError: list index out of range">&gt;   def test_numeric_gt(): assert f('a10', 'a2') == 1
+                                  ^^^^^^^^^^^^^^
+
+tests\test_solution.py:4: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+a = 'a10', b = 'a2'
+
+    def natural_compare(a: str, b: str) -&gt; int:
+        import re
+    
+        # Function to split a string into runs of ASCII digits and non-ASCII characters
+        def clean_string(s: str) -&gt; list[str]:
+            return [char for char in s if char.isascii() or not any(ord(char) &gt;= ord(c) for c in '0123456789')]
+    
+        # Clean the strings
+        a_run = clean_string(a)
+        b_run = clean_string(b)
+    
+        # Compare aligned runs: digit run vs. non-digit run
+        if len(set(a_run)) == 1:
+            return -1
+    
+        for i in range(len(a_run) - len(b_run)):
+            if a_run[i] == '-' and b_run[i+len(a_run)] != '-':
+                continue
+            elif (a_run[i] == '0' and not b_run[i+len(a_run)]) or \
+&gt;                (b_run[i + len(a_run)] == '0' and not a_run[i]):
+                  ^^^^^^^^^^^^^^^^^^^^^
+E                IndexError: list index out of range
+
+solution.py:20: IndexError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.natural_compare.tests.test_solution" name="test_file" time="0.000"><failure message="AssertionError: assert 1 == -1&#10; +  where 1 = f('file9', 'file10')">&gt;   def test_file(): assert f('file9', 'file10') == -1
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert 1 == -1
+E    +  where 1 = f('file9', 'file10')
+
+tests\test_solution.py:5: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.natural_compare.tests.test_solution" name="test_equal" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-201327.natural_compare.tests.test_solution" name="test_prefix" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-201327.natural_compare.tests.test_solution" name="test_leading_zero" time="0.000"><failure message="IndexError: list index out of range">&gt;   def test_leading_zero(): assert f('01', '1') == 1
+                                    ^^^^^^^^^^^^
+
+tests\test_solution.py:8: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+a = '01', b = '1'
+
+    def natural_compare(a: str, b: str) -&gt; int:
+        import re
+    
+        # Function to split a string into runs of ASCII digits and non-ASCII characters
+        def clean_string(s: str) -&gt; list[str]:
+            return [char for char in s if char.isascii() or not any(ord(char) &gt;= ord(c) for c in '0123456789')]
+    
+        # Clean the strings
+        a_run = clean_string(a)
+        b_run = clean_string(b)
+    
+        # Compare aligned runs: digit run vs. non-digit run
+        if len(set(a_run)) == 1:
+            return -1
+    
+        for i in range(len(a_run) - len(b_run)):
+            if a_run[i] == '-' and b_run[i+len(a_run)] != '-':
+                continue
+&gt;           elif (a_run[i] == '0' and not b_run[i+len(a_run)]) or \
+                                          ^^^^^^^^^^^^^^^^^^^
+                 (b_run[i + len(a_run)] == '0' and not a_run[i]):
+E                IndexError: list index out of range
+
+solution.py:19: IndexError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-201327.natural_compare.tests.test_solution" name="test_digit_before_alpha" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-201327.natural_compare.tests.test_solution" name="test_plain_alpha" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-201327.natural_compare.tests.test_solution" name="test_bad_input" time="0.000"><failure message="TypeError: 'int' object is not iterable">def test_bad_input():
+&gt;       with pytest.raises(ValueError) as e: f(1, 'a')
+                                             ^^^^^^^^^
+
+tests\test_solution.py:12: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+solution.py:9: in natural_compare
+    a_run = clean_string(a)
+            ^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+s = 1
+
+    def clean_string(s: str) -&gt; list[str]:
+&gt;       return [char for char in s if char.isascii() or not any(ord(char) &gt;= ord(c) for c in '0123456789')]
+                                 ^
+E       TypeError: 'int' object is not iterable
+
+solution.py:6: TypeError</failure></testcase></testsuite></testsuites>

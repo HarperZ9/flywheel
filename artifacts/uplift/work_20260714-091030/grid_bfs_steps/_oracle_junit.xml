@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="5" skipped="0" tests="16" time="0.332" timestamp="2026-07-14T09:44:22.058172-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260714-091030.grid_bfs_steps.tests.test_solution" name="test_open_two" time="0.001"><failure message="assert 1 == 2&#10; +  where 1 = f([[0, 0], [0, 0]])">&gt;   def test_open_two(): assert f([[0, 0], [0, 0]]) == 2
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   assert 1 == 2
+E    +  where 1 = f([[0, 0], [0, 0]])
+
+tests\test_solution.py:3: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-091030.grid_bfs_steps.tests.test_solution" name="test_single_open" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-091030.grid_bfs_steps.tests.test_solution" name="test_single_wall" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-091030.grid_bfs_steps.tests.test_solution" name="test_blocked" time="0.001"><failure message="assert 1 == -1&#10; +  where 1 = f([[0, 1], [1, 0]])">&gt;   def test_blocked(): assert f([[0, 1], [1, 0]]) == -1
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   assert 1 == -1
+E    +  where 1 = f([[0, 1], [1, 0]])
+
+tests\test_solution.py:6: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-091030.grid_bfs_steps.tests.test_solution" name="test_detour" time="0.001"><failure message="assert 1 == 4&#10; +  where 1 = f([[0, 0, 0], [1, 1, 0], [0, 0, 0]])">&gt;   def test_detour(): assert f([[0, 0, 0], [1, 1, 0], [0, 0, 0]]) == 4
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   assert 1 == 4
+E    +  where 1 = f([[0, 0, 0], [1, 1, 0], [0, 0, 0]])
+
+tests\test_solution.py:7: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-091030.grid_bfs_steps.tests.test_solution" name="test_row" time="0.001"><failure message="assert 1 == 3&#10; +  where 1 = f([[0, 0, 0, 0]])">&gt;   def test_row(): assert f([[0, 0, 0, 0]]) == 3
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   assert 1 == 3
+E    +  where 1 = f([[0, 0, 0, 0]])
+
+tests\test_solution.py:8: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-091030.grid_bfs_steps.tests.test_solution" name="test_start_wall" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-091030.grid_bfs_steps.tests.test_solution" name="test_goal_wall" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-091030.grid_bfs_steps.tests.test_solution" name="test_ragged" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-091030.grid_bfs_steps.tests.test_solution" name="test_ragged_before_cell" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-091030.grid_bfs_steps.tests.test_solution" name="test_bad_cell_two" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-091030.grid_bfs_steps.tests.test_solution" name="test_bad_cell_bool" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_bad_cell_bool():
+&gt;       with pytest.raises(ValueError): f([[0, True]])
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:21: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260714-091030.grid_bfs_steps.tests.test_solution" name="test_bad_grid_empty" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-091030.grid_bfs_steps.tests.test_solution" name="test_bad_grid_empty_row" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-091030.grid_bfs_steps.tests.test_solution" name="test_bad_grid_not_list" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-091030.grid_bfs_steps.tests.test_solution" name="test_bad_grid_flat" time="0.000" /></testsuite></testsuites>

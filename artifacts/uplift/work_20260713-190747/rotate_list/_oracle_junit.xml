@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="6" skipped="0" tests="9" time="0.259" timestamp="2026-07-13T19:39:45.207029-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-190747.rotate_list.tests.test_solution" name="test_basic" time="0.001"><failure message="ValueError: bad shift">&gt;   def test_basic(): assert f([1, 2, 3, 4, 5], 2) == [4, 5, 1, 2, 3]
+                             ^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:3: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+items = [1, 2, 3, 4, 5], k = 2
+
+    def rotate(items, k):
+        if not isinstance(items, list):
+            raise ValueError('bad input')
+        if not isinstance(k, int) or bool(k):
+&gt;           raise ValueError('bad shift')
+E           ValueError: bad shift
+
+solution.py:5: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-190747.rotate_list.tests.test_solution" name="test_zero" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-190747.rotate_list.tests.test_solution" name="test_full_wrap" time="0.000"><failure message="ValueError: bad shift">&gt;   def test_full_wrap(): assert f([1, 2, 3], 3) == [1, 2, 3]
+                                 ^^^^^^^^^^^^^^^
+
+tests\test_solution.py:5: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+items = [1, 2, 3], k = 3
+
+    def rotate(items, k):
+        if not isinstance(items, list):
+            raise ValueError('bad input')
+        if not isinstance(k, int) or bool(k):
+&gt;           raise ValueError('bad shift')
+E           ValueError: bad shift
+
+solution.py:5: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-190747.rotate_list.tests.test_solution" name="test_over_wrap" time="0.001"><failure message="ValueError: bad shift">&gt;   def test_over_wrap(): assert f([1, 2, 3], 4) == [3, 1, 2]
+                                 ^^^^^^^^^^^^^^^
+
+tests\test_solution.py:6: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+items = [1, 2, 3], k = 4
+
+    def rotate(items, k):
+        if not isinstance(items, list):
+            raise ValueError('bad input')
+        if not isinstance(k, int) or bool(k):
+&gt;           raise ValueError('bad shift')
+E           ValueError: bad shift
+
+solution.py:5: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-190747.rotate_list.tests.test_solution" name="test_negative" time="0.000"><failure message="ValueError: bad shift">&gt;   def test_negative(): assert f([1, 2, 3], -1) == [2, 3, 1]
+                                ^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:7: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+items = [1, 2, 3], k = -1
+
+    def rotate(items, k):
+        if not isinstance(items, list):
+            raise ValueError('bad input')
+        if not isinstance(k, int) or bool(k):
+&gt;           raise ValueError('bad shift')
+E           ValueError: bad shift
+
+solution.py:5: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-190747.rotate_list.tests.test_solution" name="test_empty" time="0.000"><failure message="ValueError: bad shift">&gt;   def test_empty(): assert f([], 5) == []
+                             ^^^^^^^^
+
+tests\test_solution.py:8: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+items = [], k = 5
+
+    def rotate(items, k):
+        if not isinstance(items, list):
+            raise ValueError('bad input')
+        if not isinstance(k, int) or bool(k):
+&gt;           raise ValueError('bad shift')
+E           ValueError: bad shift
+
+solution.py:5: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-190747.rotate_list.tests.test_solution" name="test_no_mutation" time="0.001"><failure message="ValueError: bad shift">def test_no_mutation():
+        g = [1, 2, 3]
+&gt;       f(g, 1)
+
+tests\test_solution.py:11: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+items = [1, 2, 3], k = 1
+
+    def rotate(items, k):
+        if not isinstance(items, list):
+            raise ValueError('bad input')
+        if not isinstance(k, int) or bool(k):
+&gt;           raise ValueError('bad shift')
+E           ValueError: bad shift
+
+solution.py:5: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-190747.rotate_list.tests.test_solution" name="test_bad_input" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-190747.rotate_list.tests.test_solution" name="test_bad_shift" time="0.000" /></testsuite></testsuites>

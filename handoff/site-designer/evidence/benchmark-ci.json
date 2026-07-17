@@ -1,0 +1,108 @@
+{
+  "flywheel-local-coder-14b-benchmark-m7-hard-scorecard.json": {
+    "arms": {
+      "flat_n": {
+        "n": 10,
+        "pass_rate": 0.9,
+        "passed": 9,
+        "wilson_95": [
+          0.5958,
+          0.9821
+        ]
+      },
+      "no_search": {
+        "n": 10,
+        "pass_rate": 0.8,
+        "passed": 8,
+        "wilson_95": [
+          0.4902,
+          0.9433
+        ]
+      },
+      "single_shot": {
+        "n": 10,
+        "pass_rate": 0.8,
+        "passed": 8,
+        "wilson_95": [
+          0.4902,
+          0.9433
+        ]
+      },
+      "verified_inference": {
+        "n": 10,
+        "pass_rate": 0.9,
+        "passed": 9,
+        "wilson_95": [
+          0.5958,
+          0.9821
+        ]
+      }
+    },
+    "difference": {
+      "baseline": "single_shot",
+      "candidate": "verified_inference",
+      "ci_95": [
+        -0.2362,
+        0.4205
+      ],
+      "includes_zero": true,
+      "method": "newcombe_unpaired_approximation",
+      "point": 0.1
+    },
+    "schema": "m7-scorecard-ci/v1",
+    "z": 1.959963984540054
+  },
+  "flywheel-local-coder-14b-benchmark-m7-scorecard.json": {
+    "arms": {
+      "flat_n": {
+        "n": 8,
+        "pass_rate": 1.0,
+        "passed": 8,
+        "wilson_95": [
+          0.6756,
+          1.0
+        ]
+      },
+      "no_search": {
+        "n": 8,
+        "pass_rate": 1.0,
+        "passed": 8,
+        "wilson_95": [
+          0.6756,
+          1.0
+        ]
+      },
+      "single_shot": {
+        "n": 8,
+        "pass_rate": 1.0,
+        "passed": 8,
+        "wilson_95": [
+          0.6756,
+          1.0
+        ]
+      },
+      "verified_inference": {
+        "n": 8,
+        "pass_rate": 1.0,
+        "passed": 8,
+        "wilson_95": [
+          0.6756,
+          1.0
+        ]
+      }
+    },
+    "difference": {
+      "baseline": "single_shot",
+      "candidate": "verified_inference",
+      "ci_95": [
+        -0.3244,
+        0.3244
+      ],
+      "includes_zero": true,
+      "method": "newcombe_unpaired_approximation",
+      "point": 0.0
+    },
+    "schema": "m7-scorecard-ci/v1",
+    "z": 1.959963984540054
+  }
+}

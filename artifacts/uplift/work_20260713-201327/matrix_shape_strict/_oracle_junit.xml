@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="1" failures="0" skipped="0" tests="1" time="0.381" timestamp="2026-07-13T20:26:21.544689-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="" name="artifacts.uplift.work_20260713-201327.matrix_shape_strict.tests.test_solution" time="0.000"><error message="collection failure">tests\test_solution.py:2: in &lt;module&gt;
+    from solution import matrix_shape as f
+solution.py:55: in &lt;module&gt;
+    check(matrix_shape)
+solution.py:50: in check
+    assert matrix_shape_fn(m1) == (2, 2), "Test case m1 failed."
+           ^^^^^^^^^^^^^^^^^^^
+solution.py:16: in matrix_shape
+    raise ValueError('not a list')
+E   ValueError: not a list</error></testcase></testsuite></testsuites>

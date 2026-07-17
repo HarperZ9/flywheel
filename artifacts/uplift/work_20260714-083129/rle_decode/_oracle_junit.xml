@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="2" skipped="0" tests="6" time="0.245" timestamp="2026-07-14T08:39:56.290362-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260714-083129.rle_decode.tests.test_solution" name="test_empty" time="0.001" /><testcase classname="artifacts.uplift.work_20260714-083129.rle_decode.tests.test_solution" name="test_simple" time="0.001"><failure message="ValueError: Malformed input">s = '3a1b'
+
+    def rle_decode(s):
+        result = ''
+        i = 0
+    
+        while i &lt; len(s):
+            # Check for number and its length
+            if s[i].isdigit():
+                j = i + 1
+                while j &lt; len(s) and (s[j].isdigit() or s[j] == 'a' or s[j] == 'b'):
+                    j += 1
+                count_str = s[i:j]
+                # Convert count to integer, raise ValueError if not a positive integer
+                try:
+&gt;                   count = int(count_str)
+                            ^^^^^^^^^^^^^^
+E                   ValueError: invalid literal for int() with base 10: '3a1b'
+
+solution.py:14: ValueError
+
+During handling of the above exception, another exception occurred:
+
+    def test_simple():
+&gt;       assert f('3a1b') == 'aaab'
+               ^^^^^^^^^
+
+tests\test_solution.py:6: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+s = '3a1b'
+
+    def rle_decode(s):
+        result = ''
+        i = 0
+    
+        while i &lt; len(s):
+            # Check for number and its length
+            if s[i].isdigit():
+                j = i + 1
+                while j &lt; len(s) and (s[j].isdigit() or s[j] == 'a' or s[j] == 'b'):
+                    j += 1
+                count_str = s[i:j]
+                # Convert count to integer, raise ValueError if not a positive integer
+                try:
+                    count = int(count_str)
+                except ValueError:
+&gt;                   raise ValueError("Malformed input")
+E                   ValueError: Malformed input
+
+solution.py:16: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.rle_decode.tests.test_solution" name="test_multidigit" time="0.000"><failure message="ValueError: Malformed input">s = '12a2b'
+
+    def rle_decode(s):
+        result = ''
+        i = 0
+    
+        while i &lt; len(s):
+            # Check for number and its length
+            if s[i].isdigit():
+                j = i + 1
+                while j &lt; len(s) and (s[j].isdigit() or s[j] == 'a' or s[j] == 'b'):
+                    j += 1
+                count_str = s[i:j]
+                # Convert count to integer, raise ValueError if not a positive integer
+                try:
+&gt;                   count = int(count_str)
+                            ^^^^^^^^^^^^^^
+E                   ValueError: invalid literal for int() with base 10: '12a2b'
+
+solution.py:14: ValueError
+
+During handling of the above exception, another exception occurred:
+
+    def test_multidigit():
+&gt;       assert f('12a2b') == 'a'*12 + 'bb'
+               ^^^^^^^^^^
+
+tests\test_solution.py:8: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+s = '12a2b'
+
+    def rle_decode(s):
+        result = ''
+        i = 0
+    
+        while i &lt; len(s):
+            # Check for number and its length
+            if s[i].isdigit():
+                j = i + 1
+                while j &lt; len(s) and (s[j].isdigit() or s[j] == 'a' or s[j] == 'b'):
+                    j += 1
+                count_str = s[i:j]
+                # Convert count to integer, raise ValueError if not a positive integer
+                try:
+                    count = int(count_str)
+                except ValueError:
+&gt;                   raise ValueError("Malformed input")
+E                   ValueError: Malformed input
+
+solution.py:16: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.rle_decode.tests.test_solution" name="test_no_count" time="0.001" /><testcase classname="artifacts.uplift.work_20260714-083129.rle_decode.tests.test_solution" name="test_trailing_count" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-083129.rle_decode.tests.test_solution" name="test_zero_count" time="0.000" /></testsuite></testsuites>

@@ -1,0 +1,432 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="10" skipped="0" tests="12" time="0.231" timestamp="2026-07-13T20:14:58.296590-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260713-195624.money_cents_strict.tests.test_solution" name="test_grouped" time="0.001"><failure message="ValueError: invalid literal for int() with base 10: '234.56'">&gt;   def test_grouped(): assert f('1,234.56') == 123456
+                               ^^^^^^^^^^^^^
+
+tests\test_solution.py:3: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+s = '1,234.56'
+
+    def parse_money(s):
+        """
+        Parse a strictly formatted decimal money amount and returns the value as an integer number of cents.
+    
+        The grammar for parsing:
+    
+            - optional single leading '-', then the integer part, then optionally a '.' followed by EXACTLY two digits.
+              - Integer parts are either plain digits with no separators and no leading zero (except exactly '0' by itself),
+                or comma-grouped:
+                  first group of 1 to 3 digits not starting with '0', followed by one or more groups of exactly 3 digits each preceded by a comma.
+    
+        Examples:
+            &gt;&gt;&gt; parse_money('1,234.56')
+            123456
+            &gt;&gt;&gt; parse_money('-12')
+            -1200
+            &gt;&gt;&gt; parse_money('0.99')
+            99
+            &gt;&gt;&gt; parse_money('0,123')
+            123
+        """
+        decimal = s[1:].replace(',', '').strip()
+    
+        if '.' in decimal:
+            # Integer part: comma-separated (ex: '8,9', '12.5' -&gt; "8", "9")
+            int_part = decimal.split(',')
+&gt;           int_first_digit = int(int_part[0])
+                              ^^^^^^^^^^^^^^^^
+E           ValueError: invalid literal for int() with base 10: '234.56'
+
+solution.py:27: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.money_cents_strict.tests.test_solution" name="test_cents_only" time="0.000"><failure message="ValueError: invalid literal for int() with base 10: '.99'">&gt;   def test_cents_only(): assert f('0.99') == 99
+                                  ^^^^^^^^^
+
+tests\test_solution.py:4: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+s = '0.99'
+
+    def parse_money(s):
+        """
+        Parse a strictly formatted decimal money amount and returns the value as an integer number of cents.
+    
+        The grammar for parsing:
+    
+            - optional single leading '-', then the integer part, then optionally a '.' followed by EXACTLY two digits.
+              - Integer parts are either plain digits with no separators and no leading zero (except exactly '0' by itself),
+                or comma-grouped:
+                  first group of 1 to 3 digits not starting with '0', followed by one or more groups of exactly 3 digits each preceded by a comma.
+    
+        Examples:
+            &gt;&gt;&gt; parse_money('1,234.56')
+            123456
+            &gt;&gt;&gt; parse_money('-12')
+            -1200
+            &gt;&gt;&gt; parse_money('0.99')
+            99
+            &gt;&gt;&gt; parse_money('0,123')
+            123
+        """
+        decimal = s[1:].replace(',', '').strip()
+    
+        if '.' in decimal:
+            # Integer part: comma-separated (ex: '8,9', '12.5' -&gt; "8", "9")
+            int_part = decimal.split(',')
+&gt;           int_first_digit = int(int_part[0])
+                              ^^^^^^^^^^^^^^^^
+E           ValueError: invalid literal for int() with base 10: '.99'
+
+solution.py:27: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.money_cents_strict.tests.test_solution" name="test_negative" time="0.000"><failure message="TypeError: unsupported operand type(s) for +: 'float' and 'str'">&gt;   def test_negative(): assert f('-12') == -1200
+                                ^^^^^^^^
+
+tests\test_solution.py:5: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+s = '-12'
+
+    def parse_money(s):
+        """
+        Parse a strictly formatted decimal money amount and returns the value as an integer number of cents.
+    
+        The grammar for parsing:
+    
+            - optional single leading '-', then the integer part, then optionally a '.' followed by EXACTLY two digits.
+              - Integer parts are either plain digits with no separators and no leading zero (except exactly '0' by itself),
+                or comma-grouped:
+                  first group of 1 to 3 digits not starting with '0', followed by one or more groups of exactly 3 digits each preceded by a comma.
+    
+        Examples:
+            &gt;&gt;&gt; parse_money('1,234.56')
+            123456
+            &gt;&gt;&gt; parse_money('-12')
+            -1200
+            &gt;&gt;&gt; parse_money('0.99')
+            99
+            &gt;&gt;&gt; parse_money('0,123')
+            123
+        """
+        decimal = s[1:].replace(',', '').strip()
+    
+        if '.' in decimal:
+            # Integer part: comma-separated (ex: '8,9', '12.5' -&gt; "8", "9")
+            int_part = decimal.split(',')
+            int_first_digit = int(int_part[0])
+            int_second_digit = int(int_part[1])
+            int_third_digits = int(int_part[2])
+        else:
+            # Integer part: single digit (ex: '7', '1.5' -&gt; "7", "1.5" is not valid)
+            int_first_digit, int_second_digit, int_third_digits = 0, decimal[0], float(decimal)
+    
+&gt;       return int(int_third_digits * 100 + int_second_digit * 10 + int_first_digit)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: unsupported operand type(s) for +: 'float' and 'str'
+
+solution.py:34: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.money_cents_strict.tests.test_solution" name="test_million" time="0.000"><failure message="TypeError: unsupported operand type(s) for +: 'float' and 'str'">&gt;   def test_million(): assert f('1,000,000') == 100000000
+                               ^^^^^^^^^^^^^^
+
+tests\test_solution.py:6: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+s = '1,000,000'
+
+    def parse_money(s):
+        """
+        Parse a strictly formatted decimal money amount and returns the value as an integer number of cents.
+    
+        The grammar for parsing:
+    
+            - optional single leading '-', then the integer part, then optionally a '.' followed by EXACTLY two digits.
+              - Integer parts are either plain digits with no separators and no leading zero (except exactly '0' by itself),
+                or comma-grouped:
+                  first group of 1 to 3 digits not starting with '0', followed by one or more groups of exactly 3 digits each preceded by a comma.
+    
+        Examples:
+            &gt;&gt;&gt; parse_money('1,234.56')
+            123456
+            &gt;&gt;&gt; parse_money('-12')
+            -1200
+            &gt;&gt;&gt; parse_money('0.99')
+            99
+            &gt;&gt;&gt; parse_money('0,123')
+            123
+        """
+        decimal = s[1:].replace(',', '').strip()
+    
+        if '.' in decimal:
+            # Integer part: comma-separated (ex: '8,9', '12.5' -&gt; "8", "9")
+            int_part = decimal.split(',')
+            int_first_digit = int(int_part[0])
+            int_second_digit = int(int_part[1])
+            int_third_digits = int(int_part[2])
+        else:
+            # Integer part: single digit (ex: '7', '1.5' -&gt; "7", "1.5" is not valid)
+            int_first_digit, int_second_digit, int_third_digits = 0, decimal[0], float(decimal)
+    
+&gt;       return int(int_third_digits * 100 + int_second_digit * 10 + int_first_digit)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: unsupported operand type(s) for +: 'float' and 'str'
+
+solution.py:34: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.money_cents_strict.tests.test_solution" name="test_negative_zero" time="0.000"><failure message="ValueError: invalid literal for int() with base 10: '0.00'">&gt;   def test_negative_zero(): assert f('-0.00') == 0
+                                     ^^^^^^^^^^
+
+tests\test_solution.py:7: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+s = '-0.00'
+
+    def parse_money(s):
+        """
+        Parse a strictly formatted decimal money amount and returns the value as an integer number of cents.
+    
+        The grammar for parsing:
+    
+            - optional single leading '-', then the integer part, then optionally a '.' followed by EXACTLY two digits.
+              - Integer parts are either plain digits with no separators and no leading zero (except exactly '0' by itself),
+                or comma-grouped:
+                  first group of 1 to 3 digits not starting with '0', followed by one or more groups of exactly 3 digits each preceded by a comma.
+    
+        Examples:
+            &gt;&gt;&gt; parse_money('1,234.56')
+            123456
+            &gt;&gt;&gt; parse_money('-12')
+            -1200
+            &gt;&gt;&gt; parse_money('0.99')
+            99
+            &gt;&gt;&gt; parse_money('0,123')
+            123
+        """
+        decimal = s[1:].replace(',', '').strip()
+    
+        if '.' in decimal:
+            # Integer part: comma-separated (ex: '8,9', '12.5' -&gt; "8", "9")
+            int_part = decimal.split(',')
+&gt;           int_first_digit = int(int_part[0])
+                              ^^^^^^^^^^^^^^^^
+E           ValueError: invalid literal for int() with base 10: '0.00'
+
+solution.py:27: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.money_cents_strict.tests.test_solution" name="test_zero" time="0.000"><failure message="IndexError: string index out of range">&gt;   def test_zero(): assert f('0') == 0
+                            ^^^^^^
+
+tests\test_solution.py:8: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+s = '0'
+
+    def parse_money(s):
+        """
+        Parse a strictly formatted decimal money amount and returns the value as an integer number of cents.
+    
+        The grammar for parsing:
+    
+            - optional single leading '-', then the integer part, then optionally a '.' followed by EXACTLY two digits.
+              - Integer parts are either plain digits with no separators and no leading zero (except exactly '0' by itself),
+                or comma-grouped:
+                  first group of 1 to 3 digits not starting with '0', followed by one or more groups of exactly 3 digits each preceded by a comma.
+    
+        Examples:
+            &gt;&gt;&gt; parse_money('1,234.56')
+            123456
+            &gt;&gt;&gt; parse_money('-12')
+            -1200
+            &gt;&gt;&gt; parse_money('0.99')
+            99
+            &gt;&gt;&gt; parse_money('0,123')
+            123
+        """
+        decimal = s[1:].replace(',', '').strip()
+    
+        if '.' in decimal:
+            # Integer part: comma-separated (ex: '8,9', '12.5' -&gt; "8", "9")
+            int_part = decimal.split(',')
+            int_first_digit = int(int_part[0])
+            int_second_digit = int(int_part[1])
+            int_third_digits = int(int_part[2])
+        else:
+            # Integer part: single digit (ex: '7', '1.5' -&gt; "7", "1.5" is not valid)
+&gt;           int_first_digit, int_second_digit, int_third_digits = 0, decimal[0], float(decimal)
+                                                                     ^^^^^^^^^^
+E           IndexError: string index out of range
+
+solution.py:32: IndexError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.money_cents_strict.tests.test_solution" name="test_leading_zeros" time="0.000"><failure message="TypeError: unsupported operand type(s) for +: 'float' and 'str'">def test_leading_zeros():
+&gt;       with pytest.raises(ValueError) as e: f('007')
+                                             ^^^^^^^^
+
+tests\test_solution.py:10: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+s = '007'
+
+    def parse_money(s):
+        """
+        Parse a strictly formatted decimal money amount and returns the value as an integer number of cents.
+    
+        The grammar for parsing:
+    
+            - optional single leading '-', then the integer part, then optionally a '.' followed by EXACTLY two digits.
+              - Integer parts are either plain digits with no separators and no leading zero (except exactly '0' by itself),
+                or comma-grouped:
+                  first group of 1 to 3 digits not starting with '0', followed by one or more groups of exactly 3 digits each preceded by a comma.
+    
+        Examples:
+            &gt;&gt;&gt; parse_money('1,234.56')
+            123456
+            &gt;&gt;&gt; parse_money('-12')
+            -1200
+            &gt;&gt;&gt; parse_money('0.99')
+            99
+            &gt;&gt;&gt; parse_money('0,123')
+            123
+        """
+        decimal = s[1:].replace(',', '').strip()
+    
+        if '.' in decimal:
+            # Integer part: comma-separated (ex: '8,9', '12.5' -&gt; "8", "9")
+            int_part = decimal.split(',')
+            int_first_digit = int(int_part[0])
+            int_second_digit = int(int_part[1])
+            int_third_digits = int(int_part[2])
+        else:
+            # Integer part: single digit (ex: '7', '1.5' -&gt; "7", "1.5" is not valid)
+            int_first_digit, int_second_digit, int_third_digits = 0, decimal[0], float(decimal)
+    
+&gt;       return int(int_third_digits * 100 + int_second_digit * 10 + int_first_digit)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: unsupported operand type(s) for +: 'float' and 'str'
+
+solution.py:34: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.money_cents_strict.tests.test_solution" name="test_bad_group" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-195624.money_cents_strict.tests.test_solution" name="test_no_integer_part" time="0.000"><failure message="TypeError: unsupported operand type(s) for +: 'float' and 'str'">def test_no_integer_part():
+&gt;       with pytest.raises(ValueError): f('.50')
+                                        ^^^^^^^^
+
+tests\test_solution.py:15: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+s = '.50'
+
+    def parse_money(s):
+        """
+        Parse a strictly formatted decimal money amount and returns the value as an integer number of cents.
+    
+        The grammar for parsing:
+    
+            - optional single leading '-', then the integer part, then optionally a '.' followed by EXACTLY two digits.
+              - Integer parts are either plain digits with no separators and no leading zero (except exactly '0' by itself),
+                or comma-grouped:
+                  first group of 1 to 3 digits not starting with '0', followed by one or more groups of exactly 3 digits each preceded by a comma.
+    
+        Examples:
+            &gt;&gt;&gt; parse_money('1,234.56')
+            123456
+            &gt;&gt;&gt; parse_money('-12')
+            -1200
+            &gt;&gt;&gt; parse_money('0.99')
+            99
+            &gt;&gt;&gt; parse_money('0,123')
+            123
+        """
+        decimal = s[1:].replace(',', '').strip()
+    
+        if '.' in decimal:
+            # Integer part: comma-separated (ex: '8,9', '12.5' -&gt; "8", "9")
+            int_part = decimal.split(',')
+            int_first_digit = int(int_part[0])
+            int_second_digit = int(int_part[1])
+            int_third_digits = int(int_part[2])
+        else:
+            # Integer part: single digit (ex: '7', '1.5' -&gt; "7", "1.5" is not valid)
+            int_first_digit, int_second_digit, int_third_digits = 0, decimal[0], float(decimal)
+    
+&gt;       return int(int_third_digits * 100 + int_second_digit * 10 + int_first_digit)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: unsupported operand type(s) for +: 'float' and 'str'
+
+solution.py:34: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.money_cents_strict.tests.test_solution" name="test_one_decimal" time="0.000" /><testcase classname="artifacts.uplift.work_20260713-195624.money_cents_strict.tests.test_solution" name="test_plus" time="0.000"><failure message="TypeError: unsupported operand type(s) for +: 'float' and 'str'">def test_plus():
+&gt;       with pytest.raises(ValueError): f('+1')
+                                        ^^^^^^^
+
+tests\test_solution.py:19: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+s = '+1'
+
+    def parse_money(s):
+        """
+        Parse a strictly formatted decimal money amount and returns the value as an integer number of cents.
+    
+        The grammar for parsing:
+    
+            - optional single leading '-', then the integer part, then optionally a '.' followed by EXACTLY two digits.
+              - Integer parts are either plain digits with no separators and no leading zero (except exactly '0' by itself),
+                or comma-grouped:
+                  first group of 1 to 3 digits not starting with '0', followed by one or more groups of exactly 3 digits each preceded by a comma.
+    
+        Examples:
+            &gt;&gt;&gt; parse_money('1,234.56')
+            123456
+            &gt;&gt;&gt; parse_money('-12')
+            -1200
+            &gt;&gt;&gt; parse_money('0.99')
+            99
+            &gt;&gt;&gt; parse_money('0,123')
+            123
+        """
+        decimal = s[1:].replace(',', '').strip()
+    
+        if '.' in decimal:
+            # Integer part: comma-separated (ex: '8,9', '12.5' -&gt; "8", "9")
+            int_part = decimal.split(',')
+            int_first_digit = int(int_part[0])
+            int_second_digit = int(int_part[1])
+            int_third_digits = int(int_part[2])
+        else:
+            # Integer part: single digit (ex: '7', '1.5' -&gt; "7", "1.5" is not valid)
+            int_first_digit, int_second_digit, int_third_digits = 0, decimal[0], float(decimal)
+    
+&gt;       return int(int_third_digits * 100 + int_second_digit * 10 + int_first_digit)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: unsupported operand type(s) for +: 'float' and 'str'
+
+solution.py:34: TypeError</failure></testcase><testcase classname="artifacts.uplift.work_20260713-195624.money_cents_strict.tests.test_solution" name="test_zero_grouped" time="0.000"><failure message="TypeError: unsupported operand type(s) for +: 'float' and 'str'">def test_zero_grouped():
+&gt;       with pytest.raises(ValueError): f('0,123')
+                                        ^^^^^^^^^^
+
+tests\test_solution.py:21: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+s = '0,123'
+
+    def parse_money(s):
+        """
+        Parse a strictly formatted decimal money amount and returns the value as an integer number of cents.
+    
+        The grammar for parsing:
+    
+            - optional single leading '-', then the integer part, then optionally a '.' followed by EXACTLY two digits.
+              - Integer parts are either plain digits with no separators and no leading zero (except exactly '0' by itself),
+                or comma-grouped:
+                  first group of 1 to 3 digits not starting with '0', followed by one or more groups of exactly 3 digits each preceded by a comma.
+    
+        Examples:
+            &gt;&gt;&gt; parse_money('1,234.56')
+            123456
+            &gt;&gt;&gt; parse_money('-12')
+            -1200
+            &gt;&gt;&gt; parse_money('0.99')
+            99
+            &gt;&gt;&gt; parse_money('0,123')
+            123
+        """
+        decimal = s[1:].replace(',', '').strip()
+    
+        if '.' in decimal:
+            # Integer part: comma-separated (ex: '8,9', '12.5' -&gt; "8", "9")
+            int_part = decimal.split(',')
+            int_first_digit = int(int_part[0])
+            int_second_digit = int(int_part[1])
+            int_third_digits = int(int_part[2])
+        else:
+            # Integer part: single digit (ex: '7', '1.5' -&gt; "7", "1.5" is not valid)
+            int_first_digit, int_second_digit, int_third_digits = 0, decimal[0], float(decimal)
+    
+&gt;       return int(int_third_digits * 100 + int_second_digit * 10 + int_first_digit)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: unsupported operand type(s) for +: 'float' and 'str'
+
+solution.py:34: TypeError</failure></testcase></testsuite></testsuites>

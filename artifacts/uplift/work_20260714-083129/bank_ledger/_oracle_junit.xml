@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="5" skipped="0" tests="10" time="0.186" timestamp="2026-07-14T09:08:57.154704-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260714-083129.bank_ledger.tests.test_solution" name="test_basic" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-083129.bank_ledger.tests.test_solution" name="test_empty" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-083129.bank_ledger.tests.test_solution" name="test_withdraw_all" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-083129.bank_ledger.tests.test_solution" name="test_insufficient_message" time="0.000"><failure message="NameError: name '_amount' is not defined">def test_insufficient_message():
+        with pytest.raises(ValueError) as e:
+&gt;           f([('deposit', 30), ('withdraw', 50)])
+
+tests\test_solution.py:11: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+ops = [('deposit', 30), ('withdraw', 50)]
+
+    def bank_ledger(ops):
+        """
+        A Python function that takes a list of banking operations (each a tuple with two elements, ('deposit', amount) or ('withdraw', amount))
+        and folds it over a balance starting at 0 to return the list of balances after each operation in order.
+        The input list must contain tuples where the first element is either 'deposit' or 'withdraw',
+        and the second element is an integer amount &gt;= 1 that represents either deposit or withdrawal.
+        If any other value for the tuple's first element, an integer different from 0 or -1 (for 'deposit' and 'withdraw', respectively),
+        or if the amount is not a positive integer &gt;= 1, the function raises a ValueError with appropriate error message.
+    
+        :param ops: A list of banking operations as tuples
+        :return: The list of balances after each operation in order
+        """
+        balance = 0
+        result = []
+    
+        for op in ops:
+            if len(op) != 2 or not isinstance(op[1], int):
+                raise ValueError('bad op')
+    
+            _op, amount = op
+    
+            if _op == 'deposit':
+                try:
+                    balance += amount
+                except TypeError:
+                    # This would theoretically never happen due to the type checking earlier,
+                    # but leaving this in case we ever change our types.
+                    raise
+    
+                result.append(balance)
+    
+            elif _op == 'withdraw':
+                try:
+                    if amount &gt; balance:
+&gt;                       raise ValueError(f'insufficient funds: need {_amount} have {balance}')
+                                                                     ^^^^^^^
+E                       NameError: name '_amount' is not defined
+
+solution.py:35: NameError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.bank_ledger.tests.test_solution" name="test_insufficient_zero" time="0.000"><failure message="NameError: name '_amount' is not defined">def test_insufficient_zero():
+        with pytest.raises(ValueError) as e:
+&gt;           f([('withdraw', 1)])
+
+tests\test_solution.py:15: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+ops = [('withdraw', 1)]
+
+    def bank_ledger(ops):
+        """
+        A Python function that takes a list of banking operations (each a tuple with two elements, ('deposit', amount) or ('withdraw', amount))
+        and folds it over a balance starting at 0 to return the list of balances after each operation in order.
+        The input list must contain tuples where the first element is either 'deposit' or 'withdraw',
+        and the second element is an integer amount &gt;= 1 that represents either deposit or withdrawal.
+        If any other value for the tuple's first element, an integer different from 0 or -1 (for 'deposit' and 'withdraw', respectively),
+        or if the amount is not a positive integer &gt;= 1, the function raises a ValueError with appropriate error message.
+    
+        :param ops: A list of banking operations as tuples
+        :return: The list of balances after each operation in order
+        """
+        balance = 0
+        result = []
+    
+        for op in ops:
+            if len(op) != 2 or not isinstance(op[1], int):
+                raise ValueError('bad op')
+    
+            _op, amount = op
+    
+            if _op == 'deposit':
+                try:
+                    balance += amount
+                except TypeError:
+                    # This would theoretically never happen due to the type checking earlier,
+                    # but leaving this in case we ever change our types.
+                    raise
+    
+                result.append(balance)
+    
+            elif _op == 'withdraw':
+                try:
+                    if amount &gt; balance:
+&gt;                       raise ValueError(f'insufficient funds: need {_amount} have {balance}')
+                                                                     ^^^^^^^
+E                       NameError: name '_amount' is not defined
+
+solution.py:35: NameError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.bank_ledger.tests.test_solution" name="test_bad_amount_zero" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_bad_amount_zero():
+&gt;       with pytest.raises(ValueError) as e: f([('deposit', 0)])
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:18: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.bank_ledger.tests.test_solution" name="test_bad_amount_bool" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_bad_amount_bool():
+&gt;       with pytest.raises(ValueError): f([('deposit', True)])
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:21: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.bank_ledger.tests.test_solution" name="test_bad_amount_negative" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_bad_amount_negative():
+&gt;       with pytest.raises(ValueError): f([('withdraw', -5)])
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:23: Failed</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.bank_ledger.tests.test_solution" name="test_bad_op_shape" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-083129.bank_ledger.tests.test_solution" name="test_bad_op_kind" time="0.000" /></testsuite></testsuites>

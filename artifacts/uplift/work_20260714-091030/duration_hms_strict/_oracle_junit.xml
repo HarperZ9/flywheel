@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="6" skipped="0" tests="8" time="0.234" timestamp="2026-07-14T09:22:37.666362-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260714-091030.duration_hms_strict.tests.test_solution" name="test_full_form" time="0.001"><failure message="ValueError: invalid duration: '1h30m15s'">def test_full_form():
+&gt;       assert parse_duration_strict("1h30m15s") == 5415
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:6: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+s = '1h30m15s'
+
+    def parse_duration_strict(s: str) -&gt; int:
+        if not s or not all(c in "0123456789hs" for c in s):
+&gt;           raise ValueError(f"invalid duration: {s!r}")
+E           ValueError: invalid duration: '1h30m15s'
+
+solution.py:3: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-091030.duration_hms_strict.tests.test_solution" name="test_single_units" time="0.000"><failure message="ValueError: invalid duration: '10m'">def test_single_units():
+        assert parse_duration_strict("2h") == 7200
+&gt;       assert parse_duration_strict("10m") == 600
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:12: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+s = '10m'
+
+    def parse_duration_strict(s: str) -&gt; int:
+        if not s or not all(c in "0123456789hs" for c in s):
+&gt;           raise ValueError(f"invalid duration: {s!r}")
+E           ValueError: invalid duration: '10m'
+
+solution.py:3: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-091030.duration_hms_strict.tests.test_solution" name="test_leading_component_unbounded" time="0.000"><failure message="ValueError: invalid duration: '90m'">def test_leading_component_unbounded():
+&gt;       assert parse_duration_strict("90m") == 5400
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:17: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+s = '90m'
+
+    def parse_duration_strict(s: str) -&gt; int:
+        if not s or not all(c in "0123456789hs" for c in s):
+&gt;           raise ValueError(f"invalid duration: {s!r}")
+E           ValueError: invalid duration: '90m'
+
+solution.py:3: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-091030.duration_hms_strict.tests.test_solution" name="test_zero_values" time="0.000"><failure message="IndexError: tuple index out of range">def test_zero_values():
+&gt;       assert parse_duration_strict("0s") == 0
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:24: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+s = '0s'
+
+    def parse_duration_strict(s: str) -&gt; int:
+        if not s or not all(c in "0123456789hs" for c in s):
+            raise ValueError(f"invalid duration: {s!r}")
+        total = i = 0
+        last_unit = ""
+        while i &lt; len(s):
+            start = i
+            while i &lt; len(s) and s[i].isdigit():
+                i += 1
+            if i == start:
+                raise ValueError(f"unit required after number at offset {i}: {s!r}")
+            num_str = s[start:i]
+            if (len(num_str) &gt; 1 and num_str[0] == "0") or any(c not in "0123456789" for c in num_str):
+                raise ValueError(f"invalid number {num_str!r} at offset {start}")
+            unit = s[i]
+            if last_unit:
+                if (unit, last_unit) in (("h", "m"), ("h", "s"), ("m", "s")):
+                    raise ValueError(f"{last_unit} must appear before {unit}: {s!r}")
+                if unit == last_unit:
+                    raise ValueError(f"duplicate unit {unit!r} at offset {i}: {s!r}")
+            else:
+                last_unit = unit
+            num = int(num_str)
+            if (num &gt; 59 and unit in "ms") or not (num &gt;= 0 and num == int(num)):
+                raise ValueError(f"invalid value {num_str!r} for {unit}: {s!r}")
+&gt;           total += ((3600, 60, 1)[ord(unit) - ord("h"):][0] * num)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           IndexError: tuple index out of range
+
+solution.py:26: IndexError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-091030.duration_hms_strict.tests.test_solution" name="test_order_and_duplicate_raise" time="0.000"><failure message="IndexError: tuple index out of range">def test_order_and_duplicate_raise():
+        for bad in ["5m1h", "10s5m", "1h2h", "5s5s", "3s2h"]:
+            with pytest.raises(ValueError):
+&gt;               parse_duration_strict(bad)
+
+tests\test_solution.py:32: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+s = '5s5s'
+
+    def parse_duration_strict(s: str) -&gt; int:
+        if not s or not all(c in "0123456789hs" for c in s):
+            raise ValueError(f"invalid duration: {s!r}")
+        total = i = 0
+        last_unit = ""
+        while i &lt; len(s):
+            start = i
+            while i &lt; len(s) and s[i].isdigit():
+                i += 1
+            if i == start:
+                raise ValueError(f"unit required after number at offset {i}: {s!r}")
+            num_str = s[start:i]
+            if (len(num_str) &gt; 1 and num_str[0] == "0") or any(c not in "0123456789" for c in num_str):
+                raise ValueError(f"invalid number {num_str!r} at offset {start}")
+            unit = s[i]
+            if last_unit:
+                if (unit, last_unit) in (("h", "m"), ("h", "s"), ("m", "s")):
+                    raise ValueError(f"{last_unit} must appear before {unit}: {s!r}")
+                if unit == last_unit:
+                    raise ValueError(f"duplicate unit {unit!r} at offset {i}: {s!r}")
+            else:
+                last_unit = unit
+            num = int(num_str)
+            if (num &gt; 59 and unit in "ms") or not (num &gt;= 0 and num == int(num)):
+                raise ValueError(f"invalid value {num_str!r} for {unit}: {s!r}")
+&gt;           total += ((3600, 60, 1)[ord(unit) - ord("h"):][0] * num)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           IndexError: tuple index out of range
+
+solution.py:26: IndexError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-091030.duration_hms_strict.tests.test_solution" name="test_range_raise" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-091030.duration_hms_strict.tests.test_solution" name="test_leading_zero_raise" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-091030.duration_hms_strict.tests.test_solution" name="test_malformed_raise" time="0.000"><failure message="IndexError: string index out of range">def test_malformed_raise():
+        for bad in ["", "h", "5", "5x", "5M", "5m3", "1.5h", "-5m", " 5m", "5m ", "5 m"]:
+            with pytest.raises(ValueError):
+&gt;               parse_duration_strict(bad)
+
+tests\test_solution.py:50: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+s = '5'
+
+    def parse_duration_strict(s: str) -&gt; int:
+        if not s or not all(c in "0123456789hs" for c in s):
+            raise ValueError(f"invalid duration: {s!r}")
+        total = i = 0
+        last_unit = ""
+        while i &lt; len(s):
+            start = i
+            while i &lt; len(s) and s[i].isdigit():
+                i += 1
+            if i == start:
+                raise ValueError(f"unit required after number at offset {i}: {s!r}")
+            num_str = s[start:i]
+            if (len(num_str) &gt; 1 and num_str[0] == "0") or any(c not in "0123456789" for c in num_str):
+                raise ValueError(f"invalid number {num_str!r} at offset {start}")
+&gt;           unit = s[i]
+                   ^^^^
+E           IndexError: string index out of range
+
+solution.py:15: IndexError</failure></testcase></testsuite></testsuites>

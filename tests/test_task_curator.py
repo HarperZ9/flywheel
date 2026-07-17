@@ -39,6 +39,58 @@ def test_good_task_clears_every_gate(tmp_path):
     assert r["admitted"]
 
 
+def test_stub_keeps_imports_and_module_level_code():
+    # The falsification stub must fail the tests through the SUITE's
+    # discrimination, never through an ImportError on a symbol the stub
+    # dropped. Imports, constants, and helpers survive; bodies do not.
+    from harness.task_curator import _stub_solution
+    src = ("import math\n"
+           "TABLE = [1, 2, 3]\n"
+           "def solve(x):\n"
+           "    return TABLE[x] * math.floor(2.5)\n")
+    stub = _stub_solution(src)
+    assert stub is not None
+    assert "import math" in stub
+    assert "TABLE" in stub
+    ns: dict = {}
+    exec(stub, ns)  # the stub must import cleanly
+    assert ns["solve"](0) is None
+    assert ns["TABLE"] == [1, 2, 3]
+
+
+def test_vacuous_suite_hiding_behind_module_imports_is_rejected(tmp_path):
+    # Tests that import a module-level symbol but assert nothing about the
+    # function's behavior: the old line-based stub dropped TABLE, the tests
+    # died on ImportError, and the vacuous suite was scored discriminating.
+    vac = _variant(
+        solution="TABLE = [1, 2, 3]\n\ndef solve(x):\n    return TABLE[x]\n",
+        hidden_tests=("from solution import solve, TABLE\n"
+                      "def test_table():\n    assert TABLE\n"
+                      "def test_more():\n    assert len(TABLE) == 3\n"
+                      "def test_even():\n    assert TABLE[0] == 1\n"
+                      "def test_last():\n    assert TABLE[-1] == 3\n"))
+    r = screen(vac, tmp_path)
+    assert not r["admitted"]
+    assert r["gates"]["oracle_can_fail"].startswith("FAIL")
+
+
+def test_hanging_probe_rejects_within_the_timeout(tmp_path, monkeypatch):
+    """The full-suite hang, pinned: a probe whose hidden tests spin forever
+    must come back False inside the timeout — the tree-kill must reach the
+    pytest grandchild, not just the shell."""
+    import time
+    from harness import task_curator
+    monkeypatch.setattr(task_curator, "ORACLE_TIMEOUT", 5)
+    spin = _variant(task_id="spinner", hidden_tests=(
+        "def test_never():\n"
+        "    while True:\n"
+        "        pass\n"))
+    t0 = time.time()
+    from harness.task_curator import _run_with
+    assert _run_with(spin, tmp_path, GOOD.solution, "hang-probe") is False
+    assert time.time() - t0 < 30, "the kill must reach the grandchild"
+
+
 def test_vacuous_tests_rejected_by_oracle_can_fail(tmp_path):
     vac = _variant(task_id="vacuous", hidden_tests=(
         "def test_a():\n    assert True\n"
@@ -178,9 +230,13 @@ def test_generalization_is_subsumption_not_duplicate(tmp_path):
     assert r["gates"]["dedup"] == "PASS", r["gates"]["dedup"]
 
 
+@pytest.mark.timeout(120)
 def test_hanging_solution_is_rejected_not_a_crash(tmp_path, monkeypatch):
     # learned from a real batch-3 crash: a TimeoutExpired from one oracle run
     # killed the whole admission batch. A hang must be a gate FAIL.
+    # Per-test timeout override: screen() runs several gates each hitting the
+    # monkeypatched 3s oracle timeout against an infinite loop, so cumulative
+    # wall-clock can exceed the default 60s suite timeout.
     import harness.task_curator as tc
     monkeypatch.setattr(tc, "ORACLE_TIMEOUT", 3)
     hang = _variant(task_id="hangs",
@@ -189,6 +245,25 @@ def test_hanging_solution_is_rejected_not_a_crash(tmp_path, monkeypatch):
     r = screen(hang, tmp_path)            # must RETURN, not raise
     assert not r["admitted"]
     assert r["gates"]["reference_passes"].startswith("FAIL")
+
+
+def test_seed_batch_dedups_against_the_physics_registry(tmp_path, monkeypatch):
+    """seed_batch built its dedup baseline from REGISTRY + HARD + EXPERT + the
+    persisted JSONL, omitting PHYSICS_REGISTRY, so a renamed physics twin would
+    clear the dedup gate. The baseline handed to curate must include the physics
+    tasks."""
+    from harness import task_curator
+    captured = {}
+
+    def spy_curate(candidates, work_root, existing=None):
+        captured["existing"] = existing
+        return {"admitted": [], "rejected": {}, "admit_rate": 0.0}
+
+    monkeypatch.setattr(task_curator, "curate", spy_curate)
+    reg = tmp_path / "curated.jsonl"
+    task_curator.seed_batch([], reg)
+    ids = {s.task_id for s in captured["existing"]}
+    assert "kepler_scaling" in ids, "physics registry absent from dedup baseline"
 
 
 def test_registry_roundtrip_and_tamper_detection(tmp_path):

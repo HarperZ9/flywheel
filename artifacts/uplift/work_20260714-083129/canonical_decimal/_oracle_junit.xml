@@ -1,0 +1,311 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="6" skipped="0" tests="8" time="0.237" timestamp="2026-07-14T08:42:34.875357-07:00" hostname="DESKTOP-3HC9JE1"><testcase classname="artifacts.uplift.work_20260714-083129.canonical_decimal.tests.test_solution" name="test_integers" time="0.001"><failure message="AssertionError: assert '4242' == '42'&#10;  &#10;  - 42&#10;  + 4242">def test_integers():
+&gt;       assert canonical_decimal("42") == "42"
+E       AssertionError: assert '4242' == '42'
+E         
+E         - 42
+E         + 4242
+
+tests\test_solution.py:6: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.canonical_decimal.tests.test_solution" name="test_fractions" time="0.001"><failure message="AssertionError: assert '33.140' == '3.14'&#10;  &#10;  - 3.14&#10;  + 33.140&#10;  ? +    +">def test_fractions():
+&gt;       assert canonical_decimal("3.1400") == "3.14"
+E       AssertionError: assert '33.140' == '3.14'
+E         
+E         - 3.14
+E         + 33.140
+E         ? +    +
+
+tests\test_solution.py:12: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.canonical_decimal.tests.test_solution" name="test_zero_normalization" time="0.001"><failure message="AssertionError: assert '.' == '0'&#10;  &#10;  - 0&#10;  + .">def test_zero_normalization():
+&gt;       assert canonical_decimal("-0") == "0"
+E       AssertionError: assert '.' == '0'
+E         
+E         - 0
+E         + .
+
+tests\test_solution.py:20: AssertionError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.canonical_decimal.tests.test_solution" name="test_signs" time="0.000"><failure message="ValueError: Invalid input.">s = '+12'
+
+    def canonical_decimal(s: str) -&gt; str:
+        def _validate_and_clean(input_str):
+            # Check for valid format, including no extra characters and at least one digit
+            if not (input_str.replace('.', '').replace('-', '').isdigit() or input_str.endswith('.0')):
+                raise ValueError
+    
+            # Handle underscores
+            has_underscore = '#' in input_str
+            underscore_positions = [i for i, c in enumerate(input_str) if c == '_']
+    
+            if any(pos % 2 != 0 or pos == 0 or pos == len(input_str) - 1 for pos in underscore_positions):
+                raise ValueError
+    
+            # Move all underscores to the end
+            underscore_indices = sorted(underscore_positions, reverse=True)
+            new_str_without_underscores = []
+            last_position = 0
+            for i, c in enumerate(input_str):
+                if c == '_':
+                    if underscore_indices and i &lt; underscore_indices[0] + 1:
+                        new_str_without_underscores.append(c)
+                        continue
+                elif has_underscore and (i &gt; last_position or input_str[:i].replace('.', '').isdigit()):
+                    for j in range(i - last_position):
+                        new_str_without_underscores.pop()
+                    underscore_indices.pop(0) if underscore_indices else underscore_indices.append(None)
+                    has_underscore = False
+                new_str_without_underscores.append(c)
+            new_str_without_underscores = ''.join(new_str_without_underscores)
+    
+            # Remove leading and trailing zeros, but keep at least one digit in the integer part
+            int_part = new_str_without_underscores.split('.')[0]
+            if int_part.startswith('0') or (int_part and not int_part.replace('.', '').isdigit()):
+                return '0' if all(c == '0' for c in int_part) else '.'
+    
+            fraction_part = '.'.join(new_str_without_underscores.split('.'))
+            if fraction_part.endswith('0'):
+                fraction_part = fraction_part[:-1]
+                if not fraction_part:
+                    return ''
+    
+            # Handle sign and zero case
+            if int_part.startswith('0') or all(c == '0' for c in int_part):
+                return '0'
+            elif '-' in input_str:
+                return f'-{int_part}{fraction_part}'
+            else:
+                return f'{int_part}{fraction_part}'
+    
+        try:
+            # Correct the canonicalization logic
+            if s.startswith('0'):
+                raise ValueError
+&gt;           result = _validate_and_clean(s)
+                     ^^^^^^^^^^^^^^^^^^^^^^
+
+solution.py:54: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+input_str = '+12'
+
+    def _validate_and_clean(input_str):
+        # Check for valid format, including no extra characters and at least one digit
+        if not (input_str.replace('.', '').replace('-', '').isdigit() or input_str.endswith('.0')):
+&gt;           raise ValueError
+E           ValueError
+
+solution.py:5: ValueError
+
+The above exception was the direct cause of the following exception:
+
+    def test_signs():
+&gt;       assert canonical_decimal("+12") == "12"
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:28: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+s = '+12'
+
+    def canonical_decimal(s: str) -&gt; str:
+        def _validate_and_clean(input_str):
+            # Check for valid format, including no extra characters and at least one digit
+            if not (input_str.replace('.', '').replace('-', '').isdigit() or input_str.endswith('.0')):
+                raise ValueError
+    
+            # Handle underscores
+            has_underscore = '#' in input_str
+            underscore_positions = [i for i, c in enumerate(input_str) if c == '_']
+    
+            if any(pos % 2 != 0 or pos == 0 or pos == len(input_str) - 1 for pos in underscore_positions):
+                raise ValueError
+    
+            # Move all underscores to the end
+            underscore_indices = sorted(underscore_positions, reverse=True)
+            new_str_without_underscores = []
+            last_position = 0
+            for i, c in enumerate(input_str):
+                if c == '_':
+                    if underscore_indices and i &lt; underscore_indices[0] + 1:
+                        new_str_without_underscores.append(c)
+                        continue
+                elif has_underscore and (i &gt; last_position or input_str[:i].replace('.', '').isdigit()):
+                    for j in range(i - last_position):
+                        new_str_without_underscores.pop()
+                    underscore_indices.pop(0) if underscore_indices else underscore_indices.append(None)
+                    has_underscore = False
+                new_str_without_underscores.append(c)
+            new_str_without_underscores = ''.join(new_str_without_underscores)
+    
+            # Remove leading and trailing zeros, but keep at least one digit in the integer part
+            int_part = new_str_without_underscores.split('.')[0]
+            if int_part.startswith('0') or (int_part and not int_part.replace('.', '').isdigit()):
+                return '0' if all(c == '0' for c in int_part) else '.'
+    
+            fraction_part = '.'.join(new_str_without_underscores.split('.'))
+            if fraction_part.endswith('0'):
+                fraction_part = fraction_part[:-1]
+                if not fraction_part:
+                    return ''
+    
+            # Handle sign and zero case
+            if int_part.startswith('0') or all(c == '0' for c in int_part):
+                return '0'
+            elif '-' in input_str:
+                return f'-{int_part}{fraction_part}'
+            else:
+                return f'{int_part}{fraction_part}'
+    
+        try:
+            # Correct the canonicalization logic
+            if s.startswith('0'):
+                raise ValueError
+            result = _validate_and_clean(s)
+            return result
+        except ValueError as e:
+&gt;           raise ValueError("Invalid input.") from e
+E           ValueError: Invalid input.
+
+solution.py:57: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.canonical_decimal.tests.test_solution" name="test_underscores" time="0.000"><failure message="ValueError: Invalid input.">s = '1_000'
+
+    def canonical_decimal(s: str) -&gt; str:
+        def _validate_and_clean(input_str):
+            # Check for valid format, including no extra characters and at least one digit
+            if not (input_str.replace('.', '').replace('-', '').isdigit() or input_str.endswith('.0')):
+                raise ValueError
+    
+            # Handle underscores
+            has_underscore = '#' in input_str
+            underscore_positions = [i for i, c in enumerate(input_str) if c == '_']
+    
+            if any(pos % 2 != 0 or pos == 0 or pos == len(input_str) - 1 for pos in underscore_positions):
+                raise ValueError
+    
+            # Move all underscores to the end
+            underscore_indices = sorted(underscore_positions, reverse=True)
+            new_str_without_underscores = []
+            last_position = 0
+            for i, c in enumerate(input_str):
+                if c == '_':
+                    if underscore_indices and i &lt; underscore_indices[0] + 1:
+                        new_str_without_underscores.append(c)
+                        continue
+                elif has_underscore and (i &gt; last_position or input_str[:i].replace('.', '').isdigit()):
+                    for j in range(i - last_position):
+                        new_str_without_underscores.pop()
+                    underscore_indices.pop(0) if underscore_indices else underscore_indices.append(None)
+                    has_underscore = False
+                new_str_without_underscores.append(c)
+            new_str_without_underscores = ''.join(new_str_without_underscores)
+    
+            # Remove leading and trailing zeros, but keep at least one digit in the integer part
+            int_part = new_str_without_underscores.split('.')[0]
+            if int_part.startswith('0') or (int_part and not int_part.replace('.', '').isdigit()):
+                return '0' if all(c == '0' for c in int_part) else '.'
+    
+            fraction_part = '.'.join(new_str_without_underscores.split('.'))
+            if fraction_part.endswith('0'):
+                fraction_part = fraction_part[:-1]
+                if not fraction_part:
+                    return ''
+    
+            # Handle sign and zero case
+            if int_part.startswith('0') or all(c == '0' for c in int_part):
+                return '0'
+            elif '-' in input_str:
+                return f'-{int_part}{fraction_part}'
+            else:
+                return f'{int_part}{fraction_part}'
+    
+        try:
+            # Correct the canonicalization logic
+            if s.startswith('0'):
+                raise ValueError
+&gt;           result = _validate_and_clean(s)
+                     ^^^^^^^^^^^^^^^^^^^^^^
+
+solution.py:54: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+input_str = '1_000'
+
+    def _validate_and_clean(input_str):
+        # Check for valid format, including no extra characters and at least one digit
+        if not (input_str.replace('.', '').replace('-', '').isdigit() or input_str.endswith('.0')):
+&gt;           raise ValueError
+E           ValueError
+
+solution.py:5: ValueError
+
+The above exception was the direct cause of the following exception:
+
+    def test_underscores():
+&gt;       assert canonical_decimal("1_000") == "1000"
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_solution.py:35: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+s = '1_000'
+
+    def canonical_decimal(s: str) -&gt; str:
+        def _validate_and_clean(input_str):
+            # Check for valid format, including no extra characters and at least one digit
+            if not (input_str.replace('.', '').replace('-', '').isdigit() or input_str.endswith('.0')):
+                raise ValueError
+    
+            # Handle underscores
+            has_underscore = '#' in input_str
+            underscore_positions = [i for i, c in enumerate(input_str) if c == '_']
+    
+            if any(pos % 2 != 0 or pos == 0 or pos == len(input_str) - 1 for pos in underscore_positions):
+                raise ValueError
+    
+            # Move all underscores to the end
+            underscore_indices = sorted(underscore_positions, reverse=True)
+            new_str_without_underscores = []
+            last_position = 0
+            for i, c in enumerate(input_str):
+                if c == '_':
+                    if underscore_indices and i &lt; underscore_indices[0] + 1:
+                        new_str_without_underscores.append(c)
+                        continue
+                elif has_underscore and (i &gt; last_position or input_str[:i].replace('.', '').isdigit()):
+                    for j in range(i - last_position):
+                        new_str_without_underscores.pop()
+                    underscore_indices.pop(0) if underscore_indices else underscore_indices.append(None)
+                    has_underscore = False
+                new_str_without_underscores.append(c)
+            new_str_without_underscores = ''.join(new_str_without_underscores)
+    
+            # Remove leading and trailing zeros, but keep at least one digit in the integer part
+            int_part = new_str_without_underscores.split('.')[0]
+            if int_part.startswith('0') or (int_part and not int_part.replace('.', '').isdigit()):
+                return '0' if all(c == '0' for c in int_part) else '.'
+    
+            fraction_part = '.'.join(new_str_without_underscores.split('.'))
+            if fraction_part.endswith('0'):
+                fraction_part = fraction_part[:-1]
+                if not fraction_part:
+                    return ''
+    
+            # Handle sign and zero case
+            if int_part.startswith('0') or all(c == '0' for c in int_part):
+                return '0'
+            elif '-' in input_str:
+                return f'-{int_part}{fraction_part}'
+            else:
+                return f'{int_part}{fraction_part}'
+    
+        try:
+            # Correct the canonicalization logic
+            if s.startswith('0'):
+                raise ValueError
+            result = _validate_and_clean(s)
+            return result
+        except ValueError as e:
+&gt;           raise ValueError("Invalid input.") from e
+E           ValueError: Invalid input.
+
+solution.py:57: ValueError</failure></testcase><testcase classname="artifacts.uplift.work_20260714-083129.canonical_decimal.tests.test_solution" name="test_bad_underscores_raise" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-083129.canonical_decimal.tests.test_solution" name="test_no_digits_raise" time="0.000" /><testcase classname="artifacts.uplift.work_20260714-083129.canonical_decimal.tests.test_solution" name="test_bad_chars_raise" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">def test_bad_chars_raise():
+        for bad in ["1a", " 1", "1 ", "1.2.3", "--1", "+-1", "1,000", "1e5"]:
+&gt;           with pytest.raises(ValueError):
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^
+E           Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests\test_solution.py:54: Failed</failure></testcase></testsuite></testsuites>
