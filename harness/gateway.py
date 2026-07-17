@@ -2073,6 +2073,20 @@ class _Handler(BaseHTTPRequestHandler):
                              req.get("args")
                              if isinstance(req.get("args"), dict) else {})
             return self._json(out, 400 if "error" in out else 200)
+        if p == "/api/studio/graph":                   # branching creative DAG, Merkle receipt
+            length = self._content_length()
+            if length is None:
+                return self._json({"error": "invalid or oversized Content-Length"}, 400)
+            try:
+                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
+            except Exception:
+                req = {}
+            from harness.creative_graph import run_graph
+            out = run_graph(req.get("nodes")
+                            if isinstance(req.get("nodes"), list) else [],
+                            req.get("edges")
+                            if isinstance(req.get("edges"), list) else [])
+            return self._json(out, 400 if out.get("refused") else 200)
         if p == "/api/studio/pipeline":                # ordered stages, one chained receipt
             length = self._content_length()
             if length is None:
