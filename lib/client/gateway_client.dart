@@ -115,7 +115,14 @@ class GatewayClient {
     final r = await _http.post(
       Uri.parse('$baseUrl/api/typeface'),
       headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'params': params, 'seed': seed}),
+      // every mint carries its font file, so the face is wearable the
+      // moment it exists
+      body: jsonEncode({
+        'params': params,
+        'seed': seed,
+        'ttf': true,
+        'family': 'Zentropy Mint $seed',
+      }),
     );
     return _decode(r);
   }

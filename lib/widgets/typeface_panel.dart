@@ -1,18 +1,32 @@
 // typeface_panel.dart — the forge's front: eight parameters, a seed, and a
 // mint that can refuse. The specimen paints from the minted outlines with
 // nonzero winding, so what you see is the artifact, not a preview of one.
+// Wear-it loads the minted font file into THIS app's registry, so your
+// own text renders in your own face seconds after it exists.
+
+import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../theme/flywheel_theme.dart';
 import 'fw.dart';
 
 typedef MintFace = Future<Map<String, dynamic>> Function(
     Map<String, dynamic> params, int seed);
+typedef LoadFont = Future<void> Function(String family, Uint8List bytes);
+
+Future<void> _defaultLoadFont(String family, Uint8List bytes) async {
+  final loader = FontLoader(family)
+    ..addFont(Future.value(ByteData.view(bytes.buffer)));
+  await loader.load();
+}
 
 class TypefacePanel extends StatefulWidget {
   final MintFace onMint;
-  const TypefacePanel({super.key, required this.onMint});
+  final LoadFont? fontLoad;
+  const TypefacePanel({super.key, required this.onMint, this.fontLoad});
 
   @override
   State<TypefacePanel> createState() => _TypefacePanelState();
@@ -37,8 +51,40 @@ class _TypefacePanelState extends State<TypefacePanel> {
   };
   int _seed = 58;
   Map<String, dynamic>? _face;
-  bool _minting = false;
-  String? _error;
+  bool _minting = false, _wearing = false;
+  String? _error, _wornFamily;
+  final _wearText = TextEditingController(
+      text: 'the quick brown fox jumps over the lazy dog 0123456789');
+  static final Set<String> _loadedFamilies = {};
+
+  @override
+  void dispose() {
+    _wearText.dispose();
+    super.dispose();
+  }
+
+  Future<void> _wear() async {
+    final face = _face;
+    final b64 = face?['ttf_b64'];
+    final mintId = '${face?['receipt']?['mint_id'] ?? ''}';
+    if (b64 == null || mintId.isEmpty || _wearing) return;
+    setState(() => _wearing = true);
+    try {
+      // one registry family per distinct mint, so switching seeds switches
+      // the rendered face instead of piling bytes under one name
+      final family = 'ZentropyMint-$mintId';
+      if (!_loadedFamilies.contains(family)) {
+        await (widget.fontLoad ?? _defaultLoadFont)(
+            family, base64Decode('$b64'));
+        _loadedFamilies.add(family);
+      }
+      if (mounted) setState(() => _wornFamily = family);
+    } catch (e) {
+      if (mounted) setState(() => _error = 'wear failed: $e');
+    } finally {
+      if (mounted) setState(() => _wearing = false);
+    }
+  }
 
   Future<void> _mint() async {
     if (_minting) return;
@@ -124,7 +170,35 @@ class _TypefacePanelState extends State<TypefacePanel> {
                 child: HashText(
                     'mint', '${face['receipt']?['mint_id'] ?? ''}', keep: 16),
               ),
+              if (face['ttf_b64'] != null)
+                OutlinedButton(
+                  onPressed: _wearing ? null : _wear,
+                  child: Text(_wearing ? 'Loading…' : 'Wear it'),
+                ),
             ]),
+            if (_wornFamily != null) ...[
+              const SizedBox(height: FwLayout.s3),
+              Row(children: [
+                const VerdictPill('wearing it', status: 'verified'),
+                const SizedBox(width: FwLayout.s2),
+                Expanded(
+                  child: Text(
+                      'this text renders from the font file the forge just '
+                      'wrote, loaded into this app live',
+                      style: fwMono(t, size: 11).copyWith(color: t.inkMuted)),
+                ),
+              ]),
+              const SizedBox(height: FwLayout.s2),
+              TextField(
+                controller: _wearText,
+                maxLines: 2,
+                style: TextStyle(
+                    fontFamily: _wornFamily, fontSize: 30, color: t.ink),
+                decoration: const InputDecoration(
+                    hintText: 'type anything; lowercase and digits carry '
+                        'the face'),
+              ),
+            ],
           ],
         ],
       ),
