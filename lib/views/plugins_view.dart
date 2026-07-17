@@ -10,6 +10,7 @@ import '../theme/flywheel_theme.dart';
 import '../widgets/fw.dart';
 import '../widgets/marketplace_panel.dart';
 import '../widgets/plugin_forms.dart';
+import '../widgets/tool_call_sheet.dart';
 import '../widgets/parity_table.dart';
 
 class PluginsView extends StatefulWidget {
@@ -237,7 +238,11 @@ class _PluginsViewState extends State<PluginsView> {
             ),
             if (probe != null) ...[
               const SizedBox(height: FwLayout.s3),
-              ProbeResult(probe: probe),
+              ProbeResult(
+                probe: probe,
+                onCallTool: (tool) =>
+                    showToolCallSheet(context, widget.client, name, tool),
+              ),
             ],
           ],
         ),

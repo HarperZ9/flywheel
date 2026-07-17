@@ -153,6 +153,18 @@ extension GatewayStreamsAndPlugins on GatewayClient {
     return _decode(r);
   }
 
+  /// POST /api/plugins/call — one tool call on a registered plugin, args and
+  /// result verbatim. The probe shows what a server offers; this runs it.
+  Future<Map<String, dynamic>> callPlugin(
+      String name, String tool, Map<String, dynamic> arguments) async {
+    final r = await _http.post(
+      Uri.parse('$baseUrl/api/plugins/call'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'name': name, 'tool': tool, 'arguments': arguments}),
+    );
+    return _decode(r);
+  }
+
   /// POST /api/snapshot — the citation, frozen: the page's bytes fetched,
   /// hashed, and stored so the reference outlives the live web.
   Future<Map<String, dynamic>> snapshotUrl(String url) async {
