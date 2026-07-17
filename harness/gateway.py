@@ -2046,6 +2046,24 @@ class _Handler(BaseHTTPRequestHandler):
                 face_params=req.get("face_params")
                 if isinstance(req.get("face_params"), dict) else None)
             return self._json(out, 400 if out.get("refused") else 200)
+        if p == "/api/studio/sound":                   # the seeded chime study, score = receipt
+            length = self._content_length()
+            if length is None:
+                return self._json({"error": "invalid or oversized Content-Length"}, 400)
+            try:
+                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
+            except Exception:
+                req = {}
+            from harness.sound_studio import compose_sound
+            def _num(key, default):
+                try:
+                    return float(req.get(key, default))
+                except (TypeError, ValueError):
+                    return default
+            out = compose_sound(seed=int(_num("seed", 58)),
+                                duration=_num("duration", 24.0),
+                                root=_num("root", 220.0))
+            return self._json(out, 400 if out.get("refused") else 200)
         if p == "/api/marketplace/add":                # a user catalog entry (env-var NAMES only)
             length = self._content_length()
             if length is None:
