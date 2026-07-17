@@ -136,23 +136,50 @@ class _GraphPanelState extends State<GraphPanel> {
     }
   }
 
+  String get _downloads =>
+      '${Platform.environment['USERPROFILE'] ?? Platform.environment['HOME'] ?? '.'}'
+      '${Platform.pathSeparator}Downloads';
   Future<void> _save() async {
     final rc = _receipt;
     if (rc == null || _outputs.isEmpty) return;
     try {
-      final home = Platform.environment['USERPROFILE'] ??
-          Platform.environment['HOME'] ??
-          '.';
       String last = '';
       for (final e in _outputs.entries) {
-        final f = File('$home${Platform.pathSeparator}Downloads'
-            '${Platform.pathSeparator}graph-${rc['graph_id']}-${e.key}.png');
+        final f = File('$_downloads${Platform.pathSeparator}'
+            'graph-${rc['graph_id']}-${e.key}.png');
         f.writeAsBytesSync(e.value);
         last = f.path;
       }
       setState(() => _savedTo = last);
     } catch (e) {
       setState(() => _error = 'save failed: $e');
+    }
+  }
+
+  /// Export the graph as a portable .fwgraph: the spec plus the graph_id it
+  /// produced. Reopening re-runs it (cache serves an unchanged spec instantly;
+  /// a moved graph_id proves the engine changed under the same spec).
+  Future<void> _exportSpec() async {
+    final rc = _receipt;
+    if (rc == null) return;
+    try {
+      final p = _presets[_preset];
+      final seed = int.tryParse(_seed.text.trim()) ?? 58;
+      final doc = const JsonEncoder.withIndent('  ').convert({
+        'schema': 'flywheel.fwgraph/v1',
+        'preset': p.name,
+        'seed': seed,
+        'nodes': p.nodes(seed),
+        'edges': p.edges,
+        'graph_id': rc['graph_id'],
+      });
+      final f = File('$_downloads${Platform.pathSeparator}'
+          '${p.name.replaceAll(RegExp(r'[^a-zA-Z0-9]+'), '-')}'
+          '-${rc['graph_id']}.fwgraph');
+      f.writeAsStringSync(doc);
+      setState(() => _savedTo = f.path);
+    } catch (e) {
+      setState(() => _error = 'export failed: $e');
     }
   }
 
@@ -242,7 +269,15 @@ class _GraphPanelState extends State<GraphPanel> {
             Row(children: [
               VerdictPill('graph ${_receipt?['graph_id'] ?? ''}',
                   status: 'verified'),
+              if ((_receipt?['cache_hits'] ?? 0) != 0)
+                Padding(
+                    padding: const EdgeInsets.only(left: FwLayout.s2),
+                    child: VerdictPill('${_receipt?['cache_hits']} cached',
+                        status: 'verified')),
               const Spacer(),
+              OutlinedButton(
+                  onPressed: _exportSpec, child: const Text('.fwgraph')),
+              const SizedBox(width: FwLayout.s2),
               OutlinedButton(
                   onPressed: _save, child: const Text('Save sinks')),
             ]),
