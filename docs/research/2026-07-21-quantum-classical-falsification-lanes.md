@@ -108,49 +108,23 @@ enumerator, explicit included/excluded-channel manifest, all final sectors
 through a controlled cutoff, and a receipt showing selected probability plus
 declared leakage exhausts the full state within tolerance.
 
-### Lane 1 readiness: BLOCKED before a physical closure calculation
+### Lane 1 readiness: POPULATED; BLOCKED ON NAMED TECHNICAL GATES
 
-No physical fourth-order closure run is authorized by the current vector tasks.
-Before execution, primary-source derivation and technical review must populate
-and approve this canonical manifest; the blanks are intentional and no values or
-model choices are implied here.
+The source-bounded protocol is now machine-readable at
+[`configs/qcr/amplitude-closure-manifest-v1.json`](../../configs/qcr/amplitude-closure-manifest-v1.json).
+It pins the four primary-source versions and hashes, separates conflicting
+Hamiltonian and amplitude claims, declares orders 0--4 across all four incoming
+branches and the full no-pair final-state domain, expands the 16 projected
+branch transitions per order, and makes excluded and unresolved channels
+explicit. It declares expected outputs but contains no calculated amplitudes or
+physical result.
 
-```yaml
-schema: qcr.amplitude-closure-manifest/v1
-source:
-  primary_source_versions_and_hashes: []
-model:
-  hamiltonian_or_action_terms: []
-  field_and_species_choice: null
-  initial_state: null
-  basis_and_final_sectors: []
-  included_channels: []
-  excluded_channels_and_justification: []
-perturbation:
-  convention_and_order: null
-evolution:
-  evolution_method_or_integrator: null
-  projection_definition: null
-  cutoff_sequence_and_convergence_rule: null
-oracles:
-  O1_dimension_and_validity_predicate: null
-  O2_separability_predicate: null
-  O3_local_phase_gauge_predicate: null
-  O4_trace_closure_predicate: null
-  O5_factorization_predicate: null
-  O6_null_and_asymptotic_predicate: null
-  explicit_tolerances: {}
-outputs:
-  amplitude_tables: null
-  full_and_projected_density_matrices: null
-  leakage_and_success_records: null
-  convergence_records: null
-  receipt_schema_and_hashes: null
-```
-
-The lane remains `BLOCKED` until every field is source-derived, the declared
-sectors/channels are reviewable, and the O1--O6 predicates and tolerances can be
-run deterministically. A populated manifest is a prerequisite, not a conclusion.
+No physical fourth-order closure run is authorized yet. The manifest remains
+blocked on reconciliation of the Hamiltonian sign/convention, the `N>1`
+off-diagonal dispute, an exhaustive finite-basis generator, matched
+distinct-field and barrier/binding Hamiltonians, and reviewed numeric
+convergence/trace controls. A populated manifest is a reviewable prerequisite,
+not a conclusion.
 
 ## Ranked falsifiable lanes
 
