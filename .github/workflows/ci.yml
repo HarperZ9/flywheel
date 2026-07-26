@@ -66,6 +66,9 @@ jobs:
           tests/test_uplift_bench.py
           tests/test_model_endpoint_profiles.py
           tests/test_model_release_readiness.py
+          tests/test_rung_pins.py
+          tests/test_rung_digests.py
+          tests/test_prereg_event.py
           -q
 
   full:
@@ -154,6 +157,22 @@ jobs:
         with:
           python-version: "3.13"
       - run: python scripts/check_file_gate.py
+
+  prereg_freeze:
+    name: the frozen prereg still hashes to its freeze
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Rung pins are read from the hashed document, so an edit is caught
+        # No model store exists in CI, so every rung reports ABSENT and the run
+        # exits 0. That is the point: what this job actually gates is the freeze
+        # binding. Edit the preregistration after freezing and the checker
+        # refuses to read pins out of it, and this job goes red. Possession of
+        # the ladder is asserted locally with --require-all, not here.
+        run: python scripts/verify_rung_digests.py --store /nonexistent-store
 
   parses:
     name: every harness module parses
