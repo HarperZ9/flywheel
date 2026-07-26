@@ -1,0 +1,17 @@
+{
+ "schema": "flywheel.prereg-freeze/v1",
+ "prereg_id": "prereg.size-invariant-verification.v1",
+ "prereg_path": "project-docs/prereg/2026-07-26-size-invariant-verification.md",
+ "frozen_sha256": "31055c924d48fe67ebdf29ab8f067840f83ccc6ff1d1f469bc0abb2be0dffa08",
+ "sha256_method": "sha256 of the git blob content (LF)",
+ "frozen_at": "2026-07-26T22:52:33Z",
+ "git_tag": "prereg/size-invariant-verification-v1",
+ "ledger": "artifacts/prereg/ledger.jsonl",
+ "ledger_root": "sha256:eb68d14cb0c2c2f9af89398f773ddf087b7fc18c0d822edd3f36bfbed18b09b9",
+ "ledger_size": 1,
+ "log_id": "sha256:4de456a538e8c723ecfe0edb650903214fc29c017fd898e7f23fa6e478e8ae40",
+ "public_key_hex": "1f85627e7e0dd4c6c73593d785b669b2abe4701ea780e26d1024b45dc1546111",
+ "signed_head": "artifacts/prereg/signed-head.json",
+ "inclusion_proof": "artifacts/prereg/inclusion-proof.json",
+ "note": "The prereg was frozen AS-IS; its bytes were not edited to record the freeze (a document cannot contain its own hash). This record plus the signed tree head plus the git tag are the external attestation. Verify: git show the tag's prereg, sha256 it, match frozen_sha256; then verify signed-head.json against public-key.hex."
+}
