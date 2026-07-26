@@ -1,18 +1,16 @@
 #!/usr/bin/env python3
 """check_public_instructions.py -- a public instruction file must stand alone.
 
-Wave 2 of the instruction-canon rollout turned up a design fact worth stating:
-the public repos under `public/` are published and cloned on their own, so they
-are NOT part of the local canon. A pointer that said "inherited from
-c:/dev/CLAUDE.md" would be a local path on a public surface AND false for a
-standalone clone. Public repos are self-contained by necessity.
+The design fact this gate was built on: every project here is its own repo,
+published and cloned on its own, so no project's instructions can point at the
+c:/dev workspace canon. A reference like "inherited from c:/dev/CLAUDE.md" would
+be a local path on a public surface AND false for a standalone clone. Public
+repos are self-contained by necessity.
 
-So the invariant this gate holds is not "matches the canon" but "leaks nothing
-local": a public instruction file names no local path and no internal project.
-It complements `check_claim_language.py` (which governs public PROSE) and
-`check_instruction_canon.py` (which governs INTERNAL pointer drift). Together
-they are the three registers: internal single-source, public self-containment,
-and no over-claim on either.
+So the invariant this gate holds is "leaks nothing local": a public instruction
+file names no local path and no internal project. It complements
+`check_claim_language.py` (which governs public PROSE); the workspace canon at
+c:/dev is inherited only by a session rooted there, never pointed at from a repo.
 
 Exit 0 clean, 1 with leaks listed.
 """

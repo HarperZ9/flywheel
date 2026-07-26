@@ -58,7 +58,6 @@ jobs:
           tests/test_crossing.py
           tests/test_claim_language.py
           tests/test_render.py
-          tests/test_instruction_canon.py
           tests/test_public_instructions.py
           tests/test_instance_binding.py
           tests/test_pool.py
@@ -113,29 +112,6 @@ jobs:
           python-version: "3.13"
       - name: Transitive import closure of the verifier entry points
         run: python scripts/check_verifier_stdlib.py
-
-  instruction_canon:
-    name: per-repo instruction files match the canon
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.13"
-      - name: One canon, and every pointer proves it read it
-        # The workspace canon lives one level above this repo and is not part of
-        # this checkout in CI, so this asserts the gate RUNS and the manifest is
-        # well-formed; full cross-file drift is caught locally and on the machine
-        # that holds the canon. A missing canon is skipped, not failed.
-        run: |
-          python - <<'PY'
-          import subprocess, sys, pathlib
-          if not (pathlib.Path("..") / "CLAUDE.md").exists():
-              print("workspace canon not in CI checkout; gate is exercised by tests")
-              sys.exit(0)
-          sys.exit(subprocess.run([sys.executable,
-              "scripts/check_instruction_canon.py"]).returncode)
-          PY
 
   public_instructions:
     name: public instruction files stand alone
