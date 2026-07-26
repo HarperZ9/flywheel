@@ -4,16 +4,17 @@ Status: the commands below were exercised locally; benchmark-grade usage example
 
 ## Ollama
 
-The Modelfile lives next to the artifact:
+The Modelfile ships next to the GGUF. Set `MODEL_DIR` to the directory holding
+both, then the commands below run unchanged:
 
-```text
-E:\local-model-run\gguf-work-32b\Modelfile
+```powershell
+$env:MODEL_DIR = "<the directory containing the .gguf and Modelfile>"
 ```
 
 Create and run:
 
 ```powershell
-ollama create flywheel-local-coder-32b -f E:\local-model-run\gguf-work-32b\Modelfile
+ollama create flywheel-local-coder-32b -f "$env:MODEL_DIR\Modelfile"
 ollama run flywheel-local-coder-32b
 ```
 
@@ -22,7 +23,7 @@ ollama run flywheel-local-coder-32b
 Direct completion against the GGUF, matching the deterministic smoke configuration (temp 0, seed 7):
 
 ```powershell
-llama-cli -m E:\local-model-run\gguf-work-32b\telos-coder-32b-cpt2019-q4_k_m.gguf --temp 0 --seed 7 -n 64 -p "<prompt>"
+llama-cli -m "$env:MODEL_DIR\telos-coder-32b-cpt2019-q4_k_m.gguf" --temp 0 --seed 7 -n 64 -p "<prompt>"
 ```
 
 Reruns at temp 0, seed 7 are byte-identical (smoke verdict MATCH).

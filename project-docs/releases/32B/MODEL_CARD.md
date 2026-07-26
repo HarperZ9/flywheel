@@ -15,13 +15,14 @@ Status: trained artifact verified, staged for operator-gated upload. Identity an
 - Merged fp16 GGUF (local build intermediate, not published): `telos-coder-32b-merged-f16.gguf`, SHA-256 `3360f7db86b8493dd444c4b03e113d61be6c06084ddb91c8557847f58036a3ee`
 - Adapter (safetensors) SHA-256: `d2ff1d3042c9b015d8d01b6e195cf95acedc133bf4efe78692e4349a3608e286`
 - LoRA GGUF SHA-256: `08e7d21cfde1af768c877ecc18ee6343c87711c0c38b8c5b16feb9890f94cbac`
-- Artifact location: `E:\local-model-run\gguf-work-32b\telos-coder-32b-cpt2019-q4_k_m.gguf`
+- Artifact: `telos-coder-32b-cpt2019-q4_k_m.gguf`, held outside this repository and
+  identified by the sha256 in the release checklist rather than by a path
 - Local serving name: Ollama `flywheel-local-coder-32b`
 - Manifest: `C:\dev\local-model\tasks\research\gguf_ship_manifest_checkpoint2019_32b.json` (schema `telos.model-artifact/v1`)
 
 ## Training data
 
-Continued pretraining on the operator's `C:\dev` ecosystem corpus, the same packed corpus that trained the 14B track: 66,158,592 tokens, 8 shards, 16,152 sequences, seq_len 4096, from 17,997 corpus files (`E:\local-model-run\data\packed\PACK_COMPLETE.json`). Qwen2.5-Coder 14B and 32B share a tokenizer, so one packed corpus trains both. Corpus content hash `68345cdc6667f20d1678ac0a9139edc170348dfdebb9ae6045cde3d204f4fe62`; pack shards hash `018798dfce7d4c86f5a6ea502a383553220f2e76facfe76acbe52b1c278ae543`. Corpus source identifiers stay proprietary.
+Continued pretraining on a private ecosystem corpus, the same packed corpus that trained the 14B track: 66,158,592 tokens, 8 shards, 16,152 sequences, seq_len 4096, from 17,997 corpus files, recorded in the pack's own `PACK_COMPLETE.json`. Qwen2.5-Coder 14B and 32B share a tokenizer, so one packed corpus trains both. Corpus content hash `68345cdc6667f20d1678ac0a9139edc170348dfdebb9ae6045cde3d204f4fe62`; pack shards hash `018798dfce7d4c86f5a6ea502a383553220f2e76facfe76acbe52b1c278ae543`. Corpus source identifiers stay proprietary.
 
 ## Intended use
 

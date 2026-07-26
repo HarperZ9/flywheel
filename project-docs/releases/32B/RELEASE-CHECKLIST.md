@@ -6,8 +6,8 @@ Gate ids match `scripts/run_model_publish_plan.py` and `scripts/run_model_releas
 
 | Gate id | Status | Evidence |
 | --- | --- | --- |
-| `trained_artifact_present` | DONE | `E:\local-model-run\gguf-work-32b\telos-coder-32b-cpt2019-q4_k_m.gguf`, sha256 `65e6133fbe4d12579a776047a71bebb98ab86f9e3d343ed821b51dac0ce312f4` (re-verified by re-hash). |
-| `root_exists` | DONE | `E:\local-model-run` and the `gguf-work-32b` release directory exist. |
+| `trained_artifact_present` | DONE | `telos-coder-32b-cpt2019-q4_k_m.gguf`, sha256 `65e6133fbe4d12579a776047a71bebb98ab86f9e3d343ed821b51dac0ce312f4` (re-verified by re-hash). The hash, not a path, is the identity. |
+| `root_exists` | DONE | The run root and its release directory exist on the build machine. |
 | `weights_present` | DONE | GGUF weight file present at the artifact path above (19,851,336,480 bytes); merged fp16 also present. |
 | `endpoint_profiles_present` | pending | `harness.model-endpoint-profiles/v1` artifact (backend ollama, model `flywheel-local-coder-32b`, `http://127.0.0.1:11434`). |
 | `endpoint_generation_ok` | pending | `harness.model-endpoint-gate/v1` artifact with generation_ok for this model. A deterministic smoke MATCH is recorded; a formal gate artifact is not. |
