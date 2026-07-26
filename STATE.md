@@ -8,7 +8,65 @@
 > backbone (the WHY and the phase plan); this file is where we are RIGHT NOW.
 > Update on every material step. If context is lost: read ROADMAP.md, then this.
 
-Last updated: 2026-07-11
+Last updated: 2026-07-25
+
+## 2026-07-25 -- CC-1 Certified Commons designed; Phase 0 ground shipped, gate MATCHES
+
+Branch `feat/cc1-phase0-ground` (10 commits). Full acceptance record:
+`project-docs/records/2026-07-25-phase0-acceptance.md`.
+
+- **Design: CERTIFIED COMMONS (CC-1)**, from a 22-agent adversarial panel (three
+  competing architectures, six lens critiques each, then a ruling). Spec:
+  `project-docs/specs/2026-07-25-certified-commons-design.md`. The spine
+  inverts the earlier framing: the criterion-pinned verification environment is
+  the artifact and the training run is its first consumer, because a null
+  training run only the operator can reproduce is a diary entry. TWO co-equal
+  bars per operator ruling (preregistered uplift, published even when null; and
+  stranger offline reproducibility), converging via the T0/T1/T2 replay tiers.
+  Flagship oracle family is construction certificates: pure data checkers that
+  NEVER execute candidate code, which closes the stranger-RCE flaw, the
+  verification-cost problem, and the offline-verifiability gap in one choice.
+- **Phase 0 gate: `flywheel gate` reaches `rewitness=MATCH`**, exit 0, and from
+  a fresh clone with no pip install the digests are byte-identical
+  (signal `dda8a7414a71c071`, subject `1993af18b980c95d`, claim
+  `23450831b0b42121`). Shown able to FAIL first: verdict tamper -> DRIFT,
+  candidate tamper -> DRIFT, missing/malformed -> UNVERIFIABLE.
+- **Eight live defects closed**, each with a named regression test: GRPO groups
+  spanned nine temperatures including greedy (importance ratio wrong for every
+  member); UNVERIFIABLE was unrepresentable in `OracleResult`; UNDECIDED
+  excluded from the gradient would have been an escape hatch better than
+  failing; harness bugs were scored against the candidate; `run_env()` handed
+  the whole environment to model-written code; the gateway had NO auth while
+  exposing keychain writes, MCP argv registration, installs and an agent loop;
+  nothing at the envelope level changed when a verdict was flipped;
+  `scaffold.py` carried a BOM and could not be AST-parsed at all.
+- **Tests: 85 passed / 1 skipped** on the Phase 0 slice, **243 passed** on the
+  23-file reverse-import regression surface, verifier-path import closure
+  stdlib-clean (14 modules), file gate 15 grandfathered / 0 new / 0 grown.
+- **CI created** (none existed): three OSes x py3.10/3.13, plus a bare-interpreter
+  gate job, the verifier stdlib closure check, the file gate, and an AST-parse
+  job that exists because writing it found the BOM.
+- **Two plan steps were WRONG and the evidence caught both.** The plan said to
+  bind the verdict into `content_hash`; an existing interop test correctly
+  asserted the opposite, because that digest is the in-toto SUBJECT id and two
+  verifiers who disagree must still produce the same subject. Resolution: new
+  `claim_hash`/`claim_sha256` bind the verdict, `content_*` stays subject-only.
+  The plan also specified a blanket stdlib scan of `harness/`, which flagged
+  `serve.py` and `quant_dither.py` legitimately needing torch and numpy;
+  replaced with a transitive-closure check over the verifier entry points.
+- **Essay integration:** ten qualifications restored into the spec from the
+  21,208-word canonical master that the trimmed public edition dropped, notably
+  that the flywheel has a CEILING (recirculation cannot create coverage never
+  encountered, so importing is not contamination), that throughput asymmetry
+  NULLIFIES rather than costs, that weights are not morally cursed (provenance
+  must never render clean-vs-dirty), and that a permanent record must not
+  function as a permanent sentence. Delta report in records/.
+- **Honest non-claims:** no model trained, no weight moved, no uplift measured,
+  receipts unsigned, ledger has no inclusion/consistency proofs, no human
+  stranger has re-derived anything, UNVERIFIABLE has no reason codes yet, plan
+  Task 11 (accept-path purity + no-aggregate-over-the-person) not done, and the
+  desktop app does not yet know about the gateway token so it will get 401s
+  until taught to read `FLYWHEEL_HOME/gateway.token`.
 
 ## 2026-07-11 (session 10) -- OpenAI-compat parity + design canon correction + 32B
 
@@ -512,7 +570,7 @@ Last updated (prior): 2026-07-10
 ## 2026-07-07 (session 2, cont.) — SHIPPABLE GGUF + provenance chain, index watch
 
 - **GGUF ARTIFACT SHIPPED & DETERMINISTIC.** telos-coder-14b-cpt2020-q4_k_m.gguf
-  (8.4G Q4_K_M from checkpoint-2020, train_loss 0.035). Loads, generates CORRECT
+  (8.4G Q4_K_M from checkpoint-2020, train_loss 0.035 [CORRECTED 2026-07-26: the logged curve is 0.788 -> 0.444, min 0.359; see project-docs/releases/14B/shipped-page/CORRECTIONS.md]). Loads, generates CORRECT
   code (valid iterative Fibonacci), smoke MATCH (byte-identical at temp 0 seed 7).
   The initial DRIFT was a FALSE alarm correctly diagnosed as the wrong invariant
   (llama-cli conversation banner in stdout, not generation nondeterminism) — the
@@ -798,7 +856,7 @@ region-caching, determinism-hardening (oracle path already deterministic).
 
 ## GPU endgame
 - **14B CPT COMPLETE (2026-07-06): DONE rc=0, 2020/2020, 2 epochs, train_loss
-  2.18 -> 0.035.** Final adapter at checkpoint-2020 (LoRA r=16, all-targets).
+  2.18 -> 0.035. [CORRECTED 2026-07-26: the logged curve is 0.788 -> 0.444, min 0.359; see project-docs/releases/14B/shipped-page/CORRECTIONS.md]** Final adapter at checkpoint-2020 (LoRA r=16, all-targets).
   GPU released.
 - **M7 eval RAN on the trained 14B (2026-07-06): 100% pass (8/8) all arms,
   receipts 100% reproducible, verdict MATCH.** Scorecard:

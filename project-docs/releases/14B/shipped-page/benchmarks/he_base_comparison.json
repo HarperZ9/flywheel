@@ -1,0 +1,29 @@
+{
+ "schema": "flywheel.he-base-comparison/v1",
+ "benchmark": "code-completion suite (164 tasks), pass@1 greedy temp0, same harness",
+ "base": {
+  "model_ref": "ollama:qwen2.5-coder:14b-instruct-q4_K_M",
+  "passed": 141,
+  "n": 164,
+  "pass_at_1": 0.8598
+ },
+ "flywheel": {
+  "model_ref": "ollama:flywheel-local-coder-14b",
+  "passed": 136,
+  "n": 164,
+  "pass_at_1": 0.8293
+ },
+ "delta_points": -0.0305,
+ "paired": {
+  "regressions_flywheel_fail_base_pass": 14,
+  "gains_flywheel_pass_base_fail": 9,
+  "both_pass": 127,
+  "both_fail": 14
+ },
+ "mcnemar": {
+  "chi2_cc": 0.696,
+  "p_value": 0.404,
+  "significant_0.05": false
+ },
+ "reading": "no statistically significant difference; slight regression within noise. Domain CPT on the C:/dev ecosystem did not improve, and did not significantly harm, general code-completion. The thesis is Layer-B (harness) lift on verifiable tasks, not a base-weight bump."
+}

@@ -14,7 +14,7 @@ variants appear where they differ.
 Flywheel Local Coder 14B is a 14 billion parameter coding model that runs
 entirely on your own machine. It is built from `Qwen2.5-Coder-14B-Instruct`
 (Apache-2.0 licensed) plus a continued-pretraining adapter
-(`checkpoint-2020`, QLoRA, final train_loss 0.035), merged and quantized to
+(`checkpoint-2020`, QLoRA, final logged loss 0.444 (min 0.359)), merged and quantized to
 Q4_K_M. The whole model is one file of 8,988,110,880 bytes, just under 9 GB.
 
 The model ships with something a plain model download does not have: a

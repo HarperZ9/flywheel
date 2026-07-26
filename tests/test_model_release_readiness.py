@@ -4,6 +4,7 @@ from scripts.run_model_release_readiness import GATE_FILES, build_report, profil
 
 
 TRAINED_14B_ARTIFACT = "telos-coder-14b-cpt2020-q4_k_m.gguf"
+TRAINED_32B_ARTIFACT = "telos-coder-32b-cpt2019-q4_k_m.gguf"
 
 
 def _profile(model, tmp_path):
@@ -49,7 +50,15 @@ def test_profile_model_reports_static_release_gaps_without_reading_contents(tmp_
     assert "do-not-read" not in str(row)
 
 
-def test_profile_model_32b_full_docs_and_weights_still_no_trained_artifact(tmp_path):
+def test_profile_model_32b_trained_root_without_its_artifact(tmp_path):
+    """The 32B became a trained profile when its CPT derivative was published.
+
+    This test previously asserted `trained is False` and the verdict
+    MODEL_NO_TRAINED_ARTIFACT, which was correct until the 32B shipped and
+    silently wrong afterwards. It had been failing since then, unnoticed, because
+    the full suite was already red. Updated to the current truth, with the 32B's
+    own artifact name pinned, which is the part that differs from the 14B case.
+    """
     root = tmp_path / "32B"
     root.mkdir()
     (root / "model-00001-of-00002.safetensors").write_bytes(b"weights")
@@ -60,11 +69,14 @@ def test_profile_model_32b_full_docs_and_weights_still_no_trained_artifact(tmp_p
     assert row["root_exists"] is True
     assert row["weight_file_count"] == 1
     assert all(gate["missing"] == 0 for gate in row["gates"].values())
-    assert row["trained"] is False
+    assert row["trained"] is True
+    # The declared artifact is absent from this temp root, so it is MISSING
+    # rather than NO_ARTIFACT: the difference between "we never trained one" and
+    # "we trained one and it is not here" is the whole point of the two verdicts.
     assert row["trained_artifact_present"] is False
-    assert row["verdict"] == "MODEL_NO_TRAINED_ARTIFACT"
+    assert row["verdict"] == "MODEL_TRAINED_ARTIFACT_MISSING"
+    assert row["release_identity"]["artifact_name"] == TRAINED_32B_ARTIFACT
     assert row["enterprise_release_ready"] is False
-    assert "must not be republished" in row["release_identity"]["no_artifact_reason"]
 
 
 def test_profile_model_trained_root_without_artifact_is_trained_artifact_missing(tmp_path):
@@ -158,5 +170,7 @@ def test_build_report_marks_missing_models_as_missing(tmp_path):
     assert report["summary"]["models"] == 2
     assert report["summary"]["missing_models"] == 2
     assert report["summary"]["release_ready_models"] == 0
-    assert report["summary"]["trained_models"] == 1
+    # Two trained profiles since the 32B CPT derivative shipped. This assertion
+    # said 1 and had been failing silently since then.
+    assert report["summary"]["trained_models"] == 2
     assert report["summary"]["trained_artifacts_present"] == 0

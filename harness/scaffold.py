@@ -1,4 +1,4 @@
-﻿"""scaffold.py -- the organs fire on every message, or they are not organs.
+"""scaffold.py -- the organs fire on every message, or they are not organs.
 
 A tool the model must remember to call is a tool that gets skipped.
 This layer runs the reconcile's guarantees per turn, model-independent:

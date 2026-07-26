@@ -1,0 +1,11 @@
+{
+  "task_id": "factorial",
+  "prompt": "Implement the function `factorial(n)` in solution.py. It must return n! (factorial of a non-negative integer n). Output ONLY the function definition, no explanation, no markdown fences.",
+  "oracle": "pytest",
+  "oracle_cmd": "python -m pytest tests/ -q",
+  "candidate_path": "solution.py",
+  "system": "You are a Python code generator. Output only the function definition.",
+  "max_new_tokens": 96,
+  "temperature": 0.0,
+  "seed": 0
+}

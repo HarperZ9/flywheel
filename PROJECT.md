@@ -127,7 +127,7 @@ The 10-layer partition is for clarity, not a hard dependency boundary; real call
 
 Every number below is measured on this hardware and codebase. Bounds are stated inline; do not read past them.
 
-**14B continued pre-training — DONE, verified.** Qwen2.5-Coder-14B-Instruct, QLoRA (LoRA r=16), 2 epochs, **2020/2020 steps, train_loss 2.18 → 0.035, rc=0** (checkpoint-2020). On Windows this ran at ~131 s/step; a Linux smoke of the same config measured **87 s/step at 21.04 GB peak** (≈34% faster, and it barely fits). The 14B in 4-bit occupies ~9GB of weights, leaving ~1.5GB free for activations — the reason it trains where the 32B does not.
+**14B continued pre-training — DONE, verified.** Qwen2.5-Coder-14B-Instruct, QLoRA (LoRA r=16), 2 epochs, **2020/2020 steps, logged loss 0.788 -> 0.444 (min 0.359), rc=0** (checkpoint-2020). On Windows this ran at ~131 s/step; a Linux smoke of the same config measured **87 s/step at 21.04 GB peak** (≈34% faster, and it barely fits). The 14B in 4-bit occupies ~9GB of weights, leaving ~1.5GB free for activations — the reason it trains where the 32B does not.
 
 **M7 easy set — 8/8 (100%).** All tasks pass, all receipts **100% reproducible**, verdict MATCH. This is a clean result but the tasks are easy; it establishes the plumbing works end-to-end, not that the harness lifts hard problems.
 
@@ -193,7 +193,7 @@ Ranked by what would actually move the thesis, hardest-earning first.
 
 ## 7. Honest state
 
-What is genuinely done: the 14B CPT (loss 2.18 → 0.035); the 42-module harness with M0–M7 stages present and 268/292 tests passing; the verification-hardening corpora sound on the cases tested; the proof-cache and wiki-freshness fixes with regression tests; the receipt-sealed research sweep and its novelty audit.
+What is genuinely done: the 14B CPT (logged loss 0.788 -> 0.444 (min 0.359)); the 42-module harness with M0–M7 stages present and 268/292 tests passing; the verification-hardening corpora sound on the cases tested; the proof-cache and wiki-freshness fixes with regression tests; the receipt-sealed research sweep and its novelty audit.
 
 What is **not** done, and would be theater to claim otherwise:
 

@@ -7,7 +7,7 @@ Status: draft, not publish-ready. Identity and provenance are verified; benchmar
 - Release name: `Flywheel-Local-Coder-14B`
 - Artifact file: `telos-coder-14b-cpt2020-q4_k_m.gguf`
 - Base model: `Qwen2.5-Coder-14B-Instruct` (Alibaba Cloud / Qwen team, Apache-2.0)
-- Adapter: `checkpoint-2020`, QLoRA continued pretraining, train_loss 0.035
+- Adapter: `checkpoint-2020`, QLoRA continued pretraining, final logged loss 0.444 (min 0.359)
 - Composition: base weights merged with the adapter, then quantized
 - Quantization: Q4_K_M (GGUF)
 - Size: 8,988,110,880 bytes

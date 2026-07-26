@@ -21,7 +21,7 @@ Status: staged, awaiting operator upload approval. Trained artifact, endpoint ga
 
 - Artifact file: `telos-coder-14b-cpt2020-q4_k_m.gguf` (Q4_K_M GGUF, 8,988,110,880 bytes).
 - SHA-256: `613db240e3efc6730f24042a4602d1f12f1c6b397af1d5a4d74f4e064d4064be`
-- Identity: base `Qwen2.5-Coder-14B-Instruct` merged with QLoRA continued-pretraining adapter `checkpoint-2020` (train_loss 0.035), then quantized to Q4_K_M.
+- Identity: base `Qwen2.5-Coder-14B-Instruct` merged with QLoRA continued-pretraining adapter `checkpoint-2020` (final logged loss 0.444 (min 0.359)), then quantized to Q4_K_M.
 - Artifact location: `E:\local-model-run\release\flywheel-local-coder-14b\telos-coder-14b-cpt2020-q4_k_m.gguf`
 - Local serving: Ollama model name `flywheel-local-coder-14b`, created from the Modelfile in the same directory.
 

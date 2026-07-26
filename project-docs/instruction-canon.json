@@ -1,0 +1,6 @@
+{
+  "note": "The single-source instruction canon for INTERNAL repos under the workspace root. `canonical` is the workspace CLAUDE.md; `mirror` is the byte-identical-core AGENTS.md. `pointers` are internal per-repo files that declare the canon hash and hold only their own delta. PUBLIC repos are NOT listed here: they ship and are cloned standalone, so a pointer to the workspace canon would be a local-path leak and false on clone. local-model is itself public, so it carries a self-contained AGENTS.md and is governed by check_public_instructions.py, not this manifest. Private repos have their own private manifest, never this one. Paths resolve against the workspace root (--root). Checked by scripts/check_instruction_canon.py; --bump re-syncs and re-stamps.",
+  "canonical": "CLAUDE.md",
+  "mirror": "AGENTS.md",
+  "pointers": []
+}

@@ -57,3 +57,12 @@ artifacts/exe/
 # One line naming this machine's training/run root (e.g. E:/local-model-run).
 # Read by harness/run_paths.py; never shipped, so the source stays path-clean.
 .flywheel-run-root
+
+# The committed template must survive the .env.* rule above (global standard)
+!.env.example
+
+# internal register: never ships from this public repo
+project-docs/private/
+
+# private denylist for the public-instruction gate (never ships)
+scripts/.private-denylist.txt

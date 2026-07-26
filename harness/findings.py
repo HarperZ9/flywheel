@@ -18,6 +18,7 @@ import json
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from .findings_stats import selector_bounds
 from .run_paths import run_root_default
 
 DEFAULT_RUN_ROOT = Path(run_root_default())
@@ -41,6 +42,7 @@ def _load_and_hash(p: Path) -> tuple[object, str | None]:
 def _num(v):
     """Return v only if it is a real number (not None/str/bool); else None."""
     return v if isinstance(v, (int, float)) and not isinstance(v, bool) else None
+
 
 
 @dataclass
@@ -87,8 +89,8 @@ def _selector_finding(root: Path, findings: list[Finding]) -> None:
         "selector_comparison", claim,
         f"single {single}/{n}, external {ext}/{n}, self {slf}/{n}, consensus {cons}/{n}",
         p.name, sha,
-        bounds="headroom subset, one model, code tasks with oracles; external "
-               "earns capability (McNemar p=0.0015), self earns zero (p=1.0)"))
+        bounds=selector_bounds(data)))
+
 
 
 def _passn_finding(root: Path, findings: list[Finding]) -> None:

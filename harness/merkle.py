@@ -93,3 +93,116 @@ def _proof_len(n: int, m: int) -> int:
 
 def root_hex(leaves: list) -> str:
     return "sha256:" + merkle_root(leaves).hex()
+
+
+# --- consistency proofs (RFC 6962 section 2.1.2) -----------------------------
+#
+# An inclusion proof answers "is this leaf in that tree" and says nothing about
+# whether the tree was rewritten. A consistency proof answers the other question:
+# given an OLD root a stranger already holds, does the NEW tree contain the old
+# tree unchanged as a prefix?
+#
+# That is the difference between append-only as a policy and append-only as a
+# property. Without it a maintainer can rebuild the log with an entry removed and
+# every inclusion proof for the surviving entries still verifies against the new
+# root.
+#
+# The verifier below is a RECURSIVE MIRROR of the generator rather than the usual
+# iterative bit-twiddling formulation. Both are correct; this one can be checked
+# against the RFC's SUBPROOF definition line by line, and the iterative version
+# is where implementations go wrong.
+
+
+class MerkleError(ValueError):
+    """A proof request or check that is not well posed.
+
+    Distinct from returning False: "this is not a growth claim" (old size larger
+    than new, old size zero) and "this growth claim is invalid" are different
+    facts, and collapsing them hides which one happened.
+    """
+
+
+def _subproof(hashes: list, m: int, b: bool) -> list:
+    """RFC 6962 SUBPROOF(m, D[n], b) over already-leaf-hashed values."""
+    n = len(hashes)
+    if m == n:
+        # The old tree is exactly this subtree. At the root position the verifier
+        # already holds its hash, so nothing is emitted; elsewhere it is needed.
+        return [] if b else [_mth(hashes)]
+    k = _largest_pow2_below(n)
+    if m <= k:
+        return _subproof(hashes[:k], m, b) + [_mth(hashes[k:])]
+    return _subproof(hashes[k:], m - k, False) + [_mth(hashes[:k])]
+
+
+def consistency_proof(leaves: list, old_size: int) -> list:
+    """The proof that a tree over `leaves` contains its own first `old_size`
+    leaves unchanged as a prefix."""
+    n = len(leaves)
+    if not isinstance(old_size, int) or old_size <= 0:
+        raise MerkleError(f"old_size must be a positive integer, got {old_size!r}")
+    if old_size > n:
+        raise MerkleError(
+            f"old_size {old_size} exceeds the tree size {n}: a log cannot have "
+            "shrunk and still be append-only")
+    if old_size == n:
+        return []
+    return _subproof([leaf_hash(x) for x in leaves], old_size, True)
+
+
+def _reconstruct(m: int, n: int, proof: list, b: bool,
+                 old_root: bytes) -> tuple:
+    """Rebuild (old_subtree_hash, new_subtree_hash) consuming `proof` from the
+    end, exactly mirroring _subproof. Returns the remaining proof."""
+    if m == n:
+        if b:
+            return old_root, old_root, proof
+        if not proof:
+            raise _ProofExhausted()
+        h = proof[-1]
+        return h, h, proof[:-1]
+    k = _largest_pow2_below(n)
+    if not proof:
+        raise _ProofExhausted()
+    if m <= k:
+        right = proof[-1]
+        lo, ln, rest = _reconstruct(m, k, proof[:-1], b, old_root)
+        return lo, _node(ln, right), rest
+    left = proof[-1]
+    ro, rn, rest = _reconstruct(m - k, n - k, proof[:-1], False, old_root)
+    return _node(left, ro), _node(left, rn), rest
+
+
+class _ProofExhausted(Exception):
+    """A proof too short to rebuild the claimed shape. Internal; surfaces as
+    False, because a short proof is an invalid claim rather than a malformed
+    request."""
+
+
+def verify_consistency(old_size: int, new_size: int, old_root: bytes,
+                       new_root: bytes, proof: list) -> bool:
+    """True iff the tree with `new_root` contains the tree with `old_root` as an
+    unmodified prefix of `old_size` leaves.
+
+    Raises MerkleError when the claim is not well posed (a shrinking log, a
+    non-positive old size). Returns False when the claim is well posed and wrong.
+    """
+    if not isinstance(old_size, int) or not isinstance(new_size, int):
+        raise MerkleError("sizes must be integers")
+    if old_size <= 0:
+        raise MerkleError("old_size must be positive")
+    if old_size > new_size:
+        raise MerkleError(
+            f"old_size {old_size} exceeds new_size {new_size}: that is a "
+            "truncation claim, not a growth claim, and it is refused rather than "
+            "reported as merely invalid")
+    if old_size == new_size:
+        return not proof and old_root == new_root
+    try:
+        lo, ln, rest = _reconstruct(old_size, new_size, list(proof), True,
+                                    old_root)
+    except _ProofExhausted:
+        return False
+    if rest:
+        return False                    # unused proof elements: not this shape
+    return lo == old_root and ln == new_root

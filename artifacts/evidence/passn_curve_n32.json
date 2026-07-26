@@ -1,0 +1,3822 @@
+{
+ "schema": "flywheel.passn_curve/v1",
+ "model_ref": "ollama:flywheel-local-coder-14b",
+ "n_tasks": 61,
+ "budget_levels": [
+  4,
+  8,
+  16,
+  32
+ ],
+ "max_n": 32,
+ "curve_summary": {
+  "4": {
+   "pass_at_n": 14,
+   "pass_at_n_rate": 0.2295,
+   "consensus_reachable": 4,
+   "consensus_reachable_rate": 0.0656
+  },
+  "8": {
+   "pass_at_n": 21,
+   "pass_at_n_rate": 0.3443,
+   "consensus_reachable": 13,
+   "consensus_reachable_rate": 0.2131
+  },
+  "16": {
+   "pass_at_n": 32,
+   "pass_at_n_rate": 0.5246,
+   "consensus_reachable": 22,
+   "consensus_reachable_rate": 0.3607
+  },
+  "32": {
+   "pass_at_n": 37,
+   "pass_at_n_rate": 0.6066,
+   "consensus_reachable": 30,
+   "consensus_reachable_rate": 0.4918
+  }
+ },
+ "per_task": [
+  {
+   "task_id": "search_rotated",
+   "passes": [
+    false,
+    false,
+    false,
+    false,
+    false,
+    true,
+    true,
+    false,
+    false,
+    false,
+    false,
+    false,
+    true,
+    true,
+    true,
+    true,
+    false,
+    true,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    true,
+    true,
+    false,
+    false,
+    false,
+    false
+   ],
+   "curve": {
+    "4": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    },
+    "8": {
+     "correct_count": 2,
+     "any_pass": true,
+     "multi_correct": true
+    },
+    "16": {
+     "correct_count": 6,
+     "any_pass": true,
+     "multi_correct": true
+    },
+    "32": {
+     "correct_count": 9,
+     "any_pass": true,
+     "multi_correct": true
+    }
+   },
+   "gen_s": 86.88,
+   "ver_s": 33.55,
+   "extended_from": null
+  },
+  {
+   "task_id": "sliding_window_max",
+   "passes": [
+    false,
+    false,
+    false,
+    false,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    false,
+    true,
+    true,
+    true,
+    true,
+    false,
+    true,
+    false,
+    false,
+    false,
+    true,
+    true,
+    true,
+    false,
+    true,
+    true,
+    true,
+    true,
+    false,
+    false,
+    false,
+    false
+   ],
+   "curve": {
+    "4": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    },
+    "8": {
+     "correct_count": 4,
+     "any_pass": true,
+     "multi_correct": true
+    },
+    "16": {
+     "correct_count": 10,
+     "any_pass": true,
+     "multi_correct": true
+    },
+    "32": {
+     "correct_count": 18,
+     "any_pass": true,
+     "multi_correct": true
+    }
+   },
+   "gen_s": 64.7,
+   "ver_s": 32.56,
+   "extended_from": null
+  },
+  {
+   "task_id": "topo_sort",
+   "passes": [
+    false,
+    false,
+    false,
+    false,
+    true,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    true,
+    false,
+    false
+   ],
+   "curve": {
+    "4": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    },
+    "8": {
+     "correct_count": 1,
+     "any_pass": true,
+     "multi_correct": false
+    },
+    "16": {
+     "correct_count": 1,
+     "any_pass": true,
+     "multi_correct": false
+    },
+    "32": {
+     "correct_count": 2,
+     "any_pass": true,
+     "multi_correct": true
+    }
+   },
+   "gen_s": 80.61,
+   "ver_s": 42.05,
+   "extended_from": null
+  },
+  {
+   "task_id": "evaluate_rpn",
+   "passes": [
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false
+   ],
+   "curve": {
+    "4": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    },
+    "8": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    },
+    "16": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    },
+    "32": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    }
+   },
+   "gen_s": 95.17,
+   "ver_s": 37.66,
+   "extended_from": null
+  },
+  {
+   "task_id": "first_missing_positive",
+   "passes": [
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    true,
+    true,
+    false,
+    false,
+    false,
+    false
+   ],
+   "curve": {
+    "4": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    },
+    "8": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    },
+    "16": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    },
+    "32": {
+     "correct_count": 2,
+     "any_pass": true,
+     "multi_correct": true
+    }
+   },
+   "gen_s": 56.08,
+   "ver_s": 35.7,
+   "extended_from": null
+  },
+  {
+   "task_id": "count_islands",
+   "passes": [
+    false,
+    false,
+    false,
+    false,
+    false,
+    true,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false
+   ],
+   "curve": {
+    "4": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    },
+    "8": {
+     "correct_count": 1,
+     "any_pass": true,
+     "multi_correct": false
+    },
+    "16": {
+     "correct_count": 3,
+     "any_pass": true,
+     "multi_correct": true
+    },
+    "32": {
+     "correct_count": 13,
+     "any_pass": true,
+     "multi_correct": true
+    }
+   },
+   "gen_s": 102.08,
+   "ver_s": 33.66,
+   "extended_from": null
+  },
+  {
+   "task_id": "csv_field_split",
+   "passes": [
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false
+   ],
+   "curve": {
+    "4": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    },
+    "8": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    },
+    "16": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    },
+    "32": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    }
+   },
+   "gen_s": 200.16,
+   "ver_s": 92.88,
+   "extended_from": null
+  },
+  {
+   "task_id": "duration_hms_strict",
+   "passes": [
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false
+   ],
+   "curve": {
+    "4": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    },
+    "8": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    },
+    "16": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    },
+    "32": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    }
+   },
+   "gen_s": 228.45,
+   "ver_s": 92.39,
+   "extended_from": null
+  },
+  {
+   "task_id": "shellish_tokenize",
+   "passes": [
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false
+   ],
+   "curve": {
+    "4": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    },
+    "8": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    },
+    "16": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    },
+    "32": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    }
+   },
+   "gen_s": 271.0,
+   "ver_s": 214.12,
+   "extended_from": null
+  },
+  {
+   "task_id": "header_unfold",
+   "passes": [
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false
+   ],
+   "curve": {
+    "4": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    },
+    "8": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    },
+    "16": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    },
+    "32": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    }
+   },
+   "gen_s": 195.58,
+   "ver_s": 32.69,
+   "extended_from": null
+  },
+  {
+   "task_id": "canonical_decimal",
+   "passes": [
+    false,
+    false,
+    false,
+    true,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    true,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false
+   ],
+   "curve": {
+    "4": {
+     "correct_count": 1,
+     "any_pass": true,
+     "multi_correct": false
+    },
+    "8": {
+     "correct_count": 1,
+     "any_pass": true,
+     "multi_correct": false
+    },
+    "16": {
+     "correct_count": 1,
+     "any_pass": true,
+     "multi_correct": false
+    },
+    "32": {
+     "correct_count": 2,
+     "any_pass": true,
+     "multi_correct": true
+    }
+   },
+   "gen_s": 259.59,
+   "ver_s": 33.97,
+   "extended_from": null
+  },
+  {
+   "task_id": "template_fields",
+   "passes": [
+    false,
+    false,
+    false,
+    false,
+    false,
+    true,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    true,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    true,
+    true,
+    false,
+    true
+   ],
+   "curve": {
+    "4": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    },
+    "8": {
+     "correct_count": 1,
+     "any_pass": true,
+     "multi_correct": false
+    },
+    "16": {
+     "correct_count": 1,
+     "any_pass": true,
+     "multi_correct": false
+    },
+    "32": {
+     "correct_count": 5,
+     "any_pass": true,
+     "multi_correct": true
+    }
+   },
+   "gen_s": 202.98,
+   "ver_s": 31.91,
+   "extended_from": null
+  },
+  {
+   "task_id": "partition_three_inplace",
+   "passes": [
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false
+   ],
+   "curve": {
+    "4": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    },
+    "8": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    },
+    "16": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    },
+    "32": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    }
+   },
+   "gen_s": 73.77,
+   "ver_s": 32.45,
+   "extended_from": null
+  },
+  {
+   "task_id": "merge_tallies",
+   "passes": [
+    false,
+    false,
+    true,
+    false,
+    false,
+    true,
+    true,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    true,
+    true,
+    false,
+    true,
+    false,
+    false,
+    true,
+    false,
+    false,
+    true,
+    true,
+    false
+   ],
+   "curve": {
+    "4": {
+     "correct_count": 1,
+     "any_pass": true,
+     "multi_correct": false
+    },
+    "8": {
+     "correct_count": 3,
+     "any_pass": true,
+     "multi_correct": true
+    },
+    "16": {
+     "correct_count": 3,
+     "any_pass": true,
+     "multi_correct": true
+    },
+    "32": {
+     "correct_count": 9,
+     "any_pass": true,
+     "multi_correct": true
+    }
+   },
+   "gen_s": 103.12,
+   "ver_s": 30.75,
+   "extended_from": null
+  },
+  {
+   "task_id": "apply_edits",
+   "passes": [
+    false,
+    false,
+    true,
+    true,
+    true,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    true,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    true,
+    false,
+    false
+   ],
+   "curve": {
+    "4": {
+     "correct_count": 2,
+     "any_pass": true,
+     "multi_correct": true
+    },
+    "8": {
+     "correct_count": 3,
+     "any_pass": true,
+     "multi_correct": true
+    },
+    "16": {
+     "correct_count": 4,
+     "any_pass": true,
+     "multi_correct": true
+    },
+    "32": {
+     "correct_count": 5,
+     "any_pass": true,
+     "multi_correct": true
+    }
+   },
+   "gen_s": 167.31,
+   "ver_s": 32.84,
+   "extended_from": null
+  },
+  {
+   "task_id": "splice_pure",
+   "passes": [
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false
+   ],
+   "curve": {
+    "4": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    },
+    "8": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    },
+    "16": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    },
+    "32": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    }
+   },
+   "gen_s": 87.22,
+   "ver_s": 33.7,
+   "extended_from": null
+  },
+  {
+   "task_id": "div_round_half_away",
+   "passes": [
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false
+   ],
+   "curve": {
+    "4": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    },
+    "8": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    },
+    "16": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    },
+    "32": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    }
+   },
+   "gen_s": 104.11,
+   "ver_s": 32.09,
+   "extended_from": null
+  },
+  {
+   "task_id": "add_months_clamp",
+   "passes": [
+    true,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    true,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    true,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    true,
+    false,
+    false,
+    false
+   ],
+   "curve": {
+    "4": {
+     "correct_count": 1,
+     "any_pass": true,
+     "multi_correct": false
+    },
+    "8": {
+     "correct_count": 1,
+     "any_pass": true,
+     "multi_correct": false
+    },
+    "16": {
+     "correct_count": 2,
+     "any_pass": true,
+     "multi_correct": true
+    },
+    "32": {
+     "correct_count": 4,
+     "any_pass": true,
+     "multi_correct": true
+    }
+   },
+   "gen_s": 187.31,
+   "ver_s": 31.31,
+   "extended_from": null
+  },
+  {
+   "task_id": "bucket_histogram_mixed",
+   "passes": [
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    true,
+    false,
+    false,
+    true,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    true,
+    true,
+    true,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false
+   ],
+   "curve": {
+    "4": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    },
+    "8": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    },
+    "16": {
+     "correct_count": 2,
+     "any_pass": true,
+     "multi_correct": true
+    },
+    "32": {
+     "correct_count": 5,
+     "any_pass": true,
+     "multi_correct": true
+    }
+   },
+   "gen_s": 129.36,
+   "ver_s": 29.08,
+   "extended_from": null
+  },
+  {
+   "task_id": "mini_editor_undo",
+   "passes": [
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false
+   ],
+   "curve": {
+    "4": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    },
+    "8": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    },
+    "16": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    },
+    "32": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    }
+   },
+   "gen_s": 182.59,
+   "ver_s": 37.03,
+   "extended_from": null
+  },
+  {
+   "task_id": "kv_event_fold",
+   "passes": [
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false
+   ],
+   "curve": {
+    "4": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    },
+    "8": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    },
+    "16": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    },
+    "32": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    }
+   },
+   "gen_s": 187.28,
+   "ver_s": 33.06,
+   "extended_from": null
+  },
+  {
+   "task_id": "outline_leaf_paths",
+   "passes": [
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false
+   ],
+   "curve": {
+    "4": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    },
+    "8": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    },
+    "16": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    },
+    "32": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    }
+   },
+   "gen_s": 107.31,
+   "ver_s": 94.16,
+   "extended_from": null
+  },
+  {
+   "task_id": "tilde_unescape",
+   "passes": [
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false
+   ],
+   "curve": {
+    "4": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    },
+    "8": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    },
+    "16": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    },
+    "32": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    }
+   },
+   "gen_s": 121.47,
+   "ver_s": 33.0,
+   "extended_from": null
+  },
+  {
+   "task_id": "largest_remainder_apportion",
+   "passes": [
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    true,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    true,
+    false,
+    false,
+    true,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false
+   ],
+   "curve": {
+    "4": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    },
+    "8": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    },
+    "16": {
+     "correct_count": 1,
+     "any_pass": true,
+     "multi_correct": false
+    },
+    "32": {
+     "correct_count": 3,
+     "any_pass": true,
+     "multi_correct": true
+    }
+   },
+   "gen_s": 130.45,
+   "ver_s": 34.27,
+   "extended_from": null
+  },
+  {
+   "task_id": "varint_zigzag_decode",
+   "passes": [
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false
+   ],
+   "curve": {
+    "4": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    },
+    "8": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    },
+    "16": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    },
+    "32": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    }
+   },
+   "gen_s": 170.31,
+   "ver_s": 93.34,
+   "extended_from": null
+  },
+  {
+   "task_id": "word_wrap_greedy",
+   "passes": [
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    true,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    true,
+    false
+   ],
+   "curve": {
+    "4": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    },
+    "8": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    },
+    "16": {
+     "correct_count": 1,
+     "any_pass": true,
+     "multi_correct": false
+    },
+    "32": {
+     "correct_count": 2,
+     "any_pass": true,
+     "multi_correct": true
+    }
+   },
+   "gen_s": 127.7,
+   "ver_s": 36.06,
+   "extended_from": null
+  },
+  {
+   "task_id": "identifier_words",
+   "passes": [
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false
+   ],
+   "curve": {
+    "4": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    },
+    "8": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    },
+    "16": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    },
+    "32": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    }
+   },
+   "gen_s": 198.45,
+   "ver_s": 333.22,
+   "extended_from": null
+  },
+  {
+   "task_id": "interval_subtract",
+   "passes": [
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    true,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    true,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false
+   ],
+   "curve": {
+    "4": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    },
+    "8": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    },
+    "16": {
+     "correct_count": 1,
+     "any_pass": true,
+     "multi_correct": false
+    },
+    "32": {
+     "correct_count": 2,
+     "any_pass": true,
+     "multi_correct": true
+    }
+   },
+   "gen_s": 200.38,
+   "ver_s": 154.81,
+   "extended_from": null
+  },
+  {
+   "task_id": "covered_integer_count",
+   "passes": [
+    false,
+    false,
+    false,
+    true,
+    true,
+    false,
+    false,
+    false,
+    false,
+    false,
+    true,
+    true,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    true,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    true,
+    true,
+    false,
+    false,
+    false,
+    false
+   ],
+   "curve": {
+    "4": {
+     "correct_count": 1,
+     "any_pass": true,
+     "multi_correct": false
+    },
+    "8": {
+     "correct_count": 2,
+     "any_pass": true,
+     "multi_correct": true
+    },
+    "16": {
+     "correct_count": 4,
+     "any_pass": true,
+     "multi_correct": true
+    },
+    "32": {
+     "correct_count": 7,
+     "any_pass": true,
+     "multi_correct": true
+    }
+   },
+   "gen_s": 68.41,
+   "ver_s": 39.84,
+   "extended_from": null
+  },
+  {
+   "task_id": "matrix_shape_strict",
+   "passes": [
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    true,
+    false,
+    true,
+    false,
+    false,
+    false,
+    false
+   ],
+   "curve": {
+    "4": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    },
+    "8": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    },
+    "16": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    },
+    "32": {
+     "correct_count": 2,
+     "any_pass": true,
+     "multi_correct": true
+    }
+   },
+   "gen_s": 88.77,
+   "ver_s": 37.58,
+   "extended_from": null
+  },
+  {
+   "task_id": "money_cents_strict",
+   "passes": [
+    true,
+    false,
+    false,
+    false,
+    true,
+    true,
+    false,
+    false,
+    false,
+    false,
+    false,
+    true,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    true,
+    false,
+    true,
+    false,
+    false,
+    false,
+    true,
+    false,
+    false,
+    false
+   ],
+   "curve": {
+    "4": {
+     "correct_count": 1,
+     "any_pass": true,
+     "multi_correct": false
+    },
+    "8": {
+     "correct_count": 3,
+     "any_pass": true,
+     "multi_correct": true
+    },
+    "16": {
+     "correct_count": 4,
+     "any_pass": true,
+     "multi_correct": true
+    },
+    "32": {
+     "correct_count": 7,
+     "any_pass": true,
+     "multi_correct": true
+    }
+   },
+   "gen_s": 176.02,
+   "ver_s": 35.22,
+   "extended_from": null
+  },
+  {
+   "task_id": "cron_field_expand",
+   "passes": [
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false
+   ],
+   "curve": {
+    "4": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    },
+    "8": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    },
+    "16": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    },
+    "32": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    }
+   },
+   "gen_s": 239.03,
+   "ver_s": 35.73,
+   "extended_from": null
+  },
+  {
+   "task_id": "weekday_name",
+   "passes": [
+    false,
+    false,
+    false,
+    false,
+    true,
+    false,
+    false,
+    true,
+    false,
+    false,
+    true,
+    true,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    true,
+    true,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    true,
+    false,
+    false,
+    false
+   ],
+   "curve": {
+    "4": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    },
+    "8": {
+     "correct_count": 2,
+     "any_pass": true,
+     "multi_correct": true
+    },
+    "16": {
+     "correct_count": 4,
+     "any_pass": true,
+     "multi_correct": true
+    },
+    "32": {
+     "correct_count": 7,
+     "any_pass": true,
+     "multi_correct": true
+    }
+   },
+   "gen_s": 218.31,
+   "ver_s": 40.98,
+   "extended_from": null
+  },
+  {
+   "task_id": "days_between",
+   "passes": [
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    true,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false
+   ],
+   "curve": {
+    "4": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    },
+    "8": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    },
+    "16": {
+     "correct_count": 1,
+     "any_pass": true,
+     "multi_correct": false
+    },
+    "32": {
+     "correct_count": 1,
+     "any_pass": true,
+     "multi_correct": false
+    }
+   },
+   "gen_s": 203.12,
+   "ver_s": 38.0,
+   "extended_from": null
+  },
+  {
+   "task_id": "semver_compare",
+   "passes": [
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false
+   ],
+   "curve": {
+    "4": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    },
+    "8": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    },
+    "16": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    },
+    "32": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    }
+   },
+   "gen_s": 227.39,
+   "ver_s": 41.51,
+   "extended_from": null
+  },
+  {
+   "task_id": "natural_compare",
+   "passes": [
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    true,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false
+   ],
+   "curve": {
+    "4": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    },
+    "8": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    },
+    "16": {
+     "correct_count": 1,
+     "any_pass": true,
+     "multi_correct": false
+    },
+    "32": {
+     "correct_count": 1,
+     "any_pass": true,
+     "multi_correct": false
+    }
+   },
+   "gen_s": 155.31,
+   "ver_s": 37.81,
+   "extended_from": null
+  },
+  {
+   "task_id": "round_half_even",
+   "passes": [
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    true,
+    false,
+    false,
+    false,
+    false
+   ],
+   "curve": {
+    "4": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    },
+    "8": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    },
+    "16": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    },
+    "32": {
+     "correct_count": 1,
+     "any_pass": true,
+     "multi_correct": false
+    }
+   },
+   "gen_s": 103.31,
+   "ver_s": 36.72,
+   "extended_from": null
+  },
+  {
+   "task_id": "reverse_bits",
+   "passes": [
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    true,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false
+   ],
+   "curve": {
+    "4": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    },
+    "8": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    },
+    "16": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    },
+    "32": {
+     "correct_count": 1,
+     "any_pass": true,
+     "multi_correct": false
+    }
+   },
+   "gen_s": 60.14,
+   "ver_s": 35.67,
+   "extended_from": null
+  },
+  {
+   "task_id": "reduce_fraction",
+   "passes": [
+    false,
+    false,
+    true,
+    true,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    true,
+    false,
+    false,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    false,
+    false,
+    false,
+    false,
+    false,
+    true
+   ],
+   "curve": {
+    "4": {
+     "correct_count": 2,
+     "any_pass": true,
+     "multi_correct": true
+    },
+    "8": {
+     "correct_count": 2,
+     "any_pass": true,
+     "multi_correct": true
+    },
+    "16": {
+     "correct_count": 2,
+     "any_pass": true,
+     "multi_correct": true
+    },
+    "32": {
+     "correct_count": 10,
+     "any_pass": true,
+     "multi_correct": true
+    }
+   },
+   "gen_s": 76.59,
+   "ver_s": 93.91,
+   "extended_from": null
+  },
+  {
+   "task_id": "eval_bool_expr",
+   "passes": [
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false
+   ],
+   "curve": {
+    "4": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    },
+    "8": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    },
+    "16": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    },
+    "32": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    }
+   },
+   "gen_s": 188.8,
+   "ver_s": 156.77,
+   "extended_from": null
+  },
+  {
+   "task_id": "summarize_ranges",
+   "passes": [
+    false,
+    true,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    true,
+    true,
+    true,
+    true,
+    true,
+    false,
+    true,
+    false,
+    false,
+    true,
+    true,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    true,
+    true
+   ],
+   "curve": {
+    "4": {
+     "correct_count": 1,
+     "any_pass": true,
+     "multi_correct": false
+    },
+    "8": {
+     "correct_count": 1,
+     "any_pass": true,
+     "multi_correct": false
+    },
+    "16": {
+     "correct_count": 6,
+     "any_pass": true,
+     "multi_correct": true
+    },
+    "32": {
+     "correct_count": 11,
+     "any_pass": true,
+     "multi_correct": true
+    }
+   },
+   "gen_s": 107.66,
+   "ver_s": 31.73,
+   "extended_from": null
+  },
+  {
+   "task_id": "matrix_transpose",
+   "passes": [
+    false,
+    false,
+    false,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    false,
+    false,
+    true,
+    false,
+    false,
+    false,
+    false,
+    false,
+    true,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    true,
+    true,
+    true,
+    false,
+    true,
+    true,
+    false,
+    true
+   ],
+   "curve": {
+    "4": {
+     "correct_count": 1,
+     "any_pass": true,
+     "multi_correct": false
+    },
+    "8": {
+     "correct_count": 5,
+     "any_pass": true,
+     "multi_correct": true
+    },
+    "16": {
+     "correct_count": 7,
+     "any_pass": true,
+     "multi_correct": true
+    },
+    "32": {
+     "correct_count": 14,
+     "any_pass": true,
+     "multi_correct": true
+    }
+   },
+   "gen_s": 67.75,
+   "ver_s": 39.88,
+   "extended_from": null
+  },
+  {
+   "task_id": "parse_a1_ref",
+   "passes": [
+    false,
+    false,
+    false,
+    true,
+    true,
+    true,
+    true,
+    false,
+    false,
+    false,
+    true,
+    false,
+    true,
+    true,
+    true,
+    false,
+    false,
+    true,
+    true,
+    false,
+    false,
+    true,
+    true,
+    true,
+    true,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false
+   ],
+   "curve": {
+    "4": {
+     "correct_count": 1,
+     "any_pass": true,
+     "multi_correct": false
+    },
+    "8": {
+     "correct_count": 4,
+     "any_pass": true,
+     "multi_correct": true
+    },
+    "16": {
+     "correct_count": 8,
+     "any_pass": true,
+     "multi_correct": true
+    },
+    "32": {
+     "correct_count": 14,
+     "any_pass": true,
+     "multi_correct": true
+    }
+   },
+   "gen_s": 109.39,
+   "ver_s": 92.33,
+   "extended_from": null
+  },
+  {
+   "task_id": "linked_cycle",
+   "passes": [
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    false,
+    false,
+    false,
+    false,
+    false,
+    true,
+    true,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false
+   ],
+   "curve": {
+    "4": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    },
+    "8": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    },
+    "16": {
+     "correct_count": 3,
+     "any_pass": true,
+     "multi_correct": true
+    },
+    "32": {
+     "correct_count": 8,
+     "any_pass": true,
+     "multi_correct": true
+    }
+   },
+   "gen_s": 59.77,
+   "ver_s": 92.22,
+   "extended_from": null
+  },
+  {
+   "task_id": "manhattan_tour",
+   "passes": [
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false
+   ],
+   "curve": {
+    "4": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    },
+    "8": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    },
+    "16": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    },
+    "32": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    }
+   },
+   "gen_s": 77.64,
+   "ver_s": 32.56,
+   "extended_from": null
+  },
+  {
+   "task_id": "parse_kv_pairs",
+   "passes": [
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false
+   ],
+   "curve": {
+    "4": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    },
+    "8": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    },
+    "16": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    },
+    "32": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    }
+   },
+   "gen_s": 84.05,
+   "ver_s": 31.88,
+   "extended_from": null
+  },
+  {
+   "task_id": "stock_spans",
+   "passes": [
+    true,
+    true,
+    true,
+    false,
+    true,
+    true,
+    true,
+    true,
+    true,
+    false,
+    false,
+    true,
+    false,
+    false,
+    true,
+    false,
+    false,
+    false,
+    false,
+    true,
+    false,
+    true,
+    true,
+    true,
+    true,
+    true,
+    false,
+    false,
+    true,
+    true,
+    true,
+    true
+   ],
+   "curve": {
+    "4": {
+     "correct_count": 3,
+     "any_pass": true,
+     "multi_correct": true
+    },
+    "8": {
+     "correct_count": 7,
+     "any_pass": true,
+     "multi_correct": true
+    },
+    "16": {
+     "correct_count": 10,
+     "any_pass": true,
+     "multi_correct": true
+    },
+    "32": {
+     "correct_count": 20,
+     "any_pass": true,
+     "multi_correct": true
+    }
+   },
+   "gen_s": 75.31,
+   "ver_s": 39.23,
+   "extended_from": null
+  },
+  {
+   "task_id": "perm_rank",
+   "passes": [
+    false,
+    true,
+    false,
+    false,
+    false,
+    true,
+    false,
+    false,
+    false,
+    false,
+    false,
+    true,
+    true,
+    true,
+    false,
+    false,
+    false,
+    false,
+    false,
+    true,
+    true,
+    true,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    true,
+    false,
+    true
+   ],
+   "curve": {
+    "4": {
+     "correct_count": 1,
+     "any_pass": true,
+     "multi_correct": false
+    },
+    "8": {
+     "correct_count": 2,
+     "any_pass": true,
+     "multi_correct": true
+    },
+    "16": {
+     "correct_count": 5,
+     "any_pass": true,
+     "multi_correct": true
+    },
+    "32": {
+     "correct_count": 10,
+     "any_pass": true,
+     "multi_correct": true
+    }
+   },
+   "gen_s": 100.95,
+   "ver_s": 42.19,
+   "extended_from": null
+  },
+  {
+   "task_id": "gray_rank",
+   "passes": [
+    false,
+    true,
+    true,
+    false,
+    true,
+    false,
+    false,
+    true,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    true,
+    true,
+    false,
+    false,
+    true,
+    false,
+    true,
+    true,
+    false,
+    false,
+    true,
+    true,
+    false,
+    true,
+    true,
+    false,
+    false,
+    false
+   ],
+   "curve": {
+    "4": {
+     "correct_count": 2,
+     "any_pass": true,
+     "multi_correct": true
+    },
+    "8": {
+     "correct_count": 4,
+     "any_pass": true,
+     "multi_correct": true
+    },
+    "16": {
+     "correct_count": 6,
+     "any_pass": true,
+     "multi_correct": true
+    },
+    "32": {
+     "correct_count": 13,
+     "any_pass": true,
+     "multi_correct": true
+    }
+   },
+   "gen_s": 79.17,
+   "ver_s": 284.67,
+   "extended_from": null
+  },
+  {
+   "task_id": "kth_combination",
+   "passes": [
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    true,
+    false,
+    false,
+    true,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false
+   ],
+   "curve": {
+    "4": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    },
+    "8": {
+     "correct_count": 1,
+     "any_pass": true,
+     "multi_correct": false
+    },
+    "16": {
+     "correct_count": 2,
+     "any_pass": true,
+     "multi_correct": true
+    },
+    "32": {
+     "correct_count": 2,
+     "any_pass": true,
+     "multi_correct": true
+    }
+   },
+   "gen_s": 152.73,
+   "ver_s": 154.7,
+   "extended_from": null
+  },
+  {
+   "task_id": "longest_digit_run",
+   "passes": [
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false
+   ],
+   "curve": {
+    "4": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    },
+    "8": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    },
+    "16": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    },
+    "32": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    }
+   },
+   "gen_s": 77.7,
+   "ver_s": 98.2,
+   "extended_from": null
+  },
+  {
+   "task_id": "grid_bfs_steps",
+   "passes": [
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    true,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false
+   ],
+   "curve": {
+    "4": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    },
+    "8": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    },
+    "16": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    },
+    "32": {
+     "correct_count": 1,
+     "any_pass": true,
+     "multi_correct": false
+    }
+   },
+   "gen_s": 198.16,
+   "ver_s": 156.38,
+   "extended_from": null
+  },
+  {
+   "task_id": "bipartite_strict",
+   "passes": [
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false
+   ],
+   "curve": {
+    "4": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    },
+    "8": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    },
+    "16": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    },
+    "32": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    }
+   },
+   "gen_s": 174.33,
+   "ver_s": 38.48,
+   "extended_from": null
+  },
+  {
+   "task_id": "portal_min_moves",
+   "passes": [
+    false,
+    false,
+    true,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    true,
+    false,
+    false,
+    false,
+    false,
+    true,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    true,
+    true,
+    true,
+    true
+   ],
+   "curve": {
+    "4": {
+     "correct_count": 1,
+     "any_pass": true,
+     "multi_correct": false
+    },
+    "8": {
+     "correct_count": 1,
+     "any_pass": true,
+     "multi_correct": false
+    },
+    "16": {
+     "correct_count": 2,
+     "any_pass": true,
+     "multi_correct": true
+    },
+    "32": {
+     "correct_count": 7,
+     "any_pass": true,
+     "multi_correct": true
+    }
+   },
+   "gen_s": 184.02,
+   "ver_s": 156.2,
+   "extended_from": null
+  },
+  {
+   "task_id": "spread_radius",
+   "passes": [
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    true,
+    true,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false
+   ],
+   "curve": {
+    "4": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    },
+    "8": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    },
+    "16": {
+     "correct_count": 2,
+     "any_pass": true,
+     "multi_correct": true
+    },
+    "32": {
+     "correct_count": 2,
+     "any_pass": true,
+     "multi_correct": true
+    }
+   },
+   "gen_s": 168.19,
+   "ver_s": 155.22,
+   "extended_from": null
+  },
+  {
+   "task_id": "min_stack_trace",
+   "passes": [
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    true,
+    true,
+    false,
+    false,
+    false,
+    false,
+    true,
+    false,
+    false,
+    false,
+    false,
+    true,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false
+   ],
+   "curve": {
+    "4": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    },
+    "8": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    },
+    "16": {
+     "correct_count": 2,
+     "any_pass": true,
+     "multi_correct": true
+    },
+    "32": {
+     "correct_count": 4,
+     "any_pass": true,
+     "multi_correct": true
+    }
+   },
+   "gen_s": 133.7,
+   "ver_s": 35.0,
+   "extended_from": null
+  },
+  {
+   "task_id": "ring_buffer_trace",
+   "passes": [
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false
+   ],
+   "curve": {
+    "4": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    },
+    "8": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    },
+    "16": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    },
+    "32": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    }
+   },
+   "gen_s": 96.75,
+   "ver_s": 39.72,
+   "extended_from": null
+  },
+  {
+   "task_id": "inventory_reserve",
+   "passes": [
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    true,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false
+   ],
+   "curve": {
+    "4": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    },
+    "8": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    },
+    "16": {
+     "correct_count": 1,
+     "any_pass": true,
+     "multi_correct": false
+    },
+    "32": {
+     "correct_count": 1,
+     "any_pass": true,
+     "multi_correct": false
+    }
+   },
+   "gen_s": 161.77,
+   "ver_s": 40.22,
+   "extended_from": null
+  },
+  {
+   "task_id": "url_split_strict",
+   "passes": [
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false
+   ],
+   "curve": {
+    "4": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    },
+    "8": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    },
+    "16": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    },
+    "32": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    }
+   },
+   "gen_s": 256.47,
+   "ver_s": 38.48,
+   "extended_from": null
+  },
+  {
+   "task_id": "lcs_diff_ops",
+   "passes": [
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false
+   ],
+   "curve": {
+    "4": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    },
+    "8": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    },
+    "16": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    },
+    "32": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    }
+   },
+   "gen_s": 190.09,
+   "ver_s": 394.78,
+   "extended_from": null
+  },
+  {
+   "task_id": "md_outline_number",
+   "passes": [
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    true,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false
+   ],
+   "curve": {
+    "4": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    },
+    "8": {
+     "correct_count": 0,
+     "any_pass": false,
+     "multi_correct": false
+    },
+    "16": {
+     "correct_count": 1,
+     "any_pass": true,
+     "multi_correct": false
+    },
+    "32": {
+     "correct_count": 1,
+     "any_pass": true,
+     "multi_correct": false
+    }
+   },
+   "gen_s": 150.91,
+   "ver_s": 33.88,
+   "extended_from": null
+  }
+ ]
+}

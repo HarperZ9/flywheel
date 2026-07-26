@@ -1,0 +1,205 @@
+name: ci
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+jobs:
+  phase0:
+    name: phase 0 + 1A slice
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python: ["3.10", "3.13"]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Install test tooling only
+        run: python -m pip install pytest pytest-timeout
+      - name: Phase 0 slice
+        run: >
+          python -m pytest
+          tests/test_verdict.py
+          tests/test_oracle_verdict_widening.py
+          tests/test_oracle_env_boundary.py
+          tests/test_advantages.py
+          tests/test_rl_group_sampling.py
+          tests/test_rl_from_oracle.py
+          tests/test_envelope_verdict_binding.py
+          tests/test_envelope_interop.py
+          tests/test_gateway_auth.py
+          tests/test_gate_end_to_end.py
+          tests/test_file_gate.py
+          tests/test_accept_path_purity.py
+          tests/test_no_aggregate_over_the_person.py
+          tests/test_criterion_spec.py
+          tests/test_criterion_registry.py
+          tests/test_certificate_base.py
+          tests/test_zarankiewicz.py
+          tests/test_independent_checker.py
+          tests/test_oracle_qa.py
+          tests/test_qa_gated_admission.py
+          tests/test_ed25519_verify.py
+          tests/test_receipt_v2.py
+          tests/test_receipt_sign.py
+          tests/test_why.py
+          tests/test_merkle_known_answers.py
+          tests/test_merkle.py
+          tests/test_ledger.py
+          tests/test_consistency.py
+          tests/test_bundle.py
+          tests/test_contest.py
+          tests/test_tree_head.py
+          tests/test_crossing.py
+          tests/test_claim_language.py
+          tests/test_render.py
+          tests/test_instruction_canon.py
+          tests/test_public_instructions.py
+          tests/test_instance_binding.py
+          tests/test_pool.py
+          tests/test_pool_arms.py
+          tests/test_findings.py
+          tests/test_uplift_bench.py
+          tests/test_model_endpoint_profiles.py
+          tests/test_model_release_readiness.py
+          -q
+
+  full:
+    # WHY THIS EXISTS. Four tests were failing and nobody knew, because the job
+    # above runs an explicit file list and two of the four were not on it. A
+    # curated slice cannot catch a regression in a file it does not name, and a
+    # red suite hides its newest failure among its oldest.
+    #
+    # HONEST STATUS: no job in this file has ever executed. The branch carrying
+    # them has never been pushed, so this workflow is a file rather than a gate.
+    # The dependency list below is a first guess at what the whole suite needs
+    # beyond the stdlib, and the first real push is the discovery event. Zero
+    # RUNTIME dependencies stays invariant; these are test-only.
+    name: whole suite, one os
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Test-only dependencies
+        run: python -m pip install pytest pytest-timeout pynacl pillow
+      - name: Every test, no file list to fall behind
+        run: python -m pytest tests/ -q --timeout=300
+
+  gate:
+    name: disproof gate, no dependencies
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: The gate runs on a bare interpreter, no pip install at all
+        run: python -m harness.cli_entry gate
+
+  verifier_stdlib:
+    name: verifier path is stdlib-only
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Transitive import closure of the verifier entry points
+        run: python scripts/check_verifier_stdlib.py
+
+  instruction_canon:
+    name: per-repo instruction files match the canon
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: One canon, and every pointer proves it read it
+        # The workspace canon lives one level above this repo and is not part of
+        # this checkout in CI, so this asserts the gate RUNS and the manifest is
+        # well-formed; full cross-file drift is caught locally and on the machine
+        # that holds the canon. A missing canon is skipped, not failed.
+        run: |
+          python - <<'PY'
+          import subprocess, sys, pathlib
+          if not (pathlib.Path("..") / "CLAUDE.md").exists():
+              print("workspace canon not in CI checkout; gate is exercised by tests")
+              sys.exit(0)
+          sys.exit(subprocess.run([sys.executable,
+              "scripts/check_instruction_canon.py"]).returncode)
+          PY
+
+  public_instructions:
+    name: public instruction files stand alone
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: A published repo's instructions name no local path or internal project
+        # The public/ tree is not part of this checkout in CI; the tests carry
+        # fixture coverage, and this runs against the tree when present.
+        run: |
+          python - <<'EOF'
+          import subprocess, sys, pathlib
+          if not (pathlib.Path("..") / "public").is_dir():
+              print("public/ tree not in CI checkout; gate is exercised by tests")
+              sys.exit(0)
+          sys.exit(subprocess.run([sys.executable,
+              "scripts/check_public_instructions.py"]).returncode)
+          EOF
+
+  claim_language:
+    name: no optimality claim on a public surface
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Every checker verifies a SUBMITTED object; none decides optimality
+        run: python scripts/check_claim_language.py
+
+  file_gate:
+    name: 300-line gate, burn-down only shrinks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: python scripts/check_file_gate.py
+
+  parses:
+    name: every harness module parses
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: AST-parse every module, so no file can hide from tooling
+        run: |
+          python - <<'PY'
+          import ast, sys
+          from pathlib import Path
+          bad = []
+          for p in sorted(Path("harness").rglob("*.py")):
+              if "__pycache__" in p.parts:
+                  continue
+              try:
+                  ast.parse(p.read_text(encoding="utf-8"))
+              except SyntaxError as e:
+                  bad.append(f"{p}: {e}")
+          print("\n".join(bad) if bad else f"all modules parse")
+          sys.exit(1 if bad else 0)
+          PY

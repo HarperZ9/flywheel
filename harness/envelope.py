@@ -44,10 +44,39 @@ class ProofEnvelope:
         return json.dumps(asdict(self), indent=2, sort_keys=True)
 
     def _content_preimage(self) -> str:
+        """The SUBJECT preimage: what was checked, not what was concluded.
+
+        Deliberately verdict-free. This is the in-toto subject digest, and the
+        verdict is a predicate about that subject, so two verifiers who reach
+        OPPOSITE conclusions about the same task and candidate must still produce
+        the same subject id or they cannot be compared at all. Do not add the
+        verdict here; use claim_sha256() for the verdict-bound digest.
+        """
         d = asdict(self)
         for k in ("oracle_output_hash", "verdict", "oracle_stdout_excerpt"):
             d.pop(k, None)
         return json.dumps(d, sort_keys=True)
+
+    def _claim_preimage(self) -> str:
+        """The CLAIM preimage: subject plus the conclusion drawn about it.
+
+        Everything except the volatile excerpt (pytest's timing line would
+        otherwise break re-derivation). This is the digest a signature must
+        cover and a third party re-derives: flipping a stored FAIL to PASS
+        changes it, which the subject digest by design does not.
+        """
+        d = asdict(self)
+        d.pop("oracle_stdout_excerpt", None)
+        return json.dumps(d, sort_keys=True)
+
+    def claim_hash(self) -> str:
+        """Short display id for the claim digest (16 hex)."""
+        return hashlib.sha256(self._claim_preimage().encode()).hexdigest()[:16]
+
+    def claim_sha256(self) -> str:
+        """Full-length, algorithm-tagged claim digest. Binds the verdict and the
+        oracle output hash, so it is the value to sign and to re-derive."""
+        return "sha256:" + hashlib.sha256(self._claim_preimage().encode()).hexdigest()
 
     def content_hash(self) -> str:
         """Short display id (16 hex). Not the collision-resistant hash: use

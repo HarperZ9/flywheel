@@ -20,7 +20,7 @@ MODEL_PROFILES = {
             "release_dir_name": "release/flywheel-local-coder-14b",
             "base_model": "Qwen2.5-Coder-14B-Instruct",
             "base_license": "Apache-2.0",
-            "adapter": "checkpoint-2020 (QLoRA CPT, train_loss 0.035)",
+            "adapter": "checkpoint-2020 (QLoRA CPT, 2020 steps / 2 epochs; final logged loss 0.444, min 0.359)",
             "artifact_sha256": "613db240e3efc6730f24042a4602d1f12f1c6b397af1d5a4d74f4e064d4064be",
             "ship_manifest": "tasks/research/gguf_ship_manifest_checkpoint2020.json",
             "ollama_model_name": "flywheel-local-coder-14b",
@@ -33,15 +33,17 @@ MODEL_PROFILES = {
         "serve_aliases": ["32b", "32b-base", "qwen2.5-coder-32b"],
         "ollama_selectors": ["qwen2.5-coder:32b", "qwen2.5-coder-32b", "32b"],
         "release": {
-            "trained": False,
+            "trained": True,
             "public_name": "Flywheel-Local-Coder-32B",
-            "artifact_kind": "none",
-            "no_artifact_reason": (
-                "No trained 32B artifact exists: Phase-2 QLoRA on the 32B hit the "
-                "24GB VRAM wall and only a checkpoint-2 smoke exists. The base "
-                "Qwen2.5-Coder-32B-Instruct weights must not be republished as a "
-                "Flywheel model."
-            ),
+            "artifact_kind": "gguf-qlora-cpt-merge",
+            "artifact_name": "telos-coder-32b-cpt2019-q4_k_m.gguf",
+            "release_dir_name": "gguf-work-32b",
+            "base_model": "Qwen2.5-Coder-32B-Instruct",
+            "base_license": "Apache-2.0",
+            "adapter": "checkpoint-2019 (QLoRA CPT, continued pretraining, 2019/2019 steps, completed 2026-07-12)",
+            "artifact_sha256": "65e6133fbe4d12579a776047a71bebb98ab86f9e3d343ed821b51dac0ce312f4",
+            "ship_manifest": "tasks/research/gguf_ship_manifest_checkpoint2019_32b.json",
+            "ollama_model_name": "flywheel-local-coder-32b",
         },
     },
 }

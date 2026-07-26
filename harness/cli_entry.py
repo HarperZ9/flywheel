@@ -24,7 +24,8 @@ from pathlib import Path
 
 # The new umbrella subcommands. Handled in cli_entry; everything else is
 # delegated to the existing run_harness_cli front controller.
-_UMBRELLA_COMMANDS = {"lanes", "loop-status", "install", "up", "down", "corpus-export"}
+_UMBRELLA_COMMANDS = {"lanes", "loop-status", "install", "up", "down", "corpus-export",
+                      "gate", "why"}
 
 
 def _candidate_roots() -> list[Path]:
@@ -164,6 +165,37 @@ def _dispatch_umbrella(command: str, argv: list[str]) -> int:
         roster = lane_roster()
         print(lane_report(roster))
         return 0
+    if command == "why":
+        # Asking must be the cheapest action available: a path, optionally a
+        # claim-digest prefix, no flags, no network, no model.
+        from harness.why import explain, render, WhyError
+        args = [a for a in argv if not a.startswith("-")]
+        if not args:
+            print("usage: flywheel why <receipt.json | dir> [claim-digest-prefix]",
+                  file=sys.stderr)
+            return 2
+        try:
+            report = explain(Path(args[0]), prefix=args[1] if len(args) > 1 else "")
+        except WhyError as e:
+            print(f"cannot answer from the record: {e}", file=sys.stderr)
+            return 1
+        print(render(report))
+        return 0
+    if command == "gate":
+        # The Phase 0 disproof gate: oracle -> group -> receipt -> re-witness,
+        # end to end, with no model and no candidate code executed. Exit 0 only
+        # on MATCH.
+        from harness.gate import run_gate
+        out = Path(argv[0]) if argv and not argv[0].startswith("-") else (
+            find_repo_root() / "artifacts" / "gate")
+        report = run_gate(out)
+        for s in report.steps:
+            detail = ", ".join(f"{k}={v}" for k, v in s.items() if k != "step")
+            print(f"  {s['step']}: {detail}")
+        print(f"verdict={report.verdict} rewitness={report.rewitness}")
+        print(f"subject={report.envelope_hash} claim={report.claim_hash} "
+              f"signal={report.group_signal_hash}")
+        return 0 if report.rewitness == "MATCH" else 1
     if command == "install":
         return _cmd_install(argv)
     if command == "up":

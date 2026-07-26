@@ -1,0 +1,667 @@
+{
+ "benchmark": "HumanEval",
+ "metric": "pass@1 (greedy, temperature 0)",
+ "model_ref": "ollama:flywheel-local-coder-14b",
+ "n_tasks": 164,
+ "passed": 136,
+ "pass_at_1": 0.8293,
+ "per_task": [
+  {
+   "task_id": "HumanEval/0",
+   "passed": false
+  },
+  {
+   "task_id": "HumanEval/1",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/2",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/3",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/4",
+   "passed": false
+  },
+  {
+   "task_id": "HumanEval/5",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/6",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/7",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/8",
+   "passed": false
+  },
+  {
+   "task_id": "HumanEval/9",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/10",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/11",
+   "passed": false
+  },
+  {
+   "task_id": "HumanEval/12",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/13",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/14",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/15",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/16",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/17",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/18",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/19",
+   "passed": false
+  },
+  {
+   "task_id": "HumanEval/20",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/21",
+   "passed": false
+  },
+  {
+   "task_id": "HumanEval/22",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/23",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/24",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/25",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/26",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/27",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/28",
+   "passed": false
+  },
+  {
+   "task_id": "HumanEval/29",
+   "passed": false
+  },
+  {
+   "task_id": "HumanEval/30",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/31",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/32",
+   "passed": false
+  },
+  {
+   "task_id": "HumanEval/33",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/34",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/35",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/36",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/37",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/38",
+   "passed": false
+  },
+  {
+   "task_id": "HumanEval/39",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/40",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/41",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/42",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/43",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/44",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/45",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/46",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/47",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/48",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/49",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/50",
+   "passed": false
+  },
+  {
+   "task_id": "HumanEval/51",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/52",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/53",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/54",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/55",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/56",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/57",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/58",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/59",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/60",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/61",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/62",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/63",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/64",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/65",
+   "passed": false
+  },
+  {
+   "task_id": "HumanEval/66",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/67",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/68",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/69",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/70",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/71",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/72",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/73",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/74",
+   "passed": false
+  },
+  {
+   "task_id": "HumanEval/75",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/76",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/77",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/78",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/79",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/80",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/81",
+   "passed": false
+  },
+  {
+   "task_id": "HumanEval/82",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/83",
+   "passed": false
+  },
+  {
+   "task_id": "HumanEval/84",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/85",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/86",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/87",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/88",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/89",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/90",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/91",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/92",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/93",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/94",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/95",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/96",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/97",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/98",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/99",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/100",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/101",
+   "passed": false
+  },
+  {
+   "task_id": "HumanEval/102",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/103",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/104",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/105",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/106",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/107",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/108",
+   "passed": false
+  },
+  {
+   "task_id": "HumanEval/109",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/110",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/111",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/112",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/113",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/114",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/115",
+   "passed": false
+  },
+  {
+   "task_id": "HumanEval/116",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/117",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/118",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/119",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/120",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/121",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/122",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/123",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/124",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/125",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/126",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/127",
+   "passed": false
+  },
+  {
+   "task_id": "HumanEval/128",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/129",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/130",
+   "passed": false
+  },
+  {
+   "task_id": "HumanEval/131",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/132",
+   "passed": false
+  },
+  {
+   "task_id": "HumanEval/133",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/134",
+   "passed": false
+  },
+  {
+   "task_id": "HumanEval/135",
+   "passed": false
+  },
+  {
+   "task_id": "HumanEval/136",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/137",
+   "passed": false
+  },
+  {
+   "task_id": "HumanEval/138",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/139",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/140",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/141",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/142",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/143",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/144",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/145",
+   "passed": false
+  },
+  {
+   "task_id": "HumanEval/146",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/147",
+   "passed": false
+  },
+  {
+   "task_id": "HumanEval/148",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/149",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/150",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/151",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/152",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/153",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/154",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/155",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/156",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/157",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/158",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/159",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/160",
+   "passed": false
+  },
+  {
+   "task_id": "HumanEval/161",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/162",
+   "passed": true
+  },
+  {
+   "task_id": "HumanEval/163",
+   "passed": false
+  }
+ ],
+ "note": "single deterministic sample per task; extraction strips fences; body-only completions retried with the original prompt prepended"
+}

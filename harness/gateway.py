@@ -45,6 +45,7 @@ if str(REPO) not in sys.path:
     sys.path.insert(0, str(REPO))
 
 from harness.run_paths import run_root_default
+from harness.gateway_auth import load_or_create_token, check as _auth_check, DEFAULT_HOSTS
 
 
 def _resolve_credential(key_env: str) -> str:
@@ -771,6 +772,8 @@ class _Handler(BaseHTTPRequestHandler):
 
     MAX_BODY = 32 * 1024 * 1024               # 32 MiB ceiling on any request body
     cors = False                              # opt-in (--cors) so browser OpenAI clients can call in
+    auth_token = ""                           # set by main(); "" leaves the check off
+    allowed_hosts = DEFAULT_HOSTS
 
     def log_message(self, *a):  # quiet
         pass
@@ -1005,13 +1008,37 @@ class _Handler(BaseHTTPRequestHandler):
         except Exception:
             pass                                   # headers already partly sent; nothing safe to do
 
+    def _authorized(self) -> bool:
+        """Refuse before dispatch. True when the request may proceed.
+
+        Off entirely when auth_token is empty, which is how the in-process tests
+        construct the handler; main() always sets one.
+        """
+        if not self.auth_token:
+            return True
+        ok, reason = _auth_check(self.headers, self.command, self.auth_token,
+                                 allowed_hosts=self.allowed_hosts)
+        if ok:
+            return True
+        body = json.dumps({"error": "unauthorized", "reason": reason}).encode()
+        self.send_response(401)
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+        return False
+
     def do_GET(self):
+        if not self._authorized():
+            return
         try:
             self._get()
         except Exception as e:
             self._safe_500(e)
 
     def do_POST(self):
+        if not self._authorized():
+            return
         try:
             self._post()
         except Exception as e:
@@ -2367,8 +2394,11 @@ def main(argv=None) -> int:
     _Handler.ollama_url = a.ollama_url
     _Handler.run_root = a.run_root
     _Handler.cors = a.cors
+    flywheel_home = Path(os.environ.get("FLYWHEEL_HOME", str(Path.home() / ".flywheel")))
+    _Handler.auth_token = load_or_create_token(flywheel_home)
     httpd = ThreadingHTTPServer(("127.0.0.1", a.port), _Handler)
     print(f"flywheel gateway: http://127.0.0.1:{a.port}  root={_Handler.root}")
+    print(f"  token     {flywheel_home / 'gateway.token'}  (send as: Authorization: Bearer <token>)")
     print(f"  shell     http://127.0.0.1:{a.port}/site/index.html")
     print(f"  world     http://127.0.0.1:{a.port}/api/world")
     print(f"  health    http://127.0.0.1:{a.port}/api/endpoints/health")
