@@ -66,3 +66,7 @@ project-docs/private/
 
 # private denylist for the public-instruction gate (never ships)
 scripts/.private-denylist.txt
+
+# direnv environment files (can hold exported secrets)
+.envrc
+.envrc.local
