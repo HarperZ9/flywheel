@@ -1,0 +1,11 @@
+{
+ "schema": "flywheel.consistency-proof/v2",
+ "log_id": "sha256:4de456a538e8c723ecfe0edb650903214fc29c017fd898e7f23fa6e478e8ae40",
+ "old_size": 1,
+ "new_size": 2,
+ "old_root": "sha256:eb68d14cb0c2c2f9af89398f773ddf087b7fc18c0d822edd3f36bfbed18b09b9",
+ "new_root": "sha256:0d4ea5dcfa9f81ceebdddad65caa683d59912124d960f4e720322bdf3f40951b",
+ "path": [
+  "f70e17e3b5389b7ef2a5e44cf8b36ab259d81c68913f473a38e6b529b7a18f3a"
+ ]
+}
