@@ -76,3 +76,15 @@ def test_fenced_code_bullets_are_not_entries():
             "```yaml\n- not: an entry\n- also: code\n```\n")
     r = CW.check_text(text, WP.load("changelog"))
     assert "unreferenced_entry" not in r["violations"]
+
+
+def test_a_hex_looking_english_word_is_not_a_reference():
+    r = CW.check_text("## 1.0\n\n- Fixed the defaced page\n",
+                      WP.load("changelog"))
+    assert r["violations"].get("unreferenced_entry", 0) == 1
+
+
+def test_a_real_sha_with_digits_still_counts():
+    r = CW.check_text("## 1.0\n\n- Fixed the loop (deadbe3f)\n",
+                      WP.load("changelog"))
+    assert "unreferenced_entry" not in r["violations"]

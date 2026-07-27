@@ -23,6 +23,9 @@ Python files are scored on docstrings and comments only.
 *Python files fall to the flavored default by path; the register is
 operational prose either way.
 
+The Task 5 note rewrite and docstring addition postdate these rows; gate
+cleanliness at HEAD is enforced by CI on every push.
+
 Does not prove: a clean gate is not a good document, and the per-100-word
 score is not calibrated ACROSS document lengths; short files swing wide.
 The score stays report-only until this table has enough history to pick a

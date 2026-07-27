@@ -15,6 +15,7 @@ import argparse
 import json
 import re
 import sys
+import types
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -35,7 +36,8 @@ _MATHBLOCK = re.compile(r"\$\$.*?\$\$", re.DOTALL)
 _MATH = re.compile(r"\$[^$\n]*\$")
 _SENT = re.compile(r"(?<=[.!?])(?=\s|$)")
 _ENTRY = re.compile(r"^\s*[-*+]\s+(.*)$", re.MULTILINE)
-_ENTRY_REF = re.compile(r"#\d+|\b[0-9a-f]{7,40}\b|https?://", re.IGNORECASE)
+_ENTRY_REF = re.compile(
+    r"#\d+|\b(?=[0-9a-f]*\d)[0-9a-f]{7,40}\b|https?://", re.IGNORECASE)
 
 
 def strip_code(text: str) -> str:
@@ -79,7 +81,8 @@ _BE_WORD = re.compile(rf"\b{BE}\b", re.IGNORECASE)
 # below: those heuristics are noisy, and a noisy gate is a gate somebody
 # switches off. The defaults live in writing_lists.HARD_DEFAULTS; each profile
 # carries its own hard tuple.
-HARD_BY_SLOP = {k: frozenset(v) for k, v in HARD_DEFAULTS.items()}
+HARD_BY_SLOP = types.MappingProxyType(
+    {k: frozenset(v) for k, v in HARD_DEFAULTS.items()})
 
 # Categories that can never gate. They inform, so they get their own totals and
 # stay out of the headline number: the delta a writer tracks must move only on
@@ -271,7 +274,7 @@ def main(argv: list[str] | None = None) -> int:
             records.append(score_file(f, _wp.load(name), raw))
             names.append(name)
     except _wp.ProfileError as exc:
-        print(f"unknown profile: {exc}", file=sys.stderr)
+        print(f"profile error: {exc}", file=sys.stderr)
         return 2
 
     any_hard = any(r["hard"] for r in records)

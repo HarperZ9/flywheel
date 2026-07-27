@@ -3,7 +3,9 @@
 
 Moved out of check_writing.py so the engine file stays under the 300-line gate
 as Phase 2 checks land. These lists are exactly the ones the Phase 1 engine
-shipped with; moving them changed no entry.
+shipped with; moving them changed no entry. Phase 3 added the report-check
+patterns and the gate data (HARD_DEFAULTS, KNOWN_CATEGORIES,
+REPORT_ONLY_CATEGORIES); Phase 4 added HEDGE_WORDS.
 
 Standard library only.
 """
@@ -41,7 +43,7 @@ MODAL_HEDGE = (
 # refused only where hedging itself is banned, such as procedures.
 HEDGE_WORDS = (
     "might", "perhaps", "possibly", "probably", "maybe", "likely", "unlikely",
-    "could", "should perhaps", "arguably", "seemingly", "somewhat",
+    "could", "arguably", "seemingly", "somewhat",
 )
 
 BE = r"(?:am|is|are|was|were|be|been|being)"

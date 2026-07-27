@@ -77,3 +77,23 @@ def test_moved_patterns_are_the_same_objects():
     assert CW._PASSIVE is WL.PASSIVE
     assert CW._ING_MAIN is WL.ING_MAIN
     assert CW._NOMINAL is WL.NOMINAL
+
+
+def test_hard_by_slop_cannot_be_mutated_at_runtime():
+    import pytest
+    with pytest.raises(TypeError):
+        CW.HARD_BY_SLOP["strict"] = frozenset()
+
+
+def test_unknown_profile_error_prefix_does_not_misname_the_cause(tmp_path):
+    import subprocess
+    f = tmp_path / "x.md"
+    f.write_text("words\n", encoding="utf-8")
+    root = Path(__file__).resolve().parent.parent
+    r = subprocess.run(
+        [sys.executable, str(root / "scripts" / "check_writing.py"),
+         "--profile", "no-such", str(f)], capture_output=True, text=True,
+        cwd=root)
+    assert r.returncode == 2
+    assert "profile error:" in r.stderr.lower()
+    assert "unknown profile:" not in r.stderr.lower()

@@ -48,3 +48,15 @@ def test_hedge_words_are_gate_capable_not_report_only():
 def test_hedge_word_boundaries_do_not_match_inside_words():
     r = CW.check_text("The mightiest turbine is here.", WP.load("procedure"))
     assert "hedge_word" not in r["violations"]
+
+
+def test_flavored_profiles_with_banned_hedging_count_but_never_gate():
+    # changelog and normative-spec ban hedging (they are normative surfaces)
+    # while carrying flavored hard tuples, so hedge words inform their score
+    # and never fail their gate. Pinned so the behavior is a contract, not an
+    # accident of two tuples.
+    text = "Perhaps this might help."
+    for name in ("changelog", "normative-spec"):
+        r = CW.check_text(text, WP.load(name))
+        assert r["violations"].get("hedge_word", 0) >= 2, name
+        assert "hedge_word" not in r["hard"], name
