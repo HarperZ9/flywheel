@@ -1,12 +1,12 @@
 """The determinism surface: captured as data, witnessed against a live server.
 
-`determinism_pins.py` is the "what did the server say" half of the determinism
-story; Task 2's baseline is the "did it say the same thing twice" half. These
-tests cover capture and witness only: a document shaped correctly with nine
-rungs and no field silently omitted, a witness that comes back clean against
-its own capture and names the exact field when something drifts, the prereg
-citation, and a digest stable under key order. No test here touches a network;
-every HTTP-shaped call goes through an injected `fetch` callable.
+`determinism_pins.py` is the "what did the server say" half of the story;
+Task 2's baseline is the "did it say the same thing twice" half. Covers
+capture and witness only: nine rungs with no field silently omitted, a
+witness that names the exact field when something drifts, the prereg
+citation, a digest stable under key order. The fake `/api/show` fixture
+mirrors Ollama 0.32.3's real shape (details + model_info, no digest, no
+kv_cache_type). No test touches a network; every HTTP call is injected.
 """
 from __future__ import annotations
 
@@ -22,8 +22,7 @@ _spec = importlib.util.spec_from_file_location(
 D = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(D)
 
-# D's exec above put scripts/ on sys.path, so this plain import (and its own
-# `from determinism_pins import ...`) resolves the same way.
+# D's exec above put scripts/ on sys.path, so this plain import resolves too.
 import determinism_baseline as DB  # noqa: E402
 
 FREEZE = json.loads((ROOT / "artifacts" / "prereg" / "FREEZE.json")
@@ -45,51 +44,53 @@ class FakeResponse:
     def __exit__(self, *exc):
         return False
 
-
-def make_fake_fetch(version="0.3.14", num_ctx=4096,
-                    digest="sha256:" + "a" * 64, kv_cache_type=None):
-    """A fetch(path, payload=None) that never touches the network."""
+def make_fake_fetch(version="0.3.14", quantization="Q4_K_M", fmt="gguf",
+                    parameter_size="0.5B", context_length=4096, family="qwen2",
+                    details=None, model_info=None):
+    """A fetch(path, payload=None) that never touches the network, shaped
+    like the real 0.32.3 /api/show: details + model_info, no digest field."""
     def fetch(path, payload=None):
         if path == "/api/version":
             return {"version": version}
         if path == "/api/show":
             assert isinstance(payload, dict) and "model" in payload, (
                 "/api/show must be called with {'model': name}")
-            body = {"digest": digest,
-                    "parameters": f"num_ctx {num_ctx}\nstop \"foo\"\n"}
-            if kv_cache_type is not None:
-                body["kv_cache_type"] = kv_cache_type
-            return body
+            shown_details = {"quantization_level": quantization, "format": fmt,
+                             "parameter_size": parameter_size}
+            shown_model_info = {f"{family}.context_length": context_length}
+            return {"details": details if details is not None else shown_details,
+                    "model_info": model_info if model_info is not None else shown_model_info}
         raise AssertionError(f"unexpected path {path!r}")
     return fetch
 
-
 # ---- capture shape
-
 
 def test_capture_builds_nine_rungs_from_the_frozen_prereg():
     models = D.default_models()
     assert len(models) == 9
     assert "telos-coder-32b" in models       # R6, weight-kind pin
     assert "telos-coder-14b" in models       # R4, blob-kind pin
-
     doc = D.capture(BASE_URL, models, fetch=make_fake_fetch())
     assert doc["schema"] == "flywheel.determinism-pins/v1"
     assert len(doc["rungs"]) == 9
     assert {r["model"] for r in doc["rungs"]} == set(models)
 
 def test_absent_values_are_null_not_omitted():
-    """A field the server never exposed is still a key, with value null. A
-    silently missing key would be indistinguishable from a typo in the code
-    that reads it back."""
+    """A field the server never exposed is still a key, with value null --
+    never silently missing, which would look like a typo in the reader."""
     doc = D.capture(BASE_URL, ["qwen2.5:0.5b"],
-                    fetch=make_fake_fetch(kv_cache_type=None))
+                    fetch=make_fake_fetch(details={}, model_info={}))
     rung = doc["rungs"][0]
-    assert "kv_cache_type" in rung
-    assert rung["kv_cache_type"] is None
-    assert rung["digest"] is not None
-    assert rung["num_ctx"] == 4096
+    for field in ("quantization", "format", "parameter_size",
+                  "context_length", "kv_cache_type"):
+        assert field in rung and rung[field] is None, field
     assert rung["sampler"] == D.SAMPLER_TUPLE
+
+def test_context_length_found_under_any_family_prefix():
+    """The prefix varies by family; find the one key ending in the suffix."""
+    rec = D.rung_record(BASE_URL, "m", fetch=make_fake_fetch(
+        model_info={"llama.context_length": 8192}))
+    assert rec["context_length"] == 8192
 
 def test_runtime_record_shape():
     rt = D.runtime_record(BASE_URL, fetch=make_fake_fetch(version="0.9.1"))
@@ -98,21 +99,17 @@ def test_runtime_record_shape():
     import platform
     assert rt["host_os"] == platform.system()
 
-
 def test_does_not_prove_is_present_and_nonempty():
     doc = D.capture(BASE_URL, ["qwen2.5:0.5b"], fetch=make_fake_fetch())
     assert isinstance(doc["does_not_prove"], list)
     assert len(doc["does_not_prove"]) > 0
     assert all(isinstance(item, str) for item in doc["does_not_prove"])
 
-
 def test_cites_prereg_sha256_matches_freeze():
     doc = D.capture(BASE_URL, ["qwen2.5:0.5b"], fetch=make_fake_fetch())
     assert doc["cites_prereg_sha256"] == FREEZE["frozen_sha256"]
 
-
 # ---- sha256_of
-
 
 def test_sha256_of_is_stable_under_key_order():
     a = {"z": 1, "a": {"y": 2, "x": 3}, "m": [3, 2, 1]}
@@ -131,9 +128,7 @@ def test_saved_file_bytes_hash_to_sha256_of(tmp_path):
     D.save(doc, p)
     assert hashlib.sha256(p.read_bytes()).hexdigest() == D.sha256_of(doc)
 
-
 # ---- witness: clean and each field named on drift
-
 
 def _capture_and_save(tmp_path, fetch, models=("qwen2.5:0.5b", "telos-coder-32b")):
     doc = D.capture(BASE_URL, list(models), fetch=fetch)
@@ -162,28 +157,37 @@ def test_witness_names_a_mutated_sampler(tmp_path):
     fetch = make_fake_fetch()
     path, _ = _capture_and_save(tmp_path, fetch)
     pinned = D.load(path)
-    pinned["rungs"][0]["sampler"] = dict(pinned["rungs"][0]["sampler"],
-                                         temperature=1)
+    pinned["rungs"][0]["sampler"] = dict(pinned["rungs"][0]["sampler"], temperature=1)
     D.save(pinned, path)
 
     drift = D.witness(BASE_URL, path, fetch=fetch)
     assert drift, "a mutated sampler tuple must be reported as drift"
     assert any("sampler" in d for d in drift), drift
 
-def test_witness_names_a_mutated_num_ctx(tmp_path):
-    fetch = make_fake_fetch(num_ctx=4096)
+def test_witness_names_a_mutated_context_length(tmp_path):
+    fetch = make_fake_fetch(context_length=4096)
     path, _ = _capture_and_save(tmp_path, fetch)
     pinned = D.load(path)
-    pinned["rungs"][0]["num_ctx"] = 99999
+    pinned["rungs"][0]["context_length"] = 99999
     D.save(pinned, path)
 
     drift = D.witness(BASE_URL, path, fetch=fetch)
-    assert drift, "a mutated num_ctx must be reported as drift"
-    assert any("num_ctx" in d for d in drift), drift
+    assert drift, "a mutated context_length must be reported as drift"
+    assert any("context_length" in d for d in drift), drift
+
+def test_witness_names_a_mutated_quantization(tmp_path):
+    fetch = make_fake_fetch(quantization="Q4_K_M")
+    path, _ = _capture_and_save(tmp_path, fetch)
+    pinned = D.load(path)
+    pinned["rungs"][0]["quantization"] = "Q8_0"
+    D.save(pinned, path)
+
+    drift = D.witness(BASE_URL, path, fetch=fetch)
+    assert drift, "a mutated quantization must be reported as drift"
+    assert any("quantization" in d for d in drift), drift
 
 def test_witness_ignores_a_baselines_key(tmp_path):
-    """Baselines have their own mode (Task 2); the witness must not choke on
-    one being present, and must not report it as drift."""
+    """Baselines are Task 2's own mode; present or not, never reported as drift."""
     fetch = make_fake_fetch()
     path, _ = _capture_and_save(tmp_path, fetch)
     pinned = D.load(path)
@@ -194,9 +198,7 @@ def test_witness_ignores_a_baselines_key(tmp_path):
     drift = D.witness(BASE_URL, path, fetch=fetch)
     assert drift == []
 
-
 # ---- the default (real) fetch: GET for /api/version, POST for /api/show
-
 
 def test_default_fetch_gets_version_and_posts_show(monkeypatch):
     calls = []
@@ -210,8 +212,8 @@ def test_default_fetch_gets_version_and_posts_show(monkeypatch):
             assert req.get_method() == "POST"
             body = json.loads(req.data.decode("utf-8"))
             assert body == {"model": "qwen2.5:0.5b"}
-            return FakeResponse({"digest": "sha256:" + "c" * 64,
-                                 "parameters": "num_ctx 2048\n"})
+            return FakeResponse({"details": {"quantization_level": "Q4_K_M"},
+                                 "model_info": {"qwen2.context_length": 2048}})
         raise AssertionError(f"unexpected url {req.full_url}")
 
     monkeypatch.setattr(D.urllib.request, "urlopen", fake_urlopen)
@@ -221,16 +223,15 @@ def test_default_fetch_gets_version_and_posts_show(monkeypatch):
     assert v == {"version": "0.1.0"}
 
     s = fetch("/api/show", {"model": "qwen2.5:0.5b"})
-    assert s["digest"] == "sha256:" + "c" * 64
+    assert s["details"]["quantization_level"] == "Q4_K_M"
+    assert s["model_info"]["qwen2.context_length"] == 2048
     assert len(calls) == 2
     assert calls[0].get_method() == "GET"
 
 # ---- Task 2: repeat-run digest baseline (determinism_baseline.py)
 
-
 def make_fake_generate_fetch(responses):
-    """responses: {model: [text, ...]}, consumed in call order. Asserts each
-    call is /api/generate, unstreamed, at the pinned sampler tuple."""
+    """responses: {model: [text, ...]}, consumed in call order at /api/generate."""
     cursors = {model: iter(texts) for model, texts in responses.items()}
 
     def fetch(path, payload=None):
@@ -279,8 +280,7 @@ def test_cli_baseline_merges_and_preserves_the_rest_of_the_doc(tmp_path, monkeyp
         return FakeResponse({"response": "391"})
     monkeypatch.setattr(D.urllib.request, "urlopen", fake_urlopen)
 
-    rc = D.main(["--baseline", "--n", "2", "--pins-path", str(path),
-                "--base-url", BASE_URL])
+    rc = D.main(["--baseline", "--n", "2", "--pins-path", str(path), "--base-url", BASE_URL])
     assert rc == 0
 
     saved = D.load(path)

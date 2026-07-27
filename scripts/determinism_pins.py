@@ -2,30 +2,27 @@
 """determinism_pins.py -- pin the determinism surface per rung, then witness it.
 
 `rung_pins.py` answers "what did we preregister"; `verify_rung_digests.py`
-answers "does the local store hold it". Neither one asks the question this
-module asks: once a rung is SERVED, what did the server actually say about how
-it will run it? Runtime build, the sampler tuple, the context window, the
-KV-cache type. Those are not weight digests, they are the surface a
-nondeterministic serving stack could drift on without the weights changing at
-all.
+answers "does the local store hold it". Neither asks what this module asks:
+once a rung is SERVED, what did the server actually say about how it will run
+it -- runtime build, sampler tuple, context window, KV-cache type. Not weight
+digests; the surface a nondeterministic serving stack could drift on without
+the weights changing at all.
 
 A pin does not create determinism. It localizes blame: if a witness run later
 disagrees with a pin, the pin says exactly what changed (runtime version,
-sampler, num_ctx, ...), rather than leaving "something is different" as the
-only observation. That is the same honest-null discipline `pool.py` uses for
-generation fingerprints, applied to the serving surface instead of the
-sampling loop.
+sampler, context length, ...) rather than leaving "something is different" as
+the only observation -- the same honest-null discipline `pool.py` uses for
+generation fingerprints, applied to the serving surface instead of sampling.
 
 Every field the server does not expose is recorded as null, never omitted: a
 missing key would be indistinguishable from a bug in the code that reads it
 back. The rung names are never hand-listed here; they come from the FROZEN
-preregistration via `rung_pins.py`, the same no-drift rule `verify_rung_digests.py`
+preregistration via `rung_pins.py`, the no-drift rule `verify_rung_digests.py`
 already follows.
 
-Every function that would reach the network takes an injectable `fetch(path,
-payload=None)`. The default implementation is the only place `urllib` is used:
-GET when no payload is given (`/api/version`), POST of a JSON body otherwise
-(`/api/show`). Tests inject a fake and never touch a socket.
+Every function reaching the network takes an injectable `fetch(path,
+payload=None)`: GET with no payload (`/api/version`), POST of a JSON body
+otherwise (`/api/show`) -- the only place `urllib` is used; tests inject a fake.
 
 Stdlib only.
 """
@@ -49,9 +46,8 @@ DEFAULT_PINS_PATH = REPO / "artifacts" / "prereg" / "determinism-pins.json"
 
 SCHEMA = "flywheel.determinism-pins/v1"
 
-# The one sampler every rung is captured under. A single tuple, not one per
-# rung, because the point of pinning it is to hold it fixed while everything
-# else varies.
+# The one sampler every rung is captured under: a single tuple, not one per
+# rung, held fixed while everything else varies.
 SAMPLER_TUPLE = {"temperature": 0, "top_k": 1, "top_p": 1.0, "seed": 7,
                  "repeat_penalty": 1.0}
 
@@ -64,13 +60,16 @@ DOES_NOT_PROVE = [
     "NOT_PROVES_ANCHOR: a captured pin file is not yet an attested event. "
     "Only the possession ceremony (prereg_event.py) turns it into a ledger "
     "entry with a consistency proof.",
-    "NOT_PROVES_ABSENT_FIELD_IS_STABLE: a null field (digest, num_ctx, "
+    "NOT_PROVES_ABSENT_FIELD_IS_STABLE: a null field (context_length, "
     "kv_cache_type) means the server did not expose it at capture time, not "
     "that it cannot change. A witness run cannot diff what was never "
     "observed.",
     "NOT_PROVES_THE_WHOLE_RUNTIME: /api/version and /api/show are two "
     "endpoints. A change in serving behavior that neither endpoint reports "
     "is invisible to this pin file by construction.",
+    "NOT_PROVES_DIGEST_PINNING: this record does not duplicate weight-digest "
+    "pinning, which the prereg and verify_rung_digests.py own; kv_cache_type "
+    "is null because /api/show does not expose it, not because of a bug here.",
 ]
 
 DEFAULT_HOST = "127.0.0.1:11434"
@@ -111,31 +110,31 @@ def runtime_record(base_url: str, fetch=None) -> dict:
             "host_os": platform.system()}
 
 
-def _num_ctx_from_parameters(doc: dict) -> int | None:
-    """/api/show's "parameters" is a raw multi-line "key value" blob, not
-    structured JSON. Absent or unparsable is null, not an exception: a
-    server that changed its own output format should not crash the pin."""
-    parameters = doc.get("parameters")
-    if not isinstance(parameters, str):
-        return None
-    for line in parameters.splitlines():
-        parts = line.split()
-        if len(parts) >= 2 and parts[0] == "num_ctx":
-            try:
-                return int(parts[1])
-            except ValueError:
-                return None
+def _context_length_from_model_info(model_info: dict) -> int | None:
+    """model_info's context-length key is family-prefixed, e.g.
+    "qwen2.context_length" or "llama.context_length". Find the one key
+    that ends with the suffix instead of hand-listing every family name."""
+    for key, value in model_info.items():
+        if key.endswith(".context_length"):
+            return value
     return None
 
 
 def rung_record(base_url: str, model: str, fetch=None) -> dict:
     fetch = fetch or _default_fetch(base_url)
     doc = fetch("/api/show", {"model": model}) or {}
+    details = doc.get("details") or {}
     return {
         "model": model,
-        "digest": doc.get("digest"),
-        "num_ctx": _num_ctx_from_parameters(doc),
-        "kv_cache_type": doc.get("kv_cache_type"),
+        "quantization": details.get("quantization_level"),
+        "format": details.get("format"),
+        "parameter_size": details.get("parameter_size"),
+        "context_length": _context_length_from_model_info(
+            doc.get("model_info") or {}),
+        # The server does not expose KV-cache type over the API; null is the
+        # honest value here. The prereg and verify_rung_digests.py own
+        # weight-DIGEST pinning; this record deliberately does not repeat it.
+        "kv_cache_type": None,
         "sampler": dict(SAMPLER_TUPLE),
     }
 
@@ -189,7 +188,8 @@ def _diff_fields(label: str, old: dict, new: dict, fields) -> list[str]:
     return out
 
 RUNTIME_FIELDS = ("engine", "version", "host_os")
-RUNG_FIELDS = ("digest", "num_ctx", "kv_cache_type", "sampler")
+RUNG_FIELDS = ("quantization", "format", "parameter_size", "context_length",
+              "kv_cache_type", "sampler")
 
 def witness(base_url: str, pins_path: Path, fetch=None) -> list[str]:
     """Re-capture runtime + rungs and diff against the pins on disk. Any
