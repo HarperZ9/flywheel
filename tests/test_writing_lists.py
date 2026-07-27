@@ -27,3 +27,12 @@ def test_no_entry_is_duplicated_across_lists():
         for entry in getattr(WL, name):
             assert entry not in seen, f"{entry} in both {seen.get(entry)} and {name}"
             seen[entry] = name
+
+
+def test_list_sizes_are_pinned_against_silent_retype():
+    # The Phase 1 lists were moved, not retyped. These pins are the automated
+    # backstop: a dropped or fat-fingered entry changes a count and fails here.
+    assert len(WL.MARKETING) == 26
+    assert len(WL.BANNED) == 34
+    assert len(WL.PHRASAL) == 12
+    assert len(WL.MODAL_HEDGE) == 6
