@@ -103,4 +103,11 @@ def test_no_public_function_flips_a_criterion_without_an_oracle():
     only assignment to a criterion's status lives in apply_oracle_result."""
     src = (Path(__file__).resolve().parent.parent / "harness"
            / "acceptance_criteria.py").read_text(encoding="utf-8")
-    assert src.count('["status"] =') == 1, "status is assigned in exactly one place"
+    # Count ASSIGNMENTS only. An earlier version of this test matched the bare
+    # substring, so it also matched `== ` and pushed the module into writing
+    # comparisons backwards to dodge it: the test was bending the code instead
+    # of describing it. A negative lookahead for `=` keeps the guarantee while
+    # letting the module read naturally.
+    import re
+    assigns = re.findall(r'\["status"\]\s*=(?!=)', src)
+    assert len(assigns) == 1, f"status is assigned in {len(assigns)} places, want 1"

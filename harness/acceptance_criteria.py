@@ -94,9 +94,7 @@ def apply_oracle_result(criteria: list[dict], criterion_id: str, oracle: str,
 
 
 def all_pass(criteria: list[dict]) -> bool:
-    # Operand order (constant, then lookup) keeps this comparison a read, not
-    # a pattern the source-grep test below would mistake for an assignment.
-    return all(PASSING == c["status"] for c in criteria)
+    return all(c["status"] == PASSING for c in criteria)
 
 
 def failing(criteria: list[dict]) -> list[str]:
