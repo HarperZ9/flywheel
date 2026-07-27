@@ -110,6 +110,14 @@ def test_sha256_of_changes_when_content_changes():
     assert D.sha256_of(a) != D.sha256_of(b)
 
 
+def test_saved_file_bytes_hash_to_sha256_of(tmp_path):
+    import hashlib
+    doc = {"b": 1, "a": {"z": None, "y": [1, 2]}}
+    p = tmp_path / "pins.json"
+    D.save(doc, p)
+    assert hashlib.sha256(p.read_bytes()).hexdigest() == D.sha256_of(doc)
+
+
 # ---- witness: clean and each field named on drift
 
 

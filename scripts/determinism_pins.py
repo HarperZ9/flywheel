@@ -165,7 +165,7 @@ def capture(base_url: str, models: list[str], fetch=None) -> dict:
 
 
 def canonical_bytes(doc: dict) -> bytes:
-    return json.dumps(doc, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    return (json.dumps(doc, sort_keys=True, separators=(",", ":")) + "\n").encode("utf-8")
 
 
 def sha256_of(doc: dict) -> str:
@@ -175,8 +175,7 @@ def sha256_of(doc: dict) -> str:
 def save(doc: dict, path: Path) -> None:
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(doc, sort_keys=True, indent=1) + "\n",
-                    encoding="utf-8")
+    path.write_bytes(canonical_bytes(doc))
 
 
 def load(path: Path) -> dict:
@@ -221,12 +220,13 @@ def witness(base_url: str, pins_path: Path, fetch=None) -> list[str]:
 def _build_argparser() -> argparse.ArgumentParser:
     ap = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--capture", action="store_true",
-                    help="capture the determinism surface for the nine "
-                         "prereg rungs and write the pins file")
-    ap.add_argument("--witness", action="store_true",
-                    help="re-capture and diff against an existing pins file, "
-                         "exit 1 on drift")
+    group = ap.add_mutually_exclusive_group(required=True)
+    group.add_argument("--capture", action="store_true",
+                       help="capture the determinism surface for the nine "
+                            "prereg rungs and write the pins file")
+    group.add_argument("--witness", action="store_true",
+                       help="re-capture and diff against an existing pins file, "
+                            "exit 1 on drift")
     ap.add_argument("--json", dest="as_json", action="store_true")
     ap.add_argument("--base-url", default=None,
                     help="defaults to $OLLAMA_HOST, else 127.0.0.1:11434")
@@ -238,10 +238,6 @@ def main(argv: list[str] | None = None) -> int:
     args = _build_argparser().parse_args(argv)
     base_url = args.base_url or default_base_url()
     pins_path = Path(args.pins_path)
-
-    if not args.capture and not args.witness:
-        print("one of --capture or --witness is required", file=sys.stderr)
-        return 2
 
     if args.capture:
         models = default_models()
@@ -255,7 +251,14 @@ def main(argv: list[str] | None = None) -> int:
             print(f"sha256 {digest}")
         return 0
 
-    drift = witness(base_url, pins_path)
+    try:
+        drift = witness(base_url, pins_path)
+    except FileNotFoundError as e:
+        print(f"pins file not found: {pins_path}", file=sys.stderr)
+        return 2
+    except json.JSONDecodeError as e:
+        print(f"pins file is not valid JSON: {pins_path}", file=sys.stderr)
+        return 2
     if args.as_json:
         print(json.dumps({"pins_path": str(pins_path), "drift": drift,
                           "witnessed": not drift}, indent=1))
