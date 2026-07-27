@@ -83,14 +83,32 @@ jobs:
     # red suite hides its newest failure among its oldest.
     #
     # HONEST STATUS, updated after the first real runs. This job HAS now
-    # executed, and it failed on its first three pushes for a reason no local
-    # run could show: the dependency list below was a guess, and it was missing
-    # numpy, so tests/test_quant_dither.py died at COLLECTION and took the whole
-    # suite with it. A collection error is not a test failure; it reports zero
-    # passes and hides every result behind it. The same pushes were red on the
-    # 3.10 legs, which turned out to be a false floor rather than a code fault.
+    # executed, and every push that reached it was red, for three causes in
+    # sequence that no local run could show.
+    #
+    # 1. A missing test-only numpy. tests/test_quant_dither.py imports it and
+    #    died at COLLECTION, which reports zero passes and hides every result
+    #    behind it, so a broken dependency list looked like a broken suite.
+    # 2. A false Python floor on the 3.10 legs, fixed in pyproject.toml.
+    # 3. The runner itself: "lost communication with the server" after 47
+    #    minutes, against 11 minutes locally. That is resource starvation, not a
+    #    failing test. Per-test durations showed no single culprit worth cutting
+    #    (slowest 21s, top 25 under a third of the total); the cost is diffuse
+    #    across 2516 tests, many of which spawn subprocesses.
+    #
+    # Hence shards. Diffuse cost is what sharding is for, and a fresh runner per
+    # shard also stops resource accumulation compounding across the whole run.
+    # The risk it introduces is losing a file, which would recreate the very
+    # blind spot this job exists to close while every shard reported green, so
+    # scripts/ci_shard.py is covered by tests asserting that every file lands in
+    # exactly one shard and that this matrix agrees with --count.
+    #
     # Zero RUNTIME dependencies stays invariant; these are test-only.
-    name: whole suite, one os
+    name: whole suite
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1, 2, 3]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -98,14 +116,13 @@ jobs:
         with:
           python-version: "3.13"
       - name: Test-only dependencies
-        # numpy is here because the first real run of this job discovered it:
-        # tests/test_quant_dither.py imports it and collection died, taking the
-        # whole suite with it. Zero RUNTIME dependencies stays invariant; these
-        # are test-only, and the verifier closure is checked separately to be
-        # stdlib-only.
         run: python -m pip install pytest pytest-timeout pynacl pillow numpy
       - name: Every test, no file list to fall behind
-        run: python -m pytest tests/ -q --timeout=300
+        run: |
+          FILES=$(python scripts/ci_shard.py --index ${{ matrix.shard }} --count 4)
+          test -n "$FILES" || { echo "empty shard: refusing to report success"; exit 1; }
+          echo "$FILES" | tr ' ' '\n' | sed 's/^/  /'
+          python -m pytest $FILES -q --timeout=300
 
   gate:
     name: disproof gate, no dependencies

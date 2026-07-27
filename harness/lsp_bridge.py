@@ -8,6 +8,7 @@ so unsaved edits are visible, and answers definition, references, and hover.
 A missing server is a named error, never a silent fallback. Zero deps."""
 from __future__ import annotations
 
+import atexit
 import json
 import os
 import subprocess
@@ -144,6 +145,31 @@ class LSPBridge:
 
 _BRIDGES: dict = {}
 _BRIDGES_LOCK = threading.Lock()
+
+
+def close_all() -> int:
+    """Kill every cached server and forget it. Returns how many were closed.
+
+    The cache is keyed by (command, root) and deliberately outlives any single
+    call, which is what makes a second query fast. Nothing was ending those
+    processes, so every distinct key leaked a language server for the life of
+    the interpreter. A long-lived caller accumulated them silently; a test
+    session left them behind after it exited.
+    """
+    with _BRIDGES_LOCK:
+        bridges = list(_BRIDGES.values())
+        _BRIDGES.clear()
+    for bridge in bridges:
+        try:
+            bridge.close()
+        except Exception:
+            pass                      # shutting down; a stuck server is not news
+    return len(bridges)
+
+
+# A cache that outlives its callers has to clean up after itself, because the
+# callers by definition are not around to do it.
+atexit.register(close_all)
 
 
 def get_bridge(command: list, root: str) -> "LSPBridge":
