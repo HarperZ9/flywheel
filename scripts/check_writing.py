@@ -22,8 +22,9 @@ import writing_lists  # noqa: E402
 import writing_profiles as _wp  # noqa: E402
 import writing_pysource as _ps  # noqa: E402
 from writing_lists import (  # noqa: E402
-    BANNED, BE, HARD_DEFAULTS, KNOWN_CATEGORIES, MARKETING, MODAL_HEDGE,
-    PHRASAL, ING_MAIN as _ING_MAIN, NOMINAL as _NOMINAL, PASSIVE as _PASSIVE,
+    BANNED, BE, HARD_DEFAULTS, HEDGE_WORDS, KNOWN_CATEGORIES, MARKETING,
+    MODAL_HEDGE, PHRASAL, ING_MAIN as _ING_MAIN, NOMINAL as _NOMINAL,
+    PASSIVE as _PASSIVE,
 )
 from writing_readability import reading_ease, syllables  # noqa: E402  # re-exported for CW.syllables callers
 
@@ -136,6 +137,10 @@ def check_text(text: str, profile: dict) -> dict:
         v["phrasal_verb"] = ph
     if mh:
         v["modal_hedge"] = mh
+    if profile.get("hedging") == "banned":
+        hw = _count_phrases(low, HEDGE_WORDS, keep)
+        if hw:
+            v["hedge_word"] = hw
 
     em = prose.count(_EM_DASH)
     if em and profile.get("no_em_dash", True):

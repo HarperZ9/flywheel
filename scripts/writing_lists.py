@@ -35,6 +35,14 @@ MODAL_HEDGE = (
     "it is important to note", "it should be noted", "it is worth noting",
     "please note that", "as mentioned", "as noted above",
 )
+# Uncertainty words a hedging="banned" profile refuses. This is DISTINCT from
+# MODAL_HEDGE (filler phrases, banned in flavored prose too): these words are
+# legitimate calibrated uncertainty in research or chat registers and are
+# refused only where hedging itself is banned, such as procedures.
+HEDGE_WORDS = (
+    "might", "perhaps", "possibly", "probably", "maybe", "likely", "unlikely",
+    "could", "should perhaps", "arguably", "seemingly", "somewhat",
+)
 
 BE = r"(?:am|is|are|was|were|be|been|being)"
 PP_IRREG = (r"(?:done|made|sent|read|built|kept|held|set|put|run|written|"
@@ -55,9 +63,9 @@ NOMINAL = re.compile(
 # hard tuple may draw from: both rules are enforced with ProfileError, because
 # a gate misconfigured in data must refuse, not silently gate wrong.
 HARD_DEFAULTS = {
-    "strict": ("banned_word", "contraction", "em_dash", "long_sentence",
-               "marketing_adjective", "modal_hedge", "phrasal_verb",
-               "semicolon"),
+    "strict": ("banned_word", "contraction", "em_dash", "hedge_word",
+               "long_sentence", "marketing_adjective", "modal_hedge",
+               "phrasal_verb", "semicolon"),
     "flavored": ("banned_word", "em_dash", "marketing_adjective",
                  "modal_hedge", "phrasal_verb"),
     "off": (),
@@ -67,4 +75,4 @@ REPORT_ONLY_CATEGORIES = ("passive_voice", "ing_main_verb", "nominalization",
 KNOWN_CATEGORIES = frozenset(
     ("em_dash", "marketing_adjective", "banned_word", "phrasal_verb",
      "modal_hedge", "contraction", "semicolon", "long_sentence",
-     "unreferenced_entry") + REPORT_ONLY_CATEGORIES)
+     "hedge_word", "unreferenced_entry") + REPORT_ONLY_CATEGORIES)
