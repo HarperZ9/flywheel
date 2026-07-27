@@ -66,7 +66,12 @@ MODAL_HEDGE = (
     "it is important to note", "it should be noted", "it is worth noting",
     "please note that", "as mentioned", "as noted above",
 )
-_CONTRACTION = re.compile(r"\b\w+['’](?:t|re|ve|ll|d|s|m)\b", re.IGNORECASE)
+# Possessive 's is not a contraction. The 's form is a contraction only after a
+# closed set of pronouns; the other suffixes stay general.
+_CONTRACTION = re.compile(
+    r"\b\w+['\u2019](?:t|re|ve|ll|d|m)\b"
+    r"|\b(?:it|that|there|here|he|she|what|who|let)['\u2019]s\b",
+    re.IGNORECASE)
 _EM_DASH = "\u2014"
 
 # Which categories fail --gate, by slop level. Everything else is report-only,
@@ -85,30 +90,29 @@ DOES_NOT_PROVE = (
     "document, and this tool never tries to defeat AI detection.")
 
 
-def _count_phrases(low: str, phrases, keep) -> tuple[int, list]:
-    total, hits = 0, []
+def _count_phrases(low: str, phrases, keep) -> int:
+    total = 0
     for phrase in phrases:
         if phrase in keep:
             continue
-        for _ in re.finditer(r"(?<![a-z])" + re.escape(phrase) + r"(?![a-z])", low):
-            total += 1
-            hits.append(phrase)
-    return total, hits
+        total += len(re.findall(
+            r"(?<![a-z0-9_])" + re.escape(phrase) + r"(?![a-z0-9_])", low))
+    return total
 
 
 def check_text(text: str, profile: dict) -> dict:
     slop = profile.get("slop", "flavored")
     keep = {k.lower() for k in profile.get("keep", ())}
     prose = strip_code(text)
-    low = prose.lower()
+    low = re.sub(r"\s+", " ", prose.lower())
     words = count_words(prose)
     sents = sentences(prose)
 
     v: dict[str, int] = {}
-    mk, _ = _count_phrases(low, MARKETING, keep)
-    bn, _ = _count_phrases(low, BANNED, keep)
-    ph, _ = _count_phrases(low, PHRASAL, keep)
-    mh, _ = _count_phrases(low, MODAL_HEDGE, keep)
+    mk = _count_phrases(low, MARKETING, keep)
+    bn = _count_phrases(low, BANNED, keep)
+    ph = _count_phrases(low, PHRASAL, keep)
+    mh = _count_phrases(low, MODAL_HEDGE, keep)
     if mk:
         v["marketing_adjective"] = mk
     if bn:
