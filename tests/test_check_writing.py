@@ -205,13 +205,19 @@ def test_delta_with_gate_fails_when_the_new_draft_has_a_hard_violation(tmp_path)
 
 
 def test_delta_honors_the_new_drafts_front_matter_tag(tmp_path):
-    old = tmp_path / "old.md"
-    new = tmp_path / "new.md"
+    # The path says readme (marketing is hard there); the tag says narrative
+    # (nothing is ever hard). The gate passing proves the tag won; the control
+    # without a tag proves the same fixture would otherwise fail.
+    old = tmp_path / "notes.md"
     old.write_text("Plain words.\n", encoding="utf-8")
-    new.write_text("writing-profile: readme\n\nA seamless tool.\n",
-                   encoding="utf-8")
-    gated = _run("--delta", str(old), str(new), "--gate")
-    assert gated.returncode == 1, gated.stdout + gated.stderr
+    tagged = tmp_path / "README.md"
+    tagged.write_text("writing-profile: narrative\n\nA seamless tool.\n",
+                      encoding="utf-8")
+    assert _run("--delta", str(old), str(tagged), "--gate").returncode == 0
+    untagged = tmp_path / "control" / "README.md"
+    untagged.parent.mkdir()
+    untagged.write_text("A seamless tool.\n", encoding="utf-8")
+    assert _run("--delta", str(old), str(untagged), "--gate").returncode == 1
 
 
 def test_gate_with_no_files_refuses_rather_than_passing():
