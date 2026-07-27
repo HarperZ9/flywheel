@@ -205,7 +205,8 @@ refuses to overclaim is a tool whose other claims you can trust.
 
 ## Requirements
 
-- Python 3.10+ (standard library only, no packages to install for the core).
+- Python 3.11+ to install the tool. The verifier is standard library only, so
+  checking a receipt needs no packages at all.
 - To run the local model: a machine that can host a ~9 GB 4-bit model, via
   Ollama or the bundled server. A GPU helps but is not required.
 - To reach hosted providers: their API key in your environment.

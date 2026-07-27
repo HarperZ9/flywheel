@@ -12,7 +12,11 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
-        python: ["3.10", "3.13"]
+        # 3.11 is the floor declared in pyproject.toml. It used to say 3.10 here
+        # and there, and both were false: `datetime.UTC` is 3.11+. Testing a
+        # version the package cannot import on produced a permanently red leg
+        # that said nothing about the code.
+        python: ["3.11", "3.13"]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -69,6 +73,7 @@ jobs:
           tests/test_rung_pins.py
           tests/test_rung_digests.py
           tests/test_prereg_event.py
+          tests/test_python_floor.py
           -q
 
   full:
@@ -77,11 +82,14 @@ jobs:
     # curated slice cannot catch a regression in a file it does not name, and a
     # red suite hides its newest failure among its oldest.
     #
-    # HONEST STATUS: no job in this file has ever executed. The branch carrying
-    # them has never been pushed, so this workflow is a file rather than a gate.
-    # The dependency list below is a first guess at what the whole suite needs
-    # beyond the stdlib, and the first real push is the discovery event. Zero
-    # RUNTIME dependencies stays invariant; these are test-only.
+    # HONEST STATUS, updated after the first real runs. This job HAS now
+    # executed, and it failed on its first three pushes for a reason no local
+    # run could show: the dependency list below was a guess, and it was missing
+    # numpy, so tests/test_quant_dither.py died at COLLECTION and took the whole
+    # suite with it. A collection error is not a test failure; it reports zero
+    # passes and hides every result behind it. The same pushes were red on the
+    # 3.10 legs, which turned out to be a false floor rather than a code fault.
+    # Zero RUNTIME dependencies stays invariant; these are test-only.
     name: whole suite, one os
     runs-on: ubuntu-latest
     steps:
@@ -90,7 +98,12 @@ jobs:
         with:
           python-version: "3.13"
       - name: Test-only dependencies
-        run: python -m pip install pytest pytest-timeout pynacl pillow
+        # numpy is here because the first real run of this job discovered it:
+        # tests/test_quant_dither.py imports it and collection died, taking the
+        # whole suite with it. Zero RUNTIME dependencies stays invariant; these
+        # are test-only, and the verifier closure is checked separately to be
+        # stdlib-only.
+        run: python -m pip install pytest pytest-timeout pynacl pillow numpy
       - name: Every test, no file list to fall behind
         run: python -m pytest tests/ -q --timeout=300
 
@@ -157,6 +170,36 @@ jobs:
         with:
           python-version: "3.13"
       - run: python scripts/check_file_gate.py
+
+  verifier_on_the_old_interpreter:
+    name: the verifier runs one version below the package floor
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+      - name: Install test tooling only
+        run: python -m pip install pytest pytest-timeout
+      - name: The accept path is what strangers run, so it stays portable
+        # HONEST STATUS: this leg is new and its first run is the discovery
+        # event. The package floor is 3.11 because 51 modules use datetime.UTC,
+        # but NONE of them are in the verifier closure, so checking a receipt
+        # should not require the newer interpreter. That is a claim, and this
+        # job is what turns it into a check. If it goes red, the README's
+        # standard-library-only sentence is what has to change, not this job.
+        run: >
+          python -m pytest
+          tests/test_verdict.py
+          tests/test_ed25519_verify.py
+          tests/test_merkle.py
+          tests/test_merkle_known_answers.py
+          tests/test_ledger.py
+          tests/test_consistency.py
+          tests/test_receipt_v2.py
+          tests/test_tree_head.py
+          tests/test_bundle.py
+          -q
 
   prereg_freeze:
     name: the frozen prereg still hashes to its freeze
