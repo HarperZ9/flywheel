@@ -1,8 +1,8 @@
 {
  "schema": "flywheel.candidate-pool/v1",
  "fingerprint": {
-  "model_ref": "qwen2.5:0.5b",
-  "model_digest": "sha256:a8b0c51577010a279d933d14c2a8ab4b268079d44c5c8830c0a93900f1827c67",
+  "model_ref": "qwen2.5:7b",
+  "model_digest": "sha256:845dbda0ea48ed749caafd9e6037047aa19acfcfd82e704d7ca97d631a0b697e",
   "engine": "ollama",
   "engine_version": "0.32.3",
   "quantization": "Q4_K_M",
@@ -22,7 +22,7 @@
   "max_new_tokens": 2048,
   "prompt_template_sha256": "sha256:8fb870658da9ff4f75b0f4e17dffc13f29afa7c381dc9fc20830ef3d9c3f1cc0"
  },
- "fingerprint_sha256": "sha256:0f0cd9aa578081f79b6760ff85d9a758ddba8e77f9992a9f12a704907bfdd83b",
+ "fingerprint_sha256": "sha256:510d9ecbdf0c20ef41a766e2c729a1a6e08abe4a7715b19d6a4029885d172b12",
  "n_tasks": 2,
  "entries": [
   {
@@ -33,28 +33,28 @@
      "slot": 0,
      "seed": 0,
      "temperature": 0.0,
-     "candidate_sha256": "sha256:771e18aeaa71be109d8fb0ecb8fed3e6e775df71019483f8fb66c4d4d669623c",
+     "candidate_sha256": "sha256:09d822d7a11d45cbfffd6c46c1365ce650b03d13bc8d98100c062290ea54bae5",
      "error": null
     },
     {
      "slot": 1,
      "seed": 42,
      "temperature": 0.2,
-     "candidate_sha256": "sha256:4ac77ba7fe84419897118d4331fbe4a723cfb38106a49b17d81762410fde54df",
+     "candidate_sha256": "sha256:09d822d7a11d45cbfffd6c46c1365ce650b03d13bc8d98100c062290ea54bae5",
      "error": null
     },
     {
      "slot": 2,
      "seed": 137,
      "temperature": 0.35,
-     "candidate_sha256": "sha256:f3dbdea6e31e702b6540fc1c39e021e2695ef48cdf70442915a6ccdce728fe84",
+     "candidate_sha256": "sha256:09d822d7a11d45cbfffd6c46c1365ce650b03d13bc8d98100c062290ea54bae5",
      "error": null
     },
     {
      "slot": 3,
      "seed": 7,
      "temperature": 0.5,
-     "candidate_sha256": "sha256:e74b5de42782d804bd40985bec2e25230fb313300fc8115b8cb37c20a0045237",
+     "candidate_sha256": "sha256:cbc079ca1bc477fbe7664992536b4502372a4de308dec296e1f680e6d07ed6b9",
      "error": null
     }
    ]
@@ -67,28 +67,28 @@
      "slot": 0,
      "seed": 0,
      "temperature": 0.0,
-     "candidate_sha256": "sha256:438177085e7de0d9efd0374afbfe465d119d0077ea85d4742b0ef16e3043e961",
+     "candidate_sha256": "sha256:f63bbda7d93b9b439daae0a886d9a77e4e84e0579e46c26e689be047ae5328df",
      "error": null
     },
     {
      "slot": 1,
      "seed": 42,
      "temperature": 0.2,
-     "candidate_sha256": "sha256:b1268bb85e2e8a8e0e7143f13402ec9d09b4950675a9b971b005a66e737b8e68",
+     "candidate_sha256": "sha256:f63bbda7d93b9b439daae0a886d9a77e4e84e0579e46c26e689be047ae5328df",
      "error": null
     },
     {
      "slot": 2,
      "seed": 137,
      "temperature": 0.35,
-     "candidate_sha256": "sha256:438177085e7de0d9efd0374afbfe465d119d0077ea85d4742b0ef16e3043e961",
+     "candidate_sha256": "sha256:f63bbda7d93b9b439daae0a886d9a77e4e84e0579e46c26e689be047ae5328df",
      "error": null
     },
     {
      "slot": 3,
      "seed": 7,
      "temperature": 0.5,
-     "candidate_sha256": "sha256:f0d22f14db88384ecc7c4f80fba6a53346d5d02aca66c3ea5b88b8f5d8db1330",
+     "candidate_sha256": "sha256:107a7645a2ce523b1e7f6c28e8311a725b0c35a390823f44ad68b2c940cd043d",
      "error": null
     }
    ]

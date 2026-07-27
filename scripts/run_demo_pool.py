@@ -4,7 +4,10 @@ Builds the frozen instance set for one family (project-docs/prereg/
 2026-07-26-size-invariant-verification.md, sections 2-4), renders each
 instance through demo_prompt.py's template, and calls harness/pool.py's
 `fill` against a live Ollama rung. harness/pool.py is never modified: this is
-the caller, not the cache.
+the caller, not the cache. Every proposer response passes through the
+DECLARED fenced-JSON extraction step in fenced_extract.py before `fill` ever
+sees it (see that module for the full rationale); the policy name is
+`fenced_extract.EXTRACTION` and it is recorded in every run manifest below.
 
 FROZEN, read from the prereg and honored exactly:
   - 60 instances per family: difficulties 1..5, twelve per band.
@@ -57,6 +60,8 @@ from harness.certificates.generators import zarankiewicz_instance  # noqa: E402
 from harness.certificates.crossing_generator import crossing_instance  # noqa: E402
 from demo_prompt import render_prompt, template_sha256  # noqa: E402
 from demo_proposer import OllamaProposer, default_base_url  # noqa: E402
+from fenced_extract import (  # noqa: E402
+    EXTRACTION, ExtractingProposer, write_extraction_log)
 
 SCHEMA = "flywheel.demo-pool-run/v1"
 
@@ -175,7 +180,14 @@ def build_run_manifest(*, family: str, rung: str, confirmatory: bool,
            "confirmatory": confirmatory, "pilot": pilot,
            "limit": limit if limit is not None else None,
            "pilot_reason": reason if pilot else None,
-           "n_instances": n_instances, "does_not_prove": list(DOES_NOT_PROVE)}
+           "n_instances": n_instances,
+           # DECLARED, not silent: every candidate pool.fill caches has
+           # already passed through this named extraction policy (see
+           # scripts/fenced_extract.py for what it does and why stripping a
+           # markdown fence around a certificate body is envelope decoding,
+           # not content editing).
+           "extraction": EXTRACTION,
+           "does_not_prove": list(DOES_NOT_PROVE)}
 
 
 def run_fill(*, family: str, rung: str, out_base, limit=None,
@@ -209,9 +221,16 @@ def run_fill(*, family: str, rung: str, out_base, limit=None,
     base_url = base_url or default_base_url()
     fingerprint = build_fingerprint(base_url, rung, template_sha, fetch=fetch)
     proposer = proposer or OllamaProposer(rung, host=base_url)
+    # harness/pool.py's fill() is never modified and has no extraction hook
+    # of its own, so the extractor sits here, wrapping whatever proposer
+    # generates, at the exact point the raw .text becomes a candidate. See
+    # scripts/fenced_extract.py's module docstring for the full rationale
+    # and for exactly which form (extracted, not raw) fill() ends up storing.
+    extracting_proposer = ExtractingProposer(proposer)
 
     out_dir = out_dir_for(out_base, family, rung)
-    doc = fill(tasks, proposer, fingerprint, out_dir)
+    doc = fill(tasks, extracting_proposer, fingerprint, out_dir)
+    write_extraction_log(out_dir, doc, extracting_proposer.log)
 
     manifest = build_run_manifest(
         family=family, rung=rung, confirmatory=confirmatory, pilot=pilot,

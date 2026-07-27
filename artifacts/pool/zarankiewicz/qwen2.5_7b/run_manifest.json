@@ -11,6 +11,6 @@
  "n_instances": 2,
  "pilot": true,
  "pilot_reason": "mechanical pilot run, not the confirmatory run; --limit 2",
- "rung": "qwen2.5:0.5b",
+ "rung": "qwen2.5:7b",
  "schema": "flywheel.demo-pool-run/v1"
 }
