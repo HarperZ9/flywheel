@@ -170,7 +170,11 @@ def check_text(text: str, profile: dict) -> dict:
         v["long_paragraph"] = long_paras
 
     if "unreferenced_entry" in hard_cats:
-        bare = sum(1 for m in _ENTRY.finditer(prose)
+        # Scans the RAW text, not prose: prose has already run through
+        # strip_code, which strips backtick spans, and a changelog entry
+        # commonly wraps its commit hash in backticks. Scanning stripped
+        # prose here would misclassify a referenced entry as bare.
+        bare = sum(1 for m in _ENTRY.finditer(text)
                    if not _ENTRY_REF.search(m.group(1)))
         if bare:
             v["unreferenced_entry"] = bare

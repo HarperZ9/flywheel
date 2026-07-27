@@ -177,6 +177,12 @@ def test_readability_regex_copies_stay_in_sync_with_check_writing():
     assert WR._SENT.pattern == CW._SENT.pattern
 
 
+def test_readability_sentence_splitting_matches_check_writing():
+    import writing_readability as WR
+    sample = "One sentence wraps\nacross a line. Two is here! Three?"
+    assert WR._sentences(sample) == CW.sentences(sample)
+
+
 def test_in_band_is_a_real_verdict_not_a_constant():
     prof = WP.load("readme")
     prof["readability_band"] = (0, 5)

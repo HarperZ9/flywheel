@@ -6,6 +6,11 @@ its string DATA as prose, so the ban lists tripped their own linter. The prose
 of a Python file is its docstrings and comments; string literals are payload.
 Both scoring paths use this extraction: per-file scoring and --delta.
 
+In the --delta path the front-matter profile tag is resolved from the
+EXTRACTED prose, where docstrings precede comments; a tag written as a code
+comment may fall outside the first 10 lines there. Tag .py files in the
+module docstring's opening lines when delta scoring matters.
+
 Standard library only.
 """
 from __future__ import annotations

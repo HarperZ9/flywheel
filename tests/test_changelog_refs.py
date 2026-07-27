@@ -63,3 +63,9 @@ def test_changelog_hard_tuple_is_flavored_plus_the_reference_rule():
     import writing_lists as WL
     assert set(rec["hard"]) == set(WL.HARD_DEFAULTS["flavored"]) | {
         "unreferenced_entry"}
+
+
+def test_backtick_wrapped_references_still_count():
+    ok = CW.check_text("## 1.0\n\n- Fixed the loop (`a1b2c3d`)\n",
+                       WP.load("changelog"))
+    assert "unreferenced_entry" not in ok["violations"]
