@@ -79,17 +79,19 @@ PROFILES: dict[str, dict] = {
 
 # First match wins. Patterns match the basename or a path fragment.
 PATH_RULES: list[tuple[str, str]] = [
-    (r"(?i)COMMIT_EDITMSG$", "commit"),
-    (r"(?i)CHANGELOG(\.md)?$", "changelog"),
-    (r"(?i)RELEASE[_-]?NOTES(\.md)?$", "release-notes"),
-    (r"(?i)MODEL_CARD(\.md)?$", "model-card"),
+    # Filename rules carry a (^|/) boundary so "notCHANGELOG.md" is not a
+    # changelog. The extension rules are case-insensitive like the rest.
+    (r"(?i)(^|/)COMMIT_EDITMSG$", "commit"),
+    (r"(?i)(^|/)CHANGELOG(\.md)?$", "changelog"),
+    (r"(?i)(^|/)RELEASE[_-]?NOTES(\.md)?$", "release-notes"),
+    (r"(?i)(^|/)MODEL_CARD(\.md)?$", "model-card"),
     (r"(?i)(^|/)README(\.md)?$", "readme"),
-    (r"\.tex$", "proof"),
-    (r"\.lean$", "proof"),
-    (r"(?i)/(specs?|rfc)/", "normative-spec"),
-    (r"(?i)/(essays?|novels?|narrative)/", "narrative"),
-    (r"(?i)/(papers?|research|whitepapers?)/", "research"),
-    (r"(?i)/(legal|agreements?|contracts?)/", "legal"),
+    (r"(?i)\.tex$", "proof"),
+    (r"(?i)\.lean$", "proof"),
+    (r"(?i)(^|/)(specs?|rfc)/", "normative-spec"),
+    (r"(?i)(^|/)(essays?|novels?|narrative)/", "narrative"),
+    (r"(?i)(^|/)(papers?|research|whitepapers?)/", "research"),
+    (r"(?i)(^|/)(legal|agreements?|contracts?)/", "legal"),
 ]
 
 
@@ -98,6 +100,8 @@ def load(name: str) -> dict:
     if rec is None:
         raise ProfileError(
             f"unknown profile {name!r}; known: {', '.join(sorted(PROFILES))}")
+    # Shallow copy is safe only while every schema value stays immutable
+    # (scalars and tuples). A list or dict field would alias through this.
     return dict(rec)
 
 

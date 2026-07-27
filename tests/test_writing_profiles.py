@@ -34,7 +34,21 @@ def test_load_unknown_profile_is_a_named_error():
 
 def test_path_rules_map_known_extensions():
     assert WP.profile_for("paper.tex") == "proof"
+    assert WP.profile_for("Paper.TEX") == "proof"
+    assert WP.profile_for("x/y.lean") == "proof"
     assert WP.profile_for("CHANGELOG.md") == "changelog"
+    assert WP.profile_for("docs/CHANGELOG") == "changelog"
+    assert WP.profile_for("RELEASE_NOTES.md") == "release-notes"
+    assert WP.profile_for("release/MODEL_CARD.md") == "model-card"
+    assert WP.profile_for("src/README.md") == "readme"
+    assert WP.profile_for(".git/COMMIT_EDITMSG") == "commit"
+    assert WP.profile_for("project/specs/wire.md") == "normative-spec"
+    assert WP.profile_for("essays/two-gates.md") == "narrative"
+    assert WP.profile_for("papers/uplift.md") == "research"
+    assert WP.profile_for("legal/terms.md") == "legal"
+    # Boundary: a name that merely CONTAINS a keyword is not that kind of file.
+    assert WP.profile_for("notCHANGELOG.md") == WP.DEFAULT
+    assert WP.profile_for("unreleased_notes.md") == WP.DEFAULT
     assert WP.profile_for("anything-unmapped.md") == WP.DEFAULT
 
 
