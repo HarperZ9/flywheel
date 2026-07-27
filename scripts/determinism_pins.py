@@ -296,6 +296,5 @@ def main(argv: list[str] | None = None) -> int:
         print("witnessed clean: runtime and every rung match the pins")
     return 1 if drift else 0
 
-
 if __name__ == "__main__":
     sys.exit(main())
