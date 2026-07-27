@@ -19,6 +19,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import writing_profiles as _wp  # noqa: E402
+from writing_lists import BANNED, MARKETING, MODAL_HEDGE, PHRASAL  # noqa: E402
 
 WORD_RE = re.compile(r"[A-Za-z][A-Za-z'-]*")
 _FENCE = re.compile(r"```.*?```", re.DOTALL)
@@ -49,30 +50,6 @@ def count_words(text: str) -> int:
     return len(WORD_RE.findall(text))
 
 
-MARKETING = (
-    "seamless", "seamlessly", "robust", "powerful", "cutting-edge", "effortless",
-    "effortlessly", "world-class", "next-generation", "revolutionary", "blazing",
-    "lightning-fast", "elegant", "delightful", "turnkey", "best-in-class",
-    "state-of-the-art", "game-changing", "first-class", "battle-tested",
-    "enterprise-grade", "supercharge", "unlock", "unleash", "empower", "empowers",
-)
-BANNED = (
-    "commence", "commences", "initiate", "initiates", "utilize", "utilizes",
-    "utilizing", "leverage", "leverages", "leveraging", "facilitate",
-    "facilitates", "prior to", "subsequent to", "obtain", "obtains", "acquire",
-    "acquires", "additionally", "furthermore", "moreover", "comprehensive",
-    "aforementioned", "henceforth", "therein", "whilst", "amongst", "numerous",
-    "myriad", "plethora", "in order to", "a variety of", "in the event that",
-    "due to the fact that",
-)
-PHRASAL = (
-    "spin up", "spin down", "reach out", "dive into", "dives into", "diving into",
-    "kick off", "kicks off", "roll out", "rolls out", "circle back", "drill down",
-)
-MODAL_HEDGE = (
-    "it is important to note", "it should be noted", "it is worth noting",
-    "please note that", "as mentioned", "as noted above",
-)
 # Possessive 's is not a contraction. The 's form is a contraction only after a
 # closed set of pronouns; the other suffixes stay general.
 _CONTRACTION = re.compile(
