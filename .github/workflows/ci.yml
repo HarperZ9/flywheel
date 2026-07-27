@@ -201,13 +201,13 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.13"
-      - name: The linter is stdlib, so it runs on a bare interpreter
-        # Phase 1 is REPORT ONLY. This proves the linter runs end to end on a
-        # real file and prints a score; it does not gate on the score, because
-        # the per-100-word number is noisy on short files and needs calibration
-        # on our own corpus first (spec phase 3). It does dogfood: the readme is
-        # scored against its own inferred profile.
-        run: python scripts/check_writing.py README.md scripts/check_writing.py scripts/writing_profiles.py scripts/writing_lists.py scripts/writing_pysource.py scripts/writing_readability.py
+      - name: Hard rules gate our own prose; the score stays report-only
+        # Phase 3. The hard-rule gate (em-dash, marketing words, banned slop,
+        # and for changelogs the entry-reference rule) blocks on the files
+        # calibrated clean in project-docs/records/2026-07-27-writing-calibration.md.
+        # The per-100-word score remains REPORT-ONLY: it is noisy on short
+        # texts and the calibration record is one data point, not a threshold.
+        run: python scripts/check_writing.py --gate README.md scripts/check_writing.py scripts/writing_profiles.py scripts/writing_lists.py scripts/writing_pysource.py scripts/writing_readability.py
 
   verifier_on_the_old_interpreter:
     name: the verifier runs one version below the package floor
