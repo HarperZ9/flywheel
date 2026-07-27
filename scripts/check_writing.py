@@ -242,6 +242,10 @@ def main(argv: list[str] | None = None) -> int:
             old_p, new_p = args.delta
             old_text = Path(old_p).read_text(encoding="utf-8", errors="replace")
             new_text = Path(new_p).read_text(encoding="utf-8", errors="replace")
+            if str(old_p).endswith(".py"):
+                old_text = _ps.prose_of(old_text)
+            if str(new_p).endswith(".py"):
+                new_text = _ps.prose_of(new_text)
             prof = _wp.load(resolve(new_p, new_text))
             d = delta(old_text, new_text, prof)
             print(json.dumps(d) if args.as_json

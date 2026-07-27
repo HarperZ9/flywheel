@@ -70,3 +70,6 @@ scripts/.private-denylist.txt
 # direnv environment files (can hold exported secrets)
 .envrc
 .envrc.local
+
+# process-scratch dir (currently ignored only by a machine-local global rule)
+.superpowers/

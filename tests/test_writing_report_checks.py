@@ -67,10 +67,8 @@ def test_the_new_checks_are_never_hard_in_any_slop_level():
 
 
 def test_hard_by_slop_never_contains_the_report_only_categories():
-    report_only = {"passive_voice", "ing_main_verb", "nominalization",
-                   "long_paragraph"}
     for level, cats in CW.HARD_BY_SLOP.items():
-        assert not (cats & report_only), level
+        assert not (cats & CW.REPORT_ONLY), level
 
 
 def test_regular_ed_participle_passive_is_counted():

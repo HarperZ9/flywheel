@@ -262,3 +262,23 @@ def test_text_output_labels_a_tagged_file_with_its_tag_not_its_path(tmp_path):
     # scored the file, not the path-inferred name it was overridden away from.
     r = _run(str(f))
     assert "profile=readme" in r.stdout, r.stdout
+
+
+def test_profile_flag_outranks_the_front_matter_tag(tmp_path):
+    f = tmp_path / "piece.md"
+    f.write_text("writing-profile: narrative\n\nA seamless tool.\n",
+                 encoding="utf-8")
+    # The tag says narrative (never hard); the flag says readme (marketing is
+    # hard). The gate failing proves the flag won.
+    assert _run("--profile", "readme", "--gate", str(f)).returncode == 1
+
+
+def test_delta_on_python_files_scores_prose_not_string_data(tmp_path):
+    old = tmp_path / "old.py"
+    new = tmp_path / "new.py"
+    old.write_text('"""Plain module."""\n', encoding="utf-8")
+    new.write_text('"""Plain module, still clean."""\n'
+                   'DATA = ("seamless", "utilize", "leverage")\n',
+                   encoding="utf-8")
+    r = _run("--profile", "readme", "--delta", str(old), str(new), "--gate")
+    assert r.returncode == 0, r.stdout + r.stderr

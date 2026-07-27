@@ -4,6 +4,7 @@
 Phase 1 recorded the gap this closes: pointing the linter at a .py file scored
 its string DATA as prose, so the ban lists tripped their own linter. The prose
 of a Python file is its docstrings and comments; string literals are payload.
+Both scoring paths use this extraction: per-file scoring and --delta.
 
 Standard library only.
 """

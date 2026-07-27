@@ -16,13 +16,12 @@ from __future__ import annotations
 
 import re
 
-# PHASE 1 HONESTY NOTE. The engine reads four fields: slop, keep, no_em_dash,
-# and max_sentence_words. The other seven (rigor, hedging, voice, eprime,
-# translation_ready, readability_band, output_format) are carried as data for
-# later phases and toggle NOTHING yet. Also deferred: the four unimplemented
-# checks named in check_writing.py, and changelog entry-reference enforcement.
-# Carried here so the deferral is a shipped fact rather than a conversation
-# memory.
+# PHASE 2 HONESTY NOTE. The engine reads six fields: slop, keep, no_em_dash,
+# max_sentence_words, eprime, and readability_band. The other five (rigor,
+# hedging, voice, translation_ready, output_format) are carried as data for
+# later phases and toggle NOTHING yet. Also deferred: changelog
+# entry-reference enforcement. Carried here so the deferral is a shipped fact
+# rather than a conversation memory.
 SCHEMA_FIELDS = (
     "slop", "rigor", "max_sentence_words", "no_em_dash", "hedging", "voice",
     "eprime", "translation_ready", "readability_band", "output_format", "keep",
