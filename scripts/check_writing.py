@@ -33,6 +33,8 @@ _INLINE = re.compile(r"`[^`]*`")
 _MATHBLOCK = re.compile(r"\$\$.*?\$\$", re.DOTALL)
 _MATH = re.compile(r"\$[^$\n]*\$")
 _SENT = re.compile(r"(?<=[.!?])(?=\s|$)")
+_ENTRY = re.compile(r"^\s*[-*+]\s+(.*)$", re.MULTILINE)
+_ENTRY_REF = re.compile(r"#\d+|\b[0-9a-f]{7,40}\b|https?://", re.IGNORECASE)
 
 
 def strip_code(text: str) -> str:
@@ -166,6 +168,12 @@ def check_text(text: str, profile: dict) -> dict:
     long_paras = sum(1 for p in paragraphs(prose) if len(sentences(p)) > 6)
     if long_paras:
         v["long_paragraph"] = long_paras
+
+    if "unreferenced_entry" in hard_cats:
+        bare = sum(1 for m in _ENTRY.finditer(prose)
+                   if not _ENTRY_REF.search(m.group(1)))
+        if bare:
+            v["unreferenced_entry"] = bare
 
     if profile.get("eprime"):
         be = len(_BE_WORD.findall(prose))

@@ -83,7 +83,9 @@ PROFILES: dict[str, dict] = {
                          voice="active-only", output="plaintext"),
     "commit": _p("strict", "informal", max_words=50, hedging="banned",
                  voice="active-only", output="plaintext"),
-    "changelog": _p("flavored", "informal", hedging="banned", output="markdown"),
+    "changelog": _p("flavored", "informal", hedging="banned", output="markdown",
+                    hard=writing_lists.HARD_DEFAULTS["flavored"]
+                    + ("unreferenced_entry",)),
     "release-notes": _p("flavored", "informal", output="markdown"),
     "api-docs": _p("flavored", "informal", voice="active-only",
                    translation_ready=True, output="markdown"),
