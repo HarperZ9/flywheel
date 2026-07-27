@@ -1,0 +1,175 @@
+{
+ "schema": "flywheel.fault-injection-audit/v1",
+ "seed": 20260727,
+ "n_good_per_family": 30,
+ "families": {
+  "zarankiewicz": {
+   "fault_classes": [
+    "off_by_one_edge_count",
+    "duplicated_edge",
+    "added_k22",
+    "malformed_body"
+   ],
+   "n_good": 30,
+   "n_bad": 120,
+   "checkers": {
+    "primary": {
+     "n_good": 30,
+     "n_bad": 120,
+     "tp": 120,
+     "fn": 0,
+     "fp": 0,
+     "tn": 30,
+     "tpr": 1.0,
+     "fpr": 0.0,
+     "youden_j": 1.0,
+     "oracle_type": "zarankiewicz_certificate",
+     "by_fault_class": {
+      "off_by_one_edge_count": {
+       "n": 30,
+       "caught": 30,
+       "slipped_through": 0
+      },
+      "duplicated_edge": {
+       "n": 30,
+       "caught": 30,
+       "slipped_through": 0
+      },
+      "added_k22": {
+       "n": 30,
+       "caught": 30,
+       "slipped_through": 0
+      },
+      "malformed_body": {
+       "n": 30,
+       "caught": 30,
+       "slipped_through": 0
+      }
+     }
+    },
+    "held_out": {
+     "n_good": 30,
+     "n_bad": 120,
+     "tp": 120,
+     "fn": 0,
+     "fp": 0,
+     "tn": 30,
+     "tpr": 1.0,
+     "fpr": 0.0,
+     "youden_j": 1.0,
+     "oracle_type": "zarankiewicz_certificate_independent",
+     "by_fault_class": {
+      "off_by_one_edge_count": {
+       "n": 30,
+       "caught": 30,
+       "slipped_through": 0
+      },
+      "duplicated_edge": {
+       "n": 30,
+       "caught": 30,
+       "slipped_through": 0
+      },
+      "added_k22": {
+       "n": 30,
+       "caught": 30,
+       "slipped_through": 0
+      },
+      "malformed_body": {
+       "n": 30,
+       "caught": 30,
+       "slipped_through": 0
+      }
+     }
+    }
+   }
+  },
+  "rectilinear_crossing": {
+   "fault_classes": [
+    "undercounted_crossing_total",
+    "duplicated_point",
+    "collinear_points",
+    "malformed_body"
+   ],
+   "n_good": 30,
+   "n_bad": 120,
+   "checkers": {
+    "primary": {
+     "n_good": 30,
+     "n_bad": 120,
+     "tp": 120,
+     "fn": 0,
+     "fp": 0,
+     "tn": 30,
+     "tpr": 1.0,
+     "fpr": 0.0,
+     "youden_j": 1.0,
+     "oracle_type": "crossing_certificate",
+     "by_fault_class": {
+      "undercounted_crossing_total": {
+       "n": 30,
+       "caught": 30,
+       "slipped_through": 0
+      },
+      "duplicated_point": {
+       "n": 30,
+       "caught": 30,
+       "slipped_through": 0
+      },
+      "collinear_points": {
+       "n": 30,
+       "caught": 30,
+       "slipped_through": 0
+      },
+      "malformed_body": {
+       "n": 30,
+       "caught": 30,
+       "slipped_through": 0
+      }
+     }
+    },
+    "held_out": {
+     "n_good": 30,
+     "n_bad": 120,
+     "tp": 120,
+     "fn": 0,
+     "fp": 0,
+     "tn": 30,
+     "tpr": 1.0,
+     "fpr": 0.0,
+     "youden_j": 1.0,
+     "oracle_type": "crossing_certificate_independent",
+     "by_fault_class": {
+      "undercounted_crossing_total": {
+       "n": 30,
+       "caught": 30,
+       "slipped_through": 0
+      },
+      "duplicated_point": {
+       "n": 30,
+       "caught": 30,
+       "slipped_through": 0
+      },
+      "collinear_points": {
+       "n": 30,
+       "caught": 30,
+       "slipped_through": 0
+      },
+      "malformed_body": {
+       "n": 30,
+       "caught": 30,
+       "slipped_through": 0
+      }
+     }
+    }
+   }
+  }
+ },
+ "slipped_through": [],
+ "does_not_prove": [
+  "J measured on injected faults does not bound the false-positive rate on the natural candidate distribution: a policy that has learned to game the checker produces a different error profile than a hand-written mutation, and this battery says nothing about that profile.",
+  "the fault classes are the ones we thought to write, so a fault class nobody imagined here is not measured; absence of a slip on this battery is not proof of resistance to an unenumerated attack.",
+  "several fault classes exercise structural validation code SHARED between the primary and held-out checker (both call the same _well_formed / well_formed / general_position helpers), so agreement there is not independent confirmation; only 'added_k22' (zarankiewicz) and 'undercounted_crossing_total' (crossing) exercise the genuinely separate predicate algorithms the two checkers were written twice for.",
+  "an exact symbolic oracle should score J=1 on an exact predicate; a perfect score here validates this audit instrument, not that the oracle resists attacks harder than the ones it was asked to withstand."
+ ],
+ "generated_at": "2026-07-27T21:55:29Z"
+}
