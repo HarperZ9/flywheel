@@ -97,7 +97,9 @@ def _default_fetch(base_url: str):
             data = json.dumps(payload).encode("utf-8")
             request = urllib.request.Request(
                 url, data=data, headers={"Content-Type": "application/json"})
-        with urllib.request.urlopen(request, timeout=30) as response:
+        # 600s, not 30: a cold 32B rung takes minutes to page into VRAM before
+        # its first token, and a timeout mid-load would read as nondeterminism.
+        with urllib.request.urlopen(request, timeout=600) as response:
             return json.loads(response.read().decode("utf-8", errors="replace"))
 
     return fetch
