@@ -76,6 +76,9 @@ jobs:
           tests/test_python_floor.py
           tests/test_writing_profiles.py
           tests/test_check_writing.py
+          tests/test_writing_lists.py
+          tests/test_writing_report_checks.py
+          tests/test_writing_pysource.py
           -q
 
   full:
