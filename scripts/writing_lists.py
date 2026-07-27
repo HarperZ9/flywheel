@@ -9,6 +9,8 @@ Standard library only.
 """
 from __future__ import annotations
 
+import re
+
 MARKETING = (
     "seamless", "seamlessly", "robust", "powerful", "cutting-edge", "effortless",
     "effortlessly", "world-class", "next-generation", "revolutionary", "blazing",
@@ -33,3 +35,36 @@ MODAL_HEDGE = (
     "it is important to note", "it should be noted", "it is worth noting",
     "please note that", "as mentioned", "as noted above",
 )
+
+BE = r"(?:am|is|are|was|were|be|been|being)"
+PP_IRREG = (r"(?:done|made|sent|read|built|kept|held|set|put|run|written|"
+            r"shown|given|taken|found|got|gotten|seen|known|thrown|drawn)")
+PASSIVE = re.compile(rf"\b{BE}\s+(?:\w+ed|{PP_IRREG})\b", re.IGNORECASE)
+ING_MAIN = re.compile(rf"\b{BE}\s+\w+ing\b", re.IGNORECASE)
+NOMINAL = re.compile(
+    r"\b(?:perform|performs|conduct|conducts|carry out|carries out|"
+    r"make use of|makes use of)\b"
+    r"|\b\w+(?:tion|ment|ance|ence)s?\s+of\b", re.IGNORECASE)
+# Ordinary "of" phrases are fine; only a nominalizing suffix directly before
+# "of" counts, which is why "top of the file" passes and "utilization of"
+# does not.
+
+# The gate, as data. HARD_DEFAULTS seeds each profile's hard tuple by slop
+# level; a profile may narrow or widen its own tuple. REPORT_ONLY_CATEGORIES
+# may never appear in any hard tuple, and KNOWN_CATEGORIES is the closed set a
+# hard tuple may draw from: both rules are enforced with ProfileError, because
+# a gate misconfigured in data must refuse, not silently gate wrong.
+HARD_DEFAULTS = {
+    "strict": ("banned_word", "contraction", "em_dash", "long_sentence",
+               "marketing_adjective", "modal_hedge", "phrasal_verb",
+               "semicolon"),
+    "flavored": ("banned_word", "em_dash", "marketing_adjective",
+                 "modal_hedge", "phrasal_verb"),
+    "off": (),
+}
+REPORT_ONLY_CATEGORIES = ("passive_voice", "ing_main_verb", "nominalization",
+                          "long_paragraph", "be_verb")
+KNOWN_CATEGORIES = frozenset(
+    ("em_dash", "marketing_adjective", "banned_word", "phrasal_verb",
+     "modal_hedge", "contraction", "semicolon", "long_sentence",
+     "unreferenced_entry") + REPORT_ONLY_CATEGORIES)

@@ -3,7 +3,8 @@
 
 A profile is a register configuration (Halliday field/tenor/mode) expressed as a
 rule record. The linter reads thresholds and toggles from the record; the shared
-word lists and the hard/soft split live in the engine until Phase 3. Adding a
+word lists live in writing_lists, and the hard/soft split is itself profile data
+(each record's hard tuple, seeded from writing_lists.HARD_DEFAULTS). Adding a
 prose type is adding a record here, not editing the engine.
 
 This scores the FORM of prose, never its substance or authenticity, and it never
@@ -16,16 +17,25 @@ from __future__ import annotations
 
 import re
 
+import writing_lists
+
 # PHASE 2 HONESTY NOTE. The engine reads six fields: slop, keep, no_em_dash,
 # max_sentence_words, eprime, and readability_band. The other five (rigor,
 # hedging, voice, translation_ready, output_format) are carried as data for
 # later phases and toggle NOTHING yet. Also deferred: changelog
 # entry-reference enforcement. Carried here so the deferral is a shipped fact
 # rather than a conversation memory.
+#
+# PHASE 3 NOTE. hard joins the schema: the block-versus-report split is now
+# profile data (writing_lists.HARD_DEFAULTS), not engine code. A profile that
+# omits hard gets its slop level's default; a profile may narrow or widen its
+# own tuple. load() validates every hard tuple against writing_lists'
+# KNOWN_CATEGORIES / REPORT_ONLY_CATEGORIES so a misconfigured gate refuses
+# rather than silently gating wrong.
 SCHEMA_FIELDS = (
     "slop", "rigor", "max_sentence_words", "no_em_dash", "hedging", "voice",
     "eprime", "translation_ready", "readability_band", "output_format", "keep",
-    "register",
+    "register", "hard",
 )
 
 DEFAULT = "flavored"
@@ -47,7 +57,7 @@ _TERMS = (
 def _p(slop, rigor, *, max_words=None, no_em_dash=True, hedging="calibrated",
        voice="active-preferred", eprime=False, translation_ready=False,
        readability=(30, 70), output="markdown", keep=(),
-       register=("general", "peer", "written")):
+       register=("general", "peer", "written"), hard=None):
     return {
         "slop": slop, "rigor": rigor, "max_sentence_words": max_words,
         "no_em_dash": no_em_dash, "hedging": hedging, "voice": voice,
@@ -56,6 +66,8 @@ def _p(slop, rigor, *, max_words=None, no_em_dash=True, hedging="calibrated",
         "keep": tuple(_TERMS) + tuple(keep),
         "register": {"field": register[0], "tenor": register[1],
                      "mode": register[2]},
+        "hard": tuple(hard) if hard is not None
+                else tuple(writing_lists.HARD_DEFAULTS[slop]),
     }
 
 
@@ -117,6 +129,12 @@ def load(name: str) -> dict:
     if rec is None:
         raise ProfileError(
             f"unknown profile {name!r}; known: {', '.join(sorted(PROFILES))}")
+    bad = set(rec["hard"]) - writing_lists.KNOWN_CATEGORIES
+    smuggled = set(rec["hard"]) & set(writing_lists.REPORT_ONLY_CATEGORIES)
+    if bad or smuggled:
+        raise ProfileError(
+            f"profile {name!r} carries an invalid hard tuple: "
+            f"unknown={sorted(bad)} report_only={sorted(smuggled)}")
     # Shallow copy is safe only while every schema value stays immutable
     # (scalars and tuples). A list or dict field would alias through this.
     return dict(rec)

@@ -18,9 +18,13 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import writing_lists  # noqa: E402
 import writing_profiles as _wp  # noqa: E402
 import writing_pysource as _ps  # noqa: E402
-from writing_lists import BANNED, MARKETING, MODAL_HEDGE, PHRASAL  # noqa: E402
+from writing_lists import (  # noqa: E402
+    BANNED, BE, HARD_DEFAULTS, KNOWN_CATEGORIES, MARKETING, MODAL_HEDGE,
+    PHRASAL, ING_MAIN as _ING_MAIN, NOMINAL as _NOMINAL, PASSIVE as _PASSIVE,
+)
 from writing_readability import reading_ease, syllables  # noqa: E402  # re-exported for CW.syllables callers
 
 WORD_RE = re.compile(r"[A-Za-z][A-Za-z'-]*")
@@ -64,40 +68,20 @@ _CONTRACTION = re.compile(
     re.IGNORECASE)
 _EM_DASH = "\u2014"
 
-_BE = r"(?:am|is|are|was|were|be|been|being)"
-_BE_WORD = re.compile(rf"\b{_BE}\b", re.IGNORECASE)
-_PP_IRREG = (r"(?:done|made|sent|read|built|kept|held|set|put|run|written|"
-             r"shown|given|taken|found|got|gotten|seen|known|thrown|drawn)")
-_PASSIVE = re.compile(rf"\b{_BE}\s+(?:\w+ed|{_PP_IRREG})\b", re.IGNORECASE)
-_ING_MAIN = re.compile(rf"\b{_BE}\s+\w+ing\b", re.IGNORECASE)
-_NOMINAL = re.compile(
-    r"\b(?:perform|performs|conduct|conducts|carry out|carries out|"
-    r"make use of|makes use of)\b"
-    r"|\b\w+(?:tion|ment|ance|ence)s?\s+of\b", re.IGNORECASE)
-# Ordinary "of" phrases are fine; only a nominalizing suffix directly before
-# "of" counts, which is why "top of the file" passes and "utilization of"
-# does not.
+_BE_WORD = re.compile(rf"\b{BE}\b", re.IGNORECASE)
 
 # Which categories fail --gate, by slop level. Passive-voice, gerund,
 # nominalization, and long-paragraph checks exist as REPORT-ONLY categories
 # (the Phase 2 block in check_text) and are deliberately absent from every set
 # below: those heuristics are noisy, and a noisy gate is a gate somebody
-# switches off.
-HARD_BY_SLOP = {
-    "strict": {"em_dash", "marketing_adjective", "banned_word", "phrasal_verb",
-               "contraction", "semicolon", "long_sentence", "modal_hedge"},
-    "flavored": {"em_dash", "marketing_adjective", "banned_word", "phrasal_verb",
-                 "modal_hedge"},
-    "off": set(),
-}
+# switches off. The defaults live in writing_lists.HARD_DEFAULTS; each profile
+# carries its own hard tuple.
+HARD_BY_SLOP = {k: frozenset(v) for k, v in HARD_DEFAULTS.items()}
 
 # Categories that can never gate. They inform, so they get their own totals and
 # stay out of the headline number: the delta a writer tracks must move only on
 # enforceable signal.
-REPORT_ONLY = frozenset({
-    "passive_voice", "ing_main_verb", "nominalization", "long_paragraph",
-    "be_verb",
-})
+REPORT_ONLY = frozenset(writing_lists.REPORT_ONLY_CATEGORIES)
 
 DOES_NOT_PROVE = (
     "This scores FORM, not substance. A low score is not a true or authentic "
@@ -120,6 +104,17 @@ def check_text(text: str, profile: dict) -> dict:
         raise _wp.ProfileError(
             f"unknown slop level {slop!r}; a gate that cannot recognize its "
             "level must refuse rather than silently switch off")
+    if "hard" in profile:
+        hard_cats = frozenset(profile["hard"])
+        unknown = hard_cats - KNOWN_CATEGORIES
+        if unknown:
+            raise _wp.ProfileError(f"unknown hard categories: {sorted(unknown)}")
+        smuggled = hard_cats & REPORT_ONLY
+        if smuggled:
+            raise _wp.ProfileError(
+                f"report-only categories cannot gate: {sorted(smuggled)}")
+    else:
+        hard_cats = HARD_BY_SLOP[slop]
     keep = {k.lower() for k in profile.get("keep", ())}
     prose = strip_code(text)
     low = re.sub(r"\s+", " ", prose.lower())
@@ -183,7 +178,6 @@ def check_text(text: str, profile: dict) -> dict:
     report_total = sum(informers.values())
     per100w = round(total * 100.0 / words, 2) if words else 0.0
     report_per100w = round(report_total * 100.0 / words, 2) if words else 0.0
-    hard_cats = HARD_BY_SLOP.get(slop, set())
     hard = sorted(c for c in v if c in hard_cats)
 
     ease = reading_ease(prose)
