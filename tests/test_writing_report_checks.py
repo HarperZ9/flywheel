@@ -99,3 +99,48 @@ def test_report_only_counts_do_not_move_the_headline_number():
     assert noisy["report_total"] >= 1
     assert noisy["per100w"] == 0.0
     assert noisy["report_per100w"] > 0.0
+
+
+def test_eprime_lens_counts_be_verbs_only_when_enabled():
+    text = "The result is significant. It was better."
+    on = CW.check_text(text, WP.load("research"))       # eprime=True
+    off = CW.check_text(text, WP.load("readme"))        # eprime=False
+    assert on["violations"].get("be_verb", 0) == 2
+    assert "be_verb" not in off["violations"]
+    assert "be_verb" not in on["hard"]
+
+
+def test_eprime_ignores_be_inside_words():
+    r = CW.check_text("The crisis isolated the amaryllis.", WP.load("research"))
+    assert "be_verb" not in r["violations"]
+
+
+def test_syllable_counter_on_known_words():
+    assert CW.syllables("cat") == 1
+    assert CW.syllables("paper") == 2
+    assert CW.syllables("readability") == 5
+    assert CW.syllables("queue") >= 1
+
+
+def test_reading_ease_orders_simple_above_dense():
+    simple = ("The cat sat on the mat. " * 8)
+    dense = ("Institutional epistemological considerations necessitate "
+             "comprehensive multidimensional reconceptualization. " * 5)
+    easy = CW.reading_ease(simple)
+    hard_score = CW.reading_ease(dense)
+    assert easy is not None and hard_score is not None
+    assert easy > hard_score
+
+
+def test_reading_ease_is_none_on_short_text():
+    assert CW.reading_ease("Too short to score.") is None
+
+
+def test_check_text_reports_reading_ease_and_band():
+    text = "The cat sat on the mat. " * 8
+    r = CW.check_text(text, WP.load("readme"))
+    assert isinstance(r["reading_ease"], float)
+    assert isinstance(r["in_band"], bool)
+    short = CW.check_text("Tiny.", WP.load("readme"))
+    assert short["reading_ease"] is None
+    assert short["in_band"] is None

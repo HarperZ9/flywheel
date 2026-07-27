@@ -63,10 +63,12 @@ _CONTRACTION = re.compile(
 _EM_DASH = "\u2014"
 
 _BE = r"(?:am|is|are|was|were|be|been|being)"
+_BE_WORD = re.compile(rf"\b{_BE}\b", re.IGNORECASE)
 _PP_IRREG = (r"(?:done|made|sent|read|built|kept|held|set|put|run|written|"
              r"shown|given|taken|found|got|gotten|seen|known|thrown|drawn)")
 _PASSIVE = re.compile(rf"\b{_BE}\s+(?:\w+ed|{_PP_IRREG})\b", re.IGNORECASE)
 _ING_MAIN = re.compile(rf"\b{_BE}\s+\w+ing\b", re.IGNORECASE)
+_VOWEL_GROUP = re.compile(r"[aeiouy]+")
 _NOMINAL = re.compile(
     r"\b(?:perform|performs|conduct|conducts|carry out|carries out|"
     r"make use of|makes use of)\b"
@@ -99,6 +101,35 @@ REPORT_ONLY = frozenset({
 DOES_NOT_PROVE = (
     "This scores FORM, not substance. A low score is not a true or authentic "
     "document, and this tool never tries to defeat AI detection.")
+
+
+def syllables(word: str) -> int:
+    """Count syllables in a word using vowel groups and heuristics.
+
+    Used for Flesch readability ease calculation. Returns at least 1.
+    """
+    w = word.lower().strip("'-")
+    if not w:
+        return 0
+    n = len(_VOWEL_GROUP.findall(w))
+    if w.endswith("e") and n > 1 and not w.endswith(("le", "ee")):
+        n -= 1
+    return max(1, n)
+
+
+def reading_ease(text: str) -> "float | None":
+    """Flesch reading ease over stripped prose; None under 30 words.
+
+    A crude dial, reported and never gated: the spec calls the formula crude
+    and the per-word syllable count here is a heuristic on top of that.
+    """
+    words = WORD_RE.findall(text)
+    sents = sentences(text)
+    if len(words) < 30 or not sents:
+        return None
+    syl = sum(syllables(w) for w in words)
+    return round(206.835 - 1.015 * (len(words) / len(sents))
+                 - 84.6 * (syl / len(words)), 1)
 
 
 def _count_phrases(low: str, phrases, keep) -> int:
@@ -165,6 +196,11 @@ def check_text(text: str, profile: dict) -> dict:
     if long_paras:
         v["long_paragraph"] = long_paras
 
+    if profile.get("eprime"):
+        be = len(_BE_WORD.findall(prose))
+        if be:
+            v["be_verb"] = be
+
     gated = {k: n for k, n in v.items() if k not in REPORT_ONLY}
     informers = {k: n for k, n in v.items() if k in REPORT_ONLY}
     total = sum(gated.values())
@@ -173,11 +209,17 @@ def check_text(text: str, profile: dict) -> dict:
     report_per100w = round(report_total * 100.0 / words, 2) if words else 0.0
     hard_cats = HARD_BY_SLOP.get(slop, set())
     hard = sorted(c for c in v if c in hard_cats)
+
+    ease = reading_ease(prose)
+    band = profile.get("readability_band") or (0, 100)
+    in_band = None if ease is None else bool(band[0] <= ease <= band[1])
+
     return {
         "words": words, "sentences": len(sents), "violations": v,
         "total": total, "per100w": per100w,
         "report_total": report_total, "report_per100w": report_per100w,
         "em_dash": em, "hard": hard,
+        "reading_ease": ease, "in_band": in_band,
     }
 
 
