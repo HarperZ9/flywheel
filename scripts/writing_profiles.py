@@ -19,12 +19,12 @@ import re
 
 import writing_lists
 
-# PHASE 3 HONESTY NOTE. The engine reads seven fields: slop, keep, no_em_dash,
-# max_sentence_words, eprime, readability_band, and hard (the gate itself is
-# profile data now). register is provenance, not a toggle. The remaining five
-# (rigor, hedging, voice, translation_ready, output_format) toggle NOTHING
-# yet. Carried here so the deferral is a shipped fact rather than a
-# conversation memory.
+# PHASE 4 HONESTY NOTE. Every schema field now carries shipped semantics:
+# eight drive the linter (slop, hard, keep, no_em_dash, max_sentence_words,
+# eprime, readability_band, hedging), register is provenance, and four drive
+# the /ste rewrite rather than the linter (rigor, voice, translation_ready,
+# output_format; the skill documents the mapping). Nothing on this schema is
+# inert, and nothing is deferred.
 #
 # PHASE 3 NOTE. hard joins the schema: the block-versus-report split is now
 # profile data (writing_lists.HARD_DEFAULTS), not engine code. A profile that
