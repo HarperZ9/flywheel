@@ -78,7 +78,6 @@ def test_capture_builds_nine_rungs_from_the_frozen_prereg():
     assert len(doc["rungs"]) == 9
     assert {r["model"] for r in doc["rungs"]} == set(models)
 
-
 def test_absent_values_are_null_not_omitted():
     """A field the server never exposed is still a key, with value null. A
     silently missing key would be indistinguishable from a typo in the code
@@ -91,7 +90,6 @@ def test_absent_values_are_null_not_omitted():
     assert rung["digest"] is not None
     assert rung["num_ctx"] == 4096
     assert rung["sampler"] == D.SAMPLER_TUPLE
-
 
 def test_runtime_record_shape():
     rt = D.runtime_record(BASE_URL, fetch=make_fake_fetch(version="0.9.1"))
@@ -121,12 +119,10 @@ def test_sha256_of_is_stable_under_key_order():
     b = {"a": {"x": 3, "y": 2}, "m": [3, 2, 1], "z": 1}
     assert D.sha256_of(a) == D.sha256_of(b)
 
-
 def test_sha256_of_changes_when_content_changes():
     a = {"x": 1}
     b = {"x": 2}
     assert D.sha256_of(a) != D.sha256_of(b)
-
 
 def test_saved_file_bytes_hash_to_sha256_of(tmp_path):
     import hashlib
@@ -145,13 +141,11 @@ def _capture_and_save(tmp_path, fetch, models=("qwen2.5:0.5b", "telos-coder-32b"
     D.save(doc, path)
     return path, doc
 
-
 def test_witness_is_clean_against_its_own_unchanged_capture(tmp_path):
     fetch = make_fake_fetch()
     path, _ = _capture_and_save(tmp_path, fetch)
     drift = D.witness(BASE_URL, path, fetch=fetch)
     assert drift == []
-
 
 def test_witness_names_a_mutated_version(tmp_path):
     fetch = make_fake_fetch(version="0.3.14")
@@ -163,7 +157,6 @@ def test_witness_names_a_mutated_version(tmp_path):
     drift = D.witness(BASE_URL, path, fetch=fetch)
     assert drift, "a mutated runtime version must be reported as drift"
     assert any("version" in d for d in drift), drift
-
 
 def test_witness_names_a_mutated_sampler(tmp_path):
     fetch = make_fake_fetch()
@@ -177,7 +170,6 @@ def test_witness_names_a_mutated_sampler(tmp_path):
     assert drift, "a mutated sampler tuple must be reported as drift"
     assert any("sampler" in d for d in drift), drift
 
-
 def test_witness_names_a_mutated_num_ctx(tmp_path):
     fetch = make_fake_fetch(num_ctx=4096)
     path, _ = _capture_and_save(tmp_path, fetch)
@@ -188,7 +180,6 @@ def test_witness_names_a_mutated_num_ctx(tmp_path):
     drift = D.witness(BASE_URL, path, fetch=fetch)
     assert drift, "a mutated num_ctx must be reported as drift"
     assert any("num_ctx" in d for d in drift), drift
-
 
 def test_witness_ignores_a_baselines_key(tmp_path):
     """Baselines have their own mode (Task 2); the witness must not choke on
@@ -298,3 +289,12 @@ def test_cli_baseline_merges_and_preserves_the_rest_of_the_doc(tmp_path, monkeyp
     assert saved["baselines"]["qwen2.5:0.5b"]["n"] == 2
     assert saved["baselines"]["qwen2.5:0.5b"]["witnessed"] is True
     import hashlib; assert hashlib.sha256(path.read_bytes()).hexdigest() == D.sha256_of(saved)
+
+def test_empty_rungs_pins_file_refuses_rather_than_witnessing_nothing(tmp_path):
+    p = tmp_path / "pins.json"
+    D.save({"schema": D.SCHEMA, "rungs": []}, p)
+    assert D.main(["--baseline", "--pins-path", str(p)]) == 2
+
+def test_zero_n_is_refused():
+    with pytest.raises(ValueError):
+        DB.baseline(BASE_URL, ["qwen2.5:0.5b"], n=0, fetch=lambda p, payload=None: {})

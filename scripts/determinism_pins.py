@@ -167,16 +167,13 @@ def capture(base_url: str, models: list[str], fetch=None) -> dict:
 def canonical_bytes(doc: dict) -> bytes:
     return (json.dumps(doc, sort_keys=True, separators=(",", ":")) + "\n").encode("utf-8")
 
-
 def sha256_of(doc: dict) -> str:
     return hashlib.sha256(canonical_bytes(doc)).hexdigest()
-
 
 def save(doc: dict, path: Path) -> None:
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_bytes(canonical_bytes(doc))
-
 
 def load(path: Path) -> dict:
     return json.loads(Path(path).read_text(encoding="utf-8"))
@@ -191,10 +188,8 @@ def _diff_fields(label: str, old: dict, new: dict, fields) -> list[str]:
                        f"observed={observed!r}")
     return out
 
-
 RUNTIME_FIELDS = ("engine", "version", "host_os")
 RUNG_FIELDS = ("digest", "num_ctx", "kv_cache_type", "sampler")
-
 
 def witness(base_url: str, pins_path: Path, fetch=None) -> list[str]:
     """Re-capture runtime + rungs and diff against the pins on disk. Any
@@ -259,12 +254,17 @@ def main(argv: list[str] | None = None) -> int:
         from determinism_baseline import baseline  # lazy: only this mode needs it
         try:
             doc = load(pins_path)
+            models = [r["model"] for r in doc.get("rungs", [])]
+            if not models:
+                raise ValueError("no rungs in the pins file; capture first")
+            doc["baselines"] = baseline(base_url, models, n=args.n)
         except (FileNotFoundError, json.JSONDecodeError):
             print(f"pins file not readable: {pins_path} (run --capture first)",
                  file=sys.stderr)
             return 2
-        models = [r["model"] for r in doc.get("rungs", [])]
-        doc["baselines"] = baseline(base_url, models, n=args.n)
+        except ValueError as e:
+            print(e, file=sys.stderr)
+            return 2
         save(doc, pins_path)
         witnessed = all(r["witnessed"] for r in doc["baselines"].values())
         if args.as_json:

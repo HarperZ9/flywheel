@@ -38,7 +38,7 @@ def _one_rung_baseline(fetch, model: str, n: int, prompt: str) -> dict:
         result = fetch("/api/generate", payload) or {}
         digests.append(_digest_of_text(result.get("response")))
     return {"model": model, "n": n, "digests": digests,
-            "witnessed": len(set(digests)) <= 1}
+            "witnessed": bool(digests) and len(set(digests)) == 1}
 
 
 def baseline(base_url: str, models: list[str], n: int = 3,
@@ -48,5 +48,7 @@ def baseline(base_url: str, models: list[str], n: int = 3,
     Returns a dict keyed by model name so the CLI can drop it straight under
     the pins document's "baselines" key without reshaping it.
     """
+    if n < 1:
+        raise ValueError("n must be >= 1")
     fetch = fetch or _default_fetch(base_url)
     return {model: _one_rung_baseline(fetch, model, n, prompt) for model in models}
