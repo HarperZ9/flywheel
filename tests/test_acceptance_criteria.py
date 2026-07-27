@@ -111,3 +111,15 @@ def test_no_public_function_flips_a_criterion_without_an_oracle():
     import re
     assigns = re.findall(r'\["status"\]\s*=(?!=)', src)
     assert len(assigns) == 1, f"status is assigned in {len(assigns)} places, want 1"
+
+
+def test_the_loop_never_assigns_a_criterion_status_directly():
+    """The module-side pin guards acceptance_criteria.py; criteria are plain
+    dicts, so the file that WIRES them must not bypass apply_oracle_result."""
+    import re
+    src = (Path(__file__).resolve().parent.parent / "harness"
+           / "local_loop.py").read_text(encoding="utf-8")
+    assert re.findall(r'\["status"\]\s*=(?!=)', src) == []
+    calls = re.findall(r"apply_oracle_result\(", src)
+    assert len(calls) == 1, f"{len(calls)} flip sites in the loop, want exactly 1"
+    assert '"test_cmd"' in src

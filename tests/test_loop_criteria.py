@@ -165,3 +165,61 @@ def test_criteria_none_result_has_no_criteria_or_accepted_keys(tmp_path):
                     max_steps=2)
     assert "criteria" not in res
     assert "accepted" not in res
+
+
+def test_accepted_trusted_is_false_when_the_grading_file_is_tampered_with(tmp_path):
+    """The criterion's oracle is real: test_cmd genuinely ran and genuinely
+    passed, so `accepted` (== all_pass(criteria)) legitimately reads True.
+    But the trajectory that got there first wrote to tests/test_foo.py -- a
+    path DEFAULT_PROTECTED matches -- which is exactly the "edit the file
+    that grades you" reward-hack trajectory_integrity exists to catch. That
+    trips integrity["clean"] to False, so accepted_trusted (accepted AND
+    integrity clean) must read False even though accepted itself is True:
+    the two keys are not allowed to collapse into one fact.
+    """
+    specs = [{"id": "tests_green", "description": "the suite passes",
+              "oracle": "test_cmd"}]
+    criteria = AC.new_criteria(specs)
+    agent = FakeAgent([
+        'TOOL write_file {"path": "tests/test_foo.py", '
+        '"content": "def test_x():\\n    assert True\\n"}',
+        "done",
+    ])
+    ex = ToolExecutor(root=str(tmp_path),
+                      gate=ToolGate(allow_write=True, allow_exec=True),
+                      runner=lambda cmd, root: (True, "1 passed"))
+    res = run_agent(agent, "x", ex, SessionLedger(), max_steps=3,
+                    test_cmd="pytest -q", criteria=criteria)
+    assert res["integrity"]["clean"] is False
+    assert any(f["kind"] == "edited_protected_file" for f in res["integrity"]["flags"])
+    assert res["accepted"] is True
+    assert res["accepted_trusted"] is False
+
+
+def test_tests_pass_reflects_the_last_real_test_outcome_at_max_steps(tmp_path):
+    """A run can legitimately continue past a GREEN test_cmd because a second
+    criterion (a different, never-firing oracle) is still failing, then
+    exhaust max_steps. The old max_steps exit hardcoded tests_pass=False,
+    which contradicted the criteria summary sitting right next to it showing
+    the test_cmd criterion PASSING with green evidence. tests_pass must track
+    the last real test_cmd outcome instead of assuming failure.
+    """
+    specs = [
+        {"id": "tests_green", "description": "the suite passes", "oracle": "test_cmd"},
+        {"id": "docs_written", "description": "docs updated", "oracle": "human"},
+    ]
+    criteria = AC.new_criteria(specs)
+    agent = FakeAgent(["done", "done", "done"])
+    ex = ToolExecutor(root=str(tmp_path), gate=ToolGate(allow_exec=True),
+                      runner=lambda cmd, root: (True, "3 passed"))
+    res = run_agent(agent, "x", ex, SessionLedger(), max_steps=2,
+                    test_cmd="pytest -q", criteria=criteria)
+    assert res["steps"] == 2
+    assert res["tests_pass"] is True                 # not the old hardcoded False
+    tests_green = next(c for c in criteria if c["id"] == "tests_green")
+    docs = next(c for c in criteria if c["id"] == "docs_written")
+    assert tests_green["status"] == AC.PASSING
+    assert "passed" in tests_green["evidence"]
+    assert docs["status"] == AC.FAILING
+    assert res["criteria"]["failing_ids"] == ["docs_written"]
+    assert res["accepted"] is False                  # docs_written still failing

@@ -66,7 +66,7 @@ def run_agent(agent, goal: str, executor: ToolExecutor,
     done, the test command is run and, if it fails, the failure is fed back and
     the model keeps working until the tests pass (or steps run out). The result
     then carries `tests_pass`, and the whole edit->test->repair trajectory is
-    witnessed in the ledger — a provable "made the tests green".
+    witnessed in the ledger -- a provable "made the tests green".
 
     With `criteria` (an acceptance_criteria.new_criteria() list), the loop will
     not report done while any criterion is still FAILING: at the point it would
@@ -101,6 +101,7 @@ def run_agent(agent, goal: str, executor: ToolExecutor,
 
     ledger.append("user", goal)
     message = goal
+    last_test_ok = None            # the most recent real test_cmd outcome, if any
     for step in range(1, max_steps + 1):
         to_send = message
         if budget_note:
@@ -132,6 +133,7 @@ def run_agent(agent, goal: str, executor: ToolExecutor,
                 message = feedback
                 continue
             res = executor.execute("run", {"cmd": test_cmd})
+            last_test_ok = res.ok
             ledger.append("tool_call", f"run {json.dumps({'cmd': test_cmd}, sort_keys=True)}")
             ledger.append("tool_result", res.output, _result_meta("run", res, sign_key, {"gate": "test"}))
             _emit(type="tool_result", name="run", ok=res.ok, output=res.output[:500])
@@ -196,7 +198,8 @@ def run_agent(agent, goal: str, executor: ToolExecutor,
                    "answer with no TOOL line.")
 
     return _done("[max_steps reached without a final answer]", max_steps, ledger,
-                 tests_pass=(False if test_cmd else None),
+                 tests_pass=(last_test_ok if last_test_ok is not None
+                             else (False if test_cmd else None)),
                  system=agent.system, goal=goal, criteria=criteria)
 
 
@@ -270,4 +273,10 @@ def _done(final: str, steps: int, ledger: SessionLedger, *, tests_pass=None,
         # only apply_oracle_result was ever allowed to flip.
         out["criteria"] = summary(criteria)
         out["accepted"] = all_pass(criteria)
+        # An oracle can be tampered INTO passing: edit the grading file, the
+        # test goes green, the criterion flips through the legitimate named
+        # oracle. accepted alone cannot see that; the trajectory-integrity
+        # verdict can, so the trusted variant conjoins them, exactly as
+        # tests_pass_trusted does.
+        out["accepted_trusted"] = bool(out["accepted"]) and out["integrity"]["clean"]
     return out
