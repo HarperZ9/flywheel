@@ -47,7 +47,7 @@ class ProfileError(ValueError):
 
 # Terms of art the linter must never flag, whatever list they might collide with
 # later. Kept here so every profile can share the base set. keep is exact-form:
-# keeping "leverage" does not keep "leverages"; list each inflection you mean.
+# keeping a word does not keep its inflections; list each form you mean.
 _TERMS = (
     "pass", "fail", "undecided", "unverifiable", "candidate", "harness",
     "environment", "criterion", "receipt", "oracle", "certificate",
