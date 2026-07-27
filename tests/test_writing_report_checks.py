@@ -71,3 +71,31 @@ def test_hard_by_slop_never_contains_the_report_only_categories():
                    "long_paragraph"}
     for level, cats in CW.HARD_BY_SLOP.items():
         assert not (cats & report_only), level
+
+
+def test_regular_ed_participle_passive_is_counted():
+    r = CW.check_text("The bug was fixed by the patch.", WP.load("readme"))
+    assert r["violations"].get("passive_voice", 0) >= 1
+
+
+def test_gerund_without_be_is_not_an_ing_main_verb():
+    r = CW.check_text("Running helps the tests.", WP.load("readme"))
+    assert "ing_main_verb" not in r["violations"]
+
+
+def test_long_paragraph_boundary_six_passes_seven_flags():
+    six = " ".join(f"Sentence {i} here." for i in range(6))
+    seven = " ".join(f"Sentence {i} here." for i in range(7))
+    assert "long_paragraph" not in CW.check_text(six, WP.load("readme"))["violations"]
+    assert CW.check_text(seven, WP.load("readme"))["violations"].get(
+        "long_paragraph", 0) == 1
+
+
+def test_report_only_counts_do_not_move_the_headline_number():
+    prof = WP.load("readme")
+    clean = CW.check_text("The parser reads files.", prof)
+    noisy = CW.check_text("The file is read by the parser.", prof)
+    assert noisy["total"] == clean["total"] == 0
+    assert noisy["report_total"] >= 1
+    assert noisy["per100w"] == 0.0
+    assert noisy["report_per100w"] > 0.0

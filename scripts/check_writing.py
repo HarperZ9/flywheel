@@ -76,9 +76,10 @@ _NOMINAL = re.compile(
 # does not.
 
 # Which categories fail --gate, by slop level. Passive-voice, gerund,
-# nominalization, and long-paragraph checks are NOT implemented in Phase 1;
-# when they land they stay report-only, because those heuristics are noisy and
-# a noisy gate is a gate somebody switches off.
+# nominalization, and long-paragraph checks exist as REPORT-ONLY categories
+# (the Phase 2 block in check_text) and are deliberately absent from every set
+# below: those heuristics are noisy, and a noisy gate is a gate somebody
+# switches off.
 HARD_BY_SLOP = {
     "strict": {"em_dash", "marketing_adjective", "banned_word", "phrasal_verb",
                "contraction", "semicolon", "long_sentence", "modal_hedge"},
@@ -86,6 +87,14 @@ HARD_BY_SLOP = {
                  "modal_hedge"},
     "off": set(),
 }
+
+# Categories that can never gate. They inform, so they get their own totals and
+# stay out of the headline number: the delta a writer tracks must move only on
+# enforceable signal.
+REPORT_ONLY = frozenset({
+    "passive_voice", "ing_main_verb", "nominalization", "long_paragraph",
+    "be_verb",
+})
 
 DOES_NOT_PROVE = (
     "This scores FORM, not substance. A low score is not a true or authentic "
@@ -156,13 +165,19 @@ def check_text(text: str, profile: dict) -> dict:
     if long_paras:
         v["long_paragraph"] = long_paras
 
-    total = sum(v.values())
+    gated = {k: n for k, n in v.items() if k not in REPORT_ONLY}
+    informers = {k: n for k, n in v.items() if k in REPORT_ONLY}
+    total = sum(gated.values())
+    report_total = sum(informers.values())
     per100w = round(total * 100.0 / words, 2) if words else 0.0
+    report_per100w = round(report_total * 100.0 / words, 2) if words else 0.0
     hard_cats = HARD_BY_SLOP.get(slop, set())
     hard = sorted(c for c in v if c in hard_cats)
     return {
         "words": words, "sentences": len(sents), "violations": v,
-        "total": total, "per100w": per100w, "em_dash": em, "hard": hard,
+        "total": total, "per100w": per100w,
+        "report_total": report_total, "report_per100w": report_per100w,
+        "em_dash": em, "hard": hard,
     }
 
 
@@ -221,6 +236,7 @@ def main(argv: list[str] | None = None) -> int:
             prof_name = args.profile or _wp.profile_for(r["path"])
             print(f"{r['path']}  profile={prof_name} words={r['words']} "
                   f"total={r['total']} per100w={r['per100w']} "
+                  f"report_per100w={r['report_per100w']} "
                   f"em_dash={r['em_dash']} hard={','.join(r['hard']) or '-'}")
         print(DOES_NOT_PROVE)
     return 1 if (args.gate and any_hard) else 0
