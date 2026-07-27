@@ -12,6 +12,7 @@ from __future__ import annotations
 import json
 
 from . import integrity, tool_receipts
+from .acceptance_criteria import all_pass, apply_oracle_result, failing, summary
 from .local_session import SessionLedger
 from .local_tools import TOOLS_SYSTEM, ToolExecutor, parse_tool_calls
 
@@ -56,7 +57,8 @@ def _result_meta(name, res, sign_key, extra=None) -> dict:
 def run_agent(agent, goal: str, executor: ToolExecutor,
               ledger: "SessionLedger | None" = None, *, max_steps: int = 6,
               test_cmd: "str | None" = None, sign_key: "bytes | None" = None,
-              canaries: "list | None" = None, on_event=None) -> dict:
+              canaries: "list | None" = None, on_event=None,
+              criteria: "list | None" = None, budget_note: bool = False) -> dict:
     """Run the goal to completion (or max_steps). Returns the final answer, the
     step count, and the ledger checkpoint + verify verdict.
 
@@ -64,7 +66,24 @@ def run_agent(agent, goal: str, executor: ToolExecutor,
     done, the test command is run and, if it fails, the failure is fed back and
     the model keeps working until the tests pass (or steps run out). The result
     then carries `tests_pass`, and the whole edit->test->repair trajectory is
-    witnessed in the ledger — a provable "made the tests green"."""
+    witnessed in the ledger — a provable "made the tests green".
+
+    With `criteria` (an acceptance_criteria.new_criteria() list), the loop will
+    not report done while any criterion is still FAILING: at the point it would
+    finish, the failing ids are handed back as the next message instead, and the
+    check is witnessed as a "criteria" ledger entry. Nothing here flips a
+    criterion: only apply_oracle_result does, either by a caller directly or,
+    when `test_cmd` and a criterion registered to oracle "test_cmd" are both
+    present, by this loop applying that test run's outcome. `max_steps` is the
+    ultimate backstop: it still ends the run even with criteria unmet, honestly
+    (never reports accepted) rather than looping forever.
+
+    `budget_note`, off by default so an existing caller's ledger shape and
+    prompts are untouched, prefixes each message sent to the model with the
+    remaining step count and witnesses it as a "budget" ledger entry every
+    turn, independent of `criteria`; opt in with budget_note=True. The
+    budget is only ever stated to the model, never enforced by it; `max_steps`
+    is what actually enforces it."""
     ledger = ledger if ledger is not None else SessionLedger()
 
     def _emit(**e):                                  # stream loop progress; never let it break the loop
@@ -83,7 +102,15 @@ def run_agent(agent, goal: str, executor: ToolExecutor,
     ledger.append("user", goal)
     message = goal
     for step in range(1, max_steps + 1):
-        resp = agent.send(message)
+        to_send = message
+        if budget_note:
+            remaining = max_steps - step + 1
+            budget_line = f"[budget] step {step} of {max_steps}, {remaining} remaining."
+            ledger.append("budget", budget_line,
+                          {"step": step, "max_steps": max_steps, "remaining": remaining})
+            _emit(type="budget", step=step, max_steps=max_steps, remaining=remaining)
+            to_send = f"{budget_line}\n\n{message}"
+        resp = agent.send(to_send)
         text = resp["content"][0]["text"] if resp.get("content") else ""
         ledger.append("assistant", text, {
             "backend": resp.get("backend"),
@@ -98,19 +125,38 @@ def run_agent(agent, goal: str, executor: ToolExecutor,
             _emit(type="tool_rescue", transform=rep["transform"])
         if not calls:
             if not test_cmd:
-                return _done(text, step, ledger,
-                             system=agent.system, goal=goal)
+                done, feedback = _refuse_if_failing(
+                    criteria, text, step, ledger, system=agent.system, goal=goal)
+                if done is not None:
+                    return done
+                message = feedback
+                continue
             res = executor.execute("run", {"cmd": test_cmd})
             ledger.append("tool_call", f"run {json.dumps({'cmd': test_cmd}, sort_keys=True)}")
             ledger.append("tool_result", res.output, _result_meta("run", res, sign_key, {"gate": "test"}))
             _emit(type="tool_result", name="run", ok=res.ok, output=res.output[:500])
+            # test_cmd is one criterion among several when a criterion is
+            # registered to oracle "test_cmd" -- the model's claim of done
+            # still is not enough, this flip is the only one this loop makes
+            # on its own, and only through the same named-oracle gate.
+            if criteria is not None:
+                for cid in [c["id"] for c in criteria if c["oracle"] == "test_cmd"]:
+                    rec = apply_oracle_result(criteria, cid, "test_cmd", res.ok,
+                                              evidence=res.output[:500])
+                    ledger.append("criteria", json.dumps(rec, sort_keys=True),
+                                  {"flip": True, "oracle": "test_cmd"})
             if res.output.startswith("[gate]"):
                 return _done(text, step, ledger, tests_pass=False,
                              note="test gate set but exec is disabled (pass --allow-exec)",
-                             system=agent.system, goal=goal)
+                             system=agent.system, goal=goal, criteria=criteria)
             if res.ok:
-                return _done(text, step, ledger, tests_pass=True,
-                             system=agent.system, goal=goal)
+                done, feedback = _refuse_if_failing(
+                    criteria, text, step, ledger, tests_pass=True,
+                    system=agent.system, goal=goal)
+                if done is not None:
+                    return done
+                message = feedback
+                continue
             message = (f"The tests still FAIL:\n{res.output}\n\nFix the root cause and "
                        "continue; do not give a final answer until the tests pass.")
             continue
@@ -142,7 +188,7 @@ def run_agent(agent, goal: str, executor: ToolExecutor,
                                  "the tripwire", step, ledger, tests_pass=False,
                                  note=f"canary '{hit['label']}' tripped; "
                                       "contain and investigate",
-                                 system=agent.system, goal=goal)
+                                 system=agent.system, goal=goal, criteria=criteria)
             observations.append(f"TOOL {name} -> {'ok' if res.ok else 'FAIL'}:\n{res.output}")
 
         message = ("TOOL RESULTS:\n" + "\n\n".join(observations) +
@@ -151,7 +197,32 @@ def run_agent(agent, goal: str, executor: ToolExecutor,
 
     return _done("[max_steps reached without a final answer]", max_steps, ledger,
                  tests_pass=(False if test_cmd else None),
-                 system=agent.system, goal=goal)
+                 system=agent.system, goal=goal, criteria=criteria)
+
+
+def _refuse_if_failing(criteria, text, step, ledger, *, tests_pass=None, note="",
+                       system="", goal="") -> tuple:
+    """At the point the loop would report done: witness the check as a
+    "criteria" ledger entry, and if `criteria` is given and any criterion is
+    still FAILING, refuse -- return the failing ids as the next message
+    instead of finishing. Returns (done_result, None) when the run may
+    finish, or (None, next_message) when it must keep going. criteria=None
+    reproduces today's behavior exactly: always finishes here, no entry
+    appended (there is nothing to check)."""
+    if criteria is None:
+        return _done(text, step, ledger, tests_pass=tests_pass, note=note,
+                     system=system, goal=goal), None
+    ids = failing(criteria)
+    ledger.append("criteria",
+                  json.dumps({"failing_ids": ids, "checked_at_step": step}, sort_keys=True),
+                  {"failing": len(ids), "total": len(criteria)})
+    if ids:
+        feedback = ("Acceptance criteria still FAILING: " + ", ".join(ids) +
+                    ". Continue working; do not give a final answer until "
+                    "every criterion passes.")
+        return None, feedback
+    return _done(text, step, ledger, tests_pass=tests_pass, note=note,
+                 system=system, goal=goal, criteria=criteria), None
 
 
 def _environment() -> dict:
@@ -166,7 +237,7 @@ def _environment() -> dict:
 
 
 def _done(final: str, steps: int, ledger: SessionLedger, *, tests_pass=None,
-          note="", system: str = "", goal: str = "") -> dict:
+          note="", system: str = "", goal: str = "", criteria=None) -> dict:
     from .context_manifest import context_manifest
     from .risk_review import risk_review
     from .run_review import run_review
@@ -193,4 +264,10 @@ def _done(final: str, steps: int, ledger: SessionLedger, *, tests_pass=None,
         out["tests_pass_trusted"] = bool(tests_pass) and out["integrity"]["clean"]
     if note:
         out["note"] = note
+    if criteria is not None:
+        # the accept path is structural, not the model's word: "accepted" is
+        # exactly all_pass(criteria), derived from the same criteria object
+        # only apply_oracle_result was ever allowed to flip.
+        out["criteria"] = summary(criteria)
+        out["accepted"] = all_pass(criteria)
     return out
