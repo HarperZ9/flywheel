@@ -190,6 +190,10 @@ def main(argv: list[str] | None = None) -> int:
                   Path(new_p).read_text(encoding="utf-8", errors="replace"), prof)
         print(json.dumps(d) if args.as_json
               else f"delta per100w: {d['old']} -> {d['new']} ({d['delta']:+})")
+        if args.gate and check_text(
+                Path(new_p).read_text(encoding="utf-8", errors="replace"),
+                prof)["hard"]:
+            return 1
         return 0
 
     records = [score_file(f, resolve(f)) for f in args.files]

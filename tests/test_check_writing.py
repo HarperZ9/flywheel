@@ -1,4 +1,4 @@
-import sys
+﻿import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
@@ -178,6 +178,7 @@ def test_json_output_carries_score_and_disclaimer(tmp_path):
     f = tmp_path / "x.md"
     f.write_text("word " * 20 + "seamless.\n", encoding="utf-8")
     r = _run("--profile", "readme", "--json", str(f))
+    assert r.returncode == 0, r.stdout + r.stderr
     doc = json.loads(r.stdout)
     assert doc["files"][0]["per100w"] >= 0
     assert "form" in doc["does_not_prove"].lower()
@@ -187,6 +188,17 @@ def test_profile_is_inferred_from_path_when_not_given(tmp_path):
     d = tmp_path / "essays"
     d.mkdir()
     f = d / "piece.md"
-    f.write_text("A dash lives here " + "\\u2014" + " and stays.\\n", encoding="utf-8")
+    f.write_text("A dash lives here " + "\u2014" + " and stays.\n", encoding="utf-8")
     # narrative profile -> em-dash not hard -> gate passes
     assert _run("--gate", str(f)).returncode == 0
+
+
+def test_delta_with_gate_fails_when_the_new_draft_has_a_hard_violation(tmp_path):
+    old = tmp_path / "old.md"
+    new = tmp_path / "new.md"
+    old.write_text("Plain words here.\n", encoding="utf-8")
+    new.write_text("A seamless powerful tool.\n", encoding="utf-8")
+    ok = _run("--profile", "readme", "--delta", str(old), str(new))
+    assert ok.returncode == 0
+    gated = _run("--profile", "readme", "--delta", str(old), str(new), "--gate")
+    assert gated.returncode == 1
