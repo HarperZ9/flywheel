@@ -217,3 +217,32 @@ def test_phrase_boundary_does_not_match_inside_words():
     assert r["violations"].get("marketing_adjective", 0) == 0
     hit = CW.check_text("Unlock the door.", prof)
     assert hit["violations"].get("marketing_adjective", 0) == 1
+
+
+def test_front_matter_override_beats_path_inference(tmp_path):
+    d = tmp_path / "essays"
+    d.mkdir()
+    f = d / "piece.md"
+    f.write_text("writing-profile: readme\n\nThis is a seamless tool.\n",
+                 encoding="utf-8")
+    # Path says narrative (never hard); the tag says readme (marketing is hard).
+    r = _run("--gate", str(f))
+    assert r.returncode == 1
+
+
+def test_declared_profile_reads_only_the_head():
+    text = ("line\n" * 20) + "writing-profile: readme\n"
+    assert WP.declared_profile(text) is None
+    assert WP.declared_profile("<!-- writing-profile: proof -->\nbody\n") == "proof"
+
+
+def test_text_output_labels_a_tagged_file_with_its_tag_not_its_path(tmp_path):
+    d = tmp_path / "essays"
+    d.mkdir()
+    f = d / "piece.md"
+    f.write_text("writing-profile: readme\n\nPlain words here.\n",
+                 encoding="utf-8")
+    # Path alone infers narrative; the label must show the tag that actually
+    # scored the file, not the path-inferred name it was overridden away from.
+    r = _run(str(f))
+    assert "profile=readme" in r.stdout, r.stdout

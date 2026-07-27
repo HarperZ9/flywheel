@@ -204,7 +204,7 @@ jobs:
         # the per-100-word number is noisy on short files and needs calibration
         # on our own corpus first (spec phase 3). It does dogfood: the readme is
         # scored against its own inferred profile.
-        run: python scripts/check_writing.py README.md
+        run: python scripts/check_writing.py README.md scripts/check_writing.py scripts/writing_profiles.py scripts/writing_lists.py scripts/writing_pysource.py
 
   verifier_on_the_old_interpreter:
     name: the verifier runs one version below the package floor

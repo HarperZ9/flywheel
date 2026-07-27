@@ -19,7 +19,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import writing_profiles as _wp  # noqa: E402
+import writing_pysource as _ps  # noqa: E402
 from writing_lists import BANNED, MARKETING, MODAL_HEDGE, PHRASAL  # noqa: E402
+from writing_readability import reading_ease, syllables  # noqa: E402
 
 WORD_RE = re.compile(r"[A-Za-z][A-Za-z'-]*")
 _FENCE = re.compile(r"```.*?```", re.DOTALL)
@@ -68,7 +70,6 @@ _PP_IRREG = (r"(?:done|made|sent|read|built|kept|held|set|put|run|written|"
              r"shown|given|taken|found|got|gotten|seen|known|thrown|drawn)")
 _PASSIVE = re.compile(rf"\b{_BE}\s+(?:\w+ed|{_PP_IRREG})\b", re.IGNORECASE)
 _ING_MAIN = re.compile(rf"\b{_BE}\s+\w+ing\b", re.IGNORECASE)
-_VOWEL_GROUP = re.compile(r"[aeiouy]+")
 _NOMINAL = re.compile(
     r"\b(?:perform|performs|conduct|conducts|carry out|carries out|"
     r"make use of|makes use of)\b"
@@ -101,35 +102,6 @@ REPORT_ONLY = frozenset({
 DOES_NOT_PROVE = (
     "This scores FORM, not substance. A low score is not a true or authentic "
     "document, and this tool never tries to defeat AI detection.")
-
-
-def syllables(word: str) -> int:
-    """Count syllables in a word using vowel groups and heuristics.
-
-    Used for Flesch readability ease calculation. Returns at least 1.
-    """
-    w = word.lower().strip("'-")
-    if not w:
-        return 0
-    n = len(_VOWEL_GROUP.findall(w))
-    if w.endswith("e") and n > 1 and not w.endswith(("le", "ee")):
-        n -= 1
-    return max(1, n)
-
-
-def reading_ease(text: str) -> "float | None":
-    """Flesch reading ease over stripped prose; None under 30 words.
-
-    A crude dial, reported and never gated: the spec calls the formula crude
-    and the per-word syllable count here is a heuristic on top of that.
-    """
-    words = WORD_RE.findall(text)
-    sents = sentences(text)
-    if len(words) < 30 or not sents:
-        return None
-    syl = sum(syllables(w) for w in words)
-    return round(206.835 - 1.015 * (len(words) / len(sents))
-                 - 84.6 * (syl / len(words)), 1)
 
 
 def _count_phrases(low: str, phrases, keep) -> int:
@@ -223,9 +195,15 @@ def check_text(text: str, profile: dict) -> dict:
     }
 
 
-def score_file(path: str, profile: dict) -> dict:
-    text = Path(path).read_text(encoding="utf-8", errors="replace")
-    rec = check_text(text, profile)
+def score_file(path: str, profile: dict, text: "str | None" = None) -> dict:
+    raw = text if text is not None else Path(path).read_text(
+        encoding="utf-8", errors="replace")
+    if str(path).endswith(".py"):
+        rec = check_text(_ps.prose_of(raw), profile)
+        rec["scored"] = "docstrings+comments"
+    else:
+        rec = check_text(raw, profile)
+        rec["scored"] = "text"
     rec["path"] = str(path)
     return rec
 
@@ -251,9 +229,9 @@ def main(argv: list[str] | None = None) -> int:
               file=sys.stderr)
         return 2
 
-    def resolve(path: str) -> dict:
-        name = args.profile or _wp.profile_for(path)
-        return _wp.load(name)
+    def resolve_name(path: str, text: str) -> str:
+        return (args.profile or _wp.declared_profile(text)
+                or _wp.profile_for(path))
 
     if args.delta:
         old_p, new_p = args.delta
@@ -268,14 +246,18 @@ def main(argv: list[str] | None = None) -> int:
             return 1
         return 0
 
-    records = [score_file(f, resolve(f)) for f in args.files]
+    records, names = [], []
+    for f in args.files:
+        raw = Path(f).read_text(encoding="utf-8", errors="replace")
+        name = resolve_name(f, raw)
+        records.append(score_file(f, _wp.load(name), raw))
+        names.append(name)
     any_hard = any(r["hard"] for r in records)
     if args.as_json:
         print(json.dumps({"files": records, "does_not_prove": DOES_NOT_PROVE},
                          indent=1))
     else:
-        for r in records:
-            prof_name = args.profile or _wp.profile_for(r["path"])
+        for r, prof_name in zip(records, names):
             print(f"{r['path']}  profile={prof_name} words={r['words']} "
                   f"total={r['total']} per100w={r['per100w']} "
                   f"report_per100w={r['report_per100w']} "

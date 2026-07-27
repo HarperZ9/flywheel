@@ -119,3 +119,16 @@ def profile_for(path: str) -> str:
         if re.search(pattern, p):
             return name
     return DEFAULT
+
+
+_DECLARED = re.compile(r"^\s*(?:<!--\s*)?writing-profile:\s*([a-z][a-z-]*)",
+                       re.MULTILINE)
+
+
+def declared_profile(text: str) -> "str | None":
+    """A writing-profile tag in the first 10 lines, or None. The override is
+    explicit authorial intent, so it outranks path inference and loses only to
+    a --profile flag."""
+    head = "\n".join(text.splitlines()[:10])
+    m = _DECLARED.search(head)
+    return m.group(1) if m else None
