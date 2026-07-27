@@ -202,3 +202,18 @@ def test_delta_with_gate_fails_when_the_new_draft_has_a_hard_violation(tmp_path)
     assert ok.returncode == 0
     gated = _run("--profile", "readme", "--delta", str(old), str(new), "--gate")
     assert gated.returncode == 1
+
+
+def test_gate_with_no_files_refuses_rather_than_passing():
+    r = _run("--gate")
+    assert r.returncode == 2
+    r2 = _run()
+    assert r2.returncode == 2
+
+
+def test_phrase_boundary_does_not_match_inside_words():
+    prof = WP.load("readme")
+    r = CW.check_text("The unlocked door stayed shut.", prof)
+    assert r["violations"].get("marketing_adjective", 0) == 0
+    hit = CW.check_text("Unlock the door.", prof)
+    assert hit["violations"].get("marketing_adjective", 0) == 1

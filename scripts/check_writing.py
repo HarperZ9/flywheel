@@ -81,9 +81,10 @@ _CONTRACTION = re.compile(
     re.IGNORECASE)
 _EM_DASH = "\u2014"
 
-# Which categories fail --gate, by slop level. Everything else is report-only,
-# because passive/gerund/paragraph heuristics are noisy and would make a gate
-# somebody switches off.
+# Which categories fail --gate, by slop level. Passive-voice, gerund,
+# nominalization, and long-paragraph checks are NOT implemented in Phase 1;
+# when they land they stay report-only, because those heuristics are noisy and
+# a noisy gate is a gate somebody switches off.
 HARD_BY_SLOP = {
     "strict": {"em_dash", "marketing_adjective", "banned_word", "phrasal_verb",
                "contraction", "semicolon", "long_sentence", "modal_hedge"},
@@ -178,6 +179,11 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--gate", action="store_true",
                     help="exit 1 on any hard violation; otherwise report only")
     args = ap.parse_args(argv)
+
+    if not args.delta and not args.files:
+        print("no files given; a gate over nothing proves nothing",
+              file=sys.stderr)
+        return 2
 
     def resolve(path: str) -> dict:
         name = args.profile or _wp.profile_for(path)
