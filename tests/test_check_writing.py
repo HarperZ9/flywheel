@@ -131,3 +131,62 @@ def test_possessive_s_is_not_a_contraction():
     assert "contraction" not in clean["violations"]
     real = CW.check_text("It's ready.", prof)
     assert real["violations"].get("contraction", 0) == 1
+
+
+import subprocess  # noqa: E402
+
+ROOT = Path(__file__).resolve().parent.parent
+
+
+def _run(*args, stdin=None):
+    return subprocess.run(
+        [sys.executable, str(ROOT / "scripts" / "check_writing.py"), *args],
+        capture_output=True, text=True, cwd=ROOT, input=stdin)
+
+
+def test_delta_is_new_minus_old():
+    prof = WP.load("readme")
+    d = CW.delta("seamless " * 5 + "word " * 95, "word " * 100, prof)
+    assert d["old"] > d["new"]
+    assert round(d["delta"], 2) == round(d["new"] - d["old"], 2)
+
+
+def test_gate_fails_on_a_hard_violation(tmp_path):
+    f = tmp_path / "bad.md"
+    f.write_text("This is a seamless powerful tool.\n", encoding="utf-8")
+    r = _run("--profile", "readme", "--gate", str(f))
+    assert r.returncode == 1, r.stdout + r.stderr
+
+
+def test_gate_passes_clean_text(tmp_path):
+    f = tmp_path / "ok.md"
+    f.write_text("The parser reads the file. It returns a record.\n",
+                 encoding="utf-8")
+    r = _run("--profile", "readme", "--gate", str(f))
+    assert r.returncode == 0, r.stdout + r.stderr
+
+
+def test_report_mode_never_fails_even_on_slop(tmp_path):
+    f = tmp_path / "bad.md"
+    f.write_text("This is a seamless powerful tool.\n", encoding="utf-8")
+    r = _run("--profile", "readme", str(f))
+    assert r.returncode == 0
+
+
+def test_json_output_carries_score_and_disclaimer(tmp_path):
+    import json
+    f = tmp_path / "x.md"
+    f.write_text("word " * 20 + "seamless.\n", encoding="utf-8")
+    r = _run("--profile", "readme", "--json", str(f))
+    doc = json.loads(r.stdout)
+    assert doc["files"][0]["per100w"] >= 0
+    assert "form" in doc["does_not_prove"].lower()
+
+
+def test_profile_is_inferred_from_path_when_not_given(tmp_path):
+    d = tmp_path / "essays"
+    d.mkdir()
+    f = d / "piece.md"
+    f.write_text("A dash lives here " + "\\u2014" + " and stays.\\n", encoding="utf-8")
+    # narrative profile -> em-dash not hard -> gate passes
+    assert _run("--gate", str(f)).returncode == 0
