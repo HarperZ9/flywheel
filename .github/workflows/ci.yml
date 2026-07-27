@@ -194,7 +194,7 @@ jobs:
       - run: python scripts/check_file_gate.py
 
   writing:
-    name: writing linter dogfoods its own prose, report only
+    name: hard writing rules gate our prose; the score stays report-only
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
