@@ -50,6 +50,10 @@ def count_words(text: str) -> int:
     return len(WORD_RE.findall(text))
 
 
+def paragraphs(text: str) -> list[str]:
+    return [p for p in re.split(r"\n\s*\n", text) if p.strip()]
+
+
 # Possessive 's is not a contraction. The 's form is a contraction only after a
 # closed set of pronouns; the other suffixes stay general.
 _CONTRACTION = re.compile(
@@ -57,6 +61,19 @@ _CONTRACTION = re.compile(
     r"|\b(?:it|that|there|here|he|she|what|who|let)['\u2019]s\b",
     re.IGNORECASE)
 _EM_DASH = "\u2014"
+
+_BE = r"(?:am|is|are|was|were|be|been|being)"
+_PP_IRREG = (r"(?:done|made|sent|read|built|kept|held|set|put|run|written|"
+             r"shown|given|taken|found|got|gotten|seen|known|thrown|drawn)")
+_PASSIVE = re.compile(rf"\b{_BE}\s+(?:\w+ed|{_PP_IRREG})\b", re.IGNORECASE)
+_ING_MAIN = re.compile(rf"\b{_BE}\s+\w+ing\b", re.IGNORECASE)
+_NOMINAL = re.compile(
+    r"\b(?:perform|performs|conduct|conducts|carry out|carries out|"
+    r"make use of|makes use of)\b"
+    r"|\b\w+(?:tion|ment|ance|ence)s?\s+of\b", re.IGNORECASE)
+# Ordinary "of" phrases are fine; only a nominalizing suffix directly before
+# "of" counts, which is why "top of the file" passes and "utilization of"
+# does not.
 
 # Which categories fail --gate, by slop level. Passive-voice, gerund,
 # nominalization, and long-paragraph checks are NOT implemented in Phase 1;
@@ -123,6 +140,21 @@ def check_text(text: str, profile: dict) -> dict:
         long_n = sum(1 for s in sents if count_words(s) > max_words)
         if long_n:
             v["long_sentence"] = long_n
+
+    # Phase 2 report-only checks. These heuristics are noisy, so they inform
+    # and never gate; the comment above HARD_BY_SLOP is the contract.
+    pv = len(_PASSIVE.findall(prose))
+    if pv:
+        v["passive_voice"] = pv
+    ing = len(_ING_MAIN.findall(prose))
+    if ing:
+        v["ing_main_verb"] = ing
+    nom = len(_NOMINAL.findall(low))
+    if nom:
+        v["nominalization"] = nom
+    long_paras = sum(1 for p in paragraphs(prose) if len(sentences(p)) > 6)
+    if long_paras:
+        v["long_paragraph"] = long_paras
 
     total = sum(v.values())
     per100w = round(total * 100.0 / words, 2) if words else 0.0
