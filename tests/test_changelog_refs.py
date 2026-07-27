@@ -69,3 +69,10 @@ def test_backtick_wrapped_references_still_count():
     ok = CW.check_text("## 1.0\n\n- Fixed the loop (`a1b2c3d`)\n",
                        WP.load("changelog"))
     assert "unreferenced_entry" not in ok["violations"]
+
+
+def test_fenced_code_bullets_are_not_entries():
+    text = ("## 1.0\n\n- Real entry (#1)\n\n"
+            "```yaml\n- not: an entry\n- also: code\n```\n")
+    r = CW.check_text(text, WP.load("changelog"))
+    assert "unreferenced_entry" not in r["violations"]
