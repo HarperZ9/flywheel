@@ -23,9 +23,18 @@ or no denominator is not a record. Stdlib only.
 """
 from __future__ import annotations
 
+import hashlib
 from pathlib import Path
 
-from scripts.rung_pins import blob_sha256
+
+def blob_sha256(data: bytes) -> str:
+    """sha256 of git-blob content. Deliberately a local two-line copy rather
+    than an import from scripts/: harness/ ships standalone in the offline
+    bundle, and scripts/ is not a package, so importing across that boundary
+    breaks the moment the module is loaded outside the test harness.
+    scripts/rung_pins.py holds the same method for the prereg; the two agree
+    by construction because the method is one hash over LF-normalized bytes."""
+    return hashlib.sha256(data).hexdigest()
 
 # Per addendum Section 2, in the order the addendum lists them.
 REQUIRED_FIELDS = (
