@@ -2,7 +2,8 @@
 """writing_profiles.py -- the register-adaptive profile library, as data.
 
 A profile is a register configuration (Halliday field/tenor/mode) expressed as a
-rule record. The linter reads a record and never hard-codes a rule. Adding a
+rule record. The linter reads thresholds and toggles from the record; the shared
+word lists and the hard/soft split live in the engine until Phase 3. Adding a
 prose type is adding a record here, not editing the engine.
 
 This scores the FORM of prose, never its substance or authenticity, and it never
@@ -18,14 +19,14 @@ import re
 # PHASE 1 HONESTY NOTE. The engine reads four fields: slop, keep, no_em_dash,
 # and max_sentence_words. The other seven (rigor, hedging, voice, eprime,
 # translation_ready, readability_band, output_format) are carried as data for
-# later phases and toggle NOTHING yet. Also deferred: the writing-profile
-# front-matter override (only --profile and path inference select a profile),
-# the four unimplemented checks named in check_writing.py, and changelog
-# entry-reference enforcement. Carried here so the deferral is a shipped fact
-# rather than a conversation memory.
+# later phases and toggle NOTHING yet. Also deferred: the four unimplemented
+# checks named in check_writing.py, and changelog entry-reference enforcement.
+# Carried here so the deferral is a shipped fact rather than a conversation
+# memory.
 SCHEMA_FIELDS = (
     "slop", "rigor", "max_sentence_words", "no_em_dash", "hedging", "voice",
     "eprime", "translation_ready", "readability_band", "output_format", "keep",
+    "register",
 )
 
 DEFAULT = "flavored"
@@ -36,7 +37,8 @@ class ProfileError(ValueError):
 
 
 # Terms of art the linter must never flag, whatever list they might collide with
-# later. Kept here so every profile can share the base set.
+# later. Kept here so every profile can share the base set. keep is exact-form:
+# keeping "leverage" does not keep "leverages"; list each inflection you mean.
 _TERMS = (
     "pass", "fail", "undecided", "unverifiable", "candidate", "harness",
     "environment", "criterion", "receipt", "oracle", "certificate",
@@ -45,13 +47,16 @@ _TERMS = (
 
 def _p(slop, rigor, *, max_words=None, no_em_dash=True, hedging="calibrated",
        voice="active-preferred", eprime=False, translation_ready=False,
-       readability=(30, 70), output="markdown", keep=()):
+       readability=(30, 70), output="markdown", keep=(),
+       register=("general", "peer", "written")):
     return {
         "slop": slop, "rigor": rigor, "max_sentence_words": max_words,
         "no_em_dash": no_em_dash, "hedging": hedging, "voice": voice,
         "eprime": eprime, "translation_ready": translation_ready,
         "readability_band": readability, "output_format": output,
         "keep": tuple(_TERMS) + tuple(keep),
+        "register": {"field": register[0], "tenor": register[1],
+                     "mode": register[2]},
     }
 
 
@@ -60,7 +65,9 @@ PROFILES: dict[str, dict] = {
     # exist as a real record, or load(DEFAULT) crashes on every unmapped file.
     "flavored": _p("flavored", "informal", output="any"),
     "procedure": _p("strict", "normative", max_words=20, hedging="banned",
-                    voice="active-only", translation_ready=True, output="markdown"),
+                    voice="active-only", translation_ready=True, output="markdown",
+                    register=("operations", "operator-instruction",
+                              "numbered-steps")),
     "error-message": _p("strict", "normative", max_words=20, hedging="banned",
                          voice="active-only", output="plaintext"),
     "commit": _p("strict", "informal", max_words=50, hedging="banned",
@@ -73,16 +80,19 @@ PROFILES: dict[str, dict] = {
                          output="markdown", keep=("must", "should", "may",
                          "shall", "required", "recommended", "optional")),
     "research": _p("flavored", "calibrated", hedging="section-aware",
-                   eprime=True, output="markdown"),
+                   eprime=True, output="markdown",
+                   register=("findings", "peer-review", "written-argument")),
     "proof": _p("flavored", "structured", hedging="calibrated",
                 output="latex", keep=("assume", "prove", "let", "qed")),
     "model-card": _p("flavored", "calibrated", output="markdown"),
     "readme": _p("flavored", "informal", output="markdown"),
     "legal": _p("flavored", "normative", voice="active-only", output="markdown"),
     "social": _p("flavored", "informal", output="plaintext"),
-    "chat": _p("flavored", "calibrated", output="plaintext"),
+    "chat": _p("flavored", "calibrated", output="plaintext",
+               register=("engineering", "operator-dialogue", "conversational")),
     "narrative": _p("off", "informal", no_em_dash=False, hedging="calibrated",
-                    voice="active-preferred", output="markdown"),
+                    voice="active-preferred", output="markdown",
+                    register=("story", "reader", "literary")),
 }
 
 # First match wins. Patterns match the basename or a path fragment.

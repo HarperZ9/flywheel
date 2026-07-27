@@ -70,3 +70,17 @@ def test_the_default_profile_exists_and_loads():
     # If DEFAULT names no record, every unmapped file crashes the linter.
     assert WP.DEFAULT in WP.PROFILES
     assert WP.load(WP.DEFAULT)["slop"] == "flavored"
+
+
+def test_every_profile_carries_register_provenance():
+    # The Halliday grounding the module docstring invokes, as data.
+    assert "register" in WP.SCHEMA_FIELDS
+    for name, rec in WP.PROFILES.items():
+        reg = rec["register"]
+        assert set(reg) == {"field", "tenor", "mode"}, name
+        assert all(isinstance(v, str) and v for v in reg.values()), name
+
+
+def test_backslash_paths_resolve_like_forward_ones():
+    assert WP.profile_for("docs\\CHANGELOG.md") == "changelog"
+    assert WP.profile_for("papers\\uplift.md") == "research"

@@ -191,7 +191,7 @@ jobs:
       - run: python scripts/check_file_gate.py
 
   writing:
-    name: writing linter dogfoods our own docs, report only
+    name: writing linter dogfoods its own prose, report only
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -204,7 +204,7 @@ jobs:
         # the per-100-word number is noisy on short files and needs calibration
         # on our own corpus first (spec phase 3). It does dogfood: the readme is
         # scored against its own inferred profile.
-        run: python scripts/check_writing.py README.md scripts/check_writing.py scripts/writing_profiles.py scripts/writing_lists.py scripts/writing_pysource.py
+        run: python scripts/check_writing.py README.md scripts/check_writing.py scripts/writing_profiles.py scripts/writing_lists.py scripts/writing_pysource.py scripts/writing_readability.py
 
   verifier_on_the_old_interpreter:
     name: the verifier runs one version below the package floor

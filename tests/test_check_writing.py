@@ -204,6 +204,16 @@ def test_delta_with_gate_fails_when_the_new_draft_has_a_hard_violation(tmp_path)
     assert gated.returncode == 1
 
 
+def test_delta_honors_the_new_drafts_front_matter_tag(tmp_path):
+    old = tmp_path / "old.md"
+    new = tmp_path / "new.md"
+    old.write_text("Plain words.\n", encoding="utf-8")
+    new.write_text("writing-profile: readme\n\nA seamless tool.\n",
+                   encoding="utf-8")
+    gated = _run("--delta", str(old), str(new), "--gate")
+    assert gated.returncode == 1, gated.stdout + gated.stderr
+
+
 def test_gate_with_no_files_refuses_rather_than_passing():
     r = _run("--gate")
     assert r.returncode == 2

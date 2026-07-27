@@ -21,7 +21,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import writing_profiles as _wp  # noqa: E402
 import writing_pysource as _ps  # noqa: E402
 from writing_lists import BANNED, MARKETING, MODAL_HEDGE, PHRASAL  # noqa: E402
-from writing_readability import reading_ease, syllables  # noqa: E402
+from writing_readability import reading_ease, syllables  # noqa: E402  # re-exported for CW.syllables callers
 
 WORD_RE = re.compile(r"[A-Za-z][A-Za-z'-]*")
 _FENCE = re.compile(r"```.*?```", re.DOTALL)
@@ -116,6 +116,10 @@ def _count_phrases(low: str, phrases, keep) -> int:
 
 def check_text(text: str, profile: dict) -> dict:
     slop = profile.get("slop", "flavored")
+    if slop not in HARD_BY_SLOP:
+        raise _wp.ProfileError(
+            f"unknown slop level {slop!r}; a gate that cannot recognize its "
+            "level must refuse rather than silently switch off")
     keep = {k.lower() for k in profile.get("keep", ())}
     prose = strip_code(text)
     low = re.sub(r"\s+", " ", prose.lower())
@@ -229,29 +233,33 @@ def main(argv: list[str] | None = None) -> int:
               file=sys.stderr)
         return 2
 
-    def resolve_name(path: str, text: str) -> str:
+    def resolve(path: str, text: str) -> str:
         return (args.profile or _wp.declared_profile(text)
                 or _wp.profile_for(path))
 
-    if args.delta:
-        old_p, new_p = args.delta
-        prof = _wp.load(args.profile or _wp.profile_for(new_p))
-        d = delta(Path(old_p).read_text(encoding="utf-8", errors="replace"),
-                  Path(new_p).read_text(encoding="utf-8", errors="replace"), prof)
-        print(json.dumps(d) if args.as_json
-              else f"delta per100w: {d['old']} -> {d['new']} ({d['delta']:+})")
-        if args.gate and check_text(
-                Path(new_p).read_text(encoding="utf-8", errors="replace"),
-                prof)["hard"]:
-            return 1
-        return 0
+    try:
+        if args.delta:
+            old_p, new_p = args.delta
+            old_text = Path(old_p).read_text(encoding="utf-8", errors="replace")
+            new_text = Path(new_p).read_text(encoding="utf-8", errors="replace")
+            prof = _wp.load(resolve(new_p, new_text))
+            d = delta(old_text, new_text, prof)
+            print(json.dumps(d) if args.as_json
+                  else f"delta per100w: {d['old']} -> {d['new']} ({d['delta']:+})")
+            if args.gate and check_text(new_text, prof)["hard"]:
+                return 1
+            return 0
 
-    records, names = [], []
-    for f in args.files:
-        raw = Path(f).read_text(encoding="utf-8", errors="replace")
-        name = resolve_name(f, raw)
-        records.append(score_file(f, _wp.load(name), raw))
-        names.append(name)
+        records, names = [], []
+        for f in args.files:
+            raw = Path(f).read_text(encoding="utf-8", errors="replace")
+            name = resolve(f, raw)
+            records.append(score_file(f, _wp.load(name), raw))
+            names.append(name)
+    except _wp.ProfileError as exc:
+        print(f"unknown profile: {exc}", file=sys.stderr)
+        return 2
+
     any_hard = any(r["hard"] for r in records)
     if args.as_json:
         print(json.dumps({"files": records, "does_not_prove": DOES_NOT_PROVE},

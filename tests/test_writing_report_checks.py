@@ -144,3 +144,46 @@ def test_check_text_reports_reading_ease_and_band():
     short = CW.check_text("Tiny.", WP.load("readme"))
     assert short["reading_ease"] is None
     assert short["in_band"] is None
+
+
+def test_unknown_slop_value_raises_not_silently_off():
+    import pytest
+    prof = WP.load("readme")
+    prof["slop"] = "typo-level"
+    with pytest.raises(WP.ProfileError):
+        CW.check_text("Any text.", prof)
+
+
+def test_mathblock_dollars_are_stripped():
+    r = CW.check_text("Before $$ utilize \n leverage $$ after.",
+                      WP.load("research"))
+    assert "banned_word" not in r["violations"]
+
+
+def test_unknown_profile_flag_is_a_message_not_a_traceback(tmp_path):
+    import subprocess
+    f = tmp_path / "x.md"
+    f.write_text("words\n", encoding="utf-8")
+    root = Path(__file__).resolve().parent.parent
+    r = subprocess.run([sys.executable, str(root / "scripts" / "check_writing.py"),
+                        "--profile", "no-such", str(f)],
+                       capture_output=True, text=True, cwd=root)
+    assert r.returncode == 2
+    assert "unknown profile" in (r.stderr + r.stdout).lower()
+    assert "Traceback" not in r.stderr
+
+
+def test_readability_regex_copies_stay_in_sync_with_check_writing():
+    import writing_readability as WR
+    assert WR._WORD_RE.pattern == CW.WORD_RE.pattern
+    assert WR._SENT.pattern == CW._SENT.pattern
+
+
+def test_in_band_is_a_real_verdict_not_a_constant():
+    prof = WP.load("readme")
+    prof["readability_band"] = (0, 5)
+    simple = "The cat sat on the mat. " * 8
+    r = CW.check_text(simple, prof)
+    assert r["in_band"] is False
+    prof["readability_band"] = (0, 200)
+    assert CW.check_text(simple, prof)["in_band"] is True
