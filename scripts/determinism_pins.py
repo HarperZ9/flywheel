@@ -227,6 +227,10 @@ def _build_argparser() -> argparse.ArgumentParser:
     group.add_argument("--witness", action="store_true",
                        help="re-capture and diff against an existing pins file, "
                             "exit 1 on drift")
+    group.add_argument("--baseline", action="store_true",
+                       help="repeat-run digest baseline merged into pins file")
+    ap.add_argument("--n", type=int, default=3,
+                    help="repeat count for --baseline (default 3)")
     ap.add_argument("--json", dest="as_json", action="store_true")
     ap.add_argument("--base-url", default=None,
                     help="defaults to $OLLAMA_HOST, else 127.0.0.1:11434")
@@ -249,6 +253,27 @@ def main(argv: list[str] | None = None) -> int:
         else:
             print(f"captured {len(doc['rungs'])} rung(s) -> {pins_path}")
             print(f"sha256 {digest}")
+        return 0
+
+    if args.baseline:
+        from determinism_baseline import baseline  # lazy: only this mode needs it
+        try:
+            doc = load(pins_path)
+        except (FileNotFoundError, json.JSONDecodeError):
+            print(f"pins file not readable: {pins_path} (run --capture first)",
+                 file=sys.stderr)
+            return 2
+        models = [r["model"] for r in doc.get("rungs", [])]
+        doc["baselines"] = baseline(base_url, models, n=args.n)
+        save(doc, pins_path)
+        witnessed = all(r["witnessed"] for r in doc["baselines"].values())
+        if args.as_json:
+            print(json.dumps({"pins_path": str(pins_path), "witnessed": witnessed,
+                              "baselines": doc["baselines"]}, indent=1))
+        else:
+            for model, rung in doc["baselines"].items():
+                mark = "witnessed" if rung["witnessed"] else "NOT witnessed"
+                print(f"{model}: n={rung['n']} {mark}")
         return 0
 
     try:

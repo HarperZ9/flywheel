@@ -22,10 +22,28 @@ _spec = importlib.util.spec_from_file_location(
 D = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(D)
 
+# D's exec above put scripts/ on sys.path, so this plain import (and its own
+# `from determinism_pins import ...`) resolves the same way.
+import determinism_baseline as DB  # noqa: E402
+
 FREEZE = json.loads((ROOT / "artifacts" / "prereg" / "FREEZE.json")
                     .read_text(encoding="utf-8"))
 
 BASE_URL = "http://example.invalid:11434"
+
+class FakeResponse:
+    """A urlopen()-shaped stand-in, shared by every urllib-level fake below."""
+    def __init__(self, payload):
+        self._data = json.dumps(payload).encode("utf-8")
+
+    def read(self):
+        return self._data
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        return False
 
 
 def make_fake_fetch(version="0.3.14", num_ctx=4096,
@@ -192,19 +210,6 @@ def test_witness_ignores_a_baselines_key(tmp_path):
 def test_default_fetch_gets_version_and_posts_show(monkeypatch):
     calls = []
 
-    class FakeResponse:
-        def __init__(self, payload):
-            self._data = json.dumps(payload).encode("utf-8")
-
-        def read(self):
-            return self._data
-
-        def __enter__(self):
-            return self
-
-        def __exit__(self, *exc):
-            return False
-
     def fake_urlopen(req, timeout=None):
         calls.append(req)
         if req.full_url.endswith("/api/version"):
@@ -228,3 +233,68 @@ def test_default_fetch_gets_version_and_posts_show(monkeypatch):
     assert s["digest"] == "sha256:" + "c" * 64
     assert len(calls) == 2
     assert calls[0].get_method() == "GET"
+
+# ---- Task 2: repeat-run digest baseline (determinism_baseline.py)
+
+
+def make_fake_generate_fetch(responses):
+    """responses: {model: [text, ...]}, consumed in call order. Asserts each
+    call is /api/generate, unstreamed, at the pinned sampler tuple."""
+    cursors = {model: iter(texts) for model, texts in responses.items()}
+
+    def fetch(path, payload=None):
+        assert path == "/api/generate"
+        assert payload["stream"] is False
+        assert payload["options"] == DB.SAMPLER_TUPLE
+        return {"response": next(cursors[payload["model"]])}
+    return fetch
+
+def test_baseline_identical_texts_are_witnessed_true():
+    import hashlib
+    fetch = make_fake_generate_fetch({"qwen2.5:0.5b": ["12", "12", "12"]})
+    rung = DB.baseline(BASE_URL, ["qwen2.5:0.5b"], n=3, fetch=fetch)["qwen2.5:0.5b"]
+    assert rung["model"] == "qwen2.5:0.5b" and rung["n"] == 3
+    assert len(rung["digests"]) == 3 and len(set(rung["digests"])) == 1
+    assert rung["digests"][0] == hashlib.sha256(b"12").hexdigest()
+    assert rung["witnessed"] is True
+
+def test_baseline_differing_texts_are_witnessed_false_and_all_recorded():
+    fetch = make_fake_generate_fetch({"qwen2.5:0.5b": ["12", "13", "12"]})
+    rung = DB.baseline(BASE_URL, ["qwen2.5:0.5b"], n=3, fetch=fetch)["qwen2.5:0.5b"]
+    assert rung["witnessed"] is False
+    assert len(rung["digests"]) == 3, "every digest is recorded, none hidden"
+    assert len(set(rung["digests"])) == 2
+
+def test_baseline_respects_n():
+    fetch = make_fake_generate_fetch({"qwen2.5:0.5b": ["12"] * 5})
+    rung = DB.baseline(BASE_URL, ["qwen2.5:0.5b"], n=2, fetch=fetch)["qwen2.5:0.5b"]
+    assert rung["n"] == 2 and len(rung["digests"]) == 2
+
+def test_baseline_prompt_is_a_short_fixed_string():
+    assert isinstance(DB.BASELINE_PROMPT, str) and 0 < len(DB.BASELINE_PROMPT) < 200
+
+def test_cli_baseline_without_a_pins_file_exits_2(tmp_path, capsys):
+    rc = D.main(["--baseline", "--pins-path", str(tmp_path / "missing.json")])
+    assert rc == 2
+    assert "--capture" in capsys.readouterr().err
+
+def test_cli_baseline_merges_and_preserves_the_rest_of_the_doc(tmp_path, monkeypatch):
+    fetch = make_fake_fetch()
+    path, original = _capture_and_save(tmp_path, fetch, models=("qwen2.5:0.5b",))
+
+    def fake_urlopen(req, timeout=None):
+        body = json.loads(req.data.decode("utf-8"))
+        assert body["model"] == "qwen2.5:0.5b" and body["options"] == D.SAMPLER_TUPLE
+        return FakeResponse({"response": "391"})
+    monkeypatch.setattr(D.urllib.request, "urlopen", fake_urlopen)
+
+    rc = D.main(["--baseline", "--n", "2", "--pins-path", str(path),
+                "--base-url", BASE_URL])
+    assert rc == 0
+
+    saved = D.load(path)
+    for key in ("schema", "runtime", "rungs", "cites_prereg_sha256", "does_not_prove"):
+        assert saved[key] == original[key], f"{key} must survive a --baseline merge"
+    assert saved["baselines"]["qwen2.5:0.5b"]["n"] == 2
+    assert saved["baselines"]["qwen2.5:0.5b"]["witnessed"] is True
+    import hashlib; assert hashlib.sha256(path.read_bytes()).hexdigest() == D.sha256_of(saved)
