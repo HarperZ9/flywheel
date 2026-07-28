@@ -71,15 +71,26 @@ class _ModelPickerDialog extends StatefulWidget {
 class _ModelPickerDialogState extends State<_ModelPickerDialog> {
   String _query = '';
 
+  // Subscription tier first (the paid-for CLI), then keyed/local, then unusable.
+  int _rank(EndpointRow e) => switch (e.credential) {
+        'cli-auth' => 0,
+        'present' => 1,
+        'local-none' => 1,
+        _ => 2,
+      };
+
   List<EndpointRow> get _filtered {
     final q = _query.trim().toLowerCase();
-    if (q.isEmpty) return widget.endpoints;
-    return widget.endpoints
-        .where((e) =>
-            e.name.toLowerCase().contains(q) ||
-            e.backend.toLowerCase().contains(q) ||
-            e.providerRole.toLowerCase().contains(q))
-        .toList();
+    final base = q.isEmpty
+        ? widget.endpoints.toList()
+        : widget.endpoints
+            .where((e) =>
+                e.name.toLowerCase().contains(q) ||
+                e.backend.toLowerCase().contains(q) ||
+                e.providerRole.toLowerCase().contains(q))
+            .toList();
+    base.sort((a, b) => _rank(a).compareTo(_rank(b)));
+    return base;
   }
 
   @override
@@ -133,7 +144,8 @@ class _ModelPickerDialogState extends State<_ModelPickerDialog> {
 
   Widget _row(FwTokens t, EndpointRow e, bool selected) {
     final (label, color) = switch (e.credential) {
-      'present' || 'cli-auth' => ('ready', t.verified),
+      'cli-auth' => ('subscription', t.verified),
+      'present' => ('ready', t.verified),
       'local-none' => ('local', t.verified),
       _ => ('no key', t.inkFaint),
     };

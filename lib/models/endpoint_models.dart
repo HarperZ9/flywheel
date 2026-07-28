@@ -29,18 +29,31 @@ class HostedTier {
   final String model;
   final bool credentialPresent;
   final String keyEnv; // the env var NAME only
+  final String access; // subscription | api | none — the primary usable tier
+  final bool subscriptionPresent; // official CLI on PATH (claude max / codex plan)
+  final String subscriptionCli; // the CLI binary NAME only, never a token
 
   HostedTier(
       {required this.name,
       required this.model,
       required this.credentialPresent,
-      required this.keyEnv});
+      required this.keyEnv,
+      this.access = 'none',
+      this.subscriptionPresent = false,
+      this.subscriptionCli = ''});
+
+  bool get usable => access != 'none';
 
   factory HostedTier.fromJson(Map<String, dynamic> j) => HostedTier(
         name: j['name'] ?? '',
         model: j['model'] ?? '',
         credentialPresent: j['credential_present'] ?? false,
         keyEnv: j['key_env'] ?? '',
+        // Degrade gracefully if the gateway predates subscription-first fields.
+        access: j['access'] ??
+            (((j['credential_present'] ?? false) == true) ? 'api' : 'none'),
+        subscriptionPresent: j['subscription_present'] ?? false,
+        subscriptionCli: j['subscription_cli'] ?? '',
       );
 }
 
@@ -51,13 +64,17 @@ class EndpointHealthDoc {
   final int localHealthy;
   final int localTotal;
   final int hostedConfigured;
+  final int subscriptionAvailable; // hosted providers usable via subscription CLI
+  final int enterpriseUsable; // hosted providers usable at all (subscription or key)
 
   EndpointHealthDoc(
       {required this.local,
       required this.hosted,
       required this.localHealthy,
       required this.localTotal,
-      required this.hostedConfigured});
+      required this.hostedConfigured,
+      this.subscriptionAvailable = 0,
+      this.enterpriseUsable = 0});
 
   factory EndpointHealthDoc.fromJson(Map<String, dynamic> j) =>
       EndpointHealthDoc(
@@ -70,6 +87,8 @@ class EndpointHealthDoc {
         localHealthy: j['local_healthy'] ?? 0,
         localTotal: j['local_total'] ?? 0,
         hostedConfigured: j['enterprise_configured'] ?? 0,
+        subscriptionAvailable: j['subscription_available'] ?? 0,
+        enterpriseUsable: j['enterprise_usable'] ?? 0,
       );
 }
 

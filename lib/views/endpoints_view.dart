@@ -113,12 +113,14 @@ class _EndpointsViewState extends State<EndpointsView> {
             const SizedBox(width: FwLayout.s3),
             Expanded(
                 child: StatTile(
-                    label: 'keys present',
-                    value: '${h.hostedConfigured}/${h.hosted.length}')),
+                    label: 'subscriptions',
+                    value: '${h.subscriptionAvailable}',
+                    status: h.subscriptionAvailable > 0 ? 'verified' : null)),
             const SizedBox(width: FwLayout.s3),
             Expanded(
-                child:
-                    StatTile(label: 'providers', value: '${_roster.length}')),
+                child: StatTile(
+                    label: 'keys present',
+                    value: '${h.hostedConfigured}/${h.hosted.length}')),
           ],
         ),
         const SizedBox(height: FwLayout.s5),
@@ -143,7 +145,11 @@ class _EndpointsViewState extends State<EndpointsView> {
           padding: const EdgeInsets.symmetric(
               horizontal: FwLayout.s4, vertical: FwLayout.s2),
           child: Column(
-            children: [for (final r in _roster) _providerRow(t, r)],
+            children: [
+              for (final r in (_roster.toList()
+                    ..sort((a, b) => _rank(a).compareTo(_rank(b)))))
+                _providerRow(t, r)
+            ],
           ),
         ),
         if (_keychain != null &&
@@ -205,10 +211,18 @@ class _EndpointsViewState extends State<EndpointsView> {
     );
   }
 
+  // Subscription tier first (the paid-for CLI), then keyed/local, then unusable.
+  int _rank(EndpointRow r) => switch (r.credential) {
+        'cli-auth' => 0,
+        'present' => 1,
+        'local-none' => 1,
+        _ => 2,
+      };
+
   Widget _providerRow(FwTokens t, EndpointRow r) {
     final (label, status) = switch (r.credential) {
       'present' => ('key present', 'verified'),
-      'cli-auth' => ('cli auth', 'verified'),
+      'cli-auth' => ('subscription', 'verified'),
       'local-none' => ('local', 'verified'),
       _ => ('no key', 'absent'),
     };
