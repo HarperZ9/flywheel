@@ -16,6 +16,8 @@ import os
 import subprocess
 import sys
 import types
+
+import pytest
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -82,15 +84,27 @@ def _fake_run(stdout=b"", raises=None):
     return run
 
 
-def test_an_undecodable_command_line_does_not_kill_the_walker(monkeypatch):
+@pytest.mark.parametrize("platform,blob", [
+    ("win32",
+     b"4242|@|python.exe|@|C:\\gr\x81n\\python.exe -u scripts\\run_confirmatory.py\r\n"
+     b"7|@|cmd.exe|@|unrelated\r\n"),
+    ("linux",
+     b"4242 python /gr\x81n/python -u scripts/run_confirmatory.py\n"
+     b"7 sh unrelated\n"),
+])
+def test_an_undecodable_command_line_does_not_kill_the_walker(
+        monkeypatch, platform, blob):
     """The byte 0x81 is undefined in cp1252 and appears in OEM output for a
     u with an umlaut. One unrelated process carrying one anywhere on the machine
     used to end the walk at startup, before it journaled anything, while the
-    supervisor kept recording restarts that had never run."""
-    sep = run_confirmatory._SEP.encode()
-    blob = (b"4242" + sep + b"python.exe" + sep
-            + b"C:\\gr\x81n\\python.exe -u scripts\\run_confirmatory.py\r\n"
-            + b"7" + sep + b"cmd.exe" + sep + b"unrelated\r\n")
+    supervisor kept recording restarts that had never run.
+
+    Parametrized over BOTH platform branches after the first version fed the
+    Windows separator format to whatever branch the host happened to take: it
+    passed on the machine it was written on and failed on every CI runner,
+    which is the same shape of coupling as the bug it guards against.
+    """
+    monkeypatch.setattr("sys.platform", platform)
     monkeypatch.setattr(run_confirmatory.subprocess, "run", _fake_run(blob))
     records = run_confirmatory._live_process_records()
     assert [r[0] for r in records] == [4242, 7]

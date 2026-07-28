@@ -121,7 +121,7 @@ jobs:
         with:
           python-version: "3.13"
       - name: Test-only dependencies
-        run: python -m pip install pytest pytest-timeout pynacl pillow numpy
+        run: python -m pip install pytest pytest-timeout pynacl pillow numpy scipy
       - name: Every test, no file list to fall behind
         run: |
           FILES=$(python scripts/ci_shard.py --index ${{ matrix.shard }} --count 4)
