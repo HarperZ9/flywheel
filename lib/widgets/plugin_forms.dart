@@ -3,21 +3,20 @@
 
 import 'package:flutter/material.dart';
 
+import '../models/tool_spec.dart';
 import '../theme/flywheel_theme.dart';
 import 'fw.dart';
 
 class ProbeResult extends StatelessWidget {
   final Map<String, dynamic> probe;
-  final ValueChanged<String>? onCallTool;
+  final void Function(ToolSpec spec)? onCallTool;
   const ProbeResult({super.key, required this.probe, this.onCallTool});
 
   @override
   Widget build(BuildContext context) {
     final t = context.fw;
     final status = '${probe['status'] ?? probe['error'] ?? '?'}';
-    final tools = (probe['tools'] is List)
-        ? List<String>.from(probe['tools'])
-        : const <String>[];
+    final specs = ToolSpec.listFromProbe(probe);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -35,31 +34,43 @@ class ProbeResult extends StatelessWidget {
             ],
           ],
         ),
-        if (tools.isNotEmpty) ...[
+        if (specs.isNotEmpty) ...[
           const SizedBox(height: FwLayout.s2),
           Wrap(
             spacing: 4,
             runSpacing: 4,
-            children: [
-              for (final tool in tools)
-                InkWell(
-                  onTap: onCallTool == null ? null : () => onCallTool!(tool),
-                  borderRadius: BorderRadius.circular(4),
-                  child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: t.ground2,
-                      borderRadius: BorderRadius.circular(4),
-                      border: Border.all(color: t.hairline),
-                    ),
-                    child: Text(tool, style: fwMono(t, size: 10)),
-                  ),
-                ),
-            ],
+            children: [for (final spec in specs) _toolChip(t, spec)],
           ),
         ],
       ],
+    );
+  }
+
+  Widget _toolChip(FwTokens t, ToolSpec spec) {
+    final n = spec.properties.length;
+    return InkWell(
+      onTap: onCallTool == null ? null : () => onCallTool!(spec),
+      borderRadius: BorderRadius.circular(4),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+        decoration: BoxDecoration(
+          color: t.ground2,
+          borderRadius: BorderRadius.circular(4),
+          border: Border.all(color: t.hairline),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(spec.name, style: fwMono(t, size: 10)),
+            // A faint arg count marks the few tools that take inputs, so a
+            // user can tell an actuator from a bare describer at a glance.
+            if (n > 0) ...[
+              const SizedBox(width: 3),
+              Text('$n', style: fwMono(t, size: 9, color: t.inkFaint)),
+            ],
+          ],
+        ),
+      ),
     );
   }
 }

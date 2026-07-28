@@ -240,8 +240,8 @@ class _PluginsViewState extends State<PluginsView> {
               const SizedBox(height: FwLayout.s3),
               ProbeResult(
                 probe: probe,
-                onCallTool: (tool) =>
-                    showToolCallSheet(context, widget.client, name, tool),
+                onCallTool: (spec) =>
+                    showToolCallSheet(context, widget.client, name, spec),
               ),
             ],
           ],
