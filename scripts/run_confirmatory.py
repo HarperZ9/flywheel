@@ -24,6 +24,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import subprocess
 import sys
 import time
@@ -46,6 +47,65 @@ RUNGS = [
     "qwen2.5-coder:32b-instruct-q4_K_M",
 ]
 FAMILIES = ["zarankiewicz", "rectilinear_crossing"]
+
+
+# -- one walk at a time -------------------------------------------------------
+# Each interruption was recovered by a fresh manual launch, and on 2026-07-28
+# two of those launches overlapped. Both skipped the seven finished pairs, then
+# both began generating telos-coder-32b into the same pool directory. Two 32B
+# generators on one 24 GB card forced a 20% CPU offload and neither wrote a
+# candidate in forty-eight minutes. Nothing reached the pool, but the pass had
+# two generators aimed at one pair, which is not the single pass section 7
+# allows. The supervisor already refused to add a walk while one was alive; a
+# hand-typed launch bypassed that check because the walker itself had none.
+#
+# So the walker refuses to be the second one. It reads live command lines
+# rather than a pidfile, for the reason the supervisor does: a pidfile left
+# behind by a killed process is precisely the stale state this must survive.
+_SEP = "|@|"
+
+
+def other_walk_pids(records, self_pid: int) -> list:
+    """PIDs of OTHER live walkers, from (pid, image name, command line) rows.
+
+    Two exclusions carry the correctness. Self, obviously. And any process
+    whose image is not a Python interpreter: a launch wrapped as
+    `cmd /c python -u scripts/run_confirmatory.py > log` gives that cmd.exe a
+    command line containing this script's name, so counting it would make the
+    guard refuse every wrapped launch by pointing at the caller's own parent.
+    """
+    pids = []
+    for pid, name, cmdline in records:
+        if pid == self_pid or not cmdline:
+            continue
+        if "python" not in (name or "").lower():
+            continue
+        if "run_confirmatory" in cmdline:
+            pids.append(pid)
+    return sorted(pids)
+
+
+def _live_process_records() -> list:
+    """(pid, image name, command line) for every live process. Best effort: a
+    scan that fails returns nothing, so the guard never blocks a legitimate
+    launch because a process query was unavailable."""
+    if sys.platform == "win32":
+        ps = ("Get-CimInstance Win32_Process | ForEach-Object { "
+              f"'{{0}}{_SEP}{{1}}{_SEP}{{2}}' -f "
+              "$_.ProcessId, $_.Name, $_.CommandLine }")
+        out = subprocess.run(["powershell.exe", "-NoProfile", "-Command", ps],
+                             capture_output=True, text=True).stdout
+        rows = (line.split(_SEP, 2) for line in out.splitlines())
+    else:
+        out = subprocess.run(["ps", "-eo", "pid=,comm=,args="],
+                             capture_output=True, text=True).stdout
+        rows = (line.split(None, 2) for line in out.splitlines())
+    records = []
+    for parts in rows:
+        if len(parts) != 3 or not parts[0].strip().isdigit():
+            continue
+        records.append((int(parts[0].strip()), parts[1].strip(), parts[2]))
+    return records
 
 
 def journal_append(path: Path, record: dict) -> None:
@@ -91,6 +151,14 @@ def main() -> int:
     ap.add_argument("--out", default="artifacts/pool")
     ap.add_argument("--journal", default="artifacts/pool/confirmatory-journal.jsonl")
     args = ap.parse_args()
+
+    others = other_walk_pids(_live_process_records(), os.getpid())
+    if others:
+        print("refusing to start: a confirmatory walk is already running "
+              f"(pid {', '.join(str(p) for p in others)}). Two walkers skip "
+              "the same finished pairs and then generate the same pair into "
+              "the same pool directory.", file=sys.stderr)
+        return 3
 
     journal = REPO / args.journal
     journal_append(journal, {"event": "run_start", "pairs": len(FAMILIES) * len(RUNGS)})
