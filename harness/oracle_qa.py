@@ -39,7 +39,11 @@ from .verdict import Verdict
 REQUIRED_N_PER_CLASS = 3
 DEFAULT_COUNT_PER_CLASS = 6
 DEFAULT_CONFIDENCE = 0.95
-SCHEMA = "flywheel.oracle-qa-card/v1"
+# v2 formats `confidence` as a decimal string. v1 hashed it as a bare float, so
+# every v1 card hash was tied to one interpreter's float repr. The version moves
+# because the change alters every card_hash, and a reader that silently accepted
+# both would compare digests across two different preimages.
+SCHEMA = "flywheel.oracle-qa-card/v2"
 
 # Two-sided normal quantiles for the confidences we support. Hard-coded rather
 # than computed so the stdlib-only constraint holds and the numbers are auditable.
@@ -103,13 +107,53 @@ class OracleQACard:
             "false_rejects": self.false_rejects,
             "unverifiable_seen": self.unverifiable_seen,
             "false_accept_upper_bound": f"{self.false_accept_upper_bound:.6f}",
-            "confidence": self.confidence,
+            # A DECIMAL STRING, like the bound above it. This dict is hashed by
+            # card_hash, and a bare float would make the hash depend on Python's
+            # float repr, which is the likeliest way an honest stranger's replay
+            # disagrees over nothing real. Two places is lossless here:
+            # wilson_upper_bound only accepts a confidence it finds in _Z, and
+            # that lookup is keyed by round(confidence, 2).
+            "confidence": f"{self.confidence:.2f}",
             "required_n_per_class": self.required_n_per_class,
             "per_class": self.per_class,
             "passed": self.passed,
             "failures": sorted(self.failures),
             "does_not_prove": self.does_not_prove,
         }
+
+    @classmethod
+    def from_dict(cls, d: dict) -> "OracleQACard":
+        """Read a card back, refusing a version this code does not understand.
+
+        A bundle carries qa_card.json, and until now nothing could parse it
+        back. A reader that accepted any schema would reinterpret a v1 card
+        under v2 rules and recompute a digest over a different preimage than the
+        writer covered, which looks like tampering rather than like a version
+        difference.
+        """
+        if d.get("schema") != SCHEMA:
+            raise QAError(
+                f"refusing to read QA card schema {d.get('schema')!r} as "
+                f"{SCHEMA}")
+        card = cls(
+            schema=d["schema"], oracle_type=d["oracle_type"],
+            family=d["family"],
+            checker_source_sha256=d["checker_source_sha256"],
+            n_valid=d["n_valid"], n_mutants=d["n_mutants"],
+            false_accepts=d["false_accepts"], false_rejects=d["false_rejects"],
+            unverifiable_seen=d["unverifiable_seen"],
+            false_accept_upper_bound=float(d["false_accept_upper_bound"]),
+            confidence=float(d["confidence"]),
+            required_n_per_class=d["required_n_per_class"],
+            per_class=d["per_class"], failures=list(d.get("failures", [])),
+            does_not_prove=list(d.get("does_not_prove", [])))
+        # `passed` is DERIVED from failures, so a stored value that disagrees is
+        # a contradiction rather than a field to trust.
+        if "passed" in d and bool(d["passed"]) != card.passed:
+            raise QAError(
+                f"card claims passed={d['passed']} with {len(card.failures)} "
+                "failure(s) recorded; one of the two is wrong")
+        return card
 
     def card_hash(self) -> str:
         blob = json.dumps(self.to_dict(), sort_keys=True,

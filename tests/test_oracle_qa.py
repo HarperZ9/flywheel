@@ -213,10 +213,69 @@ def test_the_card_serializes_to_plain_json():
     text = json.dumps(card.to_dict(), sort_keys=True)
     back = json.loads(text)
     assert back["oracle_type"] == "zarankiewicz_certificate"
-    assert back["schema"] == "flywheel.oracle-qa-card/v1"
+    assert back["schema"] == "flywheel.oracle-qa-card/v2"
 
 
 def test_the_card_records_the_checker_source_hash():
     # A card that does not pin the code it graded could be reused after an edit.
     card = qa_battery(ZarankiewiczOracle(), _valid_certs(), seed=5)
     assert len(card.checker_source_sha256) == 64
+
+
+def _card():
+    return qa_battery(ZarankiewiczOracle(), _valid_certs(), seed=5)
+
+
+def test_the_hashed_card_carries_no_float_anywhere():
+    """The hazard receipt_fields names by name: cross-platform float formatting
+    is the likeliest way an honest stranger's replay disagrees over nothing
+    real. v1 hashed `confidence` as a bare float, so every v1 card hash was tied
+    to one interpreter's float repr."""
+    def floats(o, path=""):
+        if isinstance(o, float):
+            raise AssertionError(f"float in the hashed card at {path}: {o!r}")
+        if isinstance(o, dict):
+            for k, v in o.items():
+                floats(v, f"{path}/{k}")
+        elif isinstance(o, list):
+            for i, v in enumerate(o):
+                floats(v, f"{path}[{i}]")
+    floats(_card().to_dict())
+
+
+def test_the_confidence_string_is_lossless_for_every_supported_value():
+    """Two places is enough only because the z lookup is keyed by
+    round(confidence, 2). If that ever changes, this test says so."""
+    from harness.oracle_qa import _Z, wilson_upper_bound
+    for confidence in sorted(_Z):
+        rendered = f"{confidence:.2f}"
+        assert round(float(rendered), 2) == round(confidence, 2)
+        wilson_upper_bound(1, 10, confidence=float(rendered))
+
+
+def test_a_card_of_an_unknown_version_is_refused_not_reinterpreted():
+    d = _card().to_dict()
+    d["schema"] = "flywheel.oracle-qa-card/v1"
+    with pytest.raises(QAError):
+        OracleQACard.from_dict(d)
+    del d["schema"]
+    with pytest.raises(QAError):
+        OracleQACard.from_dict(d)
+
+
+def test_a_card_roundtrips_and_keeps_its_hash():
+    card = _card()
+    back = OracleQACard.from_dict(card.to_dict())
+    assert back.card_hash() == card.card_hash()
+    assert back.confidence == card.confidence
+    assert back.passed == card.passed
+
+
+def test_a_card_claiming_it_passed_while_recording_failures_is_refused():
+    """`passed` is derived from failures, so a stored value that disagrees is a
+    contradiction rather than a field to trust."""
+    d = _card().to_dict()
+    d["failures"] = ["something went wrong"]
+    d["passed"] = True
+    with pytest.raises(QAError):
+        OracleQACard.from_dict(d)

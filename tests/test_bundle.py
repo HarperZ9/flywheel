@@ -48,7 +48,7 @@ def _parts(**over):
         criterion={"criterion_id": "zarankiewicz.z_2_2", "version": 1,
                    "criterion_sha256": "sha256:" + "c" * 64},
         checker_sources={"zarankiewicz.py": "def k22_free(): return True\n"},
-        qa_card={"schema": "flywheel.oracle-qa-card/v1", "passed": True,
+        qa_card={"schema": "flywheel.oracle-qa-card/v2", "passed": True,
                  "false_accept_upper_bound": "0.021600"},
         tree_head={"schema": "flywheel.tree-head/v1", "size": 2,
                    "root": "sha256:" + "1" * 64})
