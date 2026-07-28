@@ -171,9 +171,19 @@ def probe_plugin(name: str, timeout: float = 20.0) -> dict:
                        client_name="flywheel-plugins") as c:
             c.start()
             tools = c.list_tools()
+            # Keep the FULL spec (name + description + inputSchema) so a caller
+            # can build a form/args UI instead of a blind {} box. `tools` stays a
+            # sorted name list for back-compat with older consumers.
+            specs = sorted(
+                ({"name": t.get("name", ""),
+                  "description": t.get("description", ""),
+                  "inputSchema": t.get("inputSchema") or {}}
+                 for t in tools if isinstance(t, dict)),
+                key=lambda s: s["name"])
             return {"name": name, "kind": kind, "status": "live",
-                    "n_tools": len(tools),
-                    "tools": sorted(t.get("name", "") for t in tools)}
+                    "n_tools": len(specs),
+                    "tools": [s["name"] for s in specs],
+                    "tool_specs": specs}
     except (MCPError, FileNotFoundError, OSError) as e:
         return {"name": name, "kind": kind, "status": "unreachable",
                 "detail": f"{type(e).__name__}: {e}"}
