@@ -57,6 +57,16 @@ def _resolve_credential(key_env: str) -> str:
     except Exception:
         return os.environ.get(key_env or "", "")
 
+
+def _resolve_credential(key_env: str) -> str:
+    """Env first, OS keychain second; '' when neither. Import is lazy so a
+    stripped deployment without keychain.py still serves env-only."""
+    try:
+        from harness.keychain import resolve_credential
+        return resolve_credential(key_env)
+    except Exception:
+        return os.environ.get(key_env or "", "")
+
 # Receipt catalog: in-repo, re-checkable artifacts that define the world state.
 # Relative to the served root. Missing files are reported honestly as absent.
 RECEIPT_CATALOG = (

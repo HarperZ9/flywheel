@@ -12,7 +12,7 @@ Enforced by scripts/check_file_gate.py and tests/test_file_gate.py.
 | harness/classifier_friction_bench.py | 454 |
 | harness/cross_harness_manifest.py | 342 |
 | harness/endpoints.py | 492 |
-| harness/gateway.py | 2421 |
+| harness/gateway.py | 2431 |
 | harness/governed_agent_bench.py | 734 |
 | harness/lanes.py | 317 |
 | harness/local_agent.py | 360 |
@@ -21,7 +21,14 @@ Enforced by scripts/check_file_gate.py and tests/test_file_gate.py.
 | harness/model_card_claims.py | 311 |
 | harness/serve.py | 420 |
 | harness/source_mined_bench.py | 974 |
+| harness/tasks_physics.py | 461 |
 | harness/typeface_skeletons.py | 504 |
 | harness/unisonai_stateful_bench.py | 559 |
 
 Total: 15 files, 9273 lines over a 300-line gate.
+
+
+Merge note, 2026-07-28 (p1/tail x main): tasks_physics.py and
+gateway.py reached this size on the main lineage, which carried no file
+gate. The merge is the moment they come under it, so they are frozen at
+merge size under this record's own rule: shrink and leave, never grow.

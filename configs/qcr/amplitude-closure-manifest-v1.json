@@ -1,0 +1,532 @@
+{
+  "schema": "qcr.amplitude-closure-manifest/v1",
+  "manifest_id": "qcr-fourth-order-amplitude-closure-2026-07-21",
+  "status": "populated_source_bounded_blocked_on_named_technical_gates",
+  "result_state": "protocol_only_not_executed",
+  "claims_physical_result": false,
+  "scope": "Source-bounded protocol for enumerating amplitudes and channels in the disputed complex Klein-Gordon field in a prescribed classical gravitational background through fourth Dyson order.",
+  "source_receipt": {
+    "schema": "qcr.source-retrieval-receipt/v1",
+    "local_path": "C:/dev/scratch/qcr-2026-07-21-02/sources/source-retrieval-receipt.json",
+    "state": "verified_local_not_committed",
+    "retrieved_at": "2026-07-21T12:54:44.0867159-07:00"
+  },
+  "sources": [
+    {
+      "source_id": "aziz-howl-2510.19714v3",
+      "version": "2510.19714v3",
+      "canonical_url": "https://arxiv.org/abs/2510.19714v3",
+      "pdf": {
+        "url": "https://arxiv.org/pdf/2510.19714v3",
+        "bytes": 9357466,
+        "sha256": "a26fcb9f2add435c66ab6aa0ac86bcaf049481ee3c41e87e20cefc4dd63dc391"
+      },
+      "source_bundle": {
+        "url": "https://arxiv.org/e-print/2510.19714v3",
+        "bytes": 1109630,
+        "sha256": "15dfdf6db4093aa12eb00e2416914e96dccddc3d0edba6169c3b3fefe93cbe32"
+      }
+    },
+    {
+      "source_id": "gundhi-infantino-bassi-2604.19696v2",
+      "version": "2604.19696v2",
+      "canonical_url": "https://arxiv.org/abs/2604.19696v2",
+      "pdf": {
+        "url": "https://arxiv.org/pdf/2604.19696v2",
+        "bytes": 1460547,
+        "sha256": "34d1159cf786454a71b2fb380e470be52468e06854a93cdcb315787cbf161bbe"
+      },
+      "source_bundle": {
+        "url": "https://arxiv.org/e-print/2604.19696v2",
+        "bytes": 296758,
+        "sha256": "4e667a1d3c4dafbe319dc548bea1ca1ff6b885c15d307b023671bae91197865d"
+      }
+    },
+    {
+      "source_id": "vidal-iyer-2607.03429v1",
+      "version": "2607.03429v1",
+      "canonical_url": "https://arxiv.org/abs/2607.03429v1",
+      "pdf": {
+        "url": "https://arxiv.org/pdf/2607.03429v1",
+        "bytes": 529995,
+        "sha256": "2d90d1101b66c0cd868bd8a36fe8b41070e393a78902a8837111aa12dda52f99"
+      },
+      "source_bundle": {
+        "url": "https://arxiv.org/e-print/2607.03429v1",
+        "bytes": 241194,
+        "sha256": "404e6fa4b8419b541be6115cf18c6dab3cfe696ed726140f79ee2ef5f4a543ca"
+      }
+    },
+    {
+      "source_id": "tang-et-al-2512.13675v2",
+      "version": "2512.13675v2",
+      "canonical_url": "https://arxiv.org/abs/2512.13675v2",
+      "pdf": {
+        "url": "https://arxiv.org/pdf/2512.13675v2",
+        "bytes": 542266,
+        "sha256": "4c00093642a6a6caeb8535e1fbdd734af0156c8b43ce9e7326080794995f39ea"
+      },
+      "source_bundle": {
+        "url": "https://arxiv.org/e-print/2512.13675v2",
+        "bytes": 388821,
+        "sha256": "ef426c611f5ae32d80995c68c4a0d2181df0a867612afc8a7cf4c02e6c4c2938"
+      }
+    }
+  ],
+  "source_declarations": [
+    {
+      "declaration_id": "decl-ah-model-hamiltonian",
+      "source_id": "aziz-howl-2510.19714v3",
+      "version": "2510.19714v3",
+      "canonical_url": "https://arxiv.org/abs/2510.19714v3",
+      "pdf_sha256": "a26fcb9f2add435c66ab6aa0ac86bcaf049481ee3c41e87e20cefc4dd63dc391",
+      "source_bundle_sha256": "15dfdf6db4093aa12eb00e2416914e96dccddc3d0edba6169c3b3fefe93cbe32",
+      "locus": {"source_file": "main.tex", "section": "Perturbative classical gravity; Experiment / Classical gravity", "equation_labels": ["eq:Tmunu", "eq:HCQ", "eq:HintNonRel", "eq:HIonRel"]},
+      "evidence_state": "source_disputed",
+      "claim_scope": "AH classical-background complex Klein-Gordon interaction and its stated nonrelativistic reduction."
+    },
+    {
+      "declaration_id": "decl-ah-initial-state",
+      "source_id": "aziz-howl-2510.19714v3",
+      "version": "2510.19714v3",
+      "canonical_url": "https://arxiv.org/abs/2510.19714v3",
+      "pdf_sha256": "a26fcb9f2add435c66ab6aa0ac86bcaf049481ee3c41e87e20cefc4dd63dc391",
+      "source_bundle_sha256": "15dfdf6db4093aa12eb00e2416914e96dccddc3d0edba6169c3b3fefe93cbe32",
+      "locus": {"source_file": "main.tex", "section": "Experiment / Quantum gravity", "equation_labels": ["eq:PsiInitial", "eq:Nstate", "eq:psiAfterSG", "eq:U0UI"]},
+      "evidence_state": "source_stated",
+      "claim_scope": "Four branch-localized incoming state and the four-branch projected output used by AH."
+    },
+    {
+      "declaration_id": "decl-ah-dyson",
+      "source_id": "aziz-howl-2510.19714v3",
+      "version": "2510.19714v3",
+      "canonical_url": "https://arxiv.org/abs/2510.19714v3",
+      "pdf_sha256": "a26fcb9f2add435c66ab6aa0ac86bcaf049481ee3c41e87e20cefc4dd63dc391",
+      "source_bundle_sha256": "15dfdf6db4093aa12eb00e2416914e96dccddc3d0edba6169c3b3fefe93cbe32",
+      "locus": {"source_file": "main.tex", "section": "Experiment / Quantum gravity", "equation_labels": ["eq:Dyson", "eq:U0UI"]},
+      "evidence_state": "source_stated",
+      "claim_scope": "Time-ordered interaction-picture evolution and order-by-order amplitude expansion."
+    },
+    {
+      "declaration_id": "decl-ah-local-phase",
+      "source_id": "aziz-howl-2510.19714v3",
+      "version": "2510.19714v3",
+      "canonical_url": "https://arxiv.org/abs/2510.19714v3",
+      "pdf_sha256": "a26fcb9f2add435c66ab6aa0ac86bcaf049481ee3c41e87e20cefc4dd63dc391",
+      "source_bundle_sha256": "15dfdf6db4093aa12eb00e2416914e96dccddc3d0edba6169c3b3fefe93cbe32",
+      "locus": {"source_file": "main.tex", "section": "Experiment / Classical gravity", "equation_labels": ["eq:alphaCG", "eq:PsiRelativeClassicalPhase"]},
+      "evidence_state": "source_stated",
+      "claim_scope": "Local branch-phase structure through second order in the AH treatment."
+    },
+    {
+      "declaration_id": "decl-ah-higher-order-local-phase",
+      "source_id": "aziz-howl-2510.19714v3",
+      "version": "2510.19714v3",
+      "canonical_url": "https://arxiv.org/abs/2510.19714v3",
+      "pdf_sha256": "a26fcb9f2add435c66ab6aa0ac86bcaf049481ee3c41e87e20cefc4dd63dc391",
+      "source_bundle_sha256": "15dfdf6db4093aa12eb00e2416914e96dccddc3d0edba6169c3b3fefe93cbe32",
+      "locus": {"source_file": "main.tex", "section": "Experiment / Classical gravity; Additional second-order processes", "equation_labels": ["eq:PsiRelativeClassicalPhase", "eq:relativePhase2"], "line_ranges": ["403", "520"]},
+      "evidence_state": "source_bounded_protocol",
+      "claim_scope": "AH states that third-order connected diagrams remain non-entangling and that additional contributions through fourth order are local relative phases; the manifest's higher-order channel bucket is protocol classification, not a source-exhaustive enumeration."
+    },
+    {
+      "declaration_id": "decl-ah-within-object-second-order",
+      "source_id": "aziz-howl-2510.19714v3",
+      "version": "2510.19714v3",
+      "canonical_url": "https://arxiv.org/abs/2510.19714v3",
+      "pdf_sha256": "a26fcb9f2add435c66ab6aa0ac86bcaf049481ee3c41e87e20cefc4dd63dc391",
+      "source_bundle_sha256": "15dfdf6db4093aa12eb00e2416914e96dccddc3d0edba6169c3b3fefe93cbe32",
+      "locus": {"source_file": "main.tex", "section": "Additional second-order processes", "equation_labels": ["eq:contVirtWithin", "eq:relativePhase2"]},
+      "evidence_state": "source_stated",
+      "claim_scope": "Explicit second-order within-object virtual-matter contractions and their local relative-phase factorization."
+    },
+    {
+      "declaration_id": "decl-ah-fourth-order",
+      "source_id": "aziz-howl-2510.19714v3",
+      "version": "2510.19714v3",
+      "canonical_url": "https://arxiv.org/abs/2510.19714v3",
+      "pdf_sha256": "a26fcb9f2add435c66ab6aa0ac86bcaf049481ee3c41e87e20cefc4dd63dc391",
+      "source_bundle_sha256": "15dfdf6db4093aa12eb00e2416914e96dccddc3d0edba6169c3b3fefe93cbe32",
+      "locus": {"source_file": "main.tex", "section": "Experiment / Classical gravity", "equation_labels": ["eq:beta4Comp", "eq:fullCG", "eq:beta4ijFull"]},
+      "evidence_state": "source_disputed",
+      "claim_scope": "AH fourth-order two-crossed-matter-propagator contribution, recorded as a disputed channel rather than benchmark truth."
+    },
+    {
+      "declaration_id": "decl-ah-source-potential",
+      "source_id": "aziz-howl-2510.19714v3",
+      "version": "2510.19714v3",
+      "canonical_url": "https://arxiv.org/abs/2510.19714v3",
+      "pdf_sha256": "a26fcb9f2add435c66ab6aa0ac86bcaf049481ee3c41e87e20cefc4dd63dc391",
+      "source_bundle_sha256": "15dfdf6db4093aa12eb00e2416914e96dccddc3d0edba6169c3b3fefe93cbe32",
+      "locus": {"source_file": "main.tex", "section": "Experiment / Classical gravity", "equation_labels": ["eq:semiclassicalPhi"]},
+      "evidence_state": "source_disputed",
+      "claim_scope": "AH fixed semiclassical potential used in its classical-background calculation."
+    },
+    {
+      "declaration_id": "decl-ah-boundary-model",
+      "source_id": "aziz-howl-2510.19714v3",
+      "version": "2510.19714v3",
+      "canonical_url": "https://arxiv.org/abs/2510.19714v3",
+      "pdf_sha256": "a26fcb9f2add435c66ab6aa0ac86bcaf049481ee3c41e87e20cefc4dd63dc391",
+      "source_bundle_sha256": "15dfdf6db4093aa12eb00e2416914e96dccddc3d0edba6169c3b3fefe93cbe32",
+      "locus": {"source_file": "main.tex", "section": "Boundaries", "equation_labels": [], "line_ranges": ["1212-1262"]},
+      "evidence_state": "source_disputed",
+      "claim_scope": "AH supplementary 1+1-dimensional finite-wall and Dirichlet-limit analysis; not a complete matched barrier model for the v1 baseline."
+    },
+    {
+      "declaration_id": "decl-gib-initial-exact-amplitudes",
+      "source_id": "gundhi-infantino-bassi-2604.19696v2",
+      "version": "2604.19696v2",
+      "canonical_url": "https://arxiv.org/abs/2604.19696v2",
+      "pdf_sha256": "34d1159cf786454a71b2fb380e470be52468e06854a93cdcb315787cbf161bbe",
+      "source_bundle_sha256": "4e667a1d3c4dafbe319dc548bea1ca1ff6b885c15d307b023671bae91197865d",
+      "locus": {"source_file": "articleV2.tex", "section": "Main text", "equation_labels": ["eq:initial", "eq:exact", "eq:tran_amp", "eq:Betaij_general"]},
+      "evidence_state": "source_disputed",
+      "claim_scope": "Incoming four-branch sum, full transition-amplitude sum, and GIB criticism of the diagonal restriction."
+    },
+    {
+      "declaration_id": "decl-gib-no-pair",
+      "source_id": "gundhi-infantino-bassi-2604.19696v2",
+      "version": "2604.19696v2",
+      "canonical_url": "https://arxiv.org/abs/2604.19696v2",
+      "pdf_sha256": "34d1159cf786454a71b2fb380e470be52468e06854a93cdcb315787cbf161bbe",
+      "source_bundle_sha256": "4e667a1d3c4dafbe319dc548bea1ca1ff6b885c15d307b023671bae91197865d",
+      "locus": {"source_file": "articleV2.tex", "section": "No entanglement generation for fixed number of particles", "equation_labels": ["eq:Hint-general", "eq:A-kernel", "eq:B-kernel", "eq:C-kernel", "eq:Hint-np", "eq:Heis-evolution"]},
+      "evidence_state": "source_stated",
+      "claim_scope": "General particle/antiparticle kernels and the explicit no-pair number-preserving restriction."
+    },
+    {
+      "declaration_id": "decl-gib-factorization",
+      "source_id": "gundhi-infantino-bassi-2604.19696v2",
+      "version": "2604.19696v2",
+      "canonical_url": "https://arxiv.org/abs/2604.19696v2",
+      "pdf_sha256": "34d1159cf786454a71b2fb380e470be52468e06854a93cdcb315787cbf161bbe",
+      "source_bundle_sha256": "4e667a1d3c4dafbe319dc548bea1ca1ff6b885c15d307b023671bae91197865d",
+      "locus": {"source_file": "articleV2.tex", "section": "Main text", "equation_labels": ["eq:factorized", "eq:Betaij_general", "eq:Factorized"]},
+      "evidence_state": "source_disputed",
+      "claim_scope": "GIB factorization claim for the complete cross-branch fourth-order sum."
+    },
+    {
+      "declaration_id": "decl-gib-first-quantized",
+      "source_id": "gundhi-infantino-bassi-2604.19696v2",
+      "version": "2604.19696v2",
+      "canonical_url": "https://arxiv.org/abs/2604.19696v2",
+      "pdf_sha256": "34d1159cf786454a71b2fb380e470be52468e06854a93cdcb315787cbf161bbe",
+      "source_bundle_sha256": "4e667a1d3c4dafbe319dc548bea1ca1ff6b885c15d307b023671bae91197865d",
+      "locus": {"source_file": "articleV2.tex", "section": "The transition amplitudes in first quantization / Identical particles", "equation_labels": ["eq:HamiltonianFQ", "eq:Facto", "eq:Us", "eq:aLL", "eq:aRL", "eq:aLR", "eq:aRR"]},
+      "evidence_state": "source_stated",
+      "claim_scope": "First-quantized one-body factorized evolution and explicit branch transition sums."
+    },
+    {
+      "declaration_id": "decl-gib-distinguishable",
+      "source_id": "gundhi-infantino-bassi-2604.19696v2",
+      "version": "2604.19696v2",
+      "canonical_url": "https://arxiv.org/abs/2604.19696v2",
+      "pdf_sha256": "34d1159cf786454a71b2fb380e470be52468e06854a93cdcb315787cbf161bbe",
+      "source_bundle_sha256": "4e667a1d3c4dafbe319dc548bea1ca1ff6b885c15d307b023671bae91197865d",
+      "locus": {"source_file": "articleV2.tex", "section": "The transition amplitudes in first quantization / Distinguishable particles", "equation_labels": ["eq:InitialQ1Dist", "eq:aLLDist", "eq:aRLDist", "eq:aLRDist", "eq:aRRDist", "eq:fact_dist"]},
+      "evidence_state": "source_stated",
+      "claim_scope": "Distinguishable-particle control and absence of cross-particle transition amplitudes in that first-quantized model."
+    },
+    {
+      "declaration_id": "decl-gib-low-order-exchange-null",
+      "source_id": "gundhi-infantino-bassi-2604.19696v2",
+      "version": "2604.19696v2",
+      "canonical_url": "https://arxiv.org/abs/2604.19696v2",
+      "pdf_sha256": "34d1159cf786454a71b2fb380e470be52468e06854a93cdcb315787cbf161bbe",
+      "source_bundle_sha256": "4e667a1d3c4dafbe319dc548bea1ca1ff6b885c15d307b023671bae91197865d",
+      "locus": {"source_file": "articleV2.tex", "section": "The transition amplitudes in first quantization / Identical particles", "equation_labels": ["eq:b_ex_0", "eq:beta1"]},
+      "evidence_state": "source_stated",
+      "claim_scope": "The selected cross-object exchange coefficient vanishes at orders zero and one under the source's non-overlap assumptions."
+    },
+    {
+      "declaration_id": "decl-vidal-hamiltonian",
+      "source_id": "vidal-iyer-2607.03429v1",
+      "version": "2607.03429v1",
+      "canonical_url": "https://arxiv.org/abs/2607.03429v1",
+      "pdf_sha256": "2d90d1101b66c0cd868bd8a36fe8b41070e393a78902a8837111aa12dda52f99",
+      "source_bundle_sha256": "404e6fa4b8419b541be6115cf18c6dab3cfe696ed726140f79ee2ef5f4a543ca",
+      "locus": {"source_file": "MAINER.tex", "section": "Framework and results of AH", "equation_labels": ["eq:H0", "eq:Hint"]},
+      "evidence_state": "source_disputed",
+      "claim_scope": "Vidal-Iyer derivation of a sign-different classical-background interaction Hamiltonian from its Lagrangian convention."
+    },
+    {
+      "declaration_id": "decl-vidal-distinct-fields-abstract",
+      "source_id": "vidal-iyer-2607.03429v1",
+      "version": "2607.03429v1",
+      "canonical_url": "https://arxiv.org/abs/2607.03429v1",
+      "pdf_sha256": "2d90d1101b66c0cd868bd8a36fe8b41070e393a78902a8837111aa12dda52f99",
+      "source_bundle_sha256": "404e6fa4b8419b541be6115cf18c6dab3cfe696ed726140f79ee2ef5f4a543ca",
+      "locus": {"source_file": "MAINER.tex", "section": "Abstract", "equation_labels": [], "line_ranges": ["40-42"]},
+      "evidence_state": "source_disputed",
+      "claim_scope": "The abstract claims that distinct non-interconverting matter fields have no corresponding cross-propagator; the body does not supply a matched two-field action."
+    },
+    {
+      "declaration_id": "decl-vidal-particle-antiparticle-null",
+      "source_id": "vidal-iyer-2607.03429v1",
+      "version": "2607.03429v1",
+      "canonical_url": "https://arxiv.org/abs/2607.03429v1",
+      "pdf_sha256": "2d90d1101b66c0cd868bd8a36fe8b41070e393a78902a8837111aa12dda52f99",
+      "source_bundle_sha256": "404e6fa4b8419b541be6115cf18c6dab3cfe696ed726140f79ee2ef5f4a543ca",
+      "locus": {"source_file": "MAINER.tex", "section": "No entanglement of different particle type", "equation_labels": ["eq:contractket"]},
+      "evidence_state": "source_disputed",
+      "claim_scope": "Particle/antiparticle projected-sector selection rule and claimed crossed-amplitude null."
+    },
+    {
+      "declaration_id": "decl-vidal-projection",
+      "source_id": "vidal-iyer-2607.03429v1",
+      "version": "2607.03429v1",
+      "canonical_url": "https://arxiv.org/abs/2607.03429v1",
+      "pdf_sha256": "2d90d1101b66c0cd868bd8a36fe8b41070e393a78902a8837111aa12dda52f99",
+      "source_bundle_sha256": "404e6fa4b8419b541be6115cf18c6dab3cfe696ed726140f79ee2ef5f4a543ca",
+      "locus": {"source_file": "MAINER.tex", "section": "Is beta_ij^(4) separable?", "equation_labels": ["eq:actualalpha", "eq:26"]},
+      "evidence_state": "source_disputed",
+      "claim_scope": "Full incoming-branch sum versus diagonal projection and the explicit fourth-order cross-branch integrand."
+    },
+    {
+      "declaration_id": "decl-vidal-leakage-barrier",
+      "source_id": "vidal-iyer-2607.03429v1",
+      "version": "2607.03429v1",
+      "canonical_url": "https://arxiv.org/abs/2607.03429v1",
+      "pdf_sha256": "2d90d1101b66c0cd868bd8a36fe8b41070e393a78902a8837111aa12dda52f99",
+      "source_bundle_sha256": "404e6fa4b8419b541be6115cf18c6dab3cfe696ed726140f79ee2ef5f4a543ca",
+      "locus": {"source_file": "MAINER.tex", "section": "Particle entanglement or mode entanglement; Discussion", "equation_labels": [], "line_ranges": ["539-567", "617-628"]},
+      "evidence_state": "source_disputed",
+      "claim_scope": "Leakage/contamination interpretation and barrier/trapping control proposal; no complete barrier Hamiltonian is supplied."
+    },
+    {
+      "declaration_id": "decl-vidal-n-more-than-one",
+      "source_id": "vidal-iyer-2607.03429v1",
+      "version": "2607.03429v1",
+      "canonical_url": "https://arxiv.org/abs/2607.03429v1",
+      "pdf_sha256": "2d90d1101b66c0cd868bd8a36fe8b41070e393a78902a8837111aa12dda52f99",
+      "source_bundle_sha256": "404e6fa4b8419b541be6115cf18c6dab3cfe696ed726140f79ee2ef5f4a543ca",
+      "locus": {"source_file": "MAINER.tex", "section": "Is beta_ij^(4) separable?", "equation_labels": ["eq:actualalpha", "eq:26"]},
+      "evidence_state": "source_disputed",
+      "claim_scope": "Vidal-Iyer N>1 orthogonality objection to the off-diagonal terms retained by GIB."
+    },
+    {
+      "declaration_id": "decl-tang-binding",
+      "source_id": "tang-et-al-2512.13675v2",
+      "version": "2512.13675v2",
+      "canonical_url": "https://arxiv.org/abs/2512.13675v2",
+      "pdf_sha256": "4c00093642a6a6caeb8535e1fbdd734af0156c8b43ce9e7326080794995f39ea",
+      "source_bundle_sha256": "ef426c611f5ae32d80995c68c4a0d2181df0a867612afc8a7cf4c02e6c4c2938",
+      "locus": {"source_file": "apssamp.tex", "section": "Binding implies exponential suppression", "equation_labels": ["eq:ell"]},
+      "evidence_state": "source_disputed",
+      "claim_scope": "WKB localization length and exponential amplitude suppression; not a complete bound-matter Hamiltonian."
+    },
+    {
+      "declaration_id": "decl-protocol-amplitude-completeness",
+      "source_id": "gundhi-infantino-bassi-2604.19696v2",
+      "version": "2604.19696v2",
+      "canonical_url": "https://arxiv.org/abs/2604.19696v2",
+      "pdf_sha256": "34d1159cf786454a71b2fb380e470be52468e06854a93cdcb315787cbf161bbe",
+      "source_bundle_sha256": "4e667a1d3c4dafbe319dc548bea1ca1ff6b885c15d307b023671bae91197865d",
+      "locus": {"source_file": "articleV2.tex", "section": "Main text; Fourth-order exchange contribution", "equation_labels": ["eq:exact", "eq:tran_amp", "eq:Betaij_general"]},
+      "evidence_state": "source_bounded_protocol",
+      "claim_scope": "The source requires summing all incoming branches; the manifest extends this conservatively to every declared full-basis final state and orders 0-4 as a completeness protocol, not a source result."
+    }
+  ],
+  "model": {
+    "boundary": "complex Klein-Gordon matter in a prescribed weak classical gravitational background",
+    "hamiltonians": [
+      {
+        "hamiltonian_id": "ah-classical-background-interaction",
+        "state": "disputed",
+        "source_expression": "H_int^CG=-(1/2) integral h^{mu nu} T_{mu nu}; AH nonrelativistic reduction has a minus sign on its mass-density term.",
+        "declaration_ids": ["decl-ah-model-hamiltonian"]
+      },
+      {
+        "hamiltonian_id": "vidal-iyer-classical-background-interaction",
+        "state": "disputed",
+        "source_expression": "H_int=4 integral Phi [pi^dagger pi +(m^2/2) phi^dagger phi] in the Vidal-Iyer convention.",
+        "declaration_ids": ["decl-vidal-hamiltonian"]
+      },
+      {
+        "hamiltonian_id": "gib-number-preserving-no-pair-interaction",
+        "state": "included_with_explicit_restriction",
+        "source_expression": "H_I^int=E(t)+a^dagger A_t a+b^dagger B_t b after excluding pair-creation and pair-annihilation kernels.",
+        "declaration_ids": ["decl-gib-no-pair"]
+      },
+      {
+        "hamiltonian_id": "ah-semiclassical-source-potential",
+        "state": "disputed_input_model",
+        "source_expression": "Fixed semiclassical Phi sourced as stated by AH; it is not installed as benchmark truth.",
+        "declaration_ids": ["decl-ah-source-potential"]
+      }
+    ],
+    "actions": [
+      {
+        "action_id": "minimally-coupled-complex-kg-fixed-classical-metric",
+        "state": "source_stated_boundary",
+        "definition": "Complex massive scalar field minimally coupled to a fixed weak classical metric perturbation.",
+        "declaration_ids": ["decl-vidal-hamiltonian", "decl-ah-model-hamiltonian"]
+      }
+    ],
+    "initial_state": {
+      "state_id": "two-object-four-branch-factorized-superposition",
+      "branches": ["LL", "LR", "RL", "RR"],
+      "definition": "(1/2)(|N>_1L+|N>_1R) tensor (|N>_2L+|N>_2R), with localized non-overlapping branch wavepackets.",
+      "state": "source_stated",
+      "declaration_ids": ["decl-ah-initial-state", "decl-gib-initial-exact-amplitudes"]
+    },
+    "basis": {
+      "sectors": [
+        {
+          "sector_id": "full-no-pair-basis",
+          "definition": "Every final state in the fixed-number particle/antiparticle sectors retained by the no-pair Hamiltonian, before four-branch projection.",
+          "enumeration_state": {"status": "unknown", "reason": "None of the four bounded sources supplies an exhaustive finite basis generator.", "evidence_state": "unverifiable", "required_review": "finite-basis-generator-gate"},
+          "declaration_ids": ["decl-gib-no-pair", "decl-protocol-amplitude-completeness"]
+        },
+        {
+          "sector_id": "four-branch-projected-sector",
+          "definition": "Span of the four localized output states indexed by LL, LR, RL, RR.",
+          "enumeration_state": "symbolically_complete_four_states",
+          "declaration_ids": ["decl-ah-initial-state", "decl-vidal-projection"]
+        },
+        {
+          "sector_id": "projection-complement-leakage-sector",
+          "definition": "Orthogonal complement of the four localized branch states inside the declared full no-pair basis.",
+          "enumeration_state": {"status": "unknown", "reason": "The source discussion identifies leakage but does not enumerate the full complement.", "evidence_state": "unverifiable", "required_review": "finite-basis-generator-gate"},
+          "declaration_ids": ["decl-vidal-leakage-barrier", "decl-protocol-amplitude-completeness"]
+        }
+      ]
+    }
+  },
+  "variants": [
+    {"variant_id": "same-field", "state": "included_disputed_baseline", "definition": "Both objects are compatible excitations of the same complex matter field.", "declaration_ids": ["decl-ah-model-hamiltonian", "decl-gib-first-quantized"]},
+    {"variant_id": "distinct-species", "state": "unknown_blocked", "definition": "Control with distinct non-interconverting matter fields and no cross-field propagator.", "blocking_detail": {"status": "unknown", "reason": "Vidal-Iyer states the cross-propagator null in its abstract and GIB gives a distinguishable-particle control, but neither supplies a complete matched two-field action.", "evidence_state": "unverifiable", "required_review": "distinct-field-action-gate"}, "declaration_ids": ["decl-vidal-distinct-fields-abstract", "decl-gib-distinguishable", "decl-vidal-particle-antiparticle-null"]},
+    {"variant_id": "full-no-pair-sector", "state": "included_symbolic", "definition": "Evolve in the complete declared fixed-number/no-pair sector before projection.", "declaration_ids": ["decl-gib-no-pair", "decl-protocol-amplitude-completeness"]},
+    {"variant_id": "four-branch-projection", "state": "included_as_reported_projection", "definition": "Project onto LL, LR, RL, RR only and report success probability plus complement leakage.", "declaration_ids": ["decl-ah-initial-state", "decl-vidal-projection", "decl-vidal-leakage-barrier"]},
+    {"variant_id": "particle-antiparticle-null", "state": "excluded_cross_channel_control", "definition": "Particle in one interferometer and antiparticle in the other under the stated nonrelativistic contraction rules.", "declaration_ids": ["decl-vidal-particle-antiparticle-null"]},
+    {"variant_id": "barrier-control", "state": "unknown_blocked", "definition": "Add a barrier/trapping control while holding the mass geometry fixed.", "blocking_detail": {"status": "unknown", "reason": "AH gives a partial 1+1-dimensional boundary model and Vidal-Iyer proposes barriers, but the bounded corpus supplies no complete matched barrier Hamiltonian and geometry prescription for the baseline.", "evidence_state": "unverifiable", "required_review": "barrier-hamiltonian-gate"}, "declaration_ids": ["decl-ah-boundary-model", "decl-vidal-leakage-barrier"]},
+    {"variant_id": "binding-localization-control", "state": "unknown_blocked", "definition": "Replace nearly free matter propagation with a bound/localized channel carrying the stated WKB suppression scale.", "blocking_detail": {"status": "unknown", "reason": "Tang et al. supply an asymptotic WKB estimate, not a full bound-matter Hamiltonian matched to the baseline.", "evidence_state": "unverifiable", "required_review": "binding-hamiltonian-gate"}, "declaration_ids": ["decl-tang-binding"]}
+  ],
+  "perturbation": {
+    "convention": "time_ordered_dyson_expansion",
+    "orders": [0, 1, 2, 3, 4],
+    "operator_definition": "U_I(t)=T exp[-i integral_0^t H_I(tau) d tau / hbar]",
+    "normalization_and_sign_state": {"status": "unknown", "reason": "The AH and Vidal-Iyer reductions use incompatible mass-term signs/conventions that require technical reconciliation.", "evidence_state": "unverifiable", "required_review": "hamiltonian-sign-convention-gate"},
+    "declaration_ids": ["decl-ah-dyson", "decl-ah-model-hamiltonian", "decl-vidal-hamiltonian"]
+  },
+  "evolution": {
+    "records": [
+      {"evolution_id": "dyson-orders-zero-through-four", "definition": "Construct U^(n) for every n in 0..4 using one reviewed Hamiltonian convention.", "state": "declared_not_executed", "declaration_ids": ["decl-ah-dyson"]},
+      {"evolution_id": "full-no-pair-evolution", "definition": "Apply each U^(n) to every incoming branch before any four-branch projection.", "state": "declared_not_executed", "declaration_ids": ["decl-gib-no-pair", "decl-protocol-amplitude-completeness"]},
+      {"evolution_id": "four-branch-projection", "definition": "Project the evolved state onto LL, LR, RL, RR only after full-sector amplitudes are retained.", "state": "declared_not_executed", "declaration_ids": ["decl-vidal-projection"]},
+      {"evolution_id": "projection-leakage-accounting", "definition": "Record projected success and norm in the orthogonal complement without postselection overclaim.", "state": "declared_not_executed", "declaration_ids": ["decl-vidal-leakage-barrier"]},
+      {"evolution_id": "finite-basis-convergence", "definition": "Run a reviewed increasing cutoff sequence and stop unless amplitude, trace, leakage, and oracle residuals converge.", "state": "unknown_blocked", "blocking_detail": {"status": "unknown", "reason": "No bounded source gives a finite basis or numeric convergence rule.", "evidence_state": "unverifiable", "required_review": "finite-basis-and-convergence-gate"}, "declaration_ids": ["decl-protocol-amplitude-completeness"]}
+    ]
+  },
+  "completeness_rules": [
+    {
+      "rule_id": "all-orders-0-through-4-all-inputs-all-full-basis-finals",
+      "amplitude_definition": "A^(n)_{f;kl}=<f|U^(n)|initial kl>",
+      "orders": [0, 1, 2, 3, 4],
+      "initial_branches": ["LL", "LR", "RL", "RR"],
+      "final_state_domain": "full-no-pair-basis",
+      "generator_row_count": 20,
+      "projected_transition_count_per_order": 16,
+      "projected_transition_count_through_order_four": 80,
+      "full_basis_enumeration_state": {"status": "unknown", "reason": "The symbolic domain is declared but no reviewed finite-basis enumerator exists.", "evidence_state": "unverifiable", "required_review": "finite-basis-generator-gate"},
+      "source_boundary": "The four incoming branches are source-derived; all-final-state coverage is a conservative manifest protocol and not a claimed source calculation.",
+      "declaration_ids": ["decl-gib-initial-exact-amplitudes", "decl-vidal-projection", "decl-protocol-amplitude-completeness"]
+    }
+  ],
+  "projected_transitions": [
+    {"transition_id": "proj-LL-to-LL", "initial_branch": "LL", "final_branch": "LL", "applies_to_orders": [0, 1, 2, 3, 4], "declaration_ids": ["decl-protocol-amplitude-completeness"]},
+    {"transition_id": "proj-LL-to-LR", "initial_branch": "LL", "final_branch": "LR", "applies_to_orders": [0, 1, 2, 3, 4], "declaration_ids": ["decl-protocol-amplitude-completeness"]},
+    {"transition_id": "proj-LL-to-RL", "initial_branch": "LL", "final_branch": "RL", "applies_to_orders": [0, 1, 2, 3, 4], "declaration_ids": ["decl-protocol-amplitude-completeness"]},
+    {"transition_id": "proj-LL-to-RR", "initial_branch": "LL", "final_branch": "RR", "applies_to_orders": [0, 1, 2, 3, 4], "declaration_ids": ["decl-protocol-amplitude-completeness"]},
+    {"transition_id": "proj-LR-to-LL", "initial_branch": "LR", "final_branch": "LL", "applies_to_orders": [0, 1, 2, 3, 4], "declaration_ids": ["decl-protocol-amplitude-completeness"]},
+    {"transition_id": "proj-LR-to-LR", "initial_branch": "LR", "final_branch": "LR", "applies_to_orders": [0, 1, 2, 3, 4], "declaration_ids": ["decl-protocol-amplitude-completeness"]},
+    {"transition_id": "proj-LR-to-RL", "initial_branch": "LR", "final_branch": "RL", "applies_to_orders": [0, 1, 2, 3, 4], "declaration_ids": ["decl-protocol-amplitude-completeness"]},
+    {"transition_id": "proj-LR-to-RR", "initial_branch": "LR", "final_branch": "RR", "applies_to_orders": [0, 1, 2, 3, 4], "declaration_ids": ["decl-protocol-amplitude-completeness"]},
+    {"transition_id": "proj-RL-to-LL", "initial_branch": "RL", "final_branch": "LL", "applies_to_orders": [0, 1, 2, 3, 4], "declaration_ids": ["decl-protocol-amplitude-completeness"]},
+    {"transition_id": "proj-RL-to-LR", "initial_branch": "RL", "final_branch": "LR", "applies_to_orders": [0, 1, 2, 3, 4], "declaration_ids": ["decl-protocol-amplitude-completeness"]},
+    {"transition_id": "proj-RL-to-RL", "initial_branch": "RL", "final_branch": "RL", "applies_to_orders": [0, 1, 2, 3, 4], "declaration_ids": ["decl-protocol-amplitude-completeness"]},
+    {"transition_id": "proj-RL-to-RR", "initial_branch": "RL", "final_branch": "RR", "applies_to_orders": [0, 1, 2, 3, 4], "declaration_ids": ["decl-protocol-amplitude-completeness"]},
+    {"transition_id": "proj-RR-to-LL", "initial_branch": "RR", "final_branch": "LL", "applies_to_orders": [0, 1, 2, 3, 4], "declaration_ids": ["decl-protocol-amplitude-completeness"]},
+    {"transition_id": "proj-RR-to-LR", "initial_branch": "RR", "final_branch": "LR", "applies_to_orders": [0, 1, 2, 3, 4], "declaration_ids": ["decl-protocol-amplitude-completeness"]},
+    {"transition_id": "proj-RR-to-RL", "initial_branch": "RR", "final_branch": "RL", "applies_to_orders": [0, 1, 2, 3, 4], "declaration_ids": ["decl-protocol-amplitude-completeness"]},
+    {"transition_id": "proj-RR-to-RR", "initial_branch": "RR", "final_branch": "RR", "applies_to_orders": [0, 1, 2, 3, 4], "declaration_ids": ["decl-protocol-amplitude-completeness"]}
+  ],
+  "amplitudes": [
+    {"amplitude_id": "amp-n0-in-LL", "variant_ids": ["same-field", "full-no-pair-sector", "four-branch-projection"], "dyson_order": 0, "initial_branch": "LL", "final_sector": "full-no-pair-basis", "final_state": "f in declared full-no-pair basis", "species_assignment": "same complex Klein-Gordon field baseline", "channel_ids": ["identity-evolution", "off-diagonal-cross-branch-zero-audit", "projection-complement-zero-audit"], "definition": "A^(n)_{f;kl}=<f|U^(n)|initial kl>", "source_locus_declaration_id": "decl-protocol-amplitude-completeness", "inclusion_state": "included", "completeness_rule_id": "all-orders-0-through-4-all-inputs-all-full-basis-finals", "declaration_ids": ["decl-protocol-amplitude-completeness"]},
+    {"amplitude_id": "amp-n0-in-LR", "variant_ids": ["same-field", "full-no-pair-sector", "four-branch-projection"], "dyson_order": 0, "initial_branch": "LR", "final_sector": "full-no-pair-basis", "final_state": "f in declared full-no-pair basis", "species_assignment": "same complex Klein-Gordon field baseline", "channel_ids": ["identity-evolution", "off-diagonal-cross-branch-zero-audit", "projection-complement-zero-audit"], "definition": "A^(n)_{f;kl}=<f|U^(n)|initial kl>", "source_locus_declaration_id": "decl-protocol-amplitude-completeness", "inclusion_state": "included", "completeness_rule_id": "all-orders-0-through-4-all-inputs-all-full-basis-finals", "declaration_ids": ["decl-protocol-amplitude-completeness"]},
+    {"amplitude_id": "amp-n0-in-RL", "variant_ids": ["same-field", "full-no-pair-sector", "four-branch-projection"], "dyson_order": 0, "initial_branch": "RL", "final_sector": "full-no-pair-basis", "final_state": "f in declared full-no-pair basis", "species_assignment": "same complex Klein-Gordon field baseline", "channel_ids": ["identity-evolution", "off-diagonal-cross-branch-zero-audit", "projection-complement-zero-audit"], "definition": "A^(n)_{f;kl}=<f|U^(n)|initial kl>", "source_locus_declaration_id": "decl-protocol-amplitude-completeness", "inclusion_state": "included", "completeness_rule_id": "all-orders-0-through-4-all-inputs-all-full-basis-finals", "declaration_ids": ["decl-protocol-amplitude-completeness"]},
+    {"amplitude_id": "amp-n0-in-RR", "variant_ids": ["same-field", "full-no-pair-sector", "four-branch-projection"], "dyson_order": 0, "initial_branch": "RR", "final_sector": "full-no-pair-basis", "final_state": "f in declared full-no-pair basis", "species_assignment": "same complex Klein-Gordon field baseline", "channel_ids": ["identity-evolution", "off-diagonal-cross-branch-zero-audit", "projection-complement-zero-audit"], "definition": "A^(n)_{f;kl}=<f|U^(n)|initial kl>", "source_locus_declaration_id": "decl-protocol-amplitude-completeness", "inclusion_state": "included", "completeness_rule_id": "all-orders-0-through-4-all-inputs-all-full-basis-finals", "declaration_ids": ["decl-protocol-amplitude-completeness"]},
+    {"amplitude_id": "amp-n1-in-LL", "variant_ids": ["same-field", "full-no-pair-sector", "four-branch-projection"], "dyson_order": 1, "initial_branch": "LL", "final_sector": "full-no-pair-basis", "final_state": "f in declared full-no-pair basis", "species_assignment": "same complex Klein-Gordon field baseline", "channel_ids": ["direct-local-background-scattering", "off-diagonal-cross-branch-zero-audit", "projection-complement-leakage"], "definition": "A^(n)_{f;kl}=<f|U^(n)|initial kl>", "source_locus_declaration_id": "decl-protocol-amplitude-completeness", "inclusion_state": "included", "completeness_rule_id": "all-orders-0-through-4-all-inputs-all-full-basis-finals", "declaration_ids": ["decl-protocol-amplitude-completeness"]},
+    {"amplitude_id": "amp-n1-in-LR", "variant_ids": ["same-field", "full-no-pair-sector", "four-branch-projection"], "dyson_order": 1, "initial_branch": "LR", "final_sector": "full-no-pair-basis", "final_state": "f in declared full-no-pair basis", "species_assignment": "same complex Klein-Gordon field baseline", "channel_ids": ["direct-local-background-scattering", "off-diagonal-cross-branch-zero-audit", "projection-complement-leakage"], "definition": "A^(n)_{f;kl}=<f|U^(n)|initial kl>", "source_locus_declaration_id": "decl-protocol-amplitude-completeness", "inclusion_state": "included", "completeness_rule_id": "all-orders-0-through-4-all-inputs-all-full-basis-finals", "declaration_ids": ["decl-protocol-amplitude-completeness"]},
+    {"amplitude_id": "amp-n1-in-RL", "variant_ids": ["same-field", "full-no-pair-sector", "four-branch-projection"], "dyson_order": 1, "initial_branch": "RL", "final_sector": "full-no-pair-basis", "final_state": "f in declared full-no-pair basis", "species_assignment": "same complex Klein-Gordon field baseline", "channel_ids": ["direct-local-background-scattering", "off-diagonal-cross-branch-zero-audit", "projection-complement-leakage"], "definition": "A^(n)_{f;kl}=<f|U^(n)|initial kl>", "source_locus_declaration_id": "decl-protocol-amplitude-completeness", "inclusion_state": "included", "completeness_rule_id": "all-orders-0-through-4-all-inputs-all-full-basis-finals", "declaration_ids": ["decl-protocol-amplitude-completeness"]},
+    {"amplitude_id": "amp-n1-in-RR", "variant_ids": ["same-field", "full-no-pair-sector", "four-branch-projection"], "dyson_order": 1, "initial_branch": "RR", "final_sector": "full-no-pair-basis", "final_state": "f in declared full-no-pair basis", "species_assignment": "same complex Klein-Gordon field baseline", "channel_ids": ["direct-local-background-scattering", "off-diagonal-cross-branch-zero-audit", "projection-complement-leakage"], "definition": "A^(n)_{f;kl}=<f|U^(n)|initial kl>", "source_locus_declaration_id": "decl-protocol-amplitude-completeness", "inclusion_state": "included", "completeness_rule_id": "all-orders-0-through-4-all-inputs-all-full-basis-finals", "declaration_ids": ["decl-protocol-amplitude-completeness"]},
+    {"amplitude_id": "amp-n2-in-LL", "variant_ids": ["same-field", "full-no-pair-sector", "four-branch-projection"], "dyson_order": 2, "initial_branch": "LL", "final_sector": "full-no-pair-basis", "final_state": "f in declared full-no-pair basis", "species_assignment": "same complex Klein-Gordon field baseline", "channel_ids": ["direct-local-background-scattering", "same-object-self-processes-second-order", "off-diagonal-cross-branch", "projection-complement-leakage"], "definition": "A^(n)_{f;kl}=<f|U^(n)|initial kl>", "source_locus_declaration_id": "decl-protocol-amplitude-completeness", "inclusion_state": "included", "completeness_rule_id": "all-orders-0-through-4-all-inputs-all-full-basis-finals", "declaration_ids": ["decl-protocol-amplitude-completeness"]},
+    {"amplitude_id": "amp-n2-in-LR", "variant_ids": ["same-field", "full-no-pair-sector", "four-branch-projection"], "dyson_order": 2, "initial_branch": "LR", "final_sector": "full-no-pair-basis", "final_state": "f in declared full-no-pair basis", "species_assignment": "same complex Klein-Gordon field baseline", "channel_ids": ["direct-local-background-scattering", "same-object-self-processes-second-order", "off-diagonal-cross-branch", "projection-complement-leakage"], "definition": "A^(n)_{f;kl}=<f|U^(n)|initial kl>", "source_locus_declaration_id": "decl-protocol-amplitude-completeness", "inclusion_state": "included", "completeness_rule_id": "all-orders-0-through-4-all-inputs-all-full-basis-finals", "declaration_ids": ["decl-protocol-amplitude-completeness"]},
+    {"amplitude_id": "amp-n2-in-RL", "variant_ids": ["same-field", "full-no-pair-sector", "four-branch-projection"], "dyson_order": 2, "initial_branch": "RL", "final_sector": "full-no-pair-basis", "final_state": "f in declared full-no-pair basis", "species_assignment": "same complex Klein-Gordon field baseline", "channel_ids": ["direct-local-background-scattering", "same-object-self-processes-second-order", "off-diagonal-cross-branch", "projection-complement-leakage"], "definition": "A^(n)_{f;kl}=<f|U^(n)|initial kl>", "source_locus_declaration_id": "decl-protocol-amplitude-completeness", "inclusion_state": "included", "completeness_rule_id": "all-orders-0-through-4-all-inputs-all-full-basis-finals", "declaration_ids": ["decl-protocol-amplitude-completeness"]},
+    {"amplitude_id": "amp-n2-in-RR", "variant_ids": ["same-field", "full-no-pair-sector", "four-branch-projection"], "dyson_order": 2, "initial_branch": "RR", "final_sector": "full-no-pair-basis", "final_state": "f in declared full-no-pair basis", "species_assignment": "same complex Klein-Gordon field baseline", "channel_ids": ["direct-local-background-scattering", "same-object-self-processes-second-order", "off-diagonal-cross-branch", "projection-complement-leakage"], "definition": "A^(n)_{f;kl}=<f|U^(n)|initial kl>", "source_locus_declaration_id": "decl-protocol-amplitude-completeness", "inclusion_state": "included", "completeness_rule_id": "all-orders-0-through-4-all-inputs-all-full-basis-finals", "declaration_ids": ["decl-protocol-amplitude-completeness"]},
+    {"amplitude_id": "amp-n3-in-LL", "variant_ids": ["same-field", "full-no-pair-sector", "four-branch-projection"], "dyson_order": 3, "initial_branch": "LL", "final_sector": "full-no-pair-basis", "final_state": "f in declared full-no-pair basis", "species_assignment": "same complex Klein-Gordon field baseline", "channel_ids": ["direct-local-background-scattering-higher-order", "same-object-self-processes-higher-order", "off-diagonal-cross-branch", "projection-complement-leakage"], "definition": "A^(n)_{f;kl}=<f|U^(n)|initial kl>", "source_locus_declaration_id": "decl-protocol-amplitude-completeness", "inclusion_state": "included", "completeness_rule_id": "all-orders-0-through-4-all-inputs-all-full-basis-finals", "declaration_ids": ["decl-protocol-amplitude-completeness"]},
+    {"amplitude_id": "amp-n3-in-LR", "variant_ids": ["same-field", "full-no-pair-sector", "four-branch-projection"], "dyson_order": 3, "initial_branch": "LR", "final_sector": "full-no-pair-basis", "final_state": "f in declared full-no-pair basis", "species_assignment": "same complex Klein-Gordon field baseline", "channel_ids": ["direct-local-background-scattering-higher-order", "same-object-self-processes-higher-order", "off-diagonal-cross-branch", "projection-complement-leakage"], "definition": "A^(n)_{f;kl}=<f|U^(n)|initial kl>", "source_locus_declaration_id": "decl-protocol-amplitude-completeness", "inclusion_state": "included", "completeness_rule_id": "all-orders-0-through-4-all-inputs-all-full-basis-finals", "declaration_ids": ["decl-protocol-amplitude-completeness"]},
+    {"amplitude_id": "amp-n3-in-RL", "variant_ids": ["same-field", "full-no-pair-sector", "four-branch-projection"], "dyson_order": 3, "initial_branch": "RL", "final_sector": "full-no-pair-basis", "final_state": "f in declared full-no-pair basis", "species_assignment": "same complex Klein-Gordon field baseline", "channel_ids": ["direct-local-background-scattering-higher-order", "same-object-self-processes-higher-order", "off-diagonal-cross-branch", "projection-complement-leakage"], "definition": "A^(n)_{f;kl}=<f|U^(n)|initial kl>", "source_locus_declaration_id": "decl-protocol-amplitude-completeness", "inclusion_state": "included", "completeness_rule_id": "all-orders-0-through-4-all-inputs-all-full-basis-finals", "declaration_ids": ["decl-protocol-amplitude-completeness"]},
+    {"amplitude_id": "amp-n3-in-RR", "variant_ids": ["same-field", "full-no-pair-sector", "four-branch-projection"], "dyson_order": 3, "initial_branch": "RR", "final_sector": "full-no-pair-basis", "final_state": "f in declared full-no-pair basis", "species_assignment": "same complex Klein-Gordon field baseline", "channel_ids": ["direct-local-background-scattering-higher-order", "same-object-self-processes-higher-order", "off-diagonal-cross-branch", "projection-complement-leakage"], "definition": "A^(n)_{f;kl}=<f|U^(n)|initial kl>", "source_locus_declaration_id": "decl-protocol-amplitude-completeness", "inclusion_state": "included", "completeness_rule_id": "all-orders-0-through-4-all-inputs-all-full-basis-finals", "declaration_ids": ["decl-protocol-amplitude-completeness"]},
+    {"amplitude_id": "amp-n4-in-LL", "variant_ids": ["same-field", "full-no-pair-sector", "four-branch-projection"], "dyson_order": 4, "initial_branch": "LL", "final_sector": "full-no-pair-basis", "final_state": "f in declared full-no-pair basis", "species_assignment": "same complex Klein-Gordon field baseline", "channel_ids": ["direct-local-background-scattering-higher-order", "same-object-self-processes-higher-order", "same-field-two-cross-propagator-exchange", "off-diagonal-cross-branch", "n-more-than-one-off-diagonal", "projection-complement-leakage"], "definition": "A^(n)_{f;kl}=<f|U^(n)|initial kl>", "source_locus_declaration_id": "decl-protocol-amplitude-completeness", "inclusion_state": "included", "completeness_rule_id": "all-orders-0-through-4-all-inputs-all-full-basis-finals", "declaration_ids": ["decl-protocol-amplitude-completeness"]},
+    {"amplitude_id": "amp-n4-in-LR", "variant_ids": ["same-field", "full-no-pair-sector", "four-branch-projection"], "dyson_order": 4, "initial_branch": "LR", "final_sector": "full-no-pair-basis", "final_state": "f in declared full-no-pair basis", "species_assignment": "same complex Klein-Gordon field baseline", "channel_ids": ["direct-local-background-scattering-higher-order", "same-object-self-processes-higher-order", "same-field-two-cross-propagator-exchange", "off-diagonal-cross-branch", "n-more-than-one-off-diagonal", "projection-complement-leakage"], "definition": "A^(n)_{f;kl}=<f|U^(n)|initial kl>", "source_locus_declaration_id": "decl-protocol-amplitude-completeness", "inclusion_state": "included", "completeness_rule_id": "all-orders-0-through-4-all-inputs-all-full-basis-finals", "declaration_ids": ["decl-protocol-amplitude-completeness"]},
+    {"amplitude_id": "amp-n4-in-RL", "variant_ids": ["same-field", "full-no-pair-sector", "four-branch-projection"], "dyson_order": 4, "initial_branch": "RL", "final_sector": "full-no-pair-basis", "final_state": "f in declared full-no-pair basis", "species_assignment": "same complex Klein-Gordon field baseline", "channel_ids": ["direct-local-background-scattering-higher-order", "same-object-self-processes-higher-order", "same-field-two-cross-propagator-exchange", "off-diagonal-cross-branch", "n-more-than-one-off-diagonal", "projection-complement-leakage"], "definition": "A^(n)_{f;kl}=<f|U^(n)|initial kl>", "source_locus_declaration_id": "decl-protocol-amplitude-completeness", "inclusion_state": "included", "completeness_rule_id": "all-orders-0-through-4-all-inputs-all-full-basis-finals", "declaration_ids": ["decl-protocol-amplitude-completeness"]},
+    {"amplitude_id": "amp-n4-in-RR", "variant_ids": ["same-field", "full-no-pair-sector", "four-branch-projection"], "dyson_order": 4, "initial_branch": "RR", "final_sector": "full-no-pair-basis", "final_state": "f in declared full-no-pair basis", "species_assignment": "same complex Klein-Gordon field baseline", "channel_ids": ["direct-local-background-scattering-higher-order", "same-object-self-processes-higher-order", "same-field-two-cross-propagator-exchange", "off-diagonal-cross-branch", "n-more-than-one-off-diagonal", "projection-complement-leakage"], "definition": "A^(n)_{f;kl}=<f|U^(n)|initial kl>", "source_locus_declaration_id": "decl-protocol-amplitude-completeness", "inclusion_state": "included", "completeness_rule_id": "all-orders-0-through-4-all-inputs-all-full-basis-finals", "declaration_ids": ["decl-protocol-amplitude-completeness"]}
+  ],
+  "channel_accounting": {
+    "semantics": "Channel IDs are source-bound classification and audit tags, not an additive partition of an amplitude.",
+    "additivity_rule": "Only primitive contractions produced by the future reviewed enumerator may be summed; overlapping classification tags must never be summed as independent contributions.",
+    "default_disjoint": false
+  },
+  "channels": [
+    {"channel_id": "identity-evolution", "orders": [0], "coverage_role": "generator_channel", "requires_amplitude_rows": true, "variant_ids": ["full-no-pair-sector"], "final_sector": "full-no-pair-basis", "species_assignment": "all declared controls", "definition": "Zeroth-order identity contribution over the declared full basis.", "source_locus_declaration_id": "decl-ah-dyson", "inclusion_state": "included", "completeness_rule_id": "all-orders-0-through-4-all-inputs-all-full-basis-finals", "declaration_ids": ["decl-ah-dyson"]},
+    {"channel_id": "direct-local-background-scattering", "orders": [1, 2], "coverage_role": "generator_channel", "requires_amplitude_rows": true, "variant_ids": ["same-field", "full-no-pair-sector"], "final_sector": "full-no-pair-basis", "species_assignment": "same complex Klein-Gordon field baseline", "definition": "Source-explicit direct fixed-background insertions and local branch-phase contributions through second order.", "source_locus_declaration_id": "decl-ah-local-phase", "inclusion_state": "included", "completeness_rule_id": "all-orders-0-through-4-all-inputs-all-full-basis-finals", "declaration_ids": ["decl-ah-local-phase"]},
+    {"channel_id": "direct-local-background-scattering-higher-order", "orders": [3, 4], "coverage_role": "generator_channel", "requires_amplitude_rows": true, "variant_ids": ["same-field", "full-no-pair-sector"], "final_sector": "full-no-pair-basis", "species_assignment": "same complex Klein-Gordon field baseline", "definition": "Protocol bucket for higher-order contributions that AH classifies as local relative phases; it is not a source-exhaustive contraction list.", "source_locus_declaration_id": "decl-ah-higher-order-local-phase", "inclusion_state": "disputed", "completeness_rule_id": "all-orders-0-through-4-all-inputs-all-full-basis-finals", "declaration_ids": ["decl-ah-higher-order-local-phase"]},
+    {"channel_id": "same-object-self-processes-second-order", "orders": [2], "coverage_role": "classification_audit", "requires_amplitude_rows": true, "variant_ids": ["same-field", "full-no-pair-sector"], "final_sector": "full-no-pair-basis", "species_assignment": "same complex Klein-Gordon field baseline", "definition": "Explicit second-order within-object virtual-matter contractions, classified as a non-additive subset of the local-background channel.", "classification_relation": {"parent_channel": "direct-local-background-scattering", "disjoint_from_parent": false, "additive_with_parent": false}, "source_locus_declaration_id": "decl-ah-within-object-second-order", "inclusion_state": "included", "completeness_rule_id": "all-orders-0-through-4-all-inputs-all-full-basis-finals", "declaration_ids": ["decl-ah-within-object-second-order"]},
+    {"channel_id": "same-object-self-processes-higher-order", "orders": [3, 4], "coverage_role": "classification_audit", "requires_amplitude_rows": true, "variant_ids": ["same-field", "full-no-pair-sector"], "final_sector": "full-no-pair-basis", "species_assignment": "same complex Klein-Gordon field baseline", "definition": "Protocol audit bucket for possible higher-order within-object contractions; the source does not enumerate these contractions separately.", "classification_relation": {"parent_channel": "direct-local-background-scattering-higher-order", "disjoint_from_parent": false, "additive_with_parent": false}, "source_locus_declaration_id": "decl-ah-higher-order-local-phase", "inclusion_state": "disputed", "completeness_rule_id": "all-orders-0-through-4-all-inputs-all-full-basis-finals", "declaration_ids": ["decl-ah-higher-order-local-phase"]},
+    {"channel_id": "same-field-two-cross-propagator-exchange", "orders": [4], "coverage_role": "generator_channel", "requires_amplitude_rows": true, "variant_ids": ["same-field"], "final_sector": "four-branch-projected-sector and projection complement", "species_assignment": "same complex Klein-Gordon field", "definition": "Two crossed matter propagators connecting the two object/interferometer regions.", "source_locus_declaration_id": "decl-ah-fourth-order", "inclusion_state": "disputed", "completeness_rule_id": "all-orders-0-through-4-all-inputs-all-full-basis-finals", "declaration_ids": ["decl-ah-fourth-order", "decl-gib-factorization", "decl-vidal-projection"]},
+    {"channel_id": "off-diagonal-cross-branch-zero-audit", "orders": [0, 1], "coverage_role": "zero_valued_audit", "requires_amplitude_rows": true, "variant_ids": ["same-field", "four-branch-projection"], "final_sector": "four-branch-projected-sector", "species_assignment": "same complex Klein-Gordon field baseline", "definition": "Audit the source-stated zero for the selected cross-object exchange coefficient at orders zero and one; this tag does not erase other full-basis amplitudes.", "source_locus_declaration_id": "decl-gib-low-order-exchange-null", "inclusion_state": "included", "completeness_rule_id": "all-orders-0-through-4-all-inputs-all-full-basis-finals", "declaration_ids": ["decl-gib-low-order-exchange-null"]},
+    {"channel_id": "off-diagonal-cross-branch", "orders": [2, 3, 4], "coverage_role": "generator_channel", "requires_amplitude_rows": true, "variant_ids": ["same-field", "four-branch-projection"], "final_sector": "four-branch-projected-sector and projection complement", "species_assignment": "same complex Klein-Gordon field baseline", "definition": "Initial branch kl and final branch ij need not coincide; retain all 16 projected mappings at these generator orders.", "source_locus_declaration_id": "decl-gib-initial-exact-amplitudes", "inclusion_state": "included", "completeness_rule_id": "all-orders-0-through-4-all-inputs-all-full-basis-finals", "declaration_ids": ["decl-gib-initial-exact-amplitudes", "decl-vidal-projection"]},
+    {"channel_id": "n-more-than-one-off-diagonal", "orders": [4], "coverage_role": "classification_audit", "requires_amplitude_rows": true, "variant_ids": ["same-field", "four-branch-projection"], "final_sector": "four-branch-projected-sector", "species_assignment": "same complex Klein-Gordon field with N greater than one", "definition": "Non-additive audit tag for off-diagonal branch terms whose survival is disputed because of remaining N-1-state overlaps.", "classification_relation": {"parent_channel": "off-diagonal-cross-branch", "disjoint_from_parent": false, "additive_with_parent": false}, "source_locus_declaration_id": "decl-vidal-n-more-than-one", "inclusion_state": "disputed", "completeness_rule_id": "all-orders-0-through-4-all-inputs-all-full-basis-finals", "declaration_ids": ["decl-gib-factorization", "decl-vidal-n-more-than-one"]},
+    {"channel_id": "projection-complement-zero-audit", "orders": [0], "coverage_role": "zero_valued_audit", "requires_amplitude_rows": true, "variant_ids": ["full-no-pair-sector", "four-branch-projection"], "final_sector": "projection-complement-leakage-sector", "species_assignment": "all declared controls", "definition": "Audit that identity evolution leaves the declared incoming branch state inside the four-branch subspace at order zero.", "source_locus_declaration_id": "decl-ah-initial-state", "inclusion_state": "included", "completeness_rule_id": "all-orders-0-through-4-all-inputs-all-full-basis-finals", "declaration_ids": ["decl-ah-initial-state", "decl-protocol-amplitude-completeness"]},
+    {"channel_id": "projection-complement-leakage", "orders": [1, 2, 3, 4], "coverage_role": "generator_channel", "requires_amplitude_rows": true, "variant_ids": ["full-no-pair-sector", "four-branch-projection"], "final_sector": "projection-complement-leakage-sector", "species_assignment": "all declared controls", "definition": "All generated final amplitudes outside LL, LR, RL, RR; never silently postselect them away.", "source_locus_declaration_id": "decl-vidal-leakage-barrier", "inclusion_state": "included", "completeness_rule_id": "all-orders-0-through-4-all-inputs-all-full-basis-finals", "declaration_ids": ["decl-vidal-leakage-barrier", "decl-protocol-amplitude-completeness"]},
+    {"channel_id": "pair-creation-annihilation", "orders": [1, 2, 3, 4], "coverage_role": "excluded_channel", "requires_amplitude_rows": false, "variant_ids": ["full-no-pair-sector"], "final_sector": "outside-fixed-number-sector", "species_assignment": "particle-antiparticle pairs", "definition": "a^dagger C b^dagger and b C^dagger a terms from the general Hamiltonian.", "source_locus_declaration_id": "decl-gib-no-pair", "inclusion_state": "excluded", "exclusion_reason": "The declared v1 baseline is explicitly no-pair/fixed-number; exclusion must be revisited in a different manifest variant.", "completeness_rule_id": "all-orders-0-through-4-all-inputs-all-full-basis-finals", "declaration_ids": ["decl-gib-no-pair"]},
+    {"channel_id": "particle-antiparticle-cross-exchange", "orders": [4], "coverage_role": "variant_control", "requires_amplitude_rows": false, "variant_ids": ["particle-antiparticle-null"], "final_sector": "four-branch-projected-sector", "species_assignment": "particle in interferometer one; antiparticle in interferometer two", "definition": "Crossed matter-exchange contraction under the source's nonrelativistic charge-sector rules.", "source_locus_declaration_id": "decl-vidal-particle-antiparticle-null", "inclusion_state": "excluded", "exclusion_reason": "Source-stated selection rules make the projected crossed contraction vanish; retained as a deterministic null control.", "completeness_rule_id": "all-orders-0-through-4-all-inputs-all-full-basis-finals", "declaration_ids": ["decl-vidal-particle-antiparticle-null"]},
+    {"channel_id": "distinct-species-cross-propagator", "orders": [0, 1, 2, 3, 4], "coverage_role": "variant_control", "requires_amplitude_rows": false, "variant_ids": ["distinct-species"], "final_sector": "full-no-pair-basis", "species_assignment": "two distinct non-interconverting fields", "definition": "Cross-field propagation/exchange control; the source abstract claims the cross-propagator is absent, while the matched action remains unset.", "source_locus_declaration_id": "decl-vidal-distinct-fields-abstract", "inclusion_state": "unknown_blocked", "blocking_detail": {"status": "unknown", "reason": "The source abstract states the null but supplies no complete matched two-field action or propagator derivation.", "evidence_state": "unverifiable", "required_review": "distinct-field-action-gate"}, "completeness_rule_id": "all-orders-0-through-4-all-inputs-all-full-basis-finals", "declaration_ids": ["decl-vidal-distinct-fields-abstract", "decl-gib-distinguishable"]},
+    {"channel_id": "barrier-modified-propagation", "orders": [0, 1, 2, 3, 4], "coverage_role": "variant_control", "requires_amplitude_rows": false, "variant_ids": ["barrier-control"], "final_sector": "full-no-pair-basis", "species_assignment": "matched to selected baseline", "definition": "Propagation with an explicit barrier or trapping potential between objects.", "source_locus_declaration_id": "decl-ah-boundary-model", "inclusion_state": "unknown_blocked", "blocking_detail": {"status": "unknown", "reason": "The partial AH boundary treatment and Vidal-Iyer control proposal do not define a complete matched Hamiltonian and geometry for this baseline.", "evidence_state": "unverifiable", "required_review": "barrier-hamiltonian-gate"}, "completeness_rule_id": "all-orders-0-through-4-all-inputs-all-full-basis-finals", "declaration_ids": ["decl-ah-boundary-model", "decl-vidal-leakage-barrier"]},
+    {"channel_id": "binding-localized-propagation", "orders": [0, 1, 2, 3, 4], "coverage_role": "variant_control", "requires_amplitude_rows": false, "variant_ids": ["binding-localization-control"], "final_sector": "full-no-pair-basis", "species_assignment": "bound microscopic constituents", "definition": "Matter channel with WKB amplitude scaling exp(-d/ell), ell=hbar/sqrt(2 m E_b), pending a full Hamiltonian.", "source_locus_declaration_id": "decl-tang-binding", "inclusion_state": "unknown_blocked", "blocking_detail": {"status": "unknown", "reason": "The WKB asymptotic does not define a complete bound-matter basis and evolution.", "evidence_state": "unverifiable", "required_review": "binding-hamiltonian-gate"}, "completeness_rule_id": "all-orders-0-through-4-all-inputs-all-full-basis-finals", "declaration_ids": ["decl-tang-binding"]}
+  ],
+  "oracles": [
+    {"oracle_id": "O1", "name": "dimension_and_validity", "authorship": "manifest_protocol_added", "predicate": "Reject any run outside the declared weak-field, nonrelativistic, fixed-number, basis, and approximation domains.", "state": "declared_not_executed", "declaration_ids": ["decl-ah-model-hamiltonian", "decl-gib-no-pair", "decl-tang-binding"]},
+    {"oracle_id": "O2", "name": "separability", "authorship": "manifest_protocol_added", "predicate": "On the normalized four-branch projection evaluate the determinant/concurrence, and use PPT when a mixed state is declared.", "state": "declared_not_executed", "declaration_ids": ["decl-gib-factorization"]},
+    {"oracle_id": "O3", "name": "local_phase_gauge", "authorship": "manifest_protocol_added", "predicate": "The reported nonlocal invariant must be unchanged by independent local branch rephasings.", "state": "declared_not_executed", "declaration_ids": ["decl-ah-local-phase"]},
+    {"oracle_id": "O4", "name": "trace_and_sector_closure", "authorship": "manifest_protocol_added", "predicate": "Full norm equals projected success plus complement leakage within a reviewed implementation tolerance.", "state": "blocked_pending_basis_and_tolerance", "declaration_ids": ["decl-gib-initial-exact-amplitudes", "decl-vidal-leakage-barrier", "decl-protocol-amplitude-completeness"]},
+    {"oracle_id": "O5", "name": "factorization", "authorship": "manifest_protocol_added", "predicate": "Compare claimed factorization in both particle/species and interferometer/mode partitions without conflating them.", "state": "declared_not_executed", "declaration_ids": ["decl-gib-factorization", "decl-gib-first-quantized", "decl-vidal-projection"]},
+    {"oracle_id": "O6", "name": "null_and_asymptotic_limits", "authorship": "manifest_protocol_added", "predicate": "Require the declared particle-antiparticle/distinct-species nulls and barrier/binding suppression controls in their reviewed domains.", "state": "blocked_pending_control_hamiltonians", "declaration_ids": ["decl-gib-distinguishable", "decl-vidal-distinct-fields-abstract", "decl-vidal-particle-antiparticle-null", "decl-ah-boundary-model", "decl-vidal-leakage-barrier", "decl-tang-binding"]}
+  ],
+  "tolerances": {
+    "source_derived": [],
+    "implementation_controls": [
+      {"control_id": "finite-basis-convergence-threshold", "value": {"status": "unknown", "reason": "None of the bounded sources specifies a numeric finite-basis convergence threshold.", "evidence_state": "unverifiable", "required_review": "finite-basis-and-convergence-gate"}, "convergence_role": "Must bound amplitude, norm, leakage, and oracle residual changes over successive cutoffs.", "not_source_claim": true},
+      {"control_id": "trace-closure-tolerance", "value": {"status": "unknown", "reason": "No source-derived numeric trace-closure tolerance is available.", "evidence_state": "unverifiable", "required_review": "finite-basis-and-convergence-gate"}, "convergence_role": "Must bound abs(full_norm-projected_success-leakage).", "not_source_claim": true}
+    ]
+  },
+  "technical_gates": [
+    {"gate_id": "hamiltonian-sign-convention-gate", "state": "blocked", "reason": "Reconcile AH and Vidal-Iyer interaction-Hamiltonian sign/convention differences before numerical evolution."},
+    {"gate_id": "n-more-than-one-off-diagonal-gate", "state": "blocked", "reason": "Resolve the GIB versus Vidal-Iyer N>1 off-diagonal overlap dispute."},
+    {"gate_id": "finite-basis-generator-gate", "state": "blocked", "reason": "Implement and review an exhaustive finite full-sector basis/channel enumerator."},
+    {"gate_id": "distinct-field-action-gate", "state": "blocked", "reason": "Specify a matched distinct-field action and cross-propagator null."},
+    {"gate_id": "barrier-hamiltonian-gate", "state": "blocked", "reason": "Specify a barrier/trapping Hamiltonian without changing the mass geometry."},
+    {"gate_id": "binding-hamiltonian-gate", "state": "blocked", "reason": "Promote the WKB asymptotic into a reviewed bound-matter Hamiltonian and basis."},
+    {"gate_id": "finite-basis-and-convergence-gate", "state": "blocked", "reason": "Define cutoff sequence and numeric convergence/trace tolerances as implementation controls."}
+  ],
+  "outputs": [
+    {"artifact_id": "order-by-order-amplitude-tables", "path_template": "amplitudes/order-{n}.json", "state": "declared_not_generated", "exists": false},
+    {"artifact_id": "full-density-matrix", "path_template": "states/full-density-matrix.json", "state": "declared_not_generated", "exists": false},
+    {"artifact_id": "projected-density-matrix", "path_template": "states/projected-density-matrix.json", "state": "declared_not_generated", "exists": false},
+    {"artifact_id": "leakage-and-success", "path_template": "states/leakage-and-success.json", "state": "declared_not_generated", "exists": false},
+    {"artifact_id": "convergence-record", "path_template": "convergence/cutoff-sequence.json", "state": "declared_not_generated", "exists": false},
+    {"artifact_id": "execution-receipt", "path_template": "receipts/amplitude-closure.json", "state": "declared_not_generated", "exists": false}
+  ]
+}

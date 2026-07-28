@@ -58,7 +58,14 @@ Enforced by scripts/check_file_gate.py and tests/test_file_gate.py.
 | tests/test_gateway.py | 818 |
 | tests/test_harness_cli.py | 851 |
 | tests/test_ledger.py | 372 |
+| tests/test_qcr_amplitude_manifest.py | 458 |
 | tests/test_selector.py | 332 |
 | tests/test_unisonai_stateful_bench.py | 364 |
 
 Total: 46 files (36 in scripts/, 10 in tests/), 29932 lines over a 300-line gate.
+
+
+Merge note, 2026-07-28 (p1/tail x main):
+test_qcr_amplitude_manifest.py reached this size on the main lineage,
+which carried no file gate. Frozen at merge size under this record's
+own rule: shrink and leave, never grow.
