@@ -48,6 +48,20 @@ checker rejects, and only then is the difference two-sided.
 A task with no candidate in any slot is excluded from every denominator and
 reported, because grading a task nothing was generated for attributes a harness
 gap to the candidate.
+
+THE ACCEPT CONTRACT: `accept(text, task_id) -> bool`, and `score` the same.
+
+The task id is not decoration. Every arm here scores a candidate against the
+INSTANCE it was asked about, and an accept function that receives only the text
+cannot do that: `CertificateOracle.verify` reads its binding from the task, so
+with no task it skips the binding check entirely. Measured on this repository's
+own checker, a certificate declaring a 2x2 problem, submitted against the 28x39
+instance the candidate was actually given, scores FAIL when bound and PASS when
+not. The arms took `accept(text)` at first, which made the unbound version the
+only one they could be handed, and every arm's pass rate would have been
+inflated by exactly the candidates that answered an easier question than the one
+asked. That is the defect `binding_keys` was introduced to close in `verify`,
+reappearing one layer up where `verify`'s fix could not reach.
 """
 from __future__ import annotations
 
@@ -110,7 +124,7 @@ def single(pool, accept) -> dict:
             outcomes[t] = NO_CANDIDATE
             continue
         calls += 1
-        outcomes[t] = bool(accept(cands[0]))
+        outcomes[t] = bool(accept(cands[0], t))
     return _result("single", outcomes, calls, len(pool.task_ids()),
                    selector="none", scored_by=ORACLE)
 
@@ -142,12 +156,12 @@ def best_of_k(pool, accept, *, score=None) -> dict:
         chosen = None
         for _, text in cands:
             calls += 1
-            if accept(text) and chosen is None:
+            if accept(text, t) and chosen is None:
                 chosen = text
         # Selection picks one candidate; the scorer grades that one. When the two
         # are the same function this is equivalent to "any slot accepted", and
         # when they differ it is not, which is exactly the point.
-        outcomes[t] = bool(grade(chosen)) if chosen is not None else False
+        outcomes[t] = bool(grade(chosen, t)) if chosen is not None else False
     return _result("best_of_k", outcomes, calls, used, selector=ORACLE,
                    scored_by=SELF_SCORED if score is None else HELD_OUT)
 
@@ -172,7 +186,7 @@ def random_of_k(pool, accept, *, seed: int) -> dict:
         rng = random.Random(f"{seed}:{t}")
         _, text = rng.choice(cands)
         calls += 1
-        outcomes[t] = bool(accept(text))
+        outcomes[t] = bool(accept(text, t))
     return _result("random_of_k", outcomes, calls, used, selector="random",
                    scored_by=ORACLE)
 
@@ -202,7 +216,7 @@ def placebo_of_k(pool, accept, *, seed: int, accept_rate: float) -> dict:
                 chosen = c
                 break
         calls += 1
-        outcomes[t] = bool(accept(chosen[1]))
+        outcomes[t] = bool(accept(chosen[1], t))
     return _result("placebo_of_k", outcomes, calls, used, selector="placebo",
                    scored_by=ORACLE)
 
@@ -219,7 +233,7 @@ def pass_at_k(pool, accept) -> dict:
         for t in pool.task_ids():
             cands = [(i, x) for i, x in pool.candidates(t) if i < budget]
             outcomes[t] = (NO_CANDIDATE if not cands
-                           else any(accept(x) for _, x in cands))
+                           else any(accept(x, t) for _, x in cands))
         graded = [v for v in outcomes.values() if v != NO_CANDIDATE]
         hits = sum(1 for v in graded if v is True)
         lo, hi = _wilson(hits, len(graded))
