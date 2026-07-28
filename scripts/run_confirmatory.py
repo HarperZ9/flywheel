@@ -63,6 +63,7 @@ FAMILIES = ["zarankiewicz", "rectilinear_crossing"]
 # rather than a pidfile, for the reason the supervisor does: a pidfile left
 # behind by a killed process is precisely the stale state this must survive.
 _SEP = "|@|"
+_SCAN_TIMEOUT = 30.0
 
 
 def other_walk_pids(records, self_pid: int) -> list:
@@ -86,22 +87,41 @@ def other_walk_pids(records, self_pid: int) -> list:
 
 
 def _live_process_records() -> list:
-    """(pid, image name, command line) for every live process. Best effort: a
-    scan that fails returns nothing, so the guard never blocks a legitimate
-    launch because a process query was unavailable."""
+    """(pid, image name, command line) for every live process.
+
+    FAIL OPEN, in the code and not only in this docstring. The first version of
+    this function promised that and did not deliver it. It passed `text=True`,
+    so Python decoded the pipe with the ANSI codepage while PowerShell writes a
+    redirected pipe in the OEM one. One unrelated process ANYWHERE on the
+    machine carrying a non-ASCII character in its command line was enough: the
+    reader thread raised UnicodeDecodeError, `.stdout` came back None, and the
+    walker died at startup BEFORE journaling anything, while the supervisor went
+    on recording restarts that had never run. A guard that fails while looking
+    like progress is the exact shape of the failure this file exists to prevent.
+
+    So the bytes are decoded lossily on purpose, because the only things ever
+    matched here are the ASCII substrings "python" and "run_confirmatory" and an
+    ASCII pid, and any scan that fails at all returns nothing.
+    """
     if sys.platform == "win32":
         ps = ("Get-CimInstance Win32_Process | ForEach-Object { "
               f"'{{0}}{_SEP}{{1}}{_SEP}{{2}}' -f "
               "$_.ProcessId, $_.Name, $_.CommandLine }")
-        out = subprocess.run(["powershell.exe", "-NoProfile", "-Command", ps],
-                             capture_output=True, text=True).stdout
-        rows = (line.split(_SEP, 2) for line in out.splitlines())
+        cmd = ["powershell.exe", "-NoProfile", "-Command", ps]
     else:
-        out = subprocess.run(["ps", "-eo", "pid=,comm=,args="],
-                             capture_output=True, text=True).stdout
-        rows = (line.split(None, 2) for line in out.splitlines())
+        cmd = ["ps", "-eo", "pid=,comm=,args="]
+    try:
+        # No text=, no encoding=: decoding is ours to do safely below. The
+        # timeout bounds a wedged process query, which would otherwise hang the
+        # walker forever while still matching the supervisor's liveness probe.
+        proc = subprocess.run(cmd, capture_output=True, timeout=_SCAN_TIMEOUT)
+    except (OSError, subprocess.SubprocessError):
+        return []
+    out = (proc.stdout or b"").decode("utf-8", "replace")
     records = []
-    for parts in rows:
+    for line in out.splitlines():
+        parts = (line.split(_SEP, 2) if sys.platform == "win32"
+                 else line.split(None, 2))
         if len(parts) != 3 or not parts[0].strip().isdigit():
             continue
         records.append((int(parts[0].strip()), parts[1].strip(), parts[2]))

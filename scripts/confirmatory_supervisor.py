@@ -31,6 +31,11 @@ REPO = Path(__file__).resolve().parent.parent
 JOURNAL = REPO / "artifacts" / "pool" / "confirmatory-journal.jsonl"
 WALKER = REPO / "scripts" / "run_confirmatory.py"
 SUPERVISOR_LOG = REPO / "artifacts" / "pool" / "supervisor.jsonl"
+# The walker's stderr. It went to DEVNULL, which meant a walker that died during
+# startup left no trace at all while this log went on asserting "restarted" once
+# every schedule tick. Tracebacks carry absolute local paths, so the file is
+# gitignored: it exists to make a silent death visible, not to become evidence.
+WALKER_STDERR = REPO / "artifacts" / "pool" / "walker-stderr.log"
 
 
 def walk_is_running() -> bool:
@@ -84,10 +89,17 @@ def main() -> int:
         flags = (getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0)
                  | getattr(subprocess, "CREATE_NO_WINDOW", 0)
                  | getattr(subprocess, "DETACHED_PROCESS", 0))
-    subprocess.Popen([sys.executable, "-u", str(WALKER)], cwd=str(REPO),
-                     stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-                     creationflags=flags)
-    log({"action": "restarted", "reason": "no walk running and no run_end"})
+    # This process exits immediately, so it cannot wait for the child and cannot
+    # report an exit code. Recording the pid and keeping the child's stderr makes
+    # the claim CHECKABLE after the fact, which "restarted" alone was not: a
+    # walker that died on startup produced an identical log line to one that ran.
+    WALKER_STDERR.parent.mkdir(parents=True, exist_ok=True)
+    with WALKER_STDERR.open("ab") as errfh:
+        proc = subprocess.Popen([sys.executable, "-u", str(WALKER)],
+                                cwd=str(REPO), stdout=subprocess.DEVNULL,
+                                stderr=errfh, creationflags=flags)
+    log({"action": "restarted", "reason": "no walk running and no run_end",
+         "pid": proc.pid, "stderr_log": WALKER_STDERR.name})
     return 0
 
 

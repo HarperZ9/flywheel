@@ -13,7 +13,9 @@ from __future__ import annotations
 
 import importlib.util
 import os
+import subprocess
 import sys
+import types
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -61,6 +63,63 @@ def test_rows_without_a_command_line_are_skipped():
     records = [(SELF, "python.exe", WALKER_CMD), (5, "python.exe", None),
                (6, "python.exe", "")]
     assert run_confirmatory.other_walk_pids(records, SELF) == []
+
+
+def _fake_run(stdout=b"", raises=None):
+    """Stand in for subprocess.run, and model the REAL failure faithfully.
+
+    When the caller asks for decoded text, a byte the ANSI codepage cannot map
+    kills subprocess's reader thread and the CompletedProcess comes back with
+    stdout=None. That is what killed the walker, so the fake reproduces it
+    rather than a tidier error the real library never raises.
+    """
+    def run(*args, **kw):
+        if raises is not None:
+            raise raises
+        if kw.get("text") or kw.get("encoding") or kw.get("universal_newlines"):
+            return types.SimpleNamespace(stdout=None, stderr=None, returncode=0)
+        return types.SimpleNamespace(stdout=stdout, stderr=b"", returncode=0)
+    return run
+
+
+def test_an_undecodable_command_line_does_not_kill_the_walker(monkeypatch):
+    """The byte 0x81 is undefined in cp1252 and appears in OEM output for a
+    u with an umlaut. One unrelated process carrying one anywhere on the machine
+    used to end the walk at startup, before it journaled anything, while the
+    supervisor kept recording restarts that had never run."""
+    sep = run_confirmatory._SEP.encode()
+    blob = (b"4242" + sep + b"python.exe" + sep
+            + b"C:\\gr\x81n\\python.exe -u scripts\\run_confirmatory.py\r\n"
+            + b"7" + sep + b"cmd.exe" + sep + b"unrelated\r\n")
+    monkeypatch.setattr(run_confirmatory.subprocess, "run", _fake_run(blob))
+    records = run_confirmatory._live_process_records()
+    assert [r[0] for r in records] == [4242, 7]
+    assert run_confirmatory.other_walk_pids(records, 1) == [4242]
+
+
+def test_a_scan_that_cannot_run_fails_open(monkeypatch):
+    """The docstring promises a failed scan blocks nothing. A guard that
+    refuses every launch because a process query was unavailable would stop the
+    pass as surely as the bug it prevents."""
+    for boom in (FileNotFoundError("powershell.exe"),
+                 OSError("handle is invalid"),
+                 subprocess.TimeoutExpired(cmd="powershell.exe", timeout=30.0)):
+        monkeypatch.setattr(run_confirmatory.subprocess, "run",
+                            _fake_run(raises=boom))
+        assert run_confirmatory._live_process_records() == []
+
+
+def test_the_scan_is_bounded_in_time(monkeypatch):
+    """A wedged process query would hang the walker forever, and the hung
+    walker still matches the supervisor's liveness probe, so the self-healing
+    restart would never fire."""
+    seen = {}
+    def run(*args, **kw):
+        seen.update(kw)
+        return types.SimpleNamespace(stdout=b"", stderr=b"", returncode=0)
+    monkeypatch.setattr(run_confirmatory.subprocess, "run", run)
+    run_confirmatory._live_process_records()
+    assert seen.get("timeout"), "the process scan was launched without a timeout"
 
 
 def test_the_live_scan_actually_reads_this_platform():

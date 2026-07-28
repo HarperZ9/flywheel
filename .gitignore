@@ -73,3 +73,7 @@ scripts/.private-denylist.txt
 
 # process-scratch dir (currently ignored only by a machine-local global rule)
 .superpowers/
+
+# The walker's stderr, kept so a silent startup death is visible. Tracebacks
+# carry absolute local paths, so this stays local and never becomes evidence.
+artifacts/pool/walker-stderr.log
