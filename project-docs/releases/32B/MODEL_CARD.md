@@ -18,7 +18,8 @@ Status: trained artifact verified, staged for operator-gated upload. Identity an
 - Artifact: `telos-coder-32b-cpt2019-q4_k_m.gguf`, held outside this repository and
   identified by the sha256 in the release checklist rather than by a path
 - Local serving name: Ollama `flywheel-local-coder-32b`
-- Manifest: `C:\dev\local-model\tasks\research\gguf_ship_manifest_checkpoint2019_32b.json` (schema `telos.model-artifact/v1`)
+- Manifest: `tasks/research/gguf_ship_manifest_checkpoint2019_32b.json` in this
+  repository (schema `telos.model-artifact/v1`)
 
 ## Training data
 
