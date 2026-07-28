@@ -23,7 +23,7 @@ import pytest
 
 from harness.receipt import Receipt, SIGNED_OVER, SCHEMA
 from harness.receipt_fields import (
-    Denominator, EvidenceKind, Tier, ReceiptError,
+    Budget, Denominator, EvidenceKind, Tier, ReceiptError,
 )
 from harness.verdict import Verdict, Attribution
 
@@ -34,6 +34,7 @@ def _den(**kw):
                 tokens_in=120, tokens_out=512, cache_hit_tokens=0,
                 tasks_proposed=4, tasks_filtered_out=0,
                 filter_id="learn.difficulty.v1", filter_hash="sha256:" + "f" * 64,
+                retries=0, oracle_feedback_visible=False,
                 filter_is_learned=False)
     base.update(kw)
     return Denominator(**base)
@@ -63,6 +64,7 @@ def _r(**kw):
         raw_stdout_sha256="b" * 64,
         analysis_script_sha256="sha256:" + "9" * 64,
         denominator=_den(),
+        budget=Budget(600, 4096, 2, exhausted=False),
         model_ref="gate:deterministic", base_weights_digest="",
         harness_version="phase1b",
     )

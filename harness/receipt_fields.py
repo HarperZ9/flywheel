@@ -80,7 +80,7 @@ class Tier(_NominalEnum):
 _COUNTS = ("attempts", "group_size", "oracle_calls_consumed", "hits",
            "undecided", "unverifiable", "parse_failures", "timeouts",
            "tokens_in", "tokens_out", "cache_hit_tokens",
-           "tasks_proposed", "tasks_filtered_out")
+           "tasks_proposed", "tasks_filtered_out", "retries")
 
 
 @dataclass(frozen=True)
@@ -100,6 +100,11 @@ class Denominator:
     cache_hit_tokens: int
     tasks_proposed: int
     tasks_filtered_out: int
+    retries: int
+    # Did the proposer see oracle output between attempts? A hit found with the
+    # checker's own feedback in the loop is a different quantity from one found
+    # blind, and the difference is invisible unless it is recorded.
+    oracle_feedback_visible: bool
     filter_id: str
     filter_hash: str
     filter_is_learned: bool
@@ -110,6 +115,8 @@ class Denominator:
             # bool is an int in Python; a bool count is a type error here.
             if isinstance(v, bool) or not isinstance(v, int) or v < 0:
                 raise ReceiptError(f"{name} must be a non-negative integer")
+        if not isinstance(self.oracle_feedback_visible, bool):
+            raise ReceiptError("oracle_feedback_visible must be a bool")
         if self.hits > self.attempts:
             raise ReceiptError(
                 f"{self.hits} hits out of {self.attempts} attempts is impossible")
@@ -117,6 +124,100 @@ class Denominator:
             raise ReceiptError(
                 "a task filter must be identified and hashed, or the population "
                 "the receipt was drawn from is unknowable")
+
+    def to_dict(self) -> dict:
+        return asdict(self)
+
+
+@dataclass(frozen=True)
+class Budget:
+    """The CEILING a run was allowed. This is not what it consumed.
+
+    Consumption lives in Denominator, and neither field substitutes for the
+    other. A FAIL reached with headroom to spare and a FAIL that stopped at the
+    limit are different results, and only the ceiling tells them apart.
+
+    `declared` exists so that "no budget" cannot be spelled as a zero. An
+    undeclared budget is a stated absence, which `does_not_prove` reports, rather
+    than three zeros that read as a run permitted nothing at all.
+    """
+    wall_seconds_limit: int
+    tokens_limit: int
+    retries_limit: int
+    exhausted: bool
+    declared: bool = True
+
+    _LIMITS = ("wall_seconds_limit", "tokens_limit", "retries_limit")
+
+    def __post_init__(self) -> None:
+        for name in self._LIMITS:
+            v = getattr(self, name)
+            if isinstance(v, bool) or not isinstance(v, int) or v < 0:
+                raise ReceiptError(f"{name} must be a non-negative integer")
+        for name in ("exhausted", "declared"):
+            if not isinstance(getattr(self, name), bool):
+                raise ReceiptError(f"{name} must be a bool")
+        if not self.declared:
+            if any(getattr(self, n) for n in self._LIMITS):
+                raise ReceiptError(
+                    "an undeclared budget carries no limits, and a limit that is "
+                    "set is declared by definition")
+            if self.exhausted:
+                raise ReceiptError("an undeclared budget cannot be exhausted")
+
+    @classmethod
+    def undeclared(cls) -> "Budget":
+        """No ceiling was recorded. Say so explicitly rather than passing zeros."""
+        return cls(0, 0, 0, exhausted=False, declared=False)
+
+    def to_dict(self) -> dict:
+        return asdict(self)
+
+
+@dataclass(frozen=True)
+class GradedScore:
+    """A grading oracle's score as an EXACT rational in [0,1], with its trials.
+
+    Three refusals, each for a reason already load-bearing elsewhere in this
+    module. Never a float, because cross-platform float text is how an honest
+    replay disagrees over nothing real. Never a replacement for the four-way
+    verdict: a receipt carries both, so a score of nine tenths cannot quietly
+    become a PASS. And never a score without its trial count, for the same reason
+    a hit count without attempts is unpriceable.
+    """
+    numerator: int
+    denominator: int
+    trials: int
+    grader_id: str
+    grader_sha256: str
+
+    def __post_init__(self) -> None:
+        for name in ("numerator", "denominator", "trials"):
+            v = getattr(self, name)
+            if isinstance(v, bool) or not isinstance(v, int) or v < 0:
+                raise ReceiptError(f"{name} must be a non-negative integer")
+        if self.denominator == 0:
+            raise ReceiptError(
+                "a graded score needs a nonzero denominator, or the score is not "
+                "a number")
+        if self.numerator > self.denominator:
+            raise ReceiptError(
+                f"{self.numerator}/{self.denominator} falls outside [0,1]")
+        if self.trials < 1:
+            raise ReceiptError("a graded score needs at least one trial")
+        if not self.grader_id or not self.grader_sha256:
+            raise ReceiptError(
+                "a grader must be identified and hashed, or its score cannot be "
+                "reproduced")
+
+    def as_decimal_string(self, places: int = 6) -> str:
+        """Display only, derived from the integers by integer arithmetic. The
+        hashed form is always the rational, never this."""
+        if places < 1:
+            raise ReceiptError("places must be at least 1")
+        scale = 10 ** places
+        scaled = self.numerator * scale // self.denominator
+        return f"{scaled // scale}.{scaled % scale:0{places}d}"
 
     def to_dict(self) -> dict:
         return asdict(self)

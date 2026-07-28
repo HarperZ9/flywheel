@@ -30,39 +30,20 @@ from harness.contest import (
 )
 from harness.ledger import Ledger
 from harness.receipt import Receipt
-from harness.receipt_fields import Denominator, EvidenceKind, Tier
+from harness.receipt_fields import (
+    Budget, Denominator, EvidenceKind, Tier)
 from harness.receipt_sign import unsigned
 from harness.verdict import Verdict, Attribution
 
+import receipt_factories as factories
+
 
 def _den():
-    return Denominator(
-        attempts=8, group_size=4, oracle_calls_consumed=9, hits=1, undecided=0,
-        unverifiable=0, parse_failures=0, timeouts=0, tokens_in=120,
-        tokens_out=512, cache_hit_tokens=0, tasks_proposed=4,
-        tasks_filtered_out=0, filter_id="f.v1",
-        filter_hash="sha256:" + "f" * 64, filter_is_learned=False)
+    return factories.den(filter_id="f.v1")
 
 
 def _r(objective="21"):
-    return Receipt(
-        criterion_id="zarankiewicz.z_2_2", criterion_version=1,
-        criterion_sha256="sha256:" + "c" * 64, family="zarankiewicz",
-        family_instance_id="z-7", generator_id="g.v1", generator_seed=7,
-        candidate_sha256="sha256:" + "d" * 64, prompt_hash="sha256:" + "e" * 64,
-        checker_module="harness.certificates.zarankiewicz",
-        checker_source_sha256="sha256:" + "a" * 64,
-        executes_candidate_code=False, oracle_qa_card_hash="deadbeefdeadbeef",
-        held_out_agreement="AGREE", evidence_kind=EvidenceKind.CONSTRUCTIVE,
-        tier=Tier.CONSTRUCTION_CERTIFICATE, verdict=Verdict.PASS,
-        attribution=Attribution.CANDIDATE, objective=objective,
-        incumbent_objective="21", incumbent_source="operator_search",
-        coverage={"predicate_exact": True, "search_space_enumerated": True,
-                  "enumerated_fraction": "1", "stop_reason": "complete",
-                  "guarantee_weakens_above": None},
-        raw_stdout_sha256="b" * 64, analysis_script_sha256="sha256:" + "9" * 64,
-        denominator=_den(), model_ref="gate:deterministic",
-        base_weights_digest="", harness_version="phase1c")
+    return factories.receipt(objective=objective, denominator=_den())
 
 
 def _keypair():

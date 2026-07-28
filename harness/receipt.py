@@ -25,11 +25,23 @@ import hashlib
 from dataclasses import dataclass
 
 from .receipt_fields import (
-    Denominator, EvidenceKind, Tier, ReceiptError, canonical, no_floats,
+    Budget, Denominator, EvidenceKind, GradedScore, Tier, ReceiptError,
+    canonical, no_floats,
 )
 from .verdict import Verdict, Attribution
 
-SCHEMA = "flywheel.receipt/v2"
+# v3 adds the compute denominator's missing half: the budget CEILING, the retry
+# count, whether oracle feedback was visible between attempts, and an optional
+# exact graded score. The version moves because the claim digest covers all of
+# them, so a v2 reader must refuse a v3 claim rather than hash a subset of it.
+#
+# NOT done here, and left visible rather than stubbed: the QA card carries no
+# grading-oracle battery. Its false-accept and false-reject counts assume an
+# oracle that binarises, and every oracle in this repository does. Inventing card
+# fields for a grading oracle that does not exist yet would publish a shape
+# nothing produces, so `GradedScore` is honoured on the receipt and the battery
+# waits for the first grading oracle to exist.
+SCHEMA = "flywheel.receipt/v3"
 
 # What a signature covers. Fixed in code, never read from a receipt. This is a
 # security property, not a configuration choice.
@@ -65,10 +77,14 @@ class Receipt:
     raw_stdout_sha256: str
     analysis_script_sha256: str
     denominator: Denominator
+    budget: Budget
     model_ref: str
     base_weights_digest: str
     harness_version: str
     # --- optional ------------------------------------------------------------
+    # Present only when the oracle grades rather than binarises. It travels
+    # ALONGSIDE the verdict and never stands in for it.
+    graded_score: GradedScore | None = None
     input_tier_multiset: tuple = ()
     novelty_verdict: str = "UNKNOWN"         # REDISCOVERY | NOT_FOUND_IN_CORPUS
     unverifiable_reason: str = ""
@@ -80,6 +96,13 @@ class Receipt:
             raise ReceiptError("a receipt without a denominator is unpriceable")
         if not isinstance(self.denominator, Denominator):
             raise ReceiptError("denominator must be a Denominator")
+        if not isinstance(self.budget, Budget):
+            raise ReceiptError(
+                "budget must be a Budget; use Budget.undeclared() to state that "
+                "no ceiling was recorded, so an absence cannot pass as a zero")
+        if self.graded_score is not None and not isinstance(self.graded_score,
+                                                            GradedScore):
+            raise ReceiptError("graded_score must be a GradedScore or None")
         for name in ("objective", "incumbent_objective", "coverage",
                      "input_tier_multiset"):
             no_floats(getattr(self, name), name)
@@ -120,6 +143,9 @@ class Receipt:
             "oracle_qa_card_hash": self.oracle_qa_card_hash,
             "held_out_agreement": self.held_out_agreement,
             "denominator": self.denominator.to_dict(),
+            "budget": self.budget.to_dict(),
+            "graded_score": (self.graded_score.to_dict()
+                             if self.graded_score is not None else None),
             "model_ref": self.model_ref,
             "base_weights_digest": self.base_weights_digest,
             "novelty_verdict": self.novelty_verdict,
@@ -159,6 +185,18 @@ class Receipt:
             out.append("NOT_PROVES_WHICH_WEIGHTS")
         if self.denominator.filter_is_learned:
             out.append("NOT_PROVES_UNBIASED_TASK_SELECTION")
+        if not self.budget.declared:
+            out.append("NOT_PROVES_COST_BOUNDED")
+        if self.budget.exhausted:
+            # A result reached at the ceiling says as much about the ceiling as
+            # about the candidate, and a reader cannot tell which without this.
+            out.append("NOT_PROVES_UNCONSTRAINED_BY_BUDGET")
+        if self.denominator.retries:
+            out.append("NOT_PROVES_FIRST_ATTEMPT_SUCCESS")
+        if self.denominator.oracle_feedback_visible:
+            out.append("NOT_PROVES_FOUND_WITHOUT_ORACLE_FEEDBACK")
+        if self.graded_score is not None and self.graded_score.trials < 2:
+            out.append("NOT_PROVES_SCORE_STABILITY")
         if self.input_tier_multiset:
             out.append("TIER_LIMITED_BY_INPUT")
         out.extend(self.extra_does_not_prove)
@@ -176,7 +214,14 @@ class Receipt:
 
     @classmethod
     def from_dict(cls, d: dict) -> Receipt:
+        # A reader that ignores the version silently reinterprets fields whose
+        # meaning changed between them, and then reports a claim digest over a
+        # different set of fields than the writer covered.
+        if d.get("schema") != SCHEMA:
+            raise ReceiptError(
+                f"refusing to read schema {d.get('schema')!r} as {SCHEMA}")
         den = d["denominator"]
+        graded = d.get("graded_score")
         return cls(
             criterion_id=d["criterion_id"],
             criterion_version=d["criterion_version"],
@@ -199,6 +244,8 @@ class Receipt:
             coverage=d["coverage"], raw_stdout_sha256=d["raw_stdout_sha256"],
             analysis_script_sha256=d["analysis_script_sha256"],
             denominator=Denominator(**den),
+            budget=Budget(**d["budget"]),
+            graded_score=GradedScore(**graded) if graded else None,
             model_ref=d["model_ref"],
             base_weights_digest=d["base_weights_digest"],
             harness_version=d["harness_version"],
