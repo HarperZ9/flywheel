@@ -26,15 +26,13 @@ their own repos, and are simply absent from a fresh clone.
 
 Total at freeze: 31 leak(s) across 11 surface(s).
 
-Burned down since: `project-docs/releases/32B/MODEL_CARD.md` reached zero
-on 2026-07-28 and has left the list.
+Burned down since freeze, all on 2026-07-28: `project-docs/releases/32B/MODEL_CARD.md`
+and all six 14B release surfaces (23 leaks) reached zero and left the list.
+Release artifacts are identified by sha256 rather than by path, walkthrough
+commands run against a reader-set `RELEASE_DIR`, and in-repo manifests are
+named repo-relative. The remaining entries live in other repositories and
+burn down there.
 
-- `project-docs/releases/14B/MODEL_CARD.md` - 4
-- `project-docs/releases/14B/README.md` - 2
-- `project-docs/releases/14B/RELEASE-CHECKLIST.md` - 2
-- `project-docs/releases/14B/SAFETY-ACCOUNTABILITY.md` - 1
-- `project-docs/releases/14B/USAGE.md` - 3
-- `project-docs/releases/14B/WALKTHROUGH.md` - 11
 - `public/accountable-surface/README.md` - 1
 - `public/index/README.md` - 1
 - `public/public-surface-sweeper/README.md` - 3
