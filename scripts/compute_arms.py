@@ -38,6 +38,7 @@ from harness.certificates.zarankiewicz import ZarankiewiczOracle      # noqa: E4
 from harness.pool import Pool                                         # noqa: E402
 from harness.pool_arms import (                                       # noqa: E402
     SCHEMA, best_of_k, paired, pass_at_k, placebo_of_k, random_of_k, single)
+from harness.statistics import mcnemar_mde                            # noqa: E402
 from harness.verdict import Verdict                                   # noqa: E402
 
 PRIMARY = {"zarankiewicz": ZarankiewiczOracle,
@@ -93,6 +94,19 @@ def observed_accept_rate(pool, accept) -> float:
     return (hits / total) if total else 0.0
 
 
+def with_mde(comparison: dict) -> dict:
+    """Attach the declared MDE to a paired comparison, in place.
+
+    Section 6 requires it next to every result INCLUDING every null, because a
+    null below the MDE means the design could not have seen the effect and a
+    reader cannot tell that from the p-value alone. It is attached here rather
+    than left to whoever writes the report, so a result cannot travel without it.
+    """
+    out = dict(comparison)
+    out["mde"] = mcnemar_mde(comparison["n_paired"], comparison["discordant"])
+    return out
+
+
 def arms_for_pool(pool, accept, held_out_accept) -> dict:
     """Every arm of section 4 over one pool, plus the comparisons.
 
@@ -114,14 +128,18 @@ def arms_for_pool(pool, accept, held_out_accept) -> dict:
         "arms": arms,
         "observed_accept_rate": round(rate, 6),
         "selection_seed": SELECTION_SEED, "placebo_seed": PLACEBO_SEED,
+        # Section 6: a declared MDE next to EVERY result, including every null.
+        # Without one, "no effect" and "no power" read identically, and with arms
+        # sharing a cached pool the discordant count falls sharply below the task
+        # count, so the number that binds is not the one a reader expects.
         "comparisons": {
             # The legitimate one: a selection-free control against an arm whose
             # scorer was written independently of its selector.
-            "random_vs_best_held_out": paired(arms["random_of_k"],
-                                              arms["best_of_k_held_out"]),
+            "random_vs_best_held_out": with_mde(
+                paired(arms["random_of_k"], arms["best_of_k_held_out"])),
             # Kept so the refusal is visible in the record.
-            "random_vs_best_self_scored": paired(arms["random_of_k"],
-                                                 arms["best_of_k_self_scored"]),
+            "random_vs_best_self_scored": with_mde(
+                paired(arms["random_of_k"], arms["best_of_k_self_scored"])),
         },
         "does_not_prove": [
             "NOT_PROVES_UPLIFT_FROM_A_SELF_SCORED_ARM: an arm whose selector is "

@@ -163,3 +163,33 @@ def test_a_complete_pass_yields_every_arm_and_keeps_the_refusal(tmp_path):
     # The MEASURED rate must reach the report, not a stand-in: every
     # candidate in this fixture answers its instance, so it is exactly 1.0.
     assert row["observed_accept_rate"] == 1.0
+
+
+def test_every_comparison_carries_a_declared_mde(tmp_path):
+    """Section 6: the MDE travels next to every result, including every null.
+    Attached by the driver rather than by whoever writes the report, so a
+    comparison cannot reach a reader without it."""
+    pool, journal, _, _ = _fixture(tmp_path)
+    report = ca.compute(pool, journal, [FAMILY], RUNGS)
+    for rung, row in report["families"][FAMILY]["per_rung"].items():
+        for name, comp in row["comparisons"].items():
+            assert "mde" in comp, f"{rung}/{name} has no declared MDE"
+            mde = comp["mde"]
+            assert mde["n_pairs"] == comp["n_paired"]
+            assert mde["n_discordant"] == comp["discordant"]
+            assert "NOT_PROVES_AN_EFFECT_IS_ABSENT" in " ".join(
+                mde["does_not_prove"])
+
+
+def test_a_null_with_too_few_discordant_pairs_says_it_is_underpowered(tmp_path):
+    """The distinction the MDE exists to draw. Every candidate in this fixture
+    is valid, so no arm disagrees with another and the discordant count is zero:
+    the design could not have called ANY effect, and the record says so instead
+    of reporting a clean null."""
+    pool, journal, _, _ = _fixture(tmp_path)
+    report = ca.compute(pool, journal, [FAMILY], RUNGS)
+    comp = report["families"][FAMILY]["per_rung"][RUNGS[0]][
+        "comparisons"]["random_vs_best_held_out"]
+    assert comp["discordant"] == 0
+    assert comp["mde"]["detectable"] is None
+    assert "carries no information" in comp["mde"]["note"]
