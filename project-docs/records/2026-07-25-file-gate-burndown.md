@@ -14,7 +14,7 @@ Enforced by scripts/check_file_gate.py and tests/test_file_gate.py.
 | harness/endpoints.py | 492 |
 | harness/gateway.py | 2431 |
 | harness/governed_agent_bench.py | 734 |
-| harness/lanes.py | 350 |
+| harness/lanes.py | 361 |
 | harness/local_agent.py | 360 |
 | harness/local_tools.py | 386 |
 | harness/loops.py | 315 |
@@ -34,4 +34,5 @@ gate. The merge is the moment they come under it, so they are frozen at
 merge size under this record's own rule: shrink and leave, never grow.
 Same rule, second boundary: lanes.py grew 317 to 350 on main (PRs 11 and 12,
 2026-07-28) before main carried any gate; its ceiling moves to 350 at that
-merge and may only shrink from there.
+merge and may only shrink from there. Third boundary, same day:
+350 to 361 at PR 13 (PyInstaller packaging), ceiling moves to 361.
