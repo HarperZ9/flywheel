@@ -1,7 +1,15 @@
+import scripts.run_codex_mcp_launch_contract as launch_contract
 from scripts.run_codex_mcp_launch_contract import build_contract, render_markdown
 
 
-def test_codex_mcp_contract_records_launch_profile_without_env_values(tmp_path):
+def test_codex_mcp_contract_records_launch_profile_without_env_values(
+        tmp_path, monkeypatch):
+    # The contract's cwd_exists check reads the OPERATOR'S machine layout, so
+    # unpatched it made this test a test of whether the runner has that layout:
+    # it passed on the machine it was written on and failed on every CI runner.
+    # Patching existence to true makes this a test of the CONTRACT LOGIC; a
+    # real run of the script still checks the real filesystem.
+    monkeypatch.setattr(launch_contract, "_exists", lambda p: True)
     config = tmp_path / "config.toml"
     config.write_text(
         """
