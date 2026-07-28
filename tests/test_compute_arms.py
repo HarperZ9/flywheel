@@ -193,3 +193,11 @@ def test_a_null_with_too_few_discordant_pairs_says_it_is_underpowered(tmp_path):
     assert comp["discordant"] == 0
     assert comp["mde"]["detectable"] is None
     assert "carries no information" in comp["mde"]["note"]
+
+
+def test_the_arms_report_carries_the_family_qualifier(tmp_path):
+    """Section 8 mechanism 1 again, on the other result artifact."""
+    pool, journal, _, _ = _fixture(tmp_path)
+    report = ca.compute(pool, journal, [FAMILY], RUNGS)
+    joined = " ".join(report["families"][FAMILY]["family_not_proven"])
+    assert "NOT_PROVES_OPTIMALITY" in joined

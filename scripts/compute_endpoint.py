@@ -165,6 +165,11 @@ def make_submit(family: str, criterion_id: str, criterion_sha256: str,
             "verdict": result.verdict_.value,
             "attribution": result.attribution.value,
             "well_formed": bool(well_formed),
+            # Section 8 mechanism 1: NOT_PROVES_OPTIMALITY and the family's other
+            # qualifiers travel with every result. Dropping them here would lose
+            # exactly the clause the prereg names as the one most likely to go
+            # missing when a result is retold.
+            "does_not_prove": list(result.does_not_prove),
             "verdict_digest": result.output_hash,
             "subject_digest": subject_digest(
                 criterion_id=criterion_id, criterion_version=1,

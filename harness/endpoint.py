@@ -115,6 +115,7 @@ def primary_endpoint(union: dict, rung_ids, submit) -> dict:
     if not rungs:
         raise EndpointError("an endpoint over rung contexts needs at least one")
     bodies, disagreements, multi_instance = [], [], []
+    carried: set = set()
     for sha, rec in union.items():
         task_id = rec["task_ids"][0]
         verdicts, subjects = set(), set()
@@ -122,6 +123,12 @@ def primary_endpoint(union: dict, rung_ids, submit) -> dict:
             r = submit(rec["body"], task_id, rung)
             verdicts.add(r["verdict_digest"])
             subjects.add(r["subject_digest"])
+            # Section 8 mechanism 1: the family's own qualifiers travel with
+            # EVERY result, into every receipt and every bundle. An endpoint
+            # that reported only its own limits would drop
+            # NOT_PROVES_OPTIMALITY here, which is the exact clause the section
+            # calls the most likely thing to be lost when a result is retold.
+            carried.update(r.get("does_not_prove") or ())
         row = {"candidate_sha256": sha, "submitted_in_rung_contexts": len(rungs),
                "distinct_verdict_digests": len(verdicts),
                "distinct_subject_digests": len(subjects),
@@ -145,7 +152,8 @@ def primary_endpoint(union: dict, rung_ids, submit) -> dict:
         "n_disagreements": len(disagreements),
         "bodies_under_multiple_instances": multi_instance,
         "met": len(disagreements) == 0 and bool(bodies),
-        "does_not_prove": [
+        # The family's own qualifiers first, verbatim, then this endpoint's.
+        "does_not_prove": sorted(carried) + [
             "NOT_PROVES_CORRECTNESS: agreement across rung contexts says the "
             "accept path is a function of the certificate, not that any verdict "
             "it returned is right.",

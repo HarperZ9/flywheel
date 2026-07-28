@@ -224,3 +224,26 @@ def test_the_rung_changes_neither_digest(tmp_path):
     first = submit(BODIES[1], task_id, "rung-one")
     second = submit(BODIES[1], task_id, "rung-two-entirely-different")
     assert first == second
+
+
+def test_the_family_qualifier_travels_into_the_endpoint(tmp_path):
+    """Section 8 mechanism 1: NOT_PROVES_OPTIMALITY travels with every result.
+    The prereg names this the single most likely thing to be lost when a result
+    is retold, so an endpoint that reported only its own limits would drop
+    exactly the clause that matters most."""
+    pool, journal, ledger = _complete(tmp_path)
+    report = ce.compute(pool, journal, [FAMILY], RUNGS, ledger)
+    joined = " ".join(report["families"][FAMILY]["primary"]["does_not_prove"])
+    assert "NOT_PROVES_OPTIMALITY" in joined
+    assert "NOT_PROVES_CORRECTNESS" in joined      # and its own limits survive
+
+
+def test_the_submit_result_carries_the_checkers_qualifiers(tmp_path):
+    fill = ce._load("run_demo_pool")
+    instances = {fill.task_id_for(FAMILY, i): i
+                 for i in fill.build_instances(FAMILY)}
+    task_id = _task_ids(1)[0]
+    submit = ce.make_submit(FAMILY, CRITERION, "a" * 64, instances,
+                            {task_id: "sha256:" + "0" * 64}, "sha256:" + "e" * 64)
+    out = submit(BODIES[1], task_id, RUNGS[0])
+    assert any("NOT_PROVES_OPTIMALITY" in d for d in out["does_not_prove"])

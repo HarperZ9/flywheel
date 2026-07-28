@@ -175,6 +175,12 @@ def compute(pool_root: Path, journal: Path, families, rungs) -> dict:
         report["families"][family] = {
             "primary_checker": type(primary).__module__,
             "held_out_checker": type(held).__module__,
+            # Section 8 mechanism 1. Every checker here verifies a SUBMITTED
+            # object and none decides optimality, and that qualifier travels
+            # with the arms as well as with the receipts, because "our model
+            # found a drawing with 103 crossings" compresses naturally and
+            # wrongly into "our model found the crossing number".
+            "family_not_proven": list(type(primary).family_not_proven),
             "per_rung": per_rung,
         }
     return report
