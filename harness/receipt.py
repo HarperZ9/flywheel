@@ -78,7 +78,7 @@ def subject_digest(**fields) -> str:
     """The subject digest without a claim wrapped around it.
 
     The primary endpoint asserts one SUBJECT per certificate body and reads
-    nothing on the claim side. Demanding a denominator and a budget to obtain
+    nothing on the claim side. Demanding a denominator and a budget just to read
     that digest would force a caller to invent numbers it does not have, and
     invented numbers inside a receipt are worse than no receipt at all.
     """
