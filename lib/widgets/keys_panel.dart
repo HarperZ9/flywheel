@@ -70,13 +70,21 @@ class _KeysPanelState extends State<KeysPanel> {
           Text(_note!, style: fwMono(t, size: 10.5, color: t.inkMuted)),
         ],
         const SizedBox(height: FwLayout.s3),
-        HairlineCard(
-          padding: const EdgeInsets.symmetric(
-              horizontal: FwLayout.s4, vertical: FwLayout.s2),
-          child: Column(
-            children: [for (final e in entries) _row(t, e, available)],
+        if (entries.isEmpty)
+          // An empty roster is stated, never blank: without it a fresh
+          // install shows nothing and the user has no idea keys exist.
+          const HonestNull(
+              'The engine declared no provider key names. Hosted providers '
+              'appear here (with a Set path) once the engine ships provider '
+              'definitions; local tiers need no key.')
+        else
+          HairlineCard(
+            padding: const EdgeInsets.symmetric(
+                horizontal: FwLayout.s4, vertical: FwLayout.s2),
+            child: Column(
+              children: [for (final e in entries) _row(t, e, available)],
+            ),
           ),
-        ),
       ],
     );
   }

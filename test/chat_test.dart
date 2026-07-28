@@ -165,9 +165,16 @@ void main() {
     await tester.enterText(find.byType(TextField), 'gem');
     await tester.pumpAndSettle();
     expect(find.text('claude'), findsNothing); // filtered out
-    await tester.tap(find.text('gemini'));
+    // a keyless row is visible but not selectable: picking it would only
+    // set up a silent empty send
+    await tester.tap(find.text('gemini'), warnIfMissed: false);
     await tester.pumpAndSettle();
-    expect(chosen, 'gemini');
+    expect(chosen, isNull);
+    await tester.enterText(find.byType(TextField), 'cla');
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('claude'));
+    await tester.pumpAndSettle();
+    expect(chosen, 'claude');
   });
 
   testWidgets('Compare offline names the command that fixes it', (tester) async {

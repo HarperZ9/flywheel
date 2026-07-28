@@ -18,6 +18,7 @@ import 'agent_mode_pane.dart';
 import '../widgets/chat_composer.dart';
 import '../widgets/chat_sidebar.dart';
 import '../widgets/chat_thread.dart';
+import '../widgets/chat_welcome.dart';
 import '../widgets/fw.dart';
 import '../widgets/mode_chip.dart';
 import '../widgets/model_picker.dart';
@@ -85,7 +86,10 @@ class _AgentViewState extends State<AgentView> {
       if (mounted) {
         setState(() {
           _endpoints = rows;
-          _model ??= rows.isNotEmpty ? rows.first.name : null;
+          // Default to the best USABLE endpoint (subscription > keyed/local),
+          // never to whatever happens to sit first in the roster: a keyless
+          // default makes the first send silently return nothing.
+          _model ??= defaultEndpoint(rows)?.name;
           _current.model ??= _model;
         });
       }
@@ -213,7 +217,7 @@ class _AgentViewState extends State<AgentView> {
                     alive: widget.alive,
                     settings: widget.settings)
                 : _current.isEmpty
-                    ? _welcome(t)
+                    ? const ChatWelcome()
                     : ChatThread(
                         messages: _current.messages, controller: _scroll),
           ),
@@ -222,8 +226,12 @@ class _AgentViewState extends State<AgentView> {
               streaming: _streaming,
               onSend: _send,
               onStop: _stop,
-              hint:
-                  _model == null ? 'No model available…' : 'Message ${_model!}…',
+              hint: _model == null
+                  ? (_endpoints.isEmpty
+                      ? 'No model available…'
+                      : 'No endpoint has a credential. Add a key or sign in '
+                          'to a CLI under Endpoints.')
+                  : 'Message ${_model!}…',
               savedPrompts: widget.settings.savedPrompts,
               onSavePrompt: (t) =>
                   setState(() => widget.settings.savePrompt(t)),
@@ -277,23 +285,4 @@ class _AgentViewState extends State<AgentView> {
         ]),
       );
 
-  Widget _welcome(FwTokens t) => Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 460),
-          child: Column(mainAxisSize: MainAxisSize.min, children: [
-            Icon(Icons.auto_awesome_outlined, size: 30, color: t.verified),
-            const SizedBox(height: FwLayout.s4),
-            Text('What are we working on?',
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.titleLarge),
-            const SizedBox(height: FwLayout.s2),
-            Text(
-              'Ask anything. Every answer runs on the model you pick and carries a '
-              'receipt you can re-check. The trust is built in, never in the way.',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: t.inkFaint, fontSize: 13.5, height: 1.5),
-            ),
-          ]),
-        ),
-      );
 }

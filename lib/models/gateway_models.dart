@@ -3,6 +3,10 @@
 // These mirror the JSON shapes returned by the Python gateway's /api/* routes.
 // Each model has a fromJson factory; the gateway returns deterministic JSON so
 // we parse defensively (missing fields degrade to defaults, never crash).
+// EndpointRow and the credential ranking live in endpoint_row.dart and are
+// re-exported here, so existing imports keep working.
+
+export 'endpoint_row.dart';
 
 /// A single lane in the lane roster (GET /api/lanes).
 class Lane {
@@ -287,29 +291,3 @@ class ReceiptsLedger {
       );
 }
 
-/// A provider endpoint row (GET /api/endpoints).
-class EndpointRow {
-  final String name;
-  final String backend;
-  final String credential; // present | absent | local-none | cli-auth
-  final String providerRole;
-  final bool configured;
-
-  EndpointRow({
-    required this.name,
-    required this.backend,
-    required this.credential,
-    required this.providerRole,
-    required this.configured,
-  });
-
-  factory EndpointRow.fromJson(Map<String, dynamic> j) => EndpointRow(
-        name: j['name'] ?? j['model'] ?? '',
-        backend: j['backend'] ?? '',
-        credential: j['credential'] ?? 'absent',
-        providerRole: j['provider_role'] ?? '',
-        configured: j['configured'] ?? false,
-      );
-
-  bool get hasCredential => credential == 'present' || credential == 'cli-auth';
-}

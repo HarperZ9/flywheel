@@ -71,14 +71,6 @@ class _ModelPickerDialog extends StatefulWidget {
 class _ModelPickerDialogState extends State<_ModelPickerDialog> {
   String _query = '';
 
-  // Subscription tier first (the paid-for CLI), then keyed/local, then unusable.
-  int _rank(EndpointRow e) => switch (e.credential) {
-        'cli-auth' => 0,
-        'present' => 1,
-        'local-none' => 1,
-        _ => 2,
-      };
-
   List<EndpointRow> get _filtered {
     final q = _query.trim().toLowerCase();
     final base = q.isEmpty
@@ -89,7 +81,8 @@ class _ModelPickerDialogState extends State<_ModelPickerDialog> {
                 e.backend.toLowerCase().contains(q) ||
                 e.providerRole.toLowerCase().contains(q))
             .toList();
-    base.sort((a, b) => _rank(a).compareTo(_rank(b)));
+    // The shared credential ranking: subscription > keyed/local > unusable.
+    base.sort((a, b) => endpointRank(a).compareTo(endpointRank(b)));
     return base;
   }
 
@@ -149,42 +142,50 @@ class _ModelPickerDialogState extends State<_ModelPickerDialog> {
       'local-none' => ('local', t.verified),
       _ => ('no key', t.inkFaint),
     };
+    // A row with no credential cannot answer; picking it would only set up a
+    // silent empty send. It stays visible (the roster is honest about what
+    // COULD be enabled) but is not selectable.
+    final selectable = e.usable;
     return InkWell(
-      onTap: () => Navigator.of(context).pop(e.name),
-      child: Container(
-        padding: const EdgeInsets.symmetric(
-            horizontal: FwLayout.s4, vertical: FwLayout.s3),
-        color: selected ? t.panel : null,
-        child: Row(children: [
-          Icon(selected ? Icons.check_rounded : Icons.hub_outlined,
-              size: 15, color: selected ? t.ink : t.inkFaint),
-          const SizedBox(width: FwLayout.s3),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(e.name,
-                    style: TextStyle(
-                        fontSize: 13.5,
-                        color: t.ink,
-                        fontWeight:
-                            selected ? FontWeight.w600 : FontWeight.w500)),
-                if (e.providerRole.isNotEmpty || e.backend.isNotEmpty)
-                  Text(e.providerRole.isNotEmpty ? e.providerRole : e.backend,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: fwMono(t, size: 10.5, color: t.inkFaint)),
-              ],
+      onTap: selectable ? () => Navigator.of(context).pop(e.name) : null,
+      mouseCursor: selectable ? null : SystemMouseCursors.basic,
+      child: Opacity(
+        opacity: selectable ? 1.0 : 0.55,
+        child: Container(
+          padding: const EdgeInsets.symmetric(
+              horizontal: FwLayout.s4, vertical: FwLayout.s3),
+          color: selected ? t.panel : null,
+          child: Row(children: [
+            Icon(selected ? Icons.check_rounded : Icons.hub_outlined,
+                size: 15, color: selected ? t.ink : t.inkFaint),
+            const SizedBox(width: FwLayout.s3),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(e.name,
+                      style: TextStyle(
+                          fontSize: 13.5,
+                          color: t.ink,
+                          fontWeight:
+                              selected ? FontWeight.w600 : FontWeight.w500)),
+                  if (e.providerRole.isNotEmpty || e.backend.isNotEmpty)
+                    Text(e.providerRole.isNotEmpty ? e.providerRole : e.backend,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: fwMono(t, size: 10.5, color: t.inkFaint)),
+                ],
+              ),
             ),
-          ),
-          Container(
-            width: 6,
-            height: 6,
-            margin: const EdgeInsets.only(right: 6),
-            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-          ),
-          Text(label, style: fwMono(t, size: 10.5, color: color)),
-        ]),
+            Container(
+              width: 6,
+              height: 6,
+              margin: const EdgeInsets.only(right: 6),
+              decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+            ),
+            Text(label, style: fwMono(t, size: 10.5, color: color)),
+          ]),
+        ),
       ),
     );
   }

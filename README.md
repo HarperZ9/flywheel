@@ -106,4 +106,6 @@ flutter build windows --release
 
 The app displays what the engine can prove and labels what it cannot. Model
 answers that fail verification are shown as escalations, not dressed up as
-results. Credentials are never collected, stored, or displayed by this app.
+results. Provider keys are typed once into an obscured field and handed
+straight to the engine's OS-keychain store; after that the app shows presence
+and source only. A key value is never displayed, logged, or echoed back.

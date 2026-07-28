@@ -147,13 +147,15 @@ class _EndpointsViewState extends State<EndpointsView> {
           child: Column(
             children: [
               for (final r in (_roster.toList()
-                    ..sort((a, b) => _rank(a).compareTo(_rank(b)))))
+                    ..sort((a, b) => endpointRank(a).compareTo(endpointRank(b)))))
                 _providerRow(t, r)
             ],
           ),
         ),
-        if (_keychain != null &&
-            ((_keychain!['entries'] ?? []) as List).isNotEmpty) ...[
+        // The keys section always renders once the doc arrives: on a fresh
+        // machine every entry reads absent, and hiding the panel then would
+        // hide the only in-GUI way to set a key (the first-run dead-end).
+        if (_keychain != null) ...[
           const SizedBox(height: FwLayout.s5),
           const Kicker('keys · stored in the OS keychain, shown as presence'),
           const SizedBox(height: FwLayout.s3),
@@ -210,14 +212,6 @@ class _EndpointsViewState extends State<EndpointsView> {
       ),
     );
   }
-
-  // Subscription tier first (the paid-for CLI), then keyed/local, then unusable.
-  int _rank(EndpointRow r) => switch (r.credential) {
-        'cli-auth' => 0,
-        'present' => 1,
-        'local-none' => 1,
-        _ => 2,
-      };
 
   Widget _providerRow(FwTokens t, EndpointRow r) {
     final (label, status) = switch (r.credential) {
