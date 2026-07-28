@@ -49,6 +49,8 @@ Thumbs.db
 artifacts/exe/
 .pyinstaller/
 *.spec
+# the checked-in packaging spec is the exception (negation must follow *.spec)
+!packaging/*.spec
 
 # --- benchmark/screen scratch (never commit) ---
 .screen-run/

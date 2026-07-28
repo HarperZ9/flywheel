@@ -135,6 +135,13 @@ def _importable(top_module: str) -> bool:
         return False
 
 
+def _frozen() -> bool:
+    """True inside a PyInstaller bundle. There sys.executable is the frozen
+    gateway itself, NOT a Python -- handing it `-m anything` would relaunch
+    the gateway instead of a lane server. Seam for tests."""
+    return bool(getattr(sys, "frozen", False))
+
+
 def _pip_mcp_command(lane: Lane) -> list[str]:
     """Resolve a pip lane's MCP argv.
 
@@ -143,8 +150,10 @@ def _pip_mcp_command(lane: Lane) -> list[str]:
     Python's Scripts dir winning PATH) raises ModuleNotFoundError and the lane
     reads as dead while the package works fine elsewhere. So prefer THIS
     interpreter when it can actually import the lane -- same environment as
-    the engine, no PATH dependency -- and fall back to the console script."""
-    if lane.py_module:
+    the engine, no PATH dependency -- and fall back to the console script.
+    Frozen builds have no Python behind sys.executable, so they go straight
+    to the console script and the probe reports its honest health."""
+    if lane.py_module and not _frozen():
         top = lane.py_module.split(".", 1)[0]
         if _importable(top):
             return [sys.executable, "-m", lane.py_module, *lane.mcp_args]
@@ -158,9 +167,11 @@ def resolve_mcp_command(name: str) -> list[str]:
         return _node_mcp_command(lane)
     if lane.kind == "pip":
         return _pip_mcp_command(lane)
-    if lane.command == "python":
+    if lane.command == "python" and not _frozen():
         # the bundled lane runs in the engine's own interpreter, not
-        # whichever `python` happens to win PATH
+        # whichever `python` happens to win PATH. In a frozen build there is
+        # no interpreter behind sys.executable; fall through to PATH python,
+        # and an absent one reports unreachable with its real error.
         return [sys.executable, *lane.mcp_args]
     return lane.mcp_command()
 

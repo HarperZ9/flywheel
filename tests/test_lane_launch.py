@@ -60,3 +60,19 @@ def test_unreachable_probe_without_stderr_stays_plain(monkeypatch):
     out = probe_plugin("quietlane", timeout=15.0)
     assert out["status"] == "unreachable"
     assert "server stderr" not in out["detail"]   # no words, no fabricated words
+
+
+def test_frozen_build_never_hands_out_sys_executable(monkeypatch):
+    # In a PyInstaller bundle sys.executable IS the gateway; using it as a
+    # Python would relaunch the gateway instead of a lane server.
+    monkeypatch.setattr(ln, "_frozen", lambda: True)
+    monkeypatch.setattr(ln, "_importable", lambda top: True)  # even if importable
+    for name in ln.LANES:
+        cmd = ln.resolve_mcp_command(name)
+        assert cmd[0] != sys.executable, f"{name} would relaunch the gateway"
+
+
+def test_frozen_pip_lane_uses_console_script(monkeypatch):
+    monkeypatch.setattr(ln, "_frozen", lambda: True)
+    monkeypatch.setattr(ln, "_importable", lambda top: True)
+    assert ln.resolve_mcp_command("gather") == ["gather", "mcp"]
