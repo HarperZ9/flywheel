@@ -13,6 +13,7 @@ a server. MCP stdio framing is newline-delimited JSON (one message per line).
 """
 from __future__ import annotations
 
+import collections
 import json
 import queue
 import subprocess
@@ -34,10 +35,16 @@ class StdioTransport:
         self.timeout = timeout
         self.proc = subprocess.Popen(
             command, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-            stderr=subprocess.DEVNULL, text=True, bufsize=1)
+            stderr=subprocess.PIPE, text=True, bufsize=1)
         self._q: "queue.Queue" = queue.Queue()
         self._reader = threading.Thread(target=self._read_loop, daemon=True)
         self._reader.start()
+        # A server that dies on launch says why on stderr; discarding it turns
+        # a one-line ModuleNotFoundError into a bare "closed the connection".
+        # Keep a bounded tail of the server's own words for the error report.
+        self._err_tail: "collections.deque" = collections.deque(maxlen=30)
+        self._err_reader = threading.Thread(target=self._err_loop, daemon=True)
+        self._err_reader.start()
 
     def _read_loop(self) -> None:
         try:
@@ -51,6 +58,22 @@ class StdioTransport:
                     continue
         finally:
             self._q.put(_EOF)
+
+    def _err_loop(self) -> None:
+        try:
+            for line in self.proc.stderr:
+                line = line.rstrip()
+                if line:
+                    self._err_tail.append(line)
+        except (ValueError, OSError):
+            pass
+
+    def stderr_tail(self) -> str:
+        """The last stderr lines the server wrote (joined), or ''. After the
+        process exits, briefly joins the reader so the tail is complete."""
+        if self.proc.poll() is not None:
+            self._err_reader.join(timeout=0.5)
+        return "\n".join(self._err_tail).strip()
 
     def send(self, msg: dict) -> None:
         if self.proc.stdin is None:
@@ -131,6 +154,14 @@ class MCPClient:
         parts = [c.get("text", "") for c in res.get("content", [])
                  if isinstance(c, dict) and c.get("type") == "text"]
         return {"ok": not res.get("isError", False), "text": "\n".join(parts), "raw": res}
+
+    def stderr_tail(self) -> str:
+        """The server's own last words on stderr, or '' (fakes may lack it)."""
+        fn = getattr(self._t, "stderr_tail", None)
+        try:
+            return fn() if callable(fn) else ""
+        except Exception:
+            return ""
 
     def close(self) -> None:
         try:

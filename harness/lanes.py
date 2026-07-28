@@ -24,10 +24,12 @@ roster; it reports `missing`/`declared` honestly.
 """
 from __future__ import annotations
 
+import importlib.util
 import json
 import os
 import shutil
 import subprocess
+import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -65,6 +67,7 @@ class Lane:
     role: str
     organ: str
     source_repo: str = ""           # for the source-checkout install profile
+    py_module: str = ""             # `python -m` entry for a pip lane
 
     def mcp_command(self) -> list[str]:
         """The argv that launches this lane's MCP stdio server."""
@@ -80,19 +83,19 @@ LANES: dict[str, Lane] = {
     "gather": Lane(
         "gather", "gather-engine", "gather", ("mcp",), "pip", "1.6.1",
         "research intake + provenance receipts (verified-data flywheel intake)",
-        "perception", source_repo="public/gather"),
+        "perception", source_repo="public/gather", py_module="gather.cli"),
     "crucible": Lane(
         "crucible", "crucible-bench", "crucible", ("mcp",), "pip", "1.2.0",
         "falsifiable verification + re-check (register -> steelman -> measure -> witness)",
-        "verification", source_repo="public/crucible"),
+        "verification", source_repo="public/crucible", py_module="crucible.cli"),
     "index": Lane(
         "index", "index-graph", "index", ("mcp",), "pip", "2.9.0",
         "workspace map + symbol graph + verified wiki (the catalog lane)",
-        "structure", source_repo="public/index"),
+        "structure", source_repo="public/index", py_module="index_graph"),
     "forum": Lane(
         "forum", "forum-engine", "forum", ("mcp",), "pip", "1.13.0",
         "witnessed causal ledger + model-agnostic routing",
-        "orchestration", source_repo="public/forum"),
+        "orchestration", source_repo="public/forum", py_module="forum.cli"),
     "learn": Lane(
         "learn", "@harperz9/learn", "node", ("src/mcp.mjs",), "npm", "1.6.0",
         "accountable learning forge (spaced repetition + retrieval practice)",
@@ -124,11 +127,41 @@ def _node_mcp_command(lane: Lane) -> list[str]:
     return lane.mcp_command()
 
 
+def _importable(top_module: str) -> bool:
+    """True when `top_module` imports in THIS interpreter. Seam for tests."""
+    try:
+        return importlib.util.find_spec(top_module) is not None
+    except (ImportError, ValueError):
+        return False
+
+
+def _pip_mcp_command(lane: Lane) -> list[str]:
+    """Resolve a pip lane's MCP argv.
+
+    A console script on PATH is only as healthy as the interpreter its shim
+    was built for: a stale shim (moved venv, deleted editable source, another
+    Python's Scripts dir winning PATH) raises ModuleNotFoundError and the lane
+    reads as dead while the package works fine elsewhere. So prefer THIS
+    interpreter when it can actually import the lane -- same environment as
+    the engine, no PATH dependency -- and fall back to the console script."""
+    if lane.py_module:
+        top = lane.py_module.split(".", 1)[0]
+        if _importable(top):
+            return [sys.executable, "-m", lane.py_module, *lane.mcp_args]
+    return lane.mcp_command()
+
+
 def resolve_mcp_command(name: str) -> list[str]:
     """The argv to launch lane `name`'s MCP server, profile-aware."""
     lane = LANES[name]
     if lane.kind == "npm":
         return _node_mcp_command(lane)
+    if lane.kind == "pip":
+        return _pip_mcp_command(lane)
+    if lane.command == "python":
+        # the bundled lane runs in the engine's own interpreter, not
+        # whichever `python` happens to win PATH
+        return [sys.executable, *lane.mcp_args]
     return lane.mcp_command()
 
 

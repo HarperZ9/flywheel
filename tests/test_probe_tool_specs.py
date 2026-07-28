@@ -27,6 +27,12 @@ class _FakeClient:
     def start(self):
         pass
 
+    def close(self):
+        pass
+
+    def stderr_tail(self):
+        return ""
+
     def list_tools(self):
         return list(self._canned)
 
