@@ -54,6 +54,19 @@ def journal_append(path: Path, record: dict) -> None:
         fh.write(json.dumps(record, sort_keys=True) + "\n")
 
 
+def _rung_dir(out: str, family: str, rung: str) -> Path:
+    # run_demo_pool sanitizes the colon in a rung tag for Windows paths.
+    return REPO / out / family / rung.replace(":", "_")
+
+
+def already_done(out: str, family: str, rung: str) -> bool:
+    """A pair is complete when its pool index exists. MECHANICAL only: this
+    reads whether a file is present, never what any candidate scored. The
+    aborted first pass cost eleven pairs that had to restart from nothing;
+    resumption bounds a future interruption to the pair in flight."""
+    return (_rung_dir(out, family, rung) / "pool_index.json").is_file()
+
+
 def run_pair(family: str, rung: str, out: str) -> tuple[int, float]:
     cmd = [sys.executable, str(REPO / "scripts" / "run_demo_pool.py"),
            "--confirmatory", "--family", family, "--rung", rung, "--out", out]
@@ -73,6 +86,12 @@ def main() -> int:
     failures = 0
     for family in FAMILIES:
         for rung in RUNGS:
+            if already_done(args.out, family, rung):
+                journal_append(journal, {"event": "pair_skipped_complete",
+                                         "family": family, "rung": rung})
+                print(f"{family} @ {rung}: already complete, skipped",
+                      flush=True)
+                continue
             journal_append(journal, {"event": "pair_start", "family": family,
                                      "rung": rung})
             code, secs = run_pair(family, rung, args.out)
