@@ -48,6 +48,44 @@ SCHEMA = "flywheel.receipt/v3"
 SIGNED_OVER = ("claim_sha256",)
 
 
+def subject_fields(*, criterion_id, criterion_version, criterion_sha256, family,
+                   family_instance_id, generator_id, generator_seed,
+                   candidate_sha256, prompt_hash, checker_module,
+                   checker_source_sha256, executes_candidate_code, evidence_kind,
+                   tier, input_tier_multiset=()) -> dict:
+    """What was checked, as a plain mapping. THE one definition of the subject.
+
+    `Receipt._subject` calls this rather than restating it, so the standalone
+    digest below cannot drift from the one a receipt reports. Two copies of this
+    dict would eventually disagree, and the disagreement would look like a real
+    verification failure.
+    """
+    return {
+        "criterion_id": criterion_id, "criterion_version": criterion_version,
+        "criterion_sha256": criterion_sha256, "family": family,
+        "family_instance_id": family_instance_id, "generator_id": generator_id,
+        "generator_seed": generator_seed, "candidate_sha256": candidate_sha256,
+        "prompt_hash": prompt_hash, "checker_module": checker_module,
+        "checker_source_sha256": checker_source_sha256,
+        "executes_candidate_code": executes_candidate_code,
+        "evidence_kind": getattr(evidence_kind, "value", evidence_kind),
+        "tier": getattr(tier, "value", tier),
+        "input_tier_multiset": list(input_tier_multiset), "schema": SCHEMA,
+    }
+
+
+def subject_digest(**fields) -> str:
+    """The subject digest without a claim wrapped around it.
+
+    The primary endpoint asserts one SUBJECT per certificate body and reads
+    nothing on the claim side. Demanding a denominator and a budget to obtain
+    that digest would force a caller to invent numbers it does not have, and
+    invented numbers inside a receipt are worse than no receipt at all.
+    """
+    return "sha256:" + hashlib.sha256(
+        canonical(subject_fields(**fields)).encode()).hexdigest()
+
+
 @dataclass(frozen=True)
 class Receipt:
     # --- subject: what was checked -------------------------------------------
@@ -110,24 +148,18 @@ class Receipt:
     # --- digests -------------------------------------------------------------
 
     def _subject(self) -> dict:
-        return {
-            "criterion_id": self.criterion_id,
-            "criterion_version": self.criterion_version,
-            "criterion_sha256": self.criterion_sha256,
-            "family": self.family,
-            "family_instance_id": self.family_instance_id,
-            "generator_id": self.generator_id,
-            "generator_seed": self.generator_seed,
-            "candidate_sha256": self.candidate_sha256,
-            "prompt_hash": self.prompt_hash,
-            "checker_module": self.checker_module,
-            "checker_source_sha256": self.checker_source_sha256,
-            "executes_candidate_code": self.executes_candidate_code,
-            "evidence_kind": self.evidence_kind.value,
-            "tier": self.tier.value,
-            "input_tier_multiset": list(self.input_tier_multiset),
-            "schema": SCHEMA,
-        }
+        return subject_fields(
+            criterion_id=self.criterion_id,
+            criterion_version=self.criterion_version,
+            criterion_sha256=self.criterion_sha256, family=self.family,
+            family_instance_id=self.family_instance_id,
+            generator_id=self.generator_id, generator_seed=self.generator_seed,
+            candidate_sha256=self.candidate_sha256, prompt_hash=self.prompt_hash,
+            checker_module=self.checker_module,
+            checker_source_sha256=self.checker_source_sha256,
+            executes_candidate_code=self.executes_candidate_code,
+            evidence_kind=self.evidence_kind, tier=self.tier,
+            input_tier_multiset=self.input_tier_multiset)
 
     def _claim(self) -> dict:
         d = dict(self._subject())

@@ -19,7 +19,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from harness.receipt import Receipt, SCHEMA
+from harness.receipt import Receipt, SCHEMA, subject_digest
 from harness.receipt_fields import (
     Budget, Denominator, EvidenceKind, GradedScore, ReceiptError, Tier,
     canonical, no_floats)
@@ -247,6 +247,37 @@ def test_a_foreign_schema_is_refused_rather_than_reinterpreted():
     del d["schema"]
     with pytest.raises(ReceiptError):
         Receipt.from_dict(d)
+
+
+def test_the_standalone_subject_digest_equals_the_receipt_s():
+    """The endpoint computes a subject digest without a claim around it. If the
+    two ever disagreed, the difference would look like a real verification
+    failure rather than the bookkeeping accident it would actually be."""
+    r = _r()
+    assert subject_digest(
+        criterion_id=r.criterion_id, criterion_version=r.criterion_version,
+        criterion_sha256=r.criterion_sha256, family=r.family,
+        family_instance_id=r.family_instance_id, generator_id=r.generator_id,
+        generator_seed=r.generator_seed, candidate_sha256=r.candidate_sha256,
+        prompt_hash=r.prompt_hash, checker_module=r.checker_module,
+        checker_source_sha256=r.checker_source_sha256,
+        executes_candidate_code=r.executes_candidate_code,
+        evidence_kind=r.evidence_kind, tier=r.tier) == r.subject_sha256()
+
+
+def test_the_standalone_subject_digest_accepts_plain_strings():
+    """A caller holding JSON should not have to reconstruct the enums."""
+    r = _r()
+    kw = dict(
+        criterion_id=r.criterion_id, criterion_version=r.criterion_version,
+        criterion_sha256=r.criterion_sha256, family=r.family,
+        family_instance_id=r.family_instance_id, generator_id=r.generator_id,
+        generator_seed=r.generator_seed, candidate_sha256=r.candidate_sha256,
+        prompt_hash=r.prompt_hash, checker_module=r.checker_module,
+        checker_source_sha256=r.checker_source_sha256,
+        executes_candidate_code=r.executes_candidate_code)
+    assert subject_digest(evidence_kind=r.evidence_kind.value,
+                          tier=r.tier.value, **kw) == r.subject_sha256()
 
 
 def test_the_wire_form_roundtrips_with_every_new_field():

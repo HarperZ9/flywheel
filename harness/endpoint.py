@@ -151,6 +151,12 @@ def primary_endpoint(union: dict, rung_ids, submit) -> dict:
             "it returned is right.",
             "NOT_PROVES_ANY_RUNG_IS_BETTER: this endpoint is a count with no "
             "rate in it and no cross-rung comparison of any kind.",
+            "NOT_PROVES_MORE_THAN_THE_CONSTRUCTION: the accept path takes a "
+            "certificate and an instance and never a rung, and the receipt "
+            "subject excludes model identity by construction. So a pass here "
+            "confirms that nothing leaked a rung into either digest, end to "
+            "end. It is a check that the construction holds, not a discovery "
+            "that rungs happen to agree.",
         ],
     }
 
