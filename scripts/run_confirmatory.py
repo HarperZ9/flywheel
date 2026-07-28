@@ -71,7 +71,18 @@ def run_pair(family: str, rung: str, out: str) -> tuple[int, float]:
     cmd = [sys.executable, str(REPO / "scripts" / "run_demo_pool.py"),
            "--confirmatory", "--family", family, "--rung", rung, "--out", out]
     start = time.time()
-    proc = subprocess.run(cmd, cwd=str(REPO), capture_output=True, text=True)
+    # CREATE_NEW_PROCESS_GROUP so a console Ctrl+C/Ctrl+Break aimed at whatever
+    # launched us does not propagate into a generation in flight, and
+    # CREATE_NO_WINDOW so no console is allocated for it to be aimed at. The
+    # first abort was DBG_TERMINATE_PROCESS on session teardown; the second was
+    # STATUS_CONTROL_C_EXIT. Neither is fully preventable from inside the
+    # process, which is why resumption, not immortality, is the real mitigation.
+    flags = 0
+    if sys.platform == "win32":
+        flags = (getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0)
+                 | getattr(subprocess, "CREATE_NO_WINDOW", 0))
+    proc = subprocess.run(cmd, cwd=str(REPO), capture_output=True, text=True,
+                          creationflags=flags)
     return proc.returncode, round(time.time() - start, 1)
 
 
