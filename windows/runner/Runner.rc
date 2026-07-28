@@ -89,13 +89,13 @@ BEGIN
     BEGIN
         BLOCK "040904e4"
         BEGIN
-            VALUE "CompanyName", "com.flywheel" "\0"
-            VALUE "FileDescription", "flywheel_desktop" "\0"
+            VALUE "CompanyName", "ZentropyLabs" "\0"
+            VALUE "FileDescription", "Flywheel" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
             VALUE "InternalName", "flywheel_desktop" "\0"
-            VALUE "LegalCopyright", "Copyright (C) 2026 com.flywheel. All rights reserved." "\0"
+            VALUE "LegalCopyright", "Copyright (C) 2026 ZentropyLabs. All rights reserved." "\0"
             VALUE "OriginalFilename", "flywheel_desktop.exe" "\0"
-            VALUE "ProductName", "flywheel_desktop" "\0"
+            VALUE "ProductName", "Flywheel" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END
