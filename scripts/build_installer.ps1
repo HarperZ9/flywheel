@@ -59,17 +59,30 @@ if (-not (Test-Path (Join-Path $engineOut "flywheel-gateway.exe"))) {
 }
 
 # 3. VC++ CRT from a Redist tree (redistributable copies, never System32).
+# Discovery is vswhere-first: VS installs move roots across major versions
+# (2022 lives under \2022\, VS 18 under \18\), and hardcoding a year broke
+# the first CI release run. vswhere is shipped with every VS install and on
+# every GitHub runner image; a broad directory glob stays as the fallback.
 $crtDir = Join-Path $repo "build\crt"
 New-Item -ItemType Directory -Force $crtDir | Out-Null
-$redistRoots = @(
-    "C:\Program Files\Microsoft Visual Studio\2022",
-    "C:\Program Files (x86)\Microsoft Visual Studio\2022"
-) | Where-Object { Test-Path $_ }
-$crtSource = $redistRoots |
-    ForEach-Object { Get-ChildItem -Path $_ -Recurse -Directory -Filter "Microsoft.VC14*.CRT" -ErrorAction SilentlyContinue } |
-    Where-Object { $_.FullName -match '\\x64\\' } |
-    Select-Object -First 1
-if (-not $crtSource) { throw "no VC14x x64 CRT Redist tree found under VS 2022" }
+$vsRoots = @()
+$vswhere = "C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe"
+if (Test-Path $vswhere) {
+    $vsRoots += & $vswhere -latest -products * -property installationPath 2>$null
+    $vsRoots += & $vswhere -products * -property installationPath 2>$null
+}
+$vsRoots += Get-ChildItem -Directory -ErrorAction SilentlyContinue `
+    "C:\Program Files\Microsoft Visual Studio\*\*",
+    "C:\Program Files (x86)\Microsoft Visual Studio\*\*" |
+    Select-Object -ExpandProperty FullName
+$crtSource = $vsRoots | Where-Object { $_ } | Select-Object -Unique |
+    ForEach-Object {
+        Get-ChildItem -Directory -ErrorAction SilentlyContinue `
+            (Join-Path $_ "VC\Redist\MSVC\*\x64\Microsoft.VC14*.CRT")
+    } | Select-Object -First 1
+if (-not $crtSource) {
+    throw "no VC14x x64 CRT Redist tree found (searched: $($vsRoots -join '; '))"
+}
 foreach ($dll in "msvcp140.dll", "vcruntime140.dll", "vcruntime140_1.dll") {
     Copy-Item (Join-Path $crtSource.FullName $dll) $crtDir -Force
 }
