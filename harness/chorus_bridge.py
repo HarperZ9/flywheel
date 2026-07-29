@@ -46,9 +46,12 @@ def discourse_digest(corpus: str, *, runner=None) -> dict:
     if not corpus or not Path(corpus).exists():
         return {"error": f"corpus not found: {corpus}"}
     argv = _chorus_argv()
-    if argv is None:
+    if argv is None and runner is None:
+        # Only a real spawn needs the installed CLI. An injected runner IS the
+        # chorus stand-in, so the install gate must not fire ahead of it — or
+        # the seam is untestable anywhere the satellite is not installed (CI).
         return {"error": "the chorus satellite is not installed; pip install chorus-discourse"}
-    cmd = argv + ["run", str(corpus), "--verify"]
+    cmd = (argv or ["chorus"]) + ["run", str(corpus), "--verify"]
     try:
         if runner is not None:
             rc, out, err = runner(cmd)
@@ -77,9 +80,10 @@ def list_corpora(root: str, *, runner=None) -> dict:
     if not root or not Path(root).is_dir():
         return {"error": f"root is not an existing directory: {root}"}
     argv = _chorus_argv()
-    if argv is None:
+    if argv is None and runner is None:
+        # Same seam: the injected runner stands in for the CLI.
         return {"error": "the chorus satellite is not installed; pip install chorus-discourse"}
-    cmd = argv + ["corpora", str(root)]
+    cmd = (argv or ["chorus"]) + ["corpora", str(root)]
     try:
         if runner is not None:
             rc, out, err = runner(cmd)
@@ -107,9 +111,11 @@ def recent_digests(store: str, *, limit: int = 20, runner=None) -> dict:
     ``{schema, store, digests: [...]}`` newest-first, or a named error. A missing or
     empty store is an empty list (chorus's own answer), never an error."""
     argv = _chorus_argv()
-    if argv is None:
+    if argv is None and runner is None:
+        # Same seam as discourse_digest: an injected runner stands in for the
+        # CLI, so the install gate must not fire ahead of it.
         return {"error": "the chorus satellite is not installed; pip install chorus-discourse"}
-    cmd = argv + ["digests", str(store), "--limit", str(int(limit))]
+    cmd = (argv or ["chorus"]) + ["digests", str(store), "--limit", str(int(limit))]
     try:
         if runner is not None:
             rc, out, err = runner(cmd)
