@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 
 import '../services/settings.dart';
 import '../theme/flywheel_theme.dart';
+import '../version.dart';
 import 'fw.dart';
 
 const kTextChoices = <String?>[
@@ -121,6 +122,20 @@ class _AppearanceFormState extends State<_AppearanceForm> {
             ),
           ],
         ),
+        const SizedBox(height: FwLayout.s4),
+        Divider(height: 1, color: t.hairline),
+        const SizedBox(height: FwLayout.s3),
+        // The app's release identity. The version constant is drift-gated
+        // against pubspec by the test suite, so this line cannot lie.
+        Text('Flywheel v$appVersion · $appPublisher',
+            style: fwMono(t, size: 11.5, color: t.inkMuted)),
+        const SizedBox(height: 3),
+        SelectableText(appReleases, style: fwMono(t, size: 10.5, color: t.inkFaint)),
+        const SizedBox(height: 3),
+        Text(
+            'Every release ships with a SHA-256 receipt beside the installer; '
+            'verify your download against it.',
+            style: TextStyle(fontSize: 11, color: t.inkFaint, height: 1.4)),
       ],
     );
   }

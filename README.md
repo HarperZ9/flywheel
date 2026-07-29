@@ -57,7 +57,24 @@ read the receipts. No browser, no terminal.
   value); the scoreboard shows observed routing outcomes, not promises. The
   read-only training card reports the local run as it is.
 
-## Run it
+## Install it
+
+Flywheel ships as a Windows installer: the app and the engine arrive
+together, no Python, no PATH setup. Download the latest
+`Flywheel-Setup-<version>-x64.exe` from the
+[releases page](https://github.com/HarperZ9/flywheel-desktop/releases);
+every release is built from its version tag by a public pipeline and ships
+with a `SHA256SUMS.txt` receipt. Verify the copy you downloaded:
+
+```
+Get-FileHash Flywheel-Setup-0.2.1-x64.exe -Algorithm SHA256
+```
+
+The installer is not code-signed yet, so Windows SmartScreen will warn on
+first run; the hash is the substitute, proving the file you hold is the file
+the pipeline built.
+
+## Run it from source
 
 Install the engine and start it once:
 
@@ -72,7 +89,9 @@ Then run the app:
 flutter run -d windows --release
 ```
 
-If the engine is offline the app says so and can start it for you.
+If the engine is offline the app says so and can start it for you. An
+installed app launches its own bundled engine by absolute path; a dev
+checkout falls back to `flywheel` on PATH.
 
 ## Design
 
