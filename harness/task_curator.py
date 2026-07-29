@@ -92,7 +92,7 @@ def _run_with(spec: TaskSpec, work_root: Path, solution_text: str,
     it never expected and can spin forever; that must reject the probe, not
     kill the batch (learned from a batch-3 admission crash)."""
     import subprocess
-    from .oracle import _kill_tree, clear_bytecode, run_env
+    from .oracle import _kill_tree, clear_bytecode, run_env, spawn_killable
     from .task import load_task
     work = work_root / f"{spec.task_id}-{tag}"
     materialize(spec, work)
@@ -104,9 +104,9 @@ def _run_with(spec: TaskSpec, work_root: Path, solution_text: str,
     # grandchild survives holding the stdout pipe and the post-kill drain
     # blocks forever (the exact defect oracle.py documents and fixes; this
     # site had the old pattern and hung the full suite).
-    proc = subprocess.Popen(spec.oracle_cmd, cwd=task.workdir, shell=True,
-                            env=run_env(), stdout=subprocess.PIPE,
-                            stderr=subprocess.PIPE)
+    proc = spawn_killable(spec.oracle_cmd, cwd=task.workdir, shell=True,
+                          env=run_env(), stdout=subprocess.PIPE,
+                          stderr=subprocess.PIPE)
     try:
         proc.communicate(timeout=ORACLE_TIMEOUT)
     except subprocess.TimeoutExpired:

@@ -42,11 +42,11 @@ def _run_suite(project: Path, oracle_cmd: str,
                timeout: int = _TIMEOUT) -> str:
     """One suite run, tri-state: 'pass', 'fail', or 'timeout'. A hang is not
     a verdict; the suite never rendered one, so it must not read as a kill."""
-    from .oracle import _kill_tree, clear_bytecode, run_env
+    from .oracle import _kill_tree, clear_bytecode, run_env, spawn_killable
     clear_bytecode(project)
-    proc = subprocess.Popen(oracle_cmd, cwd=str(project), shell=True,
-                            env=run_env(), stdout=subprocess.PIPE,
-                            stderr=subprocess.STDOUT)
+    proc = spawn_killable(oracle_cmd, cwd=str(project), shell=True,
+                          env=run_env(), stdout=subprocess.PIPE,
+                          stderr=subprocess.STDOUT)
     try:
         proc.communicate(timeout=timeout)
     except subprocess.TimeoutExpired:

@@ -72,6 +72,22 @@ def _kill_tree(proc: subprocess.Popen) -> None:
             proc.kill()
 
 
+def spawn_killable(*args, **kwargs) -> subprocess.Popen:
+    """Popen whose whole descendant tree `_kill_tree` can actually reap.
+
+    On POSIX the child leads a fresh session, so `os.killpg(getpgid(pid))`
+    targets that tree instead of the process group the child would otherwise
+    share with the pytest parent. Without it, a hostile candidate's infinite
+    loop is a grandchild in pytest's own group: the kill either misses it (it
+    survives holding the pipe and the drain wedges) or, worse, signals pytest
+    itself. Windows reaps via `taskkill /T` and needs nothing extra. Every
+    Popen that is later handed to `_kill_tree` must come through here so the
+    kill precondition holds by construction, not by each caller remembering."""
+    if os.name != "nt":
+        kwargs.setdefault("start_new_session", True)
+    return subprocess.Popen(*args, **kwargs)
+
+
 class NonDispositiveVerdict(Exception):
     """Raised when boolean truth is asked of a verdict that did not decide.
 
@@ -210,7 +226,7 @@ class PytestOracle:
         # pipe, and run()'s post-kill drain blocks forever. A hostile candidate
         # must cost one timeout, never a wedged harness.
         out: bytes = b""
-        proc = subprocess.Popen(
+        proc = spawn_killable(
             cmd, cwd=task.workdir, shell=True, env=run_env(),
             stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         try:
