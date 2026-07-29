@@ -16,7 +16,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from .mcts import DenseResult, DenseOracle
-from .oracle import clear_bytecode, run_env
+from .oracle import _kill_tree, clear_bytecode, run_env, spawn_killable
 from .task import Task
 
 
@@ -55,29 +55,57 @@ class PythonExecutorOracle(DenseOracle):
         cpath.write_text(candidate, encoding="utf-8")
         clear_bytecode(Path(task.workdir))
         cmd = f"python {task.candidate_path}"
+        # Popen + tree-kill (the oracle.py discipline, PR #16), NOT
+        # subprocess.run(timeout=): with shell=True, run()'s timeout kills
+        # only the shell -- the candidate, and anything the candidate itself
+        # spawned, is a grandchild that survives as an orphan. spawn_killable
+        # gives the immediate child its own session so _kill_tree's killpg
+        # reaps the whole tree, not just the shell.
+        proc = spawn_killable(cmd, cwd=task.workdir, shell=True,
+                              env=run_env(), stdout=subprocess.PIPE,
+                              stderr=subprocess.PIPE)
         try:
-            p = subprocess.run(cmd, cwd=task.workdir, shell=True,
-                               env=run_env(), capture_output=True,
-                               timeout=self.timeout)
-            got = p.stdout.decode("utf-8", errors="replace").strip()
+            try:
+                out, _ = proc.communicate(timeout=self.timeout)
+            except BaseException:
+                # subprocess.run() (what this call replaced) wrapped Popen in
+                # `with Popen(...) as process:` with a bare `except:` that
+                # killed the child before re-raising -- a blanket guarantee
+                # against any exception mid-run. Popen alone does not give
+                # that for free: TimeoutExpired is the common case, but a
+                # MemoryError from buffering unbounded candidate output, an
+                # OSError off the pipe, or a KeyboardInterrupt/SystemExit
+                # hitting mid-wait would all leave alive the very
+                # session-leader tree spawn_killable built specifically so
+                # _kill_tree could reap it. Kill first, unconditionally, then
+                # let the except clauses below classify (or re-raise) as before.
+                _kill_tree(proc)
+                raise
+            got = out.decode("utf-8", errors="replace").strip()
             # a candidate that crashed (rc != 0) never passes, even when its
             # stdout happens to match — especially the empty-expected case,
             # where a candidate that died at import also printed nothing.
-            passed = p.returncode == 0 and got == self.expected
+            passed = proc.returncode == 0 and got == self.expected
             # the outcome CLASS is a named field, not smuggled into output_hash:
             # a nonzero exit is not a mismatch, a mismatch is not a timeout.
-            if p.returncode != 0:
+            if proc.returncode != 0:
                 status = "nonzero_exit"
             elif passed:
                 status = "match"
             else:
                 status = "mismatch"
             return DenseResult(passed=passed, reward=(1.0 if passed else 0.0),
-                               output_hash=f"{p.returncode}:{got[:32]}",
+                               output_hash=f"{proc.returncode}:{got[:32]}",
                                status=status)
         except subprocess.TimeoutExpired:
             # nothing ran to completion, so there is no output to witness:
-            # output_hash stays empty and the class lives in status
+            # output_hash stays empty and the class lives in status. The tree
+            # is already dead (killed above); this just drains whatever
+            # communicate() left on the pipes so the fds get closed.
+            try:
+                proc.communicate(timeout=10)
+            except Exception:
+                pass
             return DenseResult(passed=False, reward=0.0,
                                output_hash="", status="timeout")
         except Exception as e:
