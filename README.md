@@ -67,7 +67,7 @@ every release is built from its version tag by a public pipeline and ships
 with a `SHA256SUMS.txt` receipt. Verify the copy you downloaded:
 
 ```
-Get-FileHash Flywheel-Setup-0.2.1-x64.exe -Algorithm SHA256
+Get-FileHash Flywheel-Setup-0.2.2-x64.exe -Algorithm SHA256
 ```
 
 The installer is not code-signed yet, so Windows SmartScreen will warn on
