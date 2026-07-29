@@ -1,0 +1,10 @@
+{
+ "schema": "flywheel.signed-tree-head/v1",
+ "log_id": "sha256:4de456a538e8c723ecfe0edb650903214fc29c017fd898e7f23fa6e478e8ae40",
+ "size": 6,
+ "root": "sha256:3355a7338965fc00758a68374379a3aa860ed40da610cbcbd1de9de64e087538",
+ "timestamp": "2026-07-28T07:33:46Z",
+ "signature": "c630f09a794f5c95779242092e0ed883c56de790018e0a7000611ebb3d146ea489ef68e00b9372b752d5d849f65f969b8e2a789279aef9f83b08581ed17f4c0a",
+ "public_key": "1f85627e7e0dd4c6c73593d785b669b2abe4701ea780e26d1024b45dc1546111",
+ "sig_alg": "ed25519"
+}

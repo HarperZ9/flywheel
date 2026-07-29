@@ -17,7 +17,8 @@ class _FixedOracle:
         self._passed, self._hash = passed, output_hash
 
     def verify(self, candidate, task):
-        return OracleResult(self._passed, "cmd", self._hash, "", 0 if self._passed else 1)
+        return OracleResult(passed=self._passed, cmd="cmd", output_hash=self._hash,
+                            stdout_excerpt="", rc=0 if self._passed else 1)
 
 
 def _env(verdict="PASS", output_hash="abc"):

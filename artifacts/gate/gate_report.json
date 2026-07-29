@@ -1,0 +1,36 @@
+{
+  "claim_hash": "23450831b0b42121",
+  "envelope_hash": "1993af18b980c95d",
+  "group_signal_hash": "dda8a7414a71c071",
+  "rewitness": "MATCH",
+  "steps": [
+    {
+      "estimator": "drgrpo",
+      "group_size": 4,
+      "learnable": true,
+      "n_excluded": 0,
+      "n_pass": 1,
+      "n_undecided": 0,
+      "signal_hash": "dda8a7414a71c071",
+      "step": "collect",
+      "temperature": 1.0
+    },
+    {
+      "attribution": "CANDIDATE",
+      "output_hash": "93e4b6c6b7a05c82",
+      "step": "verify",
+      "verdict": "PASS"
+    },
+    {
+      "claim_hash": "23450831b0b42121",
+      "envelope_hash": "1993af18b980c95d",
+      "path": "C:\\dev\\local-model\\artifacts\\gate\\gate_envelope.json",
+      "step": "seal"
+    },
+    {
+      "result": "MATCH",
+      "step": "rewitness"
+    }
+  ],
+  "verdict": "PASS"
+}

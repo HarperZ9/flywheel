@@ -11,6 +11,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+from harness import endpoint_registry
 from harness.endpoint_registry import (
     unified_roster, make_endpoint_proposer, BackendProposer, LedgeredProposer, _NATIVE,
 )
@@ -19,7 +20,20 @@ from harness.local_session import SessionLedger
 from harness.proposer import ProposerOutput
 
 
-def test_roster_enumerates_every_provider():
+def _cli_on_path(monkeypatch):
+    # Whether a CLI is logged in is a fact about the machine, not the roster's
+    # logic. On the operator's box the CLI binaries are on PATH; on a bare CI
+    # runner none are, which would flip every cli endpoint to 'cli-absent' and
+    # make it not receipt_capable. Simulate the CLI present so these tests check
+    # the CONTRACT (a CLI on PATH reports cli-auth, and is receipt_capable), not
+    # the runner's install state. The presence-only credential tests are
+    # env-driven and untouched by this.
+    monkeypatch.setattr(endpoint_registry.shutil, "which",
+                        lambda binary: f"/usr/bin/{binary}")
+
+
+def test_roster_enumerates_every_provider(monkeypatch):
+    _cli_on_path(monkeypatch)
     r = unified_roster()
     names = {e["name"] for e in r["endpoints"]}
     for p in providers.REGISTRY:               # every registry provider present
@@ -41,7 +55,8 @@ def test_credential_is_presence_only_never_value(monkeypatch):
     assert xai["credential"] == "absent"
 
 
-def test_local_and_cli_credentials():
+def test_local_and_cli_credentials(monkeypatch):
+    _cli_on_path(monkeypatch)
     r = unified_roster()
     ollama = next(e for e in r["endpoints"] if e["name"] == "ollama")
     assert ollama["credential"] == "local-none" and ollama["local"] is True

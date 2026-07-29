@@ -1,6 +1,6 @@
 """The physics lane's admission falsifiers: every reference solution must
 pass its own physics (conservation, analytic limits, convergence order),
-and every oracle must be able to FAIL — a physics test a wrong solution
+and every oracle must be able to FAIL -- a physics test a wrong solution
 passes is not physics, it is decoration."""
 
 import pytest

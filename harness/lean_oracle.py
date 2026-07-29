@@ -68,13 +68,13 @@ def _run(argv: list, code: str) -> tuple:
     """Default runner: write the candidate, let the kernel judge it.
     Popen + tree-kill (the oracle.py discipline): a hostile candidate
     costs one timeout, never a wedged harness."""
-    from .oracle import _kill_tree
+    from .oracle import _kill_tree, spawn_killable
     with tempfile.TemporaryDirectory() as td:
         path = Path(td) / "candidate.lean"
         path.write_text(code, encoding="utf-8")
-        proc = subprocess.Popen(argv + [str(path)],
-                                stdout=subprocess.PIPE,
-                                stderr=subprocess.STDOUT)
+        proc = spawn_killable(argv + [str(path)],
+                              stdout=subprocess.PIPE,
+                              stderr=subprocess.STDOUT)
         try:
             out, _ = proc.communicate(timeout=_TIMEOUT)
             return proc.returncode, (out or b"").decode("utf-8",

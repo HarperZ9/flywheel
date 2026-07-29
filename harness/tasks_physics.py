@@ -1,8 +1,8 @@
-"""tasks_physics.py — the physics lane: tasks whose oracles ARE the physics.
+"""tasks_physics.py -- the physics lane: tasks whose oracles ARE the physics.
 
 The frontier discipline applied to computational physics: every task's
 hidden tests check a conservation law, an analytic limit, or a convergence
-order — criteria nature wrote, not the model. Same self-validating rule as
+order -- criteria nature wrote, not the model. Same self-validating rule as
 every lane: a reference solution that fails its own physics is a broken
 benchmark and never ships. This is the seed lane; growth follows the same
 curator gates as hard_v2.

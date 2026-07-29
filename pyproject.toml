@@ -19,7 +19,11 @@ name = "flywheel"
 version = "0.1.0"
 description = "The one platform: routing, verification, the lane layer, memory/context/catalog, and the closed verified-inference loop."
 readme = "README.md"
-requires-python = ">=3.10"
+# 3.11, not 3.10, because `datetime.UTC` landed in 3.11 and 51 modules use it.
+# The floor previously said 3.10 and was simply false: the package could not
+# import there. The VERIFIER closure is a separate matter and carries no such
+# dependency, so a stranger checking a receipt is not bound by this floor.
+requires-python = ">=3.11"
 license = { text = "FSL-1.1-MIT" }
 authors = [{ name = "Zain" }]
 dependencies = []

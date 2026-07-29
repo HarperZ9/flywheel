@@ -318,4 +318,187 @@ def build(params: dict) -> dict:
         {"pts": _line(0.06 * w, 0.5, 0.46 * w, 0.5),
          "role": "crossbar", "closed": False}]}
 
+    # ---- uppercase: the caps ride to the cap line on their own proportions.
+    # Same pen, same roles; a cap is a stem, a bowl, a diagonal, or a bar
+    # reaching y=C instead of the x-height. Small caps are these, set small.
+    C = 1.40                            # cap height in x-heights (under the asc)
+    cs = 0.02                           # left bearing origin; ink shifts to lsb
+    crx = 0.50 * w                      # round-cap bowl radius
+
+    def cbar(x0, x1, y):
+        return {"pts": _line(x0, y, x1, y), "role": "crossbar", "closed": False}
+
+    def cring(cx, rx):                  # a full cap bowl (O, Q)
+        return {"pts": _superellipse(cx, C / 2, rx, C / 2, n),
+                "role": "bowl", "closed": True}
+
+    def crhalf(cy, ry, rx):            # a right-opening half bowl (B, P, R lobes)
+        return {"pts": _superellipse(cs, cy, rx, ry, min(n, 2.4),
+                                     t0=0.5 * math.pi, t1=-0.5 * math.pi),
+                "role": "bowl", "closed": False}
+
+    g["A"] = {"advance": 0.94 * w, "strokes": [
+        diag(cs, 0.0, 0.46 * w, C), diag(0.46 * w, C, 0.92 * w, 0.0),
+        cbar(0.17 * w, 0.75 * w, 0.42 * C)]}
+
+    g["B"] = {"advance": 0.86 * w, "strokes": [
+        stem(cs, 0.0, C),
+        crhalf(C * 0.74, C * 0.26, 0.44 * w),
+        crhalf(C * 0.26, C * 0.26, 0.50 * w)]}
+
+    g["C"] = {"advance": 0.92 * w, "strokes": [
+        {"pts": _superellipse(crx + cs, C / 2, crx, C / 2, n,
+                              t0=0.30 * math.pi,
+                              t1=2 * math.pi - 0.30 * math.pi),
+         "role": "bowl", "closed": False}]}
+
+    g["D"] = {"advance": 0.98 * w, "strokes": [
+        stem(cs, 0.0, C),
+        {"pts": _superellipse(cs, C / 2, 0.88 * w, C / 2, n,
+                              t0=0.5 * math.pi, t1=-0.5 * math.pi),
+         "role": "bowl", "closed": False}]}
+
+    g["E"] = {"advance": 0.80 * w, "strokes": [
+        stem(cs, 0.0, C), cbar(cs, 0.74 * w, C),
+        cbar(cs, 0.64 * w, C / 2), cbar(cs, 0.74 * w, 0.0)]}
+
+    g["F"] = {"advance": 0.76 * w, "strokes": [
+        stem(cs, 0.0, C), cbar(cs, 0.74 * w, C), cbar(cs, 0.64 * w, C / 2)]}
+
+    g["G"] = {"advance": 1.0 * w, "strokes": [
+        {"pts": _superellipse(crx + cs, C / 2, crx, C / 2, n,
+                              t0=0.30 * math.pi,
+                              t1=2 * math.pi - 0.06 * math.pi),
+         "role": "bowl", "closed": False},
+        stem(2 * crx + cs - 0.02, 0.0, C * 0.46),
+        cbar(0.60 * w, 2 * crx + cs, C * 0.46)]}
+
+    g["H"] = {"advance": 0.94 * w, "strokes": [
+        stem(cs, 0.0, C), stem(0.90 * w, 0.0, C), cbar(cs, 0.90 * w, C / 2)]}
+
+    g["I"] = {"advance": 0.30 * w, "strokes": [stem(0.14 * w, 0.0, C)]}
+
+    g["J"] = {"advance": 0.72 * w, "strokes": [
+        stem(0.56 * w, C * 0.30, C),
+        {"pts": _superellipse(0.28 * w, C * 0.30, 0.28 * w, 0.30,
+                              min(n, 2.2), t0=0.0, t1=-math.pi),
+         "role": "tail", "closed": False}]}
+
+    g["K"] = {"advance": 0.92 * w, "strokes": [
+        stem(cs, 0.0, C),
+        diag(cs + 0.04, C * 0.50, 0.86 * w, C),
+        diag(cs + 0.20 * w, C * 0.58, 0.90 * w, 0.0)]}
+
+    g["L"] = {"advance": 0.74 * w, "strokes": [
+        stem(cs, 0.0, C), cbar(cs, 0.72 * w, 0.0)]}
+
+    g["M"] = {"advance": 1.30 * w, "strokes": [
+        stem(cs, 0.0, C), diag(cs, C, 0.64 * w, C * 0.34),
+        diag(0.64 * w, C * 0.34, 1.26 * w, C), stem(1.26 * w, 0.0, C)]}
+
+    g["N"] = {"advance": 0.98 * w, "strokes": [
+        stem(cs, 0.0, C), diag(cs, C, 0.92 * w, 0.0), stem(0.92 * w, 0.0, C)]}
+
+    g["O"] = {"advance": 1.0 * w, "strokes": [cring(0.50 * w, 0.50 * w)]}
+
+    g["P"] = {"advance": 0.82 * w, "strokes": [
+        stem(cs, 0.0, C), crhalf(C * 0.72, C * 0.28, 0.46 * w)]}
+
+    g["Q"] = {"advance": 1.0 * w, "strokes": [
+        cring(0.50 * w, 0.50 * w),
+        diag(0.56 * w, C * 0.30, 0.98 * w, -0.12)]}
+
+    g["R"] = {"advance": 0.90 * w, "strokes": [
+        stem(cs, 0.0, C), crhalf(C * 0.72, C * 0.28, 0.46 * w),
+        diag(0.40 * w, C * 0.44, 0.92 * w, 0.0)]}
+
+    _S_term = 0.45 + 0.4 * ap
+    _S_top = _superellipse(0.48 * w, C * 0.735, 0.40 * w, C * 0.265,
+                           min(n, 2.2), t0=_S_term, t1=1.5 * math.pi)
+    _S_bot = _superellipse(0.48 * w, C * 0.265, 0.40 * w, C * 0.265,
+                           min(n, 2.2), t0=0.5 * math.pi,
+                           t1=-math.pi + _S_term)
+    g["S"] = {"advance": 0.92 * w, "strokes": [
+        {"pts": _S_top + _S_bot[1:], "role": "spine", "closed": False}]}
+
+    g["T"] = {"advance": 0.86 * w, "strokes": [
+        cbar(cs, 0.84 * w, C), stem(0.43 * w, 0.0, C)]}
+
+    g["U"] = {"advance": 0.94 * w, "strokes": [
+        stem(cs, C * 0.28, C),
+        {"pts": _superellipse(0.46 * w, C * 0.28, 0.46 * w - cs, C * 0.28,
+                              n, t0=math.pi, t1=2 * math.pi),
+         "role": "arch", "closed": False},
+        stem(0.92 * w - cs, C * 0.28, C)]}
+
+    g["V"] = {"advance": 0.94 * w, "strokes": [
+        diag(cs, C, 0.47 * w, 0.0), diag(0.47 * w, 0.0, 0.92 * w, C)]}
+
+    g["W"] = {"advance": 1.40 * w, "strokes": [
+        diag(cs, C, 0.36 * w, 0.0), diag(0.36 * w, 0.0, 0.69 * w, C * 0.86),
+        diag(0.69 * w, C * 0.86, 1.02 * w, 0.0),
+        diag(1.02 * w, 0.0, 1.38 * w, C)]}
+
+    g["X"] = {"advance": 0.94 * w, "strokes": [
+        diag(cs, C, 0.92 * w, 0.0), diag(cs, 0.0, 0.92 * w, C)]}
+
+    g["Y"] = {"advance": 0.92 * w, "strokes": [
+        diag(cs, C, 0.46 * w, C * 0.52), diag(0.90 * w, C, 0.46 * w, C * 0.52),
+        stem(0.46 * w, 0.0, C * 0.52)]}
+
+    g["Z"] = {"advance": 0.88 * w, "strokes": [
+        cbar(cs, 0.86 * w, C), diag(0.86 * w, C, cs, 0.0),
+        cbar(cs, 0.86 * w, 0.0)]}
+
+    # ---- runic style: carved caps after the Elder Futhark hand. Runes were
+    # cut, not written, so the round bowls become straight-line facets and
+    # triangular lobes (Berkanan's B, Raidho's R), the circle a diamond
+    # (Ingwaz), the S a Sowilo zig-zag. The already-diagonal caps keep their
+    # forms; the result reads Latin but is cut, not drawn. Modern, not costume:
+    # one even weight, balanced, legible. Small caps for rhinoCase are these.
+    if params.get("style") == "runic":
+        def _poly(points, role="bowl", closed=False):
+            pts = [points[0]]
+            for i in range(1, len(points)):
+                pts.extend(_line(points[i - 1][0], points[i - 1][1],
+                                 points[i][0], points[i][1], 4)[1:])
+            return {"pts": pts, "role": role, "closed": closed}
+
+        def tri(y0, y1, tip):          # a right-pointing triangular lobe
+            return _poly([(cs, y1), (tip, (y0 + y1) / 2.0), (cs, y0)])
+
+        g["B"] = {"advance": 0.86 * w, "strokes": [
+            stem(cs, 0.0, C), tri(C * 0.52, C, 0.60 * w),
+            tri(0.0, C * 0.50, 0.68 * w)]}
+        g["D"] = {"advance": 0.96 * w, "strokes": [
+            stem(cs, 0.0, C), _poly([(cs, C), (0.94 * w, C / 2), (cs, 0.0)])]}
+        g["P"] = {"advance": 0.82 * w, "strokes": [
+            stem(cs, 0.0, C), tri(C * 0.52, C, 0.58 * w)]}
+        g["R"] = {"advance": 0.90 * w, "strokes": [
+            stem(cs, 0.0, C), tri(C * 0.52, C, 0.58 * w),
+            diag(0.30 * w, C * 0.52, 0.92 * w, 0.0)]}
+        g["C"] = {"advance": 0.90 * w, "strokes": [_poly(
+            [(0.86 * w, C), (0.16 * w, C * 0.74), (0.16 * w, C * 0.26),
+             (0.86 * w, 0.0)])]}
+        g["G"] = {"advance": 0.98 * w, "strokes": [_poly(
+            [(0.86 * w, C), (0.16 * w, C * 0.74), (0.16 * w, C * 0.26),
+             (0.86 * w, 0.0), (0.86 * w, C * 0.42), (0.52 * w, C * 0.42)])]}
+        g["O"] = {"advance": 1.0 * w, "strokes": [_poly(
+            [(0.50 * w, C), (0.98 * w, C / 2), (0.50 * w, 0.0),
+             (0.02 * w, C / 2), (0.50 * w, C)], closed=True)]}
+        g["Q"] = {"advance": 1.0 * w, "strokes": [
+            _poly([(0.50 * w, C), (0.98 * w, C / 2), (0.50 * w, 0.0),
+                   (0.02 * w, C / 2), (0.50 * w, C)], closed=True),
+            diag(0.58 * w, C * 0.30, 0.98 * w, -0.14)]}
+        g["S"] = {"advance": 0.88 * w, "strokes": [_poly(
+            [(0.80 * w, C * 0.98), (0.16 * w, C * 0.66),
+             (0.80 * w, C * 0.34), (0.16 * w, C * 0.02)], role="spine")]}
+        g["J"] = {"advance": 0.70 * w, "strokes": [
+            stem(0.56 * w, C * 0.20, C),
+            _poly([(0.56 * w, C * 0.20), (0.30 * w, 0.0), (0.06 * w, C * 0.20)],
+                  role="tail")]}
+        g["U"] = {"advance": 0.94 * w, "strokes": [_poly(
+            [(cs, C), (cs, C * 0.22), (0.46 * w, 0.0), (0.92 * w, C * 0.22),
+             (0.92 * w, C)], role="arch")]}
+
     return g

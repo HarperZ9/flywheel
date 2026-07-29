@@ -21,6 +21,7 @@ from pathlib import Path
 from typing import Protocol
 
 from .task import Task
+from .verdict import Verdict, Execution, Attribution, is_dispositive, attribution_for
 
 JUNIT_NAME = "_oracle_junit.xml"
 
@@ -30,8 +31,31 @@ def clear_bytecode(workdir: Path) -> None:
         shutil.rmtree(d, ignore_errors=True)
 
 
-def run_env() -> dict:
-    return {**os.environ, "PYTHONDONTWRITEBYTECODE": "1"}
+# Deny by default. The oracle subprocess executes model-written code, so every
+# variable that crosses this boundary is a variable an adversarial candidate can
+# read. Add only what an interpreter needs to start.
+ENV_ALLOWLIST = frozenset({
+    "PATH", "HOME", "USER", "LANG", "LC_ALL", "TZ", "TMPDIR",
+    "PYTHONPATH", "PYTHONHOME", "VIRTUAL_ENV",
+    # Windows loader variables: without these, python.exe does not start.
+    "SYSTEMROOT", "SYSTEMDRIVE", "WINDIR", "COMSPEC", "PATHEXT",
+    "TEMP", "TMP", "USERPROFILE", "APPDATA", "LOCALAPPDATA",
+    "PROCESSOR_ARCHITECTURE", "NUMBER_OF_PROCESSORS",
+})
+
+
+def run_env(extra: dict | None = None) -> dict:
+    """The child's environment: an allowlist, never an inheritance.
+
+    A secret exported in the operator's shell must not be readable by a
+    candidate the model wrote. `extra` is the explicit, auditable way to pass
+    something in.
+    """
+    env = {k: v for k, v in os.environ.items() if k in ENV_ALLOWLIST}
+    env["PYTHONDONTWRITEBYTECODE"] = "1"
+    if extra:
+        env.update(extra)
+    return env
 
 
 def _kill_tree(proc: subprocess.Popen) -> None:
@@ -48,16 +72,92 @@ def _kill_tree(proc: subprocess.Popen) -> None:
             proc.kill()
 
 
-@dataclass
+def spawn_killable(*args, **kwargs) -> subprocess.Popen:
+    """Popen whose whole descendant tree `_kill_tree` can actually reap.
+
+    On POSIX the child leads a fresh session, so `os.killpg(getpgid(pid))`
+    targets that tree instead of the process group the child would otherwise
+    share with the pytest parent. Without it, a hostile candidate's infinite
+    loop is a grandchild in pytest's own group: the kill either misses it (it
+    survives holding the pipe and the drain wedges) or, worse, signals pytest
+    itself. Windows reaps via `taskkill /T` and needs nothing extra. Every
+    Popen that is later handed to `_kill_tree` must come through here so the
+    kill precondition holds by construction, not by each caller remembering."""
+    if os.name != "nt":
+        kwargs.setdefault("start_new_session", True)
+    return subprocess.Popen(*args, **kwargs)
+
+
+class NonDispositiveVerdict(Exception):
+    """Raised when boolean truth is asked of a verdict that did not decide.
+
+    Returning False here would score an UNDECIDED rollout as a failure, which
+    teaches the policy that breaking the verifier is as good as failing it. The
+    caller must handle the four-way verdict instead.
+    """
+
+
 class OracleResult:
-    passed: bool
-    cmd: str
-    output_hash: str
-    stdout_excerpt: str
-    rc: int
+    """The verifier's answer. Carries a four-way verdict, who caused a
+    non-completion, and the raw output hash, while keeping the binary `passed`
+    that predates all three."""
+
+    def __init__(self, cmd: str, output_hash: str, stdout_excerpt: str, rc: int,
+                 passed: bool | None = None, verdict_: Verdict | str | None = None,
+                 execution: Execution | str = Execution.COMPLETED,
+                 attribution: Attribution | str | None = None,
+                 raw_stdout_sha256: str = "", duration_ns: int = 0,
+                 objective: str | None = None,
+                 unverifiable_reason: str = "", undecided_reason: str = "",
+                 coverage: dict | None = None,
+                 does_not_prove: list[str] | None = None):
+        if passed is None and verdict_ is None:
+            raise ValueError("OracleResult needs either passed= or verdict_=")
+        # A non-dispositive verdict must say why. A bare UNVERIFIABLE is
+        # indistinguishable from "we did not look".
+        self.unverifiable_reason = unverifiable_reason
+        self.undecided_reason = undecided_reason
+        self.coverage = coverage or {}
+        self.does_not_prove = list(does_not_prove or [])
+        self.cmd = cmd
+        self.output_hash = output_hash
+        self.stdout_excerpt = stdout_excerpt
+        self.rc = rc
+        self.execution = Execution(execution)
+        if verdict_ is not None:
+            self.verdict_ = Verdict(verdict_)
+        else:
+            self.verdict_ = Verdict.PASS if passed else Verdict.FAIL
+        self.attribution = (Attribution(attribution) if attribution is not None
+                            else attribution_for(self.execution))
+        self.raw_stdout_sha256 = raw_stdout_sha256
+        self.duration_ns = duration_ns
+        self.objective = objective
+
+    def __repr__(self) -> str:
+        return (f"OracleResult(verdict={self.verdict_.value}, cmd={self.cmd!r}, "
+                f"output_hash={self.output_hash!r}, rc={self.rc})")
+
+    def __eq__(self, other) -> bool:
+        if not isinstance(other, OracleResult):
+            return NotImplemented
+        return (self.cmd, self.output_hash, self.stdout_excerpt, self.rc,
+                self.verdict_, self.execution, self.attribution) == (
+            other.cmd, other.output_hash, other.stdout_excerpt, other.rc,
+            other.verdict_, other.execution, other.attribution)
+
+    @property
+    def passed(self) -> bool:
+        """Binary truth, for the call sites that predate the four-way verdict.
+        Raises rather than lying when the verdict did not decide."""
+        if not is_dispositive(self.verdict_):
+            raise NonDispositiveVerdict(
+                f"verdict is {self.verdict_.value}; handle it explicitly "
+                f"(attribution={self.attribution.value})")
+        return self.verdict_ is Verdict.PASS
 
     def verdict(self) -> str:
-        return "PASS" if self.passed else "FAIL"
+        return self.verdict_.value
 
 
 class Oracle(Protocol):
@@ -126,7 +226,7 @@ class PytestOracle:
         # pipe, and run()'s post-kill drain blocks forever. A hostile candidate
         # must cost one timeout, never a wedged harness.
         out: bytes = b""
-        proc = subprocess.Popen(
+        proc = spawn_killable(
             cmd, cwd=task.workdir, shell=True, env=run_env(),
             stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         try:

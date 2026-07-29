@@ -1,0 +1,37 @@
+{
+  "schema": "telos.model-artifact/v1",
+  "artifact": "telos-coder-32b-cpt2019-q4_k_m.gguf",
+  "quant": "Q4_K_M",
+  "base": "Qwen2.5-Coder-32B-Instruct",
+  "adapter": "checkpoint-2019 (QLoRA continued pretraining, 2019 steps, epoch 0.25, final logged train loss ~0.768)",
+  "bytes": 19851336480,
+  "sha256": "65e6133fbe4d12579a776047a71bebb98ab86f9e3d343ed821b51dac0ce312f4",
+  "lora_gguf_sha256": "08e7d21cfde1af768c877ecc18ee6343c87711c0c38b8c5b16feb9890f94cbac",
+  "merged_f16": {
+    "artifact": "telos-coder-32b-merged-f16.gguf",
+    "bytes": 65535970080,
+    "sha256": "3360f7db86b8493dd444c4b03e113d61be6c06084ddb91c8557847f58036a3ee"
+  },
+  "smoke_tool": "ollama /api/generate (temp 0, seed 7, num_predict 64), byte-compared reruns",
+  "smoke_deterministic": "MATCH",
+  "smoke_output_sha256_16": "403b2e8b21df9f55",
+  "provenance_chain": {
+    "note": "a pullable artifact whose receipt chains corpus -> shards -> checkpoint -> GGUF, each layer re-derivable",
+    "corpus_content_hash": "68345cdc6667f20d1678ac0a9139edc170348dfdebb9ae6045cde3d204f4fe62",
+    "corpus_files": 17997,
+    "pack_shards_hash": "018798dfce7d4c86f5a6ea502a383553220f2e76facfe76acbe52b1c278ae543",
+    "pack_note": "shared pack with the 14B track (66,158,592 tokens, 8 shards, 16,152 sequences, seq_len 4096); Qwen2.5-Coder 14B and 32B share a tokenizer, so one packed corpus trains both",
+    "checkpoint": "phase2-linux-qlora-cpt-32b/checkpoint-2019",
+    "checkpoint_adapter_sha256": "d2ff1d3042c9b015d8d01b6e195cf95acedc133bf4efe78692e4349a3608e286",
+    "lora": {"r": 16, "alpha": 32, "dropout": 0.05, "peft_version": "0.19.1"}
+  },
+  "pipeline": {
+    "toolchain": "llama.cpp (convert_hf_to_gguf, convert_lora_to_gguf, llama-export-lora, llama-quantize)",
+    "trained_utc": "2026-07-12",
+    "built_utc": "2026-07-16"
+  },
+  "claims": {
+    "capability_uplift": "none claimed; benchmarks under the flywheel harness are a separate, future measurement"
+  },
+  "publish_policy": "adapter + merged quant only; the base Qwen2.5-Coder-32B-Instruct is never republished; release is a deliberate operator action"
+}

@@ -1,0 +1,281 @@
+name: ci
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+jobs:
+  phase0:
+    name: phase 0 + 1A slice
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        # 3.11 is the floor declared in pyproject.toml. It used to say 3.10 here
+        # and there, and both were false: `datetime.UTC` is 3.11+. Testing a
+        # version the package cannot import on produced a permanently red leg
+        # that said nothing about the code.
+        python: ["3.11", "3.13"]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Install test tooling only
+        run: python -m pip install pytest pytest-timeout
+      - name: Phase 0 slice
+        run: >
+          python -m pytest
+          tests/test_verdict.py
+          tests/test_oracle_verdict_widening.py
+          tests/test_oracle_env_boundary.py
+          tests/test_advantages.py
+          tests/test_rl_group_sampling.py
+          tests/test_rl_from_oracle.py
+          tests/test_envelope_verdict_binding.py
+          tests/test_envelope_interop.py
+          tests/test_gateway_auth.py
+          tests/test_gate_end_to_end.py
+          tests/test_file_gate.py
+          tests/test_accept_path_purity.py
+          tests/test_no_aggregate_over_the_person.py
+          tests/test_criterion_spec.py
+          tests/test_criterion_registry.py
+          tests/test_certificate_base.py
+          tests/test_zarankiewicz.py
+          tests/test_independent_checker.py
+          tests/test_oracle_qa.py
+          tests/test_qa_gated_admission.py
+          tests/test_ed25519_verify.py
+          tests/test_receipt_v2.py
+          tests/test_receipt_sign.py
+          tests/test_why.py
+          tests/test_merkle_known_answers.py
+          tests/test_merkle.py
+          tests/test_ledger.py
+          tests/test_consistency.py
+          tests/test_bundle.py
+          tests/test_contest.py
+          tests/test_tree_head.py
+          tests/test_crossing.py
+          tests/test_claim_language.py
+          tests/test_render.py
+          tests/test_public_instructions.py
+          tests/test_instance_binding.py
+          tests/test_pool.py
+          tests/test_pool_arms.py
+          tests/test_findings.py
+          tests/test_uplift_bench.py
+          tests/test_model_endpoint_profiles.py
+          tests/test_model_release_readiness.py
+          tests/test_rung_pins.py
+          tests/test_rung_digests.py
+          tests/test_prereg_event.py
+          tests/test_python_floor.py
+          tests/test_writing_profiles.py
+          tests/test_check_writing.py
+          tests/test_writing_lists.py
+          tests/test_writing_report_checks.py
+          tests/test_writing_pysource.py
+          -q
+
+  full:
+    # WHY THIS EXISTS. Four tests were failing and nobody knew, because the job
+    # above runs an explicit file list and two of the four were not on it. A
+    # curated slice cannot catch a regression in a file it does not name, and a
+    # red suite hides its newest failure among its oldest.
+    #
+    # HONEST STATUS, updated after the first real runs. This job HAS now
+    # executed, and every push that reached it was red, for three causes in
+    # sequence that no local run could show.
+    #
+    # 1. A missing test-only numpy. tests/test_quant_dither.py imports it and
+    #    died at COLLECTION, which reports zero passes and hides every result
+    #    behind it, so a broken dependency list looked like a broken suite.
+    # 2. A false Python floor on the 3.10 legs, fixed in pyproject.toml.
+    # 3. The runner itself: "lost communication with the server" after 47
+    #    minutes, against 11 minutes locally. That is resource starvation, not a
+    #    failing test. Per-test durations showed no single culprit worth cutting
+    #    (slowest 21s, top 25 under a third of the total); the cost is diffuse
+    #    across 2516 tests, many of which spawn subprocesses.
+    #
+    # Hence shards. Diffuse cost is what sharding is for, and a fresh runner per
+    # shard also stops resource accumulation compounding across the whole run.
+    # The risk it introduces is losing a file, which would recreate the very
+    # blind spot this job exists to close while every shard reported green, so
+    # scripts/ci_shard.py is covered by tests asserting that every file lands in
+    # exactly one shard and that this matrix agrees with --count.
+    #
+    # Zero RUNTIME dependencies stays invariant; these are test-only.
+    name: whole suite
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1, 2, 3]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Test-only dependencies
+        run: python -m pip install pytest pytest-timeout pynacl pillow numpy scipy
+      - name: Every test, no file list to fall behind
+        run: |
+          FILES=$(python scripts/ci_shard.py --index ${{ matrix.shard }} --count 4)
+          test -n "$FILES" || { echo "empty shard: refusing to report success"; exit 1; }
+          echo "$FILES" | tr ' ' '\n' | sed 's/^/  /'
+          python -m pytest $FILES -q --timeout=300
+
+  gate:
+    name: disproof gate, no dependencies
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: The gate runs on a bare interpreter, no pip install at all
+        run: python -m harness.cli_entry gate
+
+  verifier_stdlib:
+    name: verifier path is stdlib-only
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Transitive import closure of the verifier entry points
+        run: python scripts/check_verifier_stdlib.py
+
+  public_instructions:
+    name: public instruction files stand alone
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: A published repo's instructions name no local path or internal project
+        # The public/ tree is not part of this checkout in CI; the tests carry
+        # fixture coverage, and this runs against the tree when present.
+        run: |
+          python - <<'EOF'
+          import subprocess, sys, pathlib
+          if not (pathlib.Path("..") / "public").is_dir():
+              print("public/ tree not in CI checkout; gate is exercised by tests")
+              sys.exit(0)
+          sys.exit(subprocess.run([sys.executable,
+              "scripts/check_public_instructions.py"]).returncode)
+          EOF
+
+  claim_language:
+    name: no optimality claim on a public surface
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Every checker verifies a SUBMITTED object; none decides optimality
+        run: python scripts/check_claim_language.py
+
+  file_gate:
+    name: 300-line gate, burn-down only shrinks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: python scripts/check_file_gate.py
+
+  writing:
+    name: hard writing rules gate our prose; the score stays report-only
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Hard rules gate our own prose; the score stays report-only
+        # Phase 3. The hard-rule gate (em-dash, marketing words, banned slop,
+        # and for changelogs the entry-reference rule) blocks on the files
+        # calibrated clean in project-docs/records/2026-07-27-writing-calibration.md.
+        # The per-100-word score remains REPORT-ONLY: it is noisy on short
+        # texts and the calibration record is one data point, not a threshold.
+        run: python scripts/check_writing.py --gate README.md scripts/check_writing.py scripts/writing_profiles.py scripts/writing_lists.py scripts/writing_pysource.py scripts/writing_readability.py
+
+  verifier_on_the_old_interpreter:
+    name: the verifier runs one version below the package floor
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+      - name: Install test tooling only
+        run: python -m pip install pytest pytest-timeout
+      - name: The accept path is what strangers run, so it stays portable
+        # HONEST STATUS: this leg is new and its first run is the discovery
+        # event. The package floor is 3.11 because 51 modules use datetime.UTC,
+        # but NONE of them are in the verifier closure, so checking a receipt
+        # should not require the newer interpreter. That is a claim, and this
+        # job is what turns it into a check. If it goes red, the README's
+        # standard-library-only sentence is what has to change, not this job.
+        run: >
+          python -m pytest
+          tests/test_verdict.py
+          tests/test_ed25519_verify.py
+          tests/test_merkle.py
+          tests/test_merkle_known_answers.py
+          tests/test_ledger.py
+          tests/test_consistency.py
+          tests/test_receipt_v2.py
+          tests/test_tree_head.py
+          tests/test_bundle.py
+          -q
+
+  prereg_freeze:
+    name: the frozen prereg still hashes to its freeze
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Rung pins are read from the hashed document, so an edit is caught
+        # No model store exists in CI, so every rung reports ABSENT and the run
+        # exits 0. That is the point: what this job actually gates is the freeze
+        # binding. Edit the preregistration after freezing and the checker
+        # refuses to read pins out of it, and this job goes red. Possession of
+        # the ladder is asserted locally with --require-all, not here.
+        run: python scripts/verify_rung_digests.py --store /nonexistent-store
+
+  parses:
+    name: every harness module parses
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: AST-parse every module, so no file can hide from tooling
+        run: |
+          python - <<'PY'
+          import ast, sys
+          from pathlib import Path
+          bad = []
+          for p in sorted(Path("harness").rglob("*.py")):
+              if "__pycache__" in p.parts:
+                  continue
+              try:
+                  ast.parse(p.read_text(encoding="utf-8"))
+              except SyntaxError as e:
+                  bad.append(f"{p}: {e}")
+          print("\n".join(bad) if bad else f"all modules parse")
+          sys.exit(1 if bad else 0)
+          PY

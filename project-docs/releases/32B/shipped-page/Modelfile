@@ -1,0 +1,1 @@
+FROM ./telos-coder-32b-cpt2019-q4_k_m.gguf

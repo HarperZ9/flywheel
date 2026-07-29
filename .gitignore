@@ -59,3 +59,23 @@ artifacts/exe/
 # One line naming this machine's training/run root (e.g. E:/local-model-run).
 # Read by harness/run_paths.py; never shipped, so the source stays path-clean.
 .flywheel-run-root
+
+# The committed template must survive the .env.* rule above (global standard)
+!.env.example
+
+# internal register: never ships from this public repo
+project-docs/private/
+
+# private denylist for the public-instruction gate (never ships)
+scripts/.private-denylist.txt
+
+# direnv environment files (can hold exported secrets)
+.envrc
+.envrc.local
+
+# process-scratch dir (currently ignored only by a machine-local global rule)
+.superpowers/
+
+# The walker's stderr, kept so a silent startup death is visible. Tracebacks
+# carry absolute local paths, so this stays local and never becomes evidence.
+artifacts/pool/walker-stderr.log

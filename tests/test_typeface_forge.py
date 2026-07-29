@@ -68,7 +68,7 @@ def test_the_receipt_names_its_rules_and_engine():
                  "tracy-spacing"):
         assert rule in r["rules_applied"]
     assert set("adhesion") <= set(r["charset"])
-    assert len(r["charset"]) == 39, "lowercase, digits, . , -"
+    assert len(r["charset"]) == 65, "lowercase, uppercase, digits, . , -"
     assert "svg" in face and "<svg" in face["svg"]
 
 

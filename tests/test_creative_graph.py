@@ -134,7 +134,7 @@ def test_a_second_identical_run_is_served_from_the_chain_keyed_cache():
     _CACHE.clear()
     nodes = [{"id": "p", "op": "plate", "args": {"seed": 58, "width": 96,
                                                  "height": 64}},
-             {"id": "d", "op": "dither", "args": {}}]
+             {"id": "d", "op": "film_frame", "args": {}}]
     edges = [{"from": "p", "to": "d"}]
     cold = run_graph(nodes, edges)
     warm = run_graph(nodes, edges)
@@ -153,7 +153,7 @@ def test_reseeding_one_branch_invalidates_exactly_its_descendants():
                   "args": {"seed": 58, "width": 96, "height": 64}},
                  {"id": "b", "op": "plate",
                   "args": {"seed": seed_b, "width": 96, "height": 64}},
-                 {"id": "db", "op": "dither", "args": {}},
+                 {"id": "db", "op": "film_frame", "args": {}},
                  {"id": "m", "op": "beside", "args": {}}],
                 [{"from": "b", "to": "db"},
                  {"from": "a", "to": "m"}, {"from": "db", "to": "m"}])

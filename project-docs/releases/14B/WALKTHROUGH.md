@@ -14,7 +14,7 @@ variants appear where they differ.
 Flywheel Local Coder 14B is a 14 billion parameter coding model that runs
 entirely on your own machine. It is built from `Qwen2.5-Coder-14B-Instruct`
 (Apache-2.0 licensed) plus a continued-pretraining adapter
-(`checkpoint-2020`, QLoRA, final train_loss 0.035), merged and quantized to
+(`checkpoint-2020`, QLoRA, final logged loss 0.444 (min 0.359)), merged and quantized to
 Q4_K_M. The whole model is one file of 8,988,110,880 bytes, just under 9 GB.
 
 The model ships with something a plain model download does not have: a
@@ -49,11 +49,11 @@ in Step 4 possible at all.
   and generation is slower but perfectly usable for study and small tasks.
 - Software: Ollama (Step 1). For the harness and benchmark steps, Python
   3.11 or newer and `pytest`.
-- The release folder. In this walkthrough it lives at
-  `E:\local-model-run\release\flywheel-local-coder-14b` and contains the
+- The release folder. This walkthrough calls it `$env:RELEASE_DIR`; set it
+  once to wherever your copy lives and every command below runs unchanged:
+  `$env:RELEASE_DIR = "<path to the release folder>"`. It contains the
   GGUF file, a `Modelfile`, `LICENSE`, the release documents, and
-  `checksums.sha256`. If your copy lives somewhere else, substitute your
-  path throughout.
+  `checksums.sha256`.
 
 ## Step 1: Install Ollama
 
@@ -87,7 +87,7 @@ The release folder includes a `Modelfile`, a one-line recipe that points
 Ollama at the GGUF file:
 
 ```powershell
-ollama create flywheel-local-coder-14b -f "E:\local-model-run\release\flywheel-local-coder-14b\Modelfile"
+ollama create flywheel-local-coder-14b -f "$env:RELEASE_DIR\Modelfile"
 ```
 
 The `FROM` line inside the Modelfile uses an absolute path. If your release
@@ -95,7 +95,7 @@ folder lives at a different path, write a fresh Modelfile next to the GGUF
 and create from that instead:
 
 ```powershell
-Set-Location "E:\local-model-run\release\flywheel-local-coder-14b"
+Set-Location $env:RELEASE_DIR
 Set-Content -Path .\Modelfile.local -Value "FROM .\telos-coder-14b-cpt2020-q4_k_m.gguf" -Encoding utf8
 ollama create flywheel-local-coder-14b -f .\Modelfile.local
 ```
@@ -133,7 +133,7 @@ You need the `local-model` repository (this walkthrough lives inside it),
 Python 3.11 or newer, and pytest:
 
 ```powershell
-Set-Location C:\dev\local-model
+Set-Location "<your clone of this repository>"
 python --version
 pip install pytest
 ```
@@ -160,8 +160,8 @@ you are ready to run verified inference.
 This is the part of the release we most hope you actually do, because you
 can. No trust required, just two commands and a comparison.
 
-The recorded chain lives in
-`C:\dev\local-model\tasks\research\gguf_ship_manifest_checkpoint2020.json`
+The recorded chain lives in this repository at
+`tasks/research/gguf_ship_manifest_checkpoint2020.json`
 and reads, layer by layer:
 
 | Layer | Hash |
@@ -177,8 +177,8 @@ The dataset receipt behind the corpus layer is
 Check the file you have against the last link in the chain:
 
 ```powershell
-Get-FileHash "E:\local-model-run\release\flywheel-local-coder-14b\telos-coder-14b-cpt2020-q4_k_m.gguf" -Algorithm SHA256
-(Get-Item "E:\local-model-run\release\flywheel-local-coder-14b\telos-coder-14b-cpt2020-q4_k_m.gguf").Length
+Get-FileHash "$env:RELEASE_DIR\telos-coder-14b-cpt2020-q4_k_m.gguf" -Algorithm SHA256
+(Get-Item "$env:RELEASE_DIR\telos-coder-14b-cpt2020-q4_k_m.gguf").Length
 ```
 
 PowerShell prints the hash in uppercase; compare it case-insensitively. The
@@ -188,14 +188,14 @@ should be exactly `8988110880`.
 WSL / Linux:
 
 ```bash
-cd /mnt/e/local-model-run/release/flywheel-local-coder-14b
+cd "<the release folder, as WSL sees it>"
 sha256sum telos-coder-14b-cpt2020-q4_k_m.gguf
 ```
 
 To check every file listed in `checksums.sha256`:
 
 ```powershell
-Set-Location "E:\local-model-run\release\flywheel-local-coder-14b"
+Set-Location $env:RELEASE_DIR
 Get-Content .\checksums.sha256 | ForEach-Object {
     $parts = $_ -split '\s+', 2
     $expected = $parts[0]
@@ -236,7 +236,7 @@ verified inference, flat best-of-4, and no-search). To rerun it yourself,
 from the repository root with Ollama serving the model:
 
 ```powershell
-Set-Location C:\dev\local-model
+Set-Location "<your clone of this repository>"
 python scripts/run_m7_eval.py --local-primary ollama --local-model flywheel-local-coder-14b --out artifacts\m7_scorecard_local.json
 ```
 
@@ -274,7 +274,7 @@ written so an outside observer can rerun everything, is at
 Open the scorecard you just produced:
 
 ```powershell
-Get-Content C:\dev\local-model\artifacts\m7_scorecard_local.json
+Get-Content .\artifacts\m7_scorecard_local.json
 ```
 
 The scorecard is written to be read without tribal knowledge. Three things
