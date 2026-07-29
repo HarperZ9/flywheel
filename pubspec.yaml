@@ -1,7 +1,7 @@
 name: flywheel_desktop
 description: "Flywheel Desktop — the native surface for the one platform: routing, verification, lanes, the closed loop, and the projected world."
 publish_to: "none"
-version: 0.2.0+2
+version: 0.2.1+3
 
 environment:
   sdk: ^3.6.0
