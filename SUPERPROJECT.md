@@ -1,8 +1,13 @@
-# Project Telos — the Superproject
+# Flywheel — the superproject (Telos is one organ within it)
 
 > One engine, five flagship organs, one rule. Curated 2026-07-06 from the live
 > ecosystem (flagship doctors verified MATCH). Machine-readable spine:
 > `harness/superproject.py`. This document is the human synthesis.
+>
+> **Naming note (2026-07-31):** "Flywheel" is the one platform name. "Project
+> Telos" / "Telos" names a lane (the reconciliation organ) and its flagship
+> tool, not a second umbrella. An earlier version of this document used
+> "Project Telos — the Superproject" as the umbrella title; that is retired.
 
 ## The mission
 

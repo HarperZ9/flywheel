@@ -16,14 +16,18 @@ the composer that binds them into one closed loop.
 
 ## Run it now
 
-Start the one surface and open it in a browser:
+Start the gateway (the engine keeps the loop, receipts, lanes, and routing):
 
 ```
 flywheel app --port 8799
 ```
 
-Then open **http://127.0.0.1:8799/site/index.html**. (From a checkout without
-the `flywheel` command installed: `python scripts/run_harness_cli.py app --port 8799`.)
+The **native surface is Flywheel Desktop** — a Flutter client that talks to
+this gateway over localhost and renders its own views (no browser, no terminal).
+From a checkout without the `flywheel` command installed:
+`python scripts/run_harness_cli.py app --port 8799`. The gateway also serves a
+`/site/index.html` shell, kept as a **dev/CI fallback** for headless checks; it
+is not the primary UI.
 
 Route a prompt to any provider you have a key for, and get a receipt with it:
 
@@ -107,7 +111,7 @@ Every route is same-origin JSON you can also `curl`:
 
 | Route | What it gives you |
 |---|---|
-| `/site/index.html` | The shell: router, world, companion, studio, receipts, lanes |
+| `/site/index.html` | Dev/CI fallback shell (the primary UI is the native Flywheel Desktop client) |
 | `GET /api/endpoints` | The universal router roster, credential presence only |
 | `GET /api/endpoints/health` | Live probe of local tiers; hosted tiers report configured-or-not |
 | `GET /api/lanes` | The tool roster: live / declared / missing per flagship |
