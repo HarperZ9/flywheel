@@ -66,6 +66,10 @@ def run_agent(agent, goal: str, executor: ToolExecutor,
     then carries `tests_pass`, and the whole edit->test->repair trajectory is
     witnessed in the ledger — a provable "made the tests green"."""
     ledger = ledger if ledger is not None else SessionLedger()
+    # Initialize the sealed tool-call receipt chain if the executor is configured for it.
+    if getattr(executor, "receipt_dir", None) and hasattr(executor, "init_receipt_chain"):
+        run_id = f"run-{ledger.checkpoint()[:12]}" if ledger.entries else f"run-{id(executor):x}"
+        executor.init_receipt_chain(run_id)
 
     def _emit(**e):                                  # stream loop progress; never let it break the loop
         if on_event is not None:

@@ -89,6 +89,50 @@ def transitive_verdicts(nodes: list[DepNode]) -> dict[str, str]:
     return {n.id: resolve(n.id) for n in nodes}
 
 
+def tool_call_receipts_to_dag(receipts: list[dict]) -> list[DepNode]:
+    """Convert a chain of sealed tool-call receipts into DepNode entries.
+
+    Each receipt becomes a node whose ``id`` is its ``source``, ``local`` is the
+    re-verification verdict (MATCH/UNVERIFIABLE), and ``deps`` is the prior
+    receipt's source (or empty for the genesis). This makes each tool call a
+    first-class node in the compositional DAG: a drifted tool call degrades
+    exactly its downstream dependents, not the whole run.
+
+    Receipts are linked by ``prev_receipt_sha256`` — the chain is a linear spine.
+    A receipt whose seal does not verify becomes UNVERIFIABLE, propagating the
+    gap downstream.
+    """
+    from .tool_call_receipt import verify_receipt
+
+    # Build a lookup: canonical_sha256 -> source, so we can resolve prev links
+    from .tool_call_receipt import _canonical_bytes, _sha256_hex
+
+    sha_to_source: dict[str, str] = {}
+    for r in receipts:
+        probe = dict(r)
+        probe["seal"] = {"algorithm": "sha256", "hex": ""}
+        sha = _sha256_hex(_canonical_bytes(probe))
+        sha_to_source[sha] = r.get("source", "")
+
+    nodes: list[DepNode] = []
+    for r in receipts:
+        v = verify_receipt(r)
+        local = v.get("verdict", UNVERIFIABLE)
+        if local == "TAMPERED":
+            local = DRIFT
+        elif local != MATCH:
+            local = UNVERIFIABLE
+        prev_sha = r.get("prev_receipt_sha256", "")
+        deps = [sha_to_source[prev_sha]] if prev_sha and prev_sha in sha_to_source else []
+        nodes.append(DepNode(
+            id=r.get("source", ""),
+            local=local,
+            deps=deps,
+            has_receipt=True,
+        ))
+    return nodes
+
+
 def frontier_verdict(nodes: list[DepNode]) -> str:
     """The whole-DAG verdict: DRIFT if any node drifted; else UNVERIFIABLE if any
     node is unconfirmable; else MATCH. The single re-checkable object a caller

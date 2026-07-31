@@ -88,7 +88,8 @@ def run_router_agent(goal: str, endpoint: str = "serve", *, root: str = ".",
                      model: "str | None" = None, base_url: "str | None" = None,
                      max_tokens: int = 1024, temperature: float = 0.0, seed: int = 0,
                      compact_budget: int = 0, proposer=None,
-                     canaries: "list | None" = None, on_event=None) -> dict:
+                     canaries: "list | None" = None, on_event=None,
+                     receipt_dir: "str | None" = None) -> dict:
     """Run the gated agentic loop over `endpoint` to complete `goal`. Returns a
     JSON-able dict: the final answer, step count, the witnessed ledger checkpoint
     and verify verdict, the endpoint used, and any compaction receipt. The ledger
@@ -99,7 +100,8 @@ def run_router_agent(goal: str, endpoint: str = "serve", *, root: str = ".",
                         compact_budget=compact_budget)
     executor = ToolExecutor(root=root, external=external or {},
                             gate=ToolGate(allow_write=allow_write, allow_exec=allow_exec,
-                                          allow_mcp=allow_mcp))
+                                          allow_mcp=allow_mcp),
+                            receipt_dir=receipt_dir)
     import time as _time
     import json as _json
     pre_state = None
@@ -135,6 +137,18 @@ def run_router_agent(goal: str, endpoint: str = "serve", *, root: str = ".",
                 "key held out of band (never published here)"}
     out["last_compaction"] = agent.last_compaction
     out["duration_s"] = duration
+    # sealed tool-call receipt chain summary: the chain head, count, and dir
+    # so a third party can re-walk every tool invocation offline via buildc
+    # receipt verify or harness.tool_call_receipt.verify_chain.
+    if receipt_dir and hasattr(executor, "receipt_chain_head"):
+        import os as _os
+        receipt_count = sum(1 for _ in _os.scandir(receipt_dir)) if _os.path.isdir(receipt_dir) else 0
+        out["tool_call_receipts"] = {
+            "dir": receipt_dir,
+            "count": executor._receipt_seq,
+            "chain_head_sha256": executor.receipt_chain_head(),
+            "schema": "flywheel.tool-call-receipt/v1",
+        }
     # behavioural deception monitor: flag a run whose final answer claims more
     # than its receipts show. It FLAGS, never accepts, and sits beside the
     # accept path (the oracle still decides).
