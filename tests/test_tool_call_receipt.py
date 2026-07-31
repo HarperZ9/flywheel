@@ -1,0 +1,162 @@
+"""Tests for the sealed tool-call receipt (emit + verify + chain)."""
+from __future__ import annotations
+
+import json
+from pathlib import Path
+
+
+from harness.tool_call_receipt import (
+    BLOCKED,
+    COMPLETED,
+    MATCH,
+    SCHEMA,
+    TAMPERED,
+    UNVERIFIABLE,
+    build_receipt,
+    emit_receipt,
+    verify_chain,
+    verify_receipt,
+)
+
+
+def _sample_receipt(**overrides) -> dict:
+    defaults = dict(
+        tool="read_file",
+        capability="builtin-read",
+        admission="ALLOWED",
+        args={"path": "/tmp/x.txt"},
+        output="hello world",
+        ok=True,
+        rc=0,
+        run_id="run-abc",
+        seq=1,
+        prev_receipt_sha256="",
+        outcome=COMPLETED,
+    )
+    defaults.update(overrides)
+    return build_receipt(**defaults)
+
+
+def test_build_receipt_produces_sealed_object():
+    r = _sample_receipt()
+    assert r["schema"] == SCHEMA
+    assert r["source"] == "tool:run-abc:1"
+    assert r["seal"]["algorithm"] == "sha256"
+    assert len(r["seal"]["hex"]) == 64
+    assert r["ok"] == "true"  # string, not bool — no floats in the schema
+
+
+def test_seal_round_trips():
+    r = _sample_receipt()
+    v = verify_receipt(r)
+    assert v["verdict"] == MATCH
+    assert v["outcome"] == COMPLETED
+
+
+def test_seal_is_deterministic():
+    r1 = _sample_receipt()
+    r2 = _sample_receipt()
+    assert r1["seal"]["hex"] == r2["seal"]["hex"]
+
+
+def test_seal_changes_with_content():
+    r1 = _sample_receipt(output="hello")
+    r2 = _sample_receipt(output="goodbye")
+    assert r1["seal"]["hex"] != r2["seal"]["hex"]
+
+
+def test_tampered_output_breaks_seal():
+    r = _sample_receipt()
+    r["output"]["bytes"] = 999
+    v = verify_receipt(r)
+    assert v["verdict"] == TAMPERED
+    assert v["failure_class"] == "SEAL_MISMATCH"
+
+
+def test_tampered_seal_hex_breaks_verification():
+    r = _sample_receipt()
+    r["seal"]["hex"] = "0" * 64
+    v = verify_receipt(r)
+    assert v["verdict"] == TAMPERED
+    assert v["failure_class"] == "SEAL_MISMATCH"
+
+
+def test_wrong_schema_is_malformed():
+    r = _sample_receipt()
+    r["schema"] = "wrong"
+    v = verify_receipt(r)
+    assert v["verdict"] == UNVERIFIABLE
+    assert v["failure_class"] == "MALFORMED"
+
+
+def test_malformed_digest_is_caught():
+    r = _sample_receipt()
+    # re-seal after tamper so the seal check passes, then corrupt a digest
+    r["output"]["sha256"] = "short"
+    # need to re-seal to get past seal check — but the digest check comes after
+    # so manually re-seal
+    from harness.tool_call_receipt import _canonical_bytes, _sha256_hex
+    probe = dict(r)
+    probe["seal"] = {"algorithm": "sha256", "hex": ""}
+    r["seal"]["hex"] = _sha256_hex(_canonical_bytes(probe))
+    v = verify_receipt(r)
+    assert v["failure_class"] == "DIGEST_MALFORMED"
+
+
+def test_blocked_outcome_requires_ok_false():
+    r = _sample_receipt(outcome=BLOCKED, ok=False, admission="BLOCKED")
+    v = verify_receipt(r)
+    assert v["verdict"] == MATCH
+
+
+def test_blocked_with_ok_true_is_contract_violation():
+    r = _sample_receipt(outcome=BLOCKED, ok=True)
+    v = verify_receipt(r)
+    assert v["failure_class"] == "FIELD_CONTRACT_VIOLATION"
+
+
+def test_args_never_in_receipt_body():
+    r = _sample_receipt(args={"secret": "password123"})
+    body = json.dumps(r, sort_keys=True)
+    assert "password123" not in body
+
+
+def test_capability_normalizes_unknown():
+    r = _sample_receipt(capability="bogus-capability")
+    assert r["capability"] == "unknown"
+
+
+def test_emit_receipt_writes_file_and_never_raises(tmp_path: Path):
+    r = _sample_receipt()
+    path = emit_receipt(r, tmp_path / "receipts")
+    assert path is not None
+    assert path.exists()
+    loaded = json.loads(path.read_text(encoding="utf-8"))
+    assert loaded["source"] == r["source"]
+
+
+def test_emit_receipt_swallows_bad_dir():
+    r = _sample_receipt()
+    # a path that can't be created (under a file, not a dir)
+    path = emit_receipt(r, Path("/dev/null/subdir"))
+    assert path is None
+
+
+def test_chain_verifies_linked_receipts():
+    r0 = _sample_receipt(seq=0, output="first", prev_receipt_sha256="")
+    # compute the prev link for r1: sha256 of r0's canonical sealed bytes
+    from harness.tool_call_receipt import _canonical_bytes, _sha256_hex
+    probe = dict(r0)
+    probe["seal"] = {"algorithm": "sha256", "hex": ""}
+    r0_hash = _sha256_hex(_canonical_bytes(probe))
+    r1 = _sample_receipt(seq=1, output="second", prev_receipt_sha256=r0_hash)
+    result = verify_chain([r0, r1])
+    assert result["verdict"] == MATCH
+    assert result["n"] == 2
+
+
+def test_chain_detects_broken_link():
+    r0 = _sample_receipt(seq=0, prev_receipt_sha256="")
+    r1 = _sample_receipt(seq=1, prev_receipt_sha256="deadbeef" + "0" * 56)
+    result = verify_chain([r0, r1])
+    assert result["verdict"] == TAMPERED

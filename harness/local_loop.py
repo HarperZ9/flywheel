@@ -85,6 +85,10 @@ def run_agent(agent, goal: str, executor: ToolExecutor,
     budget is only ever stated to the model, never enforced by it; `max_steps`
     is what actually enforces it."""
     ledger = ledger if ledger is not None else SessionLedger()
+    # Initialize the sealed tool-call receipt chain if the executor is configured for it.
+    if getattr(executor, "receipt_dir", None) and hasattr(executor, "init_receipt_chain"):
+        run_id = f"run-{ledger.checkpoint()[:12]}" if ledger.entries else f"run-{id(executor):x}"
+        executor.init_receipt_chain(run_id)
 
     def _emit(**e):                                  # stream loop progress; never let it break the loop
         if on_event is not None:

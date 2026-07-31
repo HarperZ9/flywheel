@@ -194,6 +194,68 @@ class ToolExecutor:
     max_output: int = 4000
     runner: "callable" = None      # inject for tests; default = subprocess
     external: dict = field(default_factory=dict)   # name -> {"fn": args->(ok,str), "description": str}
+    # Sealed tool-call receipt emission (opt-in). When receipt_dir is set and
+    # _receipt_run_id is non-empty, execute() emits one sealed receipt per call.
+    receipt_dir: "str | None" = None
+    _receipt_run_id: str = ""
+    _receipt_seq: int = 0
+    _receipt_prev_sha256: str = ""
+
+    def init_receipt_chain(self, run_id: str) -> None:
+        """Start a sealed tool-call receipt chain. Called by run_agent."""
+        self._receipt_run_id = run_id
+        self._receipt_seq = 0
+        self._receipt_prev_sha256 = ""
+
+    def receipt_chain_head(self) -> str:
+        """The sha256 of the last emitted receipt (the chain head), or ''."""
+        return self._receipt_prev_sha256
+
+    def _classify_capability(self, name: str) -> "tuple[str, str]":
+        """Return (capability_class, admission) for a tool call."""
+        if name in self.external:
+            cap = "external-mcp"
+        elif name in ("write_file", "apply_patch"):
+            cap = "builtin-write"
+        elif name == "run":
+            cap = "builtin-exec"
+        elif name in ("read_file", "list_dir", "grep"):
+            cap = "builtin-read"
+        else:
+            cap = "unknown"
+        return cap, "ALLOWED"
+
+    def _emit_tool_receipt(self, name: str, args: dict, result: ToolResult) -> None:
+        """Emit one sealed tool-call receipt. Never raises."""
+        if not self.receipt_dir or not self._receipt_run_id:
+            return
+        try:
+            from pathlib import Path
+            from .tool_call_receipt import build_receipt, emit_receipt, _canonical_bytes, _sha256_hex
+
+            cap, admission = self._classify_capability(name)
+            outcome = "COMPLETED" if result.ok else ("BLOCKED" if result.output.startswith("[gate]") else "ERROR")
+            self._receipt_seq += 1
+            receipt = build_receipt(
+                tool=name,
+                capability=cap,
+                admission=admission,
+                args=args,
+                output=result.output,
+                ok=result.ok,
+                rc=0 if result.ok else 1,
+                run_id=self._receipt_run_id,
+                seq=self._receipt_seq,
+                prev_receipt_sha256=self._receipt_prev_sha256,
+                outcome=outcome,
+            )
+            emit_receipt(receipt, Path(self.receipt_dir))
+            # advance the chain: compute the canonical sha256 of this receipt
+            probe = dict(receipt)
+            probe["seal"] = {"algorithm": "sha256", "hex": ""}
+            self._receipt_prev_sha256 = _sha256_hex(_canonical_bytes(probe))
+        except Exception:
+            pass  # emission must never break the tool-call path
 
     def external_tools_system(self) -> str:
         """Advertise registered external (MCP) tools to the model, in the same
@@ -207,6 +269,12 @@ class ToolExecutor:
         return "\n".join(lines)
 
     def execute(self, name: str, args: dict) -> ToolResult:
+        """Execute a tool call and emit a sealed receipt when receipt_dir is set."""
+        result = self._execute_inner(name, args)
+        self._emit_tool_receipt(name, args, result)
+        return result
+
+    def _execute_inner(self, name: str, args: dict) -> ToolResult:
         if name in self.external:
             # an external tool must not shadow a gated builtin (e.g. an
             # external 'run' running ahead of the write/exec gate)
