@@ -12,11 +12,11 @@ Enforced by scripts/check_file_gate.py and tests/test_file_gate.py.
 | harness/classifier_friction_bench.py | 454 |
 | harness/cross_harness_manifest.py | 342 |
 | harness/endpoints.py | 492 |
-| harness/gateway.py | 2431 |
+| harness/gateway.py | 2432 |
 | harness/governed_agent_bench.py | 734 |
 | harness/lanes.py | 361 |
 | harness/local_agent.py | 360 |
-| harness/local_tools.py | 386 |
+| harness/local_tools.py | 454 |
 | harness/loops.py | 315 |
 | harness/model_card_claims.py | 311 |
 | harness/serve.py | 420 |
