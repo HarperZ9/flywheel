@@ -1,0 +1,564 @@
+{
+  "screen": "difficulty/single_shot_temp0",
+  "model_ref": "ollama:flywheel-local-coder-14b",
+  "registry": "hard_v2.jsonl",
+  "n_tasks": 110,
+  "single_shot_rate": 0.445,
+  "saturates_at_temp0": [
+    "bank_ledger",
+    "col_label",
+    "col_number",
+    "collatz_trace",
+    "csv_quote",
+    "days_in_month",
+    "fletcher16_checksum",
+    "format_signed_duration",
+    "frame_checksum_decode",
+    "glob_match",
+    "group_anagrams",
+    "group_pairs",
+    "ini_section_parse",
+    "int_to_base",
+    "interval_intersection",
+    "ipv4_to_int",
+    "isbn10_check",
+    "josephus",
+    "json_string_escape",
+    "k_smallest_names",
+    "knight_min_moves",
+    "lis_length",
+    "look_and_say_bounded",
+    "lru_trace",
+    "luhn_valid",
+    "matrix_rotate_inplace",
+    "merge_sorted_streams",
+    "multiset_diff",
+    "normalize_path",
+    "ordinal_day",
+    "parse_base",
+    "parse_range_list",
+    "percent_decode",
+    "purge_in_place",
+    "qp_decode",
+    "rect_overlap_area",
+    "rle_decode",
+    "roman_encode",
+    "rotate_list",
+    "sat_add_nbit",
+    "sliding_windows",
+    "stopwatch_fsm",
+    "tab_expand_columns",
+    "token_bucket_grants",
+    "top_k_frequent",
+    "turtle_walk_program",
+    "union_component_count",
+    "uniq_counts",
+    "valid_ipv4"
+  ],
+  "headroom_at_temp0": [
+    "add_months_clamp",
+    "apply_edits",
+    "bipartite_strict",
+    "bucket_histogram_mixed",
+    "canonical_decimal",
+    "count_islands",
+    "covered_integer_count",
+    "cron_field_expand",
+    "csv_field_split",
+    "days_between",
+    "div_round_half_away",
+    "duration_hms_strict",
+    "eval_bool_expr",
+    "evaluate_rpn",
+    "first_missing_positive",
+    "gray_rank",
+    "grid_bfs_steps",
+    "header_unfold",
+    "identifier_words",
+    "interval_subtract",
+    "inventory_reserve",
+    "kth_combination",
+    "kv_event_fold",
+    "largest_remainder_apportion",
+    "lcs_diff_ops",
+    "linked_cycle",
+    "longest_digit_run",
+    "manhattan_tour",
+    "matrix_shape_strict",
+    "matrix_transpose",
+    "md_outline_number",
+    "merge_tallies",
+    "min_stack_trace",
+    "mini_editor_undo",
+    "money_cents_strict",
+    "natural_compare",
+    "outline_leaf_paths",
+    "parse_a1_ref",
+    "parse_kv_pairs",
+    "partition_three_inplace",
+    "perm_rank",
+    "portal_min_moves",
+    "reduce_fraction",
+    "reverse_bits",
+    "ring_buffer_trace",
+    "round_half_even",
+    "search_rotated",
+    "semver_compare",
+    "shellish_tokenize",
+    "sliding_window_max",
+    "splice_pure",
+    "spread_radius",
+    "stock_spans",
+    "summarize_ranges",
+    "template_fields",
+    "tilde_unescape",
+    "topo_sort",
+    "url_split_strict",
+    "varint_zigzag_decode",
+    "weekday_name",
+    "word_wrap_greedy"
+  ],
+  "per_task": [
+    {
+      "task_id": "interval_intersection",
+      "passed": true
+    },
+    {
+      "task_id": "search_rotated",
+      "passed": false
+    },
+    {
+      "task_id": "parse_range_list",
+      "passed": true
+    },
+    {
+      "task_id": "sliding_window_max",
+      "passed": false
+    },
+    {
+      "task_id": "topo_sort",
+      "passed": false
+    },
+    {
+      "task_id": "rle_decode",
+      "passed": true
+    },
+    {
+      "task_id": "matrix_rotate_inplace",
+      "passed": true
+    },
+    {
+      "task_id": "evaluate_rpn",
+      "passed": false
+    },
+    {
+      "task_id": "lis_length",
+      "passed": true
+    },
+    {
+      "task_id": "valid_ipv4",
+      "passed": true
+    },
+    {
+      "task_id": "josephus",
+      "passed": true
+    },
+    {
+      "task_id": "merge_sorted_streams",
+      "passed": true
+    },
+    {
+      "task_id": "first_missing_positive",
+      "passed": false
+    },
+    {
+      "task_id": "count_islands",
+      "passed": false
+    },
+    {
+      "task_id": "csv_field_split",
+      "passed": false
+    },
+    {
+      "task_id": "duration_hms_strict",
+      "passed": false
+    },
+    {
+      "task_id": "shellish_tokenize",
+      "passed": false
+    },
+    {
+      "task_id": "header_unfold",
+      "passed": false
+    },
+    {
+      "task_id": "canonical_decimal",
+      "passed": false
+    },
+    {
+      "task_id": "template_fields",
+      "passed": false
+    },
+    {
+      "task_id": "partition_three_inplace",
+      "passed": false
+    },
+    {
+      "task_id": "merge_tallies",
+      "passed": false
+    },
+    {
+      "task_id": "apply_edits",
+      "passed": false
+    },
+    {
+      "task_id": "group_pairs",
+      "passed": true
+    },
+    {
+      "task_id": "purge_in_place",
+      "passed": true
+    },
+    {
+      "task_id": "splice_pure",
+      "passed": false
+    },
+    {
+      "task_id": "sat_add_nbit",
+      "passed": true
+    },
+    {
+      "task_id": "div_round_half_away",
+      "passed": false
+    },
+    {
+      "task_id": "add_months_clamp",
+      "passed": false
+    },
+    {
+      "task_id": "bucket_histogram_mixed",
+      "passed": false
+    },
+    {
+      "task_id": "mini_editor_undo",
+      "passed": false
+    },
+    {
+      "task_id": "frame_checksum_decode",
+      "passed": true
+    },
+    {
+      "task_id": "kv_event_fold",
+      "passed": false
+    },
+    {
+      "task_id": "outline_leaf_paths",
+      "passed": false
+    },
+    {
+      "task_id": "tilde_unescape",
+      "passed": false
+    },
+    {
+      "task_id": "largest_remainder_apportion",
+      "passed": false
+    },
+    {
+      "task_id": "format_signed_duration",
+      "passed": true
+    },
+    {
+      "task_id": "varint_zigzag_decode",
+      "passed": false
+    },
+    {
+      "task_id": "word_wrap_greedy",
+      "passed": false
+    },
+    {
+      "task_id": "identifier_words",
+      "passed": false
+    },
+    {
+      "task_id": "tab_expand_columns",
+      "passed": true
+    },
+    {
+      "task_id": "interval_subtract",
+      "passed": false
+    },
+    {
+      "task_id": "rect_overlap_area",
+      "passed": true
+    },
+    {
+      "task_id": "covered_integer_count",
+      "passed": false
+    },
+    {
+      "task_id": "turtle_walk_program",
+      "passed": true
+    },
+    {
+      "task_id": "token_bucket_grants",
+      "passed": true
+    },
+    {
+      "task_id": "stopwatch_fsm",
+      "passed": true
+    },
+    {
+      "task_id": "matrix_shape_strict",
+      "passed": false
+    },
+    {
+      "task_id": "money_cents_strict",
+      "passed": false
+    },
+    {
+      "task_id": "cron_field_expand",
+      "passed": false
+    },
+    {
+      "task_id": "int_to_base",
+      "passed": true
+    },
+    {
+      "task_id": "parse_base",
+      "passed": true
+    },
+    {
+      "task_id": "roman_encode",
+      "passed": true
+    },
+    {
+      "task_id": "col_label",
+      "passed": true
+    },
+    {
+      "task_id": "col_number",
+      "passed": true
+    },
+    {
+      "task_id": "luhn_valid",
+      "passed": true
+    },
+    {
+      "task_id": "isbn10_check",
+      "passed": true
+    },
+    {
+      "task_id": "days_in_month",
+      "passed": true
+    },
+    {
+      "task_id": "ordinal_day",
+      "passed": true
+    },
+    {
+      "task_id": "weekday_name",
+      "passed": false
+    },
+    {
+      "task_id": "days_between",
+      "passed": false
+    },
+    {
+      "task_id": "semver_compare",
+      "passed": false
+    },
+    {
+      "task_id": "natural_compare",
+      "passed": false
+    },
+    {
+      "task_id": "percent_decode",
+      "passed": true
+    },
+    {
+      "task_id": "csv_quote",
+      "passed": true
+    },
+    {
+      "task_id": "round_half_even",
+      "passed": false
+    },
+    {
+      "task_id": "reverse_bits",
+      "passed": false
+    },
+    {
+      "task_id": "reduce_fraction",
+      "passed": false
+    },
+    {
+      "task_id": "top_k_frequent",
+      "passed": true
+    },
+    {
+      "task_id": "uniq_counts",
+      "passed": true
+    },
+    {
+      "task_id": "eval_bool_expr",
+      "passed": false
+    },
+    {
+      "task_id": "glob_match",
+      "passed": true
+    },
+    {
+      "task_id": "sliding_windows",
+      "passed": true
+    },
+    {
+      "task_id": "summarize_ranges",
+      "passed": false
+    },
+    {
+      "task_id": "matrix_transpose",
+      "passed": false
+    },
+    {
+      "task_id": "json_string_escape",
+      "passed": true
+    },
+    {
+      "task_id": "normalize_path",
+      "passed": true
+    },
+    {
+      "task_id": "ipv4_to_int",
+      "passed": true
+    },
+    {
+      "task_id": "multiset_diff",
+      "passed": true
+    },
+    {
+      "task_id": "parse_a1_ref",
+      "passed": false
+    },
+    {
+      "task_id": "linked_cycle",
+      "passed": false
+    },
+    {
+      "task_id": "manhattan_tour",
+      "passed": false
+    },
+    {
+      "task_id": "parse_kv_pairs",
+      "passed": false
+    },
+    {
+      "task_id": "rotate_list",
+      "passed": true
+    },
+    {
+      "task_id": "group_anagrams",
+      "passed": true
+    },
+    {
+      "task_id": "stock_spans",
+      "passed": false
+    },
+    {
+      "task_id": "perm_rank",
+      "passed": false
+    },
+    {
+      "task_id": "gray_rank",
+      "passed": false
+    },
+    {
+      "task_id": "kth_combination",
+      "passed": false
+    },
+    {
+      "task_id": "look_and_say_bounded",
+      "passed": true
+    },
+    {
+      "task_id": "longest_digit_run",
+      "passed": false
+    },
+    {
+      "task_id": "collatz_trace",
+      "passed": true
+    },
+    {
+      "task_id": "knight_min_moves",
+      "passed": true
+    },
+    {
+      "task_id": "grid_bfs_steps",
+      "passed": false
+    },
+    {
+      "task_id": "union_component_count",
+      "passed": true
+    },
+    {
+      "task_id": "bipartite_strict",
+      "passed": false
+    },
+    {
+      "task_id": "portal_min_moves",
+      "passed": false
+    },
+    {
+      "task_id": "spread_radius",
+      "passed": false
+    },
+    {
+      "task_id": "lru_trace",
+      "passed": true
+    },
+    {
+      "task_id": "min_stack_trace",
+      "passed": false
+    },
+    {
+      "task_id": "ring_buffer_trace",
+      "passed": false
+    },
+    {
+      "task_id": "k_smallest_names",
+      "passed": true
+    },
+    {
+      "task_id": "bank_ledger",
+      "passed": true
+    },
+    {
+      "task_id": "inventory_reserve",
+      "passed": false
+    },
+    {
+      "task_id": "url_split_strict",
+      "passed": false
+    },
+    {
+      "task_id": "qp_decode",
+      "passed": true
+    },
+    {
+      "task_id": "ini_section_parse",
+      "passed": true
+    },
+    {
+      "task_id": "lcs_diff_ops",
+      "passed": false
+    },
+    {
+      "task_id": "fletcher16_checksum",
+      "passed": true
+    },
+    {
+      "task_id": "md_outline_number",
+      "passed": false
+    }
+  ],
+  "note": "one temp-0 sample = the M7 single_shot arm, NOT pass@k; temp-0 failure does not certify hardness"
+}

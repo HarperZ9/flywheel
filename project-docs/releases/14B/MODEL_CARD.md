@@ -7,20 +7,22 @@ Status: draft, not publish-ready. Identity and provenance are verified; benchmar
 - Release name: `Flywheel-Local-Coder-14B`
 - Artifact file: `telos-coder-14b-cpt2020-q4_k_m.gguf`
 - Base model: `Qwen2.5-Coder-14B-Instruct` (Alibaba Cloud / Qwen team, Apache-2.0)
-- Adapter: `checkpoint-2020`, QLoRA continued pretraining, train_loss 0.035
+- Adapter: `checkpoint-2020`, QLoRA continued pretraining, final logged loss 0.444 (min 0.359)
 - Composition: base weights merged with the adapter, then quantized
 - Quantization: Q4_K_M (GGUF)
 - Size: 8,988,110,880 bytes
 - Artifact SHA-256: `613db240e3efc6730f24042a4602d1f12f1c6b397af1d5a4d74f4e064d4064be`
 - Adapter SHA-256: `4de07c6ea342d1cc200d4a6e2b28a63f6ee37f34c5c0926c35d8c7db74d38d0f`
 - LoRA GGUF SHA-256: `c89091709d7f385226000091dca976b7ce68086255e78af96599d06b6b52f547`
-- Artifact location: `E:\local-model-run\release\flywheel-local-coder-14b\telos-coder-14b-cpt2020-q4_k_m.gguf`
+- Artifact: `telos-coder-14b-cpt2020-q4_k_m.gguf`, held outside this repository
+  and identified by the sha256 in the release checklist rather than by a path
 - Local serving name: Ollama `flywheel-local-coder-14b`
-- Manifest: `C:\dev\local-model\tasks\research\gguf_ship_manifest_checkpoint2020.json` (schema `telos.model-artifact/v1`)
+- Manifest: `tasks/research/gguf_ship_manifest_checkpoint2020.json` in this
+  repository (schema `telos.model-artifact/v1`)
 
 ## Training data
 
-Continued pretraining on the operator's `C:\dev` ecosystem corpus. Pack numbers (verified in `HANDOFF.md` and `E:\local-model-run\data\packed\PACK_COMPLETE.json`): 66,158,592 tokens, 8 shards, 16,152 sequences, seq_len 4096, from 17,997 corpus files. Corpus content hash `68345cdc6667f20d1678ac0a9139edc170348dfdebb9ae6045cde3d204f4fe62`; pack shards hash `018798dfce7d4c86f5a6ea502a383553220f2e76facfe76acbe52b1c278ae543`. Dataset receipt: `tasks/research/dataset_receipt_checkpoint2020.json`. Corpus source identifiers stay proprietary.
+Continued pretraining on a private ecosystem corpus. Pack numbers (verified in `HANDOFF.md` and the pack's own `PACK_COMPLETE.json`): 66,158,592 tokens, 8 shards, 16,152 sequences, seq_len 4096, from 17,997 corpus files. Corpus content hash `68345cdc6667f20d1678ac0a9139edc170348dfdebb9ae6045cde3d204f4fe62`; pack shards hash `018798dfce7d4c86f5a6ea502a383553220f2e76facfe76acbe52b1c278ae543`. Dataset receipt: `tasks/research/dataset_receipt_checkpoint2020.json`. Corpus source identifiers stay proprietary.
 
 ## Intended use
 

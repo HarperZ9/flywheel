@@ -93,8 +93,15 @@ def test_release_ollama_profile_root_exists_tracks_trained_artifact_presence(tmp
     release_dir = tmp_path / "release" / "flywheel-local-coder-14b"
 
     no_release_dir = build_report(**kwargs)
-    assert no_release_dir["summary"]["profiles"] == 5
-    assert not any(row["profile_id"] == "ollama-release-32b" for row in no_release_dir["profiles"])
+    # Six, not five: serve + ollama + ollama-release for each of the two models.
+    # The 32B gained a release profile when its CPT derivative shipped, and this
+    # assertion said 5 and had been failing silently since then. Reporting a
+    # release profile with root_exists False is more honest than omitting it,
+    # which is what the second assertion here used to require.
+    assert no_release_dir["summary"]["profiles"] == 6
+    r32 = [row for row in no_release_dir["profiles"]
+           if row["profile_id"] == "ollama-release-32b"]
+    assert len(r32) == 1 and r32[0]["root_exists"] is False
     assert _release_row(no_release_dir)["root_exists"] is False
 
     release_dir.mkdir(parents=True)
@@ -104,7 +111,7 @@ def test_release_ollama_profile_root_exists_tracks_trained_artifact_presence(tmp
     (release_dir / "telos-coder-14b-cpt2020-q4_k_m.gguf").write_bytes(b"gguf")
     with_artifact = build_report(**kwargs)
     release = _release_row(with_artifact)
-    assert with_artifact["summary"]["profiles"] == 5
+    assert with_artifact["summary"]["profiles"] == 6
     assert release["root_exists"] is True
     assert release["backend"] == "ollama"
     assert release["model_ref"] == "ollama:flywheel-local-coder-14b"

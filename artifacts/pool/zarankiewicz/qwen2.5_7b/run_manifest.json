@@ -1,0 +1,16 @@
+{
+ "confirmatory": false,
+ "criterion_id": "zarankiewicz.z_2_2.v1",
+ "does_not_prove": [
+  "NOT_PROVES_ACCEPTANCE: filling a pool caches candidates. No certificate here has been submitted through an oracle's accept path; well-formedness and PASS/FAIL are a separate, later step.",
+  "NOT_PROVES_THIS_IS_THE_CONFIRMATORY_RUN: that is exactly what the pilot/confirmatory stamp on this manifest exists to make unambiguous."
+ ],
+ "extraction": "fenced-json-v1",
+ "family": "zarankiewicz",
+ "limit": 2,
+ "n_instances": 2,
+ "pilot": true,
+ "pilot_reason": "mechanical pilot run, not the confirmatory run; --limit 2",
+ "rung": "qwen2.5:7b",
+ "schema": "flywheel.demo-pool-run/v1"
+}

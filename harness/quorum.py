@@ -33,15 +33,23 @@ from .oracle import Oracle, OracleResult
 from .task import Task
 
 
-@dataclass
 class QuorumResult(OracleResult):
-    votes: list[dict] = field(default_factory=list)     # per-verifier {type, passed, output_hash, ref}
-    n_pass: int = 0
-    n_total: int = 0
-    threshold: float = 0.5
-    quorum_needed: int = 0
-    dissenters: list[str] = field(default_factory=list)  # verifiers whose vote != the accept outcome
-    distinct_members: int = 0    # distinct (type, ref) identities; < n_total means a stacked ballot
+    """An OracleResult that also carries the ballot. Explicit __init__ rather
+    than @dataclass: the parent now owns verdict/attribution resolution, so a
+    generated subclass __init__ would bypass it."""
+
+    def __init__(self, *, votes: list[dict] | None = None, n_pass: int = 0,
+                 n_total: int = 0, threshold: float = 0.5, quorum_needed: int = 0,
+                 dissenters: list[str] | None = None, distinct_members: int = 0,
+                 **kw):
+        super().__init__(**kw)
+        self.votes = votes if votes is not None else []   # {type, passed, output_hash, ref}
+        self.n_pass = n_pass
+        self.n_total = n_total
+        self.threshold = threshold
+        self.quorum_needed = quorum_needed
+        self.dissenters = dissenters if dissenters is not None else []
+        self.distinct_members = distinct_members    # < n_total means a stacked ballot
 
     def accountability_receipt(self) -> str:
         stacked = (f"; STACKED BALLOT: {self.distinct_members} distinct of "

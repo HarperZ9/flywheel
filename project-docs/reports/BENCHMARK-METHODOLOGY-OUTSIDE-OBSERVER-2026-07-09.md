@@ -18,7 +18,7 @@ Two things, and it matters to keep them separate.
 
 The model: a local 14B coding model, base `Qwen2.5-Coder-14B-Instruct`
 (Apache-2.0) merged with QLoRA continued-pretraining adapter
-`checkpoint-2020` (train_loss 0.035), quantized Q4_K_M, shipped as a single
+`checkpoint-2020` (train_loss 0.035 [CORRECTED 2026-07-26: the logged curve is 0.788 -> 0.444, min 0.359; see project-docs/releases/14B/shipped-page/CORRECTIONS.md]), quantized Q4_K_M, shipped as a single
 GGUF of 8,988,110,880 bytes with sha256
 `613db240e3efc6730f24042a4602d1f12f1c6b397af1d5a4d74f4e064d4064be`.
 

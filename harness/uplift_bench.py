@@ -95,7 +95,7 @@ def _run_arm(proposer, tasks: list, oracle, n_candidates: int) -> dict:
     """One arm over the task set. Per task: propose up to n_candidates times;
     the first oracle-accepted candidate wins; an unverifiable oracle verdict
     stops the attempts (retrying cannot help when nothing can dispose)."""
-    passes = fails = unverifiable = 0
+    passes = fails = unverifiable = generation_failed = 0
     latencies, attempts_used = [], []
     per_task: list = []   # outcome vectors: heterogeneity vs diversity is
                           # only separable with per-task data
@@ -105,6 +105,8 @@ def _run_arm(proposer, tasks: list, oracle, n_candidates: int) -> dict:
         t0 = time.perf_counter()
         outcome = "fail"
         attempts = 0
+        gen_errors: list = []
+        generated = 0
         for seed in range(n_candidates):
             attempts += 1
             try:
@@ -113,8 +115,18 @@ def _run_arm(proposer, tasks: list, oracle, n_candidates: int) -> dict:
                     temperature=0.0 if seed == 0 else 0.8,
                     max_new_tokens=max_new)
                 candidate = out.text if isinstance(out.text, str) else str(out.text)
-            except Exception:
-                continue                     # a dead attempt; retries remain
+            except Exception as e:
+                # This was `except Exception: continue`, which swallowed the
+                # error and burned an attempt without recording it. In the bare
+                # arm, where n_candidates is 1, that turned "nothing was
+                # generated" into a CANDIDATE FAILURE, which is exactly the
+                # misattribution harness/verdict.py exists to prevent. It is also
+                # a live candidate mechanism for the observed anomaly where four
+                # tasks failed in the bare arm and passed in the wrapped arm on
+                # its first attempt, the identical seed-0 temp-0 call.
+                gen_errors.append(f"{type(e).__name__}: {e}"[:200])
+                continue
+            generated += 1
             verdict = oracle(candidate, task)
             if verdict is None:
                 outcome = "unverifiable"
@@ -122,14 +134,25 @@ def _run_arm(proposer, tasks: list, oracle, n_candidates: int) -> dict:
             if verdict:
                 outcome = "pass"
                 break
+        if not generated:
+            # Nothing was ever produced for this task, so there is no candidate
+            # to grade. Attributed to the harness and kept OUT of the denominator,
+            # the same treatment unverifiable already gets.
+            outcome = "generation_failed"
         latencies.append((time.perf_counter() - t0) * 1000)
         attempts_used.append(attempts)
-        per_task.append({"task_id": str(task.get("task_id", "")),
-                         "outcome": outcome, "attempts": attempts})
+        row = {"task_id": str(task.get("task_id", "")),
+               "outcome": outcome, "attempts": attempts,
+               "generated": generated}
+        if gen_errors:
+            row["generation_errors"] = gen_errors
+        per_task.append(row)
         if outcome == "pass":
             passes += 1
         elif outcome == "unverifiable":
             unverifiable += 1
+        elif outcome == "generation_failed":
+            generation_failed += 1
         else:
             fails += 1
     graded = passes + fails
@@ -138,6 +161,10 @@ def _run_arm(proposer, tasks: list, oracle, n_candidates: int) -> dict:
         "n_tasks": len(tasks), "passes": passes, "graded": graded,
         "tasks": per_task,
         "unverifiable": unverifiable,
+        # HARNESS-attributed, excluded from `graded`. A run reporting 0 here
+        # either had none or predates this field; the two are not distinguishable
+        # in any artifact written before 2026-07-26.
+        "generation_failed": generation_failed,
         "pass_rate": round(passes / graded, 4) if graded else 0.0,
         "wilson_95": [round(lo, 4), round(hi, 4)],
         "latency_ms_mean": round(sum(latencies) / len(latencies), 3)

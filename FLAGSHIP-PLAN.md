@@ -66,7 +66,7 @@ receipt must flag CORPUS_DRIFT; byte-identical corpus must reproduce the
 receipt. ~100 lines, zero new dependencies.
 
 ### 3. Local models — tested-component
-14B CPT complete (checkpoint-2020, train_loss 0.035); 32B QLoRA fits a 4090 at
+14B CPT complete (checkpoint-2020, final logged loss 0.444 (min 0.359)); 32B QLoRA fits a 4090 at
 seq_len 256 (smoke-proven). Nothing is packaged: no artifact anyone can pull.
 **Increment:** GGUF-quantize the 14B + adapter, Ollama Modelfile, documented
 serve/eval entrypoint. Multi-hour toolchain job (llama.cpp/Ollama not yet

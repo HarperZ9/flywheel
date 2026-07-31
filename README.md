@@ -209,7 +209,8 @@ refuses to overclaim is a tool whose other claims you can trust.
 
 ## Requirements
 
-- Python 3.10+ (standard library only, no packages to install for the core).
+- Python 3.11+ to install the tool. The verifier is standard library only, so
+  checking a receipt needs no packages at all.
 - To run the local model: a machine that can host a ~9 GB 4-bit model, via
   Ollama or the bundled server. A GPU helps but is not required.
 - To reach hosted providers: their API key in your environment.
@@ -236,7 +237,7 @@ One belief across every surface, kept as a content-addressed artifact
 ([CREDO.md](CREDO.md), served live at `GET /api/credo`): knowledge open to
 anyone who can attain the means, and we build to lower the means; acceptance
 decided by external checks, never reputation; every result re-runnable;
-honest nulls first-class; ownership earned by comprehension; learning woven
+honest nulls kept; ownership earned by comprehension; learning woven
 into the work. The long form is
 [The Unbundling](docs/essays/2026-07-13-the-unbundling.md).
 

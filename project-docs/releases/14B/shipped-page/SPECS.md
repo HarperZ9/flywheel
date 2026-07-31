@@ -38,8 +38,13 @@ Runs anywhere llama.cpp or Ollama runs: Windows, Linux, macOS.
 Continued pretraining (QLoRA) of the base model on a 66.2-million-token corpus
 of 17,997 files from a real, working development ecosystem: production code,
 tests, documentation, and research notes. Training ran to adapter checkpoint
-2020 (final train loss 0.035), the adapter was merged into the base weights,
-and the merge was quantized to Q4_K_M.
+2020, which is 2020 steps over 2 epochs, ending at a logged training loss of
+0.444 with a minimum of 0.359 across 202 logged points. The adapter was merged
+into the base weights, and the merge was quantized to Q4_K_M.
+
+An earlier version of this page reported a final loss of 0.035. That figure was
+wrong and is corrected above. [CORRECTIONS.md](CORRECTIONS.md) records what it
+was, what it is, and why the mistake happened.
 
 Every layer of that build is hashed and recorded in
 [provenance.json](provenance.json): the corpus content, the packed training

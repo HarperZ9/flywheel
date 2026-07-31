@@ -1,0 +1,70 @@
+{
+ "policy": "fenced-json-v1",
+ "records": [
+  {
+   "extracted_sha256": "sha256:09d822d7a11d45cbfffd6c46c1365ce650b03d13bc8d98100c062290ea54bae5",
+   "fence_count": 0,
+   "fence_found": false,
+   "raw_sha256": "sha256:09d822d7a11d45cbfffd6c46c1365ce650b03d13bc8d98100c062290ea54bae5",
+   "slot": 0,
+   "task_id": "zarankiewicz.seed00.d1"
+  },
+  {
+   "extracted_sha256": "sha256:09d822d7a11d45cbfffd6c46c1365ce650b03d13bc8d98100c062290ea54bae5",
+   "fence_count": 0,
+   "fence_found": false,
+   "raw_sha256": "sha256:09d822d7a11d45cbfffd6c46c1365ce650b03d13bc8d98100c062290ea54bae5",
+   "slot": 1,
+   "task_id": "zarankiewicz.seed00.d1"
+  },
+  {
+   "extracted_sha256": "sha256:09d822d7a11d45cbfffd6c46c1365ce650b03d13bc8d98100c062290ea54bae5",
+   "fence_count": 0,
+   "fence_found": false,
+   "raw_sha256": "sha256:09d822d7a11d45cbfffd6c46c1365ce650b03d13bc8d98100c062290ea54bae5",
+   "slot": 2,
+   "task_id": "zarankiewicz.seed00.d1"
+  },
+  {
+   "extracted_sha256": "sha256:cbc079ca1bc477fbe7664992536b4502372a4de308dec296e1f680e6d07ed6b9",
+   "fence_count": 0,
+   "fence_found": false,
+   "raw_sha256": "sha256:cbc079ca1bc477fbe7664992536b4502372a4de308dec296e1f680e6d07ed6b9",
+   "slot": 3,
+   "task_id": "zarankiewicz.seed00.d1"
+  },
+  {
+   "extracted_sha256": "sha256:f63bbda7d93b9b439daae0a886d9a77e4e84e0579e46c26e689be047ae5328df",
+   "fence_count": 0,
+   "fence_found": false,
+   "raw_sha256": "sha256:f63bbda7d93b9b439daae0a886d9a77e4e84e0579e46c26e689be047ae5328df",
+   "slot": 0,
+   "task_id": "zarankiewicz.seed01.d1"
+  },
+  {
+   "extracted_sha256": "sha256:f63bbda7d93b9b439daae0a886d9a77e4e84e0579e46c26e689be047ae5328df",
+   "fence_count": 0,
+   "fence_found": false,
+   "raw_sha256": "sha256:f63bbda7d93b9b439daae0a886d9a77e4e84e0579e46c26e689be047ae5328df",
+   "slot": 1,
+   "task_id": "zarankiewicz.seed01.d1"
+  },
+  {
+   "extracted_sha256": "sha256:f63bbda7d93b9b439daae0a886d9a77e4e84e0579e46c26e689be047ae5328df",
+   "fence_count": 0,
+   "fence_found": false,
+   "raw_sha256": "sha256:f63bbda7d93b9b439daae0a886d9a77e4e84e0579e46c26e689be047ae5328df",
+   "slot": 2,
+   "task_id": "zarankiewicz.seed01.d1"
+  },
+  {
+   "extracted_sha256": "sha256:107a7645a2ce523b1e7f6c28e8311a725b0c35a390823f44ad68b2c940cd043d",
+   "fence_count": 0,
+   "fence_found": false,
+   "raw_sha256": "sha256:107a7645a2ce523b1e7f6c28e8311a725b0c35a390823f44ad68b2c940cd043d",
+   "slot": 3,
+   "task_id": "zarankiewicz.seed01.d1"
+  }
+ ],
+ "schema": "flywheel.demo-pool-extraction-log/v1"
+}

@@ -63,7 +63,7 @@ route is the five-tool golden workflow). Verified by `test_superproject.py`.
 
 ## The engine, measured (not asserted)
 
-- **14B QLoRA CPT** trained to completion (loss 2.18 → 0.035); **32B** QLoRA fits a single
+- **14B QLoRA CPT** trained to completion (logged loss 0.788 -> 0.444 (min 0.359)); **32B** QLoRA fits a single
   4090 at seq_len 256 (peak 21.24 GB).
 - **M7 lift did NOT reproduce.** The earlier hard-set 80% → 90% (+10%) was one task of ten
   with no interval. The self-authored-criterion ablation (2026-07-06) re-measured cleanly:

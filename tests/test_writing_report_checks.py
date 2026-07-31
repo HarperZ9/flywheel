@@ -1,0 +1,193 @@
+"""The Phase 2 report-only checks: counted, never hard, in every slop level."""
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
+
+import check_writing as CW  # noqa: E402
+import writing_profiles as WP  # noqa: E402
+
+
+def test_passive_voice_is_counted():
+    r = CW.check_text("The file is read by the parser.", WP.load("readme"))
+    assert r["violations"].get("passive_voice", 0) >= 1
+
+
+def test_irregular_participle_passive_is_counted():
+    r = CW.check_text("The report was written yesterday.", WP.load("readme"))
+    assert r["violations"].get("passive_voice", 0) >= 1
+
+
+def test_active_voice_is_not_flagged():
+    r = CW.check_text("The parser reads the file.", WP.load("readme"))
+    assert "passive_voice" not in r["violations"]
+
+
+def test_ing_main_verb_is_counted():
+    r = CW.check_text("The tool is running the checks.", WP.load("readme"))
+    assert r["violations"].get("ing_main_verb", 0) >= 1
+
+
+def test_nominalization_verb_form_is_counted():
+    r = CW.check_text("We perform analysis of the log.", WP.load("readme"))
+    assert r["violations"].get("nominalization", 0) >= 1
+
+
+def test_nominalization_suffix_before_of_is_counted():
+    r = CW.check_text("The utilization of memory grew.", WP.load("readme"))
+    assert r["violations"].get("nominalization", 0) >= 1
+
+
+def test_plain_of_phrase_is_not_a_nominalization():
+    r = CW.check_text("The top of the file holds imports.", WP.load("readme"))
+    assert "nominalization" not in r["violations"]
+
+
+def test_long_paragraph_is_counted():
+    para = " ".join(f"Sentence number {i} sits here." for i in range(8))
+    r = CW.check_text(para, WP.load("readme"))
+    assert r["violations"].get("long_paragraph", 0) == 1
+
+
+def test_two_short_paragraphs_are_not_flagged():
+    text = "One sentence.\n\nAnother sentence."
+    r = CW.check_text(text, WP.load("readme"))
+    assert "long_paragraph" not in r["violations"]
+
+
+def test_the_new_checks_are_never_hard_in_any_slop_level():
+    text = ("The file is read by the parser. The tool is running checks. "
+            "We perform analysis of the log. "
+            + " ".join(f"Filler sentence {i} here." for i in range(8)))
+    for profile_name in ("procedure", "readme", "narrative"):
+        r = CW.check_text(text, WP.load(profile_name))
+        for cat in ("passive_voice", "ing_main_verb", "nominalization",
+                    "long_paragraph"):
+            assert cat not in r["hard"], (profile_name, cat)
+
+
+def test_hard_by_slop_never_contains_the_report_only_categories():
+    for level, cats in CW.HARD_BY_SLOP.items():
+        assert not (cats & CW.REPORT_ONLY), level
+
+
+def test_regular_ed_participle_passive_is_counted():
+    r = CW.check_text("The bug was fixed by the patch.", WP.load("readme"))
+    assert r["violations"].get("passive_voice", 0) >= 1
+
+
+def test_gerund_without_be_is_not_an_ing_main_verb():
+    r = CW.check_text("Running helps the tests.", WP.load("readme"))
+    assert "ing_main_verb" not in r["violations"]
+
+
+def test_long_paragraph_boundary_six_passes_seven_flags():
+    six = " ".join(f"Sentence {i} here." for i in range(6))
+    seven = " ".join(f"Sentence {i} here." for i in range(7))
+    assert "long_paragraph" not in CW.check_text(six, WP.load("readme"))["violations"]
+    assert CW.check_text(seven, WP.load("readme"))["violations"].get(
+        "long_paragraph", 0) == 1
+
+
+def test_report_only_counts_do_not_move_the_headline_number():
+    prof = WP.load("readme")
+    clean = CW.check_text("The parser reads files.", prof)
+    noisy = CW.check_text("The file is read by the parser.", prof)
+    assert noisy["total"] == clean["total"] == 0
+    assert noisy["report_total"] >= 1
+    assert noisy["per100w"] == 0.0
+    assert noisy["report_per100w"] > 0.0
+
+
+def test_eprime_lens_counts_be_verbs_only_when_enabled():
+    text = "The result is significant. It was better."
+    on = CW.check_text(text, WP.load("research"))       # eprime=True
+    off = CW.check_text(text, WP.load("readme"))        # eprime=False
+    assert on["violations"].get("be_verb", 0) == 2
+    assert "be_verb" not in off["violations"]
+    assert "be_verb" not in on["hard"]
+
+
+def test_eprime_ignores_be_inside_words():
+    r = CW.check_text("The crisis isolated the amaryllis.", WP.load("research"))
+    assert "be_verb" not in r["violations"]
+
+
+def test_syllable_counter_on_known_words():
+    assert CW.syllables("cat") == 1
+    assert CW.syllables("paper") == 2
+    assert CW.syllables("readability") == 5
+    assert CW.syllables("queue") >= 1
+
+
+def test_reading_ease_orders_simple_above_dense():
+    simple = ("The cat sat on the mat. " * 8)
+    dense = ("Institutional epistemological considerations necessitate "
+             "comprehensive multidimensional reconceptualization. " * 5)
+    easy = CW.reading_ease(simple)
+    hard_score = CW.reading_ease(dense)
+    assert easy is not None and hard_score is not None
+    assert easy > hard_score
+
+
+def test_reading_ease_is_none_on_short_text():
+    assert CW.reading_ease("Too short to score.") is None
+
+
+def test_check_text_reports_reading_ease_and_band():
+    text = "The cat sat on the mat. " * 8
+    r = CW.check_text(text, WP.load("readme"))
+    assert isinstance(r["reading_ease"], float)
+    assert isinstance(r["in_band"], bool)
+    short = CW.check_text("Tiny.", WP.load("readme"))
+    assert short["reading_ease"] is None
+    assert short["in_band"] is None
+
+
+def test_unknown_slop_value_raises_not_silently_off():
+    import pytest
+    prof = WP.load("readme")
+    prof["slop"] = "typo-level"
+    with pytest.raises(WP.ProfileError):
+        CW.check_text("Any text.", prof)
+
+
+def test_mathblock_dollars_are_stripped():
+    r = CW.check_text("Before $$ utilize \n leverage $$ after.",
+                      WP.load("research"))
+    assert "banned_word" not in r["violations"]
+
+
+def test_unknown_profile_flag_is_a_message_not_a_traceback(tmp_path):
+    import subprocess
+    f = tmp_path / "x.md"
+    f.write_text("words\n", encoding="utf-8")
+    root = Path(__file__).resolve().parent.parent
+    r = subprocess.run([sys.executable, str(root / "scripts" / "check_writing.py"),
+                        "--profile", "no-such", str(f)],
+                       capture_output=True, text=True, cwd=root)
+    assert r.returncode == 2
+    assert "unknown profile" in (r.stderr + r.stdout).lower()
+    assert "Traceback" not in r.stderr
+
+
+def test_readability_regex_copies_stay_in_sync_with_check_writing():
+    import writing_readability as WR
+    assert WR._WORD_RE.pattern == CW.WORD_RE.pattern
+    assert WR._SENT.pattern == CW._SENT.pattern
+
+
+def test_readability_sentence_splitting_matches_check_writing():
+    import writing_readability as WR
+    sample = "One sentence wraps\nacross a line. Two is here! Three?"
+    assert WR._sentences(sample) == CW.sentences(sample)
+
+
+def test_in_band_is_a_real_verdict_not_a_constant():
+    prof = WP.load("readme")
+    prof["readability_band"] = (0, 5)
+    simple = "The cat sat on the mat. " * 8
+    r = CW.check_text(simple, prof)
+    assert r["in_band"] is False
+    prof["readability_band"] = (0, 200)
+    assert CW.check_text(simple, prof)["in_band"] is True

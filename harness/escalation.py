@@ -60,10 +60,15 @@ class CompileOracle:
             stdout_excerpt=out.decode("utf-8", errors="replace")[-800:], rc=rc)
 
 
-@dataclass
 class EscalationResult(OracleResult):
-    stopped_at_tier: str = ""
-    tiers_run: tuple = ()
+    """An OracleResult that records which tier stopped the escalation. Explicit
+    __init__ rather than @dataclass: the parent now owns verdict/attribution
+    resolution, so a generated subclass __init__ would bypass it."""
+
+    def __init__(self, *, stopped_at_tier: str = "", tiers_run: tuple = (), **kw):
+        super().__init__(**kw)
+        self.stopped_at_tier = stopped_at_tier
+        self.tiers_run = tiers_run
 
 
 class EscalationOracle:

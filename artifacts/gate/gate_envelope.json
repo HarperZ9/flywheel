@@ -1,0 +1,21 @@
+{
+  "admission": null,
+  "budget_spent": {
+    "oracle_calls": 5
+  },
+  "candidate": "{\"n\": 2, \"m\": 2, \"p\": 2, \"triples\": [{\"u\": [1, 0, 0, 1], \"v\": [1, 0, 0, 1], \"w\": [1, 0, 0, 1]}, {\"u\": [0, 0, 1, 1], \"v\": [1, 0, 0, 0], \"w\": [0, 0, 1, -1]}, {\"u\": [1, 0, 0, 0], \"v\": [0, 1, 0, -1], \"w\": [0, 1, 0, 1]}, {\"u\": [0, 0, 0, 1], \"v\": [-1, 0, 1, 0], \"w\": [1, 0, 1, 0]}, {\"u\": [1, 1, 0, 0], \"v\": [0, 0, 0, 1], \"w\": [-1, 1, 0, 0]}, {\"u\": [-1, 0, 1, 0], \"v\": [1, 1, 0, 0], \"w\": [0, 0, 0, 1]}, {\"u\": [0, 1, 0, -1], \"v\": [0, 0, 1, 1], \"w\": [1, 0, 0, 0]}]}",
+  "chain": [],
+  "citations": [],
+  "harness_version": "m1",
+  "injected_context": null,
+  "model_ref": "gate:deterministic-scheme-proposer",
+  "oracle": "matmul_bilinear",
+  "oracle_cmd": "matmul_identity",
+  "oracle_output_hash": "93e4b6c6b7a05c82",
+  "oracle_stdout_excerpt": "exact matmul tensor reproduced with rank 7",
+  "prompt_hash": "ad0c20d069f29aee",
+  "retrieved": [],
+  "seed": 0,
+  "task_id": "gate-matmul-2x2x2",
+  "verdict": "PASS"
+}

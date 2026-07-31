@@ -61,10 +61,32 @@ def _reconstruct(triples: list[dict], na: int, nb: int, nc: int) -> dict:
     return {k: val for k, val in That.items() if val != 0}
 
 
+def _strict_int(v) -> bool:
+    """An honest integer, not a bool or a float or a numeric string.
+
+    bool subclasses int in Python, so isinstance(True, int) is True. And a
+    declared dimension of "2" or 2.0 was ACCEPTED here until the QA battery could
+    finally grade this oracle (it could not before, because every mutation class
+    was graph-shaped). A declared shape that is not binding means a candidate can
+    claim one shape and exhibit another.
+    """
+    return isinstance(v, int) and not isinstance(v, bool)
+
+
 def verify_scheme(scheme: dict) -> tuple[bool, str]:
     """Return (is_exact_matmul, reason). Pure symbolic identity check."""
     try:
-        n, m, p = int(scheme["n"]), int(scheme["m"]), int(scheme["p"])
+        # int() would coerce "2" and 2.0, which made the DECLARED shape
+        # non-binding: a candidate could claim one shape and exhibit another, and
+        # the QA battery caught exactly that (8 of 12 type-confusion mutants
+        # accepted) the first time this oracle could be graded at all.
+        for key in ("n", "m", "p"):
+            if not _strict_int(scheme[key]):
+                return False, (f"dimension {key}={scheme[key]!r} is not an "
+                               "integer; a declared shape must be binding")
+        n, m, p = scheme["n"], scheme["m"], scheme["p"]
+        if min(n, m, p) <= 0:
+            return False, f"dimensions must be positive, got {n}x{m}x{p}"
         triples = scheme["triples"]
         if not isinstance(triples, list) or not triples:
             return False, "no triples"

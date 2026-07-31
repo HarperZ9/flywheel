@@ -6,26 +6,45 @@ a stable fingerprint over unchanged content, and degrade to UNVERIFIABLE (never
 crash) when the lane is unavailable.
 """
 import json
+from pathlib import Path
 
 from harness.context_envelope import (
     build_context_envelope, envelope_fingerprint, MATCH, UNVERIFIABLE)
 
+# The index lane rejects a focus that names no real repo, and it answers such a
+# request with an `index.focus-rejection/v1` document instead of an envelope. So
+# the focus has to name THIS checkout, whatever it is called. Hard-coding
+# "local-model" passed only in a checkout of that name: from a git worktree, or
+# from a CI runner that checks out to a different directory, every call came
+# back a rejection and the schema assertion failed for a reason that had nothing
+# to do with the producer.
+FOCUS = Path(".").resolve().name
+REJECTION = "index.focus-rejection/v1"
+
 
 def test_envelope_carries_the_context_envelope_schema():
-    # The producer is online on this workstation (index lane installed), so a
-    # real call should return the v1 schema with a MATCH verdict. Use a real
-    # repo name as focus so the index lane returns an envelope, not a focus
-    # rejection (index rejects a focus that names no real repo).
-    env = build_context_envelope(".", budget=400, focus="local-model", lane_timeout=30.0)
+    env = build_context_envelope(".", budget=400, focus=FOCUS, lane_timeout=30.0)
+    # Named separately from the assertion below so a rejection reports itself as
+    # a rejection rather than as a mysterious schema mismatch.
+    assert env["schema"] != REJECTION, (
+        f"the index lane rejected focus {FOCUS!r}; the test is asking about a "
+        "repo the lane does not know, not about the producer")
     assert env["schema"] == "project-telos.context-envelope/v1"
-    # Either MATCH (lane up) or UNVERIFIABLE (lane down) -- both are honest.
+    # Either MATCH (lane up) or UNVERIFIABLE (lane down) is honest. Measured
+    # 2026-07-28: the main checkout answers MATCH and a worktree answers
+    # UNVERIFIABLE, because the lane indexes the former and not the latter.
     assert env["verification_verdict"] in (MATCH, UNVERIFIABLE)
 
 
 def test_fingerprint_is_stable_across_calls_for_unchanged_content():
     # Two calls over the same workspace + budget + focus must hash identically.
-    env1 = build_context_envelope(".", budget=400, focus="loop", lane_timeout=30.0)
-    env2 = build_context_envelope(".", budget=400, focus="loop", lane_timeout=30.0)
+    # The focus is the checkout's own name for the reason above, and this test
+    # needs it for a second reason: with an unknown focus both calls returned
+    # the SAME rejection document, so the fingerprints matched while the
+    # producer was never exercised at all.
+    env1 = build_context_envelope(".", budget=400, focus=FOCUS, lane_timeout=30.0)
+    env2 = build_context_envelope(".", budget=400, focus=FOCUS, lane_timeout=30.0)
+    assert env1["schema"] != REJECTION
     assert envelope_fingerprint(env1) == envelope_fingerprint(env2)
 
 

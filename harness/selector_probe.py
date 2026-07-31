@@ -16,7 +16,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-from .oracle import _kill_tree
+from .oracle import _kill_tree, spawn_killable
 
 
 # --- typed input battery (the "pre-decided world" as a behavioral probe) -------
@@ -198,7 +198,7 @@ def _signature(candidate, fn: str, batt: list[tuple], workdir: Path,
     # are identical across processes -- otherwise the same candidate can land in
     # different clusters on different runs and selection stops being deterministic.
     try:
-        proc = subprocess.Popen(
+        proc = spawn_killable(
             [sys.executable, "driver.py"], cwd=workdir,
             stdout=subprocess.PIPE, stderr=subprocess.PIPE,
             env={**os.environ, "PYTHONDONTWRITEBYTECODE": "1", "PYTHONHASHSEED": "0"})
