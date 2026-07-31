@@ -1,5 +1,11 @@
 # Flywheel Superapp: the One Surface
 
+> **Update 2026-07-31:** The "shell" (`site/index.html`) described below as the
+> live UI has been superseded as the canonical surface by **Flywheel Desktop**,
+> the native Flutter client. The shell is retained as a dev/CI fallback for
+> headless checks. References to "the shell" / "the live UI" below should be
+> read in that historical context.
+
 > Unification spec. Synthesizes the operator vision with the six-reader survey
 > (showcase, packaged-app, companion, endpoints, training, projected-world).
 > Spec only. Nothing here is committed, published, or launched by this document.
