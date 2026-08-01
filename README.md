@@ -22,7 +22,7 @@ Start the gateway (the engine keeps the loop, receipts, lanes, and routing):
 flywheel app --port 8799
 ```
 
-The **native surface is Flywheel Desktop** — a Flutter client that talks to
+The **native surface is Flywheel Desktop**, a Flutter client that talks to
 this gateway over localhost and renders its own views (no browser, no terminal).
 From a checkout without the `flywheel` command installed:
 `python scripts/run_harness_cli.py app --port 8799`. The gateway also serves a
