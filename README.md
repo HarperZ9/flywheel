@@ -77,6 +77,17 @@ Receipts compose into a transitive-witness DAG where a drifted action degrades
 exactly its downstream dependents. The five flagships emit organ-bundle entries
 on a shared proof-surface spine so cross-tool receipts compose end-to-end.
 
+## The organizational learning loop
+
+The layer above audit. The receipt discipline records what happened at machine
+resolution. The learning loop feeds forward: it derives lessons from witnessed
+divergences (an allowed action that rolled back, a memory whose source drifted,
+a graded failure), stores them in a durable, hash-chained, append-only memory,
+and surfaces recurring patterns as improvement candidates for human admission.
+A lesson is not a note an operator wrote; it is a claim bound by hash to its
+evidence, re-checkable offline, fail-closed when the evidence is gone. See
+[docs/LESSON-LOOP.md](docs/LESSON-LOOP.md).
+
 ## Offline-first
 
 The Flutter desktop GUI launches a bundled engine by absolute path and serves
