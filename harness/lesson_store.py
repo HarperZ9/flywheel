@@ -183,7 +183,7 @@ class LessonStore:
                     improvement_candidate=improvement_candidate,
                 )
             )
-        # Most-converging first (highest-leverage pattern surfaces first).
+        # Most-converging first (highest-signal pattern surfaces first).
         patterns.sort(key=lambda p: p.repetition_count, reverse=True)
         return patterns
 

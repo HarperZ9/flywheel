@@ -18,14 +18,14 @@ party re-verifies offline.
 
 This is a monorepo containing both halves of the platform:
 
-- **`harness/`** — the Python engine: the gateway (localhost HTTP API), the
+- **`harness/`** is the Python engine: the gateway (localhost HTTP API), the
   agent loop, the receipt discipline, the lane layer, the verified-inference
   loop, the tool-call receipt system. Zero runtime dependencies (stdlib only).
-- **`desktop/`** — the Flutter native client: 24 views, 50 widgets, zero
+- **`desktop/`** is the Flutter native client: 24 views, 50 widgets, zero
   webview embedding. Talks to the gateway over localhost. Launches a bundled
   frozen engine by absolute path on a clean machine (no Python, no PATH, no
   network).
-- **`site/`** — a dev/CI fallback browser shell (not the primary UI).
+- **`site/`** is a dev/CI fallback browser shell (not the primary UI).
 
 ## Run it now
 
@@ -110,9 +110,9 @@ python scripts/run_harness_cli.py app --port 8799
 
 ## Documentation
 
-- [QUICKSTART.md](QUICKSTART.md) — first ten minutes
-- [WALKTHROUGH.md](WALKTHROUGH.md) — guided tour
-- [CREDO.md](CREDO.md) — the belief
+- [QUICKSTART.md](QUICKSTART.md): first ten minutes
+- [WALKTHROUGH.md](WALKTHROUGH.md): guided tour
+- [CREDO.md](CREDO.md): the belief
 
 ## License
 
