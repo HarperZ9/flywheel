@@ -51,6 +51,7 @@ class BootPacket:
     receipt_chain: list[dict] = field(default_factory=list)
     failure_code: str | None = None
     verdict: str = "MATCH"
+    context_envelope: dict | None = None
 
     def to_dict(self) -> dict:
         return asdict(self)
@@ -147,6 +148,25 @@ def _approx_tokens(packet_bytes: int) -> int:
     return packet_bytes // 4
 
 
+def _safe_context_envelope(root: Path, budget: int, focus: str) -> dict | None:
+    """Pull a context envelope from the index lane, gracefully degraded.
+
+    Closes Gap D (MEMORY-SUBSTRATE.md:39): the agent loop boots with real
+    workspace context from index, not a structural empty. If the index lane is
+    down or slow, returns None so the caller falls back to the envelope-less
+    boot without crashing.
+    """
+    try:
+        from .context_envelope import build_context_envelope
+        env = build_context_envelope(str(root), budget=budget, focus=focus)
+        # Only attach envelopes that actually carried content (not pure fallbacks).
+        if env.get("verification_verdict") == "UNVERIFIABLE":
+            return None
+        return env
+    except Exception:
+        return None
+
+
 def boot(root: str | Path, *, budget: int = 1500,
          focus: str = "") -> BootPacket:
     root = Path(root)
@@ -179,7 +199,8 @@ def boot(root: str | Path, *, budget: int = 1500,
         system=system, source_refs=refs,
         summary={**goals, **decisions, "source_files": len(files), "focus": focus},
         receipt_chain=[{"stage": "boot", "root_hash": rh, "git_head": gh}],
-        failure_code=None, verdict="MATCH")
+        failure_code=None, verdict="MATCH",
+        context_envelope=_safe_context_envelope(root, budget, focus))
     pkt.packet_tokens_approx = _approx_tokens(len(str(pkt.to_dict()).encode()))
     while pkt.packet_tokens_approx > budget and len(pkt.source_refs) > 8:
         pkt.source_refs.pop()
@@ -207,4 +228,14 @@ def hydrate_prompt(packet: BootPacket, prompt: str) -> str:
     head = (f"[ground] phase={s.get('phase_line','?')[:80]} "
             f"files={s.get('source_files',0)} accepted={s.get('accepted_envelopes',0)} "
             f"root_hash={packet.root_hash} modules={','.join(packet.system.get('harness_modules', [])[:6])}")
-    return f"{head}\n\n{prompt}"
+    parts = [head]
+    env = packet.context_envelope
+    if env and isinstance(env, dict):
+        verdict = env.get("verification_verdict", "?")
+        sel = env.get("selection", {})
+        mode = sel.get("mode", "?") if isinstance(sel, dict) else "?"
+        retained = sel.get("retained_names", []) if isinstance(sel, dict) else []
+        parts.append(f"[context] index_verdict={verdict} mode={mode} "
+                     f"repos={','.join(retained[:8]) if retained else '(none)'}")
+    parts.append(prompt)
+    return "\n\n".join(parts)
