@@ -1,0 +1,16 @@
+# Flutter
+build/
+.dart_tool/
+.packages
+.flutter-plugins
+.flutter-plugins-dependencies
+*.lock
+!pubspec.lock
+# IDE
+.idea/
+.vscode/
+# macOS
+.DS_Store
+
+# Session handoff notes (local only, never shipped)
+HANDOFF-*.md

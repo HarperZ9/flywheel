@@ -1,0 +1,88 @@
+# Release: a version tag (v*) reproduces the full installer from source --
+# app build, frozen engine, CRT staging, Inno compile -- and attaches it to a
+# GitHub Release with a SHA-256 receipt. The tag must match pubspec's
+# version; drift fails the run instead of shipping a mislabeled artifact.
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  installer:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # The engine repo, checked out beside the app payload. Its
+      # packaging/flywheel-gateway.spec builds the frozen gateway the
+      # installer ships as {app}\engine.
+      - uses: actions/checkout@v4
+        with:
+          repository: HarperZ9/local-model
+          path: engine-repo
+
+      - name: Gate | tag matches pubspec version
+        shell: pwsh
+        run: |
+          $tag = "${{ github.ref_name }}".TrimStart("v")
+          $line = (Get-Content pubspec.yaml | Where-Object { $_ -match '^version:' } | Select-Object -First 1)
+          $pub = ($line -replace 'version:\s*', '' -split '\+')[0].Trim()
+          if ($tag -ne $pub) {
+            throw "tag v$tag does not match pubspec version $pub -- refusing to ship a mislabeled artifact"
+          }
+          Write-Output "version gate: tag v$tag == pubspec $pub"
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: 3.44.6
+          cache: true
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install PyInstaller
+        run: python -m pip install pyinstaller==6.21.0
+
+      - name: Ensure Inno Setup
+        shell: pwsh
+        run: |
+          $iscc = @(
+            "C:\Program Files (x86)\Inno Setup 6\ISCC.exe",
+            "C:\Program Files\Inno Setup 6\ISCC.exe"
+          ) | Where-Object { Test-Path $_ } | Select-Object -First 1
+          if (-not $iscc) { choco install innosetup -y --no-progress }
+
+      - name: Gates + build + package
+        shell: pwsh
+        run: |
+          flutter analyze
+          if ($LASTEXITCODE -ne 0) { throw "analyze failed" }
+          flutter test
+          if ($LASTEXITCODE -ne 0) { throw "tests failed" }
+          powershell -NoProfile -ExecutionPolicy Bypass -File scripts\build_installer.ps1 -EngineRepo engine-repo
+
+      - name: SHA-256 receipt
+        shell: pwsh
+        run: |
+          $exe = Get-ChildItem build\installer\Flywheel-Setup-*.exe | Select-Object -First 1
+          $hash = (Get-FileHash $exe.FullName -Algorithm SHA256).Hash.ToLower()
+          "$hash  $($exe.Name)" | Out-File -Encoding ascii build\installer\SHA256SUMS.txt
+          Get-Content build\installer\SHA256SUMS.txt
+
+      - name: Publish GitHub Release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${{ github.ref_name }}" `
+            (Get-ChildItem build\installer\Flywheel-Setup-*.exe).FullName `
+            build\installer\SHA256SUMS.txt `
+            --title "Flywheel ${{ github.ref_name }}" `
+            --generate-notes `
+            --verify-tag
