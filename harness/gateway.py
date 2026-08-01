@@ -271,6 +271,31 @@ def _unified_roster() -> dict:
         return {"error": f"unified_roster failed: {e}"}
 
 
+def _forum_mcp_call(tool: str, args: dict) -> dict:
+    """Call one forum MCP tool, gracefully degraded.
+
+    Spawns the forum lane's MCP server, calls the named tool, and returns the
+    parsed JSON. If the forum lane is down or slow, returns an honest error
+    dict so the desktop view can render a 'forum offline' state.
+    """
+    from harness.mcp_client import MCPClient, MCPError
+    from harness.lanes import resolve_mcp_command
+    try:
+        command = resolve_mcp_command("forum")
+        with MCPClient(command, timeout=20, client_name="flywheel-forum-proxy") as c:
+            c.start()
+            res = c.call_text(tool, args)
+            if not res["ok"]:
+                return {"error": f"forum {tool} error: {res['text'][:200]}"}
+            import json as _json
+            try:
+                return _json.loads(res["text"])
+            except _json.JSONDecodeError:
+                return {"raw": res["text"][:500]}
+    except (MCPError, FileNotFoundError, OSError) as e:
+        return {"error": f"forum lane unavailable: {e}"}
+
+
 def _projected_world(root: Path) -> dict:
     """The full projected world (world.py: roster + findings + cursor, root-hashed).
     Falls back to the inline v0 receipt catalog if world.py is unavailable."""
@@ -1067,6 +1092,14 @@ class _Handler(BaseHTTPRequestHandler):
             from harness.lanes import lane_roster
             probe = "probe=true" in qs or "probe=1" in qs
             return self._json(lane_roster(probe=probe))
+        if p == "/api/forum/status":                  # forum lane status (via MCP)
+            return self._json(_forum_mcp_call("forum.status", {}))
+        if p == "/api/forum/ledger":                  # forum ledger summary
+            return self._json(_forum_mcp_call("forum.ledger.summary", {}))
+        if p == "/api/forum/gates":                   # pending approval gates
+            return self._json(_forum_mcp_call("gate_list", {}))
+        if p == "/api/forum/run-room":                # the current run room snapshot
+            return self._json(_forum_mcp_call("forum.run.room", {}))
         if p == "/api/training/status":
             return self._json(_training_status(self.run_root))
         if p == "/api/train/duel":                    # verified-inference duel summary (read-only)
