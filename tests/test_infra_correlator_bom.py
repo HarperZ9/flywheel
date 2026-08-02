@@ -45,6 +45,24 @@ def test_correlated_receipt_sealed():
     assert len(r["seal_hash"]) == 64
 
 
+def test_correlate_detects_statistical_anomaly():
+    """A spike in metric samples should trigger statistical anomaly detection."""
+    # Normal baseline of 10 values around 50, then a spike to 200
+    samples = [50.0, 48.0, 52.0, 49.0, 51.0, 50.0, 200.0]
+    events = correlate(metric_samples={"CpuUsage": samples}, run_id="test")
+    anomaly_events = [e for e in events if e.detection == "statistical-anomaly"]
+    assert len(anomaly_events) >= 1
+    assert "CpuUsage" in anomaly_events[0].detail
+
+
+def test_correlate_detects_changepoint():
+    """A clear mean shift should produce a changepoint detection."""
+    samples = [1.0] * 20 + [50.0] * 20
+    events = correlate(metric_samples={"NetworkConnectionRate": samples}, run_id="test")
+    cp_events = [e for e in events if e.detection == "behavioral-changepoint"]
+    assert len(cp_events) >= 1
+
+
 # --- incident sheet (Family 4) -------------------------------------------
 
 from harness.infra.incident_sheet import (

@@ -77,12 +77,15 @@ def correlate(
     tool_calls: list[dict[str, Any]] | None = None,
     egress_events: list[dict[str, Any]] | None = None,
     credential_findings: list[dict[str, Any]] | None = None,
+    metric_samples: dict[str, list[float]] | None = None,
     run_id: str = "infra-correlate",
 ) -> list[CorrelatedEvent]:
     """Correlate events across layers and return detections.
 
-    This is a heuristic correlator (not a ML model). It looks for the
-    signatures defined in DETECTIONS across the provided event streams.
+    Uses heuristic signatures by default. When metric_samples are provided,
+    uses statistical anomaly detection (z-score) from native_detect to score
+    deviations from normal behavior. When the native C++ extension is compiled,
+    this is accelerated; otherwise the pure-Python path runs.
     """
     tool_calls = tool_calls or []
     egress_events = egress_events or []
@@ -129,6 +132,62 @@ def correlate(
             evidence_refs=[{"layer": "tool-call", "ref": tc.get("source", "")}
                            for tc in error_calls[:5]],
         ))
+
+    # Statistical anomaly detection (when metric samples are provided)
+    if metric_samples:
+        events.extend(_statistical_detections(metric_samples, run_id))
+
+    return events
+
+
+def _statistical_detections(
+    metric_samples: dict[str, list[float]], run_id: str,
+) -> list[CorrelatedEvent]:
+    """Run statistical anomaly detection on metric time series.
+
+    Uses the native_detect module (pure-Python or native C++). Detects
+    anomalies via z-score against a rolling baseline, and changepoints via PELT.
+    """
+    from .native_detect import BaselineBuilder, AnomalyScorer, pelt
+
+    events: list[CorrelatedEvent] = []
+    builder = BaselineBuilder()
+    scorer = AnomalyScorer()
+
+    for metric, samples in metric_samples.items():
+        if len(samples) < 5:
+            continue  # need enough data for a baseline
+
+        # Build baseline from first 2/3 of samples
+        split = max(3, int(len(samples) * 0.67))
+        for v in samples[:split]:
+            builder.add_sample(metric, v)
+        baseline = builder.build(metric)
+        if baseline is None:
+            continue
+
+        # Score the remaining samples for anomalies
+        for v in samples[split:]:
+            score = scorer.score(v, baseline, threshold=3.0)
+            if score.is_anomalous:
+                events.append(CorrelatedEvent(
+                    run_id=run_id, detection="statistical-anomaly",
+                    severity="high" if score.severity > 0.75 else "moderate",
+                    detail=f"{metric}={v:.1f} anomalous "
+                           f"(z={score.z_score:.2f}, baseline mean={baseline.mean:.1f})",
+                    evidence_refs=[{"layer": "metrics", "ref": metric}],
+                ))
+
+        # Changepoint detection on the full series
+        cps = pelt(samples, penalty=len(samples) * 0.5)
+        if cps:
+            events.append(CorrelatedEvent(
+                run_id=run_id, detection="behavioral-changepoint",
+                severity="moderate",
+                detail=f"{len(cps)} changepoint(s) in {metric} "
+                       f"at indices {[c.index for c in cps[:5]]}",
+                evidence_refs=[{"layer": "metrics", "ref": metric}],
+            ))
 
     return events
 

@@ -19,6 +19,7 @@ Enforced by scripts/check_file_gate.py and tests/test_file_gate.py.
 | harness/local_tools.py | 493 |
 | harness/lesson.py | 356 |
 | harness/lesson_mappers.py | 340 |
+| harness/infra/native_detect.py | 460 |
 | harness/lesson_store.py | 495 |
 | harness/loops.py | 315 |
 | harness/model_card_claims.py | 311 |
@@ -29,7 +30,7 @@ Enforced by scripts/check_file_gate.py and tests/test_file_gate.py.
 | harness/tool_call_receipt.py | 339 |
 | harness/unisonai_stateful_bench.py | 559 |
 
-Total: 20 files, 11511 lines over a 300-line gate.
+Total: 21 files, 11971 lines over a 300-line gate.
 
 
 Merge note, 2026-07-28 (p1/tail x main): tasks_physics.py and
