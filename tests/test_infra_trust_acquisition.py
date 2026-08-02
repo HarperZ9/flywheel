@@ -100,7 +100,8 @@ def test_default_model_names_adversary_paths():
 
 def test_build_manifest_creates_sealed_object(tmp_path: Path):
     evidence = tmp_path / "log.txt"
-    evidence.write_text("important evidence\n", encoding="utf-8")
+    content = b"important evidence\n"
+    evidence.write_bytes(content)
     m = build_manifest(
         source_path=str(evidence),
         collector="analyst-alice",
@@ -110,7 +111,7 @@ def test_build_manifest_creates_sealed_object(tmp_path: Path):
     assert m["acquisition_id"].startswith("acq-")
     assert len(m["seal"]) == 64
     assert m["source"]["sha256"] != ""
-    assert m["source"]["byte_count"] == len(b"important evidence\n")
+    assert m["source"]["byte_count"] == len(content)
     assert m["collector"] == "analyst-alice"
 
 
