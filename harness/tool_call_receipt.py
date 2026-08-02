@@ -1,4 +1,4 @@
-"""tool_call_receipt.py — sealed, content-addressed receipt per agent tool call.
+"""tool_call_receipt.py -- sealed, content-addressed receipt per agent tool call.
 
 Extends the model-boundary-receipt discipline to every tool invocation in the
 agent loop. Each call through ToolExecutor.execute() emits one sealed JSON
@@ -81,7 +81,7 @@ def _seal_receipt(receipt: dict[str, Any]) -> None:
     """Seal a receipt in place: blank seal.hex, fix algorithm, hash canonical bytes.
 
     Mutates seal.hex in place (not reassign) so the seal key's already-correct
-    position in the fixed-order dict is preserved regardless of call order —
+    position in the fixed-order dict is preserved regardless of call order --
     same idiom as model_shim.py.
     """
     receipt["seal"]["algorithm"] = "sha256"
@@ -106,12 +106,20 @@ def build_receipt(
     seq: int,
     prev_receipt_sha256: str = "",
     outcome: str = COMPLETED,
+    rationale: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Build a sealed tool-call receipt dict from the witnessed call facts.
 
     ``args`` and ``output`` are hashed (sha256 + byte count); the receipt never
     carries raw content. The receipt is built in the fixed schema field order
     so the canonical form is stable across Python/Rust.
+
+    ``rationale`` is optional and null by default (honest null). When present,
+    it carries the typed decision-rationale block: ``{stated_intent,
+    options_considered, chosen_option, confidence}``. The block is sealed into
+    the receipt, so the rationale is re-verifiable, not asserted. A receipt
+    without rationale is byte-identical to a receipt built before this field
+    existed (backward-compatible: the field is absent, not null-padded).
     """
     args_bytes = json.dumps(args, sort_keys=True, ensure_ascii=False).encode("utf-8") if args else b""
     output_bytes = (output or "").encode("utf-8")
@@ -131,14 +139,47 @@ def build_receipt(
         "outcome": outcome,
         "seal": {"algorithm": "sha256", "hex": ""},
     }
+    # Rationale is optional. When present, it is inserted before the seal block
+    # so it is part of the sealed body. Absent rationale keeps the receipt
+    # byte-identical to the pre-rationale schema (backward-compatible).
+    if rationale is not None:
+        receipt["rationale"] = _normalize_rationale(rationale)
     _seal_receipt(receipt)
     return receipt
+
+
+# The typed rationale block. Each field is a string (no floats in the schema).
+_RATIONALE_FIELDS = ("stated_intent", "options_considered", "chosen_option", "confidence")
+
+
+def _normalize_rationale(rationale: dict[str, Any]) -> dict[str, Any]:
+    """Normalize a rationale dict to the fixed schema shape.
+
+    options_considered is a list of strings. The rest are strings. Unknown
+    fields are dropped (additionalProperties: false, same discipline as the
+    organ-bundle spine).
+    """
+    if not isinstance(rationale, dict):
+        raise ValueError("rationale must be a dict or None")
+    normalized: dict[str, Any] = {}
+    for field in _RATIONALE_FIELDS:
+        val = rationale.get(field)
+        if field == "options_considered":
+            if isinstance(val, list):
+                normalized[field] = [str(v) for v in val]
+            elif val is None:
+                normalized[field] = []
+            else:
+                normalized[field] = [str(val)]
+        else:
+            normalized[field] = str(val) if val is not None else ""
+    return normalized
 
 
 def emit_receipt(receipt: dict[str, Any], receipt_dir: Path, *, nonce: str = "") -> Path | None:
     """Write one sealed receipt to ``receipt_dir``. Never raises.
 
-    Any failure (bad dir, permission) is logged to stderr and swallowed —
+    Any failure (bad dir, permission) is logged to stderr and swallowed --
     emission must never block or break the tool-call path. Returns the path
     written, or None on failure. Same idiom as model_shim._emit_receipt.
     """
@@ -154,7 +195,7 @@ def emit_receipt(receipt: dict[str, Any], receipt_dir: Path, *, nonce: str = "")
             encoding="utf-8",
         )
         return path
-    except Exception as exc:  # noqa: BLE001 — emission must never break the call path
+    except Exception as exc:  # noqa: BLE001 -- emission must never break the call path
         print(f"tool-call-receipt: emission failed (non-fatal): {exc}", file=sys.stderr)
         return None
 
@@ -221,13 +262,31 @@ def verify_receipt(receipt: dict[str, Any]) -> dict[str, Any]:
     if outcome == BLOCKED and ok_str != "false":
         return _fail("FIELD_CONTRACT_VIOLATION", "outcome BLOCKED but ok is not false")
 
-    return {
+    # Optional rationale block: if present, it must be a dict with exactly the
+    # typed fields. The seal already bound it (checked first), so this is a
+    # structural check, not a re-seal.
+    rationale = receipt.get("rationale")
+    if rationale is not None:
+        if not isinstance(rationale, dict):
+            return _fail("FIELD_CONTRACT_VIOLATION", "rationale is present but not an object")
+        if set(rationale.keys()) != set(_RATIONALE_FIELDS):
+            return _fail(
+                "FIELD_CONTRACT_VIOLATION",
+                f"rationale fields {set(rationale.keys())} != {_RATIONALE_FIELDS}",
+            )
+        if not isinstance(rationale.get("options_considered"), list):
+            return _fail("FIELD_CONTRACT_VIOLATION", "rationale.options_considered is not a list")
+
+    result = {
         "schema": SCHEMA,
         "verdict": MATCH,
         "source": receipt.get("source", ""),
         "outcome": outcome,
         "seal": {"algorithm": "sha256", "hex": stored_hex},
     }
+    if rationale is not None:
+        result["has_rationale"] = True
+    return result
 
 
 def _fail(failure_class: str, detail: str) -> dict[str, Any]:

@@ -43,7 +43,7 @@ def test_build_receipt_produces_sealed_object():
     assert r["source"] == "tool:run-abc:1"
     assert r["seal"]["algorithm"] == "sha256"
     assert len(r["seal"]["hex"]) == 64
-    assert r["ok"] == "true"  # string, not bool — no floats in the schema
+    assert r["ok"] == "true"  # string, not bool -- no floats in the schema
 
 
 def test_seal_round_trips():
@@ -93,7 +93,7 @@ def test_malformed_digest_is_caught():
     r = _sample_receipt()
     # re-seal after tamper so the seal check passes, then corrupt a digest
     r["output"]["sha256"] = "short"
-    # need to re-seal to get past seal check — but the digest check comes after
+    # need to re-seal to get past seal check -- but the digest check comes after
     # so manually re-seal
     from harness.tool_call_receipt import _canonical_bytes, _sha256_hex
     probe = dict(r)
@@ -160,3 +160,121 @@ def test_chain_detects_broken_link():
     r1 = _sample_receipt(seq=1, prev_receipt_sha256="deadbeef" + "0" * 56)
     result = verify_chain([r0, r1])
     assert result["verdict"] == TAMPERED
+
+
+# --- typed rationale capture -----------------------------------------------
+
+
+def _rationality_receipt(**overrides) -> dict:
+    defaults = dict(
+        tool="edit_file",
+        capability="builtin-write",
+        admission="ALLOWED",
+        args={"path": "/tmp/x.txt", "content": "new"},
+        output="ok",
+        ok=True,
+        rc=0,
+        run_id="run-rat",
+        seq=1,
+        prev_receipt_sha256="",
+        outcome=COMPLETED,
+        rationale={
+            "stated_intent": "apply config patch to /tmp/x.txt",
+            "options_considered": ["patch", "rebuild", "skip"],
+            "chosen_option": "patch",
+            "confidence": "moderate",
+        },
+    )
+    defaults.update(overrides)
+    return build_receipt(**defaults)
+
+
+def test_receipt_without_rationale_is_backward_compatible():
+    """A receipt built without rationale has no 'rationale' key at all."""
+    r = _sample_receipt()
+    assert "rationale" not in r
+    v = verify_receipt(r)
+    assert v["verdict"] == MATCH
+
+
+def test_receipt_with_rationale_carries_the_block():
+    r = _rationality_receipt()
+    assert "rationale" in r
+    assert r["rationale"]["chosen_option"] == "patch"
+    assert r["rationale"]["options_considered"] == ["patch", "rebuild", "skip"]
+
+
+def test_receipt_with_rationale_verifies():
+    r = _rationality_receipt()
+    v = verify_receipt(r)
+    assert v["verdict"] == MATCH
+    assert v.get("has_rationale") is True
+
+
+def test_receipt_without_rationale_has_no_has_rationale_flag():
+    r = _sample_receipt()
+    v = verify_receipt(r)
+    assert "has_rationale" not in v
+
+
+def test_rationale_is_sealed_into_the_receipt():
+    """Tampering the rationale after sealing breaks the seal."""
+    r = _rationality_receipt()
+    r["rationale"]["chosen_option"] = "skip"  # tampered
+    v = verify_receipt(r)
+    assert v["verdict"] == TAMPERED
+    assert v["failure_class"] == "SEAL_MISMATCH"
+
+
+def test_rationale_changes_the_seal():
+    """Different rationale produces a different seal hash."""
+    r1 = _rationality_receipt(rationale={
+        "stated_intent": "patch", "options_considered": ["patch"],
+        "chosen_option": "patch", "confidence": "high"})
+    r2 = _rationality_receipt(rationale={
+        "stated_intent": "rebuild", "options_considered": ["rebuild"],
+        "chosen_option": "rebuild", "confidence": "high"})
+    assert r1["seal"]["hex"] != r2["seal"]["hex"]
+
+
+def test_rationale_normalizes_unknown_fields():
+    """Unknown fields are dropped (additionalProperties: false)."""
+    r = build_receipt(
+        tool="t", capability="builtin-read", admission="ALLOWED",
+        args=None, output="ok", ok=True, rc=0, run_id="r", seq=0,
+        rationale={"stated_intent": "x", "bogus": "dropped"},
+    )
+    assert "bogus" not in r["rationale"]
+    assert set(r["rationale"].keys()) == {
+        "stated_intent", "options_considered", "chosen_option", "confidence"}
+
+
+def test_rationale_normalizes_options_considered_to_list():
+    r = build_receipt(
+        tool="t", capability="builtin-read", admission="ALLOWED",
+        args=None, output="ok", ok=True, rc=0, run_id="r", seq=0,
+        rationale={"stated_intent": "x", "options_considered": "single"},
+    )
+    assert r["rationale"]["options_considered"] == ["single"]
+
+
+def test_rationale_with_wrong_fields_fails_verification():
+    """A rationale with wrong fields (after sealing) fails structural check."""
+    r = _rationality_receipt()
+    # Re-seal with a tampered rationale to pass the seal check, then test structure
+    r["rationale"] = {"wrong": "shape"}
+    from harness.tool_call_receipt import _canonical_bytes, _sha256_hex, _seal_receipt
+    _seal_receipt(r)
+    v = verify_receipt(r)
+    assert v["verdict"] == UNVERIFIABLE
+    assert "rationale fields" in v.get("detail", "")
+
+
+def test_rationale_not_dict_raises():
+    import pytest
+    with pytest.raises(ValueError):
+        build_receipt(
+            tool="t", capability="builtin-read", admission="ALLOWED",
+            args=None, output="ok", ok=True, rc=0, run_id="r", seq=0,
+            rationale="not a dict",
+        )
