@@ -30,7 +30,7 @@ def test_crypto_available():
 
 def test_generate_keypair():
     priv, pub = generate_keypair()
-    assert len(priv) > 100  # PEM or base64
+    assert len(priv) > 30  # PEM (cryptography) or base64 (pynacl)
     assert len(pub) > 30
 
 
