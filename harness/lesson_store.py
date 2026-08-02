@@ -31,6 +31,9 @@ from typing import Any
 from .lesson import (
     GENESIS_HASH,
     MATCH,
+    STATUS_ADMITTED,
+    STATUS_APPLIED,
+    STATUS_RETIRED,
     STATUS_SURFACED,
     build_lesson,
     derive_confidence,
@@ -159,6 +162,64 @@ class LessonStore:
         """
         lesson = build_lesson(**kwargs)
         return self.append(lesson)
+
+    # --- transitions (append-only journal) ----------------------------
+
+    # Allowed status transitions. A retired lesson is terminal.
+    _ALLOWED_TRANSITIONS: dict[str, frozenset[str]] = {
+        STATUS_SURFACED: frozenset({STATUS_ADMITTED, STATUS_RETIRED}),
+        STATUS_ADMITTED: frozenset({STATUS_APPLIED, STATUS_RETIRED}),
+        STATUS_APPLIED: frozenset({STATUS_RETIRED}),
+        STATUS_RETIRED: frozenset(),  # terminal
+    }
+
+    def latest_for(self, lesson_id: str) -> dict[str, Any] | None:
+        """Return the most recent row for a content-addressed lesson_id.
+
+        Since transitions append new rows with the same lesson_id (same
+        seal_hash), this finds the last one in chain order, which carries the
+        current status.
+        """
+        for lesson in reversed(self._lessons):
+            if lesson.get("lesson_id") == lesson_id:
+                return lesson
+        return None
+
+    def transition(
+        self, lesson_id: str, new_status: str,
+    ) -> dict[str, Any]:
+        """Append a status transition as a new row (append-only discipline).
+
+        Finds the latest row with the given lesson_id, validates the transition
+        is legal, then appends a new row with the same seal_body (identical
+        content, identical lesson_id) but the new status. The chain still
+        verifies because the seal_hash reproduces (the content did not change).
+        Returns the new row, or raises ValueError on an illegal transition.
+        """
+        current = self.latest_for(lesson_id)
+        if current is None:
+            raise ValueError(f"no lesson with lesson_id {lesson_id[:16]}...")
+        old_status = current.get("status", STATUS_SURFACED)
+        allowed = self._ALLOWED_TRANSITIONS.get(old_status, frozenset())
+        if new_status not in allowed:
+            raise ValueError(
+                f"transition {old_status} -> {new_status} not allowed "
+                f"(allowed: {sorted(allowed) or 'terminal'})"
+            )
+        body = current.get("seal_body", {})
+        new_lesson = build_lesson(
+            kind=body.get("kind", "drift"),
+            source_organ=body.get("source_organ", "flywheel"),
+            source_refs=body.get("source_refs", []),
+            claim=body.get("claim", ""),
+            evidence_class=body.get("evidence_class", "single-instance"),
+            repetition_count=body.get("repetition_count", 1),
+            scope=body.get("scope", ""),
+            rationale=body.get("rationale"),
+            status=new_status,
+            created_at=current.get("created_at", ""),
+        )
+        return self.append(new_lesson)
 
     # --- queries -------------------------------------------------------
 

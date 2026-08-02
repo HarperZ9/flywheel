@@ -12,14 +12,14 @@ Enforced by scripts/check_file_gate.py and tests/test_file_gate.py.
 | harness/classifier_friction_bench.py | 454 |
 | harness/cross_harness_manifest.py | 342 |
 | harness/endpoints.py | 492 |
-| harness/gateway.py | 2477 |
+| harness/gateway.py | 2517 |
 | harness/governed_agent_bench.py | 734 |
 | harness/lanes.py | 361 |
 | harness/local_agent.py | 360 |
 | harness/local_tools.py | 493 |
 | harness/lesson.py | 356 |
 | harness/lesson_mappers.py | 340 |
-| harness/lesson_store.py | 434 |
+| harness/lesson_store.py | 495 |
 | harness/loops.py | 315 |
 | harness/model_card_claims.py | 311 |
 | harness/serve.py | 420 |
@@ -29,7 +29,7 @@ Enforced by scripts/check_file_gate.py and tests/test_file_gate.py.
 | harness/tool_call_receipt.py | 339 |
 | harness/unisonai_stateful_bench.py | 559 |
 
-Total: 20 files, 11371 lines over a 300-line gate.
+Total: 20 files, 11511 lines over a 300-line gate.
 
 
 Merge note, 2026-07-28 (p1/tail x main): tasks_physics.py and
