@@ -38,8 +38,8 @@ evidence is gone.
           mappers (derive lessons from divergences)
           ┌───────┴──────────────┴──────────────┴────┐
           │ intent_outcome_lessons()  (shipped)      │
-          │ drift_lessons()           (follow-up)    │
-          │ misconception_lessons()   (follow-up)    │
+          │ drift_lessons()           (shipped)      │
+          │ misconception_lessons()   (shipped)      │
           └──────────────────┬───────────────────────┘
                              │
                   LessonStore (append-only, hash-chained)
@@ -88,13 +88,14 @@ seal reproduces AND the chain links hold.
 | Seam | What it witnesses | Mapper status |
 |---|---|---|
 | accountable-surface `ActuationOutcome` | intent vs outcome per action (allowed but failed / rolled back) | **shipped** |
-| mneme drift | a memory whose source changed under it | follow-up |
-| learn misconceptions | graded failures aggregated per operator | follow-up |
+| mneme drift | a memory whose source changed under it | **shipped** |
+| learn misconceptions | graded failures aggregated per operator | **shipped** |
 
-The first mapper is proven end-to-end. It reads accountable-surface's
-`ActuationOutcome`, derives a lesson when an allowed action failed or rolled
-back (the intent-vs-outcome divergence), and seals it. A clean run produces zero
-lessons: the absence is meaningful, not a gap.
+All three mappers are proven end-to-end. Each derives a lesson only from a
+divergence, and a clean run produces zero lessons: the absence is meaningful,
+not a gap. The intent-outcome mapper projects accountable-surface's grounding
+into the rationale block; the drift and misconception mappers carry a null
+rationale (neither flagship records decision rationale today).
 
 ## The feedback edge
 
@@ -112,16 +113,16 @@ deploy without an explicit yes") both hold.
 ## The honest-null rationale discipline
 
 The "why did the agent do this?" layer requires capturing decision rationale.
-Today the engine's session ledger records the conversation, and tool-call
-receipts record capability + args + output, but neither carries a typed
-rationale field. The lesson schema supports a rationale block, and the
-intent-outcome mapper projects accountable-surface's `Grounding` into it when
-present. When the grounding is absent, the rationale is `null` and stays `null`
-through round-trip. A null rationale is honest, never filled with a guess.
-
-Wiring typed rationale capture at the engine chokepoint (extending
-`tool_call_receipt.py` with the optional rationale block) is a follow-up. The
-lesson schema is ready for it.
+The engine's tool-call receipts now carry an optional typed rationale block
+(`tool_call_receipt.py`): `{stated_intent, options_considered, chosen_option,
+confidence}`, sealed into the receipt so the rationale is re-verifiable, not
+asserted. A receipt without rationale is byte-identical to a pre-rationale
+receipt (backward-compatible), so the cross-language golden fixture still
+reproduces. The intent-outcome mapper projects accountable-surface's `Grounding`
+into the lesson's rationale block when present. When the grounding is absent, or
+for the drift and misconception mappers (which read flagships that do not record
+rationale), the rationale is `null` and stays `null` through round-trip. A null
+rationale is honest, never filled with a guess.
 
 ## The organ-bundle spine
 
@@ -144,19 +145,23 @@ envelopes, and learn receipts.
 - The lesson record (`harness/lesson.py`): sealed, chain-linked, re-verifiable.
 - The lesson store (`harness/lesson_store.py`): append-only, patterns, verify,
   persistence.
-- The intent-outcome mapper (`harness/lesson_mappers.py`): reads
-  accountable-surface, derives lessons from divergences.
+- Three mappers (`harness/lesson_mappers.py`):
+  - intent-outcome (reads accountable-surface, derives lessons from divergences)
+  - drift (reads mneme drift report, derives lessons from DRIFT / UNVERIFIABLE)
+  - misconception (reads learn misconceptions, derives cross-operator lessons)
+- Typed rationale capture on tool-call receipts (`harness/tool_call_receipt.py`):
+  optional sealed block, backward-compatible.
 - The spine entry (`harness/lesson_interop.py`): maps lessons to organ-bundle
   entries, validated against proof-surface.
 - The gateway surface: `/api/lessons`, `/api/lessons/patterns`.
 - The `learn-lesson` receipt kind in proof-surface.
 
 **Deferred to follow-ups:**
-- The drift mapper (mneme drift -> lesson).
-- The misconception mapper (learn misconceptions -> cross-operator lesson).
-- Typed rationale capture at the engine chokepoint.
 - Sophisticated pattern detection (semantic clustering, temporal decay).
 - A desktop view (`lessons_view.dart`).
+- Wiring rationale capture into the agent loop's `ToolExecutor.execute()`
+  chokepoint (the schema and `build_receipt` support it; the loop does not yet
+  populate it automatically).
 
 ## Verification
 
