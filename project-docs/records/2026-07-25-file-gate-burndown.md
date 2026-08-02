@@ -18,6 +18,7 @@ Enforced by scripts/check_file_gate.py and tests/test_file_gate.py.
 | harness/local_agent.py | 360 |
 | harness/local_tools.py | 454 |
 | harness/lesson.py | 356 |
+| harness/lesson_mappers.py | 340 |
 | harness/loops.py | 315 |
 | harness/model_card_claims.py | 311 |
 | harness/serve.py | 420 |
