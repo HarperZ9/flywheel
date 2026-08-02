@@ -79,3 +79,10 @@ scripts/.private-denylist.txt
 # The walker's stderr, kept so a silent startup death is visible. Tracebacks
 # carry absolute local paths, so this stays local and never becomes evidence.
 artifacts/pool/walker-stderr.log
+
+# Task 0 keeps two public-safe fixtures; later bootstrap diagnostics stay local.
+artifacts/closeout/FW-2026-08-02-CLOSEOUT/task-0-bootstrap/*
+!artifacts/closeout/FW-2026-08-02-CLOSEOUT/task-0-bootstrap/passing-fixture/
+!artifacts/closeout/FW-2026-08-02-CLOSEOUT/task-0-bootstrap/passing-fixture/**
+!artifacts/closeout/FW-2026-08-02-CLOSEOUT/task-0-bootstrap/failing-fixture/
+!artifacts/closeout/FW-2026-08-02-CLOSEOUT/task-0-bootstrap/failing-fixture/**
