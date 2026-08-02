@@ -1100,6 +1100,18 @@ class _Handler(BaseHTTPRequestHandler):
             return self._json(_forum_mcp_call("gate_list", {}))
         if p == "/api/forum/run-room":                # the current run room snapshot
             return self._json(_forum_mcp_call("forum.run.room", {}))
+        if p == "/api/lessons":                       # the organizational learning loop
+            from harness.lesson_store import LessonStore
+            store = LessonStore.load(Path(self.run_root) / "lessons.jsonl")
+            return self._json({
+                "n": len(store),
+                "improvement_feed": store.improvement_feed(),
+                "verify": store.verify(),
+            })
+        if p == "/api/lessons/patterns":              # recurring patterns for human admission
+            from harness.lesson_store import LessonStore
+            store = LessonStore.load(Path(self.run_root) / "lessons.jsonl")
+            return self._json({"patterns": [p.to_dict() for p in store.patterns()]})
         if p == "/api/training/status":
             return self._json(_training_status(self.run_root))
         if p == "/api/train/duel":                    # verified-inference duel summary (read-only)
