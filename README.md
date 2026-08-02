@@ -112,6 +112,9 @@ python scripts/run_harness_cli.py app --port 8799
 
 - [QUICKSTART.md](QUICKSTART.md): first ten minutes
 - [WALKTHROUGH.md](WALKTHROUGH.md): guided tour
+- [docs/LESSON-LOOP.md](docs/LESSON-LOOP.md): the organizational learning loop (architecture)
+- [docs/GUIDE-LESSON-LOOP.md](docs/GUIDE-LESSON-LOOP.md): the organizational learning loop (full guide and spec)
+- [docs/ASSESSMENT-AGENTIC-SECURITY-2026-08.md](docs/ASSESSMENT-AGENTIC-SECURITY-2026-08.md): Flywheel against the July 2026 agentic security convergence
 - [CREDO.md](CREDO.md): the belief
 
 ## License
