@@ -12,8 +12,8 @@
     "A recorded zero exit code does not prove command correctness.",
     "This receipt does not prove exhaustive coverage, cross-system reproducibility, or absence of unobserved side effects."
   ],
-  "duration_ms": 90,
-  "ended_utc": "2026-08-02T19:06:08.928Z",
+  "duration_ms": 95,
+  "ended_utc": "2026-08-02T19:19:51.269Z",
   "environment_variable_names": [
     "ALEPH_HOME",
     "ALLUSERSPROFILE",
@@ -85,9 +85,9 @@
     "values_serialized": false
   },
   "schema": "flywheel.acceptance-command/v1",
-  "source_head": "9c7d86c53e33ecdedd27282a6861592eddebd3a0",
+  "source_head": "84685ff1eb1db15f45a8bd6e30b1fe0a9e63c0ec",
   "source_repository": "flywheel",
-  "started_utc": "2026-08-02T19:06:08.837Z",
+  "started_utc": "2026-08-02T19:19:51.172Z",
   "stderr": {
     "bytes": 0,
     "observed_bytes": 0,

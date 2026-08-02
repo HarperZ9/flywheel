@@ -201,3 +201,54 @@ def test_existing_receipt_tree_is_never_overwritten(tmp_path):
     assert recorder.main([*args, "--argv-json", json.dumps([sys.executable, "-c", "print('second')"])]) == 2
     _receipt, stdout, _stderr = _read_tree(receipt_dir)
     assert stdout.decode().splitlines() == ["first"]
+
+
+def test_git_commits_fixture_streams_as_receipt_hashed_bytes(tmp_path):
+    clone = tmp_path / "fixture-commit"
+    clone.mkdir()
+    subprocess.run(["git", "init", "-q", str(clone)], check=True)
+    subprocess.run(["git", "-C", str(clone), "config", "core.autocrlf", "true"], check=True)
+    subprocess.run(["git", "-C", str(clone), "config", "user.email", "fixture@example.invalid"], check=True)
+    subprocess.run(["git", "-C", str(clone), "config", "user.name", "Fixture Test"], check=True)
+    (clone / ".gitattributes").write_bytes((REPO_ROOT / ".gitattributes").read_bytes())
+    relative_root = Path("artifacts/closeout/FW-2026-08-02-CLOSEOUT/task-0-bootstrap")
+    fixture_paths: list[Path] = []
+    for name in ("passing-fixture", "failing-fixture"):
+        source = REPO_ROOT / relative_root / name
+        target = clone / relative_root / name
+        target.mkdir(parents=True)
+        for filename in ("receipt.json", "stdout.txt", "stderr.txt"):
+            (target / filename).write_bytes((source / filename).read_bytes())
+        fixture_paths.append(relative_root / name)
+    subprocess.run(["git", "-C", str(clone), "add", "."], check=True)
+    subprocess.run(["git", "-C", str(clone), "commit", "-q", "-m", "fixture"], check=True)
+
+    for fixture_path in fixture_paths:
+        receipt = json.loads((clone / fixture_path / "receipt.json").read_text(encoding="utf-8"))
+        for stream in ("stdout", "stderr"):
+            relative_stream = (fixture_path / receipt[stream]["path"]).as_posix()
+            committed = subprocess.check_output(["git", "-C", str(clone), "show", f"HEAD:{relative_stream}"])
+            expected = (REPO_ROOT / relative_stream).read_bytes()
+            assert committed == expected
+            assert len(committed) == receipt[stream]["bytes"]
+            assert hashlib.sha256(committed).hexdigest() == receipt[stream]["sha256"]
+
+
+def test_git_diff_check_accepts_exact_receipt_stream_bytes(tmp_path):
+    clone = tmp_path / "fixture-diff"
+    stream = clone / "artifacts/closeout/run/receipt/stdout.txt"
+    stream.parent.mkdir(parents=True)
+    subprocess.run(["git", "init", "-q", str(clone)], check=True)
+    subprocess.run(["git", "-C", str(clone), "config", "core.autocrlf", "true"], check=True)
+    (clone / ".gitattributes").write_bytes((REPO_ROOT / ".gitattributes").read_bytes())
+    stream.write_bytes(b"captured output\r\n")
+    subprocess.run(["git", "-C", str(clone), "add", "."], check=True)
+
+    result = subprocess.run(
+        ["git", "-C", str(clone), "diff", "--cached", "--check"],
+        text=True,
+        encoding="utf-8",
+        capture_output=True,
+    )
+
+    assert result.returncode == 0, result.stdout + result.stderr

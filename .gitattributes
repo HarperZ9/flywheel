@@ -6,3 +6,7 @@
 *.ps1 text eol=crlf
 *.cmd text eol=crlf
 *.bat text eol=crlf
+
+# Receipt hashes cover captured bytes, so Git must not normalize the streams.
+artifacts/closeout/**/stdout.txt -text -diff
+artifacts/closeout/**/stderr.txt -text -diff
