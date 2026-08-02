@@ -106,6 +106,15 @@ Each Pattern carries an `improvement_candidate` string in the same shape as
 `telemetry.efficiency_feed`, so the learning loop and the efficiency loop feed
 one admission pipeline.
 
+Two opt-in detection modes make the edge smarter:
+
+- `patterns_semantic()`: groups lessons whose claims share Jaccard token
+  overlap above a threshold (default 0.5). Catches near-match claims that exact
+  grouping misses, using union-find for transitive merging.
+- `patterns_temporal()`: decay-weights lessons by age (30-day half-life,
+  90-day cutoff). Recent patterns rank above stale ones; the `improvement_feed`
+  gains a `temporal=True` flag that uses decay-weighted ranking.
+
 The feedback edge surfaces candidates for human admission. It does not apply
 changes. The `loop_ledger` contract and the workspace rule ("no production
 deploy without an explicit yes") both hold.
@@ -118,9 +127,18 @@ The engine's tool-call receipts now carry an optional typed rationale block
 confidence}`, sealed into the receipt so the rationale is re-verifiable, not
 asserted. A receipt without rationale is byte-identical to a pre-rationale
 receipt (backward-compatible), so the cross-language golden fixture still
-reproduces. The intent-outcome mapper projects accountable-surface's `Grounding`
-into the lesson's rationale block when present. When the grounding is absent, or
-for the drift and misconception mappers (which read flagships that do not record
+reproduces.
+
+The agent loop auto-populates the rationale from the model's own pre-call prose:
+`parse_tool_calls(with_preamble=True)` extracts the reasoning text preceding
+each `TOOL` line, and `ToolExecutor.execute(rationale=...)` seals it into the
+receipt as `stated_intent`. The `chosen_option` is the tool name (a fact), and
+`confidence` is `"unknown"` (the model does not state it). When there is no
+preamble, the rationale stays `null`.
+
+The intent-outcome mapper projects accountable-surface's `Grounding` into the
+lesson's rationale block when present. When the grounding is absent, or for the
+drift and misconception mappers (which read flagships that do not record
 rationale), the rationale is `null` and stays `null` through round-trip. A null
 rationale is honest, never filled with a guess.
 
@@ -144,24 +162,28 @@ envelopes, and learn receipts.
 **Built (this layer):**
 - The lesson record (`harness/lesson.py`): sealed, chain-linked, re-verifiable.
 - The lesson store (`harness/lesson_store.py`): append-only, patterns, verify,
-  persistence.
+  persistence. Three detection modes: exact match (default), semantic
+  (Jaccard token overlap via union-find), and temporal (exponential decay
+  with a 30-day half-life and 90-day cutoff).
 - Three mappers (`harness/lesson_mappers.py`):
   - intent-outcome (reads accountable-surface, derives lessons from divergences)
   - drift (reads mneme drift report, derives lessons from DRIFT / UNVERIFIABLE)
   - misconception (reads learn misconceptions, derives cross-operator lessons)
 - Typed rationale capture on tool-call receipts (`harness/tool_call_receipt.py`):
-  optional sealed block, backward-compatible.
+  optional sealed block, backward-compatible. Auto-populated from the agent
+  loop: `parse_tool_calls(with_preamble=True)` extracts the model's pre-call
+  reasoning, and `ToolExecutor.execute(rationale=...)` seals it into the receipt.
 - The spine entry (`harness/lesson_interop.py`): maps lessons to organ-bundle
   entries, validated against proof-surface.
 - The gateway surface: `/api/lessons`, `/api/lessons/patterns`.
+- The desktop view (`desktop/lib/views/lessons_view.dart`): read-only Flutter
+  view in the side rail (group: Know, abbr: LE), rendering stats, chain
+  verdict, improvement candidates, and pattern details.
 - The `learn-lesson` receipt kind in proof-surface.
 
 **Deferred to follow-ups:**
-- Sophisticated pattern detection (semantic clustering, temporal decay).
-- A desktop view (`lessons_view.dart`).
-- Wiring rationale capture into the agent loop's `ToolExecutor.execute()`
-  chokepoint (the schema and `build_receipt` support it; the loop does not yet
-  populate it automatically).
+- Write-back from the desktop view (a POST route + form to admit/retire
+  lessons from the GUI).
 
 ## Verification
 
