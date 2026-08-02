@@ -44,6 +44,8 @@ class RunBOM:
     safeguards_removed: list[str] = field(default_factory=list)
     dependency_hashes: dict[str, str] = field(default_factory=dict)
     harness_version: str = ""
+    tadr_tier: str = ""  # TADR consequence tier: T1/T2/T3
+    tadr_modifiers: list[str] = field(default_factory=list)  # P/B/R/D/A/I/F/H/S/E/G/X
 
     def to_dict(self) -> dict[str, Any]:
         d: dict[str, Any] = {
@@ -71,6 +73,10 @@ class RunBOM:
             },
             "safeguards_removed": list(self.safeguards_removed),
             "dependency_hashes": dict(self.dependency_hashes),
+            "governance": {
+                "tadr_tier": self.tadr_tier,
+                "tadr_modifiers": list(self.tadr_modifiers),
+            } if self.tadr_tier else {},
         }
         return d
 

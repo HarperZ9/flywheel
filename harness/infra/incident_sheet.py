@@ -36,6 +36,8 @@ class IncidentSheet:
     notification_time: str = ""
     closure_time: str = ""
     notes: str = ""
+    tadr_tier: str = ""  # TADR consequence tier (separate from operational severity)
+    command_roles: dict[str, str] = field(default_factory=dict)  # role_name -> person
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -56,6 +58,8 @@ class IncidentSheet:
             "notification_time": self.notification_time,
             "closure_time": self.closure_time,
             "notes": self.notes,
+            "tadr_tier": self.tadr_tier,
+            "command_roles": dict(self.command_roles),
         }
 
     def link_related(self, other_id: str) -> None:

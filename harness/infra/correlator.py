@@ -53,6 +53,7 @@ class CorrelatedEvent:
     agent_action: str = ""
     evidence_refs: list[dict[str, str]] = field(default_factory=list)
     detail: str = ""
+    indicator_class: str = "Observation"  # TADR section 44: Observation/Report/Inference/Hypothesis/Assessment/Attribution
 
     def to_dict(self) -> dict[str, Any]:
         d = {
@@ -68,6 +69,7 @@ class CorrelatedEvent:
             "agent_action": self.agent_action,
             "evidence_refs": list(self.evidence_refs),
             "detail": self.detail,
+            "indicator_class": self.indicator_class,
         }
         return d
 

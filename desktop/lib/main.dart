@@ -24,6 +24,7 @@ import 'views/endpoints_view.dart';
 import 'views/family_view.dart';
 import 'views/feeds_view.dart';
 import 'views/graph_view.dart';
+import 'views/governance_view.dart';
 import 'views/lessons_view.dart';
 import 'views/instruments_view.dart';
 import 'views/lanes_view.dart';
@@ -175,6 +176,7 @@ class _FlywheelShellState extends State<FlywheelShell> {
     RailDestination('Discourse', abbr: 'DS', group: 'Know'),
     RailDestination('Academy', abbr: 'AY', group: 'Know'),
     RailDestination('Lessons', abbr: 'LE', group: 'Know'),
+    RailDestination('Governance', abbr: 'GV', group: 'Know'),
     RailDestination('Receipts', abbr: 'RC', group: 'Advanced'),
     RailDestination('Instruments', abbr: 'IS', group: 'Advanced'),
     RailDestination('Science', abbr: 'SC', group: 'Advanced'),
@@ -350,6 +352,8 @@ class _FlywheelShellState extends State<FlywheelShell> {
         return AcademyView(client: _client, alive: _gatewayAlive);
       case 'Lessons':
         return LessonsView(client: _client, alive: _gatewayAlive);
+      case 'Governance':
+        return GovernanceView(client: _client, alive: _gatewayAlive);
       case 'Receipts':
         final arg = _takeArg();
         return ReceiptsView(
