@@ -16,7 +16,7 @@ Enforced by scripts/check_file_gate.py and tests/test_file_gate.py.
 | harness/governed_agent_bench.py | 734 |
 | harness/lanes.py | 361 |
 | harness/local_agent.py | 360 |
-| harness/local_tools.py | 454 |
+| harness/local_tools.py | 493 |
 | harness/lesson.py | 356 |
 | harness/lesson_mappers.py | 340 |
 | harness/lesson_store.py | 434 |

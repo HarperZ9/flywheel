@@ -48,13 +48,16 @@ _TRANSFORMS = (
 )
 
 
-def rescue_tool_calls(text: str) -> tuple:
+def rescue_tool_calls(text: str, *, with_preamble: bool = False) -> tuple:
     """Parse strictly first; on failure, apply named transforms one at a
     time (cumulatively) until the strict parser accepts. Returns
     (calls, repairs) where each repair names its transform and shows the
-    original -- the witness a silent proxy never leaves."""
+    original -- the witness a silent proxy never leaves.
+
+    with_preamble is forwarded to parse_tool_calls; when True, each call is a
+    (name, args, preamble) triple."""
     from .local_tools import parse_tool_calls
-    calls = parse_tool_calls(text)
+    calls = parse_tool_calls(text, with_preamble=with_preamble)
     if calls:
         return calls, []
     current = text
@@ -63,7 +66,7 @@ def rescue_tool_calls(text: str) -> tuple:
         transformed = fn(current)
         if transformed == current:
             continue
-        attempt = parse_tool_calls(transformed)
+        attempt = parse_tool_calls(transformed, with_preamble=with_preamble)
         repairs.append({
             "transform": name,
             "original": current.strip()[:300],
