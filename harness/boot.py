@@ -52,6 +52,7 @@ class BootPacket:
     failure_code: str | None = None
     verdict: str = "MATCH"
     context_envelope: dict | None = None
+    governance_envelope: dict | None = None
 
     def to_dict(self) -> dict:
         return asdict(self)

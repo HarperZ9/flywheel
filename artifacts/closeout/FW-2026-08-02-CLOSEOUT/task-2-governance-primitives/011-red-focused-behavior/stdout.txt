@@ -1,0 +1,477 @@
+.....FF..........FFFF........FF...FFF.FFFFF.F....F..FFF..FFFFFFFFFFF.... [ 69%]
+...............................                                          [100%]
+================================== FAILURES ===================================
+_______________ test_no_inflation_rejects_unknown_tiers[T1-T9] ________________
+
+authorized = 'T1', requested = 'T9'
+
+    @pytest.mark.parametrize(
+        ("authorized", "requested"),
+        [("T9", "T1"), ("T1", "T9"), ("T9", "T9"), ("", "T1")],
+    )
+    def test_no_inflation_rejects_unknown_tiers(authorized, requested):
+>       assert enforce_no_tier_inflation(authorized, requested) is False
+E       AssertionError: assert True is False
+E        +  where True = enforce_no_tier_inflation('T1', 'T9')
+
+tests\test_governance_tadr.py:69: AssertionError
+_______________ test_no_inflation_rejects_unknown_tiers[T9-T9] ________________
+
+authorized = 'T9', requested = 'T9'
+
+    @pytest.mark.parametrize(
+        ("authorized", "requested"),
+        [("T9", "T1"), ("T1", "T9"), ("T9", "T9"), ("", "T1")],
+    )
+    def test_no_inflation_rejects_unknown_tiers(authorized, requested):
+>       assert enforce_no_tier_inflation(authorized, requested) is False
+E       AssertionError: assert True is False
+E        +  where True = enforce_no_tier_inflation('T9', 'T9')
+
+tests\test_governance_tadr.py:69: AssertionError
+___________________ test_classify_rejects_unknown_override ____________________
+
+    def test_classify_rejects_unknown_override():
+>       with pytest.raises(ValueError, match="override"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE <class 'ValueError'>
+
+tests\test_governance_tadr.py:126: Failed
+____ test_classify_rejects_unknown_assessment_keys_and_values[assessment0] ____
+
+assessment = {'unregistered_dimension': 'high'}
+
+    @pytest.mark.parametrize(
+        "assessment",
+        [
+            {"unregistered_dimension": "high"},
+            {"autonomy": "approximately-controlled"},
+        ],
+    )
+    def test_classify_rejects_unknown_assessment_keys_and_values(assessment):
+>       with pytest.raises(ValueError, match="assessment"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE <class 'ValueError'>
+
+tests\test_governance_tadr.py:138: Failed
+____ test_classify_rejects_unknown_assessment_keys_and_values[assessment1] ____
+
+assessment = {'autonomy': 'approximately-controlled'}
+
+    @pytest.mark.parametrize(
+        "assessment",
+        [
+            {"unregistered_dimension": "high"},
+            {"autonomy": "approximately-controlled"},
+        ],
+    )
+    def test_classify_rejects_unknown_assessment_keys_and_values(assessment):
+>       with pytest.raises(ValueError, match="assessment"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE <class 'ValueError'>
+
+tests\test_governance_tadr.py:138: Failed
+__________________ test_classify_rejects_unknown_uncertainty __________________
+
+    def test_classify_rejects_unknown_uncertainty():
+>       with pytest.raises(ValueError, match="uncertainty"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE <class 'ValueError'>
+
+tests\test_governance_tadr.py:143: Failed
+_ test_build_receipt_rejects_open_classification_values[uncertainty-sometimes] _
+
+field = 'uncertainty', value = 'sometimes'
+
+    @pytest.mark.parametrize(
+        ("field", "value"),
+        [("uncertainty", "sometimes"), ("evidence_quality", "adequate-ish")],
+    )
+    def test_build_receipt_rejects_open_classification_values(field, value):
+        kwargs = {field: value}
+>       with pytest.raises(ValueError, match=field):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE <class 'ValueError'>
+
+tests\test_governance_tadr.py:221: Failed
+_ test_build_receipt_rejects_open_classification_values[evidence_quality-adequate-ish] _
+
+field = 'evidence_quality', value = 'adequate-ish'
+
+    @pytest.mark.parametrize(
+        ("field", "value"),
+        [("uncertainty", "sometimes"), ("evidence_quality", "adequate-ish")],
+    )
+    def test_build_receipt_rejects_open_classification_values(field, value):
+        kwargs = {field: value}
+>       with pytest.raises(ValueError, match=field):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE <class 'ValueError'>
+
+tests\test_governance_tadr.py:221: Failed
+____________ test_check_compliance_unobserved_controls_are_unknown ____________
+
+    def test_check_compliance_unobserved_controls_are_unknown():
+        report = check_compliance("T1")
+        assert report.tier == "T1"
+>       assert report.required == 14
+               ^^^^^^^^^^^^^^^
+E       AttributeError: 'ComplianceReport' object has no attribute 'required'
+
+tests\test_governance_tadr.py:245: AttributeError
+___________________ test_check_compliance_t2_requires_more ____________________
+
+    def test_check_compliance_t2_requires_more():
+>       observation = control_baseline.ControlObservation(
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            control_id="tadr:T1:named-owner", state="present",
+            source_ref="receipt://owner/1", observed_at="2026-08-02T00:00:00Z",
+            checker_id="owner-check/v1")
+E       AttributeError: module 'harness.governance.control_baseline' has no attribute 'ControlObservation'
+
+tests\test_governance_tadr.py:254: AttributeError
+___________________ test_check_compliance_t3_checked_count ____________________
+
+    def test_check_compliance_t3_checked_count():
+        report = check_compliance("T3")
+>       assert report.required == 52
+               ^^^^^^^^^^^^^^^
+E       AttributeError: 'ComplianceReport' object has no attribute 'required'
+
+tests\test_governance_tadr.py:267: AttributeError
+_____________ test_compliance_not_compliant_when_controls_missing _____________
+
+    def test_compliance_not_compliant_when_controls_missing():
+        report = check_compliance("T1")
+        assert report.compliant is False
+>       assert report.unknown > 0
+               ^^^^^^^^^^^^^^
+E       AttributeError: 'ComplianceReport' object has no attribute 'unknown'
+
+tests\test_governance_tadr.py:281: AttributeError
+________ test_control_observation_requires_evidence_for_measured_state ________
+
+    def test_control_observation_requires_evidence_for_measured_state():
+        with pytest.raises(ValueError, match="source_ref"):
+>           control_baseline.ControlObservation(
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                control_id="tadr:T1:named-owner", state="present",
+                source_ref="", observed_at="2026-08-02T00:00:00Z",
+                checker_id="owner-check/v1")
+E           AttributeError: module 'harness.governance.control_baseline' has no attribute 'ControlObservation'
+
+tests\test_governance_tadr.py:286: AttributeError
+__________ test_check_compliance_rejects_invalid_tier_and_control_id __________
+
+    def test_check_compliance_rejects_invalid_tier_and_control_id():
+>       with pytest.raises(ValueError, match="tier"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE <class 'ValueError'>
+
+tests\test_governance_tadr.py:293: Failed
+____________ test_control_receipt_seals_complete_observation_list _____________
+
+    def test_control_receipt_seals_complete_observation_list():
+>       observations = [control_baseline.ControlObservation(
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            control_id="tadr:T1:named-owner", state="present",
+            source_ref="receipt://owner/1", observed_at="2026-08-02T00:00:00Z",
+            checker_id="owner-check/v1").to_dict()]
+E       AttributeError: module 'harness.governance.control_baseline' has no attribute 'ControlObservation'
+
+tests\test_governance_tadr.py:304: AttributeError
+___________________ test_control_receipt_detects_tampering ____________________
+
+    def test_control_receipt_detects_tampering():
+>       receipt = tadr_receipt.build_control_receipt(
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            system_id="system-1", classification_ref="a" * 64, tier="T1",
+            observations=[], checked_at="2026-08-02T00:01:00Z",
+            checker_id="baseline-check/v1")
+E       AttributeError: module 'harness.governance.tadr_receipt' has no attribute 'build_control_receipt'
+
+tests\test_governance_tadr.py:319: AttributeError
+______________ test_default_envelope_is_paused_without_evidence _______________
+
+    def test_default_envelope_is_paused_without_evidence():
+        env = GovernanceEnvelope()
+        assert env.tier == "T1"
+>       assert env.governance_verdict == "pause"
+E       AssertionError: assert 'allow' == 'pause'
+E         
+E         - pause
+E         + allow
+
+tests\test_governance_envelope.py:24: AssertionError
+__________________ test_unknown_action_tier_never_authorizes __________________
+
+    def test_unknown_action_tier_never_authorizes():
+        env = GovernanceEnvelope(tier="T3", governance_verdict="allow")
+>       assert env.allows_action("T9") is False
+E       AssertionError: assert True is False
+E        +  where True = allows_action('T9')
+E        +    where allows_action = GovernanceEnvelope(tier='T3', modifiers=[], control_compliance={}, pause_triggers=[], authorization_receipt_ref='', risk_signals=[], classification_ref='', governance_verdict='allow', timestamp='2026-08-02T21:16:06Z').allows_action
+
+tests\test_governance_envelope.py:55: AssertionError
+________________________ test_build_envelope_compliant ________________________
+
+    def test_build_envelope_compliant():
+        env = build_envelope(
+            tier="T1",
+            compliance_report={"required": 14, "measured": 14, "present": 14,
+                               "absent": 0, "unknown": 0, "compliant": True},
+            classification_ref="a" * 64)
+        assert env.governance_verdict == "allow"
+>       assert env.control_compliance["passed"] == 14
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'passed'
+
+tests\test_governance_envelope.py:77: KeyError
+_________________ test_build_envelope_non_compliant_t1_pauses _________________
+
+    def test_build_envelope_non_compliant_t1_pauses():
+        env = build_envelope(
+            tier="T1",
+            compliance_report={"required": 14, "measured": 14, "present": 11,
+                               "absent": 3, "unknown": 0, "compliant": False})
+>       assert env.governance_verdict == "pause"
+E       AssertionError: assert 'allow' == 'pause'
+E         
+E         - pause
+E         + allow
+
+tests\test_governance_envelope.py:85: AssertionError
+_________________ test_build_envelope_non_compliant_t3_denies _________________
+
+    def test_build_envelope_non_compliant_t3_denies():
+        env = build_envelope(
+            tier="T3",
+            compliance_report={"required": 52, "measured": 52, "present": 51,
+                               "absent": 1, "unknown": 0, "compliant": False})
+>       assert env.governance_verdict == "deny"
+E       AssertionError: assert 'allow' == 'deny'
+E         
+E         - deny
+E         + allow
+
+tests\test_governance_envelope.py:93: AssertionError
+_______________________ test_missing_compliance_pauses ________________________
+
+    def test_missing_compliance_pauses():
+        env = build_envelope(tier="T1", compliance_report=None,
+                             classification_ref="a" * 64)
+>       assert env.governance_verdict == "pause"
+E       AssertionError: assert 'allow' == 'pause'
+E         
+E         - pause
+E         + allow
+
+tests\test_governance_envelope.py:119: AssertionError
+________________ test_incomplete_or_unknown_compliance_pauses _________________
+
+    def test_incomplete_or_unknown_compliance_pauses():
+        env = build_envelope(
+            tier="T1",
+            compliance_report={"required": 14, "measured": 13, "present": 13,
+                               "absent": 0, "unknown": 1, "compliant": False},
+            classification_ref="a" * 64)
+>       assert env.governance_verdict == "pause"
+E       AssertionError: assert 'allow' == 'pause'
+E         
+E         - pause
+E         + allow
+
+tests\test_governance_envelope.py:128: AssertionError
+____________ test_envelope_rejects_open_governance_values[kwargs0] ____________
+
+kwargs = {'tier': 'T9'}
+
+    @pytest.mark.parametrize(
+        "kwargs",
+        [
+            {"tier": "T9"},
+            {"modifiers": ["Z"]},
+            {"governance_verdict": "maybe"},
+        ],
+    )
+    def test_envelope_rejects_open_governance_values(kwargs):
+>       with pytest.raises(ValueError):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE <class 'ValueError'>
+
+tests\test_governance_envelope.py:140: Failed
+____________ test_envelope_rejects_open_governance_values[kwargs1] ____________
+
+kwargs = {'modifiers': ['Z']}
+
+    @pytest.mark.parametrize(
+        "kwargs",
+        [
+            {"tier": "T9"},
+            {"modifiers": ["Z"]},
+            {"governance_verdict": "maybe"},
+        ],
+    )
+    def test_envelope_rejects_open_governance_values(kwargs):
+>       with pytest.raises(ValueError):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE <class 'ValueError'>
+
+tests\test_governance_envelope.py:140: Failed
+____________ test_envelope_rejects_open_governance_values[kwargs2] ____________
+
+kwargs = {'governance_verdict': 'maybe'}
+
+    @pytest.mark.parametrize(
+        "kwargs",
+        [
+            {"tier": "T9"},
+            {"modifiers": ["Z"]},
+            {"governance_verdict": "maybe"},
+        ],
+    )
+    def test_envelope_rejects_open_governance_values(kwargs):
+>       with pytest.raises(ValueError):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE <class 'ValueError'>
+
+tests\test_governance_envelope.py:140: Failed
+_________________ test_fingerprint_binds_every_decision_field _________________
+
+    def test_fingerprint_binds_every_decision_field():
+        base = GovernanceEnvelope(
+            tier="T2", modifiers=["A"],
+            control_compliance={"required": 1, "measured": 1, "present": 1,
+                                "absent": 0, "unknown": 0, "compliant": True},
+            pause_triggers=["capability-increase"],
+            authorization_receipt_ref="b" * 64,
+            risk_signals=[{"kind": "observation", "ref": "signal://1"}],
+            classification_ref="a" * 64, governance_verdict="allow",
+            timestamp="2026-08-02T00:00:00Z")
+        mutations = [
+            {"tier": "T3"}, {"modifiers": ["D"]},
+            {"control_compliance": {"required": 1, "measured": 0,
+                                    "present": 0, "absent": 0, "unknown": 1,
+                                    "compliant": False}},
+            {"pause_triggers": ["new"]},
+            {"authorization_receipt_ref": "c" * 64},
+            {"risk_signals": [{"kind": "assessment", "ref": "signal://1"}]},
+            {"classification_ref": "d" * 64},
+            {"governance_verdict": "pause"},
+            {"timestamp": "2026-08-02T00:00:01Z"},
+        ]
+>       assert all(replace(base, **change).fingerprint() != base.fingerprint()
+                   for change in mutations)
+E       assert False
+E        +  where False = all(<generator object test_fingerprint_binds_every_decision_field.<locals>.<genexpr> at 0x000002414ED0AF20>)
+
+tests\test_governance_envelope.py:166: AssertionError
+_____ test_classification_entry_requires_separate_trusted_authority_match _____
+
+    def test_classification_entry_requires_separate_trusted_authority_match():
+>       assert classification_entry(_classification())["status"] == "unverified"
+E       AssertionError: assert 'pass' == 'unverified'
+E         
+E         - unverified
+E         + pass
+
+tests\test_governance_interop.py:27: AssertionError
+________________ test_classification_entry_tamper_never_passes ________________
+
+    def test_classification_entry_tamper_never_passes():
+        receipt = _classification()
+        receipt["seal_body"]["tier"] = "T3"
+>       entry = classification_entry(receipt, trusted_authority_verdict="MATCH")
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: classification_entry() got an unexpected keyword argument 'trusted_authority_verdict'
+
+tests\test_governance_interop.py:39: TypeError
+_______________ test_control_entry_rejects_missing_or_zero_seal _______________
+
+    def test_control_entry_rejects_missing_or_zero_seal():
+>       with pytest.raises(ValueError, match="seal"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE <class 'ValueError'>
+
+tests\test_governance_interop.py:44: Failed
+________________ test_control_entry_uses_verified_nonzero_seal ________________
+
+    def test_control_entry_uses_verified_nonzero_seal():
+>       entry = control_entry(_control())
+                              ^^^^^^^^^^
+
+tests\test_governance_interop.py:53: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+observations = None
+
+    def _control(observations: list[dict] | None = None) -> dict:
+>       return tadr_receipt.build_control_receipt(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            system_id="system-1", classification_ref=_classification()["seal_hash"],
+            tier="T2", observations=observations or [],
+            checked_at="2026-08-02T00:00:00Z", checker_id="baseline-check/v1")
+E       AttributeError: module 'harness.governance.tadr_receipt' has no attribute 'build_control_receipt'
+
+tests\test_governance_interop.py:20: AttributeError
+_____________ test_entries_validate_with_installed_proof_surface ______________
+
+    def test_entries_validate_with_installed_proof_surface():
+        proof_surface = pytest.importorskip("proof_surface")
+        bundle = {
+            "organ_bundle_version": "0.1", "bundle_id": "bundle-1",
+            "generated_at": "2026-08-02T00:00:00Z", "subject": "system-1",
+            "entries": [
+                classification_entry(_classification()),
+>               control_entry(_control()),
+                              ^^^^^^^^^^
+            ],
+        }
+
+tests\test_governance_interop.py:65: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+observations = None
+
+    def _control(observations: list[dict] | None = None) -> dict:
+>       return tadr_receipt.build_control_receipt(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            system_id="system-1", classification_ref=_classification()["seal_hash"],
+            tier="T2", observations=observations or [],
+            checked_at="2026-08-02T00:00:00Z", checker_id="baseline-check/v1")
+E       AttributeError: module 'harness.governance.tadr_receipt' has no attribute 'build_control_receipt'
+
+tests\test_governance_interop.py:20: AttributeError
+=========================== short test summary info ===========================
+FAILED tests/test_governance_tadr.py::test_no_inflation_rejects_unknown_tiers[T1-T9]
+FAILED tests/test_governance_tadr.py::test_no_inflation_rejects_unknown_tiers[T9-T9]
+FAILED tests/test_governance_tadr.py::test_classify_rejects_unknown_override
+FAILED tests/test_governance_tadr.py::test_classify_rejects_unknown_assessment_keys_and_values[assessment0]
+FAILED tests/test_governance_tadr.py::test_classify_rejects_unknown_assessment_keys_and_values[assessment1]
+FAILED tests/test_governance_tadr.py::test_classify_rejects_unknown_uncertainty
+FAILED tests/test_governance_tadr.py::test_build_receipt_rejects_open_classification_values[uncertainty-sometimes]
+FAILED tests/test_governance_tadr.py::test_build_receipt_rejects_open_classification_values[evidence_quality-adequate-ish]
+FAILED tests/test_governance_tadr.py::test_check_compliance_unobserved_controls_are_unknown
+FAILED tests/test_governance_tadr.py::test_check_compliance_t2_requires_more
+FAILED tests/test_governance_tadr.py::test_check_compliance_t3_checked_count
+FAILED tests/test_governance_tadr.py::test_compliance_not_compliant_when_controls_missing
+FAILED tests/test_governance_tadr.py::test_control_observation_requires_evidence_for_measured_state
+FAILED tests/test_governance_tadr.py::test_check_compliance_rejects_invalid_tier_and_control_id
+FAILED tests/test_governance_tadr.py::test_control_receipt_seals_complete_observation_list
+FAILED tests/test_governance_tadr.py::test_control_receipt_detects_tampering
+FAILED tests/test_governance_envelope.py::test_default_envelope_is_paused_without_evidence
+FAILED tests/test_governance_envelope.py::test_unknown_action_tier_never_authorizes
+FAILED tests/test_governance_envelope.py::test_build_envelope_compliant - Key...
+FAILED tests/test_governance_envelope.py::test_build_envelope_non_compliant_t1_pauses
+FAILED tests/test_governance_envelope.py::test_build_envelope_non_compliant_t3_denies
+FAILED tests/test_governance_envelope.py::test_missing_compliance_pauses - As...
+FAILED tests/test_governance_envelope.py::test_incomplete_or_unknown_compliance_pauses
+FAILED tests/test_governance_envelope.py::test_envelope_rejects_open_governance_values[kwargs0]
+FAILED tests/test_governance_envelope.py::test_envelope_rejects_open_governance_values[kwargs1]
+FAILED tests/test_governance_envelope.py::test_envelope_rejects_open_governance_values[kwargs2]
+FAILED tests/test_governance_envelope.py::test_fingerprint_binds_every_decision_field
+FAILED tests/test_governance_interop.py::test_classification_entry_requires_separate_trusted_authority_match
+FAILED tests/test_governance_interop.py::test_classification_entry_tamper_never_passes
+FAILED tests/test_governance_interop.py::test_control_entry_rejects_missing_or_zero_seal
+FAILED tests/test_governance_interop.py::test_control_entry_uses_verified_nonzero_seal
+FAILED tests/test_governance_interop.py::test_entries_validate_with_installed_proof_surface

@@ -15,6 +15,11 @@ SCHEMA = "flywheel.incident-sheet/v1"
 
 STATUSES = ("detected", "investigating", "contained", "resolved", "closed")
 SEVERITIES = ("low", "moderate", "high", "critical")
+COMMAND_ROLES = frozenset({
+    "incident_commander", "records_custodian", "legal_counsel",
+    "technical_lead", "communications_lead", "safety_lead",
+    "security_lead", "executive_sponsor", "regulator_liaison",
+})
 
 
 @dataclass
@@ -36,9 +41,28 @@ class IncidentSheet:
     notification_time: str = ""
     closure_time: str = ""
     notes: str = ""
+    tadr_tier: str = ""  # TADR consequence tier (separate from operational severity)
+    command_roles: dict[str, str] = field(default_factory=dict)  # role_name -> person
+    classification_ref: str = ""
+
+    def __post_init__(self) -> None:
+        from harness.governance.tadr_tier import validate_tier
+
+        if self.tadr_tier and not validate_tier(self.tadr_tier):
+            raise ValueError(f"invalid tadr_tier: {self.tadr_tier!r}")
+        if self.classification_ref and not _nonzero_digest(self.classification_ref):
+            raise ValueError("invalid classification_ref")
+        invalid_roles = sorted(set(self.command_roles) - COMMAND_ROLES)
+        if invalid_roles or not all(
+                isinstance(value, str) and value for value in self.command_roles.values()):
+            raise ValueError(f"invalid command role names or values: {invalid_roles}")
 
     def to_dict(self) -> dict[str, Any]:
-        return {
+        if self.command_roles:
+            invalid_roles = sorted(set(self.command_roles) - COMMAND_ROLES)
+            if invalid_roles:
+                raise ValueError(f"invalid command role(s): {invalid_roles}")
+        result = {
             "schema": SCHEMA,
             "incident_id": self.incident_id,
             "detection_time": self.detection_time,
@@ -57,6 +81,13 @@ class IncidentSheet:
             "closure_time": self.closure_time,
             "notes": self.notes,
         }
+        if self.tadr_tier:
+            result["tadr_tier"] = self.tadr_tier
+        if self.classification_ref:
+            result["classification_ref"] = self.classification_ref
+        if self.command_roles:
+            result["command_roles"] = dict(self.command_roles)
+        return result
 
     def link_related(self, other_id: str) -> None:
         """Link a related incident without merging."""
@@ -85,4 +116,11 @@ def from_correlated_event(event: dict[str, Any], *,
         severity=severity,
         system_class=body.get("run_id", ""),
         notes=body.get("detail", body.get("detection", "")),
+        tadr_tier=body.get("tadr_tier", ""),
+        classification_ref=body.get("classification_ref", ""),
     )
+
+
+def _nonzero_digest(value: str) -> bool:
+    return (len(value) == 64 and value == value.lower() and value != "0" * 64
+            and all(char in "0123456789abcdef" for char in value))

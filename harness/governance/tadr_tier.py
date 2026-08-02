@@ -77,6 +77,47 @@ ASSESSMENT_DIMENSIONS = (
     "recovery_complexity",
 )
 
+UNCERTAINTY_VALUES = frozenset({"low", "moderate", "high", "unknown"})
+EVIDENCE_QUALITY_VALUES = frozenset({"low", "moderate", "high", "unknown"})
+
+# Closed values supported by the checked-in Flywheel-derived doctrine subset.
+ASSESSMENT_VALUES: dict[str, frozenset[str]] = {
+    "consequence_magnitude": frozenset({
+        "localized", "moderate", "severe", "catastrophic", "regional",
+        "national", "global", "unknown",
+    }),
+    "population_or_system_scope": frozenset({
+        "individual", "localized", "multi-party", "regional", "national",
+        "global", "unknown",
+    }),
+    "propagation_speed": frozenset({
+        "contained", "slow", "rapid", "uncontrolled", "unknown",
+    }),
+    "reversibility": frozenset({
+        "reversible", "difficult", "irreversible", "unknown",
+    }),
+    "autonomy": frozenset({
+        "supervised", "bounded", "semi-autonomous", "uncontrolled", "unknown",
+    }),
+    "accessibility_to_threat_actors": frozenset({
+        "restricted", "limited", "broad", "public", "unknown",
+    }),
+    "stealth_and_attribution_difficulty": frozenset({
+        "low", "moderate", "high", "unknown",
+    }),
+    "cross_system_coupling": frozenset({
+        "isolated", "limited", "high", "systemic", "unknown",
+    }),
+    "control_maturity": frozenset({
+        "mature", "partial", "immature", "absent", "unknown",
+    }),
+    "evidence_quality": EVIDENCE_QUALITY_VALUES,
+    "uncertainty": UNCERTAINTY_VALUES,
+    "recovery_complexity": frozenset({
+        "simple", "moderate", "complex", "prolonged", "unknown",
+    }),
+}
+
 
 def tier_rank(tier: str) -> int:
     """Return the numeric rank of a tier (1=T1, 2=T2, 3=T3)."""
@@ -100,7 +141,20 @@ def enforce_no_tier_inflation(authorized_tier: str,
     A system classified T1 cannot perform T3 actions. The highest credible
     consequence carries more weight than the most likely minor consequence.
     """
+    if not validate_tier(authorized_tier) or not validate_tier(requested_tier):
+        return False
     return tier_rank(requested_tier) <= tier_rank(authorized_tier)
+
+
+def validate_assessment(assessment: dict[str, str]) -> list[str]:
+    """Return closed-schema assessment errors."""
+    issues: list[str] = []
+    for key, value in assessment.items():
+        if key not in ASSESSMENT_VALUES:
+            issues.append(f"unknown assessment key: {key!r}")
+        elif value not in ASSESSMENT_VALUES[key]:
+            issues.append(f"invalid assessment value for {key!r}: {value!r}")
+    return issues
 
 
 @dataclass
@@ -112,6 +166,22 @@ class TierClassification:
     assessment: dict[str, str] = field(default_factory=dict)
     rationale: str = ""
     uncertainty: str = "moderate"
+
+    def __post_init__(self) -> None:
+        if not validate_tier(self.tier):
+            raise ValueError(f"invalid tier: {self.tier!r}")
+        invalid = validate_modifiers(self.modifiers)
+        if invalid:
+            raise ValueError(f"invalid TADR modifiers: {invalid}")
+        unknown_overrides = sorted(
+            set(self.triggered_overrides) - T2_OVERRIDES - T3_OVERRIDES)
+        if unknown_overrides:
+            raise ValueError(f"invalid consequence overrides: {unknown_overrides}")
+        assessment_issues = validate_assessment(self.assessment)
+        if assessment_issues:
+            raise ValueError("; ".join(assessment_issues))
+        if self.uncertainty not in UNCERTAINTY_VALUES:
+            raise ValueError(f"invalid uncertainty: {self.uncertainty!r}")
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -153,6 +223,15 @@ def classify(
     invalid = validate_modifiers(modifiers)
     if invalid:
         raise ValueError(f"invalid TADR modifiers: {invalid}")
+    unknown_overrides = sorted(
+        set(consequence_overrides) - T2_OVERRIDES - T3_OVERRIDES)
+    if unknown_overrides:
+        raise ValueError(f"invalid consequence overrides: {unknown_overrides}")
+    assessment_issues = validate_assessment(assessment)
+    if assessment_issues:
+        raise ValueError("; ".join(assessment_issues))
+    if uncertainty not in UNCERTAINTY_VALUES:
+        raise ValueError(f"invalid uncertainty: {uncertainty!r}")
 
     triggered = [o for o in consequence_overrides]
     tier = "T1"  # floor

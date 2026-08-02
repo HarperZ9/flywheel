@@ -1,0 +1,63 @@
+FFFF                                                                     [100%]
+================================== FAILURES ===================================
+______________________ test_mixed_tadr_bundle_validates _______________________
+
+    def test_mixed_tadr_bundle_validates() -> None:
+>       assert validate_organ_receipt_bundle(_load("valid/tadr-kinds.bundle.json")) == []
+E       AssertionError: assert [Issue(path='... raw-health')] == []
+E         
+E         Left contains 2 more items, first extra item: Issue(path='$.entries[0].receipt_kind', message='expected one of: coherence-observation, crucible-assessment, emet-wit...ather-corpus, index-context-envelope, learn-lesson, learn-receipt, proof-surface-gate, provenance-receipt, raw-health')
+E         Use -v to get more diff
+
+tests\test_organ_receipt_bundle_tadr_kinds.py:22: AssertionError
+____________________ test_zero_control_digest_is_rejected _____________________
+
+    def test_zero_control_digest_is_rejected() -> None:
+        issues = validate_organ_receipt_bundle(
+            _load("invalid/tadr-zero-digest.bundle.json")
+        )
+    
+>       assert any(
+            issue.path == "$.entries[0].payload_sha256" and "nonzero" in issue.message
+            for issue in issues
+        )
+E       assert False
+E        +  where False = any(<generator object test_zero_control_digest_is_rejected.<locals>.<genexpr> at 0x00000241FAE7E740>)
+
+tests\test_organ_receipt_bundle_tadr_kinds.py:30: AssertionError
+______________ test_tadr_conformance_manifest_matches_validator _______________
+
+    def test_tadr_conformance_manifest_matches_validator() -> None:
+        manifest = _load("manifest.json")
+    
+        for fixture in manifest["fixtures"]:
+            issues = validate_organ_receipt_bundle(_load(fixture["path"]))
+            if fixture["expected"] == "valid":
+>               assert issues == [], f"{fixture['path']} should be valid: {issues}"
+E               AssertionError: valid/tadr-kinds.bundle.json should be valid: [Issue(path='$.entries[0].receipt_kind', message='expected one of: coherence-observation, crucible-assessment, emet-witness, forum-route, gather-corpus, index-context-envelope, learn-lesson, learn-receipt, proof-surface-gate, provenance-receipt, raw-health'), Issue(path='$.entries[1].receipt_kind', message='expected one of: coherence-observation, crucible-assessment, emet-witness, forum-route, gather-corpus, index-context-envelope, learn-lesson, learn-receipt, proof-surface-gate, provenance-receipt, raw-health')]
+E               assert [Issue(path='... raw-health')] == []
+E                 
+E                 Left contains 2 more items, first extra item: Issue(path='$.entries[0].receipt_kind', message='expected one of: coherence-observation, crucible-assessment, emet-wit...ather-corpus, index-context-envelope, learn-lesson, learn-receipt, proof-surface-gate, provenance-receipt, raw-health')
+E                 Use -v to get more diff
+
+tests\test_organ_receipt_bundle_tadr_kinds.py:42: AssertionError
+________________ test_tadr_vectors_match_published_json_schema ________________
+
+    def test_tadr_vectors_match_published_json_schema() -> None:
+        jsonschema = pytest.importorskip("jsonschema")
+        validator = jsonschema.Draft202012Validator(
+            json.loads(SCHEMA.read_text(encoding="utf-8"))
+        )
+    
+>       assert list(validator.iter_errors(_load("valid/tadr-kinds.bundle.json"))) == []
+E       assert [<ValidationE...aw-health']">] == []
+E         
+E         Left contains 2 more items, first extra item: <ValidationError: "'tadr-classification' is not one of ['coherence-observation', 'crucible-assessment', 'emet-witness'... 'index-context-envelope', 'learn-lesson', 'learn-receipt', 'proof-surface-gate', 'provenance-receipt', 'raw-health']">
+E         Use -v to get more diff
+
+tests\test_organ_receipt_bundle_tadr_kinds.py:53: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/test_organ_receipt_bundle_tadr_kinds.py::test_mixed_tadr_bundle_validates
+FAILED tests/test_organ_receipt_bundle_tadr_kinds.py::test_zero_control_digest_is_rejected
+FAILED tests/test_organ_receipt_bundle_tadr_kinds.py::test_tadr_conformance_manifest_matches_validator
+FAILED tests/test_organ_receipt_bundle_tadr_kinds.py::test_tadr_vectors_match_published_json_schema

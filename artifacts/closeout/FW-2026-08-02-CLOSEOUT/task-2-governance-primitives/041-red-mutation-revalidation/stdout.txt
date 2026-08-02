@@ -1,0 +1,25 @@
+.FF                                                                      [100%]
+================================== FAILURES ===================================
+____________ test_infra_serializers_revalidate_mutated_governance _____________
+
+    def test_infra_serializers_revalidate_mutated_governance():
+        bom = RunBOM(run_id="test")
+        bom.tadr_tier = "T9"
+>       with pytest.raises(ValueError, match="tadr_tier"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE <class 'ValueError'>
+
+tests\test_infra_correlator_bom.py:205: Failed
+_______________ test_trust_model_revalidates_mutated_governance _______________
+
+    def test_trust_model_revalidates_mutated_governance():
+        model = TrustModel(model_id="bad-later")
+        model.tadr_tier = "T9"
+>       with pytest.raises(ValueError, match="tadr_tier"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE <class 'ValueError'>
+
+tests\test_infra_trust_acquisition.py:119: Failed
+=========================== short test summary info ===========================
+FAILED tests/test_infra_correlator_bom.py::test_infra_serializers_revalidate_mutated_governance
+FAILED tests/test_infra_trust_acquisition.py::test_trust_model_revalidates_mutated_governance

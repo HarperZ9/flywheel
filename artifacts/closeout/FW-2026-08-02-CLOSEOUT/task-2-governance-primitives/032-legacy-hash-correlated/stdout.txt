@@ -1,0 +1,32 @@
+F                                                                        [100%]
+================================== FAILURES ===================================
+__________ test_legacy_v1_serialization_and_seals_are_byte_identical __________
+
+    def test_legacy_v1_serialization_and_seals_are_byte_identical():
+        fixture_path = (Path(__file__).parent / "fixtures" / "governance" /
+                        "legacy-v1.json")
+        fixture = json.loads(fixture_path.read_text(encoding="utf-8"))
+        objects = {
+            "run_bom": RunBOM(
+                run_id="legacy-run", model_name="model-a",
+                model_checkpoint="checkpoint-a", python_version="3.11.9",
+                harness_version="0.3.0").to_dict(),
+            "incident": IncidentSheet(
+                incident_id="INC-legacy",
+                detection_time="2026-08-01T00:00:00Z").to_dict(),
+            "correlated": CorrelatedEvent(
+                run_id="legacy-run", timestamp="2026-08-01T00:00:00Z",
+                detection="scope-expansion").to_dict(),
+        }
+        for name, obj in objects.items():
+            raw = json.dumps(obj, separators=(",", ":"), ensure_ascii=False)
+            assert raw == fixture[name]["canonical"]
+>           assert hashlib.sha256(raw.encode("utf-8")).hexdigest() == fixture[name]["seal_hash"]
+E           AssertionError: assert '0d1c53067432...d92ec4ae28131' == 'REPLACE_CORRELATED_HASH'
+E             
+E             - REPLACE_CORRELATED_HASH
+E             + 0d1c530674329946d9479ce75745257ea7510e786ef34718361d92ec4ae28131
+
+tests\test_infra_correlator_bom.py:221: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/test_infra_correlator_bom.py::test_legacy_v1_serialization_and_seals_are_byte_identical

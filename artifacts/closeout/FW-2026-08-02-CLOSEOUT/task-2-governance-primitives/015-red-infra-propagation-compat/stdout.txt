@@ -1,0 +1,107 @@
+....FF......F....FFF............FF.........                              [100%]
+================================== FAILURES ===================================
+________ test_correlated_event_rejects_open_indicator_and_tier_values _________
+
+    def test_correlated_event_rejects_open_indicator_and_tier_values():
+>       with pytest.raises(ValueError, match="indicator_class"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE <class 'ValueError'>
+
+tests\test_infra_correlator_bom.py:53: Failed
+_______ test_correlated_event_propagates_tier_without_changing_severity _______
+
+    def test_correlated_event_propagates_tier_without_changing_severity():
+>       event = CorrelatedEvent(
+            run_id="t", severity="critical", tadr_tier="T2",
+            classification_ref="a" * 64, indicator_class="Assessment")
+E       TypeError: CorrelatedEvent.__init__() got an unexpected keyword argument 'tadr_tier'
+
+tests\test_infra_correlator_bom.py:60: TypeError
+_______ test_incident_propagates_governance_and_validates_command_roles _______
+
+    def test_incident_propagates_governance_and_validates_command_roles():
+        event = {"seal_hash": "b" * 64, "seal_body": {
+            "timestamp": "2026-08-01T00:00:00Z", "severity": "critical",
+            "run_id": "eval-001", "tadr_tier": "T3",
+            "classification_ref": "a" * 64,
+        }}
+        sheet = from_correlated_event(event, commander="alice")
+>       assert sheet.tadr_tier == "T3"
+E       AssertionError: assert '' == 'T3'
+E         
+E         - T3
+
+tests\test_infra_correlator_bom.py:138: AssertionError
+_____________ test_bom_propagates_complete_governance_references ______________
+
+    def test_bom_propagates_complete_governance_references():
+>       bom = RunBOM(
+            run_id="test", tadr_tier="T2", tadr_modifiers=["A"],
+            classification_ref="a" * 64, governance_verdict="pause",
+            pause_triggers=["capability-increase"], control_digest="b" * 64)
+E       TypeError: RunBOM.__init__() got an unexpected keyword argument 'classification_ref'
+
+tests\test_infra_correlator_bom.py:182: TypeError
+_________________ test_bom_rejects_invalid_governance_values __________________
+
+    def test_bom_rejects_invalid_governance_values():
+>       with pytest.raises(ValueError, match="tadr_tier"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE <class 'ValueError'>
+
+tests\test_infra_correlator_bom.py:196: Failed
+__________ test_legacy_v1_serialization_and_seals_are_byte_identical __________
+
+    def test_legacy_v1_serialization_and_seals_are_byte_identical():
+        fixture_path = (Path(__file__).parent / "fixtures" / "governance" /
+                        "legacy-v1.json")
+        fixture = json.loads(fixture_path.read_text(encoding="utf-8"))
+        objects = {
+            "run_bom": RunBOM(
+                run_id="legacy-run", model_name="model-a",
+                model_checkpoint="checkpoint-a", python_version="3.11.9",
+                harness_version="0.3.0").to_dict(),
+            "incident": IncidentSheet(
+                incident_id="INC-legacy",
+                detection_time="2026-08-01T00:00:00Z").to_dict(),
+            "correlated": CorrelatedEvent(
+                run_id="legacy-run", timestamp="2026-08-01T00:00:00Z",
+                detection="scope-expansion").to_dict(),
+        }
+        for name, obj in objects.items():
+            raw = json.dumps(obj, separators=(",", ":"), ensure_ascii=False)
+>           assert raw == fixture[name]["canonical"]
+E           assert '{"schema":"f...vernance":{}}' == '{"schema":"f...y_hashes":{}}'
+E             
+E             Skipping 376 identical leading characters in diff, use -v to show
+E             - hashes":{}}
+E             + hashes":{},"governance":{}}
+
+tests\test_infra_correlator_bom.py:220: AssertionError
+_________ test_trust_model_propagates_complete_governance_references __________
+
+    def test_trust_model_propagates_complete_governance_references():
+>       model = TrustModel(
+            model_id="governed", tadr_tier="T2", tadr_modifiers=["A"],
+            classification_ref="a" * 64, governance_verdict="pause",
+            pause_triggers=["capability-increase"], control_digest="b" * 64)
+E       TypeError: TrustModel.__init__() got an unexpected keyword argument 'tadr_tier'
+
+tests\test_infra_trust_acquisition.py:99: TypeError
+_____________ test_trust_model_rejects_invalid_governance_values ______________
+
+    def test_trust_model_rejects_invalid_governance_values():
+        with pytest.raises(ValueError, match="tadr_tier"):
+>           TrustModel(model_id="bad", tadr_tier="T9")
+E           TypeError: TrustModel.__init__() got an unexpected keyword argument 'tadr_tier'
+
+tests\test_infra_trust_acquisition.py:113: TypeError
+=========================== short test summary info ===========================
+FAILED tests/test_infra_correlator_bom.py::test_correlated_event_rejects_open_indicator_and_tier_values
+FAILED tests/test_infra_correlator_bom.py::test_correlated_event_propagates_tier_without_changing_severity
+FAILED tests/test_infra_correlator_bom.py::test_incident_propagates_governance_and_validates_command_roles
+FAILED tests/test_infra_correlator_bom.py::test_bom_propagates_complete_governance_references
+FAILED tests/test_infra_correlator_bom.py::test_bom_rejects_invalid_governance_values
+FAILED tests/test_infra_correlator_bom.py::test_legacy_v1_serialization_and_seals_are_byte_identical
+FAILED tests/test_infra_trust_acquisition.py::test_trust_model_propagates_complete_governance_references
+FAILED tests/test_infra_trust_acquisition.py::test_trust_model_rejects_invalid_governance_values

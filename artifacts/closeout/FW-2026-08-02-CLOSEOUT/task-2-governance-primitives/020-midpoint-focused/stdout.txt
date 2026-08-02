@@ -1,0 +1,195 @@
+.....................................F.........FF...F..............F.... [ 64%]
+FF......F....FFF............FF.........                                  [100%]
+================================== FAILURES ===================================
+_______________________ test_compliance_report_to_dict ________________________
+
+    def test_compliance_report_to_dict():
+>       report = check_compliance("T1", has_named_owner=True)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_governance_tadr.py:271: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+tier = 'T1', observations = None, legacy_facts = {'has_named_owner': True}
+
+    def check_compliance(
+        tier: str,
+        *,
+        observations: list[ControlObservation | dict[str, str]] | None = None,
+        **legacy_facts: Any,
+    ) -> ComplianceReport:
+        """Check whether a run meets its tier's control baseline.
+    
+        Omitted observations are unknown. Boolean legacy facts are rejected because
+        they cannot identify their evidence source, observation time, or checker.
+        """
+        if tier not in TIER_CONTROLS:
+            raise ValueError(f"invalid tier: {tier!r}")
+        if legacy_facts:
+>           raise ValueError("boolean control facts are unsupported; provide observations")
+E           ValueError: boolean control facts are unsupported; provide observations
+
+harness\governance\control_baseline.py:193: ValueError
+_______________________ test_allows_action_within_tier ________________________
+
+    def test_allows_action_within_tier():
+        env = GovernanceEnvelope(tier="T3", governance_verdict="allow")
+>       assert env.allows_action("T1") is True
+E       AssertionError: assert False is True
+E        +  where False = allows_action('T1')
+E        +    where allows_action = GovernanceEnvelope(tier='T3', modifiers=[], control_compliance={}, pause_triggers=[], authorization_receipt_ref='', risk_signals=[], classification_ref='', governance_verdict='allow', timestamp='2026-08-02T21:21:33Z').allows_action
+
+tests\test_governance_envelope.py:41: AssertionError
+________________________ test_blocks_action_above_tier ________________________
+
+    def test_blocks_action_above_tier():
+        env = GovernanceEnvelope(tier="T1", governance_verdict="allow")
+>       assert env.allows_action("T1") is True
+E       AssertionError: assert False is True
+E        +  where False = allows_action('T1')
+E        +    where allows_action = GovernanceEnvelope(tier='T1', modifiers=[], control_compliance={}, pause_triggers=[], authorization_receipt_ref='', risk_signals=[], classification_ref='', governance_verdict='allow', timestamp='2026-08-02T21:21:33Z').allows_action
+
+tests\test_governance_envelope.py:48: AssertionError
+________________________ test_build_envelope_compliant ________________________
+
+    def test_build_envelope_compliant():
+        env = build_envelope(
+            tier="T1",
+            compliance_report={"required": 14, "measured": 14, "present": 14,
+                               "absent": 0, "unknown": 0, "compliant": True},
+            classification_ref="a" * 64)
+        assert env.governance_verdict == "allow"
+>       assert env.control_compliance["passed"] == 14
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'passed'
+
+tests\test_governance_envelope.py:77: KeyError
+_____________ test_entries_validate_with_installed_proof_surface ______________
+
+    def test_entries_validate_with_installed_proof_surface():
+        proof_surface = pytest.importorskip("proof_surface")
+        bundle = {
+            "organ_bundle_version": "0.1", "bundle_id": "bundle-1",
+            "generated_at": "2026-08-02T00:00:00Z", "subject": "system-1",
+            "entries": [
+                classification_entry(_classification()),
+                control_entry(_control()),
+            ],
+        }
+>       assert proof_surface.validate_organ_receipt_bundle(bundle) == []
+E       AssertionError: assert [Issue(path='... raw-health')] == []
+E         
+E         Left contains 2 more items, first extra item: Issue(path='$.entries[0].receipt_kind', message='expected one of: coherence-observation, crucible-assessment, emet-wit...ather-corpus, index-context-envelope, learn-lesson, learn-receipt, proof-surface-gate, provenance-receipt, raw-health')
+E         Use -v to get more diff
+
+tests\test_governance_interop.py:68: AssertionError
+________ test_correlated_event_rejects_open_indicator_and_tier_values _________
+
+    def test_correlated_event_rejects_open_indicator_and_tier_values():
+>       with pytest.raises(ValueError, match="indicator_class"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE <class 'ValueError'>
+
+tests\test_infra_correlator_bom.py:53: Failed
+_______ test_correlated_event_propagates_tier_without_changing_severity _______
+
+    def test_correlated_event_propagates_tier_without_changing_severity():
+>       event = CorrelatedEvent(
+            run_id="t", severity="critical", tadr_tier="T2",
+            classification_ref="a" * 64, indicator_class="Assessment")
+E       TypeError: CorrelatedEvent.__init__() got an unexpected keyword argument 'tadr_tier'
+
+tests\test_infra_correlator_bom.py:60: TypeError
+_______ test_incident_propagates_governance_and_validates_command_roles _______
+
+    def test_incident_propagates_governance_and_validates_command_roles():
+        event = {"seal_hash": "b" * 64, "seal_body": {
+            "timestamp": "2026-08-01T00:00:00Z", "severity": "critical",
+            "run_id": "eval-001", "tadr_tier": "T3",
+            "classification_ref": "a" * 64,
+        }}
+        sheet = from_correlated_event(event, commander="alice")
+>       assert sheet.tadr_tier == "T3"
+E       AssertionError: assert '' == 'T3'
+E         
+E         - T3
+
+tests\test_infra_correlator_bom.py:138: AssertionError
+_____________ test_bom_propagates_complete_governance_references ______________
+
+    def test_bom_propagates_complete_governance_references():
+>       bom = RunBOM(
+            run_id="test", tadr_tier="T2", tadr_modifiers=["A"],
+            classification_ref="a" * 64, governance_verdict="pause",
+            pause_triggers=["capability-increase"], control_digest="b" * 64)
+E       TypeError: RunBOM.__init__() got an unexpected keyword argument 'classification_ref'
+
+tests\test_infra_correlator_bom.py:182: TypeError
+_________________ test_bom_rejects_invalid_governance_values __________________
+
+    def test_bom_rejects_invalid_governance_values():
+>       with pytest.raises(ValueError, match="tadr_tier"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE <class 'ValueError'>
+
+tests\test_infra_correlator_bom.py:196: Failed
+__________ test_legacy_v1_serialization_and_seals_are_byte_identical __________
+
+    def test_legacy_v1_serialization_and_seals_are_byte_identical():
+        fixture_path = (Path(__file__).parent / "fixtures" / "governance" /
+                        "legacy-v1.json")
+        fixture = json.loads(fixture_path.read_text(encoding="utf-8"))
+        objects = {
+            "run_bom": RunBOM(
+                run_id="legacy-run", model_name="model-a",
+                model_checkpoint="checkpoint-a", python_version="3.11.9",
+                harness_version="0.3.0").to_dict(),
+            "incident": IncidentSheet(
+                incident_id="INC-legacy",
+                detection_time="2026-08-01T00:00:00Z").to_dict(),
+            "correlated": CorrelatedEvent(
+                run_id="legacy-run", timestamp="2026-08-01T00:00:00Z",
+                detection="scope-expansion").to_dict(),
+        }
+        for name, obj in objects.items():
+            raw = json.dumps(obj, separators=(",", ":"), ensure_ascii=False)
+>           assert raw == fixture[name]["canonical"]
+E           assert '{"schema":"f...vernance":{}}' == '{"schema":"f...y_hashes":{}}'
+E             
+E             Skipping 376 identical leading characters in diff, use -v to show
+E             - hashes":{}}
+E             + hashes":{},"governance":{}}
+
+tests\test_infra_correlator_bom.py:220: AssertionError
+_________ test_trust_model_propagates_complete_governance_references __________
+
+    def test_trust_model_propagates_complete_governance_references():
+>       model = TrustModel(
+            model_id="governed", tadr_tier="T2", tadr_modifiers=["A"],
+            classification_ref="a" * 64, governance_verdict="pause",
+            pause_triggers=["capability-increase"], control_digest="b" * 64)
+E       TypeError: TrustModel.__init__() got an unexpected keyword argument 'tadr_tier'
+
+tests\test_infra_trust_acquisition.py:99: TypeError
+_____________ test_trust_model_rejects_invalid_governance_values ______________
+
+    def test_trust_model_rejects_invalid_governance_values():
+        with pytest.raises(ValueError, match="tadr_tier"):
+>           TrustModel(model_id="bad", tadr_tier="T9")
+E           TypeError: TrustModel.__init__() got an unexpected keyword argument 'tadr_tier'
+
+tests\test_infra_trust_acquisition.py:113: TypeError
+=========================== short test summary info ===========================
+FAILED tests/test_governance_tadr.py::test_compliance_report_to_dict - ValueE...
+FAILED tests/test_governance_envelope.py::test_allows_action_within_tier - As...
+FAILED tests/test_governance_envelope.py::test_blocks_action_above_tier - Ass...
+FAILED tests/test_governance_envelope.py::test_build_envelope_compliant - Key...
+FAILED tests/test_governance_interop.py::test_entries_validate_with_installed_proof_surface
+FAILED tests/test_infra_correlator_bom.py::test_correlated_event_rejects_open_indicator_and_tier_values
+FAILED tests/test_infra_correlator_bom.py::test_correlated_event_propagates_tier_without_changing_severity
+FAILED tests/test_infra_correlator_bom.py::test_incident_propagates_governance_and_validates_command_roles
+FAILED tests/test_infra_correlator_bom.py::test_bom_propagates_complete_governance_references
+FAILED tests/test_infra_correlator_bom.py::test_bom_rejects_invalid_governance_values
+FAILED tests/test_infra_correlator_bom.py::test_legacy_v1_serialization_and_seals_are_byte_identical
+FAILED tests/test_infra_trust_acquisition.py::test_trust_model_propagates_complete_governance_references
+FAILED tests/test_infra_trust_acquisition.py::test_trust_model_rejects_invalid_governance_values

@@ -79,3 +79,37 @@ scripts/.private-denylist.txt
 # The walker's stderr, kept so a silent startup death is visible. Tracebacks
 # carry absolute local paths, so this stays local and never becomes evidence.
 artifacts/pool/walker-stderr.log
+
+# Task 0 keeps two public-safe fixtures; later bootstrap diagnostics stay local.
+artifacts/closeout/FW-2026-08-02-CLOSEOUT/task-0-bootstrap/*
+!artifacts/closeout/FW-2026-08-02-CLOSEOUT/task-0-bootstrap/passing-fixture/
+!artifacts/closeout/FW-2026-08-02-CLOSEOUT/task-0-bootstrap/passing-fixture/**
+!artifacts/closeout/FW-2026-08-02-CLOSEOUT/task-0-bootstrap/failing-fixture/
+!artifacts/closeout/FW-2026-08-02-CLOSEOUT/task-0-bootstrap/failing-fixture/**
+
+# Task 1 raw evidence includes reproducible build trees and temporary virtual
+# environments. A compact reviewed subset ships in the sibling `-reviewed`
+# directory.
+artifacts/closeout/FW-2026-08-02-CLOSEOUT/task-1-proof-surface/
+artifacts/closeout/FW-2026-08-02-CLOSEOUT/task-1-proof-surface-final-head/
+
+# These reviewed receipts retain machine-specific argv or negative-test output.
+# Their result summaries are in the handoff record; raw copies stay local.
+artifacts/closeout/FW-2026-08-02-CLOSEOUT/task-1-proof-surface-reviewed/036-wheel-cli-tadr-valid/
+artifacts/closeout/FW-2026-08-02-CLOSEOUT/task-1-proof-surface-reviewed/037-wheel-cli-authorization-v2-valid/
+artifacts/closeout/FW-2026-08-02-CLOSEOUT/task-1-proof-surface-reviewed/038-wheel-cli-zero-digest-negative/
+artifacts/closeout/FW-2026-08-02-CLOSEOUT/task-1-proof-surface-reviewed/039-full-pytest-explicit-count/
+artifacts/closeout/FW-2026-08-02-CLOSEOUT/task-1-proof-surface-reviewed/100-red-public-surface-gate/
+artifacts/closeout/FW-2026-08-02-CLOSEOUT/task-1-proof-surface-reviewed/120-full-pytest-fix-explicit/
+artifacts/closeout/FW-2026-08-02-CLOSEOUT/task-1-proof-surface-reviewed/200-red-strict-json-authorization-cli/
+artifacts/closeout/FW-2026-08-02-CLOSEOUT/task-1-proof-surface-reviewed/202-red-public-surface-hardening-line/
+artifacts/closeout/FW-2026-08-02-CLOSEOUT/task-1-proof-surface-reviewed/226-wheel-cli-valid-tadr/
+artifacts/closeout/FW-2026-08-02-CLOSEOUT/task-1-proof-surface-reviewed/227-wheel-cli-valid-auth-v02/
+artifacts/closeout/FW-2026-08-02-CLOSEOUT/task-1-proof-surface-reviewed/228-wheel-cli-reject-zero-digest/
+artifacts/closeout/FW-2026-08-02-CLOSEOUT/task-1-proof-surface-reviewed/229-wheel-cli-reject-duplicate/
+artifacts/closeout/FW-2026-08-02-CLOSEOUT/task-1-proof-surface-reviewed/230-wheel-cli-reject-nan/
+
+# Checkpoint command receipts include transient pre-commit and post-push state.
+# The handoff record carries the stable facts; these self-referential receipts
+# stay local.
+artifacts/closeout/FW-2026-08-02-CLOSEOUT/task-checkpoint/

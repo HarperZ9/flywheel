@@ -79,6 +79,28 @@ class TrustModel:
     single_points_of_failure: list[str] = field(default_factory=list)
     adversary_paths: list[str] = field(default_factory=list)
     description: str = ""
+    tadr_tier: str = ""
+    tadr_modifiers: list[str] = field(default_factory=list)
+    classification_ref: str = ""
+    governance_verdict: str = ""
+    pause_triggers: list[str] = field(default_factory=list)
+    control_digest: str = ""
+
+    def __post_init__(self) -> None:
+        from harness.governance.tadr_tier import validate_modifiers, validate_tier
+
+        if self.tadr_tier and not validate_tier(self.tadr_tier):
+            raise ValueError(f"invalid tadr_tier: {self.tadr_tier!r}")
+        invalid = validate_modifiers(self.tadr_modifiers)
+        if invalid or (self.tadr_modifiers and not self.tadr_tier):
+            raise ValueError(f"invalid tadr_modifiers: {invalid or self.tadr_modifiers}")
+        if self.governance_verdict and self.governance_verdict not in {
+                "allow", "pause", "deny"}:
+            raise ValueError(f"invalid governance_verdict: {self.governance_verdict!r}")
+        for name in ("classification_ref", "control_digest"):
+            value = getattr(self, name)
+            if value and not _nonzero_digest(value):
+                raise ValueError(f"invalid {name}")
 
     def add_component(self, **kwargs: Any) -> Component:
         comp = Component(**kwargs)
@@ -93,7 +115,12 @@ class TrustModel:
         return claim
 
     def to_dict(self) -> dict[str, Any]:
-        return {
+        # Validate TADR tier if set (fail-closed on invalid values)
+        if self.tadr_tier:
+            from harness.governance.tadr_tier import validate_tier
+            if not validate_tier(self.tadr_tier):
+                raise ValueError(f"invalid tadr_tier: {self.tadr_tier!r}")
+        result = {
             "schema": SCHEMA,
             "model_id": self.model_id,
             "description": self.description,
@@ -102,6 +129,22 @@ class TrustModel:
             "single_points_of_failure": list(self.single_points_of_failure),
             "adversary_paths": list(self.adversary_paths),
         }
+        governance: dict[str, Any] = {}
+        if self.tadr_tier:
+            governance["tadr_tier"] = self.tadr_tier
+        if self.tadr_modifiers:
+            governance["tadr_modifiers"] = list(self.tadr_modifiers)
+        if self.classification_ref:
+            governance["classification_ref"] = self.classification_ref
+        if self.governance_verdict:
+            governance["governance_verdict"] = self.governance_verdict
+        if self.pause_triggers:
+            governance["pause_triggers"] = list(self.pause_triggers)
+        if self.control_digest:
+            governance["control_digest"] = self.control_digest
+        if governance:
+            result["governance"] = governance
+        return result
 
     def validate(self) -> list[str]:
         """Validate the trust model. Returns a list of issues (empty = valid).
@@ -203,3 +246,8 @@ def default_flywheel_trust_model() -> TrustModel:
         "model -> generated script -> cron -> persistence (gap: no process monitor)",
     ]
     return model
+
+
+def _nonzero_digest(value: str) -> bool:
+    return (len(value) == 64 and value == value.lower() and value != "0" * 64
+            and all(char in "0123456789abcdef" for char in value))

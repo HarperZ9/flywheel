@@ -1112,6 +1112,24 @@ class _Handler(BaseHTTPRequestHandler):
             from harness.lesson_store import LessonStore
             store = LessonStore.load(Path(self.run_root) / "lessons.jsonl")
             return self._json({"patterns": [p.to_dict() for p in store.patterns()]})
+        if p == "/api/governance/tiers":               # TADR tier definitions
+            from harness.governance.tadr_tier import TADR_TIERS, TADR_MODIFIERS
+            return self._json({
+                "tiers": TADR_TIERS,
+                "modifiers": sorted(TADR_MODIFIERS),
+            })
+        if p == "/api/governance/compliance":          # control baseline compliance check
+            from harness.governance.control_baseline import check_compliance
+            tier = "T1"
+            report = check_compliance(tier)
+            return self._json(report.to_dict())
+        if p == "/api/governance/classify":            # classify a system (GET with query params)
+            from harness.governance.tadr_tier import classify
+            from urllib.parse import parse_qs
+            params = parse_qs(qs) if qs else {}
+            overrides = params.get("override", [])
+            result = classify(overrides)
+            return self._json(result.to_dict())
         if p == "/api/training/status":
             return self._json(_training_status(self.run_root))
         if p == "/api/train/duel":                    # verified-inference duel summary (read-only)
