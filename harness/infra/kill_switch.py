@@ -124,14 +124,47 @@ def isolate_network() -> dict[str, Any]:
             "reason": "network isolated (live mode)"}
 
 
-def revoke_credentials() -> dict[str, Any]:
-    """Revoke all credentials. Stub (safe by default)."""
-    live = __import__("os").environ.get("FLYWHEEL_KILL_SWITCH_LIVE") == "1"
-    if not live:
-        return {"action": "credential-revocation", "executed": False,
-                "reason": "dry run"}
-    return {"action": "credential-revocation", "executed": True,
-            "reason": "credentials revoked (live mode)"}
+def revoke_credentials(
+    *,
+    aws_key_ids: list[str] | None = None,
+    gcp_sa_emails: list[str] | None = None,
+    vault_paths: list[str] | None = None,
+) -> dict[str, Any]:
+    """Revoke credentials across all configured cloud IAM providers.
+
+    Calls the cloud_iam adapters: AWS IAM (deactivate access keys), GCP IAM
+    (disable service accounts), HashiCorp Vault (revoke tokens/leases), and
+    local environment variables (clear credential-shaped env vars). In live
+    mode (FLYWHEEL_KILL_SWITCH_LIVE=1) makes real API calls; in dry-run reports
+    what it would do.
+    """
+    from .cloud_iam import revoke_all, build_revocation_receipt
+    results = revoke_all(
+        aws_key_ids=aws_key_ids,
+        gcp_sa_emails=gcp_sa_emails,
+        vault_paths=vault_paths,
+    )
+    any_executed = any(r.executed for r in results)
+    total_revoked = sum(len(r.credentials_revoked) for r in results)
+    all_errors = [e for r in results for e in r.errors]
+
+    # Build a sealed receipt for the whole revocation action
+    receipt = build_revocation_receipt(
+        results[0] if results else
+        type(results[0])(provider="none", action="no-op") if results else
+        None,  # type: ignore
+    ) if results else {}
+
+    return {
+        "action": "credential-revocation",
+        "executed": any_executed,
+        "providers_called": [r.provider for r in results],
+        "total_credentials_revoked": total_revoked,
+        "errors": all_errors,
+        "detail": (f"revoked {total_revoked} credential(s) across "
+                   f"{len(results)} provider(s)"),
+        "receipt": receipt,
+    }
 
 
 def terminate_process(pid: int = 0) -> dict[str, Any]:
