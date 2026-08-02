@@ -157,14 +157,15 @@ A lesson bundle validates against proof-surface's
 bundle alongside crucible assessments, gather corpora, forum routes, index
 envelopes, and learn receipts.
 
-## What is built vs deferred
+## What is built
 
-**Built (this layer):**
+All layers of the organizational learning loop are shipped. Nothing is deferred.
+
 - The lesson record (`harness/lesson.py`): sealed, chain-linked, re-verifiable.
 - The lesson store (`harness/lesson_store.py`): append-only, patterns, verify,
-  persistence. Three detection modes: exact match (default), semantic
-  (Jaccard token overlap via union-find), and temporal (exponential decay
-  with a 30-day half-life and 90-day cutoff).
+  persistence, status transitions. Three detection modes: exact match
+  (default), semantic (Jaccard token overlap via union-find), and temporal
+  (exponential decay with a 30-day half-life and 90-day cutoff).
 - Three mappers (`harness/lesson_mappers.py`):
   - intent-outcome (reads accountable-surface, derives lessons from divergences)
   - drift (reads mneme drift report, derives lessons from DRIFT / UNVERIFIABLE)
@@ -175,15 +176,16 @@ envelopes, and learn receipts.
   reasoning, and `ToolExecutor.execute(rationale=...)` seals it into the receipt.
 - The spine entry (`harness/lesson_interop.py`): maps lessons to organ-bundle
   entries, validated against proof-surface.
-- The gateway surface: `/api/lessons`, `/api/lessons/patterns`.
-- The desktop view (`desktop/lib/views/lessons_view.dart`): read-only Flutter
-  view in the side rail (group: Know, abbr: LE), rendering stats, chain
-  verdict, improvement candidates, and pattern details.
+- The gateway surface: `/api/lessons`, `/api/lessons/patterns`,
+  `POST /api/lessons/admit`, `POST /api/lessons/retire`.
+- The desktop view (`desktop/lib/views/lessons_view.dart`): Flutter view in the
+  side rail (group: Know, abbr: LE), rendering stats, chain verdict, improvement
+  candidates, and pattern details. Admit and Retire buttons on each pattern
+  card, with retire gated by a confirmation dialog.
+- Status transitions: `transition(lesson_id, new_status)` appends a new row
+  with the same content but the new status (append-only journal). Allowed:
+  surfaced -> admitted -> applied -> retired (terminal).
 - The `learn-lesson` receipt kind in proof-surface.
-
-**Deferred to follow-ups:**
-- Write-back from the desktop view (a POST route + form to admit/retire
-  lessons from the GUI).
 
 ## Verification
 
