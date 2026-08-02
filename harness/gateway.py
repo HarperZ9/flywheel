@@ -1130,6 +1130,9 @@ class _Handler(BaseHTTPRequestHandler):
             overrides = params.get("override", [])
             result = classify(overrides)
             return self._json(result.to_dict())
+        if p == "/api/lanes/callable":                # list lanes + their tier requirements
+            from harness.lane_caller import list_available_lanes
+            return self._json({"lanes": list_available_lanes()})
         if p == "/api/training/status":
             return self._json(_training_status(self.run_root))
         if p == "/api/train/duel":                    # verified-inference duel summary (read-only)
@@ -2489,6 +2492,28 @@ class _Handler(BaseHTTPRequestHandler):
                 return self._json(row)
             except ValueError as e:
                 return self._json({"error": str(e)}, 400)
+        if p.startswith("/api/lane/"):                   # generic lane caller
+            parts = p.split("/")
+            if len(parts) < 5:
+                return self._json({"error": "use /api/lane/<name>/<tool>"}, 400)
+            lane_name = parts[3]
+            tool_name = parts[4]
+            length = self._content_length()
+            if length is None:
+                return self._json({"error": "invalid Content-Length"}, 400)
+            try:
+                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
+            except Exception:
+                req = {}
+            args = req.get("args", {}) if isinstance(req, dict) else {}
+            gov_tier = str(req.get("governance_tier", "")) if isinstance(req, dict) else ""
+            timeout = int(req.get("timeout", 20)) if isinstance(req, dict) else 20
+            from harness.lane_caller import call_lane_tool
+            result = call_lane_tool(lane_name, tool_name, args,
+                                    timeout=timeout, governance_tier=gov_tier)
+            code = 403 if result.get("governance_denied") else (
+                400 if "error" in result else 200)
+            return self._json(result, code)
         return self._json({"error": "not found"}, 404)
 
 
