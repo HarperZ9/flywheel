@@ -83,6 +83,38 @@ TIER_CONTROLS: dict[str, tuple] = {
     "T3": T1_CONTROLS + T2_CONTROLS + T3_CONTROLS,
 }
 
+CONTROL_TIERS = {
+    **{slug: "T1" for slug, _ in T1_CONTROLS},
+    **{slug: "T2" for slug, _ in T2_CONTROLS},
+    **{slug: "T3" for slug, _ in T3_CONTROLS},
+}
+OBSERVATION_STATES = frozenset({"present", "absent", "unknown"})
+
+
+@dataclass(frozen=True)
+class ControlObservation:
+    """One evidence-bearing observation of a required control."""
+    control_id: str
+    state: str
+    source_ref: str
+    observed_at: str
+    checker_id: str
+
+    def __post_init__(self) -> None:
+        if self.state not in OBSERVATION_STATES:
+            raise ValueError(f"invalid control state: {self.state!r}")
+        if self.state != "unknown":
+            for name in ("source_ref", "observed_at", "checker_id"):
+                if not getattr(self, name):
+                    raise ValueError(f"{name} is required for measured controls")
+
+    def to_dict(self) -> dict[str, str]:
+        return {
+            "control_id": self.control_id, "state": self.state,
+            "source_ref": self.source_ref, "observed_at": self.observed_at,
+            "checker_id": self.checker_id,
+        }
+
 
 @dataclass
 class ControlCheck:
@@ -90,13 +122,13 @@ class ControlCheck:
     control_id: str
     name: str
     tier: str
-    present: bool = False
-    detail: str = ""
+    observation: ControlObservation
 
     def to_dict(self) -> dict[str, Any]:
         return {
-            "control_id": f"tadr:{self.tier}:{self.control_id}",
-            "name": self.name, "present": self.present, "detail": self.detail,
+            "control_id": self.observation.control_id, "name": self.name,
+            "required_tier": self.tier,
+            "observation": self.observation.to_dict(),
         }
 
 
@@ -104,19 +136,41 @@ class ControlCheck:
 class ComplianceReport:
     """The result of checking a run against its tier's control baseline."""
     tier: str
-    checked: int = 0
-    passed: int = 0
-    failed: int = 0
+    required: int = 0
+    measured: int = 0
+    present: int = 0
+    absent: int = 0
+    unknown: int = 0
     checks: list[ControlCheck] = field(default_factory=list)
 
     @property
     def compliant(self) -> bool:
-        return self.failed == 0 and self.checked > 0
+        return (self.required > 0 and self.measured == self.required
+                and self.present == self.required and self.absent == 0
+                and self.unknown == 0)
+
+    @property
+    def checked(self) -> int:
+        """Compatibility alias for the v1 report surface."""
+        return self.required
+
+    @property
+    def passed(self) -> int:
+        """Compatibility alias for the v1 report surface."""
+        return self.present
+
+    @property
+    def failed(self) -> int:
+        """Compatibility alias; unknown evidence remains non-passing."""
+        return self.absent + self.unknown
 
     def to_dict(self) -> dict[str, Any]:
         return {
-            "tier": self.tier, "checked": self.checked,
-            "passed": self.passed, "failed": self.failed,
+            "tier": self.tier, "required": self.required,
+            "measured": self.measured, "present": self.present,
+            "absent": self.absent, "unknown": self.unknown,
+            "checked": self.checked, "passed": self.passed,
+            "failed": self.failed,
             "compliant": self.compliant,
             "checks": [c.to_dict() for c in self.checks],
         }
@@ -125,57 +179,49 @@ class ComplianceReport:
 def check_compliance(
     tier: str,
     *,
-    has_named_owner: bool = True,
-    has_operational_logging: bool = True,
-    has_tested_backup: bool = True,
-    has_rbac: bool = True,
-    has_change_approval: bool = True,
-    has_tamper_evident_logs: bool = False,
-    has_multi_party_auth: bool = False,
-    has_continuous_monitoring: bool = False,
-    has_dual_control: bool = False,
-    has_external_review: bool = False,
-    has_emergency_shutdown: bool = False,
-    has_restricted_release: bool = False,
-    has_independent_testing: bool = False,
-    **kwargs: Any,
+    observations: list[ControlObservation | dict[str, str]] | None = None,
+    **legacy_facts: Any,
 ) -> ComplianceReport:
     """Check whether a run meets its tier's control baseline.
 
-    This is a heuristic checker: it maps configuration facts to TADR control
-    IDs and reports which are present or missing. A missing control at the
-    required tier is a compliance failure.
+    Omitted observations are unknown. Boolean legacy facts are rejected because
+    they cannot identify their evidence source, observation time, or checker.
     """
-    controls = TIER_CONTROLS.get(tier, T1_CONTROLS)
-    report = ComplianceReport(tier=tier)
-
-    # Map configuration facts to control IDs.
-    fact_map: dict[str, bool] = {
-        "named-owner": has_named_owner,
-        "rbac": has_rbac,
-        "change-approval": has_change_approval,
-        "operational-logging": has_operational_logging,
-        "tested-backup": has_tested_backup,
-        "tamper-evident-logs": has_tamper_evident_logs,
-        "multi-party-auth": has_multi_party_auth,
-        "continuous-monitoring": has_continuous_monitoring,
-        "dual-control-hazardous": has_dual_control,
-        "external-review": has_external_review,
-        "emergency-intervention": has_emergency_shutdown,
-    }
+    if tier not in TIER_CONTROLS:
+        raise ValueError(f"invalid tier: {tier!r}")
+    if legacy_facts:
+        raise ValueError("boolean control facts are unsupported; provide observations")
+    controls = TIER_CONTROLS[tier]
+    supplied: dict[str, ControlObservation] = {}
+    for raw in observations or []:
+        observation = raw if isinstance(raw, ControlObservation) else ControlObservation(**raw)
+        if observation.control_id in supplied:
+            raise ValueError(f"duplicate control_id: {observation.control_id!r}")
+        supplied[observation.control_id] = observation
+    required_ids = {
+        f"tadr:{CONTROL_TIERS[slug]}:{slug}" for slug, _ in controls}
+    unknown_ids = sorted(set(supplied) - required_ids)
+    if unknown_ids:
+        raise ValueError(f"invalid control_id for {tier}: {unknown_ids}")
+    report = ComplianceReport(tier=tier, required=len(controls))
 
     for control_id, name in controls:
-        present = fact_map.get(control_id, False)
+        full_id = f"tadr:{CONTROL_TIERS[control_id]}:{control_id}"
+        observation = supplied.get(full_id, ControlObservation(
+            control_id=full_id, state="unknown", source_ref="unobserved",
+            observed_at="", checker_id="flywheel.control-baseline/v1"))
         check = ControlCheck(
-            control_id=control_id, name=name,
-            tier=tier, present=present,
-            detail="present" if present else "missing",
+            control_id=control_id, name=name, tier=CONTROL_TIERS[control_id],
+            observation=observation,
         )
         report.checks.append(check)
-        report.checked += 1
-        if present:
-            report.passed += 1
+        if observation.state != "unknown":
+            report.measured += 1
+        if observation.state == "present":
+            report.present += 1
+        elif observation.state == "absent":
+            report.absent += 1
         else:
-            report.failed += 1
+            report.unknown += 1
 
     return report

@@ -95,6 +95,31 @@ def test_default_model_names_adversary_paths():
     assert any("network monitor" in p for p in model.adversary_paths)
 
 
+def test_trust_model_propagates_complete_governance_references():
+    model = TrustModel(
+        model_id="governed", tadr_tier="T2", tadr_modifiers=["A"],
+        classification_ref="a" * 64, governance_verdict="pause",
+        pause_triggers=["capability-increase"], control_digest="b" * 64)
+    assert model.to_dict()["governance"] == {
+        "tadr_tier": "T2", "tadr_modifiers": ["A"],
+        "classification_ref": "a" * 64, "governance_verdict": "pause",
+        "pause_triggers": ["capability-increase"],
+        "control_digest": "b" * 64,
+    }
+
+
+def test_trust_model_rejects_invalid_governance_values():
+    with pytest.raises(ValueError, match="tadr_tier"):
+        TrustModel(model_id="bad", tadr_tier="T9")
+
+
+def test_trust_model_revalidates_mutated_governance():
+    model = TrustModel(model_id="bad-later")
+    model.tadr_tier = "T9"
+    with pytest.raises(ValueError, match="tadr_tier"):
+        model.to_dict()
+
+
 # --- acquisition manifest -------------------------------------------------
 
 

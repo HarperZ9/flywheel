@@ -55,6 +55,7 @@ Enforced by scripts/check_file_gate.py and tests/test_file_gate.py.
 | tests/test_closed_loop_benchmark_seed.py | 433 |
 | tests/test_closed_loop_outcome_report.py | 1557 |
 | tests/test_contest.py | 329 |
+| tests/test_governance_tadr.py | 339 |
 | tests/test_gateway.py | 818 |
 | tests/test_harness_cli.py | 851 |
 | tests/test_ledger.py | 372 |

@@ -1,0 +1,26 @@
+
+=================================== ERRORS ====================================
+_______________ ERROR collecting tests/test_governance_tadr.py ________________
+ImportError while importing test module 'C:\dev\public\flywheel\tests\test_governance_tadr.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+C:\Users\Zain\AppData\Local\Programs\Python\Python312\Lib\importlib\__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\test_governance_tadr.py:17: in <module>
+    from harness.governance.tadr_receipt import (
+E   ImportError: cannot import name 'CONTROL_SCHEMA' from 'harness.governance.tadr_receipt' (C:\dev\public\flywheel\harness\governance\tadr_receipt.py)
+______________ ERROR collecting tests/test_governance_interop.py ______________
+ImportError while importing test module 'C:\dev\public\flywheel\tests\test_governance_interop.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+C:\Users\Zain\AppData\Local\Programs\Python\Python312\Lib\importlib\__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\test_governance_interop.py:7: in <module>
+    from harness.governance.tadr_receipt import (
+E   ImportError: cannot import name 'build_control_receipt' from 'harness.governance.tadr_receipt' (C:\dev\public\flywheel\harness\governance\tadr_receipt.py)
+=========================== short test summary info ===========================
+ERROR tests/test_governance_tadr.py
+ERROR tests/test_governance_interop.py
+!!!!!!!!!!!!!!!!!!! Interrupted: 2 errors during collection !!!!!!!!!!!!!!!!!!!

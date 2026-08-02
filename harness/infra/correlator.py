@@ -24,6 +24,11 @@ DETECTIONS = {
     "persistence": "agent wrote to a startup, cron, or service location",
     "external-publication": "agent sent data to an external destination",
 }
+INDICATOR_CLASSES = frozenset({
+    "Observation", "Report", "Inference", "Hypothesis", "Assessment",
+    "Attribution",
+})
+SEVERITIES = frozenset({"low", "moderate", "high", "critical"})
 
 
 def _sha256_hex(data: bytes) -> str:
@@ -53,9 +58,26 @@ class CorrelatedEvent:
     agent_action: str = ""
     evidence_refs: list[dict[str, str]] = field(default_factory=list)
     detail: str = ""
-    indicator_class: str = "Observation"  # TADR section 44: Observation/Report/Inference/Hypothesis/Assessment/Attribution
+    indicator_class: str = ""
+    tadr_tier: str = ""
+    classification_ref: str = ""
+
+    def __post_init__(self) -> None:
+        from harness.governance.tadr_tier import validate_tier
+
+        if self.severity not in SEVERITIES:
+            raise ValueError(f"invalid severity: {self.severity!r}")
+        if self.indicator_class and self.indicator_class not in INDICATOR_CLASSES:
+            raise ValueError(f"invalid indicator_class: {self.indicator_class!r}")
+        if self.tadr_tier and not validate_tier(self.tadr_tier):
+            raise ValueError(f"invalid tadr_tier: {self.tadr_tier!r}")
+        if self.classification_ref and not _nonzero_digest(self.classification_ref):
+            raise ValueError("invalid classification_ref")
 
     def to_dict(self) -> dict[str, Any]:
+        if self.indicator_class and self.indicator_class not in INDICATOR_CLASSES:
+            raise ValueError(
+                f"invalid indicator_class: {self.indicator_class!r}")
         d = {
             "run_id": self.run_id,
             "timestamp": self.timestamp or _utc_now(),
@@ -69,8 +91,13 @@ class CorrelatedEvent:
             "agent_action": self.agent_action,
             "evidence_refs": list(self.evidence_refs),
             "detail": self.detail,
-            "indicator_class": self.indicator_class,
         }
+        if self.indicator_class:
+            d["indicator_class"] = self.indicator_class
+        if self.tadr_tier:
+            d["tadr_tier"] = self.tadr_tier
+        if self.classification_ref:
+            d["classification_ref"] = self.classification_ref
         return d
 
 
@@ -199,3 +226,8 @@ def build_correlated_receipt(event: CorrelatedEvent) -> dict[str, Any]:
     body = event.to_dict()
     seal_hash = _sha256_hex(_canonical_bytes(body))
     return {"schema": SCHEMA, "seal_hash": seal_hash, "seal_body": body}
+
+
+def _nonzero_digest(value: str) -> bool:
+    return (len(value) == 64 and value == value.lower() and value != "0" * 64
+            and all(char in "0123456789abcdef" for char in value))

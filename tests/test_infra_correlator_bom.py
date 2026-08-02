@@ -1,6 +1,10 @@
 """Tests for Families 4+5: correlator, incident sheet, run BOM, partner assurance."""
 from __future__ import annotations
 
+import hashlib
+import json
+from pathlib import Path
+
 import pytest
 
 # --- correlator (Family 4) -----------------------------------------------
@@ -43,6 +47,24 @@ def test_correlated_receipt_sealed():
     r = build_correlated_receipt(event)
     assert r["schema"] == CORR_SCHEMA
     assert len(r["seal_hash"]) == 64
+
+
+def test_correlated_event_rejects_open_indicator_and_tier_values():
+    with pytest.raises(ValueError, match="indicator_class"):
+        CorrelatedEvent(run_id="t", indicator_class="Rumor")
+    with pytest.raises(ValueError, match="tadr_tier"):
+        CorrelatedEvent(run_id="t", tadr_tier="T9")
+
+
+def test_correlated_event_propagates_tier_without_changing_severity():
+    event = CorrelatedEvent(
+        run_id="t", severity="critical", tadr_tier="T2",
+        classification_ref="a" * 64, indicator_class="Assessment")
+    body = event.to_dict()
+    assert body["severity"] == "critical"
+    assert body["tadr_tier"] == "T2"
+    assert body["classification_ref"] == "a" * 64
+    assert body["indicator_class"] == "Assessment"
 
 
 def test_correlate_detects_statistical_anomaly():
@@ -106,6 +128,21 @@ def test_from_correlated_event():
     assert sheet.root_correlated_event == "b" * 64
 
 
+def test_incident_propagates_governance_and_validates_command_roles():
+    event = {"seal_hash": "b" * 64, "seal_body": {
+        "timestamp": "2026-08-01T00:00:00Z", "severity": "critical",
+        "run_id": "eval-001", "tadr_tier": "T3",
+        "classification_ref": "a" * 64,
+    }}
+    sheet = from_correlated_event(event, commander="alice")
+    assert sheet.tadr_tier == "T3"
+    assert sheet.classification_ref == "a" * 64
+    with pytest.raises(ValueError, match="command role"):
+        IncidentSheet(
+            incident_id="INC-1", detection_time="2026-08-01",
+            command_roles={"arbitrary_override": "mallory"})
+
+
 # --- run BOM (Family 4) ---------------------------------------------------
 
 from harness.infra.run_bom import (
@@ -139,6 +176,64 @@ def test_default_flywheel_bom():
     assert bom.run_id == "eval-001"
     assert bom.harness_version == "0.3.0"
     assert "read_file" in bom.tool_scopes
+
+
+def test_bom_propagates_complete_governance_references():
+    bom = RunBOM(
+        run_id="test", tadr_tier="T2", tadr_modifiers=["A"],
+        classification_ref="a" * 64, governance_verdict="pause",
+        pause_triggers=["capability-increase"], control_digest="b" * 64)
+    governance = bom.to_dict()["governance"]
+    assert governance == {
+        "tadr_tier": "T2", "tadr_modifiers": ["A"],
+        "classification_ref": "a" * 64, "governance_verdict": "pause",
+        "pause_triggers": ["capability-increase"],
+        "control_digest": "b" * 64,
+    }
+
+
+def test_bom_rejects_invalid_governance_values():
+    with pytest.raises(ValueError, match="tadr_tier"):
+        RunBOM(run_id="test", tadr_tier="T9")
+    with pytest.raises(ValueError, match="tadr_modifiers"):
+        RunBOM(run_id="test", tadr_tier="T1", tadr_modifiers=["Z"])
+
+
+def test_infra_serializers_revalidate_mutated_governance():
+    bom = RunBOM(run_id="test")
+    bom.tadr_tier = "T9"
+    with pytest.raises(ValueError, match="tadr_tier"):
+        bom.to_dict()
+    incident = IncidentSheet(incident_id="INC-1", detection_time="2026-08-01")
+    incident.command_roles["arbitrary_override"] = "mallory"
+    with pytest.raises(ValueError, match="command role"):
+        incident.to_dict()
+    event = CorrelatedEvent(run_id="test")
+    event.indicator_class = "Rumor"
+    with pytest.raises(ValueError, match="indicator_class"):
+        event.to_dict()
+
+
+def test_legacy_v1_serialization_and_seals_are_byte_identical():
+    fixture_path = (Path(__file__).parent / "fixtures" / "governance" /
+                    "legacy-v1.json")
+    fixture = json.loads(fixture_path.read_text(encoding="utf-8"))
+    objects = {
+        "run_bom": RunBOM(
+            run_id="legacy-run", model_name="model-a",
+            model_checkpoint="checkpoint-a", python_version="3.11.9",
+            harness_version="0.3.0").to_dict(),
+        "incident": IncidentSheet(
+            incident_id="INC-legacy",
+            detection_time="2026-08-01T00:00:00Z").to_dict(),
+        "correlated": CorrelatedEvent(
+            run_id="legacy-run", timestamp="2026-08-01T00:00:00Z",
+            detection="scope-expansion").to_dict(),
+    }
+    for name, obj in objects.items():
+        raw = json.dumps(obj, separators=(",", ":"), ensure_ascii=False)
+        assert raw == fixture[name]["canonical"]
+        assert hashlib.sha256(raw.encode("utf-8")).hexdigest() == fixture[name]["seal_hash"]
 
 
 # --- partner assurance (Family 5) ----------------------------------------

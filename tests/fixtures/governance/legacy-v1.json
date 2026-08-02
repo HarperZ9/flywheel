@@ -1,0 +1,14 @@
+{
+  "run_bom": {
+    "canonical": "{\"schema\":\"flywheel.run-bom/v1\",\"run_id\":\"legacy-run\",\"model\":{\"name\":\"model-a\",\"checkpoint\":\"checkpoint-a\",\"system_prompt_hash\":\"\"},\"runtime\":{\"python_version\":\"3.11.9\",\"harness_version\":\"0.3.0\",\"runtime_image_hash\":\"\"},\"tools\":{\"versions\":{},\"scopes\":{}},\"credentials_present\":[],\"limits\":{\"max_steps\":0,\"max_tokens\":0,\"temperature\":0.0},\"safeguards_removed\":[],\"dependency_hashes\":{}}",
+    "seal_hash": "dc191b720342a8216a797e6e6709d76a9eb1b391079164ca22e7e61c3a27f3cf"
+  },
+  "incident": {
+    "canonical": "{\"schema\":\"flywheel.incident-sheet/v1\",\"incident_id\":\"INC-legacy\",\"detection_time\":\"2026-08-01T00:00:00Z\",\"incident_commander\":\"\",\"records_custodian\":\"\",\"affected_organizations\":[],\"system_class\":\"\",\"severity\":\"moderate\",\"status\":\"detected\",\"jurisdictions\":[],\"related_incidents\":[],\"root_correlated_event\":\"\",\"first_harmful_action\":\"\",\"containment_time\":\"\",\"notification_time\":\"\",\"closure_time\":\"\",\"notes\":\"\"}",
+    "seal_hash": "8116f1e171837e952c09b6d866c031a3953ff69b372b531bae4e97ffef721d10"
+  },
+  "correlated": {
+    "canonical": "{\"run_id\":\"legacy-run\",\"timestamp\":\"2026-08-01T00:00:00Z\",\"detection\":\"scope-expansion\",\"severity\":\"moderate\",\"tool_call_hash\":\"\",\"process_pid\":0,\"process_name\":\"\",\"identity\":\"\",\"destination\":\"\",\"agent_action\":\"\",\"evidence_refs\":[],\"detail\":\"\"}",
+    "seal_hash": "0d1c530674329946d9479ce75745257ea7510e786ef34718361d92ec4ae28131"
+  }
+}
