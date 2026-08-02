@@ -1,5 +1,11 @@
 # Flywheel Engine Completion Implementation Plan
 
+> **Checkpoint, 2026-08-02:** Tasks 0 and 1 are implemented, independently
+> reviewed, committed, and pushed. The operator paused execution for a ZCode/
+> GLM 5.2 handoff before Task 2. Resume from
+> `project-docs/records/FW-2026-08-02-GLM52-HANDOFF.md` and do not merge the
+> current Flywheel governance branch until Tasks 2 through 5 and 9 pass review.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Ship a fail-closed, receipt-backed Flywheel engine; make its flagship and infrastructure modules interoperable; produce current executable, endpoint, and benchmark evidence; and regenerate every affected public document, demo, deck, portfolio surface, and profile from that verified state.
@@ -80,7 +86,7 @@ Owner manifests use `flywheel.interop-manifest/v1` and must declare `schema`, `m
 
 ---
 
-### Task 0: Bootstrap durable acceptance recording and freeze the execution contract
+### Task 0: Bootstrap durable acceptance recording and freeze the execution contract [COMPLETE]
 
 **Files:**
 - Create: `scripts/run_acceptance_command.py`
@@ -109,7 +115,7 @@ Commit message: `chore: freeze engine closeout contracts`
 
 ---
 
-### Task 1: Close Proof Surface TADR and trusted-authorization contracts
+### Task 1: Close Proof Surface TADR and trusted-authorization contracts [COMPLETE]
 
 **Files:**
 - Modify: `public/proof-surface/src/proof_surface/organ_receipt_bundle.py`

@@ -1,0 +1,2 @@
+public surface gate: scanned 254 tracked text surface(s)
+public surface gate: no findings

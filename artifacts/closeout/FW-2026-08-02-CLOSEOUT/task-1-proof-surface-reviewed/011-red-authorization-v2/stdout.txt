@@ -1,0 +1,192 @@
+...................................FFFFFFFFFFFFF                         [100%]
+================================== FAILURES ===================================
+______________________ test_v0_2_minimal_receipt_passes _______________________
+
+    def test_v0_2_minimal_receipt_passes() -> None:
+>       assert ar.validate_authorization_receipt_v2(_v2()) == []
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: module 'proof_surface.authorization_receipt' has no attribute 'validate_authorization_receipt_v2'. Did you mean: 'validate_authorization_receipt'?
+
+tests\test_authorization_receipt.py:389: AttributeError
+______________________ test_v0_2_unknown_field_rejected _______________________
+
+    def test_v0_2_unknown_field_rejected() -> None:
+>       issues = ar.validate_authorization_receipt_v2(
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            _v2("invalid/unknown-root-field.receipt.json")
+        )
+E       AttributeError: module 'proof_surface.authorization_receipt' has no attribute 'validate_authorization_receipt_v2'. Did you mean: 'validate_authorization_receipt'?
+
+tests\test_authorization_receipt.py:393: AttributeError
+________________ test_v0_2_nonce_must_carry_at_least_128_bits _________________
+
+    def test_v0_2_nonce_must_carry_at_least_128_bits() -> None:
+>       issues = ar.validate_authorization_receipt_v2(
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            _v2("invalid/short-nonce.receipt.json")
+        )
+E       AttributeError: module 'proof_surface.authorization_receipt' has no attribute 'validate_authorization_receipt_v2'. Did you mean: 'validate_authorization_receipt'?
+
+tests\test_authorization_receipt.py:400: AttributeError
+________________ test_v0_2_exact_agent_action_and_target_match ________________
+
+    def test_v0_2_exact_agent_action_and_target_match() -> None:
+        receipt = _v2()
+        assert (
+>           ar.check_action_v2(
+            ^^^^^^^^^^^^^^^^^^
+                receipt,
+                "lane.call",
+                "forum/forum_route",
+                agent_id="agent:router-7",
+                actions_used=0,
+                now=_v2_now(),
+            )
+            is None
+        )
+E       AttributeError: module 'proof_surface.authorization_receipt' has no attribute 'check_action_v2'. Did you mean: 'check_action'?
+
+tests\test_authorization_receipt.py:409: AttributeError
+______________________ test_v0_2_agent_identity_is_exact ______________________
+
+    def test_v0_2_agent_identity_is_exact() -> None:
+>       issue = ar.check_action_v2(
+                ^^^^^^^^^^^^^^^^^^
+            _v2(),
+            "lane.call",
+            "forum/forum_route",
+            agent_id="agent:router-70",
+            actions_used=0,
+            now=_v2_now(),
+        )
+E       AttributeError: module 'proof_surface.authorization_receipt' has no attribute 'check_action_v2'. Did you mean: 'check_action'?
+
+tests\test_authorization_receipt.py:422: AttributeError
+_______________________ test_v0_2_action_scope_is_exact _______________________
+
+    def test_v0_2_action_scope_is_exact() -> None:
+>       issue = ar.check_action_v2(
+                ^^^^^^^^^^^^^^^^^^
+            _v2(),
+            "lane.calls",
+            "forum/forum_route",
+            agent_id="agent:router-7",
+            actions_used=0,
+            now=_v2_now(),
+        )
+E       AttributeError: module 'proof_surface.authorization_receipt' has no attribute 'check_action_v2'. Did you mean: 'check_action'?
+
+tests\test_authorization_receipt.py:436: AttributeError
+_______________________ test_v0_2_target_scope_is_exact _______________________
+
+    def test_v0_2_target_scope_is_exact() -> None:
+>       issue = ar.check_action_v2(
+                ^^^^^^^^^^^^^^^^^^
+            _v2(),
+            "lane.call",
+            "forum/forum_verify",
+            agent_id="agent:router-7",
+            actions_used=0,
+            now=_v2_now(),
+        )
+E       AttributeError: module 'proof_surface.authorization_receipt' has no attribute 'check_action_v2'. Did you mean: 'check_action'?
+
+tests\test_authorization_receipt.py:450: AttributeError
+_____________________ test_v0_2_action_budget_is_consumed _____________________
+
+    def test_v0_2_action_budget_is_consumed() -> None:
+        receipt = _v2()
+>       issue = ar.check_action_v2(
+                ^^^^^^^^^^^^^^^^^^
+            receipt,
+            "lane.call",
+            "forum/forum_route",
+            agent_id="agent:router-7",
+            actions_used=1,
+            now=_v2_now(),
+        )
+E       AttributeError: module 'proof_surface.authorization_receipt' has no attribute 'check_action_v2'. Did you mean: 'check_action'?
+
+tests\test_authorization_receipt.py:465: AttributeError
+_____________ test_v0_2_invalid_runtime_action_count_fails_closed _____________
+
+    def test_v0_2_invalid_runtime_action_count_fails_closed() -> None:
+        for actions_used in (-1, True):
+>           issue = ar.check_action_v2(
+                    ^^^^^^^^^^^^^^^^^^
+                _v2(),
+                "lane.call",
+                "forum/forum_route",
+                agent_id="agent:router-7",
+                actions_used=actions_used,
+                now=_v2_now(),
+            )
+E           AttributeError: module 'proof_surface.authorization_receipt' has no attribute 'check_action_v2'. Did you mean: 'check_action'?
+
+tests\test_authorization_receipt.py:481: AttributeError
+__________________ test_v0_2_revocation_and_time_window_deny __________________
+
+    def test_v0_2_revocation_and_time_window_deny() -> None:
+        receipt = _v2()
+        receipt["revoked"] = True
+>       issue = ar.check_action_v2(
+                ^^^^^^^^^^^^^^^^^^
+            receipt,
+            "lane.call",
+            "forum/forum_route",
+            agent_id="agent:router-7",
+            actions_used=0,
+            now=_v2_now(),
+        )
+E       AttributeError: module 'proof_surface.authorization_receipt' has no attribute 'check_action_v2'. Did you mean: 'check_action'?
+
+tests\test_authorization_receipt.py:496: AttributeError
+________________ test_v0_2_conformance_fixtures_match_manifest ________________
+
+    def test_v0_2_conformance_fixtures_match_manifest() -> None:
+        manifest = _v2("manifest.json")
+        for fixture in manifest["fixtures"]:
+>           issues = ar.validate_authorization_receipt_v2(_v2(fixture["path"]))
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           AttributeError: module 'proof_surface.authorization_receipt' has no attribute 'validate_authorization_receipt_v2'. Did you mean: 'validate_authorization_receipt'?
+
+tests\test_authorization_receipt.py:521: AttributeError
+___________ test_v0_1_legacy_fixture_bytes_and_behavior_are_pinned ____________
+
+    def test_v0_1_legacy_fixture_bytes_and_behavior_are_pinned() -> None:
+        manifest = _v2("manifest.json")
+        legacy = CONF_V2 / manifest["migration"]["legacy_path"]
+        legacy_bytes = legacy.read_bytes()
+    
+        assert hashlib.sha256(legacy_bytes).hexdigest() == manifest["migration"]["legacy_sha256"]
+        assert ar.validate_authorization_receipt(json.loads(legacy_bytes)) == []
+>       assert ar.validate_authorization_receipt_v2(json.loads(legacy_bytes))
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: module 'proof_surface.authorization_receipt' has no attribute 'validate_authorization_receipt_v2'. Did you mean: 'validate_authorization_receipt'?
+
+tests\test_authorization_receipt.py:535: AttributeError
+______________ test_v0_2_migration_fixture_is_explicit_and_valid ______________
+
+    def test_v0_2_migration_fixture_is_explicit_and_valid() -> None:
+        manifest = _v2("manifest.json")
+        migrated = _v2(manifest["migration"]["migrated_path"])
+    
+>       assert ar.validate_authorization_receipt_v2(migrated) == []
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: module 'proof_surface.authorization_receipt' has no attribute 'validate_authorization_receipt_v2'. Did you mean: 'validate_authorization_receipt'?
+
+tests\test_authorization_receipt.py:542: AttributeError
+=========================== short test summary info ===========================
+FAILED tests/test_authorization_receipt.py::test_v0_2_minimal_receipt_passes
+FAILED tests/test_authorization_receipt.py::test_v0_2_unknown_field_rejected
+FAILED tests/test_authorization_receipt.py::test_v0_2_nonce_must_carry_at_least_128_bits
+FAILED tests/test_authorization_receipt.py::test_v0_2_exact_agent_action_and_target_match
+FAILED tests/test_authorization_receipt.py::test_v0_2_agent_identity_is_exact
+FAILED tests/test_authorization_receipt.py::test_v0_2_action_scope_is_exact
+FAILED tests/test_authorization_receipt.py::test_v0_2_target_scope_is_exact
+FAILED tests/test_authorization_receipt.py::test_v0_2_action_budget_is_consumed
+FAILED tests/test_authorization_receipt.py::test_v0_2_invalid_runtime_action_count_fails_closed
+FAILED tests/test_authorization_receipt.py::test_v0_2_revocation_and_time_window_deny
+FAILED tests/test_authorization_receipt.py::test_v0_2_conformance_fixtures_match_manifest
+FAILED tests/test_authorization_receipt.py::test_v0_1_legacy_fixture_bytes_and_behavior_are_pinned
+FAILED tests/test_authorization_receipt.py::test_v0_2_migration_fixture_is_explicit_and_valid

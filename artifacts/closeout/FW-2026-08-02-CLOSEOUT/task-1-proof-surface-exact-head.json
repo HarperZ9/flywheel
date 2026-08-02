@@ -1,0 +1,104 @@
+{
+  "schema": "flywheel.checkpoint-verification/v1",
+  "subject": {
+    "repository": "proof-surface",
+    "branch": "feat/tadr-governance-contracts",
+    "source_commit": "faf6bd47f5b403fd2f8a26e28adf0e67977adbbd",
+    "remote_head_match": true,
+    "spec_review": "PASS",
+    "quality_review": "PASS"
+  },
+  "verification": [
+    {
+      "name": "full-suite",
+      "argv": ["python", "-m", "pytest", "--override-ini=addopts=", "-q"],
+      "exit_code": 0,
+      "result": "721 passed in 1.74s",
+      "raw_receipt_sha256": "b56056b7305ca1355cfbab47cf63491dda99a6a9e7b40117701c75a099204a72",
+      "stdout_sha256": "8395561afecba6c7962c4e9427930abcd93cc30ca666ae27bec443383a83da30"
+    },
+    {
+      "name": "public-surface-gate",
+      "argv": ["python", "scripts/check_public_surface.py"],
+      "exit_code": 0,
+      "result": "348 tracked files, no findings",
+      "raw_receipt_sha256": "bce48780701a71478ba62d6cb17dfba6a29a328c7f29ffb4d6a5f472868c868c",
+      "stdout_sha256": "6b68cea7246ced873b5602eb0e20c6b8284ef799c69b82ab6adfeb8542e72953"
+    },
+    {
+      "name": "package-build",
+      "argv": ["python", "-m", "build"],
+      "exit_code": 0,
+      "raw_receipt_sha256": "2cca2ef77ce73712a7699139dab08db66b050a8d21714a0148815aca5c30eb17"
+    },
+    {
+      "name": "isolated-wheel-install",
+      "argv_role": "isolated-venv-python",
+      "package": "dist/proof_surface-0.2.0-py3-none-any.whl",
+      "network": "disabled",
+      "dependencies": "disabled",
+      "exit_code": 0,
+      "raw_receipt_sha256": "2aeeb586ae8a1ddc6425e2ccd862d0477840a5f33e04dab4ab16450ea5f24f1f"
+    },
+    {
+      "name": "installed-cli-valid-tadr",
+      "argv_role": "isolated-wheel-cli",
+      "input": "conformance/organ-receipt-bundle/v0.1/valid/tadr-kinds.bundle.json",
+      "exit_code": 0,
+      "verdict": "MATCH",
+      "raw_receipt_sha256": "358c47db7d6cd11e020c004980e050a32b684d04d8e81ac4c11ca7d1951265d6"
+    },
+    {
+      "name": "installed-cli-valid-authorization-v0.2",
+      "argv_role": "isolated-wheel-cli",
+      "input": "conformance/authorization-receipt/v0.2/valid/minimal.receipt.json",
+      "exit_code": 0,
+      "verdict": "MATCH",
+      "raw_receipt_sha256": "ec4d4b6ecaea55dd783f69209d4970b6db95d2f58fb24e660ddbbad50652f6c7"
+    },
+    {
+      "name": "installed-cli-zero-digest",
+      "argv_role": "isolated-wheel-cli",
+      "input": "conformance/organ-receipt-bundle/v0.1/invalid/tadr-zero-digest.bundle.json",
+      "exit_code": 1,
+      "verdict": "UNVERIFIABLE",
+      "raw_receipt_sha256": "aa5aefbe9f430ce94a00ee44273f61e609346808101719f12e8886d2c9138561"
+    },
+    {
+      "name": "installed-cli-duplicate-key",
+      "argv_role": "isolated-wheel-cli",
+      "input": "conformance/authorization-receipt/v0.2/invalid/duplicate-action.receipt.json",
+      "exit_code": 2,
+      "verdict": "UNVERIFIABLE",
+      "reason_class": "malformed_document",
+      "raw_receipt_sha256": "55666931ee60a0f1dbeeee25da213014c1c493f26f74a3dabf517b9cf2b31925"
+    },
+    {
+      "name": "installed-cli-non-finite-number",
+      "argv_role": "isolated-wheel-cli",
+      "input": "conformance/authorization-receipt/v0.2/invalid/nan-max-actions.receipt.json",
+      "exit_code": 2,
+      "verdict": "UNVERIFIABLE",
+      "reason_class": "malformed_document",
+      "raw_receipt_sha256": "ef9741173d4dd427894036d580a8bf75653ef69c1e4b34109e3cc6c75ef2d06e"
+    }
+  ],
+  "packages": [
+    {
+      "name": "proof_surface-0.2.0-py3-none-any.whl",
+      "bytes": 199706,
+      "sha256": "7a1d567a2ea794989cf815c142024c6885fdf7cd3518d52399e2b846cf8ae07c"
+    },
+    {
+      "name": "proof_surface-0.2.0.tar.gz",
+      "bytes": 948023,
+      "sha256": "d5db854fd0cd2ad02e8d0d444b35a98230938672e9da50dde3c5e19c58de9a0f"
+    }
+  ],
+  "does_not_prove": [
+    "This Windows run does not prove cross-platform behavior.",
+    "A passing suite does not prove absence of undiscovered defects.",
+    "Build artifacts were not published to a package registry.",
+    "Raw receipts with machine-specific argv remain local and are identified here only by SHA-256."
+  ]
+}
