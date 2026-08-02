@@ -110,7 +110,7 @@ def test_build_manifest_creates_sealed_object(tmp_path: Path):
     assert m["acquisition_id"].startswith("acq-")
     assert len(m["seal"]) == 64
     assert m["source"]["sha256"] != ""
-    assert m["source"]["byte_count"] == 20
+    assert m["source"]["byte_count"] == len(b"important evidence\n")
     assert m["collector"] == "analyst-alice"
 
 
