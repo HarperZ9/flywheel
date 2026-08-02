@@ -1,4 +1,4 @@
-"""local_tools.py — the gated tool surface for the local agent's agentic loop.
+"""local_tools.py -- the gated tool surface for the local agent's agentic loop.
 
 Small local models cannot be trusted with native tool-calling or with an open
 shell, so the tool surface is (1) a simple text protocol a 7B model can emit
@@ -28,7 +28,7 @@ _EXTERNAL_TIMEOUT = 120   # bound on an external/MCP tool call, seconds
 _TOOL_LINE = re.compile(r"^\s*TOOL\s+(\w+)\s+(\{.*\})\s*$")
 
 # Commands refused even when exec is allowed. Not a security boundary against a
-# determined operator — a guardrail against a small model wrecking the tree.
+# determined operator -- a guardrail against a small model wrecking the tree.
 # The rm/rmdir entries are order-INDEPENDENT: a recursive-force delete is refused
 # however its flags are spelled (-rf, -fr, -r -f, -Rf, --recursive --force, and
 # the Windows `rmdir /q /s`), because pinning one literal ordering let the other
@@ -67,21 +67,49 @@ class ToolGate:
         return None
 
 
-def parse_tool_calls(text: str) -> list[tuple[str, dict]]:
+def parse_tool_calls(
+    text: str, *, with_preamble: bool = False
+) -> list[tuple[str, dict]] | list[tuple[str, dict, str]]:
     """Extract (name, args) calls from model output. A malformed args object is
-    skipped (not executed) so a garbled emission never runs something unintended."""
-    calls: list[tuple[str, dict]] = []
+    skipped (not executed) so a garbled emission never runs something unintended.
+
+    When with_preamble=False (default, backward-compatible), returns
+    [(name, args), ...]. When with_preamble=True, returns
+    [(name, args, preamble), ...] where preamble is the model's reasoning text
+    preceding this TOOL line (lines between the previous TOOL line and this one,
+    stripped). The preamble is the honest answer to 'why did the agent do this?'
+    """
+    if not with_preamble:
+        calls: list[tuple[str, dict]] = []
+        for line in text.splitlines():
+            m = _TOOL_LINE.match(line)
+            if not m:
+                continue
+            try:
+                args = json.loads(m.group(2))
+            except json.JSONDecodeError:
+                continue
+            if isinstance(args, dict):
+                calls.append((m.group(1), args))
+        return calls
+
+    calls_p: list[tuple[str, dict, str]] = []
+    preamble_lines: list[str] = []
     for line in text.splitlines():
         m = _TOOL_LINE.match(line)
         if not m:
+            preamble_lines.append(line)
             continue
         try:
             args = json.loads(m.group(2))
         except json.JSONDecodeError:
+            preamble_lines.append(line)
             continue
         if isinstance(args, dict):
-            calls.append((m.group(1), args))
-    return calls
+            preamble = "\n".join(preamble_lines).strip()
+            calls_p.append((m.group(1), args, preamble))
+            preamble_lines = []
+    return calls_p
 
 
 def _safe_path(root: str, path: str) -> "str | None":
@@ -225,7 +253,10 @@ class ToolExecutor:
             cap = "unknown"
         return cap, "ALLOWED"
 
-    def _emit_tool_receipt(self, name: str, args: dict, result: ToolResult) -> None:
+    def _emit_tool_receipt(
+        self, name: str, args: dict, result: ToolResult,
+        rationale: dict | None = None,
+    ) -> None:
         """Emit one sealed tool-call receipt. Never raises."""
         if not self.receipt_dir or not self._receipt_run_id:
             return
@@ -248,6 +279,7 @@ class ToolExecutor:
                 seq=self._receipt_seq,
                 prev_receipt_sha256=self._receipt_prev_sha256,
                 outcome=outcome,
+                rationale=rationale,
             )
             emit_receipt(receipt, Path(self.receipt_dir))
             # advance the chain: compute the canonical sha256 of this receipt
@@ -268,10 +300,17 @@ class ToolExecutor:
             lines.append(f'TOOL {name} {{...}}   # {desc}')
         return "\n".join(lines)
 
-    def execute(self, name: str, args: dict) -> ToolResult:
-        """Execute a tool call and emit a sealed receipt when receipt_dir is set."""
+    def execute(
+        self, name: str, args: dict, rationale: dict | None = None,
+    ) -> ToolResult:
+        """Execute a tool call and emit a sealed receipt when receipt_dir is set.
+
+        rationale is optional (default None = honest null, byte-identical receipt).
+        When provided, it is sealed into the receipt so the 'why did the agent do
+        this?' answer is re-verifiable, not asserted.
+        """
         result = self._execute_inner(name, args)
-        self._emit_tool_receipt(name, args, result)
+        self._emit_tool_receipt(name, args, result, rationale=rationale)
         return result
 
     def _execute_inner(self, name: str, args: dict) -> ToolResult:

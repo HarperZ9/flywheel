@@ -1,10 +1,10 @@
-"""local_loop.py — the agentic loop: local model + gated tools + witnessed ledger.
+"""local_loop.py -- the agentic loop: local model + gated tools + witnessed ledger.
 
 This is what turns the chat client into an actual local coding agent. The model
 proposes tool calls in the text protocol, the executor runs them under the gate,
 observations are fed back, and the whole trajectory (turns + tool calls +
 results) is appended to a hash-chained SessionLedger. The loop terminates when
-the model stops emitting TOOL lines (final answer) or max_steps is hit — always
+the model stops emitting TOOL lines (final answer) or max_steps is hit -- always
 returning a re-verifiable checkpoint.
 """
 from __future__ import annotations
@@ -123,7 +123,7 @@ def run_agent(agent, goal: str, executor: ToolExecutor,
         _emit(type="assistant", step=step, text=text)
 
         from .tool_rescue import rescue_tool_calls
-        calls, repairs = rescue_tool_calls(text)
+        calls, repairs = rescue_tool_calls(text, with_preamble=True)
         for rep in repairs:
             # a repaired emission is a fact of the run, never a silent fix
             ledger.append("tool_rescue", json.dumps(rep, sort_keys=True))
@@ -168,8 +168,16 @@ def run_agent(agent, goal: str, executor: ToolExecutor,
             continue
 
         observations = []
-        for name, args in calls:
-            res = executor.execute(name, args)
+        for name, args, preamble in calls:
+            rationale = None
+            if preamble:
+                rationale = {
+                    "stated_intent": preamble[:500],
+                    "options_considered": [],
+                    "chosen_option": name,
+                    "confidence": "unknown",
+                }
+            res = executor.execute(name, args, rationale=rationale)
             ledger.append("tool_call", f"{name} {json.dumps(args, sort_keys=True)}")
             # a mutating tool's receipt carries the post-edit file hash, so
             # a stranger can bind this specific edit to a specific file state
