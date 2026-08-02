@@ -2431,6 +2431,46 @@ class _Handler(BaseHTTPRequestHandler):
             from harness.memory_api import memory_note
             return self._json(memory_note(self.run_root, content,
                                           (req.get("role") or "note").strip() or "note"))
+        if p == "/api/lessons/admit":                # transition a lesson to admitted
+            length = self._content_length()
+            if length is None:
+                return self._json({"error": "invalid or oversized Content-Length"}, 400)
+            try:
+                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
+            except Exception:
+                req = {}
+            lesson_id = str(req.get("lesson_id", "")).strip()
+            if not lesson_id:
+                return self._json({"error": "provide 'lesson_id'"}, 400)
+            from harness.lesson_store import LessonStore
+            from pathlib import Path
+            store = LessonStore.load(Path(self.run_root) / "lessons.jsonl")
+            try:
+                row = store.transition(lesson_id, "admitted")
+                store.save(Path(self.run_root) / "lessons.jsonl")
+                return self._json(row)
+            except ValueError as e:
+                return self._json({"error": str(e)}, 400)
+        if p == "/api/lessons/retire":               # transition a lesson to retired
+            length = self._content_length()
+            if length is None:
+                return self._json({"error": "invalid or oversized Content-Length"}, 400)
+            try:
+                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
+            except Exception:
+                req = {}
+            lesson_id = str(req.get("lesson_id", "")).strip()
+            if not lesson_id:
+                return self._json({"error": "provide 'lesson_id'"}, 400)
+            from harness.lesson_store import LessonStore
+            from pathlib import Path
+            store = LessonStore.load(Path(self.run_root) / "lessons.jsonl")
+            try:
+                row = store.transition(lesson_id, "retired")
+                store.save(Path(self.run_root) / "lessons.jsonl")
+                return self._json(row)
+            except ValueError as e:
+                return self._json({"error": str(e)}, 400)
         return self._json({"error": "not found"}, 404)
 
 

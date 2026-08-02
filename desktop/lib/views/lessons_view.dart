@@ -91,7 +91,12 @@ class _LessonsViewState extends State<LessonsView> {
         const SizedBox(height: FwLayout.s4),
         _ImprovementCandidates(doc: _doc!),
         const SizedBox(height: FwLayout.s4),
-        if (_patterns != null) _PatternsDetail(patterns: _patterns!),
+        if (_patterns != null)
+          _PatternsDetail(
+            patterns: _patterns!,
+            client: widget.client,
+            onChanged: _load,
+          ),
       ],
     );
   }
@@ -185,15 +190,79 @@ class _ImprovementCandidates extends StatelessWidget {
   }
 }
 
-class _PatternsDetail extends StatelessWidget {
+class _PatternsDetail extends StatefulWidget {
   final Map<String, dynamic> patterns;
-  const _PatternsDetail({required this.patterns});
+  final GatewayClient client;
+  final VoidCallback onChanged;
+  const _PatternsDetail({
+    required this.patterns,
+    required this.client,
+    required this.onChanged,
+  });
+
+  @override
+  State<_PatternsDetail> createState() => _PatternsDetailState();
+}
+
+class _PatternsDetailState extends State<_PatternsDetail> {
+  String? _actingOn;
+  String? _error;
+
+  Future<void> _admit(String lessonId) async {
+    if (_actingOn != null) return;
+    setState(() {
+      _actingOn = lessonId;
+      _error = null;
+    });
+    try {
+      await widget.client.lessonAdmit(lessonId);
+      widget.onChanged();
+    } catch (e) {
+      if (mounted) setState(() => _error = '$e');
+    } finally {
+      if (mounted) setState(() => _actingOn = null);
+    }
+  }
+
+  Future<void> _retire(String lessonId) async {
+    if (_actingOn != null) return;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: ctx.fw.ground,
+        title: const Text('Retire lesson'),
+        content: Text('Retire this lesson? It will be marked as no longer '
+            'active. The transition is journaled (append-only); the original '
+            'lesson stays in the chain as history.\n\n${lessonId.substring(0, 16)}...'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: const Text('Cancel')),
+          FilledButton(
+              onPressed: () => Navigator.of(ctx).pop(true),
+              child: const Text('Retire')),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    setState(() {
+      _actingOn = lessonId;
+      _error = null;
+    });
+    try {
+      await widget.client.lessonRetire(lessonId);
+      widget.onChanged();
+    } catch (e) {
+      if (mounted) setState(() => _error = '$e');
+    } finally {
+      if (mounted) setState(() => _actingOn = null);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final list = (patterns['patterns'] ?? []) as List;
+    final list = (widget.patterns['patterns'] ?? []) as List;
     if (list.isEmpty) return const SizedBox.shrink();
-    final t = context.fw;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -202,31 +271,72 @@ class _PatternsDetail extends StatelessWidget {
         for (final p in list.whereType<Map<String, dynamic>>())
           Padding(
             padding: const EdgeInsets.only(bottom: FwLayout.s2),
-            child: HairlineCard(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(children: [
-                    Text('${p['source_organ'] ?? 'unknown'}',
-                        style: fwMono(t, size: 12)
-                            .copyWith(fontWeight: FontWeight.w600)),
-                    const Spacer(),
-                    VerdictPill('${p['repetition_count']}', status: 'drift'),
-                  ]),
-                  const SizedBox(height: FwLayout.s2),
-                  Text('${p['improvement_candidate']}',
-                      style: Theme.of(context).textTheme.bodySmall),
-                  if ((p['confidence'] ?? '').isNotEmpty) ...[
-                    const SizedBox(height: FwLayout.s2),
-                    Text('confidence: ${p['confidence']}',
-                        style: fwMono(t, size: 11)
-                            .copyWith(color: t.inkFaint)),
-                  ],
-                ],
-              ),
+            child: _PatternCard(
+              pattern: p,
+              actingOn: _actingOn,
+              onAdmit: _admit,
+              onRetire: _retire,
             ),
           ),
+        if (_error != null) HonestNull('Failed: $_error'),
       ],
+    );
+  }
+}
+
+class _PatternCard extends StatelessWidget {
+  final Map<String, dynamic> pattern;
+  final String? actingOn;
+  final void Function(String) onAdmit;
+  final void Function(String) onRetire;
+  const _PatternCard({
+    required this.pattern,
+    required this.actingOn,
+    required this.onAdmit,
+    required this.onRetire,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.fw;
+    final lessonIds = (pattern['lesson_ids'] ?? []) as List;
+    final firstId = lessonIds.isNotEmpty ? '${lessonIds[0]}' : '';
+    final isActing = actingOn == firstId;
+    return HairlineCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(children: [
+            Text('${pattern['source_organ'] ?? 'unknown'}',
+                style: fwMono(t, size: 12)
+                    .copyWith(fontWeight: FontWeight.w600)),
+            const Spacer(),
+            VerdictPill('${pattern['repetition_count']}', status: 'drift'),
+          ]),
+          const SizedBox(height: FwLayout.s2),
+          Text('${pattern['improvement_candidate']}',
+              style: Theme.of(context).textTheme.bodySmall),
+          if ((pattern['confidence'] ?? '').isNotEmpty) ...[
+            const SizedBox(height: FwLayout.s2),
+            Text('confidence: ${pattern['confidence']}',
+                style: fwMono(t, size: 11).copyWith(color: t.inkFaint)),
+          ],
+          if (firstId.isNotEmpty) ...[
+            const SizedBox(height: FwLayout.s3),
+            Row(children: [
+              OutlinedButton(
+                onPressed: isActing ? null : () => onAdmit(firstId),
+                child: Text(isActing ? 'Admitting...' : 'Admit'),
+              ),
+              const SizedBox(width: FwLayout.s2),
+              OutlinedButton(
+                onPressed: isActing ? null : () => onRetire(firstId),
+                child: const Text('Retire'),
+              ),
+            ]),
+          ],
+        ],
+      ),
     );
   }
 }

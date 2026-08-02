@@ -501,12 +501,20 @@ class GatewayClient {
   Future<Map<String, dynamic>> agentRunDetail(String id) =>
       getJson('/api/agent/run?id=$id');
 
-  /// GET /api/lessons — the organizational learning loop: count, feed, verify.
+  /// GET /api/lessons -- the organizational learning loop: count, feed, verify.
   Future<Map<String, dynamic>> lessons() => getJson('/api/lessons');
 
-  /// GET /api/lessons/patterns — recurring patterns for human admission.
+  /// GET /api/lessons/patterns -- recurring patterns for human admission.
   Future<Map<String, dynamic>> lessonsPatterns() =>
       getJson('/api/lessons/patterns');
+
+  /// POST /api/lessons/admit -- transition a lesson to admitted.
+  Future<Map<String, dynamic>> lessonAdmit(String lessonId) =>
+      postJson('/api/lessons/admit', {'lesson_id': lessonId});
+
+  /// POST /api/lessons/retire -- transition a lesson to retired.
+  Future<Map<String, dynamic>> lessonRetire(String lessonId) =>
+      postJson('/api/lessons/retire', {'lesson_id': lessonId});
 
   /// GET /api/memory/list — browse stored spans verbatim (no query).
   Future<Map<String, dynamic>> memoryList({int limit = 20}) async {
