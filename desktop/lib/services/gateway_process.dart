@@ -61,8 +61,8 @@ class GatewayProcess {
         return 'The bundled engine failed to start ($bundled). '
             'Reinstall Flywheel, or run `flywheel up` from a terminal.';
       }
-      return 'flywheel is not on PATH. Install the engine from source: '
-          'pip install -e . from the engine checkout, then retry.';
+      return 'flywheel is not on PATH. Install the engine: pip install flywheel-verify '
+          '(or pip install -e . from a checkout), then retry.';
     }
   }
 
