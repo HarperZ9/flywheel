@@ -112,3 +112,48 @@ class EnterpriseProposer:
             text=text, model_ref=self.model_ref,
             seed=seed, prompt_hash=prompt_hash(prompt), cache="miss",
             served_model=str(obj.get("model", "")))
+
+
+class AnthropicProposer:
+    """The Anthropic /v1/messages wire, the protocol EnterpriseProposer does not
+    speak. Same Proposer contract, same accept path. The key is resolved by env
+    var name (keychain-backed) and never stored or logged; the served model is
+    recorded so a silent swap is catchable, exactly as the OpenAI wire does."""
+
+    def __init__(self, base_url: str = "https://api.anthropic.com",
+                 model: str = "claude-opus-5",
+                 api_key_env: str = "ANTHROPIC_API_KEY",
+                 version: str = "2023-06-01", model_ref: str = "anthropic"):
+        self.base_url = base_url.rstrip("/")
+        self.model = model
+        self.api_key_env = api_key_env
+        self.version = version
+        self.model_ref = f"{model_ref}:{model}"
+
+    def generate(self, prompt: str, *, seed: int, temperature: float,
+                 max_new_tokens: int, system: str = "") -> ProposerOutput:
+        try:
+            from .keychain import resolve_credential
+            key = resolve_credential(self.api_key_env)
+        except Exception:
+            key = os.environ.get(self.api_key_env, "")
+        payload = {"model": self.model, "max_tokens": max_new_tokens,
+                   "messages": [{"role": "user", "content": prompt}],
+                   "temperature": temperature}
+        if system:
+            payload["system"] = system            # Anthropic system is top-level
+        body = json.dumps(payload).encode()
+        req = urllib.request.Request(
+            f"{self.base_url}/v1/messages", data=body,
+            headers={"Content-Type": "application/json", "x-api-key": key,
+                     "anthropic-version": self.version})
+        with urllib.request.urlopen(req, timeout=300) as r:
+            obj = json.loads(r.read())
+        from .extract import extract_code
+        blocks = obj.get("content") or []
+        text = "".join(b.get("text", "") for b in blocks
+                       if isinstance(b, dict) and b.get("type") == "text")
+        return ProposerOutput(
+            text=extract_code(text), model_ref=self.model_ref, seed=seed,
+            prompt_hash=prompt_hash(prompt), cache="miss",
+            served_model=str(obj.get("model", "")))
