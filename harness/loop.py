@@ -194,7 +194,10 @@ def run_loop(task: Task, proposer: Proposer, oracle: Oracle, *,
             envelope, workdir=task.workdir, candidate_path=task.candidate_path)
     append_stage(chain, "accept", orc.output_hash, wv.verdict, wv.verdict,
                  payload={"reason": wv.reason})
-    accepted = (orc.passed and wv.verdict == "MATCH")
+    # orc.verdict() never raises; orc.passed raises on a non-dispositive verdict.
+    # A domain oracle may legitimately return UNVERIFIABLE (no toolchain, out of
+    # scope); that is not acceptance and must not crash the loop.
+    accepted = (orc.verdict() == "PASS" and wv.verdict == "MATCH")
     grounding = None
     if grounding_recheck and retrieved:
         # the closure on the critical path: a result is only as good as what it
