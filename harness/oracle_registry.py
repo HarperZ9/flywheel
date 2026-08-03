@@ -82,11 +82,21 @@ class OracleRegistry:
 
 def default_registry() -> OracleRegistry:
     """The registry with the oracles that exist today. Extend by registering new
-    DomainOracles; do not special-case them in the loop."""
+    DomainOracles; do not special-case them in the loop.
+
+    `math` is registered whether or not the Lean toolchain is installed: the
+    domain is in scope, and a claim answers UNVERIFIABLE (toolchain missing)
+    rather than ORACLE_UNAVAILABLE (no oracle) when Lean is absent. That
+    distinction is the difference between "the engine cannot check this kind of
+    claim" and "the engine can, but this environment lacks the checker"."""
+    from .lean_oracle import LeanOracle
     reg = OracleRegistry()
     reg.register("code", PytestOracle(),
                  does_not_prove=("passing tests do not prove the absence of "
                                  "untested behavior",))
+    reg.register("math", LeanOracle(),
+                 does_not_prove=("Lean checks the proof term, not that the "
+                                 "statement is the intended theorem",))
     return reg
 
 

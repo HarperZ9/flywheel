@@ -48,11 +48,11 @@ def test_aliases_resolve_to_canonical_domain():
 
 def test_register_extends_coverage():
     reg = default_registry()
-    assert "math" not in reg
-    reg.register("math", StubOracle(True), does_not_prove=("numeric, not formal",))
-    assert "math" in reg
-    assert reg.resolve("theorem") is not None   # alias for math
-    assert "math" in reg.domains()
+    assert "biology" not in reg
+    reg.register("biology", StubOracle(True), does_not_prove=("in vitro only",))
+    assert "biology" in reg
+    assert reg.resolve("biology") is not None
+    assert "biology" in reg.domains()
 
 
 def test_empty_domain_name_is_rejected():
