@@ -15,7 +15,10 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "flywheel"
+# Distribution name: flywheel-verify. The bare `flywheel` name on PyPI is
+# an unrelated package, so this publishes under a scoped name. The installed
+# console command stays `flywheel` (see [project.scripts]).
+name = "flywheel-verify"
 version = "0.3.0"
 description = "The one platform: routing, verification, the lane layer, memory/context/catalog, and the closed verified-inference loop."
 readme = "README.md"

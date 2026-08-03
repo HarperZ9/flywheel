@@ -85,6 +85,9 @@ pip install -e .
 flywheel up
 ```
 
+Once the engine is published to PyPI as `flywheel-verify`, `pip install
+flywheel-verify` installs the same `flywheel` command.
+
 Then run the app:
 
 ```
