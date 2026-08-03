@@ -510,6 +510,54 @@ depth (native bindings, cloud IAM APIs) not coverage breadth.
 
 ---
 
+## 9. Emerging research signals (August 2026)
+
+Two August 2026 papers sharpen the verification and governance challenges:
+
+### Mathematical proof verification (Connes, arXiv:2602.04022)
+
+Alain Connes proposes a novel strategy for the Riemann Hypothesis: optimize a
+quadratic form (identified as Weil's) using only 19th-century mathematics,
+yielding approximations to the first 50 zeta zeros with accuracies up to
+2.6 x 10^-55, all provably on the critical line. The argument tracks
+convergence from finite to infinite Euler products.
+
+This is exactly the class of claim Flywheel's Lean compiler integration
+(`harness/infra/lean_adapter.py`) is built to assess: a deep mathematical
+result that requires independent formal verification. The crucible thesis
+structure pairs the claim with a Lean proof artifact; the measurement is the
+type-check result; the verdict is MATCH/DRIFT/UNVERIFIABLE. Flywheel does not
+verify the mathematics itself; it verifies that the verification is
+reproducible and that a negative control exists.
+
+### Consciousness steering and safety collateral damage (Kim et al., arXiv:2607.28607)
+
+Kim et al. demonstrate that safety fine-tuning designed to prevent models from
+claiming consciousness inadvertently suppresses benign mind attribution,
+spiritual beliefs, and moral values. Mechanistic steering (a "consciousness
+vector") restores these representations without impairing Theory of Mind.
+
+This maps directly to the relational pressure model's finding: "self-report is
+an output until validated" and "model-welfare policy and model-consciousness
+science are related but separable." The consciousness vector manipulation is a
+T2-grade intervention on a model's internal representations. Under TADR
+governance, such an intervention should be:
+
+1. Classified (T2-A: the model is an AI system with modified internal state).
+2. Receipted (the steering operation is a tool call that modifies model
+   behavior; it should carry a sealed receipt).
+3. Witnessed (the before/after behavior shift should be measured and recorded
+   as an organizational lesson: "consciousness steering changes moral
+   reasoning").
+4. Controlled (the no-inflation gate prevents applying T3-grade steering to a
+   T1-classified deployment without authorization).
+
+The paper reinforces finding #12 from the relational pressure model:
+"Independent evidence custody is the common institutional control." The
+researcher, not the model, must hold the evidence of what the steering changed.
+
+---
+
 ## Assessment summary
 
 Flywheel is the accountability engine for the problems the July 2026 convergence
