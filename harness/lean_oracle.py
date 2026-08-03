@@ -188,3 +188,60 @@ def lean_check(code: str, *, runner=None) -> dict:
                     "the axiom footprint of every named theorem is audited "
                     "against the classical trio on accept; re-run the code "
                     "under the named toolchain to re-derive"}
+
+
+class LeanOracle:
+    """The math domain oracle: an Oracle-Protocol adapter over lean_check.
+
+    lean_check is the sole acceptance authority (kernel exit, sorry refusal, and
+    an axiom-footprint audit against the classical trio). This adapts its dict to
+    an OracleResult so the kernel judgment plugs into run_loop and the domain
+    registry with no change to either. The candidate is Lean source; the honest
+    verdict travels with what Lean does not prove.
+
+    Reuses the checker rather than reimplementing it: the rigor lives in
+    lean_check, and a missing toolchain becomes UNVERIFIABLE attributed to the
+    environment, never a candidate FAIL.
+    """
+    oracle_type = "lean"
+
+    def __init__(self, *, header: str = "", runner=None):
+        self.header = header
+        self.runner = runner
+
+    def verify(self, candidate: str, task) -> "OracleResult":
+        from .oracle import OracleResult
+        from .receipt_fields import canonical
+        from .verdict import Execution, UnverifiableReason, Verdict
+        code = f"{self.header}\n{candidate}" if self.header else candidate
+        res = lean_check(code, runner=self.runner)
+        passed = res.get("passed")
+        footprint = res.get("axiom_footprint", {}) or {}
+        kernel = res.get("kernel_output") or ""
+        output_hash = hashlib.sha256(canonical({
+            "passed": passed, "sha": res.get("code_sha256", ""),
+            "footprint": {k: sorted(v) for k, v in sorted(footprint.items())},
+        }).encode()).hexdigest()[:16]
+        gap = ("Lean checks the proof term inhabits the stated type; it does not "
+               "check the statement is the intended theorem (the formalization gap)")
+        if passed is None:
+            return OracleResult(
+                cmd="lean", output_hash=output_hash, stdout_excerpt=kernel[:1200],
+                rc=0, verdict_=Verdict.UNVERIFIABLE,
+                execution=Execution.TOOLCHAIN_MISSING,
+                unverifiable_reason=UnverifiableReason.TOOLCHAIN_MISSING.value,
+                does_not_prove=["no Lean toolchain installed; the proof was not "
+                                "checked"],
+                coverage={"checker": "lean"}, objective="lean kernel type-check")
+        if passed:
+            return OracleResult(
+                cmd="lean", output_hash=output_hash, stdout_excerpt=kernel[:1200],
+                rc=0, verdict_=Verdict.PASS, does_not_prove=[gap],
+                coverage={"checker": "lean", "axiom_footprint": footprint},
+                objective="lean kernel type-check")
+        return OracleResult(
+            cmd="lean", output_hash=output_hash, stdout_excerpt=kernel[:1200],
+            rc=1, verdict_=Verdict.FAIL,
+            does_not_prove=[kernel[:160] or "the kernel refused the proof", gap],
+            coverage={"checker": "lean", "axiom_footprint": footprint},
+            objective="lean kernel type-check")
