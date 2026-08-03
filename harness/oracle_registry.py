@@ -90,6 +90,7 @@ def default_registry() -> OracleRegistry:
     distinction is the difference between "the engine cannot check this kind of
     claim" and "the engine can, but this environment lacks the checker"."""
     from .lean_oracle import LeanOracle
+    from .measurement_oracle import MeasurementOracle
     reg = OracleRegistry()
     reg.register("code", PytestOracle(),
                  does_not_prove=("passing tests do not prove the absence of "
@@ -97,6 +98,10 @@ def default_registry() -> OracleRegistry:
     reg.register("math", LeanOracle(),
                  does_not_prove=("Lean checks the proof term, not that the "
                                  "statement is the intended theorem",))
+    reg.register("ml", MeasurementOracle(),
+                 does_not_prove=("a measurement gate bounds a tested effect "
+                                 "against a control; it does not prove the "
+                                 "mechanism",))
     return reg
 
 
