@@ -96,17 +96,18 @@ GUI. The gateway serves `/api/*` and the UI on `http://127.0.0.1:8799`.
 
 ## Install
 
-```
-pip install flywheel
-flywheel up
-```
-
-Or from source:
+Flywheel is not on PyPI: the `flywheel` name there belongs to an unrelated
+package. Install from source. Zero runtime dependencies, stdlib only.
 
 ```
+git clone https://github.com/HarperZ9/flywheel.git
+cd flywheel
 pip install -e .
 python scripts/run_harness_cli.py app --port 8799
 ```
+
+`pip install -e .` puts the `flywheel` command on your PATH, so you can also
+start the gateway with `flywheel up`.
 
 ## Documentation
 

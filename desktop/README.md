@@ -79,7 +79,9 @@ the pipeline built.
 Install the engine and start it once:
 
 ```
-pip install flywheel
+git clone https://github.com/HarperZ9/flywheel.git
+cd flywheel
+pip install -e .
 flywheel up
 ```
 
