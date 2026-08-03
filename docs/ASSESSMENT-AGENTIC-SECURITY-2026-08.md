@@ -510,6 +510,134 @@ depth (native bindings, cloud IAM APIs) not coverage breadth.
 
 ---
 
+## 9. Emerging research signals (August 2026)
+
+Two August 2026 papers sharpen the verification and governance challenges:
+
+### Mathematical proof verification (Connes, arXiv:2602.04022)
+
+Alain Connes proposes a novel strategy for the Riemann Hypothesis: optimize a
+quadratic form (identified as Weil's) using only 19th-century mathematics,
+yielding approximations to the first 50 zeta zeros with accuracies up to
+2.6 x 10^-55, all provably on the critical line. The argument tracks
+convergence from finite to infinite Euler products.
+
+This is exactly the class of claim Flywheel's Lean compiler integration
+(`harness/infra/lean_adapter.py`) is built to assess: a deep mathematical
+result that requires independent formal verification. The crucible thesis
+structure pairs the claim with a Lean proof artifact; the measurement is the
+type-check result; the verdict is MATCH/DRIFT/UNVERIFIABLE. Flywheel does not
+verify the mathematics itself; it verifies that the verification is
+reproducible and that a negative control exists.
+
+### Consciousness steering and safety collateral damage (Kim et al., arXiv:2607.28607)
+
+Kim et al. demonstrate that safety fine-tuning designed to prevent models from
+claiming consciousness inadvertently suppresses benign mind attribution,
+spiritual beliefs, and moral values. Mechanistic steering (a "consciousness
+vector") restores these representations without impairing Theory of Mind.
+
+This maps directly to the relational pressure model's finding: "self-report is
+an output until validated" and "model-welfare policy and model-consciousness
+science are related but separable." The consciousness vector manipulation is a
+T2-grade intervention on a model's internal representations. Under TADR
+governance, such an intervention should be:
+
+1. Classified (T2-A: the model is an AI system with modified internal state).
+2. Receipted (the steering operation is a tool call that modifies model
+   behavior; it should carry a sealed receipt).
+3. Witnessed (the before/after behavior shift should be measured and recorded
+   as an organizational lesson: "consciousness steering changes moral
+   reasoning").
+4. Controlled (the no-inflation gate prevents applying T3-grade steering to a
+   T1-classified deployment without authorization).
+
+The paper reinforces finding #12 from the relational pressure model:
+"Independent evidence custody is the common institutional control." The
+researcher, not the model, must hold the evidence of what the steering changed.
+
+### Model-neutral routing under provider limits (Qwen 3.8-Max, arXiv-adjacent)
+
+Alibaba shipped Qwen3.8-Max on 2026-08-03: a 2.4T-parameter mixture-of-experts
+model, 1M-token context, priced at $2/$6 per million tokens, exposed through an
+Anthropic-compatible endpoint. The externally checkable specs (parameter count,
+context window, price, an open-weights plan) are corroborated by non-Alibaba
+reporting. Every coding-capability number (Terminal-Bench, SWE-bench Pro,
+FrontierSWE) traces to a single Alibaba-authored table and is independently
+unverified; the one third-party datapoint does not corroborate the launch
+framing.
+
+This is a routing decision, and routing is where "no receipt, no accept"
+applies to model selection itself. A model-neutral harness treats any model,
+local or endpoint, as a swappable material. When the incumbent coding model
+reaches a provider quota, the value of a drop-in alternative is not its
+marketing table; it is that the alternative can be admitted behind the same
+gate as everything else. The rule the July 2026 incidents teach transfers
+directly: a vendor benchmark table is a hypothesis, not a receipt. Route a new
+model through the crucible measurement gate on your own tasks before trusting
+any capability claim, and record the result as evidence with its denominator.
+The correct role for an unverified-but-cheap model is the bulk proposer arm in
+a pool where a trusted model disposes.
+
+### Harness and tool-calling as the reliability layer (Can Bölük corpus)
+
+Reverse-engineering researcher Can Bölük published three 2026 results that
+restate the witnessing-spine thesis from the interface side, and each maps to a
+concrete receipt field:
+
+1. **Tool-call reliability is an engineering property of the emitted grammar,
+   not a model property.** Malformed tool calls do not await a provider patch;
+   they are reduced by a thinner, on-distribution grammar and tolerant parsing.
+   Consequence for the spine: parse-failure rate belongs in the tool-call
+   receipt as a measured signal with a denominator (rate x exposure), not a
+   dropped row. A per-turn failure too small to see in a demo is near-certain
+   across thousands of production turns.
+2. **Content-hash line anchors ("hashline") make an edit address a witnessed
+   prior state.** An edit that references a line by a short content hash, and is
+   rejected on hash mismatch, is a free drift and tamper check at the edit
+   layer. That is the sealed-receipt discipline applied to file mutation.
+3. **Prose-summary compaction sheds recoverable facts.** Near-verbatim carriers
+   preserve what a summary discards. Any digest step that compresses agent
+   context should be gated against a sealed hash of the pre-compaction text
+   before the compacted form is admitted to the witness DAG, and any
+   image-borne carrier must be treated as a covert channel invisible to
+   text-level claim-language gates.
+
+Bölük's earlier work on optimizing intermediate-language compilers (symbolic
+expression simplification, a known/unknown bit-vector abstraction, complexity
+as an optimization objective) is direct prior art for a capability-typed
+compiler layer.
+
+### Competitive posture: introduce the superior alternative, do not copy
+
+A separate agentic coding CLI reached receipt-and-evidence discipline
+independently: offline-verifiable evidence bundles, redaction-before-write,
+deterministic exports, honest-null provenance. Its own maintainer named the two
+properties it does not have. It has no hash-linked receipt chain or witness DAG
+(each checkpoint stands alone), it is keyless (integrity, not authenticity),
+and every gate fires at runtime with no compile-time capability typing.
+
+Those three gaps are precisely the properties this stack already holds: sealed
+hash-linked receipts over a transitive witness DAG, ed25519 non-repudiable
+signatures, and capability-typed enforcement. The posture is therefore not to
+port a competitor's narrower feature, but to ship the more complete and
+well-rounded alternative so the superior version is the one that exists. Two
+such components are introduced alongside this assessment:
+
+- A **Unicode-spoof neutralizer** that covers the full text-deception surface
+  (bidirectional controls, invisible and zero-width characters, tag
+  characters, mixed-script and confusable homoglyphs, and normalization
+  divergence), not bidirectional overrides alone, and that records its
+  neutralization decision as a witnessed receipt field rather than a silent
+  display transform.
+- A **capability-typed shell-admission classifier** that parses a command into
+  its token tree, descends into subshells, command substitutions, and
+  redirections, denies by default on dangerous capability classes, and returns
+  a typed admission decision that composes with the existing policy gate rather
+  than a runtime regex advisory.
+
+---
+
 ## Assessment summary
 
 Flywheel is the accountability engine for the problems the July 2026 convergence
