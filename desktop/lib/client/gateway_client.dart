@@ -69,6 +69,11 @@ class GatewayClient {
         .toList();
   }
 
+  /// GET /api/models?endpoint=NAME — one endpoint's model roster. The
+  /// default is flagged; a failed listing degrades to an honest reason.
+  Future<Map<String, dynamic>> models(String endpoint) =>
+      getJson('/api/models?endpoint=${Uri.encodeQueryComponent(endpoint)}');
+
   /// GET /api/endpoints/health — live health probe of local tiers.
   Future<Map<String, dynamic>> endpointHealth() async {
     final r = await _http.get(Uri.parse('$baseUrl/api/endpoints/health'));
@@ -197,11 +202,17 @@ class GatewayClient {
   }
 
   /// POST /api/route — route a prompt to a named provider, get a receipt.
-  Future<Map<String, dynamic>> route(String prompt, String endpoint) async {
+  /// [model] overrides the endpoint's default model; null keeps the default.
+  Future<Map<String, dynamic>> route(String prompt, String endpoint,
+      {String? model}) async {
     final r = await _http.post(
       Uri.parse('$baseUrl/api/route'),
       headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'prompt': prompt, 'endpoint': endpoint}),
+      body: jsonEncode({
+        'prompt': prompt,
+        'endpoint': endpoint,
+        if (model != null && model.isNotEmpty) 'model': model,
+      }),
     );
     return _decode(r);
   }

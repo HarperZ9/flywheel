@@ -13,15 +13,13 @@ import '../models/chat.dart';
 import '../models/gateway_models.dart';
 import '../services/chat_store.dart';
 import '../services/settings.dart';
-import '../theme/flywheel_theme.dart';
 import 'agent_mode_pane.dart';
 import '../widgets/chat_composer.dart';
+import '../widgets/chat_header.dart';
 import '../widgets/chat_sidebar.dart';
 import '../widgets/chat_thread.dart';
 import '../widgets/chat_welcome.dart';
 import '../widgets/fw.dart';
-import '../widgets/mode_chip.dart';
-import '../widgets/model_picker.dart';
 
 class AgentView extends StatefulWidget {
   final GatewayClient client;
@@ -44,6 +42,8 @@ class _AgentViewState extends State<AgentView> {
   final _scroll = ScrollController();
   List<EndpointRow> _endpoints = [];
   String? _model;
+  // per-endpoint model override, session-lived; absent means the default
+  final Map<String, String> _chosenModels = {};
   bool _streaming = false;
   bool _agentMode = false;
   StreamSubscription? _sub;
@@ -141,7 +141,12 @@ class _AgentViewState extends State<AgentView> {
         .where((m) => !(m.streaming && m.text.isEmpty))
         .map((m) => m.toWire())
         .toList();
-    _sub = widget.client.chatStream(wire, _model!).listen(
+    // the wire model is "endpoint" or "endpoint:model" — the gateway's
+    // OpenAI surface resolves the suffix as the served-model override
+    final chosen = _chosenModels[_model];
+    _sub = widget.client
+        .chatStream(wire, chosen == null ? _model! : '$_model:$chosen')
+        .listen(
       (e) {
         if (!mounted) return;
         setState(() {
@@ -196,7 +201,6 @@ class _AgentViewState extends State<AgentView> {
       return const FwEmpty('The engine is offline. Chat appears when it runs.',
           command: 'flywheel up');
     }
-    final t = context.fw;
     return Row(children: [
       if (!_agentMode)
         ChatSidebar(
@@ -209,7 +213,19 @@ class _AgentViewState extends State<AgentView> {
         ),
       Expanded(
         child: Column(children: [
-          _header(t),
+          ChatHeader(
+            agentMode: _agentMode,
+            streaming: _streaming,
+            endpoints: _endpoints,
+            endpoint: _model,
+            chosenModel: _chosenModels[_model],
+            onMode: (v) => setState(() => _agentMode = v),
+            onEndpoint: (v) => setState(() => _model = v),
+            onModel: (v) => setState(() => v.isEmpty
+                ? _chosenModels.remove(_model)
+                : _chosenModels[_model!] = v),
+            loadModels: () => widget.client.models(_model ?? ''),
+          ),
           Expanded(
             child: _agentMode
                 ? AgentModePane(
@@ -240,49 +256,5 @@ class _AgentViewState extends State<AgentView> {
       ),
     ]);
   }
-
-  Widget _header(FwTokens t) => Container(
-        padding: const EdgeInsets.symmetric(
-            horizontal: FwLayout.s5, vertical: FwLayout.s3),
-        decoration:
-            BoxDecoration(border: Border(bottom: BorderSide(color: t.hairline))),
-        child: Row(children: [
-          Text('Chat', style: Theme.of(context).textTheme.titleMedium),
-          const SizedBox(width: FwLayout.s4),
-          FwModeChip(
-              label: 'chat',
-              active: !_agentMode,
-              onTap: () {
-                if (!_streaming) setState(() => _agentMode = false);
-              }),
-          const SizedBox(width: FwLayout.s1),
-          FwModeChip(
-              label: 'agent',
-              active: _agentMode,
-              onTap: () {
-                if (!_streaming) setState(() => _agentMode = true);
-              }),
-          const SizedBox(width: FwLayout.s4),
-          if (!_agentMode && _endpoints.isNotEmpty)
-            ModelPickerButton(
-              endpoints: _endpoints,
-              current: _model,
-              enabled: !_streaming,
-              onSelect: (v) => setState(() => _model = v),
-            ),
-          const Spacer(),
-          Icon(Icons.verified_outlined, size: 13, color: t.inkFaint),
-          const SizedBox(width: 5),
-          Flexible(
-            child: Text(
-                _agentMode
-                    ? 'every run persists with its trace'
-                    : 'every reply is witnessed',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: fwMono(t, size: 10.5, color: t.inkFaint)),
-          ),
-        ]),
-      );
 
 }
