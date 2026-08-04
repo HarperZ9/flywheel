@@ -17,6 +17,7 @@ import 'theme/flywheel_theme.dart';
 import 'widgets/flywheel_nav.dart';
 import 'views/agent_view.dart';
 import 'views/academy_view.dart';
+import 'views/audit_view.dart';
 import 'views/code_view.dart';
 import 'views/compare_view.dart';
 import 'views/companion_view.dart';
@@ -166,6 +167,7 @@ class _FlywheelShellState extends State<FlywheelShell> {
     RailDestination('Models', abbr: 'MD', group: 'Start'),
     RailDestination('Code', abbr: 'CO', group: 'Do'),
     RailDestination('Eval', abbr: 'EV', group: 'Do'),
+    RailDestination('Audit', abbr: 'AU', group: 'Do'),
     RailDestination('Companion', abbr: 'CN', group: 'Do'),
     RailDestination('Plan', abbr: 'PN', group: 'Do'),
     RailDestination('Workflows', abbr: 'WF', group: 'Do'),
@@ -325,6 +327,8 @@ class _FlywheelShellState extends State<FlywheelShell> {
             client: _client, alive: _gatewayAlive, settings: widget.settings);
       case 'Eval':
         return EvalView(client: _client, alive: _gatewayAlive);
+      case 'Audit':
+        return AuditView(client: _client, alive: _gatewayAlive);
       case 'Companion':
         return CompanionView(client: _client, alive: _gatewayAlive);
       case 'Plan':
