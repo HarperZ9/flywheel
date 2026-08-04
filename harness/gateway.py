@@ -557,8 +557,9 @@ def route_answer(prompt: str, endpoint: str, proposer, *, credential: str = "loc
             "credential": credential}
 
 
-def route_request(prompt: str, endpoint: str) -> tuple[dict, int]:
+def route_request(prompt: str, endpoint: str, model: str = "") -> tuple[dict, int]:
     """Validate + route a request to a named endpoint. Returns (body, http_code).
+    `model` overrides the endpoint's default_model; empty keeps the default.
     Credential PRESENCE gate: an endpoint with no key present is refused honestly
     (never a silent local fallback), and no key value is ever read or returned."""
     roster = _unified_roster()
@@ -575,7 +576,8 @@ def route_request(prompt: str, endpoint: str) -> tuple[dict, int]:
     except Exception:
         from endpoint_registry import make_endpoint_proposer
     try:
-        prop = make_endpoint_proposer(endpoint, ledger=_router_ledger())
+        kw = {"model": model} if model else {}
+        prop = make_endpoint_proposer(endpoint, ledger=_router_ledger(), **kw)
     except Exception as e:
         return {"error": f"cannot build a proposer for {endpoint!r}: {e}"}, 502
     try:
@@ -1100,6 +1102,12 @@ class _Handler(BaseHTTPRequestHandler):
             return self._json(endpoint_roster(self.serve_url, self.ollama_url))
         if p == "/api/endpoints":
             return self._json(_unified_roster())     # full universal-router roster
+        if p == "/api/models":                       # one endpoint's model roster
+            name = _qs_value(qs, "endpoint")
+            if not name:
+                return self._json({"error": "provide ?endpoint=NAME"}, 400)
+            from harness.model_roster import list_models
+            return self._json(list_models(name))
         if p == "/api/world":
             return self._json(_projected_world(self.root))
         if p == "/api/lanes":                        # the lane roster (umbrella layer)
@@ -1722,11 +1730,15 @@ class _Handler(BaseHTTPRequestHandler):
             endpoint = (req.get("endpoint") or "").strip()
             if not prompt or not endpoint:
                 return self._json({"error": "provide non-empty 'prompt' and 'endpoint'"}, 400)
+            model = req.get("model") or ""
+            if not isinstance(model, str) or len(model.strip()) > 200:
+                return self._json({"error": "'model' must be a string of "
+                                            "at most 200 characters"}, 400)
             # the organs fire on every message: pre-pass freezes named
             # sources, post-pass chains the turn receipt (scaffold.py)
             from harness.scaffold import scaffold_answer, scaffold_turn
             env = scaffold_turn(prompt)
-            body, code = route_request(prompt, endpoint)
+            body, code = route_request(prompt, endpoint, model=model.strip())
             if code == 200 and isinstance(body, dict):
                 body["scaffold"] = scaffold_answer(
                     str(body.get("text", "")), env,
@@ -2012,52 +2024,15 @@ class _Handler(BaseHTTPRequestHandler):
             from harness.marketplace import install_from_catalog
             out = install_from_catalog((req.get("name") or "").strip())
             return self._json(out, 400 if "error" in out else 200)
-        if p == "/api/typeface":                       # mint a parametric face under witness
+        if p in ("/api/typeface", "/api/typeface/publish",
+                 "/api/typeface/family", "/api/typeface/variable"):
+            # mint / publish / family / variable, one module (typeface_route.py)
             req, bad = self._req_json()
             if bad:
                 return bad
-            from harness.typeface_forge import mint
-            params = req.get("params") if isinstance(req.get("params"), dict) else {}
-            try:
-                seed = int(req.get("seed", 0))
-            except (TypeError, ValueError):
-                seed = 0
-            face = mint(params, seed=seed)
-            if req.get("ttf") and not face.get("refused"):
-                # the minted outlines as an installable TrueType file
-                import base64
-                from harness.typeface_ttf import to_ttf
-                family = str(req.get("family") or "Zentropy Mint")[:48]
-                face["ttf_b64"] = base64.b64encode(
-                    to_ttf(face, family=family)).decode("ascii")
-                face["ttf_family"] = family
-            if req.get("publish") and not face.get("refused"):
-                # file the face in the witnessed gallery so others can browse
-                # and reuse it; a refused face is never a product
-                from harness.typeface_gallery import publish_face
-                face["gallery"] = publish_face(
-                    face, family=str(req.get("family") or "Zentropy Mint"))
-            return self._json(face)
-        if p == "/api/typeface/publish":               # file an already-minted face in the gallery
-            req, bad = self._req_json()
-            if bad:
-                return bad
-            from harness.typeface_forge import mint
-            from harness.typeface_ttf import to_ttf
-            from harness.typeface_gallery import publish_face
-            import base64
-            params = req.get("params") if isinstance(req.get("params"), dict) else {}
-            try:
-                seed = int(req.get("seed", 0))
-            except (TypeError, ValueError):
-                seed = 0
-            face = mint(params, seed=seed)
-            if not face.get("refused"):
-                family = str(req.get("family") or "Zentropy Mint")[:48]
-                face["ttf_b64"] = base64.b64encode(
-                    to_ttf(face, family=family)).decode("ascii")
-            out = publish_face(face, family=str(req.get("family") or "Zentropy Mint"))
-            return self._json(out, 400 if "error" in out else 200)
+            from harness.typeface_route import typeface_post
+            body, code = typeface_post(p, req)
+            return self._json(body, code)
         if p == "/api/studio/poster":                  # plate + minted face + copy, one receipt
             req, bad = self._req_json()
             if bad:
@@ -2142,34 +2117,6 @@ class _Handler(BaseHTTPRequestHandler):
                            if isinstance(req.get("source"), dict) else None,
                            req.get("args")
                            if isinstance(req.get("args"), dict) else None)
-            return self._json(out, 400 if out.get("refused") else 200)
-        if p == "/api/typeface/family":                # one seed, a product line of weights
-            req, bad = self._req_json()
-            if bad:
-                return bad
-            from harness.typeface_family import mint_family
-            try:
-                seed = int(req.get("seed", 58))
-            except (TypeError, ValueError):
-                seed = 58
-            out = mint_family(
-                req.get("params") if isinstance(req.get("params"), dict) else None,
-                seed=seed,
-                family=str(req.get("family") or "Zentropy Mint")[:48])
-            return self._json(out, 400 if out.get("refused") else 200)
-        if p == "/api/typeface/variable":              # the family as ONE variable font (wght axis)
-            req, bad = self._req_json()
-            if bad:
-                return bad
-            from harness.typeface_family import mint_variable_family
-            try:
-                seed = int(req.get("seed", 58))
-            except (TypeError, ValueError):
-                seed = 58
-            out = mint_variable_family(
-                req.get("params") if isinstance(req.get("params"), dict) else None,
-                seed=seed,
-                family=str(req.get("family") or "Zentropy Mint")[:48])
             return self._json(out, 400 if out.get("refused") else 200)
         if p == "/api/studio/brandkit":                # one seed + a name -> a whole identity
             req, bad = self._req_json()

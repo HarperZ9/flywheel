@@ -9,8 +9,8 @@ import '../client/gateway_client.dart';
 import '../models/gateway_models.dart';
 import '../models/render_status.dart';
 import '../theme/flywheel_theme.dart';
+import '../widgets/escalate_row.dart';
 import '../widgets/fw.dart';
-import '../widgets/model_picker.dart';
 import '../widgets/scaffold_strip.dart';
 
 class CompanionView extends StatefulWidget {
@@ -40,6 +40,8 @@ class _CompanionViewState extends State<CompanionView> {
   final _scroll = ScrollController();
   final List<_Turn> _turns = [];
   List<EndpointRow> _endpoints = [];
+  // per-endpoint model override, session-lived; absent means the default
+  final Map<String, String> _chosenModels = {};
 
   @override
   void initState() {
@@ -69,7 +71,8 @@ class _CompanionViewState extends State<CompanionView> {
       turn.routeError = null;
     });
     try {
-      final r = await widget.client.route(turn.prompt, endpoint);
+      final r = await widget.client
+          .route(turn.prompt, endpoint, model: _chosenModels[endpoint]);
       if (mounted) setState(() => turn.routed = r);
     } catch (e) {
       if (mounted) setState(() => turn.routeError = '$e');
@@ -219,54 +222,28 @@ class _CompanionViewState extends State<CompanionView> {
           ],
           if (r.source == 'escalate') ...[
             const SizedBox(height: FwLayout.s3),
-            _escalateRow(t, turn),
+            EscalateRouteRow(
+              endpoints: _endpoints,
+              endpoint: turn.routeEndpoint,
+              model: turn.routeEndpoint == null
+                  ? null
+                  : _chosenModels[turn.routeEndpoint],
+              routing: turn.routing,
+              routed: turn.routed,
+              routeError: turn.routeError,
+              onEndpoint: (v) => setState(() => turn.routeEndpoint = v),
+              onModel: (v) => setState(() => v.isEmpty
+                  ? _chosenModels.remove(turn.routeEndpoint)
+                  : _chosenModels[turn.routeEndpoint!] = v),
+              loadModels: () =>
+                  widget.client.models(turn.routeEndpoint ?? ''),
+              onRoute: () => _route(turn),
+            ),
           ],
           ScaffoldStrip(r.scaffold),
         ],
       ),
     );
-  }
-
-  /// The escalate branch made operable: pick a stronger endpoint from the
-  /// roster and actually route the prompt, receipt included.
-  Widget _escalateRow(FwTokens t, _Turn turn) {
-    final routed = turn.routed;
-    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Row(children: [
-        if (_endpoints.isNotEmpty)
-          ModelPickerButton(
-            endpoints: _endpoints,
-            current: turn.routeEndpoint,
-            enabled: !turn.routing,
-            onSelect: (v) => setState(() => turn.routeEndpoint = v),
-          )
-        else
-          Text('no endpoints in the roster',
-              style: fwMono(t, size: 11, color: t.inkFaint)),
-        const SizedBox(width: FwLayout.s3),
-        FilledButton.tonal(
-          onPressed: (turn.routeEndpoint == null || turn.routing)
-              ? null
-              : () => _route(turn),
-          child: Text(turn.routing ? 'Routing…' : 'Route it'),
-        ),
-      ]),
-      if (turn.routeError != null) ...[
-        const SizedBox(height: FwLayout.s2),
-        HonestNull('Route failed: ${turn.routeError}'),
-      ],
-      if (routed != null) ...[
-        const SizedBox(height: FwLayout.s3),
-        VerdictPill('routed · ${turn.routeEndpoint}', status: 'drift'),
-        const SizedBox(height: FwLayout.s2),
-        SelectableText('${routed['text'] ?? routed['error'] ?? ''}',
-            style: fwMono(t, size: 12.5).copyWith(height: 1.55)),
-        if ('${routed['receipt'] ?? ''}'.isNotEmpty) ...[
-          const SizedBox(height: FwLayout.s2),
-          HashText('receipt', '${routed['receipt']}', keep: 32),
-        ],
-      ],
-    ]);
   }
 
   Widget _inputBar(BuildContext context) {
