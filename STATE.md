@@ -4,11 +4,41 @@
 > append-only work log (newest-first); PROJECT.md is the synthesized, honestly-
 > bounded picture of the whole project. Read PROJECT.md first.
 
-> The moving cursor for the local-model program. `ROADMAP.md` is the durable
+> The moving cursor for the Flywheel program. `ROADMAP.md` is the durable
 > backbone (the WHY and the phase plan); this file is where we are RIGHT NOW.
 > Update on every material step. If context is lost: read ROADMAP.md, then this.
 
-Last updated: 2026-07-25
+Last updated: 2026-08-03
+
+## 2026-08-03 -- Consolidation sealed; one shipping surface
+
+- **Monorepo**: the engine (`harness/`) and the desktop client (`desktop/`)
+  live here, and this repo is the engine's canonical home. The predecessors
+  `HarperZ9/local-model` and `HarperZ9/flywheel-desktop` are archived
+  read-only; nothing lands there.
+- **PyPI**: the engine ships as `flywheel-verify` (0.3.0 -> 0.3.2, all
+  2026-08-03) via tag-triggered Trusted Publishing. `pip install
+  flywheel-verify` then `flywheel up` is verified end-to-end in a clean venv;
+  0.3.2 fixed the standalone gateway launch (a bare install ships `harness/`
+  without `scripts/`, and the launcher now runs `harness.gateway` directly).
+  The pip path is part of release verification from now on: 0.3.1 shipped
+  with `flywheel up` broken because only install/import had been checked,
+  not the documented command.
+- **One version, one tag**: `pyproject.toml`, `desktop/pubspec.yaml`, and
+  `desktop/lib/version.dart` declare one version, gated by
+  `tests/test_version_alignment.py`. A `v*` tag ships both halves: the wheel
+  to PyPI (`publish.yml`) and the Windows installer to the GitHub Release
+  (`desktop-release.yml`, at the ROOT workflows dir, engine frozen from this
+  repo, build source always the tag's own commit -- workflow_dispatch checks
+  the tag out before building). The nested `desktop/.github/` workflows,
+  which GitHub Actions never ran and which still froze the engine from the
+  archived repo, are deleted. **0.3.3 is the first release shipped this
+  way**: earlier tags predate `desktop-release.yml`, so their trees cannot
+  reproduce an installer, and no installer is published for them (0.3.0
+  through 0.3.2 are wheel-only; the last installer before that is
+  flywheel-desktop v0.2.2 on the archived repo).
+- **Desktop CI at the root**: `desktop-ci.yml` runs `flutter analyze` +
+  `flutter test`, path-filtered to `desktop/**`.
 
 ## 2026-07-25 -- CC-1 Certified Commons designed; Phase 0 ground shipped, gate MATCHES
 

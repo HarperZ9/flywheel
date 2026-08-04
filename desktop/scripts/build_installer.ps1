@@ -4,16 +4,18 @@
 # engine repo) -> VC++ CRT DLLs (from the VS Redist tree) -> ISCC compile.
 # Output: build\installer\Flywheel-Setup-<version>-x64.exe
 #
-# Usage (from the repo root):
+# Usage (from desktop/):
 #   powershell -File scripts\build_installer.ps1
-#   powershell -File scripts\build_installer.ps1 -EngineRepo ..\local-model -SkipFlutter
+#   powershell -File scripts\build_installer.ps1 -SkipFlutter
 #
-# Nothing here is machine-specific: the engine repo defaults to the sibling
-# checkout, ISCC is found via PATH, standard dirs, or the registry, and the
-# CRT comes from whatever VS/BuildTools Redist tree is present.
+# Nothing here is machine-specific: the engine defaults to this monorepo's
+# root (the parent of desktop/, which carries harness/ and
+# packaging/flywheel-gateway.spec), ISCC is found via PATH, standard dirs, or
+# the registry, and the CRT comes from whatever VS/BuildTools Redist tree is
+# present.
 
 param(
-    [string]$EngineRepo = "..\local-model",
+    [string]$EngineRepo = "..",
     [string]$Iscc = "",
     [switch]$SkipFlutter,
     [switch]$SkipEngine

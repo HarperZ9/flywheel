@@ -1,15 +1,15 @@
-# flywheel-desktop
+# Flywheel Desktop
 
 Native Flutter desktop client for the Flywheel gateway (127.0.0.1:8799).
-The engine (github.com/HarperZ9/flywheel, dev source in the local-model
-checkout) owns the loop, receipts, lanes, and routing; this app renders them
-and never reimplements them.
+The engine lives beside this app in the same monorepo (`harness/` at the
+repo root) and owns the loop, receipts, lanes, and routing; this app renders
+them and never reimplements them.
 
 ## Rules
 
 - Design and voice come from the ecosystem canon of record
   (telos-v2/project-docs/DESIGN-VOICE-CANON.md) and the engine's own shell
-  (local-model site/index.html). Tokens live in lib/theme/tokens.dart —
+  (`site/index.html` at the repo root). Tokens live in lib/theme/tokens.dart —
   never hardcode a color in a view. Two typefaces only. Color is verdict-only.
 - Credentials: presence only, never values. The app never collects keys.
 - Honest nulls stay visible. A view that cannot show DRIFT is not shipped.

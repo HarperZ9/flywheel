@@ -1,15 +1,35 @@
-# local-model
+# Flywheel
 
-Agent and contributor instructions for the epistemic verification engine. This
-file is self-contained: it names no local path and assumes no parent directory,
+Agent and contributor instructions for the Flywheel monorepo. This file is
+self-contained: it names no local path and assumes no parent directory,
 because this repository is published and cloned on its own.
 
 ## What this repo is
-The verification harness and its evidence layer: the certificate families
-(Zarankiewicz, rectilinear crossing, matmul), the pool-and-arms measurement
-apparatus, the receipt / ledger / bundle stack, and the lane surface in
-`harness/lanes.py`. Zero runtime dependencies is a load-bearing invariant, and
-the verifier path is stdlib-only with a gate that proves it.
+One platform, both halves:
+
+- `harness/` is the Python engine: the verification harness and its evidence
+  layer, the certificate families (Zarankiewicz, rectilinear crossing, matmul),
+  the pool-and-arms measurement apparatus, the receipt / ledger / bundle stack,
+  and the lane surface in `harness/lanes.py`. Zero runtime dependencies is a
+  load-bearing invariant, and the verifier path is stdlib-only with a gate that
+  proves it.
+- `desktop/` is the Flutter native client (its own instructions live in
+  `desktop/CLAUDE.md`). It renders the engine and never reimplements it.
+- `site/` is the dev/CI fallback browser shell, served by the gateway.
+
+This repository is the engine's canonical home. Its predecessors,
+`HarperZ9/local-model` (engine) and `HarperZ9/flywheel-desktop` (client), are
+archived and read-only; nothing lands there.
+
+## Shipping surfaces (one version, one tag)
+- PyPI: `flywheel-verify`, the engine; installing it puts the `flywheel`
+  command on PATH. Published by `.github/workflows/publish.yml` on a `v*` tag
+  via Trusted Publishing.
+- Windows installer: built by `.github/workflows/desktop-release.yml` on the
+  same tag, engine frozen from this repo, SHA-256 receipt attached to the
+  GitHub Release.
+- `pyproject.toml`, `desktop/pubspec.yaml`, and `desktop/lib/version.dart`
+  declare one version; `tests/test_version_alignment.py` fails on drift.
 
 ## Gates that must stay green (run before a commit that touches them)
 - `python scripts/check_file_gate.py` — no file over 300 lines; the burn-down only shrinks.
@@ -20,6 +40,8 @@ the verifier path is stdlib-only with a gate that proves it.
 - `python -m pytest tests/ -q` — the full suite. CI runs a curated slice plus the
   whole suite; a slice cannot catch a regression in a file it does not name, so
   the whole-suite job is the real gate.
+- `flutter analyze` and `flutter test` in `desktop/` for client changes; CI
+  runs them path-filtered (`desktop-ci.yml`).
 
 ## Invariants
 - No learned model on the accept path. A checker decides; a model never does.

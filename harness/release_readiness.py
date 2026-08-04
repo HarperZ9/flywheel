@@ -23,14 +23,15 @@ def default_roots() -> dict:
     """Roots derived at call time — no path literals in shipped source
     (the run-paths gate enforces this). FLYWHEEL_FAMILY_ROOT overrides the
     lane parent; the default is the conventional layout relative to this
-    checkout: <parent>/public/<lane>, with the desktop as a sibling."""
+    checkout: <parent>/public/<lane>, with the desktop in-repo (desktop/
+    in this monorepo)."""
     import os
     here = Path(__file__).resolve().parents[1]
     public = Path(os.environ.get("FLYWHEEL_FAMILY_ROOT")
                   or here.parent / "public")
     roots = {name: str(public / name) for name in FAMILY}
     roots["flywheel-engine"] = str(here)
-    roots["flywheel-desktop"] = str(here.parent / "flywheel-desktop")
+    roots["flywheel-desktop"] = str(here / "desktop")
     return roots
 
 

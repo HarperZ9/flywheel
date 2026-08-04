@@ -114,6 +114,11 @@ pip install -e .
 python scripts/run_harness_cli.py app --port 8799
 ```
 
+The native desktop app ships as a Windows installer with the engine bundled
+(no Python needed): download `Flywheel-Setup-<version>-x64.exe` from the
+[releases page](https://github.com/HarperZ9/flywheel/releases) and verify it
+against the release's `SHA256SUMS.txt`.
+
 ## Documentation
 
 - [QUICKSTART.md](QUICKSTART.md): first ten minutes

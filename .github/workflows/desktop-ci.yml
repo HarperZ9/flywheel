@@ -1,0 +1,48 @@
+# Desktop CI: analyze + widget tests on the fast runner, plus the Windows
+# release-exe compile proof (the break class ubuntu analyze/test cannot see).
+# Path-filtered so engine-only changes stay on the Python pipeline.
+# desktop-release.yml repeats the gates on windows-latest before packaging.
+name: desktop-ci
+
+on:
+  push:
+    branches: [main]
+    paths: ["desktop/**", ".github/workflows/desktop-ci.yml"]
+  pull_request:
+    paths: ["desktop/**", ".github/workflows/desktop-ci.yml"]
+
+permissions:
+  contents: read
+
+jobs:
+  flutter:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: desktop
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: 3.44.6
+          cache: true
+      - run: flutter pub get
+      - run: flutter analyze
+      - run: flutter test
+
+  windows-build:
+    # The Windows release exe actually compiles: CMake, plugin registrants,
+    # and the runner project are invisible to the ubuntu job.
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: desktop
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: 3.44.6
+          cache: true
+      - run: flutter build windows --release
