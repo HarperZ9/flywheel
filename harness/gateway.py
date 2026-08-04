@@ -1043,6 +1043,20 @@ class _Handler(BaseHTTPRequestHandler):
         except Exception:
             pass                                   # headers already partly sent; nothing safe to do
 
+    def _req_json(self):
+        """The decoded JSON request body, or (None, error-response) when the
+        Content-Length is missing or oversized. One parse for every POST
+        route: the same seven lines were repeated dozens of times."""
+        length = self._content_length()
+        if length is None:
+            return None, self._json(
+                {"error": "invalid or oversized Content-Length"}, 400)
+        try:
+            return (json.loads(self.rfile.read(length) or b"{}")
+                    if length else {}), None
+        except Exception:
+            return {}, None
+
     def _authorized(self) -> bool:
         """Refuse before dispatch. True when the request may proceed.
 
@@ -1346,6 +1360,9 @@ class _Handler(BaseHTTPRequestHandler):
         if p == "/api/marketplace":                  # curated catalog over the plugin registry
             from harness.marketplace import marketplace_catalog
             return self._json(marketplace_catalog())
+        if p == "/api/auth":                         # subscription sign-in roster
+            from harness import oauth_service
+            return self._json(oauth_service.auth_rows())
         if p == "/api/keychain":                     # credential names + presence, never values
             from harness.keychain import credential_source, keychain_available
             try:
@@ -1422,13 +1439,9 @@ class _Handler(BaseHTTPRequestHandler):
         if p.startswith("/v1/") or p == "/generate":
             return self._proxy(self.serve_url.rstrip("/") + p)
         if p == "/api/forge":                        # goal -> verified PRP (the studio)
-            length = self._content_length()
-            if length is None:
-                return self._json({"error": "invalid or oversized Content-Length"}, 400)
-            try:
-                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
-            except Exception:
-                req = {}
+            req, bad = self._req_json()
+            if bad:
+                return bad
             goal = (req.get("goal") or "").strip()
             if not goal:
                 return self._json({"error": "provide a non-empty 'goal'"}, 400)
@@ -1447,13 +1460,9 @@ class _Handler(BaseHTTPRequestHandler):
                     architecture_sha256=str(doc.get("architecture_sha256", "")))
             return self._json(doc)
         if p == "/api/academy/complete":             # bind a passed receipt to a lesson
-            length = self._content_length()
-            if length is None:
-                return self._json({"error": "invalid or oversized Content-Length"}, 400)
-            try:
-                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
-            except Exception:
-                req = {}
+            req, bad = self._req_json()
+            if bad:
+                return bad
             lesson_id = str(req.get("lesson_id", "")).strip()
             eid = str(req.get("comprehension_eid", "")).strip()
             if not lesson_id or not eid:
@@ -1463,13 +1472,9 @@ class _Handler(BaseHTTPRequestHandler):
             doc = academy_complete(lesson_id, eid)
             return self._json(doc, 200 if doc.get("bound") else 400)
         if p == "/api/forge/recheck":                # did an arm drift since the forge?
-            length = self._content_length()
-            if length is None:
-                return self._json({"error": "invalid or oversized Content-Length"}, 400)
-            try:
-                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
-            except Exception:
-                req = {}
+            req, bad = self._req_json()
+            if bad:
+                return bad
             if req.get("intent_sha256") or req.get("architecture_sha256"):
                 return self._json(
                     {"error": "caller-supplied sealed hashes are refused: "
@@ -1479,13 +1484,9 @@ class _Handler(BaseHTTPRequestHandler):
             out = forge_recheck(self.run_root, req.get("prp_id", ""), req)
             return self._json(out, 400 if "error" in out else 200)
         if p == "/api/science":                       # evidence -> spec -> witnessed judgment, one chain
-            length = self._content_length()
-            if length is None:
-                return self._json({"error": "invalid or oversized Content-Length"}, 400)
-            try:
-                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
-            except Exception:
-                req = {}
+            req, bad = self._req_json()
+            if bad:
+                return bad
             question = (req.get("question") or "").strip()
             if not question:
                 return self._json({"error": "provide a non-empty 'question'"}, 400)
@@ -1513,13 +1514,9 @@ class _Handler(BaseHTTPRequestHandler):
                     f"run not persisted: {type(e).__name__}: {e}")
             return self._json(doc)
         if p == "/api/retrieve":                      # retrieval that cites its evidence
-            length = self._content_length()
-            if length is None:
-                return self._json({"error": "invalid or oversized Content-Length"}, 400)
-            try:
-                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
-            except Exception:
-                req = {}
+            req, bad = self._req_json()
+            if bad:
+                return bad
             query = (req.get("query") or "").strip()
             if not query:
                 return self._json({"error": "provide a non-empty 'query'"}, 400)
@@ -1538,13 +1535,9 @@ class _Handler(BaseHTTPRequestHandler):
                                "indexed_files": index["files"],
                                "skipped": index["skipped"]})
         if p == "/api/snapshot":                      # the citation, frozen: bytes as the receipt
-            length = self._content_length()
-            if length is None:
-                return self._json({"error": "invalid or oversized Content-Length"}, 400)
-            try:
-                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
-            except Exception:
-                req = {}
+            req, bad = self._req_json()
+            if bad:
+                return bad
             url = (req.get("url") or "").strip()
             if not url.startswith(("http://", "https://")):
                 return self._json({"error": "provide an http(s) 'url'"}, 400)
@@ -1559,13 +1552,9 @@ class _Handler(BaseHTTPRequestHandler):
                     doc["stored"] = f"store unavailable: {type(e).__name__}"
             return self._json(doc)
         if p == "/api/import":                        # arrive with your whole setup, keep the proof
-            length = self._content_length()
-            if length is None:
-                return self._json({"error": "invalid or oversized Content-Length"}, 400)
-            try:
-                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
-            except Exception:
-                req = {}
+            req, bad = self._req_json()
+            if bad:
+                return bad
             root, err = _resolve_workspace_root(req.get("root"), self.root)
             if err:
                 return self._json({"error": err}, 400)
@@ -1578,13 +1567,9 @@ class _Handler(BaseHTTPRequestHandler):
                 doc["stored"] = f"store unavailable: {type(e).__name__}"
             return self._json(doc)
         if p == "/api/lean":                          # the apex oracle: the kernel decides
-            length = self._content_length()
-            if length is None:
-                return self._json({"error": "invalid or oversized Content-Length"}, 400)
-            try:
-                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
-            except Exception:
-                req = {}
+            req, bad = self._req_json()
+            if bad:
+                return bad
             code = req.get("code") or ""
             if not code.strip():
                 return self._json({"error": "provide non-empty 'code'"}, 400)
@@ -1597,13 +1582,9 @@ class _Handler(BaseHTTPRequestHandler):
                 doc["stored"] = f"store unavailable: {type(e).__name__}"
             return self._json(doc)
         if p == "/api/invent":                        # generation under witness: propose, judge, keep
-            length = self._content_length()
-            if length is None:
-                return self._json({"error": "invalid or oversized Content-Length"}, 400)
-            try:
-                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
-            except Exception:
-                req = {}
+            req, bad = self._req_json()
+            if bad:
+                return bad
             k = req.get("k", 12)
             if not isinstance(k, int) or isinstance(k, bool) or not 1 <= k <= 50:
                 return self._json({"error": "provide integer 'k' in 1..50"}, 400)
@@ -1613,13 +1594,9 @@ class _Handler(BaseHTTPRequestHandler):
             from harness.conjecture_forge import forge_round
             return self._json(forge_round(k, offset=offset))
         if p == "/api/scaffold":                      # the full turn guarantee for external wrappers
-            length = self._content_length()
-            if length is None:
-                return self._json({"error": "invalid or oversized Content-Length"}, 400)
-            try:
-                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
-            except Exception:
-                req = {}
+            req, bad = self._req_json()
+            if bad:
+                return bad
             prompt = str(req.get("prompt") or "")
             answer = str(req.get("answer") or "")
             if not prompt and not answer:
@@ -1632,13 +1609,9 @@ class _Handler(BaseHTTPRequestHandler):
                                   else None)
             return self._json(doc)
         if p == "/api/suite":                         # can this acceptance suite refuse wrong code?
-            length = self._content_length()
-            if length is None:
-                return self._json({"error": "invalid or oversized Content-Length"}, 400)
-            try:
-                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
-            except Exception:
-                req = {}
+            req, bad = self._req_json()
+            if bad:
+                return bad
             path = (req.get("path") or "").strip()
             if not path:
                 return self._json({"error": "provide a project 'path'"}, 400)
@@ -1651,26 +1624,18 @@ class _Handler(BaseHTTPRequestHandler):
                 max_mutants=mm)
             return self._json(doc, 400 if "error" in doc else 200)
         if p == "/api/tension":                       # bank a measurement pair with frozen sources
-            length = self._content_length()
-            if length is None:
-                return self._json({"error": "invalid or oversized Content-Length"}, 400)
-            try:
-                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
-            except Exception:
-                req = {}
+            req, bad = self._req_json()
+            if bad:
+                return bad
             if not isinstance(req.get("a"), dict) or not isinstance(req.get("b"), dict):
                 return self._json({"error": "provide measurement objects 'a' and 'b'"}, 400)
             from harness.tension_ledger import bank_tension
             doc = bank_tension(req["a"], req["b"])
             return self._json(doc, 400 if "error" in doc else 200)
         if p == "/api/capability":                    # probe a model on THIS machine
-            length = self._content_length()
-            if length is None:
-                return self._json({"error": "invalid or oversized Content-Length"}, 400)
-            try:
-                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
-            except Exception:
-                req = {}
+            req, bad = self._req_json()
+            if bad:
+                return bad
             endpoint = (req.get("endpoint") or "").strip()
             if not endpoint:
                 return self._json({"error": "provide a non-empty 'endpoint'"}, 400)
@@ -1687,13 +1652,9 @@ class _Handler(BaseHTTPRequestHandler):
                     doc["stored"] = f"store unavailable: {type(e).__name__}"
             return self._json(doc)
         if p == "/api/retention":                     # bank an unaided retest outcome, linked
-            length = self._content_length()
-            if length is None:
-                return self._json({"error": "invalid or oversized Content-Length"}, 400)
-            try:
-                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
-            except Exception:
-                req = {}
+            req, bad = self._req_json()
+            if bad:
+                return bad
             original = (req.get("original") or "").strip()
             if not original or not isinstance(req.get("passed"), bool):
                 return self._json({"error": "provide 'original' (entity id) "
@@ -1702,13 +1663,9 @@ class _Handler(BaseHTTPRequestHandler):
             return self._json(retention_record(
                 original, req["passed"], note=str(req.get("note", ""))))
         if p == "/api/explain":                       # the teach-back as a receipt (engagement, mechanical)
-            length = self._content_length()
-            if length is None:
-                return self._json({"error": "invalid or oversized Content-Length"}, 400)
-            try:
-                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
-            except Exception:
-                req = {}
+            req, bad = self._req_json()
+            if bad:
+                return bad
             diff = req.get("diff") or ""
             explanation = req.get("explanation") or ""
             if not diff.strip() or not explanation.strip():
@@ -1727,13 +1684,9 @@ class _Handler(BaseHTTPRequestHandler):
                 doc["stored"] = f"store unavailable: {type(e).__name__}"
             return self._json(doc)
         if p == "/api/attest":                        # ownership made checkable: sign-off bound to the walk
-            length = self._content_length()
-            if length is None:
-                return self._json({"error": "invalid or oversized Content-Length"}, 400)
-            try:
-                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
-            except Exception:
-                req = {}
+            req, bad = self._req_json()
+            if bad:
+                return bad
             run_eid = (req.get("run_eid") or "").strip()
             review = req.get("review") if isinstance(req.get("review"), dict) else None
             files = req.get("reviewed_files")
@@ -1762,13 +1715,9 @@ class _Handler(BaseHTTPRequestHandler):
                 doc["stored"] = f"store unavailable: {type(e).__name__}"
             return self._json(doc)
         if p == "/api/route":                         # universal router: send to ANY provider, with a receipt
-            length = self._content_length()
-            if length is None:
-                return self._json({"error": "invalid or oversized Content-Length"}, 400)
-            try:
-                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
-            except Exception:
-                req = {}
+            req, bad = self._req_json()
+            if bad:
+                return bad
             prompt = (req.get("prompt") or "").strip()
             endpoint = (req.get("endpoint") or "").strip()
             if not prompt or not endpoint:
@@ -1786,13 +1735,9 @@ class _Handler(BaseHTTPRequestHandler):
                                                  or endpoint)})
             return self._json(body, code)
         if p == "/api/companion":                     # the seat: answer local, escalate the hard slice
-            length = self._content_length()
-            if length is None:
-                return self._json({"error": "invalid or oversized Content-Length"}, 400)
-            try:
-                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
-            except Exception:
-                req = {}
+            req, bad = self._req_json()
+            if bad:
+                return bad
             prompt = (req.get("prompt") or "").strip()
             if not prompt:
                 return self._json({"error": "provide a non-empty 'prompt'"}, 400)
@@ -1809,13 +1754,9 @@ class _Handler(BaseHTTPRequestHandler):
                                              or body.get("source") or "")})
             return self._json(body)
         if p == "/api/agent":                          # the agentic tool loop over ANY provider
-            length = self._content_length()
-            if length is None:
-                return self._json({"error": "invalid or oversized Content-Length"}, 400)
-            try:
-                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
-            except Exception:
-                req = {}
+            req, bad = self._req_json()
+            if bad:
+                return bad
             goal = (req.get("goal") or "").strip()
             endpoint = (req.get("endpoint") or "").strip()
             if not goal or not endpoint:
@@ -1886,13 +1827,9 @@ class _Handler(BaseHTTPRequestHandler):
                     f"run not persisted: {type(e).__name__}: {e}")
             return self._json(result)
         if p == "/api/workflow":                       # staged run with a chained receipt, any endpoint
-            length = self._content_length()
-            if length is None:
-                return self._json({"error": "invalid or oversized Content-Length"}, 400)
-            try:
-                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
-            except Exception:
-                req = {}
+            req, bad = self._req_json()
+            if bad:
+                return bad
             goal = (req.get("goal") or "").strip()
             workflow = (req.get("workflow") or "").strip()
             if not goal or not workflow:
@@ -1918,13 +1855,9 @@ class _Handler(BaseHTTPRequestHandler):
             doc["run_countersign"] = _countersign_workflow(doc)
             return self._json(doc)
         if p == "/api/memory/recall":                  # verbatim recall from the fold index
-            length = self._content_length()
-            if length is None:
-                return self._json({"error": "invalid or oversized Content-Length"}, 400)
-            try:
-                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
-            except Exception:
-                req = {}
+            req, bad = self._req_json()
+            if bad:
+                return bad
             query = (req.get("query") or "").strip()
             if not query:
                 return self._json({"error": "provide a non-empty 'query'"}, 400)
@@ -1932,25 +1865,34 @@ class _Handler(BaseHTTPRequestHandler):
             return self._json(memory_recall(self.run_root, query,
                                             req.get("top_k", 5)))
         if p == "/api/plugins/register":               # register a custom MCP server by argv
-            length = self._content_length()
-            if length is None:
-                return self._json({"error": "invalid or oversized Content-Length"}, 400)
-            try:
-                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
-            except Exception:
-                req = {}
+            req, bad = self._req_json()
+            if bad:
+                return bad
             from harness.plugins import register_mcp
             out = register_mcp(req.get("name", ""), req.get("command", []),
                                (req.get("detail") or "").strip())
             return self._json(out, 400 if "error" in out else 200)
+        if p in ("/api/auth/login", "/api/auth/token", "/api/auth/logout"):
+            # Subscription sign-in. A browser flow runs in the background and
+            # the surface polls /api/auth; a guided flow returns its steps and
+            # the surface posts the paste back to /api/auth/token. No token
+            # value is logged, echoed, or returned.
+            req, bad = self._req_json()
+            if bad:
+                return bad
+            from harness import oauth_service
+            provider = (req.get("provider") or "").strip()
+            if p == "/api/auth/login":
+                out = oauth_service.begin(provider)
+            elif p == "/api/auth/token":
+                out = oauth_service.submit(provider, req.get("token") or "")
+            else:
+                out = oauth_service.sign_out(provider)
+            return self._json(out, 200 if out.get("ok") else 400)
         if p == "/api/keychain/set":                   # store a secret in the OS keychain
-            length = self._content_length()
-            if length is None:
-                return self._json({"error": "invalid or oversized Content-Length"}, 400)
-            try:
-                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
-            except Exception:
-                req = {}
+            req, bad = self._req_json()
+            if bad:
+                return bad
             from harness.keychain import keychain_set
             out = keychain_set((req.get("name") or "").strip(),
                                req.get("value") or "")
@@ -1958,37 +1900,25 @@ class _Handler(BaseHTTPRequestHandler):
             # echoes it, and `req` goes out of scope with this request.
             return self._json(out, 400 if "error" in out else 200)
         if p == "/api/keychain/delete":                # remove a stored secret
-            length = self._content_length()
-            if length is None:
-                return self._json({"error": "invalid or oversized Content-Length"}, 400)
-            try:
-                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
-            except Exception:
-                req = {}
+            req, bad = self._req_json()
+            if bad:
+                return bad
             from harness.keychain import keychain_delete
             out = keychain_delete((req.get("name") or "").strip())
             return self._json(out, 400 if "error" in out else 200)
         if p == "/api/store/entity":                   # store a content-addressed entity
-            length = self._content_length()
-            if length is None:
-                return self._json({"error": "invalid or oversized Content-Length"}, 400)
-            try:
-                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
-            except Exception:
-                req = {}
+            req, bad = self._req_json()
+            if bad:
+                return bad
             from harness.store import put_entity
             out = put_entity((req.get("kind") or "").strip(),
                              req.get("data") or {},
                              project=(req.get("project") or "").strip())
             return self._json(out, 400 if "error" in out else 200)
         if p == "/api/store/query":                    # query entities by kind/project
-            length = self._content_length()
-            if length is None:
-                return self._json({"error": "invalid or oversized Content-Length"}, 400)
-            try:
-                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
-            except Exception:
-                req = {}
+            req, bad = self._req_json()
+            if bad:
+                return bad
             from harness.store import query_entities
             rows = query_entities(kind=(req.get("kind") or None),
                                   project=(req.get("project") or None),
@@ -1996,36 +1926,24 @@ class _Handler(BaseHTTPRequestHandler):
             return self._json({"schema": "flywheel.store-query/v1",
                                "entities": rows, "n": len(rows)})
         if p == "/api/projects/add":                   # register a project directory
-            length = self._content_length()
-            if length is None:
-                return self._json({"error": "invalid or oversized Content-Length"}, 400)
-            try:
-                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
-            except Exception:
-                req = {}
+            req, bad = self._req_json()
+            if bad:
+                return bad
             from harness.projects import add_project
             out = add_project((req.get("root") or "").strip(),
                               (req.get("name") or "").strip())
             return self._json(out, 400 if "error" in out else 200)
         if p == "/api/projects/remove":                # unregister a project directory
-            length = self._content_length()
-            if length is None:
-                return self._json({"error": "invalid or oversized Content-Length"}, 400)
-            try:
-                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
-            except Exception:
-                req = {}
+            req, bad = self._req_json()
+            if bad:
+                return bad
             from harness.projects import remove_project
             out = remove_project((req.get("root") or "").strip())
             return self._json(out, 400 if "error" in out else 200)
         if p == "/api/lint":                           # native receipt-carrying linter over a project
-            length = self._content_length()
-            if length is None:
-                return self._json({"error": "invalid or oversized Content-Length"}, 400)
-            try:
-                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
-            except Exception:
-                req = {}
+            req, bad = self._req_json()
+            if bad:
+                return bad
             root, err = _resolve_workspace_root(req.get("root"), self.root)
             if err:
                 return self._json({"error": err}, 400)
@@ -2034,13 +1952,9 @@ class _Handler(BaseHTTPRequestHandler):
             out = lint_project(str(root), paths)
             return self._json(out, 400 if "error" in out else 200)
         if p == "/api/index":                          # drive the index engine over a project root
-            length = self._content_length()
-            if length is None:
-                return self._json({"error": "invalid or oversized Content-Length"}, 400)
-            try:
-                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
-            except Exception:
-                req = {}
+            req, bad = self._req_json()
+            if bad:
+                return bad
             root, err = _resolve_workspace_root(req.get("root"), self.root)
             if err:
                 return self._json({"error": err}, 400)
@@ -2052,35 +1966,23 @@ class _Handler(BaseHTTPRequestHandler):
             out = index_view(str(root), view)
             return self._json(out, 400 if "error" in out else 200)
         if p == "/api/discourse":                      # drive the chorus satellite over a gathered corpus
-            length = self._content_length()
-            if length is None:
-                return self._json({"error": "invalid or oversized Content-Length"}, 400)
-            try:
-                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
-            except Exception:
-                req = {}
+            req, bad = self._req_json()
+            if bad:
+                return bad
             from harness.chorus_bridge import discourse_digest
             out = discourse_digest((req.get("corpus") or "").strip())
             return self._json(out, 400 if "error" in out else 200)
         if p == "/api/discourse/corpora":              # discover gather corpora as discourse sources
-            length = self._content_length()
-            if length is None:
-                return self._json({"error": "invalid or oversized Content-Length"}, 400)
-            try:
-                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
-            except Exception:
-                req = {}
+            req, bad = self._req_json()
+            if bad:
+                return bad
             from harness.chorus_bridge import list_corpora
             out = list_corpora((req.get("root") or "").strip())
             return self._json(out, 400 if "error" in out else 200)
         if p == "/api/learn/animate":                  # a lesson -> a runnable manim scene (academy)
-            length = self._content_length()
-            if length is None:
-                return self._json({"error": "invalid or oversized Content-Length"}, 400)
-            try:
-                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
-            except Exception:
-                req = {}
+            req, bad = self._req_json()
+            if bad:
+                return bad
             from harness.manim_lesson import lesson_to_manim, scene_name, manimgl_available
             lesson = req.get("lesson") if isinstance(req.get("lesson"), dict) else {}
             return self._json({"schema": "flywheel.learn-animation/v1",
@@ -2088,48 +1990,32 @@ class _Handler(BaseHTTPRequestHandler):
                                "source": lesson_to_manim(lesson),
                                "renderable": manimgl_available()})
         if p == "/api/discourse/digests":              # what the chorus daemon has synthesized
-            length = self._content_length()
-            if length is None:
-                return self._json({"error": "invalid or oversized Content-Length"}, 400)
-            try:
-                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
-            except Exception:
-                req = {}
+            req, bad = self._req_json()
+            if bad:
+                return bad
             from harness.chorus_bridge import recent_digests
             limit = req.get("limit")
             out = recent_digests((req.get("store") or "").strip(),
                                  limit=int(limit) if isinstance(limit, int) else 20)
             return self._json(out, 400 if "error" in out else 200)
         if p == "/api/robustness/inject":              # measure the gated tool loop's injection containment
-            length = self._content_length()
-            if length is None:
-                return self._json({"error": "invalid or oversized Content-Length"}, 400)
-            try:
-                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
-            except Exception:
-                req = {}
+            req, bad = self._req_json()
+            if bad:
+                return bad
             from harness.injection_probe import probe
             return self._json(probe(allow_write=bool(req.get("allow_write")),
                                     allow_exec=bool(req.get("allow_exec"))))
         if p == "/api/marketplace/install":            # catalog entry -> plugin registry
-            length = self._content_length()
-            if length is None:
-                return self._json({"error": "invalid or oversized Content-Length"}, 400)
-            try:
-                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
-            except Exception:
-                req = {}
+            req, bad = self._req_json()
+            if bad:
+                return bad
             from harness.marketplace import install_from_catalog
             out = install_from_catalog((req.get("name") or "").strip())
             return self._json(out, 400 if "error" in out else 200)
         if p == "/api/typeface":                       # mint a parametric face under witness
-            length = self._content_length()
-            if length is None:
-                return self._json({"error": "invalid or oversized Content-Length"}, 400)
-            try:
-                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
-            except Exception:
-                req = {}
+            req, bad = self._req_json()
+            if bad:
+                return bad
             from harness.typeface_forge import mint
             params = req.get("params") if isinstance(req.get("params"), dict) else {}
             try:
@@ -2153,13 +2039,9 @@ class _Handler(BaseHTTPRequestHandler):
                     face, family=str(req.get("family") or "Zentropy Mint"))
             return self._json(face)
         if p == "/api/typeface/publish":               # file an already-minted face in the gallery
-            length = self._content_length()
-            if length is None:
-                return self._json({"error": "invalid or oversized Content-Length"}, 400)
-            try:
-                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
-            except Exception:
-                req = {}
+            req, bad = self._req_json()
+            if bad:
+                return bad
             from harness.typeface_forge import mint
             from harness.typeface_ttf import to_ttf
             from harness.typeface_gallery import publish_face
@@ -2177,13 +2059,9 @@ class _Handler(BaseHTTPRequestHandler):
             out = publish_face(face, family=str(req.get("family") or "Zentropy Mint"))
             return self._json(out, 400 if "error" in out else 200)
         if p == "/api/studio/poster":                  # plate + minted face + copy, one receipt
-            length = self._content_length()
-            if length is None:
-                return self._json({"error": "invalid or oversized Content-Length"}, 400)
-            try:
-                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
-            except Exception:
-                req = {}
+            req, bad = self._req_json()
+            if bad:
+                return bad
             from harness.design_studio import compose
             try:
                 seed = int(req.get("seed", 58))
@@ -2208,13 +2086,9 @@ class _Handler(BaseHTTPRequestHandler):
                 want_pdf=bool(req.get("pdf")))
             return self._json(out, 400 if out.get("refused") else 200)
         if p == "/api/lanes/install":                  # one lane, installed on request
-            length = self._content_length()
-            if length is None:
-                return self._json({"error": "invalid or oversized Content-Length"}, 400)
-            try:
-                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
-            except Exception:
-                req = {}
+            req, bad = self._req_json()
+            if bad:
+                return bad
             name = str(req.get("name", "")).strip()
             if not name:
                 return self._json({"error": "provide a lane 'name'"}, 400)
@@ -2222,13 +2096,9 @@ class _Handler(BaseHTTPRequestHandler):
             from harness.lanes import install_lane
             return self._json(install_lane(name, profile=profile))
         if p == "/api/plugins/call":                   # one tool call on a registered plugin
-            length = self._content_length()
-            if length is None:
-                return self._json({"error": "invalid or oversized Content-Length"}, 400)
-            try:
-                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
-            except Exception:
-                req = {}
+            req, bad = self._req_json()
+            if bad:
+                return bad
             from harness.plugins import call_plugin
             out = call_plugin(str(req.get("name", "")).strip(),
                               str(req.get("tool", "")).strip(),
@@ -2236,26 +2106,18 @@ class _Handler(BaseHTTPRequestHandler):
                               if isinstance(req.get("arguments"), dict) else {})
             return self._json(out, 400 if "error" in out else 200)
         if p == "/api/telos/kernel":                   # run a bridged telos creative kernel
-            length = self._content_length()
-            if length is None:
-                return self._json({"error": "invalid or oversized Content-Length"}, 400)
-            try:
-                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
-            except Exception:
-                req = {}
+            req, bad = self._req_json()
+            if bad:
+                return bad
             from harness.telos_kernels import run_kernel
             out = run_kernel(str(req.get("kernel", "")).strip(),
                              req.get("args")
                              if isinstance(req.get("args"), dict) else {})
             return self._json(out, 400 if "error" in out else 200)
         if p == "/api/studio/graph":                   # branching creative DAG, Merkle receipt
-            length = self._content_length()
-            if length is None:
-                return self._json({"error": "invalid or oversized Content-Length"}, 400)
-            try:
-                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
-            except Exception:
-                req = {}
+            req, bad = self._req_json()
+            if bad:
+                return bad
             from harness.creative_graph import run_graph
             out = run_graph(req.get("nodes")
                             if isinstance(req.get("nodes"), list) else [],
@@ -2263,25 +2125,17 @@ class _Handler(BaseHTTPRequestHandler):
                             if isinstance(req.get("edges"), list) else [])
             return self._json(out, 400 if out.get("refused") else 200)
         if p == "/api/studio/pipeline":                # ordered stages, one chained receipt
-            length = self._content_length()
-            if length is None:
-                return self._json({"error": "invalid or oversized Content-Length"}, 400)
-            try:
-                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
-            except Exception:
-                req = {}
+            req, bad = self._req_json()
+            if bad:
+                return bad
             from harness.creative_pipeline import run_pipeline
             out = run_pipeline(req.get("stages")
                                if isinstance(req.get("stages"), list) else [])
             return self._json(out, 400 if out.get("refused") else 200)
         if p == "/api/telos/raster":                   # dither / pixel-sort over a plate or PNG
-            length = self._content_length()
-            if length is None:
-                return self._json({"error": "invalid or oversized Content-Length"}, 400)
-            try:
-                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
-            except Exception:
-                req = {}
+            req, bad = self._req_json()
+            if bad:
+                return bad
             from harness.raster_fx import apply_fx
             out = apply_fx(str(req.get("kernel", "")).strip(),
                            req.get("source")
@@ -2290,13 +2144,9 @@ class _Handler(BaseHTTPRequestHandler):
                            if isinstance(req.get("args"), dict) else None)
             return self._json(out, 400 if out.get("refused") else 200)
         if p == "/api/typeface/family":                # one seed, a product line of weights
-            length = self._content_length()
-            if length is None:
-                return self._json({"error": "invalid or oversized Content-Length"}, 400)
-            try:
-                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
-            except Exception:
-                req = {}
+            req, bad = self._req_json()
+            if bad:
+                return bad
             from harness.typeface_family import mint_family
             try:
                 seed = int(req.get("seed", 58))
@@ -2308,13 +2158,9 @@ class _Handler(BaseHTTPRequestHandler):
                 family=str(req.get("family") or "Zentropy Mint")[:48])
             return self._json(out, 400 if out.get("refused") else 200)
         if p == "/api/typeface/variable":              # the family as ONE variable font (wght axis)
-            length = self._content_length()
-            if length is None:
-                return self._json({"error": "invalid or oversized Content-Length"}, 400)
-            try:
-                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
-            except Exception:
-                req = {}
+            req, bad = self._req_json()
+            if bad:
+                return bad
             from harness.typeface_family import mint_variable_family
             try:
                 seed = int(req.get("seed", 58))
@@ -2326,13 +2172,9 @@ class _Handler(BaseHTTPRequestHandler):
                 family=str(req.get("family") or "Zentropy Mint")[:48])
             return self._json(out, 400 if out.get("refused") else 200)
         if p == "/api/studio/brandkit":                # one seed + a name -> a whole identity
-            length = self._content_length()
-            if length is None:
-                return self._json({"error": "invalid or oversized Content-Length"}, 400)
-            try:
-                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
-            except Exception:
-                req = {}
+            req, bad = self._req_json()
+            if bad:
+                return bad
             from harness.brand_kit import mint_kit
             try:
                 seed = int(req.get("seed", 58))
@@ -2344,13 +2186,9 @@ class _Handler(BaseHTTPRequestHandler):
                            if isinstance(req.get("face_params"), dict) else None)
             return self._json(out, 400 if out.get("refused") else 200)
         if p == "/api/studio/sound":                   # the seeded chime study, score = receipt
-            length = self._content_length()
-            if length is None:
-                return self._json({"error": "invalid or oversized Content-Length"}, 400)
-            try:
-                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
-            except Exception:
-                req = {}
+            req, bad = self._req_json()
+            if bad:
+                return bad
             from harness.sound_studio import compose_sound
             def _num(key, default):
                 try:
@@ -2362,13 +2200,9 @@ class _Handler(BaseHTTPRequestHandler):
                                 root=_num("root", 220.0))
             return self._json(out, 400 if out.get("refused") else 200)
         if p == "/api/marketplace/add":                # a user catalog entry (env-var NAMES only)
-            length = self._content_length()
-            if length is None:
-                return self._json({"error": "invalid or oversized Content-Length"}, 400)
-            try:
-                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
-            except Exception:
-                req = {}
+            req, bad = self._req_json()
+            if bad:
+                return bad
             from harness.marketplace import add_user_entry
             out = add_user_entry(
                 str(req.get("name", "")),
@@ -2378,46 +2212,30 @@ class _Handler(BaseHTTPRequestHandler):
                 if isinstance(req.get("requires"), list) else [])
             return self._json(out, 400 if "error" in out else 200)
         if p == "/api/marketplace/remove":             # drop a user catalog entry
-            length = self._content_length()
-            if length is None:
-                return self._json({"error": "invalid or oversized Content-Length"}, 400)
-            try:
-                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
-            except Exception:
-                req = {}
+            req, bad = self._req_json()
+            if bad:
+                return bad
             from harness.marketplace import remove_user_entry
             out = remove_user_entry(str(req.get("name", "")))
             return self._json(out, 400 if "error" in out else 200)
         if p == "/api/plugins/toggle":                 # enable/disable a custom plugin
-            length = self._content_length()
-            if length is None:
-                return self._json({"error": "invalid or oversized Content-Length"}, 400)
-            try:
-                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
-            except Exception:
-                req = {}
+            req, bad = self._req_json()
+            if bad:
+                return bad
             from harness.plugins import toggle_mcp
             out = toggle_mcp(req.get("name", ""), bool(req.get("enabled", True)))
             return self._json(out, 400 if "error" in out else 200)
         if p == "/api/plugins/remove":                 # remove a custom plugin
-            length = self._content_length()
-            if length is None:
-                return self._json({"error": "invalid or oversized Content-Length"}, 400)
-            try:
-                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
-            except Exception:
-                req = {}
+            req, bad = self._req_json()
+            if bad:
+                return bad
             from harness.plugins import remove_mcp
             out = remove_mcp(req.get("name", ""))
             return self._json(out, 400 if "error" in out else 200)
         if p == "/api/lsp":                            # editor intelligence over any LSP server
-            length = self._content_length()
-            if length is None:
-                return self._json({"error": "invalid or oversized Content-Length"}, 400)
-            try:
-                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
-            except Exception:
-                req = {}
+            req, bad = self._req_json()
+            if bad:
+                return bad
             root, err = _resolve_workspace_root(req.get("root"), self.root)
             if err:
                 return self._json({"error": err}, 400)
@@ -2439,13 +2257,9 @@ class _Handler(BaseHTTPRequestHandler):
                     int(req.get("character", 0) or 0))
             return self._json(out, 400 if "error" in out else 200)
         if p == "/api/memory/note":                    # durable content-addressed note
-            length = self._content_length()
-            if length is None:
-                return self._json({"error": "invalid or oversized Content-Length"}, 400)
-            try:
-                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
-            except Exception:
-                req = {}
+            req, bad = self._req_json()
+            if bad:
+                return bad
             content = (req.get("content") or "").strip()
             if not content:
                 return self._json({"error": "provide non-empty 'content'"}, 400)
@@ -2453,13 +2267,9 @@ class _Handler(BaseHTTPRequestHandler):
             return self._json(memory_note(self.run_root, content,
                                           (req.get("role") or "note").strip() or "note"))
         if p == "/api/lessons/admit":                # transition a lesson to admitted
-            length = self._content_length()
-            if length is None:
-                return self._json({"error": "invalid or oversized Content-Length"}, 400)
-            try:
-                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
-            except Exception:
-                req = {}
+            req, bad = self._req_json()
+            if bad:
+                return bad
             lesson_id = str(req.get("lesson_id", "")).strip()
             if not lesson_id:
                 return self._json({"error": "provide 'lesson_id'"}, 400)
@@ -2473,13 +2283,9 @@ class _Handler(BaseHTTPRequestHandler):
             except ValueError as e:
                 return self._json({"error": str(e)}, 400)
         if p == "/api/lessons/retire":               # transition a lesson to retired
-            length = self._content_length()
-            if length is None:
-                return self._json({"error": "invalid or oversized Content-Length"}, 400)
-            try:
-                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
-            except Exception:
-                req = {}
+            req, bad = self._req_json()
+            if bad:
+                return bad
             lesson_id = str(req.get("lesson_id", "")).strip()
             if not lesson_id:
                 return self._json({"error": "provide 'lesson_id'"}, 400)

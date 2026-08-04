@@ -135,10 +135,16 @@ def test_emit_receipt_writes_file_and_never_raises(tmp_path: Path):
     assert loaded["source"] == r["source"]
 
 
-def test_emit_receipt_swallows_bad_dir():
+def test_emit_receipt_swallows_bad_dir(tmp_path):
     r = _sample_receipt()
-    # a path that can't be created (under a file, not a dir)
-    path = emit_receipt(r, Path("/dev/null/subdir"))
+    # A path that cannot be created on ANY platform: its parent is a regular
+    # file. The previous fixture, /dev/null/subdir, is only invalid on POSIX;
+    # on Windows it resolves to a creatable \dev\null\subdir on the current
+    # drive, so the "bad dir" quietly became a good one and the first
+    # windows-latest CI shard caught the test asserting the wrong world.
+    blocker = tmp_path / "not-a-dir"
+    blocker.write_text("a file where the receipts dir wants a parent")
+    path = emit_receipt(r, blocker / "subdir")
     assert path is None
 
 
