@@ -1,5 +1,5 @@
 // tokens.dart — the Flywheel design tokens, mirrored from the engine's own
-// shell (local-model site/index.html) and the ecosystem design canon
+// shell (site/index.html at the repo root) and the ecosystem design canon
 // (telos-v2 DESIGN-VOICE-CANON.md).
 //
 // Rules the tokens encode:

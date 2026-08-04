@@ -1,6 +1,9 @@
 # Flywheel local flagship package
 
-The flagship package is the local harness distribution for the Codex/Flywheel engine.
+The flagship package is an auxiliary self-contained local bundle of the
+engine. The primary distribution is the PyPI package `flywheel-verify`
+(`pip install flywheel-verify`) and the Windows desktop installer from the
+repo's releases page; one `v*` tag ships both.
 It packages the executable harness, local model endpoint contracts, tool integration receipts, release gates, and public-ready documentation scaffolds without bundling secrets, model weights, caches, or private corpora.
 
 ## What ships

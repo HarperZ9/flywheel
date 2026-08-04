@@ -39,7 +39,7 @@ def _find_repo_root() -> Path:
             if (root / "scripts" / "run_harness_cli.py").exists() and (root / "harness").is_dir():
                 return root
     raise FileNotFoundError(
-        "could not locate local-model repo root; set LOCAL_HARNESS_REPO to the checkout containing scripts/run_harness_cli.py"
+        "could not locate the flywheel repo root; set LOCAL_HARNESS_REPO to the checkout containing scripts/run_harness_cli.py"
     )
 
 

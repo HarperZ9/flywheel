@@ -193,29 +193,31 @@ def default_flywheel_trust_model() -> TrustModel:
     This is the self-model: it names which Flywheel component enforces which
     safety property. It is honest about single points of failure.
     """
+    from harness.infra.run_bom import installed_harness_version
+    _v = installed_harness_version()
     model = TrustModel(
         model_id="flywheel-default",
         description="Flywheel's agent-layer accountability architecture.",
     )
     model.add_component(
         name="ToolGate", component_type="gate", owner="flywheel",
-        version="0.3.0", enforces=["default-deny-write", "default-deny-exec"],
+        version=_v, enforces=["default-deny-write", "default-deny-exec"],
         notes="The capability broker. Off by default for writes and exec.")
     model.add_component(
         name="ToolCallReceipt", component_type="monitor", owner="flywheel",
-        version="0.3.0", enforces=["every-tool-call-sealed"],
+        version=_v, enforces=["every-tool-call-sealed"],
         notes="Sealed receipt at the execute() chokepoint.")
     model.add_component(
         name="CanaryTripwire", component_type="monitor", owner="flywheel",
-        version="0.3.0", enforces=["decoy-access-detected"],
+        version=_v, enforces=["decoy-access-detected"],
         notes="Decoy resources that trip containment if accessed.")
     model.add_component(
         name="GatewayAuth", component_type="identity-provider", owner="flywheel",
-        version="0.3.0", enforces=["localhost-only", "bearer-token"],
+        version=_v, enforces=["localhost-only", "bearer-token"],
         notes="Host allowlist defeats DNS rebinding. Token on state-changing methods.")
     model.add_component(
         name="LessonStore", component_type="storage", owner="flywheel",
-        version="0.3.0", enforces=["organizational-learning"],
+        version=_v, enforces=["organizational-learning"],
         notes="Append-only, hash-chained lesson memory.")
 
     model.add_claim(

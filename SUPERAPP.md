@@ -6,6 +6,12 @@
 > headless checks. References to "the shell" / "the live UI" below should be
 > read in that historical context.
 
+> **Update 2026-08-03:** The `C:\dev\local-model\...` paths below predate the
+> monorepo consolidation; those modules now live in this repo (`harness/`,
+> `scripts/`, `dataset/`, `site/`). `HarperZ9/local-model` is archived
+> read-only. One `v*` tag now ships both halves: the `flywheel-verify` wheel
+> to PyPI and the Windows installer to the GitHub Release.
+
 > Unification spec. Synthesizes the operator vision with the six-reader survey
 > (showcase, packaged-app, companion, endpoints, training, projected-world).
 > Spec only. Nothing here is committed, published, or launched by this document.

@@ -69,11 +69,12 @@ time.
 
 ## After training
 
-The 32B follows the same release path the 14B did: merge the adapter, quantize
-to GGUF, run the deterministic smoke, build the provenance chain, run the
-endpoint gate and benchmark, then stage for release. It will not be published
-until its evidence is something an outside observer can check, the same bar the
-14B is held to.
+The 32B followed the same release path the 14B did: adapter merged, quantized
+to Q4_K_M GGUF (`telos-coder-32b-cpt2019-q4_k_m.gguf`), provenance chain
+built, and staged for release ([releases/32B/](releases/32B/README.md)).
+Status: awaiting operator upload approval; benchmark evidence is pending. It
+will not be published until its evidence is something an outside observer can
+check, the same bar the 14B is held to.
 
 ## A note on the smaller-hardware goal
 

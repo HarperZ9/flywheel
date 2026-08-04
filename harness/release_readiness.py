@@ -13,7 +13,8 @@ from pathlib import Path
 
 SCHEMA = "flywheel.release-readiness/v1"
 
-# The 14-flagship family; the platform's own two repos are added by name.
+# The 14-flagship family; the platform's own two components (engine root
+# and desktop/ in this monorepo) are added by name.
 FAMILY = ("telos", "index", "forum", "gather", "crucible", "learn", "emet",
           "mneme", "plexus", "relay", "accountable-surface", "studio-engine",
           "proof-surface", "coherence-membrane")
