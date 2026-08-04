@@ -23,9 +23,17 @@ pip install flywheel-verify
 (`flywheel-verify` is the PyPI distribution name; the installed command is
 `flywheel`. From a source checkout: `pip install -e .`.)
 
-Zero runtime dependencies. Python 3.11+. Stdlib only. Optional packages
-(`cryptography`, `pynacl`, `psutil`) unlock enhanced features but are never
-required.
+Zero runtime dependencies. Python 3.11+. Stdlib only. No model download is
+required: the engine works immediately against any hosted provider you hold a
+key for, and local models are an optional layer (ollama needs no extras; the
+published 14B/32B weights are separate downloads). Optional extras unlock the
+paths that need third-party packages, and are never required:
+
+```bash
+pip install "flywheel-verify[signing]"   # receipt signing (verification stays stdlib)
+pip install "flywheel-verify[monitor]"   # network egress monitoring
+pip install "flywheel-verify[local]"     # the local HF serve/training stack
+```
 
 ## Start the engine
 

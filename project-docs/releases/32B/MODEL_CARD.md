@@ -1,6 +1,8 @@
 # Flywheel-Local-Coder-32B Model Card
 
-Status: trained artifact verified, staged for operator-gated upload. Identity and the full provenance chain are re-checkable; benchmark evidence is pending.
+Status: published at https://huggingface.co/zaindanaharper/flywheel-local-coder-32b (public since 2026-07-18). Identity and
+the full provenance chain are re-checkable; benchmark evidence is pending
+and no uplift is claimed.
 
 ## Model identity
 

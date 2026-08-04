@@ -13,7 +13,9 @@ library_name: gguf
 
 # Flywheel-Local-Coder-14B Release README
 
-Status: staged, awaiting operator upload approval. Trained artifact, endpoint gate evidence, and first benchmark evidence exist.
+Status: published at https://huggingface.co/zaindanaharper/flywheel-local-coder-14b (public since 2026-07-18; the uploaded
+GGUF matches the checksummed artifact). Trained artifact, endpoint gate
+evidence, and first benchmark evidence exist and ship with the release.
 
 ## What this release is
 

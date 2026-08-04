@@ -71,10 +71,11 @@ time.
 
 The 32B followed the same release path the 14B did: adapter merged, quantized
 to Q4_K_M GGUF (`telos-coder-32b-cpt2019-q4_k_m.gguf`), provenance chain
-built, and staged for release ([releases/32B/](releases/32B/README.md)).
-Status: awaiting operator upload approval; benchmark evidence is pending. It
-will not be published until its evidence is something an outside observer can
-check, the same bar the 14B is held to.
+built, and published (https://huggingface.co/zaindanaharper/flywheel-local-coder-32b;
+docs in [releases/32B/](releases/32B/README.md)).
+Status: public since 2026-07-18; benchmark evidence is pending, so no uplift
+is claimed until evidence an outside observer can check lands, the same bar
+the 14B is held to.
 
 ## A note on the smaller-hardware goal
 

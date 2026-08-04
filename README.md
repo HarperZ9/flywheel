@@ -105,6 +105,18 @@ flywheel up
 unrelated package); the installed command is `flywheel`. Zero runtime
 dependencies, stdlib only.
 
+**No model download required.** The engine is ready for real work the moment
+it installs: point it at any hosted provider you hold a key for (the roster
+reports credential presence only, never values) and every route carries the
+same receipt discipline. Local models are first-class but optional: ollama
+needs no extras at all (the gateway talks to it over HTTP), the published
+[14B](https://huggingface.co/zaindanaharper/flywheel-local-coder-14b) and
+[32B](https://huggingface.co/zaindanaharper/flywheel-local-coder-32b) weights
+are separate downloads for when you want them, and the local HF
+serve/training stack installs with `pip install "flywheel-verify[local]"`.
+Receipt signing and egress monitoring have their own extras (`[signing]`,
+`[monitor]`); receipt verification stays stdlib-only.
+
 Or from source:
 
 ```

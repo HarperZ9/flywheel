@@ -13,6 +13,6 @@ Gate ids match `scripts/run_model_publish_plan.py` and `scripts/run_model_releas
 | `endpoint_generation_ok` | pending | `harness.model-endpoint-gate/v1` artifact with generation_ok for this model. |
 | `benchmark_evidence_present` | pending | Executed benchmark artifacts attached to the release row. None exist yet. |
 | `release_docs_complete` | pending | All required release docs present and scored 1.0 by the readiness run. |
-| Operator upload approval | pending, NEVER auto-approved | Explicit operator approval after all gates pass. |
+| Operator upload approval | DONE | Approved and uploaded; public at https://huggingface.co/zaindanaharper/flywheel-local-coder-14b since 2026-07-18. |
 
 Verdict: do not publish.
