@@ -115,6 +115,30 @@ def _cmd_install(argv: list[str]) -> int:
     return 0 if n_ok == len(names) else 1
 
 
+def _launch_gateway(gateway_argv: list[str]) -> int:
+    """Start the gateway. Prefer a source checkout (dev: run_harness_cli.py wires
+    up cwd-relative dispatch and serves site/); otherwise -- a frozen exe or a
+    bare `pip install`, neither of which ships scripts/ -- run the gateway
+    straight from the installed harness package."""
+    repo_root = None
+    if not getattr(sys, "frozen", False):
+        try:
+            repo_root = find_repo_root()
+        except FileNotFoundError:
+            repo_root = None
+    if repo_root is None:
+        from harness.gateway import main as _gw_main
+        return _gw_main(gateway_argv)
+    os.chdir(repo_root)
+    script = repo_root / "scripts" / "run_harness_cli.py"
+    sys.argv = [str(script), "app", *gateway_argv]
+    try:
+        runpy.run_path(str(script), run_name="__main__")
+    except SystemExit as exc:
+        return int(exc.code or 0)
+    return 0
+
+
 def _cmd_up(argv: list[str]) -> int:
     """`flywheel up [--port 8799] [--probe]` -- start the one surface.
 
@@ -134,17 +158,7 @@ def _cmd_up(argv: list[str]) -> int:
         gateway_argv = ["--port", "8799"] + gateway_argv
     print("Starting the gateway ...")
     _sys.stdout.flush()
-    # Re-invoke run_harness_cli.py with `app` + our port/flags.
-    repo_root = find_repo_root()
-    os.chdir(repo_root)
-    import runpy
-    script = repo_root / "scripts" / "run_harness_cli.py"
-    _sys.argv = [str(script), "app", *gateway_argv]
-    try:
-        runpy.run_path(str(script), run_name="__main__")
-    except SystemExit as exc:
-        return int(exc.code or 0)
-    return 0
+    return _launch_gateway(gateway_argv)
 
 
 def _dispatch_umbrella(command: str, argv: list[str]) -> int:
@@ -229,24 +243,41 @@ def main(argv: list[str] | None = None) -> int:
     if command in _UMBRELLA_COMMANDS:
         rest = [a for a in raw if a is not command]
         return _dispatch_umbrella(command, rest)
-    # Passthrough: re-invoke scripts/run_harness_cli.py from the repo root so
-    # its cwd-relative subprocess dispatch (build_command) resolves correctly.
-    # When frozen (PyInstaller exe), the scripts/ dir is not bundled; for the
-    # `app` command we import harness.gateway directly, and for other commands
-    # we report they need a source checkout.
-    if getattr(sys, "frozen", False):
-        if command == "app":
-            # The gateway is importable from the bundled harness package.
-            # Strip the "app" command name; gateway.main takes --port/--root/etc.
-            from harness.gateway import main as _gw_main
-            gw_args = [a for a in raw if a != "app"]
-            return _gw_main(gw_args)
+    # `app` launches the gateway; route it through the shared launcher so it
+    # works from a source checkout, a frozen exe, or a bare `pip install`.
+    # Drop only the command token itself: an equality filter would also eat
+    # a later value that happens to equal "app" (e.g. `--root app`).
+    if command == "app":
+        gw_args = list(raw)
+        gw_args.remove("app")
+        return _launch_gateway(gw_args)
+    # Other passthrough commands re-invoke scripts/run_harness_cli.py from the
+    # repo root (its cwd-relative subprocess dispatch needs the checkout). With
+    # no checkout -- a frozen exe or a bare `pip install`, neither of which ships
+    # scripts/ -- report that instead of raising.
+    repo_root = None
+    if not getattr(sys, "frozen", False):
+        try:
+            repo_root = find_repo_root()
+        except FileNotFoundError:
+            repo_root = None
+    if repo_root is None:
+        if command is None:
+            # Bare `flywheel` or `flywheel --help` with no checkout: show the
+            # umbrella usage. Help is a success; a missing command is an error.
+            wants_help = any(a in ("-h", "--help") for a in raw)
+            print("usage: flywheel <command> [options]\n"
+                  "Umbrella commands (run from a bare install): up, lanes, "
+                  "loop-status, install, corpus-export, gate, why, down\n"
+                  "Passthrough commands need a source checkout "
+                  "(scripts/run_harness_cli.py).",
+                  file=sys.stdout if wants_help else sys.stderr)
+            return 0 if wants_help else 2
         print(f"`flywheel {command}` requires a source checkout (scripts/run_harness_cli.py).",
               file=sys.stderr)
         print("Run from a checkout, or use the umbrella commands "
-              "(lanes, loop-status, install, up, corpus-export).", file=sys.stderr)
+              "(up, lanes, loop-status, install, corpus-export).", file=sys.stderr)
         return 2
-    repo_root = find_repo_root()
     os.chdir(repo_root)
     script = repo_root / "scripts" / "run_harness_cli.py"
     sys.argv = [str(script), *raw]
