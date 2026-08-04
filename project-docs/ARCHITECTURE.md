@@ -1,6 +1,9 @@
 # Codex/Flywheel Harness Architecture
 
-This document is AUTHORITATIVE. No exceptions.
+Historical target architecture (2026-07-09), written before the monorepo
+consolidation. The current shape is this repo: `harness/` (the engine, ships
+on PyPI as `flywheel-verify`) plus `desktop/` (the native client, Windows
+installer from the same `v*` tag). Read statements below as of their date.
 
 Status: target architecture and current migration boundary, not a claim that every component is already implemented.
 

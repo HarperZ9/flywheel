@@ -2,8 +2,9 @@
 
 > **Canonical overview + roadmap: [PROJECT.md](PROJECT.md).** Original program framing, kept for history.
 
-> Durable program backbone. This file is the source of truth across sessions.
-> If context is lost, read this first, then `STATE.md` for the live cursor.
+> Historical program backbone — the original local-model framing, kept for
+> history. Canonical overview: [PROJECT.md](PROJECT.md); live cursor:
+> `STATE.md`. Read those first.
 
 ## The thesis
 

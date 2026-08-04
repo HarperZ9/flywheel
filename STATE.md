@@ -4,9 +4,9 @@
 > append-only work log (newest-first); PROJECT.md is the synthesized, honestly-
 > bounded picture of the whole project. Read PROJECT.md first.
 
-> The moving cursor for the Flywheel program. `ROADMAP.md` is the durable
-> backbone (the WHY and the phase plan); this file is where we are RIGHT NOW.
-> Update on every material step. If context is lost: read ROADMAP.md, then this.
+> The moving cursor for the Flywheel program — where we are RIGHT NOW.
+> Update on every material step. If context is lost: read PROJECT.md, then
+> this. (`ROADMAP.md` is the original program framing, kept for history.)
 
 Last updated: 2026-08-03
 

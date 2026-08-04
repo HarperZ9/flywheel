@@ -172,9 +172,13 @@ def test_capture_system_prompt_hash():
 
 
 def test_default_flywheel_bom():
+    from harness.infra.run_bom import installed_harness_version
     bom = default_flywheel_bom("eval-001")
     assert bom.run_id == "eval-001"
-    assert bom.harness_version == "0.3.0"
+    # The BOM carries the RUNNING version (installed distribution, or
+    # "unknown" from a bare source tree), never a fossilized literal.
+    assert bom.harness_version == installed_harness_version()
+    assert bom.harness_version != ""
     assert "read_file" in bom.tool_scopes
 
 

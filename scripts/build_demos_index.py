@@ -23,7 +23,7 @@ OUT = DEMOS / "index.json"
 # Curated display copy for the known shots, in gallery order. Unknown demo
 # dirs are appended alphabetically with copy derived from their transcript.
 CURATED = [
-    ("harness-first-run", "local-model harness",
+    ("harness-first-run", "flywheel harness",
      "Propose, verify against an oracle, witness a re-checkable receipt.",
      "the engine"),
     ("telos-showcase", "telos",
@@ -43,7 +43,7 @@ CURATED = [
      "A zero-dependency agent that reaches local and frontier endpoints with failover.", None),
     ("plexus-showcase", "plexus",
      "Cross-tool capability discovery and auto-wiring, so the spine composes.", None),
-    ("local-model-showcase", "local-model CLI",
+    ("local-model-showcase", "flywheel CLI",
      "The harness command line and its receipts, end to end.", None),
 ]
 

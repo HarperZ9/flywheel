@@ -6,7 +6,7 @@
   {
    "id": "harness-first-run",
    "player": "harness-first-run/player.html",
-   "name": "local-model harness",
+   "name": "flywheel harness",
    "role": "Propose, verify against an oracle, witness a re-checkable receipt.",
    "step_count": 4,
    "total_duration_ms": 65718,
@@ -80,7 +80,7 @@
    "total_duration_ms": 526,
    "recorded_utc": "2026-07-09T19:37:17.074386Z",
    "receipt_sha256": "90042adedd139a851b69b5766f083746fce1cfcf1fd186bce2475b9cd5550785",
-   "transcript_sha256": "90ecedebe70bdfaff66e872adc39b9a6abc2c0777cf36c52672e98d99822e7ae"
+   "transcript_sha256": "16ba49f2c0a2bfc3a2de60462efe3ac7eba45f99b9ea4775440462ffdb30feca"
   },
   {
    "id": "relay-showcase",
@@ -107,7 +107,7 @@
   {
    "id": "local-model-showcase",
    "player": "local-model-showcase/player.html",
-   "name": "local-model CLI",
+   "name": "flywheel CLI",
    "role": "The harness command line and its receipts, end to end.",
    "step_count": 4,
    "total_duration_ms": 296,

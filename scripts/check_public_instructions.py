@@ -21,7 +21,7 @@ import sys
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
-DEFAULT_ROOT = REPO.parent               # the workspace root, parent of local-model
+DEFAULT_ROOT = REPO.parent               # the checkout parent (the workspace root)
 
 # Public repos that do NOT live under public/. Wave 3 of the instruction-canon
 # rollout found two: state/emet and state/behavior-transform.io are PUBLIC on

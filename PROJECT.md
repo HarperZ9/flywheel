@@ -46,6 +46,12 @@ The 10-layer partition is for clarity, not a hard dependency boundary; real call
 
 ## 3. What is built
 
+**How it ships:** the engine is on PyPI as `flywheel-verify` (`pip install
+flywheel-verify`; the installed command is `flywheel`), and the native desktop
+client lives in `desktop/` with a Windows installer published from the same
+`v*` tag (GitHub Release with a `SHA256SUMS.txt` receipt). Current version
+0.3.3; one tag ships both halves.
+
 **53 mission modules** (curated map; the package holds ~100 files total incl. benchmarks/utilities), all reachable via `harness.*`, backed by test files across the selection/verification/serving slices. One line each, grouped by layer.
 
 **Core loop**
@@ -187,7 +193,7 @@ Ranked by what would actually move the thesis, hardest-earning first.
 5. **Wire perception into the loop.** `transpile.py` / `perception_probe.py` are deployed but not yet feeding the core reconcile — and given COPY-ONLY, the honest precondition is a representation the model can *reason over*, not merely copy. Multi-domain proof (color/sound/art) is needed before the +20% generalizes.
 6. **Serving traffic: F1 + F2.** The Messages facade (per-turn receipts) plus prefix canonicalization for the receipt cache, to drive real agent traffic — the payoff the proof-cache fix is waiting on.
 7. **Field mechanisms to adopt:** adversarial verifier-can-fail corpus (2606.09682), process-level per-node re-check, paraconsistent glut/gap degradation (2507.09751), epoch-boundary criterion versioning (2606.26294).
-8. **The superapp — one interoperable surface.** [SUPERAPP.md](SUPERAPP.md) is the unification spec (showcase shell + packaged app + companion routing + training lane + projected world). Increment 1 (the shell binds every number to receipts, falsifiers fired live) shipped 2026-07-09; increments 2–5 follow the ladder in the spec.
+8. **The superapp — one interoperable surface.** [SUPERAPP.md](SUPERAPP.md) is the unification spec (showcase shell + packaged app + companion routing + training lane + projected world). Increments 1–5 shipped 2026-07-09..11 (gateway, universal roster, companion seat, training status). The canonical surface is now Flywheel Desktop (`desktop/` in this monorepo, Windows installer shipped from the same `v*` tag as the wheel); the `site/` shell is retained as a dev/CI fallback.
 
 ---
 

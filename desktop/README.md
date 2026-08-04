@@ -116,7 +116,7 @@ One belief across the whole family, kept as a content-addressed artifact
 knowledge open to anyone who can attain the means, and we build to lower the
 means; acceptance decided by external checks, never reputation; honest nulls
 first-class; ownership earned by comprehension; learning woven into the work.
-The long form: [The Unbundling](https://github.com/HarperZ9/flywheel/blob/fix/release-model-identity/docs/essays/2026-07-13-the-unbundling.md).
+The long form: [The Unbundling](https://github.com/HarperZ9/flywheel/blob/main/docs/essays/2026-07-13-the-unbundling.md).
 
 ## Build and test
 

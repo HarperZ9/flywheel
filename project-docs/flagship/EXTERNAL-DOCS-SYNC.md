@@ -1,5 +1,10 @@
 # External documentation sync
 
+Note (2026-08-03): these docs now live in this public monorepo, so most of
+this procedure is satisfied by the repo itself. The external surfaces still
+worth syncing are the PyPI long description (the root README, shipped with
+the `flywheel-verify` wheel) and the GitHub Release notes.
+
 External documentation should mirror the current internal package state without exposing secrets, unpublished weights, private corpora, local caches, or authenticated session details.
 
 ## Public source set

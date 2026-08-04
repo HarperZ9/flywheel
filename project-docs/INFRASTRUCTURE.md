@@ -1,6 +1,10 @@
 # Codex/Flywheel Harness Infrastructure
 
-This document is AUTHORITATIVE. No exceptions.
+Historical target infrastructure (2026-07-09), written before the monorepo
+consolidation. The current shape is this repo: `harness/` + `desktop/`, one
+`v*` tag shipping the `flywheel-verify` wheel and the Windows installer.
+`C:/dev/local-model` paths below refer to the pre-consolidation checkout;
+those trees live in this repo now. Read statements below as of their date.
 
 Status: target infrastructure and migration plan, not a claim that every component is already deployed.
 

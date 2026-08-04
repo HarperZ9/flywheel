@@ -102,8 +102,13 @@ beside it, help it do its best work, and hand you a record you can keep.
   saturates; the discriminating measurement is a larger hard-set run, and until
   that lands with confidence intervals, the honest measurable claims are
   reproducible receipts, pass parity, and local cost.
-- The 32B model is training now. It will enter the same release path, with the
-  same evidence bar, and it will not be published until the evidence is
-  something an outside observer can check.
+- The 32B model is trained and staged on the same release path
+  ([releases/32B/](releases/32B/README.md)): the artifact and its provenance
+  chain exist and are re-checkable; benchmark evidence is pending, and it will
+  not be published until the evidence is something an outside observer can
+  check.
+- The verification engine itself ships: `pip install flywheel-verify` (the
+  `flywheel` command), and the native desktop client installs from the repo's
+  releases page; one `v*` tag ships both.
 
 This document will keep pace with the receipts, and not get ahead of them.

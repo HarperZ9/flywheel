@@ -141,11 +141,22 @@ def capture_tool_scope(tool_name: str, capabilities: list[str]) -> dict[str, lis
     return {tool_name: list(capabilities)}
 
 
+def installed_harness_version() -> str:
+    """The installed distribution version, or "unknown" from a bare source
+    tree. A BOM must carry the running version, never a hardcoded literal
+    that fossilizes at whatever release the line was written."""
+    try:
+        from importlib.metadata import version
+        return version("flywheel-verify")
+    except Exception:
+        return "unknown"
+
+
 def default_flywheel_bom(run_id: str = "default") -> RunBOM:
     """Capture the BOM for a default Flywheel run."""
     return RunBOM(
         run_id=run_id,
-        harness_version="0.3.0",
+        harness_version=installed_harness_version(),
         tool_scopes={
             "read_file": ["builtin-read"],
             "write_file": ["builtin-write"],

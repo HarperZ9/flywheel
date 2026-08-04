@@ -17,23 +17,33 @@ holds across every layer of the platform.
 ## Install
 
 ```bash
-pip install -e .
+pip install flywheel-verify
 ```
 
-Zero runtime dependencies. Python 3.10+. Stdlib only. Optional packages
+(`flywheel-verify` is the PyPI distribution name; the installed command is
+`flywheel`. From a source checkout: `pip install -e .`.)
+
+Zero runtime dependencies. Python 3.11+. Stdlib only. Optional packages
 (`cryptography`, `pynacl`, `psutil`) unlock enhanced features but are never
 required.
 
 ## Start the engine
 
 ```bash
-python scripts/run_harness_cli.py app --port 8799
+flywheel app --port 8799
 ```
+
+(From a source checkout: `python scripts/run_harness_cli.py app --port 8799`.)
 
 The gateway serves on `http://127.0.0.1:8799` (localhost only). The Flutter
 desktop client connects automatically when launched.
 
 ## Start the desktop client
+
+Download `Flywheel-Setup-<version>-x64.exe` from the
+[releases page](https://github.com/HarperZ9/flywheel/releases) and verify it
+against the release's `SHA256SUMS.txt` (engine bundled, no Python needed).
+From a dev checkout:
 
 ```bash
 cd desktop && flutter run -d windows

@@ -1,5 +1,10 @@
 # Harness packaging
 
+The shipped distribution is the PyPI package `flywheel-verify` (`pip install
+flywheel-verify`) plus the Windows desktop installer attached to the GitHub
+Release with a `SHA256SUMS.txt` receipt; one `v*` tag ships both. This
+document covers the separate self-contained local exe bundle.
+
 This package path makes the full local harness executable before benchmark comparison work.
 
 ## Build

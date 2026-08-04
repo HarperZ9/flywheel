@@ -10,10 +10,16 @@ surface shows all of it. Python standard library only, zero dependencies.
 ## Run it now
 
 ```
-python scripts/run_harness_cli.py app --port 8799
+pip install flywheel-verify
+flywheel app --port 8799
 ```
 
-Then open **http://127.0.0.1:8799/site/index.html**.
+(From a source checkout: `python scripts/run_harness_cli.py app --port 8799`.)
+
+The native surface is **Flywheel Desktop**: the Windows installer on the
+[releases page](https://github.com/HarperZ9/flywheel/releases) ships the app
+with the engine bundled. The browser shell toured below is the dev/CI
+fallback: open **http://127.0.0.1:8799/site/index.html**.
 
 That starts one process, the gateway, on one origin. It serves the shell and
 proxies your local model when it is up; nothing else needs to be running for the

@@ -14,7 +14,7 @@ Shows the package doctor, required files, schema checks, zip integrity, model en
 ## Demo 2: tool fabric receipt loop
 
 ```powershell
-python scripts/run_tool_readiness_receipts.py --tools index,forum,gather,crucible,telos,aleph,mneme,relay,plexus,pubscan,local-model --base-root C:/dev/public --tool-root aleph=C:/dev/aleph --tool-root local-model=C:/dev/local-model
+python scripts/run_tool_readiness_receipts.py --tools index,forum,gather,crucible,telos,aleph,mneme,relay,plexus,pubscan,local-model --base-root C:/dev/public --tool-root aleph=C:/dev/aleph --tool-root local-model=.
 python scripts/run_tool_operator_guide.py --tool-contract artifacts/exe/tool_integration_contract.local.json
 ```
 

@@ -9,10 +9,16 @@ point it at any hosted provider you have a key for. Python standard library only
 ## 1. Start the surface
 
 ```
-python scripts/run_harness_cli.py app --port 8799
+pip install flywheel-verify
+flywheel app --port 8799
 ```
 
-One process starts: the gateway, on one origin. Open the shell at
+(From a source checkout: `python scripts/run_harness_cli.py app --port 8799`.)
+
+One process starts: the gateway, on one origin. The native surface is
+**Flywheel Desktop** (installer on the
+[releases page](https://github.com/HarperZ9/flywheel/releases), engine
+bundled); this walkthrough tours the browser shell, the dev/CI fallback, at
 **http://127.0.0.1:8799/site/index.html**. The page loads on receipts it already
 has, so it works before any model is running. When you start the local model, the
 live panels (router, world, companion, studio, training) appear.
