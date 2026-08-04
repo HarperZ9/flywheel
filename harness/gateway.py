@@ -554,7 +554,7 @@ def route_answer(prompt: str, endpoint: str, proposer, *, credential: str = "loc
         gen, out.model_ref)
     return {"schema": "flywheel.route-result/v1", "endpoint": endpoint,
             "model_ref": out.model_ref, "text": out.text, "receipt": receipt,
-            "credential": credential}
+            "credential": credential, "usage": getattr(out, "usage", None)}
 
 
 def route_request(prompt: str, endpoint: str, model: str = "") -> tuple[dict, int]:
@@ -1265,6 +1265,10 @@ class _Handler(BaseHTTPRequestHandler):
             return self._json(gateway_graph(self.root, self.run_root,
                                             with_index=with_index,
                                             budget=budget, query=query))
+        if p == "/api/usage":                        # signed usage-metering session summary
+            from harness.usage_route import handle_usage_summary
+            body, code = handle_usage_summary(qs, self.run_root)
+            return self._json(body, code)
         if p == "/api/receipts":                     # the receipts ledger (catalog + envelopes)
             return self._json(receipts_ledger(self.root, self.run_root))
         if p == "/api/receipts/proof":               # prove one receipt is in the log
@@ -1745,6 +1749,12 @@ class _Handler(BaseHTTPRequestHandler):
                     provenance={"endpoint": endpoint,
                                 "model_ref": str(body.get("model_ref")
                                                  or endpoint)})
+                # meter the spend: a signed usage receipt chained onto the route
+                # receipt, from the provider's reported tokens (else a labeled
+                # estimate). Never raises -- metering cannot break the answer.
+                from harness.usage_route import emit_route_usage
+                body["usage_receipt_file"] = emit_route_usage(
+                    body, getattr(self, "run_root", None), prompt)
             return self._json(body, code)
         if p == "/api/companion":                     # the seat: answer local, escalate the hard slice
             req, bad = self._req_json()
@@ -2272,6 +2282,13 @@ class _Handler(BaseHTTPRequestHandler):
                 return bad
             from harness.audit_run_route import handle_audit_verify
             body, code = handle_audit_verify(req)
+            return self._json(body, code)
+        if p == "/api/usage/verify":                     # re-check a usage receipt offline; the verdict is the answer
+            req, bad = self._req_json()
+            if bad:
+                return bad
+            from harness.usage_route import handle_usage_verify
+            body, code = handle_usage_verify(req)
             return self._json(body, code)
         if p.startswith("/api/lane/"):                   # generic lane caller
             parts = p.split("/")

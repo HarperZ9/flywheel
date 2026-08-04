@@ -25,6 +25,42 @@ class ProposerOutput:
     prompt_hash: str
     cache: str
     served_model: str = ""    # the model the provider SAYS served the call
+    # Provider-REPORTED token usage, when the API returned it, normalized to
+    # {"prompt", "completion", "total"} ints. None means the provider gave no
+    # usage object -- a caller that needs a token count must ESTIMATE and say so,
+    # never silently pass an invented number off as reported.
+    usage: dict | None = None
+
+
+def normalize_usage(raw) -> dict | None:
+    """A provider's usage object -> {"prompt", "completion", "total"} ints, or
+    None when nothing usable was returned. Reads both the OpenAI-compatible shape
+    (prompt_tokens / completion_tokens / total_tokens) and the Anthropic shape
+    (input_tokens / output_tokens); total falls back to prompt+completion. These
+    are the provider's own counts; the receipt layer labels them provider_reported
+    and never guesses when this returns None."""
+    if not isinstance(raw, dict):
+        return None
+
+    def _int(*keys) -> int | None:
+        for k in keys:
+            v = raw.get(k)
+            if isinstance(v, bool):
+                continue
+            if isinstance(v, int):
+                return v
+        return None
+
+    prompt = _int("prompt_tokens", "input_tokens")
+    completion = _int("completion_tokens", "output_tokens")
+    if prompt is None and completion is None:
+        return None
+    prompt = prompt or 0
+    completion = completion or 0
+    total = _int("total_tokens")
+    if total is None:
+        total = prompt + completion
+    return {"prompt": prompt, "completion": completion, "total": total}
 
 
 class Proposer(Protocol):
@@ -72,7 +108,7 @@ class ServeProposer:
             text=extract_code(obj["text"]),   # strip fences/prose -> runnable candidate
             model_ref=obj.get("model_ref", self.model_ref),
             seed=obj.get("seed", seed), prompt_hash=obj.get("prompt_hash", prompt_hash(prompt)),
-            cache=obj.get("cache", "miss"))
+            cache=obj.get("cache", "miss"), usage=normalize_usage(obj.get("usage")))
 
 
 class EnterpriseProposer:
@@ -111,7 +147,8 @@ class EnterpriseProposer:
         return ProposerOutput(
             text=text, model_ref=self.model_ref,
             seed=seed, prompt_hash=prompt_hash(prompt), cache="miss",
-            served_model=str(obj.get("model", "")))
+            served_model=str(obj.get("model", "")),
+            usage=normalize_usage(obj.get("usage")))
 
 
 class AnthropicProposer:
@@ -156,4 +193,5 @@ class AnthropicProposer:
         return ProposerOutput(
             text=extract_code(text), model_ref=self.model_ref, seed=seed,
             prompt_hash=prompt_hash(prompt), cache="miss",
-            served_model=str(obj.get("model", "")))
+            served_model=str(obj.get("model", "")),
+            usage=normalize_usage(obj.get("usage")))
