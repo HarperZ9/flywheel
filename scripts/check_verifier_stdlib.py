@@ -33,6 +33,7 @@ VERIFIER_ENTRY_POINTS = [
     "ed25519_verify",   # the signature verifier a stranger runs
     "receipt",          # the record a stranger re-derives
     "audit_receipt",    # the Layer-2 audit receipt a stranger re-derives + chain-checks
+    "usage_receipt",    # the usage-metering receipt a stranger re-derives + re-checks
     "receipt_sign",     # the signature check a stranger runs
     "why",              # answering doubt from the record alone
     "ledger",           # the receipt log and its inclusion proofs

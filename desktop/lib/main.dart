@@ -41,6 +41,7 @@ import 'views/science_view.dart';
 import 'views/studio_view.dart';
 import 'views/train_view.dart';
 import 'views/uplift_view.dart';
+import 'views/usage_view.dart';
 import 'views/workflows_view.dart';
 import 'views/world_view.dart';
 import 'widgets/appearance_panel.dart';
@@ -182,6 +183,7 @@ class _FlywheelShellState extends State<FlywheelShell> {
     RailDestination('Lessons', abbr: 'LE', group: 'Know'),
     RailDestination('Governance', abbr: 'GV', group: 'Know'),
     RailDestination('Receipts', abbr: 'RC', group: 'Advanced'),
+    RailDestination('Usage', abbr: 'US', group: 'Advanced'),
     RailDestination('Instruments', abbr: 'IS', group: 'Advanced'),
     RailDestination('Science', abbr: 'SC', group: 'Advanced'),
     RailDestination('World', abbr: 'WD', group: 'Advanced'),
@@ -368,6 +370,8 @@ class _FlywheelShellState extends State<FlywheelShell> {
             client: _client,
             alive: _gatewayAlive,
             focusLeaf: arg is String ? arg : null);
+      case 'Usage':
+        return UsageView(client: _client, alive: _gatewayAlive);
       case 'Instruments':
         return InstrumentsView(client: _client, alive: _gatewayAlive);
       case 'Science':

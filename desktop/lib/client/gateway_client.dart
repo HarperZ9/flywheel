@@ -289,6 +289,27 @@ class GatewayClient {
     return _decodeLenient(r);
   }
 
+  /// GET /api/usage — the signed usage-metering session summary. Rolls the
+  /// emitted usage receipts into token totals, per-endpoint splits, a priced
+  /// total that sums ONLY the receipts carrying a dollar amount, an unpriced
+  /// count, and the receipts themselves so the UI re-verifies each one offline.
+  /// Tokens are provider-reported when the provider returned a usage object,
+  /// else a labeled estimate; the dollar figure is a table lookup, never a
+  /// provider-billed number.
+  Future<Map<String, dynamic>> usageSummary() => getJson('/api/usage');
+
+  /// POST /api/usage/verify — re-check one usage receipt offline. The verdict
+  /// (MATCH / TAMPERED / UNVERIFIABLE) is the answer, so the route always returns
+  /// 200 and a corrupted receipt is a first-class result, never an HTTP error.
+  Future<Map<String, dynamic>> usageVerify(Map<String, dynamic> receipt) async {
+    final r = await _http.post(
+      Uri.parse('$baseUrl/api/usage/verify'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'receipt': receipt}),
+    );
+    return _decodeLenient(r);
+  }
+
   /// POST /api/discourse — drive the chorus satellite over a gathered comment
   /// corpus (a gather corpus directory or a JSON row list) and return chorus's
   /// own weighted, clustered, re-checkable discourse digest verbatim.
