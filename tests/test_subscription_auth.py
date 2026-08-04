@@ -226,3 +226,22 @@ def test_resolver_register_and_providers():
     r = AuthResolver()
     r.register("x", EnvTokenAdapter("MY_TOKEN"))
     assert r.providers() == ["x"]
+
+
+def test_token_file_adapter_walks_dotted_fields(tmp_path):
+    """A CLI that nests its token (Codex writes tokens.access_token) is read
+    with a dotted field; a missing branch stays a quiet None."""
+    import json
+    auth = tmp_path / "auth.json"
+    auth.write_text(json.dumps({"tokens": {"access_token": "at-123"}}),
+                    encoding="utf-8")
+    assert TokenFileAdapter(auth, field="tokens.access_token").resolve().value == "at-123"
+    flat = tmp_path / "flat.json"
+    flat.write_text(json.dumps({"key": "k-1"}), encoding="utf-8")
+    assert TokenFileAdapter(flat, field="key").resolve().value == "k-1"
+    assert TokenFileAdapter(auth, field="tokens.missing.deep").resolve() is None
+
+
+def test_openai_provider_is_wired_into_the_default_resolver():
+    """The sign-in seam stores CHATGPT_OAUTH_TOKEN; the resolver must read it."""
+    assert "openai" in default_auth_resolver().providers()

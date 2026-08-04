@@ -147,7 +147,11 @@ class TokenFileAdapter:
             data = json.loads(text)
         except (ValueError, TypeError):
             return None
-        value = data.get(self.field) if isinstance(data, dict) else None
+        # A dotted field walks nested objects: "tokens.access_token" reads
+        # data["tokens"]["access_token"]. A flat field behaves as before.
+        value = data
+        for part in self.field.split("."):
+            value = value.get(part) if isinstance(value, dict) else None
         if not isinstance(value, str) or not value:
             return None
         return value
@@ -209,9 +213,13 @@ class AuthResolver:
 
 def default_auth_resolver() -> AuthResolver:
     """Wire the known subscription sources. Each provider prefers the token
-    the user's authorized login produced, then falls back to a raw key.
+    the user's authorized login produced, then falls back to a raw key. The
+    sign-in seam (oauth_signin.py) stores under these same names, so a
+    completed sign-in is visible here with no rewiring.
 
       anthropic      CLAUDE_CODE_OAUTH_TOKEN (bearer) -> ANTHROPIC_API_KEY
+      openai         CHATGPT_OAUTH_TOKEN (bearer)     -> Codex CLI auth.json
+                     -> OPENAI_API_KEY
       qwen-anthropic ANTHROPIC_AUTH_TOKEN (bearer)    -> DASHSCOPE_API_KEY
       openrouter     OPENROUTER_API_KEY (bearer)
     """
@@ -219,6 +227,12 @@ def default_auth_resolver() -> AuthResolver:
         "anthropic": ChainAdapter([
             EnvTokenAdapter("CLAUDE_CODE_OAUTH_TOKEN", _BEARER),
             EnvTokenAdapter("ANTHROPIC_API_KEY", _X_API_KEY),
+        ]),
+        "openai": ChainAdapter([
+            EnvTokenAdapter("CHATGPT_OAUTH_TOKEN", _BEARER),
+            TokenFileAdapter(Path.home() / ".codex" / "auth.json",
+                             field="tokens.access_token"),
+            EnvTokenAdapter("OPENAI_API_KEY", _BEARER),
         ]),
         "qwen-anthropic": ChainAdapter([
             EnvTokenAdapter("ANTHROPIC_AUTH_TOKEN", _BEARER),
