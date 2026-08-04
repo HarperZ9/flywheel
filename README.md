@@ -117,6 +117,12 @@ serve/training stack installs with `pip install "flywheel-verify[local]"`.
 Receipt signing and egress monitoring have their own extras (`[signing]`,
 `[monitor]`); receipt verification stays stdlib-only.
 
+Subscription sign-in is wired in: `flywheel auth login <provider>` runs a
+stepwise flow (documented PKCE where the provider sanctions it, the
+provider's own official tool where it does not), stores the token in the OS
+credential store, and the router picks it up with no further setup. See
+[GETTING-STARTED.md](GETTING-STARTED.md).
+
 Or from source:
 
 ```

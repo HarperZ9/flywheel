@@ -10,6 +10,32 @@
 
 Last updated: 2026-08-03
 
+## 2026-08-04 -- Subscription sign-in (0.3.5)
+
+- **`flywheel auth login <provider>`** is the stepwise sign-in seam, so a
+  monthly subscription can carry usage instead of a raw key.
+  `subscription_auth.py` stays read-only by covenant; the new
+  `oauth_signin.py` is the login that WRITES, under the same keychain names
+  the resolver already reads, so a completed sign-in needs no rewiring.
+  Three sanction kinds, typed into the profile and printed by `auth status`:
+  `pkce` (OpenRouter documents the third-party flow, no registration),
+  `guided-cli` (Anthropic: the official `claude setup-token` mints it, we
+  store the paste; flywheel runs no OAuth client of its own and claims no
+  provider sanction), `registered` (needs an operator-owned client id).
+- **The adversarial review earned its keep.** 16 agents, 11 confirmed
+  findings, all applied. The high-severity one: `_store` discarded
+  `keychain_set`'s result, and `keychain_set` is a no-op off Windows, so on
+  macOS/Linux a real OAuth exchange would mint a LIVE OpenRouter key, drop
+  it, and print `ok: true`. Now the flow refuses before the browser opens if
+  there is no credential store, and a failed write is reported as a failure.
+  The reviewers proved the loopback findings by executing the code: a stray
+  local GET could abort or inject the callback. The listener now binds
+  exclusively, carries a per-run nonce path compared in constant time,
+  never overwrites a captured code, 404s anything else, and closes its
+  socket on every path.
+- Lesson: for auth code, make the reviewers RUN it. Three of the four
+  highest findings were demonstrated, not argued.
+
 ## 2026-08-04 -- Release truth + optional local layer (0.3.4)
 
 - **The models were already published**: both HF repos have been public since

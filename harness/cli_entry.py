@@ -25,7 +25,7 @@ from pathlib import Path
 # The new umbrella subcommands. Handled in cli_entry; everything else is
 # delegated to the existing run_harness_cli front controller.
 _UMBRELLA_COMMANDS = {"lanes", "loop-status", "install", "up", "down", "corpus-export",
-                      "gate", "why"}
+                      "gate", "why", "auth"}
 
 
 def _candidate_roots() -> list[Path]:
@@ -179,6 +179,9 @@ def _dispatch_umbrella(command: str, argv: list[str]) -> int:
         roster = lane_roster()
         print(lane_report(roster))
         return 0
+    if command == "auth":
+        from harness.oauth_signin import cli as _auth_cli
+        return _auth_cli(argv)
     if command == "why":
         # Asking must be the cheapest action available: a path, optionally a
         # claim-digest prefix, no flags, no network, no model.

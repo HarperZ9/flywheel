@@ -35,6 +35,38 @@ pip install "flywheel-verify[monitor]"   # network egress monitoring
 pip install "flywheel-verify[local]"     # the local HF serve/training stack
 ```
 
+## Sign in with a subscription
+
+A token an authorized login already produced can carry your usage instead of a
+raw API key. Each provider differs in what it permits, and the CLI says which
+is which rather than implying they are alike:
+
+```bash
+flywheel auth status              # presence and terms per provider
+flywheel auth login openrouter    # OpenRouter documents this third-party PKCE
+                                  # flow; no registration needed
+flywheel auth login anthropic     # guided: the official `claude setup-token`
+                                  # mints the token and you paste it once.
+                                  # flywheel runs no OAuth client of its own
+                                  # and claims no provider sanction; what the
+                                  # token may be used for is governed by
+                                  # Anthropic's terms, which you accept
+flywheel auth login openai        # needs an app registration you own; set
+                                  # FLYWHEEL_OPENAI_OAUTH_CLIENT_ID plus
+                                  # _AUTHORIZE_URL and _EXCHANGE_URL
+```
+
+Tokens land in the OS credential store under the same names the router
+already reads, so a completed sign-in shows up on the endpoints roster
+(presence only, never values). Sign out with
+`flywheel auth logout <provider>`; if the token is also set as an environment
+variable, the command says so instead of claiming it cleared it.
+
+Two guarantees hold across every flow: the engine never runs another app's
+OAuth client, and it refuses to start a flow on a machine with no credential
+store rather than minting a token it cannot keep. Provider terms are yours to
+read; flywheel does not interpret them for you.
+
 ## Start the engine
 
 ```bash
