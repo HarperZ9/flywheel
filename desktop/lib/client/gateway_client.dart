@@ -15,6 +15,7 @@ import 'package:http/http.dart' as http;
 
 import '../models/gateway_models.dart';
 import '../models/workflow_models.dart';
+import 'gateway_auth.dart';
 
 part 'gateway_streams.dart';
 
@@ -22,8 +23,13 @@ class GatewayClient {
   final String baseUrl;
   final http.Client _http;
 
+  /// The default client presents the gateway's bearer token on every request
+  /// (see gateway_auth.dart). The gateway rejects an unauthenticated call with
+  /// 401, so a client without the header reports a healthy engine as offline.
+  /// An injected [httpClient] is used verbatim, which keeps tests in control of
+  /// their own headers.
   GatewayClient({this.baseUrl = 'http://127.0.0.1:8799', http.Client? httpClient})
-      : _http = httpClient ?? http.Client();
+      : _http = httpClient ?? AuthedClient(http.Client());
 
   /// True if the gateway is reachable (the gateway serves /api/world on GET).
   Future<bool> isAlive({Duration timeout = const Duration(seconds: 2)}) async {
