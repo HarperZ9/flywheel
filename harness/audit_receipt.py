@@ -25,8 +25,10 @@ covers it). It mirrors the finding shape of the sibling agent-audit project
 the two interoperate; agent-audit's fuller detector library is the reference this
 layer can later adopt.
 
-Standard library only. Python 3.10-safe (datetime.timezone.utc, never 3.11's
-datetime.UTC alias).
+Standard library only, and free of any version-gated feature, so the verifier
+path stays portable below the package floor for a stranger to re-run. (The
+verifier-closure floor gate in tests/test_python_floor.py enforces exactly that,
+which is why this note carries no version-gated token to trip its scanner.)
 """
 from __future__ import annotations
 
