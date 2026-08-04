@@ -520,7 +520,7 @@ def companion_answer(seat, prompt: str, solution_sig: str = "") -> dict:
 
 
 # One ledger for the gateway's lifetime so every routed call across every provider
-# chains into ONE tamper-evident record (the audit trail no other router keeps).
+# chains into ONE tamper-evident record: the whole session is a single audit trail.
 _ROUTER_LEDGER = None
 
 
@@ -588,8 +588,8 @@ def route_request(prompt: str, endpoint: str) -> tuple[dict, int]:
 # Any OpenAI SDK or client can point its base_url at this gateway and route to ANY
 # provider by naming it in `model` ("anthropic", "openai:gpt-4o", or a local name),
 # getting back a standard ChatCompletion PLUS an `x_receipt` extension OpenAI clients
-# ignore. This is the drop-in compatibility that makes Flywheel a better router: the
-# same wire protocol every tool already speaks, plus the verify layer none of them have.
+# ignore. Drop-in compatibility: the same wire protocol existing tools already speak,
+# with the verify layer and the receipt riding along.
 
 def _flatten_messages(messages) -> tuple[str, str]:
     """OpenAI messages -> (system, prompt). System turns concatenate. A single user
