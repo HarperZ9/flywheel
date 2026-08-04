@@ -55,7 +55,11 @@ read the receipts. No browser, no terminal.
 - **Endpoints**: the universal router roster. Local tiers are probed live;
   hosted providers show credential presence only (the env var name, never a
   value); the scoreboard shows observed routing outcomes, not promises. The
-  read-only training card reports the local run as it is.
+  read-only training card reports the local run as it is. Sign in with a
+  subscription from here: each provider states its own terms, a browser flow
+  opens the provider's page, and a provider-tool flow takes the paste in an
+  obscured field. The token goes straight to the OS credential store and is
+  never displayed.
 
 ## Install it
 

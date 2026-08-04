@@ -109,12 +109,21 @@ jobs:
     # exactly one shard and that this matrix agrees with --count.
     #
     # Zero RUNTIME dependencies stays invariant; these are test-only.
+    # The gate runs on Windows too. It used to be ubuntu-only, and that hid a
+    # real failure: a test raced OS process-startup time, which is fast enough
+    # on a Linux runner to pass and slow enough on Windows to fail every run.
+    # It went unseen until someone ran the suite on the platform this project
+    # ships an installer for. A green gate that only ever sees one OS is not
+    # the gate it claims to be. Windows runs the same shards; `shell: bash` is
+    # explicit because the runner defaults to pwsh, where this script is not
+    # valid.
     name: whole suite
     strategy:
       fail-fast: false
       matrix:
+        os: [ubuntu-latest, windows-latest]
         shard: [0, 1, 2, 3]
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -123,6 +132,7 @@ jobs:
       - name: Test-only dependencies
         run: python -m pip install pytest pytest-timeout pynacl pillow numpy scipy
       - name: Every test, no file list to fall behind
+        shell: bash
         run: |
           FILES=$(python scripts/ci_shard.py --index ${{ matrix.shard }} --count 4)
           test -n "$FILES" || { echo "empty shard: refusing to report success"; exit 1; }

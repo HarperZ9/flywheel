@@ -106,17 +106,35 @@ def redact_argv(argv: list[str], secrets: list[bytes]) -> tuple[list[str], int]:
 
 
 def _read_stream(pipe, keep_bytes: int, sink: dict[str, object]) -> None:
+    """Drain a child pipe into `sink`, publishing as it goes.
+
+    Two properties matter on the timeout path, where the child is killed and
+    this thread may never reach its end:
+
+      - `read1` returns what the OS already has instead of blocking until the
+        full request or EOF, so a line the child flushed before it was killed
+        is captured when it is written, not lost waiting for more,
+      - the sink is updated after every chunk, so whatever was read is
+        readable by the caller even while this thread is still running or is
+        torn down mid-read. Publishing only at the end discarded exactly the
+        evidence a timeout receipt exists to preserve.
+    """
     captured = bytearray()
     observed = 0
+    # read1 is the BufferedReader single-syscall read; fall back for any
+    # pipe object that does not offer it.
+    read = getattr(pipe, "read1", None) or pipe.read
     try:
         while True:
-            chunk = pipe.read(65_536)
+            chunk = read(65_536)
             if not chunk:
                 break
             observed += len(chunk)
             remaining = keep_bytes - len(captured)
             if remaining > 0:
                 captured.extend(chunk[:remaining])
+            sink["captured"] = bytes(captured)
+            sink["observed"] = observed
     except (OSError, ValueError):
         pass
     finally:

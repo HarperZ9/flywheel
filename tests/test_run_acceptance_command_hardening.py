@@ -137,22 +137,31 @@ def test_stale_incomplete_stage_does_not_poison_rerun(tmp_path):
 
 
 def test_hanging_child_times_out_with_typed_receipt(tmp_path):
+    # The timeout budget must clear interpreter STARTUP, not just the print.
+    # At 0.15s this asserted the impossible on any platform where spawning
+    # CPython costs more than that (~0.19s on Windows, well under it on the
+    # Linux CI runners), so the child was killed before it could write and
+    # the "partial output survives" assertion failed for a reason that had
+    # nothing to do with capture. 1.0s against a 5s sleep keeps every
+    # property this test exists to prove -- killed, typed TIMED_OUT receipt,
+    # exit 124, promptness, and the output written before the kill -- with
+    # room for a slow spawn. Do not tighten it back toward startup cost.
     started = time.monotonic()
     result, receipt_dir, _root = _invoke(
         tmp_path,
         "timeout",
-        [sys.executable, "-c", "import time; print('started', flush=True); time.sleep(2)"],
+        [sys.executable, "-c", "import time; print('started', flush=True); time.sleep(5)"],
         "--timeout-seconds",
-        "0.15",
+        "1.0",
     )
     elapsed = time.monotonic() - started
     receipt = _receipt(receipt_dir)
 
     assert result == 124
-    assert elapsed < 1.5
+    assert elapsed < 2.5              # killed at its deadline, not at the child's
     assert receipt["outcome"] == "TIMED_OUT"
     assert receipt["timed_out"] is True
-    assert receipt["timeout_seconds"] == 0.15
+    assert receipt["timeout_seconds"] == 1.0
     assert b"started" in (receipt_dir / "stdout.txt").read_bytes()
 
 

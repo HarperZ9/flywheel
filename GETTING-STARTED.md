@@ -56,6 +56,10 @@ flywheel auth login openai        # needs an app registration you own; set
                                   # _AUTHORIZE_URL and _EXCHANGE_URL
 ```
 
+The desktop app has the same thing with buttons: **Endpoints → sign in**,
+one row per provider with its terms stated, a Sign in button for the browser
+flow, and an obscured paste field for the provider-tool flow.
+
 Tokens land in the OS credential store under the same names the router
 already reads, so a completed sign-in shows up on the endpoints roster
 (presence only, never values). Sign out with

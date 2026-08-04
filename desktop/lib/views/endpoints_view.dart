@@ -13,6 +13,7 @@ import '../theme/flywheel_theme.dart';
 import '../widgets/charts.dart';
 import '../widgets/fw.dart';
 import '../widgets/keys_panel.dart';
+import '../widgets/signin_panel.dart';
 import '../widgets/training_card.dart';
 
 class EndpointsView extends StatefulWidget {
@@ -30,6 +31,7 @@ class _EndpointsViewState extends State<EndpointsView> {
   List<ProviderScore> _scores = [];
   Map<String, dynamic>? _training;
   Map<String, dynamic>? _keychain;
+  Map<String, dynamic>? _auth;
   String? _error;
   bool _loading = false;
 
@@ -55,6 +57,7 @@ class _EndpointsViewState extends State<EndpointsView> {
         widget.client.routerStats(),
         widget.client.trainingStatus(),
         widget.client.keychainRoster(),
+        widget.client.getJson('/api/auth'),
       ]);
       if (mounted) {
         setState(() {
@@ -65,6 +68,7 @@ class _EndpointsViewState extends State<EndpointsView> {
               ProviderScore.listFromStats(results[2] as Map<String, dynamic>);
           _training = results[3] as Map<String, dynamic>;
           _keychain = results[4] as Map<String, dynamic>;
+          _auth = results[5] as Map<String, dynamic>;
           _error = null;
           _loading = false;
         });
@@ -152,6 +156,24 @@ class _EndpointsViewState extends State<EndpointsView> {
             ],
           ),
         ),
+        // Sign-in sits above raw keys because it is the cheaper path: a
+        // subscription the user already pays for, rather than a key to mint
+        // and rotate by hand.
+        if (_auth != null) ...[
+          const SizedBox(height: FwLayout.s5),
+          const Kicker('sign in · a subscription can carry usage'),
+          const SizedBox(height: FwLayout.s3),
+          SigninPanel(
+            doc: _auth!,
+            onLogin: (p) => widget.client
+                .postJson('/api/auth/login', {'provider': p}),
+            onToken: (p, token) => widget.client
+                .postJson('/api/auth/token', {'provider': p, 'token': token}),
+            onLogout: (p) => widget.client
+                .postJson('/api/auth/logout', {'provider': p}),
+            onChanged: _load,
+          ),
+        ],
         // The keys section always renders once the doc arrives: on a fresh
         // machine every entry reads absent, and hiding the panel then would
         // hide the only in-GUI way to set a key (the first-run dead-end).
