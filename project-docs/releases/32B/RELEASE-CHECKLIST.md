@@ -13,6 +13,6 @@ Gate ids match `scripts/run_model_publish_plan.py` and `scripts/run_model_releas
 | `endpoint_generation_ok` | pending | `harness.model-endpoint-gate/v1` artifact with generation_ok for this model. A deterministic smoke MATCH is recorded; a formal gate artifact is not. |
 | `benchmark_evidence_present` | pending | Executed benchmark artifacts attached to the release row. None exist yet. No uplift is claimed. |
 | `release_docs_complete` | DONE | All required release docs present and refreshed to the verified artifact. |
-| Operator upload approval | pending, NEVER auto-approved | Explicit operator approval is the deliberate release action. |
+| Operator upload approval | DONE | Approved (benchmarks-pending null kept); public at https://huggingface.co/zaindanaharper/flywheel-local-coder-32b since 2026-07-18. |
 
 Verdict: releasable as a trained CPT derivative with a re-checkable provenance chain and an honest benchmark null. Upload is a deliberate operator action.

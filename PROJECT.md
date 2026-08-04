@@ -49,8 +49,11 @@ The 10-layer partition is for clarity, not a hard dependency boundary; real call
 **How it ships:** the engine is on PyPI as `flywheel-verify` (`pip install
 flywheel-verify`; the installed command is `flywheel`), and the native desktop
 client lives in `desktop/` with a Windows installer published from the same
-`v*` tag (GitHub Release with a `SHA256SUMS.txt` receipt). Current version
-0.3.3; one tag ships both halves.
+`v*` tag (GitHub Release with a `SHA256SUMS.txt` receipt). One tag ships both
+halves. No model download is required: the engine works against any hosted
+provider immediately, and the local models (the published 14B/32B, or
+anything via ollama) are an optional layer; the HF serve/training stack is
+the `[local]` extra.
 
 **53 mission modules** (curated map; the package holds ~100 files total incl. benchmarks/utilities), all reachable via `harness.*`, backed by test files across the selection/verification/serving slices. One line each, grouped by layer.
 

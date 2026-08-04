@@ -19,7 +19,7 @@ build-backend = "setuptools.build_meta"
 # an unrelated package, so this publishes under a scoped name. The installed
 # console command stays `flywheel` (see [project.scripts]).
 name = "flywheel-verify"
-version = "0.3.3"
+version = "0.3.4"
 description = "The one platform: routing, verification, the lane layer, memory/context/catalog, and the closed verified-inference loop."
 readme = "README.md"
 # 3.11, not 3.10, because `datetime.UTC` landed in 3.11 and 51 modules use it.
@@ -31,6 +31,27 @@ license = "FSL-1.1-MIT"
 license-files = ["LICENSE"]
 authors = [{ name = "Zain" }]
 dependencies = []
+
+[project.optional-dependencies]
+# Everything here is opt-in; the core stays zero-dependency and works
+# immediately against hosted providers with just an API key. Local model
+# serving via ollama needs NO extras (ollama is an external binary the
+# gateway talks HTTP to). These groups exist for the paths that do need
+# third-party packages:
+signing = ["cryptography"]   # Ed25519 receipt SIGNING (pynacl works as the
+                             # fallback backend; VERIFICATION stays stdlib)
+monitor = ["psutil"]         # network egress monitoring (infra controls)
+local = [                    # the local HF serve/training stack
+    "torch",                 # GPU builds may need the PyTorch index URL
+    "transformers",
+    "peft",
+    "trl",
+    "accelerate",
+    "datasets",
+    "bitsandbytes",
+    "safetensors",
+    "sentencepiece",
+]
 
 [project.scripts]
 # The single surface command. Dispatches to the existing run_harness_cli

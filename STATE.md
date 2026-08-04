@@ -10,6 +10,25 @@
 
 Last updated: 2026-08-03
 
+## 2026-08-04 -- Release truth + optional local layer (0.3.4)
+
+- **The models were already published**: both HF repos have been public since
+  2026-07-18 (`zaindanaharper/flywheel-local-coder-14b` with first benchmark
+  evidence; `-32b` with the benchmarks-pending null), verified by LFS sha256
+  match against the checklist identities. The release docs still said
+  "staged, awaiting operator upload approval" -- two weeks stale. Flipped to
+  published-with-links; the 32B keeps its honest null (no uplift claimed
+  until benchmark evidence lands). Lesson: verify release-status claims
+  against the Hub, not just the repo's own docs.
+- **Local models are an optional layer, formalized**: new pyproject extras --
+  `[signing]` (cryptography; verification stays stdlib), `[monitor]`
+  (psutil), `[local]` (the HF serve/training stack). The core stays
+  zero-dependency and works immediately against hosted providers with no
+  model download; ollama needs no extras at all. README, GETTING-STARTED,
+  and PROJECT.md now lead with that.
+- 0.3.4 also carries the dynamic BOM/trust-model version
+  (`installed_harness_version()`) from the consolidation sweep.
+
 ## 2026-08-03 -- Consolidation sealed; one shipping surface
 
 - **Monorepo**: the engine (`harness/`) and the desktop client (`desktop/`)

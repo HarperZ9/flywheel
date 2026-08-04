@@ -13,7 +13,8 @@ honest and lets you carry it home.
 There are two moving parts, and they are meant to be small.
 
 - A local model, `Flywheel-Local-Coder-14B`, that runs entirely on your own
-  machine as a single file just under 9 GB. A 32B sibling is training now.
+  machine as a single file just under 9 GB. A 32B sibling is published too.
+  Both are optional: the harness works with any model you already reach for.
 - A verification harness, the flywheel itself, that runs beside any model:
   the model proposes, an oracle checks, and every accepted answer carries a
   receipt anyone can re-run.
@@ -97,16 +98,16 @@ beside it, help it do its best work, and hand you a record you can keep.
 
 - `Flywheel-Local-Coder-14B` is a real trained artifact with a verified
   provenance chain, a passing live endpoint gate, and first benchmark evidence.
-  It is staged for release and waiting on the operator's approval to upload.
+  It is published at https://huggingface.co/zaindanaharper/flywheel-local-coder-14b.
 - No capability uplift over the base model is claimed. The easy benchmark set
   saturates; the discriminating measurement is a larger hard-set run, and until
   that lands with confidence intervals, the honest measurable claims are
   reproducible receipts, pass parity, and local cost.
-- The 32B model is trained and staged on the same release path
-  ([releases/32B/](releases/32B/README.md)): the artifact and its provenance
-  chain exist and are re-checkable; benchmark evidence is pending, and it will
-  not be published until the evidence is something an outside observer can
-  check.
+- The 32B model is published on the same release path
+  (https://huggingface.co/zaindanaharper/flywheel-local-coder-32b,
+  docs in [releases/32B/](releases/32B/README.md)): the artifact and its
+  provenance chain are re-checkable; benchmark evidence is pending and no
+  uplift is claimed until it lands.
 - The verification engine itself ships: `pip install flywheel-verify` (the
   `flywheel` command), and the native desktop client installs from the repo's
   releases page; one `v*` tag ships both.

@@ -13,7 +13,9 @@ library_name: gguf
 
 # Flywheel-Local-Coder-32B Release README
 
-Status: staged, awaiting operator upload approval. The trained artifact and its full provenance chain exist and are re-checkable; benchmark evidence is pending.
+Status: published at https://huggingface.co/zaindanaharper/flywheel-local-coder-32b (public since 2026-07-18; the uploaded
+GGUF's sha256 matches the identity below). The provenance chain is
+re-checkable; benchmark evidence is pending and no uplift is claimed.
 
 ## What this release is
 
