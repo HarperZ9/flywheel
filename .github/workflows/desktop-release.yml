@@ -1,0 +1,123 @@
+# Desktop release: one version tag (v*) ships the whole platform. publish.yml
+# sends the engine wheel to PyPI; this workflow reproduces the full Windows
+# installer from the monorepo source -- app build, engine frozen from THIS
+# repo's harness/, CRT staging, Inno compile -- and attaches it to the GitHub
+# Release with a SHA-256 receipt. The build source is ALWAYS the tag's own
+# commit: on workflow_dispatch (the recovery path for a flaked tag run) the
+# job fetches and checks out the tag before building, so an installer can
+# never be labeled with a tag whose tree did not produce it. The tag must
+# match desktop/pubspec.yaml AND pyproject.toml at that commit; drift fails
+# the run instead of shipping a mislabeled artifact.
+name: desktop-release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing v* tag to rebuild (defaults to v<pubspec version>)"
+        required: false
+
+permissions:
+  contents: write
+
+jobs:
+  installer:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve tag and check out its commit
+        id: ver
+        shell: pwsh
+        run: |
+          if ("${{ github.event_name }}" -eq "push") {
+            $tag = "${{ github.ref_name }}"
+          } elseif ("${{ github.event.inputs.tag }}") {
+            $tag = "${{ github.event.inputs.tag }}"
+          } else {
+            $line = (Get-Content desktop\pubspec.yaml | Where-Object { $_ -match '^version:' } | Select-Object -First 1)
+            $pub = ($line -replace 'version:\s*', '' -split '\+')[0].Trim()
+            if (-not $pub) { throw "could not read version from desktop\pubspec.yaml" }
+            $tag = "v$pub"
+          }
+          if ("${{ github.event_name }}" -ne "push") {
+            # The build source is the tag's commit, never the dispatched ref.
+            git fetch origin "refs/tags/${tag}:refs/tags/${tag}"
+            if ($LASTEXITCODE -ne 0) { throw "tag $tag does not exist on origin -- push the release tag first" }
+            git checkout --detach "refs/tags/$tag"
+            if ($LASTEXITCODE -ne 0) { throw "could not check out $tag" }
+          }
+          # Version comes from the tree being built (the tag's own pubspec).
+          $line = (Get-Content desktop\pubspec.yaml | Where-Object { $_ -match '^version:' } | Select-Object -First 1)
+          $pub = ($line -replace 'version:\s*', '' -split '\+')[0].Trim()
+          if (-not $pub) { throw "could not read version from desktop\pubspec.yaml at $tag" }
+          "tag=$tag" | Out-File -Append $env:GITHUB_OUTPUT -Encoding ascii
+          "version=$pub" | Out-File -Append $env:GITHUB_OUTPUT -Encoding ascii
+          Write-Output "shipping $tag (pubspec $pub, commit $(git rev-parse HEAD))"
+
+      - name: Gate | one version across tag, pubspec, pyproject
+        shell: pwsh
+        run: |
+          $tag = "${{ steps.ver.outputs.tag }}".TrimStart("v")
+          $pub = "${{ steps.ver.outputs.version }}"
+          $py = (Select-String -Path pyproject.toml -Pattern '^version = "(.+)"').Matches[0].Groups[1].Value
+          if ($tag -ne $pub) { throw "tag v$tag does not match pubspec version $pub -- refusing to ship a mislabeled artifact" }
+          if ($py -ne $pub) { throw "pyproject version $py does not match pubspec version $pub -- one platform, one version" }
+          Write-Output "version gate: tag v$tag == pubspec $pub == pyproject $py"
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: 3.44.6
+          cache: true
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install PyInstaller
+        run: python -m pip install pyinstaller==6.21.0
+
+      - name: Ensure Inno Setup
+        shell: pwsh
+        run: |
+          $iscc = @(
+            "C:\Program Files (x86)\Inno Setup 6\ISCC.exe",
+            "C:\Program Files\Inno Setup 6\ISCC.exe"
+          ) | Where-Object { Test-Path $_ } | Select-Object -First 1
+          if (-not $iscc) { choco install innosetup -y --no-progress }
+
+      - name: Gates + build + package
+        shell: pwsh
+        working-directory: desktop
+        run: |
+          flutter analyze
+          if ($LASTEXITCODE -ne 0) { throw "analyze failed" }
+          flutter test
+          if ($LASTEXITCODE -ne 0) { throw "tests failed" }
+          powershell -NoProfile -ExecutionPolicy Bypass -File scripts\build_installer.ps1
+
+      - name: SHA-256 receipt
+        shell: pwsh
+        run: |
+          $exe = Get-ChildItem desktop\build\installer\Flywheel-Setup-*.exe | Select-Object -First 1
+          $hash = (Get-FileHash $exe.FullName -Algorithm SHA256).Hash.ToLower()
+          "$hash  $($exe.Name)" | Out-File -Encoding ascii desktop\build\installer\SHA256SUMS.txt
+          Get-Content desktop\build\installer\SHA256SUMS.txt
+
+      - name: Publish GitHub Release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $tag = "${{ steps.ver.outputs.tag }}"
+          $exe = (Get-ChildItem desktop\build\installer\Flywheel-Setup-*.exe | Select-Object -First 1).FullName
+          $sums = "desktop\build\installer\SHA256SUMS.txt"
+          gh release view $tag *> $null
+          if ($LASTEXITCODE -eq 0) {
+            gh release upload $tag $exe $sums --clobber
+          } else {
+            gh release create $tag $exe $sums --title "Flywheel $tag" --generate-notes --verify-tag
+          }

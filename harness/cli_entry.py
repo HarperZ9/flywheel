@@ -42,7 +42,7 @@ def _candidate_roots() -> list[Path]:
 
 
 def find_repo_root() -> Path:
-    """Locate the flywheel/local-model checkout containing scripts/ and harness/."""
+    """Locate the flywheel checkout containing scripts/ and harness/."""
     seen: set[Path] = set()
     for candidate in _candidate_roots():
         try:

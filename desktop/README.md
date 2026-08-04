@@ -62,12 +62,12 @@ read the receipts. No browser, no terminal.
 Flywheel ships as a Windows installer: the app and the engine arrive
 together, no Python, no PATH setup. Download the latest
 `Flywheel-Setup-<version>-x64.exe` from the
-[releases page](https://github.com/HarperZ9/flywheel-desktop/releases);
+[releases page](https://github.com/HarperZ9/flywheel/releases);
 every release is built from its version tag by a public pipeline and ships
 with a `SHA256SUMS.txt` receipt. Verify the copy you downloaded:
 
 ```
-Get-FileHash Flywheel-Setup-0.2.2-x64.exe -Algorithm SHA256
+Get-FileHash Flywheel-Setup-0.3.3-x64.exe -Algorithm SHA256
 ```
 
 The installer is not code-signed yet, so Windows SmartScreen will warn on
