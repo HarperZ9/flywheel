@@ -2259,6 +2259,20 @@ class _Handler(BaseHTTPRequestHandler):
             from harness.eval_run_route import handle_eval_verify
             body, code = handle_eval_verify(req)
             return self._json(body, code)
+        if p == "/api/audit/run":                        # a post-work review -> a receipt chained onto the work receipt
+            req, bad = self._req_json()
+            if bad:
+                return bad
+            from harness.audit_run_route import handle_audit_run
+            body, code = handle_audit_run(req, self.run_root)
+            return self._json(body, code)
+        if p == "/api/audit/verify":                     # re-check an audit receipt (and its chain) offline
+            req, bad = self._req_json()
+            if bad:
+                return bad
+            from harness.audit_run_route import handle_audit_verify
+            body, code = handle_audit_verify(req)
+            return self._json(body, code)
         if p.startswith("/api/lane/"):                   # generic lane caller
             parts = p.split("/")
             if len(parts) < 5:
@@ -2314,6 +2328,7 @@ def main(argv=None) -> int:
     print(f"  companion POST /api/companion {{'prompt': ...}}      (answer local, escalate hard)")
     print(f"  agent     POST /api/agent {{'goal':...,'endpoint':...}} (gated tool loop over ANY provider, witnessed)")
     print(f"  eval      POST /api/eval/run {{'endpoint':...}} (real eval -> a sealed, offline-verifiable receipt)")
+    print(f"  audit     POST /api/audit/run {{'work_receipt':...}} (post-work review -> a receipt chained onto the work)")
     print(f"  training  http://127.0.0.1:{a.port}/api/training/status  (read-only supervisor status)")
     print(f"  stats     http://127.0.0.1:{a.port}/api/router/stats  (adaptive-routing scoreboard)")
     print(f"  openai    POST /v1/chat/completions  +  GET /v1/models  (drop-in, model=any provider, stream ok)")

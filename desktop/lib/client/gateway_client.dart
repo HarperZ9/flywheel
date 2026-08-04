@@ -249,6 +249,46 @@ class GatewayClient {
     return _decodeLenient(r);
   }
 
+  /// POST /api/audit/run — review a completed [workReceipt] and seal the review
+  /// into an audit receipt CHAINED onto it (prev_receipt_sha256 = the work
+  /// receipt's seal hex). The reviewer is cheap: it runs deterministically with
+  /// no model, and adds a narrative only when [endpoint] is supplied and
+  /// reachable; offline degrades the summary to an honest null, never an error.
+  /// [artifact] is the optional work text/summary to review. A bad request is
+  /// returned as its JSON body, not thrown.
+  Future<Map<String, dynamic>> auditRun(Map<String, dynamic> workReceipt,
+      {String? endpoint, String? model, String? artifact}) async {
+    final r = await _http.post(
+      Uri.parse('$baseUrl/api/audit/run'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'work_receipt': workReceipt,
+        if (endpoint != null && endpoint.isNotEmpty) 'endpoint': endpoint,
+        if (model != null && model.isNotEmpty) 'model': model,
+        if (artifact != null && artifact.isNotEmpty) 'artifact': artifact,
+      }),
+    );
+    return _decodeLenient(r);
+  }
+
+  /// POST /api/audit/verify — re-check an audit receipt offline. With
+  /// [workReceipt] supplied it ALSO confirms the chain link back to the work (a
+  /// wrong prev is CHAIN_BROKEN). The verdict (MATCH / TAMPERED / UNVERIFIABLE)
+  /// is the answer, so the route always returns 200 and a corrupted receipt is a
+  /// first-class result, never an HTTP error.
+  Future<Map<String, dynamic>> auditVerify(Map<String, dynamic> auditReceipt,
+      {Map<String, dynamic>? workReceipt}) async {
+    final r = await _http.post(
+      Uri.parse('$baseUrl/api/audit/verify'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'audit_receipt': auditReceipt,
+        if (workReceipt != null) 'work_receipt': workReceipt,
+      }),
+    );
+    return _decodeLenient(r);
+  }
+
   /// POST /api/discourse — drive the chorus satellite over a gathered comment
   /// corpus (a gather corpus directory or a JSON row list) and return chorus's
   /// own weighted, clustered, re-checkable discourse digest verbatim.
