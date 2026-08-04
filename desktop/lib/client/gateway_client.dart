@@ -217,6 +217,38 @@ class GatewayClient {
     return _decode(r);
   }
 
+  /// POST /api/eval/run — run a real eval through [endpoint] and get back a
+  /// sealed, offline-verifiable receipt. [model] overrides the endpoint's
+  /// default model (null/empty keeps it); [n] is the task count (1..5, capped
+  /// by the engine). A provider or credential error is returned as its JSON
+  /// body, not thrown, so the UI surfaces the reason as an honest null instead
+  /// of a dead exception.
+  Future<Map<String, dynamic>> evalRun(String endpoint,
+      {String? model, int n = 3}) async {
+    final r = await _http.post(
+      Uri.parse('$baseUrl/api/eval/run'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'endpoint': endpoint,
+        if (model != null && model.isNotEmpty) 'model': model,
+        'n': n,
+      }),
+    );
+    return _decodeLenient(r);
+  }
+
+  /// POST /api/eval/verify — re-check a receipt offline. The verdict (MATCH /
+  /// TAMPERED / UNVERIFIABLE) is the answer, so the route always returns 200 and
+  /// a corrupted receipt is a first-class result, never an HTTP error.
+  Future<Map<String, dynamic>> evalVerify(Map<String, dynamic> receipt) async {
+    final r = await _http.post(
+      Uri.parse('$baseUrl/api/eval/verify'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'receipt': receipt}),
+    );
+    return _decodeLenient(r);
+  }
+
   /// POST /api/discourse — drive the chorus satellite over a gathered comment
   /// corpus (a gather corpus directory or a JSON row list) and return chorus's
   /// own weighted, clustered, re-checkable discourse digest verbatim.
@@ -561,6 +593,19 @@ class GatewayClient {
           'gateway returned ${r.statusCode}: ${r.body.substring(0, r.body.length.clamp(0, 200))}');
     }
     return jsonDecode(r.body) as Map<String, dynamic>;
+  }
+
+  /// Decode a JSON body regardless of status. Used by routes whose non-200
+  /// responses still carry a meaningful body (an honest error, a refusal
+  /// verdict) the UI must show rather than throw away.
+  Map<String, dynamic> _decodeLenient(http.Response r) {
+    try {
+      final v = jsonDecode(r.body);
+      if (v is Map<String, dynamic>) return v;
+      return {'error': 'unexpected response shape (${r.statusCode})'};
+    } catch (_) {
+      return {'error': 'gateway returned ${r.statusCode}'};
+    }
   }
 
   void close() => _http.close();

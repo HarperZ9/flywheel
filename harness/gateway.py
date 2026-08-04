@@ -2245,6 +2245,20 @@ class _Handler(BaseHTTPRequestHandler):
                 return self._json(row)
             except ValueError as e:
                 return self._json({"error": str(e)}, 400)
+        if p == "/api/eval/run":                       # a real eval -> a sealed, offline-verifiable receipt
+            req, bad = self._req_json()
+            if bad:
+                return bad
+            from harness.eval_run_route import handle_eval_run
+            body, code = handle_eval_run(req, self.run_root)
+            return self._json(body, code)
+        if p == "/api/eval/verify":                     # re-check a receipt offline; the verdict is the answer
+            req, bad = self._req_json()
+            if bad:
+                return bad
+            from harness.eval_run_route import handle_eval_verify
+            body, code = handle_eval_verify(req)
+            return self._json(body, code)
         if p.startswith("/api/lane/"):                   # generic lane caller
             parts = p.split("/")
             if len(parts) < 5:
@@ -2299,6 +2313,7 @@ def main(argv=None) -> int:
     print(f"  route     POST /api/route {{'prompt':...,'endpoint':...}} (any provider + a receipt)")
     print(f"  companion POST /api/companion {{'prompt': ...}}      (answer local, escalate hard)")
     print(f"  agent     POST /api/agent {{'goal':...,'endpoint':...}} (gated tool loop over ANY provider, witnessed)")
+    print(f"  eval      POST /api/eval/run {{'endpoint':...}} (real eval -> a sealed, offline-verifiable receipt)")
     print(f"  training  http://127.0.0.1:{a.port}/api/training/status  (read-only supervisor status)")
     print(f"  stats     http://127.0.0.1:{a.port}/api/router/stats  (adaptive-routing scoreboard)")
     print(f"  openai    POST /v1/chat/completions  +  GET /v1/models  (drop-in, model=any provider, stream ok)")
