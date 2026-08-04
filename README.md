@@ -108,7 +108,7 @@ dependencies, stdlib only.
 **No model download required.** The engine is ready for real work the moment
 it installs: point it at any hosted provider you hold a key for (the roster
 reports credential presence only, never values) and every route carries the
-same receipt discipline. Local models are first-class but optional: ollama
+same receipt discipline. Local models get the same support and stay optional: ollama
 needs no extras at all (the gateway talks to it over HTTP), the published
 [14B](https://huggingface.co/zaindanaharper/flywheel-local-coder-14b) and
 [32B](https://huggingface.co/zaindanaharper/flywheel-local-coder-32b) weights
