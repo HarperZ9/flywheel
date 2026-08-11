@@ -121,6 +121,25 @@ def test_manifest_preserves_replayable_prompt_oracle_and_input_hash(tmp_path):
     }
 
 
+@pytest.mark.parametrize("kind", ["missing", "directory", "absolute", "traversal", "symlink"])
+def test_manifest_rejects_unhashable_repo_input(tmp_path, monkeypatch, kind):
+    root, outside = tmp_path / "repo", tmp_path / "outside.json"
+    (root / "benchmarks").mkdir(parents=True)
+    outside.write_text("{}", encoding="utf-8")
+    refs = {"missing": "missing.json", "directory": "inputs", "absolute": str(outside),
+            "traversal": "../outside.json", "symlink": "linked.json"}
+    (root / "inputs").mkdir()
+    if kind == "symlink":
+        try: (root / "linked.json").symlink_to(outside)
+        except OSError:
+            original = Path.resolve
+            monkeypatch.setattr(Path, "resolve", lambda path, *a, **kw: outside if path.name == "linked.json" else original(path, *a, **kw))
+    task_set = _task_set()
+    task_set["tasks"][0]["required_inputs"] = [refs[kind]]
+    with pytest.raises(ValueError, match="required input"):
+        build_manifest(task_set, _contract(), task_set_path=str(root / "benchmarks" / "tasks.json"))
+
+
 def test_frozen_pilot_contract_is_public_clean_and_replayable():
     task_path = ROOT / "benchmarks" / "agentic-task-set-v1.json"
     contract_path = ROOT / "benchmarks" / "cross-harness-adapter-contract-v1.json"

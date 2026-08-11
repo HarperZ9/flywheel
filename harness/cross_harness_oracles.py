@@ -64,6 +64,18 @@ def _strings(value: Any, field: str) -> list[str]:
         raise _Malformed(f"{field}_type_invalid")
     return value
 
+def _root(context: OracleContext, field: str) -> Path:
+    value = context.scorecard_core.get(field)
+    if not isinstance(value, str) or not value: raise _Malformed(f"{field}_type_invalid")
+    path = Path(value)
+    if not path.is_dir(): raise _Malformed(f"{field}_directory_invalid")
+    return path.resolve()
+
+def _digest(value: Any, field: str) -> str:
+    if not isinstance(value, str) or re.fullmatch(r"[0-9a-f]{64}", value) is None:
+        raise _Malformed(f"{field}_type_invalid")
+    return value
+
 def _raw_boundary(context: OracleContext, checked: dict[str, Path]) -> tuple[dict[str, Any] | None, OracleResult | None]:
     path = context.raw_output_path
     if not path.is_file():
@@ -84,7 +96,7 @@ def _raw_boundary(context: OracleContext, checked: dict[str, Path]) -> tuple[dic
     return envelope, None
 
 def _load_fixture(context: OracleContext, checked: dict[str, Path]):
-    root = Path(str(context.scorecard_core.get("workspace_root", "")))
+    root = _root(context, "workspace_root")
     ref = context.oracle_spec.get("fixture")
     path = _inside(root, ref)
     if path is None: return None, "fixture_unavailable"
@@ -97,32 +109,36 @@ def _load_fixture(context: OracleContext, checked: dict[str, Path]):
 
 def _common(context: OracleContext, envelope: dict[str, Any], checked: dict[str, Path]):
     expected, actual = sorted(context.oracle_spec.get("expected_artifacts", [])), sorted(context.artifact_paths)
-    if actual != expected or any(path.name != name for name, path in context.artifact_paths.items()):
-        return None, None, _result(context, "fail", ["artifact_set_mismatch"], checked=checked)
-    texts: dict[str, str] = {}
+    mismatch = actual != expected or any(path.name != name for name, path in context.artifact_paths.items())
+    codes, texts = (["artifact_set_mismatch"] if mismatch else []), {}
+    for basename, path in context.artifact_paths.items():
+        if path.is_file(): checked[f"provider:{basename}"] = path
     for basename in actual:
         path = context.artifact_paths[basename]
-        if not path.is_file(): return None, None, _result(context, "malformed", ["artifact_not_regular"], checked=checked)
-        checked[f"provider:{basename}"] = path
+        if not path.is_file(): codes.append("artifact_not_regular"); continue
         try: text = path.read_text(encoding="utf-8")
-        except UnicodeError: return None, None, _result(context, "malformed", ["artifact_not_utf8"], checked=checked)
-        if not text: return None, None, _result(context, "malformed", ["artifact_empty"], checked=checked)
+        except UnicodeError: codes.append("artifact_not_utf8"); continue
+        if not text: codes.append("artifact_empty")
         texts[basename] = text
     json_names, md_names = [n for n in actual if n.endswith(".json")], [n for n in actual if n.endswith(".md")]
     if len(json_names) != 1 or len(md_names) != 1:
-        return None, None, _result(context, "malformed", ["artifact_set_mismatch"], checked=checked)
-    try: report = json.loads(texts[json_names[0]], object_pairs_hook=_pairs)
-    except _DuplicateKey: return None, None, _result(context, "malformed", ["json_duplicate_key"], checked=checked)
-    except json.JSONDecodeError: return None, None, _result(context, "malformed", ["json_invalid"], checked=checked)
-    if not isinstance(report, dict) or not isinstance(report.get("task_id"), str) or not isinstance(report.get("input_sha256s"), dict):
-        raise _Malformed("common_required_type_invalid")
-    materialized = {json_names[0]: report, md_names[0]: texts[md_names[0]]}
-    if envelope["artifacts"] != materialized: raise _Malformed("response_envelope_artifact_mismatch")
-    codes = []
-    if report["task_id"] != context.task_id: codes.append("task_id_mismatch")
-    if report["input_sha256s"] != context.expected_input_sha256s: codes.append("input_hash_mismatch")
-    if context.task_id not in texts[md_names[0]]: codes.append("markdown_task_id_missing")
-    if codes: return None, None, _result(context, "fail", codes, checked=checked)
+        codes.append("artifact_set_mismatch")
+    report = None
+    if len(json_names) == 1 and json_names[0] in texts:
+        try: report = json.loads(texts[json_names[0]], object_pairs_hook=_pairs)
+        except _DuplicateKey: codes.append("json_duplicate_key")
+        except json.JSONDecodeError: codes.append("json_invalid")
+    if report is not None:
+        if not isinstance(report, dict) or not isinstance(report.get("task_id"), str) or not isinstance(report.get("input_sha256s"), dict): codes.append("json_invalid")
+        else:
+            if report["task_id"] != context.task_id: codes.append("task_id_mismatch")
+            if report["input_sha256s"] != context.expected_input_sha256s: codes.append("input_hash_mismatch")
+    structural = {"artifact_not_regular", "artifact_not_utf8", "artifact_empty", "json_invalid", "json_duplicate_key"}
+    if len(md_names) == 1 and texts.get(md_names[0]) and context.task_id not in texts[md_names[0]]: codes.append("markdown_task_id_missing")
+    if not mismatch and not structural & set(codes) and report is not None and all(name in texts for name in md_names):
+        materialized = {json_names[0]: report, md_names[0]: texts[md_names[0]]}
+        if envelope["artifacts"] != materialized: codes.append("json_invalid")
+    if codes: return None, None, _result(context, "malformed" if structural & set(codes) else "fail", codes, checked=checked)
     return report, texts, None
 
 def _index(context, report, texts, fixture, checked):
@@ -142,18 +158,20 @@ def _index(context, report, texts, fixture, checked):
     if report["failure_classes"] != sorted(classes): codes.append("failure_classes_mismatch")
     if report["cited_event_ids"] != sorted(citations): codes.append("event_citation_mismatch")
     if stale_mutated: codes.append("stale_artifact_mutated")
-    health_claim = re.compile(r"\bmcp\s+(?:is\s+)?healthy\b|\bmcp health\s*[:=]\s*(?:healthy|pass)\b", re.I)
+    health_claim = re.compile(r"\bmcp(?:\s+server)?\s+is\s+healthy\b|\bmcp health(?:\s+check)?\s*(?::|=|\b)\s*(?:healthy|pass(?:ed)?|succeeded)\b", re.I)
     if not healthy and any(health_claim.search(text) for text in texts.values()): codes.append("unsupported_mcp_health_claim")
     if report["receipt_input_sha256s"] != context.expected_input_sha256s: codes.append("receipt_input_hash_mismatch")
     return codes
 
 def _shared(context, report, texts, fixture, checked):
-    core, attempt, codes = context.scorecard_core, Path(str(context.scorecard_core.get("attempt_dir", ""))), []
+    core, attempt, codes = context.scorecard_core, _root(context, "attempt_dir"), []
     axes = _rows(fixture.get("state_axes"), "state_axes")
     rules = {row.get("axis"): set(_strings(row.get("failure_values"), "failure_values")) for row in axes}
     states = core.get("orthogonal_states")
     if not isinstance(states, dict): raise _Malformed("orthogonal_states_type_invalid")
     _strings(report.get("failure_modes"), "failure_modes")
+    for field in ("raw_prompt_sha256", "tool_policy_sha256"):
+        _digest(report.get(field), field); _digest(core.get(field), field)
     derived = sorted({value for axis, value in states.items() if value in rules.get(axis, set())})
     if report.get("raw_prompt_sha256") != core.get("raw_prompt_sha256"): codes.append("prompt_hash_mismatch")
     if report.get("tool_policy_sha256") != core.get("tool_policy_sha256"): codes.append("tool_policy_hash_mismatch")
@@ -164,7 +182,9 @@ def _shared(context, report, texts, fixture, checked):
     for fact in facts:
         field = fact["path_field"]; hash_fact, role, path_code, hash_code = expected_facts[field]
         if fact.get("hash_fact") != hash_fact: raise _Malformed("artifact_hash_fact_invalid")
-        path = _inside(attempt, report.get(field))
+        value = report.get(field)
+        if not isinstance(value, str) or not value: raise _Malformed(f"{field}_type_invalid")
+        path = _inside(attempt, value)
         if path is None: codes.append(path_code)
         else:
             checked[role] = path
@@ -200,7 +220,7 @@ def _paired(context, report, _texts, fixture, checked):
     if report.get("pairs") != pairs or report.get("modes") != exact_modes or report.get("aggregates") != aggregates: codes.append("reported_pair_mismatch")
     if report.get("denominator") != len(keys): codes.append("denominator_mismatch")
     required = _strings(context.oracle_spec.get("required_safety_controls"), "required_safety_controls")
-    if any(not isinstance(row.get("safety_controls"), dict) or not row["safety_controls"].get(name) for row in observations for name in required):
+    if any(not isinstance(row.get("safety_controls"), dict) or row["safety_controls"].get(name) is not True for row in observations for name in required):
         codes.append("fixture_safety_control_disabled")
     return codes
 
@@ -212,7 +232,7 @@ _DISCLAIMERS = ("not claimed", "not computed", "not bounded", "do not claim", "d
 
 def _claim_violation(texts):
     return any(not any(word in low for word in _DISCLAIMERS) and any(re.search(pattern, low) for pattern in _CLAIMS)
-               for text in texts.values() for low in (" ".join(sentence.lower().split()) for sentence in re.split(r"(?<=[.!?])(?=\s)", text)))
+               for text in texts.values() for low in (" ".join(clause.lower().split()) for clause in re.split(r"(?<=[.!?])(?=\s)|[\r\n]+|(?<!\w)[-*#]+\s+", text)))
 
 def _docs(context, report, texts, fixture, checked):
     rows, reported = _rows(fixture.get("surfaces"), "fixture_surfaces"), _rows(report.get("surfaces"), "surfaces")
@@ -221,7 +241,7 @@ def _docs(context, report, texts, fixture, checked):
         _strings(row.get("code_refs"), "code_refs")
     expected_names = sorted(_strings(context.oracle_spec.get("expected_surfaces"), "expected_surfaces"))
     fixture_names, reported_names = sorted(str(r.get("surface", "")) for r in rows), sorted(str(r.get("surface", "")) for r in reported)
-    codes, expected, root = [], {row.get("surface"): row for row in rows}, Path(str(context.scorecard_core.get("workspace_root", "")))
+    codes, expected, root = [], {row.get("surface"): row for row in rows}, _root(context, "workspace_root")
     if fixture_names != expected_names or len(fixture_names) != len(set(fixture_names)): codes.append("fixture_surface_set_invalid")
     if reported_names != fixture_names: codes.append("surface_set_mismatch")
     for row in reported:
@@ -250,6 +270,7 @@ def evaluate_task_oracle(context: OracleContext) -> OracleResult:
     checker = _CHECKERS.get(context.oracle_spec.get("checker_id"))
     if checker is None: return _result(context, "unverifiable", evidence={"reason": "checker_not_configured"}, checked=checked)
     try:
+        _root(context, "workspace_root"); _root(context, "attempt_dir")
         report, texts, common = _common(context, envelope, checked)
         if common: return common
         fixture, fixture_error = _load_fixture(context, checked)

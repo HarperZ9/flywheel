@@ -6,12 +6,9 @@ import tempfile
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
-
-
 SCHEMA = "harness.cross-harness-manifest/v1"
 SCORECARD_SCHEMA = "harness.cross-harness-task-scorecard/v1"
 DEFAULT_ARTIFACT_DIR = str(Path(tempfile.gettempdir()) / "cross_harness_runs")
-
 def now_utc() -> str:
     return datetime.now(UTC).isoformat().replace("+00:00", "Z")
 def sha256_text(text: str) -> str:
@@ -28,11 +25,8 @@ def split_csv(value: str) -> list[str]:
     return [part.strip() for part in value.split(",") if part.strip()]
 def provider_roles_from_contract(contract: dict[str, Any]) -> list[str]:
     rows = contract.get("provider_roles") if isinstance(contract.get("provider_roles"), list) else []
-    return [
-        str(row.get("provider_role", ""))
-        for row in rows
-        if isinstance(row, dict) and row.get("provider_role")
-    ]
+    return [str(row.get("provider_role", "")) for row in rows
+            if isinstance(row, dict) and row.get("provider_role")]
 def validate_inputs(task_set: dict[str, Any], contract: dict[str, Any], provider_roles: list[str]) -> None:
     _require(task_set, ["schema", "task_set_id", "tasks"], "task set")
     _require(contract, ["schema", "contract_id", "provider_roles", "scorecard_row_contract"], "contract")
@@ -212,11 +206,17 @@ def _provider_specs(contract: dict[str, Any], provider_roles: list[str]) -> dict
     return {role: specs[role] for role in provider_roles}
 def _required_metrics(contract: dict[str, Any]) -> list[str]:
     row_contract = contract.get("scorecard_row_contract") if isinstance(contract.get("scorecard_row_contract"), dict) else {}
-    return [
-        str(metric)
-        for metric in row_contract.get("required_metrics", [])
-        if metric
-    ]
+    return [str(metric) for metric in row_contract.get("required_metrics", []) if metric]
+def _input_hashes(root: Path, inputs: list[Any]) -> dict[str, str]:
+    hashes, root = {}, root.resolve()
+    for item in inputs:
+        ref, relative = str(item), Path(str(item))
+        if "://" in ref: continue
+        path = (root / relative).resolve()
+        if relative.is_absolute() or not path.is_relative_to(root) or not path.is_file():
+            raise ValueError(f"required input is not a repo-relative file: {ref}")
+        hashes[ref] = file_sha256(path)
+    return hashes
 def _prompt_text(task_set: dict[str, Any], contract: dict[str, Any], task: dict[str, Any]) -> str:
     envelope = {"artifacts": {
         name: "<markdown string>" if str(name).endswith(".md") else "<JSON object>"
@@ -256,7 +256,7 @@ def _task_row(task_set: dict[str, Any], contract: dict[str, Any], task: dict[str
     task_id = str(task["id"])
     inputs = list(task.get("required_inputs", []))
     root = Path(task_set_path).resolve().parent.parent if task_set_path else Path.cwd()
-    input_sha256s = {str(item): file_sha256(root / str(item)) for item in inputs if "://" not in str(item) and (root / str(item)).is_file()}
+    input_sha256s = _input_hashes(root, inputs)
     artifacts = list(task.get("expected_artifacts", []))
     oracle_contract = task_set.get("oracle_contract", {})
     oracle = dict(task.get("oracle", {}))
