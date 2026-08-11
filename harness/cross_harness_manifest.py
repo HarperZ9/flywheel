@@ -6,23 +6,23 @@ import tempfile
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
-SCHEMA = "harness.cross-harness-manifest/v1"
-SCORECARD_SCHEMA = "harness.cross-harness-task-scorecard/v1"
-DEFAULT_ARTIFACT_DIR = str(Path(tempfile.gettempdir()) / "cross_harness_runs")
-def now_utc() -> str:
-    return datetime.now(UTC).isoformat().replace("+00:00", "Z")
-def sha256_text(text: str) -> str:
-    return hashlib.sha256(text.encode("utf-8")).hexdigest()
+SCHEMA, SCORECARD_SCHEMA, DEFAULT_ARTIFACT_DIR = "harness.cross-harness-manifest/v1", "harness.cross-harness-task-scorecard/v1", str(Path(tempfile.gettempdir()) / "cross_harness_runs")
+def now_utc() -> str: return datetime.now(UTC).isoformat().replace("+00:00", "Z")
+def sha256_text(text: str) -> str: return hashlib.sha256(text.encode("utf-8")).hexdigest()
 def file_sha256(path: Path) -> str:
     h = hashlib.sha256()
     with path.open("rb") as fh:
         for chunk in iter(lambda: fh.read(1024 * 1024), b""):
             h.update(chunk)
     return h.hexdigest()
+def _object(rows: list[tuple[str, Any]]) -> dict[str, Any]:
+    if len(rows) != len(dict(rows)): raise ValueError("duplicate JSON key")
+    return dict(rows)
 def load_json(path: Path) -> dict[str, Any]:
-    return json.loads(path.read_text(encoding="utf-8-sig"))
-def split_csv(value: str) -> list[str]:
-    return [part.strip() for part in value.split(",") if part.strip()]
+    value = json.loads(path.read_text(encoding="utf-8-sig"), object_pairs_hook=_object)
+    if not isinstance(value, dict): raise ValueError("JSON root must be an object")
+    return value
+def split_csv(value: str) -> list[str]: return [part.strip() for part in value.split(",") if part.strip()]
 def provider_roles_from_contract(contract: dict[str, Any]) -> list[str]:
     rows = contract.get("provider_roles") if isinstance(contract.get("provider_roles"), list) else []
     return [str(row.get("provider_role", "")) for row in rows

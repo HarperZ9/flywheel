@@ -14,7 +14,7 @@ def _write(path: Path, value, *, raw=False):
     path.write_text(value if raw else json.dumps(value), encoding="utf-8")
 def _sync_output(context, report):
     _write(context.artifact_paths["report.json"], report)
-    markdown = context.artifact_paths["report.md"].read_text(encoding="utf-8")
+    markdown = context.artifact_paths["report.md"].read_bytes().decode("utf-8")
     _write(context.raw_output_path, {"artifacts": {"report.json": report, "report.md": markdown}})
 def _case(tmp_path, checker):
     task_id = TASKS[checker]
@@ -23,15 +23,10 @@ def _case(tmp_path, checker):
     raw, receipt = attempt / "raw.txt", attempt / "receipt.json"
     raw.parent.mkdir(parents=True)
     raw.write_text("raw output", encoding="utf-8"); receipt.write_text("{}", encoding="utf-8")
-    core = {
-        "raw_prompt_sha256": "a" * 64,
-        "tool_policy_sha256": "b" * 64,
-        "attempt_dir": str(attempt),
-        "workspace_root": str(workspace),
-        "raw_artifact_sha256": _sha(raw.read_bytes()),
-        "receipt_sha256": _sha(receipt.read_bytes()),
-        "orthogonal_states": {"execution_state": "timeout", "oracle_state": "not_run", "receipt_state": "valid"},
-    }
+    core = {"raw_prompt_sha256": "a" * 64, "tool_policy_sha256": "b" * 64,
+            "attempt_dir": str(attempt), "workspace_root": str(workspace),
+            "raw_artifact_sha256": _sha(raw.read_bytes()), "receipt_sha256": _sha(receipt.read_bytes()),
+            "orthogonal_states": {"execution_state": "timeout", "oracle_state": "not_run", "receipt_state": "valid"}}
     spec = {"checker_id": checker, "fixture": "fixture.json", "expected_artifacts": ["report.json", "report.md"]}
     if checker == "index_fallback_integrity/v1":
         fixture = {"events": [
@@ -44,18 +39,13 @@ def _case(tmp_path, checker):
                   "cited_event_ids": ["e1", "e2", "e3", "e4"], "receipt_input_sha256s": input_hashes,
                   "stale_artifact_preserved": False, "mcp_healthy": True}
     elif checker == "shared_task_artifact/v1":
-        fixture = {
-            "state_axes": [
-                {"axis": "execution_state", "failure_values": ["internal_error", "malformed", "timeout", "unavailable"]},
-                {"axis": "oracle_state", "failure_values": ["oracle_fail", "unverifiable"]},
-                {"axis": "receipt_state", "failure_values": ["receipt_drift"]},
-            ],
-            "artifact_facts": [
-                {"path_field": "raw_artifact_path", "hash_fact": "raw_artifact_sha256"},
-                {"path_field": "receipt_path", "hash_fact": "receipt_sha256"},
-            ],
-            "forbidden_claim_phrases": ["same model behavior", "identical controls", "pure harness ablation"],
-        }
+        fixture = {"state_axes": [
+            {"axis": "execution_state", "failure_values": ["internal_error", "malformed", "timeout", "unavailable"]},
+            {"axis": "oracle_state", "failure_values": ["oracle_fail", "unverifiable"]},
+            {"axis": "receipt_state", "failure_values": ["receipt_drift"]}],
+            "artifact_facts": [{"path_field": "raw_artifact_path", "hash_fact": "raw_artifact_sha256"},
+                               {"path_field": "receipt_path", "hash_fact": "receipt_sha256"}],
+            "forbidden_claim_phrases": ["same model behavior", "identical controls", "pure harness ablation"]}
         report = {"raw_prompt_sha256": core["raw_prompt_sha256"], "input_sha256s": input_hashes,
                   "tool_policy_sha256": core["tool_policy_sha256"], "raw_artifact_path": "raw.txt",
                   "receipt_path": "receipt.json", "failure_modes": ["timeout"]}
@@ -74,10 +64,8 @@ def _case(tmp_path, checker):
                   ], "safety_systems_disabled": True}
     else:
         spec["expected_surfaces"] = ["capability_catalog", "documentation", "roadmap", "schematic_notes"]
-        fixture = {"surfaces": [
-            {"surface": name, "path": f"docs/{name}.md", "code_refs": [f"src/{name}.py"]}
-            for name in spec["expected_surfaces"]
-        ]}
+        fixture = {"surfaces": [{"surface": name, "path": f"docs/{name}.md", "code_refs": [f"src/{name}.py"]}
+                                for name in spec["expected_surfaces"]]}
         for row in fixture["surfaces"]:
             _write(workspace / row["path"], task_id, raw=True)
             _write(workspace / row["code_refs"][0], "pass\n", raw=True)
@@ -98,6 +86,7 @@ def test_each_oracle_passes_from_facts_and_ignores_provider_booleans(tmp_path, c
     assert (result.state, result.failure_codes) == ("pass", [])
     assert result.checked_artifacts == sorted(result.checked_artifacts, key=lambda row: row["role"])
     assert all(len(row["sha256"]) == 64 for row in result.checked_artifacts)
+    assert result.evidence["failure_code_count"] == 0
 @pytest.mark.parametrize(("mutation", "code"), [
     ("artifact_set", "artifact_set_mismatch"), ("not_regular", "artifact_not_regular"),
     ("not_utf8", "artifact_not_utf8"), ("empty", "artifact_empty"),
@@ -124,36 +113,22 @@ def test_common_failures_are_exact(tmp_path, mutation, code):
     assert result.failure_codes == [code]
     assert result.state == ("malformed" if mutation in {"not_regular", "not_utf8", "empty", "invalid_json", "duplicate_key"} else "fail")
 @pytest.mark.parametrize(("checker", "mutation", "codes"), [
-    ("index_fallback_integrity/v1", "classes", ["failure_classes_mismatch"]),
-    ("index_fallback_integrity/v1", "citations", ["event_citation_mismatch"]),
-    ("index_fallback_integrity/v1", "stale", ["stale_artifact_mutated"]),
-    ("index_fallback_integrity/v1", "health", ["unsupported_mcp_health_claim"]),
-    ("index_fallback_integrity/v1", "health_server", ["unsupported_mcp_health_claim"]),
-    ("index_fallback_integrity/v1", "health_succeeded", ["unsupported_mcp_health_claim"]),
-    ("index_fallback_integrity/v1", "receipt_hash", ["receipt_input_hash_mismatch"]),
-    ("shared_task_artifact/v1", "prompt", ["prompt_hash_mismatch"]),
-    ("shared_task_artifact/v1", "policy", ["tool_policy_hash_mismatch"]),
-    ("shared_task_artifact/v1", "raw_path", ["raw_artifact_path_invalid"]),
-    ("shared_task_artifact/v1", "raw_hash", ["raw_artifact_hash_mismatch"]),
-    ("shared_task_artifact/v1", "modes", ["failure_modes_mismatch"]),
-    ("shared_task_artifact/v1", "receipt_path", ["receipt_path_invalid"]),
-    ("shared_task_artifact/v1", "claim", ["forbidden_claim"]),
-    ("paired_friction/v1", "mode_set", ["fixture_mode_set_invalid", "fixture_pair_incomplete", "reported_pair_mismatch"]),
-    ("paired_friction/v1", "pair_incomplete", ["fixture_pair_incomplete", "reported_pair_mismatch"]),
-    ("paired_friction/v1", "keys", ["reported_task_keys_mismatch"]),
-    ("paired_friction/v1", "pairs", ["reported_pair_mismatch"]),
-    ("paired_friction/v1", "reported_modes", ["reported_pair_mismatch"]),
-    ("paired_friction/v1", "denominator", ["denominator_mismatch"]),
-    ("paired_friction/v1", "safety", ["fixture_safety_control_disabled"]),
-    ("paired_friction/v1", "safety_string", ["fixture_safety_control_disabled"]),
-    ("paired_friction/v1", "safety_int", ["fixture_safety_control_disabled"]),
-    ("paired_friction/v1", "safety_null", ["fixture_safety_control_disabled"]),
-    ("paired_friction/v1", "safety_missing", ["fixture_safety_control_disabled"]),
-    ("documentation_maintenance/v1", "surface_fixture", ["fixture_surface_set_invalid", "surface_set_mismatch"]),
-    ("documentation_maintenance/v1", "surface_set", ["surface_set_mismatch"]),
-    ("documentation_maintenance/v1", "surface_path", ["surface_path_invalid"]),
-    ("documentation_maintenance/v1", "code_refs", ["code_refs_mismatch"]),
-    ("documentation_maintenance/v1", "public_claim", ["claim_language_violation"]),
+    ("index_fallback_integrity/v1", "classes", ["failure_classes_mismatch"]), ("index_fallback_integrity/v1", "citations", ["event_citation_mismatch"]),
+    ("index_fallback_integrity/v1", "stale", ["stale_artifact_mutated"]), ("index_fallback_integrity/v1", "health", ["unsupported_mcp_health_claim"]),
+    ("index_fallback_integrity/v1", "health_server", ["unsupported_mcp_health_claim"]), ("index_fallback_integrity/v1", "health_succeeded", ["unsupported_mcp_health_claim"]),
+    ("index_fallback_integrity/v1", "health_service", ["unsupported_mcp_health_claim"]), ("index_fallback_integrity/v1", "health_status", ["unsupported_mcp_health_claim"]),
+    ("index_fallback_integrity/v1", "receipt_hash", ["receipt_input_hash_mismatch"]), ("shared_task_artifact/v1", "prompt", ["prompt_hash_mismatch"]),
+    ("shared_task_artifact/v1", "policy", ["tool_policy_hash_mismatch"]), ("shared_task_artifact/v1", "raw_path", ["raw_artifact_path_invalid"]),
+    ("shared_task_artifact/v1", "raw_hash", ["raw_artifact_hash_mismatch"]), ("shared_task_artifact/v1", "modes", ["failure_modes_mismatch"]),
+    ("shared_task_artifact/v1", "receipt_path", ["receipt_path_invalid"]), ("shared_task_artifact/v1", "claim", ["forbidden_claim"]),
+    ("paired_friction/v1", "mode_set", ["fixture_mode_set_invalid", "fixture_pair_incomplete", "reported_pair_mismatch"]), ("paired_friction/v1", "pair_incomplete", ["fixture_pair_incomplete", "reported_pair_mismatch"]),
+    ("paired_friction/v1", "keys", ["reported_task_keys_mismatch"]), ("paired_friction/v1", "pairs", ["reported_pair_mismatch"]),
+    ("paired_friction/v1", "reported_modes", ["reported_pair_mismatch"]), ("paired_friction/v1", "denominator", ["denominator_mismatch"]),
+    ("paired_friction/v1", "safety", ["fixture_safety_control_disabled"]), ("paired_friction/v1", "safety_string", ["fixture_safety_control_disabled"]),
+    ("paired_friction/v1", "safety_int", ["fixture_safety_control_disabled"]), ("paired_friction/v1", "safety_null", ["fixture_safety_control_disabled"]),
+    ("paired_friction/v1", "safety_missing", ["fixture_safety_control_disabled"]), ("documentation_maintenance/v1", "surface_fixture", ["fixture_surface_set_invalid", "surface_set_mismatch"]),
+    ("documentation_maintenance/v1", "surface_set", ["surface_set_mismatch"]), ("documentation_maintenance/v1", "surface_path", ["surface_path_invalid"]),
+    ("documentation_maintenance/v1", "code_refs", ["code_refs_mismatch"]), ("documentation_maintenance/v1", "public_claim", ["claim_language_violation"]),
     ("documentation_maintenance/v1", "scoped_disclaimer", ["claim_language_violation"]),
 ])
 def test_task_failure_sets_are_exact(tmp_path, checker, mutation, codes):
@@ -163,7 +138,8 @@ def test_task_failure_sets_are_exact(tmp_path, checker, mutation, codes):
         elif mutation == "citations": report["cited_event_ids"] = []
         elif mutation == "stale": fixture["events"][1]["after_sha256"] = "2"
         elif mutation.startswith("health"):
-            claims = {"health": "MCP is healthy.", "health_server": "MCP server is healthy.", "health_succeeded": "MCP health check succeeded."}
+            claims = {"health": "MCP is healthy.", "health_server": "MCP server is healthy.", "health_succeeded": "MCP health check succeeded.",
+                      "health_service": "MCP service is operational.", "health_status": "MCP status: available."}
             context.artifact_paths["report.md"].write_text(f"{context.task_id}\n{claims[mutation]}", encoding="utf-8")
         else: report["receipt_input_sha256s"] = {}
     elif checker.startswith("shared"):
@@ -275,26 +251,50 @@ def test_malformed_required_types_never_raise(tmp_path, checker, field, value):
 @pytest.mark.parametrize("spec", [{}, {"checker_id": "missing/v1"}])
 def test_missing_or_unknown_checker_is_unverifiable(tmp_path, spec):
     context, _, _ = _case(tmp_path, "index_fallback_integrity/v1")
-    context = OracleContext(context.task_id, spec, context.raw_output_path, context.artifact_paths,
-                            context.expected_input_sha256s, context.scorecard_core)
+    context = OracleContext(context.task_id, spec, context.raw_output_path, context.artifact_paths, context.expected_input_sha256s, context.scorecard_core)
     assert evaluate_task_oracle(context).state == "unverifiable"
 def test_missing_admitted_fixture_is_unverifiable(tmp_path):
-    context, _, _ = _case(tmp_path, "index_fallback_integrity/v1")
-    context.oracle_spec["fixture"] = "missing.json"
+    context, _, _ = _case(tmp_path, "index_fallback_integrity/v1"); context.oracle_spec["fixture"] = "missing.json"
     result = evaluate_task_oracle(context)
     assert (result.state, result.evidence) == ("unverifiable", {"reason": "fixture_unavailable"})
 @pytest.mark.parametrize(("field", "value"), [("workspace_root", ""), ("workspace_root", "missing"),
                                                 ("attempt_dir", ""), ("attempt_dir", "missing")])
 def test_executor_roots_must_be_explicit_existing_directories(tmp_path, field, value):
-    context, _, _ = _case(tmp_path, "shared_task_artifact/v1")
-    context.scorecard_core[field] = str(tmp_path / value) if value else value
+    context, _, _ = _case(tmp_path, "shared_task_artifact/v1"); context.scorecard_core[field] = str(tmp_path / value) if value else value
     assert evaluate_task_oracle(context).state == "malformed"
 def test_common_validation_accumulates_codes_and_artifact_hashes(tmp_path):
-    context, report, _ = _case(tmp_path, "index_fallback_integrity/v1")
-    report.update(task_id="wrong", input_sha256s={})
+    context, report, _ = _case(tmp_path, "index_fallback_integrity/v1"); report.update(task_id="wrong", input_sha256s={})
     context.artifact_paths["report.md"].write_text("", encoding="utf-8")
-    _write(context.artifact_paths["report.json"], report)
-    _write(context.raw_output_path, {"artifacts": {"report.json": report, "report.md": ""}})
+    _write(context.artifact_paths["report.json"], report); _write(context.raw_output_path, {"artifacts": {"report.json": report, "report.md": ""}})
     result = evaluate_task_oracle(context)
     assert result.failure_codes == ["artifact_empty", "input_hash_mismatch", "task_id_mismatch"]
     assert {row["role"] for row in result.checked_artifacts} >= {"raw_output", "provider:report.json", "provider:report.md"}
+@pytest.mark.parametrize("target", ["raw", "report.json", "report.md"])
+@pytest.mark.parametrize("kind", ["outside", "traversal", "escape"])
+def test_attempt_artifacts_reject_outside_traversal_and_resolved_escape(tmp_path, monkeypatch, target, kind):
+    context, _, _ = _case(tmp_path, "index_fallback_integrity/v1"); source = context.raw_output_path if target == "raw" else context.artifact_paths[target]
+    outside = tmp_path / f"outside-{target}"; outside.write_bytes(source.read_bytes())
+    if kind == "outside": candidate = outside
+    elif kind == "traversal": candidate = source.parent / "nested" / ".." / source.name
+    else:
+        candidate, original = source.parent / f"escape-{target}", Path.resolve
+        candidate.write_bytes(source.read_bytes()); monkeypatch.setattr(Path, "resolve", lambda path, *a, **kw: outside if path.name == candidate.name else original(path, *a, **kw))
+    if target == "raw": context = OracleContext(context.task_id, context.oracle_spec, candidate, context.artifact_paths, context.expected_input_sha256s, context.scorecard_core)
+    else: context.artifact_paths[target] = candidate
+    assert evaluate_task_oracle(context).state == "malformed"
+@pytest.mark.parametrize(("kind", "value"), [("missing", None), ("extra", "x"), ("execution_state", "bogus"), ("oracle_state", "bogus"), ("receipt_state", "bogus")])
+def test_shared_states_require_exact_keys_and_approved_values(tmp_path, kind, value):
+    context, report, _ = _case(tmp_path, "shared_task_artifact/v1"); states = context.scorecard_core["orthogonal_states"]
+    if kind == "missing": states.pop("oracle_state")
+    elif kind == "extra": states["extra"] = value
+    else: states[kind] = value
+    _sync_output(context, report); assert evaluate_task_oracle(context).state == "malformed"
+def test_oracle_hashes_each_immutable_file_buffer_once(tmp_path, monkeypatch):
+    context, _, _ = _case(tmp_path, "shared_task_artifact/v1"); target, counts = context.artifact_paths["report.json"], {}
+    original, expected = {"bytes": Path.read_bytes, "text": Path.read_text}, Path.read_bytes(target)
+    def observed(path, mode, *args, **kwargs):
+        counts[path] = counts.get(path, 0) + 1; data = original[mode](path, *args, **kwargs)
+        (path.write_bytes(b"mutated") if path == target and counts[path] == 1 else None); return data
+    monkeypatch.setattr(Path, "read_bytes", lambda path, *a, **kw: observed(path, "bytes", *a, **kw)); monkeypatch.setattr(Path, "read_text", lambda path, *a, **kw: observed(path, "text", *a, **kw))
+    result = evaluate_task_oracle(context); assert result.state == "pass" and set(counts.values()) == {1}
+    assert next(row["sha256"] for row in result.checked_artifacts if row["role"] == "provider:report.json") == _sha(expected)

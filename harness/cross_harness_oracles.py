@@ -7,7 +7,6 @@ import json
 from pathlib import Path
 import re
 from typing import Any
-
 @dataclass(frozen=True)
 class OracleContext:
     task_id: str
@@ -16,7 +15,6 @@ class OracleContext:
     artifact_paths: dict[str, Path]
     expected_input_sha256s: dict[str, str]
     scorecard_core: dict[str, Any]
-
 @dataclass(frozen=True)
 class OracleResult:
     state: str
@@ -28,42 +26,47 @@ class OracleResult:
 
 class _DuplicateKey(ValueError): pass
 class _Malformed(ValueError): pass
-
 def _pairs(rows: list[tuple[str, Any]]) -> dict[str, Any]:
     out: dict[str, Any] = {}
     for key, value in rows:
         if key in out: raise _DuplicateKey(key)
         out[key] = value
     return out
-
-def _sha(path: Path) -> str: return hashlib.sha256(path.read_bytes()).hexdigest()
-
-def _checked(paths: dict[str, Path]) -> list[dict[str, str]]:
-    return [{"role": role, "basename": path.name, "sha256": _sha(path)}
-            for role, path in sorted(paths.items()) if path.is_file()]
-
+def _sha(data: bytes) -> str: return hashlib.sha256(data).hexdigest()
+def _read(checked, role: str, path: Path) -> bytes:
+    for seen, data in checked.values():
+        if seen == path: checked[role] = (path, data); return data
+    data = path.read_bytes(); checked[role] = (path, data)
+    return data
+def _checked(items) -> list[dict[str, str]]:
+    return [{"role": role, "basename": path.name, "sha256": _sha(data)}
+            for role, (path, data) in sorted(items.items())]
 def _result(context: OracleContext, state: str, codes=(), *, evidence=None, checked=None) -> OracleResult:
     checker_id = str(context.oracle_spec.get("checker_id", ""))
     return OracleResult(state, checker_id, checker_id.rsplit("/", 1)[-1] if "/" in checker_id else "",
                         evidence or {}, sorted(set(codes)), _checked(checked or {}))
-
 def _inside(root: Path, value: Any) -> Path | None:
-    if not isinstance(value, str) or not value or Path(value).is_absolute(): return None
+    if not isinstance(value, str) or not value: return None
+    relative = Path(value)
+    if relative.is_absolute() or ".." in relative.parts: return None
     try:
-        path = (root / value).resolve()
+        path = (root / relative).resolve()
         return path if path.is_relative_to(root.resolve()) and path.is_file() else None
     except (OSError, RuntimeError): return None
-
+def _admit(root: Path, value: Any) -> Path:
+    if not isinstance(value, Path) or ".." in value.parts: raise _Malformed("attempt_path_invalid")
+    try: path = (value if value.is_absolute() else root / value).resolve()
+    except (OSError, RuntimeError) as exc: raise _Malformed("attempt_path_invalid") from exc
+    if not path.is_relative_to(root): raise _Malformed("attempt_path_invalid")
+    return path
 def _rows(value: Any, field: str) -> list[dict[str, Any]]:
     if not isinstance(value, list) or any(not isinstance(row, dict) for row in value):
         raise _Malformed(f"{field}_type_invalid")
     return value
-
 def _strings(value: Any, field: str) -> list[str]:
     if not isinstance(value, list) or any(not isinstance(item, str) for item in value):
         raise _Malformed(f"{field}_type_invalid")
     return value
-
 def _root(context: OracleContext, field: str) -> Path:
     value = context.scorecard_core.get(field)
     if not isinstance(value, str) or not value: raise _Malformed(f"{field}_type_invalid")
@@ -76,14 +79,16 @@ def _digest(value: Any, field: str) -> str:
         raise _Malformed(f"{field}_type_invalid")
     return value
 
-def _raw_boundary(context: OracleContext, checked: dict[str, Path]) -> tuple[dict[str, Any] | None, OracleResult | None]:
-    path = context.raw_output_path
-    if not path.is_file():
-        return None, _result(context, "malformed", ["json_invalid"], evidence={"reason": "raw_output_missing"}, checked=checked)
-    checked["raw_output"] = path
+def _raw_boundary(context: OracleContext, checked, attempt: Path) -> tuple[dict[str, Any] | None, OracleResult | None]:
     try:
-        envelope = json.loads(path.read_text(encoding="utf-8"), object_pairs_hook=_pairs)
-    except (OSError, UnicodeError, json.JSONDecodeError, _DuplicateKey):
+        path = _admit(attempt, context.raw_output_path)
+        if not path.is_file(): raise _Malformed("attempt_path_invalid")
+        text = _read(checked, "raw_output", path).decode("utf-8")
+    except (OSError, UnicodeError, _Malformed):
+        return None, _result(context, "malformed", ["json_invalid"], evidence={"reason": "raw_output_invalid"}, checked=checked)
+    try:
+        envelope = json.loads(text, object_pairs_hook=_pairs)
+    except (json.JSONDecodeError, _DuplicateKey):
         return None, _result(context, "malformed", ["json_invalid"], evidence={"reason": "raw_output_invalid"}, checked=checked)
     expected = sorted(context.oracle_spec.get("expected_artifacts", []))
     artifacts = envelope.get("artifacts") if isinstance(envelope, dict) else None
@@ -95,28 +100,29 @@ def _raw_boundary(context: OracleContext, checked: dict[str, Path]) -> tuple[dic
         return None, _result(context, "malformed", ["json_invalid"], evidence={"reason": "response_envelope_invalid"}, checked=checked)
     return envelope, None
 
-def _load_fixture(context: OracleContext, checked: dict[str, Path]):
+def _load_fixture(context: OracleContext, checked):
     root = _root(context, "workspace_root")
     ref = context.oracle_spec.get("fixture")
     path = _inside(root, ref)
     if path is None: return None, "fixture_unavailable"
-    checked["input_fixture"] = path
-    if context.expected_input_sha256s.get(ref) != _sha(path): return None, "input_hash_mismatch"
+    try: data = _read(checked, "input_fixture", path)
+    except OSError: return None, "fixture_unavailable"
+    if context.expected_input_sha256s.get(ref) != _sha(data): return None, "input_hash_mismatch"
     try:
-        value = json.loads(path.read_text(encoding="utf-8"), object_pairs_hook=_pairs)
+        value = json.loads(data.decode("utf-8"), object_pairs_hook=_pairs)
         return (value, "") if isinstance(value, dict) else (None, "fixture_malformed")
     except (OSError, UnicodeError, json.JSONDecodeError, _DuplicateKey): return None, "fixture_malformed"
 
-def _common(context: OracleContext, envelope: dict[str, Any], checked: dict[str, Path]):
+def _common(context: OracleContext, envelope: dict[str, Any], checked, attempt: Path):
     expected, actual = sorted(context.oracle_spec.get("expected_artifacts", [])), sorted(context.artifact_paths)
     mismatch = actual != expected or any(path.name != name for name, path in context.artifact_paths.items())
     codes, texts = (["artifact_set_mismatch"] if mismatch else []), {}
-    for basename, path in context.artifact_paths.items():
-        if path.is_file(): checked[f"provider:{basename}"] = path
     for basename in actual:
-        path = context.artifact_paths[basename]
+        try: path = _admit(attempt, context.artifact_paths[basename])
+        except _Malformed: raise
         if not path.is_file(): codes.append("artifact_not_regular"); continue
-        try: text = path.read_text(encoding="utf-8")
+        try: text = _read(checked, f"provider:{basename}", path).decode("utf-8")
+        except OSError: codes.append("artifact_not_regular"); continue
         except UnicodeError: codes.append("artifact_not_utf8"); continue
         if not text: codes.append("artifact_empty")
         texts[basename] = text
@@ -158,17 +164,27 @@ def _index(context, report, texts, fixture, checked):
     if report["failure_classes"] != sorted(classes): codes.append("failure_classes_mismatch")
     if report["cited_event_ids"] != sorted(citations): codes.append("event_citation_mismatch")
     if stale_mutated: codes.append("stale_artifact_mutated")
-    health_claim = re.compile(r"\bmcp(?:\s+server)?\s+is\s+healthy\b|\bmcp health(?:\s+check)?\s*(?::|=|\b)\s*(?:healthy|pass(?:ed)?|succeeded)\b", re.I)
-    if not healthy and any(health_claim.search(text) for text in texts.values()): codes.append("unsupported_mcp_health_claim")
+    health_claim = re.compile(r"\bmcp(?:\s+(?:server|service))?\s+(?:is\s+)?(?:healthy|operational|available)\b|\bmcp\s+(?:health(?:\s+check)?|status)\s*(?:is|:|=)?\s*(?:healthy|operational|available|pass(?:ed)?|succeeded|ok)\b", re.I)
+    if not healthy and any(health_claim.search(clause) for text in texts.values() for clause in _clauses(text)): codes.append("unsupported_mcp_health_claim")
     if report["receipt_input_sha256s"] != context.expected_input_sha256s: codes.append("receipt_input_hash_mismatch")
     return codes
+
+_STATE_VALUES = {"execution_state": {"completed", "internal_error", "malformed", "timeout", "unavailable"},
+                 "oracle_state": {"not_run", "oracle_fail", "pass", "unverifiable"},
+                 "receipt_state": {"not_run", "receipt_drift", "valid"}}
 
 def _shared(context, report, texts, fixture, checked):
     core, attempt, codes = context.scorecard_core, _root(context, "attempt_dir"), []
     axes = _rows(fixture.get("state_axes"), "state_axes")
-    rules = {row.get("axis"): set(_strings(row.get("failure_values"), "failure_values")) for row in axes}
+    rules = {}
+    for row in axes:
+        axis, failures = row.get("axis"), set(_strings(row.get("failure_values"), "failure_values"))
+        if axis not in _STATE_VALUES or not failures <= _STATE_VALUES[axis]: raise _Malformed("state_axes_invalid")
+        rules[axis] = failures
+    if set(rules) != set(_STATE_VALUES): raise _Malformed("state_axes_invalid")
     states = core.get("orthogonal_states")
-    if not isinstance(states, dict): raise _Malformed("orthogonal_states_type_invalid")
+    if not isinstance(states, dict) or set(states) != set(_STATE_VALUES) or any(value not in _STATE_VALUES[axis] for axis, value in states.items()):
+        raise _Malformed("orthogonal_states_type_invalid")
     _strings(report.get("failure_modes"), "failure_modes")
     for field in ("raw_prompt_sha256", "tool_policy_sha256"):
         _digest(report.get(field), field); _digest(core.get(field), field)
@@ -187,8 +203,9 @@ def _shared(context, report, texts, fixture, checked):
         path = _inside(attempt, value)
         if path is None: codes.append(path_code)
         else:
-            checked[role] = path
-            if _sha(path) != core.get(hash_fact): codes.append(hash_code)
+            try: data = _read(checked, role, path)
+            except OSError: codes.append(path_code); continue
+            if _sha(data) != core.get(hash_fact): codes.append(hash_code)
     if report.get("failure_modes") != derived: codes.append("failure_modes_mismatch")
     phrases = _strings(fixture.get("forbidden_claim_phrases"), "forbidden_claim_phrases")
     normalized = " ".join(" ".join(texts.values()).lower().split())
@@ -228,11 +245,12 @@ _CLAIMS = (r"\brectilinear crossing numbers?\b", r"\bcrossing numbers?\s+of\b", 
            r"\boptimal (?:drawing|graph|scheme|construction|certificate)\b", r"\b(?:minimum|minimal|fewest possible|maximum possible)\s+(?:crossings?|edges?|rank)\b",
            r"\bproves?\s+optimality\b", r"\bwe\s+(?:solved|proved)\s+(?:the\s+)?(?:open\s+)?problem\b")
 _DISCLAIMERS = ("not claimed", "not computed", "not bounded", "do not claim", "does not claim", "no claim", "not proven", "not proved",
-                "cannot claim", "never claimed", "submitted drawing", "submitted graph", "submitted scheme", "submitted object", "not optimality", "without claiming", "makes no claim")
+                 "cannot claim", "never claimed", "submitted drawing", "submitted graph", "submitted scheme", "submitted object", "not optimality", "without claiming", "makes no claim")
 
+def _clauses(text): return re.split(r"(?<=[.!?])(?=\s)|[\r\n]+|(?<!\w)[-*#]+\s+", text)
 def _claim_violation(texts):
     return any(not any(word in low for word in _DISCLAIMERS) and any(re.search(pattern, low) for pattern in _CLAIMS)
-               for text in texts.values() for low in (" ".join(clause.lower().split()) for clause in re.split(r"(?<=[.!?])(?=\s)|[\r\n]+|(?<!\w)[-*#]+\s+", text)))
+               for text in texts.values() for low in (" ".join(clause.lower().split()) for clause in _clauses(text)))
 
 def _docs(context, report, texts, fixture, checked):
     rows, reported = _rows(fixture.get("surfaces"), "fixture_surfaces"), _rows(report.get("surfaces"), "surfaces")
@@ -248,14 +266,14 @@ def _docs(context, report, texts, fixture, checked):
         name, reference = row.get("surface"), expected.get(row.get("surface"), {})
         path = _inside(root, row.get("path"))
         if path is None: codes.append("surface_path_invalid")
-        else: checked[f"workspace:surface:{name}"] = path
+        else: _read(checked, f"workspace:surface:{name}", path)
         if not reference: continue
         refs = _strings(row.get("code_refs"), "code_refs")
         if refs != reference.get("code_refs"): codes.append("code_refs_mismatch")
         for index, ref in enumerate(refs):
             ref_path = _inside(root, ref)
             if ref_path is None: codes.append("surface_path_invalid")
-            else: checked[f"workspace:code_ref:{name}:{index}"] = ref_path
+            else: _read(checked, f"workspace:code_ref:{name}:{index}", ref_path)
         if row.get("path") != reference.get("path"): codes.append("surface_path_invalid")
     if _claim_violation(texts): codes.append("claim_language_violation")
     return codes
@@ -264,19 +282,19 @@ _CHECKERS = {"index_fallback_integrity/v1": _index, "shared_task_artifact/v1": _
              "paired_friction/v1": _paired, "documentation_maintenance/v1": _docs}
 
 def evaluate_task_oracle(context: OracleContext) -> OracleResult:
-    checked: dict[str, Path] = {}
-    envelope, boundary = _raw_boundary(context, checked)
-    if boundary: return boundary
-    checker = _CHECKERS.get(context.oracle_spec.get("checker_id"))
-    if checker is None: return _result(context, "unverifiable", evidence={"reason": "checker_not_configured"}, checked=checked)
+    checked = {}
     try:
-        _root(context, "workspace_root"); _root(context, "attempt_dir")
-        report, texts, common = _common(context, envelope, checked)
+        _root(context, "workspace_root"); attempt = _root(context, "attempt_dir")
+        envelope, boundary = _raw_boundary(context, checked, attempt)
+        if boundary: return boundary
+        checker = _CHECKERS.get(context.oracle_spec.get("checker_id"))
+        if checker is None: return _result(context, "unverifiable", evidence={"reason": "checker_not_configured"}, checked=checked)
+        report, texts, common = _common(context, envelope, checked, attempt)
         if common: return common
         fixture, fixture_error = _load_fixture(context, checked)
         if fixture_error == "input_hash_mismatch": return _result(context, "fail", [fixture_error], checked=checked)
         if fixture_error: return _result(context, "unverifiable", evidence={"reason": fixture_error}, checked=checked)
         codes = checker(context, report, texts, fixture, checked)
-        return _result(context, "fail" if codes else "pass", codes, evidence={"predicate_count": len(codes)}, checked=checked)
+        return _result(context, "fail" if codes else "pass", codes, evidence={"failure_code_count": len(set(codes))}, checked=checked)
     except _Malformed as exc:
         return _result(context, "malformed", ["json_invalid"], evidence={"reason": str(exc)}, checked=checked)

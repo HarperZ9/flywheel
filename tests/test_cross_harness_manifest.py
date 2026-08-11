@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from harness.cross_harness_manifest import build_manifest, render_markdown
+from harness.cross_harness_manifest import build_manifest, load_json, render_markdown
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -138,6 +138,13 @@ def test_manifest_rejects_unhashable_repo_input(tmp_path, monkeypatch, kind):
     task_set["tasks"][0]["required_inputs"] = [refs[kind]]
     with pytest.raises(ValueError, match="required input"):
         build_manifest(task_set, _contract(), task_set_path=str(root / "benchmarks" / "tasks.json"))
+
+
+@pytest.mark.parametrize("raw", ['{"key":1,"key":2}', "[]", "null", "7"])
+def test_manifest_loader_rejects_duplicate_keys_and_non_objects(tmp_path, raw):
+    path = tmp_path / "input.json"
+    path.write_text(raw, encoding="utf-8")
+    with pytest.raises(ValueError): load_json(path)
 
 
 def test_frozen_pilot_contract_is_public_clean_and_replayable():
