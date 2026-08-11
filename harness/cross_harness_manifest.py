@@ -210,7 +210,7 @@ def _input_hashes(root: Path, inputs: list[Any], pilot: bool) -> dict[str, str]:
         ref, relative = str(item), Path(str(item))
         if "://" in ref:
             scheme, _, payload = ref.partition("://"); typed = Path(payload)
-            if pilot or scheme not in {"workspace", "external", "operator"} or not payload or payload != payload.strip() or payload.startswith(("/", "\\")) or len(payload) > 2 and payload[0].isalpha() and payload[1] == ":" and payload[2] in "/\\" or typed.is_absolute() or typed.drive or ".." in typed.parts or str(typed).replace("\\", "/") != payload: raise ValueError(f"required input typed reference invalid: {ref}")
+            if pilot or scheme not in {"workspace", "external", "operator"} or not payload or payload != payload.strip() or payload.startswith(("/", "\\")) or len(payload) > 1 and payload[0].isalpha() and payload[1] == ":" or typed.is_absolute() or typed.drive or ".." in typed.parts or str(typed).replace("\\", "/") != payload: raise ValueError(f"required input typed reference invalid: {ref}")
             continue
         path = (root / relative).resolve()
         if relative.is_absolute() or not path.is_relative_to(root) or not path.is_file():

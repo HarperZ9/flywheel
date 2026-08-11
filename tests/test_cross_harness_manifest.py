@@ -149,7 +149,7 @@ def test_manifest_loader_rejects_duplicate_keys_and_non_objects(tmp_path, raw):
 
 @pytest.mark.parametrize(("ref", "rejected"), [("workspace://facts/a.json", False), ("external://receipt/a.json", False),
                                                  ("operator://input/a.json", False), ("bogus://a", True), ("file://a", True), ("workspace://", True),
-                                                 ("external://   ", True), ("operator://../a", True), ("workspace:///abs", True), ("external://C:/a", True), ("operator://a/../b", True)])
+                                                 ("external://   ", True), ("operator://../a", True), ("workspace:///abs", True), ("external://C:/a", True), ("external://C:", True), ("external://C:relative", True), ("operator://a/../b", True)])
 def test_nonpilot_typed_inputs_use_exact_scheme_allowlist(tmp_path, ref, rejected):
     task_set = _task_set(); task_set["tasks"][0].update(id="custom-task", required_inputs=[ref], oracle={"checker_id": "custom/v1"})
     call = lambda: build_manifest(task_set, _contract(), task_set_path=str(tmp_path / "benchmarks" / "tasks.json"))
@@ -158,7 +158,7 @@ def test_nonpilot_typed_inputs_use_exact_scheme_allowlist(tmp_path, ref, rejecte
     else: assert call()["task_rows"][0]["input_sha256s"] == {}
 
 
-@pytest.mark.parametrize("ref", ["external://C:/a", r"external://C:\a"])
+@pytest.mark.parametrize("ref", ["external://C:/a", r"external://C:\a", "external://C:", "external://C:relative"])
 def test_typed_drive_payload_rejection_is_platform_neutral(tmp_path, monkeypatch, ref):
     monkeypatch.setitem(_input_hashes.__globals__, "Path", PurePosixPath)
     with pytest.raises(ValueError, match="required input"): _input_hashes(tmp_path, [ref], False)
