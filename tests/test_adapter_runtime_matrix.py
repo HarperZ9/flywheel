@@ -257,7 +257,7 @@ def test_matrix_records_gate_metadata_and_renders_guards():
     assert "must not call Codex" in render_markdown(result)
 
 
-def test_metadata_cli_reads_gate_and_records_path_hash_run_and_age(tmp_path):
+def cli_matrix(tmp_path, gate):
     contract_path = tmp_path / "contract.json"
     profiles_path = tmp_path / "profiles.json"
     gate_path = tmp_path / "gate.json"
@@ -265,17 +265,34 @@ def test_metadata_cli_reads_gate_and_records_path_hash_run_and_age(tmp_path):
     profiles = profile_fixture()
     contract_path.write_text(json.dumps(contract_fixture()), encoding="utf-8")
     profiles_path.write_text(json.dumps(profiles), encoding="utf-8")
-    gate_path.write_text(json.dumps(gate_fixture(profiles["profiles"][0], observed_at=datetime.now(UTC).isoformat())), encoding="utf-8")
-
-    assert matrix_main([
+    args = [
         "--contract", str(contract_path), "--endpoint-profiles", str(profiles_path),
-        "--endpoint-gate", str(gate_path), "--endpoint-gate-run-id", "gate-run",
-        "--endpoint-gate-max-age-seconds", "600", "--out", str(out), "--markdown-out", "",
-    ]) == 0
-    result = json.loads(out.read_text(encoding="utf-8"))
+        "--endpoint-gate-run-id", "gate-run", "--endpoint-gate-max-age-seconds", "600",
+        "--out", str(out), "--markdown-out", ""]
+    if gate != "omitted":
+        if gate != "missing":
+            gate_path.write_text(json.dumps(gate), encoding="utf-8")
+        args.extend(["--endpoint-gate", str(gate_path)])
+    assert matrix_main(args) == 0
+    return json.loads(out.read_text(encoding="utf-8")), gate_path
+
+
+def test_metadata_cli_reads_gate_and_records_path_hash_run_and_age(tmp_path):
+    profile = profile_fixture()["profiles"][0]
+    gate = gate_fixture(profile, observed_at=datetime.now(UTC).isoformat())
+    result, gate_path = cli_matrix(tmp_path, gate)
     assert result["endpoint_gate_path"] == str(gate_path)
     assert result["endpoint_gate_sha256"] == hashlib.sha256(gate_path.read_bytes()).hexdigest()
     assert result["expected_gate_run_id"] == "gate-run"
     assert result["max_age_seconds"] == 600
     assert result["summary"]["endpoint_probe"] is False
     assert result["summary"]["token_store_read"] is False
+
+
+@pytest.mark.parametrize(("gate", "code"), [
+    ("omitted", "endpoint_gate_missing"), ("missing", "endpoint_gate_missing"),
+    ({}, "endpoint_gate_schema_mismatch"), ([], "endpoint_gate_schema_mismatch"),
+])
+def test_cli_preserves_missing_and_malformed_gate_evidence(tmp_path, gate, code):
+    result, _ = cli_matrix(tmp_path, gate)
+    assert local_row(result)["blocking_gates"] == [code]

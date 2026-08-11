@@ -38,6 +38,15 @@ def _optional_json(path_text: str) -> tuple[dict[str, Any], str, str]:
     return load_json(path), str(path), file_sha256(path)
 
 
+def _optional_gate_json(path_text: str) -> tuple[Any, str, str]:
+    if not path_text:
+        return None, "", ""
+    path = Path(path_text)
+    if not path.exists():
+        return None, str(path), ""
+    return load_json(path), str(path), file_sha256(path)
+
+
 def store_matrix(
     matrix: dict[str, Any],
     *,
@@ -79,7 +88,7 @@ def main(argv: list[str] | None = None) -> int:
     contract_path = Path(args.contract)
     contract = load_json(contract_path)
     endpoint_profiles, endpoint_profiles_path, endpoint_profiles_sha256 = _optional_json(args.endpoint_profiles)
-    endpoint_gate, endpoint_gate_path, endpoint_gate_sha256 = _optional_json(args.endpoint_gate)
+    endpoint_gate, endpoint_gate_path, endpoint_gate_sha256 = _optional_gate_json(args.endpoint_gate)
     endpoint_auth, endpoint_auth_path, endpoint_auth_sha256 = _optional_json(args.endpoint_auth_status)
     matrix = build_matrix(
         contract,
