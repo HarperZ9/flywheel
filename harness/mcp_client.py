@@ -15,12 +15,21 @@ from __future__ import annotations
 
 import collections
 import json
+import os
 import queue
 import subprocess
 import threading
+from dataclasses import dataclass
 
 PROTOCOL_VERSION = "2025-06-18"
 _EOF = object()
+
+
+@dataclass(frozen=True)
+class LaunchSpec:
+    argv: tuple[str, ...]
+    cwd: str | None = None
+    env_overrides: tuple[tuple[str, str], ...] = ()
 
 
 class MCPError(RuntimeError):
@@ -31,11 +40,20 @@ class StdioTransport:
     """Newline-delimited JSON-RPC over a subprocess's stdin/stdout. A background
     reader thread makes receive() timeout-safe cross-platform (no select on pipes)."""
 
-    def __init__(self, command: list, *, timeout: float = 30.0):
+    def __init__(self, command: "list | LaunchSpec", *, timeout: float = 30.0):
         self.timeout = timeout
+        popen_kwargs = {
+            "stdin": subprocess.PIPE, "stdout": subprocess.PIPE,
+            "stderr": subprocess.PIPE, "text": True, "bufsize": 1}
+        if isinstance(command, LaunchSpec):
+            child_env = os.environ.copy()
+            child_env.update(command.env_overrides)
+            argv = list(command.argv)
+            popen_kwargs.update(cwd=command.cwd, env=child_env)
+        else:
+            argv = command
         self.proc = subprocess.Popen(
-            command, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE, text=True, bufsize=1)
+            argv, **popen_kwargs)
         self._q: "queue.Queue" = queue.Queue()
         self._reader = threading.Thread(target=self._read_loop, daemon=True)
         self._reader.start()
@@ -105,7 +123,7 @@ class MCPClient:
     """Drive an MCP server: initialize, list tools, call a tool. Pass `command`
     to spawn a server over stdio, or inject `transport` (e.g. a fake) for tests."""
 
-    def __init__(self, command: "list | None" = None, *, transport=None,
+    def __init__(self, command: "list | LaunchSpec | None" = None, *, transport=None,
                  timeout: float = 30.0, client_name: str = "flywheel"):
         if transport is None and command is None:
             raise ValueError("MCPClient needs a command or a transport")
@@ -132,6 +150,8 @@ class MCPClient:
         self._t.send({"jsonrpc": "2.0", "method": method, "params": params or {}})
 
     def start(self) -> "MCPClient":
+        if self.started:
+            return self
         res = self._request("initialize", {
             "protocolVersion": PROTOCOL_VERSION,
             "capabilities": {},
