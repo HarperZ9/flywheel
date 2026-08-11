@@ -17,6 +17,8 @@ from harness.cross_harness_artifacts import (
     snapshot_source_tree,
     write_artifact_index,
 )
+from harness.cross_harness_executor import execute_cross_harness_manifest
+from harness.cross_harness_types import AdapterResult, AvailabilityResult, EnforcementResult
 
 
 def _sha(path: Path) -> str:
@@ -118,17 +120,24 @@ def test_receipt_binds_canonical_row_and_recheck_detects_row_or_artifact_tamper(
            "tool_policy_sha256": "c" * 64, "workspace_snapshot_sha256": "d" * 64,
            "input_sha256s": {"fixture": "e" * 64}, "comparison_key": "f" * 64,
            "model_observed": "model-a", "availability_evidence": {"blocking_gates": []},
-           "oracle_state": "pass", "receipt_state": "verified", "primary_outcome": "completed"}
+           "oracle_state": "pass", "oracle_evidence": {"failure_codes": []}, "receipt_state": "verified",
+           "orthogonal_states": {"execution_state": "returned", "oracle_state": "pass", "receipt_state": "verified"},
+           "primary_outcome": "completed", "status": "executed", "failure_class": "", "failure_detail": "",
+           "metrics": {"latency_ms": 4}, "metric_null_reasons": {}}
     receipt_path = tmp_path / "receipt.json"
     receipt = bind_attempt_receipt(row, {"report.json": artifact}, receipt_path)
     assert receipt["receipt_subject_sha256"]
     assert recheck_attempt_receipt(receipt_path, row) == "verified"
     assert recheck_attempt_receipt(receipt_path, {**row, "task_id": "changed"}) == "drift"
     assert recheck_attempt_receipt(receipt_path, {**row, "oracle_state": "fail",
-                                                  "primary_outcome": "oracle_fail"}) == "verified"
+                                                  "primary_outcome": "oracle_fail"}) == "drift"
     for field, value in (("input_sha256s", {}), ("comparison_key", "0" * 64),
                          ("model_observed", "model-b"), ("availability_evidence", {"blocking_gates": ["stale"]})):
         assert recheck_attempt_receipt(receipt_path, {**row, field: value}) == "drift"
+    for field, value in (("metrics", {}), ("failure_detail", "changed"), ("status", "invalid"),
+                         ("receipt_state", "drift"), ("metric_null_reasons", {"usage": "missing"})):
+        assert recheck_attempt_receipt(receipt_path, {**row, field: value}) == "drift"
+    assert receipt["does_not_bind"] == ["receipt_does_not_bind", "receipt_sha256", "receipt_subject_sha256"]
     artifact.write_text('{"value":2}\n', encoding="utf-8")
     assert recheck_attempt_receipt(receipt_path, row) == "drift"
 
@@ -148,3 +157,123 @@ def test_artifact_index_hashes_references_but_explicitly_excludes_itself(tmp_pat
     assert [row["path"] for row in index["artifacts"]] == ["nested/two.txt", "one.txt"]
     assert index["self_hash"] is None
     assert index["self_hash_reason"] == "artifact index cannot contain its own hash"
+
+
+class _ExecAdapter:
+    role, adapter_id = "local_14b", "local/v1"
+    def __init__(self, result, mutate=""): self.result, self.mutate, self.calls = result, mutate, []
+    def enforcement(self, request):
+        value = {"boundary": "read-only"}; return EnforcementResult(value, canonical_sha256(value), "adapter_claim", "non_equivalent")
+    def availability(self, request): return AvailabilityResult(True, "", "ready", {})
+    def execute(self, request):
+        self.calls.append(request.task_id)
+        target = request.workspace_root / "input.txt"
+        if self.mutate == "create": request.workspace_root.chmod(0o700); (request.workspace_root / "created.txt").write_text("new")
+        if self.mutate == "replace": target.chmod(0o600); target.write_text("replaced")
+        if isinstance(self.result, Exception): raise self.result
+        return self.result(request) if callable(self.result) else self.result
+
+
+def _execute_fixture(tmp_path, adapter, task_ids=("agt-001-task",), expected=("result.json",), oracle=None, input_text="original"):
+    source = tmp_path / "source"; source.mkdir(); source.joinpath("input.txt").write_text(input_text)
+    digest = _sha(source / "input.txt")
+    tasks = [{"task_id": task_id, "raw_prompt": "prompt\n", "raw_prompt_sha256": hashlib.sha256(b"prompt\n").hexdigest(),
+              "required_inputs": ["input.txt"], "input_sha256s": {"input.txt": digest},
+              "expected_artifacts": list(expected), "oracle": oracle or {"expected_artifacts": list(expected)}}
+             for task_id in task_ids]
+    manifest = {"task_set_id": "set", "task_rows": tasks, "provider_specs": [
+        {"provider_role": "local_14b", "harness_id": "local", "adapter_id": "local/v1", "target_model": "14B"}]}
+    runtime = {"runtime_rows": [{"provider_role": "local_14b", "focused_run_ready": True,
+                "blocking_gates": [], "endpoint_profile_matches": [], "endpoint_gate_matches": []}]}
+    root = tmp_path / "artifacts"
+    run = execute_cross_harness_manifest(manifest, runtime, {"local_14b": adapter}, artifact_root=root,
+        source_root=source, run_id="run", phase="local", selectors=list(task_ids), roles=["local_14b"], repetitions=1)
+    return run, root
+
+
+@pytest.mark.parametrize("mutation", ["create", "replace"])
+def test_workspace_mutation_is_typed_drift_preserved_and_indexed(tmp_path, mutation):
+    result = AdapterResult("returned", '{"artifacts":{"result.json":{}}}', [], 1, "14B", "seeded", "", "", {}, {}, [], [])
+    run, root = _execute_fixture(tmp_path, _ExecAdapter(result, mutation))
+    row = run["rows"][0]
+    assert (row["execution_state"], row["failure_class"], row["workspace_state"]) == ("malformed", "workspace_drift", "drift")
+    assert Path(row["workspace_root"]).is_dir()
+    after = json.loads((Path(row["attempt_dir"]) / "workspace-after.json").read_text())
+    assert {item["path"] for item in after["files"]} >= ({"created.txt"} if mutation == "create" else {"input.txt"})
+    index = json.loads((root / "run" / "artifact-index.json").read_text())
+    assert any(item["path"].endswith("workspace-after.json") for item in index["artifacts"])
+
+
+class _SecretAdapter(_ExecAdapter):
+    def availability(self, request):
+        return AvailabilityResult(True, "", "Authorization: Bearer TOP-SECRET", {"note": "token=TOP-SECRET"})
+
+
+def test_secret_values_are_redacted_from_every_serialized_surface(tmp_path):
+    result = AdapterResult("malformed", "terminal bytes", [{"note": "Authorization: Bearer TOP-SECRET"}], 1,
+        "token=TOP-SECRET", "secret=TOP-SECRET", "failure", "password=TOP-SECRET",
+        {"note": "api_key=TOP-SECRET"}, {"note": "token=TOP-SECRET"},
+        ["Authorization: Bearer TOP-SECRET"], ["secret=TOP-SECRET"])
+    run, root = _execute_fixture(tmp_path, _SecretAdapter(result))
+    assert run["rows"][0]["execution_state"] == "malformed"
+    assert "TOP-SECRET" not in "\n".join(path.read_text(errors="ignore") for path in root.rglob("*") if path.is_file())
+
+
+@pytest.mark.parametrize("state", ["malformed", "timeout", "internal_error", "unavailable"])
+def test_nonreturn_terminal_output_is_preserved_with_denominator_fields(tmp_path, state):
+    output = f"exact terminal bytes {state}"
+    result = AdapterResult(state, output, [], 4, "14B", "unsupported", state, "detail", {}, {}, [], [])
+    run, _ = _execute_fixture(tmp_path, _ExecAdapter(result)); row = run["rows"][0]
+    assert Path(row["raw_output_path"]).read_bytes() == output.encode()
+    assert (row["planned"], row["admitted"], row["launched"], row["blocked"]) == (True, True, True, state == "unavailable")
+    assert row["metric_null_reasons"]["cost"] and row["metric_null_reasons"]["usage"]
+
+
+def test_live_timeout_is_typed_and_sealed(tmp_path):
+    run, _ = _execute_fixture(tmp_path, _ExecAdapter(TimeoutError("deadline"))); row = run["rows"][0]
+    assert (row["execution_state"], row["status"], row["launched"]) == ("timeout", "failed", True)
+    assert row["receipt_state"] == "verified" and row["metric_null_reasons"]["latency"]
+
+
+@pytest.mark.parametrize("elapsed", [float("nan"), -1, True])
+def test_invalid_elapsed_is_isolated_internal_error(tmp_path, elapsed):
+    result = AdapterResult("returned", '{"artifacts":{"result.json":{}}}', [], elapsed, "14B", "seeded", "", "", {}, {}, [], [])
+    run, _ = _execute_fixture(tmp_path, _ExecAdapter(result)); row = run["rows"][0]
+    assert row["execution_state"] == "internal_error" and row["receipt_state"] == "verified"
+
+
+def test_multirow_adapter_exception_is_isolated(tmp_path):
+    def result(request):
+        if request.task_id == "agt-001-task": raise ValueError("first row bug")
+        return AdapterResult("returned", '{"artifacts":{"result.json":{}}}', [], 1, "14B", "seeded", "", "", {}, {}, [], [])
+    run, _ = _execute_fixture(tmp_path, _ExecAdapter(result), ("agt-001-task", "agt-002-task"))
+    assert [row["execution_state"] for row in run["rows"]] == ["internal_error", "returned"]
+
+
+def test_snapshot_streams_regular_files_and_detects_concurrent_mutation(tmp_path, monkeypatch):
+    path = tmp_path / "large.bin"; path.write_bytes(b"initial")
+    monkeypatch.setattr(Path, "read_bytes", lambda _self: (_ for _ in ()).throw(AssertionError("read_bytes forbidden")))
+    original = artifact_module._sha_file
+    def mutate(candidate):
+        digest = original(candidate); candidate.write_bytes(b"changed-size"); return digest
+    monkeypatch.setattr(artifact_module, "_sha_file", mutate)
+    with pytest.raises(ValueError, match="concurrent mutation"):
+        snapshot_source_tree(tmp_path)
+
+
+def test_live_oracle_fail_and_final_row_receipt_tamper(tmp_path):
+    fixture = json.dumps({"events": []})
+    def result(request):
+        report = {"task_id": request.task_id, "input_sha256s": request.input_sha256s,
+                  "failure_classes": ["wrong"], "cited_event_ids": [], "receipt_input_sha256s": request.input_sha256s}
+        output = json.dumps({"artifacts": {"result.json": report, "result.md": f"# {request.task_id}\n"}})
+        return AdapterResult("returned", output, [], 1, "14B", "seeded", "", "", {}, {}, [], [])
+    oracle = {"checker_id": "index_fallback_integrity/v1", "fixture": "input.txt",
+              "expected_artifacts": ["result.json", "result.md"]}
+    run, _ = _execute_fixture(tmp_path, _ExecAdapter(result), ("agt-001-index-fallback-integrity",),
+                              ("result.json", "result.md"), oracle, fixture)
+    row = run["rows"][0]; receipt = Path(row["receipt_path"])
+    assert (row["oracle_state"], row["primary_outcome"], row["receipt_state"]) == ("fail", "oracle_fail", "verified")
+    assert recheck_attempt_receipt(receipt, {**row, "metrics": {}}) == "drift"
+    receipt.write_text(receipt.read_text().replace("receipt_subject_sha256", "tampered_subject_sha256"))
+    assert recheck_attempt_receipt(receipt, row) == "drift"

@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
+import re
 from typing import Any, Protocol
 
 
@@ -68,3 +69,32 @@ class CrossHarnessAdapter(Protocol):
     def enforcement(self, request: AttemptRequest) -> EnforcementResult: ...
     def availability(self, request: AttemptRequest) -> AvailabilityResult: ...
     def execute(self, request: AttemptRequest) -> AdapterResult: ...
+
+
+_SECRET_KEY = re.compile(r"(?:authorization|credential|password|secret|token|api[_ -]?key)", re.I)
+_SECRET_VALUE = re.compile(r"(?i)(authorization\s*:\s*bearer\s+|(?:token|api[_ -]?key|password|secret)\s*[:=]\s*)\S+")
+
+
+def sanitize_evidence(value: Any) -> Any:
+    """Remove secret-shaped keys and reject values canonical JSON cannot encode."""
+    if isinstance(value, dict):
+        return {str(key): "[REDACTED]" if _SECRET_KEY.search(str(key)) else sanitize_evidence(item)
+                for key, item in value.items()}
+    if isinstance(value, list): return [sanitize_evidence(item) for item in value]
+    if isinstance(value, float) and (value != value or abs(value) == float("inf")): raise ValueError("nonfinite adapter evidence")
+    if isinstance(value, str): return _SECRET_VALUE.sub(lambda match: match.group(1) + "[REDACTED]", value)
+    return value if isinstance(value, (int, float, bool, type(None))) else sanitize_evidence(str(value))
+
+
+def validate_elapsed_ms(value: Any) -> int:
+    if type(value) is not int or value < 0: raise ValueError("elapsed_ms must be a finite nonnegative integer")
+    return value
+
+
+def metric_null_reasons(metrics: dict[str, Any]) -> dict[str, str]:
+    reasons = {}
+    if "latency_ms" not in metrics: reasons["latency"] = "attempt_did_not_report_latency"
+    if not metrics.get("usage"): reasons["usage"] = "provider_usage_unavailable"
+    reasons["cost"] = "provider_cost_unavailable"
+    if not metrics.get("resource_observation"): reasons["resource"] = "resource_observation_unavailable"
+    return reasons

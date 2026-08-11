@@ -1,9 +1,7 @@
 import hashlib
 import json
 from pathlib import Path
-
 import pytest
-
 from harness.cross_harness_executor import (
     SHARED_TOOL_POLICY,
     comparison_key,
@@ -15,8 +13,6 @@ from harness.cross_harness_executor import (
 from harness.cross_harness_types import (
     AdapterResult, AttemptRequest, AvailabilityResult, CrossHarnessAdapter, EnforcementResult,
 )
-
-
 TASKS = [
     {"task_id": "agt-001-index-fallback-integrity"},
     {"task_id": "agt-003-codex-flywheel-shared-task"},
@@ -97,8 +93,6 @@ def _runtime(roles, *, ready=True):
                                                 "model_ref": f"serve:{role}", "profile_sha256": "f" * 64}],
                  "endpoint_gate_matches": []}
                 for role in roles]}
-
-
 @pytest.mark.parametrize(("roles", "repetitions", "count"), [
     (["codex_harness", "flywheel_harness"], 3, 24),
     (["local_14b", "local_32b"], 1, 8),
@@ -118,8 +112,6 @@ def test_expansion_rejects_duplicate_attempt_keys(tmp_path):
         expand_attempt_rows(_manifest(["local_14b"]), _runtime(["local_14b"]), artifact_root=tmp_path,
                             run_id="run", phase="local", selectors=["agt-001"],
                             roles=["local_14b", "local_14b"], repetitions=1)
-
-
 class FakeAdapter:
     role = "local_14b"
     adapter_id = "local_14b/v1"
@@ -141,8 +133,6 @@ class FakeAdapter:
         self.calls.append("execute")
         if isinstance(self.result, Exception): raise self.result
         return self.result
-
-
 class SecretEnforcementAdapter(FakeAdapter):
     def enforcement(self, request):
         return EnforcementResult({"authorization_token": "never-write-me"}, "x" * 64, "described", "non_equivalent")
@@ -174,10 +164,12 @@ def test_unavailable_row_hashes_enforcement_first_and_preserves_gate_evidence_an
     assert adapter.calls == ["enforcement"]
     assert (row["execution_state"], row["status"], row["primary_outcome"]) == ("unavailable", "skipped", "unavailable")
     assert row["policy_equivalence"] == "non_equivalent"
+    assert (row["enforcement_verification_state"], row["adapter_verification_claim"]) == ("unverified", "verified_live_and_fixture")
     assert row["enforcement_sha256"] == canonical_hash({"boundary": "fake-read-only"})
     assert row["availability_evidence"]["blocking_gates"] == ["endpoint_gate_stale"]
     assert row["availability_evidence"]["requested_model_reference"] == "serve:local_14b"
     assert Path(row["workspace_root"]).is_dir()
+    assert (row["planned"], row["admitted"], row["blocked"], row["launched"]) == (True, False, True, False) and row["metric_null_reasons"]
 
 
 def test_returned_unverifiable_attempt_rechecks_receipt_and_preserves_workspace(tmp_path):
@@ -291,3 +283,17 @@ def test_receipt_seal_failure_is_explicitly_run_fatal(tmp_path, monkeypatch):
         execute_cross_harness_manifest(_one_task(source), _runtime(["local_14b"], ready=False),
             {"local_14b": FakeAdapter()}, artifact_root=tmp_path / "artifacts", source_root=source,
             run_id="run", phase="local", selectors=["agt-001"], roles=["local_14b"], repetitions=1)
+@pytest.mark.parametrize(("field", "bad"), [
+    ("run_id", "../escaped"), ("run_id", "C:escaped"), ("run_id", "C:/escaped"),
+    ("run_id", "/absolute"), ("phase", "bad\\path"), ("role", "../role"), ("task_id", "C:/task")])
+def test_invalid_identifiers_are_rejected_before_any_directory_creation(tmp_path, monkeypatch, field, bad):
+    source = tmp_path / "source"; source.mkdir(); calls = []
+    manifest = _one_task(source); options = {"run_id": "run", "phase": "local", "roles": ["local_14b"]}
+    if field == "task_id": manifest["task_rows"][0]["task_id"] = bad
+    elif field == "role": options["roles"] = [bad]
+    else: options[field] = bad
+    monkeypatch.setattr(Path, "mkdir", lambda self, *args, **kwargs: calls.append(self))
+    with pytest.raises(ValueError):
+        execute_cross_harness_manifest(manifest, _runtime(["local_14b"]), {"local_14b": FakeAdapter()},
+            artifact_root=tmp_path / "artifacts", source_root=source, selectors=["agt-001"], repetitions=1, **options)
+    assert calls == []

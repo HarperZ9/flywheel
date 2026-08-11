@@ -4,14 +4,14 @@ from __future__ import annotations
 import hashlib
 import json
 from pathlib import Path
-import shutil
 from typing import Any
 
-from harness.cross_harness_artifacts import (bind_attempt_receipt, create_attempt_workspace,
-    materialize_response_envelope, preflight_artifact_root, recheck_attempt_receipt,
-    snapshot_source_tree, validate_path_component, write_artifact_index)
+from harness.cross_harness_artifacts import (bind_attempt_receipt, canonical_sha256, create_attempt_workspace,
+    materialize_response_envelope, preflight_artifact_root, recheck_attempt_receipt, remove_readonly_tree,
+    snapshot_source_tree, validate_execution_components, write_artifact_index)
 from harness.cross_harness_oracles import OracleContext, evaluate_task_oracle
-from harness.cross_harness_types import AttemptRequest
+from harness.cross_harness_types import (AttemptRequest, metric_null_reasons, sanitize_evidence,
+    validate_elapsed_ms)
 class _MalformedAttempt(ValueError): pass
 
 
@@ -20,11 +20,6 @@ SHARED_TOOL_POLICY = {
     "allow_write": False, "allow_exec": False, "allow_mcp": False,
     "max_steps": 6, "max_output_tokens": 2048,
 }
-
-
-def canonical_sha256(value: Any) -> str:
-    data = json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False, allow_nan=False)
-    return hashlib.sha256(data.encode("utf-8")).hexdigest()
 
 
 def resolve_task_ids(task_rows: list[dict[str, Any]], selectors: list[str]) -> list[str]:
@@ -111,10 +106,8 @@ def expand_attempt_rows(
     """Expand a manifest into deterministic planned rows without launching adapters."""
     if repetitions < 1:
         raise ValueError("repetitions must be positive")
-    for label, value in (("run_id", run_id), ("phase", phase)): validate_path_component(value, label)
     task_rows = manifest.get("task_rows", [])
-    for task in task_rows: validate_path_component(str(task.get("task_id", "")), "canonical task id")
-    for role in roles: validate_path_component(role, "provider role")
+    validate_execution_components(task_rows, run_id, phase, roles)
     selected = resolve_task_ids(task_rows, selectors)
     policy_hash, rows, seen = canonical_sha256(SHARED_TOOL_POLICY), [], set()
     for role in roles:
@@ -149,15 +142,6 @@ def _write_json(path: Path, value: Any) -> Path:
     return path
 
 
-def _safe_evidence(value: Any) -> Any:
-    if isinstance(value, dict):
-        return {str(key): _safe_evidence(item) for key, item in value.items()
-                if not any(word in str(key).casefold() for word in ("secret", "token", "authorization", "header", "credential", "api_key"))}
-    if isinstance(value, list): return [_safe_evidence(item) for item in value]
-    if isinstance(value, float) and (value != value or abs(value) == float("inf")): raise ValueError("nonfinite adapter evidence")
-    return value if isinstance(value, (str, int, float, bool, type(None))) else str(value)
-
-
 def _seal_row(row: dict[str, Any], files: dict[str, Path], attempt: Path) -> Path:
     metrics = attempt / "metrics.json"; _write_json(metrics, row["metrics"]); files[metrics.name] = metrics
     limits = attempt / "limitations.md"; limits.write_text("\n".join(f"- {item}" for item in row["limitations"]) + "\n", encoding="utf-8"); files[limits.name] = limits
@@ -175,13 +159,6 @@ def _seal_row(row: dict[str, Any], files: dict[str, Path], attempt: Path) -> Pat
     return receipt_path
 
 
-def _remove_workspace(workspace: Path) -> None:
-    for path in sorted(workspace.rglob("*"), reverse=True):
-        try: path.chmod(0o700 if path.is_dir() else 0o600)
-        except OSError: pass
-    shutil.rmtree(workspace)
-
-
 def execute_cross_harness_manifest(
     manifest: dict[str, Any], runtime_matrix: dict[str, Any], adapters: dict[str, Any], *,
     artifact_root: Path, source_root: Path, run_id: str, phase: str, selectors: list[str],
@@ -190,6 +167,7 @@ def execute_cross_harness_manifest(
 ) -> dict[str, Any]:
     """Execute every planned row while preserving unavailable and failed evidence."""
     source = Path(source_root).resolve(strict=True)
+    validate_execution_components(manifest.get("task_rows", []), run_id, phase, roles)
     root = preflight_artifact_root(source, Path(artifact_root)); root.mkdir(parents=True, exist_ok=True)
     root = preflight_artifact_root(source, root)
     run_root = root / run_id; run_root.mkdir()
@@ -199,7 +177,7 @@ def execute_cross_harness_manifest(
                                     phase=phase, selectors=selectors, roles=roles, repetitions=repetitions)
         for plan in plans:
             task, attempt = plan["task"], Path(plan["attempt_dir"])
-            files: dict[str, Path] = {}
+            files: dict[str, Path] = {}; workspace_before = None
             row = {key: value for key, value in plan.items() if key not in {"task", "tool_policy", "planned_available"}}
             row.update({"schema": "harness.cross-harness-task-scorecard/v1", "cache_state": cache_state,
                         "source_commit": source_commit,
@@ -208,13 +186,16 @@ def execute_cross_harness_manifest(
                         "raw_prompt_sha256": str(task.get("raw_prompt_sha256", "")), "raw_output_sha256": "",
                         "raw_output_path": "", "tool_trace_path": "", "failure_class": "", "failure_detail": "",
                         "metrics": {}, "limitations": ["Actual enforcement is not assumed equivalent across adapters."],
-                        "policy_equivalence": "non_equivalent", "availability_evidence": dict(plan["runtime_evidence"])})
+                        "policy_equivalence": "non_equivalent", "availability_evidence": dict(plan["runtime_evidence"]),
+                        "planned": True, "admitted": False, "launched": False, "blocked": False})
             try:
                 try: workspace, observed = create_attempt_workspace(source, list(task.get("required_inputs", [])), dict(task.get("input_sha256s", {})), attempt)
                 except ValueError as exc: raise _MalformedAttempt(str(exc)) from exc
                 workspace_snapshot = snapshot_source_tree(workspace)
+                workspace_before = workspace_snapshot
+                workspace_before_path = attempt / "workspace-before.json"; _write_json(workspace_before_path, workspace_before); files[workspace_before_path.name] = workspace_before_path
                 row.update(workspace_root=str(workspace), workspace_snapshot_sha256=workspace_snapshot["sha256"],
-                           input_sha256s=observed)
+                           input_sha256s=observed, workspace_state="verified")
                 prompt = attempt / "prompt.txt"; prompt.write_text(str(task.get("raw_prompt", "")), encoding="utf-8", newline=""); files[prompt.name] = prompt
                 row["raw_prompt_path"] = str(prompt)
                 request = AttemptRequest(run_id, phase, row["task_set_id"], row["task_id"], task.get("raw_prompt", ""),
@@ -225,11 +206,12 @@ def execute_cross_harness_manifest(
                 if adapter is None or adapter.role != row["provider_role"] or adapter.adapter_id != row["adapter_id"]:
                     raise RuntimeError("adapter role or id mismatch")
                 enforcement = adapter.enforcement(request)
-                if _safe_evidence(enforcement.description) != enforcement.description:
+                if sanitize_evidence(enforcement.description) != enforcement.description:
                     raise RuntimeError("secret-shaped enforcement evidence")
                 actual_hash = canonical_sha256(enforcement.description)
                 row.update(enforcement_description=enforcement.description, enforcement_sha256=actual_hash,
-                           enforcement_verification_state=enforcement.verification_state)
+                           adapter_verification_claim=sanitize_evidence(enforcement.verification_state),
+                           enforcement_verification_state="unverified")
                 enforcement_path = attempt / "enforcement.json"; _write_json(enforcement_path, enforcement.description); files[enforcement_path.name] = enforcement_path
                 if enforcement.description_sha256 != actual_hash: raise RuntimeError("adapter enforcement hash mismatch")
                 if not plan["planned_available"]:
@@ -237,31 +219,38 @@ def execute_cross_harness_manifest(
                                failure_detail=row["availability_evidence"]["failure_reason"])
                 else:
                     availability = adapter.availability(request)
-                    row["availability_evidence"]["adapter_evidence"] = _safe_evidence(availability.evidence)
+                    row["availability_evidence"]["adapter_evidence"] = sanitize_evidence(availability.evidence)
+                    row["availability_evidence"]["adapter_detail"] = sanitize_evidence(availability.detail)
                     if not availability.available:
-                        row.update(execution_state="unavailable", failure_class=availability.failure_class,
-                                   failure_detail=availability.detail)
+                        row.update(execution_state="unavailable", failure_class=sanitize_evidence(availability.failure_class),
+                                   failure_detail=sanitize_evidence(availability.detail))
                     else:
-                        row["execution_state"] = "launched"
+                        row.update(execution_state="launched", admitted=True, launched=True)
                         try: result = adapter.execute(request)
                         except TimeoutError as exc:
-                            row.update(execution_state="timeout", failure_class="timeout", failure_detail=str(exc)); result = None
+                            row.update(execution_state="timeout", failure_class="timeout", failure_detail=sanitize_evidence(str(exc))); result = None
                         if result is not None:
                             if result.execution_state not in {"returned", "timeout", "malformed", "internal_error", "unavailable"}:
                                 raise RuntimeError(f"invalid adapter execution state: {result.execution_state}")
-                            metadata = _safe_evidence({"usage": result.usage, "resource": result.resource_observation,
-                                "capabilities": result.observed_capabilities, "violations": result.policy_violations, "tool_trace": result.tool_trace})
-                            row.update(execution_state=result.execution_state, failure_class=result.failure_class,
-                                       failure_detail=result.failure_detail,
-                                       metrics={"latency_ms": result.elapsed_ms, "usage": metadata["usage"], "resource_observation": metadata["resource"]},
-                                       model_observed=result.model_observed, randomness_control=result.randomness_control,
+                            if result.output_text:
+                                raw = attempt / "output.txt"; raw.write_text(result.output_text, encoding="utf-8", newline=""); files[raw.name] = raw
+                                row.update(raw_output_path=str(raw), raw_output_sha256=hashlib.sha256(raw.read_bytes()).hexdigest())
+                            elapsed_ms = validate_elapsed_ms(result.elapsed_ms)
+                            metadata = sanitize_evidence({"usage": result.usage, "resource": result.resource_observation,
+                                "capabilities": result.observed_capabilities, "violations": result.policy_violations,
+                                "tool_trace": result.tool_trace, "model": result.model_observed,
+                                "randomness": result.randomness_control, "failure_detail": result.failure_detail})
+                            row.update(execution_state=result.execution_state, failure_class=sanitize_evidence(result.failure_class),
+                                       failure_detail=metadata["failure_detail"],
+                                       metrics={"latency_ms": elapsed_ms, "usage": metadata["usage"], "resource_observation": metadata["resource"]},
+                                       model_observed=metadata["model"], randomness_control=metadata["randomness"],
                                        observed_capabilities=metadata["capabilities"], policy_violations=metadata["violations"])
                             trace = attempt / "tool_trace.json"; _write_json(trace, metadata["tool_trace"]); files[trace.name] = trace; row["tool_trace_path"] = str(trace)
                             if result.execution_state == "returned":
                                 try: raw, artifacts = materialize_response_envelope(result.output_text, list(task.get("expected_artifacts", [])), attempt)
                                 except ValueError as exc: raise _MalformedAttempt(str(exc)) from exc
                                 files.update(artifacts); row.update(raw_output_path=str(raw), raw_output_sha256=hashlib.sha256(raw.read_bytes()).hexdigest())
-                                provider_receipt = attempt / "provider-receipt.json"; _write_json(provider_receipt, {"model_observed": result.model_observed, "elapsed_ms": result.elapsed_ms}); files[provider_receipt.name] = provider_receipt
+                                provider_receipt = attempt / "provider-receipt.json"; _write_json(provider_receipt, {"model_observed": row["model_observed"], "elapsed_ms": elapsed_ms}); files[provider_receipt.name] = provider_receipt
                                 core = {"workspace_root": str(workspace), "attempt_dir": str(attempt),
                                         "raw_prompt_sha256": row["raw_prompt_sha256"], "tool_policy_sha256": row["tool_policy_sha256"],
                                         "raw_artifact_sha256": row["raw_output_sha256"], "receipt_sha256": hashlib.sha256(provider_receipt.read_bytes()).hexdigest(),
@@ -275,8 +264,19 @@ def execute_cross_harness_manifest(
                 availability_path = attempt / "availability.json"; _write_json(availability_path, row["availability_evidence"]); files[availability_path.name] = availability_path
             except Exception as exc:
                 if row["execution_state"] not in {"timeout", "malformed"}: row["execution_state"] = "malformed" if isinstance(exc, _MalformedAttempt) else "internal_error"
-                row.update(oracle_state="not_run", failure_class=row["failure_class"] or type(exc).__name__, failure_detail=row["failure_detail"] or str(exc))
+                row.update(oracle_state="not_run", failure_class=row["failure_class"] or type(exc).__name__,
+                           failure_detail=sanitize_evidence(row["failure_detail"] or str(exc)))
                 attempt.mkdir(parents=True, exist_ok=True)
+            if workspace_before is not None:
+                workspace_after = snapshot_source_tree(Path(row["workspace_root"])); workspace_after_path = attempt / "workspace-after.json"
+                _write_json(workspace_after_path, workspace_after); files[workspace_after_path.name] = workspace_after_path
+                row["workspace_snapshot_after_sha256"] = workspace_after["sha256"]
+                if workspace_after != workspace_before:
+                    row.update(execution_state="malformed", oracle_state="not_run", workspace_state="drift",
+                               failure_class="workspace_drift", failure_detail="workspace changed during adapter attempt")
+                    row["policy_violations"] = sorted(set(row.get("policy_violations", [])) | {"workspace_drift"})
+            row["blocked"] = row["execution_state"] == "unavailable"
+            row["metric_null_reasons"] = metric_null_reasons(row["metrics"])
             raw_path = attempt / "output.txt"
             if raw_path.is_file() and raw_path not in files.values(): files[raw_path.name] = raw_path; row.update(raw_output_path=str(raw_path), raw_output_sha256=hashlib.sha256(raw_path.read_bytes()).hexdigest())
             row["comparison_key"] = comparison_key(row)
@@ -290,7 +290,7 @@ def execute_cross_harness_manifest(
     finally:
         after = snapshot_source_tree(source)
     if before != after: raise RuntimeError("source_tree_changed")
-    for workspace in clean: _remove_workspace(workspace)
+    for workspace in clean: remove_readonly_tree(workspace)
     run = {"schema": "harness.cross-harness-run-receipt/v1", "run_id": run_id, "phase": phase,
            "rows": rows, "source_snapshot_before": before, "source_snapshot_after": after}
     comparison = run_root / "comparison-input.json"; _write_json(comparison, {"schema": "harness.cross-harness-task-scorecard/v1", "rows": rows})

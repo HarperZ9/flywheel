@@ -80,9 +80,13 @@ def _readonly_attributes(info: os.stat_result) -> int:
 
 def snapshot_source_tree(root: Path) -> dict[str, Any]:
     base = Path(root).resolve(strict=True)
-    files = []
+    files, directory_rows = [], []
     for current, directories, names in os.walk(base, followlinks=False):
         current_path = Path(current)
+        directory_info = current_path.lstat()
+        directory_rows.append({"path": "." if current_path == base else current_path.relative_to(base).as_posix(),
+            "mode": stat.S_IMODE(directory_info.st_mode), "read_only_attributes": _readonly_attributes(directory_info),
+            "link_identity": [directory_info.st_dev, directory_info.st_ino, directory_info.st_nlink]})
         directories[:] = sorted(name for name in directories if name != ".git")
         for name in list(directories):
             path = current_path / name
@@ -90,15 +94,19 @@ def snapshot_source_tree(root: Path) -> dict[str, Any]:
                 directories.remove(name); names.append(name)
         for name in sorted(names):
             path, info = current_path / name, (current_path / name).lstat()
-            if stat.S_ISLNK(info.st_mode): data = os.readlink(path).encode("utf-8")
-            elif stat.S_ISREG(info.st_mode): data = path.read_bytes()
+            before = (info.st_size, stat.S_IMODE(info.st_mode), _readonly_attributes(info), info.st_dev, info.st_ino, info.st_nlink)
+            if stat.S_ISLNK(info.st_mode): digest = _sha_bytes(os.readlink(path).encode("utf-8"))
+            elif stat.S_ISREG(info.st_mode): digest = _sha_file(path)
             else: raise ValueError(f"source_tree_special_file: {path.relative_to(base).as_posix()}")
-            files.append({"path": path.relative_to(base).as_posix(), "sha256": _sha_bytes(data),
+            after_info = path.lstat(); after = (after_info.st_size, stat.S_IMODE(after_info.st_mode), _readonly_attributes(after_info), after_info.st_dev, after_info.st_ino, after_info.st_nlink)
+            if before != after: raise ValueError(f"source_tree_concurrent mutation: {path.relative_to(base).as_posix()}")
+            files.append({"path": path.relative_to(base).as_posix(), "sha256": digest,
                           "size": info.st_size, "mode": stat.S_IMODE(info.st_mode),
-                          "read_only_attributes": _readonly_attributes(info)})
-    files.sort(key=lambda row: row["path"])
-    return {"schema": "harness.cross-harness-source-snapshot/v1", "files": files,
-            "sha256": _sha_bytes(_canonical(files))}
+                          "read_only_attributes": _readonly_attributes(info),
+                          "link_identity": [info.st_dev, info.st_ino, info.st_nlink]})
+    files.sort(key=lambda row: row["path"]); directory_rows.sort(key=lambda row: row["path"])
+    return {"schema": "harness.cross-harness-source-snapshot/v1", "files": files, "directories": directory_rows,
+            "sha256": _sha_bytes(_canonical({"files": files, "directories": directory_rows}))}
 
 
 def _safe_relative(value: str, label: str) -> Path:
@@ -113,7 +121,7 @@ def _safe_relative(value: str, label: str) -> Path:
 
 _STANDARD_NAMES = {"prompt.txt", "output.txt", "tool_trace.json", "receipt.json", "metrics.json",
                    "limitations.md", "enforcement.json", "availability.json", "provider-receipt.json",
-                   "oracle.json", "resource.json"}
+                   "oracle.json", "resource.json", "workspace-before.json", "workspace-after.json"}
 _DEVICES = {"con", "prn", "aux", "nul", *(f"com{i}" for i in range(1, 10)),
             *(f"lpt{i}" for i in range(1, 10))}
 
@@ -128,6 +136,12 @@ def validate_path_component(value: str, label: str = "path component") -> str:
     if len(path.parts) != 1 or "/" in value or "\\" in value:
         raise ValueError(f"{label} invalid: {value}")
     return value
+
+
+def validate_execution_components(task_rows: list[dict[str, Any]], run_id: str, phase: str, roles: list[str]) -> None:
+    for label, value in (("run_id", run_id), ("phase", phase)): validate_path_component(value, label)
+    for task in task_rows: validate_path_component(str(task.get("task_id", "")), "canonical task id")
+    for role in roles: validate_path_component(role, "provider role")
 
 
 def create_attempt_workspace(
@@ -154,7 +168,16 @@ def create_attempt_workspace(
             raise ValueError(f"required input copy is not independent: {reference}")
         target.chmod(stat.S_IREAD)
         observed[reference] = digest
+    for directory in [workspace, *(path for path in workspace.rglob("*") if path.is_dir())]:
+        directory.chmod(stat.S_IREAD | stat.S_IEXEC)
     return workspace, observed
+
+
+def remove_readonly_tree(root: Path) -> None:
+    root = Path(root); root.chmod(0o700)
+    def retry(function, path, _error):
+        Path(path).chmod(0o700 if Path(path).is_dir() else 0o600); function(path)
+    shutil.rmtree(root, onerror=retry)
 
 
 def _pairs(rows: list[tuple[str, Any]]) -> dict[str, Any]:
@@ -214,18 +237,11 @@ def materialize_response_envelope(
     return raw, paths
 
 
-_SUBJECT_FIELDS = ("attempt_key", "run_id", "phase", "provider_role", "harness_id", "adapter_id",
-                   "model_id", "task_set_id", "task_id", "repetition", "execution_state",
-                   "raw_prompt_sha256", "raw_output_sha256", "tool_policy_sha256", "enforcement_sha256",
-                   "source_snapshot_sha256", "workspace_snapshot_sha256", "cache_state", "input_sha256s",
-                   "comparison_key", "randomness_control", "model_observed", "enforcement_description",
-                   "enforcement_verification_state", "policy_equivalence", "availability_evidence",
-                   "observed_capabilities", "policy_violations", "source_commit")
-
-
+_RECEIPT_SELF_FIELDS = {"receipt_does_not_bind", "receipt_sha256", "receipt_subject_sha256"}
 def _receipt_subject(row: dict[str, Any], artifacts: list[dict[str, str]]) -> dict[str, Any]:
     return {"schema": "harness.cross-harness-receipt-subject/v1",
-            "executor_facts": {field: row.get(field) for field in _SUBJECT_FIELDS}, "artifacts": artifacts}
+            "final_row": {key: value for key, value in sorted(row.items()) if key not in _RECEIPT_SELF_FIELDS},
+            "artifacts": artifacts}
 
 
 def bind_attempt_receipt(row: dict[str, Any], artifact_paths: dict[str, Path], receipt_path: Path) -> dict[str, Any]:
@@ -240,7 +256,7 @@ def bind_attempt_receipt(row: dict[str, Any], artifact_paths: dict[str, Path], r
     subject = _receipt_subject(row, artifacts)
     receipt = {"schema": "harness.cross-harness-attempt-receipt/v1", "receipt_subject": subject,
                "receipt_subject_sha256": canonical_sha256(subject),
-               "does_not_bind": ["oracle_result", "receipt_recheck_state", "primary_outcome", "final_status"]}
+               "does_not_bind": sorted(_RECEIPT_SELF_FIELDS)}
     receipt_path.write_bytes(_canonical(receipt) + b"\n")
     return receipt
 
