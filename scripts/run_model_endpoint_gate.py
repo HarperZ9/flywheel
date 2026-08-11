@@ -69,7 +69,8 @@ def _ollama_identity(profile: dict[str, Any], obj: dict[str, Any]) -> tuple[str,
             continue
         name = str(model.get("name") or model.get("model") or "")
         if name == wanted:
-            return f"ollama:{name}", str(model.get("digest", ""))
+            digest = model.get("digest", "")
+            return f"ollama:{name}", digest.strip() if isinstance(digest, str) else ""
     return "", ""
 
 

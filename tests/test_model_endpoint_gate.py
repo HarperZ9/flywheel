@@ -5,7 +5,7 @@ from datetime import datetime
 import pytest
 
 from harness.local_agent import OllamaBackend, ServeBackend
-from scripts.run_model_endpoint_gate import _backend_for_profile, build_report, main
+from scripts.run_model_endpoint_gate import _backend_for_profile, _ollama_identity, build_report, main
 
 
 def profile(backend="serve", model="14B"):
@@ -41,6 +41,20 @@ def transport(method, url, body, timeout):
 def canonical_hash(row):
     encoded = json.dumps(row, ensure_ascii=False, separators=(",", ":"), sort_keys=True).encode("utf-8")
     return hashlib.sha256(encoded).hexdigest()
+
+
+@pytest.mark.parametrize("digest", [True, False, 0, 1, [], {}, "   "])
+def test_ollama_identity_rejects_non_string_or_blank_digest(digest):
+    observed, evidence = _ollama_identity(
+        profile("ollama"), {"models": [{"name": "qwen:14b", "digest": digest}]})
+    assert observed == "ollama:qwen:14b"
+    assert evidence == ""
+
+
+def test_ollama_identity_strips_string_digest():
+    _, evidence = _ollama_identity(
+        profile("ollama"), {"models": [{"name": "qwen:14b", "digest": " sha256:abc "}]})
+    assert evidence == "sha256:abc"
 
 
 def test_backend_for_profile_preserves_defaults():

@@ -115,10 +115,11 @@ def test_endpoint_identity_or_probe_mismatch_blocks_local_run(mutate, code):
     assert row["blocking_gates"] == [code]
 
 
-def test_ollama_gate_requires_digest():
+@pytest.mark.parametrize("digest", [True, False, 0, 1, [], {}, "   "])
+def test_ollama_gate_requires_digest(digest):
     profiles = profile_fixture(backend="ollama")
     gate = gate_fixture(profiles["profiles"][0])
-    gate["rows"][0]["ollama_digest"] = ""
+    gate["rows"][0]["ollama_digest"] = digest
 
     row = local_row(matrix(profiles=profiles, gate=gate))
 

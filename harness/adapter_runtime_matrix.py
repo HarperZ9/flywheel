@@ -212,7 +212,9 @@ def _gate_failure(gate: dict[str, Any], profile: dict[str, Any], run_id: str, no
         (gate.get("observed_model_ref") != profile["model_ref"], "endpoint_gate_observed_ref_mismatch"),
         (gate.get("health_ok") is not True or gate.get("generation_ok") is not True
          or gate.get("failure_class") != "", "endpoint_gate_failed"),
-        (profile["backend"].lower() == "ollama" and not gate.get("ollama_digest"), "endpoint_gate_ollama_digest_missing"),
+        (profile["backend"].lower() == "ollama"
+         and (not isinstance(gate.get("ollama_digest"), str) or not gate["ollama_digest"].strip()),
+         "endpoint_gate_ollama_digest_missing"),
     )
     return next((code for failed, code in checks if failed), "")
 
