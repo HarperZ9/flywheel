@@ -1,10 +1,10 @@
 import hashlib
 import json
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 import pytest
 
-from harness.cross_harness_manifest import build_manifest, load_json, render_markdown
+from harness.cross_harness_manifest import _input_hashes, build_manifest, load_json, render_markdown
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -156,6 +156,12 @@ def test_nonpilot_typed_inputs_use_exact_scheme_allowlist(tmp_path, ref, rejecte
     if rejected:
         with pytest.raises(ValueError, match="required input"): call()
     else: assert call()["task_rows"][0]["input_sha256s"] == {}
+
+
+@pytest.mark.parametrize("ref", ["external://C:/a", r"external://C:\a"])
+def test_typed_drive_payload_rejection_is_platform_neutral(tmp_path, monkeypatch, ref):
+    monkeypatch.setitem(_input_hashes.__globals__, "Path", PurePosixPath)
+    with pytest.raises(ValueError, match="required input"): _input_hashes(tmp_path, [ref], False)
 
 
 @pytest.mark.parametrize(("task_id", "checker"), [("agt-001-index-fallback-integrity", "index_fallback_integrity/v1"), ("agt-003-codex-flywheel-shared-task", "shared_task_artifact/v1"),
