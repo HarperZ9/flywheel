@@ -42,7 +42,7 @@ def _canonical_sha256(value: dict[str, Any]) -> str:
 def build_matrix(
     contract: dict[str, Any], *, contract_path: str, contract_sha256: str,
     endpoint_profiles: dict[str, Any] | None = None, endpoint_profiles_path: str = "",
-    endpoint_profiles_sha256: str = "", endpoint_gate: dict[str, Any] | None = None,
+    endpoint_profiles_sha256: str = "", endpoint_gate: Any = None,
     endpoint_gate_path: str = "", endpoint_gate_sha256: str = "",
     endpoint_auth_status: dict[str, Any] | None = None, endpoint_auth_status_path: str = "",
     endpoint_auth_status_sha256: str = "", expected_gate_run_id: str = "",
@@ -52,7 +52,7 @@ def build_matrix(
     current = now or datetime.now(UTC)
     rows = [
         _runtime_row(
-            row, endpoint_profiles=endpoint_profiles or {}, endpoint_gate=endpoint_gate or {},
+            row, endpoint_profiles=endpoint_profiles or {}, endpoint_gate=endpoint_gate,
             endpoint_auth_status=endpoint_auth_status or {}, expected_gate_run_id=expected_gate_run_id,
             now=current, max_age_seconds=max_age_seconds,
         )
@@ -112,7 +112,7 @@ def render_markdown(matrix: dict[str, Any]) -> str:
 
 
 def _runtime_row(
-    row: dict[str, Any], *, endpoint_profiles: dict[str, Any], endpoint_gate: dict[str, Any],
+    row: dict[str, Any], *, endpoint_profiles: dict[str, Any], endpoint_gate: Any,
     endpoint_auth_status: dict[str, Any], expected_gate_run_id: str, now: datetime,
     max_age_seconds: int,
 ) -> dict[str, Any]:
@@ -218,6 +218,10 @@ def _gate_failure(gate: dict[str, Any], profile: dict[str, Any], run_id: str, no
 
 
 def _endpoint_gate_result(profiles, data, run_id, now, max_age):
+    if data is None:
+        return [], "endpoint_gate_missing"
+    if not isinstance(data, dict):
+        return [], "endpoint_gate_schema_mismatch"
     if data.get("schema") != "harness.model-endpoint-gate/v1":
         return [], "endpoint_gate_schema_mismatch"
     if not run_id or data.get("run_id") != run_id:

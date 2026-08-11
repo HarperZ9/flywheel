@@ -193,6 +193,15 @@ def test_gate_envelope_and_row_run_identity_are_required(mutate, code):
     assert local_row(matrix(gate=gate))["blocking_gates"] == [code]
 
 
+def test_absent_endpoint_gate_remains_missing():
+    assert local_row(matrix(gate=None))["blocking_gates"] == ["endpoint_gate_missing"]
+
+
+@pytest.mark.parametrize("gate", [[], [{}], "not-an-object", 7])
+def test_non_object_gate_envelope_is_schema_mismatch_without_raising(gate):
+    assert local_row(matrix(gate=gate))["blocking_gates"] == ["endpoint_gate_schema_mismatch"]
+
+
 def test_unrelated_gate_row_is_not_exposed_as_a_profile_match():
     profile = profile_fixture()["profiles"][0]
     gate = gate_fixture(profile)
