@@ -204,13 +204,13 @@ def _provider_specs(contract: dict[str, Any], provider_roles: list[str]) -> dict
 def _required_metrics(contract: dict[str, Any]) -> list[str]:
     row_contract = contract.get("scorecard_row_contract") if isinstance(contract.get("scorecard_row_contract"), dict) else {}
     return [str(metric) for metric in row_contract.get("required_metrics", []) if metric]
-def _input_hashes(root: Path, inputs: list[Any], task_id: str) -> dict[str, str]:
+def _input_hashes(root: Path, inputs: list[Any], pilot: bool) -> dict[str, str]:
     hashes, root = {}, root.resolve()
     for item in inputs:
         ref, relative = str(item), Path(str(item))
         if "://" in ref:
             scheme, _, payload = ref.partition("://"); typed = Path(payload)
-            if task_id in {"agt-001-index-fallback-integrity", "agt-003-codex-flywheel-shared-task", "agt-009-receipts-vs-guardrails-friction", "agt-010-documentation-schematic-maintenance"} or scheme not in {"workspace", "external", "operator"} or not payload or payload != payload.strip() or payload.startswith(("/", "\\")) or typed.is_absolute() or typed.drive or ".." in typed.parts or str(typed).replace("\\", "/") != payload: raise ValueError(f"required input typed reference invalid: {ref}")
+            if pilot or scheme not in {"workspace", "external", "operator"} or not payload or payload != payload.strip() or payload.startswith(("/", "\\")) or typed.is_absolute() or typed.drive or ".." in typed.parts or str(typed).replace("\\", "/") != payload: raise ValueError(f"required input typed reference invalid: {ref}")
             continue
         path = (root / relative).resolve()
         if relative.is_absolute() or not path.is_relative_to(root) or not path.is_file():
@@ -252,14 +252,14 @@ def _prompt_text(task_set: dict[str, Any], contract: dict[str, Any], task: dict[
     ]
     return "\n".join(parts).strip() + "\n"
 def _task_row(task_set: dict[str, Any], contract: dict[str, Any], task: dict[str, Any], *, artifact_dir: str, task_set_path: str) -> dict[str, Any]:
-    prompt = _prompt_text(task_set, contract, task)
-    task_id = str(task["id"])
+    prompt, task_id = _prompt_text(task_set, contract, task), str(task["id"])
+    oracle_contract, oracle = task_set.get("oracle_contract", {}), dict(task.get("oracle", {}))
+    pilots = {"index_fallback_integrity/v1": "agt-001-index-fallback-integrity", "shared_task_artifact/v1": "agt-003-codex-flywheel-shared-task", "paired_friction/v1": "agt-009-receipts-vs-guardrails-friction", "documentation_maintenance/v1": "agt-010-documentation-schematic-maintenance"}
+    checker_id = oracle.get("checker_id")
+    if (checker_id in pilots and task_id != pilots[checker_id]) or (task_id in pilots.values() and pilots.get(checker_id) != task_id): raise ValueError("registered checker and canonical task id must pair")
     inputs = list(task.get("required_inputs", []))
     root = Path(task_set_path).resolve().parent.parent if task_set_path else Path.cwd()
-    input_sha256s = _input_hashes(root, inputs, task_id)
-    artifacts = list(task.get("expected_artifacts", []))
-    oracle_contract = task_set.get("oracle_contract", {})
-    oracle = dict(task.get("oracle", {}))
+    input_sha256s, artifacts = _input_hashes(root, inputs, checker_id in pilots), list(task.get("expected_artifacts", []))
     checker = oracle_contract.get("checkers", {}).get(oracle.get("checker_id"), {})
     return {
         "schema": "harness.cross-harness-manifest.task/v1",

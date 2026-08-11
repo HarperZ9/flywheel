@@ -15,7 +15,7 @@ def _task_set():
         "task_set_id": "sample_tasks",
         "tasks": [
             {
-                "id": "agt-001",
+                "id": "agt-001-index-fallback-integrity",
                 "lane": "agentic_tool_workflows",
                 "difficulty": "focused",
                 "prompt": "Run the same task across harnesses.",
@@ -151,19 +151,27 @@ def test_manifest_loader_rejects_duplicate_keys_and_non_objects(tmp_path, raw):
                                                  ("operator://input/a.json", False), ("bogus://a", True), ("file://a", True), ("workspace://", True),
                                                  ("external://   ", True), ("operator://../a", True), ("workspace:///abs", True), ("external://C:/a", True), ("operator://a/../b", True)])
 def test_nonpilot_typed_inputs_use_exact_scheme_allowlist(tmp_path, ref, rejected):
-    task_set = _task_set(); task_set["tasks"][0]["required_inputs"] = [ref]
+    task_set = _task_set(); task_set["tasks"][0].update(id="custom-task", required_inputs=[ref], oracle={"checker_id": "custom/v1"})
     call = lambda: build_manifest(task_set, _contract(), task_set_path=str(tmp_path / "benchmarks" / "tasks.json"))
     if rejected:
         with pytest.raises(ValueError, match="required input"): call()
     else: assert call()["task_rows"][0]["input_sha256s"] == {}
 
 
-@pytest.mark.parametrize("task_id", ["agt-001-index-fallback-integrity", "agt-003-codex-flywheel-shared-task",
-                                      "agt-009-receipts-vs-guardrails-friction", "agt-010-documentation-schematic-maintenance"])
+@pytest.mark.parametrize(("task_id", "checker"), [("agt-001-index-fallback-integrity", "index_fallback_integrity/v1"), ("agt-003-codex-flywheel-shared-task", "shared_task_artifact/v1"),
+                                                       ("agt-009-receipts-vs-guardrails-friction", "paired_friction/v1"), ("agt-010-documentation-schematic-maintenance", "documentation_maintenance/v1")])
 @pytest.mark.parametrize("ref", ["workspace://a", "external://a", "operator://a"])
-def test_canonical_pilots_reject_typed_inputs(tmp_path, task_id, ref):
-    task_set = _task_set(); task_set["tasks"][0].update(id=task_id, required_inputs=[ref])
+def test_canonical_pilots_reject_typed_inputs(tmp_path, task_id, checker, ref):
+    task_set = _task_set(); task_set["tasks"][0].update(id=task_id, required_inputs=[ref], oracle={"checker_id": checker})
     with pytest.raises(ValueError, match="required input"):
+        build_manifest(task_set, _contract(), task_set_path=str(tmp_path / "benchmarks" / "tasks.json"))
+
+
+@pytest.mark.parametrize(("task_id", "checker"), [("renamed", "index_fallback_integrity/v1"),
+                                                     ("agt-001-index-fallback-integrity", "shared_task_artifact/v1")])
+def test_registered_checker_and_canonical_task_id_must_pair(tmp_path, task_id, checker):
+    task_set = _task_set(); task_set["tasks"][0].update(id=task_id, oracle={"checker_id": checker})
+    with pytest.raises(ValueError, match="checker"):
         build_manifest(task_set, _contract(), task_set_path=str(tmp_path / "benchmarks" / "tasks.json"))
 
 
