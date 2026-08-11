@@ -63,6 +63,19 @@ def test_python_source_launch_has_child_cwd_and_pythonpath(
         str(source.resolve()) + os.pathsep + "existing-path")
 
 
+def test_python_source_launch_precedes_importable_package(tmp_path, monkeypatch):
+    source = tmp_path / "public" / "gather"
+    source.mkdir(parents=True)
+    monkeypatch.setattr(ln, "resolve_source_repo", lambda lane: source)
+    monkeypatch.setattr(ln, "_importable", lambda top: True)
+    monkeypatch.setenv("PYTHONPATH", "installed-path")
+    launch = ln.resolve_mcp_launch("gather")
+    assert launch.argv == (sys.executable, "-m", "gather.cli", "mcp")
+    assert launch.cwd == str(source.resolve())
+    assert dict(launch.env_overrides)["PYTHONPATH"] == (
+        str(source.resolve()) + os.pathsep + "installed-path")
+
+
 def test_node_source_launch_uses_absolute_script(tmp_path, monkeypatch):
     source = tmp_path / "public" / "telos"
     (source / "demo").mkdir(parents=True)

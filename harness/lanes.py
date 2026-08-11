@@ -144,8 +144,7 @@ def resolve_mcp_launch(name: str) -> LaunchSpec:
     if source and lane.kind == "npm":
         return LaunchSpec(("node", str((source / lane.mcp_args[0]).resolve())))
     if lane.kind == "pip":
-        top = lane.py_module.split(".", 1)[0] if lane.py_module else ""
-        if source and lane.py_module and not _frozen() and not _importable(top):
+        if source and lane.py_module:
             inherited = os.environ.get("PYTHONPATH", "")
             pythonpath = str(source) + (os.pathsep + inherited if inherited else "")
             return LaunchSpec(
