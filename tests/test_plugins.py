@@ -4,6 +4,7 @@ or malformed entries, toggles persist, and probing a dead command reports
 unreachable instead of inventing a tool list."""
 
 import json
+from pathlib import PurePosixPath, PureWindowsPath
 
 from harness import plugins
 from harness.mcp_client import LaunchSpec
@@ -22,8 +23,27 @@ def test_roster_includes_lanes_and_builtins(monkeypatch, tmp_path):
     builtin = next(p for p in doc["plugins"] if p["name"] == "tools")
     assert set(builtin["tools"]) == set(plugins.BUILTIN_TOOLS)
     assert "grants nothing" in doc["note"]
-    serialized = json.dumps(doc)
-    assert str(plugins.Path(__file__).resolve().parents[1]) not in serialized
+    decoded = json.loads(json.dumps(doc))
+    strings = []
+
+    def collect_strings(value):
+        if isinstance(value, str):
+            strings.append(value)
+        elif isinstance(value, dict):
+            for item in value.values():
+                collect_strings(item)
+        elif isinstance(value, list):
+            for item in value:
+                collect_strings(item)
+
+    collect_strings(decoded)
+    repo_root = str(plugins.Path(__file__).resolve().parents[1]).replace(
+        "\\", "/").casefold()
+    assert all(repo_root not in value.replace("\\", "/").casefold()
+               for value in strings)
+    assert all(not PureWindowsPath(value).is_absolute()
+               and not PurePosixPath(value).is_absolute()
+               for value in strings)
 
 
 def test_register_refuses_reserved_and_malformed(monkeypatch, tmp_path):

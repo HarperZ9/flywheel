@@ -1,8 +1,4 @@
-"""Portable lane declarations, source-aware runtime launches, and live probes.
-
-`declared` means present but not proven live. Only an MCP initialization, tool
-listing, and successful status/doctor call can produce `live`.
-"""
+"""Portable lane declarations, source-aware launches, and evidence-led probes."""
 from __future__ import annotations
 
 import importlib.util
@@ -115,9 +111,7 @@ def _importable(top_module: str) -> bool:
 
 
 def _frozen() -> bool:
-    """True inside a PyInstaller bundle. There sys.executable is the frozen
-    gateway itself, NOT a Python -- handing it `-m anything` would relaunch
-    the gateway instead of a lane server. Seam for tests."""
+    """True when sys.executable is a frozen gateway, not a Python interpreter."""
     return bool(getattr(sys, "frozen", False))
 
 
@@ -128,6 +122,14 @@ def _pip_mcp_command(lane: Lane) -> list[str]:
         if _importable(top):
             return [sys.executable, "-m", lane.py_module, *lane.mcp_args]
     return lane.mcp_command()
+
+
+def _python_import_root(source: Path, lane: Lane) -> Path:
+    top = lane.py_module.split(".", 1)[0]
+    for root in (source / "src", source):
+        if (root / top).is_dir() or (root / f"{top}.py").is_file():
+            return root.resolve()
+    return source.resolve()
 
 
 def resolve_mcp_command(name: str) -> list[str]:
@@ -145,11 +147,12 @@ def resolve_mcp_launch(name: str) -> LaunchSpec:
         return LaunchSpec(("node", str((source / lane.mcp_args[0]).resolve())))
     if lane.kind == "pip":
         if source and lane.py_module:
+            import_root = _python_import_root(source, lane)
             inherited = os.environ.get("PYTHONPATH", "")
-            pythonpath = str(source) + (os.pathsep + inherited if inherited else "")
+            pythonpath = str(import_root) + (os.pathsep + inherited if inherited else "")
             return LaunchSpec(
                 (sys.executable, "-m", lane.py_module, *lane.mcp_args), str(source),
-                (("PYTHONPATH", pythonpath),))
+                (("PYTHONPATH", pythonpath), ("PYTHONSAFEPATH", "1")))
         return LaunchSpec(tuple(_pip_mcp_command(lane)))
     if lane.command == "python" and not _frozen():
         return LaunchSpec((sys.executable, *lane.mcp_args))
@@ -157,12 +160,7 @@ def resolve_mcp_launch(name: str) -> LaunchSpec:
 
 
 def _installed_version(lane: Lane) -> str | None:
-    """Best-effort: the installed version of a lane, or None if absent.
-
-    For pip lanes, `pip show <install_name>` returns the version. For npm
-    lanes, `npm ls -g <install_name> --depth=0`. For bundled, the static
-    version. Presence-only: never returns a credential or value.
-    """
+    """Best-effort installed version; presence-only and credential-free."""
     try:
         if lane.kind == "bundled":
             return lane.version

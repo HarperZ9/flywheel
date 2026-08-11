@@ -6,12 +6,42 @@ closed the connection" while the real cause (ModuleNotFoundError) went to a
 discarded stderr. These tests keep public commands portable, runtime launches
 source-aware, frozen launches bare, and unreachable stderr visible."""
 import os
+import subprocess
 import sys
+from pathlib import Path
 
 import harness.lanes as ln
 import harness.plugins as pl
+import pytest
 from harness.mcp_client import LaunchSpec
 from harness.plugins import probe_plugin
+
+
+@pytest.mark.parametrize("name", ("gather", "crucible", "index", "forum"))
+def test_current_python_source_launch_imports_from_src_checkout(name):
+    lane = ln.LANES[name]
+    source = ln.resolve_source_repo(lane)
+    if source is None:
+        pytest.skip(f"{name} source checkout is absent")
+    launch = ln.resolve_mcp_launch(name)
+    child_env = os.environ.copy()
+    child_env.update(launch.env_overrides)
+    code = (
+        "import importlib, pathlib, sys; "
+        "module = importlib.import_module(sys.argv[1]); "
+        "print(pathlib.Path(module.__file__).resolve())"
+    )
+    result = subprocess.run(
+        [launch.argv[0], "-c", code, lane.py_module], cwd=launch.cwd,
+        env=child_env, capture_output=True, text=True, timeout=15)
+    assert result.returncode == 0, result.stderr
+    import_root = (source / "src").resolve()
+    assert Path(result.stdout.strip()).is_relative_to(import_root)
+    assert Path(launch.cwd) == source.resolve()
+    assert Path(
+        dict(launch.env_overrides)["PYTHONPATH"].split(os.pathsep)[0]
+    ) == import_root
+    assert dict(launch.env_overrides)["PYTHONSAFEPATH"] == "1"
 
 
 def test_public_pip_command_stays_portable_when_importable(monkeypatch):
@@ -52,7 +82,9 @@ def test_bundled_lane_runs_in_this_interpreter():
 def test_python_source_launch_has_child_cwd_and_pythonpath(
         tmp_path, monkeypatch):
     source = tmp_path / "public" / "gather"
-    source.mkdir(parents=True)
+    (source / "gather").mkdir(parents=True)
+    (source / "gather" / "__init__.py").write_text("", encoding="utf-8")
+    (source / "gather" / "cli.py").write_text("", encoding="utf-8")
     monkeypatch.setattr(ln, "resolve_source_repo", lambda lane: source)
     monkeypatch.setattr(ln, "_importable", lambda top: False)
     monkeypatch.setenv("PYTHONPATH", "existing-path")
@@ -61,6 +93,32 @@ def test_python_source_launch_has_child_cwd_and_pythonpath(
     assert launch.cwd == str(source.resolve())
     assert dict(launch.env_overrides)["PYTHONPATH"] == (
         str(source.resolve()) + os.pathsep + "existing-path")
+    child_env = os.environ.copy()
+    child_env.update(launch.env_overrides)
+    result = subprocess.run(
+        [launch.argv[0], "-c", "import gather.cli; print(gather.cli.__file__)"],
+        cwd=launch.cwd, env=child_env, capture_output=True, text=True, timeout=15)
+    assert Path(result.stdout.strip()).resolve() == (
+        source / "gather" / "cli.py").resolve()
+
+
+def test_src_python_source_launch_imports_without_editable_install(
+        tmp_path, monkeypatch):
+    source = tmp_path / "public" / "gather"
+    package = source / "src" / "gather"
+    package.mkdir(parents=True)
+    (package / "__init__.py").write_text("", encoding="utf-8")
+    (package / "cli.py").write_text("", encoding="utf-8")
+    monkeypatch.setattr(ln, "resolve_source_repo", lambda lane: source)
+    monkeypatch.setattr(ln, "_importable", lambda top: False)
+    launch = ln.resolve_mcp_launch("gather")
+    child_env = os.environ.copy()
+    child_env.update(launch.env_overrides)
+    result = subprocess.run(
+        [launch.argv[0], "-c", "import gather.cli; print(gather.cli.__file__)"],
+        cwd=launch.cwd, env=child_env, capture_output=True, text=True, timeout=15)
+    assert result.returncode == 0, result.stderr
+    assert Path(result.stdout.strip()).resolve() == (package / "cli.py").resolve()
 
 
 def test_python_source_launch_precedes_importable_package(tmp_path, monkeypatch):
