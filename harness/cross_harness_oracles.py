@@ -75,7 +75,7 @@ def _raw_boundary(context: OracleContext, checked: dict[str, Path]) -> tuple[dic
         return None, _result(context, "malformed", ["json_invalid"], evidence={"reason": "raw_output_invalid"}, checked=checked)
     expected = sorted(context.oracle_spec.get("expected_artifacts", []))
     artifacts = envelope.get("artifacts") if isinstance(envelope, dict) else None
-    valid = set(envelope) == {"artifacts"} and isinstance(artifacts, dict) and (sorted(artifacts) == expected if expected else bool(artifacts))
+    valid = isinstance(envelope, dict) and set(envelope) == {"artifacts"} and isinstance(artifacts, dict) and (sorted(artifacts) == expected if expected else bool(artifacts))
     if valid:
         valid = all(isinstance(value, str) if name.endswith(".md") else isinstance(value, dict)
                     for name, value in artifacts.items())
@@ -216,6 +216,9 @@ def _claim_violation(texts):
 
 def _docs(context, report, texts, fixture, checked):
     rows, reported = _rows(fixture.get("surfaces"), "fixture_surfaces"), _rows(report.get("surfaces"), "surfaces")
+    for row in rows + reported:
+        if not isinstance(row.get("surface"), str) or not isinstance(row.get("path"), str): raise _Malformed("surface_entry_type_invalid")
+        _strings(row.get("code_refs"), "code_refs")
     expected_names = sorted(_strings(context.oracle_spec.get("expected_surfaces"), "expected_surfaces"))
     fixture_names, reported_names = sorted(str(r.get("surface", "")) for r in rows), sorted(str(r.get("surface", "")) for r in reported)
     codes, expected, root = [], {row.get("surface"): row for row in rows}, Path(str(context.scorecard_core.get("workspace_root", "")))

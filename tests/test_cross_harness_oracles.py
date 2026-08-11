@@ -10,23 +10,15 @@ TASKS = {
     "paired_friction/v1": "agt-009-receipts-vs-guardrails-friction",
     "documentation_maintenance/v1": "agt-010-documentation-schematic-maintenance",
 }
-
-
 def _sha(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
-
-
 def _write(path: Path, value, *, raw=False):
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(value if raw else json.dumps(value), encoding="utf-8")
-
-
 def _sync_output(context, report):
     _write(context.artifact_paths["report.json"], report)
     markdown = context.artifact_paths["report.md"].read_text(encoding="utf-8")
     _write(context.raw_output_path, {"artifacts": {"report.json": report, "report.md": markdown}})
-
-
 def _case(tmp_path, checker):
     task_id = TASKS[checker]
     workspace = tmp_path / "workspace"
@@ -212,14 +204,15 @@ def test_json_order_and_whitespace_do_not_change_verdict(tmp_path):
     assert evaluate_task_oracle(context).state == "pass"
 
 
-@pytest.mark.parametrize("case", ["missing", "utf8", "json", "duplicate", "envelope"])
+@pytest.mark.parametrize("case", ["missing", "utf8", "json", "duplicate", "envelope", "null", "number", "array"])
 def test_raw_output_boundary_is_malformed_before_checker(tmp_path, case):
     context, _, _ = _case(tmp_path, "index_fallback_integrity/v1")
     if case == "missing": context.raw_output_path.unlink()
     elif case == "utf8": context.raw_output_path.write_bytes(b"\xff")
     elif case == "json": context.raw_output_path.write_text("{", encoding="utf-8")
     elif case == "duplicate": context.raw_output_path.write_text('{"artifacts":{},"artifacts":{}}', encoding="utf-8")
-    else: _write(context.raw_output_path, {"wrong": {}})
+    elif case == "envelope": _write(context.raw_output_path, {"wrong": {}})
+    else: context.raw_output_path.write_text({"null": "null", "number": "7", "array": "[]"}[case], encoding="utf-8")
     result = evaluate_task_oracle(context)
     assert result.state == "malformed"
     assert result.failure_codes == ["json_invalid"]
@@ -272,14 +265,20 @@ def test_checked_artifacts_cover_every_inspected_file(tmp_path, checker, roles):
     assert {row["role"] for row in evaluate_task_oracle(context).checked_artifacts} == roles
 
 
-@pytest.mark.parametrize(("checker", "field"), [
-    ("shared_task_artifact/v1", "failure_modes"),
-    ("paired_friction/v1", "aggregates"),
-    ("documentation_maintenance/v1", "surfaces"),
+@pytest.mark.parametrize(("checker", "field", "value"), [
+    ("shared_task_artifact/v1", "failure_modes", None),
+    ("paired_friction/v1", "aggregates", None),
+    ("documentation_maintenance/v1", "surfaces", None),
+    ("documentation_maintenance/v1", "surface", []),
+    ("documentation_maintenance/v1", "path", 7),
+    ("documentation_maintenance/v1", "code_refs", [[]]),
 ])
-def test_malformed_required_types_never_raise(tmp_path, checker, field):
+def test_malformed_required_types_never_raise(tmp_path, checker, field, value):
     context, report, _ = _case(tmp_path, checker)
-    report[field] = None
+    if checker.startswith("documentation"):
+        if field == "surfaces": report[field] = value
+        else: report["surfaces"][0][field] = value
+    else: report[field] = value
     _sync_output(context, report)
     result = evaluate_task_oracle(context)
     assert (result.state, result.failure_codes) == ("malformed", ["json_invalid"])
