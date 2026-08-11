@@ -32,7 +32,7 @@
         "failure_codes": ["prompt_hash_mismatch", "tool_policy_hash_mismatch", "raw_artifact_path_invalid", "raw_artifact_hash_mismatch", "failure_modes_mismatch", "receipt_path_invalid", "forbidden_claim"]
       },
       "paired_friction/v1": {
-        "required_json_fields": ["task_id", "input_sha256s", "modes", "task_keys", "pairs", "denominator"],
+        "required_json_fields": ["task_id", "input_sha256s", "modes", "task_keys", "pairs", "aggregates", "denominator"],
         "predicates": ["derive exact modes, unique task keys, complete pairs, denominator, and required safety-control state from observations"],
         "failure_codes": ["fixture_mode_set_invalid", "fixture_pair_incomplete", "reported_task_keys_mismatch", "reported_pair_mismatch", "denominator_mismatch", "fixture_safety_control_disabled"]
       },

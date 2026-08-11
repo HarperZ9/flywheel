@@ -1,14 +1,12 @@
 """Deterministic artifact oracles for cross-harness pilot tasks."""
-
 from __future__ import annotations
-
+from collections import Counter
 from dataclasses import dataclass
 import hashlib
 import json
 from pathlib import Path
 import re
 from typing import Any
-
 
 @dataclass(frozen=True)
 class OracleContext:
@@ -19,7 +17,6 @@ class OracleContext:
     expected_input_sha256s: dict[str, str]
     scorecard_core: dict[str, Any]
 
-
 @dataclass(frozen=True)
 class OracleResult:
     state: str
@@ -29,233 +26,233 @@ class OracleResult:
     failure_codes: list[str]
     checked_artifacts: list[dict[str, str]]
 
-
-class _DuplicateKey(ValueError):
-    pass
-
+class _DuplicateKey(ValueError): pass
+class _Malformed(ValueError): pass
 
 def _pairs(rows: list[tuple[str, Any]]) -> dict[str, Any]:
     out: dict[str, Any] = {}
     for key, value in rows:
-        if key in out:
-            raise _DuplicateKey(key)
+        if key in out: raise _DuplicateKey(key)
         out[key] = value
     return out
 
+def _sha(path: Path) -> str: return hashlib.sha256(path.read_bytes()).hexdigest()
 
-def _sha(path: Path) -> str:
-    return hashlib.sha256(path.read_bytes()).hexdigest()
+def _checked(paths: dict[str, Path]) -> list[dict[str, str]]:
+    return [{"role": role, "basename": path.name, "sha256": _sha(path)}
+            for role, path in sorted(paths.items()) if path.is_file()]
 
-
-def _result(context: OracleContext, state: str, codes=(), *, evidence=None, checked=()) -> OracleResult:
+def _result(context: OracleContext, state: str, codes=(), *, evidence=None, checked=None) -> OracleResult:
     checker_id = str(context.oracle_spec.get("checker_id", ""))
-    return OracleResult(
-        state, checker_id, checker_id.rsplit("/", 1)[-1] if "/" in checker_id else "",
-        evidence or {}, sorted(set(codes)), list(checked),
-    )
-
+    return OracleResult(state, checker_id, checker_id.rsplit("/", 1)[-1] if "/" in checker_id else "",
+                        evidence or {}, sorted(set(codes)), _checked(checked or {}))
 
 def _inside(root: Path, value: Any) -> Path | None:
-    if not isinstance(value, str) or not value or Path(value).is_absolute():
-        return None
+    if not isinstance(value, str) or not value or Path(value).is_absolute(): return None
     try:
         path = (root / value).resolve()
         return path if path.is_relative_to(root.resolve()) and path.is_file() else None
-    except (OSError, RuntimeError):
-        return None
+    except (OSError, RuntimeError): return None
 
+def _rows(value: Any, field: str) -> list[dict[str, Any]]:
+    if not isinstance(value, list) or any(not isinstance(row, dict) for row in value):
+        raise _Malformed(f"{field}_type_invalid")
+    return value
 
-def _load_fixture(context: OracleContext) -> dict[str, Any] | None:
+def _strings(value: Any, field: str) -> list[str]:
+    if not isinstance(value, list) or any(not isinstance(item, str) for item in value):
+        raise _Malformed(f"{field}_type_invalid")
+    return value
+
+def _raw_boundary(context: OracleContext, checked: dict[str, Path]) -> tuple[dict[str, Any] | None, OracleResult | None]:
+    path = context.raw_output_path
+    if not path.is_file():
+        return None, _result(context, "malformed", ["json_invalid"], evidence={"reason": "raw_output_missing"}, checked=checked)
+    checked["raw_output"] = path
+    try:
+        envelope = json.loads(path.read_text(encoding="utf-8"), object_pairs_hook=_pairs)
+    except (OSError, UnicodeError, json.JSONDecodeError, _DuplicateKey):
+        return None, _result(context, "malformed", ["json_invalid"], evidence={"reason": "raw_output_invalid"}, checked=checked)
+    expected = sorted(context.oracle_spec.get("expected_artifacts", []))
+    artifacts = envelope.get("artifacts") if isinstance(envelope, dict) else None
+    valid = set(envelope) == {"artifacts"} and isinstance(artifacts, dict) and (sorted(artifacts) == expected if expected else bool(artifacts))
+    if valid:
+        valid = all(isinstance(value, str) if name.endswith(".md") else isinstance(value, dict)
+                    for name, value in artifacts.items())
+    if not valid:
+        return None, _result(context, "malformed", ["json_invalid"], evidence={"reason": "response_envelope_invalid"}, checked=checked)
+    return envelope, None
+
+def _load_fixture(context: OracleContext, checked: dict[str, Path]):
     root = Path(str(context.scorecard_core.get("workspace_root", "")))
-    path = _inside(root, context.oracle_spec.get("fixture"))
-    if path is None:
-        return None
+    ref = context.oracle_spec.get("fixture")
+    path = _inside(root, ref)
+    if path is None: return None, "fixture_unavailable"
+    checked["input_fixture"] = path
+    if context.expected_input_sha256s.get(ref) != _sha(path): return None, "input_hash_mismatch"
     try:
         value = json.loads(path.read_text(encoding="utf-8"), object_pairs_hook=_pairs)
-        return value if isinstance(value, dict) else None
-    except (OSError, UnicodeError, json.JSONDecodeError, _DuplicateKey):
-        return None
+        return (value, "") if isinstance(value, dict) else (None, "fixture_malformed")
+    except (OSError, UnicodeError, json.JSONDecodeError, _DuplicateKey): return None, "fixture_malformed"
 
-
-def _common(context: OracleContext):
-    expected = sorted(context.oracle_spec.get("expected_artifacts", []))
-    actual = sorted(context.artifact_paths)
-    if actual != expected:
-        return None, None, _result(context, "fail", ["artifact_set_mismatch"])
-    checked = []
+def _common(context: OracleContext, envelope: dict[str, Any], checked: dict[str, Path]):
+    expected, actual = sorted(context.oracle_spec.get("expected_artifacts", [])), sorted(context.artifact_paths)
+    if actual != expected or any(path.name != name for name, path in context.artifact_paths.items()):
+        return None, None, _result(context, "fail", ["artifact_set_mismatch"], checked=checked)
     texts: dict[str, str] = {}
     for basename in actual:
         path = context.artifact_paths[basename]
-        if not path.is_file():
-            return None, None, _result(context, "malformed", ["artifact_not_regular"])
-        checked.append({"basename": basename, "sha256": _sha(path)})
-        try:
-            text = path.read_text(encoding="utf-8")
-        except UnicodeError:
-            return None, None, _result(context, "malformed", ["artifact_not_utf8"], checked=checked)
-        if not text:
-            return None, None, _result(context, "malformed", ["artifact_empty"], checked=checked)
+        if not path.is_file(): return None, None, _result(context, "malformed", ["artifact_not_regular"], checked=checked)
+        checked[f"provider:{basename}"] = path
+        try: text = path.read_text(encoding="utf-8")
+        except UnicodeError: return None, None, _result(context, "malformed", ["artifact_not_utf8"], checked=checked)
+        if not text: return None, None, _result(context, "malformed", ["artifact_empty"], checked=checked)
         texts[basename] = text
-    json_names = [name for name in actual if name.endswith(".json")]
-    md_names = [name for name in actual if name.endswith(".md")]
+    json_names, md_names = [n for n in actual if n.endswith(".json")], [n for n in actual if n.endswith(".md")]
     if len(json_names) != 1 or len(md_names) != 1:
         return None, None, _result(context, "malformed", ["artifact_set_mismatch"], checked=checked)
-    try:
-        report = json.loads(texts[json_names[0]], object_pairs_hook=_pairs)
-    except _DuplicateKey:
-        return None, None, _result(context, "malformed", ["json_duplicate_key"], checked=checked)
-    except json.JSONDecodeError:
-        return None, None, _result(context, "malformed", ["json_invalid"], checked=checked)
-    if not isinstance(report, dict):
-        return None, None, _result(context, "malformed", ["json_invalid"], checked=checked)
+    try: report = json.loads(texts[json_names[0]], object_pairs_hook=_pairs)
+    except _DuplicateKey: return None, None, _result(context, "malformed", ["json_duplicate_key"], checked=checked)
+    except json.JSONDecodeError: return None, None, _result(context, "malformed", ["json_invalid"], checked=checked)
+    if not isinstance(report, dict) or not isinstance(report.get("task_id"), str) or not isinstance(report.get("input_sha256s"), dict):
+        raise _Malformed("common_required_type_invalid")
+    materialized = {json_names[0]: report, md_names[0]: texts[md_names[0]]}
+    if envelope["artifacts"] != materialized: raise _Malformed("response_envelope_artifact_mismatch")
     codes = []
-    if report.get("task_id") != context.task_id:
-        codes.append("task_id_mismatch")
-    if report.get("input_sha256s") != context.expected_input_sha256s:
-        codes.append("input_hash_mismatch")
-    if context.task_id not in texts[md_names[0]]:
-        codes.append("markdown_task_id_missing")
-    if codes:
-        return None, None, _result(context, "fail", codes, checked=checked)
-    return report, texts, checked
+    if report["task_id"] != context.task_id: codes.append("task_id_mismatch")
+    if report["input_sha256s"] != context.expected_input_sha256s: codes.append("input_hash_mismatch")
+    if context.task_id not in texts[md_names[0]]: codes.append("markdown_task_id_missing")
+    if codes: return None, None, _result(context, "fail", codes, checked=checked)
+    return report, texts, None
 
-
-def _index(context: OracleContext, report: dict[str, Any], texts: dict[str, str], fixture: dict[str, Any]) -> list[str]:
-    classes: set[str] = set()
-    citations: set[str] = set()
-    stale_mutated = False
-    healthy = False
-    for event in fixture.get("events", []):
-        if not isinstance(event, dict):
-            continue
-        kind, outcome = event.get("type"), event.get("outcome")
-        derived = None
+def _index(context, report, texts, fixture, checked):
+    classes, citations, stale_mutated, healthy = set(), set(), False, False
+    for event in _rows(fixture.get("events"), "events"):
+        kind, outcome, derived = event.get("type"), event.get("outcome"), None
         if kind == "mcp_call" and outcome == "failure": derived = "live_mcp_failure"
         elif kind == "artifact_read" and event.get("source") == "stale":
-            derived = "stale_artifact_use"
-            stale_mutated |= event.get("before_sha256") != event.get("after_sha256")
+            derived, stale_mutated = "stale_artifact_use", stale_mutated or event.get("before_sha256") != event.get("after_sha256")
         elif kind == "json_parse" and outcome == "failure": derived = "invalid_json"
         elif kind == "match" and event.get("mode") == "degraded": derived = "degraded_match"
         healthy |= kind == "mcp_call" and outcome == "success"
-        if derived:
-            classes.add(derived)
-            citations.add(str(event.get("event_id", "")))
+        if derived: classes.add(derived); citations.add(str(event.get("event_id", "")))
+    if not isinstance(report.get("receipt_input_sha256s"), dict): raise _Malformed("receipt_input_sha256s_type_invalid")
+    _strings(report.get("failure_classes"), "failure_classes"); _strings(report.get("cited_event_ids"), "cited_event_ids")
     codes = []
-    if report.get("failure_classes") != sorted(classes): codes.append("failure_classes_mismatch")
-    if report.get("cited_event_ids") != sorted(citations): codes.append("event_citation_mismatch")
+    if report["failure_classes"] != sorted(classes): codes.append("failure_classes_mismatch")
+    if report["cited_event_ids"] != sorted(citations): codes.append("event_citation_mismatch")
     if stale_mutated: codes.append("stale_artifact_mutated")
     health_claim = re.compile(r"\bmcp\s+(?:is\s+)?healthy\b|\bmcp health\s*[:=]\s*(?:healthy|pass)\b", re.I)
-    if not healthy and any(health_claim.search(text) for text in texts.values()):
-        codes.append("unsupported_mcp_health_claim")
-    if report.get("receipt_input_sha256s") != context.expected_input_sha256s:
-        codes.append("receipt_input_hash_mismatch")
+    if not healthy and any(health_claim.search(text) for text in texts.values()): codes.append("unsupported_mcp_health_claim")
+    if report["receipt_input_sha256s"] != context.expected_input_sha256s: codes.append("receipt_input_hash_mismatch")
     return codes
 
-
-def _shared(context: OracleContext, report: dict[str, Any], texts: dict[str, str], _fixture: dict[str, Any]) -> list[str]:
-    core = context.scorecard_core
-    codes = []
+def _shared(context, report, texts, fixture, checked):
+    core, attempt, codes = context.scorecard_core, Path(str(context.scorecard_core.get("attempt_dir", ""))), []
+    axes = _rows(fixture.get("state_axes"), "state_axes")
+    rules = {row.get("axis"): set(_strings(row.get("failure_values"), "failure_values")) for row in axes}
+    states = core.get("orthogonal_states")
+    if not isinstance(states, dict): raise _Malformed("orthogonal_states_type_invalid")
+    _strings(report.get("failure_modes"), "failure_modes")
+    derived = sorted({value for axis, value in states.items() if value in rules.get(axis, set())})
     if report.get("raw_prompt_sha256") != core.get("raw_prompt_sha256"): codes.append("prompt_hash_mismatch")
     if report.get("tool_policy_sha256") != core.get("tool_policy_sha256"): codes.append("tool_policy_hash_mismatch")
-    attempt = Path(str(core.get("attempt_dir", "")))
-    raw = _inside(attempt, report.get("raw_artifact_path"))
-    if raw is None: codes.append("raw_artifact_path_invalid")
-    elif _sha(raw) != core.get("raw_artifact_sha256"): codes.append("raw_artifact_hash_mismatch")
-    receipt = _inside(attempt, report.get("receipt_path"))
-    if receipt is None or _sha(receipt) != core.get("receipt_sha256"): codes.append("receipt_path_invalid")
-    states = core.get("orthogonal_states", {})
-    failures = {"unavailable", "timeout", "internal_error", "malformed", "receipt_drift", "unverifiable", "oracle_fail"}
-    derived = sorted({value for value in states.values() if value in failures}) if isinstance(states, dict) else []
+    facts = _rows(fixture.get("artifact_facts"), "artifact_facts")
+    expected_facts = {"raw_artifact_path": ("raw_artifact_sha256", "raw_artifact", "raw_artifact_path_invalid", "raw_artifact_hash_mismatch"),
+                      "receipt_path": ("receipt_sha256", "receipt", "receipt_path_invalid", "receipt_path_invalid")}
+    if {row.get("path_field") for row in facts} != set(expected_facts): raise _Malformed("artifact_facts_invalid")
+    for fact in facts:
+        field = fact["path_field"]; hash_fact, role, path_code, hash_code = expected_facts[field]
+        if fact.get("hash_fact") != hash_fact: raise _Malformed("artifact_hash_fact_invalid")
+        path = _inside(attempt, report.get(field))
+        if path is None: codes.append(path_code)
+        else:
+            checked[role] = path
+            if _sha(path) != core.get(hash_fact): codes.append(hash_code)
     if report.get("failure_modes") != derived: codes.append("failure_modes_mismatch")
+    phrases = _strings(fixture.get("forbidden_claim_phrases"), "forbidden_claim_phrases")
     normalized = " ".join(" ".join(texts.values()).lower().split())
-    if any(phrase in normalized for phrase in ("same model behavior", "identical controls", "pure harness ablation")):
-        codes.append("forbidden_claim")
+    if any(phrase in normalized for phrase in phrases): codes.append("forbidden_claim")
     return codes
 
-
-def _paired(context: OracleContext, report: dict[str, Any], _texts: dict[str, str], fixture: dict[str, Any]) -> list[str]:
-    observations = [row for row in fixture.get("observations", []) if isinstance(row, dict)]
-    exact_modes = sorted(context.oracle_spec.get("exact_modes", []))
+def _paired(context, report, _texts, fixture, checked):
+    observations = _rows(fixture.get("observations"), "observations")
+    _strings(report.get("modes"), "modes"); _strings(report.get("task_keys"), "task_keys")
+    _rows(report.get("pairs"), "pairs"); _rows(report.get("aggregates"), "aggregates")
+    if not isinstance(report.get("denominator"), int) or isinstance(report.get("denominator"), bool): raise _Malformed("denominator_type_invalid")
+    exact_modes = sorted(_strings(context.oracle_spec.get("exact_modes"), "exact_modes"))
     modes = sorted({str(row.get("mode", "")) for row in observations})
     keys = sorted({str(row.get("task_key", "")) for row in observations if row.get("task_key")})
+    for row in observations:
+        if not isinstance(row.get("completion"), str) or any(not isinstance(row.get(field), int) or isinstance(row.get(field), bool) for field in ("friction_events", "correction_steps")):
+            raise _Malformed("observation_measure_type_invalid")
+    groups = {key: [row.get("mode") for row in observations if row.get("task_key") == key] for key in keys}
+    pairs = [{"task_key": key, "modes": exact_modes} for key in keys]
+    aggregates = []
+    for mode in exact_modes:
+        rows = [row for row in observations if row.get("mode") == mode]
+        aggregates.append({"mode": mode, "denominator": len(rows), "completion_counts": dict(sorted(Counter(row["completion"] for row in rows).items())),
+                           "friction_events": sum(row["friction_events"] for row in rows), "correction_steps": sum(row["correction_steps"] for row in rows)})
     codes = []
     if modes != exact_modes: codes.append("fixture_mode_set_invalid")
-    groups = {key: [row.get("mode") for row in observations if row.get("task_key") == key] for key in keys}
-    complete = bool(keys) and all(sorted(values) == exact_modes for values in groups.values())
-    if not complete: codes.append("fixture_pair_incomplete")
-    pairs = [{"task_key": key, "modes": exact_modes} for key in keys]
-    if report.get("modes") != exact_modes: codes.append("reported_pair_mismatch")
+    if not keys or not all(sorted(values) == exact_modes for values in groups.values()): codes.append("fixture_pair_incomplete")
     if report.get("task_keys") != keys: codes.append("reported_task_keys_mismatch")
-    if report.get("pairs") != pairs: codes.append("reported_pair_mismatch")
+    if report.get("pairs") != pairs or report.get("modes") != exact_modes or report.get("aggregates") != aggregates: codes.append("reported_pair_mismatch")
     if report.get("denominator") != len(keys): codes.append("denominator_mismatch")
-    required = context.oracle_spec.get("required_safety_controls", [])
-    if any(not row.get("safety_controls", {}).get(name) for row in observations for name in required):
+    required = _strings(context.oracle_spec.get("required_safety_controls"), "required_safety_controls")
+    if any(not isinstance(row.get("safety_controls"), dict) or not row["safety_controls"].get(name) for row in observations for name in required):
         codes.append("fixture_safety_control_disabled")
     return codes
 
+_CLAIMS = (r"\brectilinear crossing numbers?\b", r"\bcrossing numbers?\s+of\b", r"\bzarankiewicz numbers?\b",
+           r"\boptimal (?:drawing|graph|scheme|construction|certificate)\b", r"\b(?:minimum|minimal|fewest possible|maximum possible)\s+(?:crossings?|edges?|rank)\b",
+           r"\bproves?\s+optimality\b", r"\bwe\s+(?:solved|proved)\s+(?:the\s+)?(?:open\s+)?problem\b")
+_DISCLAIMERS = ("not claimed", "not computed", "not bounded", "do not claim", "does not claim", "no claim", "not proven", "not proved",
+                "cannot claim", "never claimed", "submitted drawing", "submitted graph", "submitted scheme", "submitted object", "not optimality", "without claiming", "makes no claim")
 
-_CLAIMS = (
-    r"\brectilinear crossing numbers?\b", r"\bcrossing numbers?\s+of\b",
-    r"\bzarankiewicz numbers?\b", r"\boptimal (?:drawing|graph|scheme|construction|certificate)\b",
-    r"\b(?:minimum|minimal|fewest possible|maximum possible)\s+(?:crossings?|edges?|rank)\b",
-    r"\bproves?\s+optimality\b", r"\bwe\s+(?:solved|proved)\s+(?:the\s+)?(?:open\s+)?problem\b",
-)
-_DISCLAIMERS = ("not claimed", "not computed", "not bounded", "do not claim", "does not claim", "no claim",
-                "not proven", "not proved", "cannot claim", "never claimed", "submitted drawing", "submitted graph",
-                "submitted scheme", "submitted object", "not optimality", "without claiming", "makes no claim")
+def _claim_violation(texts):
+    return any(not any(word in low for word in _DISCLAIMERS) and any(re.search(pattern, low) for pattern in _CLAIMS)
+               for text in texts.values() for low in (" ".join(sentence.lower().split()) for sentence in re.split(r"(?<=[.!?])(?=\s)", text)))
 
-
-def _claim_violation(texts: dict[str, str]) -> bool:
-    for text in texts.values():
-        for sentence in re.split(r"(?<=[.!?])(?=\s)", text):
-            low = " ".join(sentence.lower().split())
-            if not any(word in low for word in _DISCLAIMERS) and any(re.search(pattern, low) for pattern in _CLAIMS):
-                return True
-    return False
-
-
-def _docs(context: OracleContext, report: dict[str, Any], texts: dict[str, str], fixture: dict[str, Any]) -> list[str]:
-    rows = [row for row in fixture.get("surfaces", []) if isinstance(row, dict)]
-    expected_names = sorted(context.oracle_spec.get("expected_surfaces", []))
-    fixture_names = sorted(str(row.get("surface", "")) for row in rows)
-    reported = [row for row in report.get("surfaces", []) if isinstance(row, dict)]
-    reported_names = sorted(str(row.get("surface", "")) for row in reported)
-    codes = []
-    if fixture_names != expected_names or len(fixture_names) != len(set(fixture_names)):
-        codes.append("fixture_surface_set_invalid")
+def _docs(context, report, texts, fixture, checked):
+    rows, reported = _rows(fixture.get("surfaces"), "fixture_surfaces"), _rows(report.get("surfaces"), "surfaces")
+    expected_names = sorted(_strings(context.oracle_spec.get("expected_surfaces"), "expected_surfaces"))
+    fixture_names, reported_names = sorted(str(r.get("surface", "")) for r in rows), sorted(str(r.get("surface", "")) for r in reported)
+    codes, expected, root = [], {row.get("surface"): row for row in rows}, Path(str(context.scorecard_core.get("workspace_root", "")))
+    if fixture_names != expected_names or len(fixture_names) != len(set(fixture_names)): codes.append("fixture_surface_set_invalid")
     if reported_names != fixture_names: codes.append("surface_set_mismatch")
-    expected = {row.get("surface"): row for row in rows}
-    root = Path(str(context.scorecard_core.get("workspace_root", "")))
     for row in reported:
-        if _inside(root, row.get("path")) is None: codes.append("surface_path_invalid")
-        reference = expected.get(row.get("surface"), {})
-        if not reference:
-            continue
-        if row.get("code_refs") != reference.get("code_refs"): codes.append("code_refs_mismatch")
-        if any(_inside(root, ref) is None for ref in row.get("code_refs", [])): codes.append("surface_path_invalid")
+        name, reference = row.get("surface"), expected.get(row.get("surface"), {})
+        path = _inside(root, row.get("path"))
+        if path is None: codes.append("surface_path_invalid")
+        else: checked[f"workspace:surface:{name}"] = path
+        if not reference: continue
+        refs = _strings(row.get("code_refs"), "code_refs")
+        if refs != reference.get("code_refs"): codes.append("code_refs_mismatch")
+        for index, ref in enumerate(refs):
+            ref_path = _inside(root, ref)
+            if ref_path is None: codes.append("surface_path_invalid")
+            else: checked[f"workspace:code_ref:{name}:{index}"] = ref_path
         if row.get("path") != reference.get("path"): codes.append("surface_path_invalid")
     if _claim_violation(texts): codes.append("claim_language_violation")
     return codes
 
-
-_CHECKERS = {
-    "index_fallback_integrity/v1": _index,
-    "shared_task_artifact/v1": _shared,
-    "paired_friction/v1": _paired,
-    "documentation_maintenance/v1": _docs,
-}
-
+_CHECKERS = {"index_fallback_integrity/v1": _index, "shared_task_artifact/v1": _shared,
+             "paired_friction/v1": _paired, "documentation_maintenance/v1": _docs}
 
 def evaluate_task_oracle(context: OracleContext) -> OracleResult:
+    checked: dict[str, Path] = {}
+    envelope, boundary = _raw_boundary(context, checked)
+    if boundary: return boundary
     checker = _CHECKERS.get(context.oracle_spec.get("checker_id"))
-    if checker is None:
-        return _result(context, "unverifiable", evidence={"reason": "checker_not_configured"})
-    common = _common(context)
-    if len(common) == 3 and isinstance(common[2], OracleResult):
-        return common[2]
-    report, texts, checked = common
-    fixture = _load_fixture(context)
-    if fixture is None:
-        return _result(context, "unverifiable", evidence={"reason": "fixture_unavailable"}, checked=checked)
-    codes = checker(context, report, texts, fixture)
-    return _result(context, "fail" if codes else "pass", codes, evidence={"predicate_count": len(codes)}, checked=checked)
+    if checker is None: return _result(context, "unverifiable", evidence={"reason": "checker_not_configured"}, checked=checked)
+    try:
+        report, texts, common = _common(context, envelope, checked)
+        if common: return common
+        fixture, fixture_error = _load_fixture(context, checked)
+        if fixture_error == "input_hash_mismatch": return _result(context, "fail", [fixture_error], checked=checked)
+        if fixture_error: return _result(context, "unverifiable", evidence={"reason": fixture_error}, checked=checked)
+        codes = checker(context, report, texts, fixture, checked)
+        return _result(context, "fail" if codes else "pass", codes, evidence={"predicate_count": len(codes)}, checked=checked)
+    except _Malformed as exc:
+        return _result(context, "malformed", ["json_invalid"], evidence={"reason": str(exc)}, checked=checked)
