@@ -96,6 +96,8 @@ def _health_probe(profile: dict[str, Any], backend: Any) -> tuple[bool, str, dic
     elif status == 200 and isinstance(obj, dict) and obj.get("models"):
         observed, digest = _ollama_identity(profile, obj)
         detail.update(health_model_ref=observed, ollama_digest=digest)
+        if not digest:
+            return False, "ollama_digest_missing", detail
         return True, "", detail
     if status == 404:
         return False, "wrong_service_or_path", detail

@@ -57,6 +57,41 @@ def test_ollama_identity_strips_string_digest():
     assert evidence == "sha256:abc"
 
 
+def tag_transport(digest):
+    def tagged(method, url, body, timeout):
+        if url.endswith("/api/tags"):
+            model = {"name": "qwen:14b"}
+            if digest != "missing":
+                model["digest"] = digest
+            return 200, {"models": [model]}
+        return transport(method, url, body, timeout)
+    return tagged
+
+
+@pytest.mark.parametrize("digest", [True, "   ", "missing"])
+def test_ollama_report_fails_without_valid_digest(tmp_path, digest):
+    report = build_report(
+        profile_artifact=str(write_profiles(tmp_path, [profile("ollama")])), models=[], backends=[],
+        transport=tag_transport(digest), run_id="digest-run")
+    row = report["rows"][0]
+    assert row["health_ok"] is False and row["generation_attempted"] is False
+    assert row["failure_class"] == "ollama_digest_missing"
+    assert report["summary"]["failed_rows"] > 0
+    assert report["verdict"] != "MODEL_ENDPOINT_GATE_PASS"
+
+
+@pytest.mark.parametrize(("digest", "expected"), [
+    (True, 1), ("   ", 1), ("missing", 1), ("sha256:abc", 0),
+])
+def test_strict_exit_tracks_ollama_digest_gate(tmp_path, monkeypatch, digest, expected):
+    profiles = write_profiles(tmp_path, [profile("ollama")])
+    monkeypatch.setattr(
+        "scripts.run_model_endpoint_gate._backend_for_profile",
+        lambda selected, *, timeout_seconds, transport=None: _backend_for_profile(
+            selected, timeout_seconds=timeout_seconds, transport=tag_transport(digest)))
+    assert main(["--profile-artifact", str(profiles), "--strict-exit"]) == expected
+
+
 def test_backend_for_profile_preserves_defaults():
     serve = _backend_for_profile(profile(), timeout_seconds=12.0)
     ollama = _backend_for_profile(profile("ollama"), timeout_seconds=12.0)
