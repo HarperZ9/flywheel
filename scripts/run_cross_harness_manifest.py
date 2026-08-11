@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+import tempfile
 from pathlib import Path
 from typing import Any
 
@@ -22,8 +23,9 @@ from harness.cross_harness_manifest import (  # noqa: E402
 from harness.file_backed_store import FileBackedHarnessStore  # noqa: E402
 
 
-DEFAULT_TASK_SET = "C:/dev/local-model/benchmarks/agentic-task-set-v1.json"
-DEFAULT_CONTRACT = "C:/dev/local-model/benchmarks/cross-harness-adapter-contract-v1.json"
+ROOT = Path(__file__).resolve().parent.parent
+DEFAULT_TASK_SET = str(ROOT / "benchmarks" / "agentic-task-set-v1.json")
+DEFAULT_CONTRACT = str(ROOT / "benchmarks" / "cross-harness-adapter-contract-v1.json")
 
 
 def write_text(path_text: str, text: str) -> str:
@@ -65,8 +67,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--contract", default=DEFAULT_CONTRACT)
     parser.add_argument("--provider-roles", default="")
     parser.add_argument("--artifact-dir", default=DEFAULT_ARTIFACT_DIR)
-    parser.add_argument("--out", default="C:/tmp/cross_harness_manifest.json")
-    parser.add_argument("--markdown-out", default="C:/tmp/cross_harness_manifest.md")
+    parser.add_argument("--out", default=str(Path(tempfile.gettempdir()) / "cross_harness_manifest.json"))
+    parser.add_argument("--markdown-out", default=str(Path(tempfile.gettempdir()) / "cross_harness_manifest.md"))
     parser.add_argument("--store-root", default="")
     parser.add_argument("--run-id", default="")
     args = parser.parse_args(argv)

@@ -1,0 +1,14 @@
+{
+  "schema": "harness.cross-harness-fixture.documentation-topology/v1",
+  "task_id": "agt-010-documentation-schematic-maintenance",
+  "failure_code_vocabulary": {
+    "common": ["artifact_set_mismatch", "artifact_not_regular", "artifact_not_utf8", "artifact_empty", "json_invalid", "json_duplicate_key", "task_id_mismatch", "input_hash_mismatch", "markdown_task_id_missing"],
+    "task": ["fixture_surface_set_invalid", "surface_set_mismatch", "surface_path_invalid", "code_refs_mismatch", "claim_language_violation"]
+  },
+  "surfaces": [
+    {"surface": "capability_catalog", "path": "project-docs/records/CAPABILITY-CATALOG-2026-07-09.md", "code_refs": ["harness/cross_harness_manifest.py"]},
+    {"surface": "documentation", "path": "README.md", "code_refs": ["harness/lanes.py"]},
+    {"surface": "roadmap", "path": "project-docs/records/ROADMAP-STATUS-2026-07-09.md", "code_refs": ["scripts/run_cross_harness_manifest.py"]},
+    {"surface": "schematic_notes", "path": "project-docs/schematics/closed-loop-integration.graph.json", "code_refs": ["harness/schematic_drift.py"]}
+  ]
+}

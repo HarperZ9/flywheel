@@ -1,9 +1,8 @@
 """Non-executing cross-harness task manifest projection."""
-
 from __future__ import annotations
-
 import hashlib
 import json
+import tempfile
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -11,33 +10,22 @@ from typing import Any
 
 SCHEMA = "harness.cross-harness-manifest/v1"
 SCORECARD_SCHEMA = "harness.cross-harness-task-scorecard/v1"
-DEFAULT_ARTIFACT_DIR = "C:/tmp/cross_harness_runs"
-
+DEFAULT_ARTIFACT_DIR = str(Path(tempfile.gettempdir()) / "cross_harness_runs")
 
 def now_utc() -> str:
     return datetime.now(UTC).isoformat().replace("+00:00", "Z")
-
-
 def sha256_text(text: str) -> str:
     return hashlib.sha256(text.encode("utf-8")).hexdigest()
-
-
 def file_sha256(path: Path) -> str:
     h = hashlib.sha256()
     with path.open("rb") as fh:
         for chunk in iter(lambda: fh.read(1024 * 1024), b""):
             h.update(chunk)
     return h.hexdigest()
-
-
 def load_json(path: Path) -> dict[str, Any]:
     return json.loads(path.read_text(encoding="utf-8-sig"))
-
-
 def split_csv(value: str) -> list[str]:
     return [part.strip() for part in value.split(",") if part.strip()]
-
-
 def provider_roles_from_contract(contract: dict[str, Any]) -> list[str]:
     rows = contract.get("provider_roles") if isinstance(contract.get("provider_roles"), list) else []
     return [
@@ -45,8 +33,6 @@ def provider_roles_from_contract(contract: dict[str, Any]) -> list[str]:
         for row in rows
         if isinstance(row, dict) and row.get("provider_role")
     ]
-
-
 def validate_inputs(task_set: dict[str, Any], contract: dict[str, Any], provider_roles: list[str]) -> None:
     _require(task_set, ["schema", "task_set_id", "tasks"], "task set")
     _require(contract, ["schema", "contract_id", "provider_roles", "scorecard_row_contract"], "contract")
@@ -69,8 +55,6 @@ def validate_inputs(task_set: dict[str, Any], contract: dict[str, Any], provider
             ["id", "lane", "difficulty", "prompt", "required_inputs", "expected_artifacts", "scoring_focus", "must_not"],
             f"task {index}",
         )
-
-
 def build_manifest(
     task_set: dict[str, Any],
     contract: dict[str, Any],
@@ -87,7 +71,7 @@ def build_manifest(
     validate_inputs(task_set, contract, provider_roles)
     provider_specs = _provider_specs(contract, provider_roles)
     task_rows = [
-        _task_row(task_set, contract, task, artifact_dir=artifact_dir)
+        _task_row(task_set, contract, task, artifact_dir=artifact_dir, task_set_path=task_set_path)
         for task in task_set["tasks"]
     ]
     scorecard_rows = [
@@ -148,8 +132,6 @@ def build_manifest(
             "benchmark_execution": False,
         },
     }
-
-
 def render_markdown(manifest: dict[str, Any]) -> str:
     summary = manifest["summary"]
     lines = [
@@ -203,14 +185,10 @@ def render_markdown(manifest: dict[str, Any]) -> str:
     for guard in manifest.get("non_execution_guards", []):
         lines.append(f"- {guard}")
     return "\n".join(lines) + "\n"
-
-
 def _require(obj: dict[str, Any], fields: list[str], label: str) -> None:
     missing = [field for field in fields if field not in obj]
     if missing:
         raise ValueError(f"{label} missing required fields: {', '.join(missing)}")
-
-
 def _provider_specs(contract: dict[str, Any], provider_roles: list[str]) -> dict[str, dict[str, Any]]:
     rows = contract.get("provider_roles") if isinstance(contract.get("provider_roles"), list) else []
     specs = {
@@ -218,6 +196,8 @@ def _provider_specs(contract: dict[str, Any], provider_roles: list[str]) -> dict
             "provider_role": str(row.get("provider_role", "")),
             "harness_id": str(row.get("harness_id", "")),
             "target_model": str(row.get("target_model", "")),
+            "adapter_id": str(row.get("adapter_id", "")),
+            "endpoint_selector": dict(row.get("endpoint_selector", {})) if isinstance(row.get("endpoint_selector"), dict) else {},
             "adapter_state": str(row.get("adapter_state", "")),
             "allowed_modes": [str(item) for item in row.get("allowed_modes", []) if item]
             if isinstance(row.get("allowed_modes"), list)
@@ -230,8 +210,6 @@ def _provider_specs(contract: dict[str, Any], provider_roles: list[str]) -> dict
         if isinstance(row, dict) and row.get("provider_role")
     }
     return {role: specs[role] for role in provider_roles}
-
-
 def _required_metrics(contract: dict[str, Any]) -> list[str]:
     row_contract = contract.get("scorecard_row_contract") if isinstance(contract.get("scorecard_row_contract"), dict) else {}
     return [
@@ -239,9 +217,11 @@ def _required_metrics(contract: dict[str, Any]) -> list[str]:
         for metric in row_contract.get("required_metrics", [])
         if metric
     ]
-
-
 def _prompt_text(task_set: dict[str, Any], contract: dict[str, Any], task: dict[str, Any]) -> str:
+    envelope = {"artifacts": {
+        name: "<markdown string>" if str(name).endswith(".md") else "<JSON object>"
+        for name in task.get("expected_artifacts", [])
+    }}
     parts = [
         f"Task set: {task_set['task_set_id']}",
         f"Task id: {task['id']}",
@@ -266,13 +246,21 @@ def _prompt_text(task_set: dict[str, Any], contract: dict[str, Any], task: dict[
         "",
         "Cross-harness invariants:",
         *[f"- {item}" for item in contract.get("global_invariants", [])],
+        "",
+        "Response envelope (JSON only):",
+        json.dumps(envelope, sort_keys=True, separators=(",", ":")),
     ]
     return "\n".join(parts).strip() + "\n"
-
-
-def _task_row(task_set: dict[str, Any], contract: dict[str, Any], task: dict[str, Any], *, artifact_dir: str) -> dict[str, Any]:
+def _task_row(task_set: dict[str, Any], contract: dict[str, Any], task: dict[str, Any], *, artifact_dir: str, task_set_path: str) -> dict[str, Any]:
     prompt = _prompt_text(task_set, contract, task)
     task_id = str(task["id"])
+    inputs = list(task.get("required_inputs", []))
+    root = Path(task_set_path).resolve().parent.parent if task_set_path else Path.cwd()
+    input_sha256s = {str(item): file_sha256(root / str(item)) for item in inputs if "://" not in str(item) and (root / str(item)).is_file()}
+    artifacts = list(task.get("expected_artifacts", []))
+    oracle_contract = task_set.get("oracle_contract", {})
+    oracle = dict(task.get("oracle", {}))
+    checker = oracle_contract.get("checkers", {}).get(oracle.get("checker_id"), {})
     return {
         "schema": "harness.cross-harness-manifest.task/v1",
         "task_set_id": task_set["task_set_id"],
@@ -282,17 +270,31 @@ def _task_row(task_set: dict[str, Any], contract: dict[str, Any], task: dict[str
         "dataset_lane": "cross_harness_reproducibility",
         "source_task_lane": str(task["lane"]),
         "difficulty": str(task["difficulty"]),
+        "raw_prompt": prompt,
         "raw_prompt_sha256": sha256_text(prompt),
         "raw_prompt_bytes": len(prompt.encode("utf-8")),
         "raw_prompt_preview": prompt[:240],
-        "required_inputs": list(task.get("required_inputs", [])),
-        "expected_artifacts": list(task.get("expected_artifacts", [])),
+        "required_inputs": inputs,
+        "input_sha256s": input_sha256s,
+        "expected_artifacts": artifacts,
+        "oracle": {
+            **checker, **oracle, "expected_artifacts": artifacts,
+            "contract_version": oracle_contract.get("version", ""),
+            "common_predicates": oracle_contract.get("common_predicates", []),
+            "common_failure_codes": oracle_contract.get("common_failure_codes", []),
+        },
+        "response_envelope": {
+            "type": "json_object",
+            "artifacts": {
+                name: "markdown_string" if str(name).endswith(".md") else "json_object"
+                for name in artifacts
+            },
+            "additional_properties": False,
+        },
         "scoring_focus": list(task.get("scoring_focus", [])),
         "must_not": list(task.get("must_not", [])),
         "planned_artifacts": _planned_artifacts(artifact_dir, "dry", task_id),
     }
-
-
 def _scorecard_row(
     task_row: dict[str, Any],
     provider_spec: dict[str, Any],
@@ -328,8 +330,6 @@ def _scorecard_row(
         "allowed_modes": provider_spec.get("allowed_modes", []),
         "required_receipts": provider_spec.get("required_receipts", []),
     }
-
-
 def _planned_artifacts(artifact_dir: str, provider_role: str, task_id: str) -> dict[str, str]:
     base = Path(artifact_dir) / provider_role / task_id
     return {

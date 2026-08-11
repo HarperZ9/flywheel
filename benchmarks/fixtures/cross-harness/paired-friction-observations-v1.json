@@ -1,0 +1,14 @@
+{
+  "schema": "harness.cross-harness-fixture.paired-friction-observations/v1",
+  "task_id": "agt-009-receipts-vs-guardrails-friction",
+  "failure_code_vocabulary": {
+    "common": ["artifact_set_mismatch", "artifact_not_regular", "artifact_not_utf8", "artifact_empty", "json_invalid", "json_duplicate_key", "task_id_mismatch", "input_hash_mismatch", "markdown_task_id_missing"],
+    "task": ["fixture_mode_set_invalid", "fixture_pair_incomplete", "reported_task_keys_mismatch", "reported_pair_mismatch", "denominator_mismatch", "fixture_safety_control_disabled"]
+  },
+  "observations": [
+    {"task_key": "bounded-edit", "mode": "accountable_receipt", "completion": "completed", "friction_events": 1, "correction_steps": 0, "safety_controls": {"live_service_safety": true}},
+    {"task_key": "bounded-edit", "mode": "external_guardrail", "completion": "completed", "friction_events": 2, "correction_steps": 1, "safety_controls": {"live_service_safety": true}},
+    {"task_key": "receipt-recheck", "mode": "accountable_receipt", "completion": "completed", "friction_events": 0, "correction_steps": 0, "safety_controls": {"live_service_safety": true}},
+    {"task_key": "receipt-recheck", "mode": "external_guardrail", "completion": "blocked", "friction_events": 1, "correction_steps": 1, "safety_controls": {"live_service_safety": true}}
+  ]
+}
