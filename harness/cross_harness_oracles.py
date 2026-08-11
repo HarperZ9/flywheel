@@ -73,7 +73,6 @@ def _root(context: OracleContext, field: str) -> Path:
     path = Path(value)
     if not path.is_dir(): raise _Malformed(f"{field}_directory_invalid")
     return path.resolve()
-
 def _digest(value: Any, field: str) -> str:
     if not isinstance(value, str) or re.fullmatch(r"[0-9a-f]{64}", value) is None:
         raise _Malformed(f"{field}_type_invalid")
@@ -110,7 +109,6 @@ def _load_fixture(context: OracleContext, checked):
         value = json.loads(data.decode("utf-8"), object_pairs_hook=_pairs)
         return (value, "") if isinstance(value, dict) else (None, "fixture_malformed")
     except (OSError, UnicodeError, json.JSONDecodeError, _DuplicateKey): return None, "fixture_malformed"
-
 def _common(context: OracleContext, envelope: dict[str, Any], checked, attempt: Path):
     expected, actual = sorted(context.oracle_spec.get("expected_artifacts", [])), sorted(context.artifact_paths)
     mismatch = actual != expected or any(path.name != name for name, path in context.artifact_paths.items())
@@ -162,8 +160,9 @@ def _index(context, report, texts, fixture, checked):
     if report["failure_classes"] != sorted(classes): codes.append("failure_classes_mismatch")
     if report["cited_event_ids"] != sorted(citations): codes.append("event_citation_mismatch")
     if stale_mutated: codes.append("stale_artifact_mutated")
-    health_claim = re.compile(r"\bmcp(?:\s+(?:server|service|endpoint))?\s+(?:(?:is|was)\s+)?(?:healthy|operational|available)\b|\bmcp(?:\s+(?:server|service|endpoint))?\s+(?:health(?:\s+check)?|status)\s*(?:is|was|:|=)?\s*(?:healthy|operational|available|pass(?:ed)?|succeeded|ok)\b|\bmcp(?:\s+(?:server|service|endpoint))?\s+(?:passed|succeeded)\s+(?:its\s+)?health check\b", re.I)
-    if not healthy and any(health_claim.search(clause) for text in texts.values() for clause in _clauses(text)): codes.append("unsupported_mcp_health_claim")
+    status = re.compile(r"\bmcp(?:\s+(?:server|service|endpoint))?\s+(?:(?:is|was|remains|seems)\s+\w+|(?:health(?:\s+check)?|status)\s*(?:(?:is|was)\s+|[:=]\s*)?\w+|(?:passed|succeeded|responded)\b)", re.I)
+    uncertain = re.compile(r"\b(?:not|no|never|unknown|unverified|unchecked|unavailable|unhealthy|failed|failure|disabled|down|indeterminate|cannot|unable)\b", re.I)
+    if not healthy and any(status.search(clause) and not uncertain.search(clause) for text in texts.values() for clause in _clauses(text)): codes.append("unsupported_mcp_health_claim")
     if report["receipt_input_sha256s"] != context.expected_input_sha256s: codes.append("receipt_input_hash_mismatch")
     return codes
 
@@ -242,15 +241,16 @@ def _paired(context, report, _texts, fixture, checked):
 _CLAIMS = (r"\brectilinear crossing numbers?\b", r"\bcrossing numbers?\s+of\b", r"\bzarankiewicz numbers?\b",
            r"\boptimal (?:drawing|graph|scheme|construction|certificate)\b", r"\b(?:minimum|minimal|fewest possible|maximum possible)\s+(?:crossings?|edges?|rank)\b",
            r"\bproves?\s+optimality\b", r"\bwe\s+(?:solved|proved)\s+(?:the\s+)?(?:open\s+)?problem\b")
-_DISCLAIMERS = ("not claimed", "not computed", "not bounded", "do not claim", "does not claim", "no claim", "not proven", "not proved",
-                 "cannot claim", "never claimed", "submitted drawing", "submitted graph", "submitted scheme", "submitted object", "not optimality", "without claiming", "makes no claim")
-_OPEN_DISCLAIMERS = ("did not solve", "not solved", "have not solved", "does not solve", "no solution")
+_NEGATION = r"\b(?:not|never|no|without|cannot|do not|does not|did not|have not)\b"
+_CATEGORIES = ((_CLAIMS[:3], r"\b(?:crossing numbers?|zarankiewicz numbers?)\b"),
+               (_CLAIMS[3:-1], r"\b(?:optimal(?:ity)?|minimum|minimal|fewest possible|maximum possible)\b"),
+               ((_CLAIMS[-1],), r"\b(?:solv\w*|prov\w*|open problem|solution)\b"))
 
-def _clauses(text): return re.split(r"(?<=[.!?])(?=\s)|[;\r\n]+|(?<!\w)[-*#]+\s+|,?\s+\b(?:but|however|yet|although)\b\s+", text, flags=re.I)
+def _clauses(text): return re.split(r"(?<=[.!?])(?=\s)|[,;\r\n]+|(?<!\w)[-*#]+\s+|\s+\b(?:and|but|however|yet|although)\b\s+", text, flags=re.I)
+def _denied(low, category): return re.search(rf"(?:{category}).{{0,32}}{_NEGATION}|{_NEGATION}.{{0,32}}(?:{category})", low)
 def _claim_violation(texts):
-    return any((re.search(_CLAIMS[-1], low) and not any(word in low for word in _OPEN_DISCLAIMERS)) or
-               (not any(word in low for word in _DISCLAIMERS) and any(re.search(pattern, low) for pattern in _CLAIMS[:-1]))
-               for text in texts.values() for low in (" ".join(clause.lower().split()) for clause in _clauses(text)))
+    return any(any(re.search(pattern, low) for pattern in patterns) and not _denied(low, category)
+               for text in texts.values() for low in (" ".join(clause.lower().split()) for clause in _clauses(text)) for patterns, category in _CATEGORIES)
 
 def _docs(context, report, texts, fixture, checked):
     rows, reported = _rows(fixture.get("surfaces"), "fixture_surfaces"), _rows(report.get("surfaces"), "surfaces")

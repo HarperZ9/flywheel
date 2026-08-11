@@ -209,7 +209,8 @@ def _input_hashes(root: Path, inputs: list[Any], task_id: str) -> dict[str, str]
     for item in inputs:
         ref, relative = str(item), Path(str(item))
         if "://" in ref:
-            if task_id in {"agt-001-index-fallback-integrity", "agt-003-codex-flywheel-shared-task", "agt-009-receipts-vs-guardrails-friction", "agt-010-documentation-schematic-maintenance"} or ref.split("://", 1)[0] not in {"workspace", "external", "operator"}: raise ValueError(f"required input typed reference invalid: {ref}")
+            scheme, _, payload = ref.partition("://"); typed = Path(payload)
+            if task_id in {"agt-001-index-fallback-integrity", "agt-003-codex-flywheel-shared-task", "agt-009-receipts-vs-guardrails-friction", "agt-010-documentation-schematic-maintenance"} or scheme not in {"workspace", "external", "operator"} or not payload or payload != payload.strip() or payload.startswith(("/", "\\")) or typed.is_absolute() or typed.drive or ".." in typed.parts or str(typed).replace("\\", "/") != payload: raise ValueError(f"required input typed reference invalid: {ref}")
             continue
         path = (root / relative).resolve()
         if relative.is_absolute() or not path.is_relative_to(root) or not path.is_file():

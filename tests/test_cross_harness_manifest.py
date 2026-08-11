@@ -148,7 +148,8 @@ def test_manifest_loader_rejects_duplicate_keys_and_non_objects(tmp_path, raw):
 
 
 @pytest.mark.parametrize(("ref", "rejected"), [("workspace://facts/a.json", False), ("external://receipt/a.json", False),
-                                                 ("operator://input/a.json", False), ("bogus://a", True), ("file://a", True)])
+                                                 ("operator://input/a.json", False), ("bogus://a", True), ("file://a", True), ("workspace://", True),
+                                                 ("external://   ", True), ("operator://../a", True), ("workspace:///abs", True), ("external://C:/a", True), ("operator://a/../b", True)])
 def test_nonpilot_typed_inputs_use_exact_scheme_allowlist(tmp_path, ref, rejected):
     task_set = _task_set(); task_set["tasks"][0]["required_inputs"] = [ref]
     call = lambda: build_manifest(task_set, _contract(), task_set_path=str(tmp_path / "benchmarks" / "tasks.json"))
