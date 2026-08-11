@@ -7,8 +7,8 @@
   },
   "state_axes": [
     {"axis": "execution_state", "failure_values": ["internal_error", "malformed", "timeout", "unavailable"]},
-    {"axis": "oracle_state", "failure_values": ["oracle_fail", "unverifiable"]},
-    {"axis": "receipt_state", "failure_values": ["receipt_drift"]}
+    {"axis": "oracle_state", "failure_values": ["fail", "unverifiable"]},
+    {"axis": "receipt_state", "failure_values": ["drift"]}
   ],
   "artifact_facts": [
     {"path_field": "raw_artifact_path", "hash_fact": "raw_artifact_sha256"},

@@ -147,6 +147,25 @@ def test_manifest_loader_rejects_duplicate_keys_and_non_objects(tmp_path, raw):
     with pytest.raises(ValueError): load_json(path)
 
 
+@pytest.mark.parametrize(("ref", "rejected"), [("workspace://facts/a.json", False), ("external://receipt/a.json", False),
+                                                 ("operator://input/a.json", False), ("bogus://a", True), ("file://a", True)])
+def test_nonpilot_typed_inputs_use_exact_scheme_allowlist(tmp_path, ref, rejected):
+    task_set = _task_set(); task_set["tasks"][0]["required_inputs"] = [ref]
+    call = lambda: build_manifest(task_set, _contract(), task_set_path=str(tmp_path / "benchmarks" / "tasks.json"))
+    if rejected:
+        with pytest.raises(ValueError, match="required input"): call()
+    else: assert call()["task_rows"][0]["input_sha256s"] == {}
+
+
+@pytest.mark.parametrize("task_id", ["agt-001-index-fallback-integrity", "agt-003-codex-flywheel-shared-task",
+                                      "agt-009-receipts-vs-guardrails-friction", "agt-010-documentation-schematic-maintenance"])
+@pytest.mark.parametrize("ref", ["workspace://a", "external://a", "operator://a"])
+def test_canonical_pilots_reject_typed_inputs(tmp_path, task_id, ref):
+    task_set = _task_set(); task_set["tasks"][0].update(id=task_id, required_inputs=[ref])
+    with pytest.raises(ValueError, match="required input"):
+        build_manifest(task_set, _contract(), task_set_path=str(tmp_path / "benchmarks" / "tasks.json"))
+
+
 def test_frozen_pilot_contract_is_public_clean_and_replayable():
     task_path = ROOT / "benchmarks" / "agentic-task-set-v1.json"
     contract_path = ROOT / "benchmarks" / "cross-harness-adapter-contract-v1.json"

@@ -23,9 +23,9 @@ class OracleResult:
     evidence: dict[str, Any]
     failure_codes: list[str]
     checked_artifacts: list[dict[str, str]]
-
 class _DuplicateKey(ValueError): pass
 class _Malformed(ValueError): pass
+_UNPARSED = object()
 def _pairs(rows: list[tuple[str, Any]]) -> dict[str, Any]:
     out: dict[str, Any] = {}
     for key, value in rows:
@@ -78,7 +78,6 @@ def _digest(value: Any, field: str) -> str:
     if not isinstance(value, str) or re.fullmatch(r"[0-9a-f]{64}", value) is None:
         raise _Malformed(f"{field}_type_invalid")
     return value
-
 def _raw_boundary(context: OracleContext, checked, attempt: Path) -> tuple[dict[str, Any] | None, OracleResult | None]:
     try:
         path = _admit(attempt, context.raw_output_path)
@@ -99,7 +98,6 @@ def _raw_boundary(context: OracleContext, checked, attempt: Path) -> tuple[dict[
     if not valid:
         return None, _result(context, "malformed", ["json_invalid"], evidence={"reason": "response_envelope_invalid"}, checked=checked)
     return envelope, None
-
 def _load_fixture(context: OracleContext, checked):
     root = _root(context, "workspace_root")
     ref = context.oracle_spec.get("fixture")
@@ -129,19 +127,19 @@ def _common(context: OracleContext, envelope: dict[str, Any], checked, attempt: 
     json_names, md_names = [n for n in actual if n.endswith(".json")], [n for n in actual if n.endswith(".md")]
     if len(json_names) != 1 or len(md_names) != 1:
         codes.append("artifact_set_mismatch")
-    report = None
+    report = _UNPARSED
     if len(json_names) == 1 and json_names[0] in texts:
         try: report = json.loads(texts[json_names[0]], object_pairs_hook=_pairs)
         except _DuplicateKey: codes.append("json_duplicate_key")
         except json.JSONDecodeError: codes.append("json_invalid")
-    if report is not None:
+    if report is not _UNPARSED:
         if not isinstance(report, dict) or not isinstance(report.get("task_id"), str) or not isinstance(report.get("input_sha256s"), dict): codes.append("json_invalid")
         else:
             if report["task_id"] != context.task_id: codes.append("task_id_mismatch")
             if report["input_sha256s"] != context.expected_input_sha256s: codes.append("input_hash_mismatch")
     structural = {"artifact_not_regular", "artifact_not_utf8", "artifact_empty", "json_invalid", "json_duplicate_key"}
     if len(md_names) == 1 and texts.get(md_names[0]) and context.task_id not in texts[md_names[0]]: codes.append("markdown_task_id_missing")
-    if not mismatch and not structural & set(codes) and report is not None and all(name in texts for name in md_names):
+    if not mismatch and not structural & set(codes) and report is not _UNPARSED and all(name in texts for name in md_names):
         materialized = {json_names[0]: report, md_names[0]: texts[md_names[0]]}
         if envelope["artifacts"] != materialized: codes.append("json_invalid")
     if codes: return None, None, _result(context, "malformed" if structural & set(codes) else "fail", codes, checked=checked)
@@ -164,14 +162,14 @@ def _index(context, report, texts, fixture, checked):
     if report["failure_classes"] != sorted(classes): codes.append("failure_classes_mismatch")
     if report["cited_event_ids"] != sorted(citations): codes.append("event_citation_mismatch")
     if stale_mutated: codes.append("stale_artifact_mutated")
-    health_claim = re.compile(r"\bmcp(?:\s+(?:server|service))?\s+(?:is\s+)?(?:healthy|operational|available)\b|\bmcp\s+(?:health(?:\s+check)?|status)\s*(?:is|:|=)?\s*(?:healthy|operational|available|pass(?:ed)?|succeeded|ok)\b", re.I)
+    health_claim = re.compile(r"\bmcp(?:\s+(?:server|service|endpoint))?\s+(?:(?:is|was)\s+)?(?:healthy|operational|available)\b|\bmcp(?:\s+(?:server|service|endpoint))?\s+(?:health(?:\s+check)?|status)\s*(?:is|was|:|=)?\s*(?:healthy|operational|available|pass(?:ed)?|succeeded|ok)\b|\bmcp(?:\s+(?:server|service|endpoint))?\s+(?:passed|succeeded)\s+(?:its\s+)?health check\b", re.I)
     if not healthy and any(health_claim.search(clause) for text in texts.values() for clause in _clauses(text)): codes.append("unsupported_mcp_health_claim")
     if report["receipt_input_sha256s"] != context.expected_input_sha256s: codes.append("receipt_input_hash_mismatch")
     return codes
 
-_STATE_VALUES = {"execution_state": {"completed", "internal_error", "malformed", "timeout", "unavailable"},
-                 "oracle_state": {"not_run", "oracle_fail", "pass", "unverifiable"},
-                 "receipt_state": {"not_run", "receipt_drift", "valid"}}
+_STATE_VALUES = {"execution_state": {"not_started", "unavailable", "launched", "returned", "timeout", "malformed", "internal_error"},
+                 "oracle_state": {"not_run", "pass", "fail", "unverifiable"},
+                 "receipt_state": {"not_emitted", "verified", "drift"}}
 
 def _shared(context, report, texts, fixture, checked):
     core, attempt, codes = context.scorecard_core, _root(context, "attempt_dir"), []
@@ -246,10 +244,12 @@ _CLAIMS = (r"\brectilinear crossing numbers?\b", r"\bcrossing numbers?\s+of\b", 
            r"\bproves?\s+optimality\b", r"\bwe\s+(?:solved|proved)\s+(?:the\s+)?(?:open\s+)?problem\b")
 _DISCLAIMERS = ("not claimed", "not computed", "not bounded", "do not claim", "does not claim", "no claim", "not proven", "not proved",
                  "cannot claim", "never claimed", "submitted drawing", "submitted graph", "submitted scheme", "submitted object", "not optimality", "without claiming", "makes no claim")
+_OPEN_DISCLAIMERS = ("did not solve", "not solved", "have not solved", "does not solve", "no solution")
 
-def _clauses(text): return re.split(r"(?<=[.!?])(?=\s)|[\r\n]+|(?<!\w)[-*#]+\s+", text)
+def _clauses(text): return re.split(r"(?<=[.!?])(?=\s)|[;\r\n]+|(?<!\w)[-*#]+\s+|,?\s+\b(?:but|however|yet|although)\b\s+", text, flags=re.I)
 def _claim_violation(texts):
-    return any(not any(word in low for word in _DISCLAIMERS) and any(re.search(pattern, low) for pattern in _CLAIMS)
+    return any((re.search(_CLAIMS[-1], low) and not any(word in low for word in _OPEN_DISCLAIMERS)) or
+               (not any(word in low for word in _DISCLAIMERS) and any(re.search(pattern, low) for pattern in _CLAIMS[:-1]))
                for text in texts.values() for low in (" ".join(clause.lower().split()) for clause in _clauses(text)))
 
 def _docs(context, report, texts, fixture, checked):

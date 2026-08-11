@@ -25,8 +25,7 @@ def load_json(path: Path) -> dict[str, Any]:
 def split_csv(value: str) -> list[str]: return [part.strip() for part in value.split(",") if part.strip()]
 def provider_roles_from_contract(contract: dict[str, Any]) -> list[str]:
     rows = contract.get("provider_roles") if isinstance(contract.get("provider_roles"), list) else []
-    return [str(row.get("provider_role", "")) for row in rows
-            if isinstance(row, dict) and row.get("provider_role")]
+    return [str(row.get("provider_role", "")) for row in rows if isinstance(row, dict) and row.get("provider_role")]
 def validate_inputs(task_set: dict[str, Any], contract: dict[str, Any], provider_roles: list[str]) -> None:
     _require(task_set, ["schema", "task_set_id", "tasks"], "task set")
     _require(contract, ["schema", "contract_id", "provider_roles", "scorecard_row_contract"], "contract")
@@ -64,10 +63,8 @@ def build_manifest(
     provider_roles = provider_roles or provider_roles_from_contract(contract)
     validate_inputs(task_set, contract, provider_roles)
     provider_specs = _provider_specs(contract, provider_roles)
-    task_rows = [
-        _task_row(task_set, contract, task, artifact_dir=artifact_dir, task_set_path=task_set_path)
-        for task in task_set["tasks"]
-    ]
+    task_rows = [_task_row(task_set, contract, task, artifact_dir=artifact_dir, task_set_path=task_set_path)
+                 for task in task_set["tasks"]]
     scorecard_rows = [
         _scorecard_row(task_row, provider_specs[provider_role], provider_role=provider_role, artifact_dir=artifact_dir)
         for provider_role in provider_roles
@@ -207,11 +204,13 @@ def _provider_specs(contract: dict[str, Any], provider_roles: list[str]) -> dict
 def _required_metrics(contract: dict[str, Any]) -> list[str]:
     row_contract = contract.get("scorecard_row_contract") if isinstance(contract.get("scorecard_row_contract"), dict) else {}
     return [str(metric) for metric in row_contract.get("required_metrics", []) if metric]
-def _input_hashes(root: Path, inputs: list[Any]) -> dict[str, str]:
+def _input_hashes(root: Path, inputs: list[Any], task_id: str) -> dict[str, str]:
     hashes, root = {}, root.resolve()
     for item in inputs:
         ref, relative = str(item), Path(str(item))
-        if "://" in ref: continue
+        if "://" in ref:
+            if task_id in {"agt-001-index-fallback-integrity", "agt-003-codex-flywheel-shared-task", "agt-009-receipts-vs-guardrails-friction", "agt-010-documentation-schematic-maintenance"} or ref.split("://", 1)[0] not in {"workspace", "external", "operator"}: raise ValueError(f"required input typed reference invalid: {ref}")
+            continue
         path = (root / relative).resolve()
         if relative.is_absolute() or not path.is_relative_to(root) or not path.is_file():
             raise ValueError(f"required input is not a repo-relative file: {ref}")
@@ -256,7 +255,7 @@ def _task_row(task_set: dict[str, Any], contract: dict[str, Any], task: dict[str
     task_id = str(task["id"])
     inputs = list(task.get("required_inputs", []))
     root = Path(task_set_path).resolve().parent.parent if task_set_path else Path.cwd()
-    input_sha256s = _input_hashes(root, inputs)
+    input_sha256s = _input_hashes(root, inputs, task_id)
     artifacts = list(task.get("expected_artifacts", []))
     oracle_contract = task_set.get("oracle_contract", {})
     oracle = dict(task.get("oracle", {}))
