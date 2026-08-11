@@ -1,106 +1,203 @@
+import hashlib
 import json
+from datetime import UTC, datetime, timedelta
+
+import pytest
 
 from harness.adapter_runtime_matrix import build_matrix, render_markdown
+from scripts.run_adapter_runtime_matrix import main as matrix_main
+
+
+NOW = datetime(2026, 8, 11, 12, 0, tzinfo=UTC)
+
+
+def canonical_sha256(value):
+    body = json.dumps(value, ensure_ascii=False, separators=(",", ":"), sort_keys=True)
+    return hashlib.sha256(body.encode("utf-8")).hexdigest()
 
 
 def contract_fixture():
-    return {
-        "schema": "harness.cross-harness-adapter-contract/v1",
-        "provider_roles": [
-            {
-                "provider_role": "codex_harness",
-                "harness_id": "codex",
-                "target_model": "5.3-Codex-Spark",
-                "adapter_state": "contract_only",
-                "allowed_modes": ["manifest_only", "focused_run_after_approval"],
-                "required_receipts": ["raw_prompt", "raw_output"],
-            },
-            {
-                "provider_role": "claude_code",
-                "harness_id": "claude_code",
-                "target_model": "configured_by_operator",
-                "adapter_state": "needs_discovery",
-                "allowed_modes": ["manifest_only", "focused_run_after_approval"],
-                "required_receipts": ["raw_prompt", "raw_output"],
-            },
-            {
-                "provider_role": "local_14b",
-                "harness_id": "local_endpoint",
-                "target_model": "14B",
-                "adapter_state": "needs_endpoint_profile_and_gate",
-                "allowed_modes": ["manifest_only", "endpoint_profile", "focused_run_after_approval"],
-                "required_receipts": ["endpoint_profile", "endpoint_gate"],
-            },
-        ],
+    def row(role, harness, model, state="contract_only", modes=None):
+        return {
+            "provider_role": role, "harness_id": harness, "target_model": model,
+            "adapter_state": state,
+            "allowed_modes": modes or ["manifest_only", "focused_run_after_approval"],
+            "required_receipts": [],
+        }
+    return {"provider_roles": [
+        row("codex_harness", "codex", "5.3-Codex-Spark"),
+        row("flywheel_harness", "flywheel", "5.3-Codex-Spark"),
+        row("local_14b", "local_endpoint", "14B", "needs_endpoint_profile_and_gate"),
+        row("dry", "dry_null", "none", modes=["manifest_only"]),
+    ]}
+
+
+def profile_fixture(*, backend="serve"):
+    profile = {
+        "profile_id": f"{backend}-14b", "model": "14B", "model_key": "14b",
+        "backend": backend, "provider_role": "flywheel", "root_exists": True,
+        "supports_agentic_workflow": True,
+        "model_ref": "serve:expected" if backend == "serve" else "ollama:qwen:14b",
     }
+    if backend == "ollama":
+        profile["selectors"] = ["qwen:14b"]
+    return {"profiles": [profile]}
 
 
-def endpoint_profiles_fixture():
-    return {
-        "schema": "harness.model-endpoint-profiles/v1",
-        "profiles": [
-            {
-                "profile_id": "serve-14b",
-                "model": "14B",
-                "backend": "serve",
-                "provider_role": "flywheel",
-                "root_exists": True,
-                "supports_agentic_workflow": True,
-                "live_probed": False,
-            }
-        ],
-    }
+def auth_fixture(*, configured=True):
+    return {"lanes": [{
+        "id": "codex_subscription", "provider": "codex", "mode": "plan",
+        "kind": "subscription_cli", "configured": configured,
+        "evidence": {"path": "operator://codex-cli", "found": configured},
+    }]}
 
 
-def auth_fixture():
-    return {
-        "schema": "harness.endpoint-auth-status/v1",
-        "lanes": [
-            {"id": "codex_subscription", "provider": "codex", "mode": "plan", "kind": "subscription_cli", "configured": True},
-            {"id": "claude_subscription", "provider": "claude", "mode": "plan", "kind": "subscription_cli", "configured": False},
-        ],
-    }
+def gate_fixture(profile, *, observed_at=None, run_id="gate-run"):
+    return {"rows": [{
+        "selected_profile_id": profile["profile_id"], "profile_sha256": canonical_sha256(profile),
+        "model": profile["model"], "backend": profile["backend"],
+        "expected_model_ref": profile["model_ref"], "observed_model_ref": profile["model_ref"],
+        "health_ok": True, "generation_ok": True, "failure_class": "",
+        "ollama_digest": "sha256:abc" if profile["backend"] == "ollama" else "",
+        "run_id": run_id, "observed_at": observed_at or NOW.isoformat().replace("+00:00", "Z"),
+    }]}
 
 
-def test_build_matrix_joins_contract_endpoint_profiles_and_auth_status():
-    matrix = build_matrix(
-        contract_fixture(),
-        contract_path="contract.json",
-        contract_sha256="abc123",
-        endpoint_profiles=endpoint_profiles_fixture(),
-        endpoint_auth_status=auth_fixture(),
-        run_id="run_123",
+def matrix(*, profiles=None, gate=None, auth=None, now=NOW, expected_run="gate-run", max_age=900):
+    return build_matrix(
+        contract_fixture(), contract_path="contract.json", contract_sha256="contract-hash",
+        endpoint_profiles=profiles or profile_fixture(), endpoint_gate=gate,
+        endpoint_gate_path="gate.json" if gate else "", endpoint_gate_sha256="gate-hash" if gate else "",
+        endpoint_auth_status=auth or auth_fixture(), expected_gate_run_id=expected_run,
+        now=now, max_age_seconds=max_age, run_id="matrix-run",
     )
 
-    assert matrix["schema"] == "harness.adapter-runtime-matrix/v1"
-    assert matrix["summary"]["runtime_rows"] == 3
-    assert matrix["summary"]["provider_execution"] is False
-    assert matrix["summary"]["endpoint_probe"] is False
-    assert matrix["summary"]["model_weight_read"] is False
-    assert matrix["summary"]["token_store_read"] is False
-    codex = [row for row in matrix["runtime_rows"] if row["provider_role"] == "codex_harness"][0]
-    local = [row for row in matrix["runtime_rows"] if row["provider_role"] == "local_14b"][0]
-    claude = [row for row in matrix["runtime_rows"] if row["provider_role"] == "claude_code"][0]
-    assert codex["auth_ready"] is True
-    assert local["endpoint_profile_ready"] is True
-    assert "endpoint_gate" in local["blocking_gates"]
-    assert "adapter_discovery" in claude["blocking_gates"]
-    assert "account_auth" in claude["blocking_gates"]
-    json.dumps(matrix)
+
+def local_row(result):
+    return next(row for row in result["runtime_rows"] if row["provider_role"] == "local_14b")
 
 
-def test_render_markdown_lists_roles_and_non_execution_guards():
-    matrix = build_matrix(
-        contract_fixture(),
-        contract_path="contract.json",
-        contract_sha256="abc123",
-        endpoint_profiles=endpoint_profiles_fixture(),
-        endpoint_auth_status=auth_fixture(),
-    )
+def test_exact_fresh_endpoint_gate_allows_local_focused_run():
+    profiles = profile_fixture()
+    row = local_row(matrix(profiles=profiles, gate=gate_fixture(profiles["profiles"][0])))
 
-    markdown = render_markdown(matrix)
+    assert row["endpoint_gate_ready"] is True
+    assert row["focused_run_ready"] is True
+    assert row["blocking_gates"] == []
+    assert row["endpoint_gate_matches"] == [{
+        "selected_profile_id": "serve-14b", "profile_sha256": canonical_sha256(profiles["profiles"][0]),
+        "model": "14B", "backend": "serve", "expected_model_ref": "serve:expected",
+        "observed_model_ref": "serve:expected", "health_ok": True, "generation_ok": True,
+        "failure_class": "", "ollama_digest": "", "run_id": "gate-run",
+        "observed_at": "2026-08-11T12:00:00Z",
+    }]
 
-    assert "# Adapter runtime matrix" in markdown
-    assert "codex_harness" in markdown
-    assert "local_14b" in markdown
-    assert "must not call Codex" in markdown
+
+@pytest.mark.parametrize(("mutate", "code"), [
+    (lambda gate, profile: gate.update(rows=[]), "endpoint_gate_missing"),
+    (lambda gate, profile: gate["rows"][0].update(health_ok=False, failure_class="endpoint_unavailable"), "endpoint_gate_failed"),
+    (lambda gate, profile: gate["rows"][0].update(model="32B"), "endpoint_gate_model_mismatch"),
+    (lambda gate, profile: gate["rows"][0].update(model="14b"), "endpoint_gate_model_mismatch"),
+    (lambda gate, profile: gate["rows"][0].update(backend="ollama"), "endpoint_gate_backend_mismatch"),
+    (lambda gate, profile: gate["rows"][0].update(backend="Serve"), "endpoint_gate_backend_mismatch"),
+    (lambda gate, profile: gate["rows"][0].update(profile_sha256="bad"), "endpoint_gate_profile_hash_mismatch"),
+    (lambda gate, profile: gate["rows"][0].update(observed_model_ref="serve:other"), "endpoint_gate_observed_ref_mismatch"),
+])
+def test_endpoint_identity_or_probe_mismatch_blocks_local_run(mutate, code):
+    profiles = profile_fixture()
+    gate = gate_fixture(profiles["profiles"][0])
+    mutate(gate, profiles["profiles"][0])
+
+    row = local_row(matrix(profiles=profiles, gate=gate))
+
+    assert row["endpoint_gate_ready"] is False
+    assert row["focused_run_ready"] is False
+    assert row["blocking_gates"] == [code]
+
+
+def test_ollama_gate_requires_digest():
+    profiles = profile_fixture(backend="ollama")
+    gate = gate_fixture(profiles["profiles"][0])
+    gate["rows"][0]["ollama_digest"] = ""
+
+    row = local_row(matrix(profiles=profiles, gate=gate))
+
+    assert row["blocking_gates"] == ["endpoint_gate_ollama_digest_missing"]
+
+
+@pytest.mark.parametrize(("observed_at", "expected_run", "code"), [
+    (None, "gate-run", "endpoint_gate_timestamp_missing"),
+    ("not-a-time", "gate-run", "endpoint_gate_timestamp_invalid"),
+    ((NOW + timedelta(seconds=31)).isoformat(), "gate-run", "endpoint_gate_from_future"),
+    ((NOW - timedelta(seconds=901)).isoformat(), "gate-run", "endpoint_gate_stale"),
+    (NOW.isoformat(), "different-run", "endpoint_gate_run_mismatch"),
+])
+def test_gate_freshness_and_run_identity_are_exact(observed_at, expected_run, code):
+    profile = profile_fixture()["profiles"][0]
+    gate = gate_fixture(profile)
+    gate["rows"][0]["observed_at"] = observed_at
+
+    row = local_row(matrix(gate=gate, expected_run=expected_run))
+
+    assert row["blocking_gates"] == [code]
+
+
+@pytest.mark.parametrize("offset", [-30, 900])
+def test_gate_freshness_boundaries_are_inclusive(offset):
+    profile = profile_fixture()["profiles"][0]
+    gate = gate_fixture(profile, observed_at=(NOW - timedelta(seconds=offset)).isoformat())
+    assert local_row(matrix(gate=gate))["endpoint_gate_ready"] is True
+
+
+def test_empty_expected_and_observed_run_ids_do_not_match():
+    profile = profile_fixture()["profiles"][0]
+    gate = gate_fixture(profile, run_id="")
+    assert local_row(matrix(gate=gate, expected_run=""))["blocking_gates"] == ["endpoint_gate_run_mismatch"]
+
+
+def test_both_spark_roles_require_codex_cli_presence_only():
+    result = matrix(gate=None, auth=auth_fixture(configured=False))
+    spark = [row for row in result["runtime_rows"] if row["provider_role"] in {"codex_harness", "flywheel_harness"}]
+
+    assert all(row["blocking_gates"] == ["account_auth"] for row in spark)
+    assert all(row["auth_matches"][0]["evidence_basis"] == "cli_presence_only" for row in spark)
+    assert all("path" not in row["auth_matches"][0] for row in spark)
+
+
+def test_manifest_mode_alone_never_implies_focused_readiness():
+    dry = next(row for row in matrix()["runtime_rows"] if row["provider_role"] == "dry")
+    assert dry["manifest_ready"] is True
+    assert dry["focused_run_ready"] is False
+
+
+def test_matrix_records_gate_metadata_and_renders_guards():
+    result = matrix(gate=gate_fixture(profile_fixture()["profiles"][0]))
+    assert result["endpoint_gate_path"] == "gate.json"
+    assert result["endpoint_gate_sha256"] == "gate-hash"
+    assert result["expected_gate_run_id"] == "gate-run"
+    assert result["max_age_seconds"] == 900
+    assert "must not call Codex" in render_markdown(result)
+
+
+def test_metadata_cli_reads_gate_and_records_path_hash_run_and_age(tmp_path):
+    contract_path = tmp_path / "contract.json"
+    profiles_path = tmp_path / "profiles.json"
+    gate_path = tmp_path / "gate.json"
+    out = tmp_path / "matrix.json"
+    profiles = profile_fixture()
+    contract_path.write_text(json.dumps(contract_fixture()), encoding="utf-8")
+    profiles_path.write_text(json.dumps(profiles), encoding="utf-8")
+    gate_path.write_text(json.dumps(gate_fixture(profiles["profiles"][0], observed_at=datetime.now(UTC).isoformat())), encoding="utf-8")
+
+    assert matrix_main([
+        "--contract", str(contract_path), "--endpoint-profiles", str(profiles_path),
+        "--endpoint-gate", str(gate_path), "--endpoint-gate-run-id", "gate-run",
+        "--endpoint-gate-max-age-seconds", "600", "--out", str(out), "--markdown-out", "",
+    ]) == 0
+    result = json.loads(out.read_text(encoding="utf-8"))
+    assert result["endpoint_gate_path"] == str(gate_path)
+    assert result["endpoint_gate_sha256"] == hashlib.sha256(gate_path.read_bytes()).hexdigest()
+    assert result["expected_gate_run_id"] == "gate-run"
+    assert result["max_age_seconds"] == 600
+    assert result["summary"]["endpoint_probe"] is False
+    assert result["summary"]["token_store_read"] is False
