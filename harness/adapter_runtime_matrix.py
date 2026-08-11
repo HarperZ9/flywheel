@@ -157,8 +157,8 @@ def _profile_matches(role: str, target: str, data: dict[str, Any]) -> list[dict[
         "profile_id": item.get("profile_id", ""), "model": item.get("model", ""),
         "backend": item.get("backend", ""), "provider_role": item.get("provider_role", ""),
         "model_ref": item.get("model_ref", ""), "profile_sha256": _canonical_sha256(item),
-        "root_exists": bool(item.get("root_exists")),
-        "supports_agentic_workflow": bool(item.get("supports_agentic_workflow")),
+        "root_exists": item.get("root_exists") is True,
+        "supports_agentic_workflow": item.get("supports_agentic_workflow") is True,
         "live_probed": bool(item.get("live_probed")),
     } for item in rows if isinstance(item, dict) and str(item.get("model", "")).lower() == wanted.lower()]
 
@@ -175,7 +175,7 @@ def _auth_matches(role: str, data: dict[str, Any]) -> list[dict[str, Any]]:
     return [{
         "lane_id": lane.get("id", ""), "provider": lane.get("provider", ""),
         "mode": lane.get("mode", ""), "kind": lane.get("kind", ""),
-        "configured": bool(lane.get("configured")), "evidence_basis": "cli_presence_only",
+        "configured": lane.get("configured") is True, "evidence_basis": "cli_presence_only",
     } for lane in lanes if isinstance(lane, dict) and lane.get("provider") == provider and lane.get("kind") == "subscription_cli"]
 
 
@@ -218,15 +218,23 @@ def _gate_failure(gate: dict[str, Any], profile: dict[str, Any], run_id: str, no
 
 
 def _endpoint_gate_result(profiles, data, run_id, now, max_age):
+    if data.get("schema") != "harness.model-endpoint-gate/v1":
+        return [], "endpoint_gate_schema_mismatch"
+    if not run_id or data.get("run_id") != run_id:
+        return [], "endpoint_gate_run_mismatch"
     gates = data.get("rows") if isinstance(data.get("rows"), list) else []
     if not gates:
         return [], "endpoint_gate_missing"
     failures = []
     sanitized = []
+    matched = False
     for profile in profiles:
         candidates = [gate for gate in gates if isinstance(gate, dict) and gate.get("selected_profile_id") == profile["profile_id"]]
+        if len(candidates) > 1:
+            return [], "endpoint_gate_duplicate_profile"
         if not candidates:
-            candidates = [gate for gate in gates if isinstance(gate, dict)]
+            continue
+        matched = True
         for gate in candidates:
             clean = {field: gate.get(field, "") for field in GATE_FIELDS}
             sanitized.append(clean)
@@ -234,4 +242,6 @@ def _endpoint_gate_result(profiles, data, run_id, now, max_age):
             if not code:
                 return [clean], ""
             failures.append(code)
+    if not matched:
+        return [], "endpoint_gate_profile_mismatch"
     return sanitized, failures[0] if failures else "endpoint_gate_missing"

@@ -133,3 +133,24 @@ def test_gate_main_writes_run_identity(tmp_path):
 def test_gate_main_strict_exit_rejects_failure(tmp_path):
     profiles = write_profiles(tmp_path, [profile("unsupported")])
     assert main(["--profile-artifact", str(profiles), "--strict-exit"]) == 1
+
+
+@pytest.mark.parametrize(("rows", "models"), [([], []), ([profile()], ["32B"])])
+def test_zero_selected_profiles_is_an_explicit_failed_report(tmp_path, rows, models):
+    report = build_report(
+        profile_artifact=str(write_profiles(tmp_path, rows)), models=models, backends=[],
+        transport=transport, run_id="empty-run",
+    )
+    assert report["summary"]["profiles_selected"] == 0
+    assert report["summary"]["failed_rows"] == 1
+    assert report["failure_class"] == "no_profiles_selected"
+    assert report["verdict"] == "MODEL_ENDPOINT_GATE_FAIL"
+
+
+@pytest.mark.parametrize(("rows", "extra"), [
+    ([], []),
+    ([profile()], ["--models", "32B"]),
+])
+def test_strict_exit_rejects_zero_selected_profiles(tmp_path, rows, extra):
+    profiles = write_profiles(tmp_path, rows)
+    assert main(["--profile-artifact", str(profiles), "--strict-exit", *extra]) == 1

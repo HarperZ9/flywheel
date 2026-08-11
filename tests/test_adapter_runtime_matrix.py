@@ -53,7 +53,7 @@ def auth_fixture(*, configured=True):
 
 
 def gate_fixture(profile, *, observed_at=None, run_id="gate-run"):
-    return {"rows": [{
+    return {"schema": "harness.model-endpoint-gate/v1", "run_id": run_id, "rows": [{
         "selected_profile_id": profile["profile_id"], "profile_sha256": canonical_sha256(profile),
         "model": profile["model"], "backend": profile["backend"],
         "expected_model_ref": profile["model_ref"], "observed_model_ref": profile["model_ref"],
@@ -160,6 +160,55 @@ def test_malformed_probe_verdict_fields_fail_closed(field, value):
     gate = gate_fixture(profile)
     gate["rows"][0][field] = value
     assert local_row(matrix(gate=gate))["blocking_gates"] == ["endpoint_gate_failed"]
+
+
+@pytest.mark.parametrize("field", ["root_exists", "supports_agentic_workflow"])
+def test_string_false_profile_readiness_fields_block_local_run(field):
+    profiles = profile_fixture()
+    profiles["profiles"][0][field] = "false"
+    gate = gate_fixture(profiles["profiles"][0])
+    row = local_row(matrix(profiles=profiles, gate=gate))
+    assert row["endpoint_profile_ready"] is False
+    assert row["blocking_gates"] == ["endpoint_profile"]
+
+
+def test_string_false_auth_configured_blocks_both_spark_roles():
+    auth = auth_fixture()
+    auth["lanes"][0]["configured"] = "false"
+    spark = [row for row in matrix(auth=auth)["runtime_rows"]
+             if row["provider_role"] in {"codex_harness", "flywheel_harness"}]
+    assert all(row["auth_ready"] is False for row in spark)
+    assert all(row["blocking_gates"] == ["account_auth"] for row in spark)
+
+
+@pytest.mark.parametrize(("mutate", "code"), [
+    (lambda gate: gate.update(schema="wrong"), "endpoint_gate_schema_mismatch"),
+    (lambda gate: gate.update(run_id="other"), "endpoint_gate_run_mismatch"),
+    (lambda gate: gate["rows"][0].update(run_id="other"), "endpoint_gate_run_mismatch"),
+])
+def test_gate_envelope_and_row_run_identity_are_required(mutate, code):
+    profile = profile_fixture()["profiles"][0]
+    gate = gate_fixture(profile)
+    mutate(gate)
+    assert local_row(matrix(gate=gate))["blocking_gates"] == [code]
+
+
+def test_unrelated_gate_row_is_not_exposed_as_a_profile_match():
+    profile = profile_fixture()["profiles"][0]
+    gate = gate_fixture(profile)
+    gate["rows"][0]["selected_profile_id"] = "other-profile"
+    row = local_row(matrix(gate=gate))
+    assert row["blocking_gates"] == ["endpoint_gate_profile_mismatch"]
+    assert row["endpoint_gate_matches"] == []
+
+
+def test_duplicate_rows_for_selected_profile_fail_deterministically():
+    profile = profile_fixture()["profiles"][0]
+    gate = gate_fixture(profile)
+    gate["rows"].append(dict(gate["rows"][0]))
+    row = local_row(matrix(gate=gate))
+    assert row["blocking_gates"] == ["endpoint_gate_duplicate_profile"]
+    assert row["endpoint_gate_matches"] == []
 
 
 @pytest.mark.parametrize("offset", [-30, 900])

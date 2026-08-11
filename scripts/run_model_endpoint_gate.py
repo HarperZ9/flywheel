@@ -176,15 +176,20 @@ def build_report(
                 and (not wanted_backends or str(profile.get("backend", "")).lower() in wanted_backends)]
     rows = [probe_profile(profile, prompt=prompt, timeout_seconds=timeout_seconds, max_tokens=max_tokens,
                           seed=seed, run_id=run_id, transport=transport) for profile in selected]
+    failed_rows = sum(bool(row.get("failure_class")) for row in rows)
+    selection_failure = not selected
+    verdict = "MODEL_ENDPOINT_GATE_FAIL" if selection_failure else (
+        "MODEL_ENDPOINT_GATE_PARTIAL" if failed_rows else "MODEL_ENDPOINT_GATE_PASS")
     return {
         "schema": "harness.model-endpoint-gate/v1", "timestamp_utc": now_utc(), "run_id": run_id,
+        "verdict": verdict, "failure_class": "no_profiles_selected" if selection_failure else "",
         "profile_artifact": profile_artifact, "prompt_sha256": hashlib.sha256(prompt.encode("utf-8")).hexdigest(),
         "rows": rows,
         "summary": {
             "profiles_loaded": len(profiles), "profiles_selected": len(selected),
             "health_ok_rows": sum(bool(row.get("health_ok")) for row in rows),
             "generation_ok_rows": sum(bool(row.get("generation_ok")) for row in rows),
-            "failed_rows": sum(bool(row.get("failure_class")) for row in rows),
+            "failed_rows": failed_rows + int(selection_failure),
             "models_observed": sorted({str(row["model"]) for row in rows if row.get("model")}),
             "backends_observed": sorted({str(row["backend"]) for row in rows if row.get("backend")}),
             "provider_roles_observed": sorted({str(row["provider_role"]) for row in rows if row.get("provider_role")}),
@@ -239,7 +244,7 @@ def main(argv: list[str] | None = None) -> int:
     json_path, md_path = _write(args.out, json_text), _write(args.markdown_out, md_text)
     outputs = store_benchmark_outputs(
         report, store_root=args.store_root, kind="model_endpoint_gate", run_id=args.run_id,
-        verdict="MODEL_ENDPOINT_GATE_PASS" if report["summary"]["failed_rows"] == 0 else "MODEL_ENDPOINT_GATE_PARTIAL",
+        verdict=report["verdict"],
         artifact_paths=[(json_path, "model-endpoint-gate-json"), (md_path, "model-endpoint-gate-markdown")],
     )
     if outputs:
