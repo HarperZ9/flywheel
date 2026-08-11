@@ -72,20 +72,56 @@ preserve unavailable routes as typed blocked evidence.
 - `harness/mcp_client.py` - child-only working directory and environment launch
   support.
 - `harness/cli_entry.py` - probe forwarding and executor command exposure.
+- `harness/context_envelope.py`, `harness/gateway.py`,
+  `harness/lane_caller.py`, and runtime paths in `harness/plugins.py` - retain
+  source-aware launch fields without leaking them into public rosters.
 - `tests/test_lanes.py` - resolution and probe regression coverage.
 - `tests/test_mcp_client.py` - launch-spec transport coverage.
 - `tests/test_harness_cli.py` - CLI forwarding and help contract.
+- `benchmarks/agentic-task-set-v1.json` - portable pilot inputs and oracle
+  declarations.
+- `benchmarks/fixtures/cross-harness/*.json` - fixed raw task facts from which
+  oracles independently derive expected results.
+- `benchmarks/cross-harness-adapter-contract-v1.json` - public-clean execution
+  contract and orthogonal state fields.
 - `harness/cross_harness_executor.py` - manifest-driven attempt execution.
+- `harness/cross_harness_types.py` and `harness/cross_harness_artifacts.py` -
+  sub-300-line typed boundaries, isolated workspaces, and receipt material.
+- `harness/cross_harness_adapters.py` - injected Codex, Flywheel, and local
+  provider adapters kept below the file-size gate.
+- `harness/cross_harness_cli.py` - packaged executor entrypoint.
+- `harness/cross_harness_seed_steps.py` - focused seed-orchestrator step
+  construction without growing the frozen seed runner.
 - `harness/cross_harness_oracles.py` - deterministic task checkers.
 - `scripts/run_cross_harness_execution.py` - operator entrypoint.
+- `scripts/run_closed_loop_benchmark_seed.py` - canonical ownership and
+  orchestration of the existing closed-loop seed schema.
 - `tests/test_cross_harness_executor.py` - attempt/failure/receipt contracts.
+- `tests/test_cross_harness_artifacts.py` - workspace, path, source-integrity,
+  and artifact-index contracts.
+- `tests/test_cross_harness_seed_steps.py` and
+  `tests/test_closed_loop_benchmark_seed.py` - admission/Spark/local ordering
+  and seed/result ownership.
+- `tests/test_cross_harness_adapters.py` - provider command and trace contracts.
 - `tests/test_cross_harness_oracles.py` - deterministic oracle contracts.
 - `harness/adapter_runtime_matrix.py` - endpoint-gate-aware readiness if needed.
 - `harness/cross_harness_manifest.py` - execution-ready manifest fields if
   existing fields are insufficient.
+- `scripts/run_cross_harness_manifest.py` - repository-relative defaults.
+- `scripts/run_adapter_runtime_matrix.py` - endpoint-gate input.
+- `scripts/run_benchmark_profile_manifest.py` - scoped runnable pilot profile.
+- `scripts/run_benchmark_profile_coverage.py` - executed-row completeness.
+- `scripts/run_benchmark_execution_matrix.py` - executor ordering and blocked
+  expansion gate.
+- `scripts/run_cross_harness_integration_map.py` - runtime artifact topology,
+  status, and hash map generated before drift.
 - `scripts/run_harness_cli.py` - generated CLI/help contract.
 - `scripts/run_harness_comparison_report.py` - real attempt consumption.
 - `scripts/run_closed_loop_outcome_report.py` - baseline signal consumption.
+- `harness/schematic_drift.py` and the existing integration graph - executor
+  topology and drift checks.
+- `tests/test_cross_harness_integration_map.py` - required runtime inputs,
+  schema, hashes, and generation order.
 - Existing related tests for every modified consumer.
 
 The implementation must shrink this list when existing interfaces already
@@ -124,7 +160,8 @@ update before code changes.
 These are expected benchmark outcomes, not reasons to fabricate rows or delay
 the integration report. Each becomes executed or typed unavailable evidence.
 
-## Status: REVIEW
+## Status: APPROVED
 
-Design sections approved in conversation. Awaiting review of this written spec
-before implementation planning.
+Approved in conversation on 2026-08-11. Implementation planning expanded the
+expected-file list only where the approved integration-map, denominator, and
+portable-input requirements already require an existing consumer to change.

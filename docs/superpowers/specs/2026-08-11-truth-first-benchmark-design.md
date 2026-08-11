@@ -2,7 +2,7 @@
 
 Date: 2026-08-11
 
-Status: REVIEW
+Status: APPROVED
 
 Base commit: `d164aa8`
 
@@ -137,7 +137,8 @@ The executor consumes the existing manifest rather than inventing a task or
 score schema. Every attempt records:
 
 - source commit, run identifier, provider role, requested model, adapter;
-- task, prompt, tool-policy, and input hashes;
+- task, prompt, declared tool-policy, actual adapter-enforcement, and input
+  hashes;
 - repetition and declared cache state;
 - raw output and tool-trace hashes;
 - deterministic completion-oracle result and secondary rubric result;
@@ -167,6 +168,14 @@ Run `codex_harness` and `flywheel_harness` three times per task for 24 planned
 rows. Both roles request `5.3-Codex-Spark`. Typed unavailable rows remain in the
 matrix but outside performance denominators.
 
+The roles receive the same declared allowed-tool policy, but the controls are
+not assumed equivalent. Direct Codex exposes its verified CLI sandbox and
+observed tool surface; Flywheel exposes its `ToolGate`, step budget, and
+proposer boundary. Each actual enforcement description has its own hash. The
+pilot is labeled policy-non-equivalent unless independent fixtures and live
+traces prove equal effective capabilities. A matching declared-policy hash is
+not reported as matching enforcement.
+
 The local baseline is separate from the 24-row Spark comparison. It uses
 `local_14b` and `local_32b`, the same four task identifiers, and one repetition,
 for eight additional planned rows. These rows are descriptive because one
@@ -181,8 +190,9 @@ delay the report and it never enters the 24-row Spark comparison.
 
 Do not run the 84-attempt expansion unless all of these are true:
 
-- every compared Spark attempt has identical task, prompt, input, and
-  tool-policy hashes across roles;
+- every compared Spark attempt has identical task, prompt, input, and declared
+  tool-policy hashes across roles, with distinct actual-enforcement hashes
+  reported rather than collapsed;
 - every compared row declares cache and randomness control;
 - every compared row has a completed deterministic oracle;
 - every receipt re-checks;
