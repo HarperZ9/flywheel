@@ -1,8 +1,7 @@
 """Typed cross-harness row expansion and execution."""
 from __future__ import annotations
 
-import hashlib
-import json
+import hashlib, json
 from pathlib import Path
 from typing import Any
 
@@ -14,13 +13,11 @@ from harness.cross_harness_types import (AttemptRequest, metric_null_reasons, sa
     validate_elapsed_ms)
 class _MalformedAttempt(ValueError): pass
 
-
 SHARED_TOOL_POLICY = {
     "version": "cross-harness-read-only/v1", "allow_read": True,
     "allow_write": False, "allow_exec": False, "allow_mcp": False,
     "max_steps": 6, "max_output_tokens": 2048,
 }
-
 
 def resolve_task_ids(task_rows: list[dict[str, Any]], selectors: list[str]) -> list[str]:
     task_ids = [str(row.get("task_id", "")) for row in task_rows]
@@ -35,7 +32,6 @@ def resolve_task_ids(task_rows: list[dict[str, Any]], selectors: list[str]) -> l
         if matches[0] not in resolved:
             resolved.append(matches[0])
     return resolved
-
 
 def derive_primary_outcome(execution_state: str, oracle_state: str, receipt_state: str) -> tuple[str, str]:
     allowed = (
@@ -65,13 +61,11 @@ def derive_primary_outcome(execution_state: str, oracle_state: str, receipt_stat
               or ("failed" if outcome in {"timeout", "malformed", "internal_error"} else "executed"))
     return outcome, status
 
-
 def comparison_key(row: dict[str, Any]) -> str:
     fields = ("task_set_id", "task_id", "raw_prompt_sha256", "input_sha256s", "tool_policy_sha256",
               "model_id", "cache_state", "phase", "execution_mode", "source_snapshot_sha256",
               "workspace_snapshot_sha256")
     return canonical_sha256({field: row.get(field) for field in fields})
-
 
 def _one(rows: list[dict[str, Any]], field: str, value: str) -> dict[str, Any]:
     matches = [row for row in rows if str(row.get(field, "")) == value]
@@ -268,10 +262,17 @@ def execute_cross_harness_manifest(
                            failure_detail=sanitize_evidence(row["failure_detail"] or str(exc)))
                 attempt.mkdir(parents=True, exist_ok=True)
             if workspace_before is not None:
-                workspace_after = snapshot_source_tree(Path(row["workspace_root"])); workspace_after_path = attempt / "workspace-after.json"
+                try:
+                    workspace_after = snapshot_source_tree(Path(row["workspace_root"]))
+                    snapshot_failed = False
+                except Exception as exc:
+                    workspace_after = {"schema": "harness.cross-harness-workspace-after/v1",
+                                       "state": "snapshot_error", "error_type": type(exc).__name__}
+                    snapshot_failed = True
+                workspace_after_path = attempt / "workspace-after.json"
                 _write_json(workspace_after_path, workspace_after); files[workspace_after_path.name] = workspace_after_path
-                row["workspace_snapshot_after_sha256"] = workspace_after["sha256"]
-                if workspace_after != workspace_before:
+                row["workspace_snapshot_after_sha256"] = workspace_after.get("sha256", canonical_sha256(workspace_after))
+                if snapshot_failed or workspace_after != workspace_before:
                     row.update(execution_state="malformed", oracle_state="not_run", workspace_state="drift",
                                failure_class="workspace_drift", failure_detail="workspace changed during adapter attempt")
                     row["policy_violations"] = sorted(set(row.get("policy_violations", [])) | {"workspace_drift"})

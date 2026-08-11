@@ -1,6 +1,4 @@
-import hashlib
-import json
-import os
+import hashlib, json, os, shutil
 from pathlib import Path
 
 import pytest
@@ -17,7 +15,7 @@ from harness.cross_harness_artifacts import (
     snapshot_source_tree,
     write_artifact_index,
 )
-from harness.cross_harness_executor import execute_cross_harness_manifest
+from harness.cross_harness_executor import comparison_key, execute_cross_harness_manifest
 from harness.cross_harness_types import AdapterResult, AvailabilityResult, EnforcementResult
 
 
@@ -60,7 +58,6 @@ def test_preflight_rejects_resolved_alias_and_lexical_child_with_deterministic_s
     with pytest.raises(ValueError, match="artifact_root_inside_source"):
         preflight_artifact_root(source, source / "lexical-child")
 
-
 def test_workspace_inputs_are_independent_read_only_copies_and_snapshot_is_stable(tmp_path):
     source, attempt = tmp_path / "source", tmp_path / "run" / "attempt"
     original = source / "fixtures" / "facts.json"
@@ -78,6 +75,22 @@ def test_workspace_inputs_are_independent_read_only_copies_and_snapshot_is_stabl
     assert hashes == {"fixtures/facts.json": _sha(original)}
     assert snapshot_source_tree(source) == before
 
+def test_snapshot_separates_copy_comparison_from_workspace_identity(tmp_path):
+    left, right = tmp_path / "left", tmp_path / "right"
+    left.mkdir(); right.mkdir()
+    for root in (left, right): root.joinpath("same.txt").write_text("same", encoding="utf-8")
+    first, independent = snapshot_source_tree(left), snapshot_source_tree(right)
+    assert first["sha256"] == independent["sha256"]
+    assert first["identity_sha256"] != independent["identity_sha256"]
+    base = {"task_set_id": "set", "task_id": "task", "raw_prompt_sha256": "a" * 64,
+            "tool_policy_sha256": "b" * 64, "model_id": "model", "cache_state": "cold",
+            "phase": "local", "execution_mode": "focused_run", "source_snapshot_sha256": "c" * 64,
+            "input_sha256s": {}}
+    assert comparison_key({**base, "workspace_snapshot_sha256": first["sha256"]}) == comparison_key(
+        {**base, "workspace_snapshot_sha256": independent["sha256"]})
+    left.joinpath("same.txt").unlink(); left.joinpath("same.txt").write_text("same", encoding="utf-8")
+    replaced = snapshot_source_tree(left)
+    assert replaced["sha256"] == first["sha256"] and replaced != first
 
 @pytest.mark.parametrize("names", [
     ["/absolute.json"], ["../escape.json"], ["a/nested.json"], ["a\\nested.json"],
@@ -87,7 +100,6 @@ def test_workspace_inputs_are_independent_read_only_copies_and_snapshot_is_stabl
 def test_declared_artifact_names_reject_absolute_traversal_and_duplicates(tmp_path, names):
     with pytest.raises(ValueError, match="declared artifact"):
         materialize_response_envelope('{"artifacts":{}}', names, tmp_path)
-
 
 @pytest.mark.parametrize("payload", [
     '{"artifacts":{"one.json":{},"extra.md":"x"}}',
@@ -99,7 +111,6 @@ def test_materialization_rejects_undeclared_missing_duplicate_and_traversal_name
     with pytest.raises(ValueError, match="artifact"):
         materialize_response_envelope(payload, ["one.json"], tmp_path)
 
-
 def test_materialization_writes_only_exact_declared_artifacts(tmp_path):
     raw, paths = materialize_response_envelope(
         '{"artifacts":{"report.json":{"value":1},"report.md":"# Result\\n"}}',
@@ -109,7 +120,6 @@ def test_materialization_writes_only_exact_declared_artifacts(tmp_path):
     assert json.loads(paths["report.json"].read_text(encoding="utf-8")) == {"value": 1}
     assert paths["report.md"].read_text(encoding="utf-8") == "# Result\n"
     assert {path.name for path in tmp_path.iterdir()} == {"output.txt", "report.json", "report.md"}
-
 
 def test_receipt_binds_canonical_row_and_recheck_detects_row_or_artifact_tamper(tmp_path):
     artifact = tmp_path / "report.json"
@@ -141,11 +151,9 @@ def test_receipt_binds_canonical_row_and_recheck_detects_row_or_artifact_tamper(
     artifact.write_text('{"value":2}\n', encoding="utf-8")
     assert recheck_attempt_receipt(receipt_path, row) == "drift"
 
-
 def test_canonical_serializer_rejects_nonfinite_numbers():
     with pytest.raises(ValueError):
         canonical_sha256({"latency": float("nan")})
-
 
 def test_artifact_index_hashes_references_but_explicitly_excludes_itself(tmp_path):
     one, two = tmp_path / "one.txt", tmp_path / "nested" / "two.txt"
@@ -158,7 +166,6 @@ def test_artifact_index_hashes_references_but_explicitly_excludes_itself(tmp_pat
     assert index["self_hash"] is None
     assert index["self_hash_reason"] == "artifact index cannot contain its own hash"
 
-
 class _ExecAdapter:
     role, adapter_id = "local_14b", "local/v1"
     def __init__(self, result, mutate=""): self.result, self.mutate, self.calls = result, mutate, []
@@ -170,9 +177,13 @@ class _ExecAdapter:
         target = request.workspace_root / "input.txt"
         if self.mutate == "create": request.workspace_root.chmod(0o700); (request.workspace_root / "created.txt").write_text("new")
         if self.mutate == "replace": target.chmod(0o600); target.write_text("replaced")
+        if self.mutate == "relink":
+            request.workspace_root.chmod(0o700); target.chmod(0o600); target.unlink(); os.link(request.artifact_dir / "prompt.txt", target)
+        if self.mutate == "mode": target.chmod(0o600)
+        if self.mutate == "delete_first" and request.task_id == "agt-001-task":
+            request.workspace_root.chmod(0o700); target.chmod(0o600); shutil.rmtree(request.workspace_root)
         if isinstance(self.result, Exception): raise self.result
         return self.result(request) if callable(self.result) else self.result
-
 
 def _execute_fixture(tmp_path, adapter, task_ids=("agt-001-task",), expected=("result.json",), oracle=None, input_text="original"):
     source = tmp_path / "source"; source.mkdir(); source.joinpath("input.txt").write_text(input_text)
@@ -190,8 +201,7 @@ def _execute_fixture(tmp_path, adapter, task_ids=("agt-001-task",), expected=("r
         source_root=source, run_id="run", phase="local", selectors=list(task_ids), roles=["local_14b"], repetitions=1)
     return run, root
 
-
-@pytest.mark.parametrize("mutation", ["create", "replace"])
+@pytest.mark.parametrize("mutation", ["create", "replace", "relink", "mode"])
 def test_workspace_mutation_is_typed_drift_preserved_and_indexed(tmp_path, mutation):
     result = AdapterResult("returned", '{"artifacts":{"result.json":{}}}', [], 1, "14B", "seeded", "", "", {}, {}, [], [])
     run, root = _execute_fixture(tmp_path, _ExecAdapter(result, mutation))
@@ -203,6 +213,17 @@ def test_workspace_mutation_is_typed_drift_preserved_and_indexed(tmp_path, mutat
     index = json.loads((root / "run" / "artifact-index.json").read_text())
     assert any(item["path"].endswith("workspace-after.json") for item in index["artifacts"])
 
+def test_missing_workspace_is_typed_indexed_and_does_not_abort_later_tasks(tmp_path):
+    result = AdapterResult("returned", '{"artifacts":{"result.json":{}}}', [], 1, "14B", "seeded", "", "", {}, {}, [], [])
+    adapter = _ExecAdapter(result, "delete_first")
+    run, root = _execute_fixture(tmp_path, adapter, ("agt-001-task", "agt-002-task"))
+    assert adapter.calls == ["agt-001-task", "agt-002-task"]
+    assert (run["rows"][0]["execution_state"], run["rows"][0]["failure_class"]) == ("malformed", "workspace_drift")
+    after = json.loads((Path(run["rows"][0]["attempt_dir"]) / "workspace-after.json").read_text())
+    assert after["state"] == "snapshot_error"
+    assert (root / "run" / "run.json").is_file()
+    index = json.loads((root / "run" / "artifact-index.json").read_text())
+    assert sum(item["path"].endswith("workspace-after.json") for item in index["artifacts"]) == 2
 
 class _SecretAdapter(_ExecAdapter):
     def availability(self, request):

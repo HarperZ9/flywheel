@@ -1,12 +1,9 @@
 """Filesystem isolation and receipt helpers for cross-harness execution."""
 from __future__ import annotations
 
-import hashlib
-import json
-import os
+import hashlib, json, os
 from pathlib import Path
-import shutil
-import stat
+import shutil, stat
 from typing import Any, Iterable
 
 
@@ -80,13 +77,14 @@ def _readonly_attributes(info: os.stat_result) -> int:
 
 def snapshot_source_tree(root: Path) -> dict[str, Any]:
     base = Path(root).resolve(strict=True)
-    files, directory_rows = [], []
+    files, directory_rows, identities = [], [], []
     for current, directories, names in os.walk(base, followlinks=False):
         current_path = Path(current)
         directory_info = current_path.lstat()
         directory_rows.append({"path": "." if current_path == base else current_path.relative_to(base).as_posix(),
-            "mode": stat.S_IMODE(directory_info.st_mode), "read_only_attributes": _readonly_attributes(directory_info),
-            "link_identity": [directory_info.st_dev, directory_info.st_ino, directory_info.st_nlink]})
+            "mode": stat.S_IMODE(directory_info.st_mode), "read_only_attributes": _readonly_attributes(directory_info)})
+        identities.append({"path": directory_rows[-1]["path"], "kind": "directory",
+                           "link_identity": [directory_info.st_dev, directory_info.st_ino, directory_info.st_nlink]})
         directories[:] = sorted(name for name in directories if name != ".git")
         for name in list(directories):
             path = current_path / name
@@ -102,11 +100,15 @@ def snapshot_source_tree(root: Path) -> dict[str, Any]:
             if before != after: raise ValueError(f"source_tree_concurrent mutation: {path.relative_to(base).as_posix()}")
             files.append({"path": path.relative_to(base).as_posix(), "sha256": digest,
                           "size": info.st_size, "mode": stat.S_IMODE(info.st_mode),
-                          "read_only_attributes": _readonly_attributes(info),
-                          "link_identity": [info.st_dev, info.st_ino, info.st_nlink]})
+                          "read_only_attributes": _readonly_attributes(info)})
+            identities.append({"path": files[-1]["path"], "kind": "file",
+                               "link_identity": [info.st_dev, info.st_ino, info.st_nlink]})
     files.sort(key=lambda row: row["path"]); directory_rows.sort(key=lambda row: row["path"])
-    return {"schema": "harness.cross-harness-source-snapshot/v1", "files": files, "directories": directory_rows,
-            "sha256": _sha_bytes(_canonical({"files": files, "directories": directory_rows}))}
+    identities.sort(key=lambda row: (row["path"], row["kind"]))
+    comparison = {"files": files, "directories": directory_rows}
+    return {"schema": "harness.cross-harness-source-snapshot/v1", **comparison,
+            "sha256": _sha_bytes(_canonical(comparison)), "identity_rows": identities,
+            "identity_sha256": _sha_bytes(_canonical(identities))}
 
 
 def _safe_relative(value: str, label: str) -> Path:
