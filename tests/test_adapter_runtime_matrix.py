@@ -142,6 +142,26 @@ def test_gate_freshness_and_run_identity_are_exact(observed_at, expected_run, co
     assert row["blocking_gates"] == [code]
 
 
+@pytest.mark.parametrize("observed_at", [[], {}, 123])
+def test_non_string_gate_timestamp_is_invalid_without_raising(observed_at):
+    profile = profile_fixture()["profiles"][0]
+    gate = gate_fixture(profile)
+    gate["rows"][0]["observed_at"] = observed_at
+    assert local_row(matrix(gate=gate))["blocking_gates"] == ["endpoint_gate_timestamp_invalid"]
+
+
+@pytest.mark.parametrize(("field", "value"), [
+    ("health_ok", "false"),
+    ("generation_ok", "false"),
+    ("failure_class", False),
+])
+def test_malformed_probe_verdict_fields_fail_closed(field, value):
+    profile = profile_fixture()["profiles"][0]
+    gate = gate_fixture(profile)
+    gate["rows"][0][field] = value
+    assert local_row(matrix(gate=gate))["blocking_gates"] == ["endpoint_gate_failed"]
+
+
 @pytest.mark.parametrize("offset", [-30, 900])
 def test_gate_freshness_boundaries_are_inclusive(offset):
     profile = profile_fixture()["profiles"][0]

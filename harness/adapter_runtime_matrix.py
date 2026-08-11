@@ -191,7 +191,7 @@ def _parse_observed(value: Any) -> datetime | None:
 
 def _gate_failure(gate: dict[str, Any], profile: dict[str, Any], run_id: str, now: datetime, max_age: int) -> str:
     observed_raw = gate.get("observed_at")
-    if observed_raw in {None, ""}:
+    if observed_raw is None or observed_raw == "":
         return "endpoint_gate_timestamp_missing"
     observed = _parse_observed(observed_raw)
     if observed is None:
@@ -210,7 +210,8 @@ def _gate_failure(gate: dict[str, Any], profile: dict[str, Any], run_id: str, no
         (gate.get("profile_sha256") != profile["profile_sha256"], "endpoint_gate_profile_hash_mismatch"),
         (gate.get("expected_model_ref") != profile["model_ref"], "endpoint_gate_expected_ref_mismatch"),
         (gate.get("observed_model_ref") != profile["model_ref"], "endpoint_gate_observed_ref_mismatch"),
-        (not gate.get("health_ok") or not gate.get("generation_ok") or bool(gate.get("failure_class")), "endpoint_gate_failed"),
+        (gate.get("health_ok") is not True or gate.get("generation_ok") is not True
+         or gate.get("failure_class") != "", "endpoint_gate_failed"),
         (profile["backend"].lower() == "ollama" and not gate.get("ollama_digest"), "endpoint_gate_ollama_digest_missing"),
     )
     return next((code for failed, code in checks if failed), "")
