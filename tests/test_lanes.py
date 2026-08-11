@@ -5,9 +5,13 @@ and the install-name -> command asymmetry must map correctly (pip install
 gather-engine exposes the `gather` command, etc.). A missing lane never
 crashes the roster; it reports `missing`/`declared`.
 """
+from pathlib import Path
+
+import harness.lanes as lanes
+import harness.mcp_client as mcp_client
 from harness.lanes import (
     LANES, MISSING, DECLARED, LIVE, STALE,
-    lane_status, lane_roster, lane_report, resolve_mcp_command,
+    install_lane, lane_status, lane_roster, lane_report, resolve_mcp_command,
 )
 
 
@@ -62,21 +66,23 @@ def test_report_is_human_readable_and_nonempty():
         assert name in text
 
 
+def test_report_names_presence_only_mode():
+    roster = lane_roster(probe=False)
+    assert "install-presence roster" in lane_report(roster)
+
+
 def test_bundled_lane_needs_no_install():
     # local-model is the engine lane; it IS Flywheel, so it is never missing.
     r = lane_status("local-model", probe=False)
-    assert r["status"] in (LIVE, DECLARED)
+    assert r["status"] == DECLARED
     assert LANES["local-model"].kind == "bundled"
 
 
-def test_node_lanes_resolve_to_absolute_source_path_when_repo_present():
-    # telos's package profile uses a relative script path; the source profile
-    # must resolve it to an absolute path under the telos repo.
-    cmd = resolve_mcp_command("telos")
-    assert cmd[0] == "node"
-    # when the source checkout is present, the path is absolute
-    if len(cmd) > 1 and cmd[1] not in ("demo/telos-mcp.mjs",):
-        assert cmd[1].endswith("telos-mcp.mjs")
+def test_public_commands_are_portable_declared_argv():
+    assert resolve_mcp_command("gather") == ["gather", "mcp"]
+    assert resolve_mcp_command("telos") == ["node", "demo/telos-mcp.mjs"]
+    assert resolve_mcp_command("local-model") == [
+        "python", "-m", "harness.local_mcp"]
 
 
 def test_install_lane_arg_parser_defaults():
@@ -109,3 +115,135 @@ def test_registry_roundtrip(tmp_path, monkeypatch):
     write_registry({"index": {"install_name": "index-graph", "installed": True}})
     loaded = read_registry()
     assert loaded["index"]["installed"] is True
+
+
+def test_source_repo_prefers_explicit_workspace_root(tmp_path, monkeypatch):
+    explicit = tmp_path / "explicit" / "public" / "gather"
+    inferred = tmp_path / "checkout" / "public" / "gather"
+    explicit.mkdir(parents=True)
+    inferred.mkdir(parents=True)
+    monkeypatch.setenv("FLYWHEEL_WORKSPACE_ROOT", str(tmp_path / "explicit"))
+    monkeypatch.setattr(lanes, "REPO", tmp_path / "checkout" / "flywheel")
+    assert lanes.resolve_source_repo(LANES["gather"]) == explicit.resolve()
+
+
+def test_source_repo_uses_inferred_workspace_root(tmp_path, monkeypatch):
+    source = tmp_path / "workspace" / "public" / "gather"
+    source.mkdir(parents=True)
+    monkeypatch.delenv("FLYWHEEL_WORKSPACE_ROOT", raising=False)
+    monkeypatch.setattr(lanes, "REPO", tmp_path / "workspace" / "flywheel")
+    assert lanes.resolve_source_repo(LANES["gather"]) == source.resolve()
+
+
+def test_source_repo_uses_matching_container_sibling(tmp_path, monkeypatch):
+    source = tmp_path / "workspace" / "public" / "gather"
+    source.mkdir(parents=True)
+    monkeypatch.delenv("FLYWHEEL_WORKSPACE_ROOT", raising=False)
+    monkeypatch.setattr(
+        lanes, "REPO", tmp_path / "workspace" / "public" / "flywheel")
+    assert lanes.resolve_source_repo(LANES["gather"]) == source.resolve()
+    assert "public/public" not in source.as_posix()
+
+
+def test_source_repo_is_none_when_checkout_is_absent(tmp_path, monkeypatch):
+    monkeypatch.delenv("FLYWHEEL_WORKSPACE_ROOT", raising=False)
+    monkeypatch.setattr(lanes, "REPO", tmp_path / "workspace" / "flywheel")
+    assert lanes.resolve_source_repo(LANES["gather"]) is None
+
+
+class _ProbeClient:
+    tools = [{"name": "gather.status"}]
+    response = {"ok": True, "text": "ok"}
+    launch = None
+
+    def __init__(self, launch, **kwargs):
+        type(self).launch = launch
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args):
+        return False
+
+    def list_tools(self):
+        return list(self.tools)
+
+    def call_text(self, name, arguments):
+        return dict(self.response)
+
+
+def test_source_checkout_is_probed_when_package_is_absent(tmp_path, monkeypatch):
+    source = tmp_path / "workspace" / "public" / "gather"
+    source.mkdir(parents=True)
+    monkeypatch.setattr(lanes, "REPO", tmp_path / "workspace" / "flywheel")
+    monkeypatch.setattr(lanes, "_installed_version", lambda lane: None)
+    monkeypatch.setattr(lanes, "_importable", lambda top: False)
+    monkeypatch.setattr(mcp_client, "MCPClient", _ProbeClient)
+    result = lane_status("gather", probe=True)
+    assert result["status"] == LIVE
+    assert _ProbeClient.launch.cwd == str(source.resolve())
+
+
+def test_presence_only_installed_lane_is_declared_not_live(monkeypatch):
+    monkeypatch.setattr(lanes, "_installed_version", lambda lane: "1.2.3")
+    assert lane_status("gather", probe=False)["status"] == DECLARED
+
+
+def test_missing_health_tool_is_stale(monkeypatch):
+    monkeypatch.setattr(_ProbeClient, "tools", [{"name": "gather.run"}])
+    monkeypatch.setattr(mcp_client, "MCPClient", _ProbeClient)
+    result = lanes._probe_lane("gather", "1.2.3", 1.0, present=True)
+    assert result["status"] == STALE
+    assert "health tool" in result["detail"]
+
+
+def test_health_tool_error_is_stale(monkeypatch):
+    monkeypatch.setattr(_ProbeClient, "tools", [{"name": "gather.status"}])
+    monkeypatch.setattr(
+        _ProbeClient, "response", {"ok": False, "text": "not healthy"})
+    monkeypatch.setattr(mcp_client, "MCPClient", _ProbeClient)
+    result = lanes._probe_lane("gather", "1.2.3", 1.0, present=True)
+    assert result["status"] == STALE
+    assert "not healthy" in result["detail"]
+
+
+def test_failed_probe_of_present_lane_is_declared(monkeypatch):
+    class FailingClient:
+        def __init__(self, *args, **kwargs):
+            raise OSError("cannot launch")
+
+    monkeypatch.setattr(mcp_client, "MCPClient", FailingClient)
+    result = lanes._probe_lane("gather", None, 1.0, present=True)
+    assert result["status"] == DECLARED
+    assert "cannot launch" in result["detail"]
+
+
+def test_source_install_without_checkout_does_not_invoke_installer(
+        tmp_path, monkeypatch):
+    calls = []
+    monkeypatch.setattr(lanes, "REPO", tmp_path / "workspace" / "flywheel")
+    monkeypatch.setattr(lanes.subprocess, "run", lambda *a, **k: calls.append(a))
+    result = install_lane("gather", profile="source")
+    assert result["installed"] is False
+    assert "source checkout" in result["detail"]
+    assert calls == []
+
+
+def test_source_install_uses_matching_container_checkout(tmp_path, monkeypatch):
+    source = tmp_path / "workspace" / "public" / "gather"
+    source.mkdir(parents=True)
+    monkeypatch.setattr(
+        lanes, "REPO", tmp_path / "workspace" / "public" / "flywheel")
+    calls = []
+
+    class Installed:
+        returncode = 0
+        stdout = "installed"
+        stderr = ""
+
+    monkeypatch.setattr(
+        lanes.subprocess, "run",
+        lambda command, **kwargs: calls.append(command) or Installed())
+    result = install_lane("gather", profile="source")
+    assert result["installed"] is True
+    assert calls == [["pip", "install", "-e", str(source.resolve())]]

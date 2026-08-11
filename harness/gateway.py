@@ -279,11 +279,10 @@ def _forum_mcp_call(tool: str, args: dict) -> dict:
     dict so the desktop view can render a 'forum offline' state.
     """
     from harness.mcp_client import MCPClient, MCPError
-    from harness.lanes import resolve_mcp_command
+    from harness.lanes import resolve_mcp_launch
     try:
-        command = resolve_mcp_command("forum")
+        command = resolve_mcp_launch("forum")
         with MCPClient(command, timeout=20, client_name="flywheel-forum-proxy") as c:
-            c.start()
             res = c.call_text(tool, args)
             if not res["ok"]:
                 return {"error": f"forum {tool} error: {res['text'][:200]}"}

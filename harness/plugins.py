@@ -19,7 +19,7 @@ import json
 import os
 from pathlib import Path
 
-from .lanes import LANES, resolve_mcp_command
+from .lanes import LANES, resolve_mcp_command, resolve_mcp_launch
 
 # The gated builtin tool sets (local_tools.ToolExecutor). Names only; the
 # gate decides what actually runs.
@@ -125,7 +125,7 @@ def call_plugin(name: str, tool: str, arguments: "dict | None" = None,
         return {"error": "the builtin tool set runs inside gated agent "
                          "runs, not through this route"}
     if name in LANES:
-        command = resolve_mcp_command(name)
+        command = resolve_mcp_launch(name)
         kind = "lane"
     else:
         entry = next((e for e in _load_custom() if e.get("name") == name), None)
@@ -139,7 +139,6 @@ def call_plugin(name: str, tool: str, arguments: "dict | None" = None,
     try:
         with MCPClient(command, timeout=timeout,
                        client_name="flywheel-plugins") as c:
-            c.start()
             out = c.call_text(tool, arguments or {})
             return {"name": name, "kind": kind, "tool": tool, "result": out}
     except (MCPError, FileNotFoundError, OSError) as e:
@@ -154,7 +153,7 @@ def probe_plugin(name: str, timeout: float = 20.0) -> dict:
         return {"name": name, "kind": "builtin", "status": "live",
                 "tools": list(BUILTIN_TOOLS)}
     if name in LANES:
-        command = resolve_mcp_command(name)
+        command = resolve_mcp_launch(name)
         kind = "lane"
     else:
         entry = next((e for e in _load_custom() if e.get("name") == name), None)

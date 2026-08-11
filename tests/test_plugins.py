@@ -6,6 +6,7 @@ unreachable instead of inventing a tool list."""
 import json
 
 from harness import plugins
+from harness.mcp_client import LaunchSpec
 
 
 def _isolate(monkeypatch, tmp_path):
@@ -21,6 +22,8 @@ def test_roster_includes_lanes_and_builtins(monkeypatch, tmp_path):
     builtin = next(p for p in doc["plugins"] if p["name"] == "tools")
     assert set(builtin["tools"]) == set(plugins.BUILTIN_TOOLS)
     assert "grants nothing" in doc["note"]
+    serialized = json.dumps(doc)
+    assert str(plugins.Path(__file__).resolve().parents[1]) not in serialized
 
 
 def test_register_refuses_reserved_and_malformed(monkeypatch, tmp_path):
@@ -71,3 +74,28 @@ def test_builtin_probe_lists_gated_set(monkeypatch, tmp_path):
     out = plugins.probe_plugin("tools")
     assert out["status"] == "live"
     assert set(out["tools"]) == set(plugins.BUILTIN_TOOLS)
+
+
+def test_lane_call_uses_runtime_launch_spec(monkeypatch, tmp_path):
+    _isolate(monkeypatch, tmp_path)
+    expected = LaunchSpec(("gather-runtime",), "/source")
+    seen = []
+
+    class FakeClient:
+        def __init__(self, launch, **kwargs):
+            seen.append(launch)
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            return False
+
+        def call_text(self, tool, arguments):
+            return {"ok": True, "text": "called"}
+
+    monkeypatch.setattr(plugins, "resolve_mcp_launch", lambda name: expected,
+                        raising=False)
+    monkeypatch.setattr("harness.mcp_client.MCPClient", FakeClient)
+    assert plugins.call_plugin("gather", "gather.run")["result"]["ok"] is True
+    assert seen == [expected]

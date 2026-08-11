@@ -3,6 +3,7 @@ not just a flattened name list, so a caller (the desktop) can build an args form
 instead of a blind {} box. `tools` stays a sorted name list for back-compat."""
 import harness.plugins as pl
 import harness.mcp_client as mc
+from harness.mcp_client import LaunchSpec
 
 
 class _FakeClient:
@@ -14,9 +15,10 @@ class _FakeClient:
         {"name": "a_tool", "description": "does A",
          "inputSchema": {"type": "object", "properties": {}}},
     ]
+    launch = None
 
-    def __init__(self, *a, **k):
-        pass
+    def __init__(self, launch, **kwargs):
+        type(self).launch = launch
 
     def __enter__(self):
         return self
@@ -38,10 +40,13 @@ class _FakeClient:
 
 
 def _probe(monkeypatch):
+    launch = LaunchSpec(("dummy",), "/source")
     monkeypatch.setattr(pl, "LANES", {"testlane"}, raising=False)
-    monkeypatch.setattr(pl, "resolve_mcp_command", lambda name: ["dummy"])
+    monkeypatch.setattr(pl, "resolve_mcp_launch", lambda name: launch)
     monkeypatch.setattr(mc, "MCPClient", _FakeClient)
-    return pl.probe_plugin("testlane")
+    result = pl.probe_plugin("testlane")
+    assert _FakeClient.launch == launch
+    return result
 
 
 def test_probe_keeps_sorted_names_for_back_compat(monkeypatch):

@@ -130,3 +130,15 @@ def test_help_without_checkout_is_a_success(monkeypatch, capsys):
     out = capsys.readouterr().out
     assert "usage: flywheel" in out
     assert "up" in out and "lanes" in out
+
+
+def test_lanes_probe_flag_is_forwarded_to_roster(monkeypatch, capsys):
+    calls = []
+    roster = {"n_lanes": 0, "by_status": {}, "lanes": []}
+    monkeypatch.setattr(
+        "harness.lanes.lane_roster",
+        lambda **kwargs: calls.append(kwargs) or roster,
+    )
+    monkeypatch.setattr("harness.lanes.lane_report", lambda value: "empty")
+    assert cli._dispatch_umbrella("lanes", ["--probe"]) == 0
+    assert calls == [{"probe": True}]

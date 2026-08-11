@@ -176,7 +176,7 @@ def _dispatch_umbrella(command: str, argv: list[str]) -> int:
         return 0
     if command == "lanes":
         from harness.lanes import lane_roster, lane_report
-        roster = lane_roster()
+        roster = lane_roster(probe="--probe" in argv)
         print(lane_report(roster))
         return 0
     if command == "auth":

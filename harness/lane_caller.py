@@ -39,13 +39,13 @@ def call_lane_tool(
                 "governance_denied": True,
             }
 
-    from harness.lanes import resolve_mcp_command, LANES
+    from harness.lanes import resolve_mcp_launch, LANES
     if lane_name not in LANES:
         return {"error": f"unknown lane: {lane_name!r}. "
                          f"Available: {sorted(LANES.keys())}"}
 
     try:
-        command = resolve_mcp_command(lane_name)
+        command = resolve_mcp_launch(lane_name)
     except Exception as e:
         return {"error": f"cannot resolve MCP command for {lane_name!r}: {e}"}
 
@@ -53,7 +53,6 @@ def call_lane_tool(
         from harness.mcp_client import MCPClient, MCPError
         with MCPClient(command, timeout=timeout,
                        client_name=f"flywheel-{lane_name}-proxy") as c:
-            c.start()
             res = c.call_text(tool_name, args)
             if not res["ok"]:
                 return {"error": f"{lane_name}.{tool_name} error: "
