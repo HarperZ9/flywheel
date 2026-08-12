@@ -12,6 +12,7 @@ import harness.gateway as gw
 import pytest
 import subprocess
 import hashlib, json, sys, venv
+import base64
 from harness.cross_harness_adapters import CodexCliProposer, DirectCodexAdapter, FlywheelRouterAdapter, _run_process
 from harness.cross_harness_executor import SHARED_TOOL_POLICY, execute_cross_harness_manifest
 from harness.cross_harness_types import AttemptRequest
@@ -174,11 +175,40 @@ def _attempt(tmp_path, role="codex_harness", adapter="codex_cli_json/v1"):
     return AttemptRequest("run", "spark", "set", "agt-001-task", "prompt", "a" * 64, role, role.split("_")[0], adapter, "spark", tmp_path, "b" * 64, {}, SHARED_TOOL_POLICY, "c" * 64, 1, "cold_declared", 3, tmp_path)
 
 
-@pytest.mark.parametrize("command", ['bash -c "echo bad > x"', "sh -c 'echo bad > x'", 'cmd /c "echo bad > x"', "bash -lc 'echo bad > x'", 'cmd.exe /d /c "echo bad > x"', 'cmd.exe /d /v:on /c "echo bad > x"', 'cmd.exe /e:on /c "echo bad > x"', 'cmd.exe /f:off /c "echo bad > x"'])
+@pytest.mark.parametrize("command", ['bash -c "echo bad > x"', "sh -c 'echo bad > x'", 'dash -eu -c "echo bad > x"', 'zsh --no-rcs -fc "echo bad > x"', 'cmd /c "echo bad > x"', 'cmd.exe /d /v:on /c "echo bad > x"', 'C:\\Windows\\System32\\cmd.exe /s /c "echo bad > x"', 'powershell.exe -NoProfile -Command "echo bad > x"', 'C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe -Command "echo bad > x"', 'pwsh -NonInteractive -c "echo bad > x"'])
 def test_quoted_executable_wrappers_report_shell_and_write(command, tmp_path):
     process = type("Outcome", (), {"returncode": 0, "stdout": json.dumps({"type": "command_execution", "command": command}), "stderr": "", "output_text": "", "elapsed_ms": 1, "timed_out": False, "malformed_output": False})()
     result = DirectCodexAdapter(runner=lambda *a, **k: process, executable_resolver=lambda: "codex.cmd").execute(_attempt(tmp_path))
     assert result.observed_capabilities == ["shell", "write"] and result.policy_violations == ["exec_not_allowed", "write_not_allowed"]
+
+
+@pytest.mark.parametrize("command", ['bash -c "python -c \'print(1 > 0)\'"', 'pwsh -Command "Write-Output \'1 > 0\'"'])
+def test_quoted_wrapper_comparisons_are_not_writes(command, tmp_path):
+    process = type("Outcome", (), {"returncode": 0, "stdout": json.dumps({"type": "command_execution", "command": command}), "stderr": "", "output_text": "", "elapsed_ms": 1, "timed_out": False, "malformed_output": False})()
+    result = DirectCodexAdapter(runner=lambda *a, **k: process, executable_resolver=lambda: "codex.cmd").execute(_attempt(tmp_path))
+    assert "write" not in result.observed_capabilities
+
+
+@pytest.mark.parametrize("command", ['bash -c "printf \\">\\""', 'powershell -Command "Write-Output `\">`\""', 'cmd /c "echo ^> out"'])
+def test_wrapper_escaped_redirect_data_is_not_write(command, tmp_path):
+    process = type("Outcome", (), {"returncode": 0, "stdout": json.dumps({"type": "command_execution", "command": command}), "stderr": "", "output_text": "", "elapsed_ms": 1, "timed_out": False, "malformed_output": False})()
+    result = DirectCodexAdapter(runner=lambda *a, **k: process, executable_resolver=lambda: "codex.cmd").execute(_attempt(tmp_path))
+    assert "write" not in result.observed_capabilities
+
+
+def test_encoded_powershell_and_cmd_keep_commands_are_audited(tmp_path):
+    encoded = base64.b64encode("echo bad > x".encode("utf-16le")).decode()
+    for command in (f"pwsh -EncodedCommand {encoded}", 'cmd.exe /d /k "echo bad > x"'):
+        process = type("Outcome", (), {"returncode": 0, "stdout": json.dumps({"type": "command_execution", "command": command}), "stderr": "", "output_text": "", "elapsed_ms": 1, "timed_out": False, "malformed_output": False})()
+        result = DirectCodexAdapter(runner=lambda *a, **k: process, executable_resolver=lambda: "codex.cmd").execute(_attempt(tmp_path))
+        assert "write_not_allowed" in result.policy_violations
+
+
+@pytest.mark.parametrize("command", ['cmd.exe /d /c"echo bad > x"', 'cmd.exe /s /k"echo bad > x"'])
+def test_cmd_attached_command_switch_is_audited(command, tmp_path):
+    process = type("Outcome", (), {"returncode": 0, "stdout": json.dumps({"type": "command_execution", "command": command}), "stderr": "", "output_text": "", "elapsed_ms": 1, "timed_out": False, "malformed_output": False})()
+    result = DirectCodexAdapter(runner=lambda *a, **k: process, executable_resolver=lambda: "codex.cmd").execute(_attempt(tmp_path))
+    assert "write_not_allowed" in result.policy_violations
 
 
 def test_real_child_streams_and_output_stage_are_bounded(tmp_path):

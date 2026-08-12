@@ -1,7 +1,7 @@
 """Injected execution boundaries for the cross-harness executor."""
 from __future__ import annotations
 from dataclasses import asdict, replace
-import json, math, os, re, shutil, time, urllib.error, urllib.request
+import base64, binascii, json, math, os, re, shlex, shutil, time, urllib.error, urllib.request
 from pathlib import Path; from typing import Any, Callable
 from urllib.parse import urlsplit
 from .cross_harness_artifacts import canonical_sha256
@@ -50,15 +50,19 @@ def _bounded(value: Any, depth: int = 0) -> bool:
     if isinstance(value, dict):
         return len(value) <= MAX_TRACE_EVENTS and all(_bounded(str(key), depth + 1) and _bounded(item, depth + 1) for key, item in value.items())
     return value is None or isinstance(value, (bool, int)) or (isinstance(value, float) and math.isfinite(value))
+def _json_object(text: str) -> dict[str, Any]:
+    try: item = json.loads(text, object_pairs_hook=_json_pairs, parse_constant=_nonfinite)
+    except (UnicodeDecodeError, json.JSONDecodeError, ValueError, RecursionError) as exc: raise MalformedProviderOutput("malformed provider JSON") from exc
+    if not isinstance(item, dict) or not _bounded(item): raise MalformedProviderOutput("unbounded provider JSON object")
+    return item
 def _parse_jsonl(text: str, source: str) -> tuple[list[dict[str, Any]], bool]:
     events, malformed, total = [], False, 0
     for line in text.splitlines():
         if not line.strip(): continue
         size = len(line.encode("utf-8")); total += size
         if size > MAX_LINE_BYTES or total > MAX_TRACE_BYTES: malformed = True; continue
-        try: item = json.loads(line, object_pairs_hook=_json_pairs, parse_constant=_nonfinite)
-        except (json.JSONDecodeError, ValueError, RecursionError): malformed = True; continue
-        if not isinstance(item, dict) or not _bounded(item): malformed = True; continue
+        try: item = _json_object(line)
+        except MalformedProviderOutput: malformed = True; continue
         if len(events) < MAX_TRACE_EVENTS: events.append({**_clean(item), "source": source})
         else: malformed = True
     return events, malformed
@@ -66,17 +70,15 @@ def _audit(events: list[dict[str, Any]]) -> tuple[list[str], list[str]]:
     observed: set[str] = set()
     def visit(value: Any) -> None:
         if isinstance(value, dict):
-            text = " ".join(str(value.get(k, "")) for k in ("type", "name", "tool", "command"))
+            metadata = " ".join(str(value.get(k, "")) for k in ("type", "name", "tool")); text = metadata + " " + str(value.get("command", ""))
             low = text.lower()
             if any(word in low for word in ("read", "list", "grep", "glob")): observed.add("read")
             if any(word in low for word in ("command", "shell", "exec", "run")): observed.add("shell")
             if "mcp" in low: observed.add("mcp")
             command = str(value.get("command", "")); operators = re.sub(r"'[^']*'|\"[^\"]*\"", "", command)
-            shell = r"(?:^|\s)(?:\S*[\\/])?(?:ba)?sh(?:\.exe)?(?:\s+-[a-z]*c[a-z]*)\s+([\"'])(.*?)\1"
-            cmd = r"(?:^|\s)(?:\S*[\\/])?cmd(?:\.exe)?(?:\s+/(?!c\b)[a-z]+(?::(?:on|off))?)*\s+/c\s+([\"'])(.*?)\1"
-            wrapper = re.search(shell, command, re.I) or re.search(cmd, command, re.I)
-            if wrapper: operators += " " + wrapper.group(2)
-            if ("file_change" in low or any(word in low for word in ("write", "edit", "patch", "delete", "remove"))
+            wrapped = _wrapper_payload(command)
+            if wrapped: operators = _operator_text(*wrapped)
+            if ("file_change" in low or any(word in metadata.lower() for word in ("write", "edit", "patch", "delete", "remove"))
                     or re.search(r"(?:^|\s)(?:rm|del|erase|move|mv|copy|cp|tee|touch|mkdir|set-content|out-file)\b", command, re.I) or re.search(r"(?<![<>=])(?:\d|[*&])?>{1,2}(?![=])", operators)): observed.add("write")
             for item in value.values(): visit(item)
         elif isinstance(value, list):
@@ -85,6 +87,33 @@ def _audit(events: list[dict[str, Any]]) -> tuple[list[str], list[str]]:
     order = [name for name in ("read", "shell", "mcp", "write") if name in observed]
     violations = (["exec_not_allowed"] if "shell" in observed else []) + (["mcp_not_allowed"] if "mcp" in observed else []) + (["write_not_allowed"] if "write" in observed else [])
     return order, violations
+def _wrapper_payload(command: str) -> tuple[str, str] | None:
+    try: words = shlex.split(command, posix=True)
+    except ValueError: return ""
+    if not words: return None
+    executable = words[0].replace("\\", "/").rsplit("/", 1)[-1].lower()
+    def is_executable(*names: str) -> bool: return any(executable == name or executable.endswith(name + ".exe") for name in names)
+    shells = {"sh", "bash", "dash", "zsh", "ksh", "ash"}
+    if is_executable(*shells):
+        for index, word in enumerate(words[1:], 1):
+            if word.startswith("-") and not word.startswith("--") and "c" in word[1:] and index + 1 < len(words): return "posix", words[index + 1]
+    if is_executable("powershell", "pwsh"):
+        for index, word in enumerate(words[1:], 1):
+            option = word.lower()
+            if option in {"-c", "-command", "-commandwithargs", "/c", "/command"}: return "powershell", " ".join(words[index + 1:])
+            if option in {"-e", "-enc", "-encodedcommand"} and index + 1 < len(words):
+                try: return "powershell", base64.b64decode(words[index + 1], validate=True).decode("utf-16le", "strict")
+                except (binascii.Error, ValueError, UnicodeDecodeError): return None
+    if is_executable("cmd"):
+        raw = re.search(r"(?i)(?:^|\s)/[ck](.*)$", command)
+        if raw and raw.group(1).lstrip().startswith(('"', "'")): return "cmd", raw.group(1).lstrip().strip('"')
+        for index, word in enumerate(words[1:], 1):
+            if word.lower() in {"/c", "/k"}: return "cmd", " ".join(words[index + 1:])
+    return None
+def _operator_text(kind: str, payload: str) -> str:
+    if kind == "cmd": return re.sub(r"\^.", "", re.sub(r'"[^"]*"', "", payload))
+    if kind == "powershell": return re.sub(r"`.", "", re.sub(r"'[^']*'|\"[^\"]*\"", "", payload)).replace('"', '')
+    return re.sub(r"\\.|'[^']*'|\"[^\"]*\"", "", payload)
 def _codex_argv(executable: str, model: str, workspace: Path, output: Path) -> list[str]:
     return [executable, "exec", "--model", model, "--sandbox", "read-only", "--cd", str(workspace), "--ephemeral", "--ignore-user-config",
             "--skip-git-repo-check", "--json", "--output-last-message", str(output), "-"]
@@ -211,10 +240,10 @@ def _local_http(method: str, url: str, body: bytes | None, timeout: float) -> tu
     try:
         with urllib.request.build_opener(urllib.request.ProxyHandler({}), _NoRedirect()).open(request, timeout=timeout) as response: raw, status = response.read(MAX_TRACE_BYTES + 1), response.status
     except urllib.error.HTTPError as exc: raw, status = exc.read(MAX_TRACE_BYTES + 1), exc.code
-    if len(raw) > MAX_TRACE_BYTES: raise OSError("local response too large")
-    try: value = json.loads(raw, object_pairs_hook=_json_pairs) if raw else {}
-    except (UnicodeDecodeError, json.JSONDecodeError, ValueError): value = {"error": "malformed local response"}
-    return status, value if isinstance(value, dict) else {"error": "local response must be an object"}
+    if len(raw) > MAX_TRACE_BYTES: raise MalformedProviderOutput("local response too large")
+    if not raw: raise MalformedProviderOutput("empty local provider response")
+    try: return status, _json_object(raw.decode("utf-8", "strict"))
+    except UnicodeDecodeError as exc: raise MalformedProviderOutput("malformed provider JSON") from exc
 def _backend(profile: dict[str, Any], timeout: float):
     if profile["backend"] == "ollama":
         return OllamaBackend(base_url=profile["endpoint_url"], model=profile["model_ref"], timeout=timeout, transport=_local_http)

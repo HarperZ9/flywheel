@@ -4,13 +4,13 @@ from __future__ import annotations
 from dataclasses import dataclass
 import os
 from pathlib import Path
-import signal
 import stat
 import subprocess
 import sys
 import threading
 import time
 from typing import Any, Callable
+from .cross_harness_linux import prepare_linux_cgroup, run_linux_process
 
 MAX_CAPTURE_BYTES = 1 << 20
 
@@ -89,47 +89,14 @@ def _resume_windows(proc: subprocess.Popen) -> bool:
     return api.NtResumeProcess(proc._handle) == 0
 
 
-def _linux_descendants(pid: int) -> list[int]:
-    found, pending = [], [pid]
-    while pending:
-        try:
-            files = Path(f"/proc/{pending.pop()}/task").glob("*/children")
-            children = [int(value) for path in files for value in path.read_text().split()]
-        except (OSError, ValueError):
-            children = []
-        fresh = [child for child in children if child not in found]
-        found.extend(fresh)
-        pending.extend(fresh)
-    return found
-
-
-def _signal(pid: int, value: signal.Signals) -> None:
-    try:
-        os.kill(pid, value)
-    except OSError:
-        pass
-
-
 def _stop_tree(proc: subprocess.Popen, job=None) -> None:
-    if os.name == "nt":
-        if job:
-            try:
-                job[0].CloseHandle(job[1])
-            except OSError:
-                pass
-        elif proc.poll() is None:
-            proc.kill()
-    else:
-        descendants = _linux_descendants(proc.pid)
-        for pid in [proc.pid, *descendants]:
-            _signal(pid, signal.SIGSTOP)
-        descendants = list(dict.fromkeys(descendants + _linux_descendants(proc.pid)))
+    if job:
         try:
-            os.killpg(proc.pid, signal.SIGKILL)
+            job[0].CloseHandle(job[1])
         except OSError:
             pass
-        for pid in reversed(descendants):
-            _signal(pid, signal.SIGKILL)
+    elif proc.poll() is None:
+        proc.kill()
     try:
         proc.wait(timeout=.5)
     except subprocess.TimeoutExpired:
@@ -198,7 +165,8 @@ def _read_stage(path: Path) -> tuple[bytes, bool]:
 
 def run_process(argv: list[str], *, cwd: Path, stdin_text: str, timeout_seconds: float,
                 output_path: Path, sanitizer: Callable[[Any], Any]) -> ProcessOutcome:
-    if os.name != "nt" and not sys.platform.startswith("linux"):
+    linux = sys.platform.startswith("linux")
+    if os.name != "nt" and not linux:
         raise OSError("robust process containment unavailable")
     if not _remove_stage(output_path):
         raise OSError("provider output staging path is not safely removable")
@@ -206,22 +174,50 @@ def run_process(argv: list[str], *, cwd: Path, stdin_text: str, timeout_seconds:
         "cwd": str(cwd), "env": _child_env(), "stdin": subprocess.PIPE,
         "stdout": subprocess.PIPE, "stderr": subprocess.PIPE, "shell": False,
     }
-    if os.name == "nt":
+    group = prepare_linux_cgroup() if linux else None
+    if os.name == "nt" and not linux:
         options["creationflags"] = subprocess.CREATE_NEW_PROCESS_GROUP | 0x4  # CREATE_SUSPENDED
     else:
-        options["start_new_session"] = True
+        argv = group.wrap(argv)
     started = time.perf_counter()
-    proc = subprocess.Popen(argv, **options)
+    try:
+        proc = subprocess.Popen(argv, **options)
+    except Exception:
+        if group: group.kill_and_remove()
+        raise
     job = _windows_job(proc)
-    if os.name == "nt" and job is None:
+    if os.name == "nt" and not linux and job is None:
         _stop_tree(proc)
         _remove_stage(output_path)
         raise OSError("Windows process containment unavailable")
-    if os.name == "nt" and not _resume_windows(proc):
+    if os.name == "nt" and not linux and not _resume_windows(proc):
         _stop_tree(proc, job)
         _remove_stage(output_path)
         raise OSError("Windows suspended process could not be resumed")
 
+    try:
+        if linux:
+            captured, timed_out = run_linux_process(proc, group, stdin_text.encode("utf-8"), started + timeout_seconds)
+        else:
+            captured, timed_out = _run_windows_process(proc, job, stdin_text, started + timeout_seconds)
+    except Exception:
+        _remove_stage(output_path)
+        raise
+
+    output_raw, output_over = _read_stage(output_path)
+    cleanup_ok = _remove_stage(output_path)
+    stdout, stdout_over = captured.get("stdout", (b"", True))
+    stderr, stderr_over = captured.get("stderr", (b"", True))
+    stdout_text, bad_stdout = _decode(stdout)
+    stderr_text, bad_stderr = _decode(stderr)
+    output_text, bad_output = _decode(output_raw)
+    malformed = stdout_over or stderr_over or output_over or bad_stdout or bad_stderr or bad_output or not cleanup_ok
+    elapsed = max(0, round((time.perf_counter() - started) * 1000))
+    return ProcessOutcome(proc.returncode if not timed_out else -1, stdout_text, stderr_text,
+                          sanitizer(output_text), elapsed, timed_out, malformed)
+
+
+def _run_windows_process(proc: subprocess.Popen, job, stdin_text: str, deadline: float) -> tuple[dict[str, Any], bool]:
     captured: dict[str, Any] = {}
     streams = ((proc.stdout, "stdout"), (proc.stderr, "stderr"))
     readers = [threading.Thread(target=_capture, args=(pipe, captured, key), daemon=True)
@@ -239,7 +235,7 @@ def run_process(argv: list[str], *, cwd: Path, stdin_text: str, timeout_seconds:
     writer = threading.Thread(target=send_stdin, daemon=True)
     writer.start()
     try:
-        remaining = max(.001, timeout_seconds - (time.perf_counter() - started))
+        remaining = max(.001, deadline - time.perf_counter())
         proc.wait(timeout=remaining)
         timed_out = False
     except subprocess.TimeoutExpired:
@@ -260,14 +256,4 @@ def run_process(argv: list[str], *, cwd: Path, stdin_text: str, timeout_seconds:
                 pass
             reader.join(.25)
 
-    output_raw, output_over = _read_stage(output_path)
-    cleanup_ok = _remove_stage(output_path)
-    stdout, stdout_over = captured.get("stdout", (b"", True))
-    stderr, stderr_over = captured.get("stderr", (b"", True))
-    stdout_text, bad_stdout = _decode(stdout)
-    stderr_text, bad_stderr = _decode(stderr)
-    output_text, bad_output = _decode(output_raw)
-    malformed = stdout_over or stderr_over or output_over or bad_stdout or bad_stderr or bad_output or not cleanup_ok
-    elapsed = max(0, round((time.perf_counter() - started) * 1000))
-    return ProcessOutcome(proc.returncode if not timed_out else -1, stdout_text, stderr_text,
-                          sanitizer(output_text), elapsed, timed_out, malformed)
+    return captured, timed_out
