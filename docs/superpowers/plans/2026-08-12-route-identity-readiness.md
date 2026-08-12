@@ -24,7 +24,7 @@
 **Files:**
 - Create: `benchmarks/cross-harness-adapter-contract-v2.json`
 - Modify: checked-in command/deck/default files located by `rg "cross-harness-adapter-contract-v1"`
-- Modify: `harness/adapter_runtime_matrix.py`, `harness/cross_harness_executor.py`, and `harness/cross_harness_cli.py` only for the v2 identity projection required to keep migrated defaults usable
+- Modify: `harness/adapter_runtime_matrix.py`, `harness/cross_harness_executor.py`, `harness/cross_harness_cli.py`, `harness/cross_harness_types.py`, and `harness/cross_harness_adapters.py` only for the v2 projection required to keep migrated defaults usable
 - Test: `tests/test_cross_harness_manifest.py`
 
 **Interfaces:**
@@ -33,7 +33,7 @@
 - Consumers reject the v1 overloaded model contract rather than coercing it.
 - Runtime rows and planned execution rows preserve v2 `model_id`; local runtime selection uses the contract's exact profile id, backend, and model reference.
 
-**Review remediation:** This narrow consumer projection moved into Task 1 after independent specification review found v2 defaults still read `target_model`. Task 2 retains transport and observed-identity semantics; Task 4 retains profile-hash and digest admission.
+**Review remediation:** This narrow consumer projection moved into Task 1 after independent specification review found v2 defaults still read `target_model`. It includes transporting `requested_model_reference` in `AttemptRequest`, using that value only for provider/profile selection, and keeping stable `model_id` as the comparison identity. Task 2 retains observed-identity semantics; Task 4 retains profile-hash and digest admission.
 
 - [ ] **Step 1: Write failing contract tests**
 
@@ -82,12 +82,12 @@ Commit only the v2 contract, its direct checked-in references, and the focused t
 - Test: `tests/test_cross_harness_executor.py`
 
 **Interfaces:**
-- `AttemptRequest` carries `model_id`, `model_display_name`, and `requested_model_reference`.
+- `AttemptRequest` request projection is complete in Task 1; Task 2 owns only the remaining observation fields.
 - Scorecards carry `model_observed` and `model_observation_basis` separately.
 
 - [ ] **Step 1: Write failing projection tests**
 
-Assert that the manifest preserves all three contract identities, the executor passes the requested reference to the adapter, and a returned adapter result with no observed attestation leaves `model_observed == ""` and `model_observation_basis == "unknown"`.
+Assert that a returned adapter result with no observed attestation leaves `model_observed == ""` and `model_observation_basis == "unknown"`.
 
 - [ ] **Step 2: Run RED**
 
@@ -95,7 +95,7 @@ Run the exact new manifest and executor tests. Expected failures should show the
 
 - [ ] **Step 3: Implement minimal projection**
 
-Keep comparison identity stable in `model_id`. Use only `requested_model_reference` at the transport boundary. Add the limitation `provider_request_accepted_not_model_attested` when a request returned but no structured event attested the model.
+Add the limitation `provider_request_accepted_not_model_attested` when a request returned but no structured event attested the model.
 
 - [ ] **Step 4: Run GREEN and adjacent executor tests**
 
@@ -114,7 +114,7 @@ Commit only the manifest/executor/type changes and their tests.
 - Test: `tests/test_cross_harness_process.py`
 
 **Interfaces:**
-- Codex argv gets `request.requested_model_reference`.
+- Codex argv request-reference projection moved to Task 1.
 - Structured provider events may yield `(observed_model, basis)`; absence yields `("", "unknown")`.
 
 - [ ] **Step 1: Write failing direct and inner-adapter tests**

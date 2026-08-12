@@ -19,6 +19,7 @@ class AttemptRequest:
     harness_id: str
     adapter_id: str
     model_id: str
+    requested_model_reference: str
     workspace_root: Path
     workspace_snapshot_sha256: str
     input_sha256s: dict[str, str]

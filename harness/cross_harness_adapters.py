@@ -161,7 +161,7 @@ class DirectCodexAdapter:
         failure = identity or ("" if exe else "codex_cli_missing")
         return AvailabilityResult(not failure, failure, failure or "codex CLI present", {"process_present": bool(exe), "provider_called": False, **evidence})
     def execute(self, request) -> AdapterResult:
-        process = self.runner(_codex_argv(self.executable_resolver(), request.model_id, request.workspace_root),
+        process = self.runner(_codex_argv(self.executable_resolver(), request.requested_model_reference, request.workspace_root),
             cwd=request.workspace_root, stdin_text=request.prompt, timeout_seconds=request.timeout_seconds)
         events, malformed = _parse_jsonl(process.stdout, "codex_direct")
         rejection, terminal_malformed = inspect_provider_events(events); malformed |= terminal_malformed
@@ -244,7 +244,7 @@ class FlywheelRouterAdapter:
         failure = failure or ("" if present else "codex_cli_missing")
         return AvailabilityResult(not failure, failure, failure or "adapter metadata ready", {"process_present": present, "provider_called": False, **evidence})
     def execute(self, request) -> AdapterResult:
-        proposer = self.proposer or CodexCliProposer(request.model_id, workspace=request.workspace_root, artifact_dir=request.artifact_dir, timeout_seconds=request.timeout_seconds, runner=self.runner, executable_resolver=self.executable_resolver)
+        proposer = self.proposer or CodexCliProposer(request.requested_model_reference, workspace=request.workspace_root, artifact_dir=request.artifact_dir, timeout_seconds=request.timeout_seconds, runner=self.runner, executable_resolver=self.executable_resolver)
         return _router_result(request, proposer, "flywheel_outer", self.clock)
 def _profile_error(profile: dict[str, Any]) -> str:
     if profile.get("backend") not in {"serve", "ollama"}: return "unsupported_local_backend"
@@ -287,7 +287,7 @@ class LocalRouterAdapter:
         failure, evidence = _identity(request, self.task_identities); failure = failure or _profile_error(self.profile)
         if not failure and request.provider_role != self.role: failure = "endpoint_role_mismatch"
         elif not failure and request.adapter_id != self.adapter_id: failure = "endpoint_adapter_mismatch"
-        elif not failure and request.model_id != self.profile.get("model"): failure = "endpoint_model_mismatch"
+        elif not failure and request.requested_model_reference != self.profile.get("model_ref"): failure = "endpoint_model_mismatch"
         return AvailabilityResult(not failure, failure, failure or "exact local profile selected", {"profile_id": self.profile.get("profile_id", ""), "profile_sha256": self.profile.get("profile_sha256", ""), "provider_called": False, **evidence})
     def execute(self, request) -> AdapterResult:
         available = self.availability(request); failure = available.failure_class

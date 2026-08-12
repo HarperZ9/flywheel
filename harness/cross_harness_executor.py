@@ -118,7 +118,7 @@ def expand_attempt_rows(
                     "attempt_key": list(key), "run_id": run_id, "phase": phase,
                     "provider_role": role, "harness_id": str(spec.get("harness_id", "")),
                     "adapter_id": str(spec.get("adapter_id", "")),
-                    "model_id": str(spec.get("model_id", "")),
+                    "model_id": str(spec.get("model_id", "")), "requested_model_reference": str(spec.get("requested_model_reference", "")),
                     "task_set_id": str(manifest.get("task_set_id", "")), "task_id": task_id,
                     "benchmark_id": str(task.get("benchmark_id", "")), "coverage_unit": str(task.get("coverage_unit", "")),
                     "task": task, "repetition": repetition, "attempt_dir": str(attempt),
@@ -193,7 +193,7 @@ def execute_cross_harness_manifest(
                 prompt = attempt / "prompt.txt"; prompt.write_text(str(task.get("raw_prompt", "")), encoding="utf-8", newline=""); files[prompt.name] = prompt
                 row["raw_prompt_path"] = str(prompt)
                 request = AttemptRequest(run_id, phase, row["task_set_id"], row["task_id"], task.get("raw_prompt", ""),
-                    row["raw_prompt_sha256"], row["provider_role"], row["harness_id"], row["adapter_id"], row["model_id"],
+                    row["raw_prompt_sha256"], row["provider_role"], row["harness_id"], row["adapter_id"], row["model_id"], row["requested_model_reference"],
                     workspace, workspace_snapshot["sha256"], observed, dict(SHARED_TOOL_POLICY), row["tool_policy_sha256"],
                     row["repetition"], cache_state, timeout_seconds, attempt)
                 adapter = adapters.get(row["provider_role"])

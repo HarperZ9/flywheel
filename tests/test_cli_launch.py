@@ -172,7 +172,7 @@ def test_built_wheel_exposes_root_and_cross_harness_help_outside_checkout(tmp_pa
 
 
 def _attempt(tmp_path, role="codex_harness", adapter="codex_cli_json/v1"):
-    return AttemptRequest("run", "spark", "set", "agt-001-task", "prompt", "a" * 64, role, role.split("_")[0], adapter, "spark", tmp_path, "b" * 64, {}, SHARED_TOOL_POLICY, "c" * 64, 1, "cold_declared", 3, tmp_path)
+    return AttemptRequest("run", "spark", "set", "agt-001-task", "prompt", "a" * 64, role, role.split("_")[0], adapter, "spark", "spark", tmp_path, "b" * 64, {}, SHARED_TOOL_POLICY, "c" * 64, 1, "cold_declared", 3, tmp_path)
 
 
 @pytest.mark.parametrize("command", ['bash -c "echo bad > x"', "sh -c 'echo bad > x'", 'dash -eu -c "echo bad > x"', 'zsh --no-rcs -fc "echo bad > x"', 'cmd /c "echo bad > x"', 'cmd.exe /d /v:on /c "echo bad > x"', 'C:\\Windows\\System32\\cmd.exe /s /c "echo bad > x"', 'powershell.exe -NoProfile -Command "echo bad > x"', 'C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe -Command "echo bad > x"', 'pwsh -NonInteractive -c "echo bad > x"'])
@@ -237,7 +237,7 @@ def test_windows_child_cannot_spawn_before_job_assignment(tmp_path, monkeypatch)
 def test_nonfinite_provider_json_still_seals_executor_receipt(tmp_path):
     source = tmp_path / "source"; source.mkdir(); prompt = "prompt"
     task = {"task_id": "agt-001-task", "raw_prompt": prompt, "raw_prompt_sha256": hashlib.sha256(prompt.encode()).hexdigest(), "input_sha256s": {}, "required_inputs": [], "expected_artifacts": [], "oracle": {}}
-    manifest = {"task_set_id": "set", "task_rows": [task], "provider_specs": [{"provider_role": "codex_harness", "harness_id": "codex", "adapter_id": "codex_cli_json/v1", "target_model": "spark"}]}
+    manifest = {"task_set_id": "set", "task_rows": [task], "provider_specs": [{"provider_role": "codex_harness", "harness_id": "codex", "adapter_id": "codex_cli_json/v1", "model_id": "spark", "model_display_name": "Spark", "requested_model_reference": "spark"}]}
     runtime = {"runtime_rows": [{"provider_role": "codex_harness", "focused_run_ready": True, "blocking_gates": []}]}
     process = type("Outcome", (), {"returncode": 0, "stdout": '{"value":NaN}\n', "stderr": "", "output_text": "", "elapsed_ms": 1, "timed_out": False, "malformed_output": False})()
     run = execute_cross_harness_manifest(manifest, runtime, {"codex_harness": DirectCodexAdapter(runner=lambda *a, **k: process, executable_resolver=lambda: "codex.cmd")}, artifact_root=tmp_path / "artifacts", source_root=source, run_id="run", phase="spark", selectors=["agt-001"], roles=["codex_harness"], repetitions=1)

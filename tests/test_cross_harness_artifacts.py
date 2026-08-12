@@ -193,7 +193,7 @@ def _execute_fixture(tmp_path, adapter, task_ids=("agt-001-task",), expected=("r
               "expected_artifacts": list(expected), "oracle": oracle or {"expected_artifacts": list(expected)}}
              for task_id in task_ids]
     manifest = {"task_set_id": "set", "task_rows": tasks, "provider_specs": [
-        {"provider_role": "local_14b", "harness_id": "local", "adapter_id": "local/v1", "target_model": "14B"}]}
+        {"provider_role": "local_14b", "harness_id": "local", "adapter_id": "local/v1", "model_id": "flywheel-local-coder-14b", "model_display_name": "Local 14B", "requested_model_reference": "local:14b"}]}
     runtime = {"runtime_rows": [{"provider_role": "local_14b", "focused_run_ready": True,
                 "blocking_gates": [], "endpoint_profile_matches": [], "endpoint_gate_matches": []}]}
     root = tmp_path / "artifacts"

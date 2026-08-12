@@ -123,7 +123,7 @@ def _manifest():
     tasks = [{"task_id": full, "raw_prompt_sha256": key[-3:] * 21 + "a", "input_sha256s": {}, "oracle": {"checker_id": key}}
              for key, full in FULL_IDS.items()]
     specs = [{"provider_role": role, "harness_id": "direct" if role == "codex_harness" else "router",
-              "adapter_id": "adapter", "target_model": "model"} for role in ROLES]
+              "adapter_id": "adapter", "model_id": "model", "model_display_name": "Model", "requested_model_reference": "model"} for role in ROLES]
     return {"task_set_id": "set", "task_rows": tasks, "provider_specs": specs}
 
 
