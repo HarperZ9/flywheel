@@ -38,7 +38,7 @@ def _clean(value: Any) -> Any:
     text = _API_KEY.sub("[REDACTED]", _JWT.sub("[REDACTED]", text))
     return _URL_CREDS.sub(r"\1[REDACTED]@", text)
 def _run_process(argv: list[str], **kwargs) -> ProcessOutcome:
-    return run_process(argv, sanitizer=_clean, **kwargs)
+    return run_process(argv, **kwargs)
 def _json_pairs(rows):
     if len(rows) != len({key for key, _ in rows}): raise ValueError("duplicate JSON key")
     return dict(rows)
@@ -66,6 +66,17 @@ def _parse_jsonl(text: str, source: str) -> tuple[list[dict[str, Any]], bool]:
         if len(events) < MAX_TRACE_EVENTS: events.append({**_clean(item), "source": source})
         else: malformed = True
     return events, malformed
+def _final_message(events: list[dict[str, Any]]) -> str:
+    found: list[str] = []
+    for event in events:
+        if event.get("type") != "item.completed": continue
+        item = event.get("item")
+        if not isinstance(item, dict) or item.get("type") != "agent_message": continue
+        text = item.get("text")
+        if not isinstance(text, str) or not text: raise MalformedProviderOutput("malformed final agent message")
+        found.append(text)
+    if not found: raise MalformedProviderOutput("final agent message missing")
+    return found[-1]
 def _audit(events: list[dict[str, Any]]) -> tuple[list[str], list[str]]:
     observed: set[str] = set()
     def visit(value: Any) -> None:
@@ -102,7 +113,7 @@ def _wrapper_payload(command: str) -> tuple[str, str] | None:
             option = word.lower()
             named = "-" + option[1:] if option.startswith("/") else option
             command = option in {"-c", "-command", "-commandwithargs", "/c", "/command"} or (len(named) >= 3 and "-command".startswith(named))
-            encoded = named == "-e" or (len(named) >= 3 and "-encodedcommand".startswith(named))
+            encoded = named in {"-e", "-ec"} or (len(named) >= 3 and "-encodedcommand".startswith(named))
             if command: return "powershell", " ".join(words[index + 1:])
             if encoded and index + 1 < len(words):
                 try: return "powershell", base64.b64decode(words[index + 1], validate=True).decode("utf-16le", "strict")
@@ -117,9 +128,9 @@ def _operator_text(kind: str, payload: str) -> str:
     if kind == "cmd": return re.sub(r"\^.", "", re.sub(r'"[^"]*"', "", payload))
     if kind == "powershell": return re.sub(r"`.", "", re.sub(r"'[^']*'|\"[^\"]*\"", "", payload)).replace('"', '')
     return re.sub(r"\\.|'[^']*'|\"[^\"]*\"", "", payload)
-def _codex_argv(executable: str, model: str, workspace: Path, output: Path) -> list[str]:
+def _codex_argv(executable: str, model: str, workspace: Path) -> list[str]:
     return [executable, "exec", "--model", model, "--sandbox", "read-only", "--cd", str(workspace), "--ephemeral", "--ignore-user-config",
-            "--skip-git-repo-check", "--json", "--output-last-message", str(output), "-"]
+            "--skip-git-repo-check", "--json", "-"]
 def _enforcement(description: dict[str, Any]) -> EnforcementResult:
     return EnforcementResult(description, canonical_sha256(description), "unverified_claim", "non_equivalent")
 def _freeze_identities(value: dict[str, dict[str, Any]] | None) -> dict[str, str]:
@@ -148,16 +159,19 @@ class DirectCodexAdapter:
         failure = identity or ("" if exe else "codex_cli_missing")
         return AvailabilityResult(not failure, failure, failure or "codex CLI present", {"process_present": bool(exe), "provider_called": False, **evidence})
     def execute(self, request) -> AdapterResult:
-        output = request.artifact_dir / "last-message.txt"
-        process = self.runner(_codex_argv(self.executable_resolver(), request.model_id, request.workspace_root, output),
-            cwd=request.workspace_root, stdin_text=request.prompt, timeout_seconds=request.timeout_seconds, output_path=output)
+        process = self.runner(_codex_argv(self.executable_resolver(), request.model_id, request.workspace_root),
+            cwd=request.workspace_root, stdin_text=request.prompt, timeout_seconds=request.timeout_seconds)
         events, malformed = _parse_jsonl(process.stdout, "codex_direct")
+        try: output_text = _final_message(events)
+        except MalformedProviderOutput: output_text, final_invalid = "", True
+        else: final_invalid = False
         events.append({"source": "codex_direct", "type": "controls", "randomness": "unsupported", "max_output_control": None, "max_output_control_state": "unsupported"}); capabilities, violations = _audit(events)
         state, failure, detail = "returned", "", ""
         if process.timed_out: state, failure, detail = "timeout", "timeout", process.stderr
         elif malformed or process.malformed_output: state, failure, detail = "malformed", "malformed_jsonl", "provider output was not bounded UTF-8 JSONL"
+        elif final_invalid: state, failure, detail = "malformed", "malformed_jsonl", "final agent message missing or malformed"
         elif process.returncode: state, failure, detail = "internal_error", "process_nonzero", process.stderr
-        return AdapterResult(state, _clean(process.output_text), events, process.elapsed_ms, request.model_id, "unsupported", failure, _clean(detail), {}, {}, capabilities, violations)
+        return AdapterResult(state, output_text if state == "returned" else "", events, process.elapsed_ms, request.model_id, "unsupported", failure, _clean(detail), {}, {}, capabilities, violations)
 class CodexCliProposer:
     def __init__(self, model_ref: str, *, workspace: Path, artifact_dir: Path, timeout_seconds: float, runner: Callable = _run_process,
                  executable_resolver: Callable = _resolve_codex, clock: Callable = time.monotonic):
@@ -167,14 +181,15 @@ class CodexCliProposer:
     def generate(self, prompt: str, *, seed: int, temperature: float, max_new_tokens: int, system: str = "") -> ProposerOutput:
         remaining = self.deadline - self.clock()
         if remaining <= 0: raise TimeoutError("shared attempt deadline expired")
-        self.calls += 1; output = self.artifact_dir / f"codex-inner-{self.calls:03d}.txt"
-        process = self.runner(_codex_argv(self.executable_resolver(), self.model_ref, self.workspace, output), cwd=self.workspace,
-            stdin_text=(f"{system}\n\n{prompt}" if system else prompt), timeout_seconds=remaining, output_path=output)
+        self.calls += 1
+        process = self.runner(_codex_argv(self.executable_resolver(), self.model_ref, self.workspace), cwd=self.workspace,
+            stdin_text=(f"{system}\n\n{prompt}" if system else prompt), timeout_seconds=remaining)
         events, malformed = _parse_jsonl(process.stdout, "codex_inner"); self.events.extend(events)
         if process.timed_out: raise TimeoutError("codex inner call timed out")
         if malformed or process.malformed_output: raise MalformedProviderOutput("codex inner provider output was malformed")
+        final = _final_message(events)
         if process.returncode: raise RuntimeError(f"codex inner process exited {process.returncode}: {_clean(process.stderr)}")
-        return ProposerOutput(_clean(process.output_text), self.model_ref, seed, prompt_hash(prompt), "unsupported", served_model=self.model_ref, usage=None)
+        return ProposerOutput(final, self.model_ref, seed, prompt_hash(prompt), "unsupported", served_model=self.model_ref, usage=None)
 class _ObservedProposer:
     def __init__(self, inner, timeout: float, clock: Callable):
         self.inner, self.model_ref, self.observed, self.usage = inner, inner.model_ref, inner.model_ref, None

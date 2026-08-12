@@ -198,7 +198,7 @@ def test_wrapper_escaped_redirect_data_is_not_write(command, tmp_path):
 
 def test_encoded_powershell_and_cmd_keep_commands_are_audited(tmp_path):
     encoded = base64.b64encode("echo bad > x".encode("utf-16le")).decode()
-    for command in (f"pwsh -EncodedCommand {encoded}", f"powershell /E {encoded}", f"powershell -En {encoded}", f"powershell /En {encoded}", f"powershell /Enc {encoded}", f"powershell -Enco {encoded}", f"powershell /Encode {encoded}", f"powershell -Encoded {encoded}", f"powershell /Encoded {encoded}", f"powershell -EncodedC {encoded}", f"powershell -EncodedCom {encoded}",
+    for command in (f"pwsh -EncodedCommand {encoded}", f"powershell -EC {encoded}", f"powershell /EC {encoded}", f"powershell /E {encoded}", f"powershell -En {encoded}", f"powershell /En {encoded}", f"powershell /Enc {encoded}", f"powershell -Enco {encoded}", f"powershell /Encode {encoded}", f"powershell -Encoded {encoded}", f"powershell /Encoded {encoded}", f"powershell -EncodedC {encoded}", f"powershell -EncodedCom {encoded}",
                     'powershell -Co "echo bad > x"', 'powershell /Co "echo bad > x"', 'powershell -Com "echo bad > x"', 'powershell -Comm "echo bad > x"', 'cmd.exe /d /k "echo bad > x"'):
         process = type("Outcome", (), {"returncode": 0, "stdout": json.dumps({"type": "command_execution", "command": command}), "stderr": "", "output_text": "", "elapsed_ms": 1, "timed_out": False, "malformed_output": False})()
         result = DirectCodexAdapter(runner=lambda *a, **k: process, executable_resolver=lambda: "codex.cmd").execute(_attempt(tmp_path))
@@ -212,31 +212,11 @@ def test_cmd_attached_command_switch_is_audited(command, tmp_path):
     assert "write_not_allowed" in result.policy_violations
 
 
-def test_real_child_streams_and_output_stage_are_bounded(tmp_path):
-    stage = tmp_path / "out.txt"
-    code = "import pathlib,sys;sys.stdout.buffer.write(b'x'*(2<<20));sys.stderr.buffer.write(b'y'*(2<<20));pathlib.Path(sys.argv[1]).write_bytes(b'z'*(2<<20))"
-    result = _run_process([sys.executable, "-c", code, str(stage)], cwd=tmp_path, stdin_text="", timeout_seconds=3, output_path=stage)
-    assert result.malformed_output and max(map(len, (result.stdout, result.stderr, result.output_text))) <= (1 << 20) and not stage.exists()
-
-
-@pytest.mark.parametrize("kind", ["directory", "symlink"])
-def test_provider_output_stage_rejects_non_regular_objects(tmp_path, kind):
-    stage, target = tmp_path / "out.txt", tmp_path / "target.txt"
-    target.write_text("outside")
-    if kind == "directory": code = "import pathlib,sys;p=pathlib.Path(sys.argv[1]);p.unlink(missing_ok=True);p.mkdir();(p/'raw').write_text('provider-secret')"
-    else: code = "import os,pathlib,sys;p=pathlib.Path(sys.argv[1]);p.unlink(missing_ok=True);os.symlink(sys.argv[2],p)"
-    result = _run_process([sys.executable, "-c", code, str(stage), str(target)], cwd=tmp_path, stdin_text="", timeout_seconds=2, output_path=stage)
-    if kind == "symlink" and result.returncode:
-        pytest.skip("file symlink creation is unavailable on this host")
-    retained = [p for p in tmp_path.rglob("*") if p.is_file() and b"provider-secret" in p.read_bytes()]
-    assert result.malformed_output and not stage.exists() and target.read_text() == "outside" and not retained
-
-
-def test_preexisting_nonempty_stage_directory_fails_closed_without_deletion(tmp_path):
-    stage = tmp_path / "out.txt"; stage.mkdir(); payload = stage / "keep"; payload.write_text("owned")
-    with pytest.raises(OSError, match="not safely removable"):
-        _run_process([sys.executable, "-c", "pass"], cwd=tmp_path, stdin_text="", timeout_seconds=2, output_path=stage)
-    assert payload.read_text() == "owned"
+def test_real_child_streams_are_bounded_without_output_stage(tmp_path):
+    code = "import sys;sys.stdout.buffer.write(b'x'*(2<<20));sys.stderr.buffer.write(b'y'*(2<<20))"
+    result = _run_process([sys.executable, "-c", code], cwd=tmp_path, stdin_text="", timeout_seconds=3)
+    assert result.malformed_output and max(map(len, (result.stdout, result.stderr))) <= (1 << 20)
+    assert not list(tmp_path.glob(".cross-harness-stage-*"))
 
 
 @pytest.mark.skipif(sys.platform != "win32", reason="Windows suspended-launch boundary")
@@ -249,17 +229,9 @@ def test_windows_child_cannot_spawn_before_job_assignment(tmp_path, monkeypatch)
     original = process._windows_job
     def delayed(proc): time.sleep(.3); return original(proc)
     monkeypatch.setattr(process, "_windows_job", delayed)
-    result = _run_process([sys.executable, "-c", child, grandchild], cwd=tmp_path, stdin_text="", timeout_seconds=.55, output_path=tmp_path / "out.txt")
+    result = _run_process([sys.executable, "-c", child, grandchild], cwd=tmp_path, stdin_text="", timeout_seconds=.55)
     time.sleep(.9)
     assert result.timed_out and not marker.exists()
-
-
-@pytest.mark.skipif(sys.platform == "win32", reason="POSIX FIFO boundary")
-def test_provider_output_stage_rejects_fifo_without_blocking(tmp_path):
-    stage = tmp_path / "out.txt"
-    code = "import os,sys;os.mkfifo(sys.argv[1])"
-    result = _run_process([sys.executable, "-c", code, str(stage)], cwd=tmp_path, stdin_text="", timeout_seconds=2, output_path=stage)
-    assert result.malformed_output and not stage.exists()
 
 
 def test_nonfinite_provider_json_still_seals_executor_receipt(tmp_path):
@@ -274,7 +246,7 @@ def test_nonfinite_provider_json_still_seals_executor_receipt(tmp_path):
 
 @pytest.mark.parametrize("rc", [0, 7])
 def test_inner_invalid_utf8_is_malformed_through_full_adapter(tmp_path, rc):
-    process = _run_process([sys.executable, "-c", f"import sys;sys.stdout.buffer.write(b'\\xff');sys.exit({rc})"], cwd=tmp_path, stdin_text="", timeout_seconds=2, output_path=tmp_path / "child.txt")
+    process = _run_process([sys.executable, "-c", f"import sys;sys.stdout.buffer.write(b'\\xff');sys.exit({rc})"], cwd=tmp_path, stdin_text="", timeout_seconds=2)
     proposer = CodexCliProposer("spark", workspace=tmp_path, artifact_dir=tmp_path, timeout_seconds=2, runner=lambda *a, **k: process, executable_resolver=lambda: "codex.cmd")
     with pytest.raises(Exception) as caught: proposer.generate("p", seed=0, temperature=0, max_new_tokens=1)
     assert type(caught.value).__name__ == "MalformedProviderOutput"

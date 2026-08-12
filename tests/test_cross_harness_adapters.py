@@ -12,7 +12,10 @@ def request(tmp_path, role="codex_harness", adapter="codex_cli_json/v1", model="
     return AttemptRequest("run", "spark", "set", "agt-001-full", "do the task", "a" * 64, role, role.split("_")[0], adapter,
         model, tmp_path, "b" * 64, {}, SHARED_TOOL_POLICY, "c" * 64, 1, "cold_declared", 3, tmp_path)
 def outcome(stdout="", output="answer", *, rc=0, stderr="", elapsed=7):
-    return ProcessOutcome(rc, stdout, stderr, output, elapsed, False)
+    if output is not None:
+        final = json.dumps({"type": "item.completed", "item": {"type": "agent_message", "text": output}})
+        stdout = "\n".join(filter(None, (stdout, final)))
+    return ProcessOutcome(rc, stdout, stderr, elapsed, False)
 def test_empty_cli_selections_are_rejected():
     with pytest.raises(ValueError, match="selection must not be empty"): _csv("")
     assert _exit([], True) == 1
@@ -28,11 +31,10 @@ def test_direct_codex_uses_stdin_hardened_read_only_argv_and_captures_jsonl(tmp_
     result = adapter.execute(request(tmp_path))
     assert seen["argv"] == [
         "C:/bin/codex.cmd", "exec", "--model", "5.3-Codex-Spark", "--sandbox", "read-only", "--cd", str(tmp_path),
-        "--ephemeral", "--ignore-user-config", "--skip-git-repo-check", "--json",
-        "--output-last-message", str(tmp_path / "last-message.txt"), "-",
+        "--ephemeral", "--ignore-user-config", "--skip-git-repo-check", "--json", "-",
     ]
     assert seen["stdin_text"] == "do the task" and seen["cwd"] == tmp_path
-    assert result.execution_state == "returned" and len(result.tool_trace) == 3
+    assert result.execution_state == "returned" and result.output_text == "answer" and len(result.tool_trace) == 4
     assert result.usage == {} and result.resource_observation == {}
     assert result.randomness_control == "unsupported"
     assert result.observed_capabilities == ["read", "shell"]
@@ -70,31 +72,28 @@ def test_audit_does_not_infer_write_from_inert_text_and_source_is_authoritative(
     assert result.tool_trace[0]["source"] == "codex_direct"
     assert "write" not in result.observed_capabilities
 @pytest.mark.parametrize(("process", "state", "failure"), [
-    (ProcessOutcome(9, "", "bad", "", 3, False), "internal_error", "process_nonzero"),
-    (ProcessOutcome(-1, "", "late", "", 3, True), "timeout", "timeout"),
+    (ProcessOutcome(9, "", "bad", 3, False), "malformed", "malformed_jsonl"),
+    (ProcessOutcome(-1, "", "late", 3, True), "timeout", "timeout"),
 ])
 def test_direct_codex_types_nonzero_and_timeout(tmp_path, process, state, failure):
     adapter = DirectCodexAdapter(runner=lambda *a, **k: process, executable_resolver=lambda: "codex.cmd")
     result = adapter.execute(request(tmp_path))
     assert (result.execution_state, result.failure_class) == (state, failure)
 @pytest.mark.parametrize(("tail", "timeout", "state"), [("", 2, "returned"), ("sys.exit(7)", 2, "internal_error"), ("time.sleep(30)", .1, "timeout"), ("sys.stdout.buffer.write(b'\\xff');sys.exit(7)", 2, "malformed")])
-def test_process_runner_removes_raw_secret_stage_and_types_boundaries(tmp_path, monkeypatch, tail, timeout, state):
+def test_process_runner_has_no_provider_writable_stage_and_types_boundaries(tmp_path, monkeypatch, tail, timeout, state):
     import sys
-    secret, stage = "sk-abcdefghijklmnopqrstuvwxyz", tmp_path / "last-message.txt"
     monkeypatch.setenv("CODEX_HOME", str(tmp_path / "custom-auth-home"))
-    code = "import os,pathlib,sys,time;assert os.environ['CODEX_HOME'];pathlib.Path(sys.argv[1]).write_text(sys.argv[2]);" + tail
-    result = _run_process([sys.executable, "-c", code, str(stage), secret], cwd=tmp_path, stdin_text="", timeout_seconds=timeout, output_path=stage)
+    final = json.dumps({"type": "item.completed", "item": {"type": "agent_message", "text": "answer"}})
+    code = f"import os,sys,time;assert os.environ['CODEX_HOME'];print({final!r});" + tail
+    result = _run_process([sys.executable, "-c", code], cwd=tmp_path, stdin_text="", timeout_seconds=timeout)
     typed = DirectCodexAdapter(runner=lambda *a, **k: result, executable_resolver=lambda: "codex.cmd").execute(request(tmp_path))
-    assert typed.execution_state == state and not stage.exists()
-    assert secret not in repr(result)
-    index = write_artifact_index(tmp_path, [p for p in tmp_path.rglob("*") if p.is_file()])
-    assert "last-message" not in index.read_text() and secret not in index.read_text()
+    assert typed.execution_state == state and not list(tmp_path.glob(".cross-harness-stage-*"))
 def test_process_runner_terminates_descendants_within_bound(tmp_path):
     import os, subprocess, sys, time
     marker, pidfile = tmp_path / "survived", tmp_path / "descendant.pid"
     grandchild = f"import os,pathlib,time;pathlib.Path({str(pidfile)!r}).write_text(str(os.getpid()));time.sleep(3);pathlib.Path({str(marker)!r}).write_text('bad')"
     child = "import os,subprocess,sys,time;subprocess.Popen([sys.executable,'-c',sys.argv[1]],creationflags=(8 if os.name=='nt' else 0),start_new_session=(os.name!='nt'));time.sleep(30)"; started = time.monotonic()
-    result = _run_process([sys.executable, "-c", child, grandchild], cwd=tmp_path, stdin_text="", timeout_seconds=.3, output_path=tmp_path / "out.txt")
+    result = _run_process([sys.executable, "-c", child, grandchild], cwd=tmp_path, stdin_text="", timeout_seconds=.3)
     elapsed = time.monotonic() - started; time.sleep(.7)
     alive = pidfile.read_text() in subprocess.run(["tasklist", "/FI", f"PID eq {pidfile.read_text()}", "/NH"], capture_output=True, text=True).stdout if os.name == "nt" else os.path.exists(f"/proc/{pidfile.read_text()}")
     assert result.timed_out and pidfile.is_file() and elapsed < 2 and not marker.exists() and not alive
@@ -116,7 +115,7 @@ def test_codex_cli_proposer_implements_protocol_and_retains_inner_events(tmp_pat
     assert result.text == "inner answer" and result.usage is None
     assert result.seed == 4 and result.cache == "unsupported"
     assert seen["stdin_text"] == "system\n\nprompt" and seen["argv"][-1] == "-"
-    assert proposer.events == [{"source": "codex_inner", "type": "turn.completed"}]
+    assert proposer.events[-1]["item"]["text"] == "inner answer" and all(event["source"] == "codex_inner" for event in proposer.events)
 def test_outer_loop_uses_one_deadline_across_turns(tmp_path):
     class Clock:
         now = 0
