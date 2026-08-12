@@ -1143,12 +1143,12 @@ def comparison_report_signal_summary(child_summaries: list[dict[str, Any]]) -> d
 
 
 def cross_harness_execution_signal_summary(child_summaries: list[dict[str, Any]]) -> dict[str, Any]:
-    rows = [item for item in child_summaries if item.get("kind") == "cross_harness_execution"]
-    result: dict[str, Any] = {}
+    rows = [item for item in child_summaries if item.get("kind") == "cross_harness_execution"]; result: dict[str, Any] = {}
     for phase in ("spark", "local"):
         phase_rows = [row for row in rows if row.get("phase") == phase]
         result[phase] = {"artifacts": len(phase_rows), "planned_rows": sum(int(row.get("planned_rows", 0)) for row in phase_rows), "provider_units": sum(int(row.get("provider_units", 0)) for row in phase_rows), "availability": {key: sum(int(row.get("availability", {}).get(key, 0)) for row in phase_rows) for key in ("planned", "admitted", "blocked", "launched")}}
-        for key in ("execution_reliability", "deterministic_quality", "latency_ms", "resources", "metric_null_reasons", "declared_tool_policy_sha256s", "enforcement_sha256s", "policy_equivalence"): result[phase][key] = phase_rows[0].get(key) if len(phase_rows) == 1 else None
+        for key in ("execution_reliability", "deterministic_quality", "quality_n", "latency_ms", "resources", "metric_null_reasons", "declared_tool_policy_sha256s", "enforcement_sha256s", "policy_equivalence"): result[phase][key] = phase_rows[0].get(key) if len(phase_rows) == 1 else None
+    result["scorecard_artifacts"], result["quality_n"], result["availability"] = len(rows), sum(int(row.get("quality_n", 0)) for row in rows), {key: sum(int(row.get("availability", {}).get(key, 0)) for row in rows) for key in ("planned", "admitted", "blocked", "launched")}
     result["declared_tool_policy_sha256s"] = sorted({value for row in rows for value in row.get("declared_tool_policy_sha256s", [])})
     result["enforcement_sha256s"] = sorted({value for row in rows for value in row.get("enforcement_sha256s", [])})
     result["policy_equivalence"] = "non_equivalent" if rows else "unknown"
@@ -2007,8 +2007,8 @@ def conclusion(report: dict[str, Any]) -> dict[str, Any]:
 
 
 def build_outcome(report: dict[str, Any], *, source_report_path: str) -> dict[str, Any]:
-    rows = _step_rows(report)
-    child_summaries = extract_child_artifact_summaries(report)
+    rows = _step_rows(report); child_summaries = extract_child_artifact_summaries(report)
+    cross_harness_signals = cross_harness_execution_signal_summary(child_summaries); benchmark_signals = benchmark_signal_summary(child_summaries)
     observed_steps = [
         {
             "step_id": row.get("step_id", ""),
@@ -2049,8 +2049,8 @@ def build_outcome(report: dict[str, Any], *, source_report_path: str) -> dict[st
             "embodied_realtime_signals": embodied_realtime_signal_summary(child_summaries),
             "model_card_claim_signals": model_card_claim_signal_summary(child_summaries),
             "comparison_report_signals": comparison_report_signal_summary(child_summaries),
-            "cross_harness_execution_signals": cross_harness_execution_signal_summary(child_summaries),
-            "benchmark_signals": benchmark_signal_summary(child_summaries),
+            "cross_harness_execution_signals": cross_harness_signals, "scorecard_artifacts": {"benchmark_signals": benchmark_signals["scorecard_count"], "cross_harness": cross_harness_signals["scorecard_artifacts"], "total": benchmark_signals["scorecard_count"] + cross_harness_signals["scorecard_artifacts"]},
+            "benchmark_signals": benchmark_signals,
             "context_signals": context_signal_summary(child_summaries),
             "tool_readiness_signals": tool_readiness_signal_summary(child_summaries),
             "tool_hardening_signals": tool_hardening_signal_summary(child_summaries),
@@ -2065,7 +2065,7 @@ def build_outcome(report: dict[str, Any], *, source_report_path: str) -> dict[st
             "Step-level process success is not equivalent to model-quality success; child scorecards remain the authority for benchmark claims.",
         ],
         "unknowns": [
-            "No model-quality comparison can be concluded from a dry plan.",
+            *(["No model-quality comparison can be concluded from a dry plan."] if report.get("dry_plan") else ["No model-quality comparison can be concluded because the parsed cross-harness scorecards have a zero deterministic-quality denominator."] if cross_harness_signals["scorecard_artifacts"] and cross_harness_signals["quality_n"] == 0 else []),
             "Endpoint availability must be interpreted from endpoint-auth and child benchmark artifacts.",
             "Provider deltas extracted from child scorecards are only as strong as the executed benchmark scope.",
             "Full Codex/Flywheel/Claude/OpenCode/local-model conclusions require the full benchmark battery, not only the bounded seed slice.",
@@ -2076,7 +2076,7 @@ def build_outcome(report: dict[str, Any], *, source_report_path: str) -> dict[st
             "Benchmark coverage reports identify missing evidence; they do not infer quality for absent scorecards.",
         ],
         "next_checks": [
-            "Run the closed-loop seed dry plan if this outcome was built from stale or missing plan evidence.",
+            *(["Run the closed-loop seed dry plan if this outcome was built from stale or missing plan evidence."] if report.get("dry_plan") else []),
             "Execute the closed-loop seed command to create a shared-run receipt bundle.",
             "Inspect child scorecards for provider-level pass rates, latency, failure classes, and skipped endpoint posture.",
             "Extend orchestration to live gather receipts and live 14B/32B benchmark, checksum, and endpoint gates.",
@@ -2125,8 +2125,8 @@ def render_markdown(outcome: dict[str, Any]) -> str:
         f"- Model-card unresolved claim fields: `{outcome['observations']['model_card_claim_signals']['unresolved_fields']}`",
         f"- Comparison report artifacts parsed: `{outcome['observations']['comparison_report_signals']['comparison_artifacts']}`",
         f"- Available Codex/Flywheel comparisons: `{outcome['observations']['comparison_report_signals']['available_comparisons']}`",
-        f"- Missing runnable benchmarks: `{', '.join(outcome['observations']['benchmark_coverage_signals']['missing_runnable_benchmark_ids'])}`",
-        f"- Benchmark scorecards parsed: `{outcome['observations']['benchmark_signals']['scorecard_count']}`",
+        f"- Missing runnable benchmarks: `{', '.join(outcome['observations']['benchmark_coverage_signals']['missing_runnable_benchmark_ids'])}`", f"- Benchmark scorecards parsed: `{outcome['observations']['scorecard_artifacts']['total']}`",
+        f"- Cross-harness scorecards parsed: `{outcome['observations']['cross_harness_execution_signals']['scorecard_artifacts']}`", f"- Deterministic quality denominator: `{outcome['observations']['cross_harness_execution_signals']['quality_n']}`",
         f"- Providers observed: `{', '.join(outcome['observations']['benchmark_signals']['providers_observed'])}`",
         f"- Context inventory artifacts parsed: `{outcome['observations']['context_signals']['inventory_count']}`",
         f"- Context entries observed: `{outcome['observations']['context_signals']['entries']}`",
