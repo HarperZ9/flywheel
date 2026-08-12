@@ -547,13 +547,13 @@ Closed-loop wiring update:
 Cross-harness manifest command:
 
 ```powershell
-python scripts/run_cross_harness_manifest.py --task-set C:/dev/local-model/benchmarks/agentic-task-set-v1.json --contract C:/dev/local-model/benchmarks/cross-harness-adapter-contract-v1.json --provider-roles codex_harness,flywheel_harness,claude_code,opencode,local_14b,local_32b,dry --out C:/tmp/cross_harness_manifest_20260709.json --markdown-out C:/tmp/cross_harness_manifest_20260709.md --store-root C:/tmp/harness_file_store
+python scripts/run_cross_harness_manifest.py --task-set C:/dev/local-model/benchmarks/agentic-task-set-v1.json --contract C:/dev/local-model/benchmarks/cross-harness-adapter-contract-v2.json --provider-roles codex_harness,flywheel_harness,claude_code,opencode,local_14b,local_32b,dry --out C:/tmp/cross_harness_manifest_20260709.json --markdown-out C:/tmp/cross_harness_manifest_20260709.md --store-root C:/tmp/harness_file_store
 ```
 
 Executable wrapper:
 
 ```powershell
-.\harness.cmd cross-harness --task-set C:/dev/local-model/benchmarks/agentic-task-set-v1.json --contract C:/dev/local-model/benchmarks/cross-harness-adapter-contract-v1.json --provider-roles codex_harness,flywheel_harness,claude_code,opencode,local_14b,local_32b,dry --out C:/tmp/cross_harness_manifest_20260709.json --markdown-out C:/tmp/cross_harness_manifest_20260709.md --store-root C:/tmp/harness_file_store
+.\harness.cmd cross-harness --task-set C:/dev/local-model/benchmarks/agentic-task-set-v1.json --contract C:/dev/local-model/benchmarks/cross-harness-adapter-contract-v2.json --provider-roles codex_harness,flywheel_harness,claude_code,opencode,local_14b,local_32b,dry --out C:/tmp/cross_harness_manifest_20260709.json --markdown-out C:/tmp/cross_harness_manifest_20260709.md --store-root C:/tmp/harness_file_store
 ```
 
 The cross-harness manifest command is metadata-only. It emits schema `harness.cross-harness-manifest/v1`, shared task prompt hashes, planned artifact paths, provider-role rows, required receipt expectations, and manifest-only `harness.cross-harness-task-scorecard/v1` rows. It does not call Codex, Flywheel, Claude Code, OpenCode, local endpoints, model weights, or benchmark runners.

@@ -17,14 +17,10 @@ def _pairs(rows: list[tuple[str, Any]]) -> dict[str, Any]:
         if key in out: raise ValueError(f"duplicate JSON key: {key}")
         out[key] = value
     return out
-
-
 def _load(path: Path) -> dict[str, Any]:
     value = json.loads(path.read_text(encoding="utf-8-sig"), object_pairs_hook=_pairs)
     if not isinstance(value, dict): raise ValueError(f"JSON object required: {path}")
     return value
-
-
 def _sha(path: Path) -> str:
     digest = hashlib.sha256()
     with path.open("rb") as handle:
@@ -38,8 +34,7 @@ def _csv(value: str) -> list[str]:
     return rows
 
 
-def _exit(rows: list[dict[str, Any]], strict: bool) -> int:
-    return 1 if strict and (not rows or any(row.get("primary_outcome") != "completed" for row in rows)) else 0
+def _exit(rows: list[dict[str, Any]], strict: bool) -> int: return 1 if strict and (not rows or any(row.get("primary_outcome") != "completed" for row in rows)) else 0
 
 
 def _runtime(matrix: dict[str, Any], role: str) -> dict[str, Any]:
@@ -61,7 +56,7 @@ def _admission_identity_code(row: dict[str, Any], task: dict[str, Any], spec: di
         ("admission_prompt_mismatch", row.get("raw_prompt_sha256"), task.get("raw_prompt_sha256")),
         ("admission_input_mismatch", row.get("input_sha256s"), task.get("input_sha256s", {})),
         ("admission_oracle_mismatch", oracle, canonical_sha256(task.get("oracle", {}))),
-        ("admission_model_mismatch", row.get("model_id"), spec.get("target_model")),
+        ("admission_model_mismatch", row.get("model_id"), spec.get("model_id")),
         ("admission_adapter_mismatch", (row.get("harness_id"), row.get("adapter_id")),
          (spec.get("harness_id"), spec.get("adapter_id"))),
         ("admission_policy_mismatch", row.get("tool_policy_sha256"), canonical_sha256(SHARED_TOOL_POLICY)),

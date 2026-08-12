@@ -8,7 +8,7 @@
   "global_invariants": [
     "Each provider receives the same task_id and task prompt bytes for comparable runs.",
     "Each provider records raw prompt hash, raw output hash, artifact paths, receipt path, run id, provider role, harness id, model id, and failure class.",
-    "Provider secrets, endpoint credentials, .env values, tokens, private keys, and private payload bodies must never be copied into scorecards.",
+    "Provider credentials, environment values, and private payload bodies must never be copied into scorecards.",
     "A prepared adapter is not an executed benchmark.",
     "A skipped provider is evidence of coverage gap, not model failure.",
     "A provider result is comparable only when task_id, task_set_id, metric schema, and execution policy match."

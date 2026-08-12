@@ -16,18 +16,23 @@ def canonical_sha256(value):
     return hashlib.sha256(body.encode("utf-8")).hexdigest()
 
 
-def contract_fixture():
+def contract_fixture(selector):
     def row(role, harness, model, state="contract_only", modes=None):
         return {
-            "provider_role": role, "harness_id": harness, "target_model": model,
+            "provider_role": role, "harness_id": harness, "model_id": model,
+            "model_display_name": model, "requested_model_reference": model,
             "adapter_state": state,
             "allowed_modes": modes or ["manifest_only", "focused_run_after_approval"],
             "required_receipts": [],
         }
+    local = row("local_14b", "local_endpoint", "flywheel-local-coder-14b", "needs_endpoint_profile_and_gate")
+    local["endpoint_selector"] = {key: selector[key] for key in ("profile_id", "backend", "model_ref")}
+    local["endpoint_selector"]["model_reference"] = local["endpoint_selector"].pop("model_ref")
+    local["endpoint_selector"]["release_asset_sha256"] = "a" * 64
     return {"provider_roles": [
         row("codex_harness", "codex", "5.3-Codex-Spark"),
         row("flywheel_harness", "flywheel", "5.3-Codex-Spark"),
-        row("local_14b", "local_endpoint", "14B", "needs_endpoint_profile_and_gate"),
+        local,
         row("dry", "dry_null", "none", modes=["manifest_only"]),
     ]}
 
@@ -64,9 +69,10 @@ def gate_fixture(profile, *, observed_at=None, run_id="gate-run"):
 
 
 def matrix(*, profiles=None, gate=None, auth=None, now=NOW, expected_run="gate-run", max_age=900):
+    profiles = profiles or profile_fixture()
     return build_matrix(
-        contract_fixture(), contract_path="contract.json", contract_sha256="contract-hash",
-        endpoint_profiles=profiles or profile_fixture(), endpoint_gate=gate,
+        contract_fixture(profiles["profiles"][0]), contract_path="contract.json", contract_sha256="contract-hash",
+        endpoint_profiles=profiles, endpoint_gate=gate,
         endpoint_gate_path="gate.json" if gate else "", endpoint_gate_sha256="gate-hash" if gate else "",
         endpoint_auth_status=auth or auth_fixture(), expected_gate_run_id=expected_run,
         now=now, max_age_seconds=max_age, run_id="matrix-run",
@@ -257,14 +263,13 @@ def test_matrix_records_gate_metadata_and_renders_guards():
     assert result["max_age_seconds"] == 900
     assert "must not call Codex" in render_markdown(result)
 
-
 def cli_matrix(tmp_path, gate):
     contract_path = tmp_path / "contract.json"
     profiles_path = tmp_path / "profiles.json"
     gate_path = tmp_path / "gate.json"
     out = tmp_path / "matrix.json"
     profiles = profile_fixture()
-    contract_path.write_text(json.dumps(contract_fixture()), encoding="utf-8")
+    contract_path.write_text(json.dumps(contract_fixture(profiles["profiles"][0])), encoding="utf-8")
     profiles_path.write_text(json.dumps(profiles), encoding="utf-8")
     args = [
         "--contract", str(contract_path), "--endpoint-profiles", str(profiles_path),
@@ -276,8 +281,6 @@ def cli_matrix(tmp_path, gate):
         args.extend(["--endpoint-gate", str(gate_path)])
     assert matrix_main(args) == 0
     return json.loads(out.read_text(encoding="utf-8")), gate_path
-
-
 def test_metadata_cli_reads_gate_and_records_path_hash_run_and_age(tmp_path):
     profile = profile_fixture()["profiles"][0]
     gate = gate_fixture(profile, observed_at=datetime.now(UTC).isoformat())
@@ -288,8 +291,6 @@ def test_metadata_cli_reads_gate_and_records_path_hash_run_and_age(tmp_path):
     assert result["max_age_seconds"] == 600
     assert result["summary"]["endpoint_probe"] is False
     assert result["summary"]["token_store_read"] is False
-
-
 @pytest.mark.parametrize(("gate", "code"), [
     ("omitted", "endpoint_gate_missing"), ("missing", "endpoint_gate_missing"),
     ({}, "endpoint_gate_schema_mismatch"), ([], "endpoint_gate_schema_mismatch"),

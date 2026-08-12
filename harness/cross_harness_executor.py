@@ -118,7 +118,7 @@ def expand_attempt_rows(
                     "attempt_key": list(key), "run_id": run_id, "phase": phase,
                     "provider_role": role, "harness_id": str(spec.get("harness_id", "")),
                     "adapter_id": str(spec.get("adapter_id", "")),
-                    "model_id": str(spec.get("target_model", "")),
+                    "model_id": str(spec.get("model_id", "")),
                     "task_set_id": str(manifest.get("task_set_id", "")), "task_id": task_id,
                     "benchmark_id": str(task.get("benchmark_id", "")), "coverage_unit": str(task.get("coverage_unit", "")),
                     "task": task, "repetition": repetition, "attempt_dir": str(attempt),

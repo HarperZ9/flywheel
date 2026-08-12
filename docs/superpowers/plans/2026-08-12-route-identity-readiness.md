@@ -24,12 +24,16 @@
 **Files:**
 - Create: `benchmarks/cross-harness-adapter-contract-v2.json`
 - Modify: checked-in command/deck/default files located by `rg "cross-harness-adapter-contract-v1"`
+- Modify: `harness/adapter_runtime_matrix.py`, `harness/cross_harness_executor.py`, and `harness/cross_harness_cli.py` only for the v2 identity projection required to keep migrated defaults usable
 - Test: `tests/test_cross_harness_manifest.py`
 
 **Interfaces:**
 - Produces provider-role fields `model_id`, `model_display_name`, and `requested_model_reference`.
 - Produces exact local `endpoint_selector` fields `profile_id`, `backend`, `model_reference`, and release asset SHA.
 - Consumers reject the v1 overloaded model contract rather than coercing it.
+- Runtime rows and planned execution rows preserve v2 `model_id`; local runtime selection uses the contract's exact profile id, backend, and model reference.
+
+**Review remediation:** This narrow consumer projection moved into Task 1 after independent specification review found v2 defaults still read `target_model`. Task 2 retains transport and observed-identity semantics; Task 4 retains profile-hash and digest admission.
 
 - [ ] **Step 1: Write failing contract tests**
 

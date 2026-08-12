@@ -40,14 +40,23 @@ def validate_inputs(task_set: dict[str, Any], contract: dict[str, Any], provider
     missing = sorted(set(provider_roles) - available)
     if missing:
         raise ValueError(f"unknown cross-harness provider roles: {', '.join(missing)}")
+    identity = ("model_id", "model_display_name", "requested_model_reference")
+    selector_fields = ("profile_id", "backend", "model_reference", "release_asset_sha256")
+    for row in contract["provider_roles"]:
+        if not isinstance(row, dict): raise ValueError("provider role must be an object")
+        label = f"provider role {row.get('provider_role', '')}"
+        if "target_model" in row: raise ValueError(f"{label} must not contain target_model")
+        _require(row, list(identity), label)
+        if any(not isinstance(row[field], str) or not row[field] for field in identity): raise ValueError(f"{label} identity fields invalid")
+        if str(row.get("provider_role", "")).startswith("local_"):
+            selector = row.get("endpoint_selector")
+            if not isinstance(selector, dict): raise ValueError(f"{label} endpoint_selector invalid")
+            _require(selector, list(selector_fields), label)
+            if any(not isinstance(selector[field], str) or not selector[field] for field in selector_fields): raise ValueError(f"{label} endpoint selector fields invalid")
     for index, task in enumerate(tasks):
         if not isinstance(task, dict):
             raise ValueError(f"task {index} must be an object")
-        _require(
-            task,
-            ["id", "lane", "difficulty", "prompt", "required_inputs", "expected_artifacts", "scoring_focus", "must_not"],
-            f"task {index}",
-        )
+        _require(task, ["id", "lane", "difficulty", "prompt", "required_inputs", "expected_artifacts", "scoring_focus", "must_not"], f"task {index}")
 def build_manifest(
     task_set: dict[str, Any],
     contract: dict[str, Any],
@@ -65,14 +74,9 @@ def build_manifest(
     if source is not None and not source.is_dir(): raise ValueError("source root is not a directory")
     provider_specs = _provider_specs(contract, provider_roles)
     task_rows = [_task_row(task_set, contract, task, artifact_dir=artifact_dir, source_root=source) for task in task_set["tasks"]]
-    scorecard_rows = [_scorecard_row(task_row, provider_specs[provider_role], provider_role=provider_role, artifact_dir=artifact_dir)
-                      for provider_role in provider_roles for task_row in task_rows]
+    scorecard_rows = [_scorecard_row(task, provider_specs[role], provider_role=role, artifact_dir=artifact_dir) for role in provider_roles for task in task_rows]
     required_metrics = _required_metrics(contract)
-    dataset_lanes = sorted({"cross_harness_reproducibility"} | {
-        str(row.get("source_task_lane", ""))
-        for row in task_rows
-        if row.get("source_task_lane")
-    })
+    dataset_lanes = sorted({"cross_harness_reproducibility"} | {str(row.get("source_task_lane", "")) for row in task_rows if row.get("source_task_lane")})
     return {
         "schema": SCHEMA,
         "timestamp_utc": now_utc(),
@@ -141,19 +145,17 @@ def render_markdown(manifest: dict[str, Any]) -> str:
         "",
         "## Provider roles",
         "",
-        "| Provider role | Harness | Target model | Adapter state | Allowed modes |",
+        "| Provider role | Harness | Model | Adapter state | Allowed modes |",
         "|---|---|---|---|---|",
     ]
     for row in manifest["provider_specs"]:
-        lines.append(
-            "| {role} | {harness} | {model} | {state} | {modes} |".format(
+        lines.append("| {role} | {harness} | {model} | {state} | {modes} |".format(
                 role=row["provider_role"],
                 harness=row["harness_id"],
                 model=row["model_display_name"],
                 state=row["adapter_state"],
                 modes=", ".join(row.get("allowed_modes", [])),
-            )
-        )
+            ))
     lines.extend([
         "",
         "## Task rows",
@@ -162,22 +164,19 @@ def render_markdown(manifest: dict[str, Any]) -> str:
         "|---|---|---|---:|",
     ])
     for row in manifest["task_rows"]:
-        lines.append(
-            "| {task} | {lane} | `{hash}` | {artifacts} |".format(
+        lines.append("| {task} | {lane} | `{hash}` | {artifacts} |".format(
                 task=row["task_id"],
                 lane=row["source_task_lane"],
                 hash=row["raw_prompt_sha256"][:16],
                 artifacts=len(row["planned_artifacts"]),
-            )
-        )
+            ))
     lines.extend(["", "## Non-execution guards", ""])
     for guard in manifest.get("non_execution_guards", []):
         lines.append(f"- {guard}")
     return "\n".join(lines) + "\n"
 def _require(obj: dict[str, Any], fields: list[str], label: str) -> None:
     missing = [field for field in fields if field not in obj]
-    if missing:
-        raise ValueError(f"{label} missing required fields: {', '.join(missing)}")
+    if missing: raise ValueError(f"{label} missing required fields: {', '.join(missing)}")
 def _provider_specs(contract: dict[str, Any], provider_roles: list[str]) -> dict[str, dict[str, Any]]:
     rows = contract.get("provider_roles") if isinstance(contract.get("provider_roles"), list) else []
     specs = {
@@ -189,12 +188,8 @@ def _provider_specs(contract: dict[str, Any], provider_roles: list[str]) -> dict
             "adapter_id": str(row.get("adapter_id", "")),
             "endpoint_selector": dict(row.get("endpoint_selector", {})) if isinstance(row.get("endpoint_selector"), dict) else {},
             "adapter_state": str(row.get("adapter_state", "")),
-            "allowed_modes": [str(item) for item in row.get("allowed_modes", []) if item]
-            if isinstance(row.get("allowed_modes"), list)
-            else [],
-            "required_receipts": [str(item) for item in row.get("required_receipts", []) if item]
-            if isinstance(row.get("required_receipts"), list)
-            else [],
+            "allowed_modes": [str(item) for item in row.get("allowed_modes", []) if item] if isinstance(row.get("allowed_modes"), list) else [],
+            "required_receipts": [str(item) for item in row.get("required_receipts", []) if item] if isinstance(row.get("required_receipts"), list) else [],
         }
         for row in rows
         if isinstance(row, dict) and row.get("provider_role")

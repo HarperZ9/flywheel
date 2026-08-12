@@ -100,11 +100,11 @@ def render_markdown(matrix: dict[str, Any]) -> str:
         f"- Endpoint auth status: `{matrix.get('endpoint_auth_status_path', '')}`",
         f"- Runtime rows: `{summary['runtime_rows']}`", f"- Manifest-ready roles: `{summary['manifest_ready_roles']}`",
         f"- Focused-run-ready roles: `{summary['focused_run_ready_roles']}`", "",
-        "| Role | Harness | Target model | Adapter state | Manifest | Focused run | Blocking gates |",
+        "| Role | Harness | Model | Adapter state | Manifest | Focused run | Blocking gates |",
         "|---|---|---|---|---:|---:|---|",
     ]
     for row in matrix["runtime_rows"]:
-        lines.append("| {provider_role} | {harness_id} | {target_model} | {adapter_state} | {manifest} | {focused} | {gates} |".format(
+        lines.append("| {provider_role} | {harness_id} | {model_display_name} | {adapter_state} | {manifest} | {focused} | {gates} |".format(
             **row, manifest=str(row["manifest_ready"]).lower(), focused=str(row["focused_run_ready"]).lower(),
             gates=", ".join(row["blocking_gates"])))
     lines.extend(["", "## Non-execution guards", ""] + [f"- {guard}" for guard in matrix["non_execution_guards"]])
@@ -116,9 +116,9 @@ def _runtime_row(
     endpoint_auth_status: dict[str, Any], expected_gate_run_id: str, now: datetime,
     max_age_seconds: int,
 ) -> dict[str, Any]:
-    role, target = str(row.get("provider_role", "")), str(row.get("target_model", ""))
+    role = str(row.get("provider_role", "")); selector = row.get("endpoint_selector") if isinstance(row.get("endpoint_selector"), dict) else {}
     modes = [str(item) for item in row.get("allowed_modes", []) if item] if isinstance(row.get("allowed_modes"), list) else []
-    profiles = _profile_matches(role, target, endpoint_profiles)
+    profiles = _profile_matches(selector, endpoint_profiles)
     auth = _auth_matches(role, endpoint_auth_status)
     needs_endpoint = role in {"local_14b", "local_32b"}
     needs_auth = role in {"codex_harness", "flywheel_harness", "claude_code"}
@@ -138,7 +138,9 @@ def _runtime_row(
     focused_ready = "focused_run_after_approval" in modes and not blocking
     return {
         "schema": "harness.adapter-runtime-matrix.row/v1", "provider_role": role,
-        "harness_id": str(row.get("harness_id", "")), "target_model": target,
+        "harness_id": str(row.get("harness_id", "")), "model_id": str(row.get("model_id", "")),
+        "model_display_name": str(row.get("model_display_name", "")), "requested_model_reference": str(row.get("requested_model_reference", "")),
+        "endpoint_selector": dict(selector),
         "adapter_state": str(row.get("adapter_state", "")), "allowed_modes": modes,
         "required_receipts": _strings(row.get("required_receipts")),
         "current_evidence": _strings(row.get("current_evidence")),
@@ -150,8 +152,8 @@ def _runtime_row(
     }
 
 
-def _profile_matches(role: str, target: str, data: dict[str, Any]) -> list[dict[str, Any]]:
-    wanted = {"local_14b": "14B", "local_32b": "32B"}.get(role, target)
+def _profile_matches(selector: dict[str, Any], data: dict[str, Any]) -> list[dict[str, Any]]:
+    wanted = {"profile_id": selector.get("profile_id"), "backend": selector.get("backend"), "model_ref": selector.get("model_reference")}
     rows = data.get("profiles") if isinstance(data.get("profiles"), list) else []
     return [{
         "profile_id": item.get("profile_id", ""), "model": item.get("model", ""),
@@ -160,7 +162,7 @@ def _profile_matches(role: str, target: str, data: dict[str, Any]) -> list[dict[
         "root_exists": item.get("root_exists") is True,
         "supports_agentic_workflow": item.get("supports_agentic_workflow") is True,
         "live_probed": bool(item.get("live_probed")),
-    } for item in rows if isinstance(item, dict) and str(item.get("model", "")).lower() == wanted.lower()]
+    } for item in rows if isinstance(item, dict) and all(item.get(key) == value for key, value in wanted.items())]
 
 
 def _strings(value: Any) -> list[str]:
