@@ -1,7 +1,5 @@
 """Zero-dependency front controller for the local Codex/Flywheel harness."""
-
 from __future__ import annotations
-
 import argparse
 import html
 import json
@@ -10,9 +8,7 @@ import subprocess
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
-
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-
 from harness.file_backed_store import FileBackedHarnessStore
 
 
@@ -1494,8 +1490,12 @@ def format_command(command: list[str]) -> str:
 
 
 def main(argv: list[str] | None = None) -> int:
+    raw = list(argv if argv is not None else sys.argv[1:])
+    if raw and raw[0] == "cross-harness-execute":
+        from harness.cross_harness_cli import main as cross_harness_main
+        return cross_harness_main(raw[1:])
     parser = build_parser()
-    args = parser.parse_args(argv)
+    args = parser.parse_args(raw)
     root = _repo_root()
     if args.command_name == "manifest":
         manifest = build_manifest(store_root=args.store_root)

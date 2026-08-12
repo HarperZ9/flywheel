@@ -9,6 +9,8 @@ checkout must fail with a message, not a traceback. When a checkout IS present
 """
 import harness.cli_entry as cli
 import harness.gateway as gw
+import pytest
+import subprocess
 
 
 def _record(store):
@@ -130,6 +132,23 @@ def test_help_without_checkout_is_a_success(monkeypatch, capsys):
     out = capsys.readouterr().out
     assert "usage: flywheel" in out
     assert "up" in out and "lanes" in out
+
+
+def test_cross_harness_execute_help_uses_packaged_module_without_checkout(monkeypatch, capsys):
+    monkeypatch.setattr(cli, "find_repo_root", _no_repo)
+    monkeypatch.setattr(cli.sys, "frozen", False, raising=False)
+    with pytest.raises(SystemExit) as stopped:
+        cli.main(["cross-harness-execute", "--help"])
+    assert stopped.value.code == 0
+    assert "--runtime-matrix" in capsys.readouterr().out
+
+
+def test_cross_harness_source_wrapper_exposes_the_same_help_from_any_cwd(tmp_path):
+    script = cli.Path(__file__).resolve().parents[1] / "scripts" / "run_cross_harness_execution.py"
+    completed = subprocess.run([cli.sys.executable, str(script), "--help"], cwd=tmp_path,
+                               capture_output=True, text=True, check=False)
+    assert completed.returncode == 0
+    assert "--runtime-matrix" in completed.stdout
 
 
 def test_lanes_probe_flag_is_forwarded_to_roster(monkeypatch, capsys):

@@ -243,6 +243,10 @@ def main(argv: list[str] | None = None) -> int:
     # existing run_harness_cli parser requires a subcommand, so the first
     # non-flag token is the command name.
     command = next((a for a in raw if not a.startswith("-")), None)
+    if command == "cross-harness-execute":
+        from harness.cross_harness_cli import main as _cross_main
+        rest = list(raw); rest.remove(command)
+        return _cross_main(rest)
     if command in _UMBRELLA_COMMANDS:
         rest = [a for a in raw if a is not command]
         return _dispatch_umbrella(command, rest)
