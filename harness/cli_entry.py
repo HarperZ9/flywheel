@@ -275,7 +275,7 @@ def main(argv: list[str] | None = None) -> int:
             wants_help = any(a in ("-h", "--help") for a in raw)
             print("usage: flywheel <command> [options]\n"
                   "Umbrella commands (run from a bare install): up, lanes, "
-                  "loop-status, install, corpus-export, gate, why, down\n"
+                  "loop-status, install, corpus-export, gate, why, down, cross-harness-execute\n"
                   "Passthrough commands need a source checkout "
                   "(scripts/run_harness_cli.py).",
                   file=sys.stdout if wants_help else sys.stderr)

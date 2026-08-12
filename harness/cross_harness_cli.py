@@ -8,8 +8,8 @@ from typing import Any
 
 from .adapter_runtime_matrix import _endpoint_gate_result
 from .cross_harness_adapters import DirectCodexAdapter, FlywheelRouterAdapter, LocalRouterAdapter
-from .cross_harness_artifacts import canonical_sha256, recheck_attempt_receipt, write_artifact_index
-from .cross_harness_executor import execute_cross_harness_manifest, resolve_task_ids
+from .cross_harness_artifacts import canonical_sha256, recheck_attempt_receipt, snapshot_source_tree, write_artifact_index
+from .cross_harness_executor import SHARED_TOOL_POLICY, execute_cross_harness_manifest, resolve_task_ids
 
 
 def _pairs(rows: list[tuple[str, Any]]) -> dict[str, Any]:
@@ -33,7 +33,14 @@ def _sha(path: Path) -> str:
     return digest.hexdigest()
 
 
-def _csv(value: str) -> list[str]: return [item.strip() for item in value.split(",") if item.strip()]
+def _csv(value: str) -> list[str]:
+    rows = [item.strip() for item in value.split(",") if item.strip()]
+    if not rows: raise ValueError("selection must not be empty")
+    return rows
+
+
+def _exit(rows: list[dict[str, Any]], strict: bool) -> int:
+    return 1 if strict and (not rows or any(row.get("primary_outcome") != "completed" for row in rows)) else 0
 
 
 def _runtime(matrix: dict[str, Any], role: str) -> dict[str, Any]:
@@ -48,8 +55,27 @@ def _block(row: dict[str, Any], code: str) -> None:
     row["focused_run_ready"] = False
 
 
-def _apply_admission(matrix: dict[str, Any], path: Path, manifest: dict[str, Any],
-                     selectors: list[str], roles: list[str], repetitions: int) -> None:
+def _admission_identity_code(row: dict[str, Any], task: dict[str, Any], spec: dict[str, Any],
+                             manifest: dict[str, Any], current: dict[str, Any]) -> str:
+    oracle = ((row.get("availability_evidence") or {}).get("adapter_evidence") or {}).get("oracle_spec_sha256")
+    checks = (
+        ("admission_prompt_mismatch", row.get("raw_prompt_sha256"), task.get("raw_prompt_sha256")),
+        ("admission_input_mismatch", row.get("input_sha256s"), task.get("input_sha256s", {})),
+        ("admission_oracle_mismatch", oracle, canonical_sha256(task.get("oracle", {}))),
+        ("admission_model_mismatch", row.get("model_id"), spec.get("target_model")),
+        ("admission_adapter_mismatch", row.get("adapter_id"), spec.get("adapter_id")),
+        ("admission_policy_mismatch", row.get("tool_policy_sha256"), canonical_sha256(SHARED_TOOL_POLICY)),
+        ("admission_source_mismatch", (row.get("source_commit"), row.get("source_snapshot_sha256")),
+         (current.get("source_commit"), current.get("source_snapshot_sha256"))),
+        ("admission_cache_mismatch", row.get("cache_state"), current.get("cache_state")),
+        ("admission_execution_mismatch", (row.get("task_set_id"), row.get("execution_mode")),
+         (manifest.get("task_set_id"), current.get("execution_mode"))),
+    )
+    return next((code for code, observed, expected in checks if observed != expected), "")
+
+
+def _apply_admission(matrix: dict[str, Any], path: Path, manifest: dict[str, Any], selectors: list[str],
+                     roles: list[str], repetitions: int, *, current: dict[str, Any] | None = None) -> None:
     """Independently recheck every admission attempt; a failed role stays local."""
     try: admission_sha = _sha(path)
     except OSError: admission_sha = ""
@@ -64,7 +90,7 @@ def _apply_admission(matrix: dict[str, Any], path: Path, manifest: dict[str, Any
     if admission.get("phase") != "admission-smoke":
         for role in roles: _block(_runtime(matrix, role), "admission_phase_mismatch")
         return
-    selected = resolve_task_ids(manifest.get("task_rows", []), selectors)
+    selected = resolve_task_ids(manifest.get("task_rows", []), selectors); current = current or {}
     rows = [row for row in admission.get("rows", []) if isinstance(row, dict)]
     if {str(row.get("provider_role", "")) for row in rows} != set(roles):
         for role in roles: _block(_runtime(matrix, role), "admission_selection_mismatch")
@@ -83,6 +109,10 @@ def _apply_admission(matrix: dict[str, Any], path: Path, manifest: dict[str, Any
                 if not receipt.is_relative_to(root) or recheck_attempt_receipt(receipt, row) != "verified":
                     failed = True; break
             except (OSError, ValueError): failed = True; break
+            task = next(item for item in manifest.get("task_rows", []) if item.get("task_id") == row.get("task_id"))
+            spec = next(item for item in manifest.get("provider_specs", []) if item.get("provider_role") == role)
+            code = _admission_identity_code(row, task, spec, manifest, current)
+            if code: _block(runtime, code); failed = False; break
             if row.get("primary_outcome") != "completed": failed = True; break
         if failed: _block(runtime, "admission_role_failed")
 
@@ -128,10 +158,6 @@ def _recheck_local_gate(matrix: dict[str, Any], path: Path, run_id: str, roles: 
         else: row["focused_run_ready"] = not row["blocking_gates"]
 
 
-_PROFILE_FIELDS = {"profile_id", "model", "backend", "provider_role", "model_ref", "endpoint_url",
-                   "root_exists", "supports_agentic_workflow", "live_probed"}
-
-
 def _local_profiles(matrix: dict[str, Any], roles: list[str]) -> dict[str, dict[str, Any]]:
     local_roles = [role for role in roles if role.startswith("local_")]
     if not local_roles: return {}
@@ -152,19 +178,25 @@ def _local_profiles(matrix: dict[str, Any], roles: list[str]) -> dict[str, dict[
         if actual != matrix.get("endpoint_profiles_sha256"): _block(runtime, "endpoint_profile_artifact_hash_mismatch")
         elif len(matches) != 1: _block(runtime, "endpoint_profile_artifact_ambiguous")
         else:
-            profile = {key: matches[0].get(key) for key in _PROFILE_FIELDS}
-            profile["profile_sha256"] = canonical_sha256(matches[0]); profiles[role] = profile
+            profile = dict(matches[0]); profile["profile_sha256"] = canonical_sha256(matches[0]); profiles[role] = profile
     return profiles
 
 
-def build_adapter_registry(matrix: dict[str, Any], roles: list[str]) -> dict[str, Any]:
+def _task_identities(manifest: dict[str, Any]) -> dict[str, dict[str, Any]]:
+    return {str(row.get("task_id", "")): {"raw_prompt_sha256": row.get("raw_prompt_sha256"),
+            "input_sha256s": row.get("input_sha256s", {}), "oracle_spec_sha256": canonical_sha256(row.get("oracle", {}))}
+            for row in manifest.get("task_rows", []) if isinstance(row, dict)}
+
+
+def build_adapter_registry(matrix: dict[str, Any], roles: list[str],
+                           task_identities: dict[str, dict[str, Any]] | None = None) -> dict[str, Any]:
     selected = _local_profiles(matrix, roles); adapters = {}
     for role in roles:
-        if role == "codex_harness": adapters[role] = DirectCodexAdapter()
-        elif role == "flywheel_harness": adapters[role] = FlywheelRouterAdapter()
+        if role == "codex_harness": adapters[role] = DirectCodexAdapter(task_identity_by_id=task_identities)
+        elif role == "flywheel_harness": adapters[role] = FlywheelRouterAdapter(task_identity_by_id=task_identities)
         elif role.startswith("local_"):
             fallback = {"profile_id": "", "backend": "", "model_ref": "", "endpoint_url": ""}
-            adapters[role] = LocalRouterAdapter(role, selected.get(role, fallback))
+            adapters[role] = LocalRouterAdapter(role, selected.get(role, fallback), task_identity_by_id=task_identities)
         else: raise ValueError(f"unsupported execution role: {role}")
     return adapters
 
@@ -193,6 +225,7 @@ def main(argv: list[str] | None = None) -> int:
     if manifest.get("schema") != "harness.cross-harness-manifest/v1": raise ValueError("manifest schema mismatch")
     if matrix.get("schema") != "harness.adapter-runtime-matrix/v1": raise ValueError("runtime matrix schema mismatch")
     roles, selectors = _csv(args.roles), _csv(args.tasks)
+    if args.repetitions < 1: raise ValueError("repetitions must be positive")
     if any(role.startswith("local_") for role in roles):
         if args.endpoint_gate and args.gate_run_id:
             _recheck_local_gate(matrix, Path(args.endpoint_gate), args.gate_run_id, roles,
@@ -201,8 +234,10 @@ def main(argv: list[str] | None = None) -> int:
             for role in roles:
                 if role.startswith("local_"): _block(_runtime(matrix, role), "endpoint_gate_missing")
     if args.admission_receipt:
-        _apply_admission(matrix, Path(args.admission_receipt), manifest, selectors, roles, args.repetitions)
-    run = execute_cross_harness_manifest(manifest, matrix, build_adapter_registry(matrix, roles),
+        current = {"source_commit": args.source_commit, "source_snapshot_sha256": snapshot_source_tree(Path(args.source_root))["sha256"],
+                   "cache_state": args.cache, "execution_mode": "focused_run"}
+        _apply_admission(matrix, Path(args.admission_receipt), manifest, selectors, roles, args.repetitions, current=current)
+    run = execute_cross_harness_manifest(manifest, matrix, build_adapter_registry(matrix, roles, _task_identities(manifest)),
         artifact_root=Path(args.artifact_root), source_root=Path(args.source_root), run_id=args.run_id,
         phase=args.phase, selectors=selectors, roles=roles, repetitions=args.repetitions,
         cache_state=args.cache, timeout_seconds=args.timeout, source_commit=args.source_commit)
@@ -214,8 +249,7 @@ def main(argv: list[str] | None = None) -> int:
                                    if path.is_file() and path.name != "artifact-index.json"])
     print(json.dumps({"run_id": args.run_id, "run_path": str(run_root / "run.json"),
                       "scorecard_path": str(scorecard), "rows": len(run["rows"])}, sort_keys=True))
-    failed = any(row.get("primary_outcome") != "completed" for row in run["rows"])
-    return 1 if args.strict_exit and failed else 0
+    return _exit(run["rows"], args.strict_exit)
 
 
 if __name__ == "__main__": raise SystemExit(main())

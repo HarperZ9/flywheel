@@ -131,7 +131,7 @@ def test_help_without_checkout_is_a_success(monkeypatch, capsys):
     assert rc == 0
     out = capsys.readouterr().out
     assert "usage: flywheel" in out
-    assert "up" in out and "lanes" in out
+    assert "up" in out and "lanes" in out and "cross-harness-execute" in out
 
 
 def test_cross_harness_execute_help_uses_packaged_module_without_checkout(monkeypatch, capsys):
