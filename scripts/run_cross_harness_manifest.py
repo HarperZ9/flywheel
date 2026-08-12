@@ -65,6 +65,7 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--task-set", default=DEFAULT_TASK_SET)
     parser.add_argument("--contract", default=DEFAULT_CONTRACT)
+    parser.add_argument("--source-root", default="")
     parser.add_argument("--provider-roles", default="")
     parser.add_argument("--artifact-dir", default=DEFAULT_ARTIFACT_DIR)
     parser.add_argument("--out", default=str(Path(tempfile.gettempdir()) / "cross_harness_manifest.json"))
@@ -75,6 +76,7 @@ def main(argv: list[str] | None = None) -> int:
 
     task_set_path = Path(args.task_set)
     contract_path = Path(args.contract)
+    source_root = args.source_root or (str(ROOT) if all(path.resolve().is_relative_to(ROOT) for path in (task_set_path, contract_path)) else "")
     task_set = load_json(task_set_path)
     contract = load_json(contract_path)
     provider_roles = split_csv(args.provider_roles) or provider_roles_from_contract(contract)
@@ -86,6 +88,7 @@ def main(argv: list[str] | None = None) -> int:
         provider_roles=provider_roles,
         task_set_path=str(task_set_path),
         contract_path=str(contract_path),
+        source_root=source_root,
         task_set_sha256=file_sha256(task_set_path),
         contract_sha256=file_sha256(contract_path),
     )

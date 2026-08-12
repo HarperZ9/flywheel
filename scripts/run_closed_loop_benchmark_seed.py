@@ -277,12 +277,10 @@ def build_steps(args, *, run_id: str, artifact_dir: Path) -> list[OrchestrationS
             step_id="cross_harness_manifest",
             purpose="Expand same-task cross-harness prompt hashes and planned provider-role receipt rows without executing providers.",
             command=[
-                py,
-                "scripts/run_cross_harness_manifest.py",
-                "--task-set",
-                args.agentic_task_set,
-                "--contract",
-                args.cross_harness_contract,
+                py, "scripts/run_cross_harness_manifest.py",
+                "--task-set", args.agentic_task_set,
+                "--contract", args.cross_harness_contract,
+                "--source-root", args.cross_harness_source_root,
                 "--provider-roles",
                 args.cross_harness_provider_roles,
                 "--artifact-dir",
@@ -969,7 +967,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--cross-harness-gate-run-id", default="")
     parser.add_argument("--cross-harness-max-gate-age-seconds", type=int, default=900)
     parser.add_argument("--cross-harness-source-commit", default="")
-    parser.add_argument("--cross-harness-source-root", default="")
+    parser.add_argument("--cross-harness-source-root", default="C:/dev/local-model")
     parser.add_argument("--cross-harness-attempt-timeout-seconds", type=int, default=300)
     parser.add_argument("--forum-route-text", action="append", default=[])
     parser.add_argument("--mcp-tool-health-tools", default="index,forum,telos,gather,crucible,aleph,mneme,relay,plexus,pubscan,local-model")

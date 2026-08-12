@@ -37,6 +37,7 @@ class Args:
     agentic_task_adapter = "C:/dev/local-model/benchmarks/agentic-task-set-adapter-v1.json"
     agentic_task_provider_roles = "dry"
     cross_harness_contract = "C:/dev/local-model/benchmarks/cross-harness-adapter-contract-v1.json"
+    cross_harness_source_root = "C:/dev/local-model"
     cross_harness_provider_roles = "codex_harness,flywheel_harness,claude_code,opencode,local_14b,local_32b,dry"
     embodied_realtime_contract = "C:/dev/local-model/benchmarks/embodied-realtime-multimodal-v1.json"
     embodied_realtime_providers = "dry"
@@ -382,8 +383,7 @@ def test_model_card_claim_table_step_is_metadata_only(tmp_path):
 def test_cross_harness_manifest_step_is_metadata_only(tmp_path):
     steps = build_steps(Args(), run_id="run_123", artifact_dir=tmp_path)
     manifest = [step for step in steps if step.step_id == "cross_harness_manifest"][0]
-
-    assert "scripts/run_cross_harness_manifest.py" in manifest.command
+    assert "scripts/run_cross_harness_manifest.py" in manifest.command; assert manifest.command[manifest.command.index("--source-root") + 1] == Args.cross_harness_source_root
     assert "--task-set" in manifest.command
     assert "C:/dev/local-model/benchmarks/agentic-task-set-v1.json" in manifest.command
     assert "--contract" in manifest.command

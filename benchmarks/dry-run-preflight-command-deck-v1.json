@@ -136,7 +136,7 @@
       "id": "deck-012-cross-harness-manifest",
       "tier": "metadata_only",
       "purpose": "Generate the non-executing cross-harness manifest with same-task prompt hashes and provider-role receipt plans.",
-      "command": "python scripts/run_cross_harness_manifest.py --task-set C:/dev/local-model/benchmarks/agentic-task-set-v1.json --contract C:/dev/local-model/benchmarks/cross-harness-adapter-contract-v1.json --provider-roles codex_harness,flywheel_harness,claude_code,opencode,local_14b,local_32b,dry --out C:/tmp/cross_harness_manifest_20260709.json --markdown-out C:/tmp/cross_harness_manifest_20260709.md --store-root C:/tmp/harness_file_store"
+      "command": "python scripts/run_cross_harness_manifest.py --task-set C:/dev/local-model/benchmarks/agentic-task-set-v1.json --contract C:/dev/local-model/benchmarks/cross-harness-adapter-contract-v1.json --source-root C:/dev/local-model --provider-roles codex_harness,flywheel_harness,claude_code,opencode,local_14b,local_32b,dry --out C:/tmp/cross_harness_manifest_20260709.json --markdown-out C:/tmp/cross_harness_manifest_20260709.md --store-root C:/tmp/harness_file_store"
     },
     {
       "id": "deck-013-embodied-realtime-plan",

@@ -881,6 +881,7 @@ def build_parser() -> argparse.ArgumentParser:
     _add_common_io(cross)
     cross.add_argument("--task-set", default="C:/dev/local-model/benchmarks/agentic-task-set-v1.json")
     cross.add_argument("--contract", default="C:/dev/local-model/benchmarks/cross-harness-adapter-contract-v1.json")
+    cross.add_argument("--source-root", default="")
     cross.add_argument("--provider-roles", default="")
     cross.add_argument("--artifact-dir", default="C:/tmp/cross_harness_runs")
 
@@ -1265,12 +1266,9 @@ def build_command(args, *, repo_root: Path) -> list[str]:
         command = [
             py,
             "scripts/run_cross_harness_manifest.py",
-            "--task-set",
-            args.task_set,
-            "--contract",
-            args.contract,
-            "--artifact-dir",
-            args.artifact_dir,
+            "--task-set", args.task_set, "--contract", args.contract,
+            "--source-root", args.source_root or str(repo_root),
+            "--artifact-dir", args.artifact_dir,
         ]
         _append_if(command, "--provider-roles", args.provider_roles)
         _common_outputs(command, args)

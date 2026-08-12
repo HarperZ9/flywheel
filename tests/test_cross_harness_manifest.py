@@ -5,6 +5,7 @@ from pathlib import Path, PurePosixPath
 import pytest
 
 from harness.cross_harness_manifest import _input_hashes, build_manifest, load_json, render_markdown
+from scripts.run_cross_harness_manifest import main as manifest_main
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -107,6 +108,7 @@ def test_manifest_preserves_replayable_prompt_oracle_and_input_hash(tmp_path):
         _contract(),
         provider_roles=["codex_harness"],
         task_set_path=str(tmp_path / "benchmarks" / "task-set.json"),
+        source_root=str(tmp_path),
     )["task_rows"][0]
 
     assert hashlib.sha256(row["raw_prompt"].encode()).hexdigest() == row["raw_prompt_sha256"]
@@ -121,14 +123,15 @@ def test_manifest_preserves_replayable_prompt_oracle_and_input_hash(tmp_path):
     }
 
 
-@pytest.mark.parametrize("kind", ["missing", "directory", "absolute", "traversal", "symlink"])
+@pytest.mark.parametrize("kind", ["missing", "directory", "absolute", "traversal", "normalized_traversal", "symlink"])
 def test_manifest_rejects_unhashable_repo_input(tmp_path, monkeypatch, kind):
     root, outside = tmp_path / "repo", tmp_path / "outside.json"
     (root / "benchmarks").mkdir(parents=True)
     outside.write_text("{}", encoding="utf-8")
     refs = {"missing": "missing.json", "directory": "inputs", "absolute": str(outside),
-            "traversal": "../outside.json", "symlink": "linked.json"}
+            "traversal": "../outside.json", "normalized_traversal": "nested/../fixture.json", "symlink": "linked.json"}
     (root / "inputs").mkdir()
+    (root / "fixture.json").write_text("{}", encoding="utf-8")
     if kind == "symlink":
         try: (root / "linked.json").symlink_to(outside)
         except OSError:
@@ -137,7 +140,7 @@ def test_manifest_rejects_unhashable_repo_input(tmp_path, monkeypatch, kind):
     task_set = _task_set()
     task_set["tasks"][0]["required_inputs"] = [refs[kind]]
     with pytest.raises(ValueError, match="required input"):
-        build_manifest(task_set, _contract(), task_set_path=str(root / "benchmarks" / "tasks.json"))
+        build_manifest(task_set, _contract(), task_set_path=str(root / "benchmarks" / "tasks.json"), source_root=str(root))
 
 
 @pytest.mark.parametrize("raw", ['{"key":1,"key":2}', "[]", "null", "7"])
@@ -186,7 +189,7 @@ def test_frozen_pilot_contract_is_public_clean_and_replayable():
     contract_path = ROOT / "benchmarks" / "cross-harness-adapter-contract-v1.json"
     task_set = json.loads(task_path.read_text(encoding="utf-8"))
     contract = json.loads(contract_path.read_text(encoding="utf-8"))
-    manifest = build_manifest(task_set, contract, task_set_path=str(task_path))
+    manifest = build_manifest(task_set, contract, task_set_path=str(task_path), source_root=str(ROOT))
     rows = {row["task_id"]: row for row in manifest["task_rows"]}
     expected = {
         "agt-001-index-fallback-integrity": ("index_fallback_integrity_report.json", "index_fallback_integrity_report.md"),
@@ -212,3 +215,67 @@ def test_frozen_pilot_contract_is_public_clean_and_replayable():
         assert fixture["failure_code_vocabulary"]["common"] == oracle_contract["common_failure_codes"]
         assert fixture["failure_code_vocabulary"]["task"] == oracle_contract["checkers"][oracle["checker_id"]]["failure_codes"]
         assert oracle["required_json_fields"]
+
+
+def _copied_contract(tmp_path):
+    task, contract = tmp_path / "copied-tasks.json", tmp_path / "copied-contract.json"
+    task.write_bytes((ROOT / "benchmarks/agentic-task-set-v1.json").read_bytes())
+    contract.write_bytes((ROOT / "benchmarks/cross-harness-adapter-contract-v1.json").read_bytes())
+    return task, contract
+
+
+def test_external_contract_uses_explicit_source_root_without_serializing_it(tmp_path):
+    task_path, contract_path = _copied_contract(tmp_path)
+    manifest = build_manifest(load_json(task_path), load_json(contract_path), task_set_path=str(task_path),
+                              contract_path=str(contract_path), source_root=str(ROOT))
+    row = next(row for row in manifest["task_rows"] if row["task_id"].startswith("agt-001")); ref = row["required_inputs"][0]
+    assert row["input_sha256s"] == {ref: hashlib.sha256((ROOT / ref).read_bytes()).hexdigest()}
+    assert "source_root" not in manifest and str(ROOT.resolve()) not in str(manifest)
+    assert (ROOT / ref).read_text(encoding="utf-8") not in json.dumps(manifest)
+
+
+def test_external_canonical_contract_requires_explicit_source_root(tmp_path):
+    task_path, contract_path = _copied_contract(tmp_path)
+    with pytest.raises(ValueError, match="source root"):
+        build_manifest(load_json(task_path), load_json(contract_path), task_set_path=str(task_path))
+
+
+@pytest.mark.parametrize("kind", ["missing", "file"])
+def test_source_root_must_be_an_existing_directory(tmp_path, kind):
+    root = tmp_path / "source"
+    if kind == "file": root.write_text("not a directory", encoding="utf-8")
+    with pytest.raises(ValueError, match="source root"):
+        build_manifest(_task_set(), _contract(), source_root=str(root))
+
+
+def test_input_hash_binds_source_bytes_not_contract_location(tmp_path):
+    source, copied = tmp_path / "source", tmp_path / "external/tasks.json"; source.mkdir(); copied.parent.mkdir()
+    fixture = source / "fixture.json"; fixture.write_bytes(b"first")
+    task = _task_set(); task["tasks"][0]["required_inputs"] = ["fixture.json"]
+    first = build_manifest(task, _contract(), task_set_path=str(copied), source_root=str(source))["task_rows"][0]
+    fixture.write_bytes(b"second")
+    second = build_manifest(task, _contract(), task_set_path=str(copied), source_root=str(source))["task_rows"][0]
+    assert first["input_sha256s"] != second["input_sha256s"]
+    assert (first["task_set_id"], first["task_id"], first["raw_prompt_sha256"]) == (second["task_set_id"], second["task_id"], second["raw_prompt_sha256"])
+    assert "first" not in json.dumps(first) and "second" not in json.dumps(second)
+
+
+def test_manifest_cli_requires_source_root_and_supports_external_contract(tmp_path, capsys):
+    task_path, contract_path = _copied_contract(tmp_path); out, markdown = tmp_path / "manifest.json", tmp_path / "manifest.md"
+    base = ["--task-set", str(task_path), "--contract", str(contract_path), "--provider-roles", "codex_harness", "--out", str(out), "--markdown-out", str(markdown)]
+    with pytest.raises(ValueError, match="source root"): manifest_main(base)
+    assert not out.exists()
+    assert manifest_main([*base, "--source-root", str(ROOT)]) == 0
+    assert json.loads(out.read_text(encoding="utf-8"))["schema"] == "harness.cross-harness-manifest/v1"
+    capsys.readouterr()
+
+
+def test_manifest_cli_safely_defaults_source_root_for_checkout_contract(tmp_path, capsys):
+    out = tmp_path / "manifest.json"
+    assert manifest_main(["--task-set", str(ROOT / "benchmarks/agentic-task-set-v1.json"), "--contract",
+                          str(ROOT / "benchmarks/cross-harness-adapter-contract-v1.json"), "--provider-roles", "codex_harness", "--out", str(out)]) == 0
+    assert json.loads(out.read_text(encoding="utf-8"))["schema"] == "harness.cross-harness-manifest/v1"
+    deck = json.loads((ROOT / "benchmarks/dry-run-preflight-command-deck-v1.json").read_text(encoding="utf-8"))
+    command = next(row["command"] for row in deck["commands"] if row["id"] == "deck-012-cross-harness-manifest")
+    assert "--source-root C:/dev/local-model" in command
+    capsys.readouterr()

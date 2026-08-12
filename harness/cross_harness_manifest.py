@@ -55,21 +55,18 @@ def build_manifest(
     run_id: str = "",
     artifact_dir: str = DEFAULT_ARTIFACT_DIR,
     provider_roles: list[str] | None = None,
-    task_set_path: str = "",
-    contract_path: str = "",
-    task_set_sha256: str = "",
-    contract_sha256: str = "",
+    task_set_path: str = "", contract_path: str = "", source_root: str = "",
+    task_set_sha256: str = "", contract_sha256: str = "",
 ) -> dict[str, Any]:
     provider_roles = provider_roles or provider_roles_from_contract(contract)
     validate_inputs(task_set, contract, provider_roles)
+    try: source = Path(source_root).resolve(strict=True) if source_root else None
+    except OSError as exc: raise ValueError("source root is unavailable") from exc
+    if source is not None and not source.is_dir(): raise ValueError("source root is not a directory")
     provider_specs = _provider_specs(contract, provider_roles)
-    task_rows = [_task_row(task_set, contract, task, artifact_dir=artifact_dir, task_set_path=task_set_path)
-                 for task in task_set["tasks"]]
-    scorecard_rows = [
-        _scorecard_row(task_row, provider_specs[provider_role], provider_role=provider_role, artifact_dir=artifact_dir)
-        for provider_role in provider_roles
-        for task_row in task_rows
-    ]
+    task_rows = [_task_row(task_set, contract, task, artifact_dir=artifact_dir, source_root=source) for task in task_set["tasks"]]
+    scorecard_rows = [_scorecard_row(task_row, provider_specs[provider_role], provider_role=provider_role, artifact_dir=artifact_dir)
+                      for provider_role in provider_roles for task_row in task_rows]
     required_metrics = _required_metrics(contract)
     dataset_lanes = sorted({"cross_harness_reproducibility"} | {
         str(row.get("source_task_lane", ""))
@@ -213,7 +210,7 @@ def _input_hashes(root: Path, inputs: list[Any], pilot: bool) -> dict[str, str]:
             if pilot or scheme not in {"workspace", "external", "operator"} or not payload or payload != payload.strip() or payload.startswith(("/", "\\")) or len(payload) > 1 and payload[0].isalpha() and payload[1] == ":" or typed.is_absolute() or typed.drive or ".." in typed.parts or str(typed).replace("\\", "/") != payload: raise ValueError(f"required input typed reference invalid: {ref}")
             continue
         path = (root / relative).resolve()
-        if relative.is_absolute() or not path.is_relative_to(root) or not path.is_file():
+        if relative.is_absolute() or ".." in relative.parts or not path.is_relative_to(root) or not path.is_file():
             raise ValueError(f"required input is not a repo-relative file: {ref}")
         hashes[ref] = file_sha256(path)
     return hashes
@@ -251,14 +248,15 @@ def _prompt_text(task_set: dict[str, Any], contract: dict[str, Any], task: dict[
         json.dumps(envelope, sort_keys=True, separators=(",", ":")),
     ]
     return "\n".join(parts).strip() + "\n"
-def _task_row(task_set: dict[str, Any], contract: dict[str, Any], task: dict[str, Any], *, artifact_dir: str, task_set_path: str) -> dict[str, Any]:
+def _task_row(task_set: dict[str, Any], contract: dict[str, Any], task: dict[str, Any], *, artifact_dir: str, source_root: Path | None) -> dict[str, Any]:
     prompt, task_id = _prompt_text(task_set, contract, task), str(task["id"])
     oracle_contract, oracle = task_set.get("oracle_contract", {}), dict(task.get("oracle", {}))
     pilots = {"index_fallback_integrity/v1": "agt-001-index-fallback-integrity", "shared_task_artifact/v1": "agt-003-codex-flywheel-shared-task", "paired_friction/v1": "agt-009-receipts-vs-guardrails-friction", "documentation_maintenance/v1": "agt-010-documentation-schematic-maintenance"}
     checker_id = oracle.get("checker_id")
     if (checker_id in pilots and task_id != pilots[checker_id]) or (task_id in pilots.values() and pilots.get(checker_id) != task_id): raise ValueError("registered checker and canonical task id must pair")
     inputs = list(task.get("required_inputs", []))
-    root = Path(task_set_path).resolve().parent.parent if task_set_path else Path.cwd()
+    if source_root is None and any("://" not in str(item) for item in inputs): raise ValueError("source root is required for repo-relative inputs")
+    root = source_root or Path.cwd()
     input_sha256s, artifacts = _input_hashes(root, inputs, checker_id in pilots), list(task.get("expected_artifacts", []))
     checker = oracle_contract.get("checkers", {}).get(oracle.get("checker_id"), {})
     return {

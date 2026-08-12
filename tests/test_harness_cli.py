@@ -462,6 +462,7 @@ def test_cross_harness_command_targets_manifest_generator():
         "C:/tmp/tasks.json",
         "--contract",
         "C:/tmp/cross.json",
+        "--source-root", "C:/tmp/source",
         "--artifact-dir",
         "C:/tmp/cross-runs",
         "--provider-roles",
@@ -470,8 +471,7 @@ def test_cross_harness_command_targets_manifest_generator():
         "C:/tmp/cross_harness_manifest.json",
     ])
     command = build_command(args, repo_root=Path("C:/dev/local-model"))
-
-    assert command[:2] == [args.python, "scripts/run_cross_harness_manifest.py"]
+    assert command[:2] == [args.python, "scripts/run_cross_harness_manifest.py"]; assert command[command.index("--source-root") + 1] == "C:/tmp/source"
     assert "--task-set" in command
     assert "C:/tmp/tasks.json" in command
     assert "--contract" in command
