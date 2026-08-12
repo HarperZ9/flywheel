@@ -48,80 +48,98 @@ def test_malformed_local_http_attempt_still_seals_receipt(monkeypatch, tmp_path)
 
 
 @pytest.mark.skipif(sys.platform != "win32" or shutil.which("wsl.exe") is None, reason="WSL integration unavailable")
-@pytest.mark.parametrize("double_fork", [False, True])
-def test_wsl_normal_exit_daemons_are_contained_and_pipes_bounded(double_fork):
+@pytest.mark.parametrize("mode", ["normal", "double-fork", "self-migrate"])
+def test_wsl_provider_execution_fails_closed_before_launch(mode):
     root = pathlib.Path(__file__).resolve().parents[1]
     linux_root = subprocess.run(["wsl.exe", "-e", "wslpath", "-a", str(root)], capture_output=True, text=True, check=True).stdout.strip()
     script = r'''
-import pathlib,sys,tempfile,time
+import pathlib,sys,tempfile
 sys.path.insert(0, sys.argv[1]); from harness.cross_harness_process import run_process
 with tempfile.TemporaryDirectory() as d:
- p=pathlib.Path(d); marker=p/'escaped'; daemon="import pathlib,sys,time;time.sleep(.5);pathlib.Path(sys.argv[1]).write_text('bad');time.sleep(8)"
- if sys.argv[2]=='1': parent="import os,subprocess,sys;pid=os.fork();os._exit(0) if pid else (os.setsid(),subprocess.Popen([sys.executable,'-c',sys.argv[1],sys.argv[2]]),os._exit(0))"
- else: parent="import subprocess,sys;subprocess.Popen([sys.executable,'-c',sys.argv[1],sys.argv[2]],start_new_session=True)"
- started=time.monotonic(); out=run_process([sys.executable,'-c',parent,daemon,str(marker)],cwd=p,stdin_text='',timeout_seconds=2,output_path=p/'out',sanitizer=lambda x:x); time.sleep(.8)
- assert time.monotonic()-started < 2 and not out.timed_out and not marker.exists()
+ p=pathlib.Path(d); marker=p/'launched'; mode=sys.argv[2]
+ code={
+  'normal': "import pathlib,sys;pathlib.Path(sys.argv[1]).write_text('bad')",
+  'double-fork': "import os,pathlib,sys;pathlib.Path(sys.argv[1]).write_text('bad');os.fork()",
+  'self-migrate': "import pathlib,sys;pathlib.Path(sys.argv[1]).write_text('bad');open('/sys/fs/cgroup/cgroup.procs','w').write(str(__import__('os').getpid()))",
+ }[mode]
+ try: run_process([sys.executable,'-c',code,str(marker)],cwd=p,stdin_text='',timeout_seconds=2,output_path=p/'out',sanitizer=lambda x:x)
+ except OSError as exc: assert 'Linux provider containment unavailable' in str(exc)
+ else: raise AssertionError('provider launched')
+ assert not marker.exists()
 '''
-    completed = subprocess.run(["wsl.exe", "-e", "python3", "-", linux_root, "1" if double_fork else "0"], input=script, text=True, capture_output=True, timeout=15)
+    completed = subprocess.run(["wsl.exe", "-e", "python3", "-", linux_root, mode], input=script, text=True, capture_output=True, timeout=15)
     assert completed.returncode == 0, completed.stderr
 
 
 def test_linux_containment_unavailable_fails_before_launch(tmp_path, monkeypatch):
     import harness.cross_harness_process as process
     monkeypatch.setattr(process.sys, "platform", "linux")
-    monkeypatch.setattr(process, "prepare_linux_cgroup", lambda: (_ for _ in ()).throw(OSError("no delegated cgroup")), raising=False)
     marker = tmp_path / "launched"
-    with pytest.raises(OSError, match="no delegated cgroup"):
+    with pytest.raises(OSError, match="Linux provider containment unavailable"):
         process.run_process([sys.executable, "-c", f"open({str(marker)!r},'w').write('bad')"], cwd=tmp_path, stdin_text="", timeout_seconds=1, output_path=tmp_path / "out", sanitizer=lambda x: x)
     assert not marker.exists()
 
 
-def test_linux_kill_capability_failure_blocks_launch_and_cleans_stage(tmp_path, monkeypatch):
-    import harness.cross_harness_linux as linux
-    group = tmp_path / "group"; group.mkdir()
-    for name in ("cgroup.procs", "cgroup.kill", "cgroup.events"): (group / name).write_text("populated 0" if name == "cgroup.events" else "")
-    monkeypatch.setattr(linux, "_current_cgroup_root", lambda: tmp_path)
-    original = pathlib.Path.write_text
-    def denied(self, *args, **kwargs):
-        if self.name == "cgroup.kill": raise PermissionError("denied")
-        return original(self, *args, **kwargs)
-    monkeypatch.setattr(pathlib.Path, "write_text", denied)
-    with pytest.raises(OSError, match="containment unavailable"):
-        linux.prepare_linux_cgroup()
+def test_owned_nonempty_stage_tree_is_scrubbed_without_following_links(tmp_path):
+    import harness.cross_harness_process as process
+    stage, outside = tmp_path / "out.txt", tmp_path / "outside"; outside.mkdir(); secret = outside / "secret"; secret.write_text("outside-secret")
+    stage.mkdir(); (stage / "raw-secret").write_text("provider-secret")
+    link = stage / "escape"
+    try: link.symlink_to(outside, target_is_directory=True)
+    except OSError: pytest.skip("directory symlink unavailable")
+    assert process._scrub_owned_tree(stage) and not stage.exists() and secret.read_text() == "outside-secret"
 
 
-def test_linux_selector_setup_failure_always_kills_group_and_process(monkeypatch):
-    import harness.cross_harness_linux as linux
-    calls = []
-    class Group:
-        def kill_and_remove(self): calls.append("group")
-    class Stream:
-        def fileno(self): return 1
-        def close(self): calls.append("stream")
-    class Proc:
-        stdout = stderr = stdin = Stream()
-        def poll(self): return None
-        def kill(self): calls.append("process")
-        def wait(self, timeout): return 0
-    monkeypatch.setattr(linux.os, "set_blocking", lambda *a: (_ for _ in ()).throw(OSError("setup failed")))
-    with pytest.raises(OSError, match="setup failed"):
-        linux.run_linux_process(Proc(), Group(), b"", time.monotonic() + 1)
-    assert "group" in calls and "process" in calls and "stream" in calls
+def test_stage_cleanup_failure_is_reported_after_raw_bytes_are_zeroed(tmp_path, monkeypatch):
+    import harness.cross_harness_process as process
+    stage = tmp_path / "stage"; stage.mkdir(); raw = stage / "raw"; raw.write_text("provider-secret")
+    original = pathlib.Path.unlink
+    monkeypatch.setattr(pathlib.Path, "unlink", lambda self, *a, **k: (_ for _ in ()).throw(PermissionError("locked")) if self == raw else original(self, *a, **k))
+    assert not process._scrub_owned_tree(stage) and raw.read_bytes() == b""
 
 
-def test_linux_selector_constructor_failure_always_kills_group_and_process(monkeypatch):
-    import harness.cross_harness_linux as linux
-    calls = []
-    class Group:
-        def kill_and_remove(self): calls.append("group")
-    class Stream:
-        def close(self): calls.append("stream")
-    class Proc:
-        stdout = stderr = stdin = Stream()
-        def poll(self): return None
-        def kill(self): calls.append("process")
-        def wait(self, timeout): return 0
-    monkeypatch.setattr(linux.selectors, "DefaultSelector", lambda: (_ for _ in ()).throw(OSError("selector failed")))
-    with pytest.raises(OSError, match="selector failed"):
-        linux.run_linux_process(Proc(), Group(), b"", time.monotonic() + 1)
-    assert "group" in calls and "process" in calls and "stream" in calls
+def test_owned_stage_hardlink_is_unlinked_without_truncating_outside(tmp_path):
+    import harness.cross_harness_process as process
+    stage, outside = tmp_path / "stage", tmp_path / "outside"; stage.mkdir(); outside.write_text("DO-NOT-TRUNCATE")
+    linked = stage / "linked"
+    try: os.link(outside, linked)
+    except OSError: pytest.skip("hard links unavailable")
+    assert not process._scrub_owned_tree(stage)
+    assert not stage.exists() and outside.read_text() == "DO-NOT-TRUNCATE"
+
+
+@pytest.mark.skipif(sys.platform != "win32", reason="Windows provider boundary")
+@pytest.mark.parametrize("failure", ["popen", "job", "resume", "runner"])
+def test_exceptional_process_paths_report_stage_cleanup_failure(tmp_path, monkeypatch, failure):
+    import harness.cross_harness_process as process
+    monkeypatch.setattr(process, "_scrub_owned_tree", lambda path: False)
+    if failure == "popen": monkeypatch.setattr(process.subprocess, "Popen", lambda *a, **k: (_ for _ in ()).throw(RuntimeError("launch")))
+    elif failure == "job": monkeypatch.setattr(process, "_windows_job", lambda proc: None)
+    elif failure == "resume": monkeypatch.setattr(process, "_resume_windows", lambda proc: False)
+    else: monkeypatch.setattr(process, "_run_windows_process", lambda *a: (_ for _ in ()).throw(RuntimeError("runner")))
+    with pytest.raises(OSError, match="provider staging cleanup failed"):
+        process.run_process([sys.executable, "-c", "pass"], cwd=tmp_path, stdin_text="", timeout_seconds=1,
+                            output_path=tmp_path / "out", sanitizer=lambda value: value)
+
+
+@pytest.mark.skipif(sys.platform != "win32", reason="Windows junction boundary")
+def test_owned_stage_cleanup_removes_junction_without_following_it(tmp_path):
+    import harness.cross_harness_process as process
+    stage, outside = tmp_path / "stage", tmp_path / "outside"; stage.mkdir(); outside.mkdir(); secret = outside / "secret"; secret.write_text("outside-secret")
+    junction = stage / "escape"
+    made = subprocess.run(["cmd.exe", "/d", "/c", "mklink", "/J", str(junction), str(outside)], capture_output=True)
+    if made.returncode: pytest.skip("junction creation unavailable")
+    assert process._scrub_owned_tree(stage) and not stage.exists() and secret.read_text() == "outside-secret"
+
+
+@pytest.mark.skipif(sys.platform != "win32", reason="Windows provider boundary")
+def test_stage_cleanup_failure_marks_real_process_malformed(tmp_path, monkeypatch):
+    import harness.cross_harness_process as process
+    original = process._scrub_owned_tree
+    def scrub_and_report_failure(path):
+        original(path)
+        return False
+    monkeypatch.setattr(process, "_scrub_owned_tree", scrub_and_report_failure)
+    outcome = process.run_process([sys.executable, "-c", "pass"], cwd=tmp_path, stdin_text="", timeout_seconds=1,
+                                  output_path=tmp_path / "out", sanitizer=lambda value: value)
+    assert outcome.malformed_output and not list(tmp_path.glob(".cross-harness-stage-*"))

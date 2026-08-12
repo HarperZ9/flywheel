@@ -182,7 +182,7 @@ def test_quoted_executable_wrappers_report_shell_and_write(command, tmp_path):
     assert result.observed_capabilities == ["shell", "write"] and result.policy_violations == ["exec_not_allowed", "write_not_allowed"]
 
 
-@pytest.mark.parametrize("command", ['bash -c "python -c \'print(1 > 0)\'"', 'pwsh -Command "Write-Output \'1 > 0\'"'])
+@pytest.mark.parametrize("command", ['bash -c "python -c \'print(1 > 0)\'"', 'pwsh -Command "Write-Output \'1 > 0\'"', 'powershell -Co "Write-Output \'1 > 0\'"', 'powershell -Encoded "Write-Output \'1 > 0\'"'])
 def test_quoted_wrapper_comparisons_are_not_writes(command, tmp_path):
     process = type("Outcome", (), {"returncode": 0, "stdout": json.dumps({"type": "command_execution", "command": command}), "stderr": "", "output_text": "", "elapsed_ms": 1, "timed_out": False, "malformed_output": False})()
     result = DirectCodexAdapter(runner=lambda *a, **k: process, executable_resolver=lambda: "codex.cmd").execute(_attempt(tmp_path))
@@ -198,7 +198,8 @@ def test_wrapper_escaped_redirect_data_is_not_write(command, tmp_path):
 
 def test_encoded_powershell_and_cmd_keep_commands_are_audited(tmp_path):
     encoded = base64.b64encode("echo bad > x".encode("utf-16le")).decode()
-    for command in (f"pwsh -EncodedCommand {encoded}", 'cmd.exe /d /k "echo bad > x"'):
+    for command in (f"pwsh -EncodedCommand {encoded}", f"powershell -EncodedC {encoded}", f"powershell -EncodedCom {encoded}",
+                    'powershell -Com "echo bad > x"', 'powershell -Comm "echo bad > x"', 'cmd.exe /d /k "echo bad > x"'):
         process = type("Outcome", (), {"returncode": 0, "stdout": json.dumps({"type": "command_execution", "command": command}), "stderr": "", "output_text": "", "elapsed_ms": 1, "timed_out": False, "malformed_output": False})()
         result = DirectCodexAdapter(runner=lambda *a, **k: process, executable_resolver=lambda: "codex.cmd").execute(_attempt(tmp_path))
         assert "write_not_allowed" in result.policy_violations
@@ -222,12 +223,13 @@ def test_real_child_streams_and_output_stage_are_bounded(tmp_path):
 def test_provider_output_stage_rejects_non_regular_objects(tmp_path, kind):
     stage, target = tmp_path / "out.txt", tmp_path / "target.txt"
     target.write_text("outside")
-    if kind == "directory": code = "import pathlib,sys;p=pathlib.Path(sys.argv[1]);p.unlink(missing_ok=True);p.mkdir()"
+    if kind == "directory": code = "import pathlib,sys;p=pathlib.Path(sys.argv[1]);p.unlink(missing_ok=True);p.mkdir();(p/'raw').write_text('provider-secret')"
     else: code = "import os,pathlib,sys;p=pathlib.Path(sys.argv[1]);p.unlink(missing_ok=True);os.symlink(sys.argv[2],p)"
     result = _run_process([sys.executable, "-c", code, str(stage), str(target)], cwd=tmp_path, stdin_text="", timeout_seconds=2, output_path=stage)
     if kind == "symlink" and result.returncode:
         pytest.skip("file symlink creation is unavailable on this host")
-    assert result.malformed_output and not stage.exists() and target.read_text() == "outside"
+    retained = [p for p in tmp_path.rglob("*") if p.is_file() and b"provider-secret" in p.read_bytes()]
+    assert result.malformed_output and not stage.exists() and target.read_text() == "outside" and not retained
 
 
 def test_preexisting_nonempty_stage_directory_fails_closed_without_deletion(tmp_path):

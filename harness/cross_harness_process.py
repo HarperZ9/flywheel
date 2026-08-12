@@ -7,10 +7,10 @@ from pathlib import Path
 import stat
 import subprocess
 import sys
+import tempfile
 import threading
 import time
 from typing import Any, Callable
-from .cross_harness_linux import prepare_linux_cgroup, run_linux_process
 
 MAX_CAPTURE_BYTES = 1 << 20
 
@@ -126,7 +126,6 @@ def _decode(raw: bytes) -> tuple[str, bool]:
     except UnicodeDecodeError:
         return "", True
 
-
 def _remove_stage(path: Path) -> bool:
     try:
         mode = path.lstat().st_mode
@@ -140,6 +139,53 @@ def _remove_stage(path: Path) -> bool:
         return False
     return True
 
+def _reparse(info: os.stat_result) -> bool:
+    return bool(getattr(info, "st_file_attributes", 0) & getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT", 0x400))
+
+
+def _remove_leaf(path: Path, info: os.stat_result) -> bool:
+    ok = True
+    if stat.S_ISREG(info.st_mode) and not _reparse(info):
+        flags = os.O_WRONLY | getattr(os, "O_BINARY", 0) | getattr(os, "O_NOFOLLOW", 0)
+        descriptor = None
+        try:
+            descriptor = os.open(path, flags)
+            opened = os.fstat(descriptor)
+            safe = info.st_nlink == opened.st_nlink == 1 and (opened.st_dev, opened.st_ino) == (info.st_dev, info.st_ino)
+            if safe: os.ftruncate(descriptor, 0)
+            else: ok = False
+        except OSError:
+            ok = False
+        finally:
+            if descriptor is not None: os.close(descriptor)
+    try:
+        path.rmdir() if stat.S_ISDIR(info.st_mode) else path.unlink()
+    except OSError:
+        ok = False
+    return ok
+
+
+def _scrub_owned_tree(root: Path) -> bool:
+    """Remove an exclusively harness-created tree without traversing reparse leaves."""
+    ok, stack = True, [(root, False)]
+    while stack:
+        path, visited = stack.pop()
+        try: info = path.lstat()
+        except FileNotFoundError: continue
+        except OSError: ok = False; continue
+        if not stat.S_ISDIR(info.st_mode) or stat.S_ISLNK(info.st_mode) or _reparse(info):
+            ok = _remove_leaf(path, info) and ok; continue
+        if visited:
+            try: path.rmdir()
+            except OSError: ok = False
+            continue
+        stack.append((path, True))
+        try:
+            with os.scandir(path) as entries:
+                stack.extend((path / entry.name, False) for entry in entries)
+        except OSError:
+            ok = False
+    return ok
 
 def _read_stage(path: Path) -> tuple[bytes, bool]:
     try:
@@ -165,47 +211,36 @@ def _read_stage(path: Path) -> tuple[bytes, bool]:
 
 def run_process(argv: list[str], *, cwd: Path, stdin_text: str, timeout_seconds: float,
                 output_path: Path, sanitizer: Callable[[Any], Any]) -> ProcessOutcome:
-    linux = sys.platform.startswith("linux")
-    if os.name != "nt" and not linux:
+    if sys.platform.startswith("linux"):
+        raise OSError("Linux provider containment unavailable")
+    if os.name != "nt":
         raise OSError("robust process containment unavailable")
     if not _remove_stage(output_path):
         raise OSError("provider output staging path is not safely removable")
+    stage_root = Path(tempfile.mkdtemp(prefix=".cross-harness-stage-", dir=output_path.parent))
+    stage_output = stage_root / "last-message.txt"
+    argv = [str(stage_output) if str(item) == str(output_path) else item for item in argv]
     options: dict[str, Any] = {
         "cwd": str(cwd), "env": _child_env(), "stdin": subprocess.PIPE,
         "stdout": subprocess.PIPE, "stderr": subprocess.PIPE, "shell": False,
+        "creationflags": subprocess.CREATE_NEW_PROCESS_GROUP | 0x4,  # CREATE_SUSPENDED
     }
-    group = prepare_linux_cgroup() if linux else None
-    if os.name == "nt" and not linux:
-        options["creationflags"] = subprocess.CREATE_NEW_PROCESS_GROUP | 0x4  # CREATE_SUSPENDED
-    else:
-        argv = group.wrap(argv)
     started = time.perf_counter()
+    proc, job = None, None
     try:
         proc = subprocess.Popen(argv, **options)
-    except Exception:
-        if group: group.kill_and_remove()
-        raise
-    job = _windows_job(proc)
-    if os.name == "nt" and not linux and job is None:
-        _stop_tree(proc)
-        _remove_stage(output_path)
-        raise OSError("Windows process containment unavailable")
-    if os.name == "nt" and not linux and not _resume_windows(proc):
-        _stop_tree(proc, job)
-        _remove_stage(output_path)
-        raise OSError("Windows suspended process could not be resumed")
-
-    try:
-        if linux:
-            captured, timed_out = run_linux_process(proc, group, stdin_text.encode("utf-8"), started + timeout_seconds)
-        else:
-            captured, timed_out = _run_windows_process(proc, job, stdin_text, started + timeout_seconds)
-    except Exception:
-        _remove_stage(output_path)
+        job = _windows_job(proc)
+        if job is None: raise OSError("Windows process containment unavailable")
+        if not _resume_windows(proc): raise OSError("Windows suspended process could not be resumed")
+        captured, timed_out = _run_windows_process(proc, job, stdin_text, started + timeout_seconds)
+    except Exception as exc:
+        if proc is not None: _stop_tree(proc, job)
+        if not _scrub_owned_tree(stage_root):
+            raise OSError(f"provider staging cleanup failed: {stage_root.name}") from exc
         raise
 
-    output_raw, output_over = _read_stage(output_path)
-    cleanup_ok = _remove_stage(output_path)
+    output_raw, output_over = _read_stage(stage_output)
+    cleanup_ok = _scrub_owned_tree(stage_root)
     stdout, stdout_over = captured.get("stdout", (b"", True))
     stderr, stderr_over = captured.get("stderr", (b"", True))
     stdout_text, bad_stdout = _decode(stdout)
