@@ -31,7 +31,7 @@ def validate_inputs(task_set: dict[str, Any], contract: dict[str, Any], provider
     _require(contract, ["schema", "contract_id", "provider_roles", "scorecard_row_contract"], "contract")
     if task_set.get("schema") != "harness.agentic-task-set/v1":
         raise ValueError(f"unsupported task-set schema: {task_set.get('schema')}")
-    if contract.get("schema") != "harness.cross-harness-adapter-contract/v1":
+    if contract.get("schema") != "harness.cross-harness-adapter-contract/v2":
         raise ValueError(f"unsupported cross-harness contract schema: {contract.get('schema')}")
     tasks = task_set.get("tasks")
     if not isinstance(tasks, list) or not tasks:
@@ -79,6 +79,7 @@ def build_manifest(
         "status": "planned_not_executed",
         "run_id": run_id,
         "contract_id": contract["contract_id"],
+        "contract_schema": contract["schema"],
         "contract_path": contract_path,
         "contract_sha256": contract_sha256,
         "task_set_id": task_set["task_set_id"],
@@ -148,7 +149,7 @@ def render_markdown(manifest: dict[str, Any]) -> str:
             "| {role} | {harness} | {model} | {state} | {modes} |".format(
                 role=row["provider_role"],
                 harness=row["harness_id"],
-                model=row["target_model"],
+                model=row["model_display_name"],
                 state=row["adapter_state"],
                 modes=", ".join(row.get("allowed_modes", [])),
             )
@@ -183,7 +184,8 @@ def _provider_specs(contract: dict[str, Any], provider_roles: list[str]) -> dict
         str(row.get("provider_role", "")): {
             "provider_role": str(row.get("provider_role", "")),
             "harness_id": str(row.get("harness_id", "")),
-            "target_model": str(row.get("target_model", "")),
+            "model_id": str(row.get("model_id", "")), "model_display_name": str(row.get("model_display_name", "")),
+            "requested_model_reference": str(row.get("requested_model_reference", "")),
             "adapter_id": str(row.get("adapter_id", "")),
             "endpoint_selector": dict(row.get("endpoint_selector", {})) if isinstance(row.get("endpoint_selector"), dict) else {},
             "adapter_state": str(row.get("adapter_state", "")),
@@ -309,7 +311,7 @@ def _scorecard_row(
         "coverage_unit": task_row["coverage_unit"],
         "provider_role": provider_role,
         "harness_id": provider_spec["harness_id"],
-        "model_id": provider_spec["target_model"],
+        "model_id": provider_spec["model_id"],
         "execution_mode": "manifest_only",
         "status": "planned",
         "failure_class": "not_executed",

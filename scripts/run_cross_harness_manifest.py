@@ -25,7 +25,7 @@ from harness.file_backed_store import FileBackedHarnessStore  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_TASK_SET = str(ROOT / "benchmarks" / "agentic-task-set-v1.json")
-DEFAULT_CONTRACT = str(ROOT / "benchmarks" / "cross-harness-adapter-contract-v1.json")
+DEFAULT_CONTRACT = str(ROOT / "benchmarks" / "cross-harness-adapter-contract-v2.json")
 
 
 def write_text(path_text: str, text: str) -> str:

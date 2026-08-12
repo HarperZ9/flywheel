@@ -1,0 +1,125 @@
+{
+  "schema": "harness.cross-harness-adapter-contract/v2",
+  "contract_id": "cross_harness_adapter_contract_v2",
+  "status": "draft_not_executed",
+  "created_at": "2026-08-12",
+  "source_task_set": "benchmarks/agentic-task-set-v1.json",
+  "purpose": "Standardize exact model identity and route selection for comparable cross-harness receipts.",
+  "global_invariants": [
+    "Each provider receives the same task_id and task prompt bytes for comparable runs.",
+    "Each provider records raw prompt hash, raw output hash, artifact paths, receipt path, run id, provider role, harness id, model id, and failure class.",
+    "Provider secrets, endpoint credentials, .env values, tokens, private keys, and private payload bodies must never be copied into scorecards.",
+    "A prepared adapter is not an executed benchmark.",
+    "A skipped provider is evidence of coverage gap, not model failure.",
+    "A provider result is comparable only when task_id, task_set_id, metric schema, and execution policy match."
+  ],
+  "planned_scorecard_schema": "harness.cross-harness-task-scorecard/v1",
+  "planned_run_receipt_schema": "harness.cross-harness-run-receipt/v1",
+  "provider_roles": [
+    {
+      "provider_role": "codex_harness",
+      "harness_id": "codex",
+      "adapter_id": "codex_cli_json/v1",
+      "model_id": "gpt-5.3-codex-spark",
+      "model_display_name": "GPT-5.3-Codex-Spark",
+      "requested_model_reference": "gpt-5.3-codex-spark",
+      "current_evidence": ["repository adapter contract present; live authorization not inferred"],
+      "adapter_state": "contract_only",
+      "allowed_modes": ["manifest_only", "dry_plan", "focused_run_after_approval"],
+      "required_receipts": ["raw_prompt", "raw_output", "tool_trace", "harness_receipt", "metric_row"]
+    },
+    {
+      "provider_role": "flywheel_harness",
+      "harness_id": "flywheel",
+      "adapter_id": "flywheel_router/v1",
+      "model_id": "gpt-5.3-codex-spark",
+      "model_display_name": "GPT-5.3-Codex-Spark",
+      "requested_model_reference": "gpt-5.3-codex-spark",
+      "current_evidence": ["repository Flywheel harness present; live authorization not inferred"],
+      "adapter_state": "contract_only",
+      "allowed_modes": ["manifest_only", "dry_plan", "focused_run_after_approval"],
+      "required_receipts": ["raw_prompt", "raw_output", "tool_trace", "harness_receipt", "metric_row"]
+    },
+    {
+      "provider_role": "claude_code",
+      "harness_id": "claude_code",
+      "adapter_id": "claude_code_cli_json/v1",
+      "model_id": "configured_by_operator",
+      "model_display_name": "Configured by operator",
+      "requested_model_reference": "configured_by_operator",
+      "current_evidence": ["no local execution evidence recorded in this contract"],
+      "adapter_state": "needs_discovery",
+      "allowed_modes": ["manifest_only", "focused_run_after_approval"],
+      "required_receipts": ["raw_prompt", "raw_output", "tool_trace_if_available", "harness_receipt", "metric_row"]
+    },
+    {
+      "provider_role": "opencode",
+      "harness_id": "opencode",
+      "adapter_id": "opencode_cli_json/v1",
+      "model_id": "configured_by_operator",
+      "model_display_name": "Configured by operator",
+      "requested_model_reference": "configured_by_operator",
+      "current_evidence": ["operator://opencode-installation-root requires separate admission"],
+      "adapter_state": "needs_adapter",
+      "allowed_modes": ["manifest_only", "focused_run_after_approval"],
+      "required_receipts": ["raw_prompt", "raw_output", "tool_trace_if_available", "harness_receipt", "metric_row"]
+    },
+    {
+      "provider_role": "local_14b",
+      "harness_id": "local_endpoint",
+      "adapter_id": "openai_compatible_local/v1",
+      "model_id": "flywheel-local-coder-14b",
+      "model_display_name": "Flywheel Local Coder 14B",
+      "requested_model_reference": "ollama:flywheel-local-coder-14b",
+      "endpoint_selector": {
+        "profile_id": "ollama-release-14b",
+        "backend": "ollama",
+        "model_reference": "ollama:flywheel-local-coder-14b",
+        "release_asset_sha256": "613db240e3efc6730f24042a4602d1f12f1c6b397af1d5a4d74f4e064d4064be"
+      },
+      "current_evidence": ["operator://local-model-base-root requires a fresh endpoint profile and gate"],
+      "adapter_state": "needs_endpoint_profile_and_gate",
+      "allowed_modes": ["manifest_only", "endpoint_profile", "endpoint_gate_after_approval", "focused_run_after_approval"],
+      "required_receipts": ["endpoint_profile", "endpoint_gate", "raw_prompt", "raw_output", "metric_row"]
+    },
+    {
+      "provider_role": "local_32b",
+      "harness_id": "local_endpoint",
+      "adapter_id": "openai_compatible_local/v1",
+      "model_id": "flywheel-local-coder-32b",
+      "model_display_name": "Flywheel Local Coder 32B",
+      "requested_model_reference": "ollama:flywheel-local-coder-32b",
+      "endpoint_selector": {
+        "profile_id": "ollama-release-32b",
+        "backend": "ollama",
+        "model_reference": "ollama:flywheel-local-coder-32b",
+        "release_asset_sha256": "65e6133fbe4d12579a776047a71bebb98ab86f9e3d343ed821b51dac0ce312f4"
+      },
+      "current_evidence": ["operator://local-model-base-root requires a fresh endpoint profile and gate"],
+      "adapter_state": "needs_endpoint_profile_and_gate",
+      "allowed_modes": ["manifest_only", "endpoint_profile", "endpoint_gate_after_approval", "focused_run_after_approval"],
+      "required_receipts": ["endpoint_profile", "endpoint_gate", "raw_prompt", "raw_output", "metric_row"]
+    },
+    {
+      "provider_role": "dry",
+      "harness_id": "dry_null",
+      "adapter_id": "dry_null/v1",
+      "model_id": "none",
+      "model_display_name": "None",
+      "requested_model_reference": "none",
+      "current_evidence": ["dry/null role is declared for command and receipt verification"],
+      "adapter_state": "contract_only",
+      "allowed_modes": ["manifest_only", "dry_plan"],
+      "required_receipts": ["raw_prompt_hash", "planned_artifacts", "no_execution_receipt"]
+    }
+  ],
+  "scorecard_row_contract": {
+    "required_fields": [
+      "task_set_id", "task_id", "benchmark_id", "coverage_unit", "provider_role", "harness_id", "model_id", "execution_mode", "status", "failure_class", "raw_prompt_sha256", "raw_output_sha256", "raw_prompt_path", "raw_output_path", "receipt_path", "tool_trace_path", "metrics", "limitations"
+    ],
+    "required_metrics": ["task_completion", "quality", "latency_ms", "resource_use", "reliability", "tool_use_success", "failure_modes", "reproducibility"]
+  },
+  "comparability_checks": [
+    "same task_set_id", "same task_id", "same raw_prompt_sha256", "same metric schema", "same execution policy", "role and model identity recorded", "non-execution rows are excluded from quality ranking"
+  ]
+}

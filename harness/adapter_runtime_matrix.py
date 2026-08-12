@@ -10,7 +10,7 @@ from typing import Any
 
 
 SCHEMA = "harness.adapter-runtime-matrix/v1"
-DEFAULT_CONTRACT = str(Path(__file__).resolve().parent.parent / "benchmarks" / "cross-harness-adapter-contract-v1.json")
+DEFAULT_CONTRACT = str(Path(__file__).resolve().parent.parent / "benchmarks" / "cross-harness-adapter-contract-v2.json")
 GATE_FIELDS = (
     "selected_profile_id", "profile_sha256", "model", "backend",
     "expected_model_ref", "observed_model_ref", "health_ok", "generation_ok",

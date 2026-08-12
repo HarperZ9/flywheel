@@ -224,6 +224,7 @@ def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     manifest, matrix = _load(Path(args.manifest)), _load(Path(args.runtime_matrix))
     if manifest.get("schema") != "harness.cross-harness-manifest/v1": raise ValueError("manifest schema mismatch")
+    if manifest.get("contract_schema") != "harness.cross-harness-adapter-contract/v2": raise ValueError("manifest contract schema mismatch")
     if matrix.get("schema") != "harness.adapter-runtime-matrix/v1": raise ValueError("runtime matrix schema mismatch")
     roles, selectors = _csv(args.roles), _csv(args.tasks)
     if args.repetitions < 1: raise ValueError("repetitions must be positive")
