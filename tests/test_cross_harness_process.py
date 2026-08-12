@@ -1,4 +1,4 @@
-import json, pathlib, shutil, subprocess, sys, tempfile
+import hashlib, json, pathlib, shutil, subprocess, sys, tempfile
 import pytest
 from harness.cross_harness_adapters import (CodexCliProposer, DirectCodexAdapter,
     FlywheelRouterAdapter, LocalRouterAdapter, ProcessOutcome)
@@ -24,6 +24,19 @@ def _spark_request(tmp_path, role="codex_harness", adapter="codex_cli_json/v1"):
         "5.3-Codex-Spark", tmp_path, "b" * 64, {}, SHARED_TOOL_POLICY, "c" * 64, 1, "cold_declared", 2, tmp_path)
 
 
+def _execute_spark_rows(tmp_path, process, adapters):
+    source = tmp_path / "source"; source.mkdir(); prompt = "prompt"
+    task = {"task_id": "agt-001-task", "raw_prompt": prompt, "raw_prompt_sha256": hashlib.sha256(prompt.encode()).hexdigest(),
+            "input_sha256s": {}, "required_inputs": [], "expected_artifacts": [], "oracle": {}}
+    roles = list(adapters)
+    manifest = {"task_set_id": "set", "task_rows": [task], "provider_specs": [{"provider_role": role,
+        "harness_id": role.split("_")[0], "adapter_id": "codex_cli_json/v1" if role == "codex_harness" else "flywheel_router/v1",
+        "target_model": "5.3-Codex-Spark"} for role in roles]}
+    runtime = {"runtime_rows": [{"provider_role": role, "focused_run_ready": True, "blocking_gates": []} for role in roles]}
+    return execute_cross_harness_manifest(manifest, runtime, adapters, artifact_root=tmp_path / "artifacts", source_root=source,
+        run_id="run", phase="spark", selectors=["agt-001"], roles=roles, repetitions=1)["rows"]
+
+
 @pytest.mark.parametrize(("stdout", "expected"), [
     ("", None),
     (json.dumps({"type": "item.completed", "item": {"type": "agent_message", "text": 7}}), None),
@@ -47,6 +60,129 @@ def test_invalid_final_message_beats_nonzero_for_direct_and_inner(stdout, tmp_pa
     inner = FlywheelRouterAdapter(proposer=proposer).execute(_spark_request(tmp_path, "flywheel_harness", "flywheel_router/v1"))
     assert (direct.execution_state, direct.failure_class) == ("malformed", "malformed_jsonl")
     assert (inner.execution_state, inner.failure_class) == ("malformed", "malformed_provider_output")
+
+
+def test_structured_model_rejection_beats_missing_final_message_for_direct_and_inner(tmp_path):
+    provider_error = {"type": "error", "status": 400, "error": {
+        "type": "invalid_request_error",
+        "message": "The '5.3-Codex-Spark' model is not supported when using Codex with a ChatGPT account.",
+        "authorization": "opaque-value-that-must-not-escape",
+    }}
+    stdout = "\n".join((
+        json.dumps({"type": "thread.started", "thread_id": "fixture-thread"}),
+        json.dumps({"type": "error", "message": json.dumps(provider_error)}),
+        json.dumps({"type": "turn.failed", "error": {"message": json.dumps(provider_error)}}),
+    ))
+    process = ProcessOutcome(1, stdout, "", 1, False)
+    direct = DirectCodexAdapter(runner=lambda *a, **k: process, executable_resolver=lambda: "codex.cmd").execute(_spark_request(tmp_path))
+    proposer = CodexCliProposer("5.3-Codex-Spark", workspace=tmp_path, artifact_dir=tmp_path,
+        timeout_seconds=2, runner=lambda *a, **k: process, executable_resolver=lambda: "codex.cmd")
+    inner = FlywheelRouterAdapter(proposer=proposer).execute(_spark_request(tmp_path, "flywheel_harness", "flywheel_router/v1"))
+    for result in (direct, inner):
+        assert (result.execution_state, result.failure_class) == ("internal_error", "provider_model_unsupported")
+        detail = json.loads(result.failure_detail)
+        assert detail == {"provider_error_type": "invalid_request_error", "status": 400}
+        assert any(event.get("type") == "turn.failed" for event in result.tool_trace)
+    adapters = {"codex_harness": DirectCodexAdapter(runner=lambda *a, **k: process, executable_resolver=lambda: "codex.cmd"),
+        "flywheel_harness": FlywheelRouterAdapter(runner=lambda *a, **k: process, executable_resolver=lambda: "codex.cmd")}
+    for row in _execute_spark_rows(tmp_path, process, adapters):
+        assert (row["launched"], row["admitted"], row["blocked"], row["failure_class"]) == (True, True, False, "provider_model_unsupported")
+        assert (row["execution_state"], row["receipt_state"], row["model_observed"]) == ("internal_error", "verified", "5.3-Codex-Spark")
+        trace = json.loads(pathlib.Path(row["tool_trace_path"]).read_text())
+        assert any(event.get("type") == "turn.failed" for event in trace)
+        assert "opaque-value-that-must-not-escape" not in repr(trace)
+
+
+def test_provider_rejection_detail_excludes_provider_message_and_secrets(tmp_path):
+    secret = "sk-proj-abcdefghijklmnopqrstuvwxyz"
+    error = {"type": "error", "status": 400, "error": {"type": "invalid_request_error",
+        "message": f"The model is not supported for this account; Authorization: Bearer {secret}"}}
+    process = ProcessOutcome(1, json.dumps({"type": "turn.failed", "error": {"message": json.dumps(error)}}), "", 1, False)
+    result = DirectCodexAdapter(runner=lambda *a, **k: process, executable_resolver=lambda: "codex.cmd").execute(_spark_request(tmp_path))
+    assert json.loads(result.failure_detail) == {"provider_error_type": "invalid_request_error", "status": 400}
+    assert secret not in result.failure_detail and secret not in repr(result.tool_trace)
+
+
+@pytest.mark.parametrize(("status", "error_type"), [(429, "rate_limit_error"), (503, "server_error")])
+def test_other_structured_terminal_provider_failures_use_generic_typed_class(status, error_type, tmp_path):
+    event = {"type": "error", "status": status, "error": {"type": error_type, "message": "provider rejected request"}}
+    final = {"type": "item.completed", "item": {"type": "agent_message", "text": "must not outrank terminal error"}}
+    process = ProcessOutcome(0, "\n".join((json.dumps(event), json.dumps(final))), "", 1, False)
+    result = DirectCodexAdapter(runner=lambda *a, **k: process, executable_resolver=lambda: "codex.cmd").execute(_spark_request(tmp_path))
+    assert (result.execution_state, result.failure_class, result.output_text) == ("internal_error", "provider_rejected", "")
+    assert json.loads(result.failure_detail) == {"provider_error_type": error_type, "status": status}
+
+
+def test_generic_provider_rejection_needs_no_message_and_feature_error_is_not_model_error(tmp_path):
+    events = [
+        {"type": "error", "status": 503, "error": {"type": "server_error"}},
+        {"type": "error", "status": 400, "error": {"type": "invalid_request_error",
+            "message": "The model rejected this request because response_format is not supported."}},
+    ]
+    for event in events:
+        process = ProcessOutcome(1, json.dumps(event), "", 1, False)
+        result = DirectCodexAdapter(runner=lambda *a, **k: process, executable_resolver=lambda: "codex.cmd").execute(_spark_request(tmp_path))
+        assert (result.execution_state, result.failure_class) == ("internal_error", "provider_rejected")
+
+
+def test_nested_structured_turn_failure_is_typed_for_direct_and_inner(tmp_path):
+    event = {"type": "turn.failed", "error": {"status": 503, "error": {"type": "server_error"}}}
+    final = {"type": "item.completed", "item": {"type": "agent_message", "text": "must not hide terminal failure"}}
+    process = ProcessOutcome(0, "\n".join((json.dumps(event), json.dumps(final))), "", 1, False)
+    direct = DirectCodexAdapter(runner=lambda *a, **k: process, executable_resolver=lambda: "codex.cmd").execute(_spark_request(tmp_path))
+    proposer = CodexCliProposer("5.3-Codex-Spark", workspace=tmp_path, artifact_dir=tmp_path,
+        timeout_seconds=2, runner=lambda *a, **k: process, executable_resolver=lambda: "codex.cmd")
+    inner = FlywheelRouterAdapter(proposer=proposer).execute(_spark_request(tmp_path, "flywheel_harness", "flywheel_router/v1"))
+    assert {(result.execution_state, result.failure_class) for result in (direct, inner)} == {("internal_error", "provider_rejected")}
+    adapters = {"codex_harness": DirectCodexAdapter(runner=lambda *a, **k: process, executable_resolver=lambda: "codex.cmd"),
+        "flywheel_harness": FlywheelRouterAdapter(runner=lambda *a, **k: process, executable_resolver=lambda: "codex.cmd")}
+    for row in _execute_spark_rows(tmp_path, process, adapters):
+        assert (row["execution_state"], row["failure_class"], row["receipt_state"]) == ("internal_error", "provider_rejected", "verified")
+
+
+def test_malformed_jsonl_outranks_a_valid_provider_rejection(tmp_path):
+    error = {"type": "error", "status": 400, "error": {"type": "invalid_request_error",
+        "message": "The '5.3-Codex-Spark' model is not supported when using Codex with a ChatGPT account."}}
+    process = ProcessOutcome(1, json.dumps(error) + "\nnot-json", "", 1, False)
+    result = DirectCodexAdapter(runner=lambda *a, **k: process, executable_resolver=lambda: "codex.cmd").execute(_spark_request(tmp_path))
+    assert (result.execution_state, result.failure_class) == ("malformed", "malformed_jsonl")
+
+
+@pytest.mark.parametrize("event", [
+    {"type": "error", "message": '{"status":400,"error":{"type":"invalid_request_error","type":"forged","message":"model is not supported"}}'},
+    {"type": "error", "message": '{"status":400,"error":{"type":"invalid_request_error","message":"model is not supported"},"value":NaN}'},
+    {"type": "error", "message": json.dumps({"status": 400, "error": {"type": "invalid_request_error", "message": "model is not supported"},
+        "nested": [[[[[[[[[[[[[[[[["too deep"]]]]]]]]]]]]]]]]]})},
+    {"type": "error", "message": json.dumps({"status": 400, "error": {"type": "invalid_request_error",
+        "message": "model is not supported " + "x" * 5000}})},
+    {"type": "error", "message": r'{"status":400,"error":{"type":"server_error","message":"\ud800"}}'},
+], ids=["duplicate", "nonfinite", "depth", "message_limit", "surrogate"])
+def test_malformed_nested_terminal_errors_outrank_final_message(event, tmp_path):
+    final = {"type": "item.completed", "item": {"type": "agent_message", "text": "answer"}}
+    process = ProcessOutcome(0, "\n".join((json.dumps(event), json.dumps(final))), "", 1, False)
+    direct = DirectCodexAdapter(runner=lambda *a, **k: process, executable_resolver=lambda: "codex.cmd").execute(_spark_request(tmp_path))
+    proposer = CodexCliProposer("5.3-Codex-Spark", workspace=tmp_path, artifact_dir=tmp_path,
+        timeout_seconds=2, runner=lambda *a, **k: process, executable_resolver=lambda: "codex.cmd")
+    inner = FlywheelRouterAdapter(proposer=proposer).execute(_spark_request(tmp_path, "flywheel_harness", "flywheel_router/v1"))
+    assert (direct.execution_state, direct.failure_class) == ("malformed", "malformed_jsonl")
+    assert (inner.execution_state, inner.failure_class) == ("malformed", "malformed_provider_output")
+    if "\\ud800" in str(event):
+        adapters = {"codex_harness": DirectCodexAdapter(runner=lambda *a, **k: process, executable_resolver=lambda: "codex.cmd"),
+            "flywheel_harness": FlywheelRouterAdapter(runner=lambda *a, **k: process, executable_resolver=lambda: "codex.cmd")}
+        for row in _execute_spark_rows(tmp_path, process, adapters):
+            assert (row["execution_state"], row["receipt_state"], row["model_observed"]) == ("malformed", "verified", "5.3-Codex-Spark")
+            assert row["failure_class"] in {"malformed_jsonl", "malformed_provider_output"}
+            trace = pathlib.Path(row["tool_trace_path"]).read_text()
+            assert "\\ud800" not in trace and '"malformed_provider_message":true' in trace
+
+
+def test_nonterminal_nested_error_metadata_does_not_override_final_message(tmp_path):
+    event = {"type": "item.completed", "item": {"type": "error", "message": json.dumps({"status": 400,
+        "error": {"type": "invalid_request_error", "message": "model is not supported"}})}}
+    final = {"type": "item.completed", "item": {"type": "agent_message", "text": "answer"}}
+    process = ProcessOutcome(0, "\n".join((json.dumps(event), json.dumps(final))), "", 1, False)
+    result = DirectCodexAdapter(runner=lambda *a, **k: process, executable_resolver=lambda: "codex.cmd").execute(_spark_request(tmp_path))
+    assert (result.execution_state, result.output_text, result.failure_class) == ("returned", "answer", "")
 
 
 @pytest.mark.parametrize("payload", [

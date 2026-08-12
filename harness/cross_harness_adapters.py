@@ -13,7 +13,7 @@ from .local_session import SessionLedger
 from .local_tools import TOOLS_SYSTEM, ToolExecutor, ToolGate
 from .proposer import ProposerOutput, prompt_hash
 from .router_agent import RouterAgent
-from .cross_harness_process import ProcessOutcome, run_process
+from .cross_harness_process import ProcessOutcome, run_process; from .cross_harness_provider_error import ProviderRejected, inspect_provider_events
 MAX_TRACE_EVENTS, MAX_TRACE_BYTES, MAX_LINE_BYTES, MAX_FIELD_BYTES, MAX_DEPTH = 1000, 1 << 20, 1 << 16, 1 << 14, 16
 READ_ONLY_SYSTEM = ("You are the outer Flywheel text-tool agent. Inspect the supplied workspace and return the requested artifact envelope. "
     "The following TOOL protocol is visible, but write, exec, and MCP calls are denied.\n\n" + TOOLS_SYSTEM + "\n\nRead-only override: never emit write_file, edit_file, apply_patch, run, or MCP tools.")
@@ -45,7 +45,9 @@ def _json_pairs(rows):
 def _nonfinite(value: str): raise ValueError(f"non-finite JSON number: {value}")
 def _bounded(value: Any, depth: int = 0) -> bool:
     if depth > MAX_DEPTH: return False
-    if isinstance(value, str): return len(value.encode("utf-8")) <= MAX_FIELD_BYTES
+    if isinstance(value, str):
+        try: return len(value.encode("utf-8")) <= MAX_FIELD_BYTES
+        except UnicodeEncodeError: return False
     if isinstance(value, list): return len(value) <= MAX_TRACE_EVENTS and all(_bounded(item, depth + 1) for item in value)
     if isinstance(value, dict):
         return len(value) <= MAX_TRACE_EVENTS and all(_bounded(str(key), depth + 1) and _bounded(item, depth + 1) for key, item in value.items())
@@ -162,13 +164,15 @@ class DirectCodexAdapter:
         process = self.runner(_codex_argv(self.executable_resolver(), request.model_id, request.workspace_root),
             cwd=request.workspace_root, stdin_text=request.prompt, timeout_seconds=request.timeout_seconds)
         events, malformed = _parse_jsonl(process.stdout, "codex_direct")
-        try: output_text = _final_message(events)
+        rejection, terminal_malformed = inspect_provider_events(events); malformed |= terminal_malformed
+        try: output_text = "" if rejection or terminal_malformed else _final_message(events)
         except MalformedProviderOutput: output_text, final_invalid = "", True
         else: final_invalid = False
         events.append({"source": "codex_direct", "type": "controls", "randomness": "unsupported", "max_output_control": None, "max_output_control_state": "unsupported"}); capabilities, violations = _audit(events)
         state, failure, detail = "returned", "", ""
         if process.timed_out: state, failure, detail = "timeout", "timeout", process.stderr
         elif malformed or process.malformed_output: state, failure, detail = "malformed", "malformed_jsonl", "provider output was not bounded UTF-8 JSONL"
+        elif rejection: state, failure, detail = "internal_error", *rejection
         elif final_invalid: state, failure, detail = "malformed", "malformed_jsonl", "final agent message missing or malformed"
         elif process.returncode: state, failure, detail = "internal_error", "process_nonzero", process.stderr
         return AdapterResult(state, output_text if state == "returned" else "", events, process.elapsed_ms, request.model_id, "unsupported", failure, _clean(detail), {}, {}, capabilities, violations)
@@ -184,9 +188,12 @@ class CodexCliProposer:
         self.calls += 1
         process = self.runner(_codex_argv(self.executable_resolver(), self.model_ref, self.workspace), cwd=self.workspace,
             stdin_text=(f"{system}\n\n{prompt}" if system else prompt), timeout_seconds=remaining)
-        events, malformed = _parse_jsonl(process.stdout, "codex_inner"); self.events.extend(events)
+        events, malformed = _parse_jsonl(process.stdout, "codex_inner")
+        rejection, terminal_malformed = inspect_provider_events(events); self.events.extend(events)
         if process.timed_out: raise TimeoutError("codex inner call timed out")
         if malformed or process.malformed_output: raise MalformedProviderOutput("codex inner provider output was malformed")
+        if terminal_malformed: raise MalformedProviderOutput("codex inner provider output was malformed")
+        if rejection: raise ProviderRejected(*rejection)
         final = _final_message(events)
         if process.returncode: raise RuntimeError(f"codex inner process exited {process.returncode}: {_clean(process.stderr)}")
         return ProposerOutput(final, self.model_ref, seed, prompt_hash(prompt), "unsupported", served_model=self.model_ref, usage=None)
@@ -214,6 +221,7 @@ def _router_result(request, proposer, source: str, clock: Callable = time.monoto
         state, failure, detail = "returned", "", ""
     except TimeoutError as exc: result, state, failure, detail = {"final": ""}, "timeout", "timeout", str(exc)
     except MalformedProviderOutput as exc: result, state, failure, detail = {"final": ""}, "malformed", "malformed_provider_output", str(exc)
+    except ProviderRejected as exc: result, state, failure, detail = {"final": ""}, "internal_error", exc.failure_class, str(exc)
     except Exception as exc: result, state, failure, detail = {"final": ""}, "internal_error", type(exc).__name__, str(exc)
     events.extend({**_clean(asdict(entry)), "source": source, "type": "ledger_entry"} for entry in ledger.entries)
     events.append({"source": source, "type": "ledger_checkpoint", "checkpoint": ledger.checkpoint(), "verified": ledger.verify(), "randomness": "unsupported",
