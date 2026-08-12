@@ -4,36 +4,23 @@ This command does not run benchmarks. It records the intended run tiers,
 provider matrix, commands, artifacts, schemas, and evidence gates needed to
 turn the static benchmark contract into a reproducible experimental run.
 """
-
 from __future__ import annotations
-
-import argparse
-import json
-import sys
+import argparse, json, subprocess, sys
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
-
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-
 from harness.file_backed_store import FileBackedHarnessStore  # noqa: E402
 from harness.provider_roles import PROVIDER_ROLES, provider_alias_map, provider_roles_for  # noqa: E402
-
-
 SCHEMA = "harness.benchmark-execution-matrix/v1"
 DEFAULT_PROVIDERS = "serve,codex,ollama,claude,opencode,dry"
 DEFAULT_RUN_ID = "benchmark_matrix_20260709"
-DEFAULT_ARTIFACT_DIR = "C:/tmp/harness_benchmark_matrix_20260709"
-
-
+DEFAULT_ARTIFACT_DIR = "artifacts/benchmark-matrix"
 def utc_now() -> str:
     return datetime.now(UTC).isoformat().replace("+00:00", "Z")
-
-
 def split_csv(value: str) -> list[str]:
     return [part.strip() for part in value.split(",") if part.strip()]
-
-
+def git_commit() -> str: return subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=Path(__file__).resolve().parent.parent, text=True, timeout=10).strip()
 def write_text(path_text: str, text: str) -> str:
     if not path_text:
         return ""
@@ -41,8 +28,6 @@ def write_text(path_text: str, text: str) -> str:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(text, encoding="utf-8")
     return str(path)
-
-
 def command_step(
     *,
     step_id: str,
@@ -55,27 +40,14 @@ def command_step(
     providers: list[str] | None = None,
     long_running: bool = False,
 ) -> dict[str, Any]:
-    return {
-        "schema": "harness.benchmark-execution-matrix.step/v1",
-        "step_id": step_id,
-        "tier": tier,
-        "purpose": purpose,
-        "command": command,
-        "command_text": " ".join(command),
-        "expected_artifacts": expected_artifacts,
-        "expected_schemas": expected_schemas,
-        "evidence_gates": evidence_gates,
-        "providers": providers or [],
-        "long_running": long_running,
-        "executes_providers": long_running,
-        "operator_approval_required": long_running,
-    }
-
-
+    return {"schema": "harness.benchmark-execution-matrix.step/v1", "step_id": step_id, "tier": tier,
+            "purpose": purpose, "command": command, "command_text": " ".join(command),
+            "expected_artifacts": expected_artifacts, "expected_schemas": expected_schemas,
+            "evidence_gates": evidence_gates, "providers": providers or [], "long_running": long_running,
+            "executes_providers": long_running, "operator_approval_required": long_running,
+            "executable": True, "blocked_reason": ""}
 def artifact(artifact_dir: str, name: str) -> str:
     return str(Path(artifact_dir) / name)
-
-
 def build_steps(*, providers: list[str], run_id: str, artifact_dir: str, store_root: str) -> list[dict[str, Any]]:
     provider_csv = ",".join(providers)
     profile_json = artifact(artifact_dir, "benchmark_profile_manifest.json")
@@ -87,6 +59,7 @@ def build_steps(*, providers: list[str], run_id: str, artifact_dir: str, store_r
     outcome_json = artifact(artifact_dir, "harness_closed_loop_outcome.json")
     outcome_md = artifact(artifact_dir, "harness_closed_loop_outcome.md")
     seed_json = artifact(artifact_dir, "harness_closed_loop_seed.json")
+    cross_seed_json = artifact(artifact_dir, "cross_harness_seed.json")
     dry_plan_json = artifact(artifact_dir, "harness_closed_loop_dry_plan.json")
     endpoint_profiles_json = artifact(artifact_dir, "model_endpoint_profiles.json")
     endpoint_profiles_md = artifact(artifact_dir, "model_endpoint_profiles.md")
@@ -96,6 +69,7 @@ def build_steps(*, providers: list[str], run_id: str, artifact_dir: str, store_r
     schematic_md = artifact(artifact_dir, "schematic_drift_check.md")
     endpoint_gate_json = artifact(artifact_dir, "model_endpoint_gate.json")
     endpoint_gate_md = artifact(artifact_dir, "model_endpoint_gate.md")
+    auth_json, auth_md = artifact(artifact_dir, "endpoint_auth_status.json"), artifact(artifact_dir, "endpoint_auth_status.md")
     classifier_json = artifact(artifact_dir, "classifier_friction_benchmark.json")
     classifier_md = artifact(artifact_dir, "classifier_friction_benchmark.md")
     index_receipt_json = artifact(artifact_dir, "index_context_envelope_fallback_receipt.json")
@@ -122,7 +96,7 @@ def build_steps(*, providers: list[str], run_id: str, artifact_dir: str, store_r
     ])
     store_args = ["--store-root", store_root, "--run-id", run_id] if store_root else ["--run-id", run_id]
     seed_store_args = ["--store-root", store_root] if store_root else []
-    return [
+    steps = [
         command_step(
             step_id="profile_contract",
             tier="dry",
@@ -131,9 +105,10 @@ def build_steps(*, providers: list[str], run_id: str, artifact_dir: str, store_r
                 "python",
                 "scripts/run_benchmark_profile_manifest.py",
                 "--providers",
-                provider_csv,
+                "codex_harness,flywheel_harness,local_14b,local_32b",
                 "--artifact-roots",
-                f"C:/tmp;{artifact_dir}",
+                f"artifacts;{artifact_dir}",
+                "--benchmark-ids", "cross_harness_reproducibility_matrix",
                 "--out",
                 profile_json,
                 "--markdown-out",
@@ -202,7 +177,7 @@ def build_steps(*, providers: list[str], run_id: str, artifact_dir: str, store_r
                 "python",
                 "scripts/run_adapter_runtime_matrix.py",
                 "--contract",
-                "C:/dev/local-model/benchmarks/cross-harness-adapter-contract-v1.json",
+                "benchmarks/cross-harness-adapter-contract-v1.json",
                 "--endpoint-profiles",
                 endpoint_profiles_json,
                 "--out",
@@ -223,9 +198,9 @@ def build_steps(*, providers: list[str], run_id: str, artifact_dir: str, store_r
                 "python",
                 "scripts/run_schematic_drift_check.py",
                 "--graph",
-                "C:/dev/local-model/project-docs/schematics/closed-loop-integration.graph.json",
+                "project-docs/schematics/closed-loop-integration.graph.json",
                 "--report",
-                "C:/dev/local-model/project-docs/records/CLOSED-LOOP-INTEGRATION-SCHEMATIC-2026-07-09.md",
+                artifact(artifact_dir, "cross_harness_integration_map.md"),
                 "--out",
                 schematic_json,
                 "--markdown-out",
@@ -244,9 +219,9 @@ def build_steps(*, providers: list[str], run_id: str, artifact_dir: str, store_r
                 "python",
                 "scripts/run_cross_harness_manifest.py",
                 "--task-set",
-                "C:/dev/local-model/benchmarks/agentic-task-set-v1.json",
+                "benchmarks/agentic-task-set-v1.json",
                 "--contract",
-                "C:/dev/local-model/benchmarks/cross-harness-adapter-contract-v1.json",
+                "benchmarks/cross-harness-adapter-contract-v1.json",
                 "--provider-roles",
                 "codex_harness,flywheel_harness,claude_code,opencode,local_14b,local_32b,dry",
                 "--artifact-dir",
@@ -269,7 +244,7 @@ def build_steps(*, providers: list[str], run_id: str, artifact_dir: str, store_r
                 "python",
                 "scripts/run_embodied_realtime_multimodal_plan.py",
                 "--contract",
-                "C:/dev/local-model/benchmarks/embodied-realtime-multimodal-v1.json",
+                "benchmarks/embodied-realtime-multimodal-v1.json",
                 "--providers",
                 "dry",
                 "--latency-budgets-ms",
@@ -294,7 +269,7 @@ def build_steps(*, providers: list[str], run_id: str, artifact_dir: str, store_r
                 "python",
                 "scripts/run_model_card_claim_table.py",
                 "--contract",
-                "C:/dev/local-model/benchmarks/embodied-realtime-multimodal-v1.json",
+                "benchmarks/embodied-realtime-multimodal-v1.json",
                 "--artifact-dir",
                 artifact(artifact_dir, "model_card_claims"),
                 "--out",
@@ -494,8 +469,37 @@ def build_steps(*, providers: list[str], run_id: str, artifact_dir: str, store_r
             long_running=True,
         ),
     ]
-
-
+    runtime = steps.pop(next(index for index, row in enumerate(steps) if row["step_id"] == "adapter_runtime_matrix"))
+    gate = next(index for index, row in enumerate(steps) if row["step_id"] == "local_model_endpoint_gate")
+    before_json, after_json = artifact(artifact_dir, "lanes-before.json"), artifact(artifact_dir, "lanes-after.json")
+    def lane_step(step_id: str, path: str) -> dict[str, Any]:
+        code = f"from harness.lanes import lane_roster;from pathlib import Path;import json,os;p=Path({path!r});p.parent.mkdir(parents=True,exist_ok=True);t=p.with_name(p.name+'.tmp');d=lane_roster(probe=True);assert d.get('schema')=='flywheel.lanes/v1';t.write_text(json.dumps(d,sort_keys=True),encoding='utf-8');os.replace(t,p)"
+        return command_step(step_id=step_id, tier="focused", purpose="Atomically snapshot live lane truth.", command=["python", "-c", code], expected_artifacts=[path], expected_schemas=["flywheel.lanes/v1"], evidence_gates=["live_probe", "atomic_write"])
+    steps.insert(gate, lane_step("lane_snapshot_before", before_json)); gate += 1
+    auth = command_step(step_id="endpoint_auth_status", tier="focused", purpose="Record non-secret endpoint authentication posture before live gates.", command=["python", "scripts/run_endpoint_auth_status.py", "--require", "codex_subscription", "--out", auth_json, "--markdown-out", auth_md, *store_args], expected_artifacts=[auth_json, auth_md], expected_schemas=["harness.endpoint-auth-status/v1"], evidence_gates=["non_secret_auth_status"])
+    steps.insert(gate, auth); gate += 1
+    runtime["tier"] = "focused"; runtime["command"].extend(("--endpoint-auth-status", auth_json, "--endpoint-gate", endpoint_gate_json, "--endpoint-gate-run-id", run_id, "--endpoint-gate-max-age-seconds", "900")); runtime["command_text"] = " ".join(runtime["command"])
+    steps.insert(gate + 1, runtime); endpoint = gate + 1
+    spark_input = artifact(artifact_dir, f"spark-pilot/{run_id}-spark/comparison-input.json")
+    local_input = artifact(artifact_dir, f"local-baseline/{run_id}-local/comparison-input.json")
+    steps.insert(endpoint + 1, command_step(step_id="cross_harness_execution", tier="focused", purpose="Execute admitted local and Spark cross-harness cohorts with separate denominators.",
+        command=["python", "scripts/run_closed_loop_benchmark_seed.py", "--cross-harness-only", "--cross-harness-run-id", run_id, "--cross-harness-manifest", cross_harness_json, "--cross-harness-runtime-matrix", adapter_runtime_json, "--cross-harness-endpoint-gate", endpoint_gate_json, "--cross-harness-gate-run-id", run_id, "--cross-harness-source-root", ".", "--cross-harness-source-commit", git_commit(), "--artifact-dir", artifact_dir, "--out", cross_seed_json, "--benchmark-timeout-seconds", "10800", "--cross-harness-attempt-timeout-seconds", "300", "--cross-harness-max-gate-age-seconds", "900", "--strict-exit", *seed_store_args],
+        expected_artifacts=[cross_seed_json, spark_input, local_input], expected_schemas=["harness.closed-loop-benchmark-seed/v1", "harness.cross-harness-task-scorecard/v1"], evidence_gates=["spark_planned_24", "local_planned_8", "planned_admitted_blocked_launched"], providers=["codex_harness", "flywheel_harness", "local_14b", "local_32b"], long_running=True))
+    coverage = next(row for row in steps if row["step_id"] == "coverage_after_execution")
+    coverage["command"][coverage["command"].index("--artifacts") + 1] = f"{spark_input};{local_input}"; coverage["command_text"] = " ".join(coverage["command"])
+    comparison = next(row for row in steps if row["step_id"] == "harness_comparison")
+    comparison["command"][comparison["command"].index("--artifacts") + 1] = spark_input
+    comparison["command"].extend(("--flywheel-role", "flywheel_harness", "--codex-role", "codex_harness"))
+    comparison["command_text"] = " ".join(comparison["command"])
+    outcome_step = next(row for row in steps if row["step_id"] == "outcome_synthesis")
+    outcome_step["command"][outcome_step["command"].index("--input") + 1] = cross_seed_json; outcome_step["command_text"] = " ".join(outcome_step["command"])
+    integration = command_step(step_id="cross_harness_integration_map", tier="focused", purpose="Hash generated cross-harness metadata before drift.", command=["python", "scripts/run_cross_harness_integration_map.py", "--lane-before", before_json, "--lane-after", after_json, "--auth", artifact(artifact_dir, "endpoint_auth_status.json"), "--endpoint-profiles", endpoint_profiles_json, "--endpoint-gate", endpoint_gate_json, "--runtime-matrix", adapter_runtime_json, "--seed", cross_seed_json, "--coverage", coverage_json, "--comparison", comparison_json, "--outcome", outcome_json, "--out", artifact(artifact_dir, "cross_harness_integration_map.json"), "--markdown-out", artifact(artifact_dir, "cross_harness_integration_map.md"), *store_args], expected_artifacts=[artifact(artifact_dir, "cross_harness_integration_map.json"), artifact(artifact_dir, "cross_harness_integration_map.md")], expected_schemas=["harness.cross-harness-integration-map/v1"], evidence_gates=["artifact_hashes", "observed_statuses"])
+    drift = steps.pop(next(index for index, row in enumerate(steps) if row["step_id"] == "schematic_drift_check"))
+    outcome = next(index for index, row in enumerate(steps) if row["step_id"] == "outcome_synthesis")
+    steps[outcome + 1:outcome + 1] = [lane_step("lane_snapshot_after", after_json), integration, drift]
+    full = next(row for row in steps if row["step_id"] == "full_provider_matrix")
+    full.update(executable=False, blocked_reason="84_attempt_expansion_prohibited", command=[], command_text="")
+    return steps
 def build_matrix(
     *,
     providers: str = DEFAULT_PROVIDERS,
@@ -546,8 +550,6 @@ def build_matrix(
             "secrets_policy": "Commands name environment/config surfaces only; they do not inline secrets.",
         },
     }
-
-
 def render_markdown(matrix: dict[str, Any]) -> str:
     lines = [
         "# Benchmark execution matrix",
@@ -588,8 +590,6 @@ def render_markdown(matrix: dict[str, Any]) -> str:
             )
         )
     return "\n".join(lines) + "\n"
-
-
 def store_matrix(
     matrix: dict[str, Any],
     *,
@@ -612,8 +612,6 @@ def store_matrix(
         if path_text and Path(path_text).exists():
             outputs.append(store.copy_artifact(Path(path_text), run_id=run_id, label=label))
     return outputs
-
-
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--providers", default=DEFAULT_PROVIDERS)

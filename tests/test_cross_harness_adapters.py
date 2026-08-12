@@ -266,16 +266,17 @@ def test_local_phase_rechecks_bound_gate_and_emits_all_eight_sanitized_unavailab
     ("execution_mode", "bad", "admission_execution_mismatch"), ("task_set_id", "bad", "admission_execution_mismatch"),
 ])
 def test_admission_binds_current_identity_and_blocks_only_affected_role(tmp_path, path, value, code):
-    roles, task_id = ["codex_harness", "flywheel_harness"], "agt-001-full"
-    task = {"task_id": task_id, "raw_prompt_sha256": "a" * 64, "input_sha256s": {}, "oracle": {"checker_id": "x"}}
-    manifest = {"task_set_id": "set", "task_rows": [task], "provider_specs": [{"provider_role": role, "adapter_id": "adapter", "target_model": "model"} for role in roles]}
+    roles = ["codex_harness", "flywheel_harness"]
+    tasks = [{"task_id": f"agt-00{i}-full", "raw_prompt_sha256": str(i) * 64, "input_sha256s": {}, "oracle": {"checker_id": str(i)}} for i in (1, 3)]
+    manifest = {"task_set_id": "set", "task_rows": tasks, "provider_specs": [{"provider_role": role, "adapter_id": "adapter", "target_model": "model"} for role in roles]}
     current = {"source_commit": "commit", "source_snapshot_sha256": "s" * 64, "cache_state": "cold_declared", "execution_mode": "focused_run"}
     rows = []
     for role in roles:
-        attempt = tmp_path / role; attempt.mkdir(); receipt = attempt / "receipt.json"
-        row = {"phase": "admission-smoke", "provider_role": role, "task_id": task_id, "repetition": 1,
+      for task in tasks:
+        attempt = tmp_path / role / task["task_id"]; attempt.mkdir(parents=True); receipt = attempt / "receipt.json"
+        row = {"phase": "admission-smoke", "provider_role": role, "task_id": task["task_id"], "repetition": 1,
             "primary_outcome": "completed", "receipt_path": str(receipt), "task_set_id": "set",
-            "raw_prompt_sha256": "a" * 64, "input_sha256s": {}, "adapter_id": "adapter", "model_id": "model",
+            "raw_prompt_sha256": task["raw_prompt_sha256"], "input_sha256s": {}, "adapter_id": "adapter", "model_id": "model",
             "tool_policy_sha256": canonical_sha256(SHARED_TOOL_POLICY), **current,
             "availability_evidence": {"adapter_evidence": {"oracle_spec_sha256": canonical_sha256(task["oracle"])}}}
         if role == roles[1]:
@@ -286,7 +287,7 @@ def test_admission_binds_current_identity_and_blocks_only_affected_role(tmp_path
     admission = tmp_path / "admission.json"
     admission.write_text(json.dumps({"schema": "harness.cross-harness-run-receipt/v1", "phase": "admission-smoke", "rows": rows}), encoding="utf-8")
     matrix = {"runtime_rows": [{"provider_role": role, "focused_run_ready": True, "blocking_gates": []} for role in roles]}
-    _apply_admission(matrix, admission, manifest, ["agt-001"], roles, 1, current=current)
+    _apply_admission(matrix, admission, manifest, ["agt-009"], roles, 3, current=current)
     assert matrix["runtime_rows"][0]["focused_run_ready"] is True
     assert matrix["runtime_rows"][1]["blocking_gates"] == [code]
 def test_missing_gate_or_admission_artifact_blocks_rows_instead_of_aborting(tmp_path):

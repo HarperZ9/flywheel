@@ -4,7 +4,6 @@ from __future__ import annotations
 import hashlib, json
 from pathlib import Path
 from typing import Any
-
 from harness.cross_harness_artifacts import (bind_attempt_receipt, canonical_sha256, create_attempt_workspace,
     materialize_response_envelope, preflight_artifact_root, recheck_attempt_receipt, remove_readonly_tree,
     snapshot_source_tree, validate_execution_components, write_artifact_index)
@@ -121,6 +120,7 @@ def expand_attempt_rows(
                     "adapter_id": str(spec.get("adapter_id", "")),
                     "model_id": str(spec.get("target_model", "")),
                     "task_set_id": str(manifest.get("task_set_id", "")), "task_id": task_id,
+                    "benchmark_id": str(task.get("benchmark_id", "")), "coverage_unit": str(task.get("coverage_unit", "")),
                     "task": task, "repetition": repetition, "attempt_dir": str(attempt),
                     "execution_mode": "focused_run", "tool_policy": dict(SHARED_TOOL_POLICY),
                     "tool_policy_sha256": policy_hash,

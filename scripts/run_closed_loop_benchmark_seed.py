@@ -1,18 +1,14 @@
-"""Orchestrate the store-backed closed-loop benchmark seed run.
-
-The command creates one run id, executes the current profile/preflight/index/
-benchmark seed commands with the same file-backed store root, and writes a
-final orchestration receipt. Use --dry-plan to inspect the commands without
-running them.
-"""
+"""Orchestrate the store-backed closed-loop benchmark seed run."""
 
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
+import os
+import re
 import subprocess
 import sys
-from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 from time import perf_counter
@@ -20,6 +16,7 @@ from time import perf_counter
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from harness.file_backed_store import FileBackedHarnessStore  # noqa: E402
+from harness.cross_harness_seed_steps import OrchestrationStep, build_cross_harness_steps  # noqa: E402
 
 
 DEFAULT_FORUM_ROUTE_TEXTS = [
@@ -33,29 +30,13 @@ def utc_stamp() -> str:
     return datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
 
 
-@dataclass(frozen=True)
-class OrchestrationStep:
-    step_id: str
-    purpose: str
-    command: list[str]
-    timeout_seconds: float
-    expected_artifacts: list[str]
-
-    def to_json(self) -> dict:
-        return {
-            "step_id": self.step_id,
-            "purpose": self.purpose,
-            "command": self.command,
-            "timeout_seconds": self.timeout_seconds,
-            "expected_artifacts": self.expected_artifacts,
-        }
-
-
 def _path(base: Path, name: str) -> str:
     return str(base / name)
 
 
 def build_steps(args, *, run_id: str, artifact_dir: Path) -> list[OrchestrationStep]:
+    if getattr(args, "cross_harness_only", False):
+        return build_cross_harness_steps(args, run_id=getattr(args, "cross_harness_run_id", "") or run_id, artifact_dir=artifact_dir)
     py = args.python
     store = args.store_root
     steps: list[OrchestrationStep] = []
@@ -885,7 +866,7 @@ def run_step(step: OrchestrationStep, *, cwd: Path, log_dir: Path) -> dict:
     log_dir.mkdir(parents=True, exist_ok=True)
     stdout_path = log_dir / f"{step.step_id}.stdout.txt"
     stderr_path = log_dir / f"{step.step_id}.stderr.txt"
-    started = perf_counter()
+    started_at, started = datetime.now(UTC), perf_counter()
     timed_out = False
     try:
         completed = subprocess.run(
@@ -907,13 +888,22 @@ def run_step(step: OrchestrationStep, *, cwd: Path, log_dir: Path) -> dict:
     elapsed_ms = int((perf_counter() - started) * 1000)
     stdout_path.write_text(stdout, encoding="utf-8")
     stderr_path.write_text(stderr, encoding="utf-8")
+    finished_at = datetime.now(UTC)
     return {
         **step.to_json(),
         "status": "timeout" if timed_out else ("ok" if returncode == 0 else "failed"),
         "returncode": returncode,
+        "exit_code": returncode,
         "elapsed_ms": elapsed_ms,
+        "started_at": started_at.isoformat().replace("+00:00", "Z"),
+        "finished_at": finished_at.isoformat().replace("+00:00", "Z"),
         "stdout_path": str(stdout_path),
         "stderr_path": str(stderr_path),
+        "stdout_sha256": hashlib.sha256(stdout_path.read_bytes()).hexdigest(),
+        "stderr_sha256": hashlib.sha256(stderr_path.read_bytes()).hexdigest(),
+        "environment_names": sorted(name for name in os.environ
+                                    if not re.search(r"authorization|credential|password|secret|token|api[_-]?key|jwt", name, re.I)),
+        "does_not_prove": "A child exit code and captured streams do not prove benchmark quality.",
     }
 
 
@@ -971,6 +961,16 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--run-title", default="closed-loop benchmark seed")
     parser.add_argument("--dry-plan", action="store_true")
     parser.add_argument("--strict-exit", action="store_true")
+    parser.add_argument("--cross-harness-only", action="store_true")
+    parser.add_argument("--cross-harness-run-id", default="")
+    parser.add_argument("--cross-harness-manifest", default="")
+    parser.add_argument("--cross-harness-runtime-matrix", default="")
+    parser.add_argument("--cross-harness-endpoint-gate", default="")
+    parser.add_argument("--cross-harness-gate-run-id", default="")
+    parser.add_argument("--cross-harness-max-gate-age-seconds", type=int, default=900)
+    parser.add_argument("--cross-harness-source-commit", default="")
+    parser.add_argument("--cross-harness-source-root", default="")
+    parser.add_argument("--cross-harness-attempt-timeout-seconds", type=int, default=300)
     parser.add_argument("--forum-route-text", action="append", default=[])
     parser.add_argument("--mcp-tool-health-tools", default="index,forum,telos,gather,crucible,aleph,mneme,relay,plexus,pubscan,local-model")
     parser.add_argument("--mcp-tool-health-observation", action="append", default=[])

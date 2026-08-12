@@ -1,39 +1,29 @@
 """Synthesize Codex-vs-Flywheel comparisons from existing scorecard artifacts."""
 
 from __future__ import annotations
-
 import argparse
 import json
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
-from statistics import mean
+from statistics import mean, median
 from typing import Any
-
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-
 from harness.file_backed_store import FileBackedHarnessStore  # noqa: E402
+from harness.cross_harness_executor import comparison_key as executor_comparison_key  # noqa: E402
 from harness.provider_roles import provider_role as canonical_provider_role  # noqa: E402
-
-
 SCHEMA = "harness.comparison-report/v1"
 
 
 def now_utc() -> str:
     return datetime.now(UTC).isoformat().replace("+00:00", "Z")
-
-
 def split_paths(value: str) -> list[Path]:
     return [Path(part.strip()) for part in value.split(";") if part.strip()]
-
-
 def safe_float(value: Any) -> float:
     try:
         return float(value)
     except (TypeError, ValueError):
         return 0.0
-
-
 def load_json(path: Path) -> tuple[dict[str, Any] | None, str]:
     try:
         return json.loads(path.read_text(encoding="utf-8")), ""
@@ -61,20 +51,11 @@ def _metric_row(
 ) -> dict[str, Any]:
     provider = str(row.get("provider", ""))
     provider_role = _provider_role(row)
-    return {
-        "schema": "harness.comparison-report.metric-row/v1",
-        "artifact_path": artifact_path,
-        "artifact_schema": schema,
-        "benchmark_id": benchmark_id,
-        "comparison_key": comparison_key,
-        "provider": provider,
-        "provider_role": provider_role,
-        "model_ref": str(row.get("model_ref", "")),
-        "pass_rate": safe_float(pass_rate),
-        "quality_score": safe_float(quality_score),
-        "latency_ms": safe_float(latency_ms),
-        "failure_class": str(failure_class or ""),
-    }
+    return {"schema": "harness.comparison-report.metric-row/v1", "artifact_path": artifact_path,
+            "artifact_schema": schema, "benchmark_id": benchmark_id, "comparison_key": comparison_key,
+            "provider": provider, "provider_role": provider_role, "model_ref": str(row.get("model_ref", "")),
+            "pass_rate": safe_float(pass_rate), "quality_score": safe_float(quality_score),
+            "latency_ms": safe_float(latency_ms), "failure_class": str(failure_class or "")}
 
 
 def _m7_rows(data: dict[str, Any], path_text: str, *, benchmark_id: str) -> list[dict[str, Any]]:
@@ -199,48 +180,61 @@ def _quality_duel_rows(data: dict[str, Any], path_text: str) -> list[dict[str, A
     return metric_rows
 
 
+def _cross_harness_rows(data: dict[str, Any], path_text: str) -> list[dict[str, Any]]:
+    rows = [row for row in data.get("rows", []) if isinstance(row, dict) and str(row.get("phase", "")) == "spark"]
+    rows = [row for row in rows if str(row.get("provider_role", "")) in {"codex_harness", "flywheel_harness"}]
+    for row in rows:
+        if row.get("comparison_key") != executor_comparison_key(row): raise ValueError("cross-harness comparison hash mismatch")
+    for task in sorted({str(row.get("task_id", "")) for row in rows}):
+        for repetition in sorted({int(row.get("repetition", 0) or 0) for row in rows if str(row.get("task_id", "")) == task}):
+            pair = [row for row in rows if str(row.get("task_id", "")) == task and int(row.get("repetition", 0) or 0) == repetition]
+            if len({str(row.get("comparison_key", "")) for row in pair}) > 1: raise ValueError("cross-harness comparison hash mismatch")
+            if len({str(row.get("tool_policy_sha256", "")) for row in pair}) > 1: raise ValueError("cross-harness policy hash mismatch")
+    result = []
+    for row in rows:
+        returned = row.get("execution_state") == "returned"; verified = row.get("receipt_state") == "verified"; oracle = str(row.get("oracle_state", "")); metrics = row.get("metrics") if isinstance(row.get("metrics"), dict) else {}
+        result.append({"schema": "harness.comparison-report.metric-row/v1", "artifact_path": path_text,
+            "artifact_schema": data.get("schema", ""), "benchmark_id": "cross_harness_reproducibility_matrix",
+            "comparison_key": executor_comparison_key(row), "provider": "", "provider_role": row.get("provider_role", ""),
+            "model_ref": row.get("model_id", ""), "pass_rate": 1.0 if returned else 0.0,
+            "quality_score": (1.0 if oracle == "pass" else 0.0) if returned and verified and oracle in {"pass", "fail"} else None, "latency_ms": metrics.get("latency_ms") if returned else None, "failure_class": row.get("failure_class", ""), "planned": bool(row.get("planned")), "admitted": bool(row.get("admitted")), "blocked": bool(row.get("blocked")), "launched": bool(row.get("launched")), "returned_well_formed": returned, "receipt_state": row.get("receipt_state", ""), "tool_policy_sha256": row.get("tool_policy_sha256", ""), "enforcement_sha256": row.get("enforcement_sha256", ""), "policy_equivalence": "non_equivalent"})
+    return result
+
+
 def metric_rows_from_artifact(data: dict[str, Any], path_text: str) -> list[dict[str, Any]]:
     schema = str(data.get("schema", ""))
-    if schema == "flywheel.quality-duel-scorecard/v1":
-        return _quality_duel_rows(data, path_text)
-    if schema == "m7-source-mined-scorecard/v1":
-        return _m7_rows(data, path_text, benchmark_id="m7_source_mined")
-    if schema == "m7-governed-agent-scorecard/v1":
-        return _m7_rows(data, path_text, benchmark_id="m7_governed_agent")
-    if schema == "unisonai.stateful-provider-matrix/v1":
-        return _unisonai_rows(data, path_text)
-    if schema == "classifier-friction-benchmark/v1":
-        return _classifier_rows(data, path_text)
-    if schema == "harness.model-endpoint-gate/v1":
-        return _endpoint_gate_rows(data, path_text)
-    return []
+    if schema in {"m7-source-mined-scorecard/v1", "m7-governed-agent-scorecard/v1"}:
+        return _m7_rows(data, path_text, benchmark_id={"m7-source-mined-scorecard/v1": "m7_source_mined", "m7-governed-agent-scorecard/v1": "m7_governed_agent"}[schema])
+    loaders = {"flywheel.quality-duel-scorecard/v1": _quality_duel_rows,
+               "harness.cross-harness-task-scorecard/v1": _cross_harness_rows,
+               "unisonai.stateful-provider-matrix/v1": _unisonai_rows,
+               "classifier-friction-benchmark/v1": _classifier_rows,
+               "harness.model-endpoint-gate/v1": _endpoint_gate_rows}
+    return loaders[schema](data, path_text) if schema in loaders else []
 
 
 def _aggregate(rows: list[dict[str, Any]]) -> dict[str, Any]:
-    return {
-        "rows": len(rows),
-        "pass_rate": round(mean(row["pass_rate"] for row in rows), 4) if rows else 0.0,
-        "quality_score": round(mean(row["quality_score"] for row in rows), 4) if rows else 0.0,
-        "latency_ms": round(mean(row["latency_ms"] for row in rows), 3) if rows else 0.0,
-        "failure_classes": sorted({str(row.get("failure_class", "")) for row in rows if row.get("failure_class")}),
-        "artifact_paths": sorted({str(row.get("artifact_path", "")) for row in rows if row.get("artifact_path")}),
-    }
+    cross = any(row.get("artifact_schema") == "harness.cross-harness-task-scorecard/v1" for row in rows)
+    if cross:
+        quality = [row["quality_score"] for row in rows if row.get("quality_score") is not None]; latency = [float(row["latency_ms"]) for row in rows if isinstance(row.get("latency_ms"), (int, float))]; launched = sum(int(row.get("launched") is True) for row in rows)
+        return {"rows": len(rows), "pass_rate": round(sum(int(row.get("returned_well_formed")) for row in rows) / launched, 4) if launched else None,
+            "quality_score": round(mean(quality), 4) if quality else None, "quality_n": len(quality),
+            "latency_ms": round(median(latency), 3) if latency else None, "latency_range_ms": [min(latency), max(latency)] if latency else None, "latency_n": len(latency), "receipt_states": {state: sum(row.get("receipt_state") == state for row in rows) for state in ("verified", "drift", "not_emitted")}, "availability": {key: sum(int(row.get(key) is True) for row in rows) for key in ("planned", "admitted", "blocked", "launched")}, "enforcement_sha256s": sorted({str(row.get("enforcement_sha256")) for row in rows if row.get("enforcement_sha256")}), "failure_classes": sorted({str(row.get("failure_class", "")) for row in rows if row.get("failure_class")}), "artifact_paths": sorted({str(row.get("artifact_path", "")) for row in rows if row.get("artifact_path")})}
+    return {"rows": len(rows), "pass_rate": round(mean(row["pass_rate"] for row in rows), 4) if rows else 0.0,
+            "quality_score": round(mean(row["quality_score"] for row in rows), 4) if rows else 0.0,
+            "latency_ms": round(mean(row["latency_ms"] for row in rows), 3) if rows else 0.0,
+            "failure_classes": sorted({str(row.get("failure_class", "")) for row in rows if row.get("failure_class")}),
+            "artifact_paths": sorted({str(row.get("artifact_path", "")) for row in rows if row.get("artifact_path")})}
 
 
-def build_comparisons(
-    metric_rows: list[dict[str, Any]],
-    *,
-    flywheel_role: str,
-    codex_role: str,
-) -> list[dict[str, Any]]:
+def build_comparisons(metric_rows: list[dict[str, Any]], *, flywheel_role: str, codex_role: str) -> list[dict[str, Any]]:
     by_key: dict[str, list[dict[str, Any]]] = {}
     for row in metric_rows:
         by_key.setdefault(str(row["comparison_key"]), []).append(row)
     comparisons = []
     for key, rows in sorted(by_key.items()):
         by_provider: dict[str, list[dict[str, Any]]] = {}
-        for row in rows:
-            by_provider.setdefault(str(row["provider_role"]), []).append(row)
+        for row in rows: by_provider.setdefault(str(row["provider_role"]), []).append(row)
         flywheel = _aggregate(by_provider.get(flywheel_role, []))
         codex = _aggregate(by_provider.get(codex_role, []))
         available = bool(flywheel["rows"] and codex["rows"])
@@ -260,26 +254,32 @@ def build_comparisons(
             "latency_delta_ms_flywheel_minus_codex": None,
             "winner_by_quality": "insufficient_evidence",
         }
+        if benchmark_id == "cross_harness_reproducibility_matrix":
+            policies = sorted({str(row.get("tool_policy_sha256")) for row in rows if row.get("tool_policy_sha256")})
+            if len(policies) != 1: raise ValueError("cross-harness policy hash mismatch")
+            comparison.update(comparison_type="orchestration_stack", policy_equivalence="non_equivalent",
+                              declared_tool_policy_sha256=policies[0])
         if available:
-            quality_delta = round(flywheel["quality_score"] - codex["quality_score"], 4)
+            quality_delta = (round(flywheel["quality_score"] - codex["quality_score"], 4) if flywheel["quality_score"] is not None and codex["quality_score"] is not None else None)
             comparison.update({
-                "pass_rate_delta_flywheel_minus_codex": round(flywheel["pass_rate"] - codex["pass_rate"], 4),
+                "pass_rate_delta_flywheel_minus_codex": (round(flywheel["pass_rate"] - codex["pass_rate"], 4) if flywheel["pass_rate"] is not None and codex["pass_rate"] is not None else None),
                 "quality_delta_flywheel_minus_codex": quality_delta,
-                "latency_delta_ms_flywheel_minus_codex": round(flywheel["latency_ms"] - codex["latency_ms"], 3),
-                "winner_by_quality": "flywheel" if quality_delta > 0 else ("codex" if quality_delta < 0 else "tie"),
+                "latency_delta_ms_flywheel_minus_codex": (round(flywheel["latency_ms"] - codex["latency_ms"], 3) if flywheel["latency_ms"] is not None and codex["latency_ms"] is not None else None),
+                "winner_by_quality": ("insufficient_evidence" if quality_delta is None else
+                                      ("flywheel" if quality_delta > 0 else ("codex" if quality_delta < 0 else "tie"))),
             })
         comparisons.append(comparison)
     return comparisons
 
 
 def conclusion(comparisons: list[dict[str, Any]]) -> dict[str, Any]:
-    available = [row for row in comparisons if row.get("available")]
+    available = [row for row in comparisons if row.get("available") and row.get("quality_delta_flywheel_minus_codex") is not None]
     flywheel_wins = sum(1 for row in available if row.get("winner_by_quality") == "flywheel")
     codex_wins = sum(1 for row in available if row.get("winner_by_quality") == "codex")
     ties = sum(1 for row in available if row.get("winner_by_quality") == "tie")
     if not available:
         verdict = "COMPARISON_INSUFFICIENT"
-        claim = "No artifact contained both flywheel and Codex provider-role evidence for the same comparison key."
+        claim = "No shared comparison key contained deterministic quality evidence for both provider roles."
     elif flywheel_wins > codex_wins:
         verdict = "FLYWHEEL_BETTER_ON_OBSERVED_SLICE"
         claim = "Flywheel has more quality wins than Codex on the observed shared comparison keys."

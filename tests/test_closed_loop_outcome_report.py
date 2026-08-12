@@ -1,5 +1,4 @@
 import json
-
 from scripts.run_closed_loop_outcome_report import (
     build_outcome,
     conclusion,
@@ -8,32 +7,22 @@ from scripts.run_closed_loop_outcome_report import (
     render_markdown,
 )
 from harness.file_backed_store import FileBackedHarnessStore
-
-
 def test_conclusion_marks_dry_plan_as_plan_only():
     report = {
         "schema": "harness.closed-loop-benchmark-seed/v1",
         "dry_plan": True,
         "summary": {"steps": 2},
     }
-
     result = conclusion(report)
-
     assert result["verdict"] == "OUTCOME_PLAN_ONLY"
     assert "No benchmark execution evidence" in result["claim"]
-
-
 def test_conclusion_marks_failed_step_as_partial():
     report = {
         "dry_plan": False,
         "summary": {"failed_steps": 1, "timeout_steps": 0},
     }
-
     result = conclusion(report)
-
     assert result["verdict"] == "OUTCOME_PARTIAL"
-
-
 def test_build_outcome_preserves_step_observations():
     report = {
         "schema": "harness.closed-loop-benchmark-seed/v1",
@@ -51,15 +40,11 @@ def test_build_outcome_preserves_step_observations():
         ],
         "summary": {"failed_steps": 0, "timeout_steps": 0},
     }
-
     outcome = build_outcome(report, source_report_path="seed.json")
-
     assert outcome["schema"] == "harness.closed-loop-outcome/v1"
     assert outcome["run_id"] == "run_123"
     assert outcome["conclusion"]["verdict"] == "OUTCOME_RECORDED"
     assert outcome["observations"]["observed_steps"][0]["step_id"] == "endpoint_auth_status"
-
-
 def test_render_markdown_separates_unknowns_and_next_checks():
     outcome = build_outcome(
         {
@@ -71,15 +56,11 @@ def test_render_markdown_separates_unknowns_and_next_checks():
         },
         source_report_path="plan.json",
     )
-
     markdown = render_markdown(outcome)
-
     assert "# Closed-loop benchmark experimental outcome" in markdown
     assert "## Unknowns" in markdown
     assert "## Next checks" in markdown
     assert "m7_source_mined" in markdown
-
-
 def test_extract_child_artifact_summaries_reads_m7_source_mined_comparison(tmp_path):
     scorecard = tmp_path / "m7_source.json"
     scorecard.write_text(json.dumps({
@@ -127,7 +108,6 @@ def test_extract_child_artifact_summaries_reads_m7_source_mined_comparison(tmp_p
             }
         ]
     }
-
     summaries = extract_child_artifact_summaries(report)
 
     assert summaries[0]["kind"] == "m7_source_mined"
@@ -177,14 +157,11 @@ def test_build_outcome_includes_unisonai_provider_metrics(tmp_path):
     }
 
     outcome = build_outcome(report, source_report_path="seed.json")
-
     signals = outcome["observations"]["benchmark_signals"]
     assert signals["scorecard_count"] == 1
     assert signals["providers_observed"] == ["codex", "dry"]
     child = outcome["observations"]["child_artifacts"][0]
     assert child["provider_metrics"][1]["failure_class"] == "malformed_action_json"
-
-
 def test_build_outcome_includes_classifier_friction_metrics(tmp_path):
     classifier = tmp_path / "classifier_friction_benchmark.json"
     classifier.write_text(json.dumps({
@@ -242,9 +219,7 @@ def test_build_outcome_includes_classifier_friction_metrics(tmp_path):
         ],
         "summary": {"failed_steps": 0, "timeout_steps": 0},
     }
-
     outcome = build_outcome(report, source_report_path="seed.json")
-
     signals = outcome["observations"]["benchmark_signals"]
     assert signals["scorecard_count"] == 1
     assert signals["providers_observed"] == ["codex"]
@@ -1541,7 +1516,31 @@ def test_build_outcome_includes_harness_comparison_report_signals(tmp_path):
     markdown = render_markdown(outcome)
     assert "## Harness comparison signals" in markdown
 
-
+def test_build_outcome_separates_spark_and_local_cross_harness_denominators(tmp_path):
+    scorecards = []
+    for phase, roles, repetitions in (("spark", ("codex_harness", "flywheel_harness"), 3), ("local", ("local_14b", "local_32b"), 1)):
+        rows = []
+        for role in roles:
+            for task in ("agt-001", "agt-003", "agt-009", "agt-010"):
+                for repetition in range(1, repetitions + 1):
+                    rows.append({"phase": phase, "provider_role": role, "task_id": task, "repetition": repetition, "planned": True, "admitted": True, "blocked": False, "launched": True, "execution_state": "returned", "oracle_state": "pass", "receipt_state": "verified", "tool_policy_sha256": "a" * 64, "enforcement_sha256": ("b" if role.endswith("14b") else "c") * 64, "metrics": {"latency_ms": 10, "resource_observation": {"memory_mb": 2}}, "metric_null_reasons": {"usage": "provider_usage_unavailable"}})
+        if phase == "local": rows[0].update(receipt_state="drift", metrics={"latency_ms": 12, "resource_observation": {"drift": True}})
+        path = tmp_path / f"{phase}.json"; path.write_text(json.dumps({"schema": "harness.cross-harness-task-scorecard/v1", "rows": rows}), encoding="utf-8")
+        scorecards.append(str(path))
+    report = {"schema": "harness.closed-loop-benchmark-seed/v1", "run_id": "run", "results": [{"step_id": "cross", "status": "passed", "expected_artifacts": scorecards}], "summary": {"failed_steps": 0, "timeout_steps": 0}}
+    signals = build_outcome(report, source_report_path="seed.json")["observations"]["cross_harness_execution_signals"]
+    assert signals["spark"]["availability"] == {"planned": 24, "admitted": 24, "blocked": 0, "launched": 24}
+    assert signals["local"]["availability"] == {"planned": 8, "admitted": 8, "blocked": 0, "launched": 8}
+    assert signals["spark"]["planned_rows"] == 24
+    assert signals["local"]["planned_rows"] == 8
+    assert signals["declared_tool_policy_sha256s"] == signals["spark"]["declared_tool_policy_sha256s"] == ["a" * 64]
+    assert signals["enforcement_sha256s"] == ["b" * 64, "c" * 64] and signals["spark"]["enforcement_sha256s"] == ["c" * 64]
+    assert signals["spark"]["execution_reliability"] == 1.0 and signals["spark"]["deterministic_quality"] == 1.0
+    assert signals["spark"]["latency_ms"] == {"median": 10.0, "min": 10.0, "max": 10.0, "n": 24}
+    assert signals["spark"]["resources"] == {"observations": [{"memory_mb": 2}], "n": 24, "included_execution_state": "returned", "receipt_states": {"verified": 24, "drift": 0, "not_emitted": 0}}
+    assert signals["local"]["execution_reliability"] == 1.0 and signals["local"]["resources"]["receipt_states"]["drift"] == 1
+    assert {"drift": True} in signals["local"]["resources"]["observations"] and signals["local"]["deterministic_quality"] == 1.0
+    assert signals["spark"]["metric_null_reasons"] == {"usage": 24}
 def test_find_seed_report_in_store_uses_artifact_index(tmp_path):
     seed = tmp_path / "seed.json"
     seed.write_text(json.dumps({

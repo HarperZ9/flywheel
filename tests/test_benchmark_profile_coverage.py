@@ -1,12 +1,9 @@
 import json
-
 from scripts.run_benchmark_profile_coverage import (
     build_coverage_report,
     observed_artifact_summary,
     render_markdown,
 )
-
-
 def profile_fixture():
     return {
         "schema": "harness.benchmark-profile-manifest/v1",
@@ -72,8 +69,6 @@ def profile_fixture():
             {"id": "local_model_release_gate_14b_32b", "status": "planned_full", "coverage_units": ["14B", "32B"]},
         ],
     }
-
-
 def test_observed_artifact_summary_maps_m7_source_schema_to_benchmark_id():
     data = {
         "schema": "m7-source-mined-scorecard/v1",
@@ -91,17 +86,13 @@ def test_observed_artifact_summary_maps_m7_source_schema_to_benchmark_id():
             {"provider": "codex"},
         ],
     }
-
     summary = observed_artifact_summary(data, "m7.json")
-
     assert summary["benchmark_id"] == "m7_source_mined"
     assert summary["providers"] == ["codex", "serve"]
     assert summary["unit_ids"] == ["buildlang_buildc_compiler_receipts"]
     assert summary["unit_metric_completeness"]["buildlang_buildc_compiler_receipts"]["complete"] is True
     assert summary["unit_metric_completeness"]["buildlang_buildc_compiler_receipts"]["valid"] is True
     assert summary["row_count"] == 2
-
-
 def test_observed_artifact_summary_reads_legacy_m7_source_rows():
     data = {
         "schema": "m7-source-mined-scorecard/v1",
@@ -109,13 +100,9 @@ def test_observed_artifact_summary_reads_legacy_m7_source_rows():
             {"provider": "serve", "provider_role": "flywheel"},
         ],
     }
-
     summary = observed_artifact_summary(data, "legacy_m7.json")
-
     assert summary["providers"] == ["flywheel"]
     assert summary["row_count"] == 1
-
-
 def test_observed_artifact_summary_maps_model_endpoint_profiles_to_release_gate():
     data = {
         "schema": "harness.model-endpoint-profiles/v1",
@@ -134,15 +121,11 @@ def test_observed_artifact_summary_maps_model_endpoint_profiles_to_release_gate(
             },
         ],
     }
-
     summary = observed_artifact_summary(data, "model_endpoints.json")
-
     assert summary["benchmark_id"] == "local_model_release_gate_14b_32b"
     assert summary["providers"] == ["flywheel", "ollama_local"]
     assert summary["unit_ids"] == ["14B", "32B"]
     assert summary["row_count"] == 2
-
-
 def test_observed_artifact_summary_maps_model_endpoint_gate_rows_to_release_gate():
     data = {
         "schema": "harness.model-endpoint-gate/v1",
@@ -175,7 +158,6 @@ def test_observed_artifact_summary_maps_model_endpoint_gate_rows_to_release_gate
     }
 
     summary = observed_artifact_summary(data, "model_endpoint_gate.json")
-
     assert summary["benchmark_id"] == "local_model_release_gate_14b_32b"
     assert summary["providers"] == ["flywheel", "ollama_local"]
     assert summary["unit_ids"] == ["14B", "32B"]
@@ -184,8 +166,6 @@ def test_observed_artifact_summary_maps_model_endpoint_gate_rows_to_release_gate
     assert summary["unit_metric_completeness"]["32B"]["complete"] is True
     assert summary["unit_metric_completeness"]["32B"]["valid"] is True
     assert summary["row_count"] == 2
-
-
 def test_observed_artifact_summary_maps_classifier_friction_rows_to_benchmark_id():
     data = {
         "schema": "classifier-friction-benchmark/v1",
@@ -205,7 +185,6 @@ def test_observed_artifact_summary_maps_classifier_friction_rows_to_benchmark_id
     }
 
     summary = observed_artifact_summary(data, "classifier.json")
-
     assert summary["benchmark_id"] == "classifier_friction_accountability"
     assert summary["providers"] == ["codex"]
     assert summary["unit_ids"] == ["enterprise_vuln_triage_safe:guardrail_on"]
@@ -213,8 +192,6 @@ def test_observed_artifact_summary_maps_classifier_friction_rows_to_benchmark_id
     assert summary["unit_metric_completeness"]["enterprise_vuln_triage_safe:guardrail_on"]["valid"] is True
     assert summary["dataset_lanes"] == ["guardrail_accountability_friction"]
     assert summary["row_count"] == 1
-
-
 def test_observed_artifact_summary_extracts_explicit_dataset_lane_and_pressure_variables():
     data = {
         "schema": "classifier-friction-benchmark/v1",
@@ -234,11 +211,8 @@ def test_observed_artifact_summary_extracts_explicit_dataset_lane_and_pressure_v
     }
 
     summary = observed_artifact_summary(data, "classifier.json")
-
     assert summary["dataset_lanes"] == ["guardrail_accountability_friction"]
     assert summary["pressure_variables"] == ["latency-tax", "unnecessary-refusal"]
-
-
 def test_observed_artifact_summary_maps_forum_deep_verify_benchmark():
     data = {
         "schema": "forum.deep-verify-benchmark/v1",
@@ -481,13 +455,11 @@ def test_agentic_task_manifest_is_planned_only_coverage(tmp_path):
 
 def test_coverage_report_counts_unreadable_artifacts(tmp_path):
     missing = tmp_path / "missing.json"
-
     report = build_coverage_report(
         profile_fixture(),
         profile_path="profile.json",
         artifact_paths=[str(missing)],
     )
-
     assert report["summary"]["load_errors"] == 1
     assert report["load_errors"][0]["error"] == "missing_artifact"
 
@@ -498,9 +470,7 @@ def test_render_markdown_surfaces_missing_coverage(tmp_path):
         profile_path="profile.json",
         artifact_paths=[],
     )
-
     markdown = render_markdown(report)
-
     assert "# Benchmark profile coverage" in markdown
     assert "COVERAGE_PARTIAL" in markdown
     assert "m7_source_mined" in markdown
@@ -587,3 +557,33 @@ def test_coverage_report_tracks_provider_by_unit_evidence(tmp_path):
     assert summary["invalid_provider_units_by_benchmark"]["m7_source_mined"]["codex"]["buildlang_buildc_compiler_receipts"] == ["quality"]
     assert summary["provider_unit_coverage_rate"] == 0.1333
     assert summary["provider_unit_validity_rate"] == 0.0667
+
+def test_cross_harness_executed_rows_collapse_repetitions_and_keep_unavailable_incomplete(tmp_path):
+    tasks = ["agt-001-index-fallback-integrity", "agt-003-codex-flywheel-shared-task",
+             "agt-009-receipts-vs-guardrails-friction", "agt-010-documentation-schematic-maintenance"]
+    rows = []
+    for role in ("codex_harness", "flywheel_harness"):
+        for task in tasks:
+            for repetition in range(1, 4):
+                unavailable = role == "flywheel_harness" and task == tasks[-1]
+                rows.append({"provider_role": role, "task_id": task, "repetition": repetition, "execution_state": "unavailable" if unavailable else "returned", "oracle_state": "not_run" if unavailable else "pass", "receipt_state": "verified", "failure_class": "runtime_unavailable" if unavailable else "", "receipt_sha256": "a" * 64, "metrics": {} if unavailable else {"latency_ms": repetition * 10}, "planned": True, "admitted": not unavailable, "blocked": unavailable, "launched": not unavailable})
+    artifact = tmp_path / "comparison-input.json"; artifact.write_text(json.dumps({"schema": "harness.cross-harness-task-scorecard/v1", "rows": rows}), encoding="utf-8")
+    profile = {"schema": "harness.benchmark-profile-manifest/v1", "profile_id": "cross", "providers": [], "expected_provider_roles": ["codex_harness", "flywheel_harness"], "provider_aliases": {}, "metric_weight_sum": 1.0, "dataset_lane_weight_sum": 1.0, "dataset_lanes": [{"lane": "cross_harness_reproducibility", "pressure_variables": []}], "benchmarks": [{"id": "cross_harness_reproducibility_matrix", "status": "runnable", "coverage_units": tasks}]}
+    report = build_coverage_report(profile, profile_path="profile.json", artifact_paths=[str(artifact)])
+    summary = report["summary"]
+    assert summary["expected_provider_units"] == 8
+    assert summary["observed_provider_units"] == 8
+    assert summary["provider_unit_coverage_rate"] == 1.0
+    assert summary["availability_by_cohort"]["spark"] == {"planned": 24, "admitted": 21, "blocked": 3, "launched": 21}
+    assert summary["provider_units_by_cohort"] == {"spark": 8}
+    assert summary["invalid_provider_units_by_benchmark"]["cross_harness_reproducibility_matrix"]["flywheel_harness"][tasks[-1]] == ["latency", "quality"]
+    empty = observed_artifact_summary({"schema": "harness.cross-harness-task-scorecard/v1", "rows": []}, "empty.json")
+    assert (empty["recognized"], empty["planned_only"], empty["benchmark_id"]) == (False, False, "")
+    drift = {**rows[0], "receipt_state": "drift", "oracle_state": "pass"}
+    summary = observed_artifact_summary({"schema": "harness.cross-harness-task-scorecard/v1", "rows": [drift]}, "drift.json")
+    assert summary["provider_unit_metric_completeness"]["codex_harness"][tasks[0]]["missing"] == ["quality", "latency", "receipt"]
+    local = [{**rows[index], "phase": "local", "provider_role": role, "repetition": 1} for role in ("local_14b", "local_32b") for index in (0, 3, 6, 9)]
+    local_path = tmp_path / "local.json"; local_path.write_text(json.dumps({"schema": "harness.cross-harness-task-scorecard/v1", "rows": local}), encoding="utf-8")
+    profile["expected_provider_roles"] += ["local_14b", "local_32b"]
+    combined = build_coverage_report(profile, profile_path="profile.json", artifact_paths=[str(artifact), str(local_path)])
+    assert combined["summary"]["provider_units_by_cohort"] == {"local": 8, "spark": 8}

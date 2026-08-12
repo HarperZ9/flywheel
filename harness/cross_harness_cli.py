@@ -11,7 +11,6 @@ from .cross_harness_adapters import DirectCodexAdapter, FlywheelRouterAdapter, L
 from .cross_harness_artifacts import canonical_sha256, recheck_attempt_receipt, snapshot_source_tree, write_artifact_index
 from .cross_harness_executor import SHARED_TOOL_POLICY, execute_cross_harness_manifest, resolve_task_ids
 
-
 def _pairs(rows: list[tuple[str, Any]]) -> dict[str, Any]:
     out = {}
     for key, value in rows:
@@ -63,7 +62,8 @@ def _admission_identity_code(row: dict[str, Any], task: dict[str, Any], spec: di
         ("admission_input_mismatch", row.get("input_sha256s"), task.get("input_sha256s", {})),
         ("admission_oracle_mismatch", oracle, canonical_sha256(task.get("oracle", {}))),
         ("admission_model_mismatch", row.get("model_id"), spec.get("target_model")),
-        ("admission_adapter_mismatch", row.get("adapter_id"), spec.get("adapter_id")),
+        ("admission_adapter_mismatch", (row.get("harness_id"), row.get("adapter_id")),
+         (spec.get("harness_id"), spec.get("adapter_id"))),
         ("admission_policy_mismatch", row.get("tool_policy_sha256"), canonical_sha256(SHARED_TOOL_POLICY)),
         ("admission_source_mismatch", (row.get("source_commit"), row.get("source_snapshot_sha256")),
          (current.get("source_commit"), current.get("source_snapshot_sha256"))),
@@ -90,12 +90,13 @@ def _apply_admission(matrix: dict[str, Any], path: Path, manifest: dict[str, Any
     if admission.get("phase") != "admission-smoke":
         for role in roles: _block(_runtime(matrix, role), "admission_phase_mismatch")
         return
-    selected = resolve_task_ids(manifest.get("task_rows", []), selectors); current = current or {}
-    rows = [row for row in admission.get("rows", []) if isinstance(row, dict)]
-    if {str(row.get("provider_role", "")) for row in rows} != set(roles):
+    task_rows = manifest.get("task_rows", [])
+    try: selected = resolve_task_ids(task_rows, ["agt-001", "agt-003"])
+    except ValueError:
         for role in roles: _block(_runtime(matrix, role), "admission_selection_mismatch")
         return
-    expected = {(task, repetition) for task in selected for repetition in range(1, repetitions + 1)}
+    current, rows = current or {}, [row for row in admission.get("rows", []) if isinstance(row, dict)]
+    expected = {(task, 1) for task in selected}
     root = path.parent.resolve()
     for role in roles:
         runtime, role_rows = _runtime(matrix, role), [row for row in rows if row.get("provider_role") == role]
@@ -241,10 +242,8 @@ def main(argv: list[str] | None = None) -> int:
         artifact_root=Path(args.artifact_root), source_root=Path(args.source_root), run_id=args.run_id,
         phase=args.phase, selectors=selectors, roles=roles, repetitions=args.repetitions,
         cache_state=args.cache, timeout_seconds=args.timeout, source_commit=args.source_commit)
-    run_root = Path(args.artifact_root) / args.run_id
-    scorecard = run_root / "scorecard.json"
-    scorecard.write_text(json.dumps({"schema": "harness.cross-harness-task-scorecard/v1", "rows": run["rows"]},
-                         sort_keys=True, separators=(",", ":")) + "\n", encoding="utf-8", newline="")
+    run_root = Path(args.artifact_root) / args.run_id; scorecard = run_root / "comparison-input.json"
+    (run_root / "scorecard.json").write_bytes(scorecard.read_bytes())  # legacy alias
     write_artifact_index(run_root, [path for path in run_root.rglob("*")
                                    if path.is_file() and path.name != "artifact-index.json"])
     print(json.dumps({"run_id": args.run_id, "run_path": str(run_root / "run.json"),

@@ -1,7 +1,6 @@
 """Compare a benchmark profile contract against observed scorecard artifacts."""
 
 from __future__ import annotations
-
 import argparse
 import json
 import sys
@@ -9,16 +8,12 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 import re
-
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-
 from harness.file_backed_store import FileBackedHarnessStore  # noqa: E402
 from harness.provider_roles import (  # noqa: E402
     provider_alias_map as default_provider_alias_map,
     provider_role as canonical_provider_role,
 )
-
-
 SCHEMA_TO_BENCHMARK_ID = {
     "m7-source-mined-scorecard/v1": "m7_source_mined",
     "m7-governed-agent-scorecard/v1": "m7_governed_agent",
@@ -40,7 +35,6 @@ SCHEMA_TO_BENCHMARK_ID = {
     "harness.embodied-realtime-multimodal/v1": "embodied_realtime_multimodal_pressure",
     "harness.model-card-claim-table/v1": "embodied_realtime_multimodal_pressure",
 }
-
 BENCHMARK_TO_DATASET_LANES = {
     "m7_source_mined": ["source_mined_codebase_tasks"],
     "m7_governed_agent": ["agentic_tool_workflows"],
@@ -55,7 +49,6 @@ BENCHMARK_TO_DATASET_LANES = {
     "forum_ledger_deep_verify_scaling": ["replayable_causal_ledger_scaling", "adversarial_receipt_integrity"],
     "embodied_realtime_multimodal_pressure": ["embodied_realtime_multimodal", "local_resource_pressure"],
 }
-
 LOCAL_RESOURCE_PRESSURE_UNITS = {
     "14B_low_memory",
     "14B_long_context",
@@ -63,13 +56,11 @@ LOCAL_RESOURCE_PRESSURE_UNITS = {
     "32B_long_context",
     "endpoint_restart",
 }
-
 DATASET_LANE_KEYS = {
     "dataset_lane",
     "dataset_lanes",
     "lane",
 }
-
 PRESSURE_VARIABLE_KEYS = {
     "pressure_variable",
     "pressure_variables",
@@ -80,7 +71,6 @@ PRESSURE_VARIABLE_KEYS = {
     "adversarial_lane",
     "adversarial_lanes",
 }
-
 UNIT_ID_KEYS = {
     "case_id",
     "scenario_id",
@@ -92,7 +82,6 @@ UNIT_ID_KEYS = {
     "category",
     "model",
 }
-
 UNIT_CONTAINER_KEYS = {
     "cases",
     "case_results",
@@ -106,14 +95,12 @@ UNIT_CONTAINER_KEYS = {
     "configs",
     "profiles",
 }
-
 REQUIRED_UNIT_METRIC_GROUPS = {
     "quality": {"quality", "quality_score", "mean_quality_score", "weighted_quality_score", "adversarial_pressure_score"},
     "latency": {"latency_ms", "mean_latency_ms", "elapsed_ms", "duration_ms"},
     "failure_class": {"failure_class", "failure_code", "error_class", "verdict"},
     "receipt": {"receipt_hash", "packet_hash", "witness_hash", "byte_witness_id", "attached_witnesses", "receipt"},
 }
-
 VALID_FAILURE_VALUES = {
     "",
     "none",
@@ -147,13 +134,10 @@ VALID_FAILURE_VALUES = {
     "drift",
     "false_match",
     "untyped_escalation",
+    "runtime_unavailable",
 }
-
-
 def _now() -> str:
     return datetime.now(UTC).isoformat().replace("+00:00", "Z")
-
-
 def _safe_float(value: Any) -> float:
     try:
         return float(value)
@@ -165,8 +149,6 @@ def _split_paths(value: str) -> list[str]:
     if not value:
         return []
     return [part.strip() for part in value.split(";") if part.strip()]
-
-
 def _text_items(value: Any) -> list[str]:
     if isinstance(value, (str, int, float)) and str(value):
         return [str(value)]
@@ -215,8 +197,6 @@ def _declared_pressure_variables(profile: dict[str, Any]) -> list[str]:
             continue
         variables.update(str(item) for item in row["pressure_variables"] if item)
     return sorted(variables)
-
-
 def _artifact_benchmark_ids_from_schema(schema: str, unit_ids: list[str]) -> list[str]:
     ids: list[str] = []
     mapped = SCHEMA_TO_BENCHMARK_ID.get(schema)
@@ -744,11 +724,28 @@ def _cross_harness_scorecard_summary(data: dict[str, Any], path_text: str) -> di
         for row in row_dicts
         if row.get("provider_role")
     })
-    planned_only = all(
+    planned_only = bool(row_dicts) and all(
         str(row.get("execution_mode", "")) == "manifest_only" or str(row.get("status", "")) == "planned"
         for row in row_dicts
     )
-    benchmark_id = benchmark_ids[0] if benchmark_ids else ""
+    benchmark_id = benchmark_ids[0] if benchmark_ids else ("cross_harness_reproducibility_matrix" if row_dicts else "")
+    benchmark_ids = [benchmark_id] if benchmark_id else []
+    unit_metrics: dict[str, dict[str, Any]] = {}; provider_metrics: dict[str, dict[str, dict[str, Any]]] = {}; availability: dict[str, dict[str, int]] = {}; cohort_units: dict[str, set[str]] = {}
+    for row in row_dicts:
+        unit, role = str(row.get("task_id") or row.get("coverage_unit") or ""), str(row.get("provider_role", ""))
+        metrics = row.get("metrics") if isinstance(row.get("metrics"), dict) else {}
+        flat = {"coverage_unit": unit, "provider_role": role, "failure_class": row.get("failure_class", "")}
+        verified = row.get("execution_state") == "returned" and row.get("receipt_state") == "verified"
+        if row.get("receipt_state") == "verified": flat["receipt_hash"] = row.get("receipt_sha256") or row.get("receipt_hash")
+        if verified and row.get("oracle_state") in {"pass", "fail"}: flat["quality_score"] = 1.0 if row.get("oracle_state") == "pass" else 0.0
+        if verified and metrics.get("latency_ms") is not None: flat["latency_ms"] = metrics["latency_ms"]
+        metric = _metric_row_for_unit(unit, flat)
+        unit_metrics[unit] = _merge_metric_rows(unit_metrics[unit], metric) if unit in unit_metrics else metric
+        role_rows = provider_metrics.setdefault(role, {}); role_rows[unit] = _merge_metric_rows(role_rows[unit], metric) if unit in role_rows else metric
+        cohort = str(row.get("phase") or ("local" if role.startswith("local_") else "spark"))
+        cohort_units.setdefault(cohort, set()).add(f"{role}:{unit}")
+        counts = availability.setdefault(cohort, {key: 0 for key in ("planned", "admitted", "blocked", "launched")})
+        for key in counts: counts[key] += int(row.get(key) is True)
     return {
         "artifact_path": path_text,
         "schema": "harness.cross-harness-task-scorecard/v1",
@@ -758,8 +755,10 @@ def _cross_harness_scorecard_summary(data: dict[str, Any], path_text: str) -> di
         "unit_ids": unit_ids,
         "dataset_lanes": _dataset_lanes_for_benchmarks(benchmark_ids),
         "pressure_variables": [],
-        "unit_metric_completeness": {},
-        "provider_unit_metric_completeness": {},
+        "unit_metric_completeness": unit_metrics,
+        "provider_unit_metric_completeness": provider_metrics,
+        "availability_by_cohort": availability,
+        "provider_units_by_cohort": {key: sorted(value) for key, value in cohort_units.items()},
         "row_count": len(row_dicts),
         "recognized": bool(benchmark_ids),
         "planned_only": planned_only,
@@ -919,13 +918,9 @@ def _model_card_claim_table_summary(data: dict[str, Any], path_text: str) -> dic
         "unresolved_fields": int(summary.get("unresolved_fields", 0) or 0),
         "all_primary_sourced": bool(summary.get("all_primary_sourced")),
     }
-
-
 def _declared_benchmarks(profile: dict[str, Any]) -> list[dict[str, Any]]:
     rows = profile.get("benchmarks") if isinstance(profile.get("benchmarks"), list) else []
     return [row for row in rows if isinstance(row, dict)]
-
-
 def build_coverage_report(
     profile: dict[str, Any],
     *,
@@ -1139,6 +1134,10 @@ def build_coverage_report(
             "invalid_provider_units_by_benchmark": invalid_provider_units_by_benchmark,
             "provider_unit_coverage_rate": provider_unit_coverage_rate,
             "provider_unit_validity_rate": provider_unit_validity_rate,
+            "expected_provider_units": expected_provider_unit_count,
+            "observed_provider_units": observed_provider_unit_count,
+            "availability_by_cohort": {cohort: {key: sum(int(row.get("availability_by_cohort", {}).get(cohort, {}).get(key, 0) or 0) for row in executed_observed) for key in ("planned", "admitted", "blocked", "launched")} for cohort in sorted({cohort for row in executed_observed for cohort in row.get("availability_by_cohort", {})})},
+            "provider_units_by_cohort": {cohort: len({unit for row in executed_observed for unit in row.get("provider_units_by_cohort", {}).get(cohort, [])}) for cohort in sorted({cohort for row in executed_observed for cohort in row.get("provider_units_by_cohort", {})})},
             "expected_providers": expected_providers,
             "raw_expected_providers": raw_expected_providers,
             "observed_providers": observed_providers,
