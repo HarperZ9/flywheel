@@ -96,7 +96,7 @@ class ServeBackend:
             raise BackendError(f"serve unreachable: {e}") from e
         if status != 200 or "text" not in obj:
             raise BackendError(f"serve returned {status}: {obj.get('error', obj)}")
-        gen = {"text": obj["text"], "model_ref": obj.get("model_ref", "serve"),
+        gen = {"text": obj["text"], "model_ref": obj.get("model_ref", ""),
                "seed": obj.get("seed", seed)}
         if obj.get("prompt_hash"):        # only when served; else make_receipt hashes the prompt
             gen["prompt_hash"] = obj["prompt_hash"]

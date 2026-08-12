@@ -4,7 +4,7 @@ import json
 from harness.cross_harness_adapters import DirectCodexAdapter, FlywheelRouterAdapter, LocalRouterAdapter, ProcessOutcome
 from harness.cross_harness_artifacts import canonical_sha256
 from harness.cross_harness_executor import SHARED_TOOL_POLICY, execute_cross_harness_manifest
-from harness.local_agent import OllamaBackend
+from harness.local_agent import OllamaBackend, ServeBackend
 from harness.cross_harness_types import AdapterResult, AvailabilityResult, EnforcementResult
 
 
@@ -83,7 +83,7 @@ def test_local_observation_comes_from_structured_response_not_requested_referenc
     result = LocalRouterAdapter("local_14b", profile, backend_factory=lambda *_: backend).execute(
         _request(tmp_path, "local_14b", "openai_compatible_local/v1"))
 
-    assert (result.model_observed, result.model_observation_basis) == ("response-model", "structured_provider_response")
+    assert (result.model_observed, result.model_observation_basis, result.failure_class) == ("response-model", "structured_provider_response", "observed_model_drift")
 
 
 def test_ollama_backend_uses_structured_response_model_not_requested_model():
@@ -92,3 +92,19 @@ def test_ollama_backend_uses_structured_response_model_not_requested_model():
     response = backend.chat([], system="", max_tokens=1, temperature=0, seed=0)
 
     assert response["model_ref"] == "ollama:served"
+
+
+def test_serve_without_response_identity_stays_unknown_and_limits_executor(tmp_path):
+    profile = {"profile_id": "local", "backend": "serve", "model": "14B", "model_ref": "requested",
+               "endpoint_url": "http://127.0.0.1:8765", "supports_agentic_workflow": True, "root_exists": True}
+    profile["profile_sha256"] = canonical_sha256(profile)
+    backend = ServeBackend(transport=lambda *_: (200, {"text": '{"artifacts":{}}'}))
+    adapter = LocalRouterAdapter("local_14b", profile, backend_factory=lambda *_: backend)
+    result = adapter.execute(_request(tmp_path, "local_14b", "openai_compatible_local/v1"))
+    source = tmp_path / "source"; source.mkdir()
+    manifest = {"task_set_id": "set", "task_rows": [{"task_id": "task", "raw_prompt": "prompt", "raw_prompt_sha256": hashlib.sha256(b"prompt").hexdigest(), "input_sha256s": {}, "required_inputs": [], "expected_artifacts": [], "oracle": {}}], "provider_specs": [{"provider_role": "local_14b", "harness_id": "local", "adapter_id": "openai_compatible_local/v1", "model_id": "stable", "model_display_name": "Stable", "requested_model_reference": "requested"}]}
+    runtime = {"runtime_rows": [{"provider_role": "local_14b", "focused_run_ready": True, "blocking_gates": []}]}
+    row = execute_cross_harness_manifest(manifest, runtime, {"local_14b": adapter}, artifact_root=tmp_path / "artifacts", source_root=source, run_id="run", phase="local", selectors=["task"], roles=["local_14b"], repetitions=1)["rows"][0]
+
+    assert (result.model_observed, result.model_observation_basis) == ("", "unknown")
+    assert "provider_request_accepted_not_model_attested" in row["limitations"]
