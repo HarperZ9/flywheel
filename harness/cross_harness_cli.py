@@ -112,9 +112,9 @@ def _apply_admission(matrix: dict[str, Any], path: Path, manifest: dict[str, Any
             except (OSError, ValueError): failed = True; break
             task = next(item for item in manifest.get("task_rows", []) if item.get("task_id") == row.get("task_id"))
             spec = next(item for item in manifest.get("provider_specs", []) if item.get("provider_role") == role)
+            if row.get("primary_outcome") != "completed": failed = True; break
             code = _admission_identity_code(row, task, spec, manifest, current)
             if code: _block(runtime, code); failed = False; break
-            if row.get("primary_outcome") != "completed": failed = True; break
         if failed: _block(runtime, "admission_role_failed")
 
 

@@ -168,6 +168,24 @@ def test_admission_smoke_is_canonical_not_later_phase_selection(tmp_path, select
     assert all(row["focused_run_ready"] for row in matrix["runtime_rows"])
 
 
+def test_unavailable_admission_role_preserves_static_gates_without_oracle_mismatch(tmp_path):
+    def unavailable_local(rows):
+        for row in rows:
+            if row["provider_role"] == "local_14b":
+                row["primary_outcome"] = "unavailable"
+                row["availability_evidence"] = {}
+
+    manifest, current, receipt = _admission(tmp_path, mutate=unavailable_local)
+    matrix = {"runtime_rows": [{"provider_role": "local_14b", "focused_run_ready": False,
+                                "blocking_gates": ["endpoint_profile_ambiguous",
+                                                   "endpoint_profile_artifact_ambiguous"]}]}
+
+    _apply_admission(matrix, receipt, manifest, ["agt-009"], ["local_14b"], 1, current=current)
+
+    assert matrix["runtime_rows"][0]["blocking_gates"] == [
+        "admission_role_failed", "endpoint_profile_ambiguous", "endpoint_profile_artifact_ambiguous"]
+
+
 @pytest.mark.parametrize("mutate", [
     lambda rows: rows.pop(0),
     lambda rows: rows.append(dict(rows[0], receipt_path=rows[0]["receipt_path"] + "-duplicate")),
