@@ -5,7 +5,7 @@ from harness.cross_harness_adapters import (CodexCliProposer, DirectCodexAdapter
     LocalRouterAdapter, ProcessOutcome, _run_process)
 from harness.cross_harness_artifacts import bind_attempt_receipt, canonical_sha256, write_artifact_index
 from harness.cross_harness_cli import _apply_admission, _csv, _exit, _recheck_local_gate, main as cross_main
-from harness.cross_harness_executor import SHARED_TOOL_POLICY
+from harness.cross_harness_executor import SHARED_TOOL_POLICY, execute_cross_harness_manifest
 from harness.cross_harness_types import AttemptRequest
 from harness.proposer import StubProposer
 def request(tmp_path, role="codex_harness", adapter="codex_cli_json/v1", model="5.3-Codex-Spark"):
@@ -92,17 +92,17 @@ def test_process_runner_removes_raw_secret_stage_and_types_boundaries(tmp_path, 
 def test_process_runner_terminates_descendants_within_bound(tmp_path):
     import os, subprocess, sys, time
     marker, pidfile = tmp_path / "survived", tmp_path / "descendant.pid"
-    grandchild = f"import os,pathlib,time;pathlib.Path({str(pidfile)!r}).write_text(str(os.getpid()));time.sleep(.6);pathlib.Path({str(marker)!r}).write_text('bad')"
-    child = "import os,subprocess,sys,time;subprocess.Popen([sys.executable,'-c',sys.argv[1]],creationflags=(8 if os.name=='nt' else 0),start_new_session=(os.name!='nt'));time.sleep(30)"
-    started = time.monotonic()
+    grandchild = f"import os,pathlib,time;pathlib.Path({str(pidfile)!r}).write_text(str(os.getpid()));time.sleep(3);pathlib.Path({str(marker)!r}).write_text('bad')"
+    child = "import os,subprocess,sys,time;subprocess.Popen([sys.executable,'-c',sys.argv[1]],creationflags=(8 if os.name=='nt' else 0),start_new_session=(os.name!='nt'));time.sleep(30)"; started = time.monotonic()
     result = _run_process([sys.executable, "-c", child, grandchild], cwd=tmp_path, stdin_text="", timeout_seconds=.3, output_path=tmp_path / "out.txt")
-    time.sleep(.7); alive = pidfile.read_text() in subprocess.run(["tasklist", "/FI", f"PID eq {pidfile.read_text()}", "/NH"], capture_output=True, text=True).stdout if os.name == "nt" else os.path.exists(f"/proc/{pidfile.read_text()}")
-    assert result.timed_out and pidfile.is_file() and time.monotonic() - started < 5 and not marker.exists() and not alive
+    elapsed = time.monotonic() - started; time.sleep(.7)
+    alive = pidfile.read_text() in subprocess.run(["tasklist", "/FI", f"PID eq {pidfile.read_text()}", "/NH"], capture_output=True, text=True).stdout if os.name == "nt" else os.path.exists(f"/proc/{pidfile.read_text()}")
+    assert result.timed_out and pidfile.is_file() and elapsed < 2 and not marker.exists() and not alive
 @pytest.mark.parametrize("stdout", [
     '{"type":"ok","type":"forged"}\n',
-    json.dumps({"type": "ok", "value": "x" * 70000}) + "\n",
-    json.dumps({"type": "ok", "value": [[[[[[[[[[[[[[[[["x"]]]]]]]]]]]]]]]]]}) + "\n",
-], ids=["duplicate", "field_limit", "depth_limit"])
+    '{"type":"ok","value":NaN}\n', '{"type":"ok","value":Infinity}\n', '{"type":"ok","value":-Infinity}\n', '{"type":"ok","value":1e999}\n',
+    json.dumps({"type": "ok", "value": "x" * 70000}) + "\n", json.dumps({"type": "ok", "value": [[[[[[[[[[[[[[[[["x"]]]]]]]]]]]]]]]]]}) + "\n", '{"type":"ok","value":' + '[' * 5000 + '0' + ']' * 5000 + '}\n',
+], ids=["duplicate", "nan", "infinity", "negative_infinity", "overflow_float", "field_limit", "depth_limit", "parser_depth"])
 def test_direct_codex_rejects_untrusted_jsonl_shapes(stdout, tmp_path):
     result = DirectCodexAdapter(runner=lambda *a, **k: outcome(stdout),
                                 executable_resolver=lambda: "codex.cmd").execute(request(tmp_path))

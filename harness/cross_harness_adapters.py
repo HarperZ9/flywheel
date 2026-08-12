@@ -1,7 +1,7 @@
 """Injected execution boundaries for the cross-harness executor."""
 from __future__ import annotations
-from dataclasses import asdict, dataclass, replace
-import json, os, re, shutil, signal, subprocess, time, urllib.error, urllib.request
+from dataclasses import asdict, replace
+import json, math, os, re, shutil, time, urllib.error, urllib.request
 from pathlib import Path; from typing import Any, Callable
 from urllib.parse import urlsplit
 from .cross_harness_artifacts import canonical_sha256
@@ -13,74 +13,11 @@ from .local_session import SessionLedger
 from .local_tools import TOOLS_SYSTEM, ToolExecutor, ToolGate
 from .proposer import ProposerOutput, prompt_hash
 from .router_agent import RouterAgent
+from .cross_harness_process import ProcessOutcome, run_process
 MAX_TRACE_EVENTS, MAX_TRACE_BYTES, MAX_LINE_BYTES, MAX_FIELD_BYTES, MAX_DEPTH = 1000, 1 << 20, 1 << 16, 1 << 14, 16
 READ_ONLY_SYSTEM = ("You are the outer Flywheel text-tool agent. Inspect the supplied workspace and return the requested artifact envelope. "
     "The following TOOL protocol is visible, but write, exec, and MCP calls are denied.\n\n" + TOOLS_SYSTEM + "\n\nRead-only override: never emit write_file, edit_file, apply_patch, run, or MCP tools.")
-@dataclass(frozen=True)
-class ProcessOutcome:
-    returncode: int; stdout: str; stderr: str; output_text: str; elapsed_ms: int; timed_out: bool
-    malformed_output: bool = False
-def _child_env() -> dict[str, str]:
-    keep = {"SYSTEMROOT", "WINDIR", "COMSPEC", "PATHEXT", "PATH", "TEMP", "TMP", "CODEX_HOME", "USERPROFILE", "LOCALAPPDATA", "APPDATA", "PROGRAMDATA", "LANG", "LC_ALL"}
-    return {key: value for key, value in os.environ.items() if key.upper() in keep}
-def _windows_job(proc: subprocess.Popen):
-    if os.name != "nt": return None
-    import ctypes; from ctypes import wintypes
-    class BASIC(ctypes.Structure):
-        _fields_ = [("PerProcessUserTimeLimit", ctypes.c_longlong), ("PerJobUserTimeLimit", ctypes.c_longlong), ("LimitFlags", wintypes.DWORD),
-                    ("MinimumWorkingSetSize", ctypes.c_size_t), ("MaximumWorkingSetSize", ctypes.c_size_t), ("ActiveProcessLimit", wintypes.DWORD),
-                    ("Affinity", ctypes.c_size_t), ("PriorityClass", wintypes.DWORD), ("SchedulingClass", wintypes.DWORD)]
-    class IO(ctypes.Structure):
-        _fields_ = [(name, ctypes.c_ulonglong) for name in ("ReadOperationCount", "WriteOperationCount", "OtherOperationCount",
-                    "ReadTransferCount", "WriteTransferCount", "OtherTransferCount")]
-    class EXT(ctypes.Structure):
-        _fields_ = [("BasicLimitInformation", BASIC), ("IoInfo", IO), ("ProcessMemoryLimit", ctypes.c_size_t), ("JobMemoryLimit", ctypes.c_size_t),
-                    ("PeakProcessMemoryUsed", ctypes.c_size_t), ("PeakJobMemoryUsed", ctypes.c_size_t)]
-    api = ctypes.WinDLL("kernel32", use_last_error=True); api.CreateJobObjectW.restype = wintypes.HANDLE
-    api.SetInformationJobObject.argtypes = [wintypes.HANDLE, ctypes.c_int, ctypes.c_void_p, wintypes.DWORD]; api.AssignProcessToJobObject.argtypes = [wintypes.HANDLE, wintypes.HANDLE]; api.CloseHandle.argtypes = [wintypes.HANDLE]
-    job, info = api.CreateJobObjectW(None, None), EXT(); info.BasicLimitInformation.LimitFlags = 0x2000
-    if not job or not api.SetInformationJobObject(job, 9, ctypes.byref(info), ctypes.sizeof(info)) or not api.AssignProcessToJobObject(job, wintypes.HANDLE(proc._handle)):
-        if job: api.CloseHandle(job)
-        return None
-    return api, job
-def _stop_group(proc: subprocess.Popen, job=None) -> None:
-    try:
-        if os.name == "nt":
-            subprocess.run(["taskkill", "/PID", str(proc.pid), "/T", "/F"], capture_output=True, timeout=2, check=False)
-            if job: job[0].CloseHandle(job[1]); job = None
-        else: os.killpg(proc.pid, signal.SIGTERM)
-        proc.wait(timeout=.5)
-    except (OSError, ProcessLookupError, subprocess.TimeoutExpired):
-        try:
-            if os.name == "nt": subprocess.run(["taskkill", "/PID", str(proc.pid), "/T", "/F"], capture_output=True, timeout=2, check=False)
-            else: os.killpg(proc.pid, signal.SIGKILL)
-        except (OSError, subprocess.SubprocessError): proc.kill()
-    finally:
-        if job:
-            try: job[0].CloseHandle(job[1])
-            except OSError: pass
-def _run_process(argv: list[str], *, cwd: Path, stdin_text: str, timeout_seconds: float, output_path: Path) -> ProcessOutcome:
-    output_path.unlink(missing_ok=True)
-    options: dict[str, Any] = {"cwd": str(cwd), "env": _child_env(), "stdin": subprocess.PIPE, "stdout": subprocess.PIPE, "stderr": subprocess.PIPE, "shell": False}
-    if os.name == "nt": options["creationflags"] = subprocess.CREATE_NEW_PROCESS_GROUP
-    else: options["start_new_session"] = True
-    started = time.perf_counter(); proc = subprocess.Popen(argv, **options); job = _windows_job(proc)
-    try:
-        stdout, stderr = proc.communicate(stdin_text.encode("utf-8"), timeout=timeout_seconds); timed_out = False
-    except subprocess.TimeoutExpired as exc:
-        _stop_group(proc, job); job = None; stdout, stderr = proc.communicate(); timed_out = True
-        stdout = (exc.stdout or b"") + (stdout or b""); stderr = (exc.stderr or b"") + (stderr or b"")
-    finally:
-        if job: job[0].CloseHandle(job[1])
-    elapsed = max(0, round((time.perf_counter() - started) * 1000))
-    malformed = False
-    try:
-        output_raw = output_path.read_bytes() if output_path.is_file() else b""
-        stdout_text, stderr_text, output = tuple((value or b"").decode("utf-8", "strict") for value in (stdout, stderr, output_raw))
-    except UnicodeDecodeError:
-        stdout_text = stderr_text = output = ""; malformed = True
-    finally: output_path.unlink(missing_ok=True)
-    return ProcessOutcome(proc.returncode if not timed_out else -1, stdout_text, stderr_text, _clean(output), elapsed, timed_out, malformed)
+class MalformedProviderOutput(RuntimeError): pass
 def _resolve_codex() -> str:
     candidates = ("codex.cmd", "codex") if os.name == "nt" else ("codex",)
     for name in candidates:
@@ -100,24 +37,27 @@ def _clean(value: Any) -> Any:
     text = _ASSIGN.sub(r"\1[REDACTED]", _BEARER.sub(r"\1[REDACTED]", value))
     text = _API_KEY.sub("[REDACTED]", _JWT.sub("[REDACTED]", text))
     return _URL_CREDS.sub(r"\1[REDACTED]@", text)
+def _run_process(argv: list[str], **kwargs) -> ProcessOutcome:
+    return run_process(argv, sanitizer=_clean, **kwargs)
 def _json_pairs(rows):
     if len(rows) != len({key for key, _ in rows}): raise ValueError("duplicate JSON key")
     return dict(rows)
+def _nonfinite(value: str): raise ValueError(f"non-finite JSON number: {value}")
 def _bounded(value: Any, depth: int = 0) -> bool:
     if depth > MAX_DEPTH: return False
     if isinstance(value, str): return len(value.encode("utf-8")) <= MAX_FIELD_BYTES
     if isinstance(value, list): return len(value) <= MAX_TRACE_EVENTS and all(_bounded(item, depth + 1) for item in value)
     if isinstance(value, dict):
         return len(value) <= MAX_TRACE_EVENTS and all(_bounded(str(key), depth + 1) and _bounded(item, depth + 1) for key, item in value.items())
-    return value is None or isinstance(value, (bool, int, float))
+    return value is None or isinstance(value, (bool, int)) or (isinstance(value, float) and math.isfinite(value))
 def _parse_jsonl(text: str, source: str) -> tuple[list[dict[str, Any]], bool]:
     events, malformed, total = [], False, 0
     for line in text.splitlines():
         if not line.strip(): continue
         size = len(line.encode("utf-8")); total += size
         if size > MAX_LINE_BYTES or total > MAX_TRACE_BYTES: malformed = True; continue
-        try: item = json.loads(line, object_pairs_hook=_json_pairs)
-        except (json.JSONDecodeError, ValueError): malformed = True; continue
+        try: item = json.loads(line, object_pairs_hook=_json_pairs, parse_constant=_nonfinite)
+        except (json.JSONDecodeError, ValueError, RecursionError): malformed = True; continue
         if not isinstance(item, dict) or not _bounded(item): malformed = True; continue
         if len(events) < MAX_TRACE_EVENTS: events.append({**_clean(item), "source": source})
         else: malformed = True
@@ -132,6 +72,10 @@ def _audit(events: list[dict[str, Any]]) -> tuple[list[str], list[str]]:
             if any(word in low for word in ("command", "shell", "exec", "run")): observed.add("shell")
             if "mcp" in low: observed.add("mcp")
             command = str(value.get("command", "")); operators = re.sub(r"'[^']*'|\"[^\"]*\"", "", command)
+            shell = r"(?:^|\s)(?:\S*[\\/])?(?:ba)?sh(?:\.exe)?(?:\s+-[a-z]*c[a-z]*)\s+([\"'])(.*?)\1"
+            cmd = r"(?:^|\s)(?:\S*[\\/])?cmd(?:\.exe)?(?:\s+/(?!c\b)[a-z]+(?::(?:on|off))?)*\s+/c\s+([\"'])(.*?)\1"
+            wrapper = re.search(shell, command, re.I) or re.search(cmd, command, re.I)
+            if wrapper: operators += " " + wrapper.group(2)
             if ("file_change" in low or any(word in low for word in ("write", "edit", "patch", "delete", "remove"))
                     or re.search(r"(?:^|\s)(?:rm|del|erase|move|mv|copy|cp|tee|touch|mkdir|set-content|out-file)\b", command, re.I) or re.search(r"(?<![<>=])(?:\d|[*&])?>{1,2}(?![=])", operators)): observed.add("write")
             for item in value.values(): visit(item)
@@ -196,8 +140,8 @@ class CodexCliProposer:
             stdin_text=(f"{system}\n\n{prompt}" if system else prompt), timeout_seconds=remaining, output_path=output)
         events, malformed = _parse_jsonl(process.stdout, "codex_inner"); self.events.extend(events)
         if process.timed_out: raise TimeoutError("codex inner call timed out")
+        if malformed or process.malformed_output: raise MalformedProviderOutput("codex inner provider output was malformed")
         if process.returncode: raise RuntimeError(f"codex inner process exited {process.returncode}: {_clean(process.stderr)}")
-        if malformed: raise RuntimeError("codex inner trace was malformed")
         return ProposerOutput(_clean(process.output_text), self.model_ref, seed, prompt_hash(prompt), "unsupported", served_model=self.model_ref, usage=None)
 class _ObservedProposer:
     def __init__(self, inner, timeout: float, clock: Callable):
@@ -222,6 +166,7 @@ def _router_result(request, proposer, source: str, clock: Callable = time.monoto
                            on_event=lambda event: events.append({**_clean(event), "source": source}))
         state, failure, detail = "returned", "", ""
     except TimeoutError as exc: result, state, failure, detail = {"final": ""}, "timeout", "timeout", str(exc)
+    except MalformedProviderOutput as exc: result, state, failure, detail = {"final": ""}, "malformed", "malformed_provider_output", str(exc)
     except Exception as exc: result, state, failure, detail = {"final": ""}, "internal_error", type(exc).__name__, str(exc)
     events.extend({**_clean(asdict(entry)), "source": source, "type": "ledger_entry"} for entry in ledger.entries)
     events.append({"source": source, "type": "ledger_checkpoint", "checkpoint": ledger.checkpoint(), "verified": ledger.verify(), "randomness": "unsupported",
