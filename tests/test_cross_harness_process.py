@@ -112,7 +112,7 @@ def test_owned_stage_hardlink_is_unlinked_without_truncating_outside(tmp_path):
 @pytest.mark.parametrize("failure", ["popen", "job", "resume", "runner"])
 def test_exceptional_process_paths_report_stage_cleanup_failure(tmp_path, monkeypatch, failure):
     import harness.cross_harness_process as process
-    monkeypatch.setattr(process, "_scrub_owned_tree", lambda path: False)
+    monkeypatch.setattr(process, "_scrub_owned_tree", lambda path, **kwargs: False)
     if failure == "popen": monkeypatch.setattr(process.subprocess, "Popen", lambda *a, **k: (_ for _ in ()).throw(RuntimeError("launch")))
     elif failure == "job": monkeypatch.setattr(process, "_windows_job", lambda proc: None)
     elif failure == "resume": monkeypatch.setattr(process, "_resume_windows", lambda proc: False)
@@ -136,10 +136,55 @@ def test_owned_stage_cleanup_removes_junction_without_following_it(tmp_path):
 def test_stage_cleanup_failure_marks_real_process_malformed(tmp_path, monkeypatch):
     import harness.cross_harness_process as process
     original = process._scrub_owned_tree
-    def scrub_and_report_failure(path):
-        original(path)
+    def scrub_and_report_failure(path, **kwargs):
+        original(path, **kwargs)
         return False
     monkeypatch.setattr(process, "_scrub_owned_tree", scrub_and_report_failure)
     outcome = process.run_process([sys.executable, "-c", "pass"], cwd=tmp_path, stdin_text="", timeout_seconds=1,
                                   output_path=tmp_path / "out", sanitizer=lambda value: value)
     assert outcome.malformed_output and not list(tmp_path.glob(".cross-harness-stage-*"))
+
+
+@pytest.mark.skipif(sys.platform != "win32", reason="Windows provider boundary")
+def test_real_provider_cannot_rename_and_recreate_anchored_stage_root(tmp_path):
+    import harness.cross_harness_process as process
+    stage = tmp_path / "out"
+    code = """import pathlib,sys
+p=pathlib.Path(sys.argv[1]); root=p.parent; moved=root.with_name(root.name+'-moved')
+try:
+ root.rename(moved); root.mkdir(); (moved/'raw').write_text('provider-secret'); p.write_text('forged')
+except OSError:
+ p.write_text('anchored')
+"""
+    outcome = process.run_process([sys.executable, "-c", code, str(stage)], cwd=tmp_path, stdin_text="", timeout_seconds=2,
+                                  output_path=stage, sanitizer=lambda value: value)
+    retained = [path for path in tmp_path.rglob("*") if path.is_file() and b"provider-secret" in path.read_bytes()]
+    assert outcome.output_text == "anchored" and not outcome.malformed_output and not retained
+    assert not list(tmp_path.glob(".cross-harness-stage-*"))
+
+
+@pytest.mark.skipif(sys.platform != "win32", reason="Windows provider boundary")
+def test_stage_identity_drift_is_typed_malformed_and_scrubbed(tmp_path, monkeypatch):
+    import harness.cross_harness_process as process
+    real_anchor = process.anchor_stage
+    class Drift:
+        def __init__(self, inner): self.inner = inner
+        def matches(self, path): return False
+        def current_path(self): return self.inner.current_path()
+        def close(self): self.inner.close()
+    monkeypatch.setattr(process, "anchor_stage", lambda path: Drift(real_anchor(path)))
+    outcome = process.run_process([sys.executable, "-c", "pass"], cwd=tmp_path, stdin_text="", timeout_seconds=1,
+                                  output_path=tmp_path / "out", sanitizer=lambda value: value)
+    assert outcome.malformed_output and not list(tmp_path.glob(".cross-harness-stage-*"))
+
+
+@pytest.mark.skipif(sys.platform != "win32", reason="Windows provider boundary")
+def test_stage_anchor_failure_blocks_provider_launch(tmp_path, monkeypatch):
+    import harness.cross_harness_process as process
+    launched = []
+    monkeypatch.setattr(process, "anchor_stage", lambda path: (_ for _ in ()).throw(OSError("anchor failed")))
+    monkeypatch.setattr(process.subprocess, "Popen", lambda *args, **kwargs: launched.append(args))
+    with pytest.raises(OSError, match="staging containment unavailable"):
+        process.run_process([sys.executable, "-c", "pass"], cwd=tmp_path, stdin_text="", timeout_seconds=1,
+                            output_path=tmp_path / "out", sanitizer=lambda value: value)
+    assert not launched and not list(tmp_path.glob(".cross-harness-stage-*"))

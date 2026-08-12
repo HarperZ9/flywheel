@@ -100,8 +100,9 @@ def _wrapper_payload(command: str) -> tuple[str, str] | None:
     if is_executable("powershell", "pwsh"):
         for index, word in enumerate(words[1:], 1):
             option = word.lower()
-            command = option in {"-c", "-command", "-commandwithargs", "/c", "/command"} or (len(option) >= 4 and "-command".startswith(option))
-            encoded = option in {"-e", "-enc", "-encodedcommand"} or (len(option) >= 9 and "-encodedcommand".startswith(option))
+            named = "-" + option[1:] if option.startswith("/") else option
+            command = option in {"-c", "-command", "-commandwithargs", "/c", "/command"} or (len(named) >= 3 and "-command".startswith(named))
+            encoded = named == "-e" or (len(named) >= 3 and "-encodedcommand".startswith(named))
             if command: return "powershell", " ".join(words[index + 1:])
             if encoded and index + 1 < len(words):
                 try: return "powershell", base64.b64decode(words[index + 1], validate=True).decode("utf-16le", "strict")

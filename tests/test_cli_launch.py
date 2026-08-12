@@ -182,7 +182,7 @@ def test_quoted_executable_wrappers_report_shell_and_write(command, tmp_path):
     assert result.observed_capabilities == ["shell", "write"] and result.policy_violations == ["exec_not_allowed", "write_not_allowed"]
 
 
-@pytest.mark.parametrize("command", ['bash -c "python -c \'print(1 > 0)\'"', 'pwsh -Command "Write-Output \'1 > 0\'"', 'powershell -Co "Write-Output \'1 > 0\'"', 'powershell -Encoded "Write-Output \'1 > 0\'"'])
+@pytest.mark.parametrize("command", ['bash -c "python -c \'print(1 > 0)\'"', 'pwsh -Command "Write-Output \'1 > 0\'"', 'powershell -Co "Write-Output \'1 > 0\'"', 'powershell /Co "Write-Output \'1 > 0\'"'])
 def test_quoted_wrapper_comparisons_are_not_writes(command, tmp_path):
     process = type("Outcome", (), {"returncode": 0, "stdout": json.dumps({"type": "command_execution", "command": command}), "stderr": "", "output_text": "", "elapsed_ms": 1, "timed_out": False, "malformed_output": False})()
     result = DirectCodexAdapter(runner=lambda *a, **k: process, executable_resolver=lambda: "codex.cmd").execute(_attempt(tmp_path))
@@ -198,8 +198,8 @@ def test_wrapper_escaped_redirect_data_is_not_write(command, tmp_path):
 
 def test_encoded_powershell_and_cmd_keep_commands_are_audited(tmp_path):
     encoded = base64.b64encode("echo bad > x".encode("utf-16le")).decode()
-    for command in (f"pwsh -EncodedCommand {encoded}", f"powershell -EncodedC {encoded}", f"powershell -EncodedCom {encoded}",
-                    'powershell -Com "echo bad > x"', 'powershell -Comm "echo bad > x"', 'cmd.exe /d /k "echo bad > x"'):
+    for command in (f"pwsh -EncodedCommand {encoded}", f"powershell /E {encoded}", f"powershell -En {encoded}", f"powershell /En {encoded}", f"powershell /Enc {encoded}", f"powershell -Enco {encoded}", f"powershell /Encode {encoded}", f"powershell -Encoded {encoded}", f"powershell /Encoded {encoded}", f"powershell -EncodedC {encoded}", f"powershell -EncodedCom {encoded}",
+                    'powershell -Co "echo bad > x"', 'powershell /Co "echo bad > x"', 'powershell -Com "echo bad > x"', 'powershell -Comm "echo bad > x"', 'cmd.exe /d /k "echo bad > x"'):
         process = type("Outcome", (), {"returncode": 0, "stdout": json.dumps({"type": "command_execution", "command": command}), "stderr": "", "output_text": "", "elapsed_ms": 1, "timed_out": False, "malformed_output": False})()
         result = DirectCodexAdapter(runner=lambda *a, **k: process, executable_resolver=lambda: "codex.cmd").execute(_attempt(tmp_path))
         assert "write_not_allowed" in result.policy_violations

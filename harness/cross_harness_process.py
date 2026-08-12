@@ -11,6 +11,7 @@ import tempfile
 import threading
 import time
 from typing import Any, Callable
+from .cross_harness_windows import StageAnchor, anchor_stage, scrub_owned_tree as _scrub_owned_tree
 
 MAX_CAPTURE_BYTES = 1 << 20
 
@@ -139,53 +140,17 @@ def _remove_stage(path: Path) -> bool:
         return False
     return True
 
-def _reparse(info: os.stat_result) -> bool:
-    return bool(getattr(info, "st_file_attributes", 0) & getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT", 0x400))
-
-
-def _remove_leaf(path: Path, info: os.stat_result) -> bool:
-    ok = True
-    if stat.S_ISREG(info.st_mode) and not _reparse(info):
-        flags = os.O_WRONLY | getattr(os, "O_BINARY", 0) | getattr(os, "O_NOFOLLOW", 0)
-        descriptor = None
-        try:
-            descriptor = os.open(path, flags)
-            opened = os.fstat(descriptor)
-            safe = info.st_nlink == opened.st_nlink == 1 and (opened.st_dev, opened.st_ino) == (info.st_dev, info.st_ino)
-            if safe: os.ftruncate(descriptor, 0)
-            else: ok = False
-        except OSError:
-            ok = False
-        finally:
-            if descriptor is not None: os.close(descriptor)
-    try:
-        path.rmdir() if stat.S_ISDIR(info.st_mode) else path.unlink()
-    except OSError:
-        ok = False
-    return ok
-
-
-def _scrub_owned_tree(root: Path) -> bool:
-    """Remove an exclusively harness-created tree without traversing reparse leaves."""
-    ok, stack = True, [(root, False)]
-    while stack:
-        path, visited = stack.pop()
-        try: info = path.lstat()
-        except FileNotFoundError: continue
-        except OSError: ok = False; continue
-        if not stat.S_ISDIR(info.st_mode) or stat.S_ISLNK(info.st_mode) or _reparse(info):
-            ok = _remove_leaf(path, info) and ok; continue
-        if visited:
-            try: path.rmdir()
-            except OSError: ok = False
-            continue
-        stack.append((path, True))
-        try:
-            with os.scandir(path) as entries:
-                stack.extend((path / entry.name, False) for entry in entries)
-        except OSError:
-            ok = False
-    return ok
+def _finish_stage(root: Path, anchor: StageAnchor) -> bool:
+    ok, same = True, anchor.matches(root)
+    try: actual = anchor.current_path()
+    except Exception: actual, ok = root, False
+    same = same and os.path.normcase(os.path.abspath(actual)) == os.path.normcase(os.path.abspath(root))
+    try: ok = _scrub_owned_tree(actual, preserve_root=True) and ok
+    except Exception: ok = False
+    finally: anchor.close()
+    ok = _remove_stage(actual) and ok
+    if not same: ok = _scrub_owned_tree(root) and ok
+    return ok and same
 
 def _read_stage(path: Path) -> tuple[bytes, bool]:
     try:
@@ -219,6 +184,10 @@ def run_process(argv: list[str], *, cwd: Path, stdin_text: str, timeout_seconds:
         raise OSError("provider output staging path is not safely removable")
     stage_root = Path(tempfile.mkdtemp(prefix=".cross-harness-stage-", dir=output_path.parent))
     stage_output = stage_root / "last-message.txt"
+    try: anchor = anchor_stage(stage_root)
+    except OSError as exc:
+        _scrub_owned_tree(stage_root)
+        raise OSError("Windows provider staging containment unavailable") from exc
     argv = [str(stage_output) if str(item) == str(output_path) else item for item in argv]
     options: dict[str, Any] = {
         "cwd": str(cwd), "env": _child_env(), "stdin": subprocess.PIPE,
@@ -235,12 +204,13 @@ def run_process(argv: list[str], *, cwd: Path, stdin_text: str, timeout_seconds:
         captured, timed_out = _run_windows_process(proc, job, stdin_text, started + timeout_seconds)
     except Exception as exc:
         if proc is not None: _stop_tree(proc, job)
-        if not _scrub_owned_tree(stage_root):
+        if not _finish_stage(stage_root, anchor):
             raise OSError(f"provider staging cleanup failed: {stage_root.name}") from exc
         raise
 
-    output_raw, output_over = _read_stage(stage_output)
-    cleanup_ok = _scrub_owned_tree(stage_root)
+    if anchor.matches(stage_root): output_raw, output_over = _read_stage(stage_output)
+    else: output_raw, output_over = b"", True
+    cleanup_ok = _finish_stage(stage_root, anchor)
     stdout, stdout_over = captured.get("stdout", (b"", True))
     stderr, stderr_over = captured.get("stderr", (b"", True))
     stdout_text, bad_stdout = _decode(stdout)
