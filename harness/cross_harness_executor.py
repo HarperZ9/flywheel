@@ -178,7 +178,7 @@ def execute_cross_harness_manifest(
                         "source_snapshot_sha256": before["sha256"], "input_sha256s": dict(task.get("input_sha256s", {})),
                         "execution_state": "not_started", "oracle_state": "not_run", "receipt_state": "not_emitted",
                         "raw_prompt_sha256": str(task.get("raw_prompt_sha256", "")), "raw_output_sha256": "",
-                        "raw_output_path": "", "tool_trace_path": "", "failure_class": "", "failure_detail": "",
+                        "raw_output_path": "", "tool_trace_path": "", "failure_class": "", "failure_detail": "", "model_observed": "", "model_observation_basis": "unknown",
                         "metrics": {}, "limitations": ["Actual enforcement is not assumed equivalent across adapters."],
                         "policy_equivalence": "non_equivalent", "availability_evidence": dict(plan["runtime_evidence"]),
                         "planned": True, "admitted": False, "launched": False, "blocked": False})
@@ -230,21 +230,19 @@ def execute_cross_harness_manifest(
                                 raw = attempt / "output.txt"; raw.write_text(result.output_text, encoding="utf-8", newline=""); files[raw.name] = raw
                                 row.update(raw_output_path=str(raw), raw_output_sha256=hashlib.sha256(raw.read_bytes()).hexdigest())
                             elapsed_ms = validate_elapsed_ms(result.elapsed_ms)
-                            metadata = sanitize_evidence({"usage": result.usage, "resource": result.resource_observation,
-                                "capabilities": result.observed_capabilities, "violations": result.policy_violations,
-                                "tool_trace": result.tool_trace, "model": result.model_observed,
-                                "randomness": result.randomness_control, "failure_detail": result.failure_detail})
-                            row.update(execution_state=result.execution_state, failure_class=sanitize_evidence(result.failure_class),
-                                       failure_detail=metadata["failure_detail"],
-                                       metrics={"latency_ms": elapsed_ms, "usage": metadata["usage"], "resource_observation": metadata["resource"]},
-                                       model_observed=metadata["model"], randomness_control=metadata["randomness"],
+                            metadata = sanitize_evidence({"usage": result.usage, "resource": result.resource_observation, "capabilities": result.observed_capabilities,
+                                "violations": result.policy_violations, "tool_trace": result.tool_trace, "model": result.model_observed, "model_observation_basis": result.model_observation_basis, "randomness": result.randomness_control, "failure_detail": result.failure_detail})
+                            row.update(execution_state=result.execution_state, failure_class=sanitize_evidence(result.failure_class), failure_detail=metadata["failure_detail"],
+                                       metrics={"latency_ms": elapsed_ms, "usage": metadata["usage"], "resource_observation": metadata["resource"]}, model_observed=metadata["model"] if metadata["model_observation_basis"] != "unknown" else "", model_observation_basis=metadata["model_observation_basis"], randomness_control=metadata["randomness"],
                                        observed_capabilities=metadata["capabilities"], policy_violations=metadata["violations"])
                             trace = attempt / "tool_trace.json"; _write_json(trace, metadata["tool_trace"]); files[trace.name] = trace; row["tool_trace_path"] = str(trace)
                             if result.execution_state == "returned":
+                                if row["model_observation_basis"] == "unknown":
+                                    row["limitations"].append("provider_request_accepted_not_model_attested")
                                 try: raw, artifacts = materialize_response_envelope(result.output_text, list(task.get("expected_artifacts", [])), attempt)
                                 except ValueError as exc: raise _MalformedAttempt(str(exc)) from exc
                                 files.update(artifacts); row.update(raw_output_path=str(raw), raw_output_sha256=hashlib.sha256(raw.read_bytes()).hexdigest())
-                                provider_receipt = attempt / "provider-receipt.json"; _write_json(provider_receipt, {"model_observed": row["model_observed"], "elapsed_ms": elapsed_ms}); files[provider_receipt.name] = provider_receipt
+                                provider_receipt = attempt / "provider-receipt.json"; _write_json(provider_receipt, {"model_observed": row["model_observed"], "model_observation_basis": row["model_observation_basis"], "elapsed_ms": elapsed_ms}); files[provider_receipt.name] = provider_receipt
                                 core = {"workspace_root": str(workspace), "attempt_dir": str(attempt),
                                         "raw_prompt_sha256": row["raw_prompt_sha256"], "tool_policy_sha256": row["tool_policy_sha256"],
                                         "raw_artifact_sha256": row["raw_output_sha256"], "receipt_sha256": hashlib.sha256(provider_receipt.read_bytes()).hexdigest(),

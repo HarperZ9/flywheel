@@ -61,6 +61,7 @@ class AdapterResult:
     usage: dict[str, Any]
     observed_capabilities: list[str]
     policy_violations: list[str]
+    model_observation_basis: str = "unknown"
 
 
 class CrossHarnessAdapter(Protocol):
