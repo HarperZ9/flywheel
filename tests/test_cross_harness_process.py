@@ -87,7 +87,7 @@ def test_structured_model_rejection_beats_missing_final_message_for_direct_and_i
         "flywheel_harness": FlywheelRouterAdapter(runner=lambda *a, **k: process, executable_resolver=lambda: "codex.cmd")}
     for row in _execute_spark_rows(tmp_path, process, adapters):
         assert (row["launched"], row["admitted"], row["blocked"], row["failure_class"]) == (True, True, False, "provider_model_unsupported")
-        assert (row["execution_state"], row["receipt_state"], row["model_observed"]) == ("internal_error", "verified", "gpt-5.3-codex-spark")
+        assert (row["execution_state"], row["receipt_state"], row["model_observed"], row["model_observation_basis"]) == ("internal_error", "verified", "", "unknown")
         trace = json.loads(pathlib.Path(row["tool_trace_path"]).read_text())
         assert any(event.get("type") == "turn.failed" for event in trace)
         assert "opaque-value-that-must-not-escape" not in repr(trace)
@@ -170,7 +170,7 @@ def test_malformed_nested_terminal_errors_outrank_final_message(event, tmp_path)
         adapters = {"codex_harness": DirectCodexAdapter(runner=lambda *a, **k: process, executable_resolver=lambda: "codex.cmd"),
             "flywheel_harness": FlywheelRouterAdapter(runner=lambda *a, **k: process, executable_resolver=lambda: "codex.cmd")}
         for row in _execute_spark_rows(tmp_path, process, adapters):
-            assert (row["execution_state"], row["receipt_state"], row["model_observed"]) == ("malformed", "verified", "gpt-5.3-codex-spark")
+            assert (row["execution_state"], row["receipt_state"], row["model_observed"], row["model_observation_basis"]) == ("malformed", "verified", "", "unknown")
             assert row["failure_class"] in {"malformed_jsonl", "malformed_provider_output"}
             trace = pathlib.Path(row["tool_trace_path"]).read_text()
             assert "\\ud800" not in trace and '"malformed_provider_message":true' in trace

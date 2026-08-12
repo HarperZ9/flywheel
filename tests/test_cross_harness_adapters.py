@@ -133,7 +133,7 @@ def test_flywheel_runs_outer_loop_with_read_only_gate_and_distinct_enforcement(t
     req = request(tmp_path, "flywheel_harness", "flywheel_router/v1")
     result = adapter.execute(req)
     direct = DirectCodexAdapter(executable_resolver=lambda: "codex.cmd")
-    assert result.execution_state == "returned" and result.model_observed == "spark"
+    assert result.execution_state == "returned" and (result.model_observed, result.model_observation_basis) == ("", "unknown")
     assert any(event["source"] == "flywheel_outer" for event in result.tool_trace)
     assert "write_not_allowed" in result.policy_violations and not (tmp_path / "x").exists()
     assert adapter.enforcement(req).description_sha256 != direct.enforcement(req).description_sha256

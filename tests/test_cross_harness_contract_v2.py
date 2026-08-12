@@ -103,4 +103,4 @@ def test_requested_reference_drives_transport_while_stable_identity_stays_observ
     result = DirectCodexAdapter(runner=runner, executable_resolver=lambda: "codex.cmd").execute(request)
 
     assert seen["argv"][3] == "request-ref"
-    assert result.model_observed == "stable-id"
+    assert (result.model_observed, result.model_observation_basis) == ("", "unknown")

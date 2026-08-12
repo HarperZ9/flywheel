@@ -148,7 +148,7 @@ class OllamaBackend:
         text = (obj.get("message") or {}).get("content")
         if status != 200 or text is None:
             raise BackendError(f"ollama returned {status}: {obj.get('error', obj)}")
-        return {"text": text, "model_ref": f"ollama:{model}", "seed": seed}
+        return {"text": text, "model_ref": f"ollama:{obj['model']}" if isinstance(obj.get("model"), str) and obj["model"] else "", "seed": seed}
 
     def _body(self, messages, system, max_tokens, temperature, seed, stream):
         model = self._resolved or self.model

@@ -1,7 +1,10 @@
 import hashlib
+import json
 
+from harness.cross_harness_adapters import DirectCodexAdapter, FlywheelRouterAdapter, LocalRouterAdapter, ProcessOutcome
 from harness.cross_harness_artifacts import canonical_sha256
 from harness.cross_harness_executor import SHARED_TOOL_POLICY, execute_cross_harness_manifest
+from harness.local_agent import OllamaBackend
 from harness.cross_harness_types import AdapterResult, AvailabilityResult, EnforcementResult
 
 
@@ -38,3 +41,54 @@ def test_returned_unattested_model_is_empty_and_records_request_limitation(tmp_p
     assert row["requested_model_reference"] == "request-model"
     assert (row["model_observed"], row["model_observation_basis"]) == ("", "unknown")
     assert "provider_request_accepted_not_model_attested" in row["limitations"]
+
+
+def _request(tmp_path, role="codex_harness", adapter="codex_cli_json/v1"):
+    from harness.cross_harness_types import AttemptRequest
+    return AttemptRequest("run", "spark", "set", "task", "prompt", "a" * 64, role, "harness", adapter,
+                          "stable", "requested", tmp_path, "b" * 64, {}, {}, "c" * 64, 1, "cold", 3, tmp_path)
+
+
+def test_direct_and_flywheel_only_accept_explicit_bounded_model_attestation(tmp_path):
+    events = [
+        {"type": "item.completed", "item": {"type": "agent_message", "text": "I am spoofed"}},
+        {"type": "turn.completed", "model": "attested-model"},
+        {"type": "item.completed", "item": {"type": "agent_message", "text": "ok"}},
+    ]
+    process = ProcessOutcome(0, "\n".join(json.dumps(item) for item in events), "", 1, False)
+    direct = DirectCodexAdapter(runner=lambda *_, **__: process, executable_resolver=lambda: "codex.cmd").execute(_request(tmp_path))
+    flywheel = FlywheelRouterAdapter(runner=lambda *_, **__: process, executable_resolver=lambda: "codex.cmd").execute(
+        _request(tmp_path, "flywheel_harness", "flywheel_router/v1"))
+
+    assert (direct.model_observed, direct.model_observation_basis) == ("attested-model", "structured_provider_event")
+    assert (flywheel.model_observed, flywheel.model_observation_basis) == ("attested-model", "structured_provider_event")
+
+
+def test_direct_and_flywheel_do_not_treat_final_prose_or_request_as_observation(tmp_path):
+    event = {"type": "item.completed", "item": {"type": "agent_message", "text": "requested is the model"}}
+    process = ProcessOutcome(0, json.dumps(event), "", 1, False)
+    direct = DirectCodexAdapter(runner=lambda *_, **__: process, executable_resolver=lambda: "codex.cmd").execute(_request(tmp_path))
+    flywheel = FlywheelRouterAdapter(runner=lambda *_, **__: process, executable_resolver=lambda: "codex.cmd").execute(
+        _request(tmp_path, "flywheel_harness", "flywheel_router/v1"))
+
+    assert (direct.model_observed, direct.model_observation_basis) == ("", "unknown")
+    assert (flywheel.model_observed, flywheel.model_observation_basis) == ("", "unknown")
+
+
+def test_local_observation_comes_from_structured_response_not_requested_reference(tmp_path):
+    profile = {"profile_id": "local", "backend": "serve", "model": "14B", "model_ref": "requested",
+               "endpoint_url": "http://127.0.0.1:8765", "supports_agentic_workflow": True, "root_exists": True}
+    profile["profile_sha256"] = canonical_sha256(profile)
+    backend = type("Backend", (), {"chat": lambda *_args, **_kwargs: {"text": "ok", "model_ref": "response-model", "seed": 0}})()
+    result = LocalRouterAdapter("local_14b", profile, backend_factory=lambda *_: backend).execute(
+        _request(tmp_path, "local_14b", "openai_compatible_local/v1"))
+
+    assert (result.model_observed, result.model_observation_basis) == ("response-model", "structured_provider_response")
+
+
+def test_ollama_backend_uses_structured_response_model_not_requested_model():
+    backend = OllamaBackend(model="requested", transport=lambda *_: (200, {"model": "served", "message": {"content": "ok"}}))
+
+    response = backend.chat([], system="", max_tokens=1, temperature=0, seed=0)
+
+    assert response["model_ref"] == "ollama:served"
