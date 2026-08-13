@@ -1,0 +1,109 @@
+{
+ "ed25519": {
+  "schema": "flywheel.signed-receipt/v1",
+  "signature": {
+   "exportable": true,
+   "key_id": "rfc8032-test-key-1",
+   "public_key": "d75a980182b10ab7d54bfed3c964073a0ee172f3daa62325af021a68f707511a",
+   "sig": "747828fb08df005c5890cf7db0bfe854d2f08f7aaf9f1e158a140c4a61c6cb3c314ce0ac365c6aef1e316700dde4f6900ee580733be3e2e9598b4f4a257f9d0e",
+   "sig_alg": "ed25519",
+   "signed_over": [
+    "claim_sha256"
+   ]
+  }
+ },
+ "hmac": {
+  "schema": "flywheel.signed-receipt/v1",
+  "signature": {
+   "exportable": false,
+   "key_id": "legacy-local-fixture",
+   "public_key": "",
+   "sig": "7c4a6002b6f8c8ed7bef7a6af41c1bb75411c277540e3e93fbeab245fe11cb77",
+   "sig_alg": "hmac-sha256",
+   "signed_over": [
+    "claim_sha256"
+   ]
+  }
+ },
+ "receipt": {
+  "analysis_script_sha256": "sha256:9999999999999999999999999999999999999999999999999999999999999999",
+  "attribution": "CANDIDATE",
+  "base_weights_digest": "",
+  "budget": {
+   "declared": true,
+   "exhausted": false,
+   "retries_limit": 2,
+   "tokens_limit": 4096,
+   "wall_seconds_limit": 600
+  },
+  "candidate_sha256": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+  "checker_module": "harness.certificates.zarankiewicz",
+  "checker_source_sha256": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "claim_sha256": "sha256:1d5e8dca09c4b6e02e6423fbba69a168acd5ba7e0d70c71d0dcbaaf01c4bdbc8",
+  "coverage": {
+   "enumerated_fraction": "1",
+   "guarantee_weakens_above": null,
+   "predicate_exact": true,
+   "search_space_enumerated": true,
+   "stop_reason": "complete"
+  },
+  "criterion_id": "zarankiewicz.z_2_2",
+  "criterion_sha256": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+  "criterion_version": 1,
+  "denominator": {
+   "attempts": 8,
+   "cache_hit_tokens": 0,
+   "filter_hash": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+   "filter_id": "learn.difficulty.v1",
+   "filter_is_learned": false,
+   "group_size": 4,
+   "hits": 1,
+   "oracle_calls_consumed": 9,
+   "oracle_feedback_visible": false,
+   "parse_failures": 0,
+   "retries": 0,
+   "tasks_filtered_out": 0,
+   "tasks_proposed": 4,
+   "timeouts": 0,
+   "tokens_in": 120,
+   "tokens_out": 512,
+   "undecided": 0,
+   "unverifiable": 0
+  },
+  "does_not_prove": [
+   "NOT_PROVES_PUBLICATION_COMPLETENESS",
+   "NOT_PROVES_NOVELTY",
+   "NOT_PROVES_WHICH_WEIGHTS",
+   "NOT_PROVES_ORACLE_SPECIFIC_BOUNDARY"
+  ],
+  "evidence_kind": "CONSTRUCTIVE",
+  "executes_candidate_code": false,
+  "family": "zarankiewicz",
+  "family_instance_id": "z-7",
+  "generator_id": "g.v1",
+  "generator_seed": 7,
+  "graded_score": null,
+  "harness_version": "phase1c",
+  "held_out_agreement": "AGREE",
+  "incumbent_objective": "21",
+  "incumbent_source": "operator_search",
+  "input_tier_multiset": [],
+  "model_ref": "gate:deterministic",
+  "novelty_verdict": "UNKNOWN",
+  "objective": "21",
+  "oracle_qa_card_hash": "deadbeefdeadbeef",
+  "prompt_hash": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+  "raw_stdout_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "schema": "flywheel.receipt/v3",
+  "subject_sha256": "sha256:d5b0b3d6e97251f857601eb9846bbbee025f43c4b917d1bde0b12d57786407ee",
+  "tier": "construction_certificate",
+  "undecided_reason": "",
+  "unverifiable_reason": "",
+  "verdict": "PASS"
+ },
+ "schema": "flywheel.receipt-v3-fixtures/v1",
+ "unsigned": {
+  "schema": "flywheel.signed-receipt/v1",
+  "signature": null
+ }
+}

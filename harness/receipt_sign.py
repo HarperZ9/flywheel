@@ -39,7 +39,7 @@ import json
 from dataclasses import dataclass, replace
 
 from .ed25519_verify import verify as _ed_verify, Ed25519Error
-from .receipt import Receipt, SIGNED_OVER
+from .receipt import LEGACY_SCHEMA, Receipt, SIGNED_OVER
 from .receipt_fields import canonical
 
 EXPORTABLE_ALGS = frozenset({"ed25519"})
@@ -164,7 +164,12 @@ def pack_for_export(envelope: dict) -> dict:
         out["signature"] = None
         receipt = Receipt.from_dict(out["receipt"])
         limits = ("LOCAL_SIGNATURE_STRIPPED", "NOT_THIRD_PARTY_VERIFIABLE_SIGNATURE")
-        extras = receipt.extra_does_not_prove + tuple(
-            entry for entry in limits if entry not in receipt.does_not_prove())
-        out["receipt"] = replace(receipt, extra_does_not_prove=extras).to_dict()
+        missing = tuple(entry for entry in limits if entry not in receipt.does_not_prove())
+        if receipt.schema == LEGACY_SCHEMA:
+            # v3 deliberately did not bind its honesty list. Preserve that
+            # historical export shape and, critically, its signed preimage.
+            out["receipt"]["does_not_prove"].extend(missing)
+        else:
+            extras = receipt.extra_does_not_prove + missing
+            out["receipt"] = replace(receipt, extra_does_not_prove=extras).to_dict()
     return out

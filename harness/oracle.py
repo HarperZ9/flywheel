@@ -20,7 +20,6 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Protocol
 
-from .execution_input_protection import protect_execution_inputs
 from .task import Task
 from .verdict import Verdict, Execution, Attribution, is_dispositive, attribution_for
 
@@ -217,35 +216,9 @@ class PytestOracle:
 
     def verify_prepared(self, argv: list[str], task: Task,
                         input_refs: list[str]) -> tuple[OracleResult, dict, dict]:
-        """Run OS-locked populated inputs through argv, never through a shell."""
-        work = Path(task.workdir); snapshots = {}; clear_bytecode(work)
-        for ref in input_refs:
-            with (work / ref).open("rb") as stream:
-                blob = stream.read(1_048_577)
-            if len(blob) > 1_048_576:
-                raise ValueError("prepared pytest input exceeds byte limit")
-            snapshots[ref] = (blob, "sha256:" + hashlib.sha256(blob).hexdigest())
-        with protect_execution_inputs([work / ref for ref in input_refs]) as protection:
-            proc = spawn_killable([*argv, f"--junitxml={JUNIT_NAME}", "-q"], cwd=work,
-                shell=False, env=run_env(), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            try:
-                proc.communicate(timeout=self.timeout); rc = proc.returncode
-            except subprocess.TimeoutExpired:
-                _kill_tree(proc)
-                try: proc.communicate(timeout=10)
-                except Exception: pass
-                rc = 124
-            canonical = _pytest_canonical(work)
-        command = {"args": ["python", "-m", "pytest", *argv[3:]],
-            "targets": list(dict.fromkeys(arg.split("::", 1)[0] for arg in argv[3:]))}
-        artifact = {"schema": "flywheel.pytest-result/v1", "command": command,
-            "execution_input_protection": protection,
-            "inputs": [{"ref": ref, "sha256": claimed, "bytes": len(blob)}
-                       for ref, (blob, claimed) in snapshots.items()],
-            "outcomes": canonical.splitlines(), "return_code": rc}
-        result = OracleResult(passed=rc == 0 and _pytest_ran_a_real_pass(work), cmd="",
-            output_hash=canonical_hash("pytest", work, rc), stdout_excerpt="", rc=rc)
-        return result, artifact, snapshots
+        """Run populated inputs through the protected prepared-pytest route."""
+        from .pytest_prepared import verify_prepared
+        return verify_prepared(self, argv, task, input_refs)
 
     def verify(self, candidate: str, task: Task) -> OracleResult:
         cpath = task.candidate_full()

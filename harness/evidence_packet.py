@@ -3,9 +3,10 @@ from __future__ import annotations
 import hashlib, json, os, shlex, sys, tempfile
 from pathlib import Path
 from .bundle import LIMITS as BUNDLE_LIMITS, SCHEMA as BUNDLE_SCHEMA, pack_bundle, safe_relative
+from .checker_identity import checker_source as _checker_source
 from .evidence_json import admit_artifact_ref, canonical_bytes, canonical_sha256, strict_load_json
-from .evidence_packet_validation import (DNP as _DNP, MAX_FILE as _MAX_FILE,
-    MAX_JSON as _MAX_JSON, SCHEMA, criterion_basis as _basis,
+from .evidence_packet_validation import (DNP as _DNP, MAX_FILE as _MAX_FILE, MAX_JSON as _MAX_JSON,
+    SCHEMA, criterion_basis as _basis,
     criterion_fact as _criterion_fact, digest as _sha, named_refs as _named_refs,
     project as _projection, verify_journey_packet)
 from .execution_input_protection import ExecutionInputProtectionUnavailable
@@ -13,6 +14,7 @@ from .oracle_registry import default_registry
 from .receipt import Receipt
 from .receipt_fields import Budget, Denominator, EvidenceKind, Tier
 from .receipt_sign import unsigned
+from .runtime_descriptor import RUNTIME_LIMITS
 from .task import Task
 from .verdict import Attribution, Verdict
 CHECK_SCHEMA = "flywheel.evidence-check/v1"
@@ -83,19 +85,6 @@ def _pytest_command(raw: str, root: Path, carried: set[str]) -> tuple[list[str],
         if ref not in carried: raise ValueError(f"pytest target {ref!r} is not carried raw evidence")
         args.append(ref + ("::" + suffix if suffix else "")); targets.append(ref)
     return [sys.executable, "-m", "pytest", *args[3:]], {"args": args, "targets": list(dict.fromkeys(targets))}
-def _oracle_source(oracle) -> tuple[str, bytes]:
-    module = type(oracle).__module__; path = Path(getattr(sys.modules.get(module), "__file__", ""))
-    if not path.is_file() or path.suffix != ".py": raise ValueError("registered oracle source is unavailable")
-    sources = [(module, path.read_bytes())]
-    if oracle.oracle_type == "pytest":
-        protection = ExecutionInputProtectionUnavailable.__module__
-        dependency = Path(getattr(sys.modules.get(protection), "__file__", ""))
-        if not dependency.is_file(): raise ValueError("execution protection source is unavailable")
-        sources.append((protection, dependency.read_bytes()))
-    carried = {"schema": "flywheel.checker-source-set/v1", "sources": [
-        {"module": name, "sha256": _sha(blob), "source": blob.decode("utf-8", "strict")}
-        for name, blob in sorted(sources)]}
-    return module, canonical_bytes(carried)
 def _denominator(verdict: str, timed_out: bool, filter_hash: str) -> Denominator:
     return Denominator(attempts=1, group_size=1, oracle_calls_consumed=1,
         hits=int(verdict == "PASS"), undecided=int(verdict == "UNDECIDED"),
@@ -149,21 +138,22 @@ def run_journey_check(journey: dict, claim_id: str, oracle_id: str, candidate: P
     oracle_error = None
     try:
         with tempfile.TemporaryDirectory(prefix="flywheel-evidence-") as temp:
-            work = Path(temp)
+            work = Path(temp) / "input"; work.mkdir()
             for ref, (blob, _) in before.items():
                 target = work / safe_relative(ref)
                 target.parent.mkdir(parents=True, exist_ok=True)
                 target.write_bytes(blob)
             if hasattr(entry.oracle, "timeout"):
                 entry.oracle.timeout = ctx["timeout_seconds"]
+            execution_before = _snap(work, list(before))
             try:
                 if entry.oracle.oracle_type == "pytest":
-                    result, artifact, execution_before = entry.oracle.verify_prepared(
+                    result, artifact, prepared_before = entry.oracle.verify_prepared(
                         oracle_argv, Task(ctx["task_id"], ctx["prompt"], entry.domain,
                             "", str(work), candidate_ref), list(before))
+                    if prepared_before != execution_before: raise ValueError("prepared input snapshot drift")
                     output = canonical_bytes(artifact)
                 else:
-                    execution_before = _snap(work, list(before))
                     task = Task(ctx["task_id"], ctx["prompt"], entry.domain,
                                 ctx["oracle_cmd"], str(work), candidate_ref)
                     result = entry.oracle.verify(source, task)
@@ -199,12 +189,25 @@ def run_journey_check(journey: dict, claim_id: str, oracle_id: str, candidate: P
     raw = [{"ref": ref, "sha256": claimed, "bytes": len(blob)}
            for ref, (blob, claimed) in before.items()]
     raw.append({"ref": output_ref, "sha256": _sha(output), "bytes": len(output)})
-    basis = _basis(journey, claims[claim_id], entry.domain); module, checker = _oracle_source(entry.oracle)
+    runtime = artifact["runtime"] if entry.oracle.oracle_type == "pytest" else None
+    basis = _basis(journey, claims[claim_id], entry.domain)
+    module, checker, runtime_sha = _checker_source(entry.oracle, runtime)
     denominator = _denominator(verdict, timed_out, _sha(canonical_bytes(basis)))
     closed = {"command": command, "output_hash": result.output_hash, "return_code": result.rc,
               "execution": execution, "attribution": attribution, "verdict": verdict,
               "denominator": denominator.to_dict()}
     protection = artifact["execution_input_protection"] if entry.oracle.oracle_type == "pytest" else "not-applicable"
+    coverage = {**basis, "oracle_type": entry.oracle.oracle_type,
+        "candidate_ref": candidate_ref, "execution_input_protection": protection,
+        "raw_artifacts": raw, "oracle_output_ref": output_ref,
+        "check_result": closed}
+    limits = entry.does_not_prove
+    if entry.oracle.oracle_type == "pytest":
+        coverage.update(execution_namespace=artifact["execution_namespace"],
+            candidate_provenance=artifact["candidate_provenance"],
+            runtime_descriptor=runtime,
+            runtime_descriptor_sha256=runtime_sha)
+        limits += RUNTIME_LIMITS
     receipt = Receipt(criterion_id=f"evidence-journey/{journey['journey_id']}/{claim_id}",
         criterion_version=1, criterion_sha256=_sha(canonical_bytes(basis)), family="evidence-journey",
         family_instance_id=journey["journey_id"], generator_id="submitted-candidate", generator_seed=0,
@@ -214,15 +217,12 @@ def run_journey_check(journey: dict, claim_id: str, oracle_id: str, candidate: P
         held_out_agreement="NOT_RUN", evidence_kind=EvidenceKind.COMPUTATIONAL,
         tier=Tier.EXECUTION_TEST, verdict=Verdict(verdict), attribution=Attribution(attribution),
         objective=claim_id, incumbent_objective="", incumbent_source="",
-        coverage={**basis, "oracle_type": entry.oracle.oracle_type,
-                  "candidate_ref": candidate_ref, "execution_input_protection": protection,
-                  "raw_artifacts": raw,
-                  "oracle_output_ref": output_ref, "check_result": closed},
+        coverage=coverage,
         raw_stdout_sha256=_sha(output), analysis_script_sha256=_sha(checker), denominator=denominator,
         budget=Budget(ctx["timeout_seconds"], 0, 0, timed_out), model_ref="submitted",
         base_weights_digest="", harness_version="evidence-journey/v1",
         unverifiable_reason=result.unverifiable_reason, undecided_reason=result.undecided_reason,
-        extra_does_not_prove=entry.does_not_prove)
+        extra_does_not_prove=limits)
     path = admit_artifact_ref(root, receipt_ref, must_exist=False); path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(unsigned(receipt), indent=1, sort_keys=True), encoding="utf-8")
     names = ("attempts", "oracle_calls_consumed", "hits", "undecided", "unverifiable", "timeouts")
@@ -231,6 +231,8 @@ def run_journey_check(journey: dict, claim_id: str, oracle_id: str, candidate: P
         "oracle_id": entry.domain, "oracle_type": entry.oracle.oracle_type,
         "execution": execution, "attribution": attribution, "claim_id": claim_id,
         "execution_input_protection": protection,
+        "candidate_provenance": coverage.get("candidate_provenance"),
+        "runtime_descriptor_sha256": runtime_sha,
         "claim_verdict_before": claims[claim_id]["verdict"], "receipt_ref": receipt_ref,
         "receipt_claim_sha256": receipt.claim_sha256(), "raw_artifact_refs": [r["ref"] for r in raw],
         "denominator": {name: getattr(denominator, name) for name in names},
@@ -241,7 +243,8 @@ def pack_journey_packet(out_dir: Path, *, journey: dict, artifact_root: Path) ->
     root = Path(artifact_root).resolve(strict=True); receipt_refs = sorted(view["receipt_refs"])
     raw_refs = sorted(_named_refs(journey, "raw_artifact_refs"))
     if not receipt_refs or not raw_refs: raise ValueError("journey packet requires receipts and raw evidence")
-    envelopes, receipt_facts, criteria, checkers = [], [], [], {}; registry = default_registry()
+    envelopes, receipt_facts, criteria, checkers, checker_runtime = [], [], [], {}, {}
+    registry = default_registry()
     raw_facts, raw_blobs = [], {}
     for index, ref in enumerate(raw_refs):
         blob = _read(admit_artifact_ref(root, ref), _MAX_FILE); raw_blobs[ref] = blob
@@ -260,9 +263,13 @@ def pack_journey_packet(out_dir: Path, *, journey: dict, artifact_root: Path) ->
         if claim is None or ref not in claim.get("receipt_refs", []) or receipt.verdict.value != claim["verdict"]: raise ValueError(f"receipt {ref} changes its claim")
         entry = registry.entry(receipt.coverage.get("oracle_id", ""))
         if entry is None or type(entry.oracle).__module__ != receipt.checker_module: raise ValueError(f"receipt {ref} does not name a registered checker")
-        module, source = _oracle_source(entry.oracle)
+        runtime = receipt.coverage.get("runtime_descriptor")
+        module, source, runtime_sha = _checker_source(entry.oracle, runtime)
         if _sha(source) != receipt.checker_source_sha256: raise ValueError(f"checker source drift for {module}")
+        if runtime_sha != receipt.coverage.get("runtime_descriptor_sha256"):
+            raise ValueError(f"checker runtime drift for {module}")
         name = f"oracles/{entry.oracle.oracle_type}-{_sha(source)[7:23]}.json"; checkers[name] = source.decode()
+        checker_runtime[name] = runtime_sha
         expected = receipt.coverage.get("raw_artifacts", [])
         if not expected or any(actual.get(item.get("ref")) != item for item in expected):
             raise ValueError("receipt raw evidence is omitted or drifted")
@@ -272,7 +279,8 @@ def pack_journey_packet(out_dir: Path, *, journey: dict, artifact_root: Path) ->
         receipt_facts.append({"ref": ref, "claim_id": receipt.objective, "claim_sha256": receipt.claim_sha256()})
     criteria.sort(key=lambda item: (item["claim_id"], item["criterion_id"]))
     receipt_facts.sort(key=lambda item: item["claim_sha256"])
-    checker_manifest = [{"packet_path": "checker/" + name, "sha256": _sha(source.encode()), "name": name}
+    checker_manifest = [{"packet_path": "checker/" + name, "sha256": _sha(source.encode()),
+        "name": name, "runtime_descriptor_sha256": checker_runtime[name]}
         for name, source in sorted(checkers.items()) if name.startswith("oracles/")]
     pack = {"schema": BUNDLE_SCHEMA, "receipt_count": len(envelopes),
             "raw_artifact_count": len(raw_facts), "checker_count": len(checker_manifest),
@@ -284,11 +292,8 @@ def pack_journey_packet(out_dir: Path, *, journey: dict, artifact_root: Path) ->
     criterion["criterion_sha256"] = canonical_sha256(criterion); out = Path(out_dir)
     if out.exists() and any(out.iterdir()): raise ValueError("packet output directory must be empty")
     pack_bundle(out, envelopes=envelopes, criterion=criterion, checker_sources=checkers,
-        qa_card={"schema": "flywheel.oracle-qa-card/v2", "passed": False,
-                 "reason": "no aggregate QA card is asserted by this packet"},
-        tree_head={"schema": "flywheel.evidence-journey-head/v1", "size": len(journey["events"]),
-                   "root": "sha256:" + str(journey["event_head_sha256"])})
+        qa_card={"schema": "flywheel.oracle-qa-card/v2", "passed": False, "reason": "no aggregate QA card is asserted by this packet"},
+        tree_head={"schema": "flywheel.evidence-journey-head/v1", "size": len(journey["events"]), "root": "sha256:" + str(journey["event_head_sha256"])})
     path = out / "manifest.json"; manifest = strict_load_json(path.read_bytes())
-    manifest["does_not_prove"] = list(BUNDLE_LIMITS) + list(_DNP)
-    path.write_text(json.dumps(manifest, indent=1, sort_keys=True), encoding="utf-8")
-    return verify_journey_packet(out)
+    manifest["does_not_prove"] = list(BUNDLE_LIMITS) + list(_DNP); path.write_text(
+        json.dumps(manifest, indent=1, sort_keys=True), encoding="utf-8"); return verify_journey_packet(out)

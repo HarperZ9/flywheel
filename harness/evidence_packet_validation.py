@@ -5,8 +5,11 @@ import hashlib
 from pathlib import Path
 from .bundle import LIMITS as BUNDLE_LIMITS, SCHEMA as BUNDLE_SCHEMA
 from .bundle import safe_relative, verify_bundle
+from .checker_identity import validate_checker_source
 from .evidence_json import canonical_bytes, canonical_sha256, strict_load_json
+from .pytest_result_validation import validate_pytest_result
 from .receipt import Receipt
+from .runtime_descriptor import RUNTIME_LIMITS
 from .verdict import Attribution, Execution, Verdict
 SCHEMA = "flywheel.evidence-packet/v1"
 CHECK_KEYS = frozenset(("command", "output_hash", "return_code", "execution",
@@ -17,7 +20,7 @@ DNP = (
     "NOT_PROVES_EVIDENCE_COMPLETENESS: carried artifacts prove what was packed, not "
     "that no relevant evidence was omitted before packing.",
     "NOT_PROVES_LIVE_PROVIDER_STATE: offline recheck makes no provider or network call.", "NOT_PROVES_ORIGIN_AUTHENTICITY: an unsigned packet has no authenticated author.",
-    "NOT_PROVES_REHASH_RESISTANCE: self-carried hashes need an external manifest anchor.")
+    "NOT_PROVES_REHASH_RESISTANCE: self-carried hashes need an external manifest anchor.") + RUNTIME_LIMITS
 MAX_JSON, MAX_FILE, MAX_FILES, MAX_DEPTH = 1_048_576, 2_097_152, 1024, 32
 def digest(data: bytes) -> str:
     return "sha256:" + hashlib.sha256(data).hexdigest()
@@ -114,35 +117,6 @@ def _command(check: dict, receipt: Receipt, raw: dict[str, dict]) -> None:
         if targets != derived: raise ValueError("pytest target list contradicts command")
     elif targets or args != [receipt.coverage.get("oracle_type")]:
         raise ValueError("non-pytest command is not canonical")
-def _pytest_result(receipt: Receipt, check: dict, result_blob: bytes,
-                   raw: dict[str, dict], filter_hash: str) -> None:
-    result = strict_load_json(result_blob, max_depth=8)
-    required = {"schema", "command", "execution_input_protection", "inputs", "outcomes", "return_code"}
-    if set(result) != required or result["schema"] != "flywheel.pytest-result/v1":
-        raise ValueError("pytest result artifact is not closed")
-    output_ref = receipt.coverage.get("oracle_output_ref")
-    inputs = [item for ref, item in raw.items() if ref != output_ref]
-    if result["command"] != check["command"] or result["inputs"] != inputs:
-        raise ValueError("pytest result command or inputs drift")
-    protection = receipt.coverage.get("execution_input_protection")
-    if protection != "windows-share-lock/v1" or result["execution_input_protection"] != protection:
-        raise ValueError("execution input protection is absent or drifted")
-    outcomes, rc = result["outcomes"], result["return_code"]
-    if (type(outcomes) is not list or outcomes != sorted(set(outcomes))
-            or any(type(item) is not str or not item.endswith(("=PASS", "=FAIL", "=SKIP"))
-                   for item in outcomes) or type(rc) is not int):
-        raise ValueError("pytest result outcomes or return code are malformed")
-    value = hashlib.sha256(("\n".join(outcomes) + f"\n{rc}").encode()).hexdigest()[:16]
-    timed_out = rc == 124; verdict = "PASS" if rc == 0 and any(
-        item.endswith("=PASS") for item in outcomes) else "FAIL"
-    expected = {"command": result["command"], "output_hash": value,
-        "return_code": rc, "execution": "TIMEOUT" if timed_out else "COMPLETED",
-        "attribution": "CANDIDATE", "verdict": verdict,
-        "denominator": _denominator(verdict, timed_out, filter_hash)}
-    if check != expected: raise ValueError("check result contradicts carried pytest result")
-    if (receipt.verdict.value != verdict or receipt.attribution.value != "CANDIDATE"
-            or receipt.denominator.to_dict() != expected["denominator"]):
-        raise ValueError("receipt contradicts carried pytest result")
 def criterion_fact(receipt: Receipt, claim: dict, result_blob: bytes,
                    journey: dict) -> dict:
     check = receipt.coverage.get("check_result")
@@ -170,7 +144,8 @@ def criterion_fact(receipt: Receipt, claim: dict, result_blob: bytes,
     if output_ref not in raw or raw[output_ref]["sha256"] != receipt.raw_stdout_sha256:
         raise ValueError("oracle output ref drift")
     if receipt.coverage.get("oracle_type") == "pytest":
-        _pytest_result(receipt, check, result_blob, raw, filter_hash)
+        validate_pytest_result(receipt, check, result_blob, raw, filter_hash,
+                               _denominator)
     else:
         if (Verdict(check.get("verdict")) is not receipt.verdict
                 or Attribution(check.get("attribution")) is not receipt.attribution
@@ -262,8 +237,14 @@ def verify_journey_packet(packet_dir: Path, *, expected_manifest_sha256: str | N
             expected_receipts.append({"ref": fact["ref"], "claim_id": receipt.objective,
                                       "claim_sha256": receipt.claim_sha256()})
             name = f"oracles/{receipt.coverage.get('oracle_type')}-{receipt.checker_source_sha256[7:23]}.json"
+            runtime = receipt.coverage.get("runtime_descriptor")
+            runtime_sha = receipt.coverage.get("runtime_descriptor_sha256")
             expected_checkers[name] = {"packet_path": "checker/" + name,
-                                       "sha256": receipt.checker_source_sha256, "name": name}
+                "sha256": receipt.checker_source_sha256, "name": name,
+                "runtime_descriptor_sha256": runtime_sha}
+            source_blob = _read_bounded(root / safe_relative("checker/" + name), MAX_FILE)
+            validate_checker_source(source_blob, checker_module=receipt.checker_module,
+                oracle_type=receipt.coverage.get("oracle_type"), runtime=runtime)
             seen.add(receipt.claim_sha256())
         expected_criteria.sort(key=lambda item: (item["claim_id"], item["criterion_id"]))
         expected_receipts.sort(key=lambda item: item["claim_sha256"])

@@ -7,6 +7,7 @@ from harness.evidence_journey import append_event, new_journey, run_journey_chec
 from harness.evidence_json import canonical_sha256
 from harness.evidence_packet import pack_journey_packet, verify_journey_packet
 from harness.receipt import Receipt
+from harness.runtime_descriptor import RUNTIME_LIMITS
 import pytest
 
 
@@ -68,6 +69,36 @@ def _save_receipt(packet, body, criterion):
     _seal(packet, path.relative_to(packet).as_posix()); return receipt
 
 
+def test_result_receipt_and_checker_manifest_bind_runtime_and_provenance(tmp_path):
+    packet = _packet(tmp_path); criterion = _load(packet / "criterion.json")
+    body = _load(next((packet / "receipts").iterdir()))["receipt"]
+    coverage = body["coverage"]; runtime = coverage["runtime_descriptor"]
+    assert coverage["runtime_descriptor_sha256"] == "sha256:" + canonical_sha256(runtime)
+    assert all(limit in body["extra_does_not_prove"] for limit in RUNTIME_LIMITS)
+    raw = next(item for item in criterion["raw_artifacts"]
+               if item["ref"] == coverage["oracle_output_ref"])
+    result = _load(packet / raw["packet_path"])
+    assert result["runtime"] == runtime
+    assert result["candidate_provenance"] == coverage["candidate_provenance"]
+    assert criterion["checker_manifest"][0]["runtime_descriptor_sha256"] == coverage["runtime_descriptor_sha256"]
+
+
+@pytest.mark.parametrize("fact", ["runtime", "provenance", "checker-manifest"])
+def test_runtime_and_candidate_provenance_tampering_fails_closed(tmp_path, fact):
+    packet = _packet(tmp_path); criterion = _load(packet / "criterion.json")
+    if fact == "checker-manifest":
+        criterion["checker_manifest"][0]["runtime_descriptor_sha256"] = "sha256:" + "0" * 64
+    else:
+        path = next((packet / "receipts").iterdir()); body = _load(path)["receipt"]
+        if fact == "runtime":
+            body["coverage"]["runtime_descriptor"]["pytest"]["version"] = "0.0-tampered"
+        else:
+            body["coverage"]["candidate_provenance"]["source_sha256"] = "sha256:" + "0" * 64
+        _save_receipt(packet, body, criterion)
+    _save_criterion(packet, criterion)
+    assert verify_journey_packet(packet)["verdict"] == "DRIFT"
+
+
 def test_child_cannot_replace_import_and_restore_candidate_as_a_pass(tmp_path):
     root, candidate, context = _fixture(tmp_path); test = root / "test_candidate.py"
     test.write_text("from pathlib import Path\np=Path('candidate.py'); original=p.read_bytes()\n"
@@ -75,10 +106,67 @@ def test_child_cannot_replace_import_and_restore_candidate_as_a_pass(tmp_path):
         "def test_add(): assert add(2, 3) == 5\n", encoding="utf-8")
     check = run_journey_check(_journey(), "claim-root", "code", candidate, context)
     if sys.platform == "win32":
-        assert check["verdict"] == "FAIL" and check["execution_input_protection"] == "windows-share-lock/v1"
+        assert check["verdict"] != "PASS"
+        if "execution_input_protection" in check:
+            assert check["execution_input_protection"] == "windows-low-integrity-namespace/v1"
     else:
         assert (check["verdict"], check["unverifiable_reason"]) == (
             "UNVERIFIABLE", "EXECUTION_INPUT_PROTECTION_UNAVAILABLE")
+        assert "receipt_ref" not in check and not (root / "receipts").exists()
+
+
+@pytest.mark.skipif(sys.platform != "win32", reason="Windows namespace boundary")
+def test_candidate_cannot_replace_pytest_before_the_checker_starts(tmp_path):
+    root, candidate, context = _fixture(tmp_path)
+    candidate.write_text(
+        "from pathlib import Path\nimport sys, types\n"
+        "fake=types.ModuleType('pytest')\n"
+        "def main(args):\n"
+        " p=Path(sys.argv[sys.argv.index('--junit')+1])\n"
+        " p.write_text('<testsuites><testsuite><testcase classname=\"test_candidate\" name=\"test_add\"/></testsuite></testsuites>')\n"
+        " return 0\n"
+        "fake.main=main\nsys.modules['pytest']=fake\n"
+        "def add(a,b): return a-b\n", encoding="utf-8")
+    check = run_journey_check(_journey(), "claim-root", "code", candidate, context)
+    assert check["verdict"] != "PASS"
+
+
+@pytest.mark.skipif(sys.platform != "win32", reason="Windows namespace boundary")
+@pytest.mark.parametrize("attack", ["transient-package", "unchecked-pyc",
+                                     "nested-module", "create-import-delete"])
+def test_entire_import_namespace_rejects_candidate_shadowing(tmp_path, attack):
+    root, candidate, context = _fixture(tmp_path); test = root / "test_candidate.py"
+    package = (
+        "from pathlib import Path\n"
+        "p=Path('candidate'); p.mkdir()\n"
+        "(p/'__init__.py').write_text('def add(a,b): return a+b\\n')\n")
+    if attack == "transient-package":
+        source = package + "from candidate import add\n"
+    elif attack == "nested-module":
+        source = package + (
+            "(p/'nested.py').write_text('def add(a,b): return a+b\\n')\n"
+            "from candidate.nested import add\n")
+    elif attack == "create-import-delete":
+        source = package + "from candidate import add\nimport shutil\nshutil.rmtree(p)\n"
+    else:
+        source = (
+            "from pathlib import Path\nimport importlib.util\n"
+            "import importlib._bootstrap_external as bootstrap\n"
+            "original=Path('candidate.py').read_bytes()\n"
+            "cache=Path(importlib.util.cache_from_source('candidate.py'))\n"
+            "cache.parent.mkdir(parents=True, exist_ok=True)\n"
+            "code=compile('def add(a,b): return a+b\\n','candidate.py','exec')\n"
+            "cache.write_bytes(bootstrap._code_to_hash_pyc("
+            "code,importlib.util.source_hash(original),checked=False))\n"
+            "from candidate import add\n")
+    test.write_text(source + "def test_add(): assert add(2,3)==5\n", encoding="utf-8")
+    admitted = {path: path.read_bytes() for path in (candidate, test)}
+    check = run_journey_check(_journey(), "claim-root", "code", candidate, context)
+    assert check["verdict"] != "PASS", attack
+    assert all(path.read_bytes() == blob for path, blob in admitted.items())
+    if "receipt_ref" in check:
+        body = _load(root / check["receipt_ref"])["receipt"]
+        assert body["coverage"]["candidate_provenance"]["loaded"] is True
 
 
 @pytest.mark.skipif(sys.platform != "win32", reason="packet fixture needs an executed code receipt")

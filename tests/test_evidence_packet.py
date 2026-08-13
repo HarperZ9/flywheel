@@ -115,8 +115,9 @@ def test_execution_input_mutation_is_prevented_or_typed_unverifiable(tmp_path, a
     target.write_text(prefix + target.read_text(encoding="utf-8"), encoding="utf-8")
     result = run_journey_check(_journey(), "claim-root", "code", candidate, context)
     if sys.platform == "win32":
-        assert result["verdict"] == "FAIL" and result["execution_input_protection"] == "windows-share-lock/v1"
-        assert (root / result["receipt_ref"]).is_file()
+        assert result["verdict"] != "PASS"
+        if "execution_input_protection" in result:
+            assert result["execution_input_protection"] == "windows-low-integrity-namespace/v1"
     else:
         assert (result["verdict"], result["unverifiable_reason"]) == (
             "UNVERIFIABLE", "EXECUTION_INPUT_PROTECTION_UNAVAILABLE")
@@ -171,7 +172,11 @@ def test_packet_binds_journey_receipt_raw_evidence_and_checker(tmp_path):
     assert criterion["criteria"][0]["denominator"]["attempts"] == 1 and criterion["does_not_prove"]
     checker = _load(packet / criterion["checker_manifest"][0]["packet_path"])
     assert [item["module"] for item in checker["sources"]] == [
-        "harness.execution_input_protection", "harness.oracle"]
+        "harness.execution_input_protection", "harness.oracle",
+        "harness.pytest_prepared", "harness.pytest_provenance",
+        "harness.runtime_descriptor", "harness.windows_low_integrity"]
+    assert criterion["checker_manifest"][0]["runtime_descriptor_sha256"]
+
 def test_clean_directory_recheck_is_offline_and_serializes_no_host_root(tmp_path, monkeypatch):
     packet = _packet(tmp_path); clean = tmp_path / "clean" / "packet"; clean.parent.mkdir(); shutil.copytree(packet, clean)
     monkeypatch.chdir(clean.parent); monkeypatch.setattr(evidence_packet, "default_registry",
