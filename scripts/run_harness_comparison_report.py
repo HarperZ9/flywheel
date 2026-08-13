@@ -10,7 +10,7 @@ from typing import Any
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from harness.file_backed_store import FileBackedHarnessStore  # noqa: E402
 from harness.cross_harness_executor import comparison_key as executor_comparison_key, legacy_comparison_key  # noqa: E402
-from harness.cross_harness_types import project_model_identity  # noqa: E402
+from harness.cross_harness_types import model_observation_pair_error, project_model_identity  # noqa: E402
 from harness.provider_roles import provider_role as canonical_provider_role  # noqa: E402
 SCHEMA = "harness.comparison-report/v1"
 def now_utc() -> str:
@@ -170,14 +170,14 @@ def _quality_duel_rows(data: dict[str, Any], path_text: str) -> list[dict[str, A
             failure_class=row.get("failure_class", ""),
         ))
     return metric_rows
-
-
 def _row_comparison_key(row: dict[str, Any]) -> str:
     return executor_comparison_key(row) if project_model_identity(row)["identity_schema"] == "v2" else legacy_comparison_key(row)
 def _cross_harness_rows(data: dict[str, Any], path_text: str) -> list[dict[str, Any]]:
     rows = [row for row in data.get("rows", []) if isinstance(row, dict) and str(row.get("phase", "")) == "spark"]
     rows = [row for row in rows if str(row.get("provider_role", "")) in {"codex_harness", "flywheel_harness"}]
     for row in rows:
+        identity = project_model_identity(row); error = model_observation_pair_error(identity["model_observed"], identity["model_observation_basis"])
+        if identity["identity_schema"] == "v2" and error: raise ValueError("cross-harness invalid model observation pair")
         if row.get("comparison_key") != _row_comparison_key(row): raise ValueError("cross-harness comparison hash mismatch")
     for task in sorted({str(row.get("task_id", "")) for row in rows}):
         for repetition in sorted({int(row.get("repetition", 0) or 0) for row in rows if str(row.get("task_id", "")) == task}):

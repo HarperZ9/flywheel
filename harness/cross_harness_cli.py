@@ -10,6 +10,7 @@ from .adapter_runtime_matrix import _endpoint_gate_result
 from .cross_harness_adapters import DirectCodexAdapter, FlywheelRouterAdapter, LocalRouterAdapter
 from .cross_harness_artifacts import canonical_sha256, recheck_attempt_receipt, snapshot_source_tree, write_artifact_index
 from .cross_harness_executor import SHARED_TOOL_POLICY, execute_cross_harness_manifest, resolve_task_ids
+from .cross_harness_types import model_observation_pair_error
 
 def _pairs(rows: list[tuple[str, Any]]) -> dict[str, Any]:
     out = {}
@@ -70,8 +71,8 @@ def _admission_identity_code(row: dict[str, Any], task: dict[str, Any], spec: di
     mismatch = next((code for code, observed, expected in checks if observed != expected), "")
     if mismatch: return mismatch
     observed, basis = row.get("model_observed", ""), row.get("model_observation_basis", "")
+    if model_observation_pair_error(observed, basis): return "admission_model_observation_invalid"
     if observed and observed != spec.get("requested_model_reference"): return "admission_observed_model_mismatch"
-    if not observed and basis != "unknown": return "admission_observation_basis_mismatch"
     if str(row.get("provider_role", "")).startswith("local_"):
         profiles, gates = runtime.get("endpoint_profile_matches", []), runtime.get("endpoint_gate_matches", [])
         profile = profiles[0] if len(profiles) == 1 and isinstance(profiles[0], dict) else {}

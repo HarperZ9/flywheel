@@ -175,7 +175,7 @@ def test_unavailable_row_hashes_enforcement_first_and_preserves_gate_evidence_an
 def test_returned_unverifiable_attempt_rechecks_receipt_and_preserves_workspace(tmp_path):
     source = tmp_path / "source"; source.mkdir()
     result = AdapterResult("returned", '{"artifacts":{"result.json":{}}}', [{"authorization_token": "hide", "event": "read"}], 7, "14B", "seeded", "", "",
-                           {"memory": None}, {"tokens": None}, ["read"], [])
+                           {"memory": None}, {"tokens": None}, ["read"], [], "structured_provider_response")
     run = execute_cross_harness_manifest(
         _one_task(source, expected=("result.json",), oracle={"expected_artifacts": ["result.json"]}),
         _runtime(["local_14b"]), {"local_14b": FakeAdapter(result=result)},
@@ -210,7 +210,7 @@ def test_successful_attempt_cleans_workspace_only_after_oracle_and_receipt_reche
               "receipt_input_sha256s": {"fixture.json": input_hash}, "mcp_healthy": False}
     output = json.dumps({"artifacts": {"report.json": report,
                                        "report.md": "# agt-001-index-fallback-integrity\n"}})
-    result = AdapterResult("returned", output, [], 1, "14B", "seeded", "", "", {}, {}, [], [])
+    result = AdapterResult("returned", output, [], 1, "14B", "seeded", "", "", {}, {}, [], [], "structured_provider_response")
     manifest = _one_task(source, task_id="agt-001-index-fallback-integrity",
                          expected=("report.json", "report.md"), inputs=("fixture.json",),
                          oracle={"checker_id": "index_fallback_integrity/v1", "fixture": "fixture.json",
@@ -226,7 +226,7 @@ def test_oracle_malformed_normalizes_to_execution_malformed_and_preserves_worksp
     source = tmp_path / "source"; source.mkdir()
     fixture = source / "fixture.json"; fixture.write_text('{"state_axes":[]}', encoding="utf-8")
     result = AdapterResult("returned", '{"artifacts":{"one.json":{},"one.md":"bad"}}', [], 1,
-                           "14B", "seeded", "", "", {}, {}, [], [])
+                           "14B", "seeded", "", "", {}, {}, [], [], "structured_provider_response")
     manifest = _one_task(source, expected=("one.json", "one.md"),
                          oracle={"checker_id": "shared_task_artifact/v1", "fixture": "fixture.json",
                                  "expected_artifacts": ["one.json", "one.md"]}, inputs=("fixture.json",))
@@ -242,7 +242,7 @@ def test_oracle_malformed_normalizes_to_execution_malformed_and_preserves_worksp
     assert Path(row["workspace_root"]).is_dir()
 def test_malformed_provider_envelope_preserves_exact_output_bytes(tmp_path):
     source = tmp_path / "source"; source.mkdir(); output = '{"not_artifacts":true}'
-    result = AdapterResult("returned", output, [], 1, "14B", "seeded", "", "", {}, {}, [], [])
+    result = AdapterResult("returned", output, [], 1, "14B", "seeded", "", "", {}, {}, [], [], "structured_provider_response")
     run = execute_cross_harness_manifest(_one_task(source, expected=("result.json",)), _runtime(["local_14b"]),
         {"local_14b": FakeAdapter(result=result)}, artifact_root=tmp_path / "artifacts", source_root=source,
         run_id="run", phase="local", selectors=["agt-001"], roles=["local_14b"], repetitions=1)
@@ -251,7 +251,7 @@ def test_malformed_provider_envelope_preserves_exact_output_bytes(tmp_path):
     assert Path(row["raw_output_path"]).read_bytes() == output.encode()
 def test_adapter_value_error_is_internal_not_malformed(tmp_path):
     source = tmp_path / "source"; source.mkdir()
-    nonfinite = AdapterResult("returned", "{}", [], 1, "14B", "seeded", "", "", {"memory": float("nan")}, {}, [], [])
+    nonfinite = AdapterResult("returned", "{}", [], 1, "14B", "seeded", "", "", {"memory": float("nan")}, {}, [], [], "structured_provider_response")
     for index, result in enumerate((ValueError("adapter bug"), nonfinite)):
         run = execute_cross_harness_manifest(_one_task(source), _runtime(["local_14b"]),
             {"local_14b": FakeAdapter(result=result)}, artifact_root=tmp_path / f"artifacts-{index}",
@@ -267,7 +267,7 @@ def test_secret_shaped_enforcement_is_rejected_before_artifact_write(tmp_path):
     assert not (Path(row["attempt_dir"]) / "enforcement.json").exists()
 def test_source_mutation_fails_run_and_preserves_attempt_workspace(tmp_path):
     source = tmp_path / "source"; source.mkdir()
-    result = AdapterResult("returned", '{"artifacts":{"result.json":{}}}', [], 1, "14B", "seeded", "", "", {}, {}, [], [])
+    result = AdapterResult("returned", '{"artifacts":{"result.json":{}}}', [], 1, "14B", "seeded", "", "", {}, {}, [], [], "structured_provider_response")
     adapter = FakeAdapter(result=result); original = adapter.execute
     adapter.execute = lambda request: ((source / "mutated.txt").write_text("changed"), original(request))[1]
     with pytest.raises(RuntimeError, match="source_tree_changed"):

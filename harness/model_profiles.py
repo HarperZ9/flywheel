@@ -2,8 +2,12 @@
 
 from __future__ import annotations
 
+import hashlib
+import json
 from pathlib import Path
 
+
+RELEASE_IDENTITY_PROVENANCE = Path(__file__).with_name("ollama-manifest-digest-provenance-v1.json")
 
 MODEL_PROFILES = {
     "14b": {
@@ -63,6 +67,33 @@ def release_profile(model: str) -> dict:
     profile = MODEL_PROFILES.get(model_key(model), {})
     release = profile.get("release")
     return dict(release) if isinstance(release, dict) else {}
+
+
+def validate_release_identity_provenance(path: Path = RELEASE_IDENTITY_PROVENANCE) -> dict:
+    """Validate the durable digest receipt against release constants without probing Ollama."""
+    try:
+        receipt = json.loads(Path(path).read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise ValueError("release identity provenance unreadable") from exc
+    if not isinstance(receipt, dict) or receipt.get("schema") != "harness.ollama-manifest-digest-provenance/v1":
+        raise ValueError("release identity provenance schema mismatch")
+    payload = {key: value for key, value in receipt.items() if key != "evidence_sha256"}
+    evidence = hashlib.sha256(json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+    if receipt.get("evidence_sha256") != evidence:
+        raise ValueError("release identity provenance evidence hash mismatch")
+    derivation = receipt.get("derivation")
+    expected_derivation = {"method": "sha256_exact_ollama_manifest_bytes", "source_kind": "Ollama manifest JSON bytes",
+                           "tool": "python-stdlib-hashlib.sha256", "tool_version": "Python 3.12.10"}
+    if derivation != expected_derivation:
+        raise ValueError("release identity provenance derivation mismatch")
+    expected = {profile["release"]["ollama_model_name"]: (profile["release"]["artifact_sha256"],
+                profile["release"]["ollama_manifest_digest"]) for profile in MODEL_PROFILES.values()}
+    rows = receipt.get("models") if isinstance(receipt.get("models"), list) else []
+    observed = {row.get("native_model_name"): (row.get("release_asset_sha256"), row.get("ollama_manifest_digest"))
+                for row in rows if isinstance(row, dict)}
+    if len(observed) != len(rows) or observed != expected:
+        raise ValueError("release identity provenance constants mismatch")
+    return receipt
 
 
 def release_root(model: str, base_root: Path) -> Path | None:

@@ -21,7 +21,7 @@ class UnattestedAdapter:
         return AvailabilityResult(True, "", "ready", {})
 
     def execute(self, request):
-        return AdapterResult("returned", '{"artifacts":{}}', [], 1, "untrusted-model", "unsupported", "", "", {}, {}, [], [],
+        return AdapterResult("returned", '{"artifacts":{}}', [], 1, "", "unsupported", "", "", {}, {}, [], [],
                              model_observation_basis="unknown")
 
 

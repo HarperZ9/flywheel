@@ -14,9 +14,9 @@ from urllib.parse import urlparse
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from harness.file_backed_store import FileBackedHarnessStore  # noqa: E402
-from harness.model_profiles import candidate_model_roots, model_key, model_profile, release_profile, release_root  # noqa: E402
+from harness.model_profiles import (candidate_model_roots, model_key, model_profile, release_profile, release_root,
+                                    validate_release_identity_provenance)  # noqa: E402
 from harness.provider_roles import provider_role  # noqa: E402
-
 DEFAULT_SERVE_URLS = {
     "14b": "http://127.0.0.1:8765",
     "32b": "http://127.0.0.1:8767",
@@ -210,6 +210,7 @@ def build_report(
     runtime_strategies: dict[str, str] | None = None,
     ollama_url: str,
 ) -> dict[str, Any]:
+    validate_release_identity_provenance()
     profiles: list[dict[str, Any]] = []
     serve_urls = serve_urls or {}
     runtime_strategies = runtime_strategies or {}

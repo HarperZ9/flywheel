@@ -45,8 +45,13 @@ and bind each local role to one trained release profile and digest.
 - `harness/cross_harness_executor.py`
 - `harness/cross_harness_adapters.py`
 - `harness/adapter_runtime_matrix.py`
+- `harness/model_profiles.py`
+- `harness/ollama-manifest-digest-provenance-v1.json`
+- `harness/local_agent.py`
+- `pyproject.toml` (package the provenance artifact)
 - endpoint profile/gate producers if expected digest fields must be emitted
-- focused tests for every modified surface
+- focused tests for every modified surface, including a bounded round-2
+  review regression file where existing frozen test files cannot grow
 
 The implementation must update this list before adding any unexpected file.
 
@@ -75,3 +80,9 @@ The implementation must update this list before adding any unexpected file.
 Approved for implementation-only work on 2026-08-12. No provider call, endpoint
 call, service start, weight load, publication, deployment or outreach is
 authorized by this spec.
+
+Round-2 implementation is code-complete under the same non-operational scope.
+The 470-test affected/adjacent slice and static gates pass; the bounded full
+suite timed out without a verdict. Independent terminal re-review and any live
+route or local activation remain separate gates, so the candidate remains
+quarantined and non-admitted.

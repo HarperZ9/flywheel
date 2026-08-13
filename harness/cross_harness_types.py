@@ -7,6 +7,18 @@ import re
 from typing import Any, Protocol
 
 MODEL_IDENTITY_FIELDS = ("model_id", "model_display_name", "requested_model_reference", "model_observed", "model_observation_basis")
+MODEL_OBSERVATION_BASES = frozenset({"structured_provider_event", "structured_provider_response"})
+
+
+def model_observation_pair_error(observed: Any, basis: Any) -> str:
+    """Return a stable error for an impossible v2 observation attestation pair."""
+    if not isinstance(observed, str) or not isinstance(basis, str):
+        return "model_observation_pair_not_strings"
+    if basis == "unknown":
+        return "" if observed == "" else "unknown_observation_must_be_empty"
+    if basis in MODEL_OBSERVATION_BASES:
+        return "" if observed.strip() else "structured_observation_must_be_nonempty"
+    return "unsupported_model_observation_basis"
 
 
 def project_model_identity(row: dict[str, Any]) -> dict[str, str]:

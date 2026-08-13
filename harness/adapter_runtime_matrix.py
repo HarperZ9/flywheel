@@ -120,12 +120,14 @@ def _runtime_row(
     role = str(row.get("provider_role", "")); selector = row.get("endpoint_selector") if isinstance(row.get("endpoint_selector"), dict) else {}
     modes = [str(item) for item in row.get("allowed_modes", []) if item] if isinstance(row.get("allowed_modes"), list) else []
     profiles = _profile_matches(selector, endpoint_profiles)
-    profile_code = next((_profile_failure(item, selector) for item in profiles if _profile_failure(item, selector)), "")
     auth = _auth_matches(role, endpoint_auth_status)
     needs_endpoint = role in {"local_14b", "local_32b"}
     needs_auth = role in {"codex_harness", "flywheel_harness", "claude_code"}
-    profile_ready = any(item["root_exists"] and item["supports_agentic_workflow"] for item in profiles) and not profile_code if needs_endpoint else True
-    gate_matches, gate_code = _endpoint_gate_result(profiles, endpoint_gate, expected_gate_run_id, now, max_age_seconds) if needs_endpoint and not profile_code else ([], "")
+    profile_code = ("endpoint_profile_selection_mismatch" if needs_endpoint and len(profiles) != 1 else
+                    _profile_failure(profiles[0], selector) if needs_endpoint else "")
+    profile_ready = len(profiles) == 1 and profiles[0]["root_exists"] and profiles[0]["supports_agentic_workflow"] and not profile_code if needs_endpoint else True
+    gate_evaluated = needs_endpoint and len(profiles) == 1 and not profile_code
+    gate_matches, gate_code = _endpoint_gate_result(profiles, endpoint_gate, expected_gate_run_id, now, max_age_seconds) if gate_evaluated else ([], "")
     auth_ready = any(item["configured"] for item in auth) if needs_auth else True
     blocking = []
     if str(row.get("adapter_state", "")) in {"needs_discovery", "needs_adapter"}:
@@ -148,7 +150,7 @@ def _runtime_row(
         "required_receipts": _strings(row.get("required_receipts")),
         "current_evidence": _strings(row.get("current_evidence")),
         "endpoint_profile_matches": profiles, "endpoint_profile_ready": profile_ready,
-        "endpoint_gate_matches": gate_matches, "endpoint_gate_ready": needs_endpoint and not gate_code,
+        "endpoint_gate_matches": gate_matches, "endpoint_gate_ready": gate_evaluated and not gate_code,
         "auth_matches": auth, "auth_ready": auth_ready, "manifest_ready": manifest_ready,
         "focused_run_ready": focused_ready, "blocking_gates": blocking,
         "non_execution": {"provider_execution": False, "endpoint_probe": False, "model_weight_read": False, "token_store_read": False},
@@ -218,13 +220,20 @@ def _gate_failure(gate: dict[str, Any], profile: dict[str, Any], run_id: str, no
         return "endpoint_gate_stale"
     if not run_id or gate.get("run_id") != run_id:
         return "endpoint_gate_run_mismatch"
-    checks = (
+    identity_checks = (
         (gate.get("selected_profile_id") != profile["profile_id"], "endpoint_gate_profile_mismatch"),
         (gate.get("model") != profile["model"], "endpoint_gate_model_mismatch"),
         (gate.get("backend") != profile["backend"], "endpoint_gate_backend_mismatch"),
         (gate.get("profile_sha256") != profile["profile_sha256"], "endpoint_gate_profile_hash_mismatch"),
         (gate.get("release_asset_sha256") != profile["release_asset_sha256"], "endpoint_gate_release_asset_sha256_mismatch"),
         (gate.get("expected_model_ref") != profile["model_ref"], "endpoint_gate_expected_ref_mismatch"),
+    )
+    identity_error = next((code for failed, code in identity_checks if failed), "")
+    if identity_error: return identity_error
+    producer_digest_failures = {"ollama_digest_missing": "endpoint_gate_ollama_digest_missing",
+                                "ollama_digest_mismatch": "endpoint_gate_ollama_digest_mismatch"}
+    if gate.get("failure_class") in producer_digest_failures: return producer_digest_failures[gate["failure_class"]]
+    checks = (
         (gate.get("observed_model_ref") != profile["model_ref"], "endpoint_gate_observed_ref_mismatch"),
         (gate.get("health_ok") is not True or gate.get("generation_ok") is not True
          or gate.get("failure_class") != "", "endpoint_gate_failed"),

@@ -282,7 +282,7 @@ def test_admission_binds_current_identity_and_blocks_only_affected_role(tmp_path
         if role == roles[1]:
             target, parts = row, path.split(".")
             for part in parts[:-1]: target = target[part]
-            target[parts[-1]] = value
+            target[parts[-1]] = value; row["model_observation_basis"] = "structured_provider_event" if path == "model_observed" else row["model_observation_basis"]
         bind_attempt_receipt(row, {}, receipt); rows.append(row)
     admission = tmp_path / "admission.json"
     admission.write_text(json.dumps({"schema": "harness.cross-harness-run-receipt/v1", "phase": "admission-smoke", "rows": rows}), encoding="utf-8")

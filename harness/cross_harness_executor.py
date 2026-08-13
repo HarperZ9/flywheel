@@ -7,7 +7,7 @@ from harness.cross_harness_artifacts import (bind_attempt_receipt, canonical_sha
     materialize_response_envelope, preflight_artifact_root, recheck_attempt_receipt, remove_readonly_tree,
     snapshot_source_tree, validate_execution_components, write_artifact_index)
 from harness.cross_harness_oracles import OracleContext, evaluate_task_oracle
-from harness.cross_harness_types import (AttemptRequest, metric_null_reasons, sanitize_evidence,
+from harness.cross_harness_types import (AttemptRequest, metric_null_reasons, model_observation_pair_error, sanitize_evidence,
     validate_elapsed_ms)
 class _MalformedAttempt(ValueError): pass
 SHARED_TOOL_POLICY = {
@@ -131,7 +131,6 @@ def expand_attempt_rows(
                 })
     return rows
 
-
 def _write_json(path: Path, value: Any) -> Path:
     path.write_text(json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False,
                                allow_nan=False) + "\n", encoding="utf-8", newline="")
@@ -232,13 +231,14 @@ def execute_cross_harness_manifest(
                                 raw = attempt / "output.txt"; raw.write_text(result.output_text, encoding="utf-8", newline=""); files[raw.name] = raw
                                 row.update(raw_output_path=str(raw), raw_output_sha256=hashlib.sha256(raw.read_bytes()).hexdigest())
                             elapsed_ms = validate_elapsed_ms(result.elapsed_ms)
+                            observation_error = model_observation_pair_error(result.model_observed, result.model_observation_basis)
                             metadata = sanitize_evidence({"usage": result.usage, "resource": result.resource_observation, "capabilities": result.observed_capabilities,
                                 "violations": result.policy_violations, "tool_trace": result.tool_trace, "model": result.model_observed, "model_observation_basis": result.model_observation_basis, "randomness": result.randomness_control, "failure_detail": result.failure_detail})
-                            row.update(execution_state=result.execution_state, failure_class=sanitize_evidence(result.failure_class), failure_detail=metadata["failure_detail"],
-                                       metrics={"latency_ms": elapsed_ms, "usage": metadata["usage"], "resource_observation": metadata["resource"]}, model_observed=metadata["model"] if metadata["model_observation_basis"] != "unknown" else "", model_observation_basis=metadata["model_observation_basis"], randomness_control=metadata["randomness"],
+                            row.update(execution_state="malformed" if observation_error else result.execution_state, failure_class="invalid_model_observation" if observation_error else sanitize_evidence(result.failure_class), failure_detail=observation_error or metadata["failure_detail"],
+                                       metrics={"latency_ms": elapsed_ms, "usage": metadata["usage"], "resource_observation": metadata["resource"]}, model_observed="" if observation_error or metadata["model_observation_basis"] == "unknown" else metadata["model"], model_observation_basis="unknown" if observation_error else metadata["model_observation_basis"], randomness_control=metadata["randomness"],
                                        observed_capabilities=metadata["capabilities"], policy_violations=metadata["violations"])
                             trace = attempt / "tool_trace.json"; _write_json(trace, metadata["tool_trace"]); files[trace.name] = trace; row["tool_trace_path"] = str(trace)
-                            if result.execution_state == "returned":
+                            if row["execution_state"] == "returned":
                                 if row["model_observation_basis"] == "unknown":
                                     row["limitations"].append("provider_request_accepted_not_model_attested")
                                 try: raw, artifacts = materialize_response_envelope(result.output_text, list(task.get("expected_artifacts", [])), attempt)
