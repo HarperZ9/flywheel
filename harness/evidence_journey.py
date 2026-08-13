@@ -3,7 +3,7 @@ from __future__ import annotations
 from copy import deepcopy
 from datetime import datetime
 from harness.evidence_json import canonical_sha256
-
+from harness.evidence_packet import run_journey_check
 SCHEMA = "flywheel.evidence-journey/v1"
 STAGES = ("intake", "decomposed", "preflight", "running", "concluded", "exported")
 VERDICTS = frozenset(("PASS", "FAIL", "UNDECIDED", "UNVERIFIABLE"))
