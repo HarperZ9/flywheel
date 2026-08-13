@@ -5,7 +5,7 @@ import os
 from pathlib import Path
 import re
 
-from .bundle import BundleError, safe_relative
+from .bundle import BundleError, safe_relative, scan_for_secrets
 from .evidence_json import strict_load_json
 from .evidence_journey import new_journey, project_journey, run_journey_check
 from .evidence_packet import pack_journey_packet, verify_journey_packet
@@ -62,6 +62,7 @@ def _request(action: str, value: dict) -> dict:
 def _public_metadata(value: object) -> None:
     if type(value) is dict:
         for key, item in value.items():
+            _public_metadata(key)
             normalized = key.lower().replace("-", "_")
             if (normalized in _SECRET_KEYS or
                     normalized.endswith(("_api_key", "_private_key", "_password",
@@ -79,8 +80,24 @@ def _public_metadata(value: object) -> None:
         for item in value:
             _public_metadata(item)
     elif type(value) is str:
+        if scan_for_secrets(value):
+            raise TransportError("UNSAFE_METADATA", "metadata contains secret-shaped content", 422)
         if value.startswith(("/", "\\\\", "//")) or re.match(r"^[A-Za-z]:[\\/]", value):
             raise TransportError("UNSAFE_METADATA", "metadata contains a host path", 422)
+
+
+def _public_result(action: str, value: dict) -> dict:
+    result = dict(value)
+    if action == "check" and result.get("unverifiable_reason") and "reason" in result:
+        result["reason"] = "registered oracle could not verify the submitted evidence"
+    if action in {"export", "recheck"} and "detail" in result:
+        result["detail"] = "packet could not be verified from admitted evidence"
+    try:
+        _public_metadata(result)
+    except TransportError as exc:
+        raise TransportError("UNSAFE_RESULT",
+            "evidence transport produced unsafe metadata", 500) from exc
+    return result
 
 
 def _root(value: Path) -> Path:
@@ -140,10 +157,12 @@ def _text(req: dict, name: str) -> str:
 
 def _start(req: dict, root: Path) -> tuple[dict, int]:
     intake = _json_ref(root, req["intake_ref"])
+    journey_id = _text(req, "journey_id")
+    goal = _text(req, "goal")
+    created_at = _text(req, "created_at")
     try:
-        return new_journey(journey_id=_text(req, "journey_id"),
-            goal=_text(req, "goal"), intake=intake,
-            created_at=_text(req, "created_at")), 200
+        return new_journey(journey_id=journey_id, goal=goal, intake=intake,
+            created_at=created_at), 200
     except (TypeError, ValueError, RecursionError) as exc:
         raise TransportError("INVALID_METADATA", "journey metadata is invalid", 422) from exc
 
@@ -166,7 +185,8 @@ def _check(req: dict, root: Path) -> tuple[dict, int]:
     if context.get("candidate_ref") != candidate_ref:
         raise TransportError("INVALID_METADATA", "candidate references do not match", 422)
     result = run_journey_check(journey, _text(req, "claim_id"),
-        _text(req, "oracle_id"), root / _relative(candidate_ref), context)
+        _text(req, "oracle_id"), root / _relative(candidate_ref), context,
+        artifact_root=root)
     return result, 422 if result.get("verdict") in {"UNDECIDED", "UNVERIFIABLE"} else 200
 
 
@@ -201,7 +221,8 @@ def evidence_post(path: str, raw: bytes | str, *, root: Path) -> tuple[dict, int
         if action not in _ACTIONS or "/" in action:
             raise TransportError("NOT_FOUND", "evidence route not found", 404)
         request = _request(action, _parse(raw))
-        return _HANDLERS[action](request, _root(root))
+        result, status = _HANDLERS[action](request, _root(root))
+        return _public_result(action, result), status
     except TransportError as exc:
         return _error(exc)
     except Exception:

@@ -78,8 +78,8 @@ def _denominator(verdict: str, timed_out: bool, filter_hash: str) -> Denominator
         tasks_proposed=0, tasks_filtered_out=0, retries=0,
         oracle_feedback_visible=False, filter_id="evidence-journey.v1",
         filter_hash=filter_hash, filter_is_learned=False)
-def run_journey_check(journey: dict, claim_id: str, oracle_id: str, candidate: Path, context: dict) -> dict:
-    """Run a registered oracle over snapshotted inputs and emit one receipt."""
+def run_journey_check(journey: dict, claim_id: str, oracle_id: str, candidate: Path, context: dict, *, artifact_root: Path | None = None) -> dict:
+    """Run an oracle; resolve evidence refs from artifact_root or the candidate parent."""
     from .evidence_journey import project_journey, verify_journey
     structural = verify_journey(journey)
     if structural.get("verdict") != "PASS":
@@ -108,7 +108,7 @@ def run_journey_check(journey: dict, claim_id: str, oracle_id: str, candidate: P
     try:
         if not isinstance(candidate, Path):
             raise ValueError("candidate must be a Path")
-        root = candidate.parent.resolve(strict=True)
+        root = Path(artifact_root if artifact_root is not None else candidate.parent).resolve(strict=True)
         candidate_ref, admitted = _canonical(
             root, ctx.get("candidate_ref", candidate.name))
         if admitted != candidate.resolve(strict=True):

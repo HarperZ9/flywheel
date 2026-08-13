@@ -90,6 +90,16 @@ def test_start_rejects_oversized_metadata_with_typed_response(tmp_path):
     assert "traceback" not in json.dumps(result).lower()
 
 
+def test_start_rejects_host_path_in_metadata_key(tmp_path):
+    private = "C:/Users/private/intake.txt"
+    _write_json(tmp_path / "intake.json", {private: "failed"})
+    result, code = _post(tmp_path, "start", {"journey_id": "journey-1",
+        "goal": "Explain", "created_at": "2026-08-12T12:00:00Z",
+        "intake_ref": "intake.json"})
+    assert code == 422 and result["error"]["code"] == "UNSAFE_METADATA"
+    assert private not in json.dumps(result)
+
+
 @pytest.mark.parametrize("raw,expected", [
     (b'{"journey_ref":"a","journey_ref":"b","lens":"Rescue"}', "INVALID_JSON"),
     (b'{"journey_ref":"a","lens":NaN}', "INVALID_JSON"),
@@ -172,6 +182,57 @@ def test_routes_never_enter_provider_endpoint_or_model_dispatch(tmp_path, monkey
         "context_ref": "context.json"}
     result, code = _post(tmp_path, "check", request)
     assert code == 422 and result["unverifiable_reason"] == "EXECUTION_CONTAINMENT_UNAVAILABLE"
+
+
+def test_check_maps_candidate_controlled_reason_to_fixed_message(tmp_path, monkeypatch):
+    private = str(tmp_path / "private" / "candidate.json")
+    _write_json(tmp_path / "journey.json", _journey())
+    _write_json(tmp_path / "context.json", _context("measurement.json"))
+    monkeypatch.setattr("harness.evidence_route.run_journey_check",
+        lambda *a, **k: {"schema": "flywheel.evidence-check/v1",
+            "verdict": "UNVERIFIABLE", "unverifiable_reason": "MALFORMED_CANDIDATE",
+            "reason": f"candidate read failed at {private}"})
+    result, code = _post(tmp_path, "check", {"journey_ref": "journey.json",
+        "claim_id": "claim-root", "oracle_id": "ml",
+        "candidate_ref": "measurement.json", "context_ref": "context.json"})
+    assert code == 422 and result["unverifiable_reason"] == "MALFORMED_CANDIDATE"
+    assert result["reason"] == "registered oracle could not verify the submitted evidence"
+    assert str(tmp_path) not in json.dumps(result)
+
+
+def _nested_measurement(root):
+    candidate = root / "nested" / "measurement.json"
+    _write_json(candidate, {"effect": 0.1, "ci_low": 0.05, "ci_high": 0.15,
+        "min_effect": 0.2, "n": 10,
+        "negative_control": {"effect": 0, "ci_low": -0.1, "ci_high": 0.1}})
+    context = _context("nested/measurement.json")
+    context["raw_artifact_refs"] = ["nested/measurement.json"]
+    _write_json(root / "context.json", context)
+
+
+def test_gateway_check_resolves_nested_refs_from_one_evidence_root(tmp_path):
+    _write_json(tmp_path / "journey.json", _journey())
+    _nested_measurement(tmp_path)
+    result, code = _post(tmp_path, "check", {"journey_ref": "journey.json",
+        "claim_id": "claim-root", "oracle_id": "ml",
+        "candidate_ref": "nested/measurement.json", "context_ref": "context.json"})
+    assert code == 200 and result["verdict"] == "FAIL"
+    assert "nested/measurement.json" in result["raw_artifact_refs"]
+    assert result["receipt_ref"].startswith("receipts/")
+
+
+def test_nested_python_ref_remains_pre_admission_containment_null(tmp_path, monkeypatch):
+    _write_json(tmp_path / "journey.json", _journey())
+    context = _context("nested/does-not-exist.py")
+    context["raw_artifact_refs"] = ["nested/does-not-exist.py", "nested/test_candidate.py"]
+    _write_json(tmp_path / "context.json", context)
+    monkeypatch.setattr("harness.evidence_packet._snap",
+                        lambda *a, **k: pytest.fail("candidate bytes were read"))
+    result, code = _post(tmp_path, "check", {"journey_ref": "journey.json",
+        "claim_id": "claim-root", "oracle_id": "code",
+        "candidate_ref": "nested/does-not-exist.py", "context_ref": "context.json"})
+    assert code == 422 and result["unverifiable_reason"] == "EXECUTION_CONTAINMENT_UNAVAILABLE"
+    assert result["oracle_calls_consumed"] == 0 and "receipt_ref" not in result
 
 
 def _checked_measurement(root):
