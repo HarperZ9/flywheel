@@ -129,7 +129,7 @@ def test_editing_any_claim_field_breaks_verification(field, value):
     d["receipt"][field] = value
     ok, reason = verify_signed(d, pub)
     assert ok is False
-    assert reason in ("digest_mismatch", "bad_signature")
+    assert reason in ("digest_mismatch", "bad_signature", "malformed_envelope")
 
 
 def test_editing_the_recorded_digest_is_also_caught():

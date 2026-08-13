@@ -16,19 +16,15 @@ DNP = (
     "presence does not prove that it implements the intended predicate.",
     "NOT_PROVES_EVIDENCE_COMPLETENESS: carried artifacts prove what was packed, not "
     "that no relevant evidence was omitted before packing.",
-    "NOT_PROVES_LIVE_PROVIDER_STATE: offline recheck makes no provider or network call.")
+    "NOT_PROVES_LIVE_PROVIDER_STATE: offline recheck makes no provider or network call.", "NOT_PROVES_ORIGIN_AUTHENTICITY: an unsigned packet has no authenticated author.",
+    "NOT_PROVES_REHASH_RESISTANCE: self-carried hashes need an external manifest anchor.")
 MAX_JSON, MAX_FILE, MAX_FILES, MAX_DEPTH = 1_048_576, 2_097_152, 1024, 32
 def digest(data: bytes) -> str:
     return "sha256:" + hashlib.sha256(data).hexdigest()
-
 def criterion_basis(journey: dict, claim: dict, oracle_id: str) -> dict:
-    return {"schema": "flywheel.evidence-check-criterion/v1",
-            "journey_id": journey["journey_id"],
-            "journey_sha256": canonical_sha256(journey),
-            "event_head_sha256": journey["event_head_sha256"],
-            "claim_id": claim["claim_id"], "statement": claim["statement"],
-            "oracle_id": oracle_id}
-
+    return {"schema": "flywheel.evidence-check-criterion/v1", "journey_id": journey["journey_id"],
+        "journey_sha256": canonical_sha256(journey), "event_head_sha256": journey["event_head_sha256"],
+        "claim_id": claim["claim_id"], "statement": claim["statement"], "oracle_id": oracle_id}
 def project(journey: dict) -> tuple[dict, dict[str, dict]]:
     from .evidence_journey import project_journey, verify_journey
     result = verify_journey(journey)
@@ -36,7 +32,6 @@ def project(journey: dict) -> tuple[dict, dict[str, dict]]:
         raise ValueError("journey is invalid: " + result.get("reason", "unknown"))
     view = project_journey(journey, lens="verify")
     return view, {claim["claim_id"]: claim for claim in view["detail"]["claims"]}
-
 def named_refs(value: object, key: str) -> set[str]:
     out: set[str] = set()
     if type(value) is dict:
@@ -49,7 +44,6 @@ def named_refs(value: object, key: str) -> set[str]:
     elif type(value) is list:
         for item in value: out.update(named_refs(item, key))
     return out
-
 def _prefix(journey: dict, head: object) -> dict | None:
     matches = ([] if head is None else
                [index for index, event in enumerate(journey["events"])
@@ -60,12 +54,10 @@ def _prefix(journey: dict, head: object) -> dict | None:
     prefix["stage"] = "intake" if not count else prefix["events"][-1]["stage"]
     prefix["event_head_sha256"] = head
     return prefix
-
 def _read_bounded(path: Path, limit: int) -> bytes:
     with path.open("rb") as stream: data = stream.read(limit + 1)
     if len(data) > limit: raise ValueError(f"{path.name} exceeds byte limit")
     return data
-
 def _preflight(root: Path) -> tuple[dict, dict[str, dict], dict[str, int]]:
     parsed: dict[str, dict] = {}; disk: dict[str, int] = {}; count = 0
     for path in root.rglob("*"):
@@ -91,7 +83,6 @@ def _preflight(root: Path) -> tuple[dict, dict[str, dict], dict[str, int]]:
         rels.append(safe_relative(item["path"]).as_posix())
     if len(rels) != len(set(rels)): raise ValueError("manifest contains duplicate paths")
     return manifest, parsed, disk
-
 def _denominator(verdict: str, timed_out: bool, filter_hash: str) -> dict:
     return {"attempts": 1, "group_size": 1, "oracle_calls_consumed": 1,
         "hits": int(verdict == "PASS"), "undecided": int(verdict == "UNDECIDED"),
@@ -101,7 +92,6 @@ def _denominator(verdict: str, timed_out: bool, filter_hash: str) -> dict:
         "retries": 0, "oracle_feedback_visible": False,
         "filter_id": "evidence-journey.v1", "filter_hash": filter_hash,
         "filter_is_learned": False}
-
 def _command(check: dict, receipt: Receipt, raw: dict[str, dict]) -> None:
     command = check.get("command")
     if type(command) is not dict or set(command) != {"args", "targets"}:
@@ -124,17 +114,19 @@ def _command(check: dict, receipt: Receipt, raw: dict[str, dict]) -> None:
         if targets != derived: raise ValueError("pytest target list contradicts command")
     elif targets or args != [receipt.coverage.get("oracle_type")]:
         raise ValueError("non-pytest command is not canonical")
-
 def _pytest_result(receipt: Receipt, check: dict, result_blob: bytes,
                    raw: dict[str, dict], filter_hash: str) -> None:
     result = strict_load_json(result_blob, max_depth=8)
-    required = {"schema", "command", "inputs", "outcomes", "return_code"}
+    required = {"schema", "command", "execution_input_protection", "inputs", "outcomes", "return_code"}
     if set(result) != required or result["schema"] != "flywheel.pytest-result/v1":
         raise ValueError("pytest result artifact is not closed")
     output_ref = receipt.coverage.get("oracle_output_ref")
     inputs = [item for ref, item in raw.items() if ref != output_ref]
     if result["command"] != check["command"] or result["inputs"] != inputs:
         raise ValueError("pytest result command or inputs drift")
+    protection = receipt.coverage.get("execution_input_protection")
+    if protection != "windows-share-lock/v1" or result["execution_input_protection"] != protection:
+        raise ValueError("execution input protection is absent or drifted")
     outcomes, rc = result["outcomes"], result["return_code"]
     if (type(outcomes) is not list or outcomes != sorted(set(outcomes))
             or any(type(item) is not str or not item.endswith(("=PASS", "=FAIL", "=SKIP"))
@@ -151,7 +143,6 @@ def _pytest_result(receipt: Receipt, check: dict, result_blob: bytes,
     if (receipt.verdict.value != verdict or receipt.attribution.value != "CANDIDATE"
             or receipt.denominator.to_dict() != expected["denominator"]):
         raise ValueError("receipt contradicts carried pytest result")
-
 def criterion_fact(receipt: Receipt, claim: dict, result_blob: bytes,
                    journey: dict) -> dict:
     check = receipt.coverage.get("check_result")
@@ -191,7 +182,6 @@ def criterion_fact(receipt: Receipt, claim: dict, result_blob: bytes,
         "depends_on": claim["depends_on"], "criterion_id": receipt.criterion_id,
         "criterion_sha256": receipt.criterion_sha256, "verdict": receipt.verdict.value,
         "denominator": receipt.denominator.to_dict(), "check_result": check}
-
 def _raw_facts(root: Path, criterion: dict, journey: dict) -> dict[str, dict]:
     actual = {}; artifacts = criterion.get("raw_artifacts")
     if type(artifacts) is not list: raise ValueError("raw evidence facts are missing")
@@ -210,17 +200,23 @@ def _raw_facts(root: Path, criterion: dict, journey: dict) -> dict[str, dict]:
     if list(actual) != sorted(actual) or set(actual) != named_refs(journey, "raw_artifact_refs"):
         raise ValueError("raw evidence refs drift")
     return actual
-
 def _drift(detail: str) -> dict:
     return {"schema": SCHEMA, "verdict": "DRIFT", "detail": detail}
-
-def verify_journey_packet(packet_dir: Path) -> dict:
+def verify_journey_packet(packet_dir: Path, *, expected_manifest_sha256: str | None = None) -> dict:
     """Preflight all bytes, then recheck packet facts without oracle dispatch."""
     root = Path(packet_dir)
     try: manifest, parsed, disk = _preflight(root)
     except (KeyError, OSError, TypeError, ValueError, RecursionError) as exc:
         return {"schema": SCHEMA, "verdict": "UNVERIFIABLE",
                 "detail": f"packet preflight failed: {exc}"}
+    packet_sha256 = digest(_read_bounded(root / "manifest.json", MAX_JSON))
+    if expected_manifest_sha256 is not None:
+        if (type(expected_manifest_sha256) is not str or not expected_manifest_sha256.startswith("sha256:")
+                or len(expected_manifest_sha256) != 71 or any(c not in "0123456789abcdef" for c in expected_manifest_sha256[7:])):
+            return {"schema": SCHEMA, "verdict": "UNVERIFIABLE", "detail": "expected_manifest_sha256 must be a sha256 digest"}
+        if packet_sha256 != expected_manifest_sha256:
+            return {"schema": SCHEMA, "verdict": "DRIFT", "structural_verdict": "UNVERIFIABLE", "authenticity_verdict": "UNVERIFIABLE", "rehash_resistance_verdict": "DRIFT",
+                "packet_sha256": packet_sha256, "detail": "packet manifest does not match the external anchor"}
     bundle = verify_bundle(root)
     if bundle.get("verdict") != "MATCH": return {"schema": SCHEMA, **bundle}
     try:
@@ -248,13 +244,14 @@ def verify_journey_packet(packet_dir: Path) -> dict:
             return _drift("receipt facts are malformed or duplicated")
         for listed in bundle["receipts"]:
             body = parsed[listed["path"]]["receipt"]; receipt = Receipt.from_dict(body)
+            if receipt.to_dict() != body: return _drift("receipt wire form drift")
             fact, claim = receipt_facts.get(receipt.claim_sha256()), claims.get(receipt.objective)
             if (fact is None or set(fact) != {"ref", "claim_id", "claim_sha256"}
                     or fact["claim_id"] != receipt.objective or claim is None
                     or fact["ref"] not in claim.get("receipt_refs", [])):
                 return _drift("receipt claim binding drift")
             if receipt.verdict.value != claim["verdict"]: return _drift("receipt verdict drift")
-            if not set(receipt.does_not_prove()).issubset(body.get("does_not_prove", [])):
+            if receipt.does_not_prove() != body.get("does_not_prove"):
                 return _drift("receipt limits drift")
             for item in receipt.coverage.get("raw_artifacts", []):
                 actual = raw_actual.get(item.get("ref"))
@@ -264,7 +261,7 @@ def verify_journey_packet(packet_dir: Path) -> dict:
             expected_criteria.append(criterion_fact(receipt, claim, output, journey))
             expected_receipts.append({"ref": fact["ref"], "claim_id": receipt.objective,
                                       "claim_sha256": receipt.claim_sha256()})
-            name = f"oracles/{receipt.coverage.get('oracle_type')}-{receipt.checker_source_sha256[7:23]}.py"
+            name = f"oracles/{receipt.coverage.get('oracle_type')}-{receipt.checker_source_sha256[7:23]}.json"
             expected_checkers[name] = {"packet_path": "checker/" + name,
                                        "sha256": receipt.checker_source_sha256, "name": name}
             seen.add(receipt.claim_sha256())
@@ -293,8 +290,11 @@ def verify_journey_packet(packet_dir: Path) -> dict:
             return _drift("pack manifest facts or exact path set drift")
     except (KeyError, OSError, TypeError, ValueError, RecursionError) as exc:
         return _drift(f"packet semantic recheck failed: {exc}")
-    return {"schema": SCHEMA, "verdict": "MATCH", "journey_id": journey["journey_id"],
-        "event_head_sha256": journey["event_head_sha256"],
-        "packet_sha256": digest(_read_bounded(root / "manifest.json", MAX_JSON)),
+    authenticated = expected_manifest_sha256 is not None
+    return {"schema": SCHEMA, "verdict": "MATCH" if authenticated else "UNVERIFIABLE",
+        "structural_verdict": "MATCH", "authenticity_verdict": "UNVERIFIABLE", "rehash_resistance_verdict": "MATCH" if authenticated else "UNVERIFIABLE",
+        "authentication": "external-manifest-sha256" if authenticated else "unsigned",
+        "required_external_anchor": None if authenticated else "expected_manifest_sha256", "journey_id": journey["journey_id"],
+        "event_head_sha256": journey["event_head_sha256"], "packet_sha256": packet_sha256,
         "files_checked": bundle["files_checked"], "receipts_checked": len(seen),
         "does_not_prove": criterion["does_not_prove"]}

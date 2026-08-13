@@ -36,7 +36,7 @@ from __future__ import annotations
 import hashlib
 import hmac as _hmac
 import json
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 from .ed25519_verify import verify as _ed_verify, Ed25519Error
 from .receipt import Receipt, SIGNED_OVER
@@ -162,9 +162,9 @@ def pack_for_export(envelope: dict) -> dict:
     sig = out.get("signature")
     if sig and sig.get("sig_alg") in LOCAL_ONLY_ALGS:
         out["signature"] = None
-        dnp = out["receipt"].setdefault("does_not_prove", [])
-        for entry in ("LOCAL_SIGNATURE_STRIPPED",
-                      "NOT_THIRD_PARTY_VERIFIABLE_SIGNATURE"):
-            if entry not in dnp:
-                dnp.append(entry)
+        receipt = Receipt.from_dict(out["receipt"])
+        limits = ("LOCAL_SIGNATURE_STRIPPED", "NOT_THIRD_PARTY_VERIFIABLE_SIGNATURE")
+        extras = receipt.extra_does_not_prove + tuple(
+            entry for entry in limits if entry not in receipt.does_not_prove())
+        out["receipt"] = replace(receipt, extra_does_not_prove=extras).to_dict()
     return out

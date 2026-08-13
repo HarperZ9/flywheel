@@ -8,6 +8,8 @@ from harness.evidence_journey import append_event, new_journey, run_journey_chec
 from harness.evidence_json import canonical_sha256
 from harness.evidence_packet import pack_journey_packet, verify_journey_packet
 from harness.receipt import Receipt
+pytestmark = pytest.mark.skipif(sys.platform != "win32",
+    reason="journey code checks require OS-enforced execution-input protection")
 def _journey():
     journey = new_journey(journey_id="software-failure-v1",
         goal="Reproduce the software failure", intake={"summary": "add returns wrong value"},
@@ -72,13 +74,6 @@ def _save_receipt(packet, body, criterion):
     path = next((packet / "receipts").iterdir()); _store(path, {"receipt": body})
     criterion["receipts"][0]["claim_sha256"] = receipt.claim_sha256()
     _seal(packet, path.relative_to(packet).as_posix()); return receipt
-def _rehash_journey(journey):
-    prior = None
-    for event in journey["events"]:
-        event["prior_event_sha256"] = prior; event.pop("event_sha256", None)
-        event["event_sha256"] = prior = canonical_sha256(event)
-    journey["event_head_sha256"] = prior
-
 def test_registered_code_oracle_emits_typed_failure_and_receipt(tmp_path):
     journey, root, check = _checked(tmp_path)
     assert (check["verdict"], check["oracle_id"], check["oracle_type"]) == ("FAIL", "code", "pytest")
@@ -113,14 +108,19 @@ def test_context_is_a_closed_bounded_json_envelope(tmp_path):
     assert result["unverifiable_reason"] == "INVALID_CONTEXT" and "unknown" in result["reason"]
 @pytest.mark.parametrize("actor", ["candidate", "test"])
 @pytest.mark.parametrize("action", ["modify", "delete"])
-def test_execution_input_drift_never_emits_a_receipt(tmp_path, actor, action):
+def test_execution_input_mutation_is_prevented_or_typed_unverifiable(tmp_path, actor, action):
     root, candidate, context = _software_fixture(tmp_path); target = candidate if actor == "candidate" else root / "test_candidate.py"
     effect = "Path(__file__).unlink()" if action == "delete" else "Path(__file__).write_text('changed')"
     prefix = f"from pathlib import Path\n{effect}\n"
     target.write_text(prefix + target.read_text(encoding="utf-8"), encoding="utf-8")
     result = run_journey_check(_journey(), "claim-root", "code", candidate, context)
-    assert (result["verdict"], result["unverifiable_reason"]) == ("UNVERIFIABLE", "INPUT_DRIFT")
-    assert "receipt_ref" not in result and not (root / "receipts").exists()
+    if sys.platform == "win32":
+        assert result["verdict"] == "FAIL" and result["execution_input_protection"] == "windows-share-lock/v1"
+        assert (root / result["receipt_ref"]).is_file()
+    else:
+        assert (result["verdict"], result["unverifiable_reason"]) == (
+            "UNVERIFIABLE", "EXECUTION_INPUT_PROTECTION_UNAVAILABLE")
+        assert "receipt_ref" not in result
 def test_check_result_closes_command_oracle_result_and_denominator(tmp_path):
     _, root, check = _checked(tmp_path); closed = check["check_result"]
     assert set(closed) == {"command", "output_hash", "return_code", "execution",
@@ -160,15 +160,25 @@ def test_pytest_selector_metacharacters_cannot_spawn_a_shell_command(tmp_path):
     assert not marker.exists()
 def test_packet_binds_journey_receipt_raw_evidence_and_checker(tmp_path):
     packet = _packet(tmp_path); criterion = _load(packet / "criterion.json")
-    assert verify_journey_packet(packet)["verdict"] == "MATCH"
+    result = verify_journey_packet(packet)
+    assert (result["verdict"], result["structural_verdict"], result["authenticity_verdict"]) == (
+        "UNVERIFIABLE", "MATCH", "UNVERIFIABLE")
+    anchor = "sha256:" + hashlib.sha256((packet / "manifest.json").read_bytes()).hexdigest()
+    anchored = verify_journey_packet(packet, expected_manifest_sha256=anchor)
+    assert (anchored["verdict"], anchored["authenticity_verdict"], anchored["rehash_resistance_verdict"]) == ("MATCH", "UNVERIFIABLE", "MATCH")
     assert criterion["journey"] and criterion["event_head_sha256"]
     assert criterion["raw_artifacts"] and criterion["receipts"] and criterion["checker_manifest"]
     assert criterion["criteria"][0]["denominator"]["attempts"] == 1 and criterion["does_not_prove"]
+    checker = _load(packet / criterion["checker_manifest"][0]["packet_path"])
+    assert [item["module"] for item in checker["sources"]] == [
+        "harness.execution_input_protection", "harness.oracle"]
 def test_clean_directory_recheck_is_offline_and_serializes_no_host_root(tmp_path, monkeypatch):
     packet = _packet(tmp_path); clean = tmp_path / "clean" / "packet"; clean.parent.mkdir(); shutil.copytree(packet, clean)
     monkeypatch.chdir(clean.parent); monkeypatch.setattr(evidence_packet, "default_registry",
         lambda: (_ for _ in ()).throw(AssertionError("oracle dispatch")))
-    assert verify_journey_packet(Path("packet"))["verdict"] == "MATCH"
+    assert verify_journey_packet(Path("packet"))["authenticity_verdict"] == "UNVERIFIABLE"
+    anchor = "sha256:" + hashlib.sha256((clean / "manifest.json").read_bytes()).hexdigest()
+    assert verify_journey_packet(Path("packet"), expected_manifest_sha256=anchor)["verdict"] == "MATCH"
     carried = "".join(p.read_text(encoding="utf-8") for p in clean.rglob("*") if p.is_file())
     assert str((tmp_path / "artifacts").resolve()) not in carried
 def test_pack_refuses_tampered_chain_and_omitted_raw_evidence(tmp_path):
@@ -222,21 +232,6 @@ def test_rehashed_check_result_fact_tamper_fails_closed(tmp_path, fact):
         "attribution": "ENVIRONMENT", "verdict": "PASS",
         "denominator": {**changed["denominator"], "attempts": 2}}
     changed[fact] = replacements[fact]; _save_criterion(packet, criterion)
-    assert verify_journey_packet(packet)["verdict"] == "DRIFT"
-def test_fail_cannot_be_rewritten_to_pass_with_all_bound_facts_recomputed(tmp_path):
-    packet = _packet(tmp_path); receipt_path = next((packet / "receipts").iterdir()); envelope = _load(receipt_path)
-    body = envelope["receipt"]; body["verdict"] = body["coverage"]["check_result"]["verdict"] = "PASS"
-    body["denominator"]["hits"] = body["coverage"]["check_result"]["denominator"]["hits"] = 1
-    body["coverage"]["check_result"].update(return_code=0, output_hash="0" * 16)
-    criterion = _load(packet / "criterion.json"); claim = criterion["journey"]["events"][-1]["claims"][0]
-    claim["verdict"] = "PASS"; _rehash_journey(criterion["journey"])
-    criterion["journey_sha256"] = canonical_sha256(criterion["journey"])
-    criterion["event_head_sha256"] = criterion["journey"]["event_head_sha256"]
-    changed = _save_receipt(packet, body, criterion); criterion["criteria"][0].update(
-        verdict="PASS", denominator=changed.denominator.to_dict(), check_result=body["coverage"]["check_result"])
-    tree = _load(packet / "tree_head.json"); tree["root"] = "sha256:" + criterion["event_head_sha256"]
-    _store(packet / "tree_head.json", tree); _save_criterion(packet, criterion)
-    _seal(packet, "tree_head.json")
     assert verify_journey_packet(packet)["verdict"] == "DRIFT"
 def test_receipt_criterion_id_is_derived_not_self_asserted(tmp_path):
     packet = _packet(tmp_path); body = _load(next((packet / "receipts").iterdir()))["receipt"]

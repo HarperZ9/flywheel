@@ -8,6 +8,7 @@ from .evidence_packet_validation import (DNP as _DNP, MAX_FILE as _MAX_FILE,
     MAX_JSON as _MAX_JSON, SCHEMA, criterion_basis as _basis,
     criterion_fact as _criterion_fact, digest as _sha, named_refs as _named_refs,
     project as _projection, verify_journey_packet)
+from .execution_input_protection import ExecutionInputProtectionUnavailable
 from .oracle_registry import default_registry
 from .receipt import Receipt
 from .receipt_fields import Budget, Denominator, EvidenceKind, Tier
@@ -85,7 +86,16 @@ def _pytest_command(raw: str, root: Path, carried: set[str]) -> tuple[list[str],
 def _oracle_source(oracle) -> tuple[str, bytes]:
     module = type(oracle).__module__; path = Path(getattr(sys.modules.get(module), "__file__", ""))
     if not path.is_file() or path.suffix != ".py": raise ValueError("registered oracle source is unavailable")
-    return module, path.read_bytes()
+    sources = [(module, path.read_bytes())]
+    if oracle.oracle_type == "pytest":
+        protection = ExecutionInputProtectionUnavailable.__module__
+        dependency = Path(getattr(sys.modules.get(protection), "__file__", ""))
+        if not dependency.is_file(): raise ValueError("execution protection source is unavailable")
+        sources.append((protection, dependency.read_bytes()))
+    carried = {"schema": "flywheel.checker-source-set/v1", "sources": [
+        {"module": name, "sha256": _sha(blob), "source": blob.decode("utf-8", "strict")}
+        for name, blob in sorted(sources)]}
+    return module, canonical_bytes(carried)
 def _denominator(verdict: str, timed_out: bool, filter_hash: str) -> Denominator:
     return Denominator(attempts=1, group_size=1, oracle_calls_consumed=1,
         hits=int(verdict == "PASS"), undecided=int(verdict == "UNDECIDED"),
@@ -160,6 +170,9 @@ def run_journey_check(journey: dict, claim_id: str, oracle_id: str, candidate: P
                     excerpt = (result.stdout_excerpt.replace(str(root), "<artifact-root>")
                                .replace(str(work), "<check-root>"))
                     output = excerpt.encode()
+            except ExecutionInputProtectionUnavailable as exc:
+                return _unverifiable("EXECUTION_INPUT_PROTECTION_UNAVAILABLE", str(exc),
+                    oracle_id=entry.domain, oracle_calls_consumed=0)
             except Exception as exc:
                 oracle_error, result = exc, None
             stable = _stable(root, before) and _stable(work, execution_before)
@@ -191,6 +204,7 @@ def run_journey_check(journey: dict, claim_id: str, oracle_id: str, candidate: P
     closed = {"command": command, "output_hash": result.output_hash, "return_code": result.rc,
               "execution": execution, "attribution": attribution, "verdict": verdict,
               "denominator": denominator.to_dict()}
+    protection = artifact["execution_input_protection"] if entry.oracle.oracle_type == "pytest" else "not-applicable"
     receipt = Receipt(criterion_id=f"evidence-journey/{journey['journey_id']}/{claim_id}",
         criterion_version=1, criterion_sha256=_sha(canonical_bytes(basis)), family="evidence-journey",
         family_instance_id=journey["journey_id"], generator_id="submitted-candidate", generator_seed=0,
@@ -201,7 +215,8 @@ def run_journey_check(journey: dict, claim_id: str, oracle_id: str, candidate: P
         tier=Tier.EXECUTION_TEST, verdict=Verdict(verdict), attribution=Attribution(attribution),
         objective=claim_id, incumbent_objective="", incumbent_source="",
         coverage={**basis, "oracle_type": entry.oracle.oracle_type,
-                  "candidate_ref": candidate_ref, "raw_artifacts": raw,
+                  "candidate_ref": candidate_ref, "execution_input_protection": protection,
+                  "raw_artifacts": raw,
                   "oracle_output_ref": output_ref, "check_result": closed},
         raw_stdout_sha256=_sha(output), analysis_script_sha256=_sha(checker), denominator=denominator,
         budget=Budget(ctx["timeout_seconds"], 0, 0, timed_out), model_ref="submitted",
@@ -215,6 +230,7 @@ def run_journey_check(journey: dict, claim_id: str, oracle_id: str, candidate: P
         "reason": result.unverifiable_reason or result.undecided_reason or "",
         "oracle_id": entry.domain, "oracle_type": entry.oracle.oracle_type,
         "execution": execution, "attribution": attribution, "claim_id": claim_id,
+        "execution_input_protection": protection,
         "claim_verdict_before": claims[claim_id]["verdict"], "receipt_ref": receipt_ref,
         "receipt_claim_sha256": receipt.claim_sha256(), "raw_artifact_refs": [r["ref"] for r in raw],
         "denominator": {name: getattr(denominator, name) for name in names},
@@ -239,13 +255,14 @@ def pack_journey_packet(out_dir: Path, *, journey: dict, artifact_root: Path) ->
         envelope = strict_load_json(_read(admit_artifact_ref(root, ref), _MAX_JSON))
         body = envelope.get("receipt")
         receipt = Receipt.from_dict(body); claim = claims.get(receipt.objective)
+        if receipt.to_dict() != body: raise ValueError(f"receipt wire form drift: {ref}")
         if receipt.claim_sha256() != body.get("claim_sha256"): raise ValueError(f"receipt drift: {ref}")
         if claim is None or ref not in claim.get("receipt_refs", []) or receipt.verdict.value != claim["verdict"]: raise ValueError(f"receipt {ref} changes its claim")
         entry = registry.entry(receipt.coverage.get("oracle_id", ""))
         if entry is None or type(entry.oracle).__module__ != receipt.checker_module: raise ValueError(f"receipt {ref} does not name a registered checker")
         module, source = _oracle_source(entry.oracle)
         if _sha(source) != receipt.checker_source_sha256: raise ValueError(f"checker source drift for {module}")
-        name = f"oracles/{entry.oracle.oracle_type}-{_sha(source)[7:23]}.py"; checkers[name] = source.decode()
+        name = f"oracles/{entry.oracle.oracle_type}-{_sha(source)[7:23]}.json"; checkers[name] = source.decode()
         expected = receipt.coverage.get("raw_artifacts", [])
         if not expected or any(actual.get(item.get("ref")) != item for item in expected):
             raise ValueError("receipt raw evidence is omitted or drifted")

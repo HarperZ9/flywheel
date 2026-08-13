@@ -184,6 +184,8 @@ class Receipt:
             "unverifiable_reason": self.unverifiable_reason,
             "undecided_reason": self.undecided_reason,
         })
+        if self.extra_does_not_prove:
+            d["extra_does_not_prove"] = list(self.extra_does_not_prove)
         return d
 
     def subject_sha256(self) -> str:
@@ -254,7 +256,10 @@ class Receipt:
                 f"refusing to read schema {d.get('schema')!r} as {SCHEMA}")
         den = d["denominator"]
         graded = d.get("graded_score")
-        return cls(
+        extra = d.get("extra_does_not_prove", ())
+        if type(extra) not in (list, tuple) or any(type(item) is not str for item in extra):
+            raise ReceiptError("extra_does_not_prove must be a list of strings")
+        receipt = cls(
             criterion_id=d["criterion_id"],
             criterion_version=d["criterion_version"],
             criterion_sha256=d["criterion_sha256"],
@@ -284,4 +289,8 @@ class Receipt:
             input_tier_multiset=tuple(d.get("input_tier_multiset", ())),
             novelty_verdict=d.get("novelty_verdict", "UNKNOWN"),
             unverifiable_reason=d.get("unverifiable_reason", ""),
-            undecided_reason=d.get("undecided_reason", ""))
+            undecided_reason=d.get("undecided_reason", ""),
+            extra_does_not_prove=tuple(extra))
+        if d.get("does_not_prove") != receipt.does_not_prove():
+            raise ReceiptError("does_not_prove does not exactly match receipt limits")
+        return receipt
