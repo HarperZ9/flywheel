@@ -14,7 +14,7 @@ from .oracle_registry import default_registry
 from .receipt import Receipt
 from .receipt_fields import Budget, Denominator, EvidenceKind, Tier
 from .receipt_sign import unsigned
-from .runtime_descriptor import RUNTIME_LIMITS
+from .runtime_descriptor import PYTHON_LIMITS
 from .task import Task
 from .verdict import Attribution, Verdict
 CHECK_SCHEMA = "flywheel.evidence-check/v1"
@@ -205,9 +205,10 @@ def run_journey_check(journey: dict, claim_id: str, oracle_id: str, candidate: P
     if entry.oracle.oracle_type == "pytest":
         coverage.update(execution_namespace=artifact["execution_namespace"],
             candidate_provenance=artifact["candidate_provenance"],
+            dependency_boundary=artifact["dependency_boundary"],
             runtime_descriptor=runtime,
             runtime_descriptor_sha256=runtime_sha)
-        limits += RUNTIME_LIMITS
+        limits += PYTHON_LIMITS
     receipt = Receipt(criterion_id=f"evidence-journey/{journey['journey_id']}/{claim_id}",
         criterion_version=1, criterion_sha256=_sha(canonical_bytes(basis)), family="evidence-journey",
         family_instance_id=journey["journey_id"], generator_id="submitted-candidate", generator_seed=0,

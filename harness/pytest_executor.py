@@ -1,4 +1,10 @@
-"""Isolated pytest bootstrap that pins the candidate module to exact source."""
+"""Untrusted pytest executor: report observations, never decide acceptance.
+
+This process imports candidate and test code. Its JUnit, return code, and module
+report are therefore evidence claims from an adversarial process. The trusted
+parent validates their closed shape after exit and never turns a positive claim
+from this process into PASS without an independent checker.
+"""
 from __future__ import annotations
 
 import argparse
@@ -8,9 +14,8 @@ import importlib.util
 import json
 from pathlib import Path, PurePosixPath
 import sys
-import types
 
-SCHEMA = "flywheel.python-module-provenance/v1"
+SCHEMA = "flywheel.python-module-provenance/v2"
 
 
 def _module_name(ref: str) -> tuple[str, bool]:
@@ -72,7 +77,8 @@ def _write_report(values, loader, actual) -> None:
         "source_ref": values.candidate_ref, "source_sha256": actual,
         "loaded": loader.loads > 0, "load_count": loader.loads,
         "origin": values.candidate_ref if current is loader.loaded_module else None,
-        "binding": "exact-source-compile/v1"}
+        "binding": "exact-source-compile/v1",
+        "authority": "untrusted-test-process/v1"}
     Path(values.provenance).write_text(
         json.dumps(report, sort_keys=True, separators=(",", ":")), encoding="utf-8")
 
@@ -87,9 +93,10 @@ def main(argv=None) -> int:
     actual = "sha256:" + hashlib.sha256(source).hexdigest()
     if actual != values.candidate_sha256:
         raise ValueError("candidate source digest changed before bootstrap")
-    # Resolve and retain the trusted checker entry point before candidate code
-    # executes; the candidate must not be able to replace sys.modules['pytest']
-    # and thereby become its own accept path.
+    # Loading pytest before candidate code reduces accidental shadowing, but it
+    # is not a trust boundary: candidate code shares this interpreter and may
+    # mutate any cached function. The trusted parent treats all positive output
+    # from this process as non-dispositive.
     import pytest
     pytest_main = pytest.main
     module_name, package = _module_name(values.candidate_ref)
@@ -100,8 +107,8 @@ def main(argv=None) -> int:
         spec = loader.find_spec(module_name)
         module = importlib.util.module_from_spec(spec)
         sys.modules[module_name] = module; spec.loader.exec_module(module)
-        # Persist the exact load before pytest begins so a later timeout still
-        # carries provenance established by the trusted bootstrap.
+        # Persist this process's load observation before pytest begins so a
+        # later timeout still carries it; the parent labels it untrusted.
         _write_report(values, loader, actual)
         rc = int(pytest_main([*pytest_args, "-p", "no:cacheprovider",
                               f"--junitxml={values.junit}", "-q"]))

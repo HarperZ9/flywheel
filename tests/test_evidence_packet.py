@@ -153,7 +153,8 @@ def test_pytest_executes_the_byte_exact_crlf_candidate(tmp_path):
         + repr(source), encoding="utf-8")
     check = run_journey_check(_journey(), "claim-root", "code", candidate, context)
     body = _load(root / check["receipt_ref"])["receipt"]
-    assert check["verdict"] == "PASS" and body["candidate_sha256"] == "sha256:" + hashlib.sha256(source).hexdigest()
+    assert (check["verdict"], check["reason"]) == ("UNVERIFIABLE", "PYTHON_ACCEPTANCE_BOUNDARY_UNAVAILABLE")
+    assert body["candidate_sha256"] == "sha256:" + hashlib.sha256(source).hexdigest()
 def test_pytest_selector_metacharacters_cannot_spawn_a_shell_command(tmp_path):
     root, candidate, context = _software_fixture(tmp_path); marker = tmp_path / "selector-owned.txt"
     context["oracle_cmd"] += f"::test_add&echo.owned>{marker}"
@@ -173,10 +174,9 @@ def test_packet_binds_journey_receipt_raw_evidence_and_checker(tmp_path):
     checker = _load(packet / criterion["checker_manifest"][0]["packet_path"])
     assert [item["module"] for item in checker["sources"]] == [
         "harness.execution_input_protection", "harness.oracle",
-        "harness.pytest_prepared", "harness.pytest_provenance",
+        "harness.pytest_prepared", "harness.pytest_executor",
         "harness.runtime_descriptor", "harness.windows_low_integrity"]
     assert criterion["checker_manifest"][0]["runtime_descriptor_sha256"]
-
 def test_clean_directory_recheck_is_offline_and_serializes_no_host_root(tmp_path, monkeypatch):
     packet = _packet(tmp_path); clean = tmp_path / "clean" / "packet"; clean.parent.mkdir(); shutil.copytree(packet, clean)
     monkeypatch.chdir(clean.parent); monkeypatch.setattr(evidence_packet, "default_registry",

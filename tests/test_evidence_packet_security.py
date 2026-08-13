@@ -7,7 +7,7 @@ from harness.evidence_journey import append_event, new_journey, run_journey_chec
 from harness.evidence_json import canonical_sha256
 from harness.evidence_packet import pack_journey_packet, verify_journey_packet
 from harness.receipt import Receipt
-from harness.runtime_descriptor import RUNTIME_LIMITS
+from harness.runtime_descriptor import PYTHON_LIMITS
 import pytest
 
 
@@ -74,17 +74,23 @@ def test_result_receipt_and_checker_manifest_bind_runtime_and_provenance(tmp_pat
     body = _load(next((packet / "receipts").iterdir()))["receipt"]
     coverage = body["coverage"]; runtime = coverage["runtime_descriptor"]
     assert coverage["runtime_descriptor_sha256"] == "sha256:" + canonical_sha256(runtime)
-    assert all(limit in body["extra_does_not_prove"] for limit in RUNTIME_LIMITS)
+    assert all(limit in body["extra_does_not_prove"] for limit in PYTHON_LIMITS)
     raw = next(item for item in criterion["raw_artifacts"]
                if item["ref"] == coverage["oracle_output_ref"])
     result = _load(packet / raw["packet_path"])
     assert result["runtime"] == runtime
     assert result["candidate_provenance"] == coverage["candidate_provenance"]
+    assert result["candidate_provenance"]["authority"] == "untrusted-test-process/v1"
+    assert result["dependency_boundary"] == coverage["dependency_boundary"]
+    checker = _load(packet / criterion["checker_manifest"][0]["packet_path"])
+    executor = next(item for item in checker["sources"]
+                    if item["module"] == "harness.pytest_executor")
+    assert coverage["dependency_boundary"]["executor_source_sha256"] == executor["sha256"]
     assert criterion["checker_manifest"][0]["runtime_descriptor_sha256"] == coverage["runtime_descriptor_sha256"]
 
 
-@pytest.mark.parametrize("fact", ["runtime", "provenance", "checker-manifest"])
-def test_runtime_and_candidate_provenance_tampering_fails_closed(tmp_path, fact):
+@pytest.mark.parametrize("fact", ["runtime", "provenance", "executor", "checker-manifest"])
+def test_bound_runtime_provenance_and_executor_tampering_fails_closed(tmp_path, fact):
     packet = _packet(tmp_path); criterion = _load(packet / "criterion.json")
     if fact == "checker-manifest":
         criterion["checker_manifest"][0]["runtime_descriptor_sha256"] = "sha256:" + "0" * 64
@@ -92,6 +98,8 @@ def test_runtime_and_candidate_provenance_tampering_fails_closed(tmp_path, fact)
         path = next((packet / "receipts").iterdir()); body = _load(path)["receipt"]
         if fact == "runtime":
             body["coverage"]["runtime_descriptor"]["pytest"]["version"] = "0.0-tampered"
+        elif fact == "executor":
+            body["coverage"]["dependency_boundary"]["executor_source_sha256"] = "sha256:" + "0" * 64
         else:
             body["coverage"]["candidate_provenance"]["source_sha256"] = "sha256:" + "0" * 64
         _save_receipt(packet, body, criterion)
@@ -129,6 +137,77 @@ def test_candidate_cannot_replace_pytest_before_the_checker_starts(tmp_path):
         "def add(a,b): return a-b\n", encoding="utf-8")
     check = run_journey_check(_journey(), "claim-root", "code", candidate, context)
     assert check["verdict"] != "PASS"
+
+
+@pytest.mark.skipif(sys.platform != "win32", reason="Windows namespace boundary")
+@pytest.mark.parametrize("target", ["pytest.main", "_pytest.config.main"])
+def test_candidate_cannot_mutate_cached_checker_code_into_a_pass(tmp_path, target):
+    root, candidate, context = _fixture(tmp_path)
+    imports = "import pytest\n" if target == "pytest.main" else "import pytest, _pytest.config\n"
+    if target == "pytest.main":
+        trusted = pytest.main
+    else:
+        import _pytest.config
+        trusted = _pytest.config.main
+    trusted_code = trusted.__code__
+    candidate.write_text(
+        imports +
+        "def forged(args):\n"
+        " for arg in args:\n"
+        "  if arg.startswith('--junitxml='):\n"
+        "   open(arg.split('=',1)[1],'w').write('<testsuites><testsuite>"
+        "<testcase classname=\"test_candidate\" name=\"test_add\"/>"
+        "</testsuite></testsuites>')\n"
+        " return 0\n"
+        f"{target}.__code__=forged.__code__\n"
+        "def add(a,b): return a-b\n", encoding="utf-8")
+    check = run_journey_check(_journey(), "claim-root", "code", candidate, context)
+    assert trusted.__code__ is trusted_code
+    assert (check["verdict"], check["reason"]) == (
+        "UNVERIFIABLE", "PYTHON_ACCEPTANCE_BOUNDARY_UNAVAILABLE")
+    body = _load(root / check["receipt_ref"])["receipt"]
+    assert body["verdict"] == "UNVERIFIABLE"
+    assert any(item.startswith("NOT_PROVES_TRUSTWORTHY_PYTHON_PASS:")
+               for item in body["extra_does_not_prove"])
+
+
+@pytest.mark.skipif(sys.platform != "win32", reason="Windows namespace boundary")
+@pytest.mark.parametrize("loader", ["spec", "source-loader", "run-path"])
+def test_unadmitted_external_python_dependency_cannot_yield_pass(tmp_path, loader):
+    root, candidate, context = _fixture(tmp_path)
+    external = tmp_path / "unadmitted_dependency.py"
+    external.write_text("def add(a,b): return a+b\n", encoding="utf-8")
+    literal = repr(str(external))
+    if loader == "spec":
+        load = ("import importlib.util\ns=importlib.util.spec_from_file_location('outside',p)\n"
+                "m=importlib.util.module_from_spec(s); s.loader.exec_module(m)\n")
+    elif loader == "source-loader":
+        load = "from importlib.machinery import SourceFileLoader\nm=SourceFileLoader('outside',p).load_module()\n"
+    else:
+        load = "import runpy\nm=type('Module',(),runpy.run_path(p))\n"
+    candidate.write_text(f"p={literal}\n{load}add=m.add\n", encoding="utf-8")
+    check = run_journey_check(_journey(), "claim-root", "code", candidate, context)
+    assert (check["verdict"], check["reason"]) == (
+        "UNVERIFIABLE", "PYTHON_ACCEPTANCE_BOUNDARY_UNAVAILABLE")
+    body = _load(root / check["receipt_ref"])["receipt"]
+    boundary = body["coverage"]["dependency_boundary"]
+    assert boundary["admitted_source_refs"] == ["candidate.py", "test_candidate.py"]
+    assert boundary["closure"] == "UNVERIFIABLE"
+    assert external.name not in {item["ref"] for item in body["coverage"]["raw_artifacts"]}
+    assert any(item.startswith("NOT_PROVES_CLOSED_EXECUTION_DEPENDENCIES:")
+               for item in body["extra_does_not_prove"])
+
+
+@pytest.mark.skipif(sys.platform != "win32", reason="Windows namespace boundary")
+def test_benign_python_pass_is_honestly_unverifiable_without_independent_checker(tmp_path):
+    root, candidate, context = _fixture(tmp_path)
+    candidate.write_text("def add(a,b): return a+b\n", encoding="utf-8")
+    check = run_journey_check(_journey(), "claim-root", "code", candidate, context)
+    assert (check["verdict"], check["reason"]) == (
+        "UNVERIFIABLE", "PYTHON_ACCEPTANCE_BOUNDARY_UNAVAILABLE")
+    body = _load(root / check["receipt_ref"])["receipt"]
+    assert body["unverifiable_reason"] == "PYTHON_ACCEPTANCE_BOUNDARY_UNAVAILABLE"
+    assert body["denominator"]["hits"] == 0 and body["denominator"]["unverifiable"] == 1
 
 
 @pytest.mark.skipif(sys.platform != "win32", reason="Windows namespace boundary")
@@ -170,12 +249,15 @@ def test_entire_import_namespace_rejects_candidate_shadowing(tmp_path, attack):
 
 
 @pytest.mark.skipif(sys.platform != "win32", reason="packet fixture needs an executed code receipt")
-def test_unsigned_coherent_carried_result_rewrite_needs_an_external_anchor(tmp_path):
+def test_unsigned_coherent_honest_null_rewrite_needs_an_external_anchor(tmp_path):
     packet = _packet(tmp_path); receipt_path = next((packet / "receipts").iterdir())
     anchor = "sha256:" + hashlib.sha256((packet / "manifest.json").read_bytes()).hexdigest()
     body = _load(receipt_path)["receipt"]
-    body["verdict"] = body["coverage"]["check_result"]["verdict"] = "PASS"
-    body["denominator"]["hits"] = body["coverage"]["check_result"]["denominator"]["hits"] = 1
+    reason = "PYTHON_ACCEPTANCE_BOUNDARY_UNAVAILABLE"
+    body["verdict"] = body["coverage"]["check_result"]["verdict"] = "UNVERIFIABLE"
+    body["attribution"] = body["coverage"]["check_result"]["attribution"] = "ENVIRONMENT"
+    body["unverifiable_reason"] = reason
+    body["denominator"]["unverifiable"] = body["coverage"]["check_result"]["denominator"]["unverifiable"] = 1
     output_ref = body["coverage"]["oracle_output_ref"]; criterion = _load(packet / "criterion.json")
     claim = criterion["journey"]["events"][-1]["claims"][0]
     raw = next(item for item in criterion["raw_artifacts"] if item["ref"] == output_ref)
@@ -192,11 +274,12 @@ def test_unsigned_coherent_carried_result_rewrite_needs_an_external_anchor(tmp_p
     receipt_raw.update(sha256=raw["sha256"], bytes=raw["bytes"]); body["raw_stdout_sha256"] = raw["sha256"]
     body["coverage"]["check_result"].update(return_code=0,
         output_hash=hashlib.sha256(b"test_candidate::test_add=PASS\n0").hexdigest()[:16])
-    claim["verdict"] = "PASS"; _rehash_journey(criterion["journey"])
+    claim.update(verdict="UNVERIFIABLE", reason=reason); _rehash_journey(criterion["journey"])
     criterion["journey_sha256"] = canonical_sha256(criterion["journey"])
     criterion["event_head_sha256"] = criterion["journey"]["event_head_sha256"]
     changed = _save_receipt(packet, body, criterion); criterion["criteria"][0].update(
-        verdict="PASS", denominator=changed.denominator.to_dict(), check_result=body["coverage"]["check_result"])
+        verdict="UNVERIFIABLE", denominator=changed.denominator.to_dict(),
+        check_result=body["coverage"]["check_result"])
     tree = _load(packet / "tree_head.json"); tree["root"] = "sha256:" + criterion["event_head_sha256"]
     _store(packet / "tree_head.json", tree); _save_criterion(packet, criterion); _seal(packet, "tree_head.json")
     unsigned = verify_journey_packet(packet)

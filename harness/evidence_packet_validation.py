@@ -9,7 +9,7 @@ from .checker_identity import validate_checker_source
 from .evidence_json import canonical_bytes, canonical_sha256, strict_load_json
 from .pytest_result_validation import validate_pytest_result
 from .receipt import Receipt
-from .runtime_descriptor import RUNTIME_LIMITS
+from .runtime_descriptor import PYTHON_LIMITS
 from .verdict import Attribution, Execution, Verdict
 SCHEMA = "flywheel.evidence-packet/v1"
 CHECK_KEYS = frozenset(("command", "output_hash", "return_code", "execution",
@@ -20,7 +20,7 @@ DNP = (
     "NOT_PROVES_EVIDENCE_COMPLETENESS: carried artifacts prove what was packed, not "
     "that no relevant evidence was omitted before packing.",
     "NOT_PROVES_LIVE_PROVIDER_STATE: offline recheck makes no provider or network call.", "NOT_PROVES_ORIGIN_AUTHENTICITY: an unsigned packet has no authenticated author.",
-    "NOT_PROVES_REHASH_RESISTANCE: self-carried hashes need an external manifest anchor.") + RUNTIME_LIMITS
+    "NOT_PROVES_REHASH_RESISTANCE: self-carried hashes need an external manifest anchor.") + PYTHON_LIMITS
 MAX_JSON, MAX_FILE, MAX_FILES, MAX_DEPTH = 1_048_576, 2_097_152, 1024, 32
 def digest(data: bytes) -> str:
     return "sha256:" + hashlib.sha256(data).hexdigest()
@@ -243,8 +243,15 @@ def verify_journey_packet(packet_dir: Path, *, expected_manifest_sha256: str | N
                 "sha256": receipt.checker_source_sha256, "name": name,
                 "runtime_descriptor_sha256": runtime_sha}
             source_blob = _read_bounded(root / safe_relative("checker/" + name), MAX_FILE)
-            validate_checker_source(source_blob, checker_module=receipt.checker_module,
+            checker = validate_checker_source(source_blob,
+                checker_module=receipt.checker_module,
                 oracle_type=receipt.coverage.get("oracle_type"), runtime=runtime)
+            if receipt.coverage.get("oracle_type") == "pytest":
+                executor = next(item for item in checker["sources"]
+                    if item["module"] == "harness.pytest_executor")
+                if receipt.coverage["dependency_boundary"].get(
+                        "executor_source_sha256") != executor["sha256"]:
+                    raise ValueError("pytest executor source binding drift")
             seen.add(receipt.claim_sha256())
         expected_criteria.sort(key=lambda item: (item["claim_id"], item["criterion_id"]))
         expected_receipts.sort(key=lambda item: item["claim_sha256"])

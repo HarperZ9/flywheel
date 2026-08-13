@@ -14,7 +14,7 @@ PYTEST_MODULES = (
     "harness.execution_input_protection",
     "harness.oracle",
     "harness.pytest_prepared",
-    "harness.pytest_provenance",
+    "harness.pytest_executor",
     "harness.runtime_descriptor",
     "harness.windows_low_integrity",
 )

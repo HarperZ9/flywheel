@@ -1,4 +1,4 @@
-"""Public-safe, reproducible identity for the Python/pytest decision runtime."""
+"""Public-safe, reproducible identity for the Python/pytest test runtime."""
 from __future__ import annotations
 
 import hashlib
@@ -9,6 +9,7 @@ import sys
 from .receipt_fields import canonical
 
 SCHEMA = "flywheel.pytest-runtime/v1"
+PYTHON_ACCEPTANCE_REASON = "PYTHON_ACCEPTANCE_BOUNDARY_UNAVAILABLE"
 MAX_SOURCE_FILES = 1024
 MAX_SOURCE_FILE_BYTES = 1_048_576
 MAX_SOURCE_BYTES = 8_388_608
@@ -19,6 +20,13 @@ RUNTIME_LIMITS = (
     "NOT_PROVES_CROSS_ENVIRONMENT_REPRODUCTION: matching descriptors are "
     "required; execution under a different runtime is not proved equivalent.",
 )
+EXECUTION_LIMITS = (
+    "NOT_PROVES_TRUSTWORTHY_PYTHON_PASS: arbitrary Python shares memory with "
+    "its test process, so a positive child result is not independent acceptance.",
+    "NOT_PROVES_CLOSED_EXECUTION_DEPENDENCIES: admitted sources and the described "
+    "runtime are bound, but external reads are not independently observable.",
+)
+PYTHON_LIMITS = RUNTIME_LIMITS + EXECUTION_LIMITS
 
 
 def _digest(value: object) -> str:
