@@ -65,16 +65,22 @@ def test_comparison_key_uses_declared_policy_not_actual_enforcement():
     row = {"task_set_id": "set", "task_id": "task", "raw_prompt_sha256": "a" * 64,
            "tool_policy_sha256": "b" * 64, "execution_mode": "focused_run",
            "enforcement_sha256": "c" * 64, "input_sha256s": {"z": "d" * 64},
-           "model_id": "Spark", "cache_state": "cold_declared", "phase": "spark",
+           "model_id": "Spark", "requested_model_reference": "5.3-Codex-Spark", "cache_state": "cold_declared", "phase": "spark",
            "source_snapshot_sha256": "e" * 64, "workspace_snapshot_sha256": "f" * 64,
            "provider_role": "codex_harness", "repetition": 1}
     key = comparison_key(row)
     assert isinstance(key, str) and len(key) == 64
     assert comparison_key({**row, "provider_role": "flywheel_harness", "repetition": 3,
                            "enforcement_sha256": "0" * 64}) == key
-    for field in ("task_id", "input_sha256s", "model_id", "cache_state", "phase",
+    for field in ("task_id", "input_sha256s", "model_id", "requested_model_reference", "cache_state", "phase",
                   "source_snapshot_sha256", "workspace_snapshot_sha256"):
         assert comparison_key({**row, field: "changed"}) != key
+    local = {**row, "availability_evidence": {"endpoint_profile_id": "release-14b", "endpoint_profile_sha256": "1" * 64,
+             "release_asset_sha256": "2" * 64, "expected_ollama_digest": "sha256:expected", "observed_ollama_digest": "sha256:expected"}}
+    local_key = comparison_key(local)
+    for field in ("endpoint_profile_id", "endpoint_profile_sha256", "release_asset_sha256", "expected_ollama_digest", "observed_ollama_digest"):
+        evidence = {**local["availability_evidence"], field: "changed"}
+        assert comparison_key({**local, "availability_evidence": evidence}) != local_key
 def _manifest(roles):
     tasks = [{"task_id": f"agt-{n:03d}-task", "raw_prompt": f"prompt-{n}",
               "raw_prompt_sha256": f"{n:064x}", "input_sha256s": {},
@@ -115,20 +121,16 @@ def test_expansion_rejects_duplicate_attempt_keys(tmp_path):
 class FakeAdapter:
     role = "local_14b"
     adapter_id = "local_14b/v1"
-
     def __init__(self, *, available=True, result=None):
         self.available, self.result, self.calls = available, result, []
-
     def enforcement(self, request):
         self.calls.append("enforcement")
         description = {"boundary": "fake-read-only"}
         return EnforcementResult(description, canonical_hash(description), "verified_live_and_fixture", "equivalent")
-
     def availability(self, request):
         self.calls.append("availability")
         return AvailabilityResult(self.available, "" if self.available else "endpoint_unavailable",
                                   "ready" if self.available else "offline", {"probe": "fixture"})
-
     def execute(self, request):
         self.calls.append("execute")
         if isinstance(self.result, Exception): raise self.result
@@ -136,8 +138,6 @@ class FakeAdapter:
 class SecretEnforcementAdapter(FakeAdapter):
     def enforcement(self, request):
         return EnforcementResult({"authorization_token": "never-write-me"}, "x" * 64, "described", "non_equivalent")
-
-
 def canonical_hash(value):
     return hashlib.sha256(json.dumps(value, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
 

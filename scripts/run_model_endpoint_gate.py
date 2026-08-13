@@ -98,6 +98,11 @@ def _health_probe(profile: dict[str, Any], backend: Any) -> tuple[bool, str, dic
         detail.update(health_model_ref=observed, ollama_digest=digest)
         if not digest:
             return False, "ollama_digest_missing", detail
+        expected = profile.get("expected_ollama_digest", "")
+        if profile.get("release_asset_sha256") and not expected:
+            return False, "ollama_expected_digest_missing", detail
+        if expected and digest != expected:
+            return False, "ollama_digest_mismatch", detail
         return True, "", detail
     if status == 404:
         return False, "wrong_service_or_path", detail
@@ -131,6 +136,8 @@ def probe_profile(
         "model_key": profile.get("model_key", ""), "backend": profile.get("backend", ""),
         "provider_role": profile.get("provider_role", ""), "endpoint_url": profile.get("endpoint_url", ""),
         "expected_model_ref": str(profile.get("model_ref", "")), "observed_model_ref": "", "model_ref": "",
+        "release_asset_sha256": str(profile.get("release_asset_sha256", "")),
+        "expected_ollama_digest": str(profile.get("expected_ollama_digest", "")),
         "health_ok": False, "health_status": 0, "health_model_ref": "", "ollama_digest": "",
         "generation_attempted": False, "generation_ok": False, "failure_class": "",
         "response_sha256": "", "response_chars": 0, "run_id": run_id,

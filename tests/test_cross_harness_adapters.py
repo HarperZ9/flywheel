@@ -9,8 +9,7 @@ from harness.cross_harness_executor import SHARED_TOOL_POLICY, execute_cross_har
 from harness.cross_harness_types import AttemptRequest
 from harness.proposer import StubProposer
 def request(tmp_path, role="codex_harness", adapter="codex_cli_json/v1", model="gpt-5.3-codex-spark", requested=None):
-    return AttemptRequest("run", "spark", "set", "agt-001-full", "do the task", "a" * 64, role, role.split("_")[0], adapter,
-        model, requested or model, tmp_path, "b" * 64, {}, SHARED_TOOL_POLICY, "c" * 64, 1, "cold_declared", 3, tmp_path)
+    return AttemptRequest("run", "spark", "set", "agt-001-full", "do the task", "a" * 64, role, role.split("_")[0], adapter, model, requested or model, tmp_path, "b" * 64, {}, SHARED_TOOL_POLICY, "c" * 64, 1, "cold_declared", 3, tmp_path)
 def outcome(stdout="", output="answer", *, rc=0, stderr="", elapsed=7):
     if output is not None:
         final = json.dumps({"type": "item.completed", "item": {"type": "agent_message", "text": output}})
@@ -260,7 +259,7 @@ def test_local_phase_rechecks_bound_gate_and_emits_all_eight_sanitized_unavailab
         assert "token" not in json.dumps(evidence).lower()
 @pytest.mark.parametrize(("path", "value", "code"), [
     ("raw_prompt_sha256", "bad", "admission_prompt_mismatch"), ("input_sha256s", {"x": "bad"}, "admission_input_mismatch"),
-    ("availability_evidence.adapter_evidence.oracle_spec_sha256", "bad", "admission_oracle_mismatch"), ("model_id", "bad", "admission_model_mismatch"),
+    ("availability_evidence.adapter_evidence.oracle_spec_sha256", "bad", "admission_oracle_mismatch"), ("model_id", "bad", "admission_model_mismatch"), ("requested_model_reference", "bad", "admission_requested_model_mismatch"), ("model_observed", "bad", "admission_observed_model_mismatch"),
     ("adapter_id", "bad", "admission_adapter_mismatch"), ("tool_policy_sha256", "bad", "admission_policy_mismatch"),
     ("source_commit", "bad", "admission_source_mismatch"), ("source_snapshot_sha256", "bad", "admission_source_mismatch"), ("cache_state", "warm", "admission_cache_mismatch"),
     ("execution_mode", "bad", "admission_execution_mismatch"), ("task_set_id", "bad", "admission_execution_mismatch"),
@@ -277,6 +276,7 @@ def test_admission_binds_current_identity_and_blocks_only_affected_role(tmp_path
         row = {"phase": "admission-smoke", "provider_role": role, "task_id": task["task_id"], "repetition": 1,
             "primary_outcome": "completed", "receipt_path": str(receipt), "task_set_id": "set",
             "raw_prompt_sha256": task["raw_prompt_sha256"], "input_sha256s": {}, "adapter_id": "adapter", "model_id": "model",
+            "requested_model_reference": "model", "model_observed": "", "model_observation_basis": "unknown",
             "tool_policy_sha256": canonical_sha256(SHARED_TOOL_POLICY), **current,
             "availability_evidence": {"adapter_evidence": {"oracle_spec_sha256": canonical_sha256(task["oracle"])}}}
         if role == roles[1]:

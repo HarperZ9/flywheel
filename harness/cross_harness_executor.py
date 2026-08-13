@@ -1,6 +1,5 @@
 """Typed cross-harness row expansion and execution."""
 from __future__ import annotations
-
 import hashlib, json
 from pathlib import Path
 from typing import Any
@@ -11,13 +10,11 @@ from harness.cross_harness_oracles import OracleContext, evaluate_task_oracle
 from harness.cross_harness_types import (AttemptRequest, metric_null_reasons, sanitize_evidence,
     validate_elapsed_ms)
 class _MalformedAttempt(ValueError): pass
-
 SHARED_TOOL_POLICY = {
     "version": "cross-harness-read-only/v1", "allow_read": True,
     "allow_write": False, "allow_exec": False, "allow_mcp": False,
     "max_steps": 6, "max_output_tokens": 2048,
 }
-
 def resolve_task_ids(task_rows: list[dict[str, Any]], selectors: list[str]) -> list[str]:
     task_ids = [str(row.get("task_id", "")) for row in task_rows]
     resolved: list[str] = []
@@ -59,20 +56,23 @@ def derive_primary_outcome(execution_state: str, oracle_state: str, receipt_stat
     status = ({"unavailable": "skipped", "receipt_drift": "invalid"}.get(outcome)
               or ("failed" if outcome in {"timeout", "malformed", "internal_error"} else "executed"))
     return outcome, status
-
 def comparison_key(row: dict[str, Any]) -> str:
     fields = ("task_set_id", "task_id", "raw_prompt_sha256", "input_sha256s", "tool_policy_sha256",
-              "model_id", "cache_state", "phase", "execution_mode", "source_snapshot_sha256",
+              "model_id", "requested_model_reference", "cache_state", "phase", "execution_mode", "source_snapshot_sha256",
               "workspace_snapshot_sha256")
+    evidence = row.get("availability_evidence") if isinstance(row.get("availability_evidence"), dict) else {}
+    route_fields = ("endpoint_profile_id", "endpoint_profile_sha256", "release_asset_sha256",
+                    "expected_ollama_digest", "observed_ollama_digest")
+    return canonical_sha256({**{field: row.get(field) for field in fields},
+                             "local_route_identity": {field: evidence.get(field, "") for field in route_fields}})
+def legacy_comparison_key(row: dict[str, Any]) -> str:
+    fields = ("task_set_id", "task_id", "raw_prompt_sha256", "input_sha256s", "tool_policy_sha256", "model_id", "cache_state", "phase", "execution_mode", "source_snapshot_sha256", "workspace_snapshot_sha256")
     return canonical_sha256({field: row.get(field) for field in fields})
-
 def _one(rows: list[dict[str, Any]], field: str, value: str) -> dict[str, Any]:
     matches = [row for row in rows if str(row.get(field, "")) == value]
     if len(matches) != 1:
         raise ValueError(f"expected exactly one {field} row for {value}")
     return matches[0]
-
-
 def _unavailable_evidence(role: str, runtime: dict[str, Any], matrix: dict[str, Any]) -> dict[str, Any]:
     profiles = runtime.get("endpoint_profile_matches", [])
     gates = runtime.get("endpoint_gate_matches", [])
@@ -85,13 +85,14 @@ def _unavailable_evidence(role: str, runtime: dict[str, Any], matrix: dict[str, 
         "observed_model_reference": str(gate.get("observed_model_ref", "")),
         "endpoint_profile_id": str(profile.get("profile_id", "")),
         "endpoint_profile_sha256": str(profile.get("profile_sha256", "")),
+        "release_asset_sha256": str(profile.get("release_asset_sha256", "")),
+        "expected_ollama_digest": str(profile.get("expected_ollama_digest", "")),
+        "observed_ollama_digest": str(gate.get("ollama_digest", "")),
         "attempted_gate_path": str(matrix.get("endpoint_gate_path", "")),
         "attempted_gate_sha256": str(matrix.get("endpoint_gate_sha256", "")),
         "attempted_gate_run_id": str(matrix.get("expected_gate_run_id", "")),
         "blocking_gates": blocking, "failure_reason": ",".join(blocking),
     }
-
-
 def expand_attempt_rows(
     manifest: dict[str, Any], runtime_matrix: dict[str, Any], *, artifact_root: Path,
     run_id: str, phase: str, selectors: list[str], roles: list[str], repetitions: int,
@@ -118,7 +119,8 @@ def expand_attempt_rows(
                     "attempt_key": list(key), "run_id": run_id, "phase": phase,
                     "provider_role": role, "harness_id": str(spec.get("harness_id", "")),
                     "adapter_id": str(spec.get("adapter_id", "")),
-                    "model_id": str(spec.get("model_id", "")), "requested_model_reference": str(spec.get("requested_model_reference", "")),
+                    "model_id": str(spec.get("model_id", "")), "model_display_name": str(spec.get("model_display_name", "")),
+                    "requested_model_reference": str(spec.get("requested_model_reference", "")),
                     "task_set_id": str(manifest.get("task_set_id", "")), "task_id": task_id,
                     "benchmark_id": str(task.get("benchmark_id", "")), "coverage_unit": str(task.get("coverage_unit", "")),
                     "task": task, "repetition": repetition, "attempt_dir": str(attempt),

@@ -14,7 +14,8 @@ DEFAULT_CONTRACT = str(Path(__file__).resolve().parent.parent / "benchmarks" / "
 GATE_FIELDS = (
     "selected_profile_id", "profile_sha256", "model", "backend",
     "expected_model_ref", "observed_model_ref", "health_ok", "generation_ok",
-    "failure_class", "ollama_digest", "run_id", "observed_at",
+    "failure_class", "release_asset_sha256", "expected_ollama_digest",
+    "ollama_digest", "run_id", "observed_at",
 )
 
 
@@ -119,11 +120,12 @@ def _runtime_row(
     role = str(row.get("provider_role", "")); selector = row.get("endpoint_selector") if isinstance(row.get("endpoint_selector"), dict) else {}
     modes = [str(item) for item in row.get("allowed_modes", []) if item] if isinstance(row.get("allowed_modes"), list) else []
     profiles = _profile_matches(selector, endpoint_profiles)
+    profile_code = next((_profile_failure(item, selector) for item in profiles if _profile_failure(item, selector)), "")
     auth = _auth_matches(role, endpoint_auth_status)
     needs_endpoint = role in {"local_14b", "local_32b"}
     needs_auth = role in {"codex_harness", "flywheel_harness", "claude_code"}
-    profile_ready = any(item["root_exists"] and item["supports_agentic_workflow"] for item in profiles) if needs_endpoint else True
-    gate_matches, gate_code = _endpoint_gate_result(profiles, endpoint_gate, expected_gate_run_id, now, max_age_seconds) if needs_endpoint else ([], "")
+    profile_ready = any(item["root_exists"] and item["supports_agentic_workflow"] for item in profiles) and not profile_code if needs_endpoint else True
+    gate_matches, gate_code = _endpoint_gate_result(profiles, endpoint_gate, expected_gate_run_id, now, max_age_seconds) if needs_endpoint and not profile_code else ([], "")
     auth_ready = any(item["configured"] for item in auth) if needs_auth else True
     blocking = []
     if str(row.get("adapter_state", "")) in {"needs_discovery", "needs_adapter"}:
@@ -131,7 +133,7 @@ def _runtime_row(
     if needs_auth and not auth_ready:
         blocking.append("account_auth")
     if needs_endpoint and not profile_ready:
-        blocking.append("endpoint_profile")
+        blocking.append(profile_code or "endpoint_profile")
     if needs_endpoint and gate_code:
         blocking.append(gate_code)
     manifest_ready = "manifest_only" in modes
@@ -140,6 +142,7 @@ def _runtime_row(
         "schema": "harness.adapter-runtime-matrix.row/v1", "provider_role": role,
         "harness_id": str(row.get("harness_id", "")), "model_id": str(row.get("model_id", "")),
         "model_display_name": str(row.get("model_display_name", "")), "requested_model_reference": str(row.get("requested_model_reference", "")),
+        "model_observed": "", "model_observation_basis": "unknown",
         "endpoint_selector": dict(selector),
         "adapter_state": str(row.get("adapter_state", "")), "allowed_modes": modes,
         "required_receipts": _strings(row.get("required_receipts")),
@@ -159,10 +162,20 @@ def _profile_matches(selector: dict[str, Any], data: dict[str, Any]) -> list[dic
         "profile_id": item.get("profile_id", ""), "model": item.get("model", ""),
         "backend": item.get("backend", ""), "provider_role": item.get("provider_role", ""),
         "model_ref": item.get("model_ref", ""), "profile_sha256": _canonical_sha256(item),
+        "release_asset_sha256": item.get("release_asset_sha256", ""),
+        "expected_ollama_digest": item.get("expected_ollama_digest", ""),
         "root_exists": item.get("root_exists") is True,
         "supports_agentic_workflow": item.get("supports_agentic_workflow") is True,
         "live_probed": bool(item.get("live_probed")),
     } for item in rows if isinstance(item, dict) and all(item.get(key) == value for key, value in wanted.items())]
+
+
+def _profile_failure(profile: dict[str, Any], selector: dict[str, Any]) -> str:
+    if profile.get("release_asset_sha256") != selector.get("release_asset_sha256"):
+        return "endpoint_profile_release_asset_sha256_mismatch"
+    if profile.get("backend") == "ollama" and not str(profile.get("expected_ollama_digest", "")).strip():
+        return "endpoint_profile_ollama_digest_missing"
+    return ""
 
 
 def _strings(value: Any) -> list[str]:
@@ -210,13 +223,15 @@ def _gate_failure(gate: dict[str, Any], profile: dict[str, Any], run_id: str, no
         (gate.get("model") != profile["model"], "endpoint_gate_model_mismatch"),
         (gate.get("backend") != profile["backend"], "endpoint_gate_backend_mismatch"),
         (gate.get("profile_sha256") != profile["profile_sha256"], "endpoint_gate_profile_hash_mismatch"),
+        (gate.get("release_asset_sha256") != profile["release_asset_sha256"], "endpoint_gate_release_asset_sha256_mismatch"),
         (gate.get("expected_model_ref") != profile["model_ref"], "endpoint_gate_expected_ref_mismatch"),
         (gate.get("observed_model_ref") != profile["model_ref"], "endpoint_gate_observed_ref_mismatch"),
         (gate.get("health_ok") is not True or gate.get("generation_ok") is not True
          or gate.get("failure_class") != "", "endpoint_gate_failed"),
-        (profile["backend"].lower() == "ollama"
-         and (not isinstance(gate.get("ollama_digest"), str) or not gate["ollama_digest"].strip()),
-         "endpoint_gate_ollama_digest_missing"),
+        (profile["backend"].lower() == "ollama" and (not isinstance(gate.get("ollama_digest"), str)
+         or not gate["ollama_digest"].strip()), "endpoint_gate_ollama_digest_missing"),
+        (profile["backend"].lower() == "ollama" and (gate.get("expected_ollama_digest") != profile["expected_ollama_digest"]
+         or gate.get("ollama_digest") != profile["expected_ollama_digest"]), "endpoint_gate_ollama_digest_mismatch"),
     )
     return next((code for failed, code in checks if failed), "")
 

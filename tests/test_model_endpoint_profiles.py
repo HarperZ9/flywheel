@@ -118,4 +118,14 @@ def test_release_ollama_profile_root_exists_tracks_trained_artifact_presence(tmp
     assert release["selectors"] == ["flywheel-local-coder-14b"]
     assert release["model_root"] == str(release_dir)
     assert release["release_artifact"] == "telos-coder-14b-cpt2020-q4_k_m.gguf"
+    assert release["release_asset_sha256"] == "613db240e3efc6730f24042a4602d1f12f1c6b397af1d5a4d74f4e064d4064be"
+    assert release["expected_ollama_digest"] == "sha256:7ff88ed3fd95eac7e79cb38a0a5ee3db39b7103a09d5a51d75fcda908522f6d8"
     assert release["launch_command_template"] == "ollama run flywheel-local-coder-14b"
+
+
+def test_release_ollama_profile_binds_exact_32b_release_identity(tmp_path):
+    (tmp_path / "models" / "Qwen2.5-Coder-32B-Instruct").mkdir(parents=True)
+    report = build_report(models=["32B"], base_root=tmp_path, serve_url="", ollama_url="http://127.0.0.1:11434")
+    release = next(row for row in report["profiles"] if row["profile_id"] == "ollama-release-32b")
+    assert release["release_asset_sha256"] == "65e6133fbe4d12579a776047a71bebb98ab86f9e3d343ed821b51dac0ce312f4"
+    assert release["expected_ollama_digest"] == "sha256:35fa696e662eb83293491d4b87de1d1308254d82be7aa8244f4fa442bf0e09d9"

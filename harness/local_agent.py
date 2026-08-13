@@ -33,8 +33,6 @@ Transport = Callable[[str, str, Optional[bytes], float], "tuple[int, dict]"]
 
 SERVE_URL = "http://127.0.0.1:8765"
 OLLAMA_URL = "http://127.0.0.1:11434"
-
-
 def _http(method: str, url: str, body: Optional[bytes], timeout: float) -> "tuple[int, dict]":
     req = urllib.request.Request(url, data=body, method=method,
                                  headers={"Content-Type": "application/json"})
@@ -52,8 +50,7 @@ def _http(method: str, url: str, body: Optional[bytes], timeout: float) -> "tupl
 
 class BackendError(RuntimeError):
     """A backend failed to produce a completion (down, HTTP error, malformed)."""
-
-
+class MalformedBackendOutput(BackendError): """A backend response violates its typed identity contract."""
 class Backend(Protocol):
     name: str
 
@@ -67,8 +64,7 @@ def _flatten(messages: list[dict]) -> str:
     """Conversation -> single prompt (serve.py takes one prompt + system)."""
     return "\n".join(f"{m.get('role', 'user')}: {m.get('content', '')}"
                      for m in messages)
-
-
+def _ollama_native_model(value: str) -> str: return value[7:] if value.startswith("ollama:") else value
 @dataclass
 class ServeBackend:
     """The trained 14B/32B served by harness/serve.py over /generate."""
@@ -132,7 +128,7 @@ class OllamaBackend:
         return bool(self._resolved)
 
     def chat(self, messages, *, system, max_tokens, temperature, seed) -> dict:
-        model = self._resolved or self.model
+        model = _ollama_native_model(self._resolved or self.model)
         if not model:
             raise BackendError("no ollama model resolved (call health() or pass model=)")
         msgs = ([{"role": "system", "content": system}] if system else []) + messages
@@ -148,10 +144,13 @@ class OllamaBackend:
         text = (obj.get("message") or {}).get("content")
         if status != 200 or text is None:
             raise BackendError(f"ollama returned {status}: {obj.get('error', obj)}")
-        return {"text": text, "model_ref": f"ollama:{obj['model']}" if isinstance(obj.get("model"), str) and obj["model"] else "", "seed": seed}
+        observed = obj.get("model")
+        if not isinstance(observed, str) or not observed or observed != model:
+            raise MalformedBackendOutput("ollama response model missing or mismatched")
+        return {"text": text, "model_ref": f"ollama:{observed}", "seed": seed}
 
     def _body(self, messages, system, max_tokens, temperature, seed, stream):
-        model = self._resolved or self.model
+        model = _ollama_native_model(self._resolved or self.model)
         msgs = ([{"role": "system", "content": system}] if system else []) + messages
         return model, json.dumps({
             "model": model, "messages": msgs, "stream": stream,

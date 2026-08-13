@@ -113,8 +113,6 @@ def test_extract_child_artifact_summaries_reads_m7_source_mined_comparison(tmp_p
     assert summaries[0]["kind"] == "m7_source_mined"
     assert summaries[0]["comparison"]["flywheel_provider"] == "serve"
     assert summaries[0]["provider_metrics"][1]["provider"] == "codex"
-
-
 def test_build_outcome_includes_unisonai_provider_metrics(tmp_path):
     matrix = tmp_path / "unisonai.json"
     matrix.write_text(json.dumps({
@@ -228,8 +226,6 @@ def test_build_outcome_includes_classifier_friction_metrics(tmp_path):
     child = outcome["observations"]["child_artifacts"][0]
     assert child["kind"] == "classifier_friction_accountability"
     assert child["provider_metrics"][0]["mode"] == "guardrail_on"
-
-
 def test_build_outcome_includes_cross_harness_manifest_signals(tmp_path):
     manifest = tmp_path / "cross_harness_manifest.json"
     manifest.write_text(json.dumps({
@@ -271,8 +267,6 @@ def test_build_outcome_includes_cross_harness_manifest_signals(tmp_path):
     assert signals["task_count"] == 1
     assert signals["planned_scorecard_rows"] == 2
     assert signals["provider_roles"] == ["codex_harness", "flywheel_harness"]
-
-
 def test_build_outcome_includes_adapter_runtime_signals(tmp_path):
     matrix = tmp_path / "adapter_runtime_matrix.json"
     matrix.write_text(json.dumps({
@@ -287,7 +281,8 @@ def test_build_outcome_includes_adapter_runtime_signals(tmp_path):
             {
                 "provider_role": "codex_harness",
                 "harness_id": "codex",
-                "target_model": "5.3-Codex-Spark",
+                "model_id": "gpt-5.3-codex-spark", "model_display_name": "GPT-5.3-Codex-Spark",
+                "requested_model_reference": "gpt-5.3-codex-spark", "model_observed": "", "model_observation_basis": "unknown",
                 "adapter_state": "contract_only",
                 "manifest_ready": True,
                 "focused_run_ready": True,
@@ -321,9 +316,7 @@ def test_build_outcome_includes_adapter_runtime_signals(tmp_path):
         ],
         "summary": {"failed_steps": 0, "timeout_steps": 0},
     }
-
     outcome = build_outcome(report, source_report_path="seed.json")
-
     signals = outcome["observations"]["adapter_runtime_signals"]
     assert signals["matrix_artifacts"] == 1
     assert signals["runtime_rows"] == 2
@@ -331,10 +324,13 @@ def test_build_outcome_includes_adapter_runtime_signals(tmp_path):
     assert signals["focused_run_ready_roles"] == ["codex_harness"]
     assert signals["blocking_gate_counts"]["endpoint_gate"] == 1
     assert signals["provider_execution_observed"] is False
+    identities = {row["identity_schema"]: row for row in signals["model_identities"]}
+    assert identities["v2"]["requested_model_reference"] == "gpt-5.3-codex-spark"
+    assert identities["historical_v1"]["requested_model_reference"] == "14B"
+    runtime = next(row for row in outcome["observations"]["child_artifacts"] if row["kind"] == "adapter_runtime_matrix")["runtime_metrics"][0]
+    assert all(runtime[field] == {"model_id": "gpt-5.3-codex-spark", "model_display_name": "GPT-5.3-Codex-Spark", "requested_model_reference": "gpt-5.3-codex-spark", "model_observed": "", "model_observation_basis": "unknown"}[field] for field in ("model_id", "model_display_name", "requested_model_reference", "model_observed", "model_observation_basis"))
     markdown = render_markdown(outcome)
     assert "## Adapter runtime signals" in markdown
-
-
 def test_build_outcome_includes_forum_route_signals(tmp_path):
     routes = tmp_path / "forum_route_receipts.json"
     routes.write_text(json.dumps({
@@ -1489,6 +1485,9 @@ def test_build_outcome_includes_harness_comparison_report_signals(tmp_path):
                 "quality_delta_flywheel_minus_codex": 0.4,
                 "latency_delta_ms_flywheel_minus_codex": -10,
                 "winner_by_quality": "flywheel",
+                "model_identities": [{"identity_schema": "v2", "model_id": "gpt-5.3-codex-spark",
+                    "model_display_name": "GPT-5.3-Codex-Spark", "requested_model_reference": "gpt-5.3-codex-spark",
+                    "model_observed": "", "model_observation_basis": "unknown"}],
             }
         ],
     }), encoding="utf-8")
@@ -1513,6 +1512,7 @@ def test_build_outcome_includes_harness_comparison_report_signals(tmp_path):
     assert signals["available_comparisons"] == 1
     assert signals["flywheel_quality_wins"] == 1
     assert signals["verdict_counts"]["FLYWHEEL_BETTER_ON_OBSERVED_SLICE"] == 1
+    assert signals["model_identities"][0]["model_id"] == "gpt-5.3-codex-spark"
     markdown = render_markdown(outcome)
     assert "## Harness comparison signals" in markdown
 def test_build_outcome_separates_spark_and_local_cross_harness_denominators(tmp_path):
@@ -1522,7 +1522,7 @@ def test_build_outcome_separates_spark_and_local_cross_harness_denominators(tmp_
         for role in roles:
             for task in ("agt-001", "agt-003", "agt-009", "agt-010"):
                 for repetition in range(1, repetitions + 1):
-                    rows.append({"phase": phase, "provider_role": role, "task_id": task, "repetition": repetition, "planned": True, "admitted": True, "blocked": False, "launched": True, "execution_state": "returned", "oracle_state": "pass", "receipt_state": "verified", "tool_policy_sha256": "a" * 64, "enforcement_sha256": ("b" if role.endswith("14b") else "c") * 64, "metrics": {"latency_ms": 10, "resource_observation": {"memory_mb": 2}}, "metric_null_reasons": {"usage": "provider_usage_unavailable"}})
+                    rows.append({"phase": phase, "provider_role": role, "task_id": task, "repetition": repetition, "planned": True, "admitted": True, "blocked": False, "launched": True, "execution_state": "returned", "oracle_state": "pass", "receipt_state": "verified", "model_id": "stable", "model_display_name": "Stable", "requested_model_reference": "requested", "model_observed": "", "model_observation_basis": "unknown", "tool_policy_sha256": "a" * 64, "enforcement_sha256": ("b" if role.endswith("14b") else "c") * 64, "metrics": {"latency_ms": 10, "resource_observation": {"memory_mb": 2}}, "metric_null_reasons": {"usage": "provider_usage_unavailable"}})
         if phase == "local": rows[0].update(receipt_state="drift", metrics={"latency_ms": 12, "resource_observation": {"drift": True}})
         path = tmp_path / f"{phase}.json"; path.write_text(json.dumps({"schema": "harness.cross-harness-task-scorecard/v1", "rows": rows}), encoding="utf-8")
         scorecards.append(str(path))
@@ -1533,6 +1533,7 @@ def test_build_outcome_separates_spark_and_local_cross_harness_denominators(tmp_
     assert signals["spark"]["execution_reliability"] == signals["spark"]["deterministic_quality"] == 1.0 and signals["spark"]["latency_ms"] == {"median": 10.0, "min": 10.0, "max": 10.0, "n": 24}
     assert signals["spark"]["resources"] == {"observations": [{"memory_mb": 2}], "n": 24, "included_execution_state": "returned", "receipt_states": {"verified": 24, "drift": 0, "not_emitted": 0}} and signals["local"]["execution_reliability"] == 1.0 and signals["local"]["resources"]["receipt_states"]["drift"] == 1
     assert {"drift": True} in signals["local"]["resources"]["observations"] and signals["local"]["deterministic_quality"] == 1.0 and signals["spark"]["metric_null_reasons"] == {"usage": 24} and signals["scorecard_artifacts"] == 2 and signals["quality_n"] == 31 and "No model-quality comparison can be concluded" not in render_markdown(outcome)
+    assert signals["spark"]["model_identities"][0]["identity_schema"] == "v2"
 def test_non_dry_cross_harness_zero_quality_reports_execution_denominator(tmp_path):
     scorecard = tmp_path / "comparison-input.json"
     scorecard.write_text(json.dumps({"schema": "harness.cross-harness-task-scorecard/v1", "rows": [{"phase": "local", "planned": True, "admitted": False, "blocked": True, "launched": False, "execution_state": "unavailable", "oracle_state": "not_run", "receipt_state": "verified"}, {"phase": "local", "planned": True, "admitted": True, "blocked": False, "launched": True, "execution_state": "malformed", "oracle_state": "not_run", "receipt_state": "verified"}]}), encoding="utf-8")

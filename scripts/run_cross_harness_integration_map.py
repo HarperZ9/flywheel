@@ -14,6 +14,7 @@ from typing import Any
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from harness.file_backed_store import FileBackedHarnessStore  # noqa: E402
+from harness.cross_harness_types import MODEL_IDENTITY_FIELDS, project_model_identity  # noqa: E402
 
 
 SCHEMA = "harness.cross-harness-integration-map/v1"
@@ -80,6 +81,18 @@ def _classification(value: str) -> str:
     return "observed"
 
 
+def _model_identities(value: Any) -> list[dict[str, str]]:
+    rows: list[dict[str, str]] = []
+    if isinstance(value, dict):
+        if "target_model" in value or any(field in value for field in MODEL_IDENTITY_FIELDS):
+            rows.append(project_model_identity(value))
+        for child in value.values(): rows.extend(_model_identities(child))
+    elif isinstance(value, list):
+        for child in value: rows.extend(_model_identities(child))
+    unique = {json.dumps(row, sort_keys=True): row for row in rows}
+    return list(unique.values())
+
+
 def build_integration_map(
     *, graph_path: str | Path, artifact_paths: dict[str, str | Path]
 ) -> dict[str, Any]:
@@ -123,6 +136,7 @@ def build_integration_map(
             "input_state": "blocked" if input_error else "observed",
             "blocking_reason": input_error or None,
             "observed_metadata": metadata,
+            "model_identities": _model_identities(body),
         }
         artifacts.append(artifact)
         if input_error:

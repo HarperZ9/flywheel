@@ -72,6 +72,18 @@ def test_map_requires_hashes_and_preserves_generated_metadata(tmp_path):
     assert any(row["value"] == "COMPARISON_INSUFFICIENT" for row in result["evidence"]["unknown"])
 
 
+def test_map_projects_v2_identity_and_labels_historical_v1(tmp_path):
+    graph, paths = _fixture(tmp_path)
+    _write(paths["runtime_matrix"], {"schema": SCHEMAS["runtime_matrix"], "runtime_rows": [{
+        "model_id": "stable", "model_display_name": "Stable", "requested_model_reference": "requested",
+        "model_observed": "", "model_observation_basis": "unknown"}, {"target_model": "legacy"}]})
+    result = build_integration_map(graph_path=graph, artifact_paths=paths)
+    identities = next(row for row in result["artifacts"] if row["id"] == "runtime_matrix")["model_identities"]
+    assert [row["identity_schema"] for row in identities] == ["v2", "historical_v1"]
+    assert identities[0]["requested_model_reference"] == "requested"
+    assert identities[1]["requested_model_reference"] == "legacy"
+
+
 def test_static_graph_status_never_becomes_live_runtime_evidence(tmp_path):
     graph, paths = _fixture(tmp_path)
 

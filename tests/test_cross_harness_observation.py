@@ -1,10 +1,11 @@
 import hashlib
 import json
+import pytest
 
 from harness.cross_harness_adapters import DirectCodexAdapter, FlywheelRouterAdapter, LocalRouterAdapter, ProcessOutcome
 from harness.cross_harness_artifacts import canonical_sha256
 from harness.cross_harness_executor import SHARED_TOOL_POLICY, execute_cross_harness_manifest
-from harness.local_agent import OllamaBackend, ServeBackend
+from harness.local_agent import MalformedBackendOutput, OllamaBackend, ServeBackend
 from harness.cross_harness_types import AdapterResult, AvailabilityResult, EnforcementResult
 
 
@@ -86,12 +87,36 @@ def test_local_observation_comes_from_structured_response_not_requested_referenc
     assert (result.model_observed, result.model_observation_basis, result.failure_class) == ("response-model", "structured_provider_response", "observed_model_drift")
 
 
-def test_ollama_backend_uses_structured_response_model_not_requested_model():
-    backend = OllamaBackend(model="requested", transport=lambda *_: (200, {"model": "served", "message": {"content": "ok"}}))
+@pytest.mark.parametrize(("requested", "native"), [
+    ("ollama:qwen:14b", "qwen:14b"), ("qwen:14b", "qwen:14b"),
+    ("ollama:ollama:qwen:14b", "ollama:qwen:14b"), ("other:qwen", "other:qwen"),
+])
+def test_ollama_backend_removes_exactly_one_receipt_prefix_and_validates_response(requested, native):
+    seen = {}
+    def transport(_method, _url, body, _timeout):
+        seen.update(json.loads(body)); return 200, {"model": native, "message": {"content": "ok"}}
+    response = OllamaBackend(model=requested, transport=transport).chat([], system="", max_tokens=1, temperature=0, seed=0)
+    assert seen["model"] == native
+    assert response["model_ref"] == f"ollama:{native}"
 
-    response = backend.chat([], system="", max_tokens=1, temperature=0, seed=0)
 
-    assert response["model_ref"] == "ollama:served"
+@pytest.mark.parametrize("observed", [None, "", "served"])
+def test_ollama_backend_types_missing_or_mismatched_response_model_as_malformed(observed):
+    response = {"message": {"content": "ok"}}
+    if observed is not None: response["model"] = observed
+    backend = OllamaBackend(model="ollama:requested", transport=lambda *_: (200, response))
+    with pytest.raises(MalformedBackendOutput):
+        backend.chat([], system="", max_tokens=1, temperature=0, seed=0)
+
+
+def test_local_adapter_preserves_ollama_response_model_violation_as_typed_malformed(tmp_path):
+    profile = {"profile_id": "local", "backend": "ollama", "model": "14B", "model_ref": "requested",
+               "endpoint_url": "http://127.0.0.1:11434", "supports_agentic_workflow": True, "root_exists": True}
+    profile["profile_sha256"] = canonical_sha256(profile)
+    backend = OllamaBackend(model="requested", transport=lambda *_: (200, {"message": {"content": "ok"}}))
+    result = LocalRouterAdapter("local_14b", profile, backend_factory=lambda *_: backend).execute(
+        _request(tmp_path, "local_14b", "openai_compatible_local/v1"))
+    assert (result.execution_state, result.failure_class) == ("malformed", "malformed_provider_output")
 
 
 def test_serve_without_response_identity_stays_unknown_and_limits_executor(tmp_path):

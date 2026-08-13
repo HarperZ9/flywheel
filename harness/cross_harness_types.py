@@ -6,6 +6,19 @@ from pathlib import Path
 import re
 from typing import Any, Protocol
 
+MODEL_IDENTITY_FIELDS = ("model_id", "model_display_name", "requested_model_reference", "model_observed", "model_observation_basis")
+
+
+def project_model_identity(row: dict[str, Any]) -> dict[str, str]:
+    """Project v2 identity, labeling rather than silently coercing historical v1 rows."""
+    if all(field in row for field in MODEL_IDENTITY_FIELDS):
+        return {"identity_schema": "v2", **{field: str(row.get(field, "")) for field in MODEL_IDENTITY_FIELDS}}
+    legacy = str(row.get("target_model", ""))
+    return {"identity_schema": "historical_v1", "model_id": str(row.get("model_id", legacy)),
+            "model_display_name": "", "requested_model_reference": legacy,
+            "model_observed": str(row.get("model_observed", "")),
+            "model_observation_basis": "historical_v1_unrecorded"}
+
 
 @dataclass(frozen=True)
 class AttemptRequest:

@@ -1,6 +1,6 @@
 import json
 import pytest
-from harness.cross_harness_executor import comparison_key
+from harness.cross_harness_executor import comparison_key, legacy_comparison_key
 
 from scripts.run_harness_comparison_report import build_report, main, metric_rows_from_artifact
 
@@ -140,7 +140,9 @@ def test_main_writes_json_markdown_and_store_receipt(tmp_path):
 def _cross_row(role, task, repetition, *, oracle="pass", latency=10, unavailable=False):
     row = {"provider_role": role, "task_id": task, "repetition": repetition, "phase": "spark", "task_set_id": "set",
             "raw_prompt_sha256": "1" * 64, "input_sha256s": {"fixture": "2" * 64}, "tool_policy_sha256": "a" * 64,
-            "model_id": "5.3-Codex-Spark", "cache_state": "cold_declared", "execution_mode": "focused_run",
+            "model_id": "5.3-Codex-Spark", "model_display_name": "5.3 Codex Spark",
+            "requested_model_reference": "5.3-Codex-Spark", "model_observed": "", "model_observation_basis": "unknown",
+            "cache_state": "cold_declared", "execution_mode": "focused_run",
             "source_snapshot_sha256": "3" * 64, "workspace_snapshot_sha256": "4" * 64,
             "enforcement_sha256": ("c" if role == "codex_harness" else "d") * 64,
             "policy_equivalence": "non_equivalent", "execution_state": "unavailable" if unavailable else "returned",
@@ -172,6 +174,29 @@ def test_cross_harness_spark_comparison_uses_deterministic_quality_and_latency_d
     assert comparison["declared_tool_policy_sha256"] == "a" * 64
     assert comparison["codex"]["enforcement_sha256s"] == ["c" * 64]
     assert comparison["flywheel"]["enforcement_sha256s"] == ["d" * 64]
+    assert report["metric_rows"][0]["model_identity"] == {
+        "identity_schema": "v2", "model_id": "5.3-Codex-Spark", "model_display_name": "5.3 Codex Spark",
+        "requested_model_reference": "5.3-Codex-Spark", "model_observed": "", "model_observation_basis": "unknown"}
+
+
+def test_cross_harness_allows_unknown_observation_but_rejects_conflicting_attestations(tmp_path):
+    rows = [_cross_row(role, "agt-001-index-fallback-integrity", 1) for role in ("codex_harness", "flywheel_harness")]
+    rows[1].update(model_observed="attested", model_observation_basis="structured_provider_event")
+    artifact = tmp_path / "identity.json"
+    artifact.write_text(json.dumps({"schema": "harness.cross-harness-task-scorecard/v1", "rows": rows}), encoding="utf-8")
+    assert build_report(artifact_paths=[artifact])["comparisons"]
+    rows[0].update(model_observed="conflict", model_observation_basis="structured_provider_event")
+    artifact.write_text(json.dumps({"schema": "harness.cross-harness-task-scorecard/v1", "rows": rows}), encoding="utf-8")
+    with pytest.raises(ValueError, match="observed model mismatch"): build_report(artifact_paths=[artifact])
+
+
+def test_historical_v1_scorecard_identity_is_labeled_not_silently_coerced():
+    row = _cross_row("codex_harness", "agt-001-index-fallback-integrity", 1)
+    for field in ("model_display_name", "requested_model_reference", "model_observed", "model_observation_basis"): row.pop(field)
+    row["comparison_key"] = legacy_comparison_key(row)
+    metric = metric_rows_from_artifact({"schema": "harness.cross-harness-task-scorecard/v1", "rows": [row]}, "v1.json")[0]
+    assert metric["model_identity"]["identity_schema"] == "historical_v1"
+    assert metric["requested_model_reference"] == ""
 
 
 def test_cross_harness_comparison_rejects_pair_or_policy_hash_mismatch(tmp_path):

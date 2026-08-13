@@ -3,13 +3,11 @@ import json
 from pathlib import Path, PurePosixPath
 
 import pytest
-
 from harness.cross_harness_manifest import _input_hashes, build_manifest, load_json, render_markdown
 from harness.cross_harness_cli import main as execute_main
 from scripts.run_cross_harness_manifest import DEFAULT_CONTRACT, main as manifest_main
 
 ROOT = Path(__file__).resolve().parent.parent
-
 def _task_set():
     return {
         "schema": "harness.agentic-task-set/v1",
@@ -31,7 +29,6 @@ def _task_set():
             }
         ],
     }
-
 def _contract():
     return {
         "schema": "harness.cross-harness-adapter-contract/v2",
@@ -90,7 +87,6 @@ def test_v2_contract_binds_canonical_spark_and_exact_local_release_selectors():
 
 def test_manifest_rejects_v1_contract_instead_of_coercing_overloaded_model_identity():
     v1 = load_json(ROOT / "benchmarks/cross-harness-adapter-contract-v1.json")
-
     with pytest.raises(ValueError, match="unsupported cross-harness contract schema"):
         build_manifest(_task_set(), v1, provider_roles=["codex_harness"])
 
@@ -99,7 +95,6 @@ def test_execution_cli_rejects_manifest_from_v1_contract_before_loading_runtime(
     manifest, matrix = tmp_path / "manifest.json", tmp_path / "matrix.json"
     manifest.write_text(json.dumps({"schema": "harness.cross-harness-manifest/v1", "contract_schema": "harness.cross-harness-adapter-contract/v1"}), encoding="utf-8")
     matrix.write_text(json.dumps({"schema": "harness.adapter-runtime-matrix/v1"}), encoding="utf-8")
-
     with pytest.raises(ValueError, match="manifest contract schema mismatch"):
         execute_main(["--manifest", str(manifest), "--runtime-matrix", str(matrix), "--artifact-root", str(tmp_path / "artifacts"), "--roles", "codex_harness", "--source-commit", "test", "--source-root", str(tmp_path), "--phase", "test", "--run-id", "test", "--tasks", "agt-001", "--cache", "cold_declared", "--repetitions", "1", "--timeout", "1"])
 
@@ -120,6 +115,12 @@ def test_cross_harness_manifest_expands_same_prompt_across_provider_roles():
     }
     assert len({row["raw_prompt_sha256"] for row in manifest["dry_scorecard_rows"]}) == 1
     assert all(row["failure_class"] == "not_executed" for row in manifest["dry_scorecard_rows"])
+    for row in manifest["dry_scorecard_rows"]:
+        assert {field: row[field] for field in ("model_id", "model_display_name", "requested_model_reference", "model_observed", "model_observation_basis")} == {
+            "model_id": "gpt-5.3-codex-spark", "model_display_name": "GPT-5.3-Codex-Spark",
+            "requested_model_reference": "gpt-5.3-codex-spark", "model_observed": "", "model_observation_basis": "unknown"}
+    required = load_json(ROOT / "benchmarks/cross-harness-adapter-contract-v2.json")["scorecard_row_contract"]["required_fields"]
+    assert set(("model_id", "model_display_name", "requested_model_reference", "model_observed", "model_observation_basis")) <= set(required)
 
 def test_cross_harness_manifest_rejects_unknown_provider_role():
     with pytest.raises(ValueError, match="unknown cross-harness provider roles"):

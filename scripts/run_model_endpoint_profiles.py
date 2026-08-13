@@ -21,7 +21,6 @@ DEFAULT_SERVE_URLS = {
     "14b": "http://127.0.0.1:8765",
     "32b": "http://127.0.0.1:8767",
 }
-
 RUNTIME_STRATEGIES = {
     "cpu-offload": {
         "device_map": "auto",
@@ -187,6 +186,8 @@ def _release_ollama_profile(model: str, *, base_root: Path, ollama_url: str) -> 
         "candidate_roots": [str(root)] if root is not None else [],
         "root_exists": artifact_present,
         "release_artifact": artifact_name,
+        "release_asset_sha256": release.get("artifact_sha256", ""),
+        "expected_ollama_digest": release.get("ollama_manifest_digest", ""),
         "release_public_name": release.get("public_name", ""),
         "endpoint_url": ollama_url.rstrip("/"),
         "health_url": f"{ollama_url.rstrip('/')}/api/tags",
@@ -200,8 +201,6 @@ def _release_ollama_profile(model: str, *, base_root: Path, ollama_url: str) -> 
         "live_probed": False,
         "supports_agentic_workflow": True,
     }
-
-
 def build_report(
     *,
     models: list[str],

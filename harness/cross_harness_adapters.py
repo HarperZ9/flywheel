@@ -7,7 +7,7 @@ from urllib.parse import urlsplit
 from .cross_harness_artifacts import canonical_sha256
 from .cross_harness_types import AdapterResult, AvailabilityResult, EnforcementResult
 from .endpoint_registry import BackendProposer
-from .local_agent import OllamaBackend, ServeBackend
+from .local_agent import MalformedBackendOutput, OllamaBackend, ServeBackend
 from .local_loop import run_agent
 from .local_session import SessionLedger
 from .local_tools import TOOLS_SYSTEM, ToolExecutor, ToolGate
@@ -221,7 +221,7 @@ def _router_result(request, proposer, source: str, clock: Callable = time.monoto
                            on_event=lambda event: events.append({**_clean(event), "source": source}))
         state, failure, detail = "returned", "", ""
     except TimeoutError as exc: result, state, failure, detail = {"final": ""}, "timeout", "timeout", str(exc)
-    except MalformedProviderOutput as exc: result, state, failure, detail = {"final": ""}, "malformed", "malformed_provider_output", str(exc)
+    except (MalformedProviderOutput, MalformedBackendOutput) as exc: result, state, failure, detail = {"final": ""}, "malformed", "malformed_provider_output", str(exc)
     except ProviderRejected as exc: result, state, failure, detail = {"final": ""}, "internal_error", exc.failure_class, str(exc)
     except Exception as exc: result, state, failure, detail = {"final": ""}, "internal_error", type(exc).__name__, str(exc)
     events.extend({**_clean(asdict(entry)), "source": source, "type": "ledger_entry"} for entry in ledger.entries)

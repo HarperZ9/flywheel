@@ -17,6 +17,8 @@ def profile(backend="serve", model="14B"):
     }
     if backend == "ollama":
         row["selectors"] = [selector]
+        row["release_asset_sha256"] = "a" * 64
+        row["expected_ollama_digest"] = "sha256:abc"
     return row
 
 
@@ -80,6 +82,17 @@ def test_ollama_report_fails_without_valid_digest(tmp_path, digest):
     assert report["verdict"] != "MODEL_ENDPOINT_GATE_PASS"
 
 
+def test_ollama_report_fails_when_observed_digest_differs_from_profile(tmp_path):
+    report = build_report(
+        profile_artifact=str(write_profiles(tmp_path, [profile("ollama")])), models=[], backends=[],
+        transport=tag_transport("sha256:other"), run_id="digest-run")
+    row = report["rows"][0]
+    assert row["expected_ollama_digest"] == "sha256:abc"
+    assert row["ollama_digest"] == "sha256:other"
+    assert row["failure_class"] == "ollama_digest_mismatch"
+    assert report["verdict"] != "MODEL_ENDPOINT_GATE_PASS"
+
+
 @pytest.mark.parametrize(("digest", "expected"), [
     (True, 1), ("   ", 1), ("missing", 1), ("sha256:abc", 0),
 ])
@@ -116,6 +129,8 @@ def test_gate_emits_exact_profile_identity_and_fresh_observation(tmp_path, backe
     assert row["health_ok"] is True and row["generation_ok"] is True
     assert row["failure_class"] == ""
     assert row["ollama_digest"] == ("sha256:abc" if backend == "ollama" else "")
+    assert row["release_asset_sha256"] == ("a" * 64 if backend == "ollama" else "")
+    assert row["expected_ollama_digest"] == ("sha256:abc" if backend == "ollama" else "")
     assert row["run_id"] == report["run_id"] == "gate-run"
     assert row["quality_score"] == 1.0 and row["response_sha256"] and row["receipt_hash"]
     assert datetime.fromisoformat(row["observed_at"].replace("Z", "+00:00")).utcoffset().total_seconds() == 0

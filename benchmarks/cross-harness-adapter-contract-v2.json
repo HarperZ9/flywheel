@@ -115,7 +115,7 @@
   ],
   "scorecard_row_contract": {
     "required_fields": [
-      "task_set_id", "task_id", "benchmark_id", "coverage_unit", "provider_role", "harness_id", "model_id", "execution_mode", "status", "failure_class", "raw_prompt_sha256", "raw_output_sha256", "raw_prompt_path", "raw_output_path", "receipt_path", "tool_trace_path", "metrics", "limitations"
+      "task_set_id", "task_id", "benchmark_id", "coverage_unit", "provider_role", "harness_id", "model_id", "model_display_name", "requested_model_reference", "model_observed", "model_observation_basis", "execution_mode", "status", "failure_class", "raw_prompt_sha256", "raw_output_sha256", "raw_prompt_path", "raw_output_path", "receipt_path", "tool_trace_path", "metrics", "limitations"
     ],
     "required_metrics": ["task_completion", "quality", "latency_ms", "resource_use", "reliability", "tool_use_success", "failure_modes", "reproducibility"]
   },
