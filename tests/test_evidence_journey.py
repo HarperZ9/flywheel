@@ -92,6 +92,14 @@ def test_verifier_rejects_content_order_and_stored_head_tampering():
     with pytest.raises(ValueError, match="head"):
         project_journey(head, lens="verify")
 
+def test_stale_preceding_valid_event_head_rejects():
+    journey = _advance(_journey(), "preflight")
+    journey["event_head_sha256"] = journey["events"][-2]["event_sha256"]
+    result = verify_journey(journey)
+    assert result["verdict"] == "FAIL" and "head" in result["reason"]
+    with pytest.raises(ValueError, match="head"):
+        project_journey(journey, lens="verify")
+
 @pytest.mark.parametrize("claims,message", [
     ([_claim(depends_on=["missing"])], "missing"),
     ([_claim(depends_on=["claim-root"])], "cycle"),
