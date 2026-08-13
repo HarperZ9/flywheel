@@ -58,15 +58,6 @@ def _resolve_credential(key_env: str) -> str:
         return os.environ.get(key_env or "", "")
 
 
-def _resolve_credential(key_env: str) -> str:
-    """Env first, OS keychain second; '' when neither. Import is lazy so a
-    stripped deployment without keychain.py still serves env-only."""
-    try:
-        from harness.keychain import resolve_credential
-        return resolve_credential(key_env)
-    except Exception:
-        return os.environ.get(key_env or "", "")
-
 # Receipt catalog: in-repo, re-checkable artifacts that define the world state.
 # Relative to the served root. Missing files are reported honestly as absent.
 RECEIPT_CATALOG = (
@@ -1408,6 +1399,14 @@ class _Handler(BaseHTTPRequestHandler):
 
     def _post(self):
         p = self.path.split("?", 1)[0]
+        if p.startswith("/api/evidence/"):
+            length = self._content_length()
+            if length is None:
+                return self._json({"schema": "flywheel.evidence-transport-error/v1",
+                    "error": {"code": "INVALID_LENGTH", "message": "request length is invalid"}}, 400)
+            from harness.evidence_route import evidence_post
+            body, code = evidence_post(p, self.rfile.read(length), root=self.root)
+            return self._json(body, code)
         if p == "/v1/chat/completions":              # OpenAI-compatible, routes to ANY provider
             length = self._content_length()
             if length is None:
