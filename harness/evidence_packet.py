@@ -1,6 +1,6 @@
 """Registered-oracle checks and bounded, offline evidence-journey packets."""
 from __future__ import annotations
-import hashlib, json, os, shlex, sys, tempfile
+import hashlib, json, tempfile
 from pathlib import Path
 from .bundle import LIMITS as BUNDLE_LIMITS, SCHEMA as BUNDLE_SCHEMA, pack_bundle, safe_relative
 from .checker_identity import checker_source as _checker_source
@@ -9,12 +9,11 @@ from .evidence_packet_validation import (DNP as _DNP, MAX_FILE as _MAX_FILE, MAX
     SCHEMA, criterion_basis as _basis,
     criterion_fact as _criterion_fact, digest as _sha, named_refs as _named_refs,
     project as _projection, verify_journey_packet)
-from .execution_input_protection import ExecutionInputProtectionUnavailable
 from .oracle_registry import default_registry
+from .python_execution_containment import unavailable_result
 from .receipt import Receipt
 from .receipt_fields import Budget, Denominator, EvidenceKind, Tier
 from .receipt_sign import unsigned
-from .runtime_descriptor import PYTHON_LIMITS
 from .task import Task
 from .verdict import Attribution, Verdict
 CHECK_SCHEMA = "flywheel.evidence-check/v1"
@@ -71,20 +70,6 @@ def _stable(root: Path, before: dict[str, tuple[bytes, str]]) -> bool:
         return True
     except (OSError, TypeError, ValueError):
         return False
-def _pytest_command(raw: str, root: Path, carried: set[str]) -> tuple[list[str], dict]:
-    try: argv = shlex.split(raw, posix=os.name != "nt")
-    except ValueError as exc: raise ValueError("oracle_cmd is malformed") from exc
-    if argv: argv[0] = argv[0].strip('"')
-    if (len(argv) < 4 or Path(argv[0]).name.lower() not in {"python", "python.exe", "py", "py.exe"}
-            or argv[1:3] != ["-m", "pytest"]):
-        raise ValueError("code oracle_cmd must be python -m pytest plus relative targets")
-    args, targets = ["python", "-m", "pytest"], []
-    for arg in argv[3:]:
-        if arg.startswith("-"): raise ValueError("pytest options are assigned by the registered oracle")
-        raw_ref, suffix = (arg.split("::", 1) + [""])[:2]; ref, _ = _canonical(root, raw_ref)
-        if ref not in carried: raise ValueError(f"pytest target {ref!r} is not carried raw evidence")
-        args.append(ref + ("::" + suffix if suffix else "")); targets.append(ref)
-    return [sys.executable, "-m", "pytest", *args[3:]], {"args": args, "targets": list(dict.fromkeys(targets))}
 def _denominator(verdict: str, timed_out: bool, filter_hash: str) -> Denominator:
     return Denominator(attempts=1, group_size=1, oracle_calls_consumed=1,
         hits=int(verdict == "PASS"), undecided=int(verdict == "UNDECIDED"),
@@ -115,6 +100,11 @@ def run_journey_check(journey: dict, claim_id: str, oracle_id: str, candidate: P
         return _unverifiable("ORACLE_UNAVAILABLE", f"no registered oracle for {oracle_id!r}",
             oracle_id=oracle_id, oracle_calls_consumed=0,
             does_not_prove=[f"the {oracle_id!r} claim was not checked"])
+    # Low integrity denies writes, not arbitrary reads or network egress. Stop
+    # before candidate admission/staging until a genuine containment runtime exists.
+    if entry.oracle.oracle_type == "pytest":
+        return unavailable_result(claim_id=claim_id,
+            claim_verdict_before=claims[claim_id]["verdict"])
     try:
         if not isinstance(candidate, Path):
             raise ValueError("candidate must be a Path")
@@ -127,11 +117,7 @@ def run_journey_check(journey: dict, claim_id: str, oracle_id: str, candidate: P
         before = _snap(root, supplied)
         if candidate_ref not in before:
             raise ValueError("raw_artifact_refs must include candidate_ref")
-        if entry.oracle.oracle_type == "pytest":
-            oracle_argv, command = _pytest_command(
-                ctx["oracle_cmd"], root, set(before))
-        else:
-            command = {"args": [entry.oracle.oracle_type], "targets": []}
+        command = {"args": [entry.oracle.oracle_type], "targets": []}
     except (OSError, UnicodeError, TypeError, ValueError) as exc:
         return _unverifiable("MALFORMED_CANDIDATE", str(exc), oracle_id=entry.domain, oracle_calls_consumed=0)
     source = before[candidate_ref][0].decode("utf-8", "strict")
@@ -147,22 +133,12 @@ def run_journey_check(journey: dict, claim_id: str, oracle_id: str, candidate: P
                 entry.oracle.timeout = ctx["timeout_seconds"]
             execution_before = _snap(work, list(before))
             try:
-                if entry.oracle.oracle_type == "pytest":
-                    result, artifact, prepared_before = entry.oracle.verify_prepared(
-                        oracle_argv, Task(ctx["task_id"], ctx["prompt"], entry.domain,
-                            "", str(work), candidate_ref), list(before))
-                    if prepared_before != execution_before: raise ValueError("prepared input snapshot drift")
-                    output = canonical_bytes(artifact)
-                else:
-                    task = Task(ctx["task_id"], ctx["prompt"], entry.domain,
-                                ctx["oracle_cmd"], str(work), candidate_ref)
-                    result = entry.oracle.verify(source, task)
-                    excerpt = (result.stdout_excerpt.replace(str(root), "<artifact-root>")
-                               .replace(str(work), "<check-root>"))
-                    output = excerpt.encode()
-            except ExecutionInputProtectionUnavailable as exc:
-                return _unverifiable("EXECUTION_INPUT_PROTECTION_UNAVAILABLE", str(exc),
-                    oracle_id=entry.domain, oracle_calls_consumed=0)
+                task = Task(ctx["task_id"], ctx["prompt"], entry.domain,
+                            ctx["oracle_cmd"], str(work), candidate_ref)
+                result = entry.oracle.verify(source, task)
+                excerpt = (result.stdout_excerpt.replace(str(root), "<artifact-root>")
+                           .replace(str(work), "<check-root>"))
+                output = excerpt.encode()
             except Exception as exc:
                 oracle_error, result = exc, None
             stable = _stable(root, before) and _stable(work, execution_before)
@@ -182,39 +158,30 @@ def run_journey_check(journey: dict, claim_id: str, oracle_id: str, candidate: P
     key = canonical_sha256({"journey_id": journey["journey_id"], "event_head": journey["event_head_sha256"],
                             "claim_id": claim_id, "oracle_id": entry.domain,
                             "candidate_sha256": before[candidate_ref][1], "command": command})[:16]
-    suffix = "json" if entry.oracle.oracle_type == "pytest" else "txt"
-    output_ref, receipt_ref = f"raw/oracle-{key}.{suffix}", f"receipts/check-{key}.json"
+    output_ref, receipt_ref = f"raw/oracle-{key}.txt", f"receipts/check-{key}.json"
     output_path = admit_artifact_ref(root, output_ref, must_exist=False)
     output_path.parent.mkdir(parents=True, exist_ok=True); output_path.write_bytes(output)
     raw = [{"ref": ref, "sha256": claimed, "bytes": len(blob)}
            for ref, (blob, claimed) in before.items()]
     raw.append({"ref": output_ref, "sha256": _sha(output), "bytes": len(output)})
-    runtime = artifact["runtime"] if entry.oracle.oracle_type == "pytest" else None
     basis = _basis(journey, claims[claim_id], entry.domain)
-    module, checker, runtime_sha = _checker_source(entry.oracle, runtime)
+    module, checker, runtime_sha = _checker_source(entry.oracle)
     denominator = _denominator(verdict, timed_out, _sha(canonical_bytes(basis)))
     closed = {"command": command, "output_hash": result.output_hash, "return_code": result.rc,
               "execution": execution, "attribution": attribution, "verdict": verdict,
               "denominator": denominator.to_dict()}
-    protection = artifact["execution_input_protection"] if entry.oracle.oracle_type == "pytest" else "not-applicable"
+    protection = "not-applicable"
     coverage = {**basis, "oracle_type": entry.oracle.oracle_type,
         "candidate_ref": candidate_ref, "execution_input_protection": protection,
         "raw_artifacts": raw, "oracle_output_ref": output_ref,
         "check_result": closed}
     limits = entry.does_not_prove
-    if entry.oracle.oracle_type == "pytest":
-        coverage.update(execution_namespace=artifact["execution_namespace"],
-            candidate_provenance=artifact["candidate_provenance"],
-            dependency_boundary=artifact["dependency_boundary"],
-            runtime_descriptor=runtime,
-            runtime_descriptor_sha256=runtime_sha)
-        limits += PYTHON_LIMITS
     receipt = Receipt(criterion_id=f"evidence-journey/{journey['journey_id']}/{claim_id}",
         criterion_version=1, criterion_sha256=_sha(canonical_bytes(basis)), family="evidence-journey",
         family_instance_id=journey["journey_id"], generator_id="submitted-candidate", generator_seed=0,
         candidate_sha256=before[candidate_ref][1], prompt_hash=_sha(ctx["prompt"].encode()),
         checker_module=module, checker_source_sha256=_sha(checker),
-        executes_candidate_code=entry.oracle.oracle_type == "pytest", oracle_qa_card_hash="",
+        executes_candidate_code=False, oracle_qa_card_hash="",
         held_out_agreement="NOT_RUN", evidence_kind=EvidenceKind.COMPUTATIONAL,
         tier=Tier.EXECUTION_TEST, verdict=Verdict(verdict), attribution=Attribution(attribution),
         objective=claim_id, incumbent_objective="", incumbent_source="",

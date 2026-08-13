@@ -216,7 +216,7 @@ class PytestOracle:
 
     def verify_prepared(self, argv: list[str], task: Task,
                         input_refs: list[str]) -> tuple[OracleResult, dict, dict]:
-        """Run populated inputs through the protected prepared-pytest route."""
+        """Refuse the retired journey route until real containment exists."""
         from .pytest_prepared import verify_prepared
         return verify_prepared(self, argv, task, input_refs)
 

@@ -7,16 +7,17 @@ import harness.evidence_packet_validation as packet_validation
 from harness.evidence_journey import append_event, new_journey, run_journey_check
 from harness.evidence_json import canonical_sha256
 from harness.evidence_packet import pack_journey_packet, verify_journey_packet
+from harness.python_execution_containment import REASON
 from harness.receipt import Receipt
-pytestmark = pytest.mark.skipif(sys.platform != "win32",
-    reason="journey code checks require OS-enforced execution-input protection")
-def _journey():
+def _journey(*, measurement=False):
+    statement = ("The submitted effect misses its registered threshold" if measurement
+                 else "The submitted add fails its test")
     journey = new_journey(journey_id="software-failure-v1",
         goal="Reproduce the software failure", intake={"summary": "add returns wrong value"},
         created_at="2026-08-12T12:00:00Z")
     return append_event(journey, {"stage": "decomposed",
         "occurred_at": "2026-08-12T12:01:00Z", "claims": [{
-            "claim_id": "claim-root", "statement": "The submitted add fails its test",
+            "claim_id": "claim-root", "statement": statement,
             "depends_on": [], "verdict": "UNDECIDED",
             "reason": "registered checker has not run", "receipt_refs": []}]})
 
@@ -35,12 +36,23 @@ def _software_fixture(tmp_path, *, slow=False):
         "timeout_seconds": 1 if slow else 15}
     return root, candidate, context
 
-def _checked(tmp_path, *, slow=False):
-    journey = _journey(); root, candidate, context = _software_fixture(tmp_path, slow=slow)
-    return journey, root, run_journey_check(journey, "claim-root", "code", candidate, context)
+def _measurement_fixture(tmp_path):
+    root = tmp_path / "artifacts"; root.mkdir(parents=True)
+    candidate = root / "measurement.json"
+    candidate.write_text(json.dumps({"effect": 0.1, "ci_low": 0.05, "ci_high": 0.15,
+        "min_effect": 0.2, "n": 10,
+        "negative_control": {"effect": 0, "ci_low": -0.1, "ci_high": 0.1}}), encoding="utf-8")
+    context = {"task_id": "software-failure-v1", "prompt": "Check measurement",
+        "oracle_cmd": "measurement-gate", "candidate_ref": candidate.name,
+        "raw_artifact_refs": [candidate.name], "timeout_seconds": 15}
+    return root, candidate, context
+
+def _checked(tmp_path):
+    journey = _journey(measurement=True); root, candidate, context = _measurement_fixture(tmp_path)
+    return journey, root, run_journey_check(journey, "claim-root", "ml", candidate, context)
 
 def _conclude(journey, check, **overrides):
-    claim = {"claim_id": "claim-root", "statement": "The submitted add fails its test",
+    claim = {"claim_id": "claim-root", "statement": journey["events"][-1]["claims"][0]["statement"],
         "depends_on": [], "verdict": check["verdict"],
         "receipt_refs": [check["receipt_ref"]],
         "raw_artifact_refs": check["raw_artifact_refs"]}
@@ -74,33 +86,30 @@ def _save_receipt(packet, body, criterion):
     path = next((packet / "receipts").iterdir()); _store(path, {"receipt": body})
     criterion["receipts"][0]["claim_sha256"] = receipt.claim_sha256()
     _seal(packet, path.relative_to(packet).as_posix()); return receipt
-def test_registered_code_oracle_emits_typed_failure_and_receipt(tmp_path):
-    journey, root, check = _checked(tmp_path)
-    assert (check["verdict"], check["oracle_id"], check["oracle_type"]) == ("FAIL", "code", "pytest")
-    assert (check["execution"], check["attribution"], check["claim_verdict_before"]) == (
-        "COMPLETED", "CANDIDATE", "UNDECIDED")
-    assert check["denominator"] == {"attempts": 1, "oracle_calls_consumed": 1,
-        "hits": 0, "undecided": 0, "unverifiable": 0, "timeouts": 0}
-    body = _load(root / check["receipt_ref"])["receipt"]
-    assert body["verdict"] == "FAIL" and body["objective"] == "claim-root"
-    assert body["does_not_prove"] and journey == _journey()
-    assert str(root.resolve()) not in json.dumps(check)
+def test_registered_code_oracle_is_terminally_unverifiable_without_a_receipt(tmp_path):
+    root, candidate, context = _software_fixture(tmp_path)
+    check = run_journey_check(_journey(), "claim-root", "code", candidate, context)
+    assert (check["verdict"], check["oracle_id"], check["oracle_type"]) == (
+        "UNVERIFIABLE", "code", "pytest")
+    assert check["unverifiable_reason"] == REASON and check["oracle_calls_consumed"] == 0
+    assert "receipt_ref" not in check and not (root / "receipts").exists()
 def test_unknown_oracle_is_typed_unverifiable_without_dispatch(tmp_path):
     root, candidate, context = _software_fixture(tmp_path)
     check = run_journey_check(_journey(), "claim-root", "shell-plugin", candidate, context)
     assert check["verdict"] == "UNVERIFIABLE" and check["unverifiable_reason"] == "ORACLE_UNAVAILABLE"
     assert check["oracle_calls_consumed"] == 0 and "receipt_ref" not in check
     assert not (root / "receipts").exists()
-def test_timeout_remains_candidate_failure_with_typed_execution(tmp_path):
-    _, root, check = _checked(tmp_path, slow=True)
-    assert (check["verdict"], check["execution"], check["attribution"]) == ("FAIL", "TIMEOUT", "CANDIDATE")
-    assert check["denominator"]["timeouts"] == 1 and (root / check["receipt_ref"]).is_file()
+def test_timeout_attempt_is_not_spawned_or_misreported_as_candidate_failure(tmp_path):
+    root, candidate, context = _software_fixture(tmp_path, slow=True)
+    check = run_journey_check(_journey(), "claim-root", "code", candidate, context)
+    assert (check["verdict"], check["unverifiable_reason"]) == ("UNVERIFIABLE", REASON)
+    assert check["oracle_calls_consumed"] == 0 and not (root / "receipts").exists()
 @pytest.mark.parametrize("candidate_kind", ["missing", "directory"])
 def test_malformed_candidate_fails_closed_without_receipt(tmp_path, candidate_kind):
     root, candidate, context = _software_fixture(tmp_path); candidate.unlink()
     if candidate_kind == "directory": candidate.mkdir()
     check = run_journey_check(_journey(), "claim-root", "code", candidate, context)
-    assert (check["verdict"], check["unverifiable_reason"]) == ("UNVERIFIABLE", "MALFORMED_CANDIDATE")
+    assert (check["verdict"], check["unverifiable_reason"]) == ("UNVERIFIABLE", REASON)
     assert "receipt_ref" not in check and not (root / "receipts").exists()
 def test_context_is_a_closed_bounded_json_envelope(tmp_path):
     _, candidate, context = _software_fixture(tmp_path); context["plugin"] = "arbitrary.module:Oracle"
@@ -114,47 +123,35 @@ def test_execution_input_mutation_is_prevented_or_typed_unverifiable(tmp_path, a
     prefix = f"from pathlib import Path\n{effect}\n"
     target.write_text(prefix + target.read_text(encoding="utf-8"), encoding="utf-8")
     result = run_journey_check(_journey(), "claim-root", "code", candidate, context)
-    if sys.platform == "win32":
-        assert result["verdict"] != "PASS"
-        if "execution_input_protection" in result:
-            assert result["execution_input_protection"] == "windows-low-integrity-namespace/v1"
-    else:
-        assert (result["verdict"], result["unverifiable_reason"]) == (
-            "UNVERIFIABLE", "EXECUTION_INPUT_PROTECTION_UNAVAILABLE")
-        assert "receipt_ref" not in result
+    assert (result["verdict"], result["unverifiable_reason"]) == ("UNVERIFIABLE", REASON)
+    assert "receipt_ref" not in result and target.read_text(encoding="utf-8").startswith(prefix)
 def test_check_result_closes_command_oracle_result_and_denominator(tmp_path):
     _, root, check = _checked(tmp_path); closed = check["check_result"]
     assert set(closed) == {"command", "output_hash", "return_code", "execution",
                            "attribution", "verdict", "denominator"}
-    assert closed["command"] == {"args": ["python", "-m", "pytest", "test_candidate.py"],
-                                  "targets": ["test_candidate.py"]}
+    assert closed["command"] == {"args": ["measurement"], "targets": []}
     assert closed["output_hash"] and closed["return_code"] == 1
     assert closed["denominator"] == _load(root / check["receipt_ref"])["receipt"]["denominator"]
-def test_same_candidate_different_test_is_a_different_check(tmp_path):
-    root, candidate, context = _software_fixture(tmp_path)
-    (root / "test_other.py").write_text("from candidate import add\ndef test_other(): assert add(1, 1) == 2\n", encoding="utf-8")
-    first = run_journey_check(_journey(), "claim-root", "code", candidate, context)
-    context.update(oracle_cmd=f'"{sys.executable}" -m pytest test_other.py',
-                   raw_artifact_refs=["candidate.py", "test_other.py"])
-    second = run_journey_check(_journey(), "claim-root", "code", candidate, context)
-    assert first["check_result"]["command"]["targets"] == ["test_candidate.py"]
-    assert second["check_result"]["command"]["targets"] == ["test_other.py"]
+def test_different_measurement_bytes_are_a_different_check(tmp_path):
+    root, candidate, context = _measurement_fixture(tmp_path)
+    first = run_journey_check(_journey(), "claim-root", "ml", candidate, context)
+    candidate.write_text(candidate.read_text(encoding="utf-8").replace("0.05", "0.04"), encoding="utf-8")
+    second = run_journey_check(_journey(), "claim-root", "ml", candidate, context)
     assert first["receipt_claim_sha256"] != second["receipt_claim_sha256"]
-def test_pytest_target_must_be_carried_as_raw_evidence(tmp_path):
+def test_pytest_target_admission_is_unreachable_without_containment(tmp_path):
     root, candidate, context = _software_fixture(tmp_path); context["raw_artifact_refs"] = ["candidate.py"]
     result = run_journey_check(_journey(), "claim-root", "code", candidate, context)
-    assert result["verdict"] == "UNVERIFIABLE" and "target" in result["reason"]
+    assert (result["verdict"], result["unverifiable_reason"]) == ("UNVERIFIABLE", REASON)
     assert "receipt_ref" not in result and not (root / "receipts").exists()
-def test_pytest_executes_the_byte_exact_crlf_candidate(tmp_path):
+def test_pytest_attempt_does_not_touch_the_byte_exact_crlf_candidate(tmp_path):
     root, candidate, context = _software_fixture(tmp_path)
     source = b"def add(a, b):\r\n    return a + b\r\n"; candidate.write_bytes(source)
     (root / "test_candidate.py").write_text(
         "from pathlib import Path\ndef test_bytes(): assert Path('candidate.py').read_bytes() == "
         + repr(source), encoding="utf-8")
     check = run_journey_check(_journey(), "claim-root", "code", candidate, context)
-    body = _load(root / check["receipt_ref"])["receipt"]
-    assert (check["verdict"], check["reason"]) == ("UNVERIFIABLE", "PYTHON_ACCEPTANCE_BOUNDARY_UNAVAILABLE")
-    assert body["candidate_sha256"] == "sha256:" + hashlib.sha256(source).hexdigest()
+    assert (check["verdict"], check["unverifiable_reason"]) == ("UNVERIFIABLE", REASON)
+    assert candidate.read_bytes() == source and "receipt_ref" not in check
 def test_pytest_selector_metacharacters_cannot_spawn_a_shell_command(tmp_path):
     root, candidate, context = _software_fixture(tmp_path); marker = tmp_path / "selector-owned.txt"
     context["oracle_cmd"] += f"::test_add&echo.owned>{marker}"
@@ -172,11 +169,8 @@ def test_packet_binds_journey_receipt_raw_evidence_and_checker(tmp_path):
     assert criterion["raw_artifacts"] and criterion["receipts"] and criterion["checker_manifest"]
     assert criterion["criteria"][0]["denominator"]["attempts"] == 1 and criterion["does_not_prove"]
     checker = _load(packet / criterion["checker_manifest"][0]["packet_path"])
-    assert [item["module"] for item in checker["sources"]] == [
-        "harness.execution_input_protection", "harness.oracle",
-        "harness.pytest_prepared", "harness.pytest_executor",
-        "harness.runtime_descriptor", "harness.windows_low_integrity"]
-    assert criterion["checker_manifest"][0]["runtime_descriptor_sha256"]
+    assert [item["module"] for item in checker["sources"]] == ["harness.measurement_oracle"]
+    assert criterion["checker_manifest"][0]["runtime_descriptor_sha256"] is None
 def test_clean_directory_recheck_is_offline_and_serializes_no_host_root(tmp_path, monkeypatch):
     packet = _packet(tmp_path); clean = tmp_path / "clean" / "packet"; clean.parent.mkdir(); shutil.copytree(packet, clean)
     monkeypatch.chdir(clean.parent); monkeypatch.setattr(evidence_packet, "default_registry",
@@ -191,7 +185,7 @@ def test_pack_refuses_tampered_chain_and_omitted_raw_evidence(tmp_path):
     tampered = deepcopy(journey); tampered["events"][0]["occurred_at"] = "2026-08-12T12:59:00Z"
     with pytest.raises(ValueError, match="journey|event|hash"):
         pack_journey_packet(tmp_path / "bad-chain", journey=tampered, artifact_root=root)
-    (root / "test_candidate.py").unlink()
+    (root / "measurement.json").unlink()
     with pytest.raises(ValueError, match="artifact|evidence|exist"):
         pack_journey_packet(tmp_path / "missing-raw", journey=journey, artifact_root=root)
 def test_rehashed_packet_with_a_tampered_event_chain_fails_closed(tmp_path):
