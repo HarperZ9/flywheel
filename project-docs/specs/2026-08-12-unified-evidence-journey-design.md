@@ -209,7 +209,13 @@ Every capability requires schema and duplicate-key rejection; malformed, missing
 
 No pack is generally available until its corpus includes a correct, incorrect, ambiguous, malformed, stale, contested, and unsupported claim.
 
-## 13. Delivery sequence
+## 13. Can/Stencil reference bar
+
+The external harness-research parallel is Can Bölük's work, now published by Stencil: [The Harness Problem](https://stencil.so/blog/the-harness-problem) and [Snapcompact](https://stencil.so/blog/snapcompact). Flywheel must match its strongest method: isolate a harness variable, generate realistic fixtures, run heterogeneous models repeatedly, preserve per-run evidence, publish success and resource measures, and provide a reproducible command.
+
+Flywheel's added bar is not a larger point estimate. Each study must preregister its hypothesis and exclusions, bind the task generator and environment, report intervals and denominators, preserve failures and abstentions, run integrity and safety controls, recheck from a portable receipt, measure the user outcome behind the proxy, and state whether the result transfers beyond the tested models and domain. Context, edit, tool, error, and state-management interventions become named experiment families, but no intervention is called better until its frozen comparison earns that claim.
+
+## 14. Delivery sequence
 
 1. **Journey spine:** envelopes, state machine, three projections, existing-oracle dispatch, trust packet, and one software-failure flow.
 2. **Incident Compiler:** connect audit, eval, cross-harness, and provider failures to cases, regression fixtures, and lessons. Prove it on the known July/August corpus.
@@ -217,7 +223,7 @@ No pack is generally available until its corpus includes a correct, incorrect, a
 4. **Physics pack and Pack SDK:** symbolic, numerical, simulation, uncertainty, and empirical workflows. Validate the SDK with a third domain outside the core team.
 5. **Interchange and enterprise controls:** adapters, review queues, ownership, retention, signed attestations, contests, and organization views.
 
-## 14. Success measures
+## 15. Success measures
 
 Measures stay separate by audience and never form a composite trust score:
 
@@ -228,7 +234,7 @@ Measures stay separate by audience and never form a composite trust score:
 - Domain packs: QA false accepts, unsupported-claim refusal, checker agreement, ownership, recheck cost.
 - Incident loop: incidents converted, mitigations independently proven, recurrence, stale or retired cases.
 
-## 15. Explicit non-goals
+## 16. Explicit non-goals
 
 - A general truth, researcher, model, or organization score.
 - Consensus voting as verification.
@@ -238,7 +244,7 @@ Measures stay separate by audience and never form a composite trust score:
 - Replacing specialist tools, laboratories, peer review, or domain experts.
 - Another trace dashboard whose stored judgment cannot be re-derived.
 
-## 16. Implementation-plan decisions
+## 17. Implementation-plan decisions
 
 1. Whether the journey log extends the existing ledger or projects over it.
 2. The minimum attestation identity and signature scheme.
