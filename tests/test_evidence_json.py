@@ -67,6 +67,27 @@ def test_canonical_json_rejects_values_outside_the_json_data_model(value):
         canonical_bytes(value)
 
 
+def test_canonical_json_rejects_a_self_referential_list():
+    value = []
+    value.append(value)
+    with pytest.raises(ValueError, match="cycle"):
+        canonical_bytes(value)
+
+
+def test_canonical_json_rejects_a_self_referential_dict():
+    value = {}
+    value["self"] = value
+    with pytest.raises(ValueError, match="cycle"):
+        canonical_bytes(value)
+
+
+def test_canonical_json_allows_shared_acyclic_substructures():
+    child = ["evidence"]
+    assert canonical_bytes({"left": child, "right": child}) == (
+        b'{"left":["evidence"],"right":["evidence"]}'
+    )
+
+
 @pytest.mark.parametrize("ref", ["/outside.json", "../outside.json", "nested/../../outside.json", "C:\\outside.json", "C:outside.json", "\\\\server\\share\\outside.json"])
 def test_artifact_admission_rejects_absolute_and_escaping_refs(tmp_path, ref):
     root = tmp_path / "artifacts"

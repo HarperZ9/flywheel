@@ -39,22 +39,38 @@ def _has_nonfinite_number(value: object) -> bool:
     return False
 
 
-def _validate_json_value(value: object) -> None:
+def _validate_json_value(value: object, active: set[int] | None = None) -> None:
     if value is None or type(value) in (str, bool, int):
         return
     if type(value) is float:
         if not math.isfinite(value):
             raise ValueError("canonical JSON requires finite floats")
         return
+    if active is None:
+        active = set()
     if type(value) is list:
-        for item in value:
-            _validate_json_value(item)
+        identity = id(value)
+        if identity in active:
+            raise ValueError("canonical JSON must not contain a cycle")
+        active.add(identity)
+        try:
+            for item in value:
+                _validate_json_value(item, active)
+        finally:
+            active.remove(identity)
         return
     if type(value) is dict:
-        for key, item in value.items():
-            if type(key) is not str:
-                raise ValueError("canonical JSON object keys must be strings")
-            _validate_json_value(item)
+        identity = id(value)
+        if identity in active:
+            raise ValueError("canonical JSON must not contain a cycle")
+        active.add(identity)
+        try:
+            for key, item in value.items():
+                if type(key) is not str:
+                    raise ValueError("canonical JSON object keys must be strings")
+                _validate_json_value(item, active)
+        finally:
+            active.remove(identity)
         return
     raise ValueError("value is outside the JSON data model")
 
