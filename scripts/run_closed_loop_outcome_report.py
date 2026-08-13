@@ -860,8 +860,8 @@ def _adapter_runtime_matrix_summary(data: dict[str, Any], path_text: str) -> dic
             {
                 "provider_role": row.get("provider_role", ""),
                 "harness_id": row.get("harness_id", ""),
-                **project_model_identity(row),
-                "model_identity": project_model_identity(row),
+                **project_model_identity(row, source_schema=str(row.get("schema") or data.get("schema", ""))),
+                "model_identity": project_model_identity(row, source_schema=str(row.get("schema") or data.get("schema", ""))),
                 "adapter_state": row.get("adapter_state", ""),
                 "manifest_ready": bool(row.get("manifest_ready")),
                 "focused_run_ready": bool(row.get("focused_run_ready")),
@@ -975,7 +975,7 @@ def _cross_harness_execution_summary(data: dict[str, Any], path_text: str) -> di
         "deterministic_quality": round(sum(quality) / len(quality), 4) if quality else None, "quality_n": len(quality), "latency_ms": {"median": median(latency), "min": min(latency), "max": max(latency), "n": len(latency)} if latency else None,
         "resources": {"observations": [json.loads(item) for item in resources], "n": len(resource_rows), "included_execution_state": "returned", "receipt_states": {state: sum(row.get("receipt_state") == state for row in resource_rows) for state in ("verified", "drift", "not_emitted")}}, "metric_null_reasons": dict(sorted(nulls.items())), "declared_tool_policy_sha256s": sorted({str(row.get("tool_policy_sha256")) for row in rows if row.get("tool_policy_sha256")}), "enforcement_sha256s": sorted({str(row.get("enforcement_sha256")) for row in rows if row.get("enforcement_sha256")}),
         "policy_equivalence": "non_equivalent",
-        "model_identities": [json.loads(item) for item in sorted({json.dumps(project_model_identity(row), sort_keys=True) for row in rows})]}
+        "model_identities": [json.loads(item) for item in sorted({json.dumps(project_model_identity(row, source_schema=str(row.get("schema") or data.get("schema", ""))), sort_keys=True) for row in rows})]}
 
 
 def _generic_child_summary(data: dict[str, Any], path_text: str) -> dict[str, Any]:

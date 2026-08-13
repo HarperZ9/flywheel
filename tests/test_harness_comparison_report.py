@@ -192,11 +192,12 @@ def test_cross_harness_allows_unknown_observation_but_rejects_conflicting_attest
 
 def test_historical_v1_scorecard_identity_is_labeled_not_silently_coerced():
     row = _cross_row("codex_harness", "agt-001-index-fallback-integrity", 1)
-    for field in ("model_display_name", "requested_model_reference", "model_observed", "model_observation_basis"): row.pop(field)
+    for field in ("model_id", "model_display_name", "requested_model_reference", "model_observed", "model_observation_basis"): row.pop(field)
+    row["target_model"] = "5.3-Codex-Spark"
     row["comparison_key"] = legacy_comparison_key(row)
     metric = metric_rows_from_artifact({"schema": "harness.cross-harness-task-scorecard/v1", "rows": [row]}, "v1.json")[0]
     assert metric["model_identity"]["identity_schema"] == "historical_v1"
-    assert metric["requested_model_reference"] == ""
+    assert metric["requested_model_reference"] == "5.3-Codex-Spark"
 
 
 def test_cross_harness_comparison_rejects_pair_or_policy_hash_mismatch(tmp_path):

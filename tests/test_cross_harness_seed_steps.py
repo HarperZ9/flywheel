@@ -157,7 +157,8 @@ def _admission(tmp_path, *, mutate=None):
             row = {"phase": "admission-smoke", "provider_role": role, "task_id": task["task_id"], "repetition": 1,
                    "primary_outcome": "completed", "receipt_path": str(receipt), "task_set_id": "set",
                    "raw_prompt_sha256": task["raw_prompt_sha256"], "input_sha256s": {}, "harness_id": spec["harness_id"],
-                   "adapter_id": "adapter", "model_id": "model", "requested_model_reference": "model",
+                   "schema": "harness.cross-harness-task-scorecard/v1", "adapter_id": "adapter", "model_id": "model",
+                   "model_display_name": "Model", "requested_model_reference": "model",
                    "model_observed": "", "model_observation_basis": "unknown", "tool_policy_sha256": canonical_sha256(SHARED_TOOL_POLICY),
                    **current, "availability_evidence": {"adapter_evidence": {"oracle_spec_sha256": canonical_sha256(task["oracle"])}}}
             if role.startswith("local_"): row["availability_evidence"].update(_local_identity(role))

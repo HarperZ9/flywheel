@@ -5,7 +5,9 @@ import pytest
 from harness.cross_harness_artifacts import canonical_sha256
 from harness.cross_harness_cli import _admission_identity_code
 from harness.cross_harness_executor import SHARED_TOOL_POLICY, comparison_key, execute_cross_harness_manifest
-from harness.cross_harness_types import AdapterResult, AvailabilityResult, EnforcementResult
+from harness.cross_harness_types import (
+    MODEL_IDENTITY_FIELDS, AdapterResult, AvailabilityResult, EnforcementResult, project_model_identity,
+)
 from scripts.run_harness_comparison_report import metric_rows_from_artifact
 
 
@@ -52,8 +54,9 @@ def _admission_fixture():
     manifest = {"task_set_id": "set"}
     current = {"source_commit": "commit", "source_snapshot_sha256": "source", "cache_state": "cold",
                "execution_mode": "focused_run"}
-    row = {"raw_prompt_sha256": "p", "input_sha256s": {}, "availability_evidence": {"adapter_evidence": {
+    row = {"schema": "harness.cross-harness-task-scorecard/v1", "raw_prompt_sha256": "p", "input_sha256s": {}, "availability_evidence": {"adapter_evidence": {
         "oracle_spec_sha256": canonical_sha256({})}}, "model_id": "stable", "requested_model_reference": "requested",
+        "model_display_name": "Stable",
         "harness_id": "codex", "adapter_id": "adapter", "tool_policy_sha256": canonical_sha256(SHARED_TOOL_POLICY),
         "source_commit": "commit", "source_snapshot_sha256": "source", "cache_state": "cold", "task_set_id": "set",
         "execution_mode": "focused_run", "provider_role": "codex_harness"}
@@ -76,3 +79,57 @@ def test_comparison_independently_rejects_invalid_v2_observation_pair():
     row["comparison_key"] = comparison_key(row)
     with pytest.raises(ValueError, match="invalid model observation"):
         metric_rows_from_artifact({"schema": "harness.cross-harness-task-scorecard/v1", "rows": [row]}, "rows.json")
+
+
+def _complete_v2_identity():
+    return {"model_id": "stable", "model_display_name": "Stable", "requested_model_reference": "requested",
+            "model_observed": "", "model_observation_basis": "unknown"}
+
+
+@pytest.mark.parametrize("missing", MODEL_IDENTITY_FIELDS)
+def test_identity_projection_rejects_every_partial_v2_shape(missing):
+    row = _complete_v2_identity(); row.pop(missing)
+    with pytest.raises(ValueError, match="partial v2 model identity"):
+        project_model_identity(row)
+
+
+@pytest.mark.parametrize("current_fields", [(field,) for field in MODEL_IDENTITY_FIELDS] + [MODEL_IDENTITY_FIELDS])
+def test_identity_projection_rejects_mixed_legacy_and_current_shapes(current_fields):
+    identity = _complete_v2_identity()
+    row = {"target_model": "legacy", **{field: identity[field] for field in current_fields}}
+    with pytest.raises(ValueError, match="mixed legacy and v2 model identity"):
+        project_model_identity(row)
+
+
+def test_historical_identity_requires_target_marker_and_approved_source_schema():
+    identity = project_model_identity({"target_model": "legacy"},
+                                      source_schema="harness.cross-harness-task-scorecard/v1")
+    assert (identity["identity_schema"], identity["model_id"]) == ("historical_v1", "legacy")
+    for row, schema in (({}, "harness.cross-harness-task-scorecard/v1"),
+                        ({"target_model": ""}, "harness.cross-harness-task-scorecard/v1"),
+                        ({"target_model": "legacy"}, "harness.closed-loop-outcome/v1")):
+        with pytest.raises(ValueError): project_model_identity(row, source_schema=schema)
+
+
+@pytest.mark.parametrize("missing", MODEL_IDENTITY_FIELDS)
+def test_comparison_rejects_partial_v2_before_legacy_key_or_observation_validation(missing):
+    row = {"phase": "spark", "provider_role": "codex_harness", "task_id": "task", "repetition": 1,
+           "tool_policy_sha256": "a" * 64, **_complete_v2_identity()}
+    row.pop(missing); row["comparison_key"] = "legacy-key-would-be-selected"
+    with pytest.raises(ValueError, match="partial v2 model identity"):
+        metric_rows_from_artifact({"schema": "harness.cross-harness-task-scorecard/v1", "rows": [row]}, "rows.json")
+
+
+def test_comparison_rejects_mixed_identity_before_key_selection():
+    row = {"phase": "spark", "provider_role": "codex_harness", "task_id": "task", "repetition": 1,
+           "tool_policy_sha256": "a" * 64, "target_model": "legacy", **_complete_v2_identity(),
+           "comparison_key": "legacy-key-would-be-selected"}
+    with pytest.raises(ValueError, match="mixed legacy and v2 model identity"):
+        metric_rows_from_artifact({"schema": "harness.cross-harness-task-scorecard/v1", "rows": [row]}, "rows.json")
+
+
+def test_admission_rejects_partial_or_mixed_identity_before_observation_validation():
+    for mutate in (lambda row: row.pop("model_display_name"), lambda row: row.update(target_model="legacy")):
+        row, task, spec, manifest, current = _admission_fixture()
+        row.update(model_observed="requested", model_observation_basis="unknown"); mutate(row)
+        assert _admission_identity_code(row, task, spec, manifest, current, {}) == "admission_model_identity_schema_mismatch"

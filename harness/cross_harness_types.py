@@ -8,6 +8,7 @@ from typing import Any, Protocol
 
 MODEL_IDENTITY_FIELDS = ("model_id", "model_display_name", "requested_model_reference", "model_observed", "model_observation_basis")
 MODEL_OBSERVATION_BASES = frozenset({"structured_provider_event", "structured_provider_response"})
+HISTORICAL_IDENTITY_SCHEMAS = frozenset({"harness.adapter-runtime-matrix/v1", "harness.cross-harness-task-scorecard/v1"})
 
 
 def model_observation_pair_error(observed: Any, basis: Any) -> str:
@@ -21,14 +22,19 @@ def model_observation_pair_error(observed: Any, basis: Any) -> str:
     return "unsupported_model_observation_basis"
 
 
-def project_model_identity(row: dict[str, Any]) -> dict[str, str]:
-    """Project v2 identity, labeling rather than silently coercing historical v1 rows."""
-    if all(field in row for field in MODEL_IDENTITY_FIELDS):
+def project_model_identity(row: dict[str, Any], *, source_schema: str = "") -> dict[str, str]:
+    """Project one exact identity shape; ambiguous current/legacy rows fail closed."""
+    present = tuple(field for field in MODEL_IDENTITY_FIELDS if field in row)
+    if "target_model" in row and present: raise ValueError("mixed legacy and v2 model identity")
+    if present and len(present) != len(MODEL_IDENTITY_FIELDS): raise ValueError("partial v2 model identity")
+    if present:
         return {"identity_schema": "v2", **{field: str(row.get(field, "")) for field in MODEL_IDENTITY_FIELDS}}
-    legacy = str(row.get("target_model", ""))
-    return {"identity_schema": "historical_v1", "model_id": str(row.get("model_id", legacy)),
-            "model_display_name": "", "requested_model_reference": legacy,
-            "model_observed": str(row.get("model_observed", "")),
+    if "target_model" not in row: raise ValueError("model identity missing")
+    schema, legacy = source_schema or str(row.get("schema", "")), row.get("target_model")
+    if schema not in HISTORICAL_IDENTITY_SCHEMAS: raise ValueError("historical v1 model identity schema mismatch")
+    if not isinstance(legacy, str) or not legacy.strip(): raise ValueError("historical v1 target_model missing")
+    return {"identity_schema": "historical_v1", "model_id": legacy, "model_display_name": "",
+            "requested_model_reference": legacy, "model_observed": "",
             "model_observation_basis": "historical_v1_unrecorded"}
 
 

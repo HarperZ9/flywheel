@@ -67,7 +67,7 @@ def comparison_key(row: dict[str, Any]) -> str:
                              "local_route_identity": {field: evidence.get(field, "") for field in route_fields}})
 def legacy_comparison_key(row: dict[str, Any]) -> str:
     fields = ("task_set_id", "task_id", "raw_prompt_sha256", "input_sha256s", "tool_policy_sha256", "model_id", "cache_state", "phase", "execution_mode", "source_snapshot_sha256", "workspace_snapshot_sha256")
-    return canonical_sha256({field: row.get(field) for field in fields})
+    return canonical_sha256({field: row.get("target_model") if field == "model_id" and "model_id" not in row else row.get(field) for field in fields})
 def _one(rows: list[dict[str, Any]], field: str, value: str) -> dict[str, Any]:
     matches = [row for row in rows if str(row.get(field, "")) == value]
     if len(matches) != 1:

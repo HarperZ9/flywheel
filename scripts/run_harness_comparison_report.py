@@ -170,15 +170,15 @@ def _quality_duel_rows(data: dict[str, Any], path_text: str) -> list[dict[str, A
             failure_class=row.get("failure_class", ""),
         ))
     return metric_rows
-def _row_comparison_key(row: dict[str, Any]) -> str:
-    return executor_comparison_key(row) if project_model_identity(row)["identity_schema"] == "v2" else legacy_comparison_key(row)
+def _row_comparison_key(row: dict[str, Any], identity: dict[str, str]) -> str:
+    return executor_comparison_key(row) if identity["identity_schema"] == "v2" else legacy_comparison_key(row)
 def _cross_harness_rows(data: dict[str, Any], path_text: str) -> list[dict[str, Any]]:
     rows = [row for row in data.get("rows", []) if isinstance(row, dict) and str(row.get("phase", "")) == "spark"]
     rows = [row for row in rows if str(row.get("provider_role", "")) in {"codex_harness", "flywheel_harness"}]
     for row in rows:
-        identity = project_model_identity(row); error = model_observation_pair_error(identity["model_observed"], identity["model_observation_basis"])
+        identity = project_model_identity(row, source_schema=str(data.get("schema", ""))); error = model_observation_pair_error(identity["model_observed"], identity["model_observation_basis"])
         if identity["identity_schema"] == "v2" and error: raise ValueError("cross-harness invalid model observation pair")
-        if row.get("comparison_key") != _row_comparison_key(row): raise ValueError("cross-harness comparison hash mismatch")
+        if row.get("comparison_key") != _row_comparison_key(row, identity): raise ValueError("cross-harness comparison hash mismatch")
     for task in sorted({str(row.get("task_id", "")) for row in rows}):
         for repetition in sorted({int(row.get("repetition", 0) or 0) for row in rows if str(row.get("task_id", "")) == task}):
             pair = [row for row in rows if str(row.get("task_id", "")) == task and int(row.get("repetition", 0) or 0) == repetition]
@@ -189,11 +189,11 @@ def _cross_harness_rows(data: dict[str, Any], path_text: str) -> list[dict[str, 
     result = []
     for row in rows:
         returned = row.get("execution_state") == "returned"; verified = row.get("receipt_state") == "verified"; oracle = str(row.get("oracle_state", "")); metrics = row.get("metrics") if isinstance(row.get("metrics"), dict) else {}
-        identity = project_model_identity(row)
+        identity = project_model_identity(row, source_schema=str(data.get("schema", "")))
         result.append({"schema": "harness.comparison-report.metric-row/v1", "artifact_path": path_text,
             "artifact_schema": data.get("schema", ""), "benchmark_id": "cross_harness_reproducibility_matrix",
-            "comparison_key": _row_comparison_key(row), "provider": "", "provider_role": row.get("provider_role", ""),
-            "model_ref": row.get("model_id", ""), "model_identity": identity,
+            "comparison_key": _row_comparison_key(row, identity), "provider": "", "provider_role": row.get("provider_role", ""),
+            "model_ref": identity["model_id"], "model_identity": identity,
             **{field: identity[field] for field in ("model_id", "model_display_name", "requested_model_reference", "model_observed", "model_observation_basis")},
             "pass_rate": 1.0 if returned else 0.0,
             "quality_score": (1.0 if oracle == "pass" else 0.0) if returned and verified and oracle in {"pass", "fail"} else None, "latency_ms": metrics.get("latency_ms") if returned else None, "failure_class": row.get("failure_class", ""), "planned": bool(row.get("planned")), "admitted": bool(row.get("admitted")), "blocked": bool(row.get("blocked")), "launched": bool(row.get("launched")), "returned_well_formed": returned, "receipt_state": row.get("receipt_state", ""), "tool_policy_sha256": row.get("tool_policy_sha256", ""), "enforcement_sha256": row.get("enforcement_sha256", ""), "policy_equivalence": "non_equivalent"})

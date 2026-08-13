@@ -81,14 +81,15 @@ def _classification(value: str) -> str:
     return "observed"
 
 
-def _model_identities(value: Any) -> list[dict[str, str]]:
+def _model_identities(value: Any, source_schema: str = "") -> list[dict[str, str]]:
     rows: list[dict[str, str]] = []
     if isinstance(value, dict):
+        source_schema = str(value.get("schema") or source_schema)
         if "target_model" in value or any(field in value for field in MODEL_IDENTITY_FIELDS):
-            rows.append(project_model_identity(value))
-        for child in value.values(): rows.extend(_model_identities(child))
+            rows.append(project_model_identity(value, source_schema=source_schema))
+        for child in value.values(): rows.extend(_model_identities(child, source_schema))
     elif isinstance(value, list):
-        for child in value: rows.extend(_model_identities(child))
+        for child in value: rows.extend(_model_identities(child, source_schema))
     unique = {json.dumps(row, sort_keys=True): row for row in rows}
     return list(unique.values())
 
