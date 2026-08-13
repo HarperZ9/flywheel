@@ -39,6 +39,26 @@ def _has_nonfinite_number(value: object) -> bool:
     return False
 
 
+def _validate_json_value(value: object) -> None:
+    if value is None or type(value) in (str, bool, int):
+        return
+    if type(value) is float:
+        if not math.isfinite(value):
+            raise ValueError("canonical JSON requires finite floats")
+        return
+    if type(value) is list:
+        for item in value:
+            _validate_json_value(item)
+        return
+    if type(value) is dict:
+        for key, item in value.items():
+            if type(key) is not str:
+                raise ValueError("canonical JSON object keys must be strings")
+            _validate_json_value(item)
+        return
+    raise ValueError("value is outside the JSON data model")
+
+
 def strict_load_json(raw: bytes | str, *, max_bytes: int = 1_048_576,
                      max_depth: int = 32) -> object:
     """Load one bounded evidence object without JSON parser permissiveness."""
@@ -71,6 +91,7 @@ def strict_load_json(raw: bytes | str, *, max_bytes: int = 1_048_576,
 
 def canonical_bytes(value: object) -> bytes:
     """Return compact, key-sorted UTF-8 JSON bytes for a JSON-compatible value."""
+    _validate_json_value(value)
     try:
         return json.dumps(
             value, sort_keys=True, separators=(",", ":"), ensure_ascii=False,
@@ -96,7 +117,7 @@ def _reject_unsafe_ref(ref: str) -> None:
 
 
 def _case_normalized(path: Path) -> str:
-    return os.path.normcase(str(path)).casefold()
+    return os.path.normcase(str(path))
 
 
 def _is_contained(root: Path, candidate: Path) -> bool:
@@ -107,19 +128,23 @@ def _is_contained(root: Path, candidate: Path) -> bool:
         return False
 
 
+def _resolve_path(path: Path, *, strict: bool) -> Path:
+    return path.resolve(strict=strict)
+
+
 def admit_artifact_ref(root: Path, ref: str, *, must_exist: bool = True) -> Path:
     """Admit a relative evidence file only when its resolved target stays in ``root``."""
     if not isinstance(ref, str):
         raise TypeError("artifact reference must be str")
     _reject_unsafe_ref(ref)
     try:
-        resolved_root = Path(root).resolve(strict=True)
+        resolved_root = _resolve_path(Path(root), strict=True)
     except (OSError, RuntimeError) as exc:
         raise ValueError("artifact root is unavailable") from exc
     if not resolved_root.is_dir():
         raise ValueError("artifact root must be a directory")
     try:
-        candidate = (resolved_root / Path(ref)).resolve(strict=False)
+        candidate = _resolve_path(resolved_root / Path(ref), strict=False)
     except (OSError, RuntimeError) as exc:
         raise ValueError("artifact reference is invalid") from exc
     if not _is_contained(resolved_root, candidate):

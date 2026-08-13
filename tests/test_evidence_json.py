@@ -2,6 +2,7 @@ import hashlib
 from pathlib import Path
 
 import pytest
+import harness.evidence_json as evidence_json
 
 from harness.evidence_json import (
     admit_artifact_ref,
@@ -60,6 +61,12 @@ def test_canonical_json_rejects_nonfinite_numbers(value):
         canonical_bytes(value)
 
 
+@pytest.mark.parametrize("value", [{1: "x"}, {"nested": {1: "x"}}, {"nested": ("x",)}])
+def test_canonical_json_rejects_values_outside_the_json_data_model(value):
+    with pytest.raises(ValueError):
+        canonical_bytes(value)
+
+
 @pytest.mark.parametrize("ref", ["/outside.json", "../outside.json", "nested/../../outside.json", "C:\\outside.json", "C:outside.json", "\\\\server\\share\\outside.json"])
 def test_artifact_admission_rejects_absolute_and_escaping_refs(tmp_path, ref):
     root = tmp_path / "artifacts"
@@ -89,6 +96,41 @@ def test_artifact_admission_rejects_symlink_escape(tmp_path):
         pytest.skip(f"symlinks unavailable: {exc}")
     with pytest.raises(ValueError, match="root"):
         admit_artifact_ref(root, "linked.json")
+
+
+def test_artifact_admission_rejects_an_injected_resolved_escape(tmp_path, monkeypatch):
+    root = tmp_path / "artifacts"
+    root.mkdir()
+    outside = tmp_path / "outside.json"
+    outside.write_text("{}", encoding="utf-8")
+
+    def resolve(path, *, strict):
+        return root.resolve() if strict else outside.resolve()
+
+    monkeypatch.setattr(evidence_json, "_resolve_path", resolve, raising=False)
+    with pytest.raises(ValueError, match="root"):
+        admit_artifact_ref(root, "evidence.json")
+
+
+def test_artifact_admission_preserves_case_distinct_sibling_paths(tmp_path, monkeypatch):
+    root = tmp_path / "Run"
+    root.mkdir()
+    case_distinct_sibling = tmp_path / "run" / "payload.json"
+
+    def resolve(path, *, strict):
+        return root.resolve() if strict else case_distinct_sibling
+
+    def case_sensitive_commonpath(paths):
+        root_name, candidate_name = paths
+        if candidate_name.startswith(root_name + "\\"):
+            return root_name
+        return root_name.rpartition("\\")[0]
+
+    monkeypatch.setattr(evidence_json, "_resolve_path", resolve, raising=False)
+    monkeypatch.setattr(evidence_json.os.path, "normcase", lambda path: str(path))
+    monkeypatch.setattr(evidence_json.os.path, "commonpath", case_sensitive_commonpath)
+    with pytest.raises(ValueError, match="root"):
+        admit_artifact_ref(root, "evidence.json", must_exist=False)
 
 
 @pytest.mark.parametrize("name", ["missing.json", "directory"])
