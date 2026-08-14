@@ -4,7 +4,7 @@ from __future__ import annotations
 import os
 from pathlib import Path
 import re
-from urllib.parse import urlsplit
+from urllib.parse import parse_qsl, urlsplit
 
 from .bundle import BundleError, safe_relative, scan_for_secrets
 from .evidence_json import canonical_bytes, strict_load_json
@@ -65,9 +65,15 @@ def _request(action: str, value: dict) -> dict:
     return value
 
 
-def _https_url(value: str) -> bool:
+def _secret_key(value: str) -> bool:
+    normalized = value.lower().replace("-", "_")
+    return (normalized in _SECRET_KEYS or
+            normalized.endswith(("_api_key", "_private_key", "_password",
+                                  "_secret", "_credential", "_token")))
+
+
+def _https_url(value: str, parsed) -> bool:
     try:
-        parsed = urlsplit(value)
         _ = parsed.port
         return (parsed.scheme.lower() == "https" and bool(parsed.hostname) and
                 parsed.username is None and parsed.password is None and
@@ -91,10 +97,7 @@ def _public_metadata(value: object) -> None:
     if type(value) is dict:
         for key, item in value.items():
             _public_metadata(key)
-            normalized = key.lower().replace("-", "_")
-            if (normalized in _SECRET_KEYS or
-                    normalized.endswith(("_api_key", "_private_key", "_password",
-                                         "_secret", "_credential", "_token"))):
+            if _secret_key(key):
                 raise TransportError("UNSAFE_METADATA", "metadata contains a secret-bearing field", 422)
             if key == "ref" or key.endswith(("_ref", "_refs")):
                 refs = item if type(item) is list else [item]
@@ -108,7 +111,18 @@ def _public_metadata(value: object) -> None:
     elif type(value) is str:
         if scan_for_secrets(value):
             raise TransportError("UNSAFE_METADATA", "metadata contains secret-shaped content", 422)
-        if _https_url(value):
+        try:
+            parsed = urlsplit(value)
+        except ValueError:
+            parsed = None
+        if parsed is not None and parsed.scheme.lower() == "file":
+            raise TransportError("UNSAFE_METADATA", "metadata contains an unsafe reference", 422)
+        if parsed is not None and parsed.scheme.lower() == "https":
+            names = (name for component in (parsed.query, parsed.fragment)
+                     for name, _ in parse_qsl(component, keep_blank_values=True))
+            if any(_secret_key(name) for name in names):
+                raise TransportError("UNSAFE_METADATA", "metadata contains a secret-bearing field", 422)
+        if parsed is not None and _https_url(value, parsed):
             return
         if (_WINDOWS_PATH.search(value) or _UNC_PATH.search(value) or
                 _POSIX_PATH.search(value)):
