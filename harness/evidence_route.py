@@ -6,7 +6,7 @@ from pathlib import Path
 import re
 
 from .bundle import BundleError, safe_relative, scan_for_secrets
-from .evidence_json import strict_load_json
+from .evidence_json import canonical_bytes, strict_load_json
 from .evidence_journey import new_journey, project_journey, run_journey_check
 from .evidence_packet import pack_journey_packet, verify_journey_packet
 
@@ -24,6 +24,9 @@ _FIELDS = {
 _SECRET_KEYS = frozenset(("api_key", "access_token", "refresh_token", "token",
     "password", "secret", "credential", "credentials", "private_key",
     "authorization", "cookie", "environment", "env"))
+_WINDOWS_PATH = re.compile(r"(?<![A-Za-z0-9])[A-Za-z]:[\\/]")
+_UNC_PATH = re.compile(r"(?<!:)(?:\\\\|//)[^\\/\s]+[\\/][^\s]+")
+_POSIX_PATH = re.compile(r"(?<![\w:/\\])/(?!/)[^\s]+")
 
 
 class TransportError(ValueError):
@@ -82,19 +85,27 @@ def _public_metadata(value: object) -> None:
     elif type(value) is str:
         if scan_for_secrets(value):
             raise TransportError("UNSAFE_METADATA", "metadata contains secret-shaped content", 422)
-        if value.startswith(("/", "\\\\", "//")) or re.match(r"^[A-Za-z]:[\\/]", value):
+        if (_WINDOWS_PATH.search(value) or _UNC_PATH.search(value) or
+                _POSIX_PATH.search(value)):
             raise TransportError("UNSAFE_METADATA", "metadata contains a host path", 422)
 
 
 def _public_result(action: str, value: dict) -> dict:
-    result = dict(value)
-    if action == "check" and result.get("unverifiable_reason") and "reason" in result:
-        result["reason"] = "registered oracle could not verify the submitted evidence"
-    if action in {"export", "recheck"} and "detail" in result:
-        result["detail"] = "packet could not be verified from admitted evidence"
     try:
+        if type(value) is not dict:
+            raise TypeError("transport result must be an object")
+        result = dict(value)
+        if action == "check" and result.get("unverifiable_reason") and "reason" in result:
+            result["reason"] = "registered oracle could not verify the submitted evidence"
+        if action == "check" and result.get("unverifiable_reason") == "ORACLE_UNAVAILABLE":
+            result.pop("oracle_id", None)
+            result["does_not_prove"] = ["the requested claim was not checked"]
+        if action in {"export", "recheck"} and "detail" in result:
+            result["detail"] = "packet could not be verified from admitted evidence"
+        result = strict_load_json(canonical_bytes(result),
+                                  max_bytes=1_048_576, max_depth=32)
         _public_metadata(result)
-    except TransportError as exc:
+    except (TransportError, TypeError, ValueError, UnicodeError, RecursionError) as exc:
         raise TransportError("UNSAFE_RESULT",
             "evidence transport produced unsafe metadata", 500) from exc
     return result

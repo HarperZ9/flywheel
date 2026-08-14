@@ -69,6 +69,7 @@ def test_cli_check_resolves_nested_candidate_and_raw_refs(tmp_path, capsys):
         "--oracle-id", "ml", "--candidate-ref", "nested/measurement.json",
         "--context-ref", "context.json")
     assert code == 1 and err == "" and result["verdict"] == "FAIL"
+    assert result["oracle_id"] == "ml"
     assert "nested/measurement.json" in result["raw_artifact_refs"]
     assert result["receipt_ref"].startswith("receipts/")
 
@@ -155,6 +156,74 @@ def test_cli_recheck_maps_packet_detail_to_fixed_message(tmp_path, capsys):
     assert code == 4 and err == "" and result["verdict"] == "UNVERIFIABLE"
     assert result["detail"] == "packet could not be verified from admitted evidence"
     assert str(tmp_path) not in json.dumps(result)
+
+
+@pytest.mark.parametrize("oracle_id", [
+    "unknown at C:/Users/private/secret-model",
+    r"unknown at \\server\private\secret-model",
+    "unknown at /home/private/secret-model",
+])
+def test_cli_rejects_embedded_host_path_in_oracle_id_without_echo(
+        tmp_path, capsys, oracle_id):
+    _write(tmp_path / "journey.json", _journey())
+    _write(tmp_path / "context.json", {"task_id": "cli", "prompt": "Check",
+        "oracle_cmd": "measurement-gate", "candidate_ref": "missing.json",
+        "raw_artifact_refs": ["missing.json"], "timeout_seconds": 5})
+    code, result, err = _run(capsys, tmp_path, "check",
+        "--journey-ref", "journey.json", "--claim-id", "claim-root",
+        "--oracle-id", oracle_id, "--candidate-ref", "missing.json",
+        "--context-ref", "context.json")
+    assert code == 2 and err == "" and result["error"]["code"] == "UNSAFE_METADATA"
+    assert oracle_id not in json.dumps(result)
+
+
+@pytest.mark.parametrize("fragment", [
+    "from C:/Users/private/intake.json",
+    r"from \\server\private\intake.json",
+    "from /home/private/intake.json",
+    "from /private",
+])
+def test_cli_rejects_embedded_host_path_in_metadata_key(tmp_path, capsys, fragment):
+    _write(tmp_path / "intake.json", {f"failed {fragment}": "bounded"})
+    code, result, err = _run(capsys, tmp_path, "start", "--journey-id", "j-1",
+        "--goal", "Explain", "--created-at", "2026-08-12T12:00:00Z",
+        "--intake-ref", "intake.json")
+    assert code == 2 and err == "" and result["error"]["code"] == "UNSAFE_METADATA"
+    assert fragment not in json.dumps(result)
+
+
+def test_cli_preserves_public_https_metadata(tmp_path, capsys):
+    url = "https://example.com/public/evidence"
+    _write(tmp_path / "intake.json", {"source_url": url})
+    code, result, err = _run(capsys, tmp_path, "start", "--journey-id", "j-1",
+        "--goal", "Explain", "--created-at", "2026-08-12T12:00:00Z",
+        "--intake-ref", "intake.json")
+    assert code == 0 and err == "" and result["intake"]["source_url"] == url
+
+
+def test_cli_safe_unknown_oracle_keeps_typed_null_without_echo(tmp_path, capsys):
+    oracle_id = "safe-unregistered-oracle"
+    _write(tmp_path / "journey.json", _journey())
+    _write(tmp_path / "context.json", {"task_id": "cli", "prompt": "Check",
+        "oracle_cmd": "measurement-gate", "candidate_ref": "missing.json",
+        "raw_artifact_refs": ["missing.json"], "timeout_seconds": 5})
+    code, result, err = _run(capsys, tmp_path, "check",
+        "--journey-ref", "journey.json", "--claim-id", "claim-root",
+        "--oracle-id", oracle_id, "--candidate-ref", "missing.json",
+        "--context-ref", "context.json")
+    assert code == 4 and err == "" and result["verdict"] == "UNVERIFIABLE"
+    assert result["unverifiable_reason"] == "ORACLE_UNAVAILABLE"
+    assert oracle_id not in json.dumps(result) and "oracle_id" not in result
+
+
+def test_cli_final_response_must_be_strict_public_json(tmp_path, capsys, monkeypatch):
+    _write(tmp_path / "journey.json", _journey())
+    monkeypatch.setattr("harness.evidence_route.project_journey",
+                        lambda *a, **k: {"score": float("nan")})
+    code, result, err = _run(capsys, tmp_path, "project",
+        "--journey-ref", "journey.json", "--lens", "verify")
+    assert code == 2 and err == "" and result["error"]["code"] == "UNSAFE_RESULT"
+    assert "NaN" not in json.dumps(result)
 
 
 def test_cli_rejects_inline_evidence_arguments(capsys):
