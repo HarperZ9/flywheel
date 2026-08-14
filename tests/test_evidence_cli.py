@@ -192,13 +192,36 @@ def test_cli_rejects_embedded_host_path_in_metadata_key(tmp_path, capsys, fragme
     assert fragment not in json.dumps(result)
 
 
+@pytest.mark.parametrize("fragment", ["file://server/private/input.json",
+    "fieldC:/Users/private/input.json", "observed/home/private/input.json"])
+@pytest.mark.parametrize("location", ["key", "value"])
+def test_cli_rejects_scheme_or_concatenated_host_path(tmp_path, capsys, fragment,
+                                                       location):
+    intake = {fragment: "bounded"} if location == "key" else {"summary": fragment}
+    _write(tmp_path / "intake.json", intake)
+    code, result, err = _run(capsys, tmp_path, "start", "--journey-id", "j-1",
+        "--goal", "Explain", "--created-at", "2026-08-12T12:00:00Z",
+        "--intake-ref", "intake.json")
+    assert code == 2 and err == "" and result["error"]["code"] == "UNSAFE_METADATA"
+    assert fragment not in json.dumps(result)
+
+
 def test_cli_preserves_public_https_metadata(tmp_path, capsys):
-    url = "https://example.com/public/evidence"
+    url = "https://example.com/public?next=/docs/evidence#view=/home/guide"
     _write(tmp_path / "intake.json", {"source_url": url})
     code, result, err = _run(capsys, tmp_path, "start", "--journey-id", "j-1",
         "--goal", "Explain", "--created-at", "2026-08-12T12:00:00Z",
         "--intake-ref", "intake.json")
     assert code == 0 and err == "" and result["intake"]["source_url"] == url
+
+
+def test_cli_preserves_typed_safe_relative_refs(tmp_path, capsys):
+    ref = "observed/home/private/input.json"
+    _write(tmp_path / "intake.json", {"source_refs": [ref]})
+    code, result, err = _run(capsys, tmp_path, "start", "--journey-id", "j-1",
+        "--goal", "Explain", "--created-at", "2026-08-12T12:00:00Z",
+        "--intake-ref", "intake.json")
+    assert code == 0 and err == "" and result["intake"]["source_refs"] == [ref]
 
 
 def test_cli_safe_unknown_oracle_keeps_typed_null_without_echo(tmp_path, capsys):

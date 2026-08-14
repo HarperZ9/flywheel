@@ -4,6 +4,7 @@ from __future__ import annotations
 import os
 from pathlib import Path
 import re
+from urllib.parse import urlsplit
 
 from .bundle import BundleError, safe_relative, scan_for_secrets
 from .evidence_json import canonical_bytes, strict_load_json
@@ -24,9 +25,11 @@ _FIELDS = {
 _SECRET_KEYS = frozenset(("api_key", "access_token", "refresh_token", "token",
     "password", "secret", "credential", "credentials", "private_key",
     "authorization", "cookie", "environment", "env"))
-_WINDOWS_PATH = re.compile(r"(?<![A-Za-z0-9])[A-Za-z]:[\\/]")
-_UNC_PATH = re.compile(r"(?<!:)(?:\\\\|//)[^\\/\s]+[\\/][^\s]+")
-_POSIX_PATH = re.compile(r"(?<![\w:/\\])/(?!/)[^\s]+")
+_WINDOWS_PATH = re.compile(r"[A-Za-z]:[\\/]")
+_UNC_PATH = re.compile(r"(?:\\\\|//)[^\\/\s]+[\\/][^\s]+")
+_POSIX_PATH = re.compile(r"(?:^|[\s=(\[{,:;])/(?!/)[^\s]+|/"
+    r"(?:Users|home|private|tmp|var|etc|root|opt|mnt|srv|usr|bin|sbin|lib|"
+    r"Applications|Volumes|dev|proc|sys|run)(?:/|$)")
 
 
 class TransportError(ValueError):
@@ -62,6 +65,28 @@ def _request(action: str, value: dict) -> dict:
     return value
 
 
+def _https_url(value: str) -> bool:
+    try:
+        parsed = urlsplit(value)
+        _ = parsed.port
+        return (parsed.scheme.lower() == "https" and bool(parsed.hostname) and
+                parsed.username is None and parsed.password is None and
+                "\\" not in value and not any(char.isspace() for char in value))
+    except ValueError:
+        return False
+
+
+def _public_ref(value: object) -> None:
+    try:
+        if type(value) is not str or scan_for_secrets(value):
+            raise ValueError("reference is not public metadata")
+        relative = safe_relative(value)
+        if any(":" in part for part in relative.parts):
+            raise ValueError("reference contains a URI or drive marker")
+    except (BundleError, TypeError, ValueError) as exc:
+        raise TransportError("UNSAFE_METADATA", "metadata contains an unsafe reference", 422) from exc
+
+
 def _public_metadata(value: object) -> None:
     if type(value) is dict:
         for key, item in value.items():
@@ -73,18 +98,18 @@ def _public_metadata(value: object) -> None:
                 raise TransportError("UNSAFE_METADATA", "metadata contains a secret-bearing field", 422)
             if key == "ref" or key.endswith(("_ref", "_refs")):
                 refs = item if type(item) is list else [item]
-                try:
-                    for ref in refs:
-                        safe_relative(ref)
-                except (BundleError, TypeError, ValueError) as exc:
-                    raise TransportError("UNSAFE_METADATA", "metadata contains an unsafe reference", 422) from exc
-            _public_metadata(item)
+                for ref in refs:
+                    _public_ref(ref)
+            else:
+                _public_metadata(item)
     elif type(value) is list:
         for item in value:
             _public_metadata(item)
     elif type(value) is str:
         if scan_for_secrets(value):
             raise TransportError("UNSAFE_METADATA", "metadata contains secret-shaped content", 422)
+        if _https_url(value):
+            return
         if (_WINDOWS_PATH.search(value) or _UNC_PATH.search(value) or
                 _POSIX_PATH.search(value)):
             raise TransportError("UNSAFE_METADATA", "metadata contains a host path", 422)
