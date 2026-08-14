@@ -31,11 +31,14 @@ class JourneyStore:
         self.state_root, self.lock_timeout_s = Path(state_root), lock_timeout_s
         self._fault_injector = fault_injector
     def create(self, command: MutationCommand) -> MutationAck:
-        self._validate_command(command, creating=True)
+        self.validate_command(command, creating=True)
         return self._mutate(command, creating=True)
     def append(self, command: MutationCommand) -> MutationAck:
-        self._validate_command(command, creating=False)
+        self.validate_command(command, creating=False)
         return self._mutate(command, creating=False)
+    def validate_command(self, command: MutationCommand, *, creating: bool) -> None:
+        """Validate one mutation without reading or creating storage state."""
+        self._validate_command(command, creating=creating)
     def load(self, owner_ref: str, journey_ref: str) -> dict:
         self._validate_selector(owner_ref, journey_ref)
         journey_dir = self._journey_dir(owner_ref, journey_ref)

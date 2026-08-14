@@ -3,12 +3,16 @@ from datetime import datetime, timedelta, timezone
 import os
 import re
 import stat
+import subprocess
 
 import pytest
 
 from harness.operation_grants import (
     GrantError, GrantRequest, GrantStore, load_or_create_owner_ref,
 )
+from harness.journey_service import JourneyService
+from harness.journey_store import JourneyStore
+import harness.operation_grants as operation_grants
 
 
 NOW = "2026-08-14T12:00:00Z"
@@ -148,3 +152,86 @@ def test_default_ttl_is_exactly_120_seconds(tmp_path):
     issued = store.issue(_request(expires_at=None), approved=True)
     expiry = datetime.fromisoformat(issued["expires_at"].replace("Z", "+00:00"))
     assert expiry - now == timedelta(seconds=120)
+
+
+def _storage_receipts(tmp_path, monkeypatch, inspect):
+    home, state = tmp_path / "home", tmp_path / "state"
+    owner = load_or_create_owner_ref(home)
+    store = GrantStore(state, clock=lambda: NOW)
+    JourneyService(
+        owner_ref=owner, store=JourneyStore(state), grants=store, clock=lambda: NOW,
+    )
+    receipts = {
+        "owner_directory": inspect(home),
+        "owner_ref": inspect(home / "owner.ref"),
+    }
+    real_replace = operation_grants.os.replace
+
+    def inspect_then_replace(source, target):
+        receipts["grant_temp"] = inspect(source)
+        return real_replace(source, target)
+
+    monkeypatch.setattr(operation_grants.os, "replace", inspect_then_replace)
+    request = replace(_request(), owner_ref=owner)
+    store.issue(request, approved=True)
+    journey_owner = state / "journeys" / "v2" / "owners" / owner
+    grant_owner = state / "grants" / owner
+    receipts["journey_owner_directory"] = inspect(journey_owner) if journey_owner.exists() else None
+    receipts["grant_owner_directory"] = inspect(grant_owner)
+    receipts["grant_record"] = inspect(next(grant_owner.glob("*.json")))
+    return receipts
+
+
+def _windows_acl_entries(path):
+    result = subprocess.run(
+        ["icacls", str(path)], check=True, capture_output=True, text=True,
+        encoding="utf-8", errors="replace",
+    )
+    return tuple(line.strip() for line in result.stdout.splitlines() if ":(" in line)
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows DACL semantics")
+def test_every_owner_artifact_has_one_protected_owner_only_windows_ace(tmp_path, monkeypatch):
+    """Inherited local-user ACLs would expose owner and grant state to other accounts."""
+    receipts = _storage_receipts(tmp_path, monkeypatch, _windows_acl_entries)
+    assert set(receipts) == {
+        "owner_directory", "owner_ref", "journey_owner_directory",
+        "grant_owner_directory", "grant_temp", "grant_record",
+    }
+    for label, entries in receipts.items():
+        assert entries is not None, label
+        assert len(entries) == 1, (label, entries)
+        assert "OWNER RIGHTS:" in entries[0] and "(I)" not in entries[0], (label, entries)
+        assert "(F)" in entries[0], (label, entries)
+        inheritance = label.endswith("directory")
+        assert ("(OI)" in entries[0] and "(CI)" in entries[0]) is inheritance
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows open-file deletion semantics")
+def test_owner_acl_failure_is_fixed_and_leaves_no_partial_identity(tmp_path, monkeypatch):
+    """Failing ACL setup with an open descriptor must not leave a broad empty owner.ref."""
+    real_security = operation_grants._windows_owner_only
+
+    def fail_file(path, *, directory):
+        if directory:
+            return real_security(path, directory=True)
+        raise OSError(r"C:\private\operator\acl")
+
+    monkeypatch.setattr(operation_grants, "_windows_owner_only", fail_file)
+    with pytest.raises(PermissionError) as failure:
+        load_or_create_owner_ref(tmp_path / "home")
+    assert str(failure.value) == "OWNER_STORAGE_UNAVAILABLE"
+    assert not (tmp_path / "home" / "owner.ref").exists()
+
+
+@pytest.mark.skipif(os.name == "nt", reason="POSIX permission bits")
+def test_every_owner_artifact_has_owner_only_posix_mode(tmp_path, monkeypatch):
+    """A permissive umask must not make any owner or grant artifact group-readable."""
+    receipts = _storage_receipts(
+        tmp_path, monkeypatch, lambda path: stat.S_IMODE(path.stat().st_mode),
+    )
+    assert receipts == {
+        "owner_directory": 0o700, "owner_ref": 0o600,
+        "journey_owner_directory": 0o700, "grant_owner_directory": 0o700,
+        "grant_temp": 0o600, "grant_record": 0o600,
+    }

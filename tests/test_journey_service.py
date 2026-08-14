@@ -1,4 +1,5 @@
 from dataclasses import replace
+import json
 import re
 
 import pytest
@@ -220,3 +221,61 @@ def test_normal_fault_after_burn_is_a_fixed_non_echo_store_failure(tmp_path):
         )
     assert failure.value.code == str(failure.value) == "STORE_COMMIT_FAILED"
     assert "private" not in str(failure.value)
+
+
+def test_mutating_caller_body_after_authorization_cannot_change_stored_bytes(tmp_path):
+    """Passing caller-owned dictionaries through the burn boundary would widen approval."""
+    body = _create_body()
+    request, grant_ref = _approved_create(tmp_path, OWNER_A, body)
+
+    def mutate(point):
+        if point == "after_grant_burn":
+            body["goal"] = "tampered after approval"
+            body["intake"]["receipt_refs"][0] = "private/tampered.json"
+
+    ack = _service(tmp_path, OWNER_A, fault_injector=mutate).create(
+        client_request_id="snapshot-create", body=body, grant_ref=grant_ref,
+        grant_request=request,
+    )
+    event_path = next((
+        tmp_path / "journeys" / "v2" / "owners" / OWNER_A / ack.journey_ref / "events"
+    ).glob("*.json"))
+    event = json.loads(event_path.read_text(encoding="utf-8"))
+    assert event["payload"]["goal"] == "Preserve exact evidence"
+    assert event["payload"]["intake"] == {"receipt_refs": ["evidence/intake.json"]}
+
+
+def test_empty_request_id_is_rejected_before_grant_burn(tmp_path):
+    """Store validation after consume would waste approval on an invalid request key."""
+    body = _create_body()
+    request, grant_ref = _approved_create(tmp_path, OWNER_A, body)
+    service = _service(tmp_path, OWNER_A)
+    with pytest.raises(ValueError) as failure:
+        service.create(
+            client_request_id="", body=body, grant_ref=grant_ref,
+            grant_request=request,
+        )
+    assert str(failure.value) == "client_request_id must be a non-empty string"
+
+    ack = service.create(
+        client_request_id="valid-after-rejection", body=body,
+        grant_ref=grant_ref, grant_request=request,
+    )
+    assert service.resume(ack.journey_ref)["journey_ref"] == ack.journey_ref
+
+
+def test_malformed_body_is_non_echoing_and_does_not_burn_grant(tmp_path):
+    """A malformed command must fail before durable one-use authority changes state."""
+    body = {"unexpected": r"C:\private\operator\secret"}
+    request, grant_ref = _approved_create(tmp_path, OWNER_A, body)
+    with pytest.raises(ValueError) as failure:
+        _service(tmp_path, OWNER_A).create(
+            client_request_id="malformed", body=body, grant_ref=grant_ref,
+            grant_request=request,
+        )
+    assert str(failure.value) == "body has invalid mutation fields"
+    assert "private" not in str(failure.value)
+    consumed = GrantStore(tmp_path, clock=lambda: NOW).consume(
+        grant_ref, request, now=NOW,
+    )
+    assert consumed["consumed"] is True

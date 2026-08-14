@@ -186,6 +186,20 @@ def test_missing_replay_lookup_is_read_only(tmp_path):
     assert not root.exists()
 
 
+def test_public_command_validation_is_complete_and_side_effect_free(tmp_path):
+    """Validating only during mutation would burn authority before rejecting input."""
+    root = tmp_path / "absent-state"
+    store = JourneyStore(root)
+    store.validate_command(_create_command(), creating=True)
+    assert not root.exists()
+
+    invalid = replace(_create_command(), client_request_id="")
+    with pytest.raises(ValueError) as failure:
+        store.validate_command(invalid, creating=True)
+    assert str(failure.value) == "client_request_id must be a non-empty string"
+    assert not root.exists()
+
+
 def test_load_during_projection_head_commit_window_never_reports_corruption(tmp_path):
     """Reading projection before head replacement must not create false corruption."""
     store = JourneyStore(tmp_path)
