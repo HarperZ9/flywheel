@@ -145,6 +145,40 @@ def test_load_and_list_are_owner_scoped_and_return_canonical_projections(tmp_pat
     assert missing.value.code == str(missing.value) == "JOURNEY_NOT_FOUND"
 
 
+def test_list_fails_closed_on_a_corrupt_committed_head(tmp_path):
+    """Skipping every unreadable directory would hide corruption after commit."""
+    store = JourneyStore(tmp_path)
+    store.create(_create_command())
+    head_path = _journey_dir(tmp_path) / "head.json"
+    head = json.loads(head_path.read_text(encoding="utf-8"))
+    head["schema"] = "flywheel.evidence-journey-head/corrupt"
+    head_path.write_text(json.dumps(head), encoding="utf-8")
+
+    with pytest.raises(JourneyStoreError) as failure:
+        store.list(OWNER)
+    assert failure.value.code == str(failure.value) == "STORE_COMMIT_FAILED"
+
+
+@pytest.mark.parametrize("damage", ("missing", "corrupt", "mismatched"))
+def test_load_requires_the_persisted_projection_to_match_events_and_head(tmp_path, damage):
+    """Ignoring a missing or altered projection would accept an incomplete commit."""
+    store = JourneyStore(tmp_path)
+    store.create(_create_command())
+    projection_path = _journey_dir(tmp_path) / "projection.json"
+    if damage == "missing":
+        projection_path.unlink()
+    elif damage == "corrupt":
+        projection_path.write_bytes(b"{not-json")
+    else:
+        projection = json.loads(projection_path.read_text(encoding="utf-8"))
+        projection["stage"] = "exported"
+        projection_path.write_text(json.dumps(projection), encoding="utf-8")
+
+    with pytest.raises(JourneyStoreError) as failure:
+        JourneyStore(tmp_path).load(OWNER, JOURNEY)
+    assert failure.value.code == str(failure.value) == "STORE_COMMIT_FAILED"
+
+
 def test_missing_replay_lookup_is_read_only(tmp_path):
     """Creating directories during a pre-grant lookup would mutate server state."""
     root = tmp_path / "absent-state"

@@ -28,8 +28,7 @@ class MutationAck:
 class JourneyStore:
     def __init__(self, state_root: Path, *, lock_timeout_s: float = 2.0,
                  fault_injector: Callable[[str], None] | None = None) -> None:
-        self.state_root = Path(state_root)
-        self.lock_timeout_s = lock_timeout_s
+        self.state_root, self.lock_timeout_s = Path(state_root), lock_timeout_s
         self._fault_injector = fault_injector
     def create(self, command: MutationCommand) -> MutationAck:
         self._validate_command(command, creating=True)
@@ -45,7 +44,8 @@ class JourneyStore:
                 raise JourneyStoreError("JOURNEY_NOT_FOUND")
             events = self._events_at_head(self._journey_dir(owner_ref, journey_ref), head)
             projection = reduce_events(events)
-            if canonical_sha256(projection) != head["projection_sha256"]:
+            if (self._read_json(self._journey_dir(owner_ref, journey_ref) / "projection.json") != projection
+                    or canonical_sha256(projection) != head["projection_sha256"]):
                 raise JourneyStoreError("STORE_COMMIT_FAILED")
             return projection
         except JourneyStoreError:
@@ -59,7 +59,7 @@ class JourneyStore:
             return []
         try:
             refs = sorted(path.name for path in root.iterdir()
-                          if path.is_dir() and path.name.startswith("jrn_"))
+                          if path.is_dir() and path.name.startswith("jrn_") and (path / "head.json").exists())
             return [self.load(owner_ref, ref) for ref in refs]
         except JourneyStoreError:
             raise
@@ -296,4 +296,5 @@ class JourneyStore:
             fsync_directory(path)
     def _checkpoint(self, point: str) -> None:
         if self._fault_injector is not None:
-            self._fault_injector(point)
+            try: self._fault_injector(point)
+            except Exception: raise JourneyStoreError("STORE_COMMIT_FAILED") from None
