@@ -38,20 +38,23 @@ class JourneyStore:
         return self._mutate(command, creating=False)
     def load(self, owner_ref: str, journey_ref: str) -> dict:
         self._validate_selector(owner_ref, journey_ref)
+        journey_dir = self._journey_dir(owner_ref, journey_ref)
+        if not journey_dir.exists():
+            raise JourneyStoreError("JOURNEY_NOT_FOUND")
         try:
-            head = self._read_head(self._journey_dir(owner_ref, journey_ref))
-            if head is None:
-                raise JourneyStoreError("JOURNEY_NOT_FOUND")
-            events = self._events_at_head(self._journey_dir(owner_ref, journey_ref), head)
-            projection = reduce_events(events)
-            if (self._read_json(self._journey_dir(owner_ref, journey_ref) / "projection.json") != projection
-                    or canonical_sha256(projection) != head["projection_sha256"]):
-                raise JourneyStoreError("STORE_COMMIT_FAILED")
-            return projection
-        except JourneyStoreError:
-            raise
-        except (OSError, ValueError, TypeError):
-            raise JourneyStoreError("STORE_COMMIT_FAILED") from None
+            with ExclusiveJourneyLock.acquire(journey_dir / ".lock", self.lock_timeout_s):
+                head = self._read_head(journey_dir)
+                if head is None:
+                    raise JourneyStoreError("JOURNEY_NOT_FOUND")
+                events = self._events_at_head(journey_dir, head)
+                projection = reduce_events(events)
+                if (self._read_json(journey_dir / "projection.json") != projection
+                        or canonical_sha256(projection) != head["projection_sha256"]):
+                    raise JourneyStoreError("STORE_COMMIT_FAILED")
+                return projection
+        except JourneyLockBusy: raise JourneyStoreError("STORE_BUSY") from None
+        except JourneyStoreError: raise
+        except (OSError, ValueError, TypeError): raise JourneyStoreError("STORE_COMMIT_FAILED") from None
     def list(self, owner_ref: str) -> list[dict]:
         self._validate_owner(owner_ref)
         root = self._owner_dir(owner_ref)
@@ -61,10 +64,8 @@ class JourneyStore:
             refs = sorted(path.name for path in root.iterdir()
                           if path.is_dir() and path.name.startswith("jrn_") and (path / "head.json").exists())
             return [self.load(owner_ref, ref) for ref in refs]
-        except JourneyStoreError:
-            raise
-        except OSError:
-            raise JourneyStoreError("STORE_COMMIT_FAILED") from None
+        except JourneyStoreError: raise
+        except OSError: raise JourneyStoreError("STORE_COMMIT_FAILED") from None
     def lookup_replay(self, command: MutationCommand) -> MutationAck | None:
         """Return only an already authoritative replay for pre-grant service checks."""
         self._validate_selector(command.owner_ref, command.journey_ref)
@@ -76,12 +77,9 @@ class JourneyStore:
                 head = self._read_head(journey_dir)
                 events = self._events_at_head(journey_dir, head) if head else []
                 return self._replay(command, journey_dir, events)
-        except JourneyLockBusy:
-            raise JourneyStoreError("STORE_BUSY") from None
-        except JourneyStoreError:
-            raise
-        except (OSError, ValueError, TypeError):
-            raise JourneyStoreError("STORE_COMMIT_FAILED") from None
+        except JourneyLockBusy: raise JourneyStoreError("STORE_BUSY") from None
+        except JourneyStoreError: raise
+        except (OSError, ValueError, TypeError): raise JourneyStoreError("STORE_COMMIT_FAILED") from None
     def _mutate(self, command: MutationCommand, *, creating: bool) -> MutationAck:
         journey_dir = self._journey_dir(command.owner_ref, command.journey_ref)
         try:
@@ -97,12 +95,9 @@ class JourneyStore:
                 if current != command.expected_event_head or creating != (head is None):
                     raise JourneyStoreError("HEAD_CONFLICT")
                 return self._commit(command, journey_dir, events)
-        except JourneyLockBusy:
-            raise JourneyStoreError("STORE_BUSY") from None
-        except JourneyStoreError:
-            raise
-        except (OSError, ValueError, TypeError):
-            raise JourneyStoreError("STORE_COMMIT_FAILED") from None
+        except JourneyLockBusy: raise JourneyStoreError("STORE_BUSY") from None
+        except JourneyStoreError: raise
+        except (OSError, ValueError, TypeError): raise JourneyStoreError("STORE_COMMIT_FAILED") from None
     def _commit(self, command: MutationCommand, journey_dir: Path,
                 events: list[dict]) -> MutationAck:
         request_sha = self._request_sha(command)

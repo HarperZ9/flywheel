@@ -1,7 +1,7 @@
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import replace
 import json
-from threading import Barrier
+from threading import Barrier, Event
 
 import pytest
 
@@ -184,6 +184,37 @@ def test_missing_replay_lookup_is_read_only(tmp_path):
     root = tmp_path / "absent-state"
     assert JourneyStore(root).lookup_replay(_create_command()) is None
     assert not root.exists()
+
+
+def test_load_during_projection_head_commit_window_never_reports_corruption(tmp_path):
+    """Reading projection before head replacement must not create false corruption."""
+    store = JourneyStore(tmp_path)
+    genesis = store.create(_create_command())
+    entered, release = Event(), Event()
+
+    def pause_before_head(point):
+        if point == "before_head_replace":
+            entered.set()
+            assert release.wait(2.0)
+
+    command = _append_command(genesis.event_head_sha256, "paused-append", "paused")
+    with ThreadPoolExecutor(max_workers=1) as pool:
+        pending = pool.submit(JourneyStore(
+            tmp_path, fault_injector=pause_before_head,
+        ).append, command)
+        assert entered.wait(2.0)
+        try:
+            projection = JourneyStore(tmp_path, lock_timeout_s=0.01).load(OWNER, JOURNEY)
+            reader_outcome = projection["event_head_sha256"]
+        except JourneyStoreError as exc:
+            reader_outcome = exc.code
+        finally:
+            release.set()
+        appended = pending.result(timeout=2.0)
+
+    assert reader_outcome in {
+        genesis.event_head_sha256, appended.event_head_sha256, "STORE_BUSY",
+    }
 
 
 @pytest.mark.parametrize("case", range(20))
