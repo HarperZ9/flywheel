@@ -1,8 +1,8 @@
 # Flywheel Desktop Completion Design
 
-Version: 0.3-review
-Last updated: 2026-08-13
-Status: User-approved architecture; awaiting written-spec review.
+Version: 1.0-approved
+Last updated: 2026-08-14
+Status: Approved for implementation planning and subagent-driven execution.
 Eventual repository path: docs/superpowers/specs/2026-08-13-flywheel-desktop-completion-design.md
 
 ## 1. Decision
