@@ -140,3 +140,61 @@ def test_all_lenses_preserve_evidence_facts_and_only_reorder_presentation():
         ("claims", "checks", "facts", "next_actions"),
         ("checks", "facts", "claims", "next_actions"),
     ]
+
+
+def _pass_payload(kind, receipt_state):
+    claim = {
+        "claim_id": "claim-pass", "statement": "The receipt supports the claim.",
+        "depends_on": [], "receipt_refs": ["receipt:pass"],
+        "receipt_state": receipt_state, "verdict": "PASS",
+        "does_not_prove": "The full journey is complete.",
+    }
+    if kind == "claim":
+        return {"claims": [claim]}
+    return {
+        "claims": [{**claim, "verdict": "UNDECIDED", "receipt_state": "MATCH"}],
+        "checks": [{
+            "check_id": "check-pass", "claim_id": "claim-pass", "verdict": "PASS",
+            "receipt_refs": ["receipt:pass"], "receipt_state": receipt_state,
+            "numerator": 1, "denominator": 1,
+            "does_not_prove": "The full journey is complete.",
+        }],
+    }
+
+
+def test_reducer_accepts_pass_only_with_a_matching_receipt():
+    """A PASS/MATCH pair remains valid for claim and check evidence."""
+    genesis = _genesis()
+    claim = _event(genesis["journey_ref"], 1, "record_claim", _pass_payload("claim", "MATCH"),
+                   genesis["event_sha256"])
+    check = _event(genesis["journey_ref"], 1, "record_claim", _pass_payload("check", "MATCH"),
+                   genesis["event_sha256"])
+    assert reduce_events([genesis, claim])["verdicts"] == {"claim-pass": "PASS"}
+    assert reduce_events([genesis, check])["checks"][0]["verdict"] == "PASS"
+
+
+@pytest.mark.parametrize("kind", ("claim", "check"))
+@pytest.mark.parametrize("receipt_state", (
+    "missing", "present_unchecked", "DRIFT", "TAMPERED", "UNVERIFIABLE",
+))
+def test_reducer_rejects_pass_without_a_matching_receipt(kind, receipt_state):
+    """Changing PASS evidence to any non-MATCH receipt state must fail."""
+    genesis = _genesis()
+    event = _event(genesis["journey_ref"], 1, "record_claim", _pass_payload(kind, receipt_state),
+                   genesis["event_sha256"])
+    with pytest.raises(ValueError, match="receipt_state"):
+        reduce_events([genesis, event])
+
+
+def test_reducer_rejects_a_stage_event_after_exported_with_validation_error():
+    """An extra terminal stage event must not leak an IndexError."""
+    genesis = _genesis()
+    events, head = [genesis], genesis["event_sha256"]
+    for sequence, stage in enumerate(("decomposed", "preflight", "running", "concluded", "exported"), 1):
+        event = _event(events[0]["journey_ref"], sequence, stage,
+                       {"conclusion": "done"} if stage == "concluded" else {}, head)
+        events.append(event)
+        head = event["event_sha256"]
+    events.append(_event(events[0]["journey_ref"], 6, "exported", {}, head))
+    with pytest.raises(ValueError, match="stage"):
+        reduce_events(events)

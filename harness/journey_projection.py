@@ -59,6 +59,8 @@ def _record_definitions(payload: dict, state: dict) -> None:
             require_text(record.get("statement"), "statement")
             if kind == "claim":
                 require(record["verdict"] in VERDICTS, "verdict is not in the four-way enum")
+                require(record["verdict"] != "PASS" or record["receipt_state"] == "MATCH",
+                        "PASS verdict requires receipt_state MATCH")
                 require(type(record["depends_on"]) is list, "depends_on must be a list")
             key = record[identity]
             definition = {name: value for name, value in record.items()
@@ -78,6 +80,8 @@ def _record_checks(payload: dict, state: dict) -> None:
             "numerator", "denominator", "does_not_prove",
         })
         require(record["verdict"] in VERDICTS, "verdict is not in the four-way enum")
+        require(record["verdict"] != "PASS" or record["receipt_state"] == "MATCH",
+                "PASS verdict requires receipt_state MATCH")
         require(type(record["numerator"]) is int and type(record["denominator"]) is int
                 and 0 <= record["numerator"] <= record["denominator"],
                 "check numerator and denominator are invalid")
@@ -129,6 +133,7 @@ def reduce_events(events: list[dict]) -> dict:
             require(event["event_type"] == "intake" and head is None, "genesis must be intake")
             journey_ref, stage = event["journey_ref"], "intake"
         elif event["event_type"] in STAGES:
+            require(stage != STAGES[-1], "stage transition invalid")
             require(event["event_type"] == STAGES[STAGES.index(stage) + 1], "stage transition invalid")
             stage = event["event_type"]
         else:
