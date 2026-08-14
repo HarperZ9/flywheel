@@ -191,6 +191,10 @@ def test_public_command_validation_is_complete_and_side_effect_free(tmp_path):
     root = tmp_path / "absent-state"
     store = JourneyStore(root)
     store.validate_command(_create_command(), creating=True)
+    unbound = replace(_create_command(), journey_ref=None)
+    with pytest.raises(ValueError):
+        store.validate_command(unbound, creating=True)
+    store.validate_command(unbound, creating=True, allow_unbound_journey=True)
     assert not root.exists()
 
     invalid = replace(_create_command(), client_request_id="")

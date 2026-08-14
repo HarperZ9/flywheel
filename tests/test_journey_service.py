@@ -151,22 +151,39 @@ def test_identical_replay_returns_before_any_grant_lookup_or_consumption(tmp_pat
     assert replay == replace(first, idempotent_replay=True)
 
 
-def test_create_replay_is_found_before_generating_a_new_ref_or_requiring_a_grant(tmp_path):
+def test_create_replay_is_found_before_generating_a_new_ref_or_requiring_a_grant(tmp_path, monkeypatch):
     """Generating first on retry would duplicate a logically identical Journey."""
     body = _create_body()
     request, grant_ref = _approved_create(tmp_path, OWNER_A, body)
     service = _service(tmp_path, OWNER_A)
     first = service.create(
-        client_request_id="same-create", body=body, grant_ref=grant_ref,
-        grant_request=request,
+        client_request_id="same-create", body=body, grant_ref=grant_ref, grant_request=request,
     )
+    monkeypatch.setattr(service, "_new_journey_ref", lambda: pytest.fail("generated ID"))
     replay = service.create(
-        client_request_id="same-create", body=body, grant_ref="gnt_missing",
-        grant_request=request,
+        client_request_id="same-create", body=body, grant_ref="gnt_missing", grant_request=request,
     )
 
     assert replay == replace(first, idempotent_replay=True)
     assert [item["journey_ref"] for item in service.list()] == [first.journey_ref]
+
+
+def test_new_create_generates_id_only_after_durable_grant_burn(tmp_path, monkeypatch):
+    """Generating before burn would let randomness precede one-use authority."""
+    body = _create_body()
+    request, grant_ref = _approved_create(tmp_path, OWNER_A, body)
+    service = _service(tmp_path, OWNER_A)
+    def generate_after_burn():
+        with pytest.raises(GrantError) as burned:
+            service.grants.consume(grant_ref, request, now=NOW)
+        assert burned.value.code == "APPROVAL_EXPIRED"
+        return "jrn_11111111111111111111111111111111"
+    monkeypatch.setattr(service, "_new_journey_ref", generate_after_burn)
+    ack = service.create(
+        client_request_id="ordered-create", body=body, grant_ref=grant_ref,
+        grant_request=request,
+    )
+    assert ack.journey_ref == "jrn_11111111111111111111111111111111"
 
 
 def test_crash_after_durable_burn_requires_new_approval_and_never_mutates(tmp_path):
@@ -264,12 +281,14 @@ def test_empty_request_id_is_rejected_before_grant_burn(tmp_path):
     assert service.resume(ack.journey_ref)["journey_ref"] == ack.journey_ref
 
 
-def test_malformed_body_is_non_echoing_and_does_not_burn_grant(tmp_path):
+def test_malformed_body_is_non_echoing_and_does_not_burn_grant(tmp_path, monkeypatch):
     """A malformed command must fail before durable one-use authority changes state."""
     body = {"unexpected": r"C:\private\operator\secret"}
     request, grant_ref = _approved_create(tmp_path, OWNER_A, body)
+    service = _service(tmp_path, OWNER_A)
+    monkeypatch.setattr(service, "_new_journey_ref", lambda: pytest.fail("generated ID"))
     with pytest.raises(ValueError) as failure:
-        _service(tmp_path, OWNER_A).create(
+        service.create(
             client_request_id="malformed", body=body, grant_ref=grant_ref,
             grant_request=request,
         )

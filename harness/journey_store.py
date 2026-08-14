@@ -18,7 +18,7 @@ class JourneyStoreError(RuntimeError):
         super().__init__(code)
 @dataclass(frozen=True)
 class MutationCommand:
-    owner_ref: str; journey_ref: str
+    owner_ref: str; journey_ref: str | None
     expected_event_head: str | None; client_request_id: str
     operation: str; body: dict
 @dataclass(frozen=True)
@@ -36,9 +36,10 @@ class JourneyStore:
     def append(self, command: MutationCommand) -> MutationAck:
         self.validate_command(command, creating=False)
         return self._mutate(command, creating=False)
-    def validate_command(self, command: MutationCommand, *, creating: bool) -> None:
+    def validate_command(self, command: MutationCommand, *, creating: bool, allow_unbound_journey: bool = False) -> None:
         """Validate one mutation without reading or creating storage state."""
-        self._validate_command(command, creating=creating)
+        self._validate_command(command, creating=creating,
+                               allow_unbound_journey=allow_unbound_journey)
     def load(self, owner_ref: str, journey_ref: str) -> dict:
         self._validate_selector(owner_ref, journey_ref)
         journey_dir = self._journey_dir(owner_ref, journey_ref)
@@ -193,10 +194,13 @@ class JourneyStore:
             "event_head_sha256": ack.event_head_sha256,
             "event_sha256": ack.event_sha256, "projection_sha256": ack.projection_sha256,
         }
-    def _validate_command(self, command: MutationCommand, *, creating: bool) -> None:
+    def _validate_command(self, command: MutationCommand, *, creating: bool, allow_unbound_journey: bool = False) -> None:
         if not isinstance(command, MutationCommand):
             raise TypeError("command must be MutationCommand")
-        self._validate_selector(command.owner_ref, command.journey_ref)
+        if allow_unbound_journey and (not creating or command.journey_ref is not None):
+            raise ValueError("unbound journey validation is invalid")
+        if allow_unbound_journey: self._validate_owner(command.owner_ref)
+        else: self._validate_selector(command.owner_ref, command.journey_ref)
         if type(command.client_request_id) is not str or not command.client_request_id:
             raise ValueError("client_request_id must be a non-empty string")
         if type(command.operation) is not str or not command.operation:
@@ -204,9 +208,7 @@ class JourneyStore:
         if type(command.body) is not dict:
             raise ValueError("body must be an object")
         canonical_bytes(command.body)
-        expected = {"legacy_label", "goal", "intake", "occurred_at"} if creating else {
-            "payload", "occurred_at",
-        }
+        expected = ({"legacy_label", "goal", "intake", "occurred_at"} if creating else {"payload", "occurred_at"})
         if set(command.body) != expected:
             raise ValueError("body has invalid mutation fields")
         if creating and (command.expected_event_head is not GENESIS_HEAD

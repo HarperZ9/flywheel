@@ -32,21 +32,28 @@ class JourneyService:
     def create(self, *, client_request_id: str, body: dict, grant_ref: str,
                grant_request: GrantRequest) -> MutationAck:
         snapshot = self._snapshot_body(body)
-        command = MutationCommand(
-            owner_ref=self.owner_ref, journey_ref=self._new_journey_ref(),
+        template = MutationCommand(
+            owner_ref=self.owner_ref, journey_ref=None,
             expected_event_head=None, client_request_id=client_request_id,
             operation="intake", body=snapshot,
         )
-        self.store.validate_command(command, creating=True)
         replay = self._lookup_create_replay(client_request_id, snapshot)
         if replay is not None:
             return replay
+        self.store.validate_command(
+            template, creating=True, allow_unbound_journey=True,
+        )
         self._require_binding(
             grant_request, tool="journey.create", journey_ref=None,
             expected_event_head=None, operation="intake", body=snapshot,
         )
         self.grants.consume(grant_ref, grant_request, now=self.clock())
         self._checkpoint("after_grant_burn")
+        command = MutationCommand(
+            owner_ref=self.owner_ref, journey_ref=self._new_journey_ref(),
+            expected_event_head=None, client_request_id=client_request_id,
+            operation="intake", body=snapshot,
+        )
         return self.store.create(command)
 
     def append(self, *, journey_ref: str, expected_event_head: str,
