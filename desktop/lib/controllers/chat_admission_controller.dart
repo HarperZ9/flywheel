@@ -25,13 +25,13 @@ final class ChatAdmissionController {
     conversations.addAll(historyStore.load());
     try {
       for (final draft in draftStore.load()) {
+        final conversation = _conversation(draft.conversationRef);
         if (_isAdmittedState(draft.state)) {
           _admitted[_admissionKey(draft)] = draft;
+        } else if (draft.state == ChatDraftState.submitting) {
+          _restoreSubmitting(conversation, draft);
         } else {
           _drafts[draft.conversationRef] = draft;
-        }
-        if (!conversations.any((item) => item.id == draft.conversationRef)) {
-          conversations.add(Conversation(id: draft.conversationRef));
         }
       }
     } on ChatDraftStoreException {/* corrupt local bytes are not promoted */}
@@ -61,6 +61,7 @@ final class ChatAdmissionController {
       _deleteExisting(existing);
       return;
     }
+    if (_admitted.containsKey(_admissionKey(draft))) return;
     try {
       draftStore.save(draft);
       _drafts[conversation.id] = draft;
@@ -81,6 +82,11 @@ final class ChatAdmissionController {
 
   ChatAdmissionDecision acceptFirst(
       Conversation conversation, ChatDraft submitted, ChatMessage assistant) {
+    if (!_markAdmitted(
+        submitted, ChatDraftState.admittedPendingHistory, assistant.toJson())) {
+      return (disposition: PromptDisposition.retained, visible: false);
+    }
+    var pending = _admitted[_admissionKey(submitted)]!;
     final priorTitle = conversation.title;
     conversation.messages.addAll([
       ChatMessage(role: 'user', text: submitted.text),
@@ -91,11 +97,15 @@ final class ChatAdmissionController {
       conversation.messages.removeRange(
           conversation.messages.length - 2, conversation.messages.length);
       conversation.title = priorTitle;
-      _markAdmitted(submitted, ChatDraftState.admittedPendingHistory);
       return (disposition: PromptDisposition.retained, visible: false);
     }
-    if (!_cleanSubmitted(submitted)) {
-      _markAdmitted(submitted, ChatDraftState.admittedPendingCleanup);
+    if (!_markAdmitted(pending, ChatDraftState.admittedPendingCleanup,
+        pending.assistantEvent!)) {
+      assistant.streaming = false;
+      return (disposition: PromptDisposition.retained, visible: false);
+    }
+    pending = _admitted[_admissionKey(pending)]!;
+    if (!_cleanAdmitted(pending)) {
       return (disposition: PromptDisposition.retained, visible: true);
     }
     return (disposition: PromptDisposition.accepted, visible: true);
@@ -125,44 +135,58 @@ final class ChatAdmissionController {
   }
 
   PromptDisposition _reconcile(Conversation conversation, ChatDraft pending) {
-    if (pending.state == ChatDraftState.admittedPendingHistory) {
-      final priorTitle = conversation.title;
-      conversation.messages.add(ChatMessage(role: 'user', text: pending.text));
+    final event = pending.assistantEvent;
+    if (event == null) return PromptDisposition.retained;
+    final pairExists = chatHasAdmittedPair(conversation, pending.text, event);
+    final priorTitle = conversation.title;
+    if (!pairExists) {
+      conversation.messages.addAll([
+        ChatMessage(role: 'user', text: pending.text),
+        ChatMessage.fromJson(event),
+      ]);
       conversation.titleFromFirstMessage();
-      if (!historyStore.save(conversations)) {
-        conversation.messages.removeLast();
+    }
+    if (!historyStore.save(conversations)) {
+      if (!pairExists) {
+        conversation.messages.removeRange(
+            conversation.messages.length - 2, conversation.messages.length);
         conversation.title = priorTitle;
-        return PromptDisposition.retained;
       }
-      if (!_markAdmitted(pending, ChatDraftState.admittedPendingCleanup)) {
+      return PromptDisposition.retained;
+    }
+    if (pending.state != ChatDraftState.admittedPendingCleanup) {
+      if (!_markAdmitted(
+          pending, ChatDraftState.admittedPendingCleanup, event)) {
         return PromptDisposition.retained;
       }
       pending = _admitted[_admissionKey(pending)]!;
-    } else if (!historyStore.save(conversations)) {
-      return PromptDisposition.retained;
     }
     return _cleanAdmitted(pending)
         ? PromptDisposition.accepted
         : PromptDisposition.retained;
   }
 
-  bool _markAdmitted(ChatDraft submitted, ChatDraftState state) {
+  bool _markAdmitted(ChatDraft submitted, ChatDraftState state,
+      Map<String, dynamic> assistantEvent) {
     final pending = ChatDraft(
         draftRef: _admittedReference(submitted),
         conversationRef: submitted.conversationRef,
         text: submitted.text,
         state: state,
-        updatedAt: DateTime.now().toUtc());
+        updatedAt: DateTime.now().toUtc(),
+        assistantEvent: assistantEvent);
     final key = _admissionKey(pending);
-    _admitted[key] = pending;
+    final fallback = _admitted[key] ?? submitted;
     try {
       draftStore.save(pending);
+      _admitted[key] = pending;
       final current = _drafts[pending.conversationRef];
       if (current?.textSha256 == pending.textSha256) {
         _drafts.remove(pending.conversationRef);
       }
       return true;
     } on ChatDraftStoreException {
+      _admitted[key] = fallback;
       return false;
     }
   }
@@ -193,24 +217,31 @@ final class ChatAdmissionController {
           state: state,
           updatedAt: DateTime.now().toUtc());
 
-  bool _cleanSubmitted(ChatDraft submitted) {
-    try {
-      draftStore.delete(submitted.draftRef,
-          expectedTextSha256: submitted.textSha256);
-      _drafts.remove(submitted.conversationRef);
-      return true;
-    } on ChatDraftStoreException catch (error) {
-      return error.failure == ChatDraftFailure.digestMismatch ||
-          error.failure == ChatDraftFailure.notFound;
-    }
-  }
-
   void _deleteExisting(ChatDraft? draft) {
     if (draft == null) return;
     try {
       draftStore.delete(draft.draftRef, expectedTextSha256: draft.textSha256);
       _drafts.remove(draft.conversationRef);
     } on ChatDraftStoreException {/* prior recoverable bytes remain */}
+  }
+
+  Conversation _conversation(String ref) {
+    for (final conversation in conversations) {
+      if (conversation.id == ref) return conversation;
+    }
+    final conversation = Conversation(id: ref);
+    conversations.add(conversation);
+    return conversation;
+  }
+
+  void _restoreSubmitting(Conversation conversation, ChatDraft draft) {
+    final assistant = chatHistoryAssistant(conversation, draft.text);
+    if (assistant != null &&
+        _markAdmitted(
+            draft, ChatDraftState.admittedPendingCleanup, assistant.toJson())) {
+      return;
+    }
+    _admitted[_admissionKey(draft)] = draft;
   }
 
   ChatDraft? _admittedForConversation(String conversationRef) {

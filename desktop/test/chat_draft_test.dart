@@ -61,11 +61,10 @@ void _roundTripTests() {
     expect(store.load().map((draft) => draft.state.name).toSet(),
         {'submitting', 'admittedPendingHistory', 'admittedPendingCleanup'});
     expect(() => loaded.add(_draft('later')), throwsUnsupportedError);
-    final raw = file.readAsStringSync();
-    expect(raw, startsWith('{"drafts":['));
-    expect(raw, endsWith('"schema":"flywheel.desktop-chat-drafts/v1"}'));
+    expect(file.readAsStringSync(), startsWith('{"drafts":['));
+    expect(file.readAsStringSync(),
+        endsWith('"schema":"flywheel.desktop-chat-drafts/v1"}'));
   });
-
   test('digest delete requires the exact stored text digest', () {
     final directory = _temp('chat-draft-delete-');
     final store = ChatDraftStore(file: File('${directory.path}/drafts.json'));
@@ -83,6 +82,7 @@ void _writeDrafts(File file, List<(String, String, String, String)> rows) {
     'drafts': [
       for (final row in rows)
         {
+          if (row.$4[0] == 'a') 'assistant': {'role': 'assistant', 'text': 'a'},
           'conversation_ref': row.$2,
           'draft_ref': 'chd_${row.$1 * 32}',
           'state': row.$4,

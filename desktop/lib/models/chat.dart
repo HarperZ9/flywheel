@@ -1,4 +1,5 @@
 import 'dart:collection';
+import 'dart:convert';
 
 import 'evidence_state.dart';
 
@@ -142,3 +143,112 @@ class Conversation {
     }
   }
 }
+
+ChatMessage? chatHistoryAssistant(Conversation conversation, String prompt) {
+  for (var index = conversation.messages.length - 2; index >= 0; index--) {
+    final user = conversation.messages[index];
+    final assistant = conversation.messages[index + 1];
+    if (user.isUser &&
+        user.text == prompt &&
+        !assistant.isUser &&
+        (assistant.text.isNotEmpty || assistant.receipt != null)) {
+      return assistant;
+    }
+  }
+  return null;
+}
+
+bool chatHasAdmittedPair(
+    Conversation conversation, String prompt, Map<String, dynamic> event) {
+  for (var index = 0; index + 1 < conversation.messages.length; index++) {
+    final user = conversation.messages[index];
+    final assistant = conversation.messages[index + 1];
+    if (user.isUser &&
+        user.text == prompt &&
+        !assistant.isUser &&
+        _chatMessageMatches(assistant, event)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool _chatMessageMatches(ChatMessage assistant, Map<String, dynamic> event) {
+  final text = event['text'] as String;
+  final receipt = event['receipt'];
+  if (receipt != null) {
+    return jsonEncode(assistant.receipt) == jsonEncode(receipt);
+  }
+  return text.isNotEmpty && assistant.text.startsWith(text);
+}
+
+final _chatWindowsPath = RegExp(r'[A-Za-z]:[\\/]');
+final _chatUncPath = RegExp(r'(?:\\\\|//)[^\\/\s]+[\\/][^\s]+');
+final _chatPrivatePath = RegExp(r'(?:^|[\s=(\[{,:;])/(?!/)[^\s]+|/'
+    r'(?:Users|home|private|tmp|var|etc|root|opt|mnt|srv|usr|bin|sbin|lib|'
+    r'Applications|Volumes|dev|proc|sys|run)(?:/|$)');
+final _chatFileUri = RegExp(r'(?<![A-Za-z0-9+.-])file:', caseSensitive: false);
+final _chatSecretValue = RegExp(
+    r'(-----BEGIN [A-Z ]*PRIVATE KEY-----|\bAKIA[0-9A-Z]{16}\b|\bgh[pousr]_[A-Za-z0-9]{30,}\b|\bsk-(?:live|proj|ant)[A-Za-z0-9_-]{10,}\b|\bxox[baprs]-[A-Za-z0-9-]{10,}\b)');
+final _chatAssignedSecret = RegExp(
+    r'\b(?:secret|password|passwd|api_key|access_key|token|credential)\s*[:=]\s*["\x27]?[A-Za-z0-9/+_-]{12,}',
+    caseSensitive: false);
+final _chatSecretKey = RegExp(r'^(?:api_keys?|access_tokens?|refresh_tokens?|'
+    r'tokens?|passwords?|secrets?|credentials?|private_keys?|authorizations?|'
+    r'cookies?|environments?|envs?|passwds?|access_keys?|.+_(?:api_keys?|'
+    r'private_keys?|passwords?|secrets?|credentials?|tokens?))$');
+
+bool safeChatLocalText(String value) {
+  final decoded = _decodeChatPercent(value);
+  return _safeChatForm(value) && _safeChatForm(decoded);
+}
+
+bool _safeChatForm(String value) =>
+    !_chatWindowsPath.hasMatch(value) &&
+    !_chatUncPath.hasMatch(value) &&
+    !_chatPrivatePath.hasMatch(value) &&
+    !_chatFileUri.hasMatch(value) &&
+    !_chatSecretValue.hasMatch(value) &&
+    !_chatAssignedSecret.hasMatch(value);
+
+bool isChatLocalSecretKey(String key) => _chatSecretKey
+    .hasMatch(_decodeChatPercent(key).toLowerCase().replaceAll('-', '_'));
+bool safeChatLocalRef(String value) =>
+    value.isNotEmpty && value.length <= 256 && !value.contains(':');
+
+String _decodeChatPercent(String value) {
+  final result = StringBuffer();
+  for (var index = 0; index < value.length;) {
+    if (value.codeUnitAt(index) != 0x25) {
+      result.writeCharCode(value.codeUnitAt(index++));
+      continue;
+    }
+    final next = index + 1 < value.length ? value.codeUnitAt(index + 1) : null;
+    if (index + 2 >= value.length ||
+        !_chatHex(next) ||
+        !_chatHex(value.codeUnitAt(index + 2))) {
+      result.write('%');
+      index++;
+      continue;
+    }
+    final start = index;
+    while (index + 2 < value.length &&
+        value.codeUnitAt(index) == 0x25 &&
+        _chatHex(value.codeUnitAt(index + 1)) &&
+        _chatHex(value.codeUnitAt(index + 2))) {
+      index += 3;
+    }
+    try {
+      result.write(Uri.decodeComponent(value.substring(start, index)));
+    } catch (_) {
+      throw ArgumentError('Invalid encoded local text');
+    }
+  }
+  return result.toString();
+}
+
+bool _chatHex(int? value) =>
+    value != null &&
+    ((value >= 0x30 && value <= 0x39) ||
+        (value >= 0x41 && value <= 0x46) ||
+        (value >= 0x61 && value <= 0x66));
