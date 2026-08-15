@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flywheel_desktop/client/gateway_client.dart';
@@ -15,9 +14,13 @@ import 'package:flywheel_desktop/views/agent_view.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 
-const _draftRef = 'chd_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+const _ref = 'chd_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+const _cleanup = ChatDraftState.admittedPendingCleanup;
+const _dirty = ChatDraftState.dirty;
+const _history = ChatDraftState.admittedPendingHistory;
+const _submitting = ChatDraftState.submitting;
+typedef _Reply = Completer<http.Response>;
 final _updated = DateTime.parse('2026-08-15T12:00:00Z');
-
 Directory _temp(String name) {
   final result = Directory.systemTemp.createTempSync(name);
   addTearDown(() => result.deleteSync(recursive: true));
@@ -25,23 +28,27 @@ Directory _temp(String name) {
 }
 
 ChatDraft _draft(String text) => ChatDraft(
-    draftRef: _draftRef,
+    draftRef: _ref,
     conversationRef: 'c0',
     text: text,
-    state: ChatDraftState.dirty,
+    state: _dirty,
     updatedAt: _updated);
-
+ChatDraft _attempt(String key, String text, ChatDraftState s, [String? a]) =>
+    ChatDraft(
+        draftRef: 'chd_${key * 32}',
+        conversationRef: 'c0',
+        text: text,
+        state: s,
+        updatedAt: _updated,
+        attemptRef: 'att_${(a ?? key) * 32}',
+        assistantEvent: s.index < 3 ? null : _assistant(a ?? key));
+Map<String, dynamic> _assistant(String key) =>
+    {'attempt_ref': 'att_${key * 32}', 'role': 'assistant', 'text': 'answer'};
 void main() {
-  _roundTripTests();
-  _validationTests();
   _atomicFailureTests();
   _agentAdmissionTests();
-}
-
-void _roundTripTests() {
   test('canonical store keeps active and admitted custody independent', () {
-    final directory = _temp('chat-draft-roundtrip-');
-    final file = File('${directory.path}/drafts.json');
+    final file = File('${_temp('chat-draft-roundtrip-').path}/drafts.json');
     final store = ChatDraftStore(file: file);
     _writeDrafts(file, const [
       ('a', 'c0', 'newer prompt', 'dirty'),
@@ -53,7 +60,7 @@ void _roundTripTests() {
         ['dirty', 'admittedPendingHistory', 'admittedPendingCleanup']);
     store.save(loaded[1]);
     final controller = ChatAdmissionController(
-        ChatStore(file: File('${directory.path}/history.json')), store,
+        ChatStore(file: File('${file.parent.path}/history.json')), store,
         newAttemptRef: () => 'att_${'d' * 32}')
       ..restore();
     final conversation =
@@ -63,22 +70,44 @@ void _roundTripTests() {
         PromptDisposition.retained);
     expect(controller.prepare(conversation, 'newer prompt')!.attemptRef,
         'att_${'d' * 32}');
-    expect(store.load().map((draft) => draft.state.name).toSet(),
-        {'submitting', 'admittedPendingHistory', 'admittedPendingCleanup'});
+    expect(_states(store), {_dirty, _submitting, _history, _cleanup});
     expect(() => loaded.add(_draft('later')), throwsUnsupportedError);
     expect(file.readAsStringSync(), startsWith('{"drafts":['));
     expect(file.readAsStringSync(),
         endsWith('"schema":"flywheel.desktop-chat-drafts/v1"}'));
   });
   test('digest delete requires the exact stored text digest', () {
-    final directory = _temp('chat-draft-delete-');
-    final store = ChatDraftStore(file: File('${directory.path}/drafts.json'));
+    final store = ChatDraftStore(
+        file: File('${_temp('chat-draft-delete-').path}/drafts.json'));
     store.save(_draft('keep me'));
-    expect(() => store.delete(_draftRef, expectedTextSha256: '0' * 64),
-        throwsA(isA<ChatDraftStoreException>()));
+    _fails(() => store.delete(_ref, expectedTextSha256: '0' * 64));
     expect(store.load().single.text, 'keep me');
-    store.delete(_draftRef, expectedTextSha256: store.load().single.textSha256);
+    store.delete(_ref, expectedTextSha256: store.load().single.textSha256);
     expect(store.load(), isEmpty);
+  });
+  test('active draft and exact attempt custodies coexist independently', () {
+    final file = File('${_temp('chat-draft-custody-').path}/drafts.json');
+    final store = ChatDraftStore(file: file);
+    final first = _attempt('b', 'old prompt', _submitting);
+    final second = _attempt('c', 'other prompt', _submitting);
+    store
+      ..save(_draft('newer draft'))
+      ..save(first)
+      ..save(second);
+    expect(_texts(store), {'newer draft', 'old prompt', 'other prompt'});
+    store.save(_attempt('b', 'old prompt', _history));
+    expect(_states(store), {_dirty, _submitting, _history});
+    final admitted =
+        store.load().singleWhere((draft) => draft.state == _history);
+    _fails(() => store.save(_attempt('c', 'collision', _submitting, 'e')));
+    _fails(() => store.delete(second.draftRef, expectedTextSha256: '0' * 64));
+    final canonical = file.readAsStringSync();
+    file.writeAsStringSync(
+        canonical.replaceFirst('att_${'c' * 32}', 'att_${'b' * 32}'));
+    _fails(store.load);
+    file.writeAsStringSync(canonical);
+    store.delete(admitted.draftRef, expectedTextSha256: admitted.textSha256);
+    expect(_texts(store), {'newer draft', 'other prompt'});
   });
 }
 
@@ -100,54 +129,6 @@ void _writeDrafts(File file, List<(String, String, String, String)> rows) {
   }));
 }
 
-void _validationTests() {
-  test('raw and decoded path or secret text fails without echo or write', () {
-    final directory = _temp('chat-draft-private-');
-    final file = File('${directory.path}/drafts.json');
-    for (final unsafe in const [
-      r'open C:\private\note.txt',
-      r'open %43%3A%5Cprivate%5Cnote.txt',
-      r'open \\host\share\note.txt',
-      'read /etc/passwd',
-      'open file:///private/note.txt',
-      'password=abcdefghijkl',
-      'api%5Fkey%3Dabcdefghijkl',
-      'ordinary %word then %2Fetc%2Fpasswd',
-      '-----BEGIN PRIVATE KEY-----',
-    ]) {
-      Object? failure;
-      try {
-        ChatDraftStore(file: file).save(_draft(unsafe));
-      } catch (error) {
-        failure = error;
-      }
-      expect(failure, isA<ChatDraftStoreException>());
-      expect(failure.toString().contains(unsafe), isFalse);
-      expect(file.existsSync(), isFalse);
-    }
-  });
-  test('duplicate unknown stale and noncanonical records fail closed', () {
-    final directory = _temp('chat-draft-corrupt-');
-    final file = File('${directory.path}/drafts.json');
-    final store = ChatDraftStore(file: file);
-    store.save(_draft('hello'));
-    final canonical = file.readAsStringSync();
-    final fixtures = <String>[
-      '{"drafts":[],"drafts":[],"schema":"flywheel.desktop-chat-drafts/v1"}',
-      canonical.replaceFirst(
-          '"state":"dirty"', '"state":"dirty","unknown":true'),
-      canonical.replaceFirst(
-          '2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824',
-          '0' * 64),
-      const JsonEncoder.withIndent('  ').convert(jsonDecode(canonical)),
-    ];
-    for (final fixture in fixtures) {
-      file.writeAsStringSync(fixture);
-      expect(() => store.load(), throwsA(isA<ChatDraftStoreException>()));
-    }
-  });
-}
-
 void _atomicFailureTests() {
   test('temp collision and pre-rename failures preserve prior bytes', () {
     final directory = _temp('chat-draft-atomic-');
@@ -158,8 +139,7 @@ void _atomicFailureTests() {
       ..writeAsStringSync('mine');
     final collisionStore =
         ChatDraftStore(file: file, temporaryFile: (_) => collision);
-    expect(() => collisionStore.save(_draft('next')),
-        throwsA(isA<ChatDraftStoreException>()));
+    _fails(() => collisionStore.save(_draft('next')));
     expect(collision.readAsStringSync(), 'mine');
     expect(file.readAsBytesSync(), before);
     File? owned;
@@ -167,8 +147,7 @@ void _atomicFailureTests() {
         file: file,
         temporaryFile: (_) => owned = File('${directory.path}/owned.tmp'),
         beforeRename: (_) => throw StateError('injected'));
-    expect(() => beforeStore.save(_draft('next')),
-        throwsA(isA<ChatDraftStoreException>()));
+    _fails(() => beforeStore.save(_draft('next')));
     expect(owned!.existsSync(), isFalse);
     expect(file.readAsBytesSync(), before);
   });
@@ -182,8 +161,7 @@ void _atomicFailureTests() {
         file: file,
         temporaryFile: (_) => noOpTemp = File('${directory.path}/noop.tmp'),
         renameFile: (_, __) {});
-    expect(() => noOp.save(_draft('next')),
-        throwsA(isA<ChatDraftStoreException>()));
+    _fails(() => noOp.save(_draft('next')));
     expect(noOpTemp!.existsSync(), isFalse);
     expect(file.readAsBytesSync(), before);
     final corrupt = ChatDraftStore(
@@ -192,17 +170,27 @@ void _atomicFailureTests() {
           temporary.renameSync(path);
           File(path).writeAsStringSync('{}');
         });
-    expect(() => corrupt.save(_draft('next')),
-        throwsA(isA<ChatDraftStoreException>()));
+    _fails(() => corrupt.save(_draft('next')));
     expect(file.readAsBytesSync(), before);
     expect(normal.load().single.text, 'prior');
   });
 }
 
+void _fails(void Function() action) =>
+    expect(action, throwsA(isA<ChatDraftStoreException>()));
+Set<String> _texts(ChatDraftStore store) =>
+    store.load().map((draft) => draft.text).toSet();
+Set<ChatDraftState> _states(ChatDraftStore store) =>
+    store.load().map((draft) => draft.state).toSet();
+
 class _AgentHarness {
-  _AgentHarness({this.delayed, this.empty = false})
-      : directory = Directory.systemTemp.createTempSync('chat-agent-') {
-    drafts = ChatDraftStore(file: File('${directory.path}/drafts.json'));
+  _AgentHarness({_Reply? delayed, bool empty = false, int? failWrite}) {
+    final directory = _temp('chat-agent-');
+    drafts = ChatDraftStore(
+        file: File('${directory.path}/drafts.json'),
+        beforeRename: (_) {
+          if (++draftWrites == failWrite) throw StateError('injected');
+        });
     history = ChatStore(file: File('${directory.path}/history.json'));
     client = GatewayClient(
         baseUrl: 'https://chat.invalid',
@@ -214,26 +202,22 @@ class _AgentHarness {
           return delayed?.future ??
               http.Response(empty ? 'data: [DONE]\n\n' : _reply, 200);
         }));
-    addTearDown(dispose);
   }
   static const _roster =
       '{"rows":[{"name":"local-public","backend":"local","credential":"local-none","provider_role":"","configured":true}]}';
   static const _reply =
       'data: {"choices":[{"delta":{"content":"answer"}}]}\n\ndata: [DONE]\n\n';
-  final Directory directory;
-  final Completer<http.Response>? delayed;
-  final bool empty;
   late final ChatDraftStore drafts;
   late final ChatStore history;
   late final GatewayClient client;
   var chatCalls = 0;
-  AgentView view({ChatStore? historyStore}) => AgentView(
+  var draftWrites = 0;
+  AgentView view({ChatDraftStore? draftStore}) => AgentView(
       client: client,
       alive: true,
       settings: DesktopSettings(),
-      chatStore: historyStore ?? history,
-      draftStore: drafts);
-  void dispose() => directory.deleteSync(recursive: true);
+      chatStore: history,
+      draftStore: draftStore ?? drafts);
 }
 
 Future<void> _pumpAgent(WidgetTester tester, AgentView view) async {
@@ -242,59 +226,75 @@ Future<void> _pumpAgent(WidgetTester tester, AgentView view) async {
   await tester.pumpAndSettle();
 }
 
+Future<(_AgentHarness, _Reply)> _pending(WidgetTester tester, String text,
+    [int? failWrite]) async {
+  final reply = _Reply();
+  final harness = _AgentHarness(delayed: reply, failWrite: failWrite);
+  await _pumpAgent(tester, harness.view());
+  await tester.enterText(find.byType(TextField), text);
+  await tester.pump();
+  await tester.tap(find.byTooltip('Send  (Enter)'));
+  await tester.pump();
+  return (harness, reply);
+}
+
 void _agentAdmissionTests() {
-  testWidgets('accepted turn saves before clear and a newer edit survives',
-      (tester) async {
-    final reply = Completer<http.Response>();
-    final harness = _AgentHarness(delayed: reply);
-    await _pumpAgent(tester, harness.view());
+  testWidgets('new edit keeps an ambiguous attempt', (tester) async {
+    final (agent, reply) = await _pending(tester, 'old prompt', 4);
+    await tester.enterText(find.byType(TextField), 'newer draft');
+    reply.complete(http.Response(_AgentHarness._reply, 200));
+    await tester.pumpAndSettle();
+    expect(agent.chatCalls, 1);
+    expect(agent.history.load(), isEmpty);
+    expect(_texts(agent.drafts), {'old prompt', 'newer draft'});
+    await tester.pumpWidget(const SizedBox());
+    final fresh = ChatDraftStore(file: agent.drafts.storageFile);
+    await _pumpAgent(tester, agent.view(draftStore: fresh));
+    expect(_editorText(tester), 'newer draft');
     await tester.enterText(find.byType(TextField), 'old prompt');
-    await tester.pump();
     await tester.tap(find.byTooltip('Send  (Enter)'));
-    await tester.pump();
-    expect(harness.drafts.load().single.state, ChatDraftState.submitting);
+    await tester.pumpAndSettle();
+    expect(agent.chatCalls, 1);
+    expect(agent.history.load(), isEmpty);
+    expect(_texts(fresh), {'old prompt', 'newer draft'});
+  });
+  testWidgets('accepted turn saves and preserves a newer edit', (tester) async {
+    final (agent, reply) = await _pending(tester, 'old prompt');
+    expect(_states(agent.drafts), {_dirty, _submitting});
     await tester.enterText(find.byType(TextField), 'newer prompt');
     reply.complete(http.Response(_AgentHarness._reply, 200));
     await tester.pumpAndSettle();
-    expect(harness.chatCalls, 1);
-    expect(harness.history.load().single.messages.map((m) => m.text),
+    expect(agent.chatCalls, 1);
+    expect(agent.history.load().single.messages.map((m) => m.text),
         ['old prompt', 'answer']);
-    expect(harness.drafts.load().single.text, 'newer prompt');
-    expect(tester.widget<TextField>(find.byType(TextField)).controller!.text,
-        'newer prompt');
+    expect(agent.drafts.load().single.text, 'newer prompt');
+    expect(_editorText(tester), 'newer prompt');
   });
-
-  testWidgets('empty response retains draft and restart never auto-submits',
-      (tester) async {
-    final harness = _AgentHarness(empty: true);
-    await _pumpAgent(tester, harness.view());
+  testWidgets('empty response never autosubmits on restart', (tester) async {
+    final agent = _AgentHarness(empty: true);
+    await _pumpAgent(tester, agent.view());
     await tester.enterText(find.byType(TextField), 'recover me');
     await tester.pump();
     await tester.tap(find.byTooltip('Send  (Enter)'));
     await tester.pumpAndSettle();
-    expect(harness.history.load(), isEmpty);
-    expect(harness.drafts.load().single.text, 'recover me');
+    expect(agent.history.load(), isEmpty);
+    expect(_states(agent.drafts), {_dirty, _submitting});
+    expect(_texts(agent.drafts), {'recover me'});
     await tester.pumpWidget(const SizedBox());
-    await _pumpAgent(tester, harness.view());
-    expect(tester.widget<TextField>(find.byType(TextField)).controller!.text,
-        'recover me');
-    expect(harness.chatCalls, 1);
+    await _pumpAgent(tester, agent.view());
+    expect(_editorText(tester), 'recover me');
+    expect(agent.chatCalls, 1);
   });
-
-  testWidgets('dispose during admission leaves recoverable custody',
-      (tester) async {
-    final reply = Completer<http.Response>();
-    final harness = _AgentHarness(delayed: reply);
-    await _pumpAgent(tester, harness.view());
-    await tester.enterText(find.byType(TextField), 'stay safe');
-    await tester.pump();
-    await tester.tap(find.byTooltip('Send  (Enter)'));
-    await tester.pump();
+  testWidgets('dispose leaves recoverable admission custody', (tester) async {
+    final (agent, reply) = await _pending(tester, 'stay safe');
     await tester.pumpWidget(const SizedBox());
     reply.complete(http.Response(_AgentHarness._reply, 200));
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
-    expect(harness.history.load(), isEmpty);
-    expect(harness.drafts.load().single.text, 'stay safe');
+    expect(agent.history.load(), isEmpty);
+    expect(_states(agent.drafts), {_dirty, _submitting});
   });
 }
+
+String _editorText(WidgetTester tester) =>
+    tester.widget<TextField>(find.byType(TextField)).controller!.text;

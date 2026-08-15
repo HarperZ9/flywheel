@@ -123,12 +123,17 @@ final class ChatDraftStore {
       final drafts = <ChatDraft>[];
       final draftRefs = <String>{};
       final activeConversations = <String>{};
+      final attemptRefs = <String>{};
       for (final raw in root['drafts'] as List) {
         _require(raw is Map<String, dynamic>);
         final draft = _decode(raw as Map<String, dynamic>);
         _require(draftRefs.add(draft.draftRef));
-        _require(_isAdmittedState(draft.state) ||
-            activeConversations.add(draft.conversationRef));
+        if (_isAttemptState(draft.state)) {
+          _require(
+              draft.attemptRef == null || attemptRefs.add(draft.attemptRef!));
+        } else {
+          _require(activeConversations.add(draft.conversationRef));
+        }
         drafts.add(draft);
       }
       return List.unmodifiable(drafts);
@@ -138,7 +143,21 @@ final class ChatDraftStore {
   }
 
   void save(ChatDraft draft) {
-    final drafts = load().where((item) => !_superseded(item, draft)).toList()
+    final current = load();
+    for (final old
+        in current.where((item) => item.draftRef == draft.draftRef)) {
+      _require(old.conversationRef == draft.conversationRef &&
+          (!_isAttemptState(old.state) && !_isAttemptState(draft.state) ||
+              old.attemptRef == draft.attemptRef && old.text == draft.text));
+    }
+    for (final stored in current.where((item) =>
+        _isAttemptState(item.state) &&
+        item.attemptRef != null &&
+        item.attemptRef == draft.attemptRef)) {
+      _require(stored.conversationRef == draft.conversationRef &&
+          stored.textSha256 == draft.textSha256);
+    }
+    final drafts = current.where((item) => !_superseded(item, draft)).toList()
       ..add(draft)
       ..sort((a, b) => a.draftRef.compareTo(b.draftRef));
     _write(drafts);
@@ -261,12 +280,14 @@ ChatDraftState _parseState(Object? raw) {
 }
 
 bool _isAdmittedState(ChatDraftState state) => state.index >= 3;
+bool _isAttemptState(ChatDraftState state) =>
+    state == ChatDraftState.submitting || _isAdmittedState(state);
 bool _superseded(ChatDraft stored, ChatDraft incoming) {
   if (stored.draftRef == incoming.draftRef) return true;
   if (stored.conversationRef != incoming.conversationRef) return false;
-  if (!_isAdmittedState(incoming.state)) return !_isAdmittedState(stored.state);
+  if (!_isAttemptState(incoming.state)) return !_isAttemptState(stored.state);
   return incoming.attemptRef != null &&
-      !_isAdmittedState(stored.state) &&
+      _isAttemptState(stored.state) &&
       stored.attemptRef == incoming.attemptRef;
 }
 

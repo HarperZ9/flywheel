@@ -1,9 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-
 import 'package:flywheel_desktop/client/gateway_client.dart';
 import 'package:flywheel_desktop/controllers/chat_admission_controller.dart';
 import 'package:flywheel_desktop/models/chat.dart';
@@ -20,7 +18,6 @@ import 'package:http/testing.dart';
 
 Future<void> _pump(WidgetTester tester, Widget child) => tester.pumpWidget(
     MaterialApp(theme: flywheelLightTheme(), home: Scaffold(body: child)));
-
 void main() {
   _modelTests();
   _admissionTests();
@@ -39,21 +36,17 @@ void _modelTests() {
     expect(c.title, 'refactor the paginate() helper please');
     expect(c.isEmpty, isFalse);
   });
-
   test('a long first turn is trimmed for the sidebar', () {
     final c = Conversation(id: 'c1');
     c.messages.add(ChatMessage(role: 'user', text: 'x' * 80));
     c.titleFromFirstMessage();
-    expect(c.title.length, lessThanOrEqualTo(41));
-    expect(c.title.endsWith('…'), isTrue);
+    expect(c.title, allOf(hasLength(41), endsWith('…')));
   });
-
   test('a message serializes to the gateway wire shape', () {
     final m = ChatMessage(role: 'user', text: 'hello');
     expect(m.toWire(), {'role': 'user', 'content': 'hello'});
     expect(m.isUser, isTrue);
   });
-
   test('a conversation round-trips through json for durable history', () {
     final c = Conversation(id: 'c9', model: 'local-public');
     c.messages.add(ChatMessage(role: 'user', text: 'hi'));
@@ -67,11 +60,30 @@ void _modelTests() {
     expect(back.messages, hasLength(2));
     expect(back.messages[1].text, 'hello');
     expect(back.messages[1].receipt?['receipt_id'], 'r1');
-    expect(back.messages[1].streaming, isFalse); // transient, not persisted
+    expect(back.messages[1].streaming, isFalse);
   });
 }
 
 void _admissionTests() {
+  test('duplicate unknown stale and noncanonical drafts fail closed', () {
+    final directory = Directory.systemTemp.createTempSync('chat-corrupt-');
+    addTearDown(() => directory.deleteSync(recursive: true));
+    final file = File('${directory.path}/drafts.json');
+    final store = ChatDraftStore(file: file)..save(_localDraft('hello'));
+    final canonical = file.readAsStringSync();
+    for (final fixture in [
+      '{"drafts":[],"drafts":[],"schema":"flywheel.desktop-chat-drafts/v1"}',
+      canonical.replaceFirst(
+          '"state":"dirty"', '"state":"dirty","unknown":true'),
+      canonical.replaceFirst(
+          '2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824',
+          '0' * 64),
+      const JsonEncoder.withIndent('  ').convert(jsonDecode(canonical)),
+    ]) {
+      file.writeAsStringSync(fixture);
+      expect(() => store.load(), throwsA(isA<ChatDraftStoreException>()));
+    }
+  });
   test('local admission failures retain custody before visible acceptance', () {
     final directory = Directory.systemTemp.createTempSync('chat-admission-');
     addTearDown(() => directory.deleteSync(recursive: true));
@@ -80,13 +92,10 @@ void _admissionTests() {
         beforeRename: (_) => throw StateError('injected'));
     final blocked = ChatAdmissionController(
         ChatStore(file: File('${directory.path}/unused-history.json')),
-        failedDrafts)
-      ..restore();
-    final blockedConversation = blocked.blankConversation('local-public');
-    blocked.conversations.add(blockedConversation);
-    expect(blocked.prepare(blockedConversation, 'safe prompt'), isNull);
-    expect(
-        blocked.prepare(blockedConversation, 'password=abcdefghijkl'), isNull);
+        failedDrafts);
+    final blockedChat = blocked.blankConversation('local-public');
+    expect(blocked.prepare(blockedChat, 'safe prompt'), isNull);
+    expect(blocked.prepare(blockedChat, 'password=abcdefghijkl'), isNull);
     final drafts = ChatDraftStore(file: File('${directory.path}/drafts.json'));
     final controller = ChatAdmissionController(
         ChatStore(
@@ -95,7 +104,6 @@ void _admissionTests() {
         drafts)
       ..restore();
     final conversation = controller.blankConversation('local-public');
-    controller.conversations.add(conversation);
     final submitted = controller.prepare(conversation, 'keep this')!;
     final assistant = ChatMessage(
         role: 'assistant', text: 'answer', attemptRef: submitted.attemptRef);
@@ -104,7 +112,6 @@ void _admissionTests() {
     expect(conversation.messages, isEmpty);
     expect(drafts.load().single.state, ChatDraftState.admittedPendingHistory);
   });
-
   test('a malformed-only chat response produces no admission event', () async {
     var calls = 0;
     final client = GatewayClient(
@@ -116,10 +123,8 @@ void _admissionTests() {
     final events = await client.chatStream([
       {'role': 'user', 'content': 'keep this'}
     ], 'local-public').toList();
-    expect(events, isEmpty);
-    expect(calls, 1);
+    expect((events.isEmpty, calls), (true, 1));
   });
-
   test('chat history reads the legacy list and writes an atomic envelope', () {
     final directory = Directory.systemTemp.createTempSync('chat-history-');
     addTearDown(() => directory.deleteSync(recursive: true));
@@ -140,9 +145,14 @@ void _admissionTests() {
   });
 }
 
+ChatDraft _localDraft(String text) => ChatDraft(
+    draftRef: 'chd_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+    conversationRef: 'c0',
+    text: text,
+    state: ChatDraftState.dirty,
+    updatedAt: DateTime.parse('2026-08-15T12:00:00Z'));
 void _threadTests() {
-  testWidgets('the thread renders both turns and a fenced code block',
-      (tester) async {
+  testWidgets('thread renders both turns and fenced code', (tester) async {
     final messages = [
       ChatMessage(role: 'user', text: 'show me a loop'),
       ChatMessage(
@@ -157,9 +167,7 @@ void _threadTests() {
     expect(find.textContaining('for i in range(3):'),
         findsOneWidget); // the code card
   });
-
-  testWidgets('an assistant turn with a receipt stays present unchecked',
-      (tester) async {
+  testWidgets('receipt stays present unchecked', (tester) async {
     final messages = [
       ChatMessage(
           role: 'assistant', text: 'answer', receipt: {'receipt_id': 'abc123'}),
@@ -168,10 +176,7 @@ void _threadTests() {
         tester, ChatThread(messages: messages, controller: ScrollController()));
     expect(find.text('present_unchecked'), findsOneWidget);
   });
-
-  testWidgets(
-      'a streaming turn with no text yet shows a placeholder, not empty',
-      (tester) async {
+  testWidgets('empty streaming turn shows a placeholder', (tester) async {
     final messages = [
       ChatMessage(role: 'assistant', text: '', streaming: true)
     ];
@@ -182,8 +187,7 @@ void _threadTests() {
 }
 
 void _receiptTests() {
-  testWidgets('the receipt-state control opens and closes the detail',
-      (tester) async {
+  testWidgets('receipt control toggles detail', (tester) async {
     final messages = [
       ChatMessage(role: 'assistant', text: 'answer', receipt: {
         'receipt_id': 'abc123def456abc123de',
@@ -207,9 +211,7 @@ void _receiptTests() {
     await tester.pumpAndSettle();
     expect(find.textContaining('abc123def456abc123de'), findsNothing);
   });
-
-  testWidgets('the receipt names a failover and a served-model swap honestly',
-      (tester) async {
+  testWidgets('receipt names failover and served model', (tester) async {
     final messages = [
       ChatMessage(role: 'assistant', text: 'answer', receipt: {
         'receipt_id': 'abc123def456abc123de',
@@ -234,9 +236,7 @@ void _pickerTests() {
       credential: cred,
       providerRole: '',
       configured: true);
-
-  testWidgets('the model picker button shows the current model',
-      (tester) async {
+  testWidgets('picker button shows current model', (tester) async {
     await _pump(
         tester,
         ModelPickerButton(endpoints: [
@@ -245,9 +245,7 @@ void _pickerTests() {
         ], current: 'route-a', onSelect: (_) {}));
     expect(find.text('route-a'), findsOneWidget);
   });
-
-  testWidgets('opening the picker lets you search and select a model',
-      (tester) async {
+  testWidgets('picker searches and selects a model', (tester) async {
     String? chosen;
     await _pump(
         tester,
@@ -272,9 +270,7 @@ void _pickerTests() {
     await tester.pumpAndSettle();
     expect(chosen, 'route-a');
   });
-
-  testWidgets('Compare offline names the command that fixes it',
-      (tester) async {
+  testWidgets('Compare offline names recovery command', (tester) async {
     await _pump(
         tester,
         CompareView(
@@ -283,15 +279,20 @@ void _pickerTests() {
             settings: DesktopSettings()));
     expect(find.textContaining('flywheel up'), findsOneWidget);
   });
-
   test('the prompt shelf saves, dedupes, titles, and caps', () {
     final s = DesktopSettings();
     s.savePrompt('  refactor this  ');
     s.savePrompt('write tests');
     s.savePrompt('refactor this'); // dedupe -> moves to front, no duplicate
-    expect(s.savedPrompts.length, 2);
-    expect(s.savedPrompts.first['text'], 'refactor this');
-    expect(s.savedPrompts.first['title'], 'refactor this');
+    expect((
+      s.savedPrompts.length,
+      s.savedPrompts.first['text'],
+      s.savedPrompts.first['title']
+    ), (
+      2,
+      'refactor this',
+      'refactor this'
+    ));
     s.removePrompt('refactor this');
     expect(s.savedPrompts.length, 1);
   });

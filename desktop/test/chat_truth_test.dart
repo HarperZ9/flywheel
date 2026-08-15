@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -21,10 +20,10 @@ import 'package:http/testing.dart';
 
 Future<void> _pump(WidgetTester tester, Widget child) => tester.pumpWidget(
     MaterialApp(theme: flywheelLightTheme(), home: Scaffold(body: child)));
-
 void main() {
   _receiptModelTests();
-  _receiptWidgetTests();
+  _receiptLabelWidgetTests();
+  _receiptControlWidgetTests();
   _composerTests();
   _admissionTests();
 }
@@ -41,7 +40,6 @@ void _receiptModelTests() {
     expect(message.receipt!.containsKey('later'), isFalse);
     expect(() => message.receipt!['added'] = true, throwsUnsupportedError);
   });
-
   test('only allowed independent receipt states survive normalization', () {
     for (final state in const [
       ReceiptState.match,
@@ -49,28 +47,20 @@ void _receiptModelTests() {
       ReceiptState.tampered,
       ReceiptState.unverifiable,
     ]) {
-      expect(
-          ChatMessage(
-                  role: 'assistant',
-                  receipt: const {'id': 'r'},
-                  receiptState: state)
-              .receiptState,
-          state);
+      final actual = ChatMessage(
+          role: 'assistant', receipt: const {'id': 'r'}, receiptState: state);
+      expect(actual.receiptState, state);
     }
     expect(ChatMessage(role: 'assistant').receiptState, ReceiptState.missing);
-    expect(
-        ChatMessage(role: 'assistant', receiptState: ReceiptState.match)
-            .receiptState,
-        ReceiptState.invalidResponse);
-    expect(
-        ChatMessage(
-                role: 'assistant',
-                receipt: const {'id': 'r'},
-                receiptState: ReceiptState.missing)
-            .receiptState,
-        ReceiptState.invalidResponse);
+    final absent =
+        ChatMessage(role: 'assistant', receiptState: ReceiptState.match);
+    final contradiction = ChatMessage(
+        role: 'assistant',
+        receipt: const {'id': 'r'},
+        receiptState: ReceiptState.missing);
+    expect((absent.receiptState, contradiction.receiptState),
+        (ReceiptState.invalidResponse, ReceiptState.invalidResponse));
   });
-
   test('history reload degrades MATCH and ignores carried verifier state', () {
     final checked = ChatMessage(
         role: 'assistant',
@@ -92,14 +82,8 @@ void _receiptModelTests() {
   });
 }
 
-void _receiptWidgetTests() {
-  _receiptLabelWidgetTests();
-  _receiptControlWidgetTests();
-}
-
 void _receiptLabelWidgetTests() {
-  testWidgets('missing and unchecked are explicit without verified promotion',
-      (tester) async {
+  testWidgets('missing and unchecked never promote', (tester) async {
     await _pump(
         tester,
         ChatThread(messages: [
@@ -115,7 +99,6 @@ void _receiptLabelWidgetTests() {
     expect(find.text('MATCH'), findsNothing);
     expect(find.byKey(const ValueKey('chat-receipt-control')), findsOneWidget);
   });
-
   testWidgets('only an independent MATCH renders MATCH', (tester) async {
     await _pump(
         tester,
@@ -132,9 +115,7 @@ void _receiptLabelWidgetTests() {
 }
 
 void _receiptControlWidgetTests() {
-  testWidgets(
-      'receipt detail has button semantics and pointer keyboard toggles',
-      (tester) async {
+  testWidgets('receipt detail supports pointer and keyboard', (tester) async {
     final semantics = tester.ensureSemantics();
     await _pump(
         tester,
@@ -170,7 +151,6 @@ void _receiptControlWidgetTests() {
     expect(find.textContaining('receipt_public_1'), findsOneWidget);
     semantics.dispose();
   });
-
   testWidgets('header makes a neutral receipt-state promise', (tester) async {
     await _pump(
         tester,
@@ -191,7 +171,7 @@ void _receiptControlWidgetTests() {
 }
 
 void _composerTests() {
-  testWidgets('retained keeps exact prompt and accepted clears unchanged text',
+  testWidgets('retained stays and accepted clears unchanged text',
       (tester) async {
     var disposition = PromptDisposition.retained;
     String? submitted;
@@ -209,15 +189,12 @@ void _composerTests() {
     await tester.tap(find.byTooltip('Send  (Enter)'));
     await tester.pump();
     expect(submitted, '  exact prompt  ');
-    expect(tester.widget<TextField>(find.byType(TextField)).controller!.text,
-        '  exact prompt  ');
+    expect(_editorText(tester), '  exact prompt  ');
     disposition = PromptDisposition.accepted;
     await tester.tap(find.byTooltip('Send  (Enter)'));
     await tester.pump();
-    expect(tester.widget<TextField>(find.byType(TextField)).controller!.text,
-        isEmpty);
+    expect(_editorText(tester), isEmpty);
   });
-
   testWidgets('one pending submit cannot clear a newer edit', (tester) async {
     final result = Completer<PromptDisposition>();
     var calls = 0;
@@ -239,29 +216,47 @@ void _composerTests() {
     result.complete(PromptDisposition.accepted);
     await tester.pump();
     expect(calls, 1);
-    expect(tester.widget<TextField>(find.byType(TextField)).controller!.text,
-        'newer prompt');
+    expect(_editorText(tester), 'newer prompt');
   });
 }
 
 void _admissionTests() {
+  test('raw and decoded path or secret text fails without echo or write', () {
+    final directory = Directory.systemTemp.createTempSync('chat-private-');
+    addTearDown(() => directory.deleteSync(recursive: true));
+    final file = File('${directory.path}/drafts.json');
+    for (final unsafe in const [
+      r'open C:\private\note.txt',
+      r'open %43%3A%5Cprivate%5Cnote.txt',
+      r'open \\host\share\note.txt',
+      'read /etc/passwd',
+      'open file:///private/note.txt',
+      'password=abcdefghijkl',
+      'api%5Fkey%3Dabcdefghijkl',
+      'ordinary %word then %2Fetc%2Fpasswd',
+      '-----BEGIN PRIVATE KEY-----',
+    ]) {
+      Object? failure;
+      try {
+        ChatDraftStore(file: file).save(_localDraft(unsafe));
+      } catch (error) {
+        failure = error;
+      }
+      expect(failure, isA<ChatDraftStoreException>());
+      expect(failure.toString(), isNot(contains(unsafe)));
+      expect(file.existsSync(), isFalse);
+    }
+  });
   test('unicode and ordinary literal percent draft text remain admissible', () {
     final directory = Directory.systemTemp.createTempSync('chat-unicode-');
     addTearDown(() => directory.deleteSync(recursive: true));
     final store = ChatDraftStore(file: File('${directory.path}/drafts.json'));
-    store.save(ChatDraft(
-        draftRef: 'chd_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
-        conversationRef: 'c0',
-        text: "Résumé 50% complete %word trailing% SQL '%foo%' "
-            '日本語 %E2%9C%93',
-        state: ChatDraftState.dirty,
-        updatedAt: DateTime.parse('2026-08-15T12:00:00Z')));
+    store.save(_localDraft("Résumé 50% complete %word trailing% SQL '%foo%' "
+        '日本語 %E2%9C%93'));
     expect(store.load().single.text,
         "Résumé 50% complete %word trailing% SQL '%foo%' 日本語 %E2%9C%93");
   });
-
-  testWidgets('no model retains the exact safe draft with zero chat calls',
-      (tester) async {
+  testWidgets('no model retains draft with zero chat calls', (tester) async {
     final directory = Directory.systemTemp.createTempSync('chat-no-model-');
     addTearDown(() => directory.deleteSync(recursive: true));
     var chatCalls = 0;
@@ -288,8 +283,17 @@ void _admissionTests() {
     await tester.tap(find.byTooltip('Send  (Enter)'));
     await tester.pump();
     expect(chatCalls, 0);
-    expect(tester.widget<TextField>(find.byType(TextField)).controller!.text,
-        '  exact safe prompt  ');
+    expect(_editorText(tester), '  exact safe prompt  ');
     expect(drafts.load().single.text, '  exact safe prompt  ');
   });
 }
+
+ChatDraft _localDraft(String text) => ChatDraft(
+    draftRef: 'chd_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+    conversationRef: 'c0',
+    text: text,
+    state: ChatDraftState.dirty,
+    updatedAt: DateTime.parse('2026-08-15T12:00:00Z'));
+
+String _editorText(WidgetTester tester) =>
+    tester.widget<TextField>(find.byType(TextField)).controller!.text;

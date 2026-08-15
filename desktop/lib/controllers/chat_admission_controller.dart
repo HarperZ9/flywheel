@@ -77,10 +77,12 @@ final class ChatAdmissionController {
       if (_admittedFor(conversation.id, candidate.textSha256) != null) {
         return null;
       }
+      final attemptRef = _newAttemptRef();
+      if (_admitted.containsKey(attemptRef)) return null;
       final draft = _draft(conversation, text, ChatDraftState.submitting,
-          attemptRef: _newAttemptRef());
+          attemptRef: attemptRef, draftRef: _attemptReference(attemptRef));
       draftStore.save(draft);
-      _drafts[conversation.id] = draft;
+      _admitted[attemptRef] = draft;
       return draft;
     } on ChatDraftStoreException {
       return null;
@@ -125,13 +127,16 @@ final class ChatAdmissionController {
 
   void retain(ChatDraft submitted) {
     final current = _drafts[submitted.conversationRef];
-    if (current?.textSha256 != submitted.textSha256) return;
+    if (current != null && current.textSha256 != submitted.textSha256) return;
     try {
       final retained = _draft(Conversation(id: submitted.conversationRef),
           submitted.text, ChatDraftState.retained,
           attemptRef: submitted.attemptRef);
       draftStore.save(retained);
       _drafts[retained.conversationRef] = retained;
+      draftStore.delete(submitted.draftRef,
+          expectedTextSha256: submitted.textSha256);
+      _admitted.remove(_admissionKey(submitted));
     } on ChatDraftStoreException {/* submitting bytes remain recoverable */}
   }
 
@@ -185,7 +190,7 @@ final class ChatAdmissionController {
   bool _markAdmitted(ChatDraft submitted, ChatDraftState state,
       Map<String, dynamic> assistantEvent) {
     final pending = ChatDraft(
-        draftRef: _admittedReference(submitted),
+        draftRef: _attemptReference(_admissionKey(submitted)),
         conversationRef: submitted.conversationRef,
         text: submitted.text,
         state: state,
@@ -197,10 +202,6 @@ final class ChatAdmissionController {
     try {
       draftStore.save(pending);
       _admitted[key] = pending;
-      final current = _drafts[pending.conversationRef];
-      if (current?.attemptRef == pending.attemptRef) {
-        _drafts.remove(pending.conversationRef);
-      }
       return true;
     } on ChatDraftStoreException {
       _admitted[key] = fallback;
@@ -211,7 +212,7 @@ final class ChatAdmissionController {
   bool _cleanAdmitted(ChatDraft pending) {
     final current = _drafts[pending.conversationRef];
     try {
-      if (current?.attemptRef == pending.attemptRef) {
+      if (current?.textSha256 == pending.textSha256) {
         draftStore.delete(current!.draftRef,
             expectedTextSha256: current.textSha256);
         _drafts.remove(pending.conversationRef);
@@ -226,9 +227,9 @@ final class ChatAdmissionController {
   }
 
   ChatDraft _draft(Conversation conversation, String text, ChatDraftState state,
-          {String? attemptRef}) =>
+          {String? attemptRef, String? draftRef}) =>
       ChatDraft(
-          draftRef: _draftReference(conversation.id),
+          draftRef: draftRef ?? _draftReference(conversation.id),
           conversationRef: conversation.id,
           text: text,
           state: state,
@@ -281,8 +282,8 @@ String _draftReference(String conversationRef) =>
 String _admissionKey(ChatDraft draft) =>
     draft.attemptRef ?? 'legacy:${draft.draftRef}:${draft.textSha256}';
 
-String _admittedReference(ChatDraft draft) =>
-    'chd_${sha256.convert(utf8.encode('admitted:${_admissionKey(draft)}')).toString().substring(0, 32)}';
+String _attemptReference(String attemptRef) =>
+    'chd_${sha256.convert(utf8.encode('admitted:$attemptRef')).toString().substring(0, 32)}';
 
 bool _isAdmittedState(ChatDraftState state) =>
     state == ChatDraftState.admittedPendingHistory ||

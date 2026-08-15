@@ -1,9 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-
 import 'package:flywheel_desktop/client/gateway_client.dart';
 import 'package:flywheel_desktop/controllers/chat_admission_controller.dart';
 import 'package:flywheel_desktop/models/chat.dart';
@@ -20,7 +18,6 @@ import 'package:http/testing.dart';
 
 Future<void> _pump(WidgetTester tester, Widget child) => tester.pumpWidget(
     MaterialApp(theme: flywheelLightTheme(), home: Scaffold(body: child)));
-
 void main() {
   _historyAndAvatarTruthTests();
   test('complete envelope rejects excess bytes depth and nodes', () {
@@ -255,10 +252,9 @@ Future<void> _exerciseRecovery(WidgetTester tester, String prompt,
           : ChatDraftState.admittedPendingHistory;
   final recover = draftFailure != 3;
   final hasHistory = draftFailure == 4 || draftFailure == 5 || collision;
-  expect(drafts.load().single.state, state);
+  expect(drafts.load().any((draft) => draft.state == state), isTrue);
   expect(_texts(history), hasHistory ? [prompt, answer] : <String>[]);
-  expect(tester.widget<TextField>(find.byType(TextField)).controller!.text,
-      prompt);
+  expect(_editorText(tester), prompt);
   if (historyFailure == 1) expect(find.text('second'), findsNothing);
   if (!recover) {
     await tester.tap(find.byTooltip('Send  (Enter)'));
@@ -270,8 +266,7 @@ Future<void> _exerciseRecovery(WidgetTester tester, String prompt,
   final resumedHistory = ChatStore(file: history.storageFile);
   await _pumpAgent(tester, _client(_frames(['duplicate']), () => chatCalls++),
       resumedHistory, resumedDrafts);
-  expect(tester.widget<TextField>(find.byType(TextField)).controller!.text,
-      prompt);
+  expect(_editorText(tester), prompt);
   await tester.tap(find.byTooltip('Send  (Enter)'));
   await tester.pumpAndSettle();
   expect(chatCalls, 1);
@@ -287,10 +282,10 @@ Future<void> _exerciseRecovery(WidgetTester tester, String prompt,
   }
   if (recover) {
     expect(resumedDrafts.load(), isEmpty);
-    expect(tester.widget<TextField>(find.byType(TextField)).controller!.text,
-        isEmpty);
+    expect(_editorText(tester), isEmpty);
   } else {
-    expect(resumedDrafts.load().single.state, ChatDraftState.submitting);
+    expect(resumedDrafts.load().map((draft) => draft.state).toSet(),
+        {ChatDraftState.dirty, ChatDraftState.submitting});
   }
 }
 
@@ -298,3 +293,5 @@ List<String> _texts(ChatStore store) => [
       for (final conversation in store.load())
         for (final message in conversation.messages) message.text,
     ];
+String _editorText(WidgetTester tester) =>
+    tester.widget<TextField>(find.byType(TextField)).controller!.text;
