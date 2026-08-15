@@ -7,15 +7,13 @@ enum _GrantAction { create, append, check, cancel, export }
 
 Map<String, dynamic> _jsonObjectSnapshot(Map<String, dynamic> source) {
   var remaining = 4096;
-  late Object? Function(Object?, int) visit;
   Never invalid() => throw ArgumentError('JSON must be bounded and finite');
-  visit = (value, depth) => switch (value) {
+  Object? visit(Object? value, int depth) => switch (value) {
         _ when depth > 16 || --remaining < 0 => invalid(),
         null => null,
         String() || bool() => value,
         num() when value.isFinite => value,
-        List() =>
-          List.unmodifiable(value.map((item) => visit(item, depth + 1))),
+        List() => List.unmodifiable(value.map((v) => visit(v, depth + 1))),
         Map() when value.keys.every((key) => key is String) =>
           Map<String, dynamic>.unmodifiable({
             for (final entry in value.entries)
@@ -192,38 +190,38 @@ class JourneyApiException implements Exception {
   JourneyApiException(this.failure);
 }
 
-const _fixedErrors = {
-  'HEAD_CONFLICT': 'Journey state changed',
-  'AUTH_REQUIRED': 'Journey authorization is required',
-  'VERSION_MISMATCH': 'Journey data version is unavailable',
-  'STORE_COMMIT_FAILED': 'Journey persistence failed',
-  'CANCEL_UNAVAILABLE': 'Journey cancellation is unavailable',
+const _fixedErrors = <String, (Set<int>, String)>{
+  'AUTH_REQUIRED': ({401}, 'Journey authorization is required'),
+  'PERMISSION_REQUIRED': ({403}, 'Journey approval is required'),
+  'PERMISSION_DENIED': ({403}, 'Journey operation is not permitted'),
+  'APPROVAL_EXPIRED': ({403}, 'Journey approval expired'),
+  'JOURNEY_NOT_FOUND': ({404}, 'Journey was not found'),
+  'HEAD_CONFLICT': ({409}, 'Journey state changed'),
+  'VERSION_MISMATCH': ({409}, 'Journey data version is unavailable'),
+  'IDEMPOTENCY_MISMATCH': ({409}, 'Journey request conflicts with prior use'),
+  'INVALID_TRANSITION': ({409, 422}, 'Journey transition is unavailable'),
+  'STORE_COMMIT_FAILED': ({500}, 'Journey persistence failed'),
+  'STORE_BUSY': ({503}, 'Journey persistence is busy'),
+  'CANCEL_UNAVAILABLE': ({409}, 'Journey cancellation is unavailable'),
 };
 
 JourneyFailure _localFailure([String code = 'INVALID_RESPONSE']) =>
-    JourneyFailure(
-        code, _fixedErrors[code] ?? 'Gateway response was invalid', const []);
+    JourneyFailure(code,
+        _fixedErrors[code]?.$2 ?? 'Gateway response was invalid', const []);
 
 JourneyFailure _readFailure(Object? value) {
-  if (value
-      case {
-        'schema': 'flywheel.evidence-transport-error/v1',
-        'error': {'code': String code, 'message': String _}
-      }) {
-    if (_fixedErrors.containsKey(code)) return _localFailure(code);
-  }
-  return _localFailure();
+  final code = GatewayException.fromResponse(200, jsonEncode(value)).errorCode;
+  return code != null && _fixedErrors.containsKey(code)
+      ? _localFailure(code)
+      : _localFailure();
 }
 
 JourneyFailure _gatewayFailure(Object error) {
-  if (error is GatewayException) {
-    final split = error.message.indexOf(': ');
-    if (split >= 0) {
-      try {
-        return _readFailure(jsonDecode(error.message.substring(split + 2)));
-      } on Object {
-        return _localFailure();
-      }
+  if (error is GatewayException && error.errorSchema == gatewayErrorSchema) {
+    final code = error.errorCode;
+    final fixed = _fixedErrors[code];
+    if (code != null && fixed?.$1.contains(error.statusCode) == true) {
+      return _localFailure(code);
     }
   }
   return _localFailure();
@@ -236,8 +234,11 @@ class GatewayJourneyApi implements JourneyApi {
   Future<Map<String, dynamic>> _post(
       String path, Map<String, dynamic> body) async {
     try {
+      if (utf8.encode(jsonEncode(body)).length > 1048576) {
+        throw JourneyApiException(_localFailure());
+      }
       final result = await _client.postJson(path, body);
-      if (result['schema'] == 'flywheel.evidence-transport-error/v1') {
+      if (result['schema'] == gatewayErrorSchema) {
         throw JourneyApiException(_readFailure(result));
       }
       return result;

@@ -16,6 +16,9 @@ import 'package:http/http.dart' as http;
 import '../models/gateway_models.dart';
 import '../models/workflow_models.dart';
 import 'gateway_auth.dart';
+import 'gateway_error.dart';
+
+export 'gateway_error.dart';
 
 part 'gateway_streams.dart';
 
@@ -28,15 +31,15 @@ class GatewayClient {
   /// 401, so a client without the header reports a healthy engine as offline.
   /// An injected [httpClient] is used verbatim, which keeps tests in control of
   /// their own headers.
-  GatewayClient({this.baseUrl = 'http://127.0.0.1:8799', http.Client? httpClient})
+  GatewayClient(
+      {this.baseUrl = 'http://127.0.0.1:8799', http.Client? httpClient})
       : _http = httpClient ?? AuthedClient(http.Client());
 
   /// True if the gateway is reachable (the gateway serves /api/world on GET).
   Future<bool> isAlive({Duration timeout = const Duration(seconds: 2)}) async {
     try {
-      final r = await _http
-          .get(Uri.parse('$baseUrl/api/world'))
-          .timeout(timeout);
+      final r =
+          await _http.get(Uri.parse('$baseUrl/api/world')).timeout(timeout);
       return r.statusCode == 200;
     } catch (_) {
       return false;
@@ -102,8 +105,7 @@ class GatewayClient {
   /// status code and a short body excerpt so the verdict stays inspectable.
   Future<(int, String)> runLessonCheck(String path) async {
     final r = await _http.get(Uri.parse('$baseUrl$path'));
-    final body =
-        r.body.length > 240 ? '${r.body.substring(0, 240)}…' : r.body;
+    final body = r.body.length > 240 ? '${r.body.substring(0, 240)}…' : r.body;
     return (r.statusCode, body);
   }
 
@@ -140,7 +142,8 @@ class GatewayClient {
 
   /// POST /api/typeface/publish — file a minted face in the witnessed gallery.
   Future<Map<String, dynamic>> typefacePublish(
-      Map<String, dynamic> params, int seed, {String family = ''}) async {
+      Map<String, dynamic> params, int seed,
+      {String family = ''}) async {
     final r = await _http.post(
       Uri.parse('$baseUrl/api/typeface/publish'),
       headers: {'Content-Type': 'application/json'},
@@ -178,8 +181,7 @@ class GatewayClient {
   }
 
   /// POST /api/learn/animate — a lesson rendered as a runnable manim scene.
-  Future<Map<String, dynamic>> learnAnimate(
-      Map<String, dynamic> lesson) async {
+  Future<Map<String, dynamic>> learnAnimate(Map<String, dynamic> lesson) async {
     final r = await _http.post(
       Uri.parse('$baseUrl/api/learn/animate'),
       headers: {'Content-Type': 'application/json'},
@@ -189,7 +191,8 @@ class GatewayClient {
   }
 
   /// POST /api/companion — answer locally, escalate the hard slice.
-  Future<CompanionResult> companion(String prompt, {String? solutionSig}) async {
+  Future<CompanionResult> companion(String prompt,
+      {String? solutionSig}) async {
     final r = await _http.post(
       Uri.parse('$baseUrl/api/companion'),
       headers: {'Content-Type': 'application/json'},
@@ -335,7 +338,8 @@ class GatewayClient {
 
   /// POST /api/discourse/digests — what the chorus daemon has synthesized on a
   /// schedule, newest first, so the app can show it without re-running anything.
-  Future<Map<String, dynamic>> discourseDigests(String store, {int limit = 20}) async {
+  Future<Map<String, dynamic>> discourseDigests(String store,
+      {int limit = 20}) async {
     final r = await _http.post(
       Uri.parse('$baseUrl/api/discourse/digests'),
       headers: {'Content-Type': 'application/json'},
@@ -628,7 +632,8 @@ class GatewayClient {
 
   /// GET /api/memory/list — browse stored spans verbatim (no query).
   Future<Map<String, dynamic>> memoryList({int limit = 20}) async {
-    final r = await _http.get(Uri.parse('$baseUrl/api/memory/list?limit=$limit'));
+    final r =
+        await _http.get(Uri.parse('$baseUrl/api/memory/list?limit=$limit'));
     return _decode(r);
   }
 
@@ -650,8 +655,7 @@ class GatewayClient {
 
   Map<String, dynamic> _decode(http.Response r) {
     if (r.statusCode != 200) {
-      throw GatewayException(
-          'gateway returned ${r.statusCode}: ${r.body.substring(0, r.body.length.clamp(0, 200))}');
+      throw GatewayException.fromResponse(r.statusCode, r.body);
     }
     return jsonDecode(r.body) as Map<String, dynamic>;
   }
@@ -670,11 +674,4 @@ class GatewayClient {
   }
 
   void close() => _http.close();
-}
-
-class GatewayException implements Exception {
-  final String message;
-  GatewayException(this.message);
-  @override
-  String toString() => 'GatewayException: $message';
 }

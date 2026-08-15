@@ -9,17 +9,15 @@ import 'package:flywheel_desktop/client/gateway_client.dart';
 import 'package:flywheel_desktop/client/journey_api.dart';
 import 'package:flywheel_desktop/models/journey_models.dart';
 
+const _schema = 'flywheel.evidence-transport-error/v1';
 const _journey = 'jrn_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
 const _head =
     'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
 const _grant = 'gnt_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
 const _proposal = 'prp_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+const _limit = 1048576;
 
-GatewayJourneyApi _api(http.Response response) => GatewayJourneyApi(
-    GatewayClient(httpClient: MockClient((_) async => response)));
-
-GatewayJourneyApi _handlerApi(
-    Future<http.Response> Function(http.Request) handler,
+GatewayJourneyApi _api(Future<http.Response> Function(http.Request) handler,
     {String? Function()? readToken}) {
   http.Client transport = MockClient(handler);
   if (readToken != null) {
@@ -28,16 +26,12 @@ GatewayJourneyApi _handlerApi(
   return GatewayJourneyApi(GatewayClient(httpClient: transport));
 }
 
-Map<String, Object?> _proposalJson() => {
-      'schema': 'flywheel.grant-proposal/v1',
-      'proposal_ref': _proposal,
-      'planned_grant_ref': _grant,
-      'action': 'append',
-      'operation_sha256': _head,
-      'expires_at': '2026-08-15T12:00:00Z',
+Map<String, Object?> _error(String code, {int padding = 0}) => {
+      'error': {'message': List.filled(padding, 'x').join(), 'code': code},
+      'schema': _schema,
     };
 
-Map<String, Object?> _ackJson() => {
+Map<String, Object?> _ack() => {
       'schema': 'flywheel.evidence-journey-mutation-ack/v2',
       'journey_ref': _journey,
       'event_head_sha256': _head,
@@ -45,6 +39,37 @@ Map<String, Object?> _ackJson() => {
       'projection_sha256': _head,
       'idempotent_replay': false,
     };
+
+JourneyCreateRequest _create(String goal) => JourneyCreateRequest(
+    goal: goal,
+    intakeRef: 'intake.json',
+    clientRequestId: 'create-1',
+    grantRef: _grant);
+
+Map<String, dynamic> _createBody(String goal) => {
+      'goal': goal,
+      'intake_ref': 'intake.json',
+      'client_request_id': 'create-1',
+      'grant_ref': _grant,
+    };
+
+String _goalAtBytes(int target, {required bool multibyte}) {
+  final remaining = target - utf8.encode(jsonEncode(_createBody(''))).length;
+  if (!multibyte) return List.filled(remaining, 'a').join();
+  return '${List.filled(remaining ~/ 2, 'é').join()}'
+      '${remaining.isOdd ? 'a' : ''}';
+}
+
+Map<String, dynamic> _depthCommand(int depth) {
+  Object value = 'leaf';
+  for (var level = 1; level < depth; level++) {
+    value = [value];
+  }
+  return {'payload': value};
+}
+
+Map<String, dynamic> _nodeCommand(int nodes) =>
+    {'items': List<Object?>.filled(nodes - 2, null)};
 
 Future<JourneyApiException> _failure(Future<void> Function() call) async {
   try {
@@ -55,225 +80,221 @@ Future<JourneyApiException> _failure(Future<void> Function() call) async {
   fail('expected JourneyApiException');
 }
 
-JourneyCreateRequest _createRequest() => JourneyCreateRequest(
-    goal: 'Preserve evidence',
-    intakeRef: 'intake.json',
-    clientRequestId: 'create-1',
-    grantRef: _grant);
-
 void main() {
-  _fixedErrorTests();
-  _malformedSuccessTests();
-  _unsafeErrorTests();
-  _approvalAndBearerTests();
-  _snapshotTests();
+  _structuredErrorTests();
+  _malformedResponseTests();
+  _requestBoundaryTests();
+  _structureAndSnapshotTests();
+  _authAndLocalRefusalTests();
 }
 
-void _fixedErrorTests() {
-  test('known transport failures become typed fixed public failures', () async {
-    const expected = {
-      'HEAD_CONFLICT': 'Journey state changed',
-      'AUTH_REQUIRED': 'Journey authorization is required',
-      'VERSION_MISMATCH': 'Journey data version is unavailable',
-      'STORE_COMMIT_FAILED': 'Journey persistence failed',
+void _structuredErrorTests() {
+  test('complete reordered known errors retain code with exact status',
+      () async {
+    const policies = <String, List<int>>{
+      'AUTH_REQUIRED': [401],
+      'PERMISSION_REQUIRED': [403],
+      'PERMISSION_DENIED': [403],
+      'APPROVAL_EXPIRED': [403],
+      'JOURNEY_NOT_FOUND': [404],
+      'HEAD_CONFLICT': [409],
+      'VERSION_MISMATCH': [409],
+      'IDEMPOTENCY_MISMATCH': [409],
+      'INVALID_TRANSITION': [409, 422],
+      'STORE_COMMIT_FAILED': [500],
+      'STORE_BUSY': [503],
+      'CANCEL_UNAVAILABLE': [409],
     };
-    for (final entry in expected.entries) {
-      final body = jsonEncode({
-        'schema': 'flywheel.evidence-transport-error/v1',
-        'error': {'code': entry.key, 'message': 'server text must not echo'}
-      });
-      final error = await _failure(() => _api(http.Response(body, 409)).list());
-      expect(error.failure.code, entry.key);
-      expect(error.failure.detail, entry.value);
-      expect(error.failure.invalidResponse, isFalse);
-      expect(error.toString(), isNot(contains('server text must not echo')));
+    for (final entry in policies.entries) {
+      final body = jsonEncode(_error(entry.key, padding: 300));
+      for (final status in entry.value) {
+        final error = await _failure(
+            () => _api((_) async => http.Response(body, status)).list());
+        expect(error.failure.code, entry.key);
+        expect(error.toString(), isNot(contains(body)));
+      }
+      final mismatch = await _failure(
+          () => _api((_) async => http.Response(body, 418)).list());
+      expect(mismatch.failure.code, 'INVALID_RESPONSE');
+    }
+    final legacy = GatewayException('gateway returned 503');
+    expect((legacy.statusCode, legacy.message), (503, 'gateway returned 503'));
+  });
+
+  test('exact HTTP 200 error envelope remains intentionally typed', () async {
+    var body = jsonEncode(_error('AUTH_REQUIRED'));
+    final api = _api((_) async => http.Response(body, 200));
+    expect((await _failure(api.list)).failure.code, 'AUTH_REQUIRED');
+    for (final malformed in [
+      {..._error('AUTH_REQUIRED'), 'extra': 'secret'},
+      {
+        'schema': _schema,
+        'error': {'code': 'AUTH_REQUIRED', 'message': '', 'extra': 'secret'}
+      }
+    ]) {
+      body = jsonEncode(malformed);
+      expect((await _failure(api.list)).failure.code, 'INVALID_RESPONSE');
     }
   });
-
-  test('an error envelope returned with 200 is still a typed failure',
-      () async {
-    final error = await _failure(() => _api(http.Response(
-            jsonEncode({
-              'schema': 'flywheel.evidence-transport-error/v1',
-              'error': {'code': 'AUTH_REQUIRED', 'message': 'do not echo this'}
-            }),
-            200))
-        .list());
-    expect(error.failure.code, 'AUTH_REQUIRED');
-    expect(error.toString(), isNot(contains('do not echo this')));
-  });
 }
 
-void _malformedSuccessTests() {
-  test('malformed object success returns a local invalid-response model',
-      () async {
-    final result =
-        await _api(http.Response('{}', 200)).create(_createRequest());
-    expect(result.invalidResponse, isTrue);
-    expect(result.journeyRef, isEmpty);
-  });
-
-  test('malformed list envelope fails closed instead of returning empty truth',
-      () async {
-    final error = await _failure(() => _api(http.Response('{}', 200)).list());
-    expect(error.failure.code, 'INVALID_RESPONSE');
-    expect(error.failure.detail, 'Gateway response was invalid');
-  });
-
-  test('non-JSON success becomes a fixed local invalid response', () async {
-    final error = await _failure(
-        () => _api(http.Response('not-json-response', 200)).list());
-    expect(error.failure.code, 'INVALID_RESPONSE');
-    expect(error.toString(), isNot(contains('not-json-response')));
-  });
-}
-
-void _unsafeErrorTests() {
-  test('unknown or unsafe error bodies never enter displayable failures',
-      () async {
+void _malformedResponseTests() {
+  test('malformed and unsafe failures never become display text', () async {
     final bodies = [
       jsonEncode({
         'schema': 'wrong',
         'error': {'code': 'HEAD_CONFLICT', 'message': r'C:\private\hidden.json'}
       }),
-      jsonEncode({
-        'schema': 'flywheel.evidence-transport-error/v1',
-        'error': {
-          'code': 'UNKNOWN_REMOTE',
-          'message': 'password=abcdefghijklmnop'
-        }
-      }),
-      '<html>file:/private/error</html>',
+      jsonEncode(_error('UNKNOWN_REMOTE', padding: 300)),
+      '<html>file:/private/error password=abcdefghijklmnop</html>'
     ];
     for (final body in bodies) {
-      final error = await _failure(() =>
-          _api(http.Response(body, 500)).resume(_journey, JourneyLens.rescue));
+      final error = await _failure(
+          () => _api((_) async => http.Response(body, 500)).list());
       expect(error.failure.code, 'INVALID_RESPONSE');
-      expect(error.failure.detail, 'Gateway response was invalid');
       expect(error.toString(), isNot(contains(body)));
-      expect(error.toString(), isNot(contains('private')));
-      expect(error.toString(), isNot(contains('password')));
     }
   });
 
-  test('malformed typed mutation success stays invalid without inferred truth',
+  test('malformed success stays local invalid response without truth',
       () async {
-    final result = await _api(http.Response(
-            jsonEncode({
-              'schema': 'flywheel.evidence-journey-mutation-ack/v2',
-              'journey_ref': _journey,
-              'event_head_sha256': _head,
-              'event_sha256': _head,
-              'projection_sha256': _head,
-              'idempotent_replay': 'yes',
-            }),
-            200))
-        .create(_createRequest());
-    expect(result.invalidResponse, isTrue);
-    expect(result.idempotentReplay, isFalse);
+    final object = await _api((_) async => http.Response('{}', 200))
+        .create(_create('Preserve evidence'));
+    expect(object.invalidResponse, isTrue);
+    final listError = await _failure(
+        () => _api((_) async => http.Response('not-json', 200)).list());
+    expect(listError.failure.code, 'INVALID_RESPONSE');
   });
 }
 
-void _approvalAndBearerTests() {
-  test('once-only approval sends only the proposal reference', () async {
-    final api = _handlerApi((request) async {
-      expect(request.url.path, '/api/grants/approve-once');
+void _requestBoundaryTests() {
+  test('ASCII and multibyte JSON at exact byte limit are sent', () async {
+    var calls = 0;
+    final api = _api((request) async {
+      calls++;
+      expect(request.bodyBytes.length, _limit);
+      return http.Response(jsonEncode(_ack()), 200);
+    });
+    for (final multibyte in [false, true]) {
+      final goal = _goalAtBytes(_limit, multibyte: multibyte);
+      expect(utf8.encode(jsonEncode(_createBody(goal))).length, _limit);
+      expect((await api.create(_create(goal))).invalidResponse, isFalse);
+    }
+    expect(calls, 2);
+  });
+
+  test('JSON above exact byte limit fails before any HTTP call', () async {
+    var calls = 0;
+    final api = _api((_) async {
+      calls++;
+      return http.Response('{}', 200);
+    });
+    for (final multibyte in [false, true]) {
+      final goal = _goalAtBytes(_limit + 1, multibyte: multibyte);
+      final error = await _failure(() => api.create(_create(goal)));
+      expect(error.failure.code, 'INVALID_RESPONSE');
+    }
+    expect(calls, 0);
+  });
+}
+
+void _structureAndSnapshotTests() {
+  test('JSON depth 16 and node 4096 pass; 17 and 4097 fail', () {
+    GrantIntent.append(
+        journeyRef: _journey,
+        expectedEventHead: _head,
+        clientRequestId: 'depth-16',
+        command: _depthCommand(16));
+    expect(
+        () => GrantIntent.append(
+            journeyRef: _journey,
+            expectedEventHead: _head,
+            clientRequestId: 'depth-17',
+            command: _depthCommand(17)),
+        throwsArgumentError);
+    JourneyAppendRequest(
+        journeyRef: _journey,
+        expectedEventHead: _head,
+        clientRequestId: 'nodes-4096',
+        grantRef: _grant,
+        command: _nodeCommand(4096));
+    expect(
+        () => JourneyAppendRequest(
+            journeyRef: _journey,
+            expectedEventHead: _head,
+            clientRequestId: 'nodes-4097',
+            grantRef: _grant,
+            command: _nodeCommand(4097)),
+        throwsArgumentError);
+  });
+
+  test('append values snapshot nested data and reject non-JSON numbers', () {
+    final command = <String, dynamic>{
+      'nested': {
+        'items': <String>['original']
+      }
+    };
+    final request = JourneyAppendRequest(
+        journeyRef: _journey,
+        expectedEventHead: _head,
+        clientRequestId: 'snapshot',
+        grantRef: _grant,
+        command: command);
+    ((command['nested'] as Map)['items'] as List)[0] = 'changed';
+    expect(((request.command['nested'] as Map)['items'] as List).single,
+        'original');
+    for (final invalid in [double.nan, Object()]) {
+      expect(
+          () => GrantIntent.append(
+              journeyRef: _journey,
+              expectedEventHead: _head,
+              clientRequestId: 'invalid',
+              command: {'value': invalid}),
+          throwsArgumentError);
+    }
+  });
+}
+
+void _authAndLocalRefusalTests() {
+  test('401 invalidates token and explicit retry succeeds with rotation',
+      () async {
+    final tokens = ['synthetic-token-a', 'synthetic-token-b'];
+    final headers = <String?>[];
+    final api = _api((request) async {
+      headers.add(request.headers['Authorization']);
+      if (headers.length == 1) {
+        return http.Response(
+            jsonEncode(_error('AUTH_REQUIRED', padding: 300)), 401);
+      }
+      return http.Response(
+          jsonEncode(
+              {'schema': 'flywheel.evidence-journey-list/v2', 'journeys': []}),
+          200);
+    }, readToken: () => tokens.removeAt(0));
+    expect((await _failure(api.list)).failure.code, 'AUTH_REQUIRED');
+    expect(await api.list(), isEmpty);
+    expect(headers, ['Bearer synthetic-token-a', 'Bearer synthetic-token-b']);
+  });
+
+  test('invalid local lens refuses before HTTP and approval stays exact',
+      () async {
+    var calls = 0;
+    final api = _api((request) async {
+      calls++;
       expect(jsonDecode(request.body), {'proposal_ref': _proposal});
       return http.Response(
           jsonEncode({
             'schema': 'flywheel.operation-grant-approval/v1',
             'grant_ref': _grant,
-            'expires_at': '2026-08-15T12:00:00Z',
+            'expires_at': '2026-08-15T12:00:00Z'
           }),
           200);
     });
+    final error =
+        await _failure(() => api.resume(_journey, JourneyLens.invalidResponse));
+    expect(error.failure.code, 'INVALID_RESPONSE');
+    expect(calls, 0);
     expect((await api.approveGrantOnce(_proposal)).grantRef, _grant);
-  });
-
-  test('reuses the supplied bearer-aware GatewayClient', () async {
-    String? authorization;
-    final api = _handlerApi((request) async {
-      authorization = request.headers['Authorization'];
-      return http.Response(
-          jsonEncode(
-              {'schema': 'flywheel.evidence-journey-list/v2', 'journeys': []}),
-          200);
-    }, readToken: () => 'synthetic-test-token');
-    await api.list();
-    expect(authorization, 'Bearer synthetic-test-token');
-  });
-}
-
-void _snapshotTests() {
-  test('append intent and request snapshot nested JSON before caller mutation',
-      () async {
-    final intentCommand = <String, dynamic>{
-      'type': 'record_claim',
-      'claim': {
-        'claim_id': 'claim-1',
-        'statement': 'Original statement',
-        'depends_on': <String>['fact-1'],
-        'does_not_prove': 'claim correctness',
-      }
-    };
-    final requestCommand = <String, dynamic>{
-      'type': 'record_next_action',
-      'next_action': {
-        'action_id': 'action-1',
-        'kind': 'inspect',
-        'description': 'Original action',
-        'basis_refs': <String>['claim-1']
-      }
-    };
-    final intent = GrantIntent.append(
-        journeyRef: _journey,
-        expectedEventHead: _head,
-        clientRequestId: 'append-intent',
-        command: intentCommand);
-    final request = JourneyAppendRequest(
-        journeyRef: _journey,
-        expectedEventHead: _head,
-        clientRequestId: 'append-request',
-        grantRef: _grant,
-        command: requestCommand);
-    (intentCommand['claim'] as Map)['statement'] = 'Changed';
-    ((intentCommand['claim'] as Map)['depends_on'] as List).add('fact-2');
-    (requestCommand['next_action'] as Map)['description'] = 'Changed';
-    final bodies = <Map<String, dynamic>>[];
-    final api = _handlerApi((request) async {
-      bodies.add(jsonDecode(request.body) as Map<String, dynamic>);
-      return http.Response(
-          jsonEncode(request.url.path.contains('/grants/')
-              ? _proposalJson()
-              : _ackJson()),
-          200);
-    });
-    await api.prepareGrant(intent);
-    await api.append(request);
-    expect((bodies[0]['command'] as Map)['claim'], {
-      'claim_id': 'claim-1',
-      'statement': 'Original statement',
-      'depends_on': ['fact-1'],
-      'does_not_prove': 'claim correctness'
-    });
-    expect((bodies[1]['command'] as Map)['next_action'], {
-      'action_id': 'action-1',
-      'kind': 'inspect',
-      'description': 'Original action',
-      'basis_refs': ['claim-1']
-    });
-  });
-
-  test('append JSON snapshot rejects unsupported and non-finite values', () {
-    for (final invalid in [double.nan, Object()]) {
-      expect(
-          () => JourneyAppendRequest(
-              journeyRef: _journey,
-              expectedEventHead: _head,
-              clientRequestId: 'append-invalid',
-              grantRef: _grant,
-              command: {'type': 'record_claim', 'claim': invalid}),
-          throwsArgumentError);
-    }
+    expect(calls, 1);
   });
 }

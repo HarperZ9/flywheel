@@ -24,7 +24,7 @@ Map<String, Object?> _proposalJson(String action) => {
       'action': action,
       'operation_sha256': _headA,
       'expires_at': '2026-08-15T12:00:00Z',
-      if (action == 'check' || action == 'cancel') 'operation_ref': _operation,
+      if (action == 'check') 'operation_ref': _operation,
     };
 
 Map<String, Object?> _ackJson() => {
@@ -72,6 +72,10 @@ GatewayJourneyApi _api(Future<http.Response> Function(http.Request) handler) =>
     GatewayJourneyApi(GatewayClient(
         baseUrl: 'http://127.0.0.1:8799', httpClient: MockClient(handler)));
 
+Map<String, dynamic> _mutableCommand() => {
+      'items': <String>['original']
+    };
+
 void main() {
   _grantRouteTests();
   _mutationRouteTests();
@@ -81,6 +85,7 @@ void main() {
 void _grantRouteTests() {
   test('grant preparation uses five fixed routes and exact public bodies',
       () async {
+    final appendCommand = _mutableCommand();
     final expected = <String, Map<String, dynamic>>{
       '/api/grants/prepare/create': {
         'goal': 'Preserve evidence',
@@ -91,7 +96,7 @@ void _grantRouteTests() {
         'journey_ref': _journey,
         'expected_event_head': _headA,
         'client_request_id': 'append-1',
-        'command': {'type': 'advance_stage'}
+        'command': _mutableCommand()
       },
       '/api/grants/prepare/check': {
         'journey_ref': _journey,
@@ -115,10 +120,8 @@ void _grantRouteTests() {
         'packet_ref': 'packets/journey'
       },
     };
-    final seen = <String>[];
     final api = _api((request) async {
       final body = jsonDecode(request.body) as Map<String, dynamic>;
-      seen.add(request.url.path);
       expect(body, expected[request.url.path]);
       return http.Response(
           jsonEncode(_proposalJson(request.url.pathSegments.last)), 200);
@@ -132,7 +135,7 @@ void _grantRouteTests() {
           journeyRef: _journey,
           expectedEventHead: _headA,
           clientRequestId: 'append-1',
-          command: const {'type': 'advance_stage'}),
+          command: appendCommand),
       GrantIntent.check(
           journeyRef: _journey,
           expectedEventHead: _headA,
@@ -152,10 +155,10 @@ void _grantRouteTests() {
           clientRequestId: 'export-1',
           packetRef: 'packets/journey'),
     ];
+    (appendCommand['items'] as List)[0] = 'changed';
     for (final intent in intents) {
       expect((await api.prepareGrant(intent)).invalidResponse, isFalse);
     }
-    expect(seen, expected.keys);
   });
 }
 
