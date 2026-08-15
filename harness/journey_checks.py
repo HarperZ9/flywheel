@@ -5,9 +5,7 @@ import os, re
 from pathlib import Path, PurePosixPath, PureWindowsPath
 from threading import RLock
 from typing import Protocol
-from .evidence_json import (
-    admit_artifact_ref, canonical_bytes, canonical_sha256, strict_load_json,
-)
+from .evidence_json import admit_artifact_ref, canonical_bytes, canonical_sha256, strict_load_json
 from .evidence_journey import project_journey
 from .evidence_packet import run_journey_check
 from .journey_service import JourneyService
@@ -19,8 +17,7 @@ OPERATION_REF_PATTERN = re.compile(r"op_[0-9a-f]{32}\Z")
 TERMINALS = frozenset(("check_completed", "check_failed", "check_cancelled"))
 _LIFECYCLE = frozenset((
     "check_requested", "check_blocked", "check_started", "cancel_requested",
-    *TERMINALS,
-))
+    *TERMINALS,))
 @dataclass(frozen=True)
 class CheckCommand:
     owner_ref: str
@@ -38,8 +35,7 @@ class CheckCommand:
     artifact_root_ref: str
 class CheckRunner(Protocol):
     def __call__(self, journey: dict, claim_id: str, oracle_id: str,
-                 candidate: Path, context: dict, *,
-                 artifact_root: Path | None = None) -> dict: ...
+                 candidate: Path, context: dict, *, artifact_root: Path | None = None) -> dict: ...
 PACKET_CHECK_RUNNER: CheckRunner = run_journey_check
 class JourneyCheckService:
     """Persist request, admission, execution, and one terminal event."""
@@ -66,6 +62,9 @@ class JourneyCheckService:
                     or requested[0]["payload"]
                     != self._requested_payload(checked)):
                 raise JourneyStoreError("IDEMPOTENCY_MISMATCH")
+            if len(history) == 1:
+                return self._block(checked, requested[0]["event_sha256"],
+                                   "CHECK_INTERRUPTED")
             if (history[-1]["event_type"] in ("check_started", "cancel_requested")
                     and not self._terminal(history)):
                 self._commands[checked.operation_ref] = checked
@@ -77,6 +76,7 @@ class JourneyCheckService:
             operation="check_requested",
             payload=self._requested_payload(checked),
         )
+        self.journey._checkpoint("after_check_requested")
         reason = self._consume_or_block(checked)
         if reason is not None:
             return self._block(checked, requested.event_sha256, reason)

@@ -27,8 +27,6 @@ def _genesis(root):
 
 def _journey_dir(root):
     return root / "journeys" / "v2" / "owners" / OWNER / JOURNEY
-
-
 def _orphan(root, head, marker):
     request_key = canonical_sha256(f"orphan-{marker}")
     request_sha = canonical_sha256({"marker": marker})
@@ -232,6 +230,7 @@ def test_recovery_does_not_choose_between_duplicate_authoritative_starts(tmp_pat
 
 @pytest.mark.parametrize("case", (
     "extra_request", "block", "malformed_cancel", "unrelated_event",
+    "malformed_completed", "malformed_failed", "malformed_cancelled",
 ))
 def test_recovery_diagnoses_incomplete_operation_grammar(tmp_path, case):
     """Extra or malformed related events must never be repaired into a terminal."""
@@ -254,18 +253,31 @@ def test_recovery_diagnoses_incomplete_operation_grammar(tmp_path, case):
         "unrelated_event": ("record_next_action", {
             "operation_ref": OPERATION, "next_actions": [],
         }),
+        "malformed_completed": ("check_completed", {
+            "operation_ref": OPERATION, "started_event_sha256": started.event_sha256,
+        }),
+        "malformed_failed": ("check_failed", {
+            "operation_ref": OPERATION, "started_event_sha256": started.event_sha256,
+            "reason": "PRIVATE_ERROR",
+        }),
+        "malformed_cancelled": ("check_cancelled", {
+            "operation_ref": OPERATION, "started_event_sha256": started.event_sha256,
+            "result_sha256": "not-a-digest",
+        }),
     }
     event_type, payload = payloads[case]
-    _append(tmp_path, started.event_head_sha256, f"ambiguous-{case}",
-            event_type, payload)
+    ambiguous = _append(tmp_path, started.event_head_sha256, f"ambiguous-{case}",
+                        event_type, payload)
 
     result = recover_store(tmp_path, now=NOW)
 
     events = [json.loads(path.read_bytes()) for path in sorted(
         (_journey_dir(tmp_path) / "events").glob("*.json"))]
     terminals = {"check_completed", "check_failed", "check_cancelled"}
+    before = [ambiguous.event_sha256] if event_type in terminals else []
     assert result["starts_closed"] is False and result["diagnostic_refs"]
-    assert not any(event["event_type"] in terminals for event in events)
+    assert [event["event_sha256"] for event in events
+            if event["event_type"] in terminals] == before
 
 
 def test_newer_schema_recovery_opens_read_only_without_rewriting_anything(tmp_path):

@@ -35,7 +35,6 @@ REQUIREMENT = {
         "network": "no network capabilities",
     },
 }
-
 def _journey():
     journey = new_journey(journey_id="containment-v1", goal="Check Python",
         intake={"summary": "untrusted Python"}, created_at="2026-08-13T12:00:00Z")
@@ -44,12 +43,10 @@ def _journey():
             "claim_id": "claim-root", "statement": "The candidate meets its tests",
             "depends_on": [], "verdict": "UNDECIDED",
             "reason": "registered checker has not run", "receipt_refs": []}]})
-
 def _listener():
     listener = socket.socket()
     listener.bind(("127.0.0.1", 0)); listener.listen(2); listener.settimeout(0.2)
     return listener, listener.getsockname()[1]
-
 def _received(listener):
     try:
         connection, _ = listener.accept()
@@ -58,7 +55,6 @@ def _received(listener):
     with connection:
         connection.settimeout(0.2)
         return connection.recv(1024)
-
 def _fixture(tmp_path, attempt):
     root = tmp_path / "artifacts"; root.mkdir()
     candidate, test = root / "candidate.py", root / "test_candidate.py"
@@ -87,8 +83,6 @@ def _fixture(tmp_path, attempt):
         "raw_artifact_refs": ["candidate.py", "test_candidate.py"],
         "timeout_seconds": 15}
     return root, candidate, context, read_listener, process_listener
-
-
 @pytest.mark.parametrize("attempt", [
     "benign", "failing", "collection-error", "oversized-output"])
 def test_arbitrary_python_attempts_stop_before_any_child_execution(tmp_path, attempt):
@@ -107,8 +101,6 @@ def test_arbitrary_python_attempts_stop_before_any_child_execution(tmp_path, att
     assert result["execution_containment"] == REQUIREMENT
     assert result["does_not_prove"] == [LIMIT]
     assert "receipt_ref" not in result and not (root / "receipts").exists()
-
-
 def test_candidate_junit_parser_and_oracle_dispatch_are_unreachable(tmp_path, monkeypatch):
     root, candidate, context, first, second = _fixture(tmp_path, "benign")
     monkeypatch.setattr(oracle_module, "_pytest_canonical", lambda *_:
@@ -121,8 +113,6 @@ def test_candidate_junit_parser_and_oracle_dispatch_are_unreachable(tmp_path, mo
         first.close(); second.close()
     assert result["unverifiable_reason"] == REASON
     assert "receipt_ref" not in result and not (root / "receipts").exists()
-
-
 def test_python_refusal_does_not_even_resolve_or_open_candidate(tmp_path):
     """Candidate path admission before refusal would already grant a host read."""
     class UnreadablePath(type(Path())):
@@ -139,21 +129,15 @@ def test_python_refusal_does_not_even_resolve_or_open_candidate(tmp_path):
         "candidate_ref": "never-read.py", "raw_artifact_refs": ["never-read.py"],
         "timeout_seconds": 15,
     }
-
     result = run_journey_check(_journey(), "claim-root", "code", candidate, context)
-
     assert result["unverifiable_reason"] == REASON
     assert result["oracle_calls_consumed"] == 0 and "receipt_ref" not in result
-
-
 def test_retired_prepared_pytest_entry_refuses_before_using_inputs():
     entries = [lambda: verify_prepared(None, [], None, []),
                lambda: oracle_module.PytestOracle().verify_prepared([], None, [])]
     for entry in entries:
         with pytest.raises(ExecutionInputProtectionUnavailable, match=REASON):
             entry()
-
-
 def test_an_unadmitted_python_run_cannot_be_packed_as_fail_or_pass(tmp_path):
     root, candidate, context, first, second = _fixture(tmp_path, "failing")
     try:
@@ -171,8 +155,6 @@ def test_an_unadmitted_python_run_cannot_be_packed_as_fail_or_pass(tmp_path):
         pack_journey_packet(packet, journey=journey, artifact_root=root)
     assert not packet.exists()
     assert verify_journey_packet(packet)["verdict"] == "UNVERIFIABLE"
-
-
 def test_check_grant_binds_server_owned_artifact_root(tmp_path):
     """Changing the granted root reference must block rather than redirect."""
     service, genesis = check_service(tmp_path)
@@ -187,21 +169,38 @@ def test_check_grant_binds_server_owned_artifact_root(tmp_path):
     with pytest.raises(JourneyStoreError, match="IDEMPOTENCY_MISMATCH"):
         service.request(command)
     assert check_events(tmp_path) == before
-
-
-def test_operation_ref_rejects_distinct_request_before_append(tmp_path):
-    """A second request ID must not create a second lifecycle for one operation."""
+@pytest.mark.parametrize("consumed", (False, True))
+def test_request_only_retry_closes_without_duplicate_or_grant_reburn(
+        tmp_path, monkeypatch, consumed):
+    """A crash-only request is safely closed without re-burning its exact grant."""
     service, genesis = check_service(tmp_path)
-    started = service.request(check_command(
-        tmp_path, service, genesis.event_head_sha256))
-    before = check_events(tmp_path)
-    distinct = check_command(
-        tmp_path, service, started.event_head_sha256, request_id="check-distinct")
+    command = check_command(tmp_path, service, genesis.event_head_sha256)
+    def crash(point):
+        if point == "after_check_requested": raise RuntimeError("crash")
+    service.journey._fault_injector = crash
+    with pytest.raises(JourneyStoreError, match="STORE_COMMIT_FAILED"):
+        service.request(command)
+    assert [event["event_type"] for event in check_events(tmp_path)[1:]] == [
+        "check_requested"]
+    if consumed:
+        service.journey.grants.consume(command.grant_ref, command.grant_request,
+                                       now=CHECK_NOW)
+    second = JourneyCheckService(journey=JourneyService(
+        owner_ref=OWNER, store=JourneyStore(tmp_path),
+        grants=GrantStore(tmp_path, clock=lambda: CHECK_NOW), clock=lambda: CHECK_NOW))
+    monkeypatch.setattr(second.journey.grants, "consume", lambda *args, **kwargs:
+                        pytest.fail("retry attempted another grant burn"))
+    replay = second.request(command)
+    events = check_events(tmp_path)
+    assert [event["event_type"] for event in events[1:]] == [
+        "check_requested", "check_blocked"]
+    assert events[-1]["payload"]["reason"] == "CHECK_INTERRUPTED"
+    assert second.request(command).event_sha256 == replay.event_sha256
+    conflict = check_command(tmp_path, second, replay.event_head_sha256,
+                             request_id="check-distinct")
     with pytest.raises(JourneyStoreError, match="IDEMPOTENCY_MISMATCH"):
-        service.request(distinct)
-    assert check_events(tmp_path) == before
-
-
+        second.request(conflict)
+    assert check_events(tmp_path) == events
 def test_operation_ref_rejects_cross_journey_cross_service_reuse(tmp_path):
     """Owner-wide reuse must not reveal or append another Journey's operation."""
     first, genesis = check_service(tmp_path)
@@ -224,8 +223,6 @@ def test_operation_ref_rejects_cross_journey_cross_service_reuse(tmp_path):
         second.request(reused)
     assert [event["event_type"] for event in check_events(
         tmp_path, JOURNEY_TWO)] == ["intake"]
-
-
 def test_different_operation_race_has_no_bare_request_or_second_grant_burn(
         tmp_path, monkeypatch):
     """Journey admission serializes before another request or grant burn."""
@@ -260,8 +257,6 @@ def test_different_operation_race_has_no_bare_request_or_second_grant_burn(
         "check_requested", "check_started"]
     second.journey.grants.consume(
         follower_command.grant_ref, follower_command.grant_request, now=CHECK_NOW)
-
-
 def test_cross_service_run_executes_runner_and_side_effect_once(tmp_path):
     """A follower replays the terminal without invoking its runner."""
     first, genesis = check_service(tmp_path)

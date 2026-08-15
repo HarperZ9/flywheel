@@ -9,6 +9,7 @@ from .journey_checks import (
     JourneyCheckService, OPERATION_REF_PATTERN, TERMINALS,
 )
 from .journey_store import JourneyStoreError
+from .journey_types import SHA256_PATTERN
 from .operation_grants import GrantError, GrantRequest
 
 
@@ -46,12 +47,24 @@ def _valid_recovery_start(events: list[dict], start: dict) -> bool:
 
 
 def _valid_recovery_terminal(start: dict, terminal: list[dict]) -> bool:
-    return (len(terminal) == 1 and terminal[0]["sequence"] > start["sequence"]
-            and terminal[0]["actor_id"] == start["actor_id"]
-            and terminal[0]["payload"].get("operation_ref")
+    if len(terminal) != 1:
+        return False
+    event, payload = terminal[0], terminal[0]["payload"]
+    common = {"operation_ref", "started_event_sha256"}
+    if event["event_type"] == "check_failed":
+        valid_payload = (set(payload) == common | {"reason"}
+                         and payload.get("reason") in {
+                             "CHECK_FAILED", "CHECK_INTERRUPTED"})
+    else:
+        digest = payload.get("result_sha256")
+        valid_payload = (set(payload) == common | {"result_sha256"}
+                         and type(digest) is str
+                         and SHA256_PATTERN.fullmatch(digest) is not None)
+    return (valid_payload and event["sequence"] > start["sequence"]
+            and event["actor_id"] == start["actor_id"]
+            and payload.get("operation_ref")
             == start["payload"].get("operation_ref")
-            and terminal[0]["payload"].get("started_event_sha256")
-            == start["event_sha256"])
+            and payload.get("started_event_sha256") == start["event_sha256"])
 
 
 def _valid_recovery_cancel(start: dict, cancel: dict,
