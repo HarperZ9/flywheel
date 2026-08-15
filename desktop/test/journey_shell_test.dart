@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -15,6 +16,7 @@ import 'package:flywheel_desktop/services/settings.dart';
 import 'package:flywheel_desktop/shell/flywheel_shell.dart';
 import 'package:flywheel_desktop/views/agent_view.dart';
 import 'package:flywheel_desktop/views/journey_view.dart';
+import 'package:flywheel_desktop/views/lanes_view.dart';
 import 'package:flywheel_desktop/widgets/side_rail.dart';
 
 import 'journey_controller_test.dart';
@@ -27,7 +29,8 @@ class MemorySettings extends DesktopSettings {
 }
 
 class ClosingMockClient extends MockClient {
-  ClosingMockClient() : super((_) async => http.Response('{}', 503));
+  ClosingMockClient([Future<http.Response> Function(http.Request)? handler])
+      : super(handler ?? ((_) async => http.Response('{}', 503)));
   int closes = 0;
   @override
   void close() {
@@ -37,9 +40,29 @@ class ClosingMockClient extends MockClient {
 }
 
 class CountingGatewayProcess extends GatewayProcess {
+  CountingGatewayProcess({this.startResult});
+  final Completer<String?>? startResult;
   int stops = 0;
+  int starts = 0;
+  int ownedStops = 0;
+  bool owned = false;
   @override
-  void stopIfOwned() => stops++;
+  Future<String?> start({int port = 8799}) async {
+    starts++;
+    if (startResult == null) return 'test process disabled';
+    final error = await startResult!.future;
+    owned = error == null;
+    return error;
+  }
+
+  @override
+  void stopIfOwned() {
+    stops++;
+    if (owned) {
+      owned = false;
+      ownedStops++;
+    }
+  }
 }
 
 class ShellHarness {
@@ -47,10 +70,12 @@ class ShellHarness {
     this.directory, {
     JourneyLens lens = JourneyLens.verify,
     bool seedSession = true,
+    Future<http.Response> Function(http.Request)? handler,
+    CountingGatewayProcess? gateway,
   })  : api = ScriptedJourneyApi(),
         settings = MemorySettings(),
-        transport = ClosingMockClient(),
-        process = CountingGatewayProcess() {
+        transport = ClosingMockClient(handler),
+        process = gateway ?? CountingGatewayProcess() {
     client =
         GatewayClient(baseUrl: 'https://shell.invalid', httpClient: transport);
     drafts = JourneyDraftStore(file: File('${directory.path}/drafts.json'));
@@ -97,6 +122,7 @@ void main() {
   _homeLifecycleTests();
   _restartLensTests();
   _recoveryTests();
+  _lifecycleRaceTests();
 }
 
 void _homeLifecycleTests() {
@@ -204,5 +230,56 @@ void _recoveryTests() {
     expect(find.text('engine offline'), findsOneWidget);
     expect(find.text('fact-1'), findsWidgets);
     await unmount(tester);
+  });
+}
+
+void _lifecycleRaceTests() {
+  testWidgets('successful delayed start is stopped after shell unmount',
+      (tester) async {
+    final dir = Directory.systemTemp.createTempSync('journey-start-race-');
+    addTearDown(() => dir.deleteSync(recursive: true));
+    final start = Completer<String?>();
+    final gateway = CountingGatewayProcess(startResult: start);
+    final harness = ShellHarness(dir, gateway: gateway)..replyReady();
+    await tester.pumpWidget(harness.app());
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('start engine'));
+    await tester.pump();
+    expect(gateway.starts, 1);
+    await unmount(tester);
+    start.complete(null);
+    await tester.pump();
+    expect(gateway.ownedStops, 1);
+    expect(gateway.owned, isFalse);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('delayed lane install cannot probe a disposed shell',
+      (tester) async {
+    final dir = Directory.systemTemp.createTempSync('journey-install-race-');
+    addTearDown(() => dir.deleteSync(recursive: true));
+    final install = Completer<http.Response>();
+    var probes = 0;
+    final harness = ShellHarness(dir, handler: (request) {
+      if (request.url.path == '/api/lanes/install') return install.future;
+      if (request.url.path == '/api/lanes' && request.url.hasQuery) probes++;
+      return Future.value(http.Response('{}', 503));
+    })
+      ..replyReady();
+    await tester.pumpWidget(harness.app());
+    await tester.pumpAndSettle();
+    final rail = tester.widget<SideRail>(find.byType(SideRail));
+    rail.onSelect(
+        rail.destinations.indexWhere((item) => item.label == 'Lanes'));
+    await tester.pump();
+    final lanes = tester.widget<LanesView>(find.byType(LanesView));
+    final pending = lanes.onInstall!('mneme');
+    await tester.pump();
+    await unmount(tester);
+    install.complete(http.Response('{"installed":true}', 200));
+    await pending;
+    await tester.pump();
+    expect(probes, 0);
+    expect(tester.takeException(), isNull);
   });
 }

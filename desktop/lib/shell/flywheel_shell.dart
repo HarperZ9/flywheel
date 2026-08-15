@@ -144,7 +144,11 @@ class _FlywheelShellState extends State<FlywheelShell> {
   Future<void> _startEngine() async {
     setState(() => _statusMessage = 'starting engine…');
     final error = await _dependencies.gateway.start();
-    if (error != null && mounted) {
+    if (!mounted) {
+      if (error == null) _dependencies.gateway.stopIfOwned();
+      return;
+    }
+    if (error != null) {
       setState(() {
         _startError = error;
         _statusMessage = 'engine offline';
@@ -156,6 +160,7 @@ class _FlywheelShellState extends State<FlywheelShell> {
   }
 
   Future<void> _probeLanes() async {
+    if (!mounted) return;
     setState(() => _statusMessage = 'probing lanes…');
     try {
       final roster = await _dependencies.client.laneRoster(probe: true);
@@ -163,12 +168,12 @@ class _FlywheelShellState extends State<FlywheelShell> {
     } catch (error) {
       if (mounted) setState(() => _statusMessage = 'probe failed: $error');
     }
-    unawaited(_poll());
+    if (mounted) unawaited(_poll());
   }
 
   Future<Map<String, dynamic>> _installLane(String name) async {
     final result = await _dependencies.client.installLane(name);
-    unawaited(_probeLanes());
+    if (mounted) unawaited(_probeLanes());
     return result;
   }
 
