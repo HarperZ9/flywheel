@@ -25,8 +25,6 @@ enum JourneyOperationState {
   invalidResponse
 }
 
-enum JourneyLens { rescue, diagnose, verify, invalidResponse }
-
 JourneyStage _stage(Object? raw, String field, List<ParseIssue> issues) {
   for (final value in JourneyStage.values) {
     if (value != JourneyStage.invalidResponse && value.name == raw) {
@@ -62,23 +60,17 @@ JourneyLens? _lens(Object? raw, List<ParseIssue> issues) {
   return JourneyLens.invalidResponse;
 }
 
-List<T> _records<T>(Object? raw, String field, List<ParseIssue> issues,
-    T Function(Map<String, Object?>, String) build) {
-  if (raw is! List || raw.any((item) => item is! Map<String, Object?>)) {
-    addParseIssue(issues, field, raw);
-    return const [];
-  }
-  return List.unmodifiable([
-    for (var index = 0; index < raw.length; index++)
-      build(raw[index] as Map<String, Object?>, '$field[$index]'),
-  ]);
-}
-
 Map<String, EvidenceVerdict> _verdicts(
     Object? raw, Map<String, String> rawValues, List<ParseIssue> issues) {
-  if (raw is! Map || raw.keys.any((key) => key is! String)) {
+  if (raw is! Map) {
     addParseIssue(issues, 'verdicts', raw);
     return const {};
+  }
+  for (final key in raw.keys) {
+    if (key is! String || !isSafePublicText(key)) {
+      addParseIssue(issues, 'verdicts.key', key);
+      return const {};
+    }
   }
   final parsed = <String, EvidenceVerdict>{};
   for (final entry in raw.entries) {
@@ -92,36 +84,32 @@ Map<String, EvidenceVerdict> _verdicts(
 Map<String, String>? _conclusion(Object? raw, List<ParseIssue> issues) {
   if (raw == null) return null;
   if (raw is! Map ||
-      raw.keys.any((key) => key is! String) ||
       raw.values.any((value) => value is! String || !isSafePublicText(value)) ||
       raw.keys.any((key) => key != 'summary' && key != 'does_not_prove')) {
     addParseIssue(issues, 'conclusion', raw);
     return null;
   }
-  return Map.unmodifiable({
-    for (final entry in raw.entries) entry.key as String: entry.value as String
-  });
+  return Map<String, String>.unmodifiable(raw);
 }
 
 class JourneyNextAction extends DefensiveModel {
   final String actionId, kind, description;
   final List<String> basisRefs;
-  const JourneyNextAction(this.actionId, this.kind, this.description,
-      this.basisRefs, List<ParseIssue> parseIssues)
-      : super(parseIssues);
+  JourneyNextAction._(this.actionId, this.kind, this.description,
+      this.basisRefs, super.parseIssues);
   factory JourneyNextAction.fromJson(Map<String, Object?> json, String field) {
     final issues = <ParseIssue>[];
-    return JourneyNextAction(
+    return JourneyNextAction._(
         readText(json, 'action_id', issues),
         readText(json, 'kind', issues),
         readText(json, 'description', issues),
         readStringList(json['basis_refs'], '$field.basis_refs', issues),
-        List.unmodifiable(issues));
+        issues);
   }
 }
 
 class JourneyProjection extends DefensiveModel {
-  final String schema, journeyRef, eventHeadSha256, rawStage, detail;
+  final String journeyRef, eventHeadSha256, rawStage, detail;
   final List<String> factIds, claimIds;
   final List<JourneyCheck> checks;
   final Map<String, EvidenceVerdict> verdicts;
@@ -131,9 +119,8 @@ class JourneyProjection extends DefensiveModel {
   final Map<String, String>? conclusion;
   final List<JourneyNextAction> nextActions;
   final JourneyLens? lens;
-  const JourneyProjection(
-      {required this.schema,
-      required this.journeyRef,
+  JourneyProjection._(
+      {required this.journeyRef,
       required this.eventHeadSha256,
       required this.factIds,
       required this.claimIds,
@@ -154,16 +141,17 @@ class JourneyProjection extends DefensiveModel {
     expectSchema(json, 'flywheel.evidence-journey-projection/v2', issues);
     final rawVerdicts = <String, String>{};
     final checks =
-        _records(json['checks'], 'checks', issues, JourneyCheck.fromJson);
-    final missing = _records(json['missing_evidence'], 'missing_evidence',
-        issues, JourneyMissingEvidence.fromJson);
-    final actions = _records(json['next_actions'], 'next_actions', issues,
+        readRecords(json['checks'], 'checks', issues, JourneyCheck.fromJson);
+    final missing = readRecords(
+        json['missing_evidence'],
+        'missing_evidence',
+        issues,
+        (json, field) => readJourneyMissingEvidence(json, field, issues));
+    final actions = readRecords(json['next_actions'], 'next_actions', issues,
         JourneyNextAction.fromJson);
     issues.addAll(checks.expand((item) => item.parseIssues));
-    issues.addAll(missing.expand((item) => item.parseIssues));
     issues.addAll(actions.expand((item) => item.parseIssues));
-    return JourneyProjection(
-        schema: safeRawValue(json['schema']) ?? '',
+    return JourneyProjection._(
         journeyRef: readText(json, 'journey_ref', issues, pattern: _journeyRef),
         eventHeadSha256:
             readText(json, 'event_head_sha256', issues, pattern: sha256Pattern),
@@ -179,7 +167,7 @@ class JourneyProjection extends DefensiveModel {
         nextActions: actions,
         detail: readDetail(json, 'detail', issues),
         lens: _lens(json['lens'], issues),
-        parseIssues: List.unmodifiable(issues));
+        parseIssues: issues);
   }
   bool sameEvidenceAs(JourneyProjection other) =>
       !invalidResponse &&
@@ -189,22 +177,48 @@ class JourneyProjection extends DefensiveModel {
       sameList(claimIds, other.claimIds, (a, b) => a == b) &&
       sameList(checks, other.checks, (a, b) => a.sameEvidenceAs(b)) &&
       sameStringMap(rawVerdicts, other.rawVerdicts) &&
-      sameList(missingEvidence, other.missingEvidence,
-          (a, b) => a.sameEvidenceAs(b)) &&
+      sameList(missingEvidence, other.missingEvidence, sameMissingEvidence) &&
       rawStage == other.rawStage &&
-      sameNullableStringMap(conclusion, other.conclusion);
+      sameOptionalMap(conclusion, other.conclusion);
 }
 
-class JourneySummary extends DefensiveModel {
-  final JourneyProjection projection;
-  JourneySummary._(this.projection) : super(projection.parseIssues);
-  factory JourneySummary.fromJson(Map<String, Object?> json) =>
-      JourneySummary._(JourneyProjection.fromJson(json));
-  String get journeyRef => projection.journeyRef;
-  String get eventHeadSha256 => projection.eventHeadSha256;
-  JourneyStage get stage => projection.stage;
-  bool sameEvidenceAs(JourneyProjection other) =>
-      projection.sameEvidenceAs(other);
+typedef JourneySummary = JourneyProjection;
+
+class JourneyListResult extends DefensiveModel {
+  final List<JourneySummary> journeys;
+  JourneyListResult._(this.journeys, super.parseIssues);
+  factory JourneyListResult.fromJson(Map<String, Object?> json) {
+    final issues = <ParseIssue>[];
+    expectSchema(json, 'flywheel.evidence-journey-list/v2', issues);
+    final journeys = readRecords(json['journeys'], 'journeys', issues,
+        (item, _) => JourneySummary.fromJson(item));
+    issues.addAll(journeys.expand((item) => item.parseIssues));
+    return JourneyListResult._(journeys, issues);
+  }
+}
+
+class JourneyCancelResult extends DefensiveModel {
+  final String operationRef, eventHeadSha256, terminalEventRef;
+  final String? rawOperationState;
+  final JourneyOperationState operationState;
+  JourneyCancelResult._(
+      this.operationRef,
+      this.operationState,
+      this.rawOperationState,
+      this.eventHeadSha256,
+      this.terminalEventRef,
+      super.parseIssues);
+  factory JourneyCancelResult.fromJson(Map<String, Object?> json) {
+    final issues = <ParseIssue>[];
+    final rawState = json['state'];
+    return JourneyCancelResult._(
+        readText(json, 'operation_ref', issues, pattern: operationRefPattern),
+        _operationState(rawState, 'state', issues),
+        safeRawValue(rawState),
+        readText(json, 'event_head_sha256', issues, pattern: sha256Pattern),
+        readText(json, 'terminal_event_ref', issues, pattern: sha256Pattern),
+        issues);
+  }
 }
 
 class JourneyMutationAck extends DefensiveModel {
@@ -212,7 +226,7 @@ class JourneyMutationAck extends DefensiveModel {
   final bool idempotentReplay;
   final String? operationRef, rawOperationState;
   final JourneyOperationState? operationState;
-  const JourneyMutationAck(
+  JourneyMutationAck._(
       this.journeyRef,
       this.eventHeadSha256,
       this.eventSha256,
@@ -221,77 +235,66 @@ class JourneyMutationAck extends DefensiveModel {
       this.operationRef,
       this.operationState,
       this.rawOperationState,
-      List<ParseIssue> parseIssues)
-      : super(parseIssues);
+      super.parseIssues);
   factory JourneyMutationAck.fromJson(Map<String, Object?> json) {
     final issues = <ParseIssue>[];
     expectSchema(json, 'flywheel.evidence-journey-mutation-ack/v2', issues);
     final operation = readText(json, 'operation_ref', issues,
         optional: true, pattern: operationRefPattern);
     final rawState = json['state'];
-    return JourneyMutationAck(
+    return JourneyMutationAck._(
         readText(json, 'journey_ref', issues, pattern: _journeyRef),
         readText(json, 'event_head_sha256', issues, pattern: sha256Pattern),
         readText(json, 'event_sha256', issues, pattern: sha256Pattern),
         readText(json, 'projection_sha256', issues, pattern: sha256Pattern),
-        readBool(json, 'idempotent_replay', issues),
+        readValue<bool>(json, 'idempotent_replay', issues, false),
         operation.isEmpty ? null : operation,
         rawState == null ? null : _operationState(rawState, 'state', issues),
         safeRawValue(rawState),
-        List.unmodifiable(issues));
+        issues);
   }
 }
 
 class JourneyExportResult extends DefensiveModel {
-  final String journeyRef,
-      sourceEventHeadSha256,
-      finalEventHeadSha256,
-      finalProjectionSha256,
-      packetRef,
-      packetDigest;
-  final ReceiptState structuralVerdict,
-      authenticityVerdict,
-      rehashResistanceVerdict;
+  final (String, String, String, String, String, String) _refs;
+  final (ReceiptState, ReceiptState, ReceiptState) _verdicts;
   final bool idempotentReplay;
   final List<String> doesNotProve;
-  const JourneyExportResult(
-      this.journeyRef,
-      this.sourceEventHeadSha256,
-      this.finalEventHeadSha256,
-      this.finalProjectionSha256,
-      this.packetRef,
-      this.packetDigest,
-      this.structuralVerdict,
-      this.authenticityVerdict,
-      this.rehashResistanceVerdict,
-      this.idempotentReplay,
-      this.doesNotProve,
-      List<ParseIssue> parseIssues)
-      : super(parseIssues);
+  JourneyExportResult._(this._refs, this._verdicts, this.idempotentReplay,
+      this.doesNotProve, super.parseIssues);
+  String get journeyRef => _refs.$1;
+  String get sourceEventHeadSha256 => _refs.$2;
+  String get finalEventHeadSha256 => _refs.$3;
+  String get finalProjectionSha256 => _refs.$4;
+  String get packetRef => _refs.$5;
+  String get packetDigest => _refs.$6;
+  ReceiptState get structuralVerdict => _verdicts.$1;
+  ReceiptState get authenticityVerdict => _verdicts.$2;
+  ReceiptState get rehashResistanceVerdict => _verdicts.$3;
   factory JourneyExportResult.fromJson(Map<String, Object?> json) {
     final issues = <ParseIssue>[];
     expectSchema(json, 'flywheel.evidence-journey-export/v2', issues);
     if (json['profile'] != 'flywheel.evidence-journey-custody/v2') {
       addParseIssue(issues, 'profile', json['profile']);
     }
-    return JourneyExportResult(
-        readText(json, 'journey_ref', issues, pattern: _journeyRef),
-        readText(json, 'source_event_head_sha256', issues,
-            pattern: sha256Pattern),
-        readText(json, 'final_event_head_sha256', issues,
-            pattern: sha256Pattern),
-        readText(json, 'final_projection_sha256', issues,
-            pattern: sha256Pattern),
-        readText(json, 'packet_ref', issues),
-        readText(json, 'packet_digest', issues, pattern: sha256Pattern),
-        parseReceiptState(
-            json['structural_verdict'], 'structural_verdict', issues),
-        parseReceiptState(
-            json['authenticity_verdict'], 'authenticity_verdict', issues),
-        parseReceiptState(json['rehash_resistance_verdict'],
-            'rehash_resistance_verdict', issues),
-        readBool(json, 'idempotent_replay', issues),
+    return JourneyExportResult._((
+      readText(json, 'journey_ref', issues, pattern: _journeyRef),
+      readText(json, 'source_event_head_sha256', issues,
+          pattern: sha256Pattern),
+      readText(json, 'final_event_head_sha256', issues, pattern: sha256Pattern),
+      readText(json, 'final_projection_sha256', issues, pattern: sha256Pattern),
+      readText(json, 'packet_ref', issues),
+      readText(json, 'packet_digest', issues, pattern: sha256Pattern),
+    ), (
+      parseReceiptState(
+          json['structural_verdict'], 'structural_verdict', issues),
+      parseReceiptState(
+          json['authenticity_verdict'], 'authenticity_verdict', issues),
+      parseReceiptState(json['rehash_resistance_verdict'],
+          'rehash_resistance_verdict', issues),
+    ),
+        readValue<bool>(json, 'idempotent_replay', issues, false),
         readStringList(json['does_not_prove'], 'does_not_prove', issues),
-        List.unmodifiable(issues));
+        issues);
   }
 }

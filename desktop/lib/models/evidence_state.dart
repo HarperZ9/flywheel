@@ -2,7 +2,8 @@ typedef ParseIssue = ({String field, String? rawValue});
 
 abstract class DefensiveModel {
   final List<ParseIssue> parseIssues;
-  const DefensiveModel(this.parseIssues);
+  DefensiveModel(List<ParseIssue> parseIssues)
+      : parseIssues = List.unmodifiable(parseIssues);
   bool get invalidResponse => parseIssues.isNotEmpty;
   bool sameList<T>(List<T> left, List<T> right, bool Function(T, T) same) {
     if (left.length != right.length) return false;
@@ -15,8 +16,7 @@ abstract class DefensiveModel {
   bool sameStringMap(Map<String, String> left, Map<String, String> right) =>
       left.length == right.length &&
       left.entries.every((entry) => right[entry.key] == entry.value);
-  bool sameNullableStringMap(
-          Map<String, String>? left, Map<String, String>? right) =>
+  bool sameOptionalMap(Map<String, String>? left, Map<String, String>? right) =>
       left == null
           ? right == null
           : right != null && sameStringMap(left, right);
@@ -29,7 +29,9 @@ final _privatePath = RegExp(r'(?:^|[\s=(\[{,:;])/(?!/)[^\s]+|/'
     r'Applications|Volumes|dev|proc|sys|run)(?:/|$)');
 final _fileUri = RegExp(r'(?<![A-Za-z0-9+.-])file:', caseSensitive: false);
 final _secretValue = RegExp(
-    r'(^[A-Za-z0-9_+/=-]{32,}$|-----BEGIN [A-Z ]*PRIVATE KEY-----|\bAKIA[0-9A-Z]{16}\b|\bgh[pousr]_[A-Za-z0-9]{30,}\b|\bsk-(?:live|proj|ant)[A-Za-z0-9_-]{10,}\b|\bxox[baprs]-[A-Za-z0-9-]{10,}\b|\b(?:secret|password|passwd|api_key|access_key)\s*[:=]\s*["\x27]?[A-Za-z0-9/+_-]{12,})',
+    r'(-----BEGIN [A-Z ]*PRIVATE KEY-----|\bAKIA[0-9A-Z]{16}\b|\bgh[pousr]_[A-Za-z0-9]{30,}\b|\bsk-(?:live|proj|ant)[A-Za-z0-9_-]{10,}\b|\bxox[baprs]-[A-Za-z0-9-]{10,}\b)');
+final _assignedSecret = RegExp(
+    r'\b(?:secret|password|passwd|api_key|access_key)\s*[:=]\s*["\x27]?[A-Za-z0-9/+_-]{12,}',
     caseSensitive: false);
 final proposalRefPattern = RegExp(r'^prp_[0-9a-f]{32}$');
 final grantRefPattern = RegExp(r'^gnt_[0-9a-f]{32}$');
@@ -40,7 +42,8 @@ bool isSafePublicText(String value) =>
     !_uncPath.hasMatch(value) &&
     !_privatePath.hasMatch(value) &&
     !_fileUri.hasMatch(value) &&
-    !_secretValue.hasMatch(value);
+    !_secretValue.hasMatch(value) &&
+    !_assignedSecret.hasMatch(value);
 String? safeRawValue(Object? raw) {
   if (raw == null) return null;
   if (raw is String) return isSafePublicText(raw) ? raw : '[redacted]';
@@ -82,19 +85,12 @@ String readDetail(
   return fallback;
 }
 
-int readInt(Map<String, Object?> json, String field, List<ParseIssue> issues) {
+T readValue<T>(Map<String, Object?> json, String field, List<ParseIssue> issues,
+    T fallback) {
   final raw = json[field];
-  if (raw is int) return raw;
+  if (raw is T) return raw;
   addParseIssue(issues, field, raw);
-  return 0;
-}
-
-bool readBool(
-    Map<String, Object?> json, String field, List<ParseIssue> issues) {
-  final raw = json[field];
-  if (raw is bool) return raw;
-  addParseIssue(issues, field, raw);
-  return false;
+  return fallback;
 }
 
 List<String> readStringList(
@@ -105,6 +101,18 @@ List<String> readStringList(
     return const [];
   }
   return List<String>.unmodifiable(raw);
+}
+
+List<T> readRecords<T>(Object? raw, String field, List<ParseIssue> issues,
+    T Function(Map<String, Object?>, String) build) {
+  if (raw is! List || raw.any((item) => item is! Map<String, Object?>)) {
+    addParseIssue(issues, field, raw);
+    return const [];
+  }
+  return List.unmodifiable([
+    for (var index = 0; index < raw.length; index++)
+      build(raw[index] as Map<String, Object?>, '$field[$index]'),
+  ]);
 }
 
 enum ReceiptState {
@@ -135,6 +143,8 @@ ReceiptState parseReceiptState(
 
 enum EvidenceVerdict { pass, fail, undecided, unverifiable, invalidResponse }
 
+enum JourneyLens { rescue, diagnose, verify, invalidResponse }
+
 EvidenceVerdict parseEvidenceVerdict(
     Object? raw, String field, List<ParseIssue> issues) {
   const values = {
@@ -156,25 +166,26 @@ class JourneyCheck extends DefensiveModel {
   final List<String> receiptRefs;
   final ReceiptState receiptState;
   final int numerator, denominator;
-  const JourneyCheck({
+  JourneyCheck({
     required this.checkId,
     required this.claimId,
     required this.verdict,
     required this.rawVerdict,
-    required this.receiptRefs,
+    required List<String> receiptRefs,
     required this.receiptState,
     required this.rawReceiptState,
     required this.numerator,
     required this.denominator,
     required this.doesNotProve,
     required List<ParseIssue> parseIssues,
-  }) : super(parseIssues);
+  })  : receiptRefs = List.unmodifiable(receiptRefs),
+        super(parseIssues);
   factory JourneyCheck.fromJson(Map<String, Object?> json, String field) {
     final issues = <ParseIssue>[];
     final verdictField = '$field.verdict';
     final receiptField = '$field.receipt_state';
-    final numerator = readInt(json, 'numerator', issues);
-    final denominator = readInt(json, 'denominator', issues);
+    final numerator = readValue<int>(json, 'numerator', issues, 0);
+    final denominator = readValue<int>(json, 'denominator', issues, 0);
     if (numerator < 0 || denominator < numerator) {
       addParseIssue(issues, '$field.denominator', json['denominator']);
     }
@@ -191,7 +202,7 @@ class JourneyCheck extends DefensiveModel {
       numerator: numerator,
       denominator: denominator,
       doesNotProve: readText(json, 'does_not_prove', issues),
-      parseIssues: List.unmodifiable(issues),
+      parseIssues: issues,
     );
   }
   bool sameEvidenceAs(JourneyCheck other) =>
@@ -207,46 +218,37 @@ class JourneyCheck extends DefensiveModel {
       doesNotProve == other.doesNotProve;
 }
 
-class JourneyMissingEvidence extends DefensiveModel {
+class JourneyMissingEvidence {
   final String kind, id;
   final List<String> receiptRefs;
-  const JourneyMissingEvidence(
-      {required this.kind,
-      required this.id,
-      required this.receiptRefs,
-      required List<ParseIssue> parseIssues})
-      : super(parseIssues);
-  factory JourneyMissingEvidence.fromJson(
-      Map<String, Object?> json, String field) {
-    final issues = <ParseIssue>[];
-    return JourneyMissingEvidence(
-      kind: readText(json, 'kind', issues),
-      id: readText(json, 'id', issues),
-      receiptRefs:
-          readStringList(json['receipt_refs'], '$field.receipt_refs', issues),
-      parseIssues: List.unmodifiable(issues),
-    );
-  }
-  bool sameEvidenceAs(JourneyMissingEvidence other) =>
-      !invalidResponse &&
-      !other.invalidResponse &&
-      kind == other.kind &&
-      id == other.id &&
-      sameList(receiptRefs, other.receiptRefs, (a, b) => a == b);
+  JourneyMissingEvidence._(this.kind, this.id, this.receiptRefs);
 }
+
+JourneyMissingEvidence readJourneyMissingEvidence(
+        Map<String, Object?> json, String field, List<ParseIssue> issues) =>
+    JourneyMissingEvidence._(
+        readText(json, 'kind', issues),
+        readText(json, 'id', issues),
+        readStringList(json['receipt_refs'], '$field.receipt_refs', issues));
+bool sameMissingEvidence(
+        JourneyMissingEvidence left, JourneyMissingEvidence right) =>
+    left.kind == right.kind &&
+    left.id == right.id &&
+    left.receiptRefs.length == right.receiptRefs.length &&
+    left.receiptRefs.indexed
+        .every((entry) => entry.$2 == right.receiptRefs[entry.$1]);
 
 class GrantProposal extends DefensiveModel {
   final String proposalRef, plannedGrantRef, action, operationSha256, expiresAt;
   final String? operationRef;
-  const GrantProposal(
+  GrantProposal(
       this.proposalRef,
       this.plannedGrantRef,
       this.action,
       this.operationSha256,
       this.expiresAt,
       this.operationRef,
-      List<ParseIssue> parseIssues)
-      : super(parseIssues);
+      super.parseIssues);
   factory GrantProposal.fromJson(Map<String, Object?> json) {
     final issues = <ParseIssue>[];
     expectSchema(json, 'flywheel.grant-proposal/v1', issues);
@@ -259,41 +261,38 @@ class GrantProposal extends DefensiveModel {
         readText(json, 'operation_sha256', issues, pattern: sha256Pattern),
         readText(json, 'expires_at', issues),
         operation.isEmpty ? null : operation,
-        List.unmodifiable(issues));
+        issues);
   }
 }
 
 class GrantRef extends DefensiveModel {
   final String grantRef, expiresAt;
-  const GrantRef(this.grantRef, this.expiresAt, List<ParseIssue> parseIssues)
-      : super(parseIssues);
+  GrantRef(this.grantRef, this.expiresAt, super.parseIssues);
   factory GrantRef.fromJson(Map<String, Object?> json) {
     final issues = <ParseIssue>[];
     expectSchema(json, 'flywheel.operation-grant-approval/v1', issues);
     return GrantRef(
         readText(json, 'grant_ref', issues, pattern: grantRefPattern),
         readText(json, 'expires_at', issues),
-        List.unmodifiable(issues));
+        issues);
   }
 }
 
 class JourneyFailure extends DefensiveModel {
   final String code, detail;
-  const JourneyFailure(this.code, this.detail, List<ParseIssue> parseIssues)
-      : super(parseIssues);
+  JourneyFailure(this.code, this.detail, super.parseIssues);
   factory JourneyFailure.fromJson(Map<String, Object?> json) {
     final issues = <ParseIssue>[];
     expectSchema(json, 'flywheel.evidence-transport-error/v1', issues);
     final raw = json['error'];
     if (raw is! Map<String, Object?>) {
       addParseIssue(issues, 'error', raw);
-      return JourneyFailure(
-          '', 'Response detail unavailable', List.unmodifiable(issues));
+      return JourneyFailure('', 'Response detail unavailable', issues);
     }
     return JourneyFailure(
         readText(raw, 'code', issues),
         readDetail(raw, 'message', issues,
             fallback: 'Response detail unavailable'),
-        List.unmodifiable(issues));
+        issues);
   }
 }
