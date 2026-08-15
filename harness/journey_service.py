@@ -142,6 +142,34 @@ class JourneyService:
         except JourneyLockBusy:
             raise JourneyStoreError("STORE_BUSY") from None
 
+    @contextmanager
+    def _owner_operation_guard(self, operation_ref: str):
+        owner_dir = (self.store.state_root / "journeys" / "v2" / "owners"
+                     / self.owner_ref)
+        name = f".operation-{canonical_sha256(operation_ref)}.lock"
+        try:
+            with ExclusiveJourneyLock.acquire(
+                    owner_dir / name, self.store.lock_timeout_s):
+                yield
+        except JourneyLockBusy:
+            raise JourneyStoreError("STORE_BUSY") from None
+
+    def _operation_history(self, operation_ref: str, event_types,
+                           journey_ref: str | None = None) -> list[dict]:
+        matches = []
+        for projection in self.list():
+            events = self._events(projection["journey_ref"])
+            found = [event for event in events if event["event_type"] in event_types
+                     and event["payload"].get("operation_ref") == operation_ref]
+            if found:
+                matches.append(found)
+        if len(matches) > 1:
+            raise JourneyStoreError("INVALID_TRANSITION")
+        if (matches and journey_ref is not None
+                and matches[0][0]["journey_ref"] != journey_ref):
+            raise JourneyStoreError("IDEMPOTENCY_MISMATCH")
+        return matches[0] if matches else []
+
     def _validate_lifecycle_selector(self, journey_ref: str,
                                      expected_event_head: str) -> None:
         self.store._validate_selector(self.owner_ref, journey_ref)

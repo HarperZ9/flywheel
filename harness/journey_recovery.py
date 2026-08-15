@@ -10,6 +10,9 @@ from .journey_store import (
     HEAD_SCHEMA, REQUEST_SCHEMA, JourneyStore, JourneyStoreError, MutationCommand,
 )
 from .journey_types import validate_event
+from .operation_supervisor import (
+    _valid_recovery_grammar, _valid_recovery_terminal,
+)
 
 
 INDEX_SCHEMA = "flywheel.evidence-journey-index/v2"
@@ -166,49 +169,9 @@ def _rebuild_index(root: Path) -> int:
 
 
 _TERMINALS = frozenset(("check_completed", "check_failed", "check_cancelled"))
-_OP_PREFIX = "op_"
-
-
 def _event_ref(root: Path, journey_dir: Path, event: dict) -> str:
     name = f"{event['sequence']:020d}-{event['event_sha256']}.json"
     return (journey_dir / "events" / name).relative_to(root).as_posix()
-
-
-def _valid_started(events: list[dict], start: dict) -> bool:
-    payload = start["payload"]
-    if set(payload) != {
-            "operation_ref", "claim_id", "oracle_id", "request_event_sha256"}:
-        return False
-    operation = payload.get("operation_ref")
-    if (type(operation) is not str or not operation.startswith(_OP_PREFIX)
-            or len(operation) != 35
-            or any(character not in "0123456789abcdef" for character in operation[3:])
-            or type(payload.get("claim_id")) is not str or not payload["claim_id"]
-            or type(payload.get("oracle_id")) is not str or not payload["oracle_id"]):
-        return False
-    requests = [event for event in events
-                if event["event_type"] == "check_requested"
-                and event["event_sha256"] == payload["request_event_sha256"]]
-    if len(requests) != 1:
-        return False
-    requested = requests[0]
-    return (requested["sequence"] < start["sequence"]
-            and requested["actor_id"] == start["actor_id"]
-            and set(requested["payload"]) == {
-                "operation_ref", "claim_id", "oracle_id"}
-            and requested["payload"] == {
-                "operation_ref": operation, "claim_id": payload["claim_id"],
-                "oracle_id": payload["oracle_id"]})
-
-
-def _valid_terminal(start: dict, terminal: list[dict]) -> bool:
-    return (len(terminal) == 1
-            and terminal[0]["sequence"] > start["sequence"]
-            and terminal[0]["actor_id"] == start["actor_id"]
-            and terminal[0]["payload"].get("operation_ref")
-            == start["payload"].get("operation_ref")
-            and terminal[0]["payload"].get("started_event_sha256")
-            == start["event_sha256"])
 
 
 def _close_journey_starts(root: Path, owner_dir: Path, journey_dir: Path,
@@ -234,11 +197,12 @@ def _close_journey_starts(root: Path, owner_dir: Path, journey_dir: Path,
         terminal = [event for event in related if event["event_type"] in _TERMINALS]
         authoritative = (start["actor_id"] == owner_dir.name
                          and start["journey_ref"] == journey_dir.name)
-        if terminal and _valid_terminal(start, terminal) and len(duplicate) == 1:
+        grammar = _valid_recovery_grammar(events, start, terminal)
+        if (authoritative and grammar and terminal
+                and _valid_recovery_terminal(start, terminal)):
             continue
-        if (terminal or not authoritative or len(duplicate) != 1
-                or not _valid_started(events, start)):
-            refs = [_event_ref(root, journey_dir, event) for event in duplicate or [start]]
+        if terminal or not authoritative or not grammar:
+            refs = [_event_ref(root, journey_dir, event) for event in related or [start]]
             diagnostics.append(_diagnostic(root, journey_dir, refs, now))
             continue
         try:

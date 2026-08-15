@@ -1,6 +1,8 @@
 import json
 from pathlib import PurePosixPath
 
+import pytest
+
 from harness.evidence_json import canonical_bytes, canonical_sha256
 from harness.journey_recovery import recover_store
 from harness.journey_projection import reduce_events
@@ -73,9 +75,13 @@ def _append(root, head, request_id, operation, payload):
 
 
 def _started(root, head, *, duplicate=False):
-    requested = _append(root, head, "check-request", "check_requested", {
-        "operation_ref": OPERATION, "claim_id": "claim-root", "oracle_id": "ml",
-    })
+    requested_payload = {
+        "operation_ref": OPERATION, "client_request_id": "check-request",
+        "command_sha256": "a" * 64, "claim_id": "claim-root", "oracle_id": "ml",
+    }
+    requested = _append(
+        root, head, "check-request", "check_requested", requested_payload,
+    )
     payload = {
         "operation_ref": OPERATION, "claim_id": "claim-root", "oracle_id": "ml",
         "request_event_sha256": requested.event_sha256,
@@ -184,10 +190,16 @@ def test_unadmitted_ambiguous_start_like_files_are_left_unchanged(tmp_path):
     assert [path.read_bytes() for path in paths] == before
 
 
-def test_recovery_closes_one_authoritative_abandoned_check_start(tmp_path):
+@pytest.mark.parametrize("with_cancel", (False, True))
+def test_recovery_closes_one_authoritative_abandoned_check_start(tmp_path, with_cancel):
     """Leaving an admitted start open after restart would invent a running process."""
     genesis = _genesis(tmp_path)
     started = _started(tmp_path, genesis.event_head_sha256)
+    if with_cancel:
+        _append(tmp_path, started.event_head_sha256, "valid-cancel", "cancel_requested", {
+            "operation_ref": OPERATION, "started_event_sha256": started.event_sha256,
+            "timeout_s": 5.0,
+        })
 
     result = recover_store(tmp_path, now=NOW)
 
@@ -216,6 +228,44 @@ def test_recovery_does_not_choose_between_duplicate_authoritative_starts(tmp_pat
     assert result["starts_closed"] is False and result["diagnostic_refs"]
     assert not any(event["event_type"] in {
         "check_completed", "check_failed", "check_cancelled"} for event in events)
+
+
+@pytest.mark.parametrize("case", (
+    "extra_request", "block", "malformed_cancel", "unrelated_event",
+))
+def test_recovery_diagnoses_incomplete_operation_grammar(tmp_path, case):
+    """Extra or malformed related events must never be repaired into a terminal."""
+    genesis = _genesis(tmp_path)
+    started = _started(tmp_path, genesis.event_head_sha256)
+    payloads = {
+        "extra_request": ("check_requested", {
+            "operation_ref": OPERATION, "client_request_id": "other",
+            "command_sha256": "b" * 64, "claim_id": "claim-root",
+            "oracle_id": "ml",
+        }),
+        "block": ("check_blocked", {
+            "operation_ref": OPERATION, "reason": "ORACLE_UNAVAILABLE",
+            "request_event_sha256": started.event_sha256,
+        }),
+        "malformed_cancel": ("cancel_requested", {
+            "operation_ref": OPERATION,
+            "started_event_sha256": started.event_sha256, "timeout_s": "5",
+        }),
+        "unrelated_event": ("record_next_action", {
+            "operation_ref": OPERATION, "next_actions": [],
+        }),
+    }
+    event_type, payload = payloads[case]
+    _append(tmp_path, started.event_head_sha256, f"ambiguous-{case}",
+            event_type, payload)
+
+    result = recover_store(tmp_path, now=NOW)
+
+    events = [json.loads(path.read_bytes()) for path in sorted(
+        (_journey_dir(tmp_path) / "events").glob("*.json"))]
+    terminals = {"check_completed", "check_failed", "check_cancelled"}
+    assert result["starts_closed"] is False and result["diagnostic_refs"]
+    assert not any(event["event_type"] in terminals for event in events)
 
 
 def test_newer_schema_recovery_opens_read_only_without_rewriting_anything(tmp_path):

@@ -1,26 +1,19 @@
+from dataclasses import replace
 import json
-
 import pytest
-
 from harness.evidence_json import canonical_sha256
 from harness.journey_checks import CheckCommand, JourneyCheckService
 from harness.journey_service import JourneyService
 from harness.journey_store import JourneyStore, MutationCommand
-from harness.operation_grants import GrantRequest, GrantStore
+from harness.operation_grants import GrantError, GrantRequest, GrantStore
 from harness.operation_supervisor import OperationSupervisor
-
-
 NOW = "2026-08-14T12:00:00Z"
 OWNER = "owner_bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
 JOURNEY = "jrn_bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
 OPERATION = "op_bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
-
-
 def _events(root):
     directory = root / "journeys" / "v2" / "owners" / OWNER / JOURNEY / "events"
     return [json.loads(path.read_bytes()) for path in sorted(directory.glob("*.json"))]
-
-
 def _check_service(root):
     store = JourneyStore(root)
     genesis = store.create(MutationCommand(
@@ -34,16 +27,18 @@ def _check_service(root):
         owner_ref=OWNER, store=store, grants=grants, clock=lambda: NOW,
     )
     service = JourneyCheckService(journey=journey)
-    candidate = root / "candidate.json"
+    artifact_root_ref, candidate_ref = "artifacts", "candidate.json"
     context = {
         "task_id": "cancel-v1", "prompt": "Check measurement",
-        "oracle_cmd": "measurement_gate", "candidate_ref": candidate.name,
-        "raw_artifact_refs": [candidate.name], "timeout_seconds": 10,
+        "oracle_cmd": "measurement_gate", "candidate_ref": candidate_ref,
+        "raw_artifact_refs": [candidate_ref], "timeout_seconds": 10,
     }
     legacy = {"schema": "controlled-test-journey/v1", "claim": "claim-root"}
     arguments = {
+        "client_request_id": "check-start", "operation_ref": OPERATION,
         "journey_sha256": canonical_sha256(legacy), "claim_id": "claim-root",
-        "oracle_id": "ml", "candidate_ref": candidate.name,
+        "oracle_id": "ml", "artifact_root_ref": artifact_root_ref,
+        "candidate_ref": candidate_ref,
         "context_sha256": canonical_sha256(context),
     }
     operation = {
@@ -56,7 +51,8 @@ def _check_service(root):
         expected_event_head=genesis.event_head_sha256,
         operation_sha256=canonical_sha256(operation), tool="journey.check",
         arguments_sha256=canonical_sha256(arguments), scopes=("journey:check",),
-        data_refs=(candidate.name,), expires_at="2026-08-14T12:02:00Z",
+        data_refs=(artifact_root_ref, candidate_ref),
+        expires_at="2026-08-14T12:02:00Z",
         nonce="start",
     )
     grant_ref = grants.issue(request, approved=True)["grant_ref"]
@@ -65,8 +61,8 @@ def _check_service(root):
         expected_event_head=genesis.event_head_sha256,
         client_request_id="check-start", operation_ref=OPERATION,
         grant_ref=grant_ref, grant_request=request, journey=legacy,
-        claim_id="claim-root", oracle_id="ml", candidate=candidate,
-        context=context, artifact_root=root,
+        claim_id="claim-root", oracle_id="ml", candidate_ref=candidate_ref,
+        context=context, artifact_root_ref=artifact_root_ref,
     )
     started = service.request(command)
     return service, grants, started
@@ -273,5 +269,32 @@ def test_cancel_timeout_is_positive_and_bounded_before_state_change(tmp_path, ti
             client_request_id="cancel-1", operation_ref=OPERATION,
             grant_ref=grant_ref, timeout_s=timeout_s,
         )
+    assert process.signal_calls == 0
+    assert "cancel_requested" not in [event["event_type"] for event in _events(tmp_path)]
+
+
+def test_cancel_rejects_grant_without_exact_scope_before_signal(tmp_path):
+    """A digest-matching grant with the wrong scope cannot authorize cancellation."""
+    service, grants, started = _check_service(tmp_path)
+    request, _ = _cancel_request(grants, started.event_head_sha256)
+    wrong = replace(request, scopes=("journey:read",))
+    grant_ref = grants.issue(wrong, approved=True)["grant_ref"]
+    process = Process()
+    supervisor = OperationSupervisor(
+        check_service=service, grant_request=lambda _ref: wrong,
+    )
+    supervisor.register_owned(
+        owner_ref=OWNER, journey_ref=JOURNEY,
+        operation_ref=OPERATION, process=process,
+    )
+
+    with pytest.raises(GrantError, match="PERMISSION_DENIED"):
+        supervisor.request_cancel(
+            owner_ref=OWNER, journey_ref=JOURNEY,
+            expected_event_head=started.event_head_sha256,
+            client_request_id="cancel-1", operation_ref=OPERATION,
+            grant_ref=grant_ref, timeout_s=5.0,
+        )
+
     assert process.signal_calls == 0
     assert "cancel_requested" not in [event["event_type"] for event in _events(tmp_path)]
