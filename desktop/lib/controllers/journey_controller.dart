@@ -70,19 +70,19 @@ final class JourneyController extends ChangeNotifier {
       _custody.saveSession(ref, lens);
       _view.ready(result, ref: ref, lens: lens);
       _desired = null;
-      if (exact) {
-        _acks.take(ack);
-      } else if (ack != null) {
-        await _refreshAck(ack, intent.lens);
-      }
+      if (exact) _acks.take(ack);
+      if (!exact && ack != null) await _refreshAck(ack, intent.lens);
+    } on JourneyLocalStoreException catch (error) {
+      if (intent != _desired) return;
+      _desired = null;
+      final ack = _acks.forRef(ref);
+      _view.local(error.failure, acknowledged: ack != null && _acks.take(ack));
     } on Object catch (error) {
       if (intent != _desired) return;
       _desired = null;
       final ack = _acks.forRef(ref);
       if (ack != null && _acks.take(ack)) {
         _view.refreshFailed(_fail(error));
-      } else if (error is JourneyLocalStoreException) {
-        _view.local(error.failure);
       } else {
         _view.remote(_fail(error));
       }
@@ -247,7 +247,7 @@ final class JourneyController extends ChangeNotifier {
   }
 
   Future<void> _refreshAck(_Ack token, JourneyLens fallback) async {
-    final desired = _desired;
+    final (selectionEpoch, desired) = (_epoch, _desired);
     if (desired?.ref == token.ref) return;
     final active = (desired?.ref ?? _view.ref) == token.ref;
     final lens = active ? _view.lens : fallback;
@@ -258,7 +258,7 @@ final class JourneyController extends ChangeNotifier {
     } on Object catch (e) {
       failure = _fail(e);
     }
-    if (desired != _desired || !_acks.take(token) || !active) return;
+    if (selectionEpoch != _epoch || !_acks.take(token) || !active) return;
     if (failure != null) return _view.refreshFailed(failure);
     _view.ready(refreshed!);
   }

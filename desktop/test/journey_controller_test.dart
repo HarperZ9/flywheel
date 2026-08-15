@@ -8,7 +8,6 @@ import 'package:flywheel_desktop/services/journey_draft_store.dart';
 import 'package:flywheel_desktop/services/journey_session_store.dart';
 
 const journeyA = 'jrn_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
-const journeyB = 'jrn_bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
 const headA =
     'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
 const headB =
@@ -18,6 +17,7 @@ const headC =
 const operationA = 'op_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
 const proposalA = 'prp_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
 const grantA = 'gnt_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+const resumeA = 'resume:$journeyA:verify';
 JourneyProjection projection({
   String journeyRef = journeyA,
   String head = headA,
@@ -83,35 +83,43 @@ JourneyApiException failure(String code) =>
 JourneyDraft draft(String kind,
     {String ref = 'dft_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
     String? journeyRef = journeyA,
-    String? baseHead}) {
-  final payload = switch (kind) {
-    'create' => <Object?, Object?>{
-        'client_request_id': 'request-create',
-        'goal': 'Preserve evidence',
-        'intake_ref': 'intake.json',
-      },
-    'append' => <Object?, Object?>{
-        'client_request_id': 'request-append',
-        'command': {'kind': 'record_fact', 'fact_ref': 'fact.json'},
-      },
-    _ => <Object?, Object?>{
-        'client_request_id': 'request-check',
-        'claim_id': 'claim-1',
-        'oracle_id': 'code',
-        'candidate_ref': 'candidate.py',
-        'context_ref': 'context.json',
-      },
-  };
+    String? baseHead,
+    Map<Object?, Object?>? payload}) {
+  final value = payload ??
+      switch (kind) {
+        'create' => <Object?, Object?>{
+            'client_request_id': 'request-create',
+            'goal': 'Preserve evidence',
+            'intake_ref': 'intake.json',
+          },
+        'append' => <Object?, Object?>{
+            'client_request_id': 'request-append',
+            'command': {'kind': 'record_fact', 'fact_ref': 'fact.json'},
+          },
+        _ => <Object?, Object?>{
+            'client_request_id': 'request-check',
+            'claim_id': 'claim-1',
+            'oracle_id': 'code',
+            'candidate_ref': 'candidate.py',
+            'context_ref': 'context.json',
+          },
+      };
   return JourneyDraft(
     draftRef: ref,
     journeyRef: kind == 'create' ? null : journeyRef,
     baseEventHeadSha256: baseHead,
     kind: kind,
-    payload: payload,
+    payload: value,
     state: JourneyDraftState.dirty,
     updatedAt: DateTime.utc(2026, 8, 15),
   );
 }
+
+JourneyDraft edited(JourneyDraft item) =>
+    draft('append', ref: item.draftRef, baseHead: headA, payload: {
+      ...item.payload,
+      'command': {'kind': 'changed'}
+    });
 
 class ScriptedJourneyApi implements JourneyApi {
   final Map<String, List<Object>> replies = {};
@@ -142,39 +150,32 @@ class ScriptedJourneyApi implements JourneyApi {
     return value as T;
   }
 
+  Future<T> _record<T, R>(String name, List<R> records, R request) {
+    records.add(request);
+    return _take(name);
+  }
+
   @override
   Future<GrantProposal> prepareGrant(GrantIntent intent) => _take('prepare');
   @override
   Future<GrantRef> approveGrantOnce(String proposalRef) => _take('approve');
   @override
-  Future<JourneyMutationAck> create(JourneyCreateRequest request) {
-    createRequests.add(request);
-    return _take('create');
-  }
-
+  Future<JourneyMutationAck> create(JourneyCreateRequest request) =>
+      _record('create', createRequests, request);
   @override
   Future<List<JourneySummary>> list() => _take('list');
   @override
   Future<JourneyProjection> resume(String ref, JourneyLens lens) =>
       _take('resume:$ref:${lens.name}');
   @override
-  Future<JourneyMutationAck> append(JourneyAppendRequest request) {
-    appendRequests.add(request);
-    return _take('append');
-  }
-
+  Future<JourneyMutationAck> append(JourneyAppendRequest request) =>
+      _record('append', appendRequests, request);
   @override
-  Future<JourneyMutationAck> check(JourneyCheckRequest request) {
-    checkRequests.add(request);
-    return _take('check');
-  }
-
+  Future<JourneyMutationAck> check(JourneyCheckRequest request) =>
+      _record('check', checkRequests, request);
   @override
-  Future<JourneyCancelResult> cancel(JourneyCancelRequest request) {
-    cancelRequests.add(request);
-    return _take('cancel');
-  }
-
+  Future<JourneyCancelResult> cancel(JourneyCancelRequest request) =>
+      _record('cancel', cancelRequests, request);
   @override
   Future<JourneyExportResult> export(JourneyExportRequest request) =>
       throw UnimplementedError();
@@ -208,16 +209,16 @@ class ControllerHarness {
         'cancel' => controller.requestCancel(operationA),
         _ => controller.submitAppend(item),
       };
-
   void dispose() => directory.deleteSync(recursive: true);
 }
 
-Future<ControllerHarness> readyHarness(ScriptedJourneyApi api) async {
-  final harness = ControllerHarness(api);
+Future<ControllerHarness> readyHarness(ScriptedJourneyApi api,
+    {JourneyBeforeRename? rename}) async {
+  final harness = ControllerHarness(api, sessionBeforeRename: rename);
   addTearDown(harness.dispose);
   harness.sessions
       .save(JourneySession(journeyRef: journeyA, lens: JourneyLens.verify));
-  api.reply('resume:$journeyA:verify', projection());
+  api.reply(resumeA, projection());
   api.reply('list', <JourneySummary>[projection()]);
   await harness.controller.initialize();
   api.calls.clear();
@@ -240,10 +241,9 @@ void _contractTests() {
     final item = harness.save(draft('append'));
     api
       ..mutation('append', acknowledgement())
-      ..reply('resume:$journeyA:verify', projection(head: headB));
+      ..reply(resumeA, projection(head: headB));
     await harness.controller.submitAppend(item);
-    expect(
-        api.calls, ['prepare', 'approve', 'append', 'resume:$journeyA:verify']);
+    expect(api.calls, ['prepare', 'approve', 'append', resumeA]);
     final request = api.appendRequests.single;
     expect(request.clientRequestId, 'request-append');
     expect(request.expectedEventHead, headA);
@@ -260,7 +260,7 @@ void _mutationTests() {
     api
       ..mutation('check', acknowledgement(operationRef: operationA),
           operationRef: operationA)
-      ..reply('resume:$journeyA:verify', projection(head: headB));
+      ..reply(resumeA, projection(head: headB));
     await harness.controller.runCheck(JourneyCheckDraft.fromDraft(item));
     final request = api.checkRequests.single;
     expect([request.clientRequestId, request.claimId, request.oracleId],
@@ -280,7 +280,7 @@ void _mutationTests() {
       ..reply('prepare', blocked.future)
       ..reply('approve', approval())
       ..reply('append', acknowledgement())
-      ..reply('resume:$journeyA:verify', projection(head: headB))
+      ..reply(resumeA, projection(head: headB))
       ..reply('prepare', failure('AUTH_REQUIRED'));
     final one = harness.controller.submitAppend(first);
     final two = harness.controller.submitAppend(second);
