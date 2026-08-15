@@ -102,7 +102,7 @@ void _admissionTests() {
         ChatMessage(role: 'assistant', text: 'answer'));
     expect(decision, (disposition: PromptDisposition.retained, visible: false));
     expect(conversation.messages, isEmpty);
-    expect(drafts.load().single.state, ChatDraftState.retained);
+    expect(drafts.load().single.state, ChatDraftState.admittedPendingHistory);
   });
 
   test('a malformed-only chat response produces no admission event', () async {

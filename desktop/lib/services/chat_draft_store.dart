@@ -25,13 +25,21 @@ final _secretKey = RegExp(r'^(?:api_keys?|access_tokens?|refresh_tokens?|'
     r'cookies?|environments?|envs?|passwds?|access_keys?|.+_(?:api_keys?|'
     r'private_keys?|passwords?|secrets?|credentials?|tokens?))$');
 
-enum ChatDraftState { dirty, submitting, retained }
+enum ChatDraftState {
+  dirty,
+  submitting,
+  retained,
+  admittedPendingHistory,
+  admittedPendingCleanup,
+}
 
 extension on ChatDraftState {
   String get wire => switch (this) {
         ChatDraftState.dirty => 'dirty',
         ChatDraftState.submitting => 'submitting',
         ChatDraftState.retained => 'retained',
+        ChatDraftState.admittedPendingHistory => 'admitted_pending_history',
+        ChatDraftState.admittedPendingCleanup => 'admitted_pending_cleanup',
       };
 }
 
@@ -105,12 +113,13 @@ final class ChatDraftStore {
       _require(root['schema'] == _schema && root['drafts'] is List);
       final drafts = <ChatDraft>[];
       final draftRefs = <String>{};
-      final conversationRefs = <String>{};
+      final activeConversations = <String>{};
       for (final raw in root['drafts'] as List) {
         _require(raw is Map<String, dynamic>);
         final draft = _decode(raw as Map<String, dynamic>);
         _require(draftRefs.add(draft.draftRef));
-        _require(conversationRefs.add(draft.conversationRef));
+        _require(_isAdmittedState(draft.state) ||
+            activeConversations.add(draft.conversationRef));
         drafts.add(draft);
       }
       return List.unmodifiable(drafts);
@@ -120,11 +129,7 @@ final class ChatDraftStore {
   }
 
   void save(ChatDraft draft) {
-    final drafts = load()
-        .where((item) =>
-            item.draftRef != draft.draftRef &&
-            item.conversationRef != draft.conversationRef)
-        .toList()
+    final drafts = load().where((item) => !_superseded(item, draft)).toList()
       ..add(draft)
       ..sort((a, b) => a.draftRef.compareTo(b.draftRef));
     _write(drafts);
@@ -220,6 +225,15 @@ ChatDraftState _parseState(Object? raw) {
     if (state.wire == raw) return state;
   }
   throw const ChatDraftStoreException(ChatDraftFailure.invalidRecord);
+}
+
+bool _isAdmittedState(ChatDraftState state) => state.index >= 3;
+bool _superseded(ChatDraft stored, ChatDraft incoming) {
+  if (stored.draftRef == incoming.draftRef) return true;
+  if (stored.conversationRef != incoming.conversationRef) return false;
+  if (!_isAdmittedState(incoming.state)) return !_isAdmittedState(stored.state);
+  return !_isAdmittedState(stored.state) &&
+      stored.textSha256 == incoming.textSha256;
 }
 
 String _textSha(String text) => sha256.convert(utf8.encode(text)).toString();

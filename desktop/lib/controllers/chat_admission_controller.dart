@@ -18,25 +18,20 @@ final class ChatAdmissionController {
   final ChatDraftStore draftStore;
   final conversations = <Conversation>[];
   final _drafts = <String, ChatDraft>{};
-  final _admitted = <String>{};
+  final _admitted = <String, ChatDraft>{};
   var _sequence = 0;
 
   void restore() {
     conversations.addAll(historyStore.load());
     try {
       for (final draft in draftStore.load()) {
-        _drafts[draft.conversationRef] = draft;
-        final matches = conversations
-            .where((item) => item.id == draft.conversationRef)
-            .firstOrNull;
-        if (matches == null) {
-          conversations.add(Conversation(id: draft.conversationRef));
+        if (_isAdmittedState(draft.state)) {
+          _admitted[_admissionKey(draft)] = draft;
+        } else {
+          _drafts[draft.conversationRef] = draft;
         }
-        if (draft.state == ChatDraftState.submitting &&
-            matches?.messages.any((message) =>
-                    message.isUser && message.text == draft.text) ==
-                true) {
-          _admitted.add(_admissionKey(draft));
+        if (!conversations.any((item) => item.id == draft.conversationRef)) {
+          conversations.add(Conversation(id: draft.conversationRef));
         }
       }
     } on ChatDraftStoreException {/* corrupt local bytes are not promoted */}
@@ -47,7 +42,9 @@ final class ChatAdmissionController {
       Conversation(id: 'c${_sequence++}', model: model);
 
   String draftText(Conversation conversation) =>
-      _drafts[conversation.id]?.text ?? '';
+      _drafts[conversation.id]?.text ??
+      _admittedForConversation(conversation.id)?.text ??
+      '';
 
   bool persistHistory() => historyStore.save(conversations);
 
@@ -73,7 +70,7 @@ final class ChatAdmissionController {
   ChatDraft? prepare(Conversation conversation, String text) {
     try {
       final draft = _draft(conversation, text, ChatDraftState.submitting);
-      if (_admitted.contains(_admissionKey(draft))) return null;
+      if (_admitted.containsKey(_admissionKey(draft))) return null;
       draftStore.save(draft);
       _drafts[conversation.id] = draft;
       return draft;
@@ -84,6 +81,7 @@ final class ChatAdmissionController {
 
   ChatAdmissionDecision acceptFirst(
       Conversation conversation, ChatDraft submitted, ChatMessage assistant) {
+    final priorTitle = conversation.title;
     conversation.messages.addAll([
       ChatMessage(role: 'user', text: submitted.text),
       assistant,
@@ -92,12 +90,12 @@ final class ChatAdmissionController {
     if (!historyStore.save(conversations)) {
       conversation.messages.removeRange(
           conversation.messages.length - 2, conversation.messages.length);
-      retain(submitted);
-      _admitted.add(_admissionKey(submitted));
+      conversation.title = priorTitle;
+      _markAdmitted(submitted, ChatDraftState.admittedPendingHistory);
       return (disposition: PromptDisposition.retained, visible: false);
     }
     if (!_cleanSubmitted(submitted)) {
-      _admitted.add(_admissionKey(submitted));
+      _markAdmitted(submitted, ChatDraftState.admittedPendingCleanup);
       return (disposition: PromptDisposition.retained, visible: true);
     }
     return (disposition: PromptDisposition.accepted, visible: true);
@@ -112,6 +110,78 @@ final class ChatAdmissionController {
       draftStore.save(retained);
       _drafts[retained.conversationRef] = retained;
     } on ChatDraftStoreException {/* submitting bytes remain recoverable */}
+  }
+
+  PromptDisposition? reconcileAdmitted(Conversation conversation, String text) {
+    ChatDraft candidate;
+    try {
+      candidate = _draft(conversation, text, ChatDraftState.dirty);
+    } on ChatDraftStoreException {
+      return null;
+    }
+    final pending = _admitted[_admissionKey(candidate)];
+    if (pending == null) return null;
+    return _reconcile(conversation, pending);
+  }
+
+  PromptDisposition _reconcile(Conversation conversation, ChatDraft pending) {
+    if (pending.state == ChatDraftState.admittedPendingHistory) {
+      final priorTitle = conversation.title;
+      conversation.messages.add(ChatMessage(role: 'user', text: pending.text));
+      conversation.titleFromFirstMessage();
+      if (!historyStore.save(conversations)) {
+        conversation.messages.removeLast();
+        conversation.title = priorTitle;
+        return PromptDisposition.retained;
+      }
+      if (!_markAdmitted(pending, ChatDraftState.admittedPendingCleanup)) {
+        return PromptDisposition.retained;
+      }
+      pending = _admitted[_admissionKey(pending)]!;
+    } else if (!historyStore.save(conversations)) {
+      return PromptDisposition.retained;
+    }
+    return _cleanAdmitted(pending)
+        ? PromptDisposition.accepted
+        : PromptDisposition.retained;
+  }
+
+  bool _markAdmitted(ChatDraft submitted, ChatDraftState state) {
+    final pending = ChatDraft(
+        draftRef: _admittedReference(submitted),
+        conversationRef: submitted.conversationRef,
+        text: submitted.text,
+        state: state,
+        updatedAt: DateTime.now().toUtc());
+    final key = _admissionKey(pending);
+    _admitted[key] = pending;
+    try {
+      draftStore.save(pending);
+      final current = _drafts[pending.conversationRef];
+      if (current?.textSha256 == pending.textSha256) {
+        _drafts.remove(pending.conversationRef);
+      }
+      return true;
+    } on ChatDraftStoreException {
+      return false;
+    }
+  }
+
+  bool _cleanAdmitted(ChatDraft pending) {
+    final current = _drafts[pending.conversationRef];
+    try {
+      if (current?.textSha256 == pending.textSha256) {
+        draftStore.delete(current!.draftRef,
+            expectedTextSha256: current.textSha256);
+        _drafts.remove(pending.conversationRef);
+      }
+      draftStore.delete(pending.draftRef,
+          expectedTextSha256: pending.textSha256);
+      _admitted.remove(_admissionKey(pending));
+      return true;
+    } on ChatDraftStoreException {
+      return false;
+    }
   }
 
   ChatDraft _draft(
@@ -142,6 +212,17 @@ final class ChatAdmissionController {
       _drafts.remove(draft.conversationRef);
     } on ChatDraftStoreException {/* prior recoverable bytes remain */}
   }
+
+  ChatDraft? _admittedForConversation(String conversationRef) {
+    ChatDraft? newest;
+    for (final draft in _admitted.values) {
+      if (draft.conversationRef != conversationRef) continue;
+      if (newest == null || draft.updatedAt.isAfter(newest.updatedAt)) {
+        newest = draft;
+      }
+    }
+    return newest;
+  }
 }
 
 String _draftReference(String conversationRef) =>
@@ -149,6 +230,13 @@ String _draftReference(String conversationRef) =>
 
 String _admissionKey(ChatDraft draft) =>
     '${draft.conversationRef}:${draft.textSha256}';
+
+String _admittedReference(ChatDraft draft) =>
+    'chd_${sha256.convert(utf8.encode('admitted:${_admissionKey(draft)}')).toString().substring(0, 32)}';
+
+bool _isAdmittedState(ChatDraftState state) =>
+    state == ChatDraftState.admittedPendingHistory ||
+    state == ChatDraftState.admittedPendingCleanup;
 
 int _nextSequence(List<Conversation> conversations) {
   var next = 0;

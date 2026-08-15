@@ -1,6 +1,3 @@
-// The Chat destination's agent mode and the shared resizable split: the
-// header chips swap the chat surface for the gated tool loop, and compare's
-// two panes sit on a real draggable divider whose fraction persists.
 import 'dart:convert';
 import 'dart:io';
 
@@ -25,8 +22,10 @@ Future<void> _pump(WidgetTester tester, Widget child) => tester.pumpWidget(
 
 void main() {
   _historyTruthTests();
+  _storeBoundaryTests();
   _avatarTruthTests();
-  _oneShotAdmissionTests();
+  _historyFailureRestartTests();
+  _cleanupFailureRestartTests();
   test('a dragged split fraction is stored and read back, with a fallback', () {
     final s = DesktopSettings();
     expect(s.splitFraction('compare', 0.5), 0.5);
@@ -131,6 +130,32 @@ void _historyTruthTests() {
   });
 }
 
+void _storeBoundaryTests() {
+  test('complete envelope rejects excess bytes depth and nodes', () {
+    final directory = _temporary('chat-draft-bounds-');
+    final file = File('${directory.path}/drafts.json');
+    final store = ChatDraftStore(file: file);
+    file.writeAsStringSync('x' * 1048577);
+    expect(() => store.load(), throwsA(isA<ChatDraftStoreException>()));
+    dynamic deep = true;
+    for (var i = 0; i < 18; i++) {
+      deep = [deep];
+    }
+    file.writeAsStringSync(jsonEncode({
+      'drafts': const [],
+      'extra': deep,
+      'schema': 'flywheel.desktop-chat-drafts/v1'
+    }));
+    expect(() => store.load(), throwsA(isA<ChatDraftStoreException>()));
+    file.writeAsStringSync(jsonEncode({
+      'drafts': const [],
+      'extra': List.filled(4097, 0),
+      'schema': 'flywheel.desktop-chat-drafts/v1'
+    }));
+    expect(() => store.load(), throwsA(isA<ChatDraftStoreException>()));
+  });
+}
+
 void _avatarTruthTests() {
   testWidgets('assistant avatar is green only for typed MATCH', (tester) async {
     for (final state in const [
@@ -167,7 +192,7 @@ void _avatarTruthTests() {
   });
 }
 
-void _oneShotAdmissionTests() {
+void _historyFailureRestartTests() {
   testWidgets(
       'failed first-event history save closes admission to later frames',
       (tester) async {
@@ -194,10 +219,33 @@ void _oneShotAdmissionTests() {
     await tester.pumpAndSettle();
     expect(chatCalls, 1);
     expect(history.load(), isEmpty);
-    expect(drafts.load().single.state, ChatDraftState.retained);
+    final pendingState = drafts.load().single.state.name;
+    expect(tester.widget<TextField>(find.byType(TextField)).controller!.text,
+        'one shot');
     expect(find.text('second'), findsNothing);
+    await tester.pumpWidget(const SizedBox());
+    final resumedHistory = ChatStore(file: history.storageFile);
+    final resumedDrafts = ChatDraftStore(file: drafts.storageFile);
+    await _pumpAgent(
+        tester,
+        AgentView(
+            client: _client(_frames(['duplicate']), () => chatCalls++),
+            alive: true,
+            settings: DesktopSettings(),
+            chatStore: resumedHistory,
+            draftStore: resumedDrafts));
+    expect(tester.widget<TextField>(find.byType(TextField)).controller!.text,
+        'one shot');
+    await tester.tap(find.byTooltip('Send  (Enter)'));
+    await tester.pumpAndSettle();
+    expect((pendingState, chatCalls), ('admittedPendingHistory', 1));
+    expect(
+        resumedHistory.load().single.messages.map((m) => m.text), ['one shot']);
+    expect(resumedDrafts.load(), isEmpty);
   });
+}
 
+void _cleanupFailureRestartTests() {
   testWidgets('visible admitted digest cannot transport after cleanup failure',
       (tester) async {
     final directory = _temporary('chat-one-shot-cleanup-');
@@ -222,14 +270,28 @@ void _oneShotAdmissionTests() {
     await tester.tap(find.byTooltip('Send  (Enter)'));
     await tester.pumpAndSettle();
     expect(history.load().single.messages, hasLength(2));
-    expect(drafts.load().single.state, ChatDraftState.submitting);
+    final pendingState = drafts.load().single.state.name;
     await tester.tap(find.byTooltip('Stop'));
     await tester.pump();
-    expect(find.byTooltip('Send  (Enter)'), findsOneWidget);
+    await tester.pumpWidget(const SizedBox());
+    final resumedHistory = ChatStore(file: history.storageFile);
+    final resumedDrafts = ChatDraftStore(file: drafts.storageFile);
+    await _pumpAgent(
+        tester,
+        AgentView(
+            client: _client(_frames(['duplicate']), () => chatCalls++),
+            alive: true,
+            settings: DesktopSettings(),
+            chatStore: resumedHistory,
+            draftStore: resumedDrafts));
+    expect(tester.widget<TextField>(find.byType(TextField)).controller!.text,
+        'one admitted prompt');
     await tester.tap(find.byTooltip('Send  (Enter)'));
     await tester.pumpAndSettle();
-    expect(chatCalls, 1);
-    expect(history.load().single.messages, hasLength(2));
-    expect(drafts.load().single.state, ChatDraftState.submitting);
+    expect((pendingState, chatCalls), ('admittedPendingCleanup', 1));
+    expect(resumedHistory.load().single.messages, hasLength(2));
+    expect(resumedDrafts.load(), isEmpty);
+    expect(tester.widget<TextField>(find.byType(TextField)).controller!.text,
+        isEmpty);
   });
 }

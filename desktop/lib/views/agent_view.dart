@@ -56,7 +56,6 @@ class _AgentViewState extends State<AgentView> {
 
   bool get _busy => _admitting || _streaming;
   List<Conversation> get _conversations => _admission.conversations;
-
   @override
   void initState() {
     super.initState();
@@ -133,11 +132,14 @@ class _AgentViewState extends State<AgentView> {
   }
 
   void _draftChanged(String text) => _admission.changeDraft(_current, text);
-
   Future<PromptDisposition> _send(String text) {
-    if (_busy || _model == null) {
-      return Future.value(PromptDisposition.retained);
+    if (_busy) return Future.value(PromptDisposition.retained);
+    final reconciled = _admission.reconcileAdmitted(_current, text);
+    if (reconciled != null) {
+      setState(() {});
+      return Future.value(reconciled);
     }
+    if (_model == null) return Future.value(PromptDisposition.retained);
     final submitted = _admission.prepare(_current, text);
     if (submitted == null) return Future.value(PromptDisposition.retained);
     _beginAdmission(submitted);

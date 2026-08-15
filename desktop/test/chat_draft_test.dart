@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flywheel_desktop/client/gateway_client.dart';
+import 'package:flywheel_desktop/controllers/chat_admission_controller.dart';
 import 'package:flywheel_desktop/services/chat_draft_store.dart';
 import 'package:flywheel_desktop/services/chat_store.dart';
 import 'package:flywheel_desktop/services/settings.dart';
@@ -22,16 +23,12 @@ Directory _temp(String name) {
   return result;
 }
 
-ChatDraft _draft(String text,
-        {String draftRef = _draftRef,
-        String conversationRef = 'c0',
-        ChatDraftState state = ChatDraftState.dirty}) =>
-    ChatDraft(
-        draftRef: draftRef,
-        conversationRef: conversationRef,
-        text: text,
-        state: state,
-        updatedAt: _updated);
+ChatDraft _draft(String text) => ChatDraft(
+    draftRef: _draftRef,
+    conversationRef: 'c0',
+    text: text,
+    state: ChatDraftState.dirty,
+    updatedAt: _updated);
 
 void main() {
   _roundTripTests();
@@ -42,22 +39,31 @@ void main() {
 }
 
 void _roundTripTests() {
-  test('canonical store round-trips immutable exact text and digest', () {
+  test('canonical store keeps active and admitted custody independent', () {
     final directory = _temp('chat-draft-roundtrip-');
     final file = File('${directory.path}/drafts.json');
     final store = ChatDraftStore(file: file);
-    store.save(_draft('hello', state: ChatDraftState.submitting));
+    _writeDrafts(file, const [
+      ('a', 'c0', 'newer prompt', 'dirty'),
+      ('b', 'c0', 'old prompt', 'admitted_pending_history'),
+      ('c', 'c1', 'cleanup prompt', 'admitted_pending_cleanup'),
+    ]);
     final loaded = store.load();
-    expect(loaded, hasLength(1));
-    expect(loaded.single.text, 'hello');
-    expect(loaded.single.textSha256,
-        '2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824');
-    expect(loaded.single.state, ChatDraftState.submitting);
-    expect(loaded.single.updatedAt, _updated);
+    expect(loaded.map((draft) => draft.state.name),
+        ['dirty', 'admittedPendingHistory', 'admittedPendingCleanup']);
+    final controller = ChatAdmissionController(
+        ChatStore(file: File('${directory.path}/history.json')), store)
+      ..restore();
+    final conversation =
+        controller.conversations.singleWhere((c) => c.id == 'c0');
+    expect(controller.draftText(conversation), 'newer prompt');
+    expect(controller.prepare(conversation, 'newer prompt'), isNotNull);
+    expect(store.load().map((draft) => draft.state.name).toSet(),
+        {'submitting', 'admittedPendingHistory', 'admittedPendingCleanup'});
     expect(() => loaded.add(_draft('later')), throwsUnsupportedError);
     final raw = file.readAsStringSync();
-    expect(raw.startsWith('{"drafts":['), isTrue);
-    expect(raw.endsWith('"schema":"flywheel.desktop-chat-drafts/v1"}'), isTrue);
+    expect(raw, startsWith('{"drafts":['));
+    expect(raw, endsWith('"schema":"flywheel.desktop-chat-drafts/v1"}'));
   });
 
   test('digest delete requires the exact stored text digest', () {
@@ -70,6 +76,23 @@ void _roundTripTests() {
     store.delete(_draftRef, expectedTextSha256: store.load().single.textSha256);
     expect(store.load(), isEmpty);
   });
+}
+
+void _writeDrafts(File file, List<(String, String, String, String)> rows) {
+  file.writeAsStringSync(jsonEncode({
+    'drafts': [
+      for (final row in rows)
+        {
+          'conversation_ref': row.$2,
+          'draft_ref': 'chd_${row.$1 * 32}',
+          'state': row.$4,
+          'text': row.$3,
+          'text_sha256': _draft(row.$3).textSha256,
+          'updated_at': _updated.toIso8601String(),
+        }
+    ],
+    'schema': 'flywheel.desktop-chat-drafts/v1'
+  }));
 }
 
 void _privacyTests() {
@@ -120,30 +143,6 @@ void _corruptionTests() {
       file.writeAsStringSync(fixture);
       expect(() => store.load(), throwsA(isA<ChatDraftStoreException>()));
     }
-  });
-
-  test('complete envelope rejects excess bytes depth and nodes', () {
-    final directory = _temp('chat-draft-bounds-');
-    final file = File('${directory.path}/drafts.json');
-    final store = ChatDraftStore(file: file);
-    file.writeAsStringSync('x' * 1048577);
-    expect(() => store.load(), throwsA(isA<ChatDraftStoreException>()));
-    dynamic deep = true;
-    for (var i = 0; i < 18; i++) {
-      deep = [deep];
-    }
-    file.writeAsStringSync(jsonEncode({
-      'drafts': const [],
-      'extra': deep,
-      'schema': 'flywheel.desktop-chat-drafts/v1'
-    }));
-    expect(() => store.load(), throwsA(isA<ChatDraftStoreException>()));
-    file.writeAsStringSync(jsonEncode({
-      'drafts': const [],
-      'extra': List.filled(4097, 0),
-      'schema': 'flywheel.desktop-chat-drafts/v1'
-    }));
-    expect(() => store.load(), throwsA(isA<ChatDraftStoreException>()));
   });
 }
 
