@@ -8,6 +8,14 @@
 **Initial implementation tree:** `1c34d0039fd2f67512345abd5056bb9a4818b98b`.
 **Reviewed code-fix commit:** `94392b6d1f5faced8c8eba6fc60cd281d2611dcc`.
 **Reviewed code-fix tree:** `25c866b651626afd13d5e06bec8a28cfa7a0ebf1`.
+**Final repair commit:** `3fc52be24347c80a0bb432e0aacb764ffd840d22`.
+**Final repair tree:** `04e064c89bf93862c296c2804ce843f406ea26e8`.
+**Router integration commits:** `671bc6b2b6c2353e74b32cbc8836b017ac20926c`,
+`90543cd8feb7a8e16f92a4943f41409a42f1996a`, and
+`b641d03c41322a4c181df458a1ce39eb2ed8622d`.
+**Final combined code tree:** `f459827893a052e8823191befeaa7f24509e09e1`.
+**Repair review:** SPEC PASS and QUALITY APPROVED.
+**Router review:** SPEC PASS and QUALITY APPROVED.
 
 This record accepts the Journey-v2 event store, public transport, exact-grant
 custody export, and restart recovery. It also accepts offline clean-copy
@@ -97,6 +105,38 @@ The full suite emitted one existing Pillow deprecation warning. Its skips were
 platform or optional-checkout capability skips. No test skipped the new Journey
 packet, export transaction, recovery, route, or acceptance behavior.
 
+## Final combined acceptance update.
+
+The final repair review accepted `3fc52be24347c80a0bb432e0aacb764ffd840d22`
+with tree `04e064c89bf93862c296c2804ce843f406ea26e8`. The independent router
+integration review accepted `671bc6b2b6c2353e74b32cbc8836b017ac20926c`,
+`90543cd8feb7a8e16f92a4943f41409a42f1996a`, and
+`b641d03c41322a4c181df458a1ce39eb2ed8622d`. The final combined code tree is
+`f459827893a052e8823191befeaa7f24509e09e1`.
+
+Failure attribution closed the earlier full-suite residuals as outside the
+Journey repair slice or as router integration work. The router-stat recurrence
+was handled by the independently reviewed router commits above. The remaining
+non-Journey residuals did not recur in the final combined full-suite command.
+
+The final combined targeted slice exited 0. The final full-suite command was:
+
+```text
+python -m pytest tests/ -q -ra --basetemp C:\dev\p1final-b641d03
+```
+
+It exited 0. A separate collect-only sum reported `collected=4865`. The quiet
+output omitted an aggregate pass denominator, so this record does not infer one.
+The command explicitly reported 27 skips and one existing Pillow deprecation
+warning.
+
+The final static gates exited 0: writing, claim-language, public-instruction,
+and diff. The CLI gate exited 0 with `verdict=PASS` and `rewitness=MATCH`.
+
+The 33,439,520-byte temporary evidence root remains at
+`C:\dev\p1final-b641d03` because policy blocked recursive deletion. It is not
+tracked, not part of product evidence, and not cited here as immutable evidence.
+
 ## Durability boundary and rollback.
 
 The service serializes Journey export admission and the canonical packet target.
@@ -125,4 +165,6 @@ Checker-source drift is separate from carried structure and remains
 `UNVERIFIABLE` across versions. It contains no signed author identity and no provider trace. No provider, model,
 endpoint, network service, live Python candidate, or subprocess checker ran.
 This record does not prove Phase 2 behavior, general release readiness, package
-publication readiness, or production deployment readiness.
+publication readiness, or production deployment readiness. It does not prove
+provider, model, endpoint, network-service, push, tag, or release behavior. It
+does not prove that `C:\dev\p1final-b641d03` is durable product evidence.
