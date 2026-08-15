@@ -32,6 +32,7 @@ class CheckCommand:
     context: dict
     context_bytes_sha256: str
     artifact_root_ref: str
+    journey_sha256: str | None = None
 class CheckRunner(Protocol):
     def __call__(self, journey: dict, claim_id: str, oracle_id: str,
                  candidate: Path, context: dict, *, artifact_root: Path | None = None) -> dict: ...
@@ -173,27 +174,22 @@ class JourneyCheckService:
                 expected_event_head=command.expected_event_head,
                 operation="check", body=arguments,
             )
-            self.journey.grants.consume(
-                command.grant_ref, command.grant_request, now=self.journey.clock(),
-            )
-        except GrantError as exc:
-            return exc.code
+        except GrantError as exc: return exc.code
         entry = self.registry.entry(command.oracle_id)
-        if entry is None:
-            return "ORACLE_UNAVAILABLE"
+        if entry is None: return "ORACLE_UNAVAILABLE"
         oracle_type = entry.oracle.oracle_type
         if oracle_type == "pytest":
             try:
                 view = project_journey(command.journey, lens="verify")
                 claims = {item["claim_id"]: item for item in view["detail"]["claims"]}
                 verdict = claims[command.claim_id]["verdict"]
-            except (KeyError, TypeError, ValueError):
-                return "INVALID_JOURNEY"
+            except (KeyError, TypeError, ValueError): return "INVALID_JOURNEY"
             return unavailable_result(
                 claim_id=command.claim_id, claim_verdict_before=verdict,
             )["unverifiable_reason"]
-        if oracle_type not in self.supported_oracle_types:
-            return "UNSUPPORTED_CAPABILITY"
+        if oracle_type not in self.supported_oracle_types: return "UNSUPPORTED_CAPABILITY"
+        try: self.journey.grants.consume(command.grant_ref, command.grant_request, now=self.journey.clock())
+        except GrantError as exc: return exc.code
         return None
     def _block(self, command: CheckCommand, requested_sha: str,
                reason: str) -> MutationAck:
@@ -233,7 +229,7 @@ class JourneyCheckService:
     def _arguments(command: CheckCommand) -> dict:
         return {"client_request_id": command.client_request_id,
                 "operation_ref": command.operation_ref,
-                "journey_sha256": canonical_sha256(command.journey),
+                "journey_sha256": command.journey_sha256 or canonical_sha256(command.journey),
                 "claim_id": command.claim_id, "oracle_id": command.oracle_id,
                 "artifact_root_ref": command.artifact_root_ref,
                 "candidate_ref": command.candidate_ref,
@@ -283,6 +279,7 @@ class JourneyCheckService:
                 or not command.client_request_id
                 or type(command.claim_id) is not str or not command.claim_id
                 or type(command.oracle_id) is not str or not command.oracle_id
+                or (command.journey_sha256 is not None and re.fullmatch(r"[0-9a-f]{64}\Z", command.journey_sha256) is None)
                 or not isinstance(command.grant_request, GrantRequest) or re.fullmatch(
                     r"[0-9a-f]{64}\Z", command.context_bytes_sha256 or "") is None):
             raise ValueError("check command is invalid")

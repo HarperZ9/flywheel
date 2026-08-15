@@ -9,7 +9,7 @@ from typing import Callable
 from .evidence_json import canonical_sha256
 from .evidence_public import (
     TransportError, error_response, exact_request, json_ref_bytes, parse_json,
-    public_metadata, public_result,
+    public_metadata, public_result, relative_ref,
 )
 from .grant_route import _artifact_root_ref, resolve_approved_grant
 from .journey_checks import CheckCommand, JourneyCheckService
@@ -88,16 +88,17 @@ def _append(req: dict, service: JourneyService, approved: dict) -> dict:
 def _check_context(req: dict, approved: dict, state_root: Path,
                    evidence_root: Path) -> tuple[dict, dict, str]:
     evidence, artifact_ref = _artifact_root_ref(state_root, evidence_root)
-    context, context_bytes = json_ref_bytes(evidence, req["context_ref"])
-    if context.get("candidate_ref") != req["candidate_ref"]:
+    context_ref, candidate_ref = relative_ref(req["context_ref"]).as_posix(), relative_ref(req["candidate_ref"]).as_posix()
+    context, context_bytes = json_ref_bytes(evidence, context_ref)
+    if context.get("candidate_ref") != candidate_ref:
         raise GrantError("PERMISSION_DENIED")
-    context = {**context, "_source_ref": req["context_ref"]}
+    context = {**context, "_source_ref": context_ref}
     public_metadata(context)
     body = approved["operation_body"]
     if (body.get("context_sha256") != canonical_sha256(context)
             or body.get("context_bytes_sha256") != hashlib.sha256(context_bytes).hexdigest()
             or body.get("artifact_root_ref") != artifact_ref
-            or body.get("candidate_ref") != req["candidate_ref"]):
+            or body.get("candidate_ref") != candidate_ref):
         raise GrantError("PERMISSION_DENIED")
     return context, body, artifact_ref
 
@@ -107,7 +108,9 @@ def _check(req: dict, service: JourneyService, approved: dict,
     context, body, artifact_ref = _check_context(
         req, approved, state_root, evidence_root)
     journey = service.resume(req["journey_ref"])
-    if body.get("journey_sha256") != canonical_sha256(journey):
+    checks = JourneyCheckService(journey=service)
+    if (body.get("journey_sha256") != canonical_sha256(journey)
+            and not checks._history(approved["operation_ref"], req["journey_ref"])):
         raise GrantError("PERMISSION_DENIED")
     command = CheckCommand(
         owner_ref=service.owner_ref, journey_ref=req["journey_ref"],
@@ -116,10 +119,9 @@ def _check(req: dict, service: JourneyService, approved: dict,
         operation_ref=approved["operation_ref"], grant_ref=req["grant_ref"],
         grant_request=approved["grant_request"], journey=journey,
         claim_id=req["claim_id"], oracle_id=req["oracle_id"],
-        candidate_ref=req["candidate_ref"], context=context,
+        candidate_ref=body["candidate_ref"], context=context,
         context_bytes_sha256=body["context_bytes_sha256"],
-        artifact_root_ref=artifact_ref)
-    checks = JourneyCheckService(journey=service)
+        artifact_root_ref=artifact_ref, journey_sha256=body["journey_sha256"])
     ack = checks.request(command)
     return _ack(ack, operation_ref=approved["operation_ref"],
                 state=checks.state(approved["operation_ref"]))
@@ -157,8 +159,9 @@ def _mapped_error(exc: Exception) -> tuple[dict, int]:
     if isinstance(exc, TransportError):
         return error_response(exc)
     if isinstance(exc, GrantError):
+        status = 503 if exc.code == "STORE_BUSY" else 403
         return error_response(TransportError(
-            exc.code, "operation approval is unavailable", 403))
+            exc.code, "operation approval is unavailable", status))
     if isinstance(exc, JourneyStoreError):
         statuses = {"JOURNEY_NOT_FOUND": 404, "HEAD_CONFLICT": 409,
             "IDEMPOTENCY_MISMATCH": 409, "INVALID_TRANSITION": 409,

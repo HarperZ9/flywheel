@@ -23,7 +23,7 @@ def _require_supported_version(root: Path) -> None:
     try: value = strict_load_json(path.read_bytes())
     except (OSError, TypeError, ValueError): raise JourneyStoreError("STORE_COMMIT_FAILED") from None
     if set(value) != {"schema", "version"} or value.get("schema") != VERSION_SCHEMA: raise JourneyStoreError("STORE_COMMIT_FAILED")
-    if value.get("version") != SUPPORTED_STORE_VERSION: raise JourneyStoreError("VERSION_MISMATCH")
+    if type(value.get("version")) is not int or value["version"] != SUPPORTED_STORE_VERSION: raise JourneyStoreError("VERSION_MISMATCH")
 @dataclass(frozen=True)
 class MutationCommand:
     owner_ref: str; journey_ref: str | None

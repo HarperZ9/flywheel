@@ -15,7 +15,7 @@ from .journey_export import plan_export_grant
 from .journey_lock import ExclusiveJourneyLock, JourneyLockBusy, fsync_directory
 from .journey_service import JourneyService
 from .journey_store import JourneyStore, JourneyStoreError
-from .journey_types import STAGES
+from .journey_types import JOURNEY_REF_PATTERN, SHA256_PATTERN, STAGES
 from .operation_grants import (
     GrantError, GrantRequest, GrantStore, _parse_time, _secure_owner_only, _utc_text,
     _validate_owner_ref)
@@ -69,7 +69,7 @@ def _client_item(kind: str, item: object) -> dict:
         for name in ("claim_id", "statement", "does_not_prove"): public_text(item, name)
         return {**item, "verdict": "UNDECIDED", "receipt_refs": ["receipts/pending"],
                 "receipt_state": "missing"}
-    if item["kind"] not in _ACTION_KINDS:
+    if type(item["kind"]) is not str or item["kind"] not in _ACTION_KINDS:
         raise TransportError("INVALID_TRANSITION", "Journey command is invalid", 422)
     for name in ("action_id", "description"): public_text(item, name)
     return item
@@ -119,23 +119,23 @@ def _check_operation(req: dict, service: JourneyService, state_root: Path,
     return body, (artifact_ref, candidate_ref)
 def _operation(action: str, req: dict, owner_ref: str, state_root: Path,
                evidence_root: Path, clock: Callable[[], str], operation_ref: str | None):
-    service = _service(owner_ref, state_root, clock)
     if action == "create":
         intake = json_ref(admitted_root(evidence_root), req["intake_ref"])
-        body = {"legacy_label": None, "goal": public_text(req, "goal"),
-                "intake": intake, "occurred_at": clock()}
+        body = {"legacy_label": None, "goal": public_text(req, "goal"), "intake": intake, "occurred_at": clock()}
         return "intake", body, "journey.create", ("journey:create",), (req["intake_ref"],)
+    if action == "append" and (type(req["command"]) is not dict or req["command"].get("type") != "advance_stage"):
+        operation, payload = _append_operation(req, None)
+        body = {"occurred_at": clock(), "payload": payload}; return operation, body, "journey.append", ("journey:append",), ()
+    service = _service(owner_ref, state_root, clock)
     if action == "append":
         operation, payload = _append_operation(req, service)
         body = {"occurred_at": clock(), "payload": payload}
         return operation, body, "journey.append", ("journey:append",), ()
     if action == "check":
-        body, refs = _check_operation(
-            req, service, state_root, evidence_root, operation_ref)
+        body, refs = _check_operation(req, service, state_root, evidence_root, operation_ref)
         return "check", body, "journey.check", ("journey:check",), refs
     if action == "cancel":
-        if (type(req["operation_ref"]) is not str
-                or OPERATION_REF_PATTERN.fullmatch(req["operation_ref"]) is None):
+        if type(req["operation_ref"]) is not str or OPERATION_REF_PATTERN.fullmatch(req["operation_ref"]) is None:
             raise TransportError("INVALID_TRANSITION", "operation is unavailable", 422)
         body = {"client_request_id": req["client_request_id"],
                 "operation_ref": req["operation_ref"], "timeout_s": 5.0}
@@ -209,8 +209,9 @@ def _replace(path: Path, value: dict) -> None:
 def _prepare(action: str, req: dict, owner_ref: str, state_root: Path,
              evidence_root: Path, clock: Callable[[], str]) -> dict:
     public_metadata(req)
-    state = Path(state_root); new_state = not state.exists(); state.mkdir(parents=True, exist_ok=True)
-    if new_state: fsync_directory(state.parent)
+    if type(req["client_request_id"]) is not str or not req["client_request_id"].strip(): raise TransportError("INVALID_TRANSITION", "Journey command is invalid", 422)
+    if action != "create" and (type(req["journey_ref"]) is not str or JOURNEY_REF_PATTERN.fullmatch(req["journey_ref"]) is None or type(req["expected_event_head"]) is not str or SHA256_PATTERN.fullmatch(req["expected_event_head"]) is None):
+        raise TransportError("INVALID_TRANSITION", "Journey command is invalid", 422)
     suffix = secrets.token_hex(16)
     proposal_ref, grant_ref = f"prp_{suffix}", f"gnt_{suffix}"
     operation_ref = f"op_{secrets.token_hex(16)}" if action == "check" else None
@@ -223,6 +224,7 @@ def _prepare(action: str, req: dict, owner_ref: str, state_root: Path,
         "expected_event_head": head, "operation": operation, "body": body}
     grant = GrantRequest(owner_ref, selector, head, canonical_sha256(operation_value),
         tool, canonical_sha256(body), scopes, refs, expiry, proposal_ref)
+    GrantStore._validate_request(grant, allow_default_expiry=False)
     grant_value = asdict(grant); grant_value["scopes"], grant_value["data_refs"] = list(scopes), list(refs)
     record = {"schema": PROPOSAL_SCHEMA, "proposal_ref": proposal_ref,
         "planned_grant_ref": grant_ref, "owner_ref": owner_ref, "action": action,
@@ -261,8 +263,6 @@ def resolve_approved_grant(grant_ref: str, *, owner_ref: str, state_root: Path,
     record = _read(owner_dir, f"prp_{suffix}", owner_ref)
     if (record["planned_grant_ref"] != grant_ref or record["state"] != "approved"):
         raise GrantError("PERMISSION_REQUIRED")
-    if _parse_time(clock()) >= _parse_time(record["expires_at"]):
-        raise GrantError("APPROVAL_EXPIRED")
     return {"action": record["action"], "request": record["request"],
         "operation": record["operation"], "operation_body": record["operation_body"],
         "operation_ref": record["operation_ref"],

@@ -266,7 +266,7 @@ def test_gateway_dispatches_private_routes_with_only_authenticated_owner(
     def called(route, body, **kwargs):
         assert route == path and body == raw and kwargs["owner_ref"] == OWNER
         assert kwargs["state_root"] == handler.flywheel_home / "state"
-        assert kwargs["evidence_root"] == handler.root
+        assert kwargs["evidence_root"] == handler.flywheel_home / "state" / "artifacts"
         return {"schema": "bounded"}, 200
     monkeypatch.setattr(f"{module}.{function}", called)
     handler._post()

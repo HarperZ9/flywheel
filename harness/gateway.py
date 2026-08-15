@@ -1397,11 +1397,11 @@ class _Handler(BaseHTTPRequestHandler):
             elif p.startswith("/api/journeys/"):
                 from harness.journey_route import journey_post
                 body, code = journey_post(p, raw, owner_ref=self.owner_ref, state_root=self.flywheel_home / "state",
-                    evidence_root=self.root, clock=self.clock)
+                    evidence_root=self.flywheel_home / "state" / "artifacts", clock=self.clock)
             else:
                 from harness.grant_route import grant_post
                 body, code = grant_post(p, raw, owner_ref=self.owner_ref, state_root=self.flywheel_home / "state",
-                    evidence_root=self.root, clock=self.clock)
+                    evidence_root=self.flywheel_home / "state" / "artifacts", clock=self.clock)
             return self._json(body, code)
         if p == "/v1/chat/completions":              # OpenAI-compatible, routes to ANY provider
             length = self._content_length()

@@ -40,17 +40,30 @@ def _grant(action, body, state, evidence, owner):
     assert status == 200, approved
     return approved["grant_ref"], proposal
 
-def _mutate(action, body, state, evidence, owner):
+def _observe(log, *, action, request_id, status, result, effect):
+    log.append({"action": action, "client_request_id": request_id,
+        "grant_prepare": True, "grant_approve": True,
+        "expected_status": status,
+        "expected_error": None if status == 200 else result["error"]["code"],
+        "expected_effect": effect})
+
+def _mutate(action, body, state, evidence, owner, log=None,
+            fixture_action=None, effect=None):
     grant, proposal = _grant(action, body, state, evidence, owner)
     result, status = _post(action, {**body, "grant_ref": grant},
                            state, evidence, owner)
+    if log is not None:
+        _observe(log, action=fixture_action or action,
+            request_id=body["client_request_id"], status=status,
+            result=result, effect=effect)
     assert status == 200, result
     return result, proposal
 
-def _created_with_claim(state, evidence, owner):
+def _created_with_claim(state, evidence, owner, log):
     create = {"goal": "Accept durable restart", "intake_ref": "intake.json",
               "client_request_id": "create-1"}
-    ack, _ = _mutate("create", create, state, evidence, owner)
+    ack, _ = _mutate("create", create, state, evidence, owner, log,
+                     "create", "intake_event")
     retry_grant, _ = _grant("create", create, state, evidence, owner)
     retry, status = _post("create", {**create, "grant_ref": retry_grant},
                            state, evidence, owner)
@@ -65,18 +78,22 @@ def _created_with_claim(state, evidence, owner):
         "client_request_id": "claim-1", "command": {"type": "record_claim",
         "claim": {"claim_id": "claim-1", "statement": "Data is deterministic",
         "depends_on": [], "does_not_prove": "claim correctness"}}}
-    return _mutate("append", claim, state, evidence, owner)[0]
+    return _mutate("append", claim, state, evidence, owner, log,
+                   "record_claim", "record_claim_event")[0]
 
-def _conclude(ack, state, evidence, owner):
+def _conclude(ack, state, evidence, owner, log):
+    effects = ("stage_decomposed", "stage_preflight",
+               "stage_running", "stage_concluded")
     for index in range(4):
         body = {"journey_ref": ack["journey_ref"],
             "expected_event_head": ack["event_head_sha256"],
             "client_request_id": f"stage-{index}",
             "command": {"type": "advance_stage"}}
-        ack, _ = _mutate("append", body, state, evidence, owner)
+        ack, _ = _mutate("append", body, state, evidence, owner, log,
+                         "advance_stage", effects[index])
     return ack
 
-def _blocked_python(ack, state, evidence, owner):
+def _blocked_python(ack, state, evidence, owner, log):
     context = {"candidate_ref": "candidate.py", "task_id": "blocked-python"}
     (evidence / "python-context.json").write_text(json.dumps(context), encoding="utf-8")
     body = {"journey_ref": ack["journey_ref"],
@@ -84,7 +101,8 @@ def _blocked_python(ack, state, evidence, owner):
         "client_request_id": "check-python", "claim_id": "claim-1",
         "oracle_id": "code", "candidate_ref": "candidate.py",
         "context_ref": "python-context.json"}
-    result, _ = _mutate("check", body, state, evidence, owner)
+    result, _ = _mutate("check", body, state, evidence, owner, log,
+                        "blocked_python_check", "check_blocked")
     assert result["state"] == "blocked" and not (evidence / "candidate.py").exists()
     return result
 
@@ -96,7 +114,7 @@ class _DataRunner:
         assert candidate.name == "candidate.json" and artifact_root == candidate.parent
         return {"verdict": "UNDECIDED", "basis": "deterministic fixture"}
 
-def _data_check(ack, state, evidence, owner, monkeypatch):
+def _data_check(ack, state, evidence, owner, monkeypatch, log):
     candidate = evidence / "candidate.json"
     candidate.write_text('{"sample":1}', encoding="utf-8")
     context = {"candidate_ref": "candidate.json", "task_id": "data-check"}
@@ -115,6 +133,9 @@ def _data_check(ack, state, evidence, owner, monkeypatch):
         started, _ = _mutate("check", body, state, evidence, owner)
     checks, runner = captured[0], _DataRunner()
     terminal = checks.run(started["operation_ref"], runner)
+    _observe(log, action="deterministic_data_check",
+        request_id=body["client_request_id"], status=200, result=started,
+        effect="check_completed")
     assert started["state"] == "running"
     assert runner.calls == 1 and checks.state(started["operation_ref"]) == "completed"
     return {"journey_ref": terminal.journey_ref,
@@ -148,13 +169,14 @@ def test_phase_1_acceptance_flow_and_fixture_are_public_safe(tmp_path, monkeypat
     state, evidence = tmp_path / "state", tmp_path / "state" / "artifacts"
     evidence.mkdir(parents=True); owner = _owner(state)
     fixture = json.loads(open(FIXTURE, encoding="utf-8").read())
+    observed = []
     (evidence / "intake.json").write_text(json.dumps(fixture["intake"]), encoding="utf-8")
     assert set(fixture) == {"schema", "goal", "intake", "commands",
                             "expected_events", "expected_terminal_counts"}
-    concluded = _conclude(_created_with_claim(state, evidence, owner),
-                          state, evidence, owner)
-    blocked = _blocked_python(concluded, state, evidence, owner)
-    checked = _data_check(blocked, state, evidence, owner, monkeypatch)
+    concluded = _conclude(_created_with_claim(state, evidence, owner, observed),
+                          state, evidence, owner, observed)
+    blocked = _blocked_python(concluded, state, evidence, owner, observed)
+    checked = _data_check(blocked, state, evidence, owner, monkeypatch, observed)
     stale = {"journey_ref": checked["journey_ref"], "expected_event_head": "0" * 64,
         "client_request_id": "stale", "command": {"type": "advance_stage"}}
     grant, _ = _grant("append", stale, state, evidence, owner)
@@ -165,6 +187,9 @@ def test_phase_1_acceptance_flow_and_fixture_are_public_safe(tmp_path, monkeypat
     cancel_grant, _ = _grant("cancel", cancel, state, evidence, owner)
     cancelled, cancel_status = _post("cancel", {**cancel, "grant_ref": cancel_grant},
                                      state, evidence, owner)
+    _observe(observed, action="cancel_terminal_operation",
+        request_id=cancel["client_request_id"], status=cancel_status,
+        result=cancelled, effect="no_new_event")
     assert status == 409 and conflict["error"]["code"] == "HEAD_CONFLICT"
     assert cancel_status == 409 and cancelled["error"]["code"] == "CANCEL_UNAVAILABLE"
     views = [_post("resume", {"journey_ref": checked["journey_ref"], "lens": lens},
@@ -176,7 +201,8 @@ def test_phase_1_acceptance_flow_and_fixture_are_public_safe(tmp_path, monkeypat
     export = {"journey_ref": checked["journey_ref"],
         "expected_event_head": checked["event_head_sha256"],
         "client_request_id": "export-1", "packet_ref": "packets/journey"}
-    exported, _ = _mutate("export", export, state, evidence, owner)
+    exported, _ = _mutate("export", export, state, evidence, owner, observed,
+                          "export", "exported_event_and_packet")
     clean = tmp_path / "clean" / "packet"; clean.parent.mkdir()
     shutil.copytree(evidence / "packets" / "journey", clean)
     recheck = verify_journey_custody_packet(
@@ -184,6 +210,7 @@ def test_phase_1_acceptance_flow_and_fixture_are_public_safe(tmp_path, monkeypat
     recovery = recover_store(state, now=NOW)
     assert recheck["verdict"] == "MATCH" and exported["source_event_head_sha256"] == checked["event_head_sha256"]
     events = _events(state, owner, checked["journey_ref"])
+    assert observed == fixture["commands"]
     assert [event["event_type"] for event in events] == fixture["expected_events"]
     assert _terminal_counts(events, exported, evidence) == fixture[
         "expected_terminal_counts"]

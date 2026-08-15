@@ -40,7 +40,8 @@ def test_cli_prepare_approve_create_list_round_trip(tmp_path, capsys):
 def test_prepare_and_approve_survive_separate_cli_processes(tmp_path):
     """Approval must load private proposal custody from disk in a new process."""
     evidence = tmp_path / "evidence"; evidence.mkdir()
-    (evidence / "intake.json").write_text('{"summary":"bounded"}', encoding="utf-8")
+    artifacts = tmp_path / "home" / "state" / "artifacts"; artifacts.mkdir(parents=True)
+    (artifacts / "intake.json").write_text('{"summary":"bounded"}', encoding="utf-8")
     env = os.environ.copy()
     env["FLYWHEEL_HOME"] = str(tmp_path / "home")
     env["PYTHONPATH"] = str(REPO)

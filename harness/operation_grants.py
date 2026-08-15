@@ -152,10 +152,9 @@ class GrantStore:
                 self._sync(owner_dir)
             return {"grant_ref": grant_ref, "expires_at": effective.expires_at,
                     "consumed": False}
-        except GrantError:
-            raise
-        except (JourneyLockBusy, OSError, TypeError, ValueError):
-            raise GrantError("PERMISSION_DENIED") from None
+        except GrantError: raise
+        except JourneyLockBusy: raise GrantError("STORE_BUSY") from None
+        except (OSError, TypeError, ValueError): raise GrantError("PERMISSION_DENIED") from None
     def issue_exact(self, grant_ref: str, request: GrantRequest, *,
                     approved: bool) -> dict:
         """Idempotently issue one trusted server-planned exact grant ref."""
@@ -201,10 +200,9 @@ class GrantStore:
                 self._replace(path, record)
                 self._sync(owner_dir)
             return {"grant_ref": grant_ref, "consumed": True, "consumed_at": now}
-        except GrantError:
-            raise
-        except (JourneyLockBusy, OSError, TypeError, ValueError):
-            raise GrantError("PERMISSION_DENIED") from None
+        except GrantError: raise
+        except JourneyLockBusy: raise GrantError("STORE_BUSY") from None
+        except (OSError, TypeError, ValueError): raise GrantError("PERMISSION_DENIED") from None
     def _effective_request(self, request: GrantRequest) -> GrantRequest:
         self._validate_request(request, allow_default_expiry=True)
         now = _parse_time(self.clock())

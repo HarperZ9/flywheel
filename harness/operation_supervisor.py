@@ -152,6 +152,8 @@ class OperationSupervisor:
             ack, state = replay
             return (self._unavailable(operation_ref) if state == "cancel_requested"
                     else self._result(operation_ref, state, ack))
+        history = self.check_service._history(operation_ref, journey_ref)
+        if any(event["event_type"] == "cancel_requested" for event in history) and self.check_service._terminal(history) is None: return self._unavailable(operation_ref)
         owned = self._owned.get(operation_ref)
         if (owned is None or owned.owner_ref != owner_ref
                 or owned.journey_ref != journey_ref):

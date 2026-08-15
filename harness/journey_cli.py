@@ -135,7 +135,7 @@ def main(argv: list[str] | None = None, *, home: Path | None = None,
     effective_home = Path(home) if home is not None else Path(
         os.environ.get("FLYWHEEL_HOME", str(Path.home() / ".flywheel")))
     state = Path(state_root) if state_root is not None else effective_home / "state"
-    evidence = Path(evidence_root) if evidence_root is not None else Path.cwd()
+    evidence = Path(evidence_root) if evidence_root is not None else state / "artifacts"
     try:
         owner_ref = load_or_create_owner_ref(effective_home)
         if args.surface == "grant":
