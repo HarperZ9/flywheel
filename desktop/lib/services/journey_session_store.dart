@@ -13,21 +13,6 @@ const _maxDepth = 16;
 const _maxNodes = 4096;
 final _journeyRef = RegExp(r'^jrn_[0-9a-f]{32}$');
 final _selectionRef = RegExp(r'^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$');
-final _windowsPath = RegExp(r'[A-Za-z]:[\\/]');
-final _uncPath = RegExp(r'(?:\\\\|//)[^\\/\s]+[\\/][^\s]+');
-final _privatePath = RegExp(r'(?:^|[\s=(\[{,:;])/(?!/)[^\s]+|/'
-    r'(?:Users|home|private|tmp|var|etc|root|opt|mnt|srv|usr|bin|sbin|lib|'
-    r'Applications|Volumes|dev|proc|sys|run)(?:/|$)');
-final _fileUri = RegExp(r'(?<![A-Za-z0-9+.-])file:', caseSensitive: false);
-final _secretValue = RegExp(
-    r'(-----BEGIN [A-Z ]*PRIVATE KEY-----|\bAKIA[0-9A-Z]{16}\b|\bgh[pousr]_[A-Za-z0-9]{30,}\b|\bsk-(?:live|proj|ant)[A-Za-z0-9_-]{10,}\b|\bxox[baprs]-[A-Za-z0-9-]{10,}\b)');
-final _assignedSecret = RegExp(
-    r'\b(?:secret|password|passwd|api_key|access_key|token|credential)\s*[:=]\s*["\x27]?[A-Za-z0-9/+_-]{12,}',
-    caseSensitive: false);
-final _secretKeyName = RegExp(r'^(?:api_key|access_token|refresh_token|token|'
-    r'password|secret|credential|credentials|private_key|authorization|cookie|'
-    r'environment|env|passwd|access_key|.+_(?:api_key|private_key|password|'
-    r'secret|credential|token))$');
 
 enum JourneyLocalFailure {
   invalidRecord,
@@ -61,9 +46,6 @@ class JourneySession {
     _valid(_journeyRef.hasMatch(journeyRef));
     _valid(lens != JourneyLens.invalidResponse);
     _valid(selectionRef == null || _selectionRef.hasMatch(selectionRef));
-    if (selectionRef != null) {
-      snapshotJourneyLocalJson({'selection_ref': selectionRef});
-    }
     return JourneySession._(
         journeyRef, lens, selectionRef, detailsExpanded, recoveryVisible);
   }
@@ -161,9 +143,29 @@ String _lensWire(JourneyLens lens) => switch (lens) {
           JourneyLocalFailure.invalidRecord),
     };
 
-Map<String, dynamic> snapshotJourneyLocalJson(Map<Object?, Object?> source) {
+Map<String, dynamic> snapshotJourneyLocalJson(Map<Object?, Object?> source,
+    {required bool Function(String) safeText,
+    required bool Function(String) secretKey,
+    required bool Function(String) safeRef}) {
+  final result = _JsonGuard(safeText, secretKey, safeRef).object(source);
+  _valid(canonicalJourneyLocalBytes(result).length <= journeyLocalMaxBytes);
+  return result;
+}
+
+class _JsonGuard {
+  _JsonGuard([this.safeText, this.secretKey, this.safeRef]);
+  final bool Function(String)? safeText;
+  final bool Function(String)? secretKey;
+  final bool Function(String)? safeRef;
   var nodes = 0;
-  dynamic visit(Object? value, int depth, String? key) {
+
+  Map<String, dynamic> object(Object? source) {
+    final result = _visit(source, 0, null);
+    _valid(result is Map<String, dynamic>);
+    return result as Map<String, dynamic>;
+  }
+
+  dynamic _visit(Object? value, int depth, String? key) {
     _valid(depth <= _maxDepth && ++nodes <= _maxNodes);
     if (value == null || value is bool) return value;
     if (value is num) {
@@ -171,34 +173,29 @@ Map<String, dynamic> snapshotJourneyLocalJson(Map<Object?, Object?> source) {
       return value;
     }
     if (value is String) {
-      _valid(isSafeJourneyLocalText(value));
-      if (key != null &&
-          (key == 'ref' || key.endsWith('_ref') || key.endsWith('_refs'))) {
-        _valid(_safeRef(value));
-      }
+      _valid(safeText?.call(value) ?? true);
+      if (key != null && _refKey(key)) _valid(safeRef?.call(value) ?? true);
       return value;
     }
     if (value is List) {
       return List.unmodifiable(
-          value.map((item) => visit(item, depth + 1, key)));
+          value.map((item) => _visit(item, depth + 1, key)));
     }
-    if (value is Map) {
-      final sorted = SplayTreeMap<String, dynamic>();
-      for (final entry in value.entries) {
-        _valid(entry.key is String);
-        final name = entry.key as String;
-        _valid(isSafeJourneyLocalText(name) && !_secretKey(name));
-        sorted[name] = visit(entry.value, depth + 1, name);
-      }
-      return Map<String, dynamic>.unmodifiable(sorted);
+    _valid(value is Map);
+    final sorted = SplayTreeMap<String, dynamic>();
+    for (final entry in (value as Map).entries) {
+      _valid(entry.key is String);
+      final name = entry.key as String;
+      _valid(
+          (safeText?.call(name) ?? true) && !(secretKey?.call(name) ?? false));
+      sorted[name] = _visit(entry.value, depth + 1, name);
     }
-    throw const JourneyLocalStoreException(JourneyLocalFailure.invalidRecord);
+    return Map<String, dynamic>.unmodifiable(sorted);
   }
-
-  final result = visit(source, 0, null) as Map<String, dynamic>;
-  _valid(canonicalJourneyLocalBytes(result).length <= journeyLocalMaxBytes);
-  return result;
 }
+
+bool _refKey(String key) =>
+    key == 'ref' || key.endsWith('_ref') || key.endsWith('_refs');
 
 List<int> canonicalJourneyLocalBytes(Object? value) =>
     utf8.encode(jsonEncode(value));
@@ -210,8 +207,7 @@ Map<String, dynamic> readJourneyLocalObject(File file) {
   final bytes = file.readAsBytesSync();
   _valid(bytes.length <= journeyLocalMaxBytes);
   final decoded = jsonDecode(utf8.decode(bytes));
-  _valid(decoded is Map<String, dynamic>);
-  return decoded as Map<String, dynamic>;
+  return _JsonGuard().object(decoded);
 }
 
 void writeJourneyLocalObject(File target, Object value,
@@ -236,7 +232,8 @@ void writeJourneyLocalObject(File target, Object value,
     beforeRename?.call(temporary);
     (renameFile ?? (file, path) => file.renameSync(path))(
         temporary, target.path);
-    if (!target.existsSync() ||
+    if (temporary.existsSync() ||
+        !target.existsSync() ||
         target.lengthSync() != bytes.length ||
         sha256.convert(target.readAsBytesSync()).toString() !=
             sha256.convert(bytes).toString()) {
@@ -260,34 +257,6 @@ File _uniqueTemporary(File target) => File(
 
 String journeyLocalDefaultPath(String name) =>
     '${flywheelHome()}${Platform.pathSeparator}$name';
-
-bool isSafeJourneyLocalText(String value) {
-  String decoded;
-  try {
-    decoded = Uri.decodeFull(value);
-  } on FormatException {
-    return false;
-  }
-  return !_windowsPath.hasMatch(value) &&
-      !_uncPath.hasMatch(value) &&
-      !_privatePath.hasMatch(value) &&
-      !_fileUri.hasMatch(decoded) &&
-      !_secretValue.hasMatch(value) &&
-      !_assignedSecret.hasMatch(value);
-}
-
-bool _secretKey(String key) {
-  final name = key.toLowerCase().replaceAll('-', '_');
-  return _secretKeyName.hasMatch(name);
-}
-
-bool _safeRef(String value) =>
-    value.isNotEmpty &&
-    value.length <= 256 &&
-    !value.startsWith('/') &&
-    !value.startsWith(r'\') &&
-    !value.contains(':') &&
-    !value.split(RegExp(r'[\\/]')).contains('..');
 
 void _valid(bool condition) {
   if (!condition) {

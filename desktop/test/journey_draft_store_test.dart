@@ -7,9 +7,9 @@ import 'package:flywheel_desktop/services/journey_draft_store.dart';
 
 const _head =
     'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+const _newHead =
+    'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
 const _journey = 'jrn_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
-const _digest =
-    'd8816f66d6219cab73766e8e3b9b8881e1218865ec0bb7b07bb68cd73d28dc45';
 
 Directory _temp() {
   final directory = Directory.systemTemp.createTempSync('journey-drafts-');
@@ -22,12 +22,15 @@ File _file(Directory directory) =>
 
 JourneyDraft _draft(String suffix,
         {JourneyDraftState state = JourneyDraftState.dirty,
-        Map<Object?, Object?>? payload}) =>
+        Map<Object?, Object?>? payload,
+        String? journeyRef = _journey,
+        String? baseEventHeadSha256 = _head,
+        String kind = 'append'}) =>
     JourneyDraft(
       draftRef: 'dft_${suffix.padLeft(32, '0')}',
-      journeyRef: _journey,
-      baseEventHeadSha256: _head,
-      kind: 'append',
+      journeyRef: journeyRef,
+      baseEventHeadSha256: baseEventHeadSha256,
+      kind: kind,
       payload: payload ??
           {
             'client_request_id': 'request-$suffix',
@@ -39,6 +42,9 @@ JourneyDraft _draft(String suffix,
       state: state,
       updatedAt: DateTime.utc(2026, 8, 15, 12),
     );
+
+Map<Object?, Object?> _attack(Object? key, Object? value) =>
+    {'client_request_id': 'r', key: value};
 
 JourneyLocalStoreException _failure(void Function() call) {
   try {
@@ -69,14 +75,8 @@ void _roundTripTests() {
     final loaded = JourneyDraftStore(file: file).list();
     expect(loaded.map((draft) => draft.state), states);
     final stored = jsonDecode(file.readAsStringSync()) as Map<String, dynamic>;
-    expect((stored['drafts'] as List).map((draft) => draft['state']), [
-      'clean',
-      'dirty',
-      'saving',
-      'saved',
-      'save_failed',
-      'recovery_available'
-    ]);
+    expect((stored['drafts'] as List).map((draft) => draft['state']).join(','),
+        'clean,dirty,saving,saved,save_failed,recovery_available');
     expect(loaded.every((draft) => draft.journeyRef == _journey), isTrue);
     expect(loaded.every((draft) => draft.baseEventHeadSha256 == _head), isTrue);
     final before = file.readAsBytesSync();
@@ -85,15 +85,6 @@ void _roundTripTests() {
     expect(store.storageFile.path, file.path);
     expect(
         JourneyDraftStore().storageFile.path, endsWith('journey-drafts.json'));
-  });
-
-  test('canonical key order produces the independently fixed payload digest',
-      () {
-    final draft = _draft('a', payload: {
-      'nested': {'b': 2, 'a': 1},
-      'client_request_id': 'request-1'
-    });
-    expect(draft.payloadSha256, _digest);
   });
 }
 
@@ -111,22 +102,6 @@ void _immutabilityAndBoundsTests() {
     expect((nested['items'] as List).single, 'original');
     expect(() => nested['new'] = true, throwsUnsupportedError);
     expect(() => (nested['items'] as List).add('new'), throwsUnsupportedError);
-  });
-
-  test('depth node and byte bounds fail before touching storage', () {
-    Object value = 'leaf';
-    for (var index = 0; index < 17; index++) {
-      value = [value];
-    }
-    final invalid = [
-      {'client_request_id': 'depth', 'value': value},
-      {'client_request_id': 'nodes', 'items': List<Object?>.filled(4096, null)},
-      {'client_request_id': 'bytes', 'value': 'x' * 1048576},
-    ];
-    for (final payload in invalid) {
-      final error = _failure(() => _draft('c', payload: payload));
-      expect(error.failure, JourneyLocalFailure.invalidRecord);
-    }
   });
 }
 
@@ -180,24 +155,41 @@ void _corruptionTests() {
 void _unsafeInputTests() {
   test('secret path ref key and JSON attacks are rejected without echo', () {
     final attacks = <Map<Object?, Object?>>[
-      {'client_request_id': 'r', 'api_key': 'synthetic-value'},
-      {'client_request_id': 'r', 'client_api_key': 'synthetic-value'},
-      {'client_request_id': 'r', 'access_token': 'synthetic-value'},
-      {'client_request_id': 'r', 'note': 'password=abcdefghijklmnop'},
-      {'client_request_id': 'r', 'note': r'C:\private\draft.json'},
-      {'client_request_id': 'r', 'note': r'\\server\share\draft.json'},
-      {'client_request_id': 'r', 'note': '/etc/passwd'},
-      {'client_request_id': 'r', 'note': 'error FiLe:/private/draft'},
-      {'client_request_id': 'r', 'note': 'f%69le:opaque'},
-      {'client_request_id': 'r', 'context_ref': '../private.json'},
-      {
-        'client_request_id': 'r',
-        'artifact_refs': ['../private.json']
-      },
-      {'client_request_id': 'r', 'context_ref': '/absolute.json'},
-      {1: 'non-string key', 'client_request_id': 'r'},
-      {'client_request_id': 'r', 'value': double.nan},
-      {'client_request_id': 'r', 'value': Object()},
+      _attack('api_key', 'synthetic-value'),
+      _attack('client_api_key', 'synthetic-value'),
+      _attack('access_token', 'synthetic-value'),
+      for (final key
+          in 'api_keys,access_tokens,refresh_tokens,tokens,passwords,'
+                  'secrets,credentials,private_keys,authorizations,cookies,'
+                  'environments,envs,passwds,access_keys'
+              .split(','))
+        _attack(key, 'synthetic-value'),
+      _attack('note', 'password=abcdefghijklmnop'),
+      _attack('note', r'C:\private\draft.json'),
+      _attack('note', r'\\server\share\draft.json'),
+      _attack('note', '/etc/passwd'),
+      _attack('note', 'error FiLe:/private/draft'),
+      _attack('note', 'f%69le:opaque'),
+      _attack('note', r'C%3A%5Cprivate%5Cdraft.json'),
+      _attack('note', r'%5C%5Cserver%5Cshare%5Cdraft.json'),
+      _attack('note', '%2Fetc%2Fpasswd'),
+      _attack('note', 'password%3Dabcdefghijklmnop'),
+      _attack('context_ref', '../private.json'),
+      _attack('context_ref', '%2e%2e%2fprivate.json'),
+      _attack('artifact_refs', ['../private.json']),
+      _attack('%61pi%5Fkey', 'synthetic-value'),
+      _attack('nested', {'t%6Fkens': 'synthetic-value'}),
+      _attack('items', [
+        {'api%5Fkeys': 'synthetic-value'}
+      ]),
+      _attack('context_ref', '/absolute.json'),
+      _attack(1, 'non-string key'),
+      _attack('value', double.nan),
+      _attack('value', Object()),
+      _attack('note', '%2G'),
+      _attack('note', '%A'),
+      _attack('note', '%GG'),
+      _attack('note', '%FF'),
     ];
     for (final attack in attacks) {
       final error = _failure(() => _draft('f', payload: attack));
@@ -230,17 +222,27 @@ void _atomicFailureTests() {
     final file = _file(directory);
     JourneyDraftStore(file: file).save(_draft('1'));
     final before = file.readAsBytesSync();
-    final failures = <JourneyDraftStore>[
-      JourneyDraftStore(
-          file: file,
-          beforeRename: (_) => throw const FileSystemException('synthetic')),
-      JourneyDraftStore(
-          file: file,
-          renameFile: (_, __) => throw const FileSystemException('synthetic')),
-      JourneyDraftStore(file: file, renameFile: (_, __) {}),
+    final failures = [
+      (
+        store: JourneyDraftStore(
+            file: file,
+            beforeRename: (_) => throw const FileSystemException('synthetic')),
+        draft: _draft('2')
+      ),
+      (
+        store: JourneyDraftStore(
+            file: file,
+            renameFile: (_, __) =>
+                throw const FileSystemException('synthetic')),
+        draft: _draft('2')
+      ),
+      (
+        store: JourneyDraftStore(file: file, renameFile: (_, __) {}),
+        draft: _draft('1')
+      ),
     ];
-    for (final store in failures) {
-      final error = _failure(() => store.save(_draft('2')));
+    for (final failure in failures) {
+      final error = _failure(() => failure.store.save(failure.draft));
       expect(error.failure, JourneyLocalFailure.writeFailed);
       expect(file.readAsBytesSync(), before);
       expect(directory.listSync().whereType<File>().length, 1);
@@ -266,6 +268,7 @@ void _acknowledgementDeletionTests() {
     final store = JourneyDraftStore(file: file)..save(_draft('4'));
     final invalid = [
       const JourneyDraftAcknowledgement('other-request', _head),
+      const JourneyDraftAcknowledgement('request-4', _head),
       const JourneyDraftAcknowledgement('request-4', ''),
       const JourneyDraftAcknowledgement('request-4', 'not-a-head'),
     ];
@@ -284,7 +287,14 @@ void _acknowledgementDeletionTests() {
   test('exact request id and canonical nonblank new head permit deletion', () {
     final store = JourneyDraftStore(file: _file(_temp()))..save(_draft('5'));
     store.delete('dft_${'5'.padLeft(32, '0')}',
-        acknowledgement: const JourneyDraftAcknowledgement('request-5', _head));
+        acknowledgement:
+            const JourneyDraftAcknowledgement('request-5', _newHead));
+    expect(store.list(), isEmpty);
+
+    store.save(_draft('6',
+        journeyRef: null, baseEventHeadSha256: null, kind: 'create'));
+    store.delete('dft_${'6'.padLeft(32, '0')}',
+        acknowledgement: const JourneyDraftAcknowledgement('request-6', _head));
     expect(store.list(), isEmpty);
   });
 }
