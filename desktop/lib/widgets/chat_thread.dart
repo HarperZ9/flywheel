@@ -1,7 +1,7 @@
 // chat_thread.dart — the conversation thread: user and assistant turns as
 // bubbles, streaming text as it arrives, fenced code rendered in a mono card
-// with copy, and a quiet 'verified' mark under an assistant turn that carried a
-// receipt. Accountability is present but small; the conversation is the subject.
+// with copy and an explicit receipt state. Accountability is present but small;
+// the conversation is the subject.
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -59,7 +59,13 @@ class _BubbleState extends State<_Bubble> {
         mainAxisAlignment:
             isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
         children: [
-          if (!isUser) _avatar(t, 'AI', t.verified),
+          if (!isUser)
+            _avatar(
+                t,
+                'AI',
+                message.receiptState == ReceiptState.match
+                    ? t.verified
+                    : t.inkMuted),
           if (!isUser) const SizedBox(width: FwLayout.s3),
           Flexible(
             child: Column(

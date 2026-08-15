@@ -18,6 +18,7 @@ final class ChatAdmissionController {
   final ChatDraftStore draftStore;
   final conversations = <Conversation>[];
   final _drafts = <String, ChatDraft>{};
+  final _admitted = <String>{};
   var _sequence = 0;
 
   void restore() {
@@ -25,8 +26,17 @@ final class ChatAdmissionController {
     try {
       for (final draft in draftStore.load()) {
         _drafts[draft.conversationRef] = draft;
-        if (!conversations.any((item) => item.id == draft.conversationRef)) {
+        final matches = conversations
+            .where((item) => item.id == draft.conversationRef)
+            .firstOrNull;
+        if (matches == null) {
           conversations.add(Conversation(id: draft.conversationRef));
+        }
+        if (draft.state == ChatDraftState.submitting &&
+            matches?.messages.any((message) =>
+                    message.isUser && message.text == draft.text) ==
+                true) {
+          _admitted.add(_admissionKey(draft));
         }
       }
     } on ChatDraftStoreException {/* corrupt local bytes are not promoted */}
@@ -63,6 +73,7 @@ final class ChatAdmissionController {
   ChatDraft? prepare(Conversation conversation, String text) {
     try {
       final draft = _draft(conversation, text, ChatDraftState.submitting);
+      if (_admitted.contains(_admissionKey(draft))) return null;
       draftStore.save(draft);
       _drafts[conversation.id] = draft;
       return draft;
@@ -82,9 +93,11 @@ final class ChatAdmissionController {
       conversation.messages.removeRange(
           conversation.messages.length - 2, conversation.messages.length);
       retain(submitted);
+      _admitted.add(_admissionKey(submitted));
       return (disposition: PromptDisposition.retained, visible: false);
     }
     if (!_cleanSubmitted(submitted)) {
+      _admitted.add(_admissionKey(submitted));
       return (disposition: PromptDisposition.retained, visible: true);
     }
     return (disposition: PromptDisposition.accepted, visible: true);
@@ -133,6 +146,9 @@ final class ChatAdmissionController {
 
 String _draftReference(String conversationRef) =>
     'chd_${sha256.convert(utf8.encode('chat:$conversationRef')).toString().substring(0, 32)}';
+
+String _admissionKey(ChatDraft draft) =>
+    '${draft.conversationRef}:${draft.textSha256}';
 
 int _nextSequence(List<Conversation> conversations) {
   var next = 0;

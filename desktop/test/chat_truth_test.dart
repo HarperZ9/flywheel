@@ -71,7 +71,7 @@ void _receiptModelTests() {
         ReceiptState.invalidResponse);
   });
 
-  test('history reload degrades MATCH and rejects unknown carried state', () {
+  test('history reload degrades MATCH and ignores carried verifier state', () {
     final checked = ChatMessage(
         role: 'assistant',
         receipt: const {'receipt_id': 'r'},
@@ -85,7 +85,7 @@ void _receiptModelTests() {
       'receipt': {'receipt_id': 'r'},
       'receipt_state': 'UNKNOWN',
     });
-    expect(unknown.receiptState, ReceiptState.invalidResponse);
+    expect(unknown.receiptState, ReceiptState.presentUnchecked);
     final malformed =
         ChatMessage.fromJson({'role': 'assistant', 'receipt': 'not-a-receipt'});
     expect(malformed.receiptState, ReceiptState.invalidResponse);
@@ -252,10 +252,12 @@ void _admissionTests() {
     store.save(ChatDraft(
         draftRef: 'chd_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
         conversationRef: 'c0',
-        text: 'Résumé 50% complete 日本語',
+        text: "Résumé 50% complete %word trailing% SQL '%foo%' "
+            '日本語 %E2%9C%93',
         state: ChatDraftState.dirty,
         updatedAt: DateTime.parse('2026-08-15T12:00:00Z')));
-    expect(store.load().single.text, 'Résumé 50% complete 日本語');
+    expect(store.load().single.text,
+        "Résumé 50% complete %word trailing% SQL '%foo%' 日本語 %E2%9C%93");
   });
 
   testWidgets('no model retains the exact safe draft with zero chat calls',

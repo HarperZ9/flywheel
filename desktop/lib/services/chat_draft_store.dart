@@ -259,7 +259,6 @@ String _decodedText(String value) {
     if (index + 2 >= value.length ||
         !_hex(next) ||
         !_hex(value.codeUnitAt(index + 2))) {
-      _require(next == null || !_alphaNumeric(next));
       result.write('%');
       index++;
       continue;
@@ -285,7 +284,3 @@ bool _hex(int? value) =>
     ((value >= 0x30 && value <= 0x39) ||
         (value >= 0x41 && value <= 0x46) ||
         (value >= 0x61 && value <= 0x66));
-bool _alphaNumeric(int value) =>
-    (value >= 0x30 && value <= 0x39) ||
-    (value >= 0x41 && value <= 0x5a) ||
-    (value >= 0x61 && value <= 0x7a);

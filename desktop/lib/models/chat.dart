@@ -50,11 +50,7 @@ class ChatMessage {
     final receipt = rawReceipt is Map<String, dynamic> ? rawReceipt : null;
     final malformedReceipt =
         json.containsKey('receipt') && rawReceipt != null && receipt == null;
-    final state = malformedReceipt
-        ? ReceiptState.invalidResponse
-        : json.containsKey('receipt_state')
-            ? _readReceiptState(json['receipt_state'])
-            : null;
+    final state = malformedReceipt ? ReceiptState.invalidResponse : null;
     return ChatMessage(
         role: json['role'] == 'user' ? 'user' : 'assistant',
         text: json['text'] is String ? json['text'] as String : '',
@@ -80,16 +76,6 @@ ReceiptState _effectiveReceiptState(bool present, ReceiptState? state) {
     _ => ReceiptState.invalidResponse,
   };
 }
-
-ReceiptState _readReceiptState(Object? raw) => switch (raw) {
-      'missing' => ReceiptState.missing,
-      'present_unchecked' => ReceiptState.presentUnchecked,
-      'MATCH' => ReceiptState.match,
-      'DRIFT' => ReceiptState.drift,
-      'TAMPERED' => ReceiptState.tampered,
-      'UNVERIFIABLE' => ReceiptState.unverifiable,
-      _ => ReceiptState.invalidResponse,
-    };
 
 Map<String, dynamic> _immutableMap(Map<String, dynamic> source) {
   final result = SplayTreeMap<String, dynamic>();

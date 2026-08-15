@@ -84,6 +84,7 @@ void _privacyTests() {
       'open file:///private/note.txt',
       'password=abcdefghijkl',
       'api%5Fkey%3Dabcdefghijkl',
+      'ordinary %word then %2Fetc%2Fpasswd',
       '-----BEGIN PRIVATE KEY-----',
     ]) {
       Object? failure;

@@ -165,15 +165,15 @@ class _AgentViewState extends State<AgentView> {
 
   void _onEvent(int generation, Map<String, dynamic> event) {
     if (!mounted || generation != _generation || !_validEvent(event)) return;
-    if (!_accepted) {
-      if (!_acceptFirstEvent(event)) return;
-    } else {
+    if (_assistant == null) {
+      _acceptFirstEvent(event);
+    } else if (_accepted) {
       _applyEvent(_assistant!, event);
     }
-    _scrollToEnd();
+    if (_accepted) _scrollToEnd();
   }
 
-  bool _acceptFirstEvent(Map<String, dynamic> event) {
+  void _acceptFirstEvent(Map<String, dynamic> event) {
     final assistant = ChatMessage(role: 'assistant', streaming: true);
     _applyEvent(assistant, event);
     final decision = _admission.acceptFirst(
@@ -182,7 +182,6 @@ class _AgentViewState extends State<AgentView> {
     _assistant = assistant;
     _streaming = decision.visible;
     _finishDisposition(decision.disposition);
-    return decision.visible;
   }
 
   void _applyEvent(ChatMessage assistant, Map<String, dynamic> event) {
@@ -195,10 +194,11 @@ class _AgentViewState extends State<AgentView> {
 
   void _onTerminal(int generation) {
     if (!mounted || generation != _generation) return;
-    if (!_accepted) {
+    if (_assistant == null) {
       _retainAdmission();
       return;
     }
+    if (!_accepted) return;
     setState(() {
       _assistant!.streaming = false;
       if (_assistant!.text.isEmpty) _assistant!.text = 'No reply arrived.';
