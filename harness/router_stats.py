@@ -18,6 +18,7 @@ import json
 import math
 import os
 import threading
+import time
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from uuid import uuid4
@@ -68,6 +69,19 @@ class RouterStats:
             self._load()
 
     def _load(self) -> None:
+        if not self.path:
+            return
+        try:
+            with ExclusiveJourneyLock.acquire(self._lock_path(), self.lock_timeout_s):
+                self._load_unlocked()
+        except JourneyLockBusy:
+            raise RouterStatsError("STORE_BUSY") from None
+        except RouterStatsError:
+            raise
+        except (OSError, ValueError, TypeError):
+            raise RouterStatsError("STORE_COMMIT_FAILED") from None
+
+    def _load_unlocked(self) -> None:
         try:
             raw = json.loads(self.path.read_text(encoding="utf-8"))
         except (json.JSONDecodeError, OSError):
@@ -88,6 +102,30 @@ class RouterStats:
     def _lock_path(self) -> Path:
         return self.path.with_name(f".{self.path.name}.lock")
 
+    def _retry_windows_permission(self, deadline: float) -> None:
+        if os.name != "nt" or time.monotonic() >= deadline:
+            raise RouterStatsError("STORE_BUSY") from None
+        time.sleep(min(0.01, max(0.0, deadline - time.monotonic())))
+
+    def _replace_with_retry(self, source: Path) -> None:
+        deadline = time.monotonic() + max(0.0, self.lock_timeout_s)
+        while True:
+            try:
+                os.replace(source, self.path)
+                return
+            except PermissionError:
+                self._retry_windows_permission(deadline)
+
+    def _fsync_file_with_retry(self, path: Path) -> None:
+        deadline = time.monotonic() + max(0.0, self.lock_timeout_s)
+        while True:
+            try:
+                with path.open("r+b") as stream:
+                    os.fsync(stream.fileno())
+                return
+            except PermissionError:
+                self._retry_windows_permission(deadline)
+
     def _save(self) -> None:
         if not self.path:
             return
@@ -101,9 +139,8 @@ class RouterStats:
                 stream.write(json.dumps(self.snapshot(), sort_keys=True).encode("utf-8"))
                 stream.flush()
                 os.fsync(stream.fileno())
-            os.replace(tmp, self.path)
-            with self.path.open("r+b") as stream:
-                os.fsync(stream.fileno())
+            self._replace_with_retry(tmp)
+            self._fsync_file_with_retry(self.path)
             fsync_directory(self.path.parent)
         finally:
             try:
@@ -130,11 +167,13 @@ class RouterStats:
             try:
                 with ExclusiveJourneyLock.acquire(self._lock_path(), self.lock_timeout_s):
                     if self.path.exists():
-                        self._load()
+                        self._load_unlocked()
                     self._record_locked(endpoint, ok, latency)
                     self._save()
             except JourneyLockBusy:
                 raise RouterStatsError("STORE_BUSY") from None
+            except RouterStatsError:
+                raise
             except (OSError, ValueError, TypeError):
                 raise RouterStatsError("STORE_COMMIT_FAILED") from None
 
