@@ -4,6 +4,10 @@
 **Verdict:** PASS for the bounded Phase 1 persistence and custody-export scope.
 **Source boundary commit:** `7d3ace27de92a775e170114c83b2a529488c6c00`.
 **Source boundary tree:** `1f6a0d05e87e7238912bd5b45a32fa688e6de9ff`.
+**Initial implementation commit:** `744a74d2eb582d4e9e848dc4618228cdccae0933`.
+**Initial implementation tree:** `1c34d0039fd2f67512345abd5056bb9a4818b98b`.
+**Reviewed code-fix commit:** `94392b6d1f5faced8c8eba6fc60cd281d2611dcc`.
+**Reviewed code-fix tree:** `25c866b651626afd13d5e06bec8a28cfa7a0ebf1`.
 
 This record accepts the Journey-v2 event store, public transport, exact-grant
 custody export, and restart recovery. It also accepts offline clean-copy
@@ -18,10 +22,10 @@ changed the overall and rehash-resistance verdicts to `MATCH`.
 
 - Fixture: `a17b404f7b967a5e0558842b1fe5ed44b7c95f3aac3246e29b44d2c94be5f5ee`.
 - E2E test: `c68233a75eaf3351ae67615fd696992178efece7dbe73bc6e035c3eada989d1e`.
-- Packet test: `0fd8edd7e02623d4751b50fc98b456d4ff9a675f399bdc02663bc9b74a544a9c`.
+- Packet test: `69363872cb9f5bdec7360166cf5013f4eaa81c787af7ef59b8a3b0961326c776`.
 - Export test: `dd8f8b0a6359e8f42ae9c02da0ecbbe999a382dbe7a74994c7c4b687e500b553`.
-- Transaction test: `120cd4fbfa2dd9cedb97c78212c529d5802547da02857072d2932b1c37afe9df`.
-- Packet manifest: `sha256:e074888c8826b21c50362ddfa0c9329cb02e8ecd8af16791bd000745a61acf01`.
+- Transaction test: `8ce328bbb2d6df5749f58bb09d5ce6760e14e407eaa8ed4d76e272c7152961bb`.
+- Packet manifest: `sha256:54f028b9e7359e9db5f5ea64122fd27b66b87b544f92e60701d4795a81cc05d6`.
 - Packet source head H0: `b34db23c5a3e477ccf08a74be0a794129b0e93ed87a0e2721fc55306edd84bd3`.
 - Packet source projection P0: `bac7b716e8cf4401284e11515ec185fe17580916718c2151318a1c9bd8858163`.
 
@@ -44,12 +48,13 @@ The check denominator is 2 requested and 2 terminal. Outcomes were 1 blocked,
 network calls. The admitted data-only path made exactly 1 call to the injected
 deterministic runner after its request passed through the authenticated route.
 
-The export crash denominator is 8 injected windows. Five cover export phases
+The export crash denominator is 9 injected windows. Five cover export phases
 from grant consumption through response. Three cover event fsync, head
-replacement, and Journey directory fsync.
+replacement, and Journey directory fsync. One covers the durable quarantine
+move before its final phase seal.
 Every case converged to one exact packet and one exported event. The recovery
-denominator is 6: four phase-completion cases, one competing-head quarantine,
-and one clean no-op recovery. The two-export race denominator is 2: one
+denominator is 7: four phase-completion cases, two competing-head quarantine
+cases, and one clean no-op recovery. The two-export race denominator is 2: one
 same-target race and one different-target race. Each race produced one
 `MATCH`, one `HEAD_CONFLICT`, one exported event, and no overwritten neighbor.
 
@@ -75,8 +80,8 @@ exit 1: export grant data refs were incomplete and the export route returned 409
 
 The accepted commands and observed exits follow.
 
-- Packet tests: exit 0, 17 passed.
-- Export and transaction tests: exit 0, 20 passed.
+- Packet tests: exit 0, 18 passed.
+- Export and transaction tests: exit 0, 34 passed.
 - Acceptance E2E: exit 0, 1 passed.
 - Legacy packet and transport command: exit 0, 183 passed.
 - Explicit evidence, Journey, operation, and grant list: exit 0, 557 passed and 2 platform skips.
@@ -84,7 +89,7 @@ The accepted commands and observed exits follow.
 - Verifier closure: exit 0, 51 modules from 26 entry points, clean.
 - Claim-language gate: exit 0, 20 public surfaces, clean.
 - Public-instruction gate: exit 0, no new public leak.
-- Full suite: exit 0, 4,810 passed and 23 expected skips.
+- Initial implementation full suite: exit 0, 4,810 passed and 23 expected skips.
 - CLI gate: exit 0, `verdict=PASS`, `rewitness=MATCH`.
 - Procedure writing gate: exit 0, no hard violation.
 
@@ -100,7 +105,8 @@ It builds in service-owned staging, verifies, and publishes by absent-target
 rename. It appends the exported event by CAS at H0. It acknowledges after the
 committed transaction is flushed. Recovery requires an exact consumed and
 digest-matched private grant record. A competing head moves only the exact
-service-owned target to private quarantine.
+service-owned target to private quarantine. A durable intermediate phase makes
+the move recoverable before the final quarantine seal.
 
 Rollback means reverting the commit titled `test: accept durable journey
 persistence`. Do not delete Journey events, export transactions, packets, or
@@ -115,7 +121,8 @@ transitions. It does not prove claim correctness, evidence completeness, or
 general execution containment. It does not prove origin authenticity, provider
 behavior, network isolation, or filesystem durability outside the tested
 boundaries. The packet binds pre-export H0 and P0, not final exported H1.
-It contains no signed author identity and no provider trace. No provider, model,
+Checker-source drift is separate from carried structure and remains
+`UNVERIFIABLE` across versions. It contains no signed author identity and no provider trace. No provider, model,
 endpoint, network service, live Python candidate, or subprocess checker ran.
 This record does not prove Phase 2 behavior, general release readiness, package
 publication readiness, or production deployment readiness.
