@@ -77,6 +77,9 @@ final class _View {
   JourneyCancelResult? get cancelResult => _cancelResult;
   set cancelResult(JourneyCancelResult? v) => _changed(_cancelResult = v);
   void _changed(Object? _) => _notify();
+  bool get canSelect => projection != null && ref != null;
+  bool hasRef(String? value) =>
+      projection != null && projection!.journeyRef == value;
   JourneyViewState get snapshot => (
         phase: phase,
         selectedLens: lens,
@@ -124,7 +127,7 @@ final class _View {
     projection = value;
     this.lens = lens ?? this.lens;
     phase = JourneyViewPhase.ready;
-    _clear();
+    errors = (null, null, const {});
     _notify();
   }
 
@@ -164,10 +167,6 @@ final class _View {
       actions
     );
     _notify();
-  }
-
-  void _clear() {
-    errors = (null, null, const {});
   }
 }
 

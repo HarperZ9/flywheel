@@ -17,6 +17,8 @@ final class JourneyController extends ChangeNotifier {
   final _Custody _custody;
   Future<void> _tail = Future.value();
   final Map<String, String> _cancelHeads = {};
+  _Target? _desired;
+  String? _pendingAck;
   var _epoch = 0;
   JourneyViewState get state => _view.snapshot;
   Future<void> initialize() async {
@@ -51,9 +53,7 @@ final class JourneyController extends ChangeNotifier {
 
   Future<void> selectJourney(String ref) => _select(ref, _view.lens, false);
   Future<void> selectLens(JourneyLens lens) async {
-    if (_view.projection == null ||
-        _view.ref == null ||
-        lens == JourneyLens.invalidResponse) {
+    if (!_view.canSelect || lens == JourneyLens.invalidResponse) {
       _view.remote(_invalid());
       return;
     }
@@ -61,18 +61,20 @@ final class JourneyController extends ChangeNotifier {
   }
 
   Future<void> _select(String ref, JourneyLens lens, bool same) async {
-    final epoch = ++_epoch, prior = _view.projection;
+    final intent = _desired = (epoch: ++_epoch, ref: ref, lens: lens);
+    final prior = _view.projection;
     _view.busy(JourneyViewPhase.loading);
     try {
       final result = await _resume((_api, ref, lens));
-      if (epoch != _epoch) return;
+      if (intent != _desired) return;
       _accept(!same || result.sameEvidenceAs(prior!));
       _custody.saveSession(ref, lens);
       _view.ready(result, ref: ref, lens: lens);
+      if (_pendingAck == ref) await _refreshAcknowledged(ref, intent);
     } on JourneyLocalStoreException catch (error) {
-      if (epoch == _epoch) _view.local(error.failure);
+      if (intent == _desired) _view.local(error.failure);
     } on Object catch (error) {
-      if (epoch == _epoch) _view.remote(_fail(error));
+      if (intent == _desired) _view.remote(_fail(error));
     }
   }
 
@@ -91,9 +93,7 @@ final class JourneyController extends ChangeNotifier {
       _q(() => _run(d.draft, _M.check));
   Future<void> requestCancel(String ref) => _q(() => _cancel(ref));
   Future<void> _run(JourneyDraft source, _M kind) async {
-    if (kind != _M.create &&
-        (_view.projection == null ||
-            source.journeyRef != _view.projection!.journeyRef)) {
+    if (kind != _M.create && !_view.hasRef(source.journeyRef)) {
       _view.local(JourneyLocalFailure.invalidRecord);
       return;
     }
@@ -236,26 +236,28 @@ final class JourneyController extends ChangeNotifier {
   }
 
   Future<(String, String?)> _grant(GrantIntent intent, String action) async {
-    final proposal = await _api.prepareGrant(intent);
-    _accept(!proposal.invalidResponse &&
-        proposal.action == action &&
-        ((proposal.operationRef != null) == (action == 'check')));
-    final grant = await _api.approveGrantOnce(proposal.proposalRef);
-    _accept(
-        !grant.invalidResponse && grant.grantRef == proposal.plannedGrantRef);
-    return (grant.grantRef, proposal.operationRef);
+    final p = await _api.prepareGrant(intent);
+    _accept(!p.invalidResponse &&
+        p.action == action &&
+        ((p.operationRef != null) == (action == 'check')));
+    final g = await _api.approveGrantOnce(p.proposalRef);
+    _accept(!g.invalidResponse && g.grantRef == p.plannedGrantRef);
+    return (g.grantRef, p.operationRef);
   }
 
   Future<void> _refreshAcknowledged(String ref, _Target target) async {
-    final current = _view.ref == ref ? _capture() : null;
-    final lens = current?.lens ?? target.lens;
+    _pendingAck = ref;
+    final desired = _desired;
+    if (_view.phase == JourneyViewPhase.loading && desired?.ref == ref) return;
+    final active = (desired?.ref ?? _view.ref) == ref;
+    final lens = active ? desired?.lens ?? _view.lens : target.lens;
     try {
       final refreshed = await _resume((_api, ref, lens));
-      if (current != null && _current(current)) {
-        _view.ready(refreshed, ref: ref, lens: lens);
-      }
+      _pendingAck = null;
+      if (active && desired == _desired) _view.ready(refreshed);
     } on Object catch (e) {
-      if (current != null && _current(current)) _view.refreshFailed(_fail(e));
+      _pendingAck = null;
+      if (active && desired == _desired) _view.refreshFailed(_fail(e));
     }
   }
 
@@ -288,9 +290,8 @@ final class JourneyController extends ChangeNotifier {
     }
   }
 
-  _Target _capture() => (epoch: ++_epoch, ref: _view.ref, lens: _view.lens);
-  bool _current(_Target target) =>
-      target == (epoch: _epoch, ref: _view.ref, lens: _view.lens);
+  _Target _capture() => (epoch: _epoch, ref: _view.ref, lens: _view.lens);
+  bool _current(_Target target) => target == _capture();
   Future<void> _q(Future<void> Function() action) {
     final result = _tail.then((_) => action());
     _tail = result.then<void>((_) {}, onError: (_) {});

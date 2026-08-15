@@ -17,16 +17,19 @@ JourneyCancelResult _cancelResult() => JourneyCancelResult.fromJson({
 
 void main() {
   _raceTests();
-  for (final kind in const ['append', 'check', 'cancel']) {
-    test('$kind completion refreshes the newly selected lens',
-        () => _sameJourneyLensRace(kind));
+  for (final ackFirst in const [false, true]) {
+    for (final kind in const ['append', 'check', 'cancel']) {
+      final order = ackFirst ? 'pending selection' : 'selected lens';
+      test('$kind completion refreshes the $order',
+          () => _sameJourneyLensRace(kind, ackFirst));
+    }
   }
   _custodyTests();
   _exactKeyTests();
   _contractTests();
 }
 
-Future<void> _sameJourneyLensRace(String kind) async {
+Future<void> _sameJourneyLensRace(String kind, bool ackFirst) async {
   final api = ScriptedJourneyApi();
   final harness = await readyHarness(api);
   addTearDown(harness.dispose);
@@ -34,12 +37,14 @@ Future<void> _sameJourneyLensRace(String kind) async {
   if (kind != 'cancel') harness.controller.saveDraft(item);
   final mutation = Completer<JourneyMutationAck>();
   final cancellation = Completer<JourneyCancelResult>();
+  final selection = Completer<JourneyProjection>();
   api
     ..reply('prepare',
         proposal(kind, operationRef: kind == 'check' ? operationA : null))
     ..reply('approve', approval())
     ..reply(kind, kind == 'cancel' ? cancellation.future : mutation.future)
-    ..reply('resume:$journeyA:diagnose', projection(lens: JourneyLens.diagnose))
+    ..reply('resume:$journeyA:diagnose',
+        ackFirst ? selection.future : projection(lens: JourneyLens.diagnose))
     ..reply('resume:$journeyA:diagnose',
         projection(head: headB, lens: JourneyLens.diagnose));
   final submitted = switch (kind) {
@@ -48,7 +53,8 @@ Future<void> _sameJourneyLensRace(String kind) async {
     _ => harness.controller.requestCancel(operationA),
   };
   await api.waitFor(kind);
-  await harness.controller.selectLens(JourneyLens.diagnose);
+  final selected = harness.controller.selectLens(JourneyLens.diagnose);
+  if (!ackFirst) await selected;
   if (kind == 'cancel') {
     cancellation.complete(_cancelResult());
   } else {
@@ -56,6 +62,10 @@ Future<void> _sameJourneyLensRace(String kind) async {
         acknowledgement(operationRef: kind == 'check' ? operationA : null));
   }
   await submitted;
+  if (ackFirst) {
+    selection.complete(projection(lens: JourneyLens.diagnose));
+    await selected;
+  }
   final state = harness.controller.state;
   expect([state.activeJourneyRef, state.projection?.journeyRef],
       [journeyA, journeyA]);
@@ -70,76 +80,58 @@ Future<void> _sameJourneyLensRace(String kind) async {
 }
 
 void _raceTests() {
-  test('append acknowledgement cannot overwrite a newer Journey', () async {
-    final api = ScriptedJourneyApi();
-    final harness = await readyHarness(api);
-    addTearDown(harness.dispose);
-    final item = draft('append');
-    harness.controller.saveDraft(item);
-    final pending = Completer<JourneyMutationAck>();
-    api
-      ..reply('prepare', proposal('append'))
-      ..reply('approve', approval())
-      ..reply('append', pending.future)
-      ..reply('resume:$journeyB:verify', projection(journeyRef: journeyB))
-      ..reply('resume:$journeyA:verify', projection(head: headB));
-    final submitted = harness.controller.submitAppend(item);
-    await api.waitFor('append');
-    await harness.controller.selectJourney(journeyB);
-    pending.complete(acknowledgement());
-    await submitted;
-    final state = harness.controller.state;
-    expect(state.activeJourneyRef, journeyB);
-    expect(state.projection?.journeyRef, journeyB);
-  });
-
-  test('conflict refresh cannot mix a newer ref with older evidence', () async {
-    final api = ScriptedJourneyApi();
-    final harness = await readyHarness(api);
-    addTearDown(harness.dispose);
-    final item = draft('append');
-    harness.controller.saveDraft(item);
-    final pending = Completer<JourneyMutationAck>();
-    api
-      ..reply('prepare', proposal('append'))
-      ..reply('approve', approval())
-      ..reply('append', pending.future)
-      ..reply('resume:$journeyB:verify', projection(journeyRef: journeyB))
-      ..reply('resume:$journeyA:verify', projection(head: headB));
-    final submitted = harness.controller.submitAppend(item);
-    await api.waitFor('append');
-    await harness.controller.selectJourney(journeyB);
-    pending.completeError(JourneyApiException(
-        JourneyFailure('HEAD_CONFLICT', 'Journey state changed', const [])));
-    await submitted;
-    final state = harness.controller.state;
-    expect(state.activeJourneyRef, journeyB);
-    expect(state.projection?.journeyRef, journeyB);
-  });
-
+  test('append acknowledgement cannot overwrite a newer Journey',
+      () => _crossJourneyRace('append', false));
+  test('conflict refresh cannot mix a newer ref with older evidence',
+      () => _crossJourneyRace('conflict', false));
   test('cancel cannot overwrite a newer Journey and switching clears result',
-      () async {
-    final api = ScriptedJourneyApi();
-    final harness = await readyHarness(api);
-    addTearDown(harness.dispose);
-    final pending = Completer<JourneyCancelResult>();
-    api
-      ..reply('prepare', proposal('cancel'))
-      ..reply('approve', approval())
-      ..reply('cancel', pending.future)
-      ..reply('resume:$journeyB:verify', projection(journeyRef: journeyB))
-      ..reply('resume:$journeyA:verify', projection(head: headB));
-    final cancelled = harness.controller.requestCancel(operationA);
-    await api.waitFor('cancel');
-    await harness.controller.selectJourney(journeyB);
-    pending.complete(_cancelResult());
-    await cancelled;
-    final state = harness.controller.state;
-    expect(state.activeJourneyRef, journeyB);
-    expect(state.projection?.journeyRef, journeyB);
-    expect(state.activeOperationRef, isNull);
-    expect(state.cancelResult, isNull);
-  });
+      () => _crossJourneyRace('cancel', false));
+  test('append completion preserves a pending Journey selection',
+      () => _crossJourneyRace('append', true));
+}
+
+Future<void> _crossJourneyRace(String outcome, bool pendingSelection) async {
+  final api = ScriptedJourneyApi();
+  final harness = await readyHarness(api);
+  addTearDown(harness.dispose);
+  final action = outcome == 'cancel' ? 'cancel' : 'append';
+  final item = draft('append');
+  if (action == 'append') harness.controller.saveDraft(item);
+  final mutation = Completer<JourneyMutationAck>();
+  final cancellation = Completer<JourneyCancelResult>();
+  final selection = Completer<JourneyProjection>();
+  api
+    ..reply('prepare', proposal(action))
+    ..reply('approve', approval())
+    ..reply(action, action == 'cancel' ? cancellation.future : mutation.future)
+    ..reply('resume:$journeyB:verify',
+        pendingSelection ? selection.future : projection(journeyRef: journeyB))
+    ..reply('resume:$journeyA:verify', projection(head: headB));
+  final submitted = action == 'cancel'
+      ? harness.controller.requestCancel(operationA)
+      : harness.controller.submitAppend(item);
+  await api.waitFor(action);
+  final selected = harness.controller.selectJourney(journeyB);
+  if (!pendingSelection) await selected;
+  if (outcome == 'conflict') {
+    mutation.completeError(JourneyApiException(
+        JourneyFailure('HEAD_CONFLICT', 'Journey state changed', const [])));
+  } else if (action == 'cancel') {
+    cancellation.complete(_cancelResult());
+  } else {
+    mutation.complete(acknowledgement());
+  }
+  await submitted;
+  if (pendingSelection) {
+    selection.complete(projection(journeyRef: journeyB));
+    await selected;
+  }
+  final state = harness.controller.state;
+  expect([state.activeJourneyRef, state.projection?.journeyRef],
+      [journeyB, journeyB]);
+  if (action == 'cancel') {
+    expect([state.activeOperationRef, state.cancelResult], [null, null]);
+  }
 }
 
 void _custodyTests() {
