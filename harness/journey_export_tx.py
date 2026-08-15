@@ -15,7 +15,7 @@ from .operation_grants import _secure_owner_only, _validate_owner_ref
 
 TX_SCHEMA = "flywheel.evidence-journey-export-transaction/v1"
 PHASES = frozenset(("prepared", "authorized", "packed", "published",
-                    "committed", "quarantined"))
+                    "quarantine_pending", "committed", "quarantined"))
 TX_FIELDS = frozenset(("schema", "owner_ref", "client_request_sha256",
     "request_sha256", "journey_ref", "source_event_head_sha256",
     "source_projection_sha256", "artifact_root_ref", "packet_ref",
@@ -33,20 +33,20 @@ def _canonical_ref(value: object, *, allow_dot: bool) -> str:
             or value != posix.as_posix() or not allow_dot and value == "."):
         raise ValueError("artifact reference is invalid")
     return value
-
 def _is_reparse(path: Path) -> bool:
     return path.is_symlink() or bool(
         getattr(path.lstat(), "st_file_attributes", 0) & 0x400)
-
+def path_present(path: Path) -> bool:
+    """Report directory entries without following a broken reparse target."""
+    return os.path.lexists(path)
 def _check_ancestors(root: Path, relative: str) -> None:
     current = root
     for part in PurePosixPath(relative).parts:
         current = current / part
-        if not current.exists():
+        if not path_present(current):
             continue
         if _is_reparse(current):
             raise ValueError("artifact path contains a link or reparse point")
-
 def artifact_root_path(state_root: Path, root_ref: object) -> tuple[Path, str]:
     """Admit one existing artifact directory beneath state custody."""
     ref = _canonical_ref(root_ref, allow_dot=True)
@@ -63,7 +63,6 @@ def artifact_root_path(state_root: Path, root_ref: object) -> tuple[Path, str]:
     if not contained or not root.is_dir() or _is_reparse(root):
         raise ValueError("artifact root is invalid")
     return root, ref
-
 def packet_target_path(root: Path, packet_ref: object) -> tuple[Path, str]:
     """Admit an absent-or-owned packet selector without following links."""
     ref = _canonical_ref(packet_ref, allow_dot=False)
@@ -78,19 +77,17 @@ def packet_target_path(root: Path, packet_ref: object) -> tuple[Path, str]:
     if not contained:
         raise ValueError("packet target escapes artifact root")
     return target, ref
-
 def prepare_target_parent(root: Path, target: Path) -> None:
     """Create and flush only missing ancestors of one admitted target."""
     current = root
     for part in target.relative_to(root).parts[:-1]:
         parent, current = current, current / part
-        if current.exists():
+        if path_present(current):
             if not current.is_dir() or _is_reparse(current):
                 raise ValueError("packet target ancestor is invalid")
             continue
         current.mkdir(); _secure_owner_only(current, directory=True)
         fsync_directory(parent)
-
 def request_digest(*, owner_ref: str, journey_ref: str, expected_event_head: str,
                    client_request_id: str, body: dict) -> str:
     return canonical_sha256({"owner_ref": owner_ref, "journey_ref": journey_ref,
@@ -100,21 +97,33 @@ def request_digest(*, owner_ref: str, journey_ref: str, expected_event_head: str
 def _tx_root(state_root: Path) -> Path:
     return Path(state_root) / "journey-exports" / "v2"
 
-def _prepare_private(path: Path) -> None:
-    missing = []
-    current = path
-    while not current.exists():
-        missing.append(current); current = current.parent
-    path.mkdir(parents=True, exist_ok=True)
-    for created in reversed(missing):
-        _secure_owner_only(created, directory=True)
-        fsync_directory(created.parent)
-    _secure_owner_only(path, directory=True)
+def _prepare_private(path: Path, state_root: Path) -> None:
+    state = Path(os.path.abspath(state_root)); target = Path(os.path.abspath(path))
+    try:
+        contained = os.path.commonpath((os.path.normcase(str(state)),
+            os.path.normcase(str(target)))) == os.path.normcase(str(state))
+        relative = target.relative_to(state)
+    except ValueError:
+        contained = False
+    if (not contained or not path_present(state) or _is_reparse(state)
+            or not state.is_dir()):
+        raise ValueError("private export path escapes state custody")
+    current = state
+    for part in relative.parts:
+        parent, current, created = current, current / part, False
+        if not path_present(current):
+            try: current.mkdir(); created = True
+            except FileExistsError: pass
+        if (not path_present(current) or _is_reparse(current)
+                or not current.is_dir()):
+            raise ValueError("private export path contains a reparse point")
+        _secure_owner_only(current, directory=True)
+        if created: fsync_directory(parent)
 
 def owner_transaction_dir(state_root: Path, owner_ref: str) -> Path:
     _validate_owner_ref(owner_ref)
     path = _tx_root(state_root) / "owners" / owner_ref
-    _prepare_private(path)
+    _prepare_private(path, state_root)
     return path
 
 def transaction_path(state_root: Path, owner_ref: str,
@@ -178,7 +187,7 @@ def replace_transaction(path: Path, value: dict) -> dict:
         except FileNotFoundError: pass
 
 def load_transaction(path: Path) -> dict | None:
-    if not path.exists():
+    if not path_present(path):
         return None
     try:
         _secure_owner_only(path, directory=False)
@@ -208,18 +217,20 @@ def update_phase(path: Path, value: dict, phase: str, **changes) -> dict:
 def target_lock_path(state_root: Path, artifact_ref: str,
                      packet_ref: str) -> Path:
     root = _tx_root(state_root) / "target-locks"
-    _prepare_private(root)
+    _prepare_private(root, state_root)
     return root / (canonical_sha256(
         {"artifact_root_ref": artifact_ref, "packet_ref": packet_ref}) + ".lock")
 
 def staging_path(state_root: Path, value: dict) -> Path:
+    _validate_owner_ref(value["owner_ref"])
     root = _tx_root(state_root) / "staging" / value["owner_ref"]
-    _prepare_private(root)
+    _prepare_private(root, state_root)
     return root / value["client_request_sha256"]
 
 def quarantine_path(state_root: Path, value: dict) -> Path:
+    _validate_owner_ref(value["owner_ref"])
     root = _tx_root(state_root) / "quarantine" / value["owner_ref"]
-    _prepare_private(root)
+    _prepare_private(root, state_root)
     suffix = (value.get("packet_digest") or "unsealed").removeprefix("sha256:")[:16]
     return root / f"{value['client_request_sha256']}-{suffix}"
 
@@ -245,15 +256,16 @@ def consumed_grant_matches(state_root: Path, value: dict) -> bool:
 
 def iter_transactions(state_root: Path) -> list[tuple[Path, dict]]:
     owners = _tx_root(state_root) / "owners"
-    if not owners.exists():
+    if not path_present(owners):
         return []
+    _prepare_private(owners, state_root)
     output = []
     for path in sorted(owners.glob("*/*.json")):
+        _prepare_private(path.parent, state_root)
         value = load_transaction(path)
         if value is not None:
             output.append((path, value))
     return output
-
 def recover_export_transactions(state_root: Path, *, now: str) -> tuple[int, int, list[str]]:
     """Advance consumed exact transactions or quarantine their one owned target."""
     from .journey_export import JourneyExportService

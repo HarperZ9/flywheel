@@ -33,6 +33,7 @@ DOES_NOT_PROVE = (
     "NOT_PROVES_LIVE_PROVIDER_STATE: offline recheck makes no provider or network call.",
     "NOT_PROVES_DURABLE_FILESYSTEM: recheck does not prove durability outside tested boundaries.",
     "NOT_PROVES_FINAL_EXPORTED_HEAD: the packet binds pre-export H0, not final H1.",
+    "NOT_PROVES_CROSS_VERSION_CHECKER_EQUIVALENCE: local checker versions may differ.",
 )
 
 def _duplicate_safe(pairs: list[tuple[str, object]]) -> dict:
@@ -42,17 +43,14 @@ def _duplicate_safe(pairs: list[tuple[str, object]]) -> dict:
             raise ValueError("duplicate JSON key")
         value[key] = item
     return value
-
 def _reject_constant(value: str) -> object:
     raise ValueError(f"non-finite JSON number: {value}")
-
 def _depth(value: object) -> int:
     if type(value) is dict:
         return 1 + max((_depth(item) for item in value.values()), default=0)
     if type(value) is list:
         return 1 + max((_depth(item) for item in value), default=0)
     return 0
-
 def _load(data: bytes) -> object:
     if len(data) > MAX_FILE:
         raise ValueError("packet file exceeds byte limit")
@@ -66,7 +64,6 @@ def _load(data: bytes) -> object:
     if _nonfinite(value):
         raise ValueError("non-finite JSON number")
     return value
-
 def _nonfinite(value: object) -> bool:
     if type(value) is float:
         return not math.isfinite(value)
@@ -75,16 +72,12 @@ def _nonfinite(value: object) -> bool:
     if type(value) is list:
         return any(_nonfinite(item) for item in value)
     return False
-
 def _digest(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
-
 def _manifest_digest(data: bytes) -> str:
     return "sha256:" + _digest(data)
-
 def _checker_sha256() -> str:
     return _digest(Path(__file__).read_bytes())
-
 def _safe_ref(value: object) -> str:
     if type(value) is not str or not value or "\\" in value or "\x00" in value:
         raise ValueError("unsafe packet path")
@@ -94,24 +87,20 @@ def _safe_ref(value: object) -> str:
             or ".." in posix.parts or value == "."):
         raise ValueError("unsafe packet path")
     return value
-
 def _reparse(path: Path) -> bool:
     info = path.lstat()
     return path.is_symlink() or bool(getattr(info, "st_file_attributes", 0) & 0x400)
-
 def _write_exclusive(path: Path, value: object) -> None:
     data = canonical_bytes(value)
     with path.open("xb") as stream:
         stream.write(data)
         stream.flush()
         os.fsync(stream.fileno())
-
 def _inventory(root: Path, names=PACKET_FILES) -> list[dict]:
     return [{"path": name, "sha256": _digest((root / name).read_bytes()),
              "bytes": (root / name).stat().st_size} for name in names]
-
 def _criterion(events: list[dict], projection: dict, tree: dict,
-               inventory_sha256: str) -> dict:
+               inventory_sha256: str, checker_source_sha256: str | None = None) -> dict:
     value = {"schema": PACKET_SCHEMA, "profile": PACKET_PROFILE,
         "journey_ref": projection["journey_ref"],
         "source_event_head_sha256": events[-1]["event_sha256"],
@@ -119,7 +108,7 @@ def _criterion(events: list[dict], projection: dict, tree: dict,
         "event_count": len(events), "tree_head_sha256": canonical_sha256(tree),
         "inventory_sha256": inventory_sha256,
         "checker_id": "harness.journey_packet_v2",
-        "checker_source_sha256": _checker_sha256(),
+        "checker_source_sha256": checker_source_sha256 or _checker_sha256(),
         "does_not_prove": list(DOES_NOT_PROVE)}
     value["criterion_sha256"] = canonical_sha256(value)
     return value
@@ -136,7 +125,6 @@ def _receipt(criterion: dict) -> dict:
         "structural_verdict": "MATCH", "does_not_prove": list(DOES_NOT_PROVE)}
     value["receipt_sha256"] = canonical_sha256(value)
     return value
-
 def pack_journey_custody_packet(staging_dir: Path, *, events: list[dict],
                                 projection: dict) -> dict:
     """Create one exact H0/P0 custody packet and return an offline recheck."""
@@ -233,13 +221,20 @@ def _semantic(parsed: dict[str, object], manifest: dict) -> tuple[dict, dict]:
         raise ValueError("projection does not equal the event-chain reduction")
     tree, criterion, receipt = (parsed["tree_head.json"],
         parsed["criterion.json"], parsed["custody_receipt.json"])
+    if (type(criterion) is not dict
+            or type(criterion.get("checker_source_sha256")) is not str
+            or len(criterion["checker_source_sha256"]) != 64
+            or any(char not in "0123456789abcdef"
+                   for char in criterion["checker_source_sha256"])):
+        raise ValueError("checker source identity is malformed")
     expected_tree = {"schema": TREE_SCHEMA, "journey_ref": projection["journey_ref"],
         "size": len(checked), "root": checked[-1]["event_sha256"],
         "projection_sha256": canonical_sha256(projection)}
     source_inventory = [item for item in manifest["files"]
                         if item.get("path") in SOURCE_FILES]
     inventory_sha = canonical_sha256(source_inventory)
-    expected_criterion = _criterion(checked, projection, expected_tree, inventory_sha)
+    expected_criterion = _criterion(checked, projection, expected_tree,
+        inventory_sha, criterion["checker_source_sha256"])
     if (tree != expected_tree or criterion != expected_criterion
             or not _self_hash(criterion, "criterion_sha256")
             or receipt != _receipt(expected_criterion)
@@ -252,6 +247,7 @@ def _failure(verdict: str, detail: str, *, structural: str | None = None) -> dic
     return {"schema": PACKET_SCHEMA, "profile": PACKET_PROFILE,
         "verdict": verdict, "structural_verdict": structural or verdict,
         "authenticity_verdict": "UNVERIFIABLE",
+        "checker_source_verdict": "UNVERIFIABLE",
         "rehash_resistance_verdict": "UNVERIFIABLE", "detail": detail,
         "does_not_prove": list(DOES_NOT_PROVE)}
 
@@ -287,9 +283,13 @@ def verify_journey_custody_packet(packet_dir: Path, *,
         return _failure("DRIFT" if semantic else "UNVERIFIABLE",
                         "custody recheck failed", structural="DRIFT" if semantic else None)
     anchored = expected_manifest_sha256 is not None
+    checker_state = ("MATCH" if criterion["checker_source_sha256"]
+                     == _checker_sha256() else "DRIFT")
     return {"schema": PACKET_SCHEMA, "profile": PACKET_PROFILE,
-        "verdict": "MATCH" if anchored else "UNVERIFIABLE",
+        "verdict": "MATCH" if anchored and checker_state == "MATCH"
+                   else "UNVERIFIABLE",
         "structural_verdict": "MATCH", "authenticity_verdict": "UNVERIFIABLE",
+        "checker_source_verdict": checker_state,
         "rehash_resistance_verdict": "MATCH" if anchored else "UNVERIFIABLE",
         "authentication": "external-manifest-sha256" if anchored else "unsigned",
         "required_external_anchor": None if anchored else "expected_manifest_sha256",

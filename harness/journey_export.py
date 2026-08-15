@@ -9,8 +9,8 @@ from uuid import uuid4
 from .evidence_json import canonical_sha256
 from .journey_export_tx import (artifact_root_path, consumed_grant_matches,
     grant_record_ref, load_or_create, load_transaction,
-    packet_target_path, prepare_target_parent, quarantine_path, request_digest,
-    staging_path, target_lock_path, transaction_path, update_phase)
+    packet_target_path, path_present, prepare_target_parent, quarantine_path,
+    request_digest, staging_path, target_lock_path, transaction_path, update_phase)
 from .journey_lock import ExclusiveJourneyLock, JourneyLockBusy, fsync_directory
 from .journey_packet_v2 import (DOES_NOT_PROVE, PACKET_PROFILE, PACKET_SCHEMA,
     pack_journey_custody_packet, verify_journey_custody_packet)
@@ -94,7 +94,7 @@ class JourneyExportService:
             return self._advance(path, current, root, target, grant_ref=grant_ref,
                                  grant_request=grant_request, replay=True)
         projection = self._source(journey_ref, expected_event_head, body)
-        if target.exists():
+        if path_present(target):
             raise JourneyStoreError("STORE_COMMIT_FAILED")
         self._grant_binding(grant_request, journey_ref, expected_event_head,
                             packet_ref, artifact_ref, body)
@@ -152,6 +152,9 @@ class JourneyExportService:
                  *, grant_ref: str | None = None,
                  grant_request: GrantRequest | None = None,
                  replay: bool = True) -> dict | None:
+        if value["phase"] == "quarantine_pending":
+            self._finish_quarantine(path, value, target)
+            raise JourneyStoreError("HEAD_CONFLICT")
         if value["phase"] == "quarantined":
             raise JourneyStoreError("HEAD_CONFLICT")
         if value["phase"] == "prepared":
@@ -190,7 +193,7 @@ class JourneyExportService:
             value["source_event_head_sha256"], {
                 "source_projection_sha256": value["source_projection_sha256"]})
         stage = staging_path(self.journey.store.state_root, value)
-        if stage.exists():
+        if path_present(stage):
             residue = quarantine_path(self.journey.store.state_root, value).with_name(
                 f"{value['client_request_sha256']}-partial-{uuid4().hex}")
             os.rename(stage, residue); fsync_directory(residue.parent)
@@ -200,7 +203,7 @@ class JourneyExportService:
         packet_digest = result["packet_digest"]
         anchored = verify_journey_custody_packet(
             stage, expected_manifest_sha256=packet_digest)
-        if anchored.get("verdict") != "MATCH" or target.exists():
+        if anchored.get("verdict") != "MATCH" or path_present(target):
             raise JourneyStoreError("STORE_COMMIT_FAILED")
         value = update_phase(path, value, "packed", packet_digest=packet_digest)
         self._checkpoint("after_staging_flush")
@@ -208,13 +211,13 @@ class JourneyExportService:
 
     def _publish(self, path: Path, value: dict, target: Path) -> dict:
         stage = staging_path(self.journey.store.state_root, value)
-        if target.exists() and not stage.exists():
+        if path_present(target) and not path_present(stage):
             checked = verify_journey_custody_packet(
                 target, expected_manifest_sha256=value["packet_digest"])
             if checked.get("verdict") != "MATCH":
                 raise JourneyStoreError("STORE_COMMIT_FAILED")
         else:
-            if target.exists() or not stage.is_dir():
+            if path_present(target) or not stage.is_dir():
                 raise JourneyStoreError("STORE_COMMIT_FAILED")
             root = target.parents[len(Path(value["packet_ref"]).parts) - 1]
             prepare_target_parent(root, target)
@@ -238,16 +241,24 @@ class JourneyExportService:
         except JourneyStoreError as exc:
             if exc.code != "HEAD_CONFLICT":
                 raise
-            held = quarantine_path(self.journey.store.state_root, value)
-            if target.exists():
-                os.rename(target, held); fsync_directory(target.parent)
-                fsync_directory(held.parent)
-            update_phase(path, value, "quarantined")
+            value = update_phase(path, value, "quarantine_pending")
+            self._finish_quarantine(path, value, target)
             raise
         self._checkpoint("after_event_commit")
         return update_phase(path, value, "committed",
             final_event_head_sha256=ack.event_head_sha256,
             final_projection_sha256=ack.projection_sha256)
+
+    def _finish_quarantine(self, path: Path, value: dict, target: Path) -> dict:
+        held = quarantine_path(self.journey.store.state_root, value)
+        if path_present(target):
+            if path_present(held):
+                raise JourneyStoreError("STORE_COMMIT_FAILED")
+            os.rename(target, held); fsync_directory(target.parent)
+            fsync_directory(held.parent); self._checkpoint("after_quarantine_move")
+        elif not path_present(held):
+            raise JourneyStoreError("STORE_COMMIT_FAILED")
+        return update_phase(path, value, "quarantined")
 
     @staticmethod
     def _event_payload(value: dict) -> dict:

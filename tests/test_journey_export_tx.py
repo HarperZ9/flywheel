@@ -1,12 +1,17 @@
 import json
+import os
 from concurrent.futures import ThreadPoolExecutor
+from pathlib import Path
 
 import pytest
 
+import harness.journey_export_tx as export_tx
 from harness.evidence_json import canonical_sha256
+from harness.grant_route import grant_post, resolve_approved_grant
 from harness.journey_export import JourneyExportService
 from harness.journey_packet_v2 import PACKET_PROFILE
 from harness.journey_recovery import recover_store
+from harness.journey_route import journey_post
 from harness.journey_service import JourneyService
 from harness.journey_store import JourneyStore, JourneyStoreError, MutationCommand
 from harness.operation_grants import GrantRequest, GrantStore
@@ -52,6 +57,18 @@ def _events(root):
     return [json.loads(path.read_bytes()) for path in sorted(directory.glob("*.json"))]
 
 
+def _private_path(kind, state):
+    value = {"owner_ref": OWNER, "client_request_sha256": "a" * 64,
+             "packet_digest": "sha256:" + "b" * 64}
+    if kind == "owner":
+        return export_tx.owner_transaction_dir(state, OWNER)
+    if kind == "staging":
+        return export_tx.staging_path(state, value)
+    if kind == "quarantine":
+        return export_tx.quarantine_path(state, value)
+    return export_tx.target_lock_path(state, "artifacts", "packets/out")
+
+
 def _crash(root, point):
     head = _concluded(root)
     request, grant_ref, body = _authority(root, head)
@@ -93,6 +110,110 @@ def test_recovery_quarantines_only_owned_target_after_competing_head(tmp_path):
     assert report["quarantined"] == 1
     assert not (artifacts / "packets" / "journey").exists()
     assert neighbor.read_text(encoding="utf-8") == "keep"
+
+
+def test_recovery_finishes_crash_after_quarantine_move(tmp_path):
+    """A crash between owned-target move and phase seal must remain recoverable."""
+    artifacts = tmp_path / "artifacts"; artifacts.mkdir()
+    head = _concluded(tmp_path)
+    request, grant_ref, body = _authority(tmp_path, head)
+    with pytest.raises(JourneyStoreError):
+        JourneyExportService(journey=_service(tmp_path),
+            artifact_root_ref="artifacts", fault_injector=lambda point:
+            (_ for _ in ()).throw(OSError("crash"))
+            if point == "after_publish" else None).export(
+                journey_ref=JOURNEY, expected_event_head=head,
+                client_request_id="export-1", packet_ref="packets/journey",
+                grant_ref=grant_ref, grant_request=request, body=body)
+    JourneyStore(tmp_path).append(MutationCommand(OWNER, JOURNEY, head,
+        "competing-quarantine", "record_next_action", {"occurred_at": NOW,
+        "payload": {"next_actions": [{"action_id": "inspect",
+            "kind": "inspect", "description": "Inspect competing head",
+            "basis_refs": ["fact_public"]}]}}))
+    with pytest.raises(JourneyStoreError) as failure:
+        JourneyExportService(journey=_service(tmp_path),
+            artifact_root_ref="artifacts", fault_injector=lambda point:
+            (_ for _ in ()).throw(OSError("crash"))
+            if point == "after_quarantine_move" else None).export(
+                journey_ref=JOURNEY, expected_event_head=head,
+                client_request_id="export-1", packet_ref="packets/journey",
+                grant_ref=grant_ref, grant_request=request, body=body)
+    assert failure.value.code == "STORE_COMMIT_FAILED"
+    report = recover_store(tmp_path, now=NOW)
+    transaction = next((tmp_path / "journey-exports" / "v2" / "owners"
+                        / OWNER).glob("*.json"))
+    assert report["quarantined"] == 1 and report["completed"] == 0
+    assert json.loads(transaction.read_bytes())["phase"] == "quarantined"
+    assert not (artifacts / "packets" / "journey").exists()
+
+
+@pytest.mark.parametrize("kind", ("owner", "staging", "quarantine", "lock"))
+def test_private_export_roots_reject_abstract_reparse_ancestor(
+        tmp_path, monkeypatch, kind):
+    """A Windows-style reparse ancestor must not redirect private custody."""
+    state = tmp_path / "state"; suspect = state / "journey-exports"
+    suspect.mkdir(parents=True)
+    original = export_tx._is_reparse
+    monkeypatch.setattr(export_tx, "_is_reparse", lambda path:
+                        Path(path) == suspect or original(path))
+    with pytest.raises(ValueError):
+        _private_path(kind, state)
+    assert not (suspect / "v2").exists()
+
+
+@pytest.mark.skipif(os.name == "nt", reason="deterministic POSIX symlink case")
+@pytest.mark.parametrize("kind", ("owner", "staging", "quarantine", "lock"))
+def test_private_export_roots_reject_real_symlink_ancestor(tmp_path, kind):
+    """A real symlink must not create transaction material outside state."""
+    state, outside = tmp_path / "state", tmp_path / "outside"
+    state.mkdir(); outside.mkdir()
+    (state / "journey-exports").symlink_to(outside, target_is_directory=True)
+    with pytest.raises(ValueError):
+        _private_path(kind, state)
+    assert list(outside.iterdir()) == []
+
+
+@pytest.mark.parametrize("kind", ("owner", "staging", "quarantine", "lock"))
+def test_private_export_roots_verify_state_containment(tmp_path, monkeypatch, kind):
+    """Every private root must reject a computed path outside state custody."""
+    state, outside = tmp_path / "state", tmp_path / "outside"
+    state.mkdir(); outside.mkdir()
+    monkeypatch.setattr(export_tx, "_tx_root", lambda _state: outside)
+    with pytest.raises(ValueError):
+        _private_path(kind, state)
+    assert list(outside.iterdir()) == []
+
+
+def test_public_export_rejects_broken_reparse_target_before_grant_burn(
+        tmp_path, monkeypatch):
+    """A broken target reparse point must not consume approved authority."""
+    state, evidence = tmp_path / "state", tmp_path / "state" / "artifacts"
+    evidence.mkdir(parents=True); head = _concluded(state)
+    public = {"journey_ref": JOURNEY, "expected_event_head": head,
+        "client_request_id": "export-broken", "packet_ref": "packets/broken"}
+    proposed, status = grant_post("/api/grants/prepare/export",
+        json.dumps(public).encode(), owner_ref=OWNER, state_root=state,
+        evidence_root=evidence, clock=lambda: NOW)
+    assert status == 200
+    approved, status = grant_post("/api/grants/approve-once", json.dumps({
+        "proposal_ref": proposed["proposal_ref"]}).encode(), owner_ref=OWNER,
+        state_root=state, evidence_root=evidence, clock=lambda: NOW)
+    assert status == 200
+    resolved = resolve_approved_grant(approved["grant_ref"], owner_ref=OWNER,
+        state_root=state, clock=lambda: NOW)
+    target = evidence / "packets" / "broken"; target.mkdir(parents=True)
+    real_exists, real_reparse = Path.exists, export_tx._is_reparse
+    monkeypatch.setattr(Path, "exists", lambda path:
+                        False if path == target else real_exists(path))
+    monkeypatch.setattr(export_tx, "_is_reparse", lambda path:
+                        path == target or real_reparse(path))
+    result, status = journey_post("/api/journeys/export", json.dumps({
+        **public, "grant_ref": approved["grant_ref"]}).encode(), owner_ref=OWNER,
+        state_root=state, evidence_root=evidence, clock=lambda: NOW)
+    assert status == 500 and result["error"]["code"] == "STORE_COMMIT_FAILED"
+    consumed = GrantStore(state, clock=lambda: NOW).consume(
+        approved["grant_ref"], resolved["grant_request"], now=NOW)
+    assert consumed["consumed"] is True
 
 
 def test_transaction_is_digest_closed_and_omits_raw_grant_ref(tmp_path):

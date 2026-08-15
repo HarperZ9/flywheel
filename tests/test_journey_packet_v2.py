@@ -81,11 +81,26 @@ def test_custody_packet_rechecks_clean_copy_without_oracle_or_host_paths(tmp_pat
     assert unanchored["structural_verdict"] == "MATCH"
     assert unanchored["verdict"] == "UNVERIFIABLE"
     assert anchored["verdict"] == "MATCH"
+    assert anchored["checker_source_verdict"] == "MATCH"
     drifted = verify_journey_custody_packet(
         clean, expected_manifest_sha256="sha256:" + "0" * 64)
     assert drifted["verdict"] == drifted["rehash_resistance_verdict"] == "DRIFT"
     assert str(tmp_path).encode() not in carried
     assert b"Zain" not in carried and b"credential" not in carried
+
+
+def test_checker_version_drift_does_not_reclassify_carried_packet_bytes(
+        tmp_path, monkeypatch):
+    """Local checker drift is not structural tamper of anchored packet bytes."""
+    packet, _, _, packed = _packet(tmp_path)
+    monkeypatch.setattr(packet_module, "_checker_sha256", lambda: "f" * 64)
+    checked = verify_journey_custody_packet(
+        packet, expected_manifest_sha256=packed["packet_digest"])
+    assert checked["structural_verdict"] == "MATCH"
+    assert checked["rehash_resistance_verdict"] == "MATCH"
+    assert checked["checker_source_verdict"] == "DRIFT"
+    assert checked["verdict"] == "UNVERIFIABLE"
+    assert any("CROSS_VERSION" in item for item in checked["does_not_prove"])
 
 
 @pytest.mark.parametrize("rel,mutate", [
