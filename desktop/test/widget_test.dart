@@ -1,72 +1,106 @@
-// Shell tests: the app renders the sidebar with all destinations,
-// navigation switches views, and the offline state names the command that
-// fixes it.
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-
 import 'package:flywheel_desktop/main.dart';
-import 'package:flywheel_desktop/services/settings.dart';
+import 'package:flywheel_desktop/shell/view_factory.dart';
+import 'package:flywheel_desktop/views/lanes_view.dart';
+import 'package:flywheel_desktop/views/receipts_view.dart';
+import 'package:flywheel_desktop/widgets/fw.dart';
 import 'package:flywheel_desktop/widgets/side_rail.dart';
 
+import 'journey_controller_test.dart' show headA;
+import 'journey_shell_test.dart';
+
+const _types = <String, String>{
+  'Journey': 'JourneyView',
+  'Chat': 'AgentView',
+  'Compare': 'CompareView',
+  'Models': 'EndpointsView',
+  'Code': 'CodeView',
+  'Eval': 'EvalView',
+  'Audit': 'AuditView',
+  'Companion': 'CompanionView',
+  'Plan': 'PlanView',
+  'Workflows': 'WorkflowsView',
+  'Studio': 'StudioView',
+  'Lint': 'LintView',
+  'Memory': 'MemoryView',
+  'Graph': 'GraphView',
+  'Projects': 'ProjectsView',
+  'Feeds': 'FeedsView',
+  'Discourse': 'DiscourseView',
+  'Academy': 'AcademyView',
+  'Lessons': 'LessonsView',
+  'Governance': 'GovernanceView',
+  'Receipts': 'ReceiptsView',
+  'Usage': 'UsageView',
+  'Instruments': 'InstrumentsView',
+  'Science': 'ScienceView',
+  'World': 'WorldView',
+  'Lanes': 'LanesView',
+  'Train': 'TrainView',
+  'Uplift': 'UpliftView',
+  'Family': 'FamilyView',
+  'Plugins': 'PluginsView',
+};
+
 void main() {
-  testWidgets('App renders the shell with all twenty-four destinations',
-      (WidgetTester tester) async {
-    await tester.pumpWidget(FlywheelApp(settings: DesktopSettings()));
-    await tester.pump();
-    expect(find.text('Flywheel'), findsWidgets);
-    expect(find.byType(SideRail), findsOneWidget);
-    // In rail order (top to bottom) so the one-directional scroll below reveals
-    // each in turn — the nav is grouped Start / Do / Know / Advanced.
-    for (final label in [
-      'Chat',
-      'Compare',
-      'Models',
-      'Code',
-      'Companion',
-      'Plan',
-      'Workflows',
-      'Studio',
-      'Lint',
-      'Memory',
-      'Graph',
-      'Projects',
-      'Feeds',
-      'Discourse',
-      'Academy',
-      'Receipts',
-      'Instruments',
-      'Science',
-      'World',
-      'Lanes',
-      'Train',
-      'Uplift',
-      'Family',
-      'Plugins',
-    ]) {
-      // The rail scrolls when the window is short; bring each item in view.
-      await tester.scrollUntilVisible(find.text(label), 40,
-          scrollable: find.byType(Scrollable).first);
-      expect(find.text(label), findsOneWidget);
+  testWidgets('factory preserves all thirty exact destination mappings',
+      (tester) async {
+    final dir = Directory.systemTemp.createTempSync('journey-factory-');
+    addTearDown(() => dir.deleteSync(recursive: true));
+    final harness = ShellHarness(dir)..replyReady();
+    await tester.pumpWidget(harness.app());
+    await tester.pumpAndSettle();
+    final inputs = DestinationInputs(
+      client: harness.client,
+      journey: harness.controller,
+      alive: false,
+      settings: harness.settings,
+      pendingArgument: headA,
+      onProbe: () {},
+      onInstall: (_) async => const {},
+    );
+    expect(flywheelDestinations.map((item) => item.label), _types.keys);
+    for (final entry in _types.entries) {
+      expect(buildDestinationView(entry.key, inputs).runtimeType.toString(),
+          entry.value,
+          reason: entry.key);
     }
+    expect(buildDestinationView('Unknown', inputs), isA<FwEmpty>());
+    expect((buildDestinationView('Receipts', inputs) as ReceiptsView).focusLeaf,
+        headA);
+    final lanes = buildDestinationView('Lanes', inputs) as LanesView;
+    expect(lanes.onProbe, isNotNull);
+    expect(lanes.onInstall, isNotNull);
+    await unmount(tester);
   });
 
-  testWidgets('Navigation switches views and offline state names the command',
-      (WidgetTester tester) async {
-    // A tall window so the grouped rail fits without scrolling and every
-    // destination is directly tappable.
-    tester.view.physicalSize = const Size(1400, 1600);
-    tester.view.devicePixelRatio = 1.0;
+  testWidgets('thirty labels remain reachable at ordinary scaled viewport',
+      (tester) async {
+    tester.view.physicalSize = const Size(1440, 900);
+    tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
-
-    await tester.pumpWidget(FlywheelApp(settings: DesktopSettings()));
-    await tester.pump();
-    // Offline (no gateway in the test environment): Chat, the default surface,
-    // states the fact and names the command.
-    expect(find.textContaining('flywheel up'), findsWidgets);
-    // Switch to Receipts (now under Advanced); its offline state renders too.
+    final dir = Directory.systemTemp.createTempSync('journey-shell-routes-');
+    addTearDown(() => dir.deleteSync(recursive: true));
+    final harness = ShellHarness(dir)..replyReady();
+    harness.settings.uiScale = 1.4;
+    await tester.pumpWidget(FlywheelApp(
+        settings: harness.settings, dependencies: harness.dependencies));
+    await tester.pumpAndSettle();
+    final rail = tester.widget<SideRail>(find.byType(SideRail));
+    expect(rail.destinations, hasLength(30));
+    for (final label in _types.keys) {
+      await tester.scrollUntilVisible(find.text(label), 40,
+          scrollable: find.byType(Scrollable).first);
+      expect(find.text(label), findsOneWidget, reason: label);
+    }
     await tester.tap(find.text('Receipts'));
     await tester.pump();
     expect(find.textContaining('receipts ledger'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    await unmount(tester);
   });
 }
