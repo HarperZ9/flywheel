@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui' show AppExitResponse;
 
 import 'package:flutter/material.dart';
 
@@ -7,9 +8,12 @@ import '../client/journey_api.dart';
 import '../controllers/journey_controller.dart';
 import '../models/gateway_models.dart';
 import '../services/gateway_process.dart';
+import '../services/code_draft_store.dart';
 import '../services/journey_draft_store.dart';
 import '../services/journey_session_store.dart';
 import '../services/settings.dart';
+import '../ide/code_buffer_session.dart';
+import '../ide/unsaved_work_guard.dart';
 import '../widgets/appearance_panel.dart';
 import '../widgets/flywheel_nav.dart';
 import '../widgets/side_rail.dart';
@@ -21,6 +25,8 @@ final class FlywheelDependencies {
     required this.client,
     required this.gateway,
     required this.journey,
+    required this.code,
+    this.closePrompt,
   });
 
   factory FlywheelDependencies.production() {
@@ -28,6 +34,7 @@ final class FlywheelDependencies {
     return FlywheelDependencies(
       client: client,
       gateway: GatewayProcess(),
+      code: CodeBufferSession(draftStore: CodeDraftStore()),
       journey: JourneyController(
         api: GatewayJourneyApi(client),
         draftStore: JourneyDraftStore(),
@@ -39,9 +46,12 @@ final class FlywheelDependencies {
   final GatewayClient client;
   final GatewayProcess gateway;
   final JourneyController journey;
+  final CodeBufferSession code;
+  final CloseChoicePrompt? closePrompt;
 
   void dispose() {
     journey.dispose();
+    code.dispose();
     client.close();
     gateway.stopIfOwned();
   }
@@ -79,11 +89,19 @@ class _FlywheelShellState extends State<FlywheelShell> {
   WorldDoc? _world;
   Timer? _timer;
   Object? _pendingArgument;
+  late final UnsavedWorkGuard _guard;
+  late final AppLifecycleListener _lifecycle;
+  int _navigationGeneration = 0;
 
   @override
   void initState() {
     super.initState();
     _dependencies = widget.dependencies ?? FlywheelDependencies.production();
+    _guard = UnsavedWorkGuard(
+        session: _dependencies.code,
+        prompt: _dependencies.closePrompt ??
+            (request) => showUnsavedWorkPrompt(context, request));
+    _lifecycle = AppLifecycleListener(onExitRequested: _requestExit);
     unawaited(_dependencies.journey.initialize());
     unawaited(_poll());
     _timer = Timer.periodic(
@@ -95,6 +113,7 @@ class _FlywheelShellState extends State<FlywheelShell> {
   @override
   void dispose() {
     _timer?.cancel();
+    _lifecycle.dispose();
     _dependencies.dispose();
     super.dispose();
   }
@@ -102,12 +121,28 @@ class _FlywheelShellState extends State<FlywheelShell> {
   void _goTo(String label, {Object? arg}) {
     final index =
         flywheelDestinations.indexWhere((item) => item.label == label);
-    if (index < 0) return;
+    if (index >= 0) unawaited(_requestSelection(index, arg: arg));
+  }
+
+  Future<void> _requestSelection(int index, {Object? arg}) async {
+    if (index == _selectedIndex) {
+      if (arg != null) setState(() => _pendingArgument = arg);
+      return;
+    }
+    final generation = ++_navigationGeneration;
+    final allowed =
+        await _guard.requestNavigation(flywheelDestinations[index].label);
+    if (!allowed || !mounted || generation != _navigationGeneration) return;
     setState(() {
       _selectedIndex = index;
       _pendingArgument = arg;
     });
   }
+
+  Future<AppExitResponse> _requestExit() async =>
+      await _guard.requestApplicationExit()
+          ? AppExitResponse.exit
+          : AppExitResponse.cancel;
 
   Future<void> _poll() async {
     final alive = await _dependencies.client.isAlive();
@@ -186,6 +221,8 @@ class _FlywheelShellState extends State<FlywheelShell> {
       DestinationInputs(
         client: _dependencies.client,
         journey: _dependencies.journey,
+        code: _dependencies.code,
+        codeGuard: _guard,
         alive: _gatewayAlive,
         settings: widget.settings,
         pendingArgument: argument,
@@ -223,7 +260,7 @@ class _FlywheelShellState extends State<FlywheelShell> {
   Widget _rail() => SideRail(
         destinations: flywheelDestinations,
         selectedIndex: _selectedIndex,
-        onSelect: (index) => setState(() => _selectedIndex = index),
+        onSelect: (index) => unawaited(_requestSelection(index)),
         themeMode: widget.themeMode,
         onToggleTheme: widget.onToggleTheme,
         collapsed: _railCollapsed,

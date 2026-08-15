@@ -8,23 +8,7 @@ import 'package:flutter/services.dart';
 
 import '../theme/flywheel_theme.dart';
 import '../widgets/fw.dart';
-import 'highlighter.dart';
-
-class OpenFile {
-  final String path;
-  final CodeEditingController controller;
-  final bool readOnly;
-  final String? note;
-  bool dirty = false;
-
-  OpenFile(
-      {required this.path,
-      required this.controller,
-      this.readOnly = false,
-      this.note});
-
-  String get name => path.split(RegExp(r'[\\/]')).last;
-}
+import 'code_buffer_session.dart';
 
 class EditorPane extends StatelessWidget {
   final OpenFile file;

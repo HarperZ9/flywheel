@@ -8,8 +8,11 @@ import 'package:http/testing.dart';
 import 'package:flywheel_desktop/app.dart';
 import 'package:flywheel_desktop/client/gateway_client.dart';
 import 'package:flywheel_desktop/controllers/journey_controller.dart';
+import 'package:flywheel_desktop/ide/code_buffer_session.dart';
+import 'package:flywheel_desktop/ide/unsaved_work_guard.dart';
 import 'package:flywheel_desktop/models/journey_models.dart';
 import 'package:flywheel_desktop/services/gateway_process.dart';
+import 'package:flywheel_desktop/services/code_draft_store.dart';
 import 'package:flywheel_desktop/services/journey_draft_store.dart';
 import 'package:flywheel_desktop/services/journey_session_store.dart';
 import 'package:flywheel_desktop/services/settings.dart';
@@ -72,6 +75,7 @@ class ShellHarness {
     bool seedSession = true,
     Future<http.Response> Function(http.Request)? handler,
     CountingGatewayProcess? gateway,
+    CloseChoicePrompt? closePrompt,
   })  : api = ScriptedJourneyApi(),
         settings = MemorySettings(),
         transport = ClosingMockClient(handler),
@@ -86,8 +90,14 @@ class ShellHarness {
     }
     controller =
         JourneyController(api: api, draftStore: drafts, sessionStore: sessions);
+    code = CodeBufferSession(
+        draftStore: CodeDraftStore(root: Directory('${directory.path}/code')));
     dependencies = FlywheelDependencies(
-        client: client, gateway: process, journey: controller);
+        client: client,
+        gateway: process,
+        journey: controller,
+        code: code,
+        closePrompt: closePrompt);
   }
   final Directory directory;
   final ScriptedJourneyApi api;
@@ -98,6 +108,7 @@ class ShellHarness {
   late final JourneyDraftStore drafts;
   late final JourneySessionStore sessions;
   late final JourneyController controller;
+  late final CodeBufferSession code;
   late final FlywheelDependencies dependencies;
 
   void replyReady({
@@ -271,7 +282,7 @@ void _lifecycleRaceTests() {
     final rail = tester.widget<SideRail>(find.byType(SideRail));
     rail.onSelect(
         rail.destinations.indexWhere((item) => item.label == 'Lanes'));
-    await tester.pump();
+    await tester.pumpAndSettle();
     final lanes = tester.widget<LanesView>(find.byType(LanesView));
     final pending = lanes.onInstall!('mneme');
     await tester.pump();

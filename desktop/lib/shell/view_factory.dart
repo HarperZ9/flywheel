@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../client/gateway_client.dart';
 import '../controllers/journey_controller.dart';
+import '../ide/code_buffer_session.dart';
+import '../ide/unsaved_work_guard.dart';
 import '../models/gateway_models.dart';
 import '../services/settings.dart';
 import '../views/academy_view.dart';
@@ -74,6 +76,8 @@ final class DestinationInputs {
   const DestinationInputs({
     required this.client,
     required this.journey,
+    required this.code,
+    required this.codeGuard,
     required this.alive,
     required this.settings,
     required this.onProbe,
@@ -85,6 +89,8 @@ final class DestinationInputs {
 
   final GatewayClient client;
   final JourneyController journey;
+  final CodeBufferSession code;
+  final UnsavedWorkGuard codeGuard;
   final bool alive;
   final DesktopSettings settings;
   final Object? pendingArgument;
@@ -107,8 +113,12 @@ Widget? _startAndDo(String label, DestinationInputs i) => switch (label) {
       'Compare' =>
         CompareView(client: i.client, alive: i.alive, settings: i.settings),
       'Models' => EndpointsView(client: i.client, alive: i.alive),
-      'Code' =>
-        CodeView(client: i.client, alive: i.alive, settings: i.settings),
+      'Code' => CodeView(
+          client: i.client,
+          alive: i.alive,
+          settings: i.settings,
+          session: i.code,
+          guard: i.codeGuard),
       'Eval' => EvalView(client: i.client, alive: i.alive),
       'Audit' => AuditView(client: i.client, alive: i.alive),
       'Companion' => CompanionView(client: i.client, alive: i.alive),

@@ -1,299 +1,238 @@
-// code_view.dart — the Code view: an IDE lane on the one surface. Open a
-// folder, edit with highlighting and Ctrl+S, and put the gated agent to
-// work on the workspace itself. The editor is local dart:io; the agent
-// runs through the engine with the workspace as its sandbox root.
-
-import 'dart:io';
+import 'dart:async';
 
 import 'package:flutter/material.dart';
 
 import '../client/gateway_client.dart';
 import '../ide/agent_panel.dart';
+import '../ide/code_buffer_session.dart';
 import '../ide/diff.dart';
 import '../ide/diff_view.dart';
 import '../ide/editor_pane.dart';
-import '../ide/tab_bar.dart';
 import '../ide/file_tree.dart';
-import '../ide/highlighter.dart';
 import '../ide/lint_index_sheet.dart';
 import '../ide/lsp_config.dart';
-import '../ide/workspace.dart' as ws;
+import '../ide/open_panel.dart';
+import '../ide/tab_bar.dart';
+import '../ide/unsaved_work_guard.dart';
 import '../services/settings.dart';
 import '../theme/flywheel_theme.dart';
-import '../ide/open_panel.dart';
 import '../widgets/fw.dart';
 import '../widgets/split_pane.dart';
 
 class CodeView extends StatefulWidget {
+  const CodeView({
+    super.key,
+    required this.client,
+    required this.alive,
+    required this.settings,
+    required this.session,
+    required this.guard,
+  });
+
   final GatewayClient client;
   final bool alive;
   final DesktopSettings settings;
-  const CodeView(
-      {super.key,
-      required this.client,
-      required this.alive,
-      required this.settings});
+  final CodeBufferSession session;
+  final UnsavedWorkGuard guard;
 
   @override
   State<CodeView> createState() => _CodeViewState();
 }
 
 class _CodeViewState extends State<CodeView> {
-  String? _root;
-  final List<OpenFile> _open = [];
-  int _active = -1;
-  String? _status;
-  final Map<String, String> _preRunSnapshot = {};
-  List<FileDiff> _diffs = [];
-  // Owned here so the diff viewer's anchored change requests compose into
-  // the same goal the agent panel sends.
   final _agentGoal = TextEditingController();
 
   @override
   void dispose() {
-    for (final f in _open) {
-      f.controller.dispose();
-    }
     _agentGoal.dispose();
     super.dispose();
   }
 
   void _openWorkspace(String path) {
-    final dir = Directory(path.trim());
-    if (!dir.existsSync()) {
-      setState(() => _status = 'Not a directory: ${path.trim()}');
-      return;
+    try {
+      widget.session.openWorkspace(path.trim());
+      widget.settings.rememberWorkspace(widget.session.workspaceRoot!);
+      widget.session.recover();
+    } catch (_) {
+      widget.session.report('workspace unavailable');
     }
-    widget.settings.rememberWorkspace(dir.path);
-    setState(() {
-      _root = dir.path;
-      _open.clear();
-      _active = -1;
-      _status = null;
-    });
   }
 
   void _openFile(String path) {
-    final existing = _open.indexWhere((f) => f.path == path);
-    if (existing >= 0) {
-      setState(() => _active = existing);
-      return;
-    }
-    final loaded = ws.loadFile(path);
-    final file = OpenFile(
-      path: path,
-      controller: CodeEditingController(
-          text: loaded.content, language: languageFor(path)),
-      readOnly: loaded.readOnly,
-      note: loaded.note,
-    );
-    setState(() {
-      _open.add(file);
-      _active = _open.length - 1;
-    });
-  }
-
-  void _closeFile(int i) {
-    setState(() {
-      _open.removeAt(i).controller.dispose();
-      if (_active >= _open.length) _active = _open.length - 1;
-    });
-  }
-
-  void _save(OpenFile f) {
-    if (f.readOnly) return;
     try {
-      ws.saveFile(f.path, f.controller.text);
-      setState(() {
-        f.dirty = false;
-        _status = 'saved ${f.name}';
-      });
-      // Ask the language server what it thinks of the saved buffer.
-      resolveDiagnostics(widget.client, f, _root!).then((d) {
-        if (d != null && mounted) {
-          setState(() => _status = 'saved ${f.name} · $d');
-        }
-      });
-    } catch (e) {
-      setState(() => _status = 'save failed: $e');
+      widget.session.openFile(path);
+    } catch (_) {
+      widget.session.report('file unavailable');
     }
   }
 
-  /// Before an agent run: snapshot open files so the change is diffable.
-  void _snapshotOpenFiles() {
-    _preRunSnapshot.clear();
-    for (final f in _open) {
-      _preRunSnapshot[f.path] = f.controller.text;
-    }
-  }
-
-  /// After an agent run: reload every clean open file from disk so the
-  /// editor shows what the agent actually wrote, and diff against the
-  /// pre-run snapshot as evidence of the change. Dirty files are kept and
-  /// flagged rather than silently overwritten.
-  void _reloadCleanFiles() {
-    var reloaded = 0;
-    final diffs = <FileDiff>[];
-    for (final f in _open) {
-      if (f.dirty || f.readOnly) continue;
-      final fresh = ws.loadFile(f.path);
-      if (fresh.content != f.controller.text) {
-        final before = _preRunSnapshot[f.path];
-        if (before != null) {
-          diffs.add(diffFiles(f.path, before, fresh.content));
-        }
-        f.controller.text = fresh.content;
-        reloaded++;
-      }
-    }
-    setState(() {
-      _diffs = diffs;
-      if (reloaded > 0) {
-        _status = '$reloaded open file(s) changed on disk, reloaded';
-      }
+  void _save(OpenFile file) {
+    if (!widget.session.save(file.path)) return;
+    resolveDiagnostics(widget.client, file, widget.session.workspaceRoot!)
+        .then((value) {
+      if (value != null) widget.session.report('saved ${file.name} · $value');
     });
   }
 
-  /// F12: ask the language server where the symbol under the cursor is
-  /// defined, then jump there. A missing server is a named status line.
-  Future<void> _goToDefinition(OpenFile f) async {
-    setState(() => _status = 'definition…');
-    final r = await resolveDefinition(widget.client, f, _root!);
-    if (r.target == null) {
-      setState(() => _status = r.message);
+  Future<void> _goToDefinition(OpenFile file) async {
+    widget.session.report('definition…');
+    final result = await resolveDefinition(
+        widget.client, file, widget.session.workspaceRoot!);
+    if (result.target == null) {
+      widget.session.report(result.message);
       return;
     }
-    _openFile(r.target!.path);
-    final opened = _open[_active];
-    final offset = offsetOf(
-        opened.controller.text, r.target!.line, r.target!.character);
-    opened.controller.selection = TextSelection.collapsed(offset: offset);
-    setState(() => _status = 'definition: ${opened.name}:${r.target!.line + 1}');
+    _openFile(result.target!.path);
+    final opened = _active;
+    if (opened == null) return;
+    opened.controller.selection = TextSelection.collapsed(
+        offset: offsetOf(opened.controller.text, result.target!.line,
+            result.target!.character));
+    widget.session.report('definition: ${opened.name}');
   }
 
-  /// Shift+F12: list references for the symbol under the cursor; tapping
-  /// one jumps there.
-  Future<void> _findReferences(OpenFile f) async {
-    setState(() => _status = 'references…');
-    final r = await resolveReferences(widget.client, f, _root!);
-    setState(() => _status = r.message);
-    if (r.targets.isEmpty || !mounted) return;
-    showReferencesSheet(context, r.targets, (t) {
-      _openFile(t.path);
-      final opened = _open[_active];
+  Future<void> _findReferences(OpenFile file) async {
+    widget.session.report('references…');
+    final result = await resolveReferences(
+        widget.client, file, widget.session.workspaceRoot!);
+    widget.session.report(result.message);
+    if (result.targets.isEmpty || !mounted) return;
+    showReferencesSheet(context, result.targets, (target) {
+      _openFile(target.path);
+      final opened = _active;
+      if (opened == null) return;
       opened.controller.selection = TextSelection.collapsed(
-          offset: offsetOf(opened.controller.text, t.line, t.character));
+          offset:
+              offsetOf(opened.controller.text, target.line, target.character));
     });
   }
 
   void _showDiffs() {
-    showDiffSheet(context, _diffs, (d, anchor, note) {
-      final prefix = _agentGoal.text.trim().isEmpty
-          ? ''
-          : '${_agentGoal.text.trimRight()}\n';
-      _agentGoal.text = '${prefix}CHANGE REQUEST [${d.path} @ $anchor]: $note';
+    showDiffSheet(context, widget.session.diffs, (diff, anchor, note) {
+      final current = _agentGoal.text.trimRight();
+      _agentGoal.text = '${current.isEmpty ? '' : '$current\n'}'
+          'CHANGE REQUEST [${diff.path} @ $anchor]: $note';
       Navigator.of(context).pop();
-      setState(
-          () => _status = 'change request anchored to ${d.path} @ $anchor');
+      widget.session.report('change request anchored to ${diff.path}');
     });
   }
 
-  /// Open a file and land the cursor on a 1-indexed line (lint findings).
   void _openAt(String path, int line) {
     _openFile(path);
-    if (_active < 0 || _active >= _open.length) return;
-    final opened = _open[_active];
+    final opened = _active;
+    if (opened == null) return;
     opened.controller.selection = TextSelection.collapsed(
         offset: offsetOf(opened.controller.text, line - 1, 0));
-    setState(() => _status = '${opened.name}:$line');
+  }
+
+  OpenFile? get _active {
+    final index = widget.session.activeIndex;
+    final open = widget.session.openFiles;
+    return index >= 0 && index < open.length ? open[index] : null;
   }
 
   @override
-  Widget build(BuildContext context) {
-    if (_root == null) {
+  Widget build(BuildContext context) => AnimatedBuilder(
+        animation: widget.session,
+        builder: (context, _) => _content(context),
+      );
+
+  Widget _content(BuildContext context) {
+    final root = widget.session.workspaceRoot;
+    if (root == null) {
       return OpenWorkspacePanel(
-          settings: widget.settings, onOpen: _openWorkspace, status: _status);
+          settings: widget.settings,
+          onOpen: _openWorkspace,
+          status: widget.session.status);
     }
-    final t = context.fw;
-    final active = _active >= 0 && _active < _open.length ? _open[_active] : null;
+    final active = _active;
     return SplitPane(
       axis: Axis.horizontal,
       initialFraction: 0.2,
       minFraction: 0.1,
       maxFraction: 0.45,
       first: Container(
-        color: t.ground2,
-        child: FileTree(
-            root: _root!, activePath: active?.path, onOpen: _openFile),
+        color: context.fw.ground2,
+        child:
+            FileTree(root: root, activePath: active?.path, onOpen: _openFile),
       ),
-      second: SplitPane(
+      second: _workArea(root, active),
+    );
+  }
+
+  Widget _workArea(String root, OpenFile? active) => SplitPane(
         axis: Axis.vertical,
         initialFraction: 0.66,
         minFraction: 0.3,
         maxFraction: 0.88,
-        first: Column(
-            children: [
-              EditorTabBar(
-                open: _open,
-                active: _active,
-                onSelect: (i) => setState(() => _active = i),
-                onClose: _closeFile,
-                onCloseWorkspace: () => setState(() {
-                  for (final f in _open) {
-                    f.controller.dispose();
-                  }
-                  _open.clear();
-                  _active = -1;
-                  _root = null;
-                }),
-              ),
-              Expanded(
-                child: active == null
-                    ? const FwEmpty('Open a file from the tree.')
-                    : EditorPane(
-                        file: active,
-                        onSave: () => _save(active),
-                        onDefinition: () => _goToDefinition(active),
-                        onReferences: () => _findReferences(active),
-                        onChanged: () {
-                          if (!active.dirty) setState(() => active.dirty = true);
-                        },
-                      ),
-              ),
-              EditorQualityBar(
-                status: _status,
-                diffCount: _diffs.length,
-                onLint: () => showLintIndexSheet(
-                    context, widget.client, _root!, _openAt,
-                    index: false),
-                onIndex: () => showLintIndexSheet(
-                    context, widget.client, _root!, _openAt,
-                    index: true),
-                onShowDiffs: _showDiffs,
-              ),
-            ],
-        ),
+        first: Column(children: [
+          EditorTabBar(
+            open: widget.session.openFiles,
+            active: widget.session.activeIndex,
+            onSelect: widget.session.selectIndex,
+            onClose: (index) => unawaited(widget.guard
+                .requestFileClose(widget.session.openFiles[index].path)),
+            onCloseWorkspace: () =>
+                unawaited(widget.guard.requestWorkspaceClose()),
+          ),
+          if (widget.session.conflicts.isNotEmpty)
+            _conflict(widget.session.conflicts.last)
+          else
+            Expanded(
+              child: active == null
+                  ? const FwEmpty('Open a file from the tree.')
+                  : EditorPane(
+                      file: active,
+                      onSave: () => _save(active),
+                      onDefinition: () => _goToDefinition(active),
+                      onReferences: () => _findReferences(active),
+                      onChanged: () => widget.session.snapshot(active.path),
+                    ),
+            ),
+          EditorQualityBar(
+            status: widget.session.status,
+            diffCount: widget.session.diffs.length,
+            onLint: () => showLintIndexSheet(
+                context, widget.client, root, _openAt,
+                index: false),
+            onIndex: () => showLintIndexSheet(
+                context, widget.client, root, _openAt,
+                index: true),
+            onShowDiffs: _showDiffs,
+          ),
+        ]),
         second: SingleChildScrollView(
           child: AgentPanel(
             client: widget.client,
             alive: widget.alive,
-            workspaceRoot: _root!,
+            workspaceRoot: root,
             activeFile: active?.path,
             selection: _selectionOf(active),
             goalController: _agentGoal,
-            onRunStarted: _snapshotOpenFiles,
-            onRunFinished: _reloadCleanFiles,
+            onRunStarted: widget.session.snapshotOpenFiles,
+            onRunFinished: widget.session.reloadCleanFiles,
           ),
         ),
-      ),
-    );
-  }
+      );
 
-  String? _selectionOf(OpenFile? f) {
-    if (f == null) return null;
-    final sel = f.controller.selection;
-    if (!sel.isValid || sel.isCollapsed) return null;
-    return sel.textInside(f.controller.text);
-  }
+  Widget _conflict(CodeRecoveryConflict conflict) => Expanded(
+        child: Column(children: [
+          HonestNull(conflict.kind == CodeRecoveryKind.fileMissing
+              ? '${conflict.path}: file missing; draft retained'
+              : '${conflict.path}: disk changed; draft retained'),
+          Expanded(
+            child: DiffViewPanel(diffs: [
+              diffFiles(
+                  conflict.path, conflict.diskText ?? '', conflict.draft.text)
+            ]),
+          ),
+        ]),
+      );
 
+  String? _selectionOf(OpenFile? file) {
+    if (file == null) return null;
+    final selection = file.controller.selection;
+    if (!selection.isValid || selection.isCollapsed) return null;
+    return selection.textInside(file.controller.text);
+  }
 }

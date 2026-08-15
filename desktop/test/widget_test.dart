@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flywheel_desktop/main.dart';
+import 'package:flywheel_desktop/ide/unsaved_work_guard.dart';
 import 'package:flywheel_desktop/shell/view_factory.dart';
 import 'package:flywheel_desktop/views/lanes_view.dart';
 import 'package:flywheel_desktop/views/receipts_view.dart';
@@ -56,6 +57,9 @@ void main() {
     final inputs = DestinationInputs(
       client: harness.client,
       journey: harness.controller,
+      code: harness.code,
+      codeGuard: UnsavedWorkGuard(
+          session: harness.code, prompt: (_) async => CloseChoice.cancel),
       alive: false,
       settings: harness.settings,
       pendingArgument: headA,
