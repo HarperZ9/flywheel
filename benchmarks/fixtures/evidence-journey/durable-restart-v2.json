@@ -1,0 +1,43 @@
+{
+  "schema": "flywheel.evidence-journey-acceptance-fixture/v2",
+  "goal": "Accept durable Journey restart and custody export",
+  "intake": {
+    "summary": "Public deterministic evidence"
+  },
+  "commands": [
+    {"action": "create", "client_request_id": "create-1"},
+    {"action": "record_claim", "client_request_id": "claim-1"},
+    {"action": "advance_stage", "client_request_id": "stage-0"},
+    {"action": "advance_stage", "client_request_id": "stage-1"},
+    {"action": "advance_stage", "client_request_id": "stage-2"},
+    {"action": "advance_stage", "client_request_id": "stage-3"},
+    {"action": "blocked_python_check", "client_request_id": "check-python"},
+    {"action": "deterministic_data_check", "client_request_id": "check-data"},
+    {"action": "cancel_terminal_operation", "client_request_id": "cancel-1"},
+    {"action": "export", "client_request_id": "export-1"}
+  ],
+  "expected_events": [
+    "intake",
+    "record_claim",
+    "decomposed",
+    "preflight",
+    "running",
+    "concluded",
+    "check_requested",
+    "check_blocked",
+    "check_requested",
+    "check_started",
+    "check_completed",
+    "exported"
+  ],
+  "expected_terminal_counts": {
+    "acknowledged_loss": 0,
+    "duplicate_logical_event": 0,
+    "silent_overwrite": 0,
+    "unclosed_check_request": 0,
+    "check_blocked": 1,
+    "check_completed": 1,
+    "check_failed": 0,
+    "check_cancelled": 0
+  }
+}

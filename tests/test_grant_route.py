@@ -220,3 +220,36 @@ def test_check_prepare_rejects_unrepresentable_root_before_context_or_candidate_
         "context_ref": "context.json",
     }, state=state, evidence=evidence)
     assert status == 409 and result["error"]["code"] == "INVALID_TRANSITION"
+
+
+def test_export_prepare_binds_concluded_h0_projection_profile_and_target_refs(tmp_path):
+    """Export grants must bind H0, P0, profile, artifact root, and packet ref."""
+    from harness.evidence_json import canonical_sha256
+    from harness.journey_store import JourneyStore, MutationCommand
+    state, evidence = tmp_path / "state", tmp_path / "state" / "artifacts"
+    evidence.mkdir(parents=True)
+    store = JourneyStore(state)
+    ack = store.create(MutationCommand(OWNER,
+        "jrn_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", None, "create-export",
+        "intake", {"legacy_label": None, "goal": "Preserve evidence",
+                   "intake": {}, "occurred_at": NOW}))
+    for stage in ("decomposed", "preflight", "running", "concluded"):
+        payload = {"conclusion": {"summary": "bounded"}} if stage == "concluded" else {}
+        ack = store.append(MutationCommand(OWNER, ack.journey_ref,
+            ack.event_head_sha256, f"stage-{stage}", stage,
+            {"occurred_at": NOW, "payload": payload}))
+    body = {"journey_ref": ack.journey_ref,
+            "expected_event_head": ack.event_head_sha256,
+            "client_request_id": "export-1", "packet_ref": "packets/out"}
+    proposal, status = _post("prepare/export", body, state=state, evidence=evidence)
+    approved, _ = _post("approve-once", {"proposal_ref": proposal["proposal_ref"]},
+                         state=state, evidence=evidence)
+    resolved = resolve_approved_grant(
+        approved["grant_ref"], owner_ref=OWNER,
+        state_root=state, clock=lambda: NOW)
+    assert status == 200 and resolved["grant_request"].scopes == ("journey:export",)
+    assert resolved["grant_request"].data_refs == ("artifacts", "packets/out")
+    assert resolved["operation_body"]["packet_profile"] == (
+        "flywheel.evidence-journey-custody/v2")
+    assert resolved["operation_body"]["source_projection_sha256"] == canonical_sha256(
+        store.load(OWNER, ack.journey_ref))

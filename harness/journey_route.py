@@ -13,6 +13,7 @@ from .evidence_public import (
 )
 from .grant_route import _artifact_root_ref, resolve_approved_grant
 from .journey_checks import CheckCommand, JourneyCheckService
+from .journey_export import JourneyExportService
 from .journey_projection import project_lens
 from .journey_service import JourneyService
 from .journey_store import JourneyStore, JourneyStoreError
@@ -140,6 +141,18 @@ def _cancel(req: dict, service: JourneyService, approved: dict) -> dict:
     return result
 
 
+def _export(req: dict, service: JourneyService, approved: dict,
+            state_root: Path, evidence_root: Path) -> dict:
+    _, artifact_ref = _artifact_root_ref(state_root, evidence_root)
+    return JourneyExportService(
+        journey=service, artifact_root_ref=artifact_ref).export(
+        journey_ref=req["journey_ref"],
+        expected_event_head=req["expected_event_head"],
+        client_request_id=req["client_request_id"], packet_ref=req["packet_ref"],
+        grant_ref=req["grant_ref"], grant_request=approved["grant_request"],
+        body=approved["operation_body"])
+
+
 def _mapped_error(exc: Exception) -> tuple[dict, int]:
     if isinstance(exc, TransportError):
         return error_response(exc)
@@ -183,9 +196,8 @@ def journey_post(path: str, raw: bytes, *, owner_ref: str, state_root: Path,
             elif action == "check":
                 result = _check(req, service, approved, state_root, evidence_root)
             elif action == "cancel": result = _cancel(req, service, approved)
-            else:
-                raise TransportError(
-                    "INVALID_TRANSITION", "Journey export is unavailable", 409)
+            else: result = _export(
+                req, service, approved, state_root, evidence_root)
         return public_result(action, result), 200
     except (TransportError, GrantError, JourneyStoreError, Exception) as exc:
         return _mapped_error(exc)

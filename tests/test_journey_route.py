@@ -7,6 +7,7 @@ import pytest
 
 from harness.grant_route import grant_post
 from harness.journey_route import journey_post
+from harness.journey_store import JourneyStore, MutationCommand
 from harness import gateway
 
 NOW = "2026-08-14T12:00:00Z"
@@ -163,16 +164,28 @@ def test_record_claim_synthesizes_honest_null_verdict_and_receipt_state(tmp_path
     assert stored["receipt_state"] == "missing" and stored["receipt_refs"]
 
 
-def test_export_is_typed_unavailable_without_untracked_packet_mutation(tmp_path):
-    """A packet write without a service-owned CAS event would weaken custody."""
-    state, evidence, created = _created(tmp_path)
-    public = {"journey_ref": created["journey_ref"],
-        "expected_event_head": created["event_head_sha256"],
+def test_export_route_publishes_packet_and_appends_export_event(tmp_path):
+    """Export must be a service-owned packet plus CAS stage event, not a side write."""
+    state, evidence = tmp_path / "state", tmp_path / "state" / "artifacts"
+    evidence.mkdir(parents=True)
+    store = JourneyStore(state)
+    ack = store.create(MutationCommand(OWNER,
+        "jrn_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", None, "create-export",
+        "intake", {"legacy_label": None, "goal": "Preserve evidence",
+                   "intake": {}, "occurred_at": NOW}))
+    for stage in ("decomposed", "preflight", "running", "concluded"):
+        payload = {"conclusion": {"summary": "bounded"}} if stage == "concluded" else {}
+        ack = store.append(MutationCommand(OWNER, ack.journey_ref,
+            ack.event_head_sha256, f"stage-{stage}", stage,
+            {"occurred_at": NOW, "payload": payload}))
+    public = {"journey_ref": ack.journey_ref,
+        "expected_event_head": ack.event_head_sha256,
         "client_request_id": "export-1", "packet_ref": "packets/out"}
     grant, _ = _grant("export", public, state, evidence)
     result, status = _route("export", {**public, "grant_ref": grant}, state, evidence)
-    assert status == 409 and result["error"]["code"] == "INVALID_TRANSITION"
-    assert not (evidence / "packets").exists()
+    assert status == 200 and result["structural_verdict"] == "MATCH"
+    assert result["source_event_head_sha256"] == public["expected_event_head"]
+    assert (evidence / "packets" / "out" / "manifest.json").is_file()
 
 
 def test_check_records_a_block_without_candidate_network_or_python_execution(

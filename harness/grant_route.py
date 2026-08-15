@@ -11,6 +11,7 @@ from .evidence_public import (
     TransportError, admitted_root, error_response, exact_request, json_ref, json_ref_bytes, parse_json,
     public_metadata, public_result, public_text, relative_ref)
 from .journey_checks import OPERATION_REF_PATTERN
+from .journey_export import plan_export_grant
 from .journey_lock import ExclusiveJourneyLock, JourneyLockBusy, fsync_directory
 from .journey_service import JourneyService
 from .journey_store import JourneyStore, JourneyStoreError
@@ -89,7 +90,8 @@ def _append_operation(req: dict, service: JourneyService) -> tuple[str, dict]:
         except (KeyError, ValueError, IndexError):
             raise TransportError(
                 "INVALID_TRANSITION", "Journey transition is unavailable", 409) from None
-        return operation, {}
+        return operation, ({"conclusion": {"summary": "Journey workflow concluded", "does_not_prove": "claim correctness or evidence completeness"}}
+                           if operation == "concluded" else {})
     name = "claims" if kind == "record_claim" else "next_actions"
     item = command["claim"] if kind == "record_claim" else command["next_action"]
     return kind, {name: [_client_item(kind, item)]}
@@ -138,10 +140,8 @@ def _operation(action: str, req: dict, owner_ref: str, state_root: Path,
         body = {"client_request_id": req["client_request_id"],
                 "operation_ref": req["operation_ref"], "timeout_s": 5.0}
         return "cancel", body, "journey.cancel", ("journey:cancel",), ()
-    relative_ref(req["packet_ref"])
-    body = {"client_request_id": req["client_request_id"],
-            "packet_ref": req["packet_ref"]}
-    return "export", body, "journey.export", ("journey:export",), (req["packet_ref"],)
+    _, artifact_ref = _artifact_root_ref(state_root, evidence_root)
+    return plan_export_grant(req, service, state_root, artifact_ref)
 def _proposal_dir(state_root: Path, owner_ref: str) -> Path:
     _validate_owner_ref(owner_ref); state = Path(state_root)
     new_state = not state.exists(); state.mkdir(parents=True, exist_ok=True)

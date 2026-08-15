@@ -258,6 +258,12 @@ def recover_store(store_root: Path, *, now: str) -> dict:
                 quarantined += held
                 if ref is not None:
                     diagnostics.append(ref)
+    from .journey_export_tx import recover_export_transactions
+    export_done, export_held, export_refs = recover_export_transactions(
+        root, now=now)
+    completed += export_done
+    quarantined += export_held
+    diagnostics.extend(export_refs)
     rebuilt = _rebuild_index(root)
     return _result(completed=completed, quarantined=quarantined,
                    indexes_rebuilt=rebuilt, starts_closed=bool(closed),
