@@ -1,6 +1,7 @@
 """Terminal fail-closed boundary for arbitrary Python journey checks."""
 import socket
 import sys
+from pathlib import Path
 
 import pytest
 
@@ -117,6 +118,29 @@ def test_candidate_junit_parser_and_oracle_dispatch_are_unreachable(tmp_path, mo
         first.close(); second.close()
     assert result["unverifiable_reason"] == REASON
     assert "receipt_ref" not in result and not (root / "receipts").exists()
+
+
+def test_python_refusal_does_not_even_resolve_or_open_candidate(tmp_path):
+    """Candidate path admission before refusal would already grant a host read."""
+    class UnreadablePath(type(Path())):
+        def resolve(self, *args, **kwargs):
+            raise AssertionError("candidate resolution reached")
+
+        def open(self, *args, **kwargs):
+            raise AssertionError("candidate open reached")
+
+    candidate = UnreadablePath(tmp_path / "never-read.py")
+    context = {
+        "task_id": "containment-v1", "prompt": "Check candidate",
+        "oracle_cmd": f'"{sys.executable}" -m pytest test_candidate.py',
+        "candidate_ref": "never-read.py", "raw_artifact_refs": ["never-read.py"],
+        "timeout_seconds": 15,
+    }
+
+    result = run_journey_check(_journey(), "claim-root", "code", candidate, context)
+
+    assert result["unverifiable_reason"] == REASON
+    assert result["oracle_calls_consumed"] == 0 and "receipt_ref" not in result
 
 
 def test_retired_prepared_pytest_entry_refuses_before_using_inputs():

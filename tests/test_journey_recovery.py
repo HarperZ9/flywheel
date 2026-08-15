@@ -11,6 +11,7 @@ from harness.journey_types import build_event
 OWNER = "owner_recovery_aaaaaaaaaaaaaaaaaaaaaaaaaa"
 JOURNEY = "jrn_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 NOW = "2026-08-14T20:00:00Z"
+OPERATION = "op_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 
 
 def _genesis(root):
@@ -61,6 +62,33 @@ def _write_version(root, version):
         "schema": "flywheel.evidence-journey-store-version/v1", "version": version,
     }))
     return path
+
+
+def _append(root, head, request_id, operation, payload):
+    return JourneyStore(root).append(MutationCommand(
+        owner_ref=OWNER, journey_ref=JOURNEY, expected_event_head=head,
+        client_request_id=request_id, operation=operation,
+        body={"occurred_at": "2026-08-14T19:02:00Z", "payload": payload},
+    ))
+
+
+def _started(root, head, *, duplicate=False):
+    requested = _append(root, head, "check-request", "check_requested", {
+        "operation_ref": OPERATION, "claim_id": "claim-root", "oracle_id": "ml",
+    })
+    payload = {
+        "operation_ref": OPERATION, "claim_id": "claim-root", "oracle_id": "ml",
+        "request_event_sha256": requested.event_sha256,
+    }
+    started = _append(
+        root, requested.event_head_sha256, "check-start", "check_started", payload,
+    )
+    if not duplicate:
+        return started
+    return _append(
+        root, started.event_head_sha256, "check-start-duplicate",
+        "check_started", payload,
+    )
 
 
 def test_recovery_completes_only_one_deterministic_orphan_and_rebuilds_index(tmp_path):
@@ -154,6 +182,40 @@ def test_unadmitted_ambiguous_start_like_files_are_left_unchanged(tmp_path):
 
     assert result["starts_closed"] is False
     assert [path.read_bytes() for path in paths] == before
+
+
+def test_recovery_closes_one_authoritative_abandoned_check_start(tmp_path):
+    """Leaving an admitted start open after restart would invent a running process."""
+    genesis = _genesis(tmp_path)
+    started = _started(tmp_path, genesis.event_head_sha256)
+
+    result = recover_store(tmp_path, now=NOW)
+
+    journey_dir = _journey_dir(tmp_path)
+    events = [json.loads(path.read_bytes())
+              for path in sorted((journey_dir / "events").glob("*.json"))]
+    terminals = [event for event in events if event["event_type"] in {
+        "check_completed", "check_failed", "check_cancelled"}]
+    assert result["starts_closed"] is True and len(terminals) == 1
+    assert terminals[0]["event_type"] == "check_failed"
+    assert terminals[0]["payload"] == {
+        "operation_ref": OPERATION, "reason": "CHECK_INTERRUPTED",
+        "started_event_sha256": started.event_sha256,
+    }
+
+
+def test_recovery_does_not_choose_between_duplicate_authoritative_starts(tmp_path):
+    """Closing an ambiguous operation would manufacture a terminal owner decision."""
+    genesis = _genesis(tmp_path)
+    _started(tmp_path, genesis.event_head_sha256, duplicate=True)
+
+    result = recover_store(tmp_path, now=NOW)
+
+    events = [json.loads(path.read_bytes()) for path in sorted(
+        (_journey_dir(tmp_path) / "events").glob("*.json"))]
+    assert result["starts_closed"] is False and result["diagnostic_refs"]
+    assert not any(event["event_type"] in {
+        "check_completed", "check_failed", "check_cancelled"} for event in events)
 
 
 def test_newer_schema_recovery_opens_read_only_without_rewriting_anything(tmp_path):

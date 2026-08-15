@@ -6,7 +6,9 @@ from pathlib import Path
 from .evidence_json import canonical_bytes, canonical_sha256, strict_load_json
 from .journey_migration import VERSION_SCHEMA, _atomic_replace
 from .journey_projection import reduce_events
-from .journey_store import HEAD_SCHEMA, REQUEST_SCHEMA, JourneyStore, JourneyStoreError
+from .journey_store import (
+    HEAD_SCHEMA, REQUEST_SCHEMA, JourneyStore, JourneyStoreError, MutationCommand,
+)
 from .journey_types import validate_event
 
 
@@ -163,9 +165,114 @@ def _rebuild_index(root: Path) -> int:
     return 1
 
 
+_TERMINALS = frozenset(("check_completed", "check_failed", "check_cancelled"))
+_OP_PREFIX = "op_"
+
+
+def _event_ref(root: Path, journey_dir: Path, event: dict) -> str:
+    name = f"{event['sequence']:020d}-{event['event_sha256']}.json"
+    return (journey_dir / "events" / name).relative_to(root).as_posix()
+
+
+def _valid_started(events: list[dict], start: dict) -> bool:
+    payload = start["payload"]
+    if set(payload) != {
+            "operation_ref", "claim_id", "oracle_id", "request_event_sha256"}:
+        return False
+    operation = payload.get("operation_ref")
+    if (type(operation) is not str or not operation.startswith(_OP_PREFIX)
+            or len(operation) != 35
+            or any(character not in "0123456789abcdef" for character in operation[3:])
+            or type(payload.get("claim_id")) is not str or not payload["claim_id"]
+            or type(payload.get("oracle_id")) is not str or not payload["oracle_id"]):
+        return False
+    requests = [event for event in events
+                if event["event_type"] == "check_requested"
+                and event["event_sha256"] == payload["request_event_sha256"]]
+    if len(requests) != 1:
+        return False
+    requested = requests[0]
+    return (requested["sequence"] < start["sequence"]
+            and requested["actor_id"] == start["actor_id"]
+            and set(requested["payload"]) == {
+                "operation_ref", "claim_id", "oracle_id"}
+            and requested["payload"] == {
+                "operation_ref": operation, "claim_id": payload["claim_id"],
+                "oracle_id": payload["oracle_id"]})
+
+
+def _valid_terminal(start: dict, terminal: list[dict]) -> bool:
+    return (len(terminal) == 1
+            and terminal[0]["sequence"] > start["sequence"]
+            and terminal[0]["actor_id"] == start["actor_id"]
+            and terminal[0]["payload"].get("operation_ref")
+            == start["payload"].get("operation_ref")
+            and terminal[0]["payload"].get("started_event_sha256")
+            == start["event_sha256"])
+
+
+def _close_journey_starts(root: Path, owner_dir: Path, journey_dir: Path,
+                          *, now: str) -> tuple[int, list[str]]:
+    store, diagnostics, closed = JourneyStore(root), [], 0
+    try:
+        head = store._read_head(journey_dir)
+        events = store._events_at_head(journey_dir, head) if head else []
+    except (JourneyStoreError, OSError, TypeError, ValueError):
+        return 0, []
+    starts = [event for event in events if event["event_type"] == "check_started"]
+    current_head, seen = (events[-1]["event_sha256"] if events else None), set()
+    for start in starts:
+        operation = start["payload"].get("operation_ref")
+        identity = operation if type(operation) is str else start["event_sha256"]
+        if identity in seen:
+            continue
+        seen.add(identity)
+        related = [event for event in events
+                   if event["payload"].get("operation_ref") == operation]
+        duplicate = [event for event in related
+                     if event["event_type"] == "check_started"]
+        terminal = [event for event in related if event["event_type"] in _TERMINALS]
+        authoritative = (start["actor_id"] == owner_dir.name
+                         and start["journey_ref"] == journey_dir.name)
+        if terminal and _valid_terminal(start, terminal) and len(duplicate) == 1:
+            continue
+        if (terminal or not authoritative or len(duplicate) != 1
+                or not _valid_started(events, start)):
+            refs = [_event_ref(root, journey_dir, event) for event in duplicate or [start]]
+            diagnostics.append(_diagnostic(root, journey_dir, refs, now))
+            continue
+        try:
+            ack = store.append(MutationCommand(
+                owner_ref=owner_dir.name, journey_ref=journey_dir.name,
+                expected_event_head=current_head,
+                client_request_id=f"recovery:{start['event_sha256']}",
+                operation="check_failed", body={"occurred_at": now, "payload": {
+                    "operation_ref": operation, "reason": "CHECK_INTERRUPTED",
+                    "started_event_sha256": start["event_sha256"],
+                }},
+            ))
+        except JourneyStoreError:
+            refs = [_event_ref(root, journey_dir, start)]
+            diagnostics.append(_diagnostic(root, journey_dir, refs, now))
+            continue
+        current_head = ack.event_head_sha256
+        closed += 1
+    return closed, diagnostics
+
+
 def _close_abandoned_starts(store_root: Path, *, now: str) -> tuple[int, list[str]]:
-    """P1-T5 seam: no start layout is admitted yet, so no closure is claimed."""
-    return 0, []
+    """Close only exact authoritative check starts; diagnose every ambiguity."""
+    owners, closed, diagnostics = store_root / "journeys" / "v2" / "owners", 0, []
+    if not owners.exists():
+        return 0, []
+    for owner_dir in sorted(path for path in owners.iterdir() if path.is_dir()):
+        for journey_dir in sorted(path for path in owner_dir.iterdir() if path.is_dir()):
+            count, refs = _close_journey_starts(
+                store_root, owner_dir, journey_dir, now=now,
+            )
+            closed += count
+            diagnostics.extend(refs)
+    return closed, diagnostics
 
 
 def recover_store(store_root: Path, *, now: str) -> dict:
