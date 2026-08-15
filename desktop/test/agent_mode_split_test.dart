@@ -28,13 +28,11 @@ void main() {
     await _pump(
         tester,
         AgentView(
-            client: GatewayClient(),
-            alive: true,
-            settings: DesktopSettings()));
+            client: GatewayClient(), alive: true, settings: DesktopSettings()));
     await tester.pump();
-    // chat mode: the tool loop is absent, the witness line names the chat
+    // chat mode: the tool loop is absent and receipt truth stays neutral
     expect(find.text('Point the agent at a workspace'), findsNothing);
-    expect(find.text('every reply is witnessed'), findsOneWidget);
+    expect(find.text('every reply is witnessed'), findsNothing);
 
     await tester.tap(find.text('agent'));
     await tester.pump();
@@ -44,16 +42,14 @@ void main() {
     await tester.tap(find.text('chat'));
     await tester.pump();
     expect(find.text('Point the agent at a workspace'), findsNothing);
-    expect(find.text('every reply is witnessed'), findsOneWidget);
+    expect(find.text('every reply is witnessed'), findsNothing);
   });
 
   testWidgets('compare panes sit on a draggable divider', (tester) async {
     await _pump(
         tester,
         CompareView(
-            client: GatewayClient(),
-            alive: true,
-            settings: DesktopSettings()));
+            client: GatewayClient(), alive: true, settings: DesktopSettings()));
     await tester.pump();
     expect(find.byKey(const Key('split-divider')), findsOneWidget);
     expect(find.text('Pick a model and send a prompt.'), findsNWidgets(2));

@@ -1,51 +1,113 @@
-// chat.dart — the conversation model for the Chat surface. A conversation is a
-// list of turns; each assistant turn can carry a quiet receipt (the re-derivable
-// proof of the turn), so accountability rides underneath the experience without
-// being the headline. Pure data; the view owns streaming and persistence.
+import 'dart:collection';
+
+import 'evidence_state.dart';
+
+enum PromptDisposition { accepted, retained }
+
+typedef SubmitPrompt = Future<PromptDisposition> Function(String text);
 
 class ChatMessage {
-  final String role; // 'user' | 'assistant'
-  String text; // mutable so a streaming assistant turn grows in place
-  bool streaming;
-  Map<String, dynamic>? receipt; // the turn's x_receipt, when the engine returned one
-  Map<String, dynamic>? run; // an agent-mode run result (evidence + verdict), when used
+  factory ChatMessage({
+    required String role,
+    String text = '',
+    bool streaming = false,
+    Map<String, dynamic>? receipt,
+    ReceiptState? receiptState,
+    Map<String, dynamic>? run,
+  }) {
+    final copy = receipt == null ? null : _immutableMap(receipt);
+    return ChatMessage._(role, text, streaming, copy,
+        _effectiveReceiptState(copy != null, receiptState), run);
+  }
 
-  ChatMessage({
-    required this.role,
-    this.text = '',
-    this.streaming = false,
-    this.receipt,
-    this.run,
-  });
+  ChatMessage._(this.role, this.text, this.streaming, this._receipt,
+      this.receiptState, this.run);
+
+  final String role;
+  String text;
+  bool streaming;
+  Map<String, dynamic>? _receipt;
+  Map<String, dynamic>? get receipt => _receipt;
+  ReceiptState receiptState;
+  Map<String, dynamic>? run;
 
   bool get isUser => role == 'user';
-
-  /// The wire shape the gateway's /v1/chat/completions expects.
   Map<String, String> toWire() => {'role': role, 'content': text};
 
-  /// Durable shape (the transient streaming/run fields are not persisted).
+  void setReceipt(Map<String, dynamic>? value, {ReceiptState? state}) {
+    _receipt = value == null ? null : _immutableMap(value);
+    receiptState = _effectiveReceiptState(_receipt != null, state);
+  }
+
   Map<String, dynamic> toJson() => {
         'role': role,
         'text': text,
-        if (receipt != null) 'receipt': receipt,
+        if (_receipt != null) 'receipt': _receipt,
       };
 
-  factory ChatMessage.fromJson(Map<String, dynamic> j) => ChatMessage(
-        role: j['role'] == 'user' ? 'user' : 'assistant',
-        text: j['text'] is String ? j['text'] as String : '',
-        receipt: j['receipt'] is Map<String, dynamic>
-            ? j['receipt'] as Map<String, dynamic>
-            : null,
-      );
+  factory ChatMessage.fromJson(Map<String, dynamic> json) {
+    final rawReceipt = json['receipt'];
+    final receipt = rawReceipt is Map<String, dynamic> ? rawReceipt : null;
+    final malformedReceipt =
+        json.containsKey('receipt') && rawReceipt != null && receipt == null;
+    final state = malformedReceipt
+        ? ReceiptState.invalidResponse
+        : json.containsKey('receipt_state')
+            ? _readReceiptState(json['receipt_state'])
+            : null;
+    return ChatMessage(
+        role: json['role'] == 'user' ? 'user' : 'assistant',
+        text: json['text'] is String ? json['text'] as String : '',
+        receipt: receipt,
+        receiptState: state);
+  }
+}
+
+ReceiptState _effectiveReceiptState(bool present, ReceiptState? state) {
+  if (!present) {
+    return state == null || state == ReceiptState.missing
+        ? ReceiptState.missing
+        : ReceiptState.invalidResponse;
+  }
+  return switch (state) {
+    null => ReceiptState.presentUnchecked,
+    ReceiptState.presentUnchecked ||
+    ReceiptState.match ||
+    ReceiptState.drift ||
+    ReceiptState.tampered ||
+    ReceiptState.unverifiable =>
+      state,
+    _ => ReceiptState.invalidResponse,
+  };
+}
+
+ReceiptState _readReceiptState(Object? raw) => switch (raw) {
+      'missing' => ReceiptState.missing,
+      'present_unchecked' => ReceiptState.presentUnchecked,
+      'MATCH' => ReceiptState.match,
+      'DRIFT' => ReceiptState.drift,
+      'TAMPERED' => ReceiptState.tampered,
+      'UNVERIFIABLE' => ReceiptState.unverifiable,
+      _ => ReceiptState.invalidResponse,
+    };
+
+Map<String, dynamic> _immutableMap(Map<String, dynamic> source) {
+  final result = SplayTreeMap<String, dynamic>();
+  for (final entry in source.entries) {
+    result[entry.key] = _immutableJson(entry.value);
+  }
+  return Map.unmodifiable(result);
+}
+
+dynamic _immutableJson(Object? value) {
+  if (value == null || value is String || value is bool) return value;
+  if (value is num && value.isFinite) return value;
+  if (value is List) return List.unmodifiable(value.map(_immutableJson));
+  if (value is Map<String, dynamic>) return _immutableMap(value);
+  throw ArgumentError('Receipt contains unsupported local data');
 }
 
 class Conversation {
-  final String id;
-  String title;
-  final List<ChatMessage> messages;
-  String? model; // the endpoint this conversation is talking to
-  final DateTime createdAt;
-
   Conversation({
     required this.id,
     this.title = 'New chat',
@@ -55,6 +117,12 @@ class Conversation {
   })  : messages = messages ?? [],
         createdAt = createdAt ?? DateTime.now();
 
+  final String id;
+  String title;
+  final List<ChatMessage> messages;
+  String? model;
+  final DateTime createdAt;
+
   bool get isEmpty => messages.isEmpty;
 
   Map<String, dynamic> toJson() => {
@@ -62,28 +130,27 @@ class Conversation {
         'title': title,
         if (model != null) 'model': model,
         'created_at': createdAt.millisecondsSinceEpoch,
-        'messages': [for (final m in messages) m.toJson()],
+        'messages': [for (final message in messages) message.toJson()],
       };
 
-  factory Conversation.fromJson(Map<String, dynamic> j) => Conversation(
-        id: j['id'] is String ? j['id'] as String : 'c0',
-        title: j['title'] is String ? j['title'] as String : 'New chat',
-        model: j['model'] is String ? j['model'] as String : null,
-        createdAt: j['created_at'] is int
-            ? DateTime.fromMillisecondsSinceEpoch(j['created_at'] as int)
+  factory Conversation.fromJson(Map<String, dynamic> json) => Conversation(
+        id: json['id'] is String ? json['id'] as String : 'c0',
+        title: json['title'] is String ? json['title'] as String : 'New chat',
+        model: json['model'] is String ? json['model'] as String : null,
+        createdAt: json['created_at'] is int
+            ? DateTime.fromMillisecondsSinceEpoch(json['created_at'] as int)
             : null,
         messages: [
-          for (final m in (j['messages'] as List? ?? const []))
-            if (m is Map<String, dynamic>) ChatMessage.fromJson(m)
+          for (final message in (json['messages'] as List? ?? const []))
+            if (message is Map<String, dynamic>) ChatMessage.fromJson(message)
         ],
       );
 
-  /// A title derived from the first user turn, trimmed for the sidebar.
   void titleFromFirstMessage() {
-    for (final m in messages) {
-      if (m.isUser && m.text.trim().isNotEmpty) {
-        final t = m.text.trim().replaceAll('\n', ' ');
-        title = t.length <= 40 ? t : '${t.substring(0, 40)}…';
+    for (final message in messages) {
+      if (message.isUser && message.text.trim().isNotEmpty) {
+        final text = message.text.trim().replaceAll('\n', ' ');
+        title = text.length <= 40 ? text : '${text.substring(0, 40)}…';
         return;
       }
     }

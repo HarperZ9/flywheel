@@ -43,12 +43,17 @@ class ChatHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = context.fw;
-    return Container(
-      padding: const EdgeInsets.symmetric(
-          horizontal: FwLayout.s5, vertical: FwLayout.s3),
-      decoration:
-          BoxDecoration(border: Border(bottom: BorderSide(color: t.hairline))),
-      child: Row(children: [
+    return LayoutBuilder(
+        builder: (context, constraints) => Container(
+            padding: const EdgeInsets.symmetric(
+                horizontal: FwLayout.s5, vertical: FwLayout.s3),
+            decoration: BoxDecoration(
+                border: Border(bottom: BorderSide(color: t.hairline))),
+            child: _row(context, t, constraints.maxWidth >= 650)));
+  }
+
+  Widget _row(BuildContext context, FwTokens t, bool showReceiptCopy) =>
+      Row(children: [
         Text('Chat', style: Theme.of(context).textTheme.titleMedium),
         const SizedBox(width: FwLayout.s4),
         FwModeChip(
@@ -72,7 +77,7 @@ class ChatHeader extends StatelessWidget {
             enabled: !streaming,
             onSelect: onEndpoint,
           ),
-        if (!agentMode && endpoint != null) ...[
+        if (!agentMode && endpoint != null && showReceiptCopy) ...[
           const SizedBox(width: FwLayout.s2),
           ModelSelectorButton(
             loadModels: loadModels,
@@ -81,19 +86,17 @@ class ChatHeader extends StatelessWidget {
             onSelect: onModel,
           ),
         ],
-        const Spacer(),
-        Icon(Icons.verified_outlined, size: 13, color: t.inkFaint),
-        const SizedBox(width: 5),
-        Flexible(
-          child: Text(
-              agentMode
-                  ? 'every run persists with its trace'
-                  : 'every reply is witnessed',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: fwMono(t, size: 10.5, color: t.inkFaint)),
-        ),
-      ]),
-    );
-  }
+        if (showReceiptCopy) ...[
+          const Spacer(),
+          Flexible(
+            child: Text(
+                agentMode
+                    ? 'every run persists with its trace'
+                    : 'receipt state shown on every reply',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: fwMono(t, size: 10.5, color: t.inkFaint)),
+          ),
+        ],
+      ]);
 }

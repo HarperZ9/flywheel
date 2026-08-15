@@ -76,15 +76,18 @@ class _CompareViewState extends State<CompareView> {
         setState(() {
           _endpoints = rows;
           _left.model ??= rows.isNotEmpty ? rows.first.name : null;
-          _right.model ??=
-              rows.length > 1 ? rows[1].name : (rows.isNotEmpty ? rows.first.name : null);
+          _right.model ??= rows.length > 1
+              ? rows[1].name
+              : (rows.isNotEmpty ? rows.first.name : null);
         });
       }
     } catch (_) {/* offline empty-state handles it */}
   }
 
-  void _send(String text) {
-    if (_left.model == null && _right.model == null) return;
+  Future<PromptDisposition> _send(String text) async {
+    if (_left.model == null && _right.model == null) {
+      return PromptDisposition.retained;
+    }
     setState(() {
       for (final s in [_left, _right]) {
         if (s.model == null) continue;
@@ -94,6 +97,7 @@ class _CompareViewState extends State<CompareView> {
     });
     _run(_left);
     _run(_right);
+    return PromptDisposition.accepted;
   }
 
   void _run(_Side s) {
@@ -110,7 +114,7 @@ class _CompareViewState extends State<CompareView> {
         setState(() {
           if (e['type'] == 'delta') assistant.text += e['content'] as String;
           if (e['type'] == 'done') {
-            assistant.receipt = e['receipt'] as Map<String, dynamic>?;
+            assistant.setReceipt(e['receipt'] as Map<String, dynamic>?);
           }
         });
         _scroll(s);
@@ -125,7 +129,8 @@ class _CompareViewState extends State<CompareView> {
     setState(() {
       assistant.streaming = false;
       if (assistant.text.isEmpty) {
-        assistant.text = 'No reply. This model may be offline; pick another above.';
+        assistant.text =
+            'No reply. This model may be offline; pick another above.';
       }
       s.streaming = false;
     });
@@ -162,7 +167,8 @@ class _CompareViewState extends State<CompareView> {
   @override
   Widget build(BuildContext context) {
     if (!widget.alive) {
-      return const FwEmpty('The engine is offline. Compare appears when it runs.',
+      return const FwEmpty(
+          'The engine is offline. Compare appears when it runs.',
           command: 'flywheel up');
     }
     final t = context.fw;
@@ -170,8 +176,8 @@ class _CompareViewState extends State<CompareView> {
       Container(
         padding: const EdgeInsets.symmetric(
             horizontal: FwLayout.s5, vertical: FwLayout.s3),
-        decoration:
-            BoxDecoration(border: Border(bottom: BorderSide(color: t.hairline))),
+        decoration: BoxDecoration(
+            border: Border(bottom: BorderSide(color: t.hairline))),
         child: Row(children: [
           Text('Compare', style: Theme.of(context).textTheme.titleMedium),
           const Spacer(),
@@ -196,6 +202,7 @@ class _CompareViewState extends State<CompareView> {
       ChatComposer(
         streaming: _busy,
         onSend: _send,
+        onDraftChanged: (_) {},
         onStop: _stop,
         hint: 'Ask both models the same thing…',
         savedPrompts: widget.settings.savedPrompts,
@@ -209,8 +216,8 @@ class _CompareViewState extends State<CompareView> {
       Container(
         padding: const EdgeInsets.symmetric(
             horizontal: FwLayout.s4, vertical: FwLayout.s2),
-        decoration:
-            BoxDecoration(border: Border(bottom: BorderSide(color: t.hairline))),
+        decoration: BoxDecoration(
+            border: Border(bottom: BorderSide(color: t.hairline))),
         child: Row(children: [
           ModelPickerButton(
             endpoints: _endpoints,
