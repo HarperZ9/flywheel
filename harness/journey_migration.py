@@ -5,6 +5,7 @@ import hashlib
 import os
 from pathlib import Path, PurePosixPath, PureWindowsPath
 import shutil
+import stat
 import tempfile
 from uuid import uuid4
 
@@ -203,7 +204,15 @@ def _packet_inventory(root: Path) -> tuple[list[tuple[str, bytes]], str]:
 
 
 def _is_link(path: Path) -> bool:
-    return path.is_symlink() or (hasattr(path, "is_junction") and path.is_junction())
+    try:
+        status = os.lstat(path)
+    except FileNotFoundError:
+        return False
+    except OSError as exc:
+        raise ValueError("derived packet path is unavailable") from exc
+    attributes = getattr(status, "st_file_attributes", 0)
+    reparse = getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT", 0x400)
+    return stat.S_ISLNK(status.st_mode) or bool(attributes & reparse)
 
 
 def _verified_output_root(path: Path) -> Path:

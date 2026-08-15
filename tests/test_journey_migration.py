@@ -1,7 +1,7 @@
 import hashlib
 import json
 import os
-from pathlib import PurePosixPath
+from pathlib import Path, PurePosixPath
 import subprocess
 
 import pytest
@@ -59,6 +59,15 @@ def _directory_link(link, target):
         if result.returncode == 0:
             return
     pytest.skip("platform grants no directory symlink or junction")
+
+
+def _junction(link, target):
+    if os.name != "nt":
+        pytest.skip("Windows junction test")
+    result = subprocess.run(["cmd", "/c", "mklink", "/J", str(link), str(target)],
+                            capture_output=True, text=True)
+    if result.returncode != 0:
+        pytest.skip("platform denied junction creation")
 
 
 def test_import_cites_raw_snapshot_without_inventing_preimport_custody(tmp_path):
@@ -148,6 +157,38 @@ def test_packet_migration_rejects_a_symlinked_destination_component(tmp_path):
 
     with pytest.raises(ValueError, match="link"):
         migrate_packet(packet, target_schema="flywheel.evidence-packet/v2", out_root=out)
+
+    assert list(outside.iterdir()) == []
+
+
+def test_packet_migration_rejects_output_root_junction_without_path_is_junction(
+        tmp_path, monkeypatch):
+    """Python 3.11 must detect a junction at the requested output root."""
+    packet, outside = _packet(tmp_path), tmp_path / "outside"
+    outside.mkdir()
+    requested = tmp_path / "junction-root"
+    _junction(requested, outside)
+    monkeypatch.delattr(Path, "is_junction", raising=False)
+
+    with pytest.raises(ValueError, match="link"):
+        migrate_packet(packet, target_schema="flywheel.evidence-packet/v2",
+                       out_root=requested)
+
+    assert list(outside.iterdir()) == []
+
+
+def test_packet_migration_rejects_ancestor_junction_without_path_is_junction(
+        tmp_path, monkeypatch):
+    """Python 3.11 must detect a junction above a missing output root."""
+    packet, outside = _packet(tmp_path), tmp_path / "outside"
+    outside.mkdir()
+    ancestor = tmp_path / "junction-parent"
+    _junction(ancestor, outside)
+    monkeypatch.delattr(Path, "is_junction", raising=False)
+
+    with pytest.raises(ValueError, match="link"):
+        migrate_packet(packet, target_schema="flywheel.evidence-packet/v2",
+                       out_root=ancestor / "derived")
 
     assert list(outside.iterdir()) == []
 
