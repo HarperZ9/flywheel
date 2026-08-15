@@ -55,12 +55,12 @@ def test_proposal_parent_creation_and_replacements_sync_the_full_chain(
     """Acknowledgment must follow durable parent entries through state_root."""
     from harness import grant_route
     state, evidence = tmp_path / "state", tmp_path / "evidence"
-    state.mkdir(); evidence.mkdir(); synced = []
+    evidence.mkdir(); synced = []
     monkeypatch.setattr(grant_route, "fsync_directory",
                         lambda path: synced.append(Path(path)))
     proposal, status = _prepare_create(state, evidence)
     root, owner = state / "grant-proposals", state / "grant-proposals" / OWNER
-    assert status == 200 and synced == [state, root, owner, root, state]
+    assert status == 200 and synced == [tmp_path, state, root, owner, root, state]
     synced.clear()
     approved, approved_status = _post(
         "approve-once", {"proposal_ref": proposal["proposal_ref"]},

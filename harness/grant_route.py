@@ -143,8 +143,9 @@ def _operation(action: str, req: dict, owner_ref: str, state_root: Path,
             "packet_ref": req["packet_ref"]}
     return "export", body, "journey.export", ("journey:export",), (req["packet_ref"],)
 def _proposal_dir(state_root: Path, owner_ref: str) -> Path:
-    _validate_owner_ref(owner_ref)
-    state = Path(state_root); state.mkdir(parents=True, exist_ok=True)
+    _validate_owner_ref(owner_ref); state = Path(state_root)
+    new_state = not state.exists(); state.mkdir(parents=True, exist_ok=True)
+    if new_state: fsync_directory(state.parent)
     root = state / "grant-proposals"; new_root = not root.exists(); root.mkdir(exist_ok=True)
     _secure_owner_only(root, directory=True)
     if new_root: fsync_directory(state)
@@ -153,12 +154,10 @@ def _proposal_dir(state_root: Path, owner_ref: str) -> Path:
     if new_owner: fsync_directory(root)
     return owner
 def _proposal_path(owner_dir: Path, proposal_ref: str) -> Path:
-    if type(proposal_ref) is not str or PROPOSAL_REF_PATTERN.fullmatch(proposal_ref) is None:
-        raise GrantError("PERMISSION_REQUIRED")
+    if type(proposal_ref) is not str or PROPOSAL_REF_PATTERN.fullmatch(proposal_ref) is None: raise GrantError("PERMISSION_REQUIRED")
     return owner_dir / f"{canonical_sha256(proposal_ref)}.json"
 def _digest(record: dict) -> str:
-    return canonical_sha256({key: value for key, value in record.items()
-                             if key != "proposal_sha256"})
+    return canonical_sha256({key: value for key, value in record.items() if key != "proposal_sha256"})
 def _request_from(value: dict) -> GrantRequest:
     try:
         exact = dict(value); exact["scopes"] = tuple(exact["scopes"])
@@ -210,6 +209,8 @@ def _replace(path: Path, value: dict) -> None:
 def _prepare(action: str, req: dict, owner_ref: str, state_root: Path,
              evidence_root: Path, clock: Callable[[], str]) -> dict:
     public_metadata(req)
+    state = Path(state_root); new_state = not state.exists(); state.mkdir(parents=True, exist_ok=True)
+    if new_state: fsync_directory(state.parent)
     suffix = secrets.token_hex(16)
     proposal_ref, grant_ref = f"prp_{suffix}", f"gnt_{suffix}"
     operation_ref = f"op_{secrets.token_hex(16)}" if action == "check" else None
@@ -270,8 +271,7 @@ def _mapped_error(exc: Exception) -> tuple[dict, int]:
     if isinstance(exc, TransportError): return error_response(exc)
     if isinstance(exc, JourneyLockBusy) or (isinstance(exc, GrantError) and exc.code == "STORE_BUSY"):
         return error_response(TransportError("STORE_BUSY", "grant proposal custody is busy", 503))
-    if isinstance(exc, GrantError):
-        return error_response(TransportError(exc.code, "operation approval is unavailable", 403))
+    if isinstance(exc, GrantError): return error_response(TransportError(exc.code, "operation approval is unavailable", 403))
     if isinstance(exc, JourneyStoreError):
         status = 404 if exc.code == "JOURNEY_NOT_FOUND" else 503 if exc.code == "STORE_BUSY" else 409
         return error_response(TransportError(exc.code, "Journey state is unavailable", status))
