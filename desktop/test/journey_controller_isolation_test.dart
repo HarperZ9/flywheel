@@ -17,28 +17,56 @@ JourneyCancelResult _cancelResult() => JourneyCancelResult.fromJson({
 
 void main() {
   _raceTests();
+  for (final kind in const ['append', 'check', 'cancel']) {
+    test('$kind completion refreshes the newly selected lens',
+        () => _sameJourneyLensRace(kind));
+  }
   _custodyTests();
   _exactKeyTests();
   _contractTests();
 }
 
-void _exactKeyTests() {
-  test('check draft rejects delimiter-collided exact field names', () {
-    final collided = JourneyDraft(
-        draftRef: 'dft_cccccccccccccccccccccccccccccccc',
-        journeyRef: journeyA,
-        kind: 'check',
-        payload: const {
-          'candidate_ref|claim_id': 'candidate.py',
-          'client_request_id': 'request-collision',
-          'context_ref': 'context.json',
-          'oracle_id': 'code'
-        },
-        state: JourneyDraftState.dirty,
-        updatedAt: DateTime.utc(2026, 8, 15));
-    expect(() => JourneyCheckDraft.fromDraft(collided),
-        throwsA(isA<JourneyLocalStoreException>()));
-  });
+Future<void> _sameJourneyLensRace(String kind) async {
+  final api = ScriptedJourneyApi();
+  final harness = await readyHarness(api);
+  addTearDown(harness.dispose);
+  final item = draft(kind == 'cancel' ? 'append' : kind);
+  if (kind != 'cancel') harness.controller.saveDraft(item);
+  final mutation = Completer<JourneyMutationAck>();
+  final cancellation = Completer<JourneyCancelResult>();
+  api
+    ..reply('prepare',
+        proposal(kind, operationRef: kind == 'check' ? operationA : null))
+    ..reply('approve', approval())
+    ..reply(kind, kind == 'cancel' ? cancellation.future : mutation.future)
+    ..reply('resume:$journeyA:diagnose', projection(lens: JourneyLens.diagnose))
+    ..reply('resume:$journeyA:diagnose',
+        projection(head: headB, lens: JourneyLens.diagnose));
+  final submitted = switch (kind) {
+    'append' => harness.controller.submitAppend(item),
+    'check' => harness.controller.runCheck(JourneyCheckDraft.fromDraft(item)),
+    _ => harness.controller.requestCancel(operationA),
+  };
+  await api.waitFor(kind);
+  await harness.controller.selectLens(JourneyLens.diagnose);
+  if (kind == 'cancel') {
+    cancellation.complete(_cancelResult());
+  } else {
+    mutation.complete(
+        acknowledgement(operationRef: kind == 'check' ? operationA : null));
+  }
+  await submitted;
+  final state = harness.controller.state;
+  expect([state.activeJourneyRef, state.projection?.journeyRef],
+      [journeyA, journeyA]);
+  expect(state.selectedLens, JourneyLens.diagnose);
+  expect(state.projection?.eventHeadSha256, headB);
+  expect(api.calls.where((call) => call.endsWith(':diagnose')), hasLength(2));
+  if (kind == 'cancel') {
+    expect(state.cancelResult?.operationState, JourneyOperationState.cancelled);
+  } else {
+    expect(harness.drafts.list(), isEmpty);
+  }
 }
 
 void _raceTests() {
@@ -56,9 +84,7 @@ void _raceTests() {
       ..reply('resume:$journeyB:verify', projection(journeyRef: journeyB))
       ..reply('resume:$journeyA:verify', projection(head: headB));
     final submitted = harness.controller.submitAppend(item);
-    while (api.appendRequests.isEmpty) {
-      await Future<void>.delayed(Duration.zero);
-    }
+    await api.waitFor('append');
     await harness.controller.selectJourney(journeyB);
     pending.complete(acknowledgement());
     await submitted;
@@ -81,9 +107,7 @@ void _raceTests() {
       ..reply('resume:$journeyB:verify', projection(journeyRef: journeyB))
       ..reply('resume:$journeyA:verify', projection(head: headB));
     final submitted = harness.controller.submitAppend(item);
-    while (api.appendRequests.isEmpty) {
-      await Future<void>.delayed(Duration.zero);
-    }
+    await api.waitFor('append');
     await harness.controller.selectJourney(journeyB);
     pending.completeError(JourneyApiException(
         JourneyFailure('HEAD_CONFLICT', 'Journey state changed', const [])));
@@ -106,9 +130,7 @@ void _raceTests() {
       ..reply('resume:$journeyB:verify', projection(journeyRef: journeyB))
       ..reply('resume:$journeyA:verify', projection(head: headB));
     final cancelled = harness.controller.requestCancel(operationA);
-    while (api.cancelRequests.isEmpty) {
-      await Future<void>.delayed(Duration.zero);
-    }
+    await api.waitFor('cancel');
     await harness.controller.selectJourney(journeyB);
     pending.complete(_cancelResult());
     await cancelled;
@@ -135,9 +157,7 @@ void _custodyTests() {
       ..reply('append', pending.future)
       ..reply('resume:$journeyA:verify', projection(head: headB));
     final submitted = harness.controller.submitAppend(item);
-    while (api.appendRequests.isEmpty) {
-      await Future<void>.delayed(Duration.zero);
-    }
+    await api.waitFor('append');
     harness.drafts.save(JourneyDraft(
         draftRef: item.draftRef,
         journeyRef: journeyA,
@@ -184,6 +204,25 @@ void _custodyTests() {
       JourneyRecoveryAction.reviewDraft,
       JourneyRecoveryAction.refreshProjection
     });
+  });
+}
+
+void _exactKeyTests() {
+  test('check draft rejects delimiter-collided exact field names', () {
+    final collided = JourneyDraft(
+        draftRef: 'dft_cccccccccccccccccccccccccccccccc',
+        journeyRef: journeyA,
+        kind: 'check',
+        payload: const {
+          'candidate_ref|claim_id': 'candidate.py',
+          'client_request_id': 'request-collision',
+          'context_ref': 'context.json',
+          'oracle_id': 'code'
+        },
+        state: JourneyDraftState.dirty,
+        updatedAt: DateTime.utc(2026, 8, 15));
+    expect(() => JourneyCheckDraft.fromDraft(collided),
+        throwsA(isA<JourneyLocalStoreException>()));
   });
 }
 

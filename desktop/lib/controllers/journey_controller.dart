@@ -105,7 +105,7 @@ final class JourneyController extends ChangeNotifier {
       _view.drafts = _custody.list();
       final request = draft.payload['client_request_id'] as String;
       final granted = await _grant(_intent(draft, kind), kind.name);
-      if (_current(target)) _view.operation = granted.$2;
+      if (_view.ref == target.ref) _view.operation = granted.$2;
       final ack = await _dispatch(draft, kind, granted.$1);
       final ref = kind == _M.create ? ack.journeyRef : draft.journeyRef;
       _accept(ack.journeyRef == ref && _validAck(ack, kind, granted.$2));
@@ -124,26 +124,23 @@ final class JourneyController extends ChangeNotifier {
 
   Future<void> _acknowledged(JourneyDraft draft, _M kind,
       JourneyMutationAck ack, String request, _Target initial) async {
-    JourneyLocalFailure? local;
-    var target = initial;
+    JourneyLocalFailure? e;
+    var t = initial;
     try {
       if (kind == _M.create) {
-        target =
-            (epoch: initial.epoch, ref: ack.journeyRef, lens: initial.lens);
+        t = (epoch: initial.epoch, ref: ack.journeyRef, lens: initial.lens);
         if (_current(initial)) {
           _view.acknowledgedRef(ack.journeyRef);
-          _custody.saveSession(ack.journeyRef, target.lens);
+          _custody.saveSession(ack.journeyRef, t.lens);
         }
       }
       _custody.delete(draft, request, ack.eventHeadSha256);
       _view.drafts = _custody.list();
     } on JourneyLocalStoreException catch (error) {
-      local = error.failure;
+      e = error.failure;
     }
-    await _refreshAcknowledged(ack.journeyRef, target);
-    if (local != null && _current(target)) {
-      _view.local(local, acknowledged: true);
-    }
+    await _refreshAcknowledged(ack.journeyRef, t);
+    if (e != null && _view.ref == t.ref) _view.local(e, acknowledged: true);
   }
 
   GrantIntent _intent(JourneyDraft draft, _M kind) {
@@ -226,7 +223,7 @@ final class JourneyController extends ChangeNotifier {
           operationRef: operation));
       _accept(_terminal(result, operation));
       _cancelHeads.remove(key);
-      if (_current(target)) _view.cancelResult = result;
+      if (_view.ref == current.journeyRef) _view.cancelResult = result;
       await _refreshAcknowledged(current.journeyRef, target);
     } on Object catch (error) {
       final failure = _fail(error);
@@ -250,13 +247,15 @@ final class JourneyController extends ChangeNotifier {
   }
 
   Future<void> _refreshAcknowledged(String ref, _Target target) async {
+    final current = _view.ref == ref ? _capture() : null;
+    final lens = current?.lens ?? target.lens;
     try {
-      final refreshed = await _resume((_api, ref, target.lens));
-      if (_current(target)) {
-        _view.ready(refreshed, ref: ref, lens: target.lens);
+      final refreshed = await _resume((_api, ref, lens));
+      if (current != null && _current(current)) {
+        _view.ready(refreshed, ref: ref, lens: lens);
       }
-    } on Object catch (error) {
-      if (_current(target)) _view.refreshFailed(_fail(error));
+    } on Object catch (e) {
+      if (current != null && _current(current)) _view.refreshFailed(_fail(e));
     }
   }
 

@@ -118,6 +118,12 @@ class ScriptedJourneyApi implements JourneyApi {
   final List<JourneyCancelRequest> cancelRequests = [];
   void reply(String name, Object value) =>
       replies.putIfAbsent(name, () => []).add(value);
+  Future<void> waitFor(String call) async {
+    while (!calls.contains(call)) {
+      await Future<void>.delayed(Duration.zero);
+    }
+  }
+
   Future<T> _take<T>(String name) async {
     calls.add(name);
     final value = replies[name]!.removeAt(0);
