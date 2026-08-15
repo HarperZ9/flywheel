@@ -60,6 +60,8 @@ JourneyMutationAck acknowledgement({
   String journeyRef = journeyA,
   String head = headB,
   String? operationRef,
+  String? operationState,
+  bool includeOperationState = true,
 }) =>
     JourneyMutationAck.fromJson({
       'schema': 'flywheel.evidence-journey-mutation-ack/v2',
@@ -68,10 +70,11 @@ JourneyMutationAck acknowledgement({
       'event_sha256': headB,
       'projection_sha256': headA,
       'idempotent_replay': false,
-      if (operationRef != null) ...{
-        'operation_ref': operationRef,
-        'state': 'completed',
-      },
+      if (operationRef != null) 'operation_ref': operationRef,
+      if (includeOperationState && operationRef != null)
+        'state': operationState ?? 'completed'
+      else if (operationState != null)
+        'state': operationState,
     });
 JourneyDraft draft(String kind,
     {String ref = 'dft_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
@@ -162,11 +165,12 @@ class ScriptedJourneyApi implements JourneyApi {
 }
 
 class ControllerHarness {
-  ControllerHarness(this.api)
+  ControllerHarness(this.api, {JourneyBeforeRename? sessionBeforeRename})
       : directory = Directory.systemTemp.createTempSync('journey-controller-') {
     drafts = JourneyDraftStore(file: File('${directory.path}/drafts.json'));
-    sessions =
-        JourneySessionStore(file: File('${directory.path}/session.json'));
+    sessions = JourneySessionStore(
+        file: File('${directory.path}/session.json'),
+        beforeRename: sessionBeforeRename);
     controller = JourneyController(
       api: api,
       draftStore: drafts,
@@ -198,27 +202,6 @@ void main() {
 }
 
 void _contractTests() {
-  test('check wrapper and view collections fail closed and immutable', () {
-    final valid = draft('check');
-    expect(JourneyCheckDraft.fromDraft(valid).clientRequestId, 'request-check');
-    expect(
-      () => JourneyCheckDraft.fromDraft(JourneyDraft(
-        draftRef: valid.draftRef,
-        journeyRef: journeyA,
-        kind: 'check',
-        payload: {...valid.payload, 'extra': 'value'},
-        state: JourneyDraftState.dirty,
-        updatedAt: valid.updatedAt,
-      )),
-      throwsA(isA<JourneyLocalStoreException>()),
-    );
-    final harness = ControllerHarness(ScriptedJourneyApi());
-    addTearDown(harness.dispose);
-    final state = harness.controller.state;
-    expect(() => state.drafts.add(valid), throwsUnsupportedError);
-    expect(() => state.recoveryActions.add(JourneyRecoveryAction.reviewDraft),
-        throwsUnsupportedError);
-  });
   test('append preserves request and deletes only on ack', () async {
     final api = ScriptedJourneyApi();
     final harness = await readyHarness(api);

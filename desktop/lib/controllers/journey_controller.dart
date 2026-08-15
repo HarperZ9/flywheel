@@ -13,8 +13,7 @@ final class JourneyController extends ChangeNotifier {
   })  : _api = api,
         _custody = _Custody(draftStore, sessionStore);
   final JourneyApi _api;
-  _View? _model;
-  _View get _view => _model ??= _View(notifyListeners);
+  late final _View _view = _View(notifyListeners);
   final _Custody _custody;
   Future<void> _tail = Future.value();
   final Map<String, String> _cancelHeads = {};
@@ -34,7 +33,7 @@ final class JourneyController extends ChangeNotifier {
     JourneyFailure? failure;
     if (session != null) {
       try {
-        resumed = await _resume(session.journeyRef, session.lens);
+        resumed = await _resume((_api, session.journeyRef, session.lens));
       } on Object catch (error) {
         failure = _fail(error);
       }
@@ -65,7 +64,7 @@ final class JourneyController extends ChangeNotifier {
     final epoch = ++_epoch, prior = _view.projection;
     _view.busy(JourneyViewPhase.loading);
     try {
-      final result = await _resume(ref, lens);
+      final result = await _resume((_api, ref, lens));
       if (epoch != _epoch) return;
       _accept(!same || result.sameEvidenceAs(prior!));
       _custody.saveSession(ref, lens);
@@ -98,64 +97,72 @@ final class JourneyController extends ChangeNotifier {
       _view.local(JourneyLocalFailure.invalidRecord);
       return;
     }
-    ++_epoch;
+    final target = _capture();
     _view.busy(JourneyViewPhase.values[kind.index + 3]);
-    JourneyDraft draft;
+    late JourneyDraft draft;
     try {
       draft = _custody.attempt(source, kind, _view.projection?.eventHeadSha256);
       _view.drafts = _custody.list();
-    } on JourneyLocalStoreException catch (error) {
-      _view.local(error.failure);
-      return;
-    }
-    try {
       final request = draft.payload['client_request_id'] as String;
       final granted = await _grant(_intent(draft, kind), kind.name);
-      _view.operation = granted.$2;
+      if (_current(target)) _view.operation = granted.$2;
       final ack = await _dispatch(draft, kind, granted.$1);
       final ref = kind == _M.create ? ack.journeyRef : draft.journeyRef;
-      _accept(!ack.invalidResponse &&
-          ack.journeyRef == ref &&
-          (kind == _M.check
-              ? ack.operationRef == granted.$2
-              : ack.operationRef == null));
-      _custody.delete(draft, request, ack.eventHeadSha256);
-      _view.drafts = _custody.list();
-      if (kind == _M.create) {
-        _view.ref = ack.journeyRef;
-        _custody.saveSession(ack.journeyRef, _view.lens);
-      }
-      await _refreshAcknowledged(ack.journeyRef);
+      _accept(ack.journeyRef == ref && _validAck(ack, kind, granted.$2));
+      await _acknowledged(draft, kind, ack, request, target);
     } on JourneyLocalStoreException catch (error) {
-      _view.local(error.failure);
+      if (_current(target)) _view.local(error.failure);
     } on Object catch (error) {
       final failure = _fail(error);
       if (failure.code == 'HEAD_CONFLICT' && kind != _M.create) {
-        await _conflict(failure, draft: draft);
+        await _conflict(failure, target, draft: draft);
       } else {
-        _failDraft(draft, failure);
+        _failDraft(draft, failure, target);
       }
+    }
+  }
+
+  Future<void> _acknowledged(JourneyDraft draft, _M kind,
+      JourneyMutationAck ack, String request, _Target initial) async {
+    JourneyLocalFailure? local;
+    var target = initial;
+    try {
+      if (kind == _M.create) {
+        target =
+            (epoch: initial.epoch, ref: ack.journeyRef, lens: initial.lens);
+        if (_current(initial)) {
+          _view.acknowledgedRef(ack.journeyRef);
+          _custody.saveSession(ack.journeyRef, target.lens);
+        }
+      }
+      _custody.delete(draft, request, ack.eventHeadSha256);
+      _view.drafts = _custody.list();
+    } on JourneyLocalStoreException catch (error) {
+      local = error.failure;
+    }
+    await _refreshAcknowledged(ack.journeyRef, target);
+    if (local != null && _current(target)) {
+      _view.local(local, acknowledged: true);
     }
   }
 
   GrantIntent _intent(JourneyDraft draft, _M kind) {
     final value = draft.payload;
     String text(String key) => value[key] as String;
-    final request = text('client_request_id');
     return switch (kind) {
       _M.create => GrantIntent.create(
           goal: text('goal'),
           intakeRef: text('intake_ref'),
-          clientRequestId: request),
+          clientRequestId: text('client_request_id')),
       _M.append => GrantIntent.append(
           journeyRef: draft.journeyRef!,
           expectedEventHead: draft.baseEventHeadSha256!,
-          clientRequestId: request,
+          clientRequestId: text('client_request_id'),
           command: value['command'] as Map<String, dynamic>),
       _M.check => GrantIntent.check(
           journeyRef: draft.journeyRef!,
           expectedEventHead: draft.baseEventHeadSha256!,
-          clientRequestId: request,
+          clientRequestId: text('client_request_id'),
           claimId: text('claim_id'),
           oracleId: text('oracle_id'),
           candidateRef: text('candidate_ref'),
@@ -167,31 +174,28 @@ final class JourneyController extends ChangeNotifier {
       JourneyDraft draft, _M kind, String grant) {
     final value = draft.payload;
     String text(String key) => value[key] as String;
-    final request = text('client_request_id');
-    if (kind == _M.create) {
-      return _api.create(JourneyCreateRequest(
+    return switch (kind) {
+      _M.create => _api.create(JourneyCreateRequest(
           goal: text('goal'),
           intakeRef: text('intake_ref'),
-          clientRequestId: request,
-          grantRef: grant));
-    }
-    if (kind == _M.append) {
-      return _api.append(JourneyAppendRequest(
+          clientRequestId: text('client_request_id'),
+          grantRef: grant)),
+      _M.append => _api.append(JourneyAppendRequest(
           journeyRef: draft.journeyRef!,
           expectedEventHead: draft.baseEventHeadSha256!,
-          clientRequestId: request,
+          clientRequestId: text('client_request_id'),
           grantRef: grant,
-          command: value['command'] as Map<String, dynamic>));
-    }
-    return _api.check(JourneyCheckRequest(
-        journeyRef: draft.journeyRef!,
-        expectedEventHead: draft.baseEventHeadSha256!,
-        clientRequestId: request,
-        grantRef: grant,
-        claimId: text('claim_id'),
-        oracleId: text('oracle_id'),
-        candidateRef: text('candidate_ref'),
-        contextRef: text('context_ref')));
+          command: value['command'] as Map<String, dynamic>)),
+      _M.check => _api.check(JourneyCheckRequest(
+          journeyRef: draft.journeyRef!,
+          expectedEventHead: draft.baseEventHeadSha256!,
+          clientRequestId: text('client_request_id'),
+          grantRef: grant,
+          claimId: text('claim_id'),
+          oracleId: text('oracle_id'),
+          candidateRef: text('candidate_ref'),
+          contextRef: text('context_ref'))),
+    };
   }
 
   Future<void> _cancel(String operation) async {
@@ -200,11 +204,11 @@ final class JourneyController extends ChangeNotifier {
       _view.remote(_invalid());
       return;
     }
-    ++_epoch;
+    final target = _capture();
     _view.busy(JourneyViewPhase.cancelling, operation: operation);
     _view.cancelResult = null;
-    final head =
-        _cancelHeads.putIfAbsent(operation, () => current.eventHeadSha256);
+    final key = '${current.journeyRef}:$operation';
+    final head = _cancelHeads.putIfAbsent(key, () => current.eventHeadSha256);
     try {
       final request = 'cancel:$operation';
       final granted = await _grant(
@@ -221,14 +225,14 @@ final class JourneyController extends ChangeNotifier {
           grantRef: granted.$1,
           operationRef: operation));
       _accept(_terminal(result, operation));
-      _cancelHeads.remove(operation);
-      _view.cancelResult = result;
-      await _refreshAcknowledged(current.journeyRef);
+      _cancelHeads.remove(key);
+      if (_current(target)) _view.cancelResult = result;
+      await _refreshAcknowledged(current.journeyRef, target);
     } on Object catch (error) {
       final failure = _fail(error);
       if (failure.code == 'HEAD_CONFLICT') {
-        await _conflict(failure, operation: operation);
-      } else {
+        await _conflict(failure, target, operation: operation);
+      } else if (_current(target)) {
         _view.remote(failure);
       }
     }
@@ -245,51 +249,49 @@ final class JourneyController extends ChangeNotifier {
     return (grant.grantRef, proposal.operationRef);
   }
 
-  Future<JourneyProjection> _resume(String ref, JourneyLens lens) async {
-    final result = await _api.resume(ref, lens);
-    _accept(!result.invalidResponse &&
-        result.journeyRef == ref &&
-        result.lens == lens);
-    return result;
-  }
-
-  Future<void> _refreshAcknowledged(String ref) async {
+  Future<void> _refreshAcknowledged(String ref, _Target target) async {
     try {
-      _view.ready(await _resume(ref, _view.lens), ref: ref);
+      final refreshed = await _resume((_api, ref, target.lens));
+      if (_current(target)) {
+        _view.ready(refreshed, ref: ref, lens: target.lens);
+      }
     } on Object catch (error) {
-      _view.refreshFailed(_fail(error));
+      if (_current(target)) _view.refreshFailed(_fail(error));
     }
   }
 
-  Future<void> _conflict(JourneyFailure failure,
+  Future<void> _conflict(JourneyFailure failure, _Target target,
       {JourneyDraft? draft, String? operation}) async {
     try {
-      final ref = draft?.journeyRef ?? _view.ref!;
-      final refreshed = await _resume(ref, _view.lens);
+      final ref = draft?.journeyRef ?? target.ref!;
+      final refreshed = await _resume((_api, ref, target.lens));
       if (draft != null) {
         _custody.rebase(draft, refreshed.eventHeadSha256);
         _view.drafts = _custody.list();
       } else {
-        _cancelHeads[operation!] = refreshed.eventHeadSha256;
+        _cancelHeads['$ref:${operation!}'] = refreshed.eventHeadSha256;
       }
-      _view.conflict(failure, refreshed);
+      if (_current(target)) _view.conflict(failure, refreshed);
     } on JourneyLocalStoreException catch (error) {
-      _view.local(error.failure);
+      if (_current(target)) _view.local(error.failure);
     } on Object {
-      _view.conflict(failure, null);
+      if (_current(target)) _view.conflict(failure, null);
     }
   }
 
-  void _failDraft(JourneyDraft draft, JourneyFailure failure) {
+  void _failDraft(JourneyDraft draft, JourneyFailure failure, _Target target) {
     try {
       _custody.failed(draft);
       _view.drafts = _custody.list();
-      _view.remote(failure);
+      if (_current(target)) _view.remote(failure);
     } on JourneyLocalStoreException catch (error) {
-      _view.local(error.failure);
+      if (_current(target)) _view.local(error.failure);
     }
   }
 
+  _Target _capture() => (epoch: ++_epoch, ref: _view.ref, lens: _view.lens);
+  bool _current(_Target target) =>
+      target == (epoch: _epoch, ref: _view.ref, lens: _view.lens);
   Future<void> _q(Future<void> Function() action) {
     final result = _tail.then((_) => action());
     _tail = result.then<void>((_) {}, onError: (_) {});

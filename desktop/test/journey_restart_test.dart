@@ -1,13 +1,10 @@
 import 'dart:async';
-
 import 'package:flutter_test/flutter_test.dart';
-
 import 'package:flywheel_desktop/client/journey_api.dart';
 import 'package:flywheel_desktop/controllers/journey_controller.dart';
 import 'package:flywheel_desktop/models/journey_models.dart';
 import 'package:flywheel_desktop/services/journey_draft_store.dart';
 import 'package:flywheel_desktop/services/journey_session_store.dart';
-
 import 'journey_controller_test.dart';
 
 JourneyCancelResult _cancelResult({String state = 'cancelled'}) =>
@@ -17,12 +14,12 @@ JourneyCancelResult _cancelResult({String state = 'cancelled'}) =>
       'event_head_sha256': headB,
       'terminal_event_ref': headB,
     });
-
 void main() {
   _restartTests();
   _readTests();
   _retryTests();
   _ackTests();
+  _grantTests();
   _failureTests();
 }
 
@@ -43,16 +40,13 @@ void _restartTests() {
           'list',
           JourneyApiException(JourneyFailure(
               'STORE_BUSY', 'Journey persistence is busy', const [])));
-
     await harness.controller.initialize();
-
     expect(harness.controller.state.activeJourneyRef, journeyA);
     expect(harness.controller.state.selectedLens, JourneyLens.diagnose);
     expect(harness.controller.state.projection?.journeyRef, journeyA);
     expect(harness.controller.state.drafts.single.payloadSha256,
         item.payloadSha256);
   });
-
   test('create ack persists session and a new controller resumes it', () async {
     final api = ScriptedJourneyApi();
     final harness = ControllerHarness(api);
@@ -70,7 +64,6 @@ void _restartTests() {
     final request = api.createRequests.single;
     expect([request.clientRequestId, request.goal, request.intakeRef],
         ['request-create', 'Preserve evidence', 'intake.json']);
-
     final restartApi = ScriptedJourneyApi()
       ..reply('resume:$journeyA:verify', projection(head: headB))
       ..reply('list', <JourneySummary>[projection(head: headB)]);
@@ -94,7 +87,6 @@ void _readTests() {
     await harness.controller.selectLens(JourneyLens.diagnose);
     expect(harness.controller.state.selectedLens, JourneyLens.diagnose);
     expect(harness.sessions.load()?.lens, JourneyLens.diagnose);
-
     api.reply('resume:$journeyA:rescue',
         projection(journeyRef: journeyB, lens: JourneyLens.rescue));
     await harness.controller.selectLens(JourneyLens.rescue);
@@ -105,7 +97,6 @@ void _readTests() {
     await harness.controller.selectLens(JourneyLens.rescue);
     expect(harness.controller.state.selectedLens, JourneyLens.diagnose);
   });
-
   test('newer Journey selection wins over an older resume response', () async {
     final api = ScriptedJourneyApi();
     final harness = await readyHarness(api);
@@ -139,7 +130,6 @@ void _retryTests() {
     final retained = harness.drafts.list().single;
     expect(retained.baseEventHeadSha256, headA);
     expect(retained.state, JourneyDraftState.saveFailed);
-
     final retryApi = ScriptedJourneyApi()
       ..reply('resume:$journeyA:verify', projection(head: headB))
       ..reply('list', <JourneySummary>[projection(head: headB)])
@@ -156,7 +146,6 @@ void _retryTests() {
     expect(retryApi.appendRequests.single.expectedEventHead, headA);
     expect(retryApi.appendRequests.single.clientRequestId, 'request-append');
   });
-
   test('head conflict rebases retained draft without deletion', () async {
     final api = ScriptedJourneyApi();
     final harness = await readyHarness(api);
@@ -210,12 +199,13 @@ void _ackTests() {
       state: JourneyDraftState.dirty,
       updatedAt: DateTime.utc(2026, 8, 15, 1),
     ));
+    api.reply('resume:$journeyA:verify', projection(head: headB));
     pending.complete(acknowledgement());
     await submit;
     expect(harness.drafts.list(), hasLength(1));
     await harness.controller.requestCancel('not-an-operation-ref');
-    expect(api.calls, ['prepare', 'approve', 'append']);
-
+    expect(
+        api.calls, ['prepare', 'approve', 'append', 'resume:$journeyA:verify']);
     api
       ..reply('prepare', proposal('cancel'))
       ..reply('approve', approval())
@@ -225,7 +215,11 @@ void _ackTests() {
     expect(harness.controller.state.cancelResult?.operationState,
         JourneyOperationState.cancelled);
     expect(api.cancelRequests.single.clientRequestId, 'cancel:$operationA');
-
+    api.reply('resume:$journeyA:diagnose',
+        projection(head: headB, lens: JourneyLens.diagnose));
+    await harness.controller.selectLens(JourneyLens.diagnose);
+    expect(harness.controller.state.activeOperationRef, operationA);
+    expect(harness.controller.state.cancelResult, isNotNull);
     api
       ..reply('prepare', proposal('cancel'))
       ..reply('approve', approval())
@@ -234,7 +228,9 @@ void _ackTests() {
     expect(harness.controller.state.remoteFailure?.code, 'INVALID_RESPONSE');
     expect(harness.controller.state.cancelResult, isNull);
   });
+}
 
+void _grantTests() {
   test('grant and acknowledgement mismatches retain the exact draft', () async {
     final api = ScriptedJourneyApi();
     final harness = await readyHarness(api);
@@ -243,14 +239,12 @@ void _ackTests() {
     api.reply('prepare', proposal('check', operationRef: operationA));
     await harness.controller.submitAppend(harness.drafts.list().single);
     expect(api.appendRequests, isEmpty);
-
     const otherGrant = 'gnt_bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
     api
       ..reply('prepare', proposal('append'))
       ..reply('approve', approval(grantRef: otherGrant));
     await harness.controller.submitAppend(harness.drafts.list().single);
     expect(api.appendRequests, isEmpty);
-
     api
       ..reply('prepare', proposal('append'))
       ..reply('approve', approval())

@@ -22,54 +22,32 @@ enum JourneyRecoveryAction {
   chooseJourney,
 }
 
-final class JourneyViewState {
-  const JourneyViewState._(this._identity, this._evidence, this._failure);
-  final (JourneyViewPhase, JourneyLens, String?, String?) _identity;
-  final (
-    JourneyProjection?,
-    List<JourneySummary>,
-    List<JourneyDraft>
-  ) _evidence;
-  final (
-    JourneyFailure?,
-    JourneyLocalFailure?,
-    Set<JourneyRecoveryAction>,
-    JourneyCancelResult?
-  ) _failure;
-  JourneyViewPhase get phase => _identity.$1;
-  JourneyLens get selectedLens => _identity.$2;
-  String? get activeJourneyRef => _identity.$3;
-  String? get activeOperationRef => _identity.$4;
-  JourneyProjection? get projection => _evidence.$1;
-  List<JourneySummary> get journeys => _evidence.$2;
-  List<JourneyDraft> get drafts => _evidence.$3;
-  JourneyFailure? get remoteFailure => _failure.$1;
-  JourneyLocalFailure? get localFailure => _failure.$2;
-  Set<JourneyRecoveryAction> get recoveryActions => _failure.$3;
-  JourneyCancelResult? get cancelResult => _failure.$4;
-}
+const _retry = JourneyRecoveryAction.retrySameRequest;
+const _refresh = JourneyRecoveryAction.refreshProjection;
+const _auth = JourneyRecoveryAction.authenticate;
+const _review = JourneyRecoveryAction.reviewDraft;
 
-final class JourneyCheckDraft {
+typedef JourneyViewState = ({
+  JourneyViewPhase phase,
+  JourneyLens selectedLens,
+  String? activeJourneyRef,
+  String? activeOperationRef,
+  JourneyProjection? projection,
+  List<JourneySummary> journeys,
+  List<JourneyDraft> drafts,
+  JourneyFailure? remoteFailure,
+  JourneyLocalFailure? localFailure,
+  Set<JourneyRecoveryAction> recoveryActions,
+  JourneyCancelResult? cancelResult,
+});
+
+extension type const JourneyCheckDraft._(JourneyDraft draft) {
   factory JourneyCheckDraft.fromDraft(JourneyDraft draft) {
-    const keys = {
-      'client_request_id',
-      'claim_id',
-      'oracle_id',
-      'candidate_ref',
-      'context_ref'
-    };
-    final values = draft.payload;
-    if (draft.kind != 'check' ||
-        draft.journeyRef == null ||
-        values.length != keys.length ||
-        !values.keys.toSet().containsAll(keys) ||
-        values.values.any((value) => value is! String || value.isEmpty)) {
+    if (!_validDraft(draft, _M.check)) {
       throw const JourneyLocalStoreException(JourneyLocalFailure.invalidRecord);
     }
     return JourneyCheckDraft._(draft);
   }
-  const JourneyCheckDraft._(this.draft);
-  final JourneyDraft draft;
   String get clientRequestId => draft.payload['client_request_id'] as String;
   String get claimId => draft.payload['claim_id'] as String;
   String get oracleId => draft.payload['oracle_id'] as String;
@@ -78,6 +56,8 @@ final class JourneyCheckDraft {
 }
 
 enum _M { create, append, check }
+
+typedef _Target = ({int epoch, String? ref, JourneyLens lens});
 
 final class _View {
   _View(this._notify);
@@ -88,9 +68,8 @@ final class _View {
   JourneyProjection? projection;
   List<JourneySummary> journeys = const [];
   List<JourneyDraft> _drafts = const [];
-  JourneyFailure? remoteFailure;
-  JourneyLocalFailure? localFailure;
-  Set<JourneyRecoveryAction> recovery = const {};
+  (JourneyFailure?, JourneyLocalFailure?, Set<JourneyRecoveryAction>) errors =
+      (null, null, const {});
   JourneyCancelResult? _cancelResult;
   set operation(String? value) => _changed(_operation = value);
   List<JourneyDraft> get drafts => _drafts;
@@ -98,10 +77,19 @@ final class _View {
   JourneyCancelResult? get cancelResult => _cancelResult;
   set cancelResult(JourneyCancelResult? v) => _changed(_cancelResult = v);
   void _changed(Object? _) => _notify();
-  JourneyViewState get snapshot => JourneyViewState._(
-      (phase, lens, ref, _operation),
-      (projection, List.unmodifiable(journeys), List.unmodifiable(drafts)),
-      (remoteFailure, localFailure, Set.unmodifiable(recovery), cancelResult));
+  JourneyViewState get snapshot => (
+        phase: phase,
+        selectedLens: lens,
+        activeJourneyRef: ref,
+        activeOperationRef: _operation,
+        projection: projection?.journeyRef == ref ? projection : null,
+        journeys: List.unmodifiable(journeys),
+        drafts: List.unmodifiable(drafts),
+        remoteFailure: errors.$1,
+        localFailure: errors.$2,
+        recoveryActions: Set.unmodifiable(errors.$3),
+        cancelResult: cancelResult,
+      );
   void begin(JourneySession? session, List<JourneyDraft> stored) {
     phase = JourneyViewPhase.loading;
     drafts = stored;
@@ -116,12 +104,10 @@ final class _View {
       JourneyFailure? failure) {
     projection = resumed;
     journeys = List.unmodifiable(listed);
-    remoteFailure = failure;
-    localFailure = null;
     phase = resumed != null || ref == null
         ? JourneyViewPhase.ready
         : _failurePhase(failure!);
-    recovery = resumed != null ? const {} : _actions(failure);
+    errors = (failure, null, resumed != null ? const {} : _actions(failure));
     _notify();
   }
 
@@ -132,52 +118,56 @@ final class _View {
   }
 
   void ready(JourneyProjection value, {String? ref, JourneyLens? lens}) {
+    final nextRef = ref ?? this.ref;
+    _accept(nextRef != null && value.journeyRef == nextRef);
+    _bind(nextRef!);
     projection = value;
-    this.ref = ref ?? this.ref;
     this.lens = lens ?? this.lens;
     phase = JourneyViewPhase.ready;
     _clear();
     _notify();
   }
 
-  void remote(JourneyFailure failure) {
-    phase = _failurePhase(failure);
-    remoteFailure = failure;
-    localFailure = null;
-    recovery = _actions(failure);
-    _notify();
-  }
-
-  void local(JourneyLocalFailure failure) {
-    phase = JourneyViewPhase.failed;
-    localFailure = failure;
-    remoteFailure = null;
-    recovery = const {JourneyRecoveryAction.reviewDraft};
+  void remote(JourneyFailure failure) =>
+      _failed(failure, _failurePhase(failure), _actions(failure));
+  void local(JourneyLocalFailure failure, {bool acknowledged = false}) =>
+      _failed(failure, JourneyViewPhase.failed,
+          acknowledged ? const {_review, _refresh} : const {_review});
+  void acknowledgedRef(String value) {
+    _bind(value);
     _notify();
   }
 
   void conflict(JourneyFailure failure, JourneyProjection? refreshed) {
     projection = refreshed ?? projection;
     phase = JourneyViewPhase.conflicted;
-    remoteFailure = failure;
-    recovery = {
-      if (refreshed == null) JourneyRecoveryAction.refreshProjection,
-      JourneyRecoveryAction.retrySameRequest
-    };
+    errors = (failure, null, {if (refreshed == null) _refresh, _retry});
     _notify();
   }
 
-  void refreshFailed(JourneyFailure failure) {
-    phase = JourneyViewPhase.failed;
-    remoteFailure = failure;
-    recovery = const {JourneyRecoveryAction.refreshProjection};
+  void refreshFailed(JourneyFailure failure) =>
+      _failed(failure, JourneyViewPhase.failed, const {_refresh});
+  void _bind(String value) {
+    if (value == ref) return;
+    ref = value;
+    projection = null;
+    _operation = null;
+    _cancelResult = null;
+  }
+
+  void _failed(Object failure, JourneyViewPhase value,
+      Set<JourneyRecoveryAction> actions) {
+    phase = value;
+    errors = (
+      failure is JourneyFailure ? failure : null,
+      failure is JourneyLocalFailure ? failure : null,
+      actions
+    );
     _notify();
   }
 
   void _clear() {
-    remoteFailure = null;
-    localFailure = null;
-    recovery = const {};
+    errors = (null, null, const {});
   }
 }
 
@@ -191,11 +181,18 @@ final class _Custody {
   void saveSession(String ref, JourneyLens lens) =>
       sessions.save(JourneySession(journeyRef: ref, lens: lens));
   JourneyDraft attempt(JourneyDraft source, _M kind, String? currentHead) {
-    if (!_valid(source, kind)) {
+    if (!_validDraft(source, kind)) {
       throw const JourneyLocalStoreException(JourneyLocalFailure.invalidRecord);
     }
-    final head =
-        kind == _M.create ? null : source.baseEventHeadSha256 ?? currentHead;
+    final head = kind == _M.create
+        ? null
+        : switch (source.state) {
+            JourneyDraftState.saving ||
+            JourneyDraftState.saveFailed ||
+            JourneyDraftState.recoveryAvailable =>
+              source.baseEventHeadSha256,
+            _ => currentHead,
+          };
     if (kind != _M.create && head == null) {
       throw const JourneyLocalStoreException(JourneyLocalFailure.invalidRecord);
     }
@@ -229,47 +226,56 @@ final class _Custody {
           payload: draft.payload,
           state: state,
           updatedAt: DateTime.now().toUtc());
-  bool _valid(JourneyDraft draft, _M kind) {
-    final keys = switch (kind) {
-      _M.create => const {'client_request_id', 'goal', 'intake_ref'},
-      _M.append => const {'client_request_id', 'command'},
-      _M.check => const {
-          'client_request_id',
-          'claim_id',
-          'oracle_id',
-          'candidate_ref',
-          'context_ref'
-        },
-    };
-    if (draft.kind != kind.name ||
-        keys.length != draft.payload.length ||
-        !draft.payload.keys.toSet().containsAll(keys) ||
-        (kind == _M.create
-            ? draft.journeyRef != null || draft.baseEventHeadSha256 != null
-            : draft.journeyRef == null)) {
-      return false;
-    }
-    return draft.payload.entries.every((entry) => entry.key == 'command'
-        ? entry.value is Map<String, dynamic>
-        : entry.value is String && (entry.value as String).isNotEmpty);
-  }
+}
+
+bool _validDraft(JourneyDraft draft, _M kind) {
+  final expected = switch (kind) {
+    _M.create => 'client_request_id|goal|intake_ref',
+    _M.append => 'client_request_id|command',
+    _M.check =>
+      'candidate_ref|claim_id|client_request_id|context_ref|oracle_id',
+  };
+  final references = kind == _M.create
+      ? draft.journeyRef == null && draft.baseEventHeadSha256 == null
+      : draft.journeyRef != null;
+  return draft.kind == kind.name &&
+      references &&
+      expected.split('|').length == draft.payload.length &&
+      expected.split('|').every(draft.payload.containsKey) &&
+      draft.payload.entries.every((entry) => entry.key == 'command'
+          ? entry.value is Map<String, dynamic>
+          : entry.value is String && (entry.value as String).isNotEmpty);
 }
 
 bool _terminal(JourneyCancelResult result, String operation) =>
     !result.invalidResponse &&
     result.operationRef == operation &&
-    const {
-      JourneyOperationState.cancelled,
-      JourneyOperationState.completed,
-      JourneyOperationState.failed
-    }.contains(result.operationState);
+    const {'cancelled', 'completed', 'failed'}
+        .contains(result.operationState.name);
+bool _validAck(JourneyMutationAck ack, _M kind, String? operation) =>
+    !ack.invalidResponse &&
+    switch (kind) {
+      _M.check => ack.operationRef == operation &&
+          ack.operationState != null &&
+          ack.operationState != JourneyOperationState.unknown,
+      _ => ack.operationRef == null && ack.operationState == null,
+    };
+
+Future<JourneyProjection> _resume(
+    (JourneyApi, String, JourneyLens) input) async {
+  final result = await input.$1.resume(input.$2, input.$3);
+  _accept(!result.invalidResponse &&
+      result.journeyRef == input.$2 &&
+      result.lens == input.$3);
+  return result;
+}
+
 JourneyFailure _invalid() => JourneyFailure(
     'INVALID_RESPONSE', 'Gateway response was invalid', const []);
 JourneyFailure _fail(Object e) =>
     e is JourneyApiException ? e.failure : _invalid();
-void _accept(bool condition) {
-  if (!condition) throw JourneyApiException(_invalid());
-}
+void _accept(bool condition) =>
+    condition ? null : throw JourneyApiException(_invalid());
 
 JourneyViewPhase _failurePhase(JourneyFailure f) => switch (f.code) {
       'HEAD_CONFLICT' => JourneyViewPhase.conflicted,
@@ -278,23 +284,17 @@ JourneyViewPhase _failurePhase(JourneyFailure f) => switch (f.code) {
     };
 Set<JourneyRecoveryAction> _actions(JourneyFailure? failure) =>
     switch (failure?.code) {
-      'AUTH_REQUIRED' => const {
-          JourneyRecoveryAction.authenticate,
-          JourneyRecoveryAction.retrySameRequest
-        },
+      'AUTH_REQUIRED' => const {_auth, _retry},
       'VERSION_MISMATCH' => const {JourneyRecoveryAction.updateClient},
-      'STORE_COMMIT_FAILED' => const {
-          JourneyRecoveryAction.retrySameRequest,
-          JourneyRecoveryAction.reviewDraft
-        },
-      'IDEMPOTENCY_MISMATCH' => const {JourneyRecoveryAction.reviewDraft},
+      'STORE_COMMIT_FAILED' => const {_retry, _review},
+      'IDEMPOTENCY_MISMATCH' => const {_review},
       'JOURNEY_NOT_FOUND' => const {JourneyRecoveryAction.chooseJourney},
-      'CANCEL_UNAVAILABLE' => const {JourneyRecoveryAction.refreshProjection},
+      'CANCEL_UNAVAILABLE' => const {_refresh},
       'STORE_BUSY' ||
       'PERMISSION_REQUIRED' ||
       'APPROVAL_EXPIRED' ||
       'INVALID_RESPONSE' ||
       'HEAD_CONFLICT' =>
-        const {JourneyRecoveryAction.retrySameRequest},
+        const {_retry},
       _ => const {},
     };
