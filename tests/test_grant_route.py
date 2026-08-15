@@ -1,0 +1,159 @@
+from datetime import datetime, timedelta, timezone
+import json
+from pathlib import Path
+
+import pytest
+
+from harness.grant_route import grant_post, resolve_approved_grant
+
+NOW = "2026-08-14T12:00:00Z"
+OWNER = "owner_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+OTHER = "owner_bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+
+
+def _post(path, body, *, owner=OWNER, state, evidence, clock=lambda: NOW):
+    return grant_post(f"/api/grants/{path}", json.dumps(body).encode(),
+                      owner_ref=owner, state_root=state,
+                      evidence_root=evidence, clock=clock)
+
+
+def _prepare_create(state, evidence):
+    (evidence / "intake.json").write_text('{"summary":"bounded"}', encoding="utf-8")
+    return _post("prepare/create", {
+        "goal": "Preserve evidence", "intake_ref": "intake.json",
+        "client_request_id": "create-1",
+    }, state=state, evidence=evidence)
+
+
+def test_prepare_is_not_authority_and_approval_survives_process_state(tmp_path):
+    """Treating a proposal as a grant or relying on memory would widen or lose custody."""
+    state, evidence = tmp_path / "state", tmp_path / "evidence"
+    state.mkdir(); evidence.mkdir()
+    proposal, status = _prepare_create(state, evidence)
+    assert status == 200
+    assert set(proposal) == {"schema", "proposal_ref", "planned_grant_ref",
+                             "action", "operation_sha256", "expires_at"}
+    assert proposal["planned_grant_ref"][4:] == proposal["proposal_ref"][4:]
+    with pytest.raises(Exception, match="PERMISSION_REQUIRED"):
+        resolve_approved_grant(proposal["planned_grant_ref"], owner_ref=OWNER,
+                               state_root=state, clock=lambda: NOW)
+
+    approved, status = _post("approve-once", {
+        "proposal_ref": proposal["proposal_ref"],
+    }, state=state, evidence=evidence)
+    assert status == 200 and approved["grant_ref"] == proposal["planned_grant_ref"]
+    resolved = resolve_approved_grant(
+        approved["grant_ref"], owner_ref=OWNER, state_root=state, clock=lambda: NOW)
+    assert resolved["action"] == "create"
+    assert resolved["grant_request"].owner_ref == OWNER
+
+
+def test_approval_is_idempotent_cross_owner_hidden_and_grant_ledger_digest_only(tmp_path):
+    """A retry must keep one grant while another owner learns nothing about it."""
+    state, evidence = tmp_path / "state", tmp_path / "evidence"
+    state.mkdir(); evidence.mkdir()
+    proposal, _ = _prepare_create(state, evidence)
+    body = {"proposal_ref": proposal["proposal_ref"]}
+    first, first_status = _post("approve-once", body, state=state, evidence=evidence)
+    second, second_status = _post("approve-once", body, state=state, evidence=evidence)
+    denied, denied_status = _post(
+        "approve-once", body, owner=OTHER, state=state, evidence=evidence)
+    assert (first_status, second_status) == (200, 200) and first == second
+    assert denied_status == 403 and denied["error"]["code"] == "PERMISSION_REQUIRED"
+    grant_bytes = b"".join(path.read_bytes() for path in (state / "grants").rglob("*.json"))
+    assert b"Preserve evidence" not in grant_bytes and b"intake.json" not in grant_bytes
+    assert b"request_sha256" in grant_bytes
+
+
+def test_approval_retry_recovers_after_grant_issue_before_proposal_mark(tmp_path, monkeypatch):
+    """A crash-shaped proposal write failure must not mint a second grant."""
+    from harness import grant_route
+    state, evidence = tmp_path / "state", tmp_path / "evidence"
+    state.mkdir(); evidence.mkdir()
+    proposal, _ = _prepare_create(state, evidence)
+    body = {"proposal_ref": proposal["proposal_ref"]}
+    real_replace = grant_route._replace
+    monkeypatch.setattr(grant_route, "_replace",
+                        lambda *_a, **_k: (_ for _ in ()).throw(OSError("crash")))
+    failed, failed_status = _post(
+        "approve-once", body, state=state, evidence=evidence)
+    monkeypatch.setattr(grant_route, "_replace", real_replace)
+    retried, retried_status = _post(
+        "approve-once", body, state=state, evidence=evidence)
+    records = list((state / "grants").rglob("*.json"))
+    assert failed_status == 500 and failed["error"]["code"] == "STORE_COMMIT_FAILED"
+    assert retried_status == 200 and retried["grant_ref"] == proposal["planned_grant_ref"]
+    assert len(records) == 1
+
+
+def test_proposal_digest_mismatch_fails_closed(tmp_path):
+    """Private-record tampering must not be promoted into grant authority."""
+    state, evidence = tmp_path / "state", tmp_path / "evidence"
+    state.mkdir(); evidence.mkdir()
+    proposal, _ = _prepare_create(state, evidence)
+    record_path = next((state / "grant-proposals" / OWNER).glob("*.json"))
+    record = json.loads(record_path.read_text(encoding="utf-8"))
+    record["operation_body"]["goal"] = "changed"
+    record_path.write_text(json.dumps(record), encoding="utf-8")
+    result, status = _post("approve-once", {
+        "proposal_ref": proposal["proposal_ref"],
+    }, state=state, evidence=evidence)
+    assert status == 403 and result["error"]["code"] == "PERMISSION_DENIED"
+    assert not (state / "grants").exists()
+
+
+def test_expired_proposal_and_unknown_fields_are_fixed_non_echo_errors(tmp_path):
+    """Late or widened approval must fail without returning caller-controlled data."""
+    state, evidence = tmp_path / "state", tmp_path / "evidence"
+    state.mkdir(); evidence.mkdir()
+    proposal, _ = _prepare_create(state, evidence)
+    late = (datetime.fromisoformat(NOW.replace("Z", "+00:00"))
+            + timedelta(minutes=3)).astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
+    expired, status = _post("approve-once", {"proposal_ref": proposal["proposal_ref"]},
+                            state=state, evidence=evidence, clock=lambda: late)
+    widened, widened_status = _post("prepare/create", {
+        "goal": "C:/private/secret", "intake_ref": "intake.json",
+        "client_request_id": "create-2", "occurred_at": "caller-owned",
+    }, state=state, evidence=evidence)
+    assert status == 403 and expired["error"]["code"] == "APPROVAL_EXPIRED"
+    assert widened_status == 400 and widened["error"]["code"] == "UNKNOWN_FIELD"
+    assert "private" not in json.dumps(widened)
+
+
+def test_check_prepare_binds_context_without_reading_candidate(tmp_path, monkeypatch):
+    """Grant preparation must hash admitted context but never touch candidate bytes."""
+    state, evidence = tmp_path / "state", tmp_path / "state" / "artifacts"
+    evidence.mkdir(parents=True)
+    context = {"candidate_ref": "candidate.py", "task_id": "bounded"}
+    (evidence / "context.json").write_text(json.dumps(context), encoding="utf-8")
+    real_read = Path.read_bytes
+    def guarded(path):
+        if path.name == "candidate.py": pytest.fail("candidate was read")
+        return real_read(path)
+    monkeypatch.setattr(Path, "read_bytes", guarded)
+    body, status = _post("prepare/check", {
+        "journey_ref": "jrn_0123456789abcdef0123456789abcdef",
+        "expected_event_head": "a" * 64, "client_request_id": "check-1",
+        "claim_id": "claim-1", "oracle_id": "code",
+        "candidate_ref": "candidate.py", "context_ref": "context.json",
+    }, state=state, evidence=evidence)
+    assert status in {200, 404}
+    if status == 200:
+        assert body["operation_ref"].startswith("op_")
+    assert not (evidence / "candidate.py").exists()
+
+
+def test_check_prepare_rejects_unrepresentable_root_before_context_or_candidate_read(
+        tmp_path, monkeypatch):
+    """An external evidence root cannot become a service-owned artifact selector."""
+    state, evidence = tmp_path / "state", tmp_path / "outside"
+    state.mkdir(); evidence.mkdir()
+    def no_read(_path): pytest.fail("artifact bytes were read")
+    monkeypatch.setattr(Path, "read_bytes", no_read)
+    result, status = _post("prepare/check", {
+        "journey_ref": "jrn_0123456789abcdef0123456789abcdef",
+        "expected_event_head": "a" * 64, "client_request_id": "check-1",
+        "claim_id": "claim-1", "oracle_id": "code", "candidate_ref": "candidate.py",
+        "context_ref": "context.json",
+    }, state=state, evidence=evidence)
+    assert status == 409 and result["error"]["code"] == "INVALID_TRANSITION"

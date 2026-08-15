@@ -154,6 +154,32 @@ def test_default_ttl_is_exactly_120_seconds(tmp_path):
     assert expiry - now == timedelta(seconds=120)
 
 
+def test_exact_issue_is_idempotent_for_same_digest_and_denies_mismatch(tmp_path):
+    """Approval crash retry must keep one planned ref without widening its request."""
+    store = GrantStore(tmp_path, clock=lambda: NOW)
+    request = _request()
+    ref = "gnt_11111111111111111111111111111111"
+    first = store.issue_exact(ref, request, approved=True)
+    second = GrantStore(tmp_path, clock=lambda: NOW).issue_exact(
+        ref, request, approved=True)
+    assert first == second == {"grant_ref": ref, "expires_at": request.expires_at,
+                               "consumed": False}
+    _assert_code("PERMISSION_DENIED", lambda: store.issue_exact(
+        ref, replace(request, nonce="different"), approved=True))
+    assert store.consume(ref, request, now=NOW)["consumed"] is True
+
+
+def test_exact_issue_keeps_random_issue_and_digest_only_record_compatible(tmp_path):
+    """Adding planned refs must not alter existing random issue or persist authority."""
+    store = GrantStore(tmp_path, clock=lambda: NOW)
+    random = store.issue(_request(nonce="random"), approved=True)
+    exact = store.issue_exact("gnt_22222222222222222222222222222222",
+                              _request(nonce="exact"), approved=True)
+    stored = b"".join(path.read_bytes() for path in (tmp_path / "grants").rglob("*.json"))
+    assert random["grant_ref"] != exact["grant_ref"]
+    assert b"journey.append" not in stored and b"nonce" not in stored
+
+
 def _storage_receipts(tmp_path, monkeypatch, inspect):
     home, state = tmp_path / "home", tmp_path / "state"
     owner = load_or_create_owner_ref(home)

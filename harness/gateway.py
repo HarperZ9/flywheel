@@ -28,6 +28,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+from datetime import datetime, timezone
 import hashlib
 import json
 import os
@@ -36,18 +37,15 @@ import urllib.parse
 import urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-
 REPO = Path(__file__).resolve().parent.parent
 # Ensure `from harness.X import ...` resolves even when run as `python
 # harness/gateway.py` (script mode puts harness/ on the path, not the repo root),
 # so the on-demand endpoint_registry / context_forge imports work in both modes.
 if str(REPO) not in sys.path:
     sys.path.insert(0, str(REPO))
-
 from harness.run_paths import run_root_default
-from harness.gateway_auth import load_or_create_token, check as _auth_check, DEFAULT_HOSTS
-
-
+from harness.gateway_auth import (authenticate_owner as _auth_owner,
+    load_or_create_owner_ref, load_or_create_token, check as _auth_check, DEFAULT_HOSTS)
 def _resolve_credential(key_env: str) -> str:
     """Env first, OS keychain second; '' when neither. Import is lazy so a
     stripped deployment without keychain.py still serves env-only."""
@@ -56,8 +54,6 @@ def _resolve_credential(key_env: str) -> str:
         return resolve_credential(key_env)
     except Exception:
         return os.environ.get(key_env or "", "")
-
-
 # Receipt catalog: in-repo, re-checkable artifacts that define the world state.
 # Relative to the served root. Missing files are reported honestly as absent.
 RECEIPT_CATALOG = (
@@ -72,8 +68,6 @@ RECEIPT_CATALOG = (
 # (organs of the reconcile), not peers. local-model is the trained-model lane.
 SPINE = ("flywheel", "local-model", "telos", "index", "forum", "gather",
          "crucible", "learn", "mneme", "relay", "plexus")
-
-
 def _probe(url: str, timeout: float = 2.0) -> tuple[bool, dict]:
     """GET a local health URL. Returns (healthy, parsed_json_or_empty).
     Any error is unhealthy — a down endpoint must read as down."""
@@ -86,8 +80,6 @@ def _probe(url: str, timeout: float = 2.0) -> tuple[bool, dict]:
             return True, {}
     except Exception:
         return False, {}
-
-
 def endpoint_roster(serve_url: str, ollama_url: str) -> dict:
     """Local tiers get a live probe; enterprise providers report credential
     presence only (no network, no value)."""
@@ -119,8 +111,6 @@ def endpoint_roster(serve_url: str, ollama_url: str) -> dict:
             "local": local, "enterprise": enterprise,
             "local_healthy": healthy_local, "local_total": len(local),
             "enterprise_configured": sum(1 for e in enterprise if e["credential_present"])}
-
-
 def world_state(root: Path, catalog=RECEIPT_CATALOG) -> dict:
     """The projected world v0: spine roster + receipt catalog with a root hash.
     Root hash is a sha256 over sorted 'path:filehash' lines, so any file change
@@ -144,8 +134,6 @@ def world_state(root: Path, catalog=RECEIPT_CATALOG) -> dict:
             "receipt_count": len(receipts),
             "present_count": sum(1 for r in receipts if r["present"]),
             "root_hash": root_hash}
-
-
 def receipts_ledger(root: Path, run_root: Path | str) -> dict:
     """The receipts ledger: the in-repo receipt catalog (re-hashed on every
     read) plus the accepted proof envelopes under the run root. Every entry
@@ -183,8 +171,6 @@ def receipts_ledger(root: Path, run_root: Path | str) -> dict:
             "merkle_note": "root over the ordered envelope hashes; GET "
                            "/api/receipts/proof?leaf=<sha256> returns an "
                            "inclusion proof re-checkable offline"}
-
-
 def _workspace_root_allowlist() -> "list[str]":
     """Permitted workspace-root prefixes, normalized for prefix comparison.
     Read from FLYWHEEL_WORKSPACE_ROOTS (os.pathsep-separated). Empty = open
@@ -202,8 +188,6 @@ def _workspace_root_allowlist() -> "list[str]":
         except (OSError, ValueError):
             continue
     return roots
-
-
 def _qs_value(qs: str, key: str) -> str:
     """First value for `key` in a raw query string, '' when absent."""
     for part in qs.split("&"):
@@ -801,7 +785,9 @@ class _Handler(BaseHTTPRequestHandler):
     cors = False                              # opt-in (--cors) so browser OpenAI clients can call in
     auth_token = ""                           # set by main(); "" leaves the check off
     allowed_hosts = DEFAULT_HOSTS
-
+    flywheel_home = Path(os.environ.get("FLYWHEEL_HOME", str(Path.home() / ".flywheel")))
+    owner_ref, clock = None, staticmethod(
+        lambda: datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"))
     def log_message(self, *a):  # quiet
         pass
 
@@ -1034,7 +1020,6 @@ class _Handler(BaseHTTPRequestHandler):
                                   "type": "api_error"}}, 500)
         except Exception:
             pass                                   # headers already partly sent; nothing safe to do
-
     def _req_json(self):
         """The decoded JSON request body, or (None, error-response) when the
         Content-Length is missing or oversized. One parse for every POST
@@ -1048,27 +1033,35 @@ class _Handler(BaseHTTPRequestHandler):
                     if length else {}), None
         except Exception:
             return {}, None
-
     def _authorized(self) -> bool:
         """Refuse before dispatch. True when the request may proceed.
 
         Off entirely when auth_token is empty, which is how the in-process tests
         construct the handler; main() always sets one.
         """
+        private = self.path.split("?", 1)[0].startswith(("/api/journeys/", "/api/grants/"))
         if not self.auth_token:
+            if private and not getattr(self, "owner_ref", None): self.owner_ref = load_or_create_owner_ref(self.flywheel_home)
             return True
-        ok, reason = _auth_check(self.headers, self.command, self.auth_token,
-                                 allowed_hosts=self.allowed_hosts)
+        if private:
+            owner, reason = _auth_owner(
+                self.headers, self.command, self.auth_token, self.flywheel_home, allowed_hosts=self.allowed_hosts)
+            ok = owner is not None
+            if ok: self.owner_ref = owner
+        else:
+            ok, reason = _auth_check(self.headers, self.command, self.auth_token, allowed_hosts=self.allowed_hosts)
         if ok:
             return True
-        body = json.dumps({"error": "unauthorized", "reason": reason}).encode()
+        refusal = ({"schema": "flywheel.evidence-transport-error/v1", "error": {
+            "code": "AUTH_REQUIRED", "message": "gateway authentication is required"}}
+            if private else {"error": "unauthorized", "reason": reason})
+        body = json.dumps(refusal).encode()
         self.send_response(401)
         self.send_header("Content-Type", "application/json")
         self.send_header("Content-Length", str(len(body)))
         self.end_headers()
         self.wfile.write(body)
         return False
-
     def do_GET(self):
         if not self._authorized():
             return
@@ -1076,7 +1069,6 @@ class _Handler(BaseHTTPRequestHandler):
             self._get()
         except Exception as e:
             self._safe_500(e)
-
     def do_POST(self):
         if not self._authorized():
             return
@@ -1084,7 +1076,6 @@ class _Handler(BaseHTTPRequestHandler):
             self._post()
         except Exception as e:
             self._safe_500(e)
-
     def _get(self):
         p = self.path.split("?", 1)[0]
         qs = self.path.split("?", 1)[1] if "?" in self.path else ""
@@ -1399,13 +1390,23 @@ class _Handler(BaseHTTPRequestHandler):
 
     def _post(self):
         p = self.path.split("?", 1)[0]
-        if p.startswith("/api/evidence/"):
+        if p.startswith(("/api/evidence/", "/api/journeys/", "/api/grants/")):
             length = self._content_length()
             if length is None:
                 return self._json({"schema": "flywheel.evidence-transport-error/v1",
                     "error": {"code": "INVALID_LENGTH", "message": "request length is invalid"}}, 400)
-            from harness.evidence_route import evidence_post
-            body, code = evidence_post(p, self.rfile.read(length), root=self.root)
+            raw = self.rfile.read(length)
+            if p.startswith("/api/evidence/"):
+                from harness.evidence_route import evidence_post
+                body, code = evidence_post(p, raw, root=self.root)
+            elif p.startswith("/api/journeys/"):
+                from harness.journey_route import journey_post
+                body, code = journey_post(p, raw, owner_ref=self.owner_ref, state_root=self.flywheel_home / "state",
+                    evidence_root=self.root, clock=self.clock)
+            else:
+                from harness.grant_route import grant_post
+                body, code = grant_post(p, raw, owner_ref=self.owner_ref, state_root=self.flywheel_home / "state",
+                    evidence_root=self.root, clock=self.clock)
             return self._json(body, code)
         if p == "/v1/chat/completions":              # OpenAI-compatible, routes to ANY provider
             length = self._content_length()
@@ -2311,8 +2312,6 @@ class _Handler(BaseHTTPRequestHandler):
                 400 if "error" in result else 200)
             return self._json(result, code)
         return self._json({"error": "not found"}, 404)
-
-
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description="flywheel superapp gateway (one origin)")
     ap.add_argument("--port", type=int, default=8799)
@@ -2329,6 +2328,7 @@ def main(argv=None) -> int:
     _Handler.run_root = a.run_root
     _Handler.cors = a.cors
     flywheel_home = Path(os.environ.get("FLYWHEEL_HOME", str(Path.home() / ".flywheel")))
+    _Handler.flywheel_home = flywheel_home
     _Handler.auth_token = load_or_create_token(flywheel_home)
     httpd = ThreadingHTTPServer(("127.0.0.1", a.port), _Handler)
     print(f"flywheel gateway: http://127.0.0.1:{a.port}  root={_Handler.root}")

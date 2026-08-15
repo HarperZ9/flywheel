@@ -16,13 +16,10 @@ import os
 import runpy
 import sys
 from pathlib import Path
-
 # The new umbrella subcommands. Handled in cli_entry; everything else is
 # delegated to the existing run_harness_cli front controller.
 _UMBRELLA_COMMANDS = {"lanes", "loop-status", "install", "up", "down", "corpus-export",
                       "gate", "why", "auth"}
-
-
 def _candidate_roots() -> list[Path]:
     candidates: list[Path] = []
     explicit = os.environ.get("FLYWHEEL_REPO", "").strip() or os.environ.get("LOCAL_HARNESS_REPO", "").strip()
@@ -154,8 +151,6 @@ def _cmd_up(argv: list[str]) -> int:
     print("Starting the gateway ...")
     _sys.stdout.flush()
     return _launch_gateway(gateway_argv)
-
-
 def _dispatch_umbrella(command: str, argv: list[str]) -> int:
     """Handle the new umbrella subcommands. Phase 2/3 implement these fully."""
     if command == "loop-status":
@@ -230,22 +225,29 @@ def _dispatch_umbrella(command: str, argv: list[str]) -> int:
         print(_json.dumps(r, indent=2))
         return 0
     return 2
-
-
+def _dispatch_packaged(command: str, raw: list[str]) -> int | None:
+    if command == "cross-harness-execute":
+        from harness.cross_harness_cli import main as packaged
+        rest = list(raw); rest.remove(command)
+        return packaged(rest)
+    if command in {"journey", "grant"}:
+        from harness.journey_cli import main as packaged
+        rest = list(raw); rest.remove(command)
+        return packaged([command, *rest])
+    if command == "evidence":
+        from harness.evidence_cli import main as packaged
+        rest = list(raw); rest.remove(command)
+        return packaged(rest)
+    return None
 def main(argv: list[str] | None = None) -> int:
     raw = list(argv if argv is not None else sys.argv[1:])
     # Peek at the first positional to decide umbrella-vs-passthrough. The
     # existing run_harness_cli parser requires a subcommand, so the first
     # non-flag token is the command name.
     command = next((a for a in raw if not a.startswith("-")), None)
-    if command == "cross-harness-execute":
-        from harness.cross_harness_cli import main as _cross_main
-        rest = list(raw); rest.remove(command)
-        return _cross_main(rest)
-    if command == "journey":
-        from harness.evidence_cli import main as _journey_main
-        rest = list(raw); rest.remove(command)
-        return _journey_main(rest)
+    packaged = _dispatch_packaged(command, raw)
+    if packaged is not None:
+        return packaged
     if command in _UMBRELLA_COMMANDS:
         rest = [a for a in raw if a is not command]
         return _dispatch_umbrella(command, rest)
@@ -274,7 +276,7 @@ def main(argv: list[str] | None = None) -> int:
             wants_help = any(a in ("-h", "--help") for a in raw)
             print("usage: flywheel <command> [options]\n"
                   "Umbrella commands (run from a bare install): up, lanes, "
-                   "loop-status, install, corpus-export, gate, why, down, journey, cross-harness-execute\n"
+                  "loop-status, install, corpus-export, gate, why, down, grant, journey, evidence, cross-harness-execute\n"
                   "Passthrough commands need a source checkout "
                   "(scripts/run_harness_cli.py).",
                   file=sys.stdout if wants_help else sys.stderr)

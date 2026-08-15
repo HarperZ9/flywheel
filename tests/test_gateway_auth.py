@@ -4,7 +4,7 @@ import stat
 import pytest
 
 from harness.gateway_auth import (
-    load_or_create_token, check, TOKEN_FILENAME, DEFAULT_HOSTS,
+    authenticate_owner, load_or_create_token, check, TOKEN_FILENAME, DEFAULT_HOSTS,
 )
 
 TOK = "t" * 43
@@ -110,3 +110,26 @@ def test_refusal_reason_never_leaks_the_token():
     assert ok is False
     assert TOK not in reason
     assert "wrong" not in reason
+
+
+def test_owner_is_loaded_only_after_bearer_auth_and_survives_rotation(tmp_path, monkeypatch):
+    """Loading identity before auth or deriving it from token would weaken ownership."""
+    from harness import gateway_auth
+    calls = []
+    real = gateway_auth.load_or_create_owner_ref
+    monkeypatch.setattr(gateway_auth, "load_or_create_owner_ref",
+                        lambda home: calls.append(home) or real(home))
+    wrong, reason = authenticate_owner(
+        _h(Authorization="Bearer wrong", Host="localhost"), "POST", TOK, tmp_path,
+        allowed_hosts=DEFAULT_HOSTS)
+    first, first_reason = authenticate_owner(
+        _h(Authorization=f"Bearer {TOK}", Host="localhost",
+           Content_Type="application/json"), "POST", TOK, tmp_path,
+        allowed_hosts=DEFAULT_HOSTS)
+    rotated = "r" * 43
+    second, second_reason = authenticate_owner(
+        _h(Authorization=f"Bearer {rotated}", Host="localhost",
+           Content_Type="application/json"), "POST", rotated, tmp_path,
+        allowed_hosts=DEFAULT_HOSTS)
+    assert wrong is None and reason == "bad_token" and calls == [tmp_path, tmp_path]
+    assert first == second and first_reason == second_reason == "ok"

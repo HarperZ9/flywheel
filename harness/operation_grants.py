@@ -1,13 +1,11 @@
 """Durable exact-scope, one-use grants and stable local owner identity."""
 from __future__ import annotations
-
 from dataclasses import asdict, dataclass, replace
 from datetime import datetime, timedelta, timezone
 import hashlib, os, re, secrets
 from pathlib import Path
 from typing import Callable
 from uuid import uuid4
-
 from .evidence_json import canonical_bytes, canonical_sha256, strict_load_json
 from .journey_lock import ExclusiveJourneyLock, JourneyLockBusy, fsync_directory
 from .journey_types import JOURNEY_REF_PATTERN, SHA256_PATTERN
@@ -135,16 +133,11 @@ def load_or_create_owner_ref(home: Path) -> str:
         raise
 class GrantStore:
     """Filesystem grant store containing only request/ref digests and state."""
-
     def __init__(self, state_root: Path, *, clock: Callable[[], str],
                  lock_timeout_s: float = 2.0) -> None:
-        self.state_root = Path(state_root)
-        self.clock = clock
-        self.lock_timeout_s = lock_timeout_s
-
+        self.state_root, self.clock, self.lock_timeout_s = Path(state_root), clock, lock_timeout_s
     def issue(self, request: GrantRequest, *, approved: bool) -> dict:
-        if approved is not True:
-            raise GrantError("PERMISSION_DENIED")
+        if approved is not True: raise GrantError("PERMISSION_DENIED")
         try:
             effective = self._effective_request(request)
             owner_dir = self._prepare_owner_dir(effective.owner_ref)
@@ -163,7 +156,29 @@ class GrantStore:
             raise
         except (JourneyLockBusy, OSError, TypeError, ValueError):
             raise GrantError("PERMISSION_DENIED") from None
-
+    def issue_exact(self, grant_ref: str, request: GrantRequest, *,
+                    approved: bool) -> dict:
+        """Idempotently issue one trusted server-planned exact grant ref."""
+        if approved is not True: raise GrantError("PERMISSION_DENIED")
+        try:
+            if type(grant_ref) is not str or GRANT_REF_PATTERN.fullmatch(grant_ref) is None:
+                raise ValueError("grant_ref is invalid")
+            effective = self._effective_request(request)
+            owner_dir = self._prepare_owner_dir(effective.owner_ref)
+            with ExclusiveJourneyLock.acquire(owner_dir / ".lock", self.lock_timeout_s):
+                path = self._grant_path(owner_dir, grant_ref)
+                if path.exists():
+                    record = self._read_record(path, grant_ref)
+                    if record["request_sha256"] != self._request_sha(effective):
+                        raise GrantError("PERMISSION_DENIED")
+                else:
+                    record = self._record(grant_ref, effective)
+                    self._replace(path, record); self._sync(owner_dir)
+            return {"grant_ref": grant_ref, "expires_at": record["expires_at"],
+                    "consumed": record["consumed"]}
+        except GrantError: raise
+        except (JourneyLockBusy, OSError, TypeError, ValueError):
+            raise GrantError("PERMISSION_DENIED") from None
     def consume(self, grant_ref: str, request: GrantRequest, *, now: str) -> dict:
         try:
             self._validate_request(request, allow_default_expiry=False)
@@ -190,7 +205,6 @@ class GrantStore:
             raise
         except (JourneyLockBusy, OSError, TypeError, ValueError):
             raise GrantError("PERMISSION_DENIED") from None
-
     def _effective_request(self, request: GrantRequest) -> GrantRequest:
         self._validate_request(request, allow_default_expiry=True)
         now = _parse_time(self.clock())
@@ -200,7 +214,6 @@ class GrantStore:
         effective = replace(request, expires_at=request.expires_at or _utc_text(expiry))
         self._validate_request(effective, allow_default_expiry=False)
         return effective
-
     @staticmethod
     def _validate_request(request: GrantRequest, *, allow_default_expiry: bool) -> None:
         if not isinstance(request, GrantRequest):
@@ -229,16 +242,13 @@ class GrantStore:
         if request.expires_at is None and allow_default_expiry:
             return
         _parse_time(request.expires_at)
-
     @staticmethod
     def _request_sha(request: GrantRequest) -> str:
         value = asdict(request)
         value["scopes"], value["data_refs"] = list(request.scopes), list(request.data_refs)
         return canonical_sha256(value)
-
     def _owner_dir(self, owner_ref: str) -> Path:
         return self.state_root / "grants" / _validate_owner_ref(owner_ref)
-
     def _prepare_owner_dir(self, owner_ref: str) -> Path:
         root = self.state_root / "grants"
         root.mkdir(parents=True, exist_ok=True)
@@ -247,20 +257,17 @@ class GrantStore:
         owner_dir.mkdir(exist_ok=True)
         _secure_owner_only(owner_dir, directory=True)
         return owner_dir
-
     @staticmethod
     def _grant_path(owner_dir: Path, grant_ref: str) -> Path:
         if type(grant_ref) is not str or GRANT_REF_PATTERN.fullmatch(grant_ref) is None:
             return owner_dir / f"{hashlib.sha256(str(grant_ref).encode()).hexdigest()}.json"
         return owner_dir / f"{hashlib.sha256(grant_ref.encode('ascii')).hexdigest()}.json"
-
     def _record(self, grant_ref: str, request: GrantRequest) -> dict:
         return {
             "schema": GRANT_SCHEMA, "grant_sha256": canonical_sha256(grant_ref),
             "request_sha256": self._request_sha(request), "expires_at": request.expires_at,
             "consumed": False, "consumed_at": None,
         }
-
     def _read_record(self, path: Path, grant_ref: str) -> dict:
         value = strict_load_json(path.read_bytes())
         keys = {"schema", "grant_sha256", "request_sha256", "expires_at", "consumed", "consumed_at"}
@@ -270,7 +277,6 @@ class GrantStore:
                 or value.get("consumed_at") is not None and type(value["consumed_at"]) is not str):
             raise ValueError("grant record is invalid")
         return value
-
     @staticmethod
     def _replace(path: Path, value: dict) -> None:
         temporary = path.with_name(f".{path.name}.{uuid4().hex}.tmp")
@@ -289,7 +295,6 @@ class GrantStore:
                 temporary.unlink()
             except FileNotFoundError:
                 pass
-
     def _sync(self, owner_dir: Path) -> None:
         for path in (owner_dir, owner_dir.parent, self.state_root):
             fsync_directory(path)

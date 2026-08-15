@@ -24,6 +24,8 @@ from hmac import compare_digest
 from pathlib import Path
 from typing import Mapping
 
+from .operation_grants import load_or_create_owner_ref
+
 TOKEN_FILENAME = "gateway.token"
 DEFAULT_HOSTS = frozenset({"127.0.0.1", "localhost", "[::1]"})
 STATE_CHANGING = frozenset({"POST", "PUT", "PATCH", "DELETE"})
@@ -67,3 +69,17 @@ def check(headers: Mapping, method: str, token: str, *,
         if ctype != "application/json":
             return False, "bad_content_type"
     return True, "ok"
+
+
+def authenticate_owner(headers: Mapping, method: str, token: str, home: Path, *,
+                       allowed_hosts: frozenset[str] = DEFAULT_HOSTS
+                       ) -> tuple[str | None, str]:
+    """Authenticate first, then load token-independent private owner custody."""
+    ok, reason = check(
+        headers, method, token, allowed_hosts=allowed_hosts)
+    if not ok:
+        return None, reason
+    try:
+        return load_or_create_owner_ref(home), "ok"
+    except (OSError, PermissionError, TypeError, ValueError):
+        return None, "owner_unavailable"
