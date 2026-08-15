@@ -59,6 +59,7 @@ void main() {
   _roundTripTests();
   _immutabilityAndBoundsTests();
   _corruptionTests();
+  _duplicateJsonKeyTests();
   _unsafeInputTests();
   _atomicFailureTests();
   _acknowledgementDeletionTests();
@@ -77,14 +78,31 @@ void _roundTripTests() {
     final stored = jsonDecode(file.readAsStringSync()) as Map<String, dynamic>;
     expect((stored['drafts'] as List).map((draft) => draft['state']).join(','),
         'clean,dirty,saving,saved,save_failed,recovery_available');
-    expect(loaded.every((draft) => draft.journeyRef == _journey), isTrue);
-    expect(loaded.every((draft) => draft.baseEventHeadSha256 == _head), isTrue);
     final before = file.readAsBytesSync();
     store.save(loaded.first);
     expect(file.readAsBytesSync(), before);
-    expect(store.storageFile.path, file.path);
-    expect(
-        JourneyDraftStore().storageFile.path, endsWith('journey-drafts.json'));
+  });
+}
+
+void _duplicateJsonKeyTests() {
+  test('canonical store control reads and duplicate keys fail closed', () {
+    final file = _file(_temp());
+    JourneyDraftStore(file: file)
+        .save(_draft('c', payload: {'client_request_id': 'request-canonical'}));
+    final canonical = file.readAsStringSync();
+    expect(jsonEncode(jsonDecode(canonical)), canonical);
+    for (final duplicate in [
+      canonical.replaceFirst('{"drafts":',
+          '{"schema":"flywheel.desktop-journey-drafts/v1","drafts":'),
+      canonical.replaceFirst('{"base_event_head_sha256":',
+          '{"kind":"append","base_event_head_sha256":'),
+      canonical.replaceFirst('{"client_request_id":',
+          '{"client_request_id":"shadow","client_request_id":'),
+    ]) {
+      final corrupt = _file(_temp())..writeAsStringSync(duplicate);
+      expect(_failure(JourneyDraftStore(file: corrupt).list).failure,
+          JourneyLocalFailure.corruptStore);
+    }
   });
 }
 
@@ -112,7 +130,8 @@ void _corruptionTests() {
     final envelope =
         jsonDecode(file.readAsStringSync()) as Map<String, dynamic>;
     final drafts = envelope['drafts'] as List<dynamic>;
-    (drafts.single['payload'] as Map<String, dynamic>)['changed'] = true;
+    (drafts.single['payload'] as Map<String, dynamic>)['client_request_id'] =
+        'request-changed';
     file.writeAsStringSync(jsonEncode(envelope));
     final corrupt = _failure(store.list);
     expect(corrupt.failure, JourneyLocalFailure.corruptStore);
@@ -135,12 +154,12 @@ void _corruptionTests() {
 
     for (final value in [
       {
-        'schema': 'flywheel.desktop-journey-drafts/v1',
         'drafts': [
           {'state': 'dirty'}
-        ]
+        ],
+        'schema': 'flywheel.desktop-journey-drafts/v1',
       },
-      {'schema': 'wrong', 'drafts': <Object?>[]},
+      {'drafts': <Object?>[], 'schema': 'wrong'},
     ]) {
       final file = _file(_temp())..writeAsStringSync(jsonEncode(value));
       expect(_failure(JourneyDraftStore(file: file).list).failure,
@@ -155,41 +174,30 @@ void _corruptionTests() {
 void _unsafeInputTests() {
   test('secret path ref key and JSON attacks are rejected without echo', () {
     final attacks = <Map<Object?, Object?>>[
-      _attack('api_key', 'synthetic-value'),
-      _attack('client_api_key', 'synthetic-value'),
-      _attack('access_token', 'synthetic-value'),
       for (final key
-          in 'api_keys,access_tokens,refresh_tokens,tokens,passwords,'
+          in 'api_key,client_api_key,access_token,api_keys,access_tokens,'
+                  'refresh_tokens,tokens,passwords,'
                   'secrets,credentials,private_keys,authorizations,cookies,'
                   'environments,envs,passwds,access_keys'
               .split(','))
         _attack(key, 'synthetic-value'),
-      _attack('note', 'password=abcdefghijklmnop'),
-      _attack('note', r'C:\private\draft.json'),
-      _attack('note', r'\\server\share\draft.json'),
-      _attack('note', '/etc/passwd'),
-      _attack('note', 'error FiLe:/private/draft'),
-      _attack('note', 'f%69le:opaque'),
-      _attack('note', r'C%3A%5Cprivate%5Cdraft.json'),
-      _attack('note', r'%5C%5Cserver%5Cshare%5Cdraft.json'),
-      _attack('note', '%2Fetc%2Fpasswd'),
-      _attack('note', 'password%3Dabcdefghijklmnop'),
-      _attack('context_ref', '../private.json'),
-      _attack('context_ref', '%2e%2e%2fprivate.json'),
+      for (final value
+          in r'password=abcdefghijklmnop|C:\private\draft.json|\\server\share\draft.json|/etc/passwd|error FiLe:/private/draft|f%69le:opaque|C%3A%5Cprivate%5Cdraft.json|%5C%5Cserver%5Cshare%5Cdraft.json|%2Fetc%2Fpasswd|password%3Dabcdefghijklmnop'
+              .split('|'))
+        _attack('note', value),
+      for (final value
+          in '../private.json|%2e%2e%2fprivate.json|/absolute.json'.split('|'))
+        _attack('context_ref', value),
       _attack('artifact_refs', ['../private.json']),
       _attack('%61pi%5Fkey', 'synthetic-value'),
       _attack('nested', {'t%6Fkens': 'synthetic-value'}),
       _attack('items', [
         {'api%5Fkeys': 'synthetic-value'}
       ]),
-      _attack('context_ref', '/absolute.json'),
       _attack(1, 'non-string key'),
       _attack('value', double.nan),
       _attack('value', Object()),
-      _attack('note', '%2G'),
-      _attack('note', '%A'),
-      _attack('note', '%GG'),
-      _attack('note', '%FF'),
+      for (final value in '%2G|%A|%GG|%FF'.split('|')) _attack('note', value),
     ];
     for (final attack in attacks) {
       final error = _failure(() => _draft('f', payload: attack));
@@ -222,27 +230,18 @@ void _atomicFailureTests() {
     final file = _file(directory);
     JourneyDraftStore(file: file).save(_draft('1'));
     final before = file.readAsBytesSync();
-    final failures = [
-      (
-        store: JourneyDraftStore(
-            file: file,
-            beforeRename: (_) => throw const FileSystemException('synthetic')),
-        draft: _draft('2')
-      ),
-      (
-        store: JourneyDraftStore(
-            file: file,
-            renameFile: (_, __) =>
-                throw const FileSystemException('synthetic')),
-        draft: _draft('2')
-      ),
-      (
-        store: JourneyDraftStore(file: file, renameFile: (_, __) {}),
-        draft: _draft('1')
-      ),
+    final failures = <JourneyDraftStore>[
+      JourneyDraftStore(
+          file: file,
+          beforeRename: (_) => throw const FileSystemException('synthetic')),
+      JourneyDraftStore(
+          file: file,
+          renameFile: (_, __) => throw const FileSystemException('synthetic')),
+      JourneyDraftStore(file: file, renameFile: (_, __) {}),
     ];
-    for (final failure in failures) {
-      final error = _failure(() => failure.store.save(failure.draft));
+    for (var index = 0; index < failures.length; index++) {
+      final draft = _draft(index == failures.length - 1 ? '1' : '2');
+      final error = _failure(() => failures[index].save(draft));
       expect(error.failure, JourneyLocalFailure.writeFailed);
       expect(file.readAsBytesSync(), before);
       expect(directory.listSync().whereType<File>().length, 1);

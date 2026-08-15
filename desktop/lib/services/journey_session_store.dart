@@ -207,14 +207,16 @@ Map<String, dynamic> readJourneyLocalObject(File file) {
   final bytes = file.readAsBytesSync();
   _valid(bytes.length <= journeyLocalMaxBytes);
   final decoded = jsonDecode(utf8.decode(bytes));
-  return _JsonGuard().object(decoded);
+  final guarded = _JsonGuard().object(decoded);
+  _valid(_sameBytes(bytes, canonicalJourneyLocalBytes(guarded)));
+  return guarded;
 }
 
 void writeJourneyLocalObject(File target, Object value,
     {JourneyBeforeRename? beforeRename,
     JourneyRenameFile? renameFile,
     JourneyTemporaryFile? temporaryFile}) {
-  final bytes = canonicalJourneyLocalBytes(value);
+  final bytes = canonicalJourneyLocalBytes(_JsonGuard().object(value));
   _valid(bytes.length <= journeyLocalMaxBytes);
   File? temporary;
   RandomAccessFile? handle;
@@ -250,6 +252,14 @@ void writeJourneyLocalObject(File target, Object value,
       temporary!.deleteSync();
     }
   }
+}
+
+bool _sameBytes(List<int> left, List<int> right) {
+  if (left.length != right.length) return false;
+  for (var index = 0; index < left.length; index++) {
+    if (left[index] != right[index]) return false;
+  }
+  return true;
 }
 
 File _uniqueTemporary(File target) => File(
