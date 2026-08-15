@@ -53,31 +53,43 @@ final class ChatDraft {
     required ChatDraftState state,
     required DateTime updatedAt,
     Map<String, dynamic>? assistantEvent,
+    String? attemptRef,
   }) {
     try {
       _require(_draftRef.hasMatch(draftRef));
       _require(_conversationRef.hasMatch(conversationRef));
       _require(text.trim().isNotEmpty && updatedAt.isUtc);
+      _require(attemptRef == null || isChatAttemptRef(attemptRef));
       _require(_isAdmittedState(state) == (assistantEvent != null));
       final guarded = snapshotJourneyLocalJson({
         'text': text,
+        if (attemptRef != null) 'attempt_ref': attemptRef,
         if (assistantEvent != null) 'assistant': assistantEvent
       },
           safeText: safeChatLocalText,
           secretKey: isChatLocalSecretKey,
           safeRef: safeChatLocalRef);
       final exact = guarded['text'] as String;
-      final assistant =
-          assistantEvent == null ? null : _validAssistant(guarded['assistant']);
+      final exactAttempt = guarded['attempt_ref'] as String?;
+      final assistant = assistantEvent == null
+          ? null
+          : _validAssistant(guarded['assistant'], exactAttempt);
       return ChatDraft._(draftRef, conversationRef, exact, _textSha(exact),
-          state, updatedAt.toUtc(), assistant);
+          state, updatedAt.toUtc(), assistant, exactAttempt);
     } catch (_) {
       throw const ChatDraftStoreException(ChatDraftFailure.invalidRecord);
     }
   }
 
-  const ChatDraft._(this.draftRef, this.conversationRef, this.text,
-      this.textSha256, this.state, this.updatedAt, this.assistantEvent);
+  const ChatDraft._(
+      this.draftRef,
+      this.conversationRef,
+      this.text,
+      this.textSha256,
+      this.state,
+      this.updatedAt,
+      this.assistantEvent,
+      this.attemptRef);
   final String draftRef;
   final String conversationRef;
   final String text;
@@ -85,6 +97,7 @@ final class ChatDraft {
   final ChatDraftState state;
   final DateTime updatedAt;
   final Map<String, dynamic>? assistantEvent;
+  final String? attemptRef;
 }
 
 typedef ChatBeforeRename = void Function(File temporary);
@@ -194,6 +207,7 @@ ChatDraft _decode(Map<String, dynamic> raw) {
     'updated_at'
   };
   if (_isAdmittedState(state)) keys.add('assistant');
+  if (raw.containsKey('attempt_ref')) keys.add('attempt_ref');
   _exactKeys(raw, keys);
   _require(raw['conversation_ref'] is String && raw['draft_ref'] is String);
   _require(raw['text'] is String && raw['text_sha256'] is String);
@@ -206,13 +220,15 @@ ChatDraft _decode(Map<String, dynamic> raw) {
       text: raw['text'] as String,
       state: state,
       updatedAt: updatedAt!,
-      assistantEvent: raw['assistant'] as Map<String, dynamic>?);
+      assistantEvent: raw['assistant'] as Map<String, dynamic>?,
+      attemptRef: raw['attempt_ref'] as String?);
   _require(raw['text_sha256'] == draft.textSha256);
   return draft;
 }
 
 Map<String, dynamic> _encode(ChatDraft draft) => {
       if (draft.assistantEvent != null) 'assistant': draft.assistantEvent,
+      if (draft.attemptRef != null) 'attempt_ref': draft.attemptRef,
       'conversation_ref': draft.conversationRef,
       'draft_ref': draft.draftRef,
       'state': draft.state.wire,
@@ -221,17 +237,19 @@ Map<String, dynamic> _encode(ChatDraft draft) => {
       'updated_at': draft.updatedAt.toIso8601String(),
     };
 
-Map<String, dynamic> _validAssistant(Object? value) {
+Map<String, dynamic> _validAssistant(Object? value, String? attemptRef) {
   _require(value is Map<String, dynamic>);
   final assistant = value as Map<String, dynamic>;
   final expected = <String>{'role', 'text'};
   if (assistant.containsKey('receipt')) expected.add('receipt');
+  if (assistant.containsKey('attempt_ref')) expected.add('attempt_ref');
   _exactKeys(assistant, expected);
   _require(assistant['role'] == 'assistant' && assistant['text'] is String);
   _require(!assistant.containsKey('receipt') ||
       assistant['receipt'] is Map<String, dynamic>);
   _require((assistant['text'] as String).isNotEmpty ||
       assistant.containsKey('receipt'));
+  _require(assistant['attempt_ref'] == attemptRef);
   return assistant;
 }
 
@@ -247,8 +265,9 @@ bool _superseded(ChatDraft stored, ChatDraft incoming) {
   if (stored.draftRef == incoming.draftRef) return true;
   if (stored.conversationRef != incoming.conversationRef) return false;
   if (!_isAdmittedState(incoming.state)) return !_isAdmittedState(stored.state);
-  return !_isAdmittedState(stored.state) &&
-      stored.textSha256 == incoming.textSha256;
+  return incoming.attemptRef != null &&
+      !_isAdmittedState(stored.state) &&
+      stored.attemptRef == incoming.attemptRef;
 }
 
 String _textSha(String text) => sha256.convert(utf8.encode(text)).toString();

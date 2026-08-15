@@ -22,7 +22,7 @@ Future<void> _pump(WidgetTester tester, Widget child) => tester.pumpWidget(
     MaterialApp(theme: flywheelLightTheme(), home: Scaffold(body: child)));
 
 void main() {
-  _historyTruthTests();
+  _historyAndAvatarTruthTests();
   test('complete envelope rejects excess bytes depth and nodes', () {
     final directory = _temporary('chat-draft-bounds-');
     final file = File('${directory.path}/drafts.json');
@@ -41,9 +41,7 @@ void main() {
       expect(() => store.load(), throwsA(isA<ChatDraftStoreException>()));
     }
   });
-  _avatarTruthTests();
   _remoteRecoveryTests();
-  _submittingRecoveryTests();
   test('a dragged split fraction is stored and read back, with a fallback', () {
     final s = DesktopSettings();
     expect(s.splitFraction('compare', 0.5), 0.5);
@@ -52,7 +50,6 @@ void main() {
     expect(s.splitFraction('agent', 0.7), 0.7); // untouched views keep theirs
     s.cancelPendingSaves(); // the test never writes the real home dir
   });
-
   testWidgets('the agent chip swaps chat for the tool loop and back',
       (tester) async {
     await _pump(
@@ -62,18 +59,15 @@ void main() {
     await tester.pump();
     expect(find.text('Point the agent at a workspace'), findsNothing);
     expect(find.text('every reply is witnessed'), findsNothing);
-
     await tester.tap(find.text('agent'));
     await tester.pump();
     expect(find.text('Point the agent at a workspace'), findsOneWidget);
     expect(find.text('every run persists with its trace'), findsOneWidget);
-
     await tester.tap(find.text('chat'));
     await tester.pump();
     expect(find.text('Point the agent at a workspace'), findsNothing);
     expect(find.text('every reply is witnessed'), findsNothing);
   });
-
   testWidgets('compare panes sit on a draggable divider', (tester) async {
     await _pump(
         tester,
@@ -87,13 +81,11 @@ void main() {
 
 const _roster =
     '{"rows":[{"name":"local-public","backend":"local","credential":"local-none","provider_role":"","configured":true}]}';
-
 String _frames(List<String> values) => [
       for (final value in values)
         'data: {"choices":[{"delta":{"content":"$value"}}]}\n\n',
       'data: [DONE]\n\n'
     ].join();
-
 GatewayClient _client(String body, void Function() onChat) => GatewayClient(
     baseUrl: 'https://chat.invalid',
     httpClient: MockClient((request) async {
@@ -103,7 +95,6 @@ GatewayClient _client(String body, void Function() onChat) => GatewayClient(
       onChat();
       return http.Response(body, 200);
     }));
-
 Directory _temporary(String name) {
   final directory = Directory.systemTemp.createTempSync(name);
   addTearDown(() => directory.deleteSync(recursive: true));
@@ -123,7 +114,7 @@ Future<void> _pumpAgent(WidgetTester tester, GatewayClient client,
   await tester.pumpAndSettle();
 }
 
-void _historyTruthTests() {
+void _historyAndAvatarTruthTests() {
   test('legacy and envelope history cannot carry a verifier verdict', () {
     final directory = _temporary('chat-history-truth-');
     final file = File('${directory.path}/history.json');
@@ -153,9 +144,6 @@ void _historyTruthTests() {
     expect(store.load().single.messages.single.receiptState,
         ReceiptState.presentUnchecked);
   });
-}
-
-void _avatarTruthTests() {
   testWidgets('assistant avatar is green only for typed MATCH', (tester) async {
     for (final state in const [
       ReceiptState.missing,
@@ -163,34 +151,23 @@ void _avatarTruthTests() {
       ReceiptState.unverifiable,
       ReceiptState.invalidResponse,
     ]) {
-      await _pump(
-          tester,
-          ChatThread(messages: [
-            ChatMessage(
-                role: 'assistant',
-                text: 'answer',
-                receipt:
-                    state == ReceiptState.missing ? null : const {'id': 'r'},
-                receiptState:
-                    state == ReceiptState.presentUnchecked ? null : state)
-          ], controller: ScrollController()));
+      await _pump(tester, _avatarThread(state));
       expect(tester.widget<Text>(find.text('F')).style!.color,
           FwTokens.light.inkMuted);
     }
-    await _pump(
-        tester,
-        ChatThread(messages: [
-          ChatMessage(
-              role: 'assistant',
-              text: 'answer',
-              receipt: const {'id': 'r'},
-              receiptState: ReceiptState.match)
-        ], controller: ScrollController()));
+    await _pump(tester, _avatarThread(ReceiptState.match));
     expect(tester.widget<Text>(find.text('F')).style!.color,
         FwTokens.light.verified);
   });
 }
 
+ChatThread _avatarThread(ReceiptState state) => ChatThread(messages: [
+      ChatMessage(
+          role: 'assistant',
+          text: 'answer',
+          receipt: state == ReceiptState.missing ? null : const {'id': 'r'},
+          receiptState: state == ReceiptState.presentUnchecked ? null : state)
+    ], controller: ScrollController());
 void _remoteRecoveryTests() {
   testWidgets('history crash carries pair',
       (tester) => _exerciseRecovery(tester, 'one shot', 'first', 0, 1));
@@ -202,6 +179,38 @@ void _remoteRecoveryTests() {
           _exerciseRecovery(tester, 'uncertain prompt', 'admitted', 3, 0));
   testWidgets('pending history is idempotent',
       (tester) => _exerciseRecovery(tester, 'one prompt', 'one answer', 4, 0));
+  test('identical older history cannot satisfy a newer or legacy attempt', () {
+    final directory = _temporary('chat-submitting-history-');
+    for (final current in [null, 'att_${'b' * 32}']) {
+      final drafts = ChatDraftStore(
+          file: File('${directory.path}/drafts-${current ?? 'legacy'}.json'))
+        ..save(ChatDraft(
+            draftRef: 'chd_${'b' * 32}',
+            conversationRef: 'c0',
+            text: 'same prompt',
+            state: ChatDraftState.submitting,
+            updatedAt: DateTime.parse('2026-08-15T12:00:00Z'),
+            attemptRef: current));
+      final old = current == null ? null : 'att_${'a' * 32}';
+      final history = ChatStore(
+          file: File('${directory.path}/history-${current ?? 'legacy'}.json'))
+        ..save([
+          Conversation(id: 'c0', messages: [
+            ChatMessage(role: 'user', text: 'same prompt', attemptRef: old),
+            ChatMessage(
+                role: 'assistant', text: 'same answer', attemptRef: old),
+          ])
+        ]);
+      final controller = ChatAdmissionController(history, drafts)..restore();
+      final conversation = controller.conversations.single;
+      expect(drafts.load().single.state, ChatDraftState.submitting);
+      expect(controller.reconcileAdmitted(conversation, 'same prompt'),
+          PromptDisposition.retained);
+      expect(controller.prepare(conversation, 'same prompt'), isNull);
+      expect(drafts.load().single.attemptRef, current);
+      expect(_texts(history), ['same prompt', 'same answer']);
+    }
+  });
 }
 
 Future<void> _exerciseRecovery(WidgetTester tester, String prompt,
@@ -210,13 +219,24 @@ Future<void> _exerciseRecovery(WidgetTester tester, String prompt,
   var draftWrites = 0;
   var historyWrites = 0;
   var chatCalls = 0;
+  final collision = historyFailure == 1;
+  final historyFile = File('${directory.path}/history.json');
+  final oldAttempt = 'att_${'a' * 32}';
+  if (collision) {
+    ChatStore(file: historyFile).save([
+      Conversation(id: 'c0', messages: [
+        ChatMessage(role: 'user', text: prompt, attemptRef: oldAttempt),
+        ChatMessage(role: 'assistant', text: answer, attemptRef: oldAttempt),
+      ])
+    ]);
+  }
   final drafts = ChatDraftStore(
       file: File('${directory.path}/drafts.json'),
       beforeRename: (_) {
         if (++draftWrites == draftFailure) throw StateError('injected');
       });
   final history = ChatStore(
-      file: File('${directory.path}/history.json'),
+      file: historyFile,
       beforeRename: (_) {
         if (++historyWrites == historyFailure) throw StateError('injected');
       });
@@ -234,7 +254,7 @@ Future<void> _exerciseRecovery(WidgetTester tester, String prompt,
           ? ChatDraftState.submitting
           : ChatDraftState.admittedPendingHistory;
   final recover = draftFailure != 3;
-  final hasHistory = draftFailure == 4 || draftFailure == 5;
+  final hasHistory = draftFailure == 4 || draftFailure == 5 || collision;
   expect(drafts.load().single.state, state);
   expect(_texts(history), hasHistory ? [prompt, answer] : <String>[]);
   expect(tester.widget<TextField>(find.byType(TextField)).controller!.text,
@@ -255,7 +275,16 @@ Future<void> _exerciseRecovery(WidgetTester tester, String prompt,
   await tester.tap(find.byTooltip('Send  (Enter)'));
   await tester.pumpAndSettle();
   expect(chatCalls, 1);
-  expect(_texts(resumedHistory), recover ? [prompt, answer] : <String>[]);
+  final expected = recover ? [prompt, answer] : <String>[];
+  if (collision) expected.addAll([prompt, answer]);
+  expect(_texts(resumedHistory), expected);
+  if (collision) {
+    final messages = resumedHistory.load().single.messages;
+    final refs = [for (final message in messages) message.attemptRef];
+    expect(refs.sublist(0, 2), [oldAttempt, oldAttempt]);
+    expect((refs.length, refs[2] == refs[3], refs[2] != oldAttempt),
+        (4, true, true));
+  }
   if (recover) {
     expect(resumedDrafts.load(), isEmpty);
     expect(tester.widget<TextField>(find.byType(TextField)).controller!.text,
@@ -269,30 +298,3 @@ List<String> _texts(ChatStore store) => [
       for (final conversation in store.load())
         for (final message in conversation.messages) message.text,
     ];
-
-void _submittingRecoveryTests() {
-  test('submitting plus complete history recovers without dispatch', () {
-    final directory = _temporary('chat-submitting-history-');
-    final drafts = ChatDraftStore(file: File('${directory.path}/drafts.json'))
-      ..save(ChatDraft(
-          draftRef: 'chd_${'a' * 32}',
-          conversationRef: 'c0',
-          text: 'already admitted',
-          state: ChatDraftState.submitting,
-          updatedAt: DateTime.parse('2026-08-15T12:00:00Z')));
-    final history = ChatStore(file: File('${directory.path}/history.json'))
-      ..save([
-        Conversation(id: 'c0', messages: [
-          ChatMessage(role: 'user', text: 'already admitted'),
-          ChatMessage(role: 'assistant', text: 'durable answer'),
-        ])
-      ]);
-    final controller = ChatAdmissionController(history, drafts)..restore();
-    expect(drafts.load().single.state, ChatDraftState.admittedPendingCleanup);
-    final disposition = controller.reconcileAdmitted(
-        controller.conversations.single, 'already admitted');
-    expect(disposition, PromptDisposition.accepted);
-    expect(_texts(history), ['already admitted', 'durable answer']);
-    expect(drafts.load(), isEmpty);
-  });
-}

@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flywheel_desktop/client/gateway_client.dart';
 import 'package:flywheel_desktop/controllers/chat_admission_controller.dart';
+import 'package:flywheel_desktop/models/chat.dart';
 import 'package:flywheel_desktop/services/chat_draft_store.dart';
 import 'package:flywheel_desktop/services/chat_store.dart';
 import 'package:flywheel_desktop/services/settings.dart';
@@ -32,8 +33,7 @@ ChatDraft _draft(String text) => ChatDraft(
 
 void main() {
   _roundTripTests();
-  _privacyTests();
-  _corruptionTests();
+  _validationTests();
   _atomicFailureTests();
   _agentAdmissionTests();
 }
@@ -51,13 +51,18 @@ void _roundTripTests() {
     final loaded = store.load();
     expect(loaded.map((draft) => draft.state.name),
         ['dirty', 'admittedPendingHistory', 'admittedPendingCleanup']);
+    store.save(loaded[1]);
     final controller = ChatAdmissionController(
-        ChatStore(file: File('${directory.path}/history.json')), store)
+        ChatStore(file: File('${directory.path}/history.json')), store,
+        newAttemptRef: () => 'att_${'d' * 32}')
       ..restore();
     final conversation =
         controller.conversations.singleWhere((c) => c.id == 'c0');
     expect(controller.draftText(conversation), 'newer prompt');
-    expect(controller.prepare(conversation, 'newer prompt'), isNotNull);
+    expect(controller.reconcileAdmitted(conversation, 'old prompt'),
+        PromptDisposition.retained);
+    expect(controller.prepare(conversation, 'newer prompt')!.attemptRef,
+        'att_${'d' * 32}');
     expect(store.load().map((draft) => draft.state.name).toSet(),
         {'submitting', 'admittedPendingHistory', 'admittedPendingCleanup'});
     expect(() => loaded.add(_draft('later')), throwsUnsupportedError);
@@ -95,7 +100,7 @@ void _writeDrafts(File file, List<(String, String, String, String)> rows) {
   }));
 }
 
-void _privacyTests() {
+void _validationTests() {
   test('raw and decoded path or secret text fails without echo or write', () {
     final directory = _temp('chat-draft-private-');
     final file = File('${directory.path}/drafts.json');
@@ -121,9 +126,6 @@ void _privacyTests() {
       expect(file.existsSync(), isFalse);
     }
   });
-}
-
-void _corruptionTests() {
   test('duplicate unknown stale and noncanonical records fail closed', () {
     final directory = _temp('chat-draft-corrupt-');
     final file = File('${directory.path}/drafts.json');
@@ -170,7 +172,6 @@ void _atomicFailureTests() {
     expect(owned!.existsSync(), isFalse);
     expect(file.readAsBytesSync(), before);
   });
-
   test('rename and readback failures restore prior bytes and clean temp', () {
     final directory = _temp('chat-draft-readback-');
     final file = File('${directory.path}/drafts.json');

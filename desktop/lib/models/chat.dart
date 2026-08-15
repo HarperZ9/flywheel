@@ -1,5 +1,5 @@
 import 'dart:collection';
-import 'dart:convert';
+import 'dart:math';
 
 import 'evidence_state.dart';
 
@@ -15,14 +15,18 @@ class ChatMessage {
     Map<String, dynamic>? receipt,
     ReceiptState? receiptState,
     Map<String, dynamic>? run,
+    String? attemptRef,
   }) {
+    if (attemptRef != null && !isChatAttemptRef(attemptRef)) {
+      throw ArgumentError('Invalid chat attempt reference');
+    }
     final copy = receipt == null ? null : _immutableMap(receipt);
     return ChatMessage._(role, text, streaming, copy,
-        _effectiveReceiptState(copy != null, receiptState), run);
+        _effectiveReceiptState(copy != null, receiptState), run, attemptRef);
   }
 
   ChatMessage._(this.role, this.text, this.streaming, this._receipt,
-      this.receiptState, this.run);
+      this.receiptState, this.run, this.attemptRef);
 
   final String role;
   String text;
@@ -31,6 +35,7 @@ class ChatMessage {
   Map<String, dynamic>? get receipt => _receipt;
   ReceiptState receiptState;
   Map<String, dynamic>? run;
+  final String? attemptRef;
 
   bool get isUser => role == 'user';
   Map<String, String> toWire() => {'role': role, 'content': text};
@@ -43,6 +48,7 @@ class ChatMessage {
   Map<String, dynamic> toJson() => {
         'role': role,
         'text': text,
+        if (attemptRef != null) 'attempt_ref': attemptRef,
         if (_receipt != null) 'receipt': _receipt,
       };
 
@@ -56,7 +62,8 @@ class ChatMessage {
         role: json['role'] == 'user' ? 'user' : 'assistant',
         text: json['text'] is String ? json['text'] as String : '',
         receipt: receipt,
-        receiptState: state);
+        receiptState: state,
+        attemptRef: _attemptFromJson(json));
   }
 }
 
@@ -144,13 +151,16 @@ class Conversation {
   }
 }
 
-ChatMessage? chatHistoryAssistant(Conversation conversation, String prompt) {
+ChatMessage? chatHistoryAssistant(
+    Conversation conversation, String? attemptRef) {
+  if (attemptRef == null) return null;
   for (var index = conversation.messages.length - 2; index >= 0; index--) {
     final user = conversation.messages[index];
     final assistant = conversation.messages[index + 1];
     if (user.isUser &&
-        user.text == prompt &&
         !assistant.isUser &&
+        user.attemptRef == attemptRef &&
+        assistant.attemptRef == attemptRef &&
         (assistant.text.isNotEmpty || assistant.receipt != null)) {
       return assistant;
     }
@@ -158,28 +168,39 @@ ChatMessage? chatHistoryAssistant(Conversation conversation, String prompt) {
   return null;
 }
 
-bool chatHasAdmittedPair(
-    Conversation conversation, String prompt, Map<String, dynamic> event) {
+bool chatHasAdmittedPair(Conversation conversation, String? attemptRef) {
+  if (attemptRef == null) return false;
   for (var index = 0; index + 1 < conversation.messages.length; index++) {
     final user = conversation.messages[index];
     final assistant = conversation.messages[index + 1];
     if (user.isUser &&
-        user.text == prompt &&
         !assistant.isUser &&
-        _chatMessageMatches(assistant, event)) {
+        user.attemptRef == attemptRef &&
+        assistant.attemptRef == attemptRef) {
       return true;
     }
   }
   return false;
 }
 
-bool _chatMessageMatches(ChatMessage assistant, Map<String, dynamic> event) {
-  final text = event['text'] as String;
-  final receipt = event['receipt'];
-  if (receipt != null) {
-    return jsonEncode(assistant.receipt) == jsonEncode(receipt);
+final _chatAttemptRef = RegExp(r'^att_[0-9a-f]{32}$');
+bool isChatAttemptRef(String value) => _chatAttemptRef.hasMatch(value);
+
+String newChatAttemptRef() {
+  final random = Random.secure();
+  final hex = List.generate(16, (_) => random.nextInt(256))
+      .map((byte) => byte.toRadixString(16).padLeft(2, '0'))
+      .join();
+  return 'att_$hex';
+}
+
+String? _attemptFromJson(Map<String, dynamic> json) {
+  if (!json.containsKey('attempt_ref')) return null;
+  final value = json['attempt_ref'];
+  if (value is! String || !isChatAttemptRef(value)) {
+    throw const FormatException('Invalid chat attempt reference');
   }
-  return text.isNotEmpty && assistant.text.startsWith(text);
+  return value;
 }
 
 final _chatWindowsPath = RegExp(r'[A-Za-z]:[\\/]');

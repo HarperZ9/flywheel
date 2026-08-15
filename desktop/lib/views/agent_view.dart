@@ -48,9 +48,7 @@ class _AgentViewState extends State<AgentView> {
   Conversation? _submittedConversation;
   ChatDraft? _submittedDraft;
   ChatMessage? _assistant;
-  bool _admitting = false;
-  bool _accepted = false;
-  bool _streaming = false;
+  bool _admitting = false, _accepted = false, _streaming = false;
   bool _agentMode = false;
   int _generation = 0;
 
@@ -176,7 +174,10 @@ class _AgentViewState extends State<AgentView> {
   }
 
   void _acceptFirstEvent(Map<String, dynamic> event) {
-    final assistant = ChatMessage(role: 'assistant', streaming: true);
+    final assistant = ChatMessage(
+        role: 'assistant',
+        streaming: true,
+        attemptRef: _submittedDraft!.attemptRef);
     _applyEvent(assistant, event);
     final decision = _admission.acceptFirst(
         _submittedConversation!, _submittedDraft!, assistant);

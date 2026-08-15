@@ -87,7 +87,6 @@ void _admissionTests() {
     expect(blocked.prepare(blockedConversation, 'safe prompt'), isNull);
     expect(
         blocked.prepare(blockedConversation, 'password=abcdefghijkl'), isNull);
-
     final drafts = ChatDraftStore(file: File('${directory.path}/drafts.json'));
     final controller = ChatAdmissionController(
         ChatStore(
@@ -98,8 +97,9 @@ void _admissionTests() {
     final conversation = controller.blankConversation('local-public');
     controller.conversations.add(conversation);
     final submitted = controller.prepare(conversation, 'keep this')!;
-    final decision = controller.acceptFirst(conversation, submitted,
-        ChatMessage(role: 'assistant', text: 'answer'));
+    final assistant = ChatMessage(
+        role: 'assistant', text: 'answer', attemptRef: submitted.attemptRef);
+    final decision = controller.acceptFirst(conversation, submitted, assistant);
     expect(decision, (disposition: PromptDisposition.retained, visible: false));
     expect(conversation.messages, isEmpty);
     expect(drafts.load().single.state, ChatDraftState.admittedPendingHistory);
@@ -200,7 +200,6 @@ void _receiptTests() {
     expect(find.textContaining('abc123def456abc123de'), findsNothing);
     await tester.tap(find.byKey(const ValueKey('chat-receipt-control')));
     await tester.pumpAndSettle();
-    // the receipt detail: routing fact, the id, and the recompute note
     expect(find.text('route-public-a'), findsOneWidget);
     expect(find.textContaining('abc123def456abc123de'), findsOneWidget);
     expect(find.textContaining('content-addressed'), findsOneWidget);
@@ -259,7 +258,6 @@ void _pickerTests() {
         ], current: 'local-public', onSelect: (v) => chosen = v));
     await tester.tap(find.byType(ModelPickerButton));
     await tester.pumpAndSettle();
-    // credential state shows at a glance
     expect(find.text('ready'), findsWidgets);
     expect(find.text('no key'), findsOneWidget);
     await tester.enterText(find.byType(TextField), 'route-b');
