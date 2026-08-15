@@ -12,7 +12,7 @@ from .journey_types import JOURNEY_REF_PATTERN, SHA256_PATTERN
 OWNER_FILENAME, GRANT_SCHEMA = "owner.ref", "flywheel.operation-grant/v1"
 OWNER_REF_PATTERN = re.compile(r"owner_[0-9a-f]{32}\Z")
 GRANT_REF_PATTERN = re.compile(r"gnt_[0-9a-f]{32}\Z")
-_ERRORS = frozenset(("PERMISSION_REQUIRED", "PERMISSION_DENIED", "APPROVAL_EXPIRED"))
+_ERRORS = frozenset(("PERMISSION_REQUIRED", "PERMISSION_DENIED", "APPROVAL_EXPIRED", "STORE_BUSY"))
 class GrantError(RuntimeError):
     """One fixed non-echoing permission failure."""
 
@@ -177,8 +177,8 @@ class GrantStore:
             return {"grant_ref": grant_ref, "expires_at": record["expires_at"],
                     "consumed": record["consumed"]}
         except GrantError: raise
-        except (JourneyLockBusy, OSError, TypeError, ValueError):
-            raise GrantError("PERMISSION_DENIED") from None
+        except JourneyLockBusy: raise GrantError("STORE_BUSY") from None
+        except (OSError, TypeError, ValueError): raise GrantError("PERMISSION_DENIED") from None
     def consume(self, grant_ref: str, request: GrantRequest, *, now: str) -> dict:
         try:
             self._validate_request(request, allow_default_expiry=False)

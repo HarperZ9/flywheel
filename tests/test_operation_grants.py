@@ -11,6 +11,7 @@ from harness.operation_grants import (
     GrantError, GrantRequest, GrantStore, load_or_create_owner_ref,
 )
 from harness.journey_service import JourneyService
+from harness.journey_lock import JourneyLockBusy
 from harness.journey_store import JourneyStore
 import harness.operation_grants as operation_grants
 
@@ -178,6 +179,15 @@ def test_exact_issue_keeps_random_issue_and_digest_only_record_compatible(tmp_pa
     stored = b"".join(path.read_bytes() for path in (tmp_path / "grants").rglob("*.json"))
     assert random["grant_ref"] != exact["grant_ref"]
     assert b"journey.append" not in stored and b"nonce" not in stored
+
+
+def test_exact_issue_preserves_retryable_lock_contention(tmp_path, monkeypatch):
+    """A busy exact ledger is retryable and must not be disguised as denial."""
+    monkeypatch.setattr(operation_grants.ExclusiveJourneyLock, "acquire",
+                        lambda *_a, **_k: (_ for _ in ()).throw(JourneyLockBusy()))
+    store = GrantStore(tmp_path, clock=lambda: NOW)
+    _assert_code("STORE_BUSY", lambda: store.issue_exact(
+        "gnt_33333333333333333333333333333333", _request(), approved=True))
 
 
 def _storage_receipts(tmp_path, monkeypatch, inspect):

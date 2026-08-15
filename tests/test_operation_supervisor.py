@@ -1,7 +1,7 @@
 from dataclasses import replace
-import json
+import hashlib, json
 import pytest
-from harness.evidence_json import canonical_sha256
+from harness.evidence_json import canonical_bytes, canonical_sha256
 from harness.journey_checks import CheckCommand, JourneyCheckService
 from harness.journey_service import JourneyService
 from harness.journey_store import JourneyStore, MutationCommand
@@ -39,7 +39,7 @@ def _check_service(root):
         "journey_sha256": canonical_sha256(legacy), "claim_id": "claim-root",
         "oracle_id": "ml", "artifact_root_ref": artifact_root_ref,
         "candidate_ref": candidate_ref,
-        "context_sha256": canonical_sha256(context),
+        "context_sha256": canonical_sha256(context), "context_bytes_sha256": hashlib.sha256(canonical_bytes(context)).hexdigest(),
     }
     operation = {
         "owner_ref": OWNER, "journey_ref": JOURNEY,
@@ -62,7 +62,7 @@ def _check_service(root):
         client_request_id="check-start", operation_ref=OPERATION,
         grant_ref=grant_ref, grant_request=request, journey=legacy,
         claim_id="claim-root", oracle_id="ml", candidate_ref=candidate_ref,
-        context=context, artifact_root_ref=artifact_root_ref,
+        context=context, context_bytes_sha256=arguments["context_bytes_sha256"], artifact_root_ref=artifact_root_ref,
     )
     started = service.request(command)
     return service, grants, started

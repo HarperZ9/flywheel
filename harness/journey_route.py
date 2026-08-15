@@ -2,12 +2,13 @@
 from __future__ import annotations
 
 from dataclasses import asdict
+import hashlib
 from pathlib import Path
 from typing import Callable
 
 from .evidence_json import canonical_sha256
 from .evidence_public import (
-    TransportError, error_response, exact_request, json_ref, parse_json,
+    TransportError, error_response, exact_request, json_ref_bytes, parse_json,
     public_metadata, public_result,
 )
 from .grant_route import _artifact_root_ref, resolve_approved_grant
@@ -86,13 +87,14 @@ def _append(req: dict, service: JourneyService, approved: dict) -> dict:
 def _check_context(req: dict, approved: dict, state_root: Path,
                    evidence_root: Path) -> tuple[dict, dict, str]:
     evidence, artifact_ref = _artifact_root_ref(state_root, evidence_root)
-    context = json_ref(evidence, req["context_ref"])
+    context, context_bytes = json_ref_bytes(evidence, req["context_ref"])
     if context.get("candidate_ref") != req["candidate_ref"]:
         raise GrantError("PERMISSION_DENIED")
     context = {**context, "_source_ref": req["context_ref"]}
     public_metadata(context)
     body = approved["operation_body"]
     if (body.get("context_sha256") != canonical_sha256(context)
+            or body.get("context_bytes_sha256") != hashlib.sha256(context_bytes).hexdigest()
             or body.get("artifact_root_ref") != artifact_ref
             or body.get("candidate_ref") != req["candidate_ref"]):
         raise GrantError("PERMISSION_DENIED")
@@ -114,6 +116,7 @@ def _check(req: dict, service: JourneyService, approved: dict,
         grant_request=approved["grant_request"], journey=journey,
         claim_id=req["claim_id"], oracle_id=req["oracle_id"],
         candidate_ref=req["candidate_ref"], context=context,
+        context_bytes_sha256=body["context_bytes_sha256"],
         artifact_root_ref=artifact_ref)
     checks = JourneyCheckService(journey=service)
     ack = checks.request(command)

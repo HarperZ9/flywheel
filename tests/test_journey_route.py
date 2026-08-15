@@ -108,6 +108,61 @@ def test_append_uses_only_allowlisted_command_types_and_server_time(tmp_path):
     assert bad_status == 422 and bad["error"]["code"] == "INVALID_TRANSITION"
 
 
+@pytest.mark.parametrize("nested", [
+    {"claim_id": "claim-unsafe", "statement": "Forged", "depends_on": [],
+     "does_not_prove": "verification", "verdict": "PASS",
+     "receipt_refs": ["receipt.json"], "receipt_state": "MATCH"},
+    {"claim_id": "claim-unsafe", "statement": "Forged", "depends_on": [],
+     "does_not_prove": "verification", "provider": "remote"},
+    {"claim_id": "claim-unsafe", "statement": "Forged", "depends_on": [],
+     "does_not_prove": "verification", "error": "raw exception"},
+    {"claim_id": "claim-unsafe", "statement": "Forged", "depends_on": [],
+     "does_not_prove": "verification", "path": "C:/private/result"},
+    {"claim_id": "claim-unsafe", "statement": "", "depends_on": [],
+     "does_not_prove": "verification"},
+    {"action_id": "next-1", "kind": "inspect", "description": "Inspect",
+     "basis_refs": ["claim-1"], "lifecycle_event": "check_completed"},
+])
+def test_append_rejects_nested_authority_and_unknown_fields_before_proposal(
+        tmp_path, nested):
+    """Nested authority, unknown fields, and invalid facts never become authority."""
+    state, evidence, created = _created(tmp_path)
+    kind = "record_next_action" if "action_id" in nested else "record_claim"
+    field = "next_action" if kind == "record_next_action" else "claim"
+    before_proposals = list((state / "grant-proposals").rglob("*.json"))
+    before_grants = list((state / "grants").rglob("*.json"))
+    request = {"journey_ref": created["journey_ref"],
+        "expected_event_head": created["event_head_sha256"],
+        "client_request_id": "unsafe-append", "command": {
+            "type": kind, field: nested}}
+    result, status = grant_post("/api/grants/prepare/append",
+        json.dumps(request).encode(), owner_ref=OWNER, state_root=state,
+        evidence_root=evidence, clock=lambda: NOW)
+    expected = ("UNSAFE_METADATA" if "path" in nested else
+                "INVALID_METADATA" if nested.get("statement") == "" else "INVALID_TRANSITION")
+    assert status == 422 and result["error"]["code"] == expected
+    assert list((state / "grant-proposals").rglob("*.json")) == before_proposals
+    assert list((state / "grants").rglob("*.json")) == before_grants
+
+
+def test_record_claim_synthesizes_honest_null_verdict_and_receipt_state(tmp_path):
+    """A client claim supplies facts; the server owns verdict and receipt state."""
+    state, evidence, created = _created(tmp_path)
+    claim = {"claim_id": "claim-1", "statement": "Candidate is correct",
+        "depends_on": [], "does_not_prove": "candidate behavior"}
+    request = {"journey_ref": created["journey_ref"],
+        "expected_event_head": created["event_head_sha256"],
+        "client_request_id": "claim-1", "command": {
+            "type": "record_claim", "claim": claim}}
+    grant, _ = _grant("append", request, state, evidence)
+    ack, status = _route("append", {**request, "grant_ref": grant}, state, evidence)
+    view, _ = _route("resume", {
+        "journey_ref": ack["journey_ref"], "lens": "Verify"}, state, evidence)
+    stored = view["claims"]["claim-1"]
+    assert status == 200 and stored["verdict"] == "UNDECIDED"
+    assert stored["receipt_state"] == "missing" and stored["receipt_refs"]
+
+
 def test_export_is_typed_unavailable_without_untracked_packet_mutation(tmp_path):
     """A packet write without a service-owned CAS event would weaken custody."""
     state, evidence, created = _created(tmp_path)
@@ -136,8 +191,7 @@ def test_check_records_a_block_without_candidate_network_or_python_execution(
     grant, _ = _grant("append", advance, state, evidence)
     ack, _ = _route("append", {**advance, "grant_ref": grant}, state, evidence)
     claim = {"claim_id": "claim-1", "statement": "Candidate is correct",
-        "depends_on": [], "verdict": "UNDECIDED", "receipt_refs": ["receipt.json"],
-        "receipt_state": "missing", "does_not_prove": "candidate behavior"}
+        "depends_on": [], "does_not_prove": "candidate behavior"}
     record = {"journey_ref": ack["journey_ref"],
         "expected_event_head": ack["event_head_sha256"],
         "client_request_id": "claim-check",

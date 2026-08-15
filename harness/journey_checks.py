@@ -15,9 +15,7 @@ from .oracle_registry import OracleRegistry, default_registry
 from .python_execution_containment import unavailable_result
 OPERATION_REF_PATTERN = re.compile(r"op_[0-9a-f]{32}\Z")
 TERMINALS = frozenset(("check_completed", "check_failed", "check_cancelled"))
-_LIFECYCLE = frozenset((
-    "check_requested", "check_blocked", "check_started", "cancel_requested",
-    *TERMINALS,))
+_LIFECYCLE = frozenset(("check_requested", "check_blocked", "check_started", "cancel_requested", *TERMINALS))
 @dataclass(frozen=True)
 class CheckCommand:
     owner_ref: str
@@ -32,6 +30,7 @@ class CheckCommand:
     oracle_id: str
     candidate_ref: str
     context: dict
+    context_bytes_sha256: str
     artifact_root_ref: str
 class CheckRunner(Protocol):
     def __call__(self, journey: dict, claim_id: str, oracle_id: str,
@@ -238,7 +237,7 @@ class JourneyCheckService:
                 "claim_id": command.claim_id, "oracle_id": command.oracle_id,
                 "artifact_root_ref": command.artifact_root_ref,
                 "candidate_ref": command.candidate_ref,
-                "context_sha256": canonical_sha256(command.context)}
+                "context_sha256": canonical_sha256(command.context), "context_bytes_sha256": command.context_bytes_sha256}
     @staticmethod
     def _requested_payload(command: CheckCommand) -> dict:
         command_sha = canonical_sha256({
@@ -284,7 +283,8 @@ class JourneyCheckService:
                 or not command.client_request_id
                 or type(command.claim_id) is not str or not command.claim_id
                 or type(command.oracle_id) is not str or not command.oracle_id
-                or not isinstance(command.grant_request, GrantRequest)):
+                or not isinstance(command.grant_request, GrantRequest) or re.fullmatch(
+                    r"[0-9a-f]{64}\Z", command.context_bytes_sha256 or "") is None):
             raise ValueError("check command is invalid")
         journey = strict_load_json(canonical_bytes(command.journey))
         context = strict_load_json(canonical_bytes(command.context))

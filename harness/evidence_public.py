@@ -188,12 +188,13 @@ def within_root(root: Path, ref: object, *, must_exist: bool) -> Path:
     return root / rel
 
 
-def json_ref(root: Path, ref: object) -> dict:
+def json_ref_bytes(root: Path, ref: object) -> tuple[dict, bytes]:
     path = within_root(root, ref, must_exist=True)
     if not path.is_file():
         raise TransportError("INVALID_REF", "referenced artifact must be a file")
     try:
-        value = strict_load_json(path.read_bytes(), max_bytes=1_048_576, max_depth=32)
+        raw = path.read_bytes()
+        value = strict_load_json(raw, max_bytes=1_048_576, max_depth=32)
     except (OSError, TypeError, ValueError, UnicodeError, RecursionError) as exc:
         raise TransportError(
             "INVALID_ARTIFACT", "referenced artifact is not strict JSON", 422) from exc
@@ -201,7 +202,11 @@ def json_ref(root: Path, ref: object) -> dict:
         raise TransportError(
             "INVALID_ARTIFACT", "referenced JSON must be an object", 422)
     public_metadata(value)
-    return value
+    return value, raw
+
+
+def json_ref(root: Path, ref: object) -> dict:
+    return json_ref_bytes(root, ref)[0]
 
 
 def public_text(req: dict, name: str) -> str:

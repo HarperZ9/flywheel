@@ -2,25 +2,22 @@
 from __future__ import annotations
 from dataclasses import asdict
 from datetime import timedelta
-import os, re, secrets
+import hashlib, os, re, secrets
 from pathlib import Path
 from typing import Callable
 from uuid import uuid4
 from .evidence_json import canonical_bytes, canonical_sha256, strict_load_json
 from .evidence_public import (
-    TransportError, admitted_root, error_response, exact_request, json_ref,
-    parse_json, public_metadata, public_result, public_text, relative_ref,
-)
+    TransportError, admitted_root, error_response, exact_request, json_ref, json_ref_bytes, parse_json,
+    public_metadata, public_result, public_text, relative_ref)
 from .journey_checks import OPERATION_REF_PATTERN
 from .journey_lock import ExclusiveJourneyLock, JourneyLockBusy, fsync_directory
 from .journey_service import JourneyService
 from .journey_store import JourneyStore, JourneyStoreError
 from .journey_types import STAGES
 from .operation_grants import (
-    GrantError, GrantRequest, GrantStore, _parse_time, _secure_owner_only,
-    _utc_text, _validate_owner_ref,
-)
-
+    GrantError, GrantRequest, GrantStore, _parse_time, _secure_owner_only, _utc_text,
+    _validate_owner_ref)
 ROUTE_PREFIX = "/api/grants/"
 PROPOSAL_SCHEMA = "flywheel.grant-proposal/v1"
 PROPOSAL_REF_PATTERN = re.compile(r"prp_[0-9a-f]{32}\Z")
@@ -38,13 +35,13 @@ _PREPARE_FIELDS = {
 _RECORD_FIELDS = frozenset((
     "schema", "proposal_ref", "planned_grant_ref", "owner_ref", "action",
     "request", "operation", "operation_body", "grant_request", "operation_ref",
-    "expires_at", "state", "proposal_sha256",
-))
+    "expires_at", "state", "proposal_sha256"))
+_CLAIM_FIELDS = {"claim_id", "statement", "depends_on", "does_not_prove"}
+_ACTION_FIELDS = {"action_id", "kind", "description", "basis_refs"}
+_ACTION_KINDS = {"inspect", "rerun", "collect", "escalate", "repair", "rollback", "recheck", "export"}
 def _service(owner_ref: str, state_root: Path,
              clock: Callable[[], str]) -> JourneyService:
-    grants = GrantStore(state_root, clock=clock)
-    return JourneyService(owner_ref=owner_ref, store=JourneyStore(state_root),
-                          grants=grants, clock=clock)
+    return JourneyService(owner_ref=owner_ref, store=JourneyStore(state_root), grants=GrantStore(state_root, clock=clock), clock=clock)
 def _artifact_root_ref(state_root: Path, evidence_root: Path) -> tuple[Path, str]:
     state = Path(state_root).resolve(strict=True)
     evidence = admitted_root(evidence_root)
@@ -58,6 +55,23 @@ def _artifact_root_ref(state_root: Path, evidence_root: Path) -> tuple[Path, str
         raise TransportError(
             "INVALID_TRANSITION", "check artifact custody is unavailable", 409)
     return evidence, relative
+def _client_item(kind: str, item: object) -> dict:
+    expected = _CLAIM_FIELDS if kind == "record_claim" else _ACTION_FIELDS
+    if type(item) is not dict or set(item) != expected:
+        raise TransportError("INVALID_TRANSITION", "Journey command is invalid", 422)
+    public_metadata(item); refs = item["depends_on"] if kind == "record_claim" else item["basis_refs"]
+    if (type(refs) is not list or (kind != "record_claim" and not refs)
+            or not all(type(value) is str and value.strip() for value in refs)
+            or len(refs) != len(set(refs))):
+        raise TransportError("INVALID_TRANSITION", "Journey command is invalid", 422)
+    if kind == "record_claim":
+        for name in ("claim_id", "statement", "does_not_prove"): public_text(item, name)
+        return {**item, "verdict": "UNDECIDED", "receipt_refs": ["receipts/pending"],
+                "receipt_state": "missing"}
+    if item["kind"] not in _ACTION_KINDS:
+        raise TransportError("INVALID_TRANSITION", "Journey command is invalid", 422)
+    for name in ("action_id", "description"): public_text(item, name)
+    return item
 def _append_operation(req: dict, service: JourneyService) -> tuple[str, dict]:
     command = req["command"]
     if type(command) is not dict or type(command.get("type")) is not str:
@@ -78,16 +92,14 @@ def _append_operation(req: dict, service: JourneyService) -> tuple[str, dict]:
         return operation, {}
     name = "claims" if kind == "record_claim" else "next_actions"
     item = command["claim"] if kind == "record_claim" else command["next_action"]
-    if type(item) is not dict:
-        raise TransportError("INVALID_TRANSITION", "Journey command is invalid", 422)
-    return kind, {name: [item]}
+    return kind, {name: [_client_item(kind, item)]}
 def _check_operation(req: dict, service: JourneyService, state_root: Path,
                      evidence_root: Path, operation_ref: str) -> tuple[dict, tuple[str, ...]]:
     evidence, artifact_ref = _artifact_root_ref(state_root, evidence_root)
     journey = service.resume(req["journey_ref"])
     context_ref = relative_ref(req["context_ref"]).as_posix()
     candidate_ref = relative_ref(req["candidate_ref"]).as_posix()
-    context = json_ref(evidence, context_ref)
+    context, context_bytes = json_ref_bytes(evidence, context_ref)
     if context.get("candidate_ref") != candidate_ref:
         raise TransportError(
             "INVALID_TRANSITION", "check references do not match", 422)
@@ -100,7 +112,7 @@ def _check_operation(req: dict, service: JourneyService, state_root: Path,
         "claim_id": public_text(req, "claim_id"),
         "oracle_id": public_text(req, "oracle_id"),
         "artifact_root_ref": artifact_ref, "candidate_ref": candidate_ref,
-        "context_sha256": canonical_sha256(context),
+        "context_sha256": canonical_sha256(context), "context_bytes_sha256": hashlib.sha256(context_bytes).hexdigest(),
     }
     return body, (artifact_ref, candidate_ref)
 def _operation(action: str, req: dict, owner_ref: str, state_root: Path,
@@ -132,12 +144,13 @@ def _operation(action: str, req: dict, owner_ref: str, state_root: Path,
     return "export", body, "journey.export", ("journey:export",), (req["packet_ref"],)
 def _proposal_dir(state_root: Path, owner_ref: str) -> Path:
     _validate_owner_ref(owner_ref)
-    state = Path(state_root)
-    state.mkdir(parents=True, exist_ok=True)
-    root = state / "grant-proposals"; root.mkdir(exist_ok=True)
+    state = Path(state_root); state.mkdir(parents=True, exist_ok=True)
+    root = state / "grant-proposals"; new_root = not root.exists(); root.mkdir(exist_ok=True)
     _secure_owner_only(root, directory=True)
-    owner = root / owner_ref; owner.mkdir(exist_ok=True)
+    if new_root: fsync_directory(state)
+    owner = root / owner_ref; new_owner = not owner.exists(); owner.mkdir(exist_ok=True)
     _secure_owner_only(owner, directory=True)
+    if new_owner: fsync_directory(root)
     return owner
 def _proposal_path(owner_dir: Path, proposal_ref: str) -> Path:
     if type(proposal_ref) is not str or PROPOSAL_REF_PATTERN.fullmatch(proposal_ref) is None:
@@ -190,7 +203,7 @@ def _replace(path: Path, value: dict) -> None:
             stream.write(canonical_bytes(value)); stream.flush(); os.fsync(stream.fileno())
         os.replace(temporary, path); _secure_owner_only(path, directory=False)
         with path.open("r+b") as stream: os.fsync(stream.fileno())
-        fsync_directory(path.parent)
+        for directory in (path.parent, path.parent.parent, path.parent.parent.parent): fsync_directory(directory)
     finally:
         try: temporary.unlink()
         except FileNotFoundError: pass
@@ -255,9 +268,10 @@ def resolve_approved_grant(grant_ref: str, *, owner_ref: str, state_root: Path,
         "grant_request": _request_from(record["grant_request"])}
 def _mapped_error(exc: Exception) -> tuple[dict, int]:
     if isinstance(exc, TransportError): return error_response(exc)
+    if isinstance(exc, JourneyLockBusy) or (isinstance(exc, GrantError) and exc.code == "STORE_BUSY"):
+        return error_response(TransportError("STORE_BUSY", "grant proposal custody is busy", 503))
     if isinstance(exc, GrantError):
-        status = 403
-        return error_response(TransportError(exc.code, "operation approval is unavailable", status))
+        return error_response(TransportError(exc.code, "operation approval is unavailable", 403))
     if isinstance(exc, JourneyStoreError):
         status = 404 if exc.code == "JOURNEY_NOT_FOUND" else 503 if exc.code == "STORE_BUSY" else 409
         return error_response(TransportError(exc.code, "Journey state is unavailable", status))

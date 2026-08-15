@@ -1034,18 +1034,13 @@ class _Handler(BaseHTTPRequestHandler):
         except Exception:
             return {}, None
     def _authorized(self) -> bool:
-        """Refuse before dispatch. True when the request may proceed.
-
-        Off entirely when auth_token is empty, which is how the in-process tests
-        construct the handler; main() always sets one.
-        """
+        """Refuse before dispatch; public auth-off compatibility stays available,
+        while private custody always requires a configured bearer token."""
         private = self.path.split("?", 1)[0].startswith(("/api/journeys/", "/api/grants/"))
-        if not self.auth_token:
-            if private and not getattr(self, "owner_ref", None): self.owner_ref = load_or_create_owner_ref(self.flywheel_home)
-            return True
+        if not self.auth_token and not private: return True
         if private:
-            owner, reason = _auth_owner(
-                self.headers, self.command, self.auth_token, self.flywheel_home, allowed_hosts=self.allowed_hosts)
+            owner, reason = ((None, "no_token") if not self.auth_token else _auth_owner(
+                self.headers, self.command, self.auth_token, self.flywheel_home, allowed_hosts=self.allowed_hosts))
             ok = owner is not None
             if ok: self.owner_ref = owner
         else:

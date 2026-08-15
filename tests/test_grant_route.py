@@ -5,6 +5,8 @@ from pathlib import Path
 import pytest
 
 from harness.grant_route import grant_post, resolve_approved_grant
+from harness.journey_lock import JourneyLockBusy
+from harness.journey_route import journey_post
 
 NOW = "2026-08-14T12:00:00Z"
 OWNER = "owner_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
@@ -46,6 +48,47 @@ def test_prepare_is_not_authority_and_approval_survives_process_state(tmp_path):
         approved["grant_ref"], owner_ref=OWNER, state_root=state, clock=lambda: NOW)
     assert resolved["action"] == "create"
     assert resolved["grant_request"].owner_ref == OWNER
+
+
+def test_proposal_parent_creation_and_replacements_sync_the_full_chain(
+        tmp_path, monkeypatch):
+    """Acknowledgment must follow durable parent entries through state_root."""
+    from harness import grant_route
+    state, evidence = tmp_path / "state", tmp_path / "evidence"
+    state.mkdir(); evidence.mkdir(); synced = []
+    monkeypatch.setattr(grant_route, "fsync_directory",
+                        lambda path: synced.append(Path(path)))
+    proposal, status = _prepare_create(state, evidence)
+    root, owner = state / "grant-proposals", state / "grant-proposals" / OWNER
+    assert status == 200 and synced == [state, root, owner, root, state]
+    synced.clear()
+    approved, approved_status = _post(
+        "approve-once", {"proposal_ref": proposal["proposal_ref"]},
+        state=state, evidence=evidence)
+    assert approved_status == 200 and approved["grant_ref"] == proposal["planned_grant_ref"]
+    assert synced == [owner, root, state]
+
+
+@pytest.mark.parametrize("phase", ("prepare", "approve"))
+def test_proposal_and_exact_grant_lock_contention_is_retryable(
+        phase, tmp_path, monkeypatch):
+    """Private lock contention must return one fixed retryable response."""
+    from harness import grant_route
+    state, evidence = tmp_path / "state", tmp_path / "evidence"
+    state.mkdir(); evidence.mkdir()
+    proposal = _prepare_create(state, evidence)[0] if phase == "approve" else None
+    monkeypatch.setattr(grant_route.ExclusiveJourneyLock, "acquire",
+                        lambda *_a, **_k: (_ for _ in ()).throw(JourneyLockBusy()))
+    if phase == "prepare":
+        result, status = _prepare_create(state, evidence)
+        assert not list((state / "grant-proposals").rglob("*.json"))
+    else:
+        result, status = _post("approve-once", {
+            "proposal_ref": proposal["proposal_ref"]}, state=state, evidence=evidence)
+        assert not (state / "grants").exists()
+    assert status == 503 and result["error"] == {
+        "code": "STORE_BUSY", "message": "grant proposal custody is busy"}
+    assert str(tmp_path) not in json.dumps(result)
 
 
 def test_approval_is_idempotent_cross_owner_hidden_and_grant_ledger_digest_only(tmp_path):
@@ -121,25 +164,45 @@ def test_expired_proposal_and_unknown_fields_are_fixed_non_echo_errors(tmp_path)
 
 
 def test_check_prepare_binds_context_without_reading_candidate(tmp_path, monkeypatch):
-    """Grant preparation must hash admitted context but never touch candidate bytes."""
+    """Post-approval context byte rewriting must deny before grant or Journey use."""
     state, evidence = tmp_path / "state", tmp_path / "state" / "artifacts"
     evidence.mkdir(parents=True)
-    context = {"candidate_ref": "candidate.py", "task_id": "bounded"}
-    (evidence / "context.json").write_text(json.dumps(context), encoding="utf-8")
+    create, _ = _prepare_create(state, evidence)
+    approved, _ = _post("approve-once", {"proposal_ref": create["proposal_ref"]},
+                         state=state, evidence=evidence)
+    created, status = journey_post("/api/journeys/create", json.dumps({
+        "goal": "Preserve evidence", "intake_ref": "intake.json",
+        "client_request_id": "create-1", "grant_ref": approved["grant_ref"],
+    }).encode(), owner_ref=OWNER, state_root=state,
+        evidence_root=evidence, clock=lambda: NOW)
+    assert status == 200
+    original = b'{"candidate_ref":"candidate.py","task_id":"bounded"}'
+    context_path = evidence / "context.json"; context_path.write_bytes(original)
     real_read = Path.read_bytes
     def guarded(path):
         if path.name == "candidate.py": pytest.fail("candidate was read")
         return real_read(path)
     monkeypatch.setattr(Path, "read_bytes", guarded)
-    body, status = _post("prepare/check", {
-        "journey_ref": "jrn_0123456789abcdef0123456789abcdef",
-        "expected_event_head": "a" * 64, "client_request_id": "check-1",
+    request = {
+        "journey_ref": created["journey_ref"],
+        "expected_event_head": created["event_head_sha256"], "client_request_id": "check-1",
         "claim_id": "claim-1", "oracle_id": "code",
         "candidate_ref": "candidate.py", "context_ref": "context.json",
-    }, state=state, evidence=evidence)
-    assert status in {200, 404}
-    if status == 200:
-        assert body["operation_ref"].startswith("op_")
+    }
+    proposal, status = _post("prepare/check", request, state=state, evidence=evidence)
+    approved, _ = _post("approve-once", {"proposal_ref": proposal["proposal_ref"]},
+                         state=state, evidence=evidence)
+    context_path.write_bytes(b'{ "task_id": "bounded", "candidate_ref": "candidate.py" }')
+    denied, denied_status = journey_post("/api/journeys/check", json.dumps({
+        **request, "grant_ref": approved["grant_ref"]}).encode(), owner_ref=OWNER,
+        state_root=state, evidence_root=evidence, clock=lambda: NOW)
+    context_path.write_bytes(original)
+    retried, retry_status = journey_post("/api/journeys/check", json.dumps({
+        **request, "grant_ref": approved["grant_ref"]}).encode(), owner_ref=OWNER,
+        state_root=state, evidence_root=evidence, clock=lambda: NOW)
+    assert status == 200 and proposal["operation_ref"].startswith("op_")
+    assert denied_status == 403 and denied["error"]["code"] == "PERMISSION_DENIED"
+    assert retry_status == 200 and retried["state"] == "blocked"
     assert not (evidence / "candidate.py").exists()
 
 

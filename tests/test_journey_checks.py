@@ -1,9 +1,10 @@
 from dataclasses import replace
+import hashlib
 import json
 from threading import Event, Thread
 
 import pytest
-from harness.evidence_json import canonical_sha256
+from harness.evidence_json import canonical_bytes, canonical_sha256
 from harness.evidence_journey import append_event, new_journey
 from harness.journey_checks import CheckCommand, JourneyCheckService
 from harness.journey_service import JourneyService
@@ -48,7 +49,7 @@ def _arguments(journey, oracle_id, context, *, operation_ref=OPERATION,
         "journey_sha256": canonical_sha256(journey), "claim_id": "claim-root",
         "oracle_id": oracle_id, "artifact_root_ref": artifact_root_ref,
         "candidate_ref": context["candidate_ref"],
-        "context_sha256": canonical_sha256(context),
+        "context_sha256": canonical_sha256(context), "context_bytes_sha256": hashlib.sha256(canonical_bytes(context)).hexdigest(),
     }
 def _command(root, service, head, *, oracle_id="ml", operation_ref=OPERATION,
              request_id="check-1", grant=True, artifact_root_ref="artifacts",
@@ -88,7 +89,7 @@ def _command(root, service, head, *, oracle_id="ml", operation_ref=OPERATION,
         grant_ref=grant_ref, grant_request=request, journey=legacy,
         claim_id="claim-root", oracle_id=oracle_id,
         candidate_ref=candidate.name, context=context,
-        artifact_root_ref=artifact_root_ref,
+        context_bytes_sha256=arguments["context_bytes_sha256"], artifact_root_ref=artifact_root_ref,
     )
 def _events(root, journey_ref=JOURNEY):
     directory = root / "journeys" / "v2" / "owners" / OWNER / journey_ref / "events"
@@ -120,6 +121,13 @@ def test_admitted_check_commits_one_started_and_one_completed_terminal(tmp_path)
     assert runner.calls == 1
     assert (runner.candidate, runner.artifact_root) == (
         tmp_path / "artifacts" / "candidate.json", tmp_path / "artifacts")
+def test_check_arguments_bind_server_context_byte_digest(tmp_path):
+    """Exact grant arguments must bind bytes, not only parsed context meaning."""
+    service, genesis = _service(tmp_path)
+    command = _command(tmp_path, service, genesis.event_head_sha256)
+    expected = hashlib.sha256(canonical_bytes(command.context)).hexdigest()
+    assert getattr(command, "context_bytes_sha256", None) == expected
+    assert service._arguments(command)["context_bytes_sha256"] == expected
 @pytest.mark.parametrize("case,oracle_id,supported,grant,reason", (
     ("permission", "ml", frozenset(("measurement",)), False, "PERMISSION_REQUIRED"),
     ("oracle", "unregistered", frozenset(("measurement",)), True,
@@ -134,7 +142,6 @@ def test_pre_admission_blocks_are_durable_after_request(
         tmp_path, service, genesis.event_head_sha256, oracle_id=oracle_id,
         request_id=f"check-{case}", grant=grant,
     )
-
     blocked = service.request(command)
     events = _events(tmp_path)
     assert [event["event_type"] for event in events[1:]] == [
@@ -154,7 +161,6 @@ def test_python_refusal_precedes_candidate_read_runner_spawn_and_receipt(
     runner = Runner()
 
     blocked = service.request(command)
-
     events = _events(tmp_path)
     assert blocked.event_sha256 == events[-1]["event_sha256"]
     assert [event["event_type"] for event in events[1:]] == [
@@ -177,9 +183,7 @@ def test_run_commits_one_public_safe_noncompleted_terminal(
         operation_ref=operation, request_id=terminal,
     )
     service.request(command)
-
     ack = service.run(operation, Runner(result=result, error=error))
-
     events = _events(tmp_path)
     terminals = [event for event in events if event["event_type"].startswith("check_")
                  and event["event_type"] in {
@@ -194,9 +198,7 @@ def test_identical_request_replays_before_grant_and_adds_no_events(tmp_path):
     first = service.request(command)
     before = _events(tmp_path)
     retry = replace(command, grant_ref="gnt_ffffffffffffffffffffffffffffffff")
-
     replay = service.request(retry)
-
     assert replay.event_sha256 == first.event_sha256
     assert replay.idempotent_replay is True
     assert _events(tmp_path) == before
@@ -205,10 +207,8 @@ def test_invalid_journey_selector_is_rejected_before_lock_path_creation(tmp_path
     service, genesis = _service(tmp_path)
     command = _command(tmp_path, service, genesis.event_head_sha256)
     escaped = tmp_path / "journeys" / "v2" / "owners" / "escape"
-
     with pytest.raises(ValueError, match="journey_ref"):
         service.request(replace(command, journey_ref=r"..\escape"))
-
     assert not escaped.exists()
 
 
