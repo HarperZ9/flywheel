@@ -4,15 +4,18 @@ from __future__ import annotations
 import hashlib
 import os
 from pathlib import Path, PurePosixPath, PureWindowsPath
+import shutil
+import tempfile
 from uuid import uuid4
 
 from .evidence_json import canonical_bytes, canonical_sha256, strict_load_json
 from .evidence_journey import verify_journey
 from .journey_lock import fsync_directory
-from .journey_store import JourneyStore, JourneyStoreError, MutationAck, MutationCommand
+from .journey_store import (
+    VERSION_SCHEMA, JourneyStore, JourneyStoreError, MutationAck, MutationCommand,
+)
 
 
-VERSION_SCHEMA = "flywheel.evidence-journey-store-version/v1"
 MIGRATION_SCHEMA = "flywheel.evidence-journey-migration/v1"
 PACKET_MIGRATION_SCHEMA = "flywheel.evidence-packet-migration/v1"
 _LEGACY_REF_KINDS = frozenset(("chats", "workspaces", "settings", "receipts"))
@@ -199,26 +202,78 @@ def _packet_inventory(root: Path) -> tuple[list[tuple[str, bytes]], str]:
     return files, canonical_sha256(manifest)
 
 
+def _is_link(path: Path) -> bool:
+    return path.is_symlink() or (hasattr(path, "is_junction") and path.is_junction())
+
+
+def _verified_output_root(path: Path) -> Path:
+    candidate = Path(path).absolute()
+    for component in (*reversed(candidate.parents), candidate):
+        if _is_link(component):
+            raise ValueError("derived packet path contains a link")
+    candidate.mkdir(parents=True, exist_ok=True)
+    if _is_link(candidate) or not candidate.is_dir():
+        raise ValueError("derived packet output root must be a plain directory")
+    return candidate.resolve(strict=True)
+
+
+def _write_exclusive(root: Path, relative: Path, raw: bytes) -> None:
+    parent = root
+    for part in relative.parent.parts:
+        parent /= part
+        try:
+            parent.mkdir()
+        except FileExistsError:
+            pass
+        if _is_link(parent) or not parent.is_dir():
+            raise ValueError("derived packet destination contains a link")
+    path = parent / relative.name
+    if _is_link(path):
+        raise ValueError("derived packet destination contains a link")
+    with path.open("xb") as stream:
+        stream.write(raw)
+        stream.flush()
+        os.fsync(stream.fileno())
+
+
+def _stage_packet(out: Path, ref: str, files: list[tuple[str, bytes]], descriptor: dict) -> Path:
+    staging = Path(tempfile.mkdtemp(prefix=f".{ref}.", dir=out))
+    try:
+        for relative, raw in files:
+            _write_exclusive(staging, Path(*PurePosixPath(relative).parts), raw)
+        _write_exclusive(staging, Path("migration.json"), canonical_bytes(descriptor))
+        for directory in sorted({path.parent for path in staging.rglob("*") if path.is_file()},
+                                key=lambda path: len(path.parts), reverse=True):
+            fsync_directory(directory)
+        fsync_directory(staging)
+        return staging
+    except Exception:
+        shutil.rmtree(staging)
+        raise
+
+
 def migrate_packet(packet_root: Path, *, target_schema: str, out_root: Path) -> dict:
     """Create a derived packet bound to the exact immutable source tree."""
-    source, out = Path(packet_root).resolve(strict=True), Path(out_root).resolve()
+    source, out_path = Path(packet_root).resolve(strict=True), Path(out_root).absolute()
     if type(target_schema) is not str or not target_schema.strip() or not source.is_dir():
         raise ValueError("packet root and target_schema are required")
-    if out == source or source in out.parents:
+    if out_path == source or source in out_path.parents:
         raise ValueError("derived packet must be outside the source packet")
+    out = _verified_output_root(out_path)
     files, digest = _packet_inventory(source)
     ref = f"packet-{digest[:16]}"
     target = out / ref
-    target.mkdir(parents=True, exist_ok=True)
-    for relative, raw in files:
-        destination = target / Path(*PurePosixPath(relative).parts)
-        destination.parent.mkdir(parents=True, exist_ok=True)
-        if destination.exists() and destination.read_bytes() != raw:
-            raise JourneyStoreError("STORE_COMMIT_FAILED")
-        if not destination.exists():
-            destination.write_bytes(raw)
+    if target.exists() or _is_link(target):
+        raise ValueError("derived packet target exists or is a link")
     descriptor = {"schema": PACKET_MIGRATION_SCHEMA, "target_schema": target_schema,
                   "source_sha256": digest}
-    _atomic_replace(target / "migration.json", canonical_bytes(descriptor))
+    staging = _stage_packet(out, ref, files, descriptor)
+    try:
+        os.replace(staging, target)
+        fsync_directory(out)
+    except Exception:
+        if staging.exists():
+            shutil.rmtree(staging)
+        raise
     return {"derived_packet_ref": ref, "source_sha256": digest,
             "target_schema": target_schema}

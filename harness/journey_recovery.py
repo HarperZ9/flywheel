@@ -32,16 +32,19 @@ def _store_version(root: Path) -> tuple[int, bool]:
     return value["version"], True
 
 
-def _all_events(journey_dir: Path) -> tuple[dict[str, dict], list[str]]:
-    valid, invalid = {}, []
+def _all_events(journey_dir: Path) -> tuple[list[tuple[dict, Path]], list[Path]]:
+    valid, invalid = [], []
     for path in sorted((journey_dir / "events").glob("*.json")):
-        ref = path.as_posix()
         try:
             event = validate_event(strict_load_json(path.read_bytes()))
         except (OSError, TypeError, ValueError):
-            invalid.append(ref)
+            invalid.append(path)
             continue
-        valid[event["event_sha256"]] = event
+        expected = f"{event['sequence']:020d}-{event['event_sha256']}.json"
+        if path.name != expected:
+            invalid.append(path)
+            continue
+        valid.append((event, path))
     return valid, invalid
 
 
@@ -66,11 +69,13 @@ def _matching_request(journey_dir: Path, event: dict, projection_sha: str) -> bo
 
 
 def _complete_candidate(journey_dir: Path, head: dict, chain: list[dict],
-                        candidates: list[dict]) -> tuple[int, list[dict]]:
+                        candidates: list[tuple[dict, Path]]) -> tuple[int, list[tuple[dict, Path]]]:
     if len(candidates) != 1:
         return 0, candidates
-    event = candidates[0]
-    if (event["prior_event_sha256"] != head["event_head_sha256"]
+    event, path = candidates[0]
+    expected_name = f"{event['sequence']:020d}-{event['event_sha256']}.json"
+    if (path.name != expected_name
+            or event["prior_event_sha256"] != head["event_head_sha256"]
             or event["sequence"] != head["sequence"] + 1):
         return 0, candidates
     try:
@@ -89,14 +94,9 @@ def _complete_candidate(journey_dir: Path, head: dict, chain: list[dict],
     return 1, []
 
 
-def _relative_refs(root: Path, journey_dir: Path, events: list[dict], invalid: list[str]) -> list[str]:
-    refs = []
-    for event in events:
-        matches = sorted((journey_dir / "events").glob(f"*-{event['event_sha256']}.json"))
-        refs.extend(path.relative_to(root).as_posix() for path in matches)
-    for raw in invalid:
-        refs.append(Path(raw).relative_to(root).as_posix())
-    return sorted(set(refs))
+def _relative_refs(root: Path, events: list[tuple[dict, Path]], invalid: list[Path]) -> list[str]:
+    paths = [path for _, path in events] + invalid
+    return sorted({path.relative_to(root).as_posix() for path in paths})
 
 
 def _diagnostic(root: Path, journey_dir: Path, refs: list[str], now: str) -> str:
@@ -122,9 +122,10 @@ def _recover_journey(root: Path, journey_dir: Path, now: str) -> tuple[int, int,
         return 0, len(refs), _diagnostic(root, journey_dir, refs, now) if refs else None
     valid, invalid = _all_events(journey_dir)
     authoritative = {event["event_sha256"] for event in chain}
-    candidates = [event for digest, event in valid.items() if digest not in authoritative]
+    candidates = [(event, path) for event, path in valid
+                  if event["event_sha256"] not in authoritative]
     completed, remaining = _complete_candidate(journey_dir, head, chain, candidates)
-    refs = _relative_refs(root, journey_dir, remaining, invalid)
+    refs = _relative_refs(root, remaining, invalid)
     diagnostic = _diagnostic(root, journey_dir, refs, now) if refs else None
     return completed, len(refs), diagnostic
 
@@ -162,14 +163,21 @@ def _rebuild_index(root: Path) -> int:
     return 1
 
 
+def _close_abandoned_starts(store_root: Path, *, now: str) -> tuple[int, list[str]]:
+    """P1-T5 seam: no start layout is admitted yet, so no closure is claimed."""
+    return 0, []
+
+
 def recover_store(store_root: Path, *, now: str) -> dict:
     """Complete deterministic residue, quarantine ambiguity, and rebuild indexes."""
     root = Path(store_root)
     version, has_pointer = _store_version(root)
     if version > 2:
         refs = ["journeys/version.json"] if has_pointer else []
-        return _result(starts_closed=True, read_only=True, diagnostic_refs=refs)
+        return _result(read_only=True, diagnostic_refs=refs)
     completed, quarantined, diagnostics = 0, 0, []
+    closed, start_refs = _close_abandoned_starts(root, now=now)
+    diagnostics.extend(start_refs)
     owners = root / "journeys" / "v2" / "owners"
     if owners.exists():
         for owner_dir in sorted(path for path in owners.iterdir() if path.is_dir()):
@@ -181,5 +189,5 @@ def recover_store(store_root: Path, *, now: str) -> dict:
                     diagnostics.append(ref)
     rebuilt = _rebuild_index(root)
     return _result(completed=completed, quarantined=quarantined,
-                   indexes_rebuilt=rebuilt, starts_closed=bool(quarantined),
+                   indexes_rebuilt=rebuilt, starts_closed=bool(closed),
                    diagnostic_refs=diagnostics)

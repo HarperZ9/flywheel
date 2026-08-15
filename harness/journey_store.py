@@ -11,11 +11,19 @@ from .journey_projection import reduce_events
 from .journey_types import SHA256_PATTERN, build_event, validate_event, validate_journey_ref
 GENESIS_HEAD = None
 HEAD_SCHEMA, REQUEST_SCHEMA = "flywheel.evidence-journey-head/v2", "flywheel.evidence-journey-request/v2"
+VERSION_SCHEMA, SUPPORTED_STORE_VERSION = "flywheel.evidence-journey-store-version/v1", 2
 _OWNER_PATTERN = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]{0,127}\Z")
 class JourneyStoreError(RuntimeError):
     def __init__(self, code: str) -> None:
         self.code = code
         super().__init__(code)
+def _require_supported_version(root: Path) -> None:
+    path = Path(root) / "journeys" / "version.json"
+    if not path.exists(): return
+    try: value = strict_load_json(path.read_bytes())
+    except (OSError, TypeError, ValueError): raise JourneyStoreError("STORE_COMMIT_FAILED") from None
+    if set(value) != {"schema", "version"} or value.get("schema") != VERSION_SCHEMA: raise JourneyStoreError("STORE_COMMIT_FAILED")
+    if value.get("version") != SUPPORTED_STORE_VERSION: raise JourneyStoreError("VERSION_MISMATCH")
 @dataclass(frozen=True)
 class MutationCommand:
     owner_ref: str; journey_ref: str | None
@@ -31,15 +39,11 @@ class JourneyStore:
         self.state_root, self.lock_timeout_s = Path(state_root), lock_timeout_s
         self._fault_injector = fault_injector
     def create(self, command: MutationCommand) -> MutationAck:
-        self.validate_command(command, creating=True)
-        return self._mutate(command, creating=True)
+        self.validate_command(command, creating=True); return self._mutate(command, creating=True)
     def append(self, command: MutationCommand) -> MutationAck:
-        self.validate_command(command, creating=False)
-        return self._mutate(command, creating=False)
+        self.validate_command(command, creating=False); return self._mutate(command, creating=False)
     def validate_command(self, command: MutationCommand, *, creating: bool, allow_unbound_journey: bool = False) -> None:
-        """Validate one mutation without reading or creating storage state."""
-        self._validate_command(command, creating=creating,
-                               allow_unbound_journey=allow_unbound_journey)
+        self._validate_command(command, creating=creating, allow_unbound_journey=allow_unbound_journey)
     def load(self, owner_ref: str, journey_ref: str) -> dict:
         self._validate_selector(owner_ref, journey_ref)
         journey_dir = self._journey_dir(owner_ref, journey_ref)
@@ -71,7 +75,7 @@ class JourneyStore:
         except JourneyStoreError: raise
         except OSError: raise JourneyStoreError("STORE_COMMIT_FAILED") from None
     def lookup_replay(self, command: MutationCommand) -> MutationAck | None:
-        """Return only an already authoritative replay for pre-grant service checks."""
+        _require_supported_version(self.state_root)
         self._validate_selector(command.owner_ref, command.journey_ref)
         journey_dir = self._journey_dir(command.owner_ref, command.journey_ref)
         if not journey_dir.exists():
@@ -85,6 +89,7 @@ class JourneyStore:
         except JourneyStoreError: raise
         except (OSError, ValueError, TypeError): raise JourneyStoreError("STORE_COMMIT_FAILED") from None
     def _mutate(self, command: MutationCommand, *, creating: bool) -> MutationAck:
+        _require_supported_version(self.state_root)
         journey_dir = self._journey_dir(command.owner_ref, command.journey_ref)
         try:
             self._prepare_dirs(journey_dir)
@@ -219,20 +224,15 @@ class JourneyStore:
                              or command.operation == "intake"):
             raise JourneyStoreError("HEAD_CONFLICT")
     def _validate_selector(self, owner_ref: str, journey_ref: str) -> None:
-        self._validate_owner(owner_ref)
-        validate_journey_ref(journey_ref)
+        self._validate_owner(owner_ref); validate_journey_ref(journey_ref)
     @staticmethod
     def _validate_owner(owner_ref: str) -> None:
-        if type(owner_ref) is not str or _OWNER_PATTERN.fullmatch(owner_ref) is None:
-            raise ValueError("owner_ref is invalid")
-    def _owner_dir(self, owner_ref: str) -> Path:
-        return self.state_root / "journeys" / "v2" / "owners" / owner_ref
-    def _journey_dir(self, owner_ref: str, journey_ref: str) -> Path:
-        return self._owner_dir(owner_ref) / journey_ref
+        if type(owner_ref) is not str or _OWNER_PATTERN.fullmatch(owner_ref) is None: raise ValueError("owner_ref is invalid")
+    def _owner_dir(self, owner_ref: str) -> Path: return self.state_root / "journeys" / "v2" / "owners" / owner_ref
+    def _journey_dir(self, owner_ref: str, journey_ref: str) -> Path: return self._owner_dir(owner_ref) / journey_ref
     @staticmethod
     def _prepare_dirs(journey_dir: Path) -> None:
-        (journey_dir / "events").mkdir(parents=True, exist_ok=True)
-        (journey_dir / "requests").mkdir(parents=True, exist_ok=True)
+        (journey_dir / "events").mkdir(parents=True, exist_ok=True); (journey_dir / "requests").mkdir(parents=True, exist_ok=True)
     @staticmethod
     def _read_json(path: Path) -> dict:
         return strict_load_json(path.read_bytes())

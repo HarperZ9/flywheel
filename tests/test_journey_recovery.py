@@ -93,7 +93,7 @@ def test_recovery_quarantines_ambiguous_successors_and_preserves_authoritative_h
 
     projection = JourneyStore(tmp_path).load(OWNER, JOURNEY)
     assert result["completed"] == 0 and result["quarantined"] == 2
-    assert result["starts_closed"] is True and result["read_only"] is False
+    assert result["starts_closed"] is False and result["read_only"] is False
     assert projection["event_head_sha256"] == genesis.event_head_sha256
     assert all(path.read_bytes() == raw for path, raw in before.items())
     assert result["diagnostic_refs"]
@@ -119,6 +119,43 @@ def test_recovery_rebuilds_stale_index_from_authoritative_heads(tmp_path):
     assert index["owners"] == {OWNER: {JOURNEY: genesis.event_head_sha256}}
 
 
+def test_noncanonical_orphan_filename_is_quarantined_without_head_advance(tmp_path):
+    """Trusting valid content under any filename would bypass the event layout."""
+    genesis = _genesis(tmp_path)
+    _, canonical = _orphan(tmp_path, genesis.event_head_sha256, "wrong-name")
+    noncanonical = canonical.with_name("orphan.json")
+    canonical.rename(noncanonical)
+
+    result = recover_store(tmp_path, now=NOW)
+
+    assert result["completed"] == 0 and result["quarantined"] == 1
+    assert JourneyStore(tmp_path).load(OWNER, JOURNEY)["event_head_sha256"] == (
+        genesis.event_head_sha256
+    )
+    diagnostic = json.loads((tmp_path / result["diagnostic_refs"][0]).read_bytes())
+    assert diagnostic["event_refs"] == [noncanonical.relative_to(tmp_path).as_posix()]
+
+
+def test_absent_start_layout_never_reports_a_closed_start(tmp_path):
+    """Counting unrelated recovery work as start closure would invent an operation."""
+    assert recover_store(tmp_path, now=NOW)["starts_closed"] is False
+
+
+def test_unadmitted_ambiguous_start_like_files_are_left_unchanged(tmp_path):
+    """Guessing a future start schema would mutate P1-T5 state without authority."""
+    starts = tmp_path / "journeys" / "v2" / "operation-starts"
+    starts.mkdir(parents=True)
+    paths = [starts / "one.json", starts / "two.json"]
+    for path in paths:
+        path.write_bytes(canonical_bytes({"state": "started"}))
+    before = [path.read_bytes() for path in paths]
+
+    result = recover_store(tmp_path, now=NOW)
+
+    assert result["starts_closed"] is False
+    assert [path.read_bytes() for path in paths] == before
+
+
 def test_newer_schema_recovery_opens_read_only_without_rewriting_anything(tmp_path):
     """Running older recovery over a newer layout would make incompatible writes."""
     genesis = _genesis(tmp_path)
@@ -132,7 +169,7 @@ def test_newer_schema_recovery_opens_read_only_without_rewriting_anything(tmp_pa
              for path in tmp_path.rglob("*") if path.is_file()}
     assert result == {
         "completed": 0, "quarantined": 0, "indexes_rebuilt": 0,
-        "starts_closed": True, "read_only": True,
+        "starts_closed": False, "read_only": True,
         "diagnostic_refs": ["journeys/version.json"],
     }
     assert after == before and pointer.read_bytes() == before[pointer.relative_to(tmp_path)]

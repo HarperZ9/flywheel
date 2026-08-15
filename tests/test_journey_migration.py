@@ -1,6 +1,8 @@
 import hashlib
 import json
+import os
 from pathlib import PurePosixPath
+import subprocess
 
 import pytest
 
@@ -13,6 +15,7 @@ from harness.journey_store import JourneyStore, JourneyStoreError
 OWNER = "owner_import_aaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 IMPORTED_AT = "2026-08-14T19:00:00Z"
 LEGACY_AT = "2026-08-12T12:00:00Z"
+DERIVED_REF = "packet-63b23fad5236156d"
 
 
 def _legacy_bytes():
@@ -34,6 +37,28 @@ def _write_version(root, version, *, indent=2):
     path.write_bytes(json.dumps({"schema": "flywheel.evidence-journey-store-version/v1",
                                  "version": version}, indent=indent).encode())
     return path
+
+
+def _packet(root):
+    packet = root / "packet-v1"
+    (packet / "raw").mkdir(parents=True)
+    (packet / "manifest.json").write_bytes(b'{  "schema": "packet/v1" }\n')
+    (packet / "raw" / "evidence.txt").write_bytes(b"source evidence\r\n")
+    return packet
+
+
+def _directory_link(link, target):
+    try:
+        link.symlink_to(target, target_is_directory=True)
+        return
+    except (OSError, NotImplementedError):
+        pass
+    if os.name == "nt":
+        result = subprocess.run(["cmd", "/c", "mklink", "/J", str(link), str(target)],
+                                capture_output=True, text=True)
+        if result.returncode == 0:
+            return
+    pytest.skip("platform grants no directory symlink or junction")
 
 
 def test_import_cites_raw_snapshot_without_inventing_preimport_custody(tmp_path):
@@ -82,10 +107,7 @@ def test_import_rejects_snapshot_or_legacy_refs_that_are_not_safe_relative(tmp_p
 
 def test_packet_migration_derives_new_bytes_and_binds_the_immutable_source_tree(tmp_path):
     """Rewriting packet input or omitting a tree digest would sever provenance."""
-    packet = tmp_path / "packet-v1"
-    (packet / "raw").mkdir(parents=True)
-    (packet / "manifest.json").write_bytes(b'{  "schema": "packet/v1" }\n')
-    (packet / "raw" / "evidence.txt").write_bytes(b"source evidence\r\n")
+    packet = _packet(tmp_path)
     before = {path.relative_to(packet).as_posix(): path.read_bytes()
               for path in packet.rglob("*") if path.is_file()}
 
@@ -101,6 +123,33 @@ def test_packet_migration_derives_new_bytes_and_binds_the_immutable_source_tree(
     assert descriptor["target_schema"] == "flywheel.evidence-packet/v2"
     assert descriptor["source_sha256"] == result["source_sha256"]
     assert PurePosixPath(result["derived_packet_ref"]).is_absolute() is False
+
+
+def test_packet_migration_rejects_a_symlinked_derived_target(tmp_path):
+    """Following the published target link would write packet bytes outside out_root."""
+    packet, out, outside = _packet(tmp_path), tmp_path / "derived", tmp_path / "outside"
+    out.mkdir()
+    outside.mkdir()
+    _directory_link(out / DERIVED_REF, outside)
+
+    with pytest.raises(ValueError, match="link"):
+        migrate_packet(packet, target_schema="flywheel.evidence-packet/v2", out_root=out)
+
+    assert list(outside.iterdir()) == []
+
+
+def test_packet_migration_rejects_a_symlinked_destination_component(tmp_path):
+    """Following a nested link would copy a source member outside out_root."""
+    packet, out, outside = _packet(tmp_path), tmp_path / "derived", tmp_path / "outside"
+    target = out / DERIVED_REF
+    target.mkdir(parents=True)
+    outside.mkdir()
+    _directory_link(target / "raw", outside)
+
+    with pytest.raises(ValueError, match="link"):
+        migrate_packet(packet, target_schema="flywheel.evidence-packet/v2", out_root=out)
+
+    assert list(outside.iterdir()) == []
 
 
 def test_store_migration_writes_backup_and_journal_before_pointer_and_is_idempotent(

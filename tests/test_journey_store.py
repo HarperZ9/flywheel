@@ -5,7 +5,7 @@ from threading import Barrier, Event
 
 import pytest
 
-from harness.evidence_json import canonical_sha256
+from harness.evidence_json import canonical_bytes, canonical_sha256
 from harness.journey_store import JourneyStore, JourneyStoreError, MutationCommand
 from harness.journey_lock import ExclusiveJourneyLock
 
@@ -46,6 +46,14 @@ def _stored_events(root):
             for path in sorted((_journey_dir(root) / "events").glob("*.json"))]
 
 
+def _write_version(root, version):
+    path = root / "journeys" / "version.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(canonical_bytes({
+        "schema": "flywheel.evidence-journey-store-version/v1", "version": version,
+    }))
+
+
 def test_create_persists_a_hash_bound_head_projection_and_event(tmp_path):
     """Removing any durable artifact or hash binding must break a reopened load."""
     store = JourneyStore(tmp_path)
@@ -72,6 +80,29 @@ def test_create_persists_a_hash_bound_head_projection_and_event(tmp_path):
         "operation": command.operation, "body": command.body,
     })
     assert b"create-1" not in b"".join(path.read_bytes() for path in journey_dir.rglob("*.*"))
+
+
+def test_create_refuses_a_newer_store_before_creating_v2_state(tmp_path):
+    """Skipping the version check would write a v2 genesis into a newer layout."""
+    _write_version(tmp_path, 3)
+    with pytest.raises(JourneyStoreError) as failure:
+        JourneyStore(tmp_path).create(_create_command())
+    assert failure.value.code == str(failure.value) == "VERSION_MISMATCH"
+    assert not (tmp_path / "journeys" / "v2").exists()
+
+
+def test_append_refuses_a_newer_store_without_changing_committed_bytes(tmp_path):
+    """Checking only create would still let append corrupt a newer layout."""
+    genesis = JourneyStore(tmp_path).create(_create_command())
+    _write_version(tmp_path, 3)
+    before = {path.relative_to(tmp_path): path.read_bytes()
+              for path in tmp_path.rglob("*") if path.is_file()}
+    with pytest.raises(JourneyStoreError) as failure:
+        JourneyStore(tmp_path).append(_append_command(genesis.event_head_sha256))
+    after = {path.relative_to(tmp_path): path.read_bytes()
+             for path in tmp_path.rglob("*") if path.is_file()}
+    assert failure.value.code == str(failure.value) == "VERSION_MISMATCH"
+    assert after == before
 
 
 def test_same_idempotency_key_replays_only_the_identical_canonical_request(tmp_path):
