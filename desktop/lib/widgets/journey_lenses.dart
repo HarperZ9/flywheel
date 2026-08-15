@@ -98,6 +98,7 @@ class _JourneyLensSelectorState extends State<JourneyLensSelector> {
         button: true,
         selected: selected,
         enabled: widget.enabled,
+        onTap: widget.enabled ? () => widget.onSelected(lens) : null,
         excludeSemantics: true,
         child: OutlinedButton.icon(
           key: ValueKey('journey-lens-${lens.name}'),

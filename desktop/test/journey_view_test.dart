@@ -45,6 +45,8 @@ JourneyProjection viewProjection({
 }) {
   final empty = shape == 'empty';
   final unchecked = shape == 'unchecked';
+  final partialConclusion = shape == 'partial-conclusion';
+  final emptyConclusion = shape == 'empty-conclusion';
   return JourneyProjection.fromJson({
     'schema': 'flywheel.evidence-journey-projection/v2',
     'journey_ref': journeyA,
@@ -81,10 +83,15 @@ JourneyProjection viewProjection({
     'stage': 'running',
     'conclusion': empty
         ? null
-        : const {
-            'summary': 'Evidence remains incomplete.',
-            'does_not_prove': 'This conclusion does not prove optimality.',
-          },
+        : emptyConclusion
+            ? const {'summary': '', 'does_not_prove': ''}
+            : partialConclusion
+                ? const {'summary': 'Evidence remains incomplete.'}
+                : const {
+                    'summary': 'Evidence remains incomplete.',
+                    'does_not_prove':
+                        'This conclusion does not prove optimality.',
+                  },
     'next_actions': empty || unchecked
         ? const []
         : const [

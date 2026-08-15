@@ -9,13 +9,14 @@ import 'package:flywheel_desktop/widgets/journey_cards.dart';
 import 'package:flywheel_desktop/widgets/journey_lenses.dart';
 
 import 'journey_view_test.dart';
-import 'journey_controller_test.dart' show headA;
+import 'journey_controller_test.dart' show headA, journeyA;
 
 void main() {
   _semanticsAndFocusTests();
   _keyboardTests();
   _motionAndNarrowTests();
   _nullTests();
+  _conclusionNullTests();
 }
 
 void _semanticsAndFocusTests() {
@@ -30,6 +31,17 @@ void _semanticsAndFocusTests() {
     ];
     expect(nodes.every((node) => node.flagsCollection.isButton), isTrue);
     expect(
+      tester.getSemantics(find.bySemanticsLabel('Diagnose')),
+      matchesSemantics(
+        label: 'Diagnose',
+        isButton: true,
+        hasSelectedState: true,
+        hasEnabledState: true,
+        isEnabled: true,
+        hasTapAction: true,
+      ),
+    );
+    expect(
         nodes.where(
             (node) => node.flagsCollection.isSelected == Tristate.isTrue),
         hasLength(1));
@@ -39,6 +51,16 @@ void _semanticsAndFocusTests() {
     ];
     expect(widths.toSet(), hasLength(1));
     expect(find.bySemanticsLabel('Event head $headA'), findsOneWidget);
+    harness.api.reply('resume:$journeyA:diagnose',
+        viewProjection(lens: JourneyLens.diagnose));
+    tester.semantics.tap(find.semantics.byLabel('Diagnose'));
+    await tester.pumpAndSettle();
+    expect(
+        tester
+            .getSemantics(find.bySemanticsLabel('Diagnose'))
+            .flagsCollection
+            .isSelected,
+        Tristate.isTrue);
     semantics.dispose();
   });
 
@@ -168,6 +190,30 @@ void _nullTests() {
         find.text('No verdict was supplied for this check.'), findsOneWidget);
     expect(find.text('No receipt state was supplied for this check.'),
         findsOneWidget);
+  });
+}
+
+void _conclusionNullTests() {
+  testWidgets('partial and empty conclusions render exact honest nulls',
+      (tester) async {
+    await tester.pumpWidget(MaterialApp(
+      theme: flywheelLightTheme(),
+      home: SingleChildScrollView(
+        child: Column(children: [
+          JourneyCoreCard(
+              projection: viewProjection(shape: 'partial-conclusion')),
+          JourneyCoreCard(
+              projection: viewProjection(shape: 'empty-conclusion')),
+        ]),
+      ),
+    ));
+    expect(find.text('Evidence remains incomplete.'), findsOneWidget);
+    expect(find.text('No conclusion summary was supplied in this projection.'),
+        findsOneWidget);
+    expect(
+        find.text(
+            'No conclusion does_not_prove limit was supplied in this projection.'),
+        findsNWidgets(2));
   });
 }
 

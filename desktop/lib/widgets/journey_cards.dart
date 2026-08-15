@@ -25,6 +25,8 @@ class JourneyCoreCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final conclusion = projection.conclusion;
+    final summary = conclusion?['summary'];
+    final limit = conclusion?['does_not_prove'];
     return HairlineCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -59,15 +61,17 @@ class JourneyCoreCard extends StatelessWidget {
           if (conclusion == null)
             const HonestNull('No conclusion was supplied in this projection.')
           else ...[
-            LabeledValue(
-                'Conclusion',
-                conclusion['summary'] ??
-                    'No conclusion summary was supplied in this projection.'),
+            if (summary?.isNotEmpty ?? false)
+              LabeledValue('Conclusion', summary!)
+            else
+              const HonestNull(
+                  'No conclusion summary was supplied in this projection.'),
             const SizedBox(height: FwLayout.s2),
-            LabeledValue(
-                'Conclusion does_not_prove',
-                conclusion['does_not_prove'] ??
-                    'No conclusion does_not_prove limit was supplied in this projection.'),
+            if (limit?.isNotEmpty ?? false)
+              LabeledValue('Conclusion does_not_prove', limit!)
+            else
+              const HonestNull(
+                  'No conclusion does_not_prove limit was supplied in this projection.'),
           ],
         ],
       ),
