@@ -20,6 +20,17 @@ import os
 import threading
 from dataclasses import asdict, dataclass
 from pathlib import Path
+from uuid import uuid4
+
+from .journey_lock import ExclusiveJourneyLock, JourneyLockBusy, fsync_directory
+
+
+class RouterStatsError(RuntimeError):
+    """Fixed, host-detail-free failure for durable stats writes."""
+
+    def __init__(self, code: str) -> None:
+        self.code = code
+        super().__init__(code)
 
 
 @dataclass
@@ -44,10 +55,11 @@ class RouterStats:
     is optional; when absent every provider costs 1, so ordering is by quality."""
 
     def __init__(self, path=None, *, cost: "dict | None" = None,
-                 circuit_threshold: int = 3):
+                 circuit_threshold: int = 3, lock_timeout_s: float = 2.0):
         self.path = Path(path) if path else None
         self.cost = dict(cost or {})
         self.circuit_threshold = circuit_threshold
+        self.lock_timeout_s = lock_timeout_s
         self.stats: "dict[str, ProviderStat]" = {}
         # the gateway serves via ThreadingHTTPServer, so record() runs
         # concurrently from request threads: guard the table and the write
@@ -61,13 +73,20 @@ class RouterStats:
         except (json.JSONDecodeError, OSError):
             # a truncated / interleaved file must not be fatal: quarantine it
             # and start clean rather than crashing every route from then on
+            self.stats = {}
             try:
                 self.path.replace(self.path.with_suffix(".corrupt"))
             except OSError:
                 pass
             return
+        loaded = {}
         for name, d in (raw.get("providers") or {}).items():
-            self.stats[name] = ProviderStat(**{k: d[k] for k in ProviderStat.__dataclass_fields__ if k in d})
+            loaded[name] = ProviderStat(**{
+                k: d[k] for k in ProviderStat.__dataclass_fields__ if k in d})
+        self.stats = loaded
+
+    def _lock_path(self) -> Path:
+        return self.path.with_name(f".{self.path.name}.lock")
 
     def _save(self) -> None:
         if not self.path:
@@ -75,22 +94,49 @@ class RouterStats:
         self.path.parent.mkdir(parents=True, exist_ok=True)
         # atomic: write a temp file then os.replace, so a concurrent reader or
         # a crash mid-write never sees a torn stats file
-        tmp = self.path.with_suffix(".tmp")
-        tmp.write_text(json.dumps(self.snapshot(), sort_keys=True), encoding="utf-8")
-        os.replace(tmp, self.path)
+        tmp = self.path.with_name(
+            f".{self.path.name}.{os.getpid()}.{threading.get_ident()}.{uuid4().hex}.tmp")
+        try:
+            with tmp.open("xb") as stream:
+                stream.write(json.dumps(self.snapshot(), sort_keys=True).encode("utf-8"))
+                stream.flush()
+                os.fsync(stream.fileno())
+            os.replace(tmp, self.path)
+            with self.path.open("r+b") as stream:
+                os.fsync(stream.fileno())
+            fsync_directory(self.path.parent)
+        finally:
+            try:
+                tmp.unlink()
+            except FileNotFoundError:
+                pass
+
+    def _record_locked(self, endpoint: str, ok: bool, latency: float) -> None:
+        s = self.stats.setdefault(endpoint, ProviderStat())
+        s.attempts += 1
+        s.total_latency += max(0.0, latency)
+        if ok:
+            s.successes += 1
+            s.consecutive_failures = 0
+        else:
+            s.failures += 1
+            s.consecutive_failures += 1
 
     def record(self, endpoint: str, ok: bool, latency: float = 0.0) -> None:
         with self._lock:
-            s = self.stats.setdefault(endpoint, ProviderStat())
-            s.attempts += 1
-            s.total_latency += max(0.0, latency)
-            if ok:
-                s.successes += 1
-                s.consecutive_failures = 0
-            else:
-                s.failures += 1
-                s.consecutive_failures += 1
-            self._save()
+            if not self.path:
+                self._record_locked(endpoint, ok, latency)
+                return
+            try:
+                with ExclusiveJourneyLock.acquire(self._lock_path(), self.lock_timeout_s):
+                    if self.path.exists():
+                        self._load()
+                    self._record_locked(endpoint, ok, latency)
+                    self._save()
+            except JourneyLockBusy:
+                raise RouterStatsError("STORE_BUSY") from None
+            except (OSError, ValueError, TypeError):
+                raise RouterStatsError("STORE_COMMIT_FAILED") from None
 
     def score(self, endpoint: str) -> float:
         """Higher is better. The quality term is the WILSON LOWER BOUND of the

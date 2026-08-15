@@ -7,6 +7,9 @@ Success criteria:
   - order() puts the best provider first and circuit-open ones last.
   - stats persist across instances (JSON round-trip).
 """
+import pytest
+
+import harness.router_stats as router_stats
 from harness.router_stats import RouterStats
 
 
@@ -79,6 +82,41 @@ def test_stats_persist_across_instances(tmp_path):
     reloaded = RouterStats(p)
     assert reloaded.stats["a"].attempts == 2
     assert reloaded.snapshot()["providers"]["a"]["success_rate"] == 0.5
+
+
+def test_shared_stats_tmp_race_is_not_fatal_across_instances(tmp_path, monkeypatch):
+    """A second writer moving stats.tmp must not make the first writer fail."""
+    p = tmp_path / "stats.json"
+    first = RouterStats(p)
+    second = RouterStats(p)
+    real_replace = router_stats.os.replace
+    raced = False
+
+    def interleave_shared_tmp(source, target):
+        nonlocal raced
+        if not raced and router_stats.Path(source).name == "stats.tmp":
+            raced = True
+            second.record("b", True)
+        return real_replace(source, target)
+
+    monkeypatch.setattr(router_stats.os, "replace", interleave_shared_tmp)
+    first.record("a", True)
+    if not raced:
+        second.record("b", True)
+    reloaded = RouterStats(p)
+    assert reloaded.stats["a"].attempts == 1
+    assert reloaded.stats["b"].attempts == 1
+
+
+def test_lock_contention_has_a_fixed_retryable_failure(tmp_path, monkeypatch):
+    """A busy cross-process stats writer must surface STORE_BUSY without host detail."""
+    def busy(*_args, **_kwargs):
+        raise router_stats.JourneyLockBusy()
+
+    monkeypatch.setattr(router_stats.ExclusiveJourneyLock, "acquire", busy)
+    with pytest.raises(router_stats.RouterStatsError) as failure:
+        RouterStats(tmp_path / "stats.json").record("a", True)
+    assert failure.value.code == str(failure.value) == "STORE_BUSY"
 
 
 def test_persistence_is_atomic_and_thread_safe(tmp_path):
