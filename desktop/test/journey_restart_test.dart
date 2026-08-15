@@ -1,26 +1,26 @@
 import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:flywheel_desktop/client/journey_api.dart';
 import 'package:flywheel_desktop/controllers/journey_controller.dart';
 import 'package:flywheel_desktop/models/journey_models.dart';
 import 'package:flywheel_desktop/services/journey_draft_store.dart';
 import 'package:flywheel_desktop/services/journey_session_store.dart';
 import 'journey_controller_test.dart';
 
-JourneyCancelResult _cancelResult({String state = 'cancelled'}) =>
+JourneyCancelResult cancelResult({String state = 'cancelled'}) =>
     JourneyCancelResult.fromJson({
       'operation_ref': operationA,
       'state': state,
       'event_head_sha256': headB,
       'terminal_event_ref': headB,
     });
+JourneyController _restart(ControllerHarness h, ScriptedJourneyApi api) =>
+    JourneyController(api: api, draftStore: h.drafts, sessionStore: h.sessions);
 void main() {
   _restartTests();
   _readTests();
   _retryTests();
   _ackTests();
   _grantTests();
-  _failureTests();
 }
 
 void _restartTests() {
@@ -36,10 +36,7 @@ void _restartTests() {
     api
       ..reply(
           'resume:$journeyA:diagnose', projection(lens: JourneyLens.diagnose))
-      ..reply(
-          'list',
-          JourneyApiException(JourneyFailure(
-              'STORE_BUSY', 'Journey persistence is busy', const [])));
+      ..reply('list', failure('STORE_BUSY'));
     await harness.controller.initialize();
     expect(harness.controller.state.activeJourneyRef, journeyA);
     expect(harness.controller.state.selectedLens, JourneyLens.diagnose);
@@ -51,12 +48,9 @@ void _restartTests() {
     final api = ScriptedJourneyApi();
     final harness = ControllerHarness(api);
     addTearDown(harness.dispose);
-    final item = draft('create');
-    harness.controller.saveDraft(item);
+    final item = harness.save(draft('create'));
     api
-      ..reply('prepare', proposal('create'))
-      ..reply('approve', approval())
-      ..reply('create', acknowledgement())
+      ..mutation('create', acknowledgement())
       ..reply('resume:$journeyA:verify', projection(head: headB));
     await harness.controller.submitStart(item);
     expect(harness.drafts.list(), isEmpty);
@@ -67,21 +61,43 @@ void _restartTests() {
     final restartApi = ScriptedJourneyApi()
       ..reply('resume:$journeyA:verify', projection(head: headB))
       ..reply('list', <JourneySummary>[projection(head: headB)]);
-    final restarted = JourneyController(
-        api: restartApi,
-        draftStore: harness.drafts,
-        sessionStore: harness.sessions);
+    final restarted = _restart(harness, restartApi);
     await restarted.initialize();
     expect(restarted.state.projection?.eventHeadSha256, headB);
   });
+  for (final failedSelection in const [false, true]) {
+    final state = failedSelection ? 'failed' : 'completed';
+    test('create supersedes a $state selection intent',
+        () => _createAfterSelection(failedSelection));
+  }
+}
+
+Future<void> _createAfterSelection(bool failed) async {
+  final (api, harness) = await ready();
+  api.reply(
+      'resume:$journeyA:diagnose',
+      failed
+          ? failure('INVALID_RESPONSE')
+          : projection(lens: JourneyLens.diagnose));
+  await harness.controller.selectLens(JourneyLens.diagnose);
+  final lens = failed ? JourneyLens.verify : JourneyLens.diagnose;
+  final item = harness.save(draft('create'));
+  api
+    ..mutation('create', acknowledgement(journeyRef: journeyB))
+    ..reply('resume:$journeyB:${lens.name}',
+        projection(journeyRef: journeyB, head: headB, lens: lens));
+  await harness.controller.submitStart(item);
+  final view = harness.controller.state;
+  expect([view.phase, view.activeJourneyRef, view.projection?.journeyRef],
+      [JourneyViewPhase.ready, journeyB, journeyB]);
+  expect(harness.sessions.load()?.journeyRef, journeyB);
+  expect(harness.drafts.list(), isEmpty);
 }
 
 void _readTests() {
   test('lens accepts equal evidence and rejects wrong ref or core drift',
       () async {
-    final api = ScriptedJourneyApi();
-    final harness = await readyHarness(api);
-    addTearDown(harness.dispose);
+    final (api, harness) = await ready();
     api.reply(
         'resume:$journeyA:diagnose', projection(lens: JourneyLens.diagnose));
     await harness.controller.selectLens(JourneyLens.diagnose);
@@ -98,9 +114,7 @@ void _readTests() {
     expect(harness.controller.state.selectedLens, JourneyLens.diagnose);
   });
   test('newer Journey selection wins over an older resume response', () async {
-    final api = ScriptedJourneyApi();
-    final harness = await readyHarness(api);
-    addTearDown(harness.dispose);
+    final (api, harness) = await ready();
     final older = Completer<JourneyProjection>();
     api
       ..reply('resume:$journeyA:verify', older.future)
@@ -117,15 +131,9 @@ void _readTests() {
 
 void _retryTests() {
   test('restart retry preserves request and attempted head', () async {
-    final firstApi = ScriptedJourneyApi();
-    final harness = await readyHarness(firstApi);
-    addTearDown(harness.dispose);
-    final item = draft('append');
-    harness.controller.saveDraft(item);
-    firstApi.reply(
-        'prepare',
-        JourneyApiException(JourneyFailure(
-            'STORE_BUSY', 'Journey persistence is busy', const [])));
+    final (firstApi, harness) = await ready();
+    final item = harness.save(draft('append'));
+    firstApi.reply('prepare', failure('STORE_BUSY'));
     await harness.controller.submitAppend(item);
     final retained = harness.drafts.list().single;
     expect(retained.baseEventHeadSha256, headA);
@@ -133,32 +141,19 @@ void _retryTests() {
     final retryApi = ScriptedJourneyApi()
       ..reply('resume:$journeyA:verify', projection(head: headB))
       ..reply('list', <JourneySummary>[projection(head: headB)])
-      ..reply('prepare', proposal('append'))
-      ..reply('approve', approval())
-      ..reply('append', acknowledgement())
+      ..mutation('append', acknowledgement())
       ..reply('resume:$journeyA:verify', projection(head: headB));
-    final restarted = JourneyController(
-        api: retryApi,
-        draftStore: harness.drafts,
-        sessionStore: harness.sessions);
+    final restarted = _restart(harness, retryApi);
     await restarted.initialize();
     await restarted.submitAppend(restarted.state.drafts.single);
     expect(retryApi.appendRequests.single.expectedEventHead, headA);
     expect(retryApi.appendRequests.single.clientRequestId, 'request-append');
   });
   test('head conflict rebases retained draft without deletion', () async {
-    final api = ScriptedJourneyApi();
-    final harness = await readyHarness(api);
-    addTearDown(harness.dispose);
-    final item = draft('append');
-    harness.controller.saveDraft(item);
+    final (api, harness) = await ready();
+    final item = harness.save(draft('append'));
     api
-      ..reply('prepare', proposal('append'))
-      ..reply('approve', approval())
-      ..reply(
-          'append',
-          JourneyApiException(JourneyFailure(
-              'HEAD_CONFLICT', 'Journey state changed', const [])))
+      ..mutation('append', failure('HEAD_CONFLICT'))
       ..reply('resume:$journeyA:verify', projection(head: headB));
     await harness.controller.submitAppend(item);
     final retained = harness.drafts.list().single;
@@ -168,21 +163,23 @@ void _retryTests() {
     expect(harness.controller.state.recoveryActions,
         {JourneyRecoveryAction.retrySameRequest});
   });
+  test('dirty draft uses current head, not stale base', () async {
+    final (api, harness) = await ready();
+    final item = harness.save(draft('append', baseHead: headB));
+    api.mutation('append', failure('STORE_BUSY'));
+    await harness.controller.submitAppend(item);
+    expect(api.appendRequests.single.expectedEventHead, headA);
+    expect(harness.drafts.list().single.baseEventHeadSha256, headA);
+  });
 }
 
 void _ackTests() {
   test('edited draft survives ack and terminal cancel uses exact result',
       () async {
-    final api = ScriptedJourneyApi();
-    final harness = await readyHarness(api);
-    addTearDown(harness.dispose);
-    final item = draft('append');
-    harness.controller.saveDraft(item);
+    final (api, harness) = await ready();
+    final item = harness.save(draft('append'));
     final pending = Completer<JourneyMutationAck>();
-    api
-      ..reply('prepare', proposal('append'))
-      ..reply('approve', approval())
-      ..reply('append', pending.future);
+    api.mutation('append', pending.future);
     final submit = harness.controller.submitAppend(item);
     while (api.appendRequests.isEmpty) {
       await Future<void>.delayed(Duration.zero);
@@ -207,9 +204,7 @@ void _ackTests() {
     expect(
         api.calls, ['prepare', 'approve', 'append', 'resume:$journeyA:verify']);
     api
-      ..reply('prepare', proposal('cancel'))
-      ..reply('approve', approval())
-      ..reply('cancel', _cancelResult())
+      ..mutation('cancel', cancelResult())
       ..reply('resume:$journeyA:verify', projection(head: headB));
     await harness.controller.requestCancel(operationA);
     expect(harness.controller.state.cancelResult?.operationState,
@@ -220,21 +215,41 @@ void _ackTests() {
     await harness.controller.selectLens(JourneyLens.diagnose);
     expect(harness.controller.state.activeOperationRef, operationA);
     expect(harness.controller.state.cancelResult, isNotNull);
-    api
-      ..reply('prepare', proposal('cancel'))
-      ..reply('approve', approval())
-      ..reply('cancel', _cancelResult(state: 'running'));
+    api.mutation('cancel', cancelResult(state: 'running'));
     await harness.controller.requestCancel(operationA);
     expect(harness.controller.state.remoteFailure?.code, 'INVALID_RESPONSE');
     expect(harness.controller.state.cancelResult, isNull);
   });
+  for (final kind in const ['append', 'check']) {
+    test('$kind acknowledged refresh failure never replays after restart',
+        () => _ackRefreshRestart(kind));
+  }
+}
+
+Future<void> _ackRefreshRestart(String kind) async {
+  final (api, harness) = await ready();
+  final item = harness.save(draft(kind));
+  api
+    ..mutation(kind,
+        acknowledgement(operationRef: kind == 'check' ? operationA : null),
+        operationRef: kind == 'check' ? operationA : null)
+    ..reply('resume:$journeyA:verify', failure('STORE_BUSY'));
+  await harness.submit(kind, item);
+  expect(harness.drafts.list(), isEmpty);
+  expect(harness.controller.state.recoveryActions,
+      {JourneyRecoveryAction.refreshProjection});
+  final restartApi = ScriptedJourneyApi()
+    ..reply('resume:$journeyA:verify', projection(head: headB))
+    ..reply('list', <JourneySummary>[projection(head: headB)]);
+  final restarted = _restart(harness, restartApi);
+  await restarted.initialize();
+  expect(restarted.state.projection?.eventHeadSha256, headB);
+  expect(restarted.state.drafts, isEmpty);
 }
 
 void _grantTests() {
   test('grant and acknowledgement mismatches retain the exact draft', () async {
-    final api = ScriptedJourneyApi();
-    final harness = await readyHarness(api);
-    addTearDown(harness.dispose);
+    final (api, harness) = await ready();
     harness.controller.saveDraft(draft('append'));
     api.reply('prepare', proposal('check', operationRef: operationA));
     await harness.controller.submitAppend(harness.drafts.list().single);
@@ -245,21 +260,13 @@ void _grantTests() {
       ..reply('approve', approval(grantRef: otherGrant));
     await harness.controller.submitAppend(harness.drafts.list().single);
     expect(api.appendRequests, isEmpty);
-    api
-      ..reply('prepare', proposal('append'))
-      ..reply('approve', approval())
-      ..reply('append', acknowledgement(journeyRef: journeyB));
+    api.mutation('append', acknowledgement(journeyRef: journeyB));
     await harness.controller.submitAppend(harness.drafts.list().single);
     expect(harness.drafts.list(), hasLength(1));
     expect(harness.controller.state.remoteFailure?.code, 'INVALID_RESPONSE');
   });
-}
-
-void _failureTests() {
   test('fixed remote failures expose exact recovery actions', () async {
-    final api = ScriptedJourneyApi();
-    final harness = await readyHarness(api);
-    addTearDown(harness.dispose);
+    final (api, harness) = await ready();
     harness.controller.saveDraft(draft('append'));
     const retry = {JourneyRecoveryAction.retrySameRequest};
     const review = {JourneyRecoveryAction.reviewDraft};
@@ -282,8 +289,7 @@ void _failureTests() {
     };
     final preserved = harness.controller.state.projection;
     for (final entry in cases.entries) {
-      final failure = JourneyFailure(entry.key, 'Fixed detail', const []);
-      api.reply('prepare', JourneyApiException(failure));
+      api.reply('prepare', failure(entry.key));
       await harness.controller.submitAppend(harness.drafts.list().single);
       expect(harness.controller.state.phase, entry.value.$1);
       expect(harness.controller.state.recoveryActions, entry.value.$2);

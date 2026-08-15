@@ -13,6 +13,8 @@ const headA =
     'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
 const headB =
     'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
+const headC =
+    'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc';
 const operationA = 'op_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
 const proposalA = 'prp_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
 const grantA = 'gnt_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
@@ -72,10 +74,12 @@ JourneyMutationAck acknowledgement({
       'idempotent_replay': false,
       if (operationRef != null) 'operation_ref': operationRef,
       if (includeOperationState && operationRef != null)
-        'state': operationState ?? 'completed'
-      else if (operationState != null)
+        'state': operationState ?? 'completed',
+      if (operationRef == null && operationState != null)
         'state': operationState,
     });
+JourneyApiException failure(String code) =>
+    JourneyApiException(JourneyFailure(code, 'Fixed failure detail', const []));
 JourneyDraft draft(String kind,
     {String ref = 'dft_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
     String? journeyRef = journeyA,
@@ -118,6 +122,12 @@ class ScriptedJourneyApi implements JourneyApi {
   final List<JourneyCancelRequest> cancelRequests = [];
   void reply(String name, Object value) =>
       replies.putIfAbsent(name, () => []).add(value);
+  void mutation(String action, Object result, {String? operationRef}) {
+    reply('prepare', proposal(action, operationRef: operationRef));
+    reply('approve', approval());
+    reply(action, result);
+  }
+
   Future<void> waitFor(String call) async {
     while (!calls.contains(call)) {
       await Future<void>.delayed(Duration.zero);
@@ -188,11 +198,23 @@ class ControllerHarness {
   late final JourneyDraftStore drafts;
   late final JourneySessionStore sessions;
   late final JourneyController controller;
+  JourneyDraft save(JourneyDraft item) {
+    controller.saveDraft(item);
+    return item;
+  }
+
+  Future<void> submit(String kind, JourneyDraft item) => switch (kind) {
+        'check' => controller.runCheck(JourneyCheckDraft.fromDraft(item)),
+        'cancel' => controller.requestCancel(operationA),
+        _ => controller.submitAppend(item),
+      };
+
   void dispose() => directory.deleteSync(recursive: true);
 }
 
 Future<ControllerHarness> readyHarness(ScriptedJourneyApi api) async {
   final harness = ControllerHarness(api);
+  addTearDown(harness.dispose);
   harness.sessions
       .save(JourneySession(journeyRef: journeyA, lens: JourneyLens.verify));
   api.reply('resume:$journeyA:verify', projection());
@@ -202,6 +224,11 @@ Future<ControllerHarness> readyHarness(ScriptedJourneyApi api) async {
   return harness;
 }
 
+Future<(ScriptedJourneyApi, ControllerHarness)> ready() async {
+  final api = ScriptedJourneyApi();
+  return (api, await readyHarness(api));
+}
+
 void main() {
   _contractTests();
   _mutationTests();
@@ -209,15 +236,10 @@ void main() {
 
 void _contractTests() {
   test('append preserves request and deletes only on ack', () async {
-    final api = ScriptedJourneyApi();
-    final harness = await readyHarness(api);
-    addTearDown(harness.dispose);
-    final item = draft('append');
-    harness.controller.saveDraft(item);
+    final (api, harness) = await ready();
+    final item = harness.save(draft('append'));
     api
-      ..reply('prepare', proposal('append'))
-      ..reply('approve', approval())
-      ..reply('append', acknowledgement())
+      ..mutation('append', acknowledgement())
       ..reply('resume:$journeyA:verify', projection(head: headB));
     await harness.controller.submitAppend(item);
     expect(
@@ -233,15 +255,11 @@ void _contractTests() {
 
 void _mutationTests() {
   test('check binds exact fields and operation refs', () async {
-    final api = ScriptedJourneyApi();
-    final harness = await readyHarness(api);
-    addTearDown(harness.dispose);
-    final item = draft('check');
-    harness.controller.saveDraft(item);
+    final (api, harness) = await ready();
+    final item = harness.save(draft('check'));
     api
-      ..reply('prepare', proposal('check', operationRef: operationA))
-      ..reply('approve', approval())
-      ..reply('check', acknowledgement(operationRef: operationA))
+      ..mutation('check', acknowledgement(operationRef: operationA),
+          operationRef: operationA)
       ..reply('resume:$journeyA:verify', projection(head: headB));
     await harness.controller.runCheck(JourneyCheckDraft.fromDraft(item));
     final request = api.checkRequests.single;
@@ -253,24 +271,17 @@ void _mutationTests() {
     expect(harness.drafts.list(), isEmpty);
   });
   test('mutations are FIFO and typed failures preserve projection', () async {
-    final api = ScriptedJourneyApi();
-    final harness = await readyHarness(api);
-    addTearDown(harness.dispose);
+    final (api, harness) = await ready();
     final blocked = Completer<GrantProposal>();
-    final first = draft('append');
-    final second = draft('append', ref: 'dft_bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb');
-    harness.controller
-      ..saveDraft(first)
-      ..saveDraft(second);
+    final first = harness.save(draft('append'));
+    final second = harness
+        .save(draft('append', ref: 'dft_bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb'));
     api
       ..reply('prepare', blocked.future)
       ..reply('approve', approval())
       ..reply('append', acknowledgement())
       ..reply('resume:$journeyA:verify', projection(head: headB))
-      ..reply(
-          'prepare',
-          JourneyApiException(JourneyFailure(
-              'AUTH_REQUIRED', 'Journey authorization is required', const [])));
+      ..reply('prepare', failure('AUTH_REQUIRED'));
     final one = harness.controller.submitAppend(first);
     final two = harness.controller.submitAppend(second);
     await Future<void>.delayed(Duration.zero);

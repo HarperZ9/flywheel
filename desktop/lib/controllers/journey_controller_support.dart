@@ -26,7 +26,8 @@ const _retry = JourneyRecoveryAction.retrySameRequest;
 const _refresh = JourneyRecoveryAction.refreshProjection;
 const _auth = JourneyRecoveryAction.authenticate;
 const _review = JourneyRecoveryAction.reviewDraft;
-
+const _reviewOnly = {_review};
+const _acknowledgedActions = {_review, _refresh};
 typedef JourneyViewState = ({
   JourneyViewPhase phase,
   JourneyLens selectedLens,
@@ -40,12 +41,9 @@ typedef JourneyViewState = ({
   Set<JourneyRecoveryAction> recoveryActions,
   JourneyCancelResult? cancelResult,
 });
-
 extension type const JourneyCheckDraft._(JourneyDraft draft) {
   factory JourneyCheckDraft.fromDraft(JourneyDraft draft) {
-    if (!_validDraft(draft, _M.check)) {
-      throw const JourneyLocalStoreException(JourneyLocalFailure.invalidRecord);
-    }
+    _validLocal(_validDraft(draft, _M.check));
     return JourneyCheckDraft._(draft);
   }
   String get clientRequestId => draft.payload['client_request_id'] as String;
@@ -58,6 +56,16 @@ extension type const JourneyCheckDraft._(JourneyDraft draft) {
 enum _M { create, append, check }
 
 typedef _Target = ({int epoch, String? ref, JourneyLens lens});
+typedef _Ack = ({int generation, String ref, String head});
+String _t(JourneyDraft draft, String key) => draft.payload[key] as String;
+
+final class _Acks {
+  final Map<String, _Ack> _v = {};
+  var _g = 0;
+  _Ack add(String r, String h) => _v[r] = (generation: ++_g, ref: r, head: h);
+  _Ack? forRef(String r) => _v[r];
+  bool take(_Ack a) => _v[a.ref] == a && _v.remove(a.ref) != null;
+}
 
 final class _View {
   _View(this._notify);
@@ -77,9 +85,7 @@ final class _View {
   JourneyCancelResult? get cancelResult => _cancelResult;
   set cancelResult(JourneyCancelResult? v) => _changed(_cancelResult = v);
   void _changed(Object? _) => _notify();
-  bool get canSelect => projection != null && ref != null;
-  bool hasRef(String? value) =>
-      projection != null && projection!.journeyRef == value;
+  bool hasRef(String? v) => v != null && projection?.journeyRef == v;
   JourneyViewState get snapshot => (
         phase: phase,
         selectedLens: lens,
@@ -105,6 +111,7 @@ final class _View {
 
   void initialized(JourneyProjection? resumed, List<JourneySummary> listed,
       JourneyFailure? failure) {
+    _accept(resumed == null || resumed.journeyRef == ref);
     projection = resumed;
     journeys = List.unmodifiable(listed);
     phase = resumed != null || ref == null
@@ -131,42 +138,39 @@ final class _View {
     _notify();
   }
 
-  void remote(JourneyFailure failure) =>
-      _failed(failure, _failurePhase(failure), _actions(failure));
-  void local(JourneyLocalFailure failure, {bool acknowledged = false}) =>
-      _failed(failure, JourneyViewPhase.failed,
-          acknowledged ? const {_review, _refresh} : const {_review});
-  void acknowledgedRef(String value) {
-    _bind(value);
+  void remote(JourneyFailure failure,
+      {JourneyViewPhase? phase, Set<JourneyRecoveryAction>? actions}) {
+    this.phase = phase ?? _failurePhase(failure);
+    errors = (failure, null, actions ?? _actions(failure));
     _notify();
   }
 
+  void local(JourneyLocalFailure failure, {bool acknowledged = false}) {
+    phase = JourneyViewPhase.failed;
+    errors = (null, failure, acknowledged ? _acknowledgedActions : _reviewOnly);
+    _notify();
+  }
+
+  void acknowledgedRef(String value) => _changed(_bind(value));
+
   void conflict(JourneyFailure failure, JourneyProjection? refreshed) {
+    _accept(refreshed == null || refreshed.journeyRef == ref);
     projection = refreshed ?? projection;
     phase = JourneyViewPhase.conflicted;
     errors = (failure, null, {if (refreshed == null) _refresh, _retry});
     _notify();
   }
 
-  void refreshFailed(JourneyFailure failure) =>
-      _failed(failure, JourneyViewPhase.failed, const {_refresh});
-  void _bind(String value) {
-    if (value == ref) return;
+  void refreshFailed(JourneyFailure failure) => remote(failure,
+      phase: JourneyViewPhase.failed, actions: const {_refresh});
+
+  String _bind(String value) {
+    if (value == ref) return value;
     ref = value;
     projection = null;
     _operation = null;
     _cancelResult = null;
-  }
-
-  void _failed(Object failure, JourneyViewPhase value,
-      Set<JourneyRecoveryAction> actions) {
-    phase = value;
-    errors = (
-      failure is JourneyFailure ? failure : null,
-      failure is JourneyLocalFailure ? failure : null,
-      actions
-    );
-    _notify();
+    return value;
   }
 }
 
@@ -180,9 +184,7 @@ final class _Custody {
   void saveSession(String ref, JourneyLens lens) =>
       sessions.save(JourneySession(journeyRef: ref, lens: lens));
   JourneyDraft attempt(JourneyDraft source, _M kind, String? currentHead) {
-    if (!_validDraft(source, kind)) {
-      throw const JourneyLocalStoreException(JourneyLocalFailure.invalidRecord);
-    }
+    _validLocal(_validDraft(source, kind));
     final head = kind == _M.create
         ? null
         : switch (source.state) {
@@ -192,9 +194,7 @@ final class _Custody {
               source.baseEventHeadSha256,
             _ => currentHead,
           };
-    if (kind != _M.create && head == null) {
-      throw const JourneyLocalStoreException(JourneyLocalFailure.invalidRecord);
-    }
+    _validLocal(kind == _M.create || head != null);
     final result = _copy(source, head, JourneyDraftState.saving);
     drafts.save(result);
     return result;
@@ -206,11 +206,10 @@ final class _Custody {
   void delete(JourneyDraft sent, String request, String head) {
     final stored =
         drafts.list().where((item) => item.draftRef == sent.draftRef).single;
-    if (stored.payloadSha256 != sent.payloadSha256 ||
-        stored.payload['client_request_id'] != request) {
-      throw const JourneyLocalStoreException(
-          JourneyLocalFailure.acknowledgementMismatch);
-    }
+    _validLocal(
+        stored.payloadSha256 == sent.payloadSha256 &&
+            stored.payload['client_request_id'] == request,
+        JourneyLocalFailure.acknowledgementMismatch);
     drafts.delete(sent.draftRef,
         acknowledgement: JourneyDraftAcknowledgement(request, head));
   }
@@ -227,6 +226,10 @@ final class _Custody {
           updatedAt: DateTime.now().toUtc());
 }
 
+void _validLocal(bool valid,
+        [JourneyLocalFailure failure = JourneyLocalFailure.invalidRecord]) =>
+    valid ? null : throw JourneyLocalStoreException(failure);
+
 bool _validDraft(JourneyDraft draft, _M kind) {
   final expected = switch (kind) {
     _M.create => 'client_request_id|goal|intake_ref',
@@ -234,11 +237,10 @@ bool _validDraft(JourneyDraft draft, _M kind) {
     _M.check =>
       'candidate_ref|claim_id|client_request_id|context_ref|oracle_id',
   };
-  final references = kind == _M.create
-      ? draft.journeyRef == null && draft.baseEventHeadSha256 == null
-      : draft.journeyRef != null;
   return draft.kind == kind.name &&
-      references &&
+      (kind == _M.create
+          ? draft.journeyRef == null && draft.baseEventHeadSha256 == null
+          : draft.journeyRef != null) &&
       expected.split('|').length == draft.payload.length &&
       expected.split('|').every(draft.payload.containsKey) &&
       draft.payload.entries.every((entry) => entry.key == 'command'
@@ -259,7 +261,6 @@ bool _validAck(JourneyMutationAck ack, _M kind, String? operation) =>
           ack.operationState != JourneyOperationState.unknown,
       _ => ack.operationRef == null && ack.operationState == null,
     };
-
 Future<JourneyProjection> _resume(
     (JourneyApi, String, JourneyLens) input) async {
   final result = await input.$1.resume(input.$2, input.$3);
@@ -275,7 +276,6 @@ JourneyFailure _fail(Object e) =>
     e is JourneyApiException ? e.failure : _invalid();
 void _accept(bool condition) =>
     condition ? null : throw JourneyApiException(_invalid());
-
 JourneyViewPhase _failurePhase(JourneyFailure f) => switch (f.code) {
       'HEAD_CONFLICT' => JourneyViewPhase.conflicted,
       'STORE_COMMIT_FAILED' || 'INVALID_RESPONSE' => JourneyViewPhase.failed,
