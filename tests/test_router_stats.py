@@ -7,12 +7,8 @@ Success criteria:
   - order() puts the best provider first and circuit-open ones last.
   - stats persist across instances (JSON round-trip).
 """
-import multiprocessing
-import os
+import multiprocessing, os, queue, threading, time
 from pathlib import Path
-import queue
-import threading
-import time
 
 import pytest
 
@@ -179,16 +175,20 @@ def test_held_windows_reader_contention_is_typed_and_bounded(tmp_path):
     p = tmp_path / "stats.json"
     RouterStats(p).record("seed", True)
     release, thread = _start_windows_reader_without_delete_share(p)
+    blocked_stats = RouterStats(p, lock_timeout_s=0.05)
     started = time.monotonic()
     try:
         with pytest.raises(router_stats.RouterStatsError) as failure:
-            RouterStats(p, lock_timeout_s=0.05).record("blocked", True)
+            blocked_stats.record("blocked", True)
     finally:
         release.set()
         thread.join(2)
     assert failure.value.code == str(failure.value) == "STORE_BUSY"
     assert time.monotonic() - started < 1.0
-    assert "blocked" not in RouterStats(p).stats
+    persisted = RouterStats(p)
+    assert "blocked" not in blocked_stats.stats
+    assert "blocked" not in persisted.stats
+    assert blocked_stats.snapshot() == persisted.snapshot()
     _assert_no_stats_temp_leftovers(tmp_path)
 
 

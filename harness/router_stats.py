@@ -126,7 +126,7 @@ class RouterStats:
             except PermissionError:
                 self._retry_windows_permission(deadline)
 
-    def _save(self) -> None:
+    def _save(self, stats: "dict[str, ProviderStat] | None" = None) -> None:
         if not self.path:
             return
         self.path.parent.mkdir(parents=True, exist_ok=True)
@@ -136,7 +136,10 @@ class RouterStats:
             f".{self.path.name}.{os.getpid()}.{threading.get_ident()}.{uuid4().hex}.tmp")
         try:
             with tmp.open("xb") as stream:
-                stream.write(json.dumps(self.snapshot(), sort_keys=True).encode("utf-8"))
+                stream.write(json.dumps(
+                    self._snapshot_from(self.stats if stats is None else stats),
+                    sort_keys=True,
+                ).encode("utf-8"))
                 stream.flush()
                 os.fsync(stream.fileno())
             self._replace_with_retry(tmp)
@@ -148,8 +151,20 @@ class RouterStats:
             except FileNotFoundError:
                 pass
 
-    def _record_locked(self, endpoint: str, ok: bool, latency: float) -> None:
-        s = self.stats.setdefault(endpoint, ProviderStat())
+    @staticmethod
+    def _copy_stats(stats: "dict[str, ProviderStat]") -> "dict[str, ProviderStat]":
+        return {
+            endpoint: ProviderStat(**{
+                field: getattr(stat, field)
+                for field in ProviderStat.__dataclass_fields__
+            })
+            for endpoint, stat in stats.items()
+        }
+
+    @staticmethod
+    def _record_in(stats: "dict[str, ProviderStat]", endpoint: str,
+                   ok: bool, latency: float) -> None:
+        s = stats.setdefault(endpoint, ProviderStat())
         s.attempts += 1
         s.total_latency += max(0.0, latency)
         if ok:
@@ -159,23 +174,53 @@ class RouterStats:
             s.failures += 1
             s.consecutive_failures += 1
 
+    def _reload_after_failed_save(self) -> None:
+        if self.path and self.path.exists():
+            self._load_unlocked()
+        else:
+            self.stats = {}
+
     def record(self, endpoint: str, ok: bool, latency: float = 0.0) -> None:
         with self._lock:
             if not self.path:
-                self._record_locked(endpoint, ok, latency)
+                self._record_in(self.stats, endpoint, ok, latency)
                 return
             try:
                 with ExclusiveJourneyLock.acquire(self._lock_path(), self.lock_timeout_s):
                     if self.path.exists():
                         self._load_unlocked()
-                    self._record_locked(endpoint, ok, latency)
-                    self._save()
+                    staged = self._copy_stats(self.stats)
+                    self._record_in(staged, endpoint, ok, latency)
+                    try:
+                        self._save(staged)
+                    except (RouterStatsError, OSError, ValueError, TypeError):
+                        self._reload_after_failed_save()
+                        raise
+                    self.stats = staged
             except JourneyLockBusy:
                 raise RouterStatsError("STORE_BUSY") from None
             except RouterStatsError:
                 raise
             except (OSError, ValueError, TypeError):
                 raise RouterStatsError("STORE_COMMIT_FAILED") from None
+
+    def _score_from(self, endpoint: str, stats: "dict[str, ProviderStat]") -> float:
+        s = stats.get(endpoint)
+        if s is None or s.attempts == 0:
+            base = 1.0
+        else:
+            total = sum(x.attempts for x in stats.values()) or 1
+            z = 1.96
+            n = s.attempts
+            p = s.success_rate
+            denom = 1 + z * z / n
+            centre = p + z * z / (2 * n)
+            margin = z * math.sqrt(p * (1 - p) / n + z * z / (4 * n * n))
+            lb = (centre - margin) / denom
+            bonus = 0.15 * math.sqrt(math.log(total + 1) / n)
+            base = min(1.0, lb) + bonus
+        cost = self.cost.get(endpoint, 1.0) or 1.0
+        return base / cost
 
     def score(self, endpoint: str) -> float:
         """Higher is better. The quality term is the WILSON LOWER BOUND of the
@@ -184,28 +229,7 @@ class RouterStats:
         small and tightens as attempts accrue. An exploration bonus that decays
         with attempts keeps an unseen provider tried optimistically. Pure
         arithmetic, no learned model. Divided by relative cost."""
-        s = self.stats.get(endpoint)
-        if s is None or s.attempts == 0:
-            base = 1.0                                   # optimistic prior for the unseen
-        else:
-            total = sum(x.attempts for x in self.stats.values()) or 1
-            z = 1.96
-            n = s.attempts
-            p = s.success_rate
-            # Wilson lower bound: the honest floor on the true success rate,
-            # wide when n is small and tightening as attempts accrue
-            denom = 1 + z * z / n
-            centre = p + z * z / (2 * n)
-            margin = z * math.sqrt(p * (1 - p) / n + z * z / (4 * n * n))
-            lb = (centre - margin) / denom
-            # the lower bound is the DOMINANT quality signal so thin evidence
-            # (one minted success) cannot leap a long track record; a modest
-            # exploration term keeps an under-sampled arm in contention without
-            # letting it dominate a proven provider
-            bonus = 0.15 * math.sqrt(math.log(total + 1) / n)
-            base = min(1.0, lb) + bonus
-        cost = self.cost.get(endpoint, 1.0) or 1.0
-        return base / cost
+        return self._score_from(endpoint, self.stats)
 
     def is_circuit_open(self, endpoint: str) -> bool:
         s = self.stats.get(endpoint)
@@ -219,14 +243,17 @@ class RouterStats:
         healthy.sort(key=lambda e: -self.score(e))
         return healthy + tripped
 
-    def snapshot(self) -> dict:
+    def _snapshot_from(self, stats: "dict[str, ProviderStat]") -> dict:
         return {
             "schema": "flywheel.router-stats/v1",
             "circuit_threshold": self.circuit_threshold,
             "providers": {
                 e: {**asdict(s), "success_rate": round(s.success_rate, 4),
                     "mean_latency": round(s.mean_latency, 4),
-                    "circuit_open": self.is_circuit_open(e),
-                    "score": round(self.score(e), 4)}
-                for e, s in sorted(self.stats.items())},
+                    "circuit_open": s.consecutive_failures >= self.circuit_threshold,
+                    "score": round(self._score_from(e, stats), 4)}
+                for e, s in sorted(stats.items())},
         }
+
+    def snapshot(self) -> dict:
+        return self._snapshot_from(self.stats)
