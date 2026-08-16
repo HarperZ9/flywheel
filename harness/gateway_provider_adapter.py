@@ -21,25 +21,36 @@ class ExecutionPlan:
     credential_refs: tuple[str, ...]
     launch: object | None = None
     plugin_kind: str | None = None
+    marketplace: object | None = None
 
 
 def freeze_execution_plan(operation) -> ExecutionPlan:
     """Snapshot server-derived dispatch metadata before approval."""
-    launch = kind = None
+    launch = kind = market = None
     if operation.action in {"plugin.probe", "plugin.call"}:
         from .plugins import plugin_execution_plan
         launch, kind, required, refs = plugin_execution_plan(
             operation.operation["name"])
+    elif operation.action == "marketplace.install":
+        from .marketplace import marketplace_execution_plan
+        market = marketplace_execution_plan(operation.operation["name"])
+        required, refs = market.required_slots, market.credential_refs
     else:
         required, refs = _credential_plan(operation)
     argv = tuple(launch.argv) if hasattr(launch, "argv") else (
         tuple(launch) if launch is not None else ())
     cwd = getattr(launch, "cwd", None)
+    market_value = (None if market is None else {
+        "name": market.name, "command": list(market.command),
+        "detail": market.detail, "required_slots": list(market.required_slots),
+        "credential_refs": list(market.credential_refs)})
     digest = canonical_sha256({
         "action": operation.action, "operation_sha256": operation.operation_sha256,
         "required_slots": list(required), "credential_refs": list(refs),
-        "plugin_kind": kind, "argv": list(argv), "cwd": cwd})
-    return ExecutionPlan(digest, tuple(required), tuple(refs), launch, kind)
+        "plugin_kind": kind, "argv": list(argv), "cwd": cwd,
+        "marketplace": market_value})
+    return ExecutionPlan(
+        digest, tuple(required), tuple(refs), launch, kind, market)
 
 
 def _credential_plan(operation) -> tuple[tuple[str, ...], tuple[str, ...]]:

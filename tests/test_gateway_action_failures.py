@@ -38,6 +38,18 @@ OPERATIONS = {
     "marketplace.remove": {"name": "fetch", "data_refs": [],
         "credential_refs": []},
 }
+ROUTES = {
+    "chat.complete": "/v1/chat/completions",
+    "agent.run": "/api/agent", "workflow.run": "/api/workflow",
+    "plugin.probe": "/api/plugins/probe",
+    "plugin.call": "/api/plugins/call",
+    "plugin.register": "/api/plugins/register",
+    "plugin.toggle": "/api/plugins/toggle",
+    "plugin.remove": "/api/plugins/remove",
+    "marketplace.install": "/api/marketplace/install",
+    "marketplace.add": "/api/marketplace/add",
+    "marketplace.remove": "/api/marketplace/remove",
+}
 
 
 @pytest.mark.parametrize("action", OPERATIONS)
@@ -100,7 +112,7 @@ def test_every_action_consumes_one_exact_grant_before_one_dispatch(
     assert calls == [action]
 
 
-def _final_body(root, action):
+def _final_body(root, action, *, approve=True):
     owner, journey = "owner_" + "a" * 32, "jrn_" + "a" * 32
     now = "2026-08-15T12:00:00Z"
     state = root / "state"
@@ -115,12 +127,15 @@ def _final_body(root, action):
     proposal, _ = gateway_grant_post(
         f"/api/gateway-grants/prepare/{action}", json.dumps(prepare).encode(),
         owner_ref=owner, state_root=state, clock=lambda: now)
-    approval, _ = gateway_grant_post(
-        "/api/gateway-grants/approve-once",
-        json.dumps({"proposal_ref": proposal["proposal_ref"]}).encode(),
-        owner_ref=owner, state_root=state, clock=lambda: now)
+    grant = proposal["planned_grant_ref"]
+    if approve:
+        approval, _ = gateway_grant_post(
+            "/api/gateway-grants/approve-once",
+            json.dumps({"proposal_ref": proposal["proposal_ref"]}).encode(),
+            owner_ref=owner, state_root=state, clock=lambda: now)
+        grant = approval["grant_ref"]
     final = {key: value for key, value in prepare.items() if key != "operation"}
-    final.update(OPERATIONS[action]); final["grant_ref"] = approval["grant_ref"]
+    final.update(OPERATIONS[action]); final["grant_ref"] = grant
     return owner, now, final
 
 
@@ -141,28 +156,49 @@ def _different(action, body):
     return {**body, field: value}
 
 
-@pytest.mark.parametrize("action", OPERATIONS)
-def test_every_final_route_mismatch_preserves_exact_grant(tmp_path, action):
-    owner, now, body = _final_body(tmp_path, action)
-    with pytest.raises(GatewayOperationError):
-        authorize_gateway_operation(
-            action, json.dumps(_different(action, body)).encode(),
-            owner_ref=owner, state_root=tmp_path / "state", clock=lambda: now)
-    exact = authorize_gateway_operation(
-        action, json.dumps(body).encode(), owner_ref=owner,
-        state_root=tmp_path / "state", clock=lambda: now)
+def _handler_post(root, path, owner, now, body):
+    raw, sent = json.dumps(body).encode(), {}
+    handler = gateway._Handler.__new__(gateway._Handler)
+    handler.path, handler.owner_ref = path, owner
+    handler.flywheel_home = handler.root = handler.run_root = root
+    handler.clock, handler.serve_url = lambda: now, "http://local.invalid"
+    handler.headers = type("Headers", (), {"get": lambda _, key, default=None:
+        str(len(raw)) if key == "Content-Length" else default})()
+    handler.rfile, handler.wfile = io.BytesIO(raw), io.BytesIO()
+    handler.send_response = lambda code: sent.update(code=code)
+    handler.send_header = handler.end_headers = handler._cors = lambda *_: None
+    handler._post()
+    return sent["code"], json.loads(handler.wfile.getvalue())
+
+
+@pytest.mark.parametrize("action,path", ROUTES.items())
+def test_every_http_final_route_refuses_without_burn_and_dispatches_once(
+        tmp_path, monkeypatch, action, path):
     calls = []
-    dispatch_authorized(
-        exact, {action: lambda op: calls.append(op.action) or "ok"})
-    assert calls == [action]
+    monkeypatch.setattr(
+        "harness.gateway_actions.dispatch_builtin",
+        lambda operation: (calls.append(operation.action) or ({"ok": True}, 200)))
+    owner, now, body = _final_body(tmp_path, action)
+    absent = {**body, "grant_ref": "gnt_" + "f" * 32}
+    for denied in (absent, _different(action, body)):
+        status, _ = _handler_post(tmp_path, path, owner, now, denied)
+        assert status in {403, 422} and calls == []
+    pending_root = tmp_path / "pending"
+    other_owner, other_now, pending = _final_body(
+        pending_root, action, approve=False)
+    status, _ = _handler_post(
+        pending_root, path, other_owner, other_now, pending)
+    assert status == 403 and calls == []
+    status, result = _handler_post(tmp_path, path, owner, now, body)
+    assert status == 200 and result == {"ok": True} and calls == [action]
+    status, _ = _handler_post(tmp_path, path, owner, now, body)
+    assert status == 403 and calls == [action]
 
 
-@pytest.mark.parametrize("path,action", [
-    ("/v1/chat/completions", "chat.complete"),
-    ("/api/agent", "agent.run"), ("/api/workflow", "workflow.run"),
-])
+@pytest.mark.parametrize("action", [
+    "chat.complete", "agent.run", "workflow.run"])
 def test_guarded_provider_failures_are_fixed_and_never_persist_raw_text(
-        tmp_path, monkeypatch, path, action):
+        tmp_path, monkeypatch, action):
     marker = "synthetic-provider-marker-123456"
     owner, now, body = _final_body(tmp_path, action)
     if action == "chat.complete":
@@ -176,19 +212,8 @@ def test_guarded_provider_failures_are_fixed_and_never_persist_raw_text(
         monkeypatch.setattr("harness.workflows.run_workflow",
                             lambda *_args, **_kwargs: (_ for _ in ()).throw(
                                 RuntimeError(marker)))
-    raw, sent = json.dumps(body).encode(), {}
-    handler = gateway._Handler.__new__(gateway._Handler)
-    handler.path, handler.owner_ref = path, owner
-    handler.flywheel_home = handler.root = handler.run_root = tmp_path
-    handler.clock, handler.serve_url = lambda: now, "http://local.invalid"
-    handler.headers = type("Headers", (), {"get": lambda _, key, default=None:
-        str(len(raw)) if key == "Content-Length" else default})()
-    handler.rfile, handler.wfile = io.BytesIO(raw), io.BytesIO()
-    handler.send_response = lambda code: sent.update(code=code)
-    handler.send_header = handler.end_headers = handler._cors = lambda *_: None
-    handler._post()
-    response = json.loads(handler.wfile.getvalue())
-    assert sent["code"] == 502 and response == fixed_external_failure()[0]
+    status, response = _handler_post(tmp_path, ROUTES[action], owner, now, body)
+    assert status == 502 and response == fixed_external_failure()[0]
     assert marker not in b"".join(p.read_bytes() for p in tmp_path.rglob("*.*")).decode(
         "utf-8", errors="ignore")
 

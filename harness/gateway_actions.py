@@ -70,7 +70,8 @@ def _marketplace(operation: AuthorizedOperation) -> object:
     value = operation.operation
     return {
         "marketplace.install": lambda: marketplace.install_from_catalog(
-            value["name"], credential_refs=list(value["credential_refs"])),
+            value["name"], credential_refs=list(value["credential_refs"]),
+            execution_plan=operation.execution_plan.marketplace),
         "marketplace.add": lambda: marketplace.add_user_entry(
             value["name"], list(value["command"]), detail=value["detail"],
             requires=list(value["requires"]),

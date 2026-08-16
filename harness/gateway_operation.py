@@ -6,6 +6,7 @@ import math
 import re
 from types import MappingProxyType
 from typing import Mapping
+from urllib.parse import unquote
 from .evidence_json import canonical_sha256
 from .gateway_secret_boundary import validate_no_raw_secrets
 
@@ -72,7 +73,8 @@ _REFS = {"data_refs", "credential_refs"}
 _FIELDS = {
     "chat.complete": ({"model", "messages", "stream"} | _REFS, set()),
     "agent.run": ({"goal", "endpoint", "max_steps", "allow_write",
-                   "allow_exec", "stream"} | _REFS, {"root", "test_cmd"}),
+                   "allow_exec", "stream"} | _REFS,
+                  {"root", "test_cmd", "attachment"}),
     "workflow.run": ({"workflow", "goal", "endpoint", "allow_write",
                       "allow_exec"} | _REFS,
                      {"profile", "root", "test_cmd"}),
@@ -144,6 +146,20 @@ def thaw_operation(value: Mapping[str, object]) -> dict:
     return thaw(value)
 
 
+def materialize_agent_attachment(value: dict) -> dict:
+    """Render an already-authorized relative attachment for the agent only."""
+    result = dict(value)
+    attachment = result.pop("attachment", None)
+    if attachment is None:
+        return result
+    parts = [f"Active source: {attachment['relative_path']}"]
+    if attachment.get("selection"):
+        parts.append(f"Selected text:\n{attachment['selection']}")
+    parts.append(f"Request:\n{result['goal']}")
+    result["goal"] = "\n".join(parts)
+    return result
+
+
 def _snapshot(value: object) -> dict:
     remaining = [4096]
     def visit(item: object, depth: int):
@@ -174,6 +190,24 @@ def _text(value: object) -> bool:
     return type(value) is str and bool(value.strip())
 
 
+def _relative_path(value: object) -> bool:
+    if not _text(value) or len(value) > 1024:
+        return False
+    forms = [value]
+    try:
+        for _ in range(3):
+            decoded = unquote(forms[-1], errors="strict")
+            if decoded == forms[-1]:
+                break
+            forms.append(decoded)
+    except (UnicodeError, ValueError):
+        return False
+    return all(not form.startswith(("/", "\\")) and ":" not in form
+               and "\\" not in form
+               and all(part not in ("", ".", "..")
+                       for part in form.split("/")) for form in forms)
+
+
 def _validate_shape(action: str, value: dict) -> None:
     text_fields = {"model", "goal", "endpoint", "workflow", "profile", "root",
                    "test_cmd", "name", "tool", "detail"}
@@ -195,6 +229,17 @@ def _validate_shape(action: str, value: dict) -> None:
         raise ValueError
     if "arguments" in value and type(value["arguments"]) is not dict:
         raise ValueError
+    if "attachment" in value:
+        attachment = value["attachment"]
+        if (type(attachment) is not dict
+                or set(attachment) not in ({"relative_path"},
+                                           {"relative_path", "selection"})):
+            raise ValueError
+        path = attachment["relative_path"]
+        if (not _relative_path(path)
+                or ("selection" in attachment
+                    and not _text(attachment["selection"]))):
+            raise ValueError
     for name in ("command", "requires", "data_refs", "credential_refs"):
         if name in value and (type(value[name]) is not list
                               or any(not _text(item) for item in value[name])):

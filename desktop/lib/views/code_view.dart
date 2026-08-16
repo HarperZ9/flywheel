@@ -211,7 +211,7 @@ class _CodeViewState extends State<CodeView> {
             client: widget.client,
             alive: widget.alive,
             workspaceRoot: root,
-            activeFile: active?.path,
+            activeFile: active?.relativePath,
             selection: _selectionOf(active),
             goalController: _agentGoal,
             onRunStarted: widget.session.snapshotOpenFiles,

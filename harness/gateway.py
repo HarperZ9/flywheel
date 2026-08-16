@@ -1442,7 +1442,7 @@ class _Handler(BaseHTTPRequestHandler):
                     p, raw, owner_ref=self.owner_ref,
                     state_root=self.flywheel_home / "state")
             return self._json(body, code)
-        from harness.gateway_operation import action_for_path, thaw_operation
+        from harness.gateway_operation import action_for_path, materialize_agent_attachment, thaw_operation
         action = action_for_path(p)
         if action is not None:
             length = self._content_length()
@@ -1471,7 +1471,7 @@ class _Handler(BaseHTTPRequestHandler):
                 return self._json(body, code)
             if dispatched is not None:
                 return self._json(*dispatched)
-            self._gateway_operation = thaw_operation(authorized.operation)
+            self._gateway_operation = materialize_agent_attachment(thaw_operation(authorized.operation))
             self._gateway_bindings = authorized.credential_bindings
         if p == "/v1/chat/completions":              # OpenAI-compatible, routes to ANY provider
             req, bad = self._req_json()

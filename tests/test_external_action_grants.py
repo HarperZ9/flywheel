@@ -162,3 +162,74 @@ def test_authorized_plugin_dispatch_uses_frozen_launch(tmp_path, monkeypatch):
     result, status = dispatch_builtin(resolve_credentials(authorized, tmp_path))
     assert status == 200 and result["result"] == "ok"
     assert tuple(launches[0].argv) == ("safe-mcp",)
+
+
+def _approved_marketplace(root, monkeypatch):
+    from harness import marketplace
+    monkeypatch.setenv("FLYWHEEL_HOME", str(root))
+    added = marketplace.add_user_entry(
+        "mutable-market", ["safe-market"], detail="safe detail",
+        requires=[], credential_refs=[])
+    assert added["added"] is True
+    owner, journey = "owner_" + "b" * 32, "jrn_" + "b" * 32
+    now = "2026-08-15T12:00:00Z"
+    head = JourneyStore(root).create(MutationCommand(
+        owner, journey, None, "create-market", "intake",
+        {"legacy_label": None, "goal": "bind catalog", "intake": {},
+         "occurred_at": now})).event_head_sha256
+    operation = {"name": "mutable-market", "data_refs": [],
+                 "credential_refs": []}
+    prepare = {"schema": "flywheel.gateway-operation/v1",
+               "journey_ref": journey, "expected_event_head": head,
+               "client_request_id": "market-request", "operation": operation}
+    proposal, _ = gateway_grant_post(
+        "/api/gateway-grants/prepare/marketplace.install",
+        json.dumps(prepare).encode(), owner_ref=owner, state_root=root,
+        clock=lambda: now)
+    approval, _ = gateway_grant_post(
+        "/api/gateway-grants/approve-once",
+        json.dumps({"proposal_ref": proposal["proposal_ref"]}).encode(),
+        owner_ref=owner, state_root=root, clock=lambda: now)
+    final = {key: value for key, value in prepare.items() if key != "operation"}
+    final.update(operation); final["grant_ref"] = approval["grant_ref"]
+    return owner, now, final
+
+
+def _replace_marketplace(root, command, detail):
+    path = root / "catalog.json"
+    doc = json.loads(path.read_text())
+    doc["entries"][0].update(command=[command], detail=detail)
+    path.write_text(json.dumps(doc))
+
+
+def test_marketplace_plan_change_rejects_before_consumption(tmp_path, monkeypatch):
+    owner, now, final = _approved_marketplace(tmp_path, monkeypatch)
+    _replace_marketplace(tmp_path, "different-market", "different detail")
+    with pytest.raises(GatewayOperationError) as failure:
+        authorize_gateway_operation(
+            "marketplace.install", json.dumps(final).encode(), owner_ref=owner,
+            state_root=tmp_path, clock=lambda: now)
+    assert failure.value.code == "PERMISSION_DENIED"
+    assert not (tmp_path / "plugins.json").exists()
+    _replace_marketplace(tmp_path, "safe-market", "safe detail")
+    exact = authorize_gateway_operation(
+        "marketplace.install", json.dumps(final).encode(), owner_ref=owner,
+        state_root=tmp_path, clock=lambda: now)
+    assert exact.grant_ref == final["grant_ref"]
+
+
+def test_authorized_marketplace_dispatch_uses_frozen_entry(tmp_path, monkeypatch):
+    owner, now, final = _approved_marketplace(tmp_path, monkeypatch)
+    authorized = authorize_gateway_operation(
+        "marketplace.install", json.dumps(final).encode(), owner_ref=owner,
+        state_root=tmp_path, clock=lambda: now)
+    frozen = authorized.execution_plan.marketplace
+    assert (frozen.name, frozen.command, frozen.detail,
+            frozen.required_slots, frozen.credential_refs) == (
+                "mutable-market", ("safe-market",), "safe detail", (), ())
+    _replace_marketplace(tmp_path, "different-market", "different detail")
+    result, status = dispatch_builtin(resolve_credentials(authorized, tmp_path))
+    assert status == 200 and result["registered"] == "mutable-market"
+    registry = json.loads((tmp_path / "plugins.json").read_text())
+    assert registry["mcp"][0]["command"] == ["safe-market"]
+    assert registry["mcp"][0]["detail"] == "safe detail"

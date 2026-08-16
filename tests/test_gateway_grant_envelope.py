@@ -3,7 +3,8 @@ import json
 import pytest
 
 from harness.gateway_envelope import parse_gateway_envelope
-from harness.gateway_operation import GatewayOperationError
+from harness.gateway_operation import (
+    GatewayOperationError, canonicalize_operation, materialize_agent_attachment)
 from harness.gateway_secret_boundary import validate_no_raw_secrets
 
 
@@ -76,3 +77,26 @@ def test_one_recursive_boundary_refuses_raw_credentials_without_echo(value):
         validate_no_raw_secrets(value)
     assert failure.value.code == "INVALID_REQUEST"
     assert "synthetic-marker" not in str(failure.value)
+
+
+def test_agent_attachment_is_closed_structured_relative_context():
+    base = {"goal": "inspect", "endpoint": "local", "max_steps": 2,
+            "allow_write": False, "allow_exec": False, "stream": True,
+            "data_refs": [], "credential_refs": []}
+    operation = canonicalize_operation("agent.run", {
+        **base, "attachment": {
+            "relative_path": "lib/main.dart", "selection": "selected"}})
+    assert dict(operation.operation["attachment"]) == {
+        "relative_path": "lib/main.dart", "selection": "selected"}
+    for unsafe in (r"C:\private\main.dart", "C:/private/main.dart",
+                   "/private/main.dart", "../main.dart", "%2e%2e/main.dart"):
+        with pytest.raises(GatewayOperationError) as failure:
+            canonicalize_operation("agent.run", {
+                **base, "attachment": {
+                    "relative_path": unsafe, "selection": "selected"}})
+        assert failure.value.code == "INVALID_REQUEST"
+        assert "private" not in str(failure.value)
+    rendered = materialize_agent_attachment(dict(operation.operation))
+    assert rendered["goal"] == (
+        "Active source: lib/main.dart\nSelected text:\nselected\nRequest:\ninspect")
+    assert "attachment" not in rendered

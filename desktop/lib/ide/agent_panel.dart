@@ -13,10 +13,8 @@ class AgentPanel extends StatefulWidget {
   final GatewayClient client;
   final bool alive;
   final String workspaceRoot;
-  final String? activeFile;
-  final String? selection;
-  final VoidCallback onRunStarted;
-  final VoidCallback onRunFinished;
+  final String? activeFile, selection;
+  final VoidCallback onRunStarted, onRunFinished;
   final TextEditingController? goalController;
   const AgentPanel(
       {super.key,
@@ -37,14 +35,12 @@ class _AgentPanelState extends State<AgentPanel> {
       widget.goalController ?? TextEditingController();
   final _scroll = ScrollController();
   List<EndpointRow> _endpoints = [];
-  String? _endpoint;
+  String? _endpoint, _error;
   bool _allowWrite = true, _allowExec = false, _attachContext = true;
   bool _running = false, _detached = false, _pastOpen = false;
-  List<Map<String, dynamic>> _events = [];
+  List<Map<String, dynamic>> _events = [], _pastRuns = [];
   StreamSubscription<Map<String, dynamic>>? _sub;
-  List<Map<String, dynamic>> _pastRuns = [];
   Map<String, dynamic>? _stored;
-  String? _error;
   @override
   void initState() {
     super.initState();
@@ -81,24 +77,25 @@ class _AgentPanelState extends State<AgentPanel> {
   GatewayOperation? _operation(String request) {
     final endpoint = _endpoint, input = _goal.text.trim();
     if (endpoint == null || input.isEmpty) return null;
-    var goal = input;
-    if (_attachContext && widget.activeFile != null) {
-      final selection = widget.selection;
-      goal = 'Active source ${widget.activeFile}\n'
-          '${selection != null && selection.isNotEmpty ? 'Selected text\n$selection\n' : ''}'
-          '\n$goal';
-    }
+    final file = _attachContext ? widget.activeFile : null;
+    final selection = widget.selection;
     try {
       return GatewayOperation.exact(
           action: 'agent.run',
           clientRequestId: request,
           operation: {
-            'goal': goal,
+            'goal': input,
             'endpoint': endpoint,
             'max_steps': 10,
             'allow_write': _allowWrite,
             'allow_exec': _allowExec,
             'stream': true,
+            if (file != null)
+              'attachment': {
+                'relative_path': file,
+                if (selection != null && selection.isNotEmpty)
+                  'selection': selection,
+              },
             'root': widget.workspaceRoot
           });
     } catch (_) {
@@ -110,7 +107,10 @@ class _AgentPanelState extends State<AgentPanel> {
     if (_running) return;
     final request = 'desktop-agent-${DateTime.now().microsecondsSinceEpoch}';
     final operation = _operation(request);
-    if (operation == null) return;
+    if (operation == null) {
+      setState(() => _error = 'INVALID_CONTEXT');
+      return;
+    }
     final value = operation.operation;
     widget.onRunStarted();
     _beginRun();

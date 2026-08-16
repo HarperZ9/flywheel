@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import json
 import os
+from dataclasses import dataclass
 from pathlib import Path
 
 from .lanes import LANES
@@ -100,6 +101,17 @@ CATALOG = [
 ]
 
 
+@dataclass(frozen=True)
+class MarketplaceInstallPlan:
+    """One catalog entry frozen before its one-time grant is approved."""
+
+    name: str
+    command: tuple[str, ...]
+    detail: str
+    required_slots: tuple[str, ...]
+    credential_refs: tuple[str, ...]
+
+
 def _user_catalog_path() -> Path:
     home = os.environ.get("FLYWHEEL_HOME") or os.path.join(
         os.path.expanduser("~"), ".flywheel")
@@ -149,25 +161,37 @@ def marketplace_catalog() -> dict:
 def marketplace_credentials(
         name: str) -> tuple[tuple[str, ...], tuple[str, ...]]:
     """Return safe frozen credential metadata, never credential values."""
+    plan = marketplace_execution_plan(name)
+    return plan.required_slots, plan.credential_refs
+
+
+def marketplace_execution_plan(name: str) -> MarketplaceInstallPlan:
+    """Freeze one complete safe catalog entry without installing it."""
     entry = next((e for e in _merged_catalog() if e["name"] == name), None)
     if entry is None:
         raise PluginPermissionError
     _safe_plan(entry.get("name"), entry.get("command"), entry.get("detail", ""))
-    return _credential_metadata(entry.get("requires") or (),
-                                entry.get("credential_refs") or (),
-                                allow_unbound=True)
+    slots, refs = _credential_metadata(
+        entry.get("requires") or (), entry.get("credential_refs") or (),
+        allow_unbound=True)
+    return MarketplaceInstallPlan(
+        entry["name"], tuple(entry["command"]), entry.get("detail", ""),
+        slots, refs)
 
 
-def install_from_catalog(name: str, *, credential_refs=None) -> dict:
-    entry = next((e for e in _merged_catalog() if e["name"] == name), None)
-    if entry is None:
-        return {"error": f"no catalog entry named '{name}'"}
-    refs = (entry.get("credential_refs", ()) if credential_refs is None
-            else credential_refs)
-    return register_mcp(entry["name"], entry["command"],
-                        detail=entry.get("detail", ""),
-                        requires=entry.get("requires", ()),
-                        credential_refs=refs)
+def install_from_catalog(name: str, *, credential_refs=None,
+                         execution_plan=None) -> dict:
+    try:
+        plan = (marketplace_execution_plan(name) if execution_plan is None
+                else execution_plan)
+        if not isinstance(plan, MarketplaceInstallPlan) or plan.name != name:
+            raise PluginPermissionError
+        refs = plan.credential_refs if credential_refs is None else credential_refs
+        return register_mcp(
+            plan.name, list(plan.command), detail=plan.detail,
+            requires=list(plan.required_slots), credential_refs=list(refs))
+    except PluginPermissionError:
+        return {"code": "PERMISSION_REQUIRED", "error": "permission required"}
 
 
 def add_user_entry(name: str, command: list, detail: str = "",
