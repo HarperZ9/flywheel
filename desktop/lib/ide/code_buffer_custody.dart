@@ -161,12 +161,16 @@ final class CodeBufferCustody {
   void removeConflict(String path) =>
       conflicts.removeWhere((value) => value.path == path);
   void clear() {
-    final pending = _pending;
-    if (pending != null) disposeFiles(pending.files);
-    _pending = null;
+    disposePending();
     records.clear();
     outcomes.clear();
     conflicts.clear();
+  }
+
+  void disposePending() {
+    final pending = _pending;
+    if (pending != null) disposeFiles(pending.files);
+    _pending = null;
   }
 
   void disposeFiles(List<workspace.OpenFile> files) {

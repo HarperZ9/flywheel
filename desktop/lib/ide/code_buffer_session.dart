@@ -286,6 +286,7 @@ final class CodeBufferSession extends ChangeNotifier {
   @override
   void dispose() {
     _custody.disposeFiles(_open);
+    _custody.disposePending();
     super.dispose();
   }
 }

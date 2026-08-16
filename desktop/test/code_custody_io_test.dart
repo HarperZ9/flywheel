@@ -2,8 +2,10 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:crypto/crypto.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flywheel_desktop/ide/code_buffer_session.dart';
+import 'package:flywheel_desktop/ide/highlighter.dart';
 import 'package:flywheel_desktop/ide/workspace.dart' as workspace;
 import 'package:flywheel_desktop/ide/workspace_file_transaction.dart';
 import 'package:flywheel_desktop/services/code_custody_io.dart';
@@ -66,6 +68,7 @@ void main() {
   _boundedDraftReadTests();
   _workspaceReadTests();
   _recoveryCleanupTests();
+  _recoveryDisposeTests();
 }
 
 void _boundedDraftReadTests() {
@@ -191,5 +194,57 @@ void _recoveryCleanupTests() {
             workspaceRef:
                 workspace.workspaceReference(root.resolveSymbolicLinksSync())),
         isEmpty);
+  });
+}
+
+void _recoveryDisposeTests() {
+  test('session dispose releases pending controllers and preserves journals',
+      () {
+    final root = _temp('code-dispose-root-');
+    final drafts = _temp('code-dispose-drafts-');
+    final files = ['a.dart', 'b.dart']
+        .map((name) => File('${root.path}/lib/$name')
+          ..parent.createSync(recursive: true)
+          ..writeAsStringSync('base-$name'))
+        .toList();
+    final first = CodeBufferSession(draftStore: CodeDraftStore(root: drafts))
+      ..openWorkspace(root.path)
+      ..recover();
+    for (var index = 0; index < files.length; index++) {
+      first.openFile(files[index].path);
+      first.openFiles[first.activeIndex].controller.text = 'saved-$index';
+      first.snapshot(files[index].path);
+      files[index].writeAsStringSync('saved-$index', flush: true);
+    }
+    first.dispose();
+    final created = <Object>{};
+    final disposed = <Object>{};
+    void allocations(ObjectEvent event) {
+      if (event.object is! CodeEditingController) return;
+      if (event is ObjectCreated) created.add(event.object);
+      if (event is ObjectDisposed) disposed.add(event.object);
+    }
+
+    FlutterMemoryAllocations.instance.addListener(allocations);
+    addTearDown(
+        () => FlutterMemoryAllocations.instance.removeListener(allocations));
+    final failing = CodeDraftStore(
+        root: drafts, deleteFile: (_) => throw StateError('injected'));
+    final second = CodeBufferSession(draftStore: failing)
+      ..openWorkspace(root.path);
+    expect(second.recover(), isEmpty);
+    expect(second.phase, CodeSessionPhase.recoveryBlocked);
+    expect(created, hasLength(2));
+    second.dispose();
+    expect(disposed.intersection(created), hasLength(2));
+    final workspaceRef =
+        workspace.workspaceReference(root.resolveSymbolicLinksSync());
+    expect(CodeDraftStore(root: drafts).load(workspaceRef: workspaceRef),
+        hasLength(2));
+    final fresh = CodeBufferSession(draftStore: CodeDraftStore(root: drafts))
+      ..openWorkspace(root.path);
+    expect(fresh.recover(), hasLength(2));
+    expect(fresh.drafts, isEmpty);
+    fresh.dispose();
   });
 }
