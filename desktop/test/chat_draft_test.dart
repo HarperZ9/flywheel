@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flywheel_desktop/client/gateway_client.dart';
 import 'package:flywheel_desktop/controllers/chat_admission_controller.dart';
+import 'package:flywheel_desktop/controllers/gateway_operation_controller.dart';
 import 'package:flywheel_desktop/models/chat.dart';
 import 'package:flywheel_desktop/services/chat_draft_store.dart';
 import 'package:flywheel_desktop/services/chat_store.dart';
@@ -15,8 +16,8 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 
 const _ref = 'chd_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
-const _cleanup = ChatDraftState.admittedPendingCleanup;
-const _dirty = ChatDraftState.dirty;
+const _done = ChatDraftState.admittedPendingCleanup,
+    _dirty = ChatDraftState.dirty;
 const _history = ChatDraftState.admittedPendingHistory;
 const _submitting = ChatDraftState.submitting;
 typedef _Reply = Completer<http.Response>;
@@ -63,14 +64,13 @@ void main() {
         ChatStore(file: File('${file.parent.path}/history.json')), store,
         newAttemptRef: () => 'att_${'d' * 32}')
       ..restore();
-    final conversation =
-        controller.conversations.singleWhere((c) => c.id == 'c0');
-    expect(controller.draftText(conversation), 'newer prompt');
-    expect(controller.reconcileAdmitted(conversation, 'old prompt'),
+    final c = controller.conversations.singleWhere((c) => c.id == 'c0');
+    expect(controller.draftText(c), 'newer prompt');
+    expect(controller.reconcileAdmitted(c, 'old prompt'),
         PromptDisposition.retained);
-    expect(controller.prepare(conversation, 'newer prompt')!.attemptRef,
-        'att_${'d' * 32}');
-    expect(_states(store), {_dirty, _submitting, _history, _cleanup});
+    expect(
+        controller.prepare(c, 'newer prompt')!.attemptRef, 'att_${'d' * 32}');
+    expect(_states(store), {_dirty, _submitting, _history, _done});
     expect(() => loaded.add(_draft('later')), throwsUnsupportedError);
     expect(file.readAsStringSync(), startsWith('{"drafts":['));
     expect(file.readAsStringSync(),
@@ -176,12 +176,9 @@ void _atomicFailureTests() {
   });
 }
 
-void _fails(void Function() action) =>
-    expect(action, throwsA(isA<ChatDraftStoreException>()));
-Set<String> _texts(ChatDraftStore store) =>
-    store.load().map((draft) => draft.text).toSet();
-Set<ChatDraftState> _states(ChatDraftStore store) =>
-    store.load().map((draft) => draft.state).toSet();
+_fails(f) => expect(f, throwsA(isA<ChatDraftStoreException>()));
+Set<String> _texts(ChatDraftStore s) => s.load().map((d) => d.text).toSet();
+_states(ChatDraftStore s) => s.load().map((d) => d.state).toSet();
 
 class _AgentHarness {
   _AgentHarness({_Reply? delayed, bool empty = false, int? failWrite}) {
@@ -210,8 +207,7 @@ class _AgentHarness {
   late final ChatDraftStore drafts;
   late final ChatStore history;
   late final GatewayClient client;
-  var chatCalls = 0;
-  var draftWrites = 0;
+  var chatCalls = 0, draftWrites = 0;
   AgentView view({ChatDraftStore? draftStore}) => AgentView(
       client: client,
       alive: true,
@@ -221,10 +217,15 @@ class _AgentHarness {
 }
 
 Future<void> _pumpAgent(WidgetTester tester, AgentView view) async {
-  await tester.pumpWidget(
-      MaterialApp(theme: flywheelLightTheme(), home: Scaffold(body: view)));
+  await tester.pumpWidget(MaterialApp(
+      theme: flywheelLightTheme(), home: Scaffold(body: _granted(view))));
   await tester.pumpAndSettle();
 }
+
+Widget _granted(Widget child) => GatewayOperationScope(
+    authorize: (_, operation, dispatch) => dispatch(
+        operation.finalBody('jrn_${'a' * 32}', 'a' * 64, 'gnt_${'a' * 32}')),
+    child: child);
 
 Future<(_AgentHarness, _Reply)> _pending(WidgetTester tester, String text,
     [int? failWrite]) async {
@@ -296,5 +297,4 @@ void _agentAdmissionTests() {
   });
 }
 
-String _editorText(WidgetTester tester) =>
-    tester.widget<TextField>(find.byType(TextField)).controller!.text;
+_editorText(t) => t.widget<TextField>(find.byType(TextField)).controller!.text;

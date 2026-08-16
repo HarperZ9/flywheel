@@ -1,10 +1,5 @@
-// gateway_streams.dart — the streaming and plugin surface of the client,
-// as a same-library extension so it shares the private http client.
-
 part of 'gateway_client.dart';
 
-/// Live streams and the plugin registry. Same client, same base URL; split
-/// only to keep each file within the size gate.
 extension GatewayStreamsAndPlugins on GatewayClient {
   /// POST /api/agent with stream:true — the live agent event stream.
   /// Yields one decoded event map per SSE frame (assistant, tool_call,
@@ -14,19 +9,21 @@ extension GatewayStreamsAndPlugins on GatewayClient {
       bool allowWrite = false,
       bool allowExec = false,
       String? root,
-      String? testCmd}) async* {
+      String? testCmd,
+      Map<String, dynamic>? authorizedBody}) async* {
     final req = http.Request('POST', Uri.parse('$baseUrl/api/agent'))
       ..headers['Content-Type'] = 'application/json'
-      ..body = jsonEncode({
-        'goal': goal,
-        'endpoint': endpoint,
-        'max_steps': maxSteps,
-        'allow_write': allowWrite,
-        'allow_exec': allowExec,
-        'stream': true,
-        if (root != null && root.isNotEmpty) 'root': root,
-        if (testCmd != null && testCmd.isNotEmpty) 'test_cmd': testCmd,
-      });
+      ..body = jsonEncode(authorizedBody ??
+          {
+            'goal': goal,
+            'endpoint': endpoint,
+            'max_steps': maxSteps,
+            'allow_write': allowWrite,
+            'allow_exec': allowExec,
+            'stream': true,
+            if (root != null && root.isNotEmpty) 'root': root,
+            if (testCmd != null && testCmd.isNotEmpty) 'test_cmd': testCmd,
+          });
     final res = await _http.send(req);
     if (res.statusCode != 200) {
       throw GatewayException('gateway returned ${res.statusCode}');
@@ -58,10 +55,12 @@ extension GatewayStreamsAndPlugins on GatewayClient {
   /// arrives and a final `{type:'done', receipt:{…}}` carrying the turn's
   /// re-derivable receipt. Malformed frames are skipped, never fatal.
   Stream<Map<String, dynamic>> chatStream(
-      List<Map<String, String>> messages, String model) async* {
+      List<Map<String, String>> messages, String model,
+      {Map<String, dynamic>? authorizedBody}) async* {
     final req = http.Request('POST', Uri.parse('$baseUrl/v1/chat/completions'))
       ..headers['Content-Type'] = 'application/json'
-      ..body = jsonEncode({'model': model, 'messages': messages, 'stream': true});
+      ..body = jsonEncode(authorizedBody ??
+          {'model': model, 'messages': messages, 'stream': true});
     final res = await _http.send(req);
     if (res.statusCode != 200) {
       throw GatewayException('gateway returned ${res.statusCode}');
@@ -125,9 +124,8 @@ extension GatewayStreamsAndPlugins on GatewayClient {
 
   /// GET /api/feeds — cross-domain live feeds through the gather lane.
   Future<Map<String, dynamic>> feeds({String? domain}) async {
-    final q = domain == null
-        ? ''
-        : '?domain=${Uri.encodeQueryComponent(domain)}';
+    final q =
+        domain == null ? '' : '?domain=${Uri.encodeQueryComponent(domain)}';
     final r = await _http.get(Uri.parse('$baseUrl/api/feeds$q'));
     return _decode(r);
   }
@@ -161,18 +159,6 @@ extension GatewayStreamsAndPlugins on GatewayClient {
       Uri.parse('$baseUrl/api/lanes/install'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({'name': name, 'profile': profile}),
-    );
-    return _decode(r);
-  }
-
-  /// POST /api/plugins/call — one tool call on a registered plugin, args and
-  /// result verbatim. The probe shows what a server offers; this runs it.
-  Future<Map<String, dynamic>> callPlugin(
-      String name, String tool, Map<String, dynamic> arguments) async {
-    final r = await _http.post(
-      Uri.parse('$baseUrl/api/plugins/call'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'name': name, 'tool': tool, 'arguments': arguments}),
     );
     return _decode(r);
   }
@@ -243,7 +229,8 @@ extension GatewayStreamsAndPlugins on GatewayClient {
   }
 
   /// POST /api/projects/add — register a project directory.
-  Future<Map<String, dynamic>> addProject(String root, {String name = ''}) async {
+  Future<Map<String, dynamic>> addProject(String root,
+      {String name = ''}) async {
     final r = await _http.post(
       Uri.parse('$baseUrl/api/projects/add'),
       headers: {'Content-Type': 'application/json'},
@@ -362,83 +349,6 @@ extension GatewayStreamsAndPlugins on GatewayClient {
   /// GET /api/marketplace — the curated catalog over the plugin registry.
   Future<Map<String, dynamic>> marketplace() async {
     final r = await _http.get(Uri.parse('$baseUrl/api/marketplace'));
-    return _decode(r);
-  }
-
-  /// POST /api/marketplace/install — register a catalog entry.
-  Future<Map<String, dynamic>> installFromCatalog(String name) async {
-    final r = await _http.post(
-      Uri.parse('$baseUrl/api/marketplace/install'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'name': name}),
-    );
-    return _decode(r);
-  }
-
-  /// POST /api/marketplace/add — save a user entry into the catalog.
-  /// `requires` lists env var NAMES only; the engine refuses values.
-  Future<Map<String, dynamic>> marketplaceAdd(
-      String name, List<String> command,
-      {String detail = '', List<String> requires = const []}) async {
-    final r = await _http.post(
-      Uri.parse('$baseUrl/api/marketplace/add'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'name': name,
-        'command': command,
-        'detail': detail,
-        'requires': requires,
-      }),
-    );
-    return _decode(r);
-  }
-
-  /// POST /api/marketplace/remove — drop a user catalog entry.
-  Future<Map<String, dynamic>> marketplaceRemove(String name) async {
-    final r = await _http.post(
-      Uri.parse('$baseUrl/api/marketplace/remove'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'name': name}),
-    );
-    return _decode(r);
-  }
-
-  /// GET /api/plugins/probe — spawn a plugin's server, report its real tools.
-  Future<Map<String, dynamic>> probePlugin(String name) async {
-    final r = await _http.get(Uri.parse(
-        '$baseUrl/api/plugins/probe?name=${Uri.encodeQueryComponent(name)}'));
-    return _decode(r);
-  }
-
-  /// POST /api/plugins/register — register a custom MCP server by argv.
-  Future<Map<String, dynamic>> registerPlugin(
-      String name, List<String> command,
-      {String detail = ''}) async {
-    final r = await _http.post(
-      Uri.parse('$baseUrl/api/plugins/register'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'name': name, 'command': command, 'detail': detail}),
-    );
-    return _decode(r);
-  }
-
-  /// POST /api/plugins/toggle — enable or disable a custom plugin.
-  Future<Map<String, dynamic>> togglePlugin(String name, bool enabled) async {
-    final r = await _http.post(
-      Uri.parse('$baseUrl/api/plugins/toggle'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'name': name, 'enabled': enabled}),
-    );
-    return _decode(r);
-  }
-
-  /// POST /api/plugins/remove — remove a custom plugin.
-  Future<Map<String, dynamic>> removePlugin(String name) async {
-    final r = await _http.post(
-      Uri.parse('$baseUrl/api/plugins/remove'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'name': name}),
-    );
     return _decode(r);
   }
 }

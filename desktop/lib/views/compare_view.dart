@@ -16,6 +16,7 @@ import '../widgets/chat_composer.dart';
 import '../widgets/chat_thread.dart';
 import '../widgets/fw.dart';
 import '../widgets/model_picker.dart';
+import '../widgets/operation_grant_sheet.dart';
 import '../widgets/split_pane.dart';
 
 class CompareView extends StatefulWidget {
@@ -95,12 +96,12 @@ class _CompareViewState extends State<CompareView> {
         s.messages.add(ChatMessage(role: 'assistant', streaming: true));
       }
     });
-    _run(_left);
-    _run(_right);
+    await _run(_left);
+    await _run(_right);
     return PromptDisposition.accepted;
   }
 
-  void _run(_Side s) {
+  Future<void> _run(_Side s) async {
     if (s.model == null || s.messages.isEmpty) return;
     final assistant = s.messages.last;
     s.streaming = true;
@@ -108,20 +109,27 @@ class _CompareViewState extends State<CompareView> {
         .where((m) => !(m.streaming && m.text.isEmpty))
         .map((m) => m.toWire())
         .toList();
-    s.sub = widget.client.chatStream(wire, s.model!).listen(
-      (e) {
-        if (!mounted) return;
-        setState(() {
-          if (e['type'] == 'delta') assistant.text += e['content'] as String;
-          if (e['type'] == 'done') {
-            assistant.setReceipt(e['receipt'] as Map<String, dynamic>?);
-          }
-        });
-        _scroll(s);
-      },
-      onError: (_) => _finish(s, assistant),
-      onDone: () => _finish(s, assistant),
-    );
+    final operation = GatewayOperation.chat(
+        'desktop-compare-${DateTime.now().microsecondsSinceEpoch}',
+        s.model!,
+        wire);
+    await authorizeGatewayStream(context, operation, (body) {
+      s.sub =
+          widget.client.chatStream(wire, s.model!, authorizedBody: body).listen(
+        (e) {
+          if (!mounted) return;
+          setState(() {
+            if (e['type'] == 'delta') assistant.text += e['content'] as String;
+            if (e['type'] == 'done') {
+              assistant.setReceipt(e['receipt'] as Map<String, dynamic>?);
+            }
+          });
+          _scroll(s);
+        },
+        onError: (_) => _finish(s, assistant),
+        onDone: () => _finish(s, assistant),
+      );
+    }, () => _finish(s, assistant));
   }
 
   void _finish(_Side s, ChatMessage assistant) {

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flywheel_desktop/client/gateway_client.dart';
 import 'package:flywheel_desktop/controllers/chat_admission_controller.dart';
+import 'package:flywheel_desktop/controllers/gateway_operation_controller.dart';
 import 'package:flywheel_desktop/models/chat.dart';
 import 'package:flywheel_desktop/models/evidence_state.dart';
 import 'package:flywheel_desktop/services/chat_draft_store.dart';
@@ -16,8 +17,13 @@ import 'package:flywheel_desktop/widgets/chat_thread.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 
-Future<void> _pump(WidgetTester tester, Widget child) => tester.pumpWidget(
-    MaterialApp(theme: flywheelLightTheme(), home: Scaffold(body: child)));
+Future<void> _pump(WidgetTester tester, Widget child) =>
+    tester.pumpWidget(MaterialApp(
+        theme: flywheelLightTheme(), home: Scaffold(body: _granted(child))));
+Widget _granted(Widget child) => GatewayOperationScope(
+    authorize: (_, operation, dispatch) => dispatch(
+        operation.finalBody('jrn_${'a' * 32}', 'a' * 64, 'gnt_${'a' * 32}')),
+    child: child);
 void main() {
   _historyAndAvatarTruthTests();
   test('complete envelope rejects excess bytes depth and nodes', () {
@@ -44,7 +50,7 @@ void main() {
     expect(s.splitFraction('compare', 0.5), 0.5);
     s.setSplitFraction('compare', 0.62);
     expect(s.splitFraction('compare', 0.5), 0.62);
-    expect(s.splitFraction('agent', 0.7), 0.7); // untouched views keep theirs
+    expect(s.splitFraction('agent', 0.7), 0.7);
     s.cancelPendingSaves(); // the test never writes the real home dir
   });
   testWidgets('the agent chip swaps chat for the tool loop and back',
@@ -78,11 +84,8 @@ void main() {
 
 const _roster =
     '{"rows":[{"name":"local-public","backend":"local","credential":"local-none","provider_role":"","configured":true}]}';
-String _frames(List<String> values) => [
-      for (final value in values)
-        'data: {"choices":[{"delta":{"content":"$value"}}]}\n\n',
-      'data: [DONE]\n\n'
-    ].join();
+String _frames(List<String> values) =>
+    '${values.map((v) => 'data: {"choices":[{"delta":{"content":"$v"}}]}\n\n').join()}data: [DONE]\n\n';
 GatewayClient _client(String body, void Function() onChat) => GatewayClient(
     baseUrl: 'https://chat.invalid',
     httpClient: MockClient((request) async {

@@ -1024,6 +1024,10 @@ class _Handler(BaseHTTPRequestHandler):
         """The decoded JSON request body, or (None, error-response) when the
         Content-Length is missing or oversized. One parse for every POST
         route: the same seven lines were repeated dozens of times."""
+        admitted = getattr(self, "_gateway_operation", None)
+        if admitted is not None:
+            del self._gateway_operation
+            return admitted, None
         length = self._content_length()
         if length is None:
             return None, self._json(
@@ -1036,7 +1040,16 @@ class _Handler(BaseHTTPRequestHandler):
     def _authorized(self) -> bool:
         """Refuse before dispatch; public auth-off compatibility stays available,
         while private custody always requires a configured bearer token."""
-        private = self.path.split("?", 1)[0].startswith(("/api/journeys/", "/api/grants/"))
+        path = self.path.split("?", 1)[0]
+        private = (path.startswith(("/api/journeys/", "/api/grants/",
+                                    "/api/gateway-grants/"))
+                   or path in {"/v1/chat/completions", "/api/agent",
+                               "/api/workflow", "/api/plugins/probe",
+                               "/api/plugins/call", "/api/plugins/register",
+                               "/api/plugins/toggle", "/api/plugins/remove",
+                               "/api/marketplace/install",
+                               "/api/marketplace/add",
+                               "/api/marketplace/remove"})
         if not self.auth_token and not private: return True
         if private:
             owner, reason = ((None, "no_token") if not self.auth_token else _auth_owner(
@@ -1367,14 +1380,9 @@ class _Handler(BaseHTTPRequestHandler):
                 "note": "presence and source only; values never leave "
                         "resolution inside a routed call"})
         if p == "/api/plugins/probe":                # spawn a plugin's server, report its real tools
-            from harness.plugins import probe_plugin
-            name = ""
-            for part in qs.split("&"):
-                if part.startswith("name="):
-                    name = urllib.parse.unquote(part[5:])
-            if not name:
-                return self._json({"error": "provide ?name="}, 400)
-            return self._json(probe_plugin(name))
+            return self._json({"schema": "flywheel.evidence-transport-error/v1",
+                "error": {"code": "INVALID_REQUEST",
+                          "message": "plugin probe requires POST approval"}}, 405)
         if p == "/api/router/stats":                 # observed per-provider success/cost
             return self._json(get_router_stats().snapshot())
         if p == "/v1/models":                        # OpenAI-compatible model list (the roster)
@@ -1385,7 +1393,8 @@ class _Handler(BaseHTTPRequestHandler):
 
     def _post(self):
         p = self.path.split("?", 1)[0]
-        if p.startswith(("/api/evidence/", "/api/journeys/", "/api/grants/")):
+        if p.startswith(("/api/evidence/", "/api/journeys/", "/api/grants/",
+                         "/api/gateway-grants/")):
             length = self._content_length()
             if length is None:
                 return self._json({"schema": "flywheel.evidence-transport-error/v1",
@@ -1398,20 +1407,46 @@ class _Handler(BaseHTTPRequestHandler):
                 from harness.journey_route import journey_post
                 body, code = journey_post(p, raw, owner_ref=self.owner_ref, state_root=self.flywheel_home / "state",
                     evidence_root=self.flywheel_home / "state" / "artifacts", clock=self.clock)
-            else:
+            elif p.startswith("/api/grants/"):
                 from harness.grant_route import grant_post
                 body, code = grant_post(p, raw, owner_ref=self.owner_ref, state_root=self.flywheel_home / "state",
                     evidence_root=self.flywheel_home / "state" / "artifacts", clock=self.clock)
+            else:
+                from harness.gateway_grant_route import gateway_grant_post
+                body, code = gateway_grant_post(
+                    p, raw, owner_ref=self.owner_ref,
+                    state_root=self.flywheel_home / "state", clock=self.clock)
             return self._json(body, code)
-        if p == "/v1/chat/completions":              # OpenAI-compatible, routes to ANY provider
+        from harness.gateway_operation import action_for_path, thaw_operation
+        action = action_for_path(p)
+        if action is not None:
             length = self._content_length()
             if length is None:
-                return self._json({"error": {"message": "invalid or oversized Content-Length",
-                                             "type": "invalid_request_error"}}, 400)
+                return self._json({"schema": "flywheel.evidence-transport-error/v1",
+                    "error": {"code": "INVALID_REQUEST",
+                              "message": "gateway operation is invalid"}}, 422)
+            from harness.gateway_grant_route import (
+                authorize_gateway_operation, gateway_error_response)
             try:
-                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
-            except Exception:
-                req = {}
+                authorized = authorize_gateway_operation(
+                    action, self.rfile.read(length), owner_ref=self.owner_ref,
+                    state_root=self.flywheel_home / "state", clock=self.clock)
+            except Exception as exc:
+                body, code = gateway_error_response(exc)
+                return self._json(body, code)
+            from harness.gateway_actions import dispatch_builtin
+            try:
+                dispatched = dispatch_builtin(authorized)
+            except Exception as exc:
+                body, code = gateway_error_response(exc)
+                return self._json(body, code)
+            if dispatched is not None:
+                return self._json(*dispatched)
+            self._gateway_operation = thaw_operation(authorized.operation)
+        if p == "/v1/chat/completions":              # OpenAI-compatible, routes to ANY provider
+            req, bad = self._req_json()
+            if bad:
+                return bad
             if req.get("stream"):
                 return self._sse_chat(req)
             from harness.scaffold import scaffold_answer, scaffold_turn
@@ -1880,14 +1915,6 @@ class _Handler(BaseHTTPRequestHandler):
             from harness.memory_api import memory_recall
             return self._json(memory_recall(self.run_root, query,
                                             req.get("top_k", 5)))
-        if p == "/api/plugins/register":               # register a custom MCP server by argv
-            req, bad = self._req_json()
-            if bad:
-                return bad
-            from harness.plugins import register_mcp
-            out = register_mcp(req.get("name", ""), req.get("command", []),
-                               (req.get("detail") or "").strip())
-            return self._json(out, 400 if "error" in out else 200)
         if p in ("/api/auth/login", "/api/auth/token", "/api/auth/logout"):
             # Subscription sign-in. A browser flow runs in the background and
             # the surface polls /api/auth; a guided flow returns its steps and
@@ -2021,13 +2048,6 @@ class _Handler(BaseHTTPRequestHandler):
             from harness.injection_probe import probe
             return self._json(probe(allow_write=bool(req.get("allow_write")),
                                     allow_exec=bool(req.get("allow_exec"))))
-        if p == "/api/marketplace/install":            # catalog entry -> plugin registry
-            req, bad = self._req_json()
-            if bad:
-                return bad
-            from harness.marketplace import install_from_catalog
-            out = install_from_catalog((req.get("name") or "").strip())
-            return self._json(out, 400 if "error" in out else 200)
         if p in ("/api/typeface", "/api/typeface/publish",
                  "/api/typeface/family", "/api/typeface/variable"):
             # mint / publish / family / variable, one module (typeface_route.py)
@@ -2074,16 +2094,6 @@ class _Handler(BaseHTTPRequestHandler):
             profile = str(req.get("profile", "package")).strip() or "package"
             from harness.lanes import install_lane
             return self._json(install_lane(name, profile=profile))
-        if p == "/api/plugins/call":                   # one tool call on a registered plugin
-            req, bad = self._req_json()
-            if bad:
-                return bad
-            from harness.plugins import call_plugin
-            out = call_plugin(str(req.get("name", "")).strip(),
-                              str(req.get("tool", "")).strip(),
-                              req.get("arguments")
-                              if isinstance(req.get("arguments"), dict) else {})
-            return self._json(out, 400 if "error" in out else 200)
         if p == "/api/telos/kernel":                   # run a bridged telos creative kernel
             req, bad = self._req_json()
             if bad:
@@ -2150,39 +2160,6 @@ class _Handler(BaseHTTPRequestHandler):
                                 duration=_num("duration", 24.0),
                                 root=_num("root", 220.0))
             return self._json(out, 400 if out.get("refused") else 200)
-        if p == "/api/marketplace/add":                # a user catalog entry (env-var NAMES only)
-            req, bad = self._req_json()
-            if bad:
-                return bad
-            from harness.marketplace import add_user_entry
-            out = add_user_entry(
-                str(req.get("name", "")),
-                req.get("command") if isinstance(req.get("command"), list) else [],
-                detail=str(req.get("detail", "")),
-                requires=req.get("requires")
-                if isinstance(req.get("requires"), list) else [])
-            return self._json(out, 400 if "error" in out else 200)
-        if p == "/api/marketplace/remove":             # drop a user catalog entry
-            req, bad = self._req_json()
-            if bad:
-                return bad
-            from harness.marketplace import remove_user_entry
-            out = remove_user_entry(str(req.get("name", "")))
-            return self._json(out, 400 if "error" in out else 200)
-        if p == "/api/plugins/toggle":                 # enable/disable a custom plugin
-            req, bad = self._req_json()
-            if bad:
-                return bad
-            from harness.plugins import toggle_mcp
-            out = toggle_mcp(req.get("name", ""), bool(req.get("enabled", True)))
-            return self._json(out, 400 if "error" in out else 200)
-        if p == "/api/plugins/remove":                 # remove a custom plugin
-            req, bad = self._req_json()
-            if bad:
-                return bad
-            from harness.plugins import remove_mcp
-            out = remove_mcp(req.get("name", ""))
-            return self._json(out, 400 if "error" in out else 200)
         if p == "/api/lsp":                            # editor intelligence over any LSP server
             req, bad = self._req_json()
             if bad:

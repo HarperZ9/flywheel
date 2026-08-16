@@ -141,6 +141,10 @@ def test_owner_is_loaded_only_after_bearer_auth_and_survives_rotation(tmp_path, 
     ("GET", "/api/journeys/list?limit=1"),
     ("POST", "/api/journeys/get"),
     ("POST", "/api/grants/approve-once"),
+    ("POST", "/api/gateway-grants/prepare/plugin.probe"),
+    ("POST", "/api/plugins/probe"),
+    ("POST", "/v1/chat/completions"),
+    ("GET", "/api/plugins/probe?name=gather"),
 ])
 def test_private_routes_require_configured_auth_without_loading_owner(
         method, path, tmp_path, monkeypatch):

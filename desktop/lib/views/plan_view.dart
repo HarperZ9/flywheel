@@ -1,10 +1,3 @@
-// plan_view.dart — spec-driven planning: a goal becomes a criterion-bearing
-// plan BEFORE anything runs. The forge scores confidence by how many of the
-// plan's validation gates an external oracle can run (checkability is the
-// verdict), the deep profile supplies the discipline and the workflow, the
-// registered project supplies the root, and the handoff is a staged run that
-// carries one chained receipt.
-
 import 'package:flutter/material.dart';
 
 import '../client/gateway_client.dart';
@@ -17,6 +10,7 @@ import '../widgets/composer_results.dart';
 import '../widgets/fw.dart';
 import '../widgets/plan_cards.dart';
 import '../widgets/workflow_cards.dart';
+import '../widgets/operation_grant_sheet.dart';
 
 class PlanView extends StatefulWidget {
   final GatewayClient client;
@@ -37,17 +31,11 @@ class _PlanViewState extends State<PlanView> {
   List<Map<String, dynamic>> _projects = [];
   List<ProfileManifest> _profiles = [];
   List<EndpointRow> _endpoints = [];
-  String? _root;
-  String? _profile;
-  String? _endpoint;
-  bool _allowWrite = false;
-  bool _allowExec = false;
-  bool _forging = false;
-  bool _running = false;
+  String? _root, _profile, _endpoint, _error;
+  bool _allowWrite = false, _allowExec = false;
+  bool _forging = false, _running = false;
   ForgedPlan? _plan;
   WorkflowRun? _run;
-  String? _error;
-
   @override
   void initState() {
     super.initState();
@@ -131,8 +119,11 @@ class _PlanViewState extends State<PlanView> {
 
   Future<void> _runPlan() async {
     final p = _activeProfile;
-    if (_plan == null || p?.workflow == null || _endpoint == null ||
-        _root == null || _running) {
+    if (_plan == null ||
+        p?.workflow == null ||
+        _endpoint == null ||
+        _root == null ||
+        _running) {
       return;
     }
     setState(() {
@@ -141,15 +132,21 @@ class _PlanViewState extends State<PlanView> {
       _error = null;
     });
     try {
-      final run = await widget.client.runWorkflow(
-        workflow: p!.workflow!,
-        goal: _plan!.goal,
-        endpoint: _endpoint!,
-        profile: _profile,
-        allowWrite: _allowWrite,
-        allowExec: _allowExec,
-        root: _root,
-      );
+      final body = await authorizeGatewayOperation(
+          context,
+          GatewayOperation.workflow(
+              'desktop-plan-${DateTime.now().microsecondsSinceEpoch}', {
+            'workflow': p!.workflow!,
+            'goal': _plan!.goal,
+            'endpoint': _endpoint!,
+            'allow_write': _allowWrite,
+            'allow_exec': _allowExec,
+            if (_profile != null) 'profile': _profile!,
+            'root': _root!,
+          }),
+          (body) => widget.client.postJson('/api/workflow', body));
+      if (body == null) return;
+      final run = WorkflowRun.fromJson(body);
       if (mounted) setState(() => _run = run);
     } catch (e) {
       if (mounted) setState(() => _error = '$e');
@@ -169,7 +166,8 @@ class _PlanViewState extends State<PlanView> {
       settings: widget.settings,
       viewKey: 'plan',
       header: const SectionHeader('Plan', kicker: 'spec first, receipt after'),
-      composer: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      composer:
+          Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
         Text(
           'The forge turns a goal into a plan whose validation gates are '
           'marked by what an external oracle can actually run; confidence is '
@@ -205,16 +203,20 @@ class _PlanViewState extends State<PlanView> {
             runSpacing: FwLayout.s2,
             crossAxisAlignment: WrapCrossAlignment.center,
             children: [
-              _picker('project', _root,
+              _picker(
+                  'project',
+                  _root,
                   [for (final p in _projects) '${p['root']}'],
                   (v) => setState(() => _root = v)),
-              _picker('profile', _profile,
-                  [for (final p in _profiles) p.name],
+              _picker('profile', _profile, [for (final p in _profiles) p.name],
                   (v) => setState(() => _profile = v)),
-              _picker('endpoint', _endpoint,
+              _picker(
+                  'endpoint',
+                  _endpoint,
                   [for (final e in _endpoints) e.name],
                   (v) => setState(() => _endpoint = v)),
-              _gate('write', _allowWrite, (v) => setState(() => _allowWrite = v)),
+              _gate(
+                  'write', _allowWrite, (v) => setState(() => _allowWrite = v)),
               _gate('exec', _allowExec, (v) => setState(() => _allowExec = v)),
             ],
           ),
@@ -234,29 +236,33 @@ class _PlanViewState extends State<PlanView> {
             decoration: const InputDecoration(hintText: 'The goal…'),
           ),
           const SizedBox(height: FwLayout.s3),
-          Row(
-            children: [
-              FilledButton(
-                onPressed: _forging ? null : _forge,
-                child: Text(_forging ? 'Forging…' : 'Forge plan'),
-              ),
-              const SizedBox(width: FwLayout.s3),
-              OutlinedButton(
-                onPressed: _plan == null || _running ||
-                        _activeProfile?.workflow == null ||
-                        _root == null || _endpoint == null
-                    ? null
-                    : _runPlan,
-                child: Text(_running
-                    ? 'Running…'
-                    : 'Run as ${_activeProfile?.workflow ?? 'workflow'}'),
-              ),
-            ],
-          ),
+          _actions(),
         ],
       ),
     );
   }
+
+  Widget _actions() => Row(
+        children: [
+          FilledButton(
+            onPressed: _forging ? null : _forge,
+            child: Text(_forging ? 'Forging…' : 'Forge plan'),
+          ),
+          const SizedBox(width: FwLayout.s3),
+          OutlinedButton(
+            onPressed: _plan == null ||
+                    _running ||
+                    _activeProfile?.workflow == null ||
+                    _root == null ||
+                    _endpoint == null
+                ? null
+                : _runPlan,
+            child: Text(_running
+                ? 'Running…'
+                : 'Run as ${_activeProfile?.workflow ?? 'workflow'}'),
+          ),
+        ],
+      );
 
   Widget _picker(String label, String? value, List<String> options,
       ValueChanged<String?> onChanged) {
@@ -279,17 +285,16 @@ class _PlanViewState extends State<PlanView> {
     );
   }
 
-  Widget _gate(String label, bool value, ValueChanged<bool> onChanged) {
-    final t = context.fw;
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Checkbox(
-            value: value,
-            onChanged: (v) => onChanged(v ?? false),
-            visualDensity: VisualDensity.compact),
-        Text('allow $label', style: fwMono(t, size: 11.5, color: t.inkMuted)),
-      ],
-    );
-  }
+  Widget _gate(String label, bool value, ValueChanged<bool> onChanged) => Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Checkbox(
+              value: value,
+              onChanged: (v) => onChanged(v ?? false),
+              visualDensity: VisualDensity.compact),
+          Text('allow $label',
+              style:
+                  fwMono(context.fw, size: 11.5, color: context.fw.inkMuted)),
+        ],
+      );
 }

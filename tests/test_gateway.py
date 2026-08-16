@@ -453,21 +453,6 @@ def test_content_length_guard_rejects_garbage_and_oversize():
     assert _content_length(str(gateway._Handler.MAX_BODY + 1)) is None   # oversized
 
 
-def _agent_post(body: dict, root):
-    import io
-    raw = json.dumps(body).encode()
-    h = gateway._Handler.__new__(gateway._Handler)
-    h.path = "/api/agent"
-    h.root = root
-    h.run_root = root  # hermetic: run persistence must never touch real history
-    h.headers = _FakeHeaders(str(len(raw)))
-    h.rfile = io.BytesIO(raw)
-    sent = {}
-    h._json = lambda b, code=200: sent.update(body=b, code=code)
-    h._post()
-    return sent
-
-
 def _fake_spec(base_url="https://api.x.com/v1", api_key_env="X_KEY"):
     s = type("Spec", (), {})()
     s.base_url, s.api_key_env, s.local, s.default_model = base_url, api_key_env, False, "e"
@@ -596,47 +581,6 @@ def test_openai_chat_default_does_not_touch_stats(monkeypatch):
     monkeypatch.setattr(gateway, "_resolve_proposer", lambda cand, url: (None, "unavailable", 503))
     gateway.openai_chat({"model": "a", "messages": [{"role": "user", "content": "hi"}]}, "http://x")
     assert spy.ordered is None and spy.recorded == []   # explicit order honored, no side effect
-
-
-def test_agent_route_validates_goal_and_endpoint(tmp_path):
-    sent = _agent_post({"goal": "", "endpoint": ""}, tmp_path)
-    assert sent["code"] == 400 and "goal" in sent["body"]["error"]
-
-
-def test_agent_route_dispatches_gated_and_caps_steps(tmp_path, monkeypatch):
-    monkeypatch.setenv("FLYWHEEL_HOME", str(tmp_path))  # countersign store
-    import harness.router_agent as RA
-    seen = {}
-
-    def fake_run(goal, endpoint, **kw):
-        seen.update(goal=goal, endpoint=endpoint, kw=kw)
-        emit = kw.get("on_event")
-        if emit:
-            emit({"type": "assistant", "step": 1, "text": "the plan"})
-            emit({"type": "tool_result", "name": "run", "ok": True,
-                  "output": "green"})
-        return {"final": "done", "steps": 1, "verified": True,
-                "checkpoint": "abc", "endpoint": endpoint}
-
-    monkeypatch.setattr(RA, "run_router_agent", fake_run)
-    sent = _agent_post({"goal": "fix the bug", "endpoint": "anthropic",
-                        "max_steps": 99}, tmp_path)
-    assert sent["code"] == 200 and sent["body"]["final"] == "done"
-    assert seen["goal"] == "fix the bug" and seen["endpoint"] == "anthropic"
-    assert seen["kw"]["max_steps"] == 12               # capped, no runaway loop
-    assert seen["kw"]["allow_write"] is False          # default-deny survives the HTTP hop
-    assert seen["kw"]["allow_exec"] is False
-    # the run persisted into HISTORY under the run root, content-addressed,
-    # and it CARRIES ITS TRACE: the same events a live stream would show
-    from harness.eval_store import agent_run_detail, agent_runs
-    hist = agent_runs(tmp_path)
-    assert hist["total"] == 1
-    assert hist["runs"][0]["run_id"] == sent["body"]["run_id"]
-    assert hist["runs"][0]["intact"] is True
-    assert hist["runs"][0]["goal_excerpt"] == "fix the bug"
-    detail = agent_run_detail(tmp_path, sent["body"]["run_id"])
-    assert [e["type"] for e in detail["events"]] == [
-        "assistant", "tool_result"]
 
 
 def test_sse_agent_persists_the_run_and_dones_with_run_id(tmp_path, monkeypatch):

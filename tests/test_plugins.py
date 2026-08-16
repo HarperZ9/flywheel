@@ -119,3 +119,18 @@ def test_lane_call_uses_runtime_launch_spec(monkeypatch, tmp_path):
     monkeypatch.setattr("harness.mcp_client.MCPClient", FakeClient)
     assert plugins.call_plugin("gather", "gather.run")["result"]["ok"] is True
     assert seen == [expected]
+
+
+def test_probe_uses_injected_client_and_always_closes(monkeypatch, tmp_path):
+    _isolate(monkeypatch, tmp_path)
+    calls = []
+
+    class FakeClient:
+        def start(self): calls.append("start")
+        def list_tools(self): return [{"name": "gather.run"}]
+        def close(self): calls.append("close")
+
+    out = plugins.probe_plugin(
+        "gather", client_factory=lambda *_args, **_kwargs: FakeClient())
+    assert out["status"] == "live"
+    assert calls == ["start", "close"]

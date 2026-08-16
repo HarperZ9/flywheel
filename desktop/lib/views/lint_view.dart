@@ -9,6 +9,7 @@ import '../client/gateway_client.dart';
 import '../models/gateway_models.dart';
 import '../theme/flywheel_theme.dart';
 import '../widgets/fw.dart';
+import '../widgets/operation_grant_sheet.dart';
 
 class LintView extends StatefulWidget {
   final GatewayClient client;
@@ -86,11 +87,24 @@ class _LintViewState extends State<LintView> {
     final goal = 'Fix this lint finding in ${f['file']} at line ${f['line']}: '
         '${f['rule']}: ${f['message']}. Make the smallest correct change.';
     try {
-      final r = await widget.client.agent(goal, _endpoint!,
-          maxSteps: 8, allowWrite: true, root: _root);
-      final clean = (r['integrity'] is Map)
-          ? (r['integrity']['clean'] == true)
-          : null;
+      final operation = GatewayOperation.exact(
+          action: 'agent.run',
+          clientRequestId:
+              'desktop-lint-${DateTime.now().microsecondsSinceEpoch}',
+          operation: {
+            'goal': goal,
+            'endpoint': _endpoint!,
+            'max_steps': 8,
+            'allow_write': true,
+            'allow_exec': false,
+            'stream': false,
+            'root': _root!
+          });
+      final r = await authorizeGatewayOperation(context, operation,
+          (body) => widget.client.postJson('/api/agent', body));
+      if (r == null) return;
+      final clean =
+          (r['integrity'] is Map) ? (r['integrity']['clean'] == true) : null;
       setState(() => _fixing[key] = r['error'] != null
           ? 'failed: ${r['error']}'
           : 'done · ${r['steps'] ?? '?'} steps'
@@ -129,10 +143,16 @@ class _LintViewState extends State<LintView> {
             runSpacing: FwLayout.s2,
             crossAxisAlignment: WrapCrossAlignment.center,
             children: [
-              _picker(t, 'project', _root,
+              _picker(
+                  t,
+                  'project',
+                  _root,
                   {for (final p in _projects) '${p['root']}': '${p['name']}'},
                   (v) => setState(() => _root = v)),
-              _picker(t, 'fix via', _endpoint,
+              _picker(
+                  t,
+                  'fix via',
+                  _endpoint,
                   {for (final e in _endpoints) e.name: e.name},
                   (v) => setState(() => _endpoint = v)),
               FilledButton(
@@ -191,7 +211,9 @@ class _LintViewState extends State<LintView> {
             const SizedBox(width: FwLayout.s3),
             Expanded(
                 child: StatTile(
-                    label: 'high', value: '${sev['high'] ?? 0}', status: 'drift')),
+                    label: 'high',
+                    value: '${sev['high'] ?? 0}',
+                    status: 'drift')),
           ],
         ),
         const SizedBox(height: FwLayout.s3),
@@ -242,7 +264,8 @@ class _LintViewState extends State<LintView> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text('${f['file']}:${f['line']}  ·  ${f['rule']}',
-                          style: fwMono(t, size: 11.5, weight: FontWeight.w600)),
+                          style:
+                              fwMono(t, size: 11.5, weight: FontWeight.w600)),
                       Text('${f['message']}',
                           style: TextStyle(fontSize: 12, color: t.inkMuted)),
                       Row(children: [

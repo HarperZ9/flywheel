@@ -14,9 +14,10 @@ import '../models/tool_spec.dart';
 import '../theme/flywheel_theme.dart';
 import 'fw.dart';
 import 'tool_form.dart';
+import 'operation_grant_sheet.dart';
 
-void showToolCallSheet(BuildContext context, GatewayClient client,
-    String plugin, ToolSpec spec) {
+void showToolCallSheet(
+    BuildContext context, GatewayClient client, String plugin, ToolSpec spec) {
   showModalBottomSheet(
     context: context,
     isScrollControlled: true,
@@ -94,8 +95,16 @@ class _ToolCallSheetState extends State<ToolCallSheet> {
       _result = null;
     });
     try {
-      final doc = await widget.client
-          .callPlugin(widget.plugin, widget.spec.name, arguments);
+      final operation = GatewayOperation.pluginCall(
+          name: widget.plugin,
+          tool: widget.spec.name,
+          arguments: arguments,
+          credentialRefs: const [],
+          clientRequestId:
+              'desktop-tool-${DateTime.now().microsecondsSinceEpoch}');
+      final doc = await authorizeGatewayOperation(context, operation,
+          (body) => widget.client.postJson('/api/plugins/call', body));
+      if (doc == null) return;
       if (mounted) {
         setState(
             () => _result = const JsonEncoder.withIndent('  ').convert(doc));
@@ -175,8 +184,7 @@ class _ToolCallSheetState extends State<ToolCallSheet> {
       maxLines: 5,
       minLines: 2,
       style: fwMono(t, size: 12),
-      decoration:
-          const InputDecoration(hintText: 'arguments as a JSON object'),
+      decoration: const InputDecoration(hintText: 'arguments as a JSON object'),
     );
   }
 
@@ -207,8 +215,7 @@ class _ToolCallSheetState extends State<ToolCallSheet> {
               color: active ? t.drift.withValues(alpha: 0.42) : t.line),
         ),
         child: Text(label.toUpperCase(),
-            style: fwKicker(t,
-                size: 10, color: active ? t.drift : t.inkFaint)),
+            style: fwKicker(t, size: 10, color: active ? t.drift : t.inkFaint)),
       ),
     );
   }

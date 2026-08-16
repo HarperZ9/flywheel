@@ -15,6 +15,7 @@ import '../widgets/chat_sidebar.dart';
 import '../widgets/chat_thread.dart';
 import '../widgets/chat_welcome.dart';
 import '../widgets/fw.dart';
+import '../widgets/operation_grant_sheet.dart';
 import 'agent_mode_pane.dart';
 
 class AgentView extends StatefulWidget {
@@ -45,7 +46,6 @@ class _AgentViewState extends State<AgentView> {
   String? _model;
   StreamSubscription<Map<String, dynamic>>? _sub;
   Completer<PromptDisposition>? _disposition;
-  Conversation? _submittedConversation;
   ChatDraft? _submittedDraft;
   ChatMessage? _assistant;
   bool _admitting = false, _accepted = false, _streaming = false;
@@ -140,27 +140,29 @@ class _AgentViewState extends State<AgentView> {
     if (_model == null) return Future.value(PromptDisposition.retained);
     final submitted = _admission.prepare(_current, text);
     if (submitted == null) return Future.value(PromptDisposition.retained);
-    _beginAdmission(submitted);
+    unawaited(_beginAdmission(submitted));
     return _disposition!.future;
   }
 
-  void _beginAdmission(ChatDraft submitted) {
+  Future<void> _beginAdmission(ChatDraft submitted) async {
     final generation = ++_generation;
     _submittedDraft = submitted;
-    _submittedConversation = _current;
     _assistant = null;
     _accepted = false;
     _admitting = true;
     _disposition = Completer<PromptDisposition>();
     setState(() {});
     final chosen = _chosenModels[_model];
-    final model = chosen == null ? _model! : '$_model:$chosen';
+    final String model = chosen == null ? _model! : '$_model:$chosen';
     final wire = _current.messages.map((message) => message.toWire()).toList();
     wire.add({'role': 'user', 'content': submitted.text});
-    _sub = widget.client.chatStream(wire, model).listen(
-        (event) => _onEvent(generation, event),
-        onError: (_) => _onTerminal(generation),
-        onDone: () => _onTerminal(generation));
+    final operation = GatewayOperation.chat(submitted.attemptRef!, model, wire);
+    await authorizeGatewayStream(context, operation, (body) {
+      _sub = widget.client.chatStream(wire, model, authorizedBody: body).listen(
+          (event) => _onEvent(generation, event),
+          onError: (_) => _onTerminal(generation),
+          onDone: () => _onTerminal(generation));
+    }, () => _onTerminal(generation));
   }
 
   void _onEvent(int generation, Map<String, dynamic> event) {
@@ -179,8 +181,8 @@ class _AgentViewState extends State<AgentView> {
         streaming: true,
         attemptRef: _submittedDraft!.attemptRef);
     _applyEvent(assistant, event);
-    final decision = _admission.acceptFirst(
-        _submittedConversation!, _submittedDraft!, assistant);
+    final decision =
+        _admission.acceptFirst(_current, _submittedDraft!, assistant);
     _accepted = decision.visible;
     _assistant = assistant;
     _streaming = decision.visible;
@@ -236,7 +238,6 @@ class _AgentViewState extends State<AgentView> {
               curve: Curves.easeOut);
         }
       });
-
   @override
   Widget build(BuildContext context) {
     if (!widget.alive) {
@@ -273,7 +274,6 @@ class _AgentViewState extends State<AgentView> {
           ? _chosenModels.remove(_model)
           : _chosenModels[_model!] = value),
       loadModels: () => widget.client.models(_model ?? ''));
-
   Widget _body() => _agentMode
       ? AgentModePane(
           client: widget.client, alive: widget.alive, settings: widget.settings)
@@ -293,8 +293,8 @@ class _AgentViewState extends State<AgentView> {
       onSavePrompt: (text) => setState(() => widget.settings.savePrompt(text)));
 }
 
-bool _validEvent(Map<String, dynamic> event) =>
-    (event['type'] == 'delta' &&
-        event['content'] is String &&
-        (event['content'] as String).isNotEmpty) ||
-    (event['type'] == 'done' && event['receipt'] is Map<String, dynamic>);
+bool _validEvent(Map<String, dynamic> event) => switch (event) {
+      {'type': 'delta', 'content': final String value} => value.isNotEmpty,
+      {'type': 'done', 'receipt': final Map<String, dynamic> _} => true,
+      _ => false,
+    };

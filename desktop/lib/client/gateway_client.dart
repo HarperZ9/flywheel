@@ -478,31 +478,6 @@ class GatewayClient {
     return _decode(r);
   }
 
-  /// POST /api/agent — run a gated, witnessed tool loop (non-streaming).
-  /// `root` scopes the run to an open workspace; the engine refuses a root
-  /// that is not an existing directory.
-  Future<Map<String, dynamic>> agent(String goal, String endpoint,
-      {int maxSteps = 6,
-      bool allowWrite = false,
-      bool allowExec = false,
-      String? root,
-      String? testCmd}) async {
-    final r = await _http.post(
-      Uri.parse('$baseUrl/api/agent'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'goal': goal,
-        'endpoint': endpoint,
-        'max_steps': maxSteps,
-        'allow_write': allowWrite,
-        'allow_exec': allowExec,
-        if (root != null && root.isNotEmpty) 'root': root,
-        if (testCmd != null && testCmd.isNotEmpty) 'test_cmd': testCmd,
-      }),
-    );
-    return _decode(r);
-  }
-
   /// Generic GET returning decoded JSON, for lightweight read-only routes.
   Future<Map<String, dynamic>> getJson(String path) async {
     final r = await _http.get(Uri.parse('$baseUrl$path'));
@@ -547,35 +522,6 @@ class GatewayClient {
   Future<WorkflowRoster> workflows() async {
     final r = await _http.get(Uri.parse('$baseUrl/api/workflows'));
     return WorkflowRoster.fromJson(_decode(r));
-  }
-
-  /// POST /api/workflow — run a staged workflow over any endpoint. `root`
-  /// scopes the run to a workspace; the engine refuses a missing directory.
-  Future<WorkflowRun> runWorkflow({
-    required String workflow,
-    required String goal,
-    required String endpoint,
-    String? profile,
-    bool allowWrite = false,
-    bool allowExec = false,
-    String? testCmd,
-    String? root,
-  }) async {
-    final r = await _http.post(
-      Uri.parse('$baseUrl/api/workflow'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'workflow': workflow,
-        'goal': goal,
-        'endpoint': endpoint,
-        if (profile != null) 'profile': profile,
-        'allow_write': allowWrite,
-        'allow_exec': allowExec,
-        if (testCmd != null && testCmd.isNotEmpty) 'test_cmd': testCmd,
-        if (root != null && root.isNotEmpty) 'root': root,
-      }),
-    );
-    return WorkflowRun.fromJson(_decode(r));
   }
 
   /// GET /api/memory — durable memory stats.

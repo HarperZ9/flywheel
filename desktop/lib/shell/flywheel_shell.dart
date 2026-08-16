@@ -4,7 +4,9 @@ import 'dart:ui' show AppExitResponse;
 import 'package:flutter/material.dart';
 
 import '../client/gateway_client.dart';
+import '../client/gateway_grants.dart';
 import '../client/journey_api.dart';
+import '../controllers/gateway_operation_controller.dart';
 import '../controllers/journey_controller.dart';
 import '../models/gateway_models.dart';
 import '../services/gateway_process.dart';
@@ -16,6 +18,7 @@ import '../ide/code_buffer_session.dart';
 import '../ide/unsaved_work_guard.dart';
 import '../widgets/appearance_panel.dart';
 import '../widgets/flywheel_nav.dart';
+import '../widgets/operation_grant_sheet.dart';
 import '../widgets/side_rail.dart';
 import '../widgets/status_bar.dart';
 import 'view_factory.dart';
@@ -90,6 +93,7 @@ class _FlywheelShellState extends State<FlywheelShell> {
   Timer? _timer;
   Object? _pendingArgument;
   late final UnsavedWorkGuard _guard;
+  late final GatewayOperationController _operations;
   late final AppLifecycleListener _lifecycle;
   int _navigationGeneration = 0;
 
@@ -97,6 +101,8 @@ class _FlywheelShellState extends State<FlywheelShell> {
   void initState() {
     super.initState();
     _dependencies = widget.dependencies ?? FlywheelDependencies.production();
+    _operations =
+        GatewayOperationController(GatewayGrantClient(_dependencies.client));
     _guard = UnsavedWorkGuard(
         session: _dependencies.code,
         prompt: _dependencies.closePrompt ??
@@ -114,6 +120,7 @@ class _FlywheelShellState extends State<FlywheelShell> {
   void dispose() {
     _timer?.cancel();
     _lifecycle.dispose();
+    _operations.dispose();
     _dependencies.dispose();
     super.dispose();
   }
@@ -236,22 +243,25 @@ class _FlywheelShellState extends State<FlywheelShell> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: FlywheelNav(
-        goTo: _goTo,
-        child: Column(
-          children: [
-            Expanded(
-              child: Row(children: [_rail(), Expanded(child: _activeView())]),
-            ),
-            StatusBar(
-              alive: _gatewayAlive,
-              message: _statusMessage,
-              startError: _startError,
-              world: _world,
-              onStartEngine: _startEngine,
-            ),
-          ],
+    return GatewayOperationScope(
+      authorize: journeyGatewayAuthorizer(_operations, _dependencies.journey),
+      child: Scaffold(
+        body: FlywheelNav(
+          goTo: _goTo,
+          child: Column(
+            children: [
+              Expanded(
+                child: Row(children: [_rail(), Expanded(child: _activeView())]),
+              ),
+              StatusBar(
+                alive: _gatewayAlive,
+                message: _statusMessage,
+                startError: _startError,
+                world: _world,
+                onStartEngine: _startEngine,
+              ),
+            ],
+          ),
         ),
       ),
     );

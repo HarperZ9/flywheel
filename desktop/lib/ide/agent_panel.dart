@@ -1,9 +1,3 @@
-// agent_panel.dart — the agent docked under the editor, scoped to the open
-// workspace. Same gated loop as everywhere else, now revealed as it runs:
-// every assistant turn, tool call, and tool verdict streams into the
-// timeline live, and every finished run lands in past runs with its trace.
-// Detach is honest: it stops the watching, never the gated run.
-
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -12,6 +6,7 @@ import '../client/gateway_client.dart';
 import '../models/gateway_models.dart';
 import '../theme/flywheel_theme.dart';
 import '../widgets/fw.dart';
+import '../widgets/operation_grant_sheet.dart';
 import 'agent_gates.dart';
 import 'agent_runs_panel.dart';
 import 'live_run_tail.dart';
@@ -25,8 +20,6 @@ class AgentPanel extends StatefulWidget {
   final VoidCallback onRunStarted;
   final VoidCallback onRunFinished;
 
-  /// When provided, the goal field is owned by the caller so other panes
-  /// (the diff viewer's anchored change requests) can compose into it.
   final TextEditingController? goalController;
   const AgentPanel(
       {super.key,
@@ -49,16 +42,12 @@ class _AgentPanelState extends State<AgentPanel> {
   final _scroll = ScrollController();
   List<EndpointRow> _endpoints = [];
   String? _endpoint;
-  bool _allowWrite = true; // an IDE agent exists to edit; still a visible grant
-  bool _allowExec = false;
-  bool _attachContext = true;
-  bool _running = false;
-  bool _detached = false;
+  bool _allowWrite = true, _allowExec = false, _attachContext = true;
+  bool _running = false, _detached = false, _pastOpen = false;
   List<Map<String, dynamic>> _events = [];
   StreamSubscription<Map<String, dynamic>>? _sub;
-  bool _pastOpen = false;
   List<Map<String, dynamic>> _pastRuns = [];
-  Map<String, dynamic>? _stored; // an opened past run
+  Map<String, dynamic>? _stored;
   String? _error;
 
   @override
@@ -88,7 +77,7 @@ class _AgentPanelState extends State<AgentPanel> {
     } catch (_) {}
   }
 
-  void _run() {
+  Future<void> _run() async {
     var goal = _goal.text.trim();
     if (goal.isEmpty || _endpoint == null || _running) return;
     if (_attachContext && widget.activeFile != null) {
@@ -105,22 +94,42 @@ class _AgentPanelState extends State<AgentPanel> {
       _stored = null;
       _error = null;
     });
-    _sub = widget.client
-        .agentStream(goal, _endpoint!,
-            maxSteps: 10,
-            allowWrite: _allowWrite,
-            allowExec: _allowExec,
-            root: widget.workspaceRoot)
-        .listen(_onEvent, onError: (e) {
-      if (mounted) {
-        setState(() {
-          _error = '$e';
-          _running = false;
+    final operation = GatewayOperation.exact(
+        action: 'agent.run',
+        clientRequestId:
+            'desktop-agent-${DateTime.now().microsecondsSinceEpoch}',
+        operation: {
+          'goal': goal,
+          'endpoint': _endpoint!,
+          'max_steps': 10,
+          'allow_write': _allowWrite,
+          'allow_exec': _allowExec,
+          'stream': true,
+          'root': widget.workspaceRoot
         });
-      }
+    await authorizeGatewayStream(context, operation, (body) {
+      _sub = widget.client
+          .agentStream(goal, _endpoint!,
+              maxSteps: 10,
+              allowWrite: _allowWrite,
+              allowExec: _allowExec,
+              root: widget.workspaceRoot,
+              authorizedBody: body)
+          .listen(_onEvent, onError: (e) {
+        if (mounted) {
+          setState(() {
+            _error = '$e';
+            _running = false;
+          });
+        }
+        widget.onRunFinished();
+      }, onDone: () {
+        if (mounted) setState(() => _running = false);
+      });
+    }, () {
+      if (!mounted) return;
+      setState(() => _running = false);
       widget.onRunFinished();
-    }, onDone: () {
-      if (mounted) setState(() => _running = false);
     });
   }
 
@@ -131,7 +140,6 @@ class _AgentPanelState extends State<AgentPanel> {
       widget.onRunFinished();
       if (_pastOpen) _loadPastRuns();
     }
-    // follow the tail so the newest step is always in view
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!_scroll.hasClients) return;
       final end = _scroll.position.maxScrollExtent;
@@ -145,8 +153,6 @@ class _AgentPanelState extends State<AgentPanel> {
     });
   }
 
-  /// Stops the watching, never the run: the gated loop finishes in the
-  /// engine and its trace lands in past runs.
   void _detach() {
     _sub?.cancel();
     setState(() {
@@ -191,29 +197,7 @@ class _AgentPanelState extends State<AgentPanel> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              // one hot mark per view: while browsing history the sign flow
-              // (when offered) carries it, so the header calms down
-              Kicker('workspace agent', hot: !_pastOpen),
-              const Spacer(),
-              if (!widget.alive)
-                Text('engine offline',
-                    style: fwMono(t, size: 10.5, color: t.drift))
-              else
-                TextButton(
-                  onPressed: () {
-                    setState(() {
-                      _pastOpen = !_pastOpen;
-                      _stored = null;
-                    });
-                    if (_pastOpen) _loadPastRuns();
-                  },
-                  child: Text(_pastOpen ? 'live' : 'past runs',
-                      style: fwMono(t, size: 11, color: t.inkMuted)),
-                ),
-            ],
-          ),
+          _header(t),
           const SizedBox(height: FwLayout.s2),
           if (_pastOpen)
             _pastSection()
@@ -252,6 +236,27 @@ class _AgentPanelState extends State<AgentPanel> {
     );
   }
 
+  Widget _header(FwTokens t) => Row(
+        children: [
+          Kicker('workspace agent', hot: !_pastOpen),
+          const Spacer(),
+          if (!widget.alive)
+            Text('engine offline', style: fwMono(t, size: 10.5, color: t.drift))
+          else
+            TextButton(
+              onPressed: () {
+                setState(() {
+                  _pastOpen = !_pastOpen;
+                  _stored = null;
+                });
+                if (_pastOpen) _loadPastRuns();
+              },
+              child: Text(_pastOpen ? 'live' : 'past runs',
+                  style: fwMono(t, size: 11, color: t.inkMuted)),
+            ),
+        ],
+      );
+
   Widget _pastSection() {
     return ConstrainedBox(
       constraints: const BoxConstraints(maxHeight: 280),
@@ -276,7 +281,7 @@ class _AgentPanelState extends State<AgentPanel> {
             style: const TextStyle(fontSize: 13),
             decoration:
                 const InputDecoration(hintText: 'Change this workspace…'),
-            onSubmitted: (_) => _run(),
+            onSubmitted: (_) => unawaited(_run()),
           ),
         ),
         const SizedBox(width: FwLayout.s2),
@@ -285,11 +290,10 @@ class _AgentPanelState extends State<AgentPanel> {
           const SizedBox(width: FwLayout.s2),
         ],
         FilledButton(
-          onPressed: widget.alive && !_running ? _run : null,
+          onPressed: widget.alive && !_running ? () => unawaited(_run()) : null,
           child: Text(_running ? 'Running…' : 'Run'),
         ),
       ],
     );
   }
-
 }

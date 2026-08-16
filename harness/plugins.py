@@ -116,7 +116,7 @@ def remove_mcp(name: str) -> dict:
 
 
 def call_plugin(name: str, tool: str, arguments: "dict | None" = None,
-                timeout: float = 45.0) -> dict:
+                timeout: float = 45.0, client_factory=None) -> dict:
     """Spawn a registered plugin's server and call ONE tool. Admission is
     the same as probing: lanes and registered custom servers only, so this
     route never launches an arbitrary command. The result is the server's
@@ -136,17 +136,18 @@ def call_plugin(name: str, tool: str, arguments: "dict | None" = None,
         command = entry.get("command", [])
         kind = "mcp"
     from .mcp_client import MCPClient, MCPError
+    factory = client_factory or MCPClient
     try:
-        with MCPClient(command, timeout=timeout,
-                       client_name="flywheel-plugins") as c:
+        with factory(command, timeout=timeout,
+                     client_name="flywheel-plugins") as c:
             out = c.call_text(tool, arguments or {})
             return {"name": name, "kind": kind, "tool": tool, "result": out}
-    except (MCPError, FileNotFoundError, OSError) as e:
-        return {"error": f"{type(e).__name__}: {e}", "name": name,
+    except (MCPError, FileNotFoundError, OSError) as error:
+        return {"error": f"{type(error).__name__}: {error}", "name": name,
                 "tool": tool}
 
 
-def probe_plugin(name: str, timeout: float = 20.0) -> dict:
+def probe_plugin(name: str, timeout: float = 20.0, client_factory=None) -> dict:
     """Spawn the plugin's server and report its real tools. Lanes and custom
     mcp plugins probe alike; builtins list their gated set directly."""
     if name == "tools":
@@ -165,10 +166,10 @@ def probe_plugin(name: str, timeout: float = 20.0) -> dict:
         command = entry.get("command", [])
         kind = "mcp"
     from .mcp_client import MCPClient, MCPError
-    client = None
+    factory, client = client_factory or MCPClient, None
     try:
-        client = MCPClient(command, timeout=timeout,
-                           client_name="flywheel-plugins")
+        client = factory(command, timeout=timeout,
+                         client_name="flywheel-plugins")
         client.start()
         tools = client.list_tools()
         # Keep the FULL spec (name + description + inputSchema) so a caller
@@ -184,10 +185,8 @@ def probe_plugin(name: str, timeout: float = 20.0) -> dict:
                 "n_tools": len(specs),
                 "tools": [s["name"] for s in specs],
                 "tool_specs": specs}
-    except (MCPError, FileNotFoundError, OSError) as e:
-        detail = f"{type(e).__name__}: {e}"
-        # A server that died on launch said why on stderr; report the
-        # server's own words (bounded) instead of a bare connection error.
+    except (MCPError, FileNotFoundError, OSError) as error:
+        detail = f"{type(error).__name__}: {error}"
         tail = client.stderr_tail() if client is not None else ""
         if tail:
             detail += f" | server stderr: {tail[-400:]}"
