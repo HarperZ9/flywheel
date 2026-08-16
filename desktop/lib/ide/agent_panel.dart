@@ -1,10 +1,15 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../client/gateway_client.dart';
+import '../client/gateway_grants.dart';
+import '../controllers/gateway_operation_controller.dart';
+import '../controllers/operation_controller.dart';
 import '../models/gateway_models.dart';
+import '../models/operation_models.dart';
 import '../theme/flywheel_theme.dart';
 import '../widgets/fw.dart';
 import '../widgets/operation_grant_sheet.dart';
+import '../widgets/operation_controls.dart';
 import 'agent_gates.dart';
 import 'agent_runs_panel.dart';
 import 'editor_pane.dart';
@@ -39,20 +44,26 @@ class _AgentPanelState extends State<AgentPanel> {
   final _scroll = ScrollController();
   List<EndpointRow> _endpoints = [];
   String? _endpoint, _error;
-  bool _allowWrite = true, _allowExec = false, _attachContext = true;
-  bool _running = false, _detached = false, _pastOpen = false;
+  bool _allowWrite = false, _allowExec = false, _attachContext = true;
+  bool _authorizing = false, _started = false, _pastOpen = false;
   List<Map<String, dynamic>> _events = [], _pastRuns = [];
-  StreamSubscription<Map<String, dynamic>>? _sub;
+  late final GatewayOperations _operations;
+  late final GatewayOperationController _stopGrants;
+  late OperationController _operationState;
   Map<String, dynamic>? _stored;
   @override
   void initState() {
     super.initState();
+    _operations = GatewayOperations(widget.client);
+    _stopGrants = GatewayOperationController(GatewayGrantClient(widget.client));
+    _operationState = _newOperationState();
     _loadEndpoints();
   }
 
   @override
   void dispose() {
-    _sub?.cancel();
+    _operationState.dispose();
+    _stopGrants.dispose();
     _scroll.dispose();
     if (widget.goalController == null) _goal.dispose();
     super.dispose();
@@ -71,12 +82,23 @@ class _AgentPanelState extends State<AgentPanel> {
     } catch (_) {}
   }
 
-  void _beginRun() => setState(() {
-        _running = true;
-        _detached = false;
-        _events = [];
-        _stored = _error = null;
-      });
+  OperationController _newOperationState() => OperationController(
+      requestId: () => 'desktop-stop-${DateTime.now().microsecondsSinceEpoch}',
+      grants: _stopGrants,
+      onTerminal: _finished)
+    ..addListener(_stateChanged);
+  void _beginRun() {
+    _operationState.dispose();
+    _operationState = _newOperationState();
+    widget.onRunStarted();
+    setState(() {
+      _authorizing = false;
+      _started = true;
+      _events = [];
+      _stored = _error = null;
+    });
+  }
+
   GatewayOperation? _operation(String request) {
     final endpoint = _endpoint, input = _goal.text.trim();
     if (endpoint == null || input.isEmpty) return null;
@@ -102,70 +124,69 @@ class _AgentPanelState extends State<AgentPanel> {
   }
 
   Future<void> _run() async {
-    if (_running) return;
+    if (_authorizing || _started) return;
     final request = 'desktop-agent-${DateTime.now().microsecondsSinceEpoch}';
     final operation = _operation(request);
     if (operation == null) {
       setState(() => _error = 'INVALID_CONTEXT');
       return;
     }
-    final value = operation.operation;
-    widget.onRunStarted();
-    _beginRun();
+    setState(() => _authorizing = true);
     await authorizeGatewayStream(context, operation, (body) {
-      _sub = widget.client
-          .agentStream(value['goal'] as String, value['endpoint'] as String,
-              maxSteps: 10,
-              allowWrite: value['allow_write'] as bool,
-              allowExec: value['allow_exec'] as bool,
-              root: widget.workspaceRoot,
-              authorizedBody: body)
-          .listen(_onEvent, onError: (e) {
-        if (mounted) {
-          setState(() {
-            _error = '$e';
-            _running = false;
-          });
-        }
-        widget.onRunFinished();
-      }, onDone: () {
-        if (mounted) setState(() => _running = false);
-      });
+      if (!mounted) return;
+      _beginRun();
+      _operationState.observe(_operations.start(body),
+          onProgress: _onProgress, onInterrupted: _interrupted);
     }, () {
       if (!mounted) return;
-      setState(() => _running = false);
-      widget.onRunFinished();
+      setState(() => _authorizing = false);
     }, currentOperation: () => _operation(request));
   }
 
-  void _onEvent(Map<String, dynamic> e) {
+  void _onProgress(Map<String, dynamic> event) {
     if (!mounted) return;
-    setState(() => _events = [..._events, e]);
-    if (e['type'] == 'done') {
-      widget.onRunFinished();
-      if (_pastOpen) _loadPastRuns();
-    }
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!_scroll.hasClients) return;
-      final end = _scroll.position.maxScrollExtent;
-      if (MediaQuery.of(context).disableAnimations) {
-        _scroll.jumpTo(end);
-      } else {
-        _scroll.animateTo(end,
-            duration: const Duration(milliseconds: 180),
-            curve: Curves.easeOutQuart);
+    setState(() => _events = [..._events, event]);
+    _scrollTail();
+  }
+
+  void _interrupted() {
+    if (mounted) setState(() => _error = 'INVALID_RESPONSE');
+  }
+
+  void _stateChanged() {
+    if (mounted) setState(() {});
+  }
+
+  void _finished() {
+    _started = false;
+    widget.onRunFinished();
+    if (_pastOpen) _loadPastRuns();
+  }
+
+  Future<void> _stop() async {
+    final operation = _operationState.stopOperation();
+    if (operation == null || !await _operationState.prepareStop(operation)) {
+      if (mounted && _stopGrants.failure != null) {
+        setState(() => _error = _stopGrants.failure!.code);
       }
+      return;
+    }
+    if (!mounted) return;
+    await showOperationGrantSheet<OperationSnapshot>(context, _stopGrants,
+        (body) async {
+      final snapshot = await _operations.cancel(body);
+      if (!_operationState.acceptSnapshot(snapshot)) {
+        throw StateError('invalid operation response');
+      }
+      return snapshot;
     });
   }
 
-  void _detach() {
-    _sub?.cancel();
-    _running = false;
-    _detached = true;
-    setState(() {});
-    widget.onRunFinished();
-  }
-
+  void _scrollTail() => WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (_scroll.hasClients) {
+          _scroll.jumpTo(_scroll.position.maxScrollExtent);
+        }
+      });
   Future<void> _loadPastRuns() async {
     try {
       final r = await widget.client.agentRuns(limit: 10);
@@ -206,7 +227,13 @@ class _AgentPanelState extends State<AgentPanel> {
           if (_pastOpen)
             _pastSection()
           else ...[
-            _composerRow(),
+            AgentOperationComposer(
+                controller: _goal,
+                alive: widget.alive,
+                authorizing: _authorizing,
+                snapshot: _operationState.execution,
+                onRun: () => unawaited(_run()),
+                onStop: () => unawaited(_stop())),
             const SizedBox(height: FwLayout.s2),
             AgentGates(
               endpoints: _endpoints,
@@ -222,10 +249,6 @@ class _AgentPanelState extends State<AgentPanel> {
             if (_error != null) ...[
               const SizedBox(height: FwLayout.s2),
               HonestNull('The run failed: $_error'),
-            ],
-            if (_detached) ...[
-              const SizedBox(height: FwLayout.s2),
-              const HonestNull('Detached. The run continues under past runs.'),
             ],
             if (_events.isNotEmpty) ...[
               const SizedBox(height: FwLayout.s2),
@@ -258,7 +281,6 @@ class _AgentPanelState extends State<AgentPanel> {
             ),
         ],
       );
-
   Widget _pastSection() => ConstrainedBox(
         constraints: const BoxConstraints(maxHeight: 280),
         child: SingleChildScrollView(
@@ -266,33 +288,5 @@ class _AgentPanelState extends State<AgentPanel> {
               ? StoredAgentRun(doc: _stored!, client: widget.client)
               : AgentRunsList(runs: _pastRuns, onOpen: _openStored),
         ),
-      );
-
-  Widget _composerRow() => Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            child: TextField(
-              controller: _goal,
-              maxLines: 2,
-              minLines: 1,
-              enabled: widget.alive,
-              style: const TextStyle(fontSize: 13),
-              decoration:
-                  const InputDecoration(hintText: 'Change this workspace…'),
-              onSubmitted: (_) => unawaited(_run()),
-            ),
-          ),
-          const SizedBox(width: FwLayout.s2),
-          if (_running) ...[
-            OutlinedButton(onPressed: _detach, child: const Text('Detach')),
-            const SizedBox(width: FwLayout.s2),
-          ],
-          FilledButton(
-            onPressed:
-                widget.alive && !_running ? () => unawaited(_run()) : null,
-            child: Text(_running ? 'Running…' : 'Run'),
-          ),
-        ],
       );
 }

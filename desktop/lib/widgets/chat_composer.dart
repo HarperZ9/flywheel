@@ -1,6 +1,5 @@
 // chat_composer.dart — the message input. Enter sends, Shift+Enter makes a
-// newline; a Stop button replaces Send while a turn streams so a run is always
-// cancellable. Warm and roomy: the composer is where the user lives.
+// newline. Stop appears only when a server-owned operation supplies control.
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -38,7 +37,8 @@ class ChatComposer extends StatefulWidget {
   final SubmitPrompt onSend;
   final String initialText;
   final ValueChanged<String> onDraftChanged;
-  final VoidCallback onStop;
+  final VoidCallback? onStop;
+  final bool canStop;
   final String hint;
 
   /// The user's saved prompts ([{title, text}]) and a callback to save the
@@ -50,7 +50,8 @@ class ChatComposer extends StatefulWidget {
     required this.streaming,
     required this.onSend,
     required this.onDraftChanged,
-    required this.onStop,
+    this.onStop,
+    this.canStop = false,
     this.initialText = '',
     this.hint = 'Message the agent…',
     this.savedPrompts = const [],
@@ -233,6 +234,12 @@ class _ChatComposerState extends State<ChatComposer> {
 
   Widget _actionButton(FwTokens t) {
     if (widget.streaming) {
+      if (!widget.canStop || widget.onStop == null) {
+        return SizedBox(
+            width: 40,
+            height: 40,
+            child: Icon(Icons.more_horiz_rounded, color: t.inkFaint));
+      }
       return IconButton.filled(
         onPressed: widget.onStop,
         icon: const Icon(Icons.stop_rounded, size: 18),

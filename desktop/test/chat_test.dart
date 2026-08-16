@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flywheel_desktop/client/gateway_client.dart';
+import 'package:flywheel_desktop/client/gateway_sse_decoder.dart';
 import 'package:flywheel_desktop/controllers/chat_admission_controller.dart';
 import 'package:flywheel_desktop/models/chat.dart';
 import 'package:flywheel_desktop/services/chat_draft_store.dart';
@@ -112,7 +113,7 @@ void _admissionTests() {
     expect(conversation.messages, isEmpty);
     expect(drafts.load().single.state, ChatDraftState.admittedPendingHistory);
   });
-  test('a malformed-only chat response produces no admission event', () async {
+  test('a malformed-only chat response fails observation as unknown', () async {
     var calls = 0;
     final client = GatewayClient(
         baseUrl: 'https://chat.invalid',
@@ -120,10 +121,9 @@ void _admissionTests() {
           calls++;
           return http.Response('data: {malformed}\n\ndata: [DONE]\n\n', 200);
         }));
-    final events = await client.chatStream([
-      {'role': 'user', 'content': 'keep this'}
-    ], 'local-public').toList();
-    expect((events.isEmpty, calls), (true, 1));
+    await expectLater(client.chatStream(const [], 'local-public').toList(),
+        throwsA(isA<GatewaySseException>()));
+    expect(calls, 1);
   });
   test('chat history reads the legacy list and writes an atomic envelope', () {
     final directory = Directory.systemTemp.createTempSync('chat-history-');

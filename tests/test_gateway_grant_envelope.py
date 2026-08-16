@@ -100,3 +100,26 @@ def test_agent_attachment_is_closed_structured_relative_context():
     assert rendered["goal"] == (
         "Active source: lib/main.dart\nSelected text:\nselected\nRequest:\ninspect")
     assert "attachment" not in rendered
+
+
+def test_cancel_envelope_has_exact_operation_destination_tool_and_scope():
+    ref = "op_" + "b" * 32
+    parsed = parse_gateway_envelope("operation.cancel", _raw(operation={
+        "operation_ref": ref, "timeout_ms": 5_000,
+        "data_refs": [], "credential_refs": [],
+    }))
+
+    assert dict(parsed.operation.operation) == {
+        "operation_ref": ref, "timeout_ms": 5_000,
+        "data_refs": (), "credential_refs": (),
+    }
+    assert parsed.operation.tool == "operation.cancel"
+    assert dict(parsed.operation.destination) == {"kind": "operation", "ref": ref}
+    assert parsed.operation.scopes == ("exec",)
+
+    with pytest.raises(GatewayOperationError) as failure:
+        parse_gateway_envelope("operation.cancel", _raw(operation={
+            "operation_ref": ref, "timeout_ms": 5_000,
+            "data_refs": ["data_public"], "credential_refs": [],
+        }))
+    assert failure.value.code == "INVALID_REQUEST"

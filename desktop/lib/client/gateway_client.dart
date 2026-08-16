@@ -1,26 +1,19 @@
-// gateway_client.dart — the typed HTTP client for the Flywheel Python gateway.
-//
-// The Flutter desktop app is a native CLIENT for the gateway API. The gateway
-// (harness/gateway.py, started by `flywheel up`) runs on 127.0.0.1:8799 and
-// exposes every route the UI needs as same-origin localhost JSON. This client
-// wraps those routes with typed Dart methods so the UI layers never touch raw
-// JSON or HTTP.
-//
-// The gateway is the backend; Flutter is the frontend. The verified-loop,
-// receipts, lanes, and corpus-export stay in Python — this client only reads
-// and posts to the API.
+// Typed loopback client. Durable agent operations live in the gateway.
 
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 import '../models/gateway_models.dart';
+import '../models/operation_models.dart';
 import '../models/workflow_models.dart';
 import 'gateway_auth.dart';
 import 'gateway_error.dart';
+import 'gateway_sse_decoder.dart';
 
 export 'gateway_error.dart';
 
 part 'gateway_streams.dart';
+part 'gateway_operations.dart';
 
 class GatewayClient {
   final String baseUrl;

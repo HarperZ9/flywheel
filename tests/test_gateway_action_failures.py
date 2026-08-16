@@ -40,7 +40,7 @@ OPERATIONS = {
 }
 ROUTES = {
     "chat.complete": "/v1/chat/completions",
-    "agent.run": "/api/agent", "workflow.run": "/api/workflow",
+    "workflow.run": "/api/workflow",
     "plugin.probe": "/api/plugins/probe",
     "plugin.call": "/api/plugins/call",
     "plugin.register": "/api/plugins/register",
@@ -195,8 +195,7 @@ def test_every_http_final_route_refuses_without_burn_and_dispatches_once(
     assert status == 403 and calls == [action]
 
 
-@pytest.mark.parametrize("action", [
-    "chat.complete", "agent.run", "workflow.run"])
+@pytest.mark.parametrize("action", ["chat.complete", "workflow.run"])
 def test_guarded_provider_failures_are_fixed_and_never_persist_raw_text(
         tmp_path, monkeypatch, action):
     marker = "synthetic-provider-marker-123456"
@@ -204,10 +203,6 @@ def test_guarded_provider_failures_are_fixed_and_never_persist_raw_text(
     if action == "chat.complete":
         monkeypatch.setattr(gateway, "openai_chat", lambda *_args: (
             {"error": {"message": marker}}, 502, None, None, None))
-    elif action == "agent.run":
-        monkeypatch.setattr("harness.router_agent.run_router_agent",
-                            lambda *_args, **_kwargs: (_ for _ in ()).throw(
-                                RuntimeError(marker)))
     else:
         monkeypatch.setattr("harness.workflows.run_workflow",
                             lambda *_args, **_kwargs: (_ for _ in ()).throw(
@@ -230,23 +225,20 @@ def test_legacy_training_loop_failure_keeps_its_bounded_diagnostic(monkeypatch):
     assert sent == [({"error": "RuntimeError: safe diagnostic"}, 502)]
 
 
-def test_guarded_agent_sse_failure_is_fixed_in_stream_and_history(
-        tmp_path, monkeypatch):
-    marker = "synthetic-sse-marker-123456"
+def test_agent_worker_failure_is_fixed_without_raw_provider_text(monkeypatch):
+    from harness import gateway_operation_process as process
+    marker, emitted = "synthetic-sse-marker-123456", []
+    monkeypatch.setattr(process, "_worker_request",
+                        lambda: ({}, {}, None, None))
     monkeypatch.setattr(
-        "harness.router_agent.run_router_agent",
-        lambda *_args, **_kwargs: (_ for _ in ()).throw(RuntimeError(marker)))
-    handler = gateway._Handler.__new__(gateway._Handler)
-    handler._gateway_guarded = True
-    handler.root = handler.run_root = tmp_path
-    handler.wfile = io.BytesIO()
-    handler.send_response = lambda *_: None
-    handler.send_header = handler.end_headers = handler._cors = lambda *_: None
-    handler._sse_agent({"goal": "inspect"}, "inspect", "local")
-    public = handler.wfile.getvalue().decode()
-    persisted = b"".join(path.read_bytes() for path in tmp_path.rglob("*.*"))
-    assert marker not in public and marker.encode() not in persisted
-    assert "EXTERNAL_ACTION_FAILED" in public and "[DONE]" in public
+        process, "_run_agent",
+        lambda *_args: (_ for _ in ()).throw(RuntimeError(marker)))
+    monkeypatch.setattr(process, "_emit", emitted.append)
+
+    assert process._main() == 1
+    assert emitted == [{"type": "terminal", "state": "failed",
+                        "result": {"reason": "EXTERNAL_ACTION_FAILED"}}]
+    assert marker not in repr(emitted)
 
 
 def test_persisted_plugin_and_marketplace_plans_refuse_raw_credentials(

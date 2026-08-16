@@ -160,9 +160,9 @@ class _AgentViewState extends State<AgentView> {
     await authorizeGatewayStream(context, operation, (body) {
       _sub = widget.client.chatStream(wire, model, authorizedBody: body).listen(
           (event) => _onEvent(generation, event),
-          onError: (_) => _onTerminal(generation),
-          onDone: () => _onTerminal(generation));
-    }, () => _onTerminal(generation),
+          onError: (_) => _onObservationClosed(generation),
+          onDone: () => _onObservationClosed(generation));
+    }, () => _onObservationClosed(generation),
         currentOperation: () => _model == endpoint &&
                 _chosenModels[endpoint] == chosen &&
                 _admission.draftText(_current) == submitted.text
@@ -202,7 +202,7 @@ class _AgentViewState extends State<AgentView> {
     }
   }
 
-  void _onTerminal(int generation) {
+  void _onObservationClosed(int generation) {
     if (!mounted || generation != _generation) return;
     if (_assistant == null) {
       _admission.retain(_submittedDraft!);
@@ -212,7 +212,12 @@ class _AgentViewState extends State<AgentView> {
     if (!_accepted) return;
     setState(() {
       _assistant!.streaming = false;
-      if (_assistant!.text.isEmpty) _assistant!.text = 'No reply arrived.';
+      if (_assistant!.receipt == null) {
+        const unknown = 'Reply interrupted; completion is unknown.';
+        _assistant!.text = _assistant!.text.isEmpty
+            ? unknown
+            : '${_assistant!.text}\n\n$unknown';
+      }
       _streaming = false;
     });
     _admission.persistHistory();
@@ -222,14 +227,6 @@ class _AgentViewState extends State<AgentView> {
     _admitting = false;
     if (!(_disposition?.isCompleted ?? true)) _disposition!.complete(result);
     if (mounted) setState(() {});
-  }
-
-  void _stop() {
-    _sub?.cancel();
-    for (final message in _current.messages) {
-      message.streaming = false;
-    }
-    setState(() => _streaming = false);
   }
 
   void _scrollToEnd() => WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -285,7 +282,6 @@ class _AgentViewState extends State<AgentView> {
       initialText: _admission.draftText(_current),
       onDraftChanged: _draftChanged,
       onSend: _send,
-      onStop: _stop,
       savedPrompts: widget.settings.savedPrompts,
       onSavePrompt: (text) => setState(() => widget.settings.savePrompt(text)));
 }

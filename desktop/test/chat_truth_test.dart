@@ -184,8 +184,7 @@ void _composerTests() {
             onSend: (text) async {
               submitted = text;
               return disposition;
-            },
-            onStop: () {}));
+            }));
     await tester.tap(find.byTooltip('Send  (Enter)'));
     await tester.pump();
     expect(submitted, '  exact prompt  ');
@@ -207,8 +206,7 @@ void _composerTests() {
             onSend: (_) {
               calls++;
               return result.future;
-            },
-            onStop: () {}));
+            }));
     await tester.tap(find.byTooltip('Send  (Enter)'));
     await tester.pump();
     await tester.sendKeyEvent(LogicalKeyboardKey.enter);

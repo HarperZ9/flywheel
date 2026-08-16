@@ -790,6 +790,7 @@ class _Handler(BaseHTTPRequestHandler):
     flywheel_home = Path(os.environ.get("FLYWHEEL_HOME", str(Path.home() / ".flywheel")))
     owner_ref, clock = None, staticmethod(
         lambda: datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"))
+    operation_service = operation_process_factory = None
     def log_message(self, *a):  # quiet
         pass
 
@@ -833,6 +834,54 @@ class _Handler(BaseHTTPRequestHandler):
         self._cors()
         self.end_headers()
         self.wfile.write(body)
+
+    def _operation_components(self):
+        state_root = self.flywheel_home / "state"
+        service = type(self).operation_service
+        if service is None or service.state_root != state_root:
+            from harness.gateway_operations import GatewayOperations
+            from harness.gateway_operation_process import GatewayAgentProcessFactory
+            service = GatewayOperations(state_root, clock=self.clock)
+            type(self).operation_service = service
+            type(self).operation_process_factory = GatewayAgentProcessFactory(
+                repo_root=Path(self.root), run_root=Path(self.run_root))
+        return service, type(self).operation_process_factory
+
+    def _operation_response(self, response):
+        if response.stream is None:
+            return self._json(response.body, response.status)
+        self.send_response(response.status)
+        self.send_header("Content-Type", "text/event-stream")
+        self.send_header("Cache-Control", "no-cache")
+        self._cors(); self.end_headers()
+        try:
+            for chunk in response.stream:
+                self.wfile.write(chunk); self.wfile.flush()
+        except (BrokenPipeError, ConnectionError, OSError):
+            pass
+
+    def _route_operation(self, method):
+        path = self.path.split("?", 1)[0]
+        is_operation = (path.startswith("/api/operations/")
+                        if method == "GET" else path in {
+                            "/api/agent", "/api/operations/cancel"})
+        if not is_operation:
+            return False
+        from harness.gateway_operation_route import route_gateway_operation
+        query = self.path.split("?", 1)[1] if "?" in self.path else ""
+        raw, content = b"", ""
+        if method == "POST":
+            length = self._content_length()
+            raw = self.rfile.read(length) if length is not None else b""
+            content = (self.headers.get("Content-Type", "") or "").split(
+                ";", 1)[0].strip()
+        service, factory = self._operation_components()
+        response = route_gateway_operation(
+            method, path, query=query, content_type=content,
+            owner_ref=self.owner_ref, raw=raw, service=service,
+            process_factory=factory)
+        self._operation_response(response)
+        return True
 
     def _sse_chat(self, req: dict):
         """Stream a completed, receipted answer as OpenAI-compatible SSE."""
@@ -882,113 +931,6 @@ class _Handler(BaseHTTPRequestHandler):
             self.wfile.flush()
         except Exception:
             pass                                   # client hung up mid-stream; nothing to do
-
-    def _sse_agent(self, req: dict, goal: str, endpoint: str):
-        """Stream the agent loop and its witnessed terminal result."""
-        guarded = getattr(self, "_gateway_guarded", False)
-        try:
-            max_steps = max(1, min(int(req.get("max_steps", 6)), 12))
-        except (TypeError, ValueError):
-            max_steps = 6
-        self.send_response(200)
-        self.send_header("Content-Type", "text/event-stream")
-        self.send_header("Cache-Control", "no-cache")
-        self.send_header("Connection", "keep-alive")
-        self._cors()
-        self.end_headers()
-
-        events: list = []
-
-        def emit(evt):
-            # tee: the stream shows the process live, the run root keeps it —
-            # a streamed run lands in history exactly like a posted one
-            if (guarded and isinstance(evt, dict)
-                    and evt.get("type") == "error"):
-                evt = {"type": "error", "error": {
-                    "code": "EXTERNAL_ACTION_FAILED",
-                    "message": "authorized external action failed"}}
-            events.append(evt)
-            try:
-                self.wfile.write(("data: " + json.dumps(evt) + "\n\n").encode())
-                self.wfile.flush()
-            except Exception:
-                pass
-
-        from harness.router_agent import run_router_agent
-        from harness.scaffold import scaffold_answer, scaffold_turn
-        env = scaffold_turn(goal)
-        root, root_err = _resolve_workspace_root(req.get("root"), self.root)
-        if root_err:
-            emit({"type": "error", "error": root_err})
-            try:
-                self.wfile.write(b"data: [DONE]\n\n")
-                self.wfile.flush()
-            except Exception:
-                pass
-            return
-        try:
-            result = run_router_agent(
-                goal, endpoint, root=str(root),
-                allow_write=bool(req.get("allow_write", False)),
-                allow_exec=bool(req.get("allow_exec", False)),
-                max_steps=max_steps, test_cmd=(req.get("test_cmd") or None),
-                model=(req.get("model") or None),
-                compact_budget=int(req.get("compact_budget", 0) or 0),
-                credential_bindings=getattr(
-                    self, "_gateway_bindings", None), on_event=emit)
-            # countersign ONCE, before persistence, so the stored doc and the
-            # done event carry the same receipt (the store banks one witness)
-            run_receipt = _countersign_run(result)
-            run_id, receipt_note = None, None
-            try:
-                from harness.eval_store import save_agent_run, trim_events
-                run_id = save_agent_run(
-                    self.run_root,
-                    dict(result, goal_excerpt=goal[:200],
-                         events=trim_events(events),
-                         run_receipt=run_receipt))["run_id"]
-            except Exception as e:
-                receipt_note = ("authorized external action failed" if guarded
-                                else f"run not persisted: {type(e).__name__}: {e}")
-            emit({"type": "done", "run_id": run_id,
-                  **({"receipt_note": receipt_note} if receipt_note else {}),
-                  "final": result.get("final"), "steps": result.get("steps"),
-                  "verified": result.get("verified"), "integrity": result.get("integrity"),
-                  # the reviewability projection + checkpoint ride the done
-                  # event so the surface can offer a sign-this-run attestation
-                  "review": result.get("review"),
-                  "checkpoint": result.get("checkpoint"),
-                  # the window manifest: what the model actually saw
-                  "context_manifest": result.get("context_manifest"),
-                  "risk_review": result.get("risk_review"),
-                  "provenance": result.get("provenance"),
-                  "duration_s": result.get("duration_s"),
-                  "ttva_s": result.get("ttva_s"),
-                  "scaffold": scaffold_answer(str(result.get("final") or ""),
-                                              env),
-                  "run_receipt": run_receipt})
-        except Exception as e:
-            error = ("authorized external action failed" if guarded
-                     else f"{type(e).__name__}: {e}")
-            emit({"type": "error", "error": error})
-            # a failed run is the one most worth inspecting afterward: it
-            # lands in history as ERROR carrying every event up to and
-            # including the error itself, instead of vanishing with the stream
-            try:
-                from harness.eval_store import save_agent_run, trim_events
-                save_agent_run(
-                    self.run_root,
-                    {"goal_excerpt": goal[:200], "endpoint": endpoint,
-                     "status": "ERROR",
-                     "error": error,
-                     "events": trim_events(events)})
-            except Exception:
-                pass  # the stream already carries the primary error
-        try:
-            self.wfile.write(b"data: [DONE]\n\n")
-            self.wfile.flush()
-        except Exception:
-            pass
 
     def _proxy(self, target: str):
         length = self._content_length()
@@ -1056,7 +998,8 @@ class _Handler(BaseHTTPRequestHandler):
         path = self.path.split("?", 1)[0]
         private = (path.startswith(("/api/journeys/", "/api/grants/",
                                     "/api/gateway-grants/",
-                                    "/api/credential-handles"))
+                                    "/api/credential-handles",
+                                    "/api/operations/"))
                    or path in {"/v1/chat/completions", "/api/agent",
                                "/api/workflow", "/api/plugins/probe",
                                "/api/plugins/call", "/api/plugins/register",
@@ -1088,14 +1031,16 @@ class _Handler(BaseHTTPRequestHandler):
         if not self._authorized():
             return
         try:
-            self._get()
+            if not self._route_operation("GET"):
+                self._get()
         except Exception as e:
             self._safe_500(e)
     def do_POST(self):
         if not self._authorized():
             return
         try:
-            self._post()
+            if not self._route_operation("POST"):
+                self._post()
         except Exception as e:
             self._safe_500(e)
     def _get(self):
@@ -2339,6 +2284,16 @@ def main(argv=None) -> int:
     _Handler.flywheel_home = flywheel_home
     _Handler.auth_token = load_or_create_token(flywheel_home)
     httpd = ThreadingHTTPServer(("127.0.0.1", a.port), _Handler)
+    state_root = flywheel_home / "state"
+    from harness.gateway_operations import GatewayOperations
+    from harness.gateway_operation_process import GatewayAgentProcessFactory
+    from harness.gateway_operation_recovery import recover_gateway_operations
+    from harness.journey_recovery import recover_store
+    _Handler.operation_service = GatewayOperations(state_root, clock=_Handler.clock)
+    _Handler.operation_process_factory = GatewayAgentProcessFactory(
+        repo_root=_Handler.root, run_root=Path(_Handler.run_root))
+    recover_store(state_root, now=_Handler.clock())
+    recover_gateway_operations(state_root, now=_Handler.clock())
     print(f"flywheel gateway: http://127.0.0.1:{a.port}  root={_Handler.root}")
     print(f"  token     {flywheel_home / 'gateway.token'}  (send as: Authorization: Bearer <token>)")
     print(f"  surface   Flywheel Desktop (the native client) talks to this gateway")
@@ -2359,6 +2314,9 @@ def main(argv=None) -> int:
         httpd.serve_forever()
     except KeyboardInterrupt:
         pass
+    finally:
+        _Handler.operation_service.shutdown()
+        httpd.server_close()
     return 0
 
 

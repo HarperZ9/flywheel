@@ -60,6 +60,7 @@ final class GatewayOperation {
         credentialRefs.toSet().length != credentialRefs.length) {
       _invalid();
     }
+    if (action == 'operation.cancel') _validateCancel(raw);
   }
 
   factory GatewayOperation.pluginProbe(
@@ -109,6 +110,17 @@ final class GatewayOperation {
           clientRequestId: request,
           dataRefs: dataRefs,
           credentialRefs: credentialRefs);
+
+  factory GatewayOperation.cancel(
+          String request, String operationRef, int timeoutMs) =>
+      GatewayOperation._withRefs(
+          'operation.cancel',
+          request,
+          GatewayDestination('operation', operationRef),
+          'operation.cancel',
+          {'operation_ref': operationRef, 'timeout_ms': timeoutMs},
+          dataRefs: const [],
+          credentialRefs: const []);
 
   factory GatewayOperation.exact(
           {required String action,
@@ -198,6 +210,10 @@ List<String> _refs(
 }
 
 GatewayDestination _destination(String action, Map<String, Object?> value) {
+  if (action == 'operation.cancel') {
+    final ref = value['operation_ref'];
+    return ref is String ? GatewayDestination('operation', ref) : _invalid();
+  }
   final plugin = action.startsWith('plugin.');
   final market = action.startsWith('marketplace.');
   final field = plugin || market
@@ -225,6 +241,7 @@ String _tool(String action, Map<String, Object?> value) =>
         : action;
 
 List<String> _scopes(String action, Map<String, Object?> value) {
+  if (action == 'operation.cancel') return const ['exec'];
   final selected = <String>{};
   if (const {'chat.complete', 'agent.run', 'workflow.run'}.contains(action)) {
     selected.add('network');
@@ -251,4 +268,26 @@ List<String> _scopes(String action, Map<String, Object?> value) {
   return const ['write', 'exec', 'network', 'plugin', 'secrets']
       .where(selected.contains)
       .toList();
+}
+
+void _validateCancel(Map<String, Object?> value) {
+  const fields = {
+    'operation_ref',
+    'timeout_ms',
+    'data_refs',
+    'credential_refs'
+  };
+  final reference = value['operation_ref'];
+  final timeout = value['timeout_ms'];
+  if (value.keys.toSet().length != fields.length ||
+      !value.keys.every(fields.contains) ||
+      reference is! String ||
+      !operationRefPattern.hasMatch(reference) ||
+      timeout is! int ||
+      timeout < 1 ||
+      timeout > 30000 ||
+      (value['data_refs'] as List).isNotEmpty ||
+      (value['credential_refs'] as List).isNotEmpty) {
+    _invalid();
+  }
 }

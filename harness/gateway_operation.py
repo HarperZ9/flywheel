@@ -1,7 +1,7 @@
 """Strict canonical operations for exact gateway grants."""
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import math
 import re
 from types import MappingProxyType
@@ -15,12 +15,12 @@ PROPOSAL_SCHEMA = "flywheel.gateway-grant-proposal/v1"
 PROPOSAL_REF_PATTERN = re.compile(r"prp_[0-9a-f]{32}\Z")
 CREDENTIAL_REF_PATTERN = re.compile(r"cred_[0-9a-f]{32}\Z")
 _SCOPES = ("write", "exec", "network", "plugin", "secrets")
+OPERATION_REF_PATTERN = re.compile(r"op_[0-9a-f]{32}\Z")
 _SECRET_NAMES = frozenset(("api_key", "access_token", "refresh_token", "token",
     "password", "secret", "credential", "credentials", "private_key",
     "authorization", "cookie", "environment", "env"))
 _COMMAND_SECRET = re.compile(
     r"(?i)(?:^|[_-])(api[_-]?key|token|secret|password|credential)(?:$|[=_-])")
-
 
 class GatewayOperationError(RuntimeError):
     """One fixed non-echoing operation-boundary failure."""
@@ -28,7 +28,6 @@ class GatewayOperationError(RuntimeError):
     def __init__(self, code: str) -> None:
         self.code = code
         super().__init__(code)
-
 
 @dataclass(frozen=True)
 class CanonicalOperation:
@@ -52,7 +51,7 @@ class AuthorizedOperation(CanonicalOperation):
     grant_ref: str
     expires_at: str
     execution_plan: object | None = None
-    credential_bindings: object | None = None
+    credential_bindings: object | None = field(default=None, repr=False)
 
     @classmethod
     def for_test(cls, *, action: str, operation: dict,
@@ -88,6 +87,7 @@ _FIELDS = {
     "marketplace.add": ({"name", "command", "detail", "requires",
                          } | _REFS, set()),
     "marketplace.remove": ({"name"} | _REFS, set()),
+    "operation.cancel": ({"operation_ref", "timeout_ms"} | _REFS, set()),
 }
 
 
@@ -102,6 +102,7 @@ def action_for_path(path: str) -> str | None:
         "/api/marketplace/install": "marketplace.install",
         "/api/marketplace/add": "marketplace.add",
         "/api/marketplace/remove": "marketplace.remove",
+        "/api/operations/cancel": "operation.cancel",
     }.get(path)
 
 
@@ -121,7 +122,9 @@ def canonicalize_operation(action: str, operation: object) -> CanonicalOperation
                 or any(CREDENTIAL_REF_PATTERN.fullmatch(value) is None
                        for value in credentials)
                 or len(set(data_refs)) != len(data_refs)
-                or len(set(credentials)) != len(credentials)):
+                or len(set(credentials)) != len(credentials)
+                or (action == "operation.cancel"
+                    and bool(data_refs or credentials))):
             raise ValueError
         scopes = _derived_scopes(action, snapshot, bool(credentials))
         operation_sha = canonical_sha256({"action": action, "operation": snapshot})
@@ -227,6 +230,12 @@ def _validate_shape(action: str, value: dict) -> None:
     if "max_steps" in value and (type(value["max_steps"]) is not int
                                   or not 1 <= value["max_steps"] <= 12):
         raise ValueError
+    if ("timeout_ms" in value and (type(value["timeout_ms"]) is not int
+                                   or not 1 <= value["timeout_ms"] <= 30_000)):
+        raise ValueError
+    if ("operation_ref" in value and OPERATION_REF_PATTERN.fullmatch(
+            value["operation_ref"]) is None):
+        raise ValueError
     if "arguments" in value and type(value["arguments"]) is not dict:
         raise ValueError
     if "attachment" in value:
@@ -258,6 +267,8 @@ def _safe_ref(value: object, prefix: str) -> bool:
 
 
 def _destination(action: str, value: dict) -> dict[str, str]:
+    if action == "operation.cancel":
+        return {"kind": "operation", "ref": value["operation_ref"]}
     if action == "chat.complete":
         return {"kind": "model", "ref": value["model"]}
     if action in {"agent.run", "workflow.run"}:
@@ -269,6 +280,8 @@ def _destination(action: str, value: dict) -> dict[str, str]:
 
 def _derived_scopes(action: str, value: dict, secrets: bool) -> tuple[str, ...]:
     selected = set()
+    if action == "operation.cancel":
+        selected.add("exec")
     if action in {"chat.complete", "agent.run", "workflow.run"}:
         selected.add("network")
     if action in {"plugin.call"}:

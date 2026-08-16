@@ -18,6 +18,8 @@ OPERATIONAL_EVENT_TYPES = frozenset((
     "record_fact", "record_claim", "record_next_action", "record_receipt",
     "check_requested", "check_blocked", "check_started", "check_completed",
     "check_failed", "check_cancelled", "cancel_requested",
+    "operation_queued", "operation_started", "operation_completed",
+    "operation_failed", "operation_cancelled",
 ))
 EVENT_TYPES = frozenset(STAGES) | OPERATIONAL_EVENT_TYPES
 VERDICTS = frozenset(("PASS", "FAIL", "UNDECIDED", "UNVERIFIABLE"))

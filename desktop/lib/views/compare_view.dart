@@ -137,23 +137,14 @@ class _CompareViewState extends State<CompareView> {
     if (!mounted) return;
     setState(() {
       assistant.streaming = false;
-      if (assistant.text.isEmpty) {
-        assistant.text =
-            'No reply. This model may be offline; pick another above.';
+      if (assistant.receipt == null) {
+        const unknown = 'Reply interrupted; completion is unknown.';
+        assistant.text = assistant.text.isEmpty
+            ? '$unknown Pick another model.'
+            : '${assistant.text}\n\n$unknown';
       }
       s.streaming = false;
     });
-  }
-
-  void _stop() {
-    for (final s in [_left, _right]) {
-      s.sub?.cancel();
-      for (final m in s.messages) {
-        m.streaming = false;
-      }
-      s.streaming = false;
-    }
-    setState(() {});
   }
 
   void _clear() {
@@ -212,7 +203,6 @@ class _CompareViewState extends State<CompareView> {
         streaming: _busy,
         onSend: _send,
         onDraftChanged: (_) {},
-        onStop: _stop,
         hint: 'Ask both models the same thing…',
         savedPrompts: widget.settings.savedPrompts,
         onSavePrompt: (t) => setState(() => widget.settings.savePrompt(t)),

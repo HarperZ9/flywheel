@@ -1,59 +1,10 @@
 part of 'gateway_client.dart';
 
 extension GatewayStreamsAndPlugins on GatewayClient {
-  /// POST /api/agent with stream:true — the live agent event stream.
-  /// Yields one decoded event map per SSE frame (assistant, tool_call,
-  /// tool_result, done, error) and closes on the [DONE] sentinel.
-  Stream<Map<String, dynamic>> agentStream(String goal, String endpoint,
-      {int maxSteps = 8,
-      bool allowWrite = false,
-      bool allowExec = false,
-      String? root,
-      String? testCmd,
-      Map<String, dynamic>? authorizedBody}) async* {
-    final req = http.Request('POST', Uri.parse('$baseUrl/api/agent'))
-      ..headers['Content-Type'] = 'application/json'
-      ..body = jsonEncode(authorizedBody ??
-          {
-            'goal': goal,
-            'endpoint': endpoint,
-            'max_steps': maxSteps,
-            'allow_write': allowWrite,
-            'allow_exec': allowExec,
-            'stream': true,
-            if (root != null && root.isNotEmpty) 'root': root,
-            if (testCmd != null && testCmd.isNotEmpty) 'test_cmd': testCmd,
-          });
-    final res = await _http.send(req);
-    if (res.statusCode != 200) {
-      throw GatewayException('gateway returned ${res.statusCode}');
-    }
-    var buffer = '';
-    await for (final chunk in res.stream.transform(utf8.decoder)) {
-      buffer += chunk;
-      while (true) {
-        final sep = buffer.indexOf('\n\n');
-        if (sep < 0) break;
-        final frame = buffer.substring(0, sep);
-        buffer = buffer.substring(sep + 2);
-        for (final line in frame.split('\n')) {
-          if (!line.startsWith('data: ')) continue;
-          final payload = line.substring(6).trim();
-          if (payload == '[DONE]') return;
-          try {
-            yield jsonDecode(payload) as Map<String, dynamic>;
-          } catch (_) {
-            // A malformed frame is skipped, never fatal to the stream.
-          }
-        }
-      }
-    }
-  }
-
   /// POST /v1/chat/completions with stream:true — a conversational turn over any
   /// endpoint in the roster. Yields `{type:'delta', content:'…'}` as the answer
   /// arrives and a final `{type:'done', receipt:{…}}` carrying the turn's
-  /// re-derivable receipt. Malformed frames are skipped, never fatal.
+  /// re-derivable receipt. Invalid framing closes observation as unknown.
   Stream<Map<String, dynamic>> chatStream(
       List<Map<String, String>> messages, String model,
       {Map<String, dynamic>? authorizedBody}) async* {
@@ -65,35 +16,22 @@ extension GatewayStreamsAndPlugins on GatewayClient {
     if (res.statusCode != 200) {
       throw GatewayException('gateway returned ${res.statusCode}');
     }
-    var buffer = '';
-    await for (final chunk in res.stream.transform(utf8.decoder)) {
-      buffer += chunk;
-      while (true) {
-        final sep = buffer.indexOf('\n\n');
-        if (sep < 0) break;
-        final frame = buffer.substring(0, sep);
-        buffer = buffer.substring(sep + 2);
-        for (final line in frame.split('\n')) {
-          if (!line.startsWith('data: ')) continue;
-          final payload = line.substring(6).trim();
-          if (payload == '[DONE]') return;
-          try {
-            final obj = jsonDecode(payload) as Map<String, dynamic>;
-            final choices = obj['choices'];
-            final delta = (choices is List && choices.isNotEmpty)
-                ? (choices.first as Map<String, dynamic>)['delta']
-                : null;
-            final content = (delta is Map) ? delta['content'] : null;
-            if (content is String && content.isNotEmpty) {
-              yield {'type': 'delta', 'content': content};
-            }
-            if (obj['x_receipt'] is Map<String, dynamic>) {
-              yield {'type': 'done', 'receipt': obj['x_receipt']};
-            }
-          } catch (_) {
-            // a malformed frame is skipped, never fatal to the stream
-          }
-        }
+    const decoder =
+        GatewaySseDecoder(requireIds: false, requireTerminal: false);
+    await for (final event in res.stream.transform(decoder)) {
+      if (event.isDone) return;
+      final obj = event.data as Map<String, dynamic>;
+      final choices = obj['choices'];
+      final delta =
+          choices is List && choices.isNotEmpty && choices.first is Map
+              ? (choices.first as Map)['delta']
+              : null;
+      final content = delta is Map ? delta['content'] : null;
+      if (content is String && content.isNotEmpty) {
+        yield {'type': 'delta', 'content': content};
+      }
+      if (obj['x_receipt'] is Map<String, dynamic>) {
+        yield {'type': 'done', 'receipt': obj['x_receipt']};
       }
     }
   }

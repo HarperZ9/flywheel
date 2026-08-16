@@ -10,21 +10,17 @@ from typing import Callable
 from .evidence_json import canonical_sha256, strict_load_json
 from .evidence_public import TransportError, error_response, exact_request, parse_json
 from .grant_route import _replace, _request_from
-from .gateway_operation import (
-    AuthorizedOperation, GatewayOperationError, PROPOSAL_REF_PATTERN,
-    PROPOSAL_SCHEMA, REQUEST_SCHEMA, action_for_path, canonicalize_operation,
-    thaw_operation,
-)
+from .gateway_operation import (AuthorizedOperation, GatewayOperationError,
+    PROPOSAL_REF_PATTERN, PROPOSAL_SCHEMA, REQUEST_SCHEMA,
+    canonicalize_operation, thaw_operation)
 from .gateway_envelope import parse_gateway_envelope
 from .gateway_secret_boundary import validate_no_raw_secrets
 from .gateway_provider_adapter import credential_slots, freeze_execution_plan
 from .journey_lock import ExclusiveJourneyLock, JourneyLockBusy
 from .journey_store import JourneyStore, JourneyStoreError
 from .journey_types import JOURNEY_REF_PATTERN, SHA256_PATTERN
-from .operation_grants import (
-    GrantError, GrantRequest, GrantStore, _parse_time, _secure_owner_only,
-    _utc_text, _validate_owner_ref,
-)
+from .operation_grants import (GrantError, GrantRequest, GrantStore, _parse_time,
+    _secure_owner_only, _utc_text, _validate_owner_ref)
 ROUTE_PREFIX = "/api/gateway-grants/"
 _BASE = {"schema", "journey_ref", "expected_event_head", "client_request_id"}
 _RECORD_FIELDS = {
@@ -254,20 +250,28 @@ def authorize_gateway_operation(
         raise GatewayOperationError("INVALID_REQUEST") from None
 def gateway_error_response(exc: Exception) -> tuple[dict, int]:
     code = getattr(exc, "code", "STORE_COMMIT_FAILED")
-    if code == "EXTERNAL_ACTION_FAILED":
-        from .gateway_provider_adapter import fixed_external_failure
-        return fixed_external_failure()
     if isinstance(exc, TransportError):
         code = "INVALID_REQUEST"
     elif isinstance(exc, JourneyLockBusy):
         code = "STORE_BUSY"
     elif isinstance(exc, JourneyStoreError) and code == "JOURNEY_NOT_FOUND":
         code = "PERMISSION_REQUIRED"
-    status = {"INVALID_REQUEST": 422, "NOT_FOUND": 404,
-              "HEAD_CONFLICT": 409, "STORE_BUSY": 503,
-              "STORE_COMMIT_FAILED": 500}.get(code, 403)
-    message = "gateway operation is invalid" if code == "INVALID_REQUEST" else (
-        "gateway operation approval is unavailable")
+    errors = {
+        "INVALID_REQUEST": (422, "gateway operation is invalid"),
+        "AUTH_REQUIRED": (401, "gateway authentication is required"),
+        "PERMISSION_REQUIRED": (403, "gateway operation approval is required"),
+        "PERMISSION_DENIED": (403, "gateway operation approval is invalid"),
+        "APPROVAL_EXPIRED": (403, "gateway operation approval expired"),
+        "NOT_FOUND": (404, "gateway operation was not found"),
+        "HEAD_CONFLICT": (409, "Journey head changed"),
+        "IDEMPOTENCY_MISMATCH": (409, "operation request conflicts with its prior use"),
+        "INVALID_TRANSITION": (409, "operation state does not allow this action"),
+        "CANCEL_UNAVAILABLE": (409, "operation cancellation is unavailable"),
+        "STORE_BUSY": (503, "operation store is busy"),
+        "STORE_COMMIT_FAILED": (500, "operation state could not be committed"),
+        "EXTERNAL_ACTION_FAILED": (502, "authorized external action failed")}
+    code = code if code in errors else "STORE_COMMIT_FAILED"
+    status, message = errors[code]
     return error_response(TransportError(code, message, status))
 
 
@@ -284,13 +288,10 @@ def gateway_grant_post(
         if not route.startswith("prepare/") or "/" in route[8:]:
             raise GatewayOperationError("NOT_FOUND")
         action = route[8:]
-        if action_for_path(next((path for path in (
-                "/v1/chat/completions", "/api/agent", "/api/workflow",
-                "/api/plugins/probe", "/api/plugins/call",
-                "/api/plugins/register", "/api/plugins/toggle",
-                "/api/plugins/remove", "/api/marketplace/install",
-                "/api/marketplace/add", "/api/marketplace/remove")
-                if action_for_path(path) == action), "")) != action:
+        if action not in {"chat.complete", "agent.run", "workflow.run",
+                "plugin.probe", "plugin.call", "plugin.register",
+                "plugin.toggle", "plugin.remove", "marketplace.install",
+                "marketplace.add", "marketplace.remove", "operation.cancel"}:
             raise GatewayOperationError("NOT_FOUND")
         return _prepare(action, body, owner_ref, state_root, clock), 200
     except (TransportError, GatewayOperationError, GrantError,
