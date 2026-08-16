@@ -49,7 +49,7 @@ final class CodeDraftTransaction {
   }
 
   T locked<T>(String key, T Function() action) {
-    final locks = Directory('${root.path}/.locks')..createSync(recursive: true);
+    final locks = _privateDirectory('.locks');
     final file = File('${locks.path}/$workspaceRef.$key.lock');
     final handle = file.openSync(mode: FileMode.append);
     try {
@@ -81,7 +81,7 @@ final class CodeDraftTransaction {
   }) {
     final recordSha = sha256.convert(bytes).toString();
     final pathKey = target.uri.pathSegments.last.substring(0, 64);
-    final prior = target.existsSync() ? target.readAsBytesSync() : null;
+    final prior = _validTarget(target, pathKey, valid);
     final temporary = temporaryFile?.call(target) ??
         File('${target.path}.fw-write.$pid.${_nonce()}.$recordSha.tmp');
     if (_entryExists(temporary.path)) {
@@ -101,7 +101,7 @@ final class CodeDraftTransaction {
       }
       return recordSha;
     } catch (_) {
-      _cleanup(temporary);
+      if (temporary.existsSync()) temporary.deleteSync();
       _rollback(target, prior, recordSha, pathKey, valid);
       rethrow;
     }
@@ -167,6 +167,7 @@ final class CodeDraftTransaction {
         .where((file) => file.uri.pathSegments.last != '$key.json')
         .toList();
     if (target.existsSync()) {
+      _validTarget(target, key, valid);
       for (final file in owned) {
         _quarantine(file);
       }
@@ -219,8 +220,7 @@ final class CodeDraftTransaction {
     if (!file.existsSync()) return;
     final bytes = file.readAsBytesSync();
     final digest = sha256.convert(bytes).toString();
-    final quarantine = Directory('${root.path}/.quarantine')
-      ..createSync(recursive: true);
+    final quarantine = _privateDirectory('.quarantine');
     final name =
         sha256.convert(utf8.encode('$workspaceRef:${file.path}')).toString();
     final target = File('${quarantine.path}/$name.$digest');
@@ -231,15 +231,26 @@ final class CodeDraftTransaction {
     }
   }
 
-  void _cleanup(File file) {
-    if (_entryExists(file.path) && file.existsSync()) {
-      file.deleteSync();
-    }
-  }
-
   bool _entryExists(String path) =>
       FileSystemEntity.typeSync(path, followLinks: false) !=
       FileSystemEntityType.notFound;
+
+  List<int>? _validTarget(
+      File target, String pathKey, DraftBytesValidator valid) {
+    if (!target.existsSync()) return null;
+    final bytes = target.readAsBytesSync();
+    if (!valid(bytes, pathKey)) throw const DraftTransactionException(false);
+    return bytes;
+  }
+
+  Directory _privateDirectory(String name) {
+    final directory = Directory('${root.path}/$name');
+    _regularOrMissing(directory.path, allowDirectory: true);
+    directory.createSync(recursive: true);
+    _regularOrMissing(directory.path, allowDirectory: true);
+    return directory;
+  }
+
   String _nonce() => DateTime.now()
       .microsecondsSinceEpoch
       .toRadixString(16)
@@ -250,10 +261,8 @@ final class CodeDraftTransaction {
     final type = FileSystemEntity.typeSync(path, followLinks: false);
     final accepted = type == FileSystemEntityType.notFound ||
         type == FileSystemEntityType.file ||
-        (allowDirectory && type == FileSystemEntityType.directory);
-    if (!accepted) {
-      throw const DraftTransactionException(false);
-    }
+        allowDirectory && type == FileSystemEntityType.directory;
+    if (!accepted) throw const DraftTransactionException(false);
   }
 }
 

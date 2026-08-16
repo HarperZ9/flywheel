@@ -87,6 +87,7 @@ class OpenFile {
     this.journalRecordSha256,
     this.journalFailure,
     this.diskFailure,
+    this.editRevision = 0,
   });
   final String path;
   final String relativePath;
@@ -99,6 +100,7 @@ class OpenFile {
   String? journalRecordSha256;
   CodeSessionFailure? journalFailure;
   CodeDiskFailure? diskFailure;
+  int editRevision;
   String get name => relativePath.split('/').last;
 }
 
@@ -130,32 +132,43 @@ final class CodeRecoveryConflict {
 }
 
 class WorkspaceSessionIo {
-  factory WorkspaceSessionIo.open(String root) {
+  factory WorkspaceSessionIo.open(String root,
+      {WorkspaceFileTransaction? transaction}) {
     try {
       final canonical = canonicalWorkspaceRoot(root);
-      return WorkspaceSessionIo._(canonical, workspaceReference(canonical));
+      return WorkspaceSessionIo._(canonical, workspaceReference(canonical),
+          transaction ?? const WorkspaceFileTransaction());
     } catch (_) {
       throw const CodeSessionException(CodeSessionFailure.invalidPath);
     }
   }
 
-  const WorkspaceSessionIo._(this.root, this.workspaceRef);
+  const WorkspaceSessionIo._(this.root, this.workspaceRef, this.transaction);
   final String root;
   final String workspaceRef;
+  final WorkspaceFileTransaction transaction;
 
   OpenedWorkspaceFile openFile(String path) {
-    return openWith(path, loadFile);
+    final source = existingFile(path);
+    if (source != null) return source;
+    throw const CodeSessionException(CodeSessionFailure.readFailed);
   }
 
-  OpenedWorkspaceFile openWith(
-      String path, LoadedFile Function(String) loader) {
+  OpenedWorkspaceFile? existingFile(String path) {
     try {
-      final admitted = containedFile(root, path);
-      return OpenedWorkspaceFile(
-          admitted, relativeFile(root, admitted), loader(admitted));
+      return _read(path);
+    } on WorkspaceFileException catch (error) {
+      if (error.failure == CodeDiskFailure.missing) return null;
+      throw const CodeSessionException(CodeSessionFailure.readFailed);
     } catch (_) {
       throw const CodeSessionException(CodeSessionFailure.readFailed);
     }
+  }
+
+  OpenedWorkspaceFile _read(String path) {
+    final result = transaction.read(canonicalRoot: root, requestedPath: path);
+    return OpenedWorkspaceFile(result.canonicalPath,
+        relativeFile(root, result.canonicalPath), loadedFile(result));
   }
 
   OpenedWorkspaceFile source(String path, LoadedFile loaded) =>
@@ -166,10 +179,13 @@ class WorkspaceSessionIo {
 
   DraftDiskView inspect(CodeDraft draft) {
     final path = absoluteFile(root, draft.path);
-    if (!File(path).existsSync()) {
+    late final OpenedWorkspaceFile opened;
+    try {
+      opened = _read(path);
+    } on WorkspaceFileException catch (error) {
+      if (error.failure != CodeDiskFailure.missing) rethrow;
       return DraftDiskView(DraftDiskState.missing, path, null);
     }
-    final opened = openFile(path);
     final state = opened.loaded.sha256 == draft.bufferSha256
         ? DraftDiskState.buffer
         : opened.loaded.sha256 == draft.diskSha256
@@ -217,11 +233,10 @@ class WorkspaceSessionIo {
           open.map((file) => MapEntry(file.path, file.controller.text)));
   }
 
-  List<FileDiff> reloadClean(List<OpenFile> open, Map<String, String> before,
-      LoadedFile Function(String) loader) {
+  List<FileDiff> reloadClean(List<OpenFile> open, Map<String, String> before) {
     final values = <FileDiff>[];
     for (final file in open.where((item) => !item.dirty && !item.readOnly)) {
-      final fresh = openWith(file.path, loader).loaded;
+      final fresh = _read(file.path).loaded;
       if (fresh.content == file.controller.text) continue;
       final prior = before[file.path];
       if (prior != null) {
@@ -234,27 +249,19 @@ class WorkspaceSessionIo {
   }
 }
 
-LoadedFile loadFile(String path) {
-  final f = File(path);
+LoadedFile loadedFile(WorkspaceReadResult result) {
+  if (result.bytes.length > editableLimitBytes) {
+    final head = String.fromCharCodes(result.bytes.take(editableLimitBytes));
+    return LoadedFile(head, result.sha256,
+        readOnly: true,
+        note:
+            'large file: showing the first ${editableLimitBytes ~/ 1024} KB read-only');
+  }
   try {
-    final bytes = f.readAsBytesSync();
-    final digest = sha256.convert(bytes).toString();
-    if (bytes.length > editableLimitBytes) {
-      final head = String.fromCharCodes(bytes.take(editableLimitBytes));
-      return LoadedFile(head, digest,
-          readOnly: true,
-          note:
-              'large file: showing the first ${editableLimitBytes ~/ 1024} KB read-only');
-    }
-    try {
-      return LoadedFile(utf8.decode(bytes), digest);
-    } on FormatException {
-      return LoadedFile('', digest,
-          readOnly: true, note: 'binary file: not editable here');
-    }
-  } on FileSystemException catch (e) {
-    return LoadedFile('', sha256.convert(const <int>[]).toString(),
-        readOnly: true, note: 'unreadable: ${e.message}');
+    return LoadedFile(utf8.decode(result.bytes), result.sha256);
+  } on FormatException {
+    return LoadedFile('', result.sha256,
+        readOnly: true, note: 'binary file: not editable here');
   }
 }
 
@@ -265,17 +272,6 @@ String workspaceReference(String canonicalRoot) {
   final identity =
       Platform.isWindows ? canonicalRoot.toLowerCase() : canonicalRoot;
   return sha256.convert(utf8.encode(identity)).toString();
-}
-
-String containedFile(String canonicalRoot, String path) {
-  final resolved = File(path).resolveSymbolicLinksSync();
-  final root = Platform.isWindows ? canonicalRoot.toLowerCase() : canonicalRoot;
-  final candidate = Platform.isWindows ? resolved.toLowerCase() : resolved;
-  if (candidate != root &&
-      !candidate.startsWith('$root${Platform.pathSeparator}')) {
-    throw const FileSystemException('outside workspace');
-  }
-  return resolved;
 }
 
 String relativeFile(String canonicalRoot, String path) => path

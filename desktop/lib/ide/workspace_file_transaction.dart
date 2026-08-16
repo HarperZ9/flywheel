@@ -36,19 +36,20 @@ final class WorkspaceWriteResult {
 final class WorkspaceFileTransaction {
   const WorkspaceFileTransaction({this.afterHandleValidated});
   final void Function()? afterHandleValidated;
-
   WorkspaceReadResult read({
     required String canonicalRoot,
     required String requestedPath,
   }) {
     _admit(canonicalRoot, requestedPath);
-    if (!Platform.isWindows) return _portableRead(canonicalRoot, requestedPath);
+    if (!Platform.isWindows) {
+      return _portableRead(canonicalRoot, requestedPath, afterHandleValidated);
+    }
     final native = _WindowsIo.open();
     int? handle;
     try {
       handle = native.openRead(requestedPath);
-      final path = native.finalPath(handle);
-      _contained(canonicalRoot, path);
+      final path = _contained(canonicalRoot, native.finalPath(handle));
+      afterHandleValidated?.call();
       final bytes = native.readAll(handle);
       return WorkspaceReadResult(path, _digest(bytes), bytes);
     } finally {
@@ -69,7 +70,7 @@ final class WorkspaceFileTransaction {
       throw const WorkspaceFileException(CodeDiskFailure.writeFailed);
     }
     if (!Platform.isWindows) {
-      final current = _portableRead(canonicalRoot, requestedPath);
+      final current = _portableRead(canonicalRoot, requestedPath, null);
       if (current.sha256 == bufferSha256) {
         return WorkspaceWriteResult(WorkspaceWriteDisposition.alreadyWritten,
             current.canonicalPath, bufferSha256);
@@ -86,8 +87,7 @@ final class WorkspaceFileTransaction {
     int? handle;
     try {
       handle = native.openWrite(requested);
-      final path = native.finalPath(handle);
-      _contained(root, path);
+      final path = _contained(root, native.finalPath(handle));
       afterHandleValidated?.call();
       final current = native.readAll(handle);
       final currentSha = _digest(current);
@@ -113,9 +113,8 @@ final class WorkspaceFileTransaction {
       }
       return WorkspaceWriteResult(
           WorkspaceWriteDisposition.saved, path, bufferSha);
-    } on WorkspaceFileException {
-      rethrow;
-    } catch (_) {
+    } catch (error) {
+      if (error is WorkspaceFileException) rethrow;
       throw const WorkspaceFileException(CodeDiskFailure.writeFailed);
     } finally {
       if (handle != null) native.close(handle);
@@ -124,15 +123,16 @@ final class WorkspaceFileTransaction {
   }
 }
 
-WorkspaceReadResult _portableRead(String root, String requested) {
+WorkspaceReadResult _portableRead(
+    String root, String requested, void Function()? afterValidated) {
   try {
     final path = File(requested).resolveSymbolicLinksSync();
     _contained(root, path);
     final bytes = File(path).readAsBytesSync();
+    afterValidated?.call();
     return WorkspaceReadResult(path, _digest(bytes), bytes);
-  } on WorkspaceFileException {
-    rethrow;
-  } catch (_) {
+  } catch (error) {
+    if (error is WorkspaceFileException) rethrow;
     throw const WorkspaceFileException(CodeDiskFailure.missing);
   }
 }
@@ -149,18 +149,19 @@ void _admit(String root, String requested) {
   }
 }
 
-void _contained(String root, String candidate) {
-  String clean(String value) => value
-      .replaceFirst(RegExp(r'^\\\\\?\\UNC\\', caseSensitive: false), r'\\')
-      .replaceFirst(RegExp(r'^\\\\\?\\'), '')
-      .replaceAll('/', Platform.pathSeparator);
-  final base = clean(root), path = clean(candidate);
+String _contained(String root, String candidate) {
+  final base = _cleanPath(root), path = _cleanPath(candidate);
   final left = Platform.isWindows ? base.toLowerCase() : base;
   final right = Platform.isWindows ? path.toLowerCase() : path;
-  if (right != left && !right.startsWith('$left${Platform.pathSeparator}')) {
-    throw const WorkspaceFileException(CodeDiskFailure.unavailable);
-  }
+  return right != left && !right.startsWith('$left${Platform.pathSeparator}')
+      ? throw const WorkspaceFileException(CodeDiskFailure.unavailable)
+      : path;
 }
+
+String _cleanPath(String value) => value
+    .replaceFirst(RegExp(r'^\\\\\?\\UNC\\', caseSensitive: false), r'\\')
+    .replaceFirst(RegExp(r'^\\\\\?\\'), '')
+    .replaceAll('/', Platform.pathSeparator);
 
 String _digest(List<int> bytes) => sha256.convert(bytes).toString();
 
@@ -209,8 +210,7 @@ final class _WindowsIo {
   int openRead(String path) => _open(path, 0x80000000, 7);
   int openWrite(String path) => _open(path, 0xC0000000, 1);
   int _open(String path, int access, int sharing) {
-    final name = _wide(path);
-    final handle = create(name, access, sharing, nullptr, 3, 0x80, 0);
+    final handle = create(_wide(path), access, sharing, nullptr, 3, 0x80, 0);
     if (handle == -1) {
       final failure = {
             32: CodeDiskFailure.busy,

@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:io';
 import 'package:flutter/foundation.dart';
 import '../services/code_draft_store.dart';
 import 'code_buffer_custody.dart';
@@ -13,7 +12,6 @@ typedef CodeRecoveryConflict = workspace.CodeRecoveryConflict;
 typedef CodeRecoveryOutcome = workspace.CodeRecoveryOutcome;
 typedef CodeSessionException = workspace.CodeSessionException;
 typedef CodeSessionFailure = workspace.CodeSessionFailure;
-typedef CodeLoadFile = workspace.LoadedFile Function(String path);
 typedef CodeCompareAndWrite = WorkspaceWriteResult Function(String root,
     String path, String diskSha, String bufferSha, List<int> bytes);
 
@@ -22,15 +20,17 @@ enum CodeSessionPhase { closed, recovering, recoveryBlocked, ready }
 final class CodeBufferSession extends ChangeNotifier {
   CodeBufferSession({
     required this.draftStore,
-    CodeLoadFile? loadFile,
+    WorkspaceFileTransaction? fileTransaction,
     CodeCompareAndWrite? compareAndWrite,
     DateTime Function()? now,
-  })  : _load = loadFile ?? workspace.loadFile,
-        _write = compareAndWrite ?? _defaultWrite,
+  })  : _files = fileTransaction ?? const WorkspaceFileTransaction(),
+        _write = compareAndWrite ??
+            _transactionWriter(
+                fileTransaction ?? const WorkspaceFileTransaction()),
         _custody = CodeBufferCustody(draftStore),
         _now = now ?? (() => DateTime.now().toUtc());
   final CodeDraftStore draftStore;
-  final CodeLoadFile _load;
+  final WorkspaceFileTransaction _files;
   final CodeCompareAndWrite _write;
   final CodeBufferCustody _custody;
   final DateTime Function() _now;
@@ -60,7 +60,8 @@ final class CodeBufferSession extends ChangeNotifier {
       (_phase == CodeSessionPhase.ready &&
           _open.where((file) => file.dirty).every(_custody.closable));
   void openWorkspace(String root) {
-    final candidate = workspace.WorkspaceSessionIo.open(root);
+    final candidate =
+        workspace.WorkspaceSessionIo.open(root, transaction: _files);
     if (_open.any((file) => file.dirty)) {
       throw const CodeSessionException(CodeSessionFailure.localStore);
     }
@@ -96,7 +97,7 @@ final class CodeBufferSession extends ChangeNotifier {
 
   void openFile(String absolutePath) {
     _requireReady();
-    _addLoaded(_io!.openWith(absolutePath, _load));
+    _active = _io!.addLoaded(_open, _io!.openFile(absolutePath));
     notifyListeners();
   }
 
@@ -110,6 +111,7 @@ final class CodeBufferSession extends ChangeNotifier {
     _requireReady();
     final file = _find(absolutePath);
     if (file.readOnly) return;
+    file.editRevision++;
     final digest = workspace.codeTextSha256(file.controller.text);
     file.dirty = digest != file.diskSha256;
     if (!file.dirty) {
@@ -171,7 +173,7 @@ final class CodeBufferSession extends ChangeNotifier {
       file.diskFailure = error.failure;
       if (error.failure == CodeDiskFailure.changed ||
           error.failure == CodeDiskFailure.missing) {
-        _custody.addConflict(_io!, file, error.failure, _load);
+        _custody.addConflict(_io!, file, error.failure);
       }
       notifyListeners();
       return false;
@@ -184,8 +186,9 @@ final class CodeBufferSession extends ChangeNotifier {
     if (!file.dirty) return true;
     if (!_custody.hasJournal(file) || !_generationCurrent(file)) return false;
     if (!_deleteJournal(file)) return false;
-    if (File(file.path).existsSync()) {
-      final disk = _io!.openWith(file.path, _load).loaded;
+    final source = _io!.existingFile(file.path);
+    if (source != null) {
+      final disk = source.loaded;
       file
         ..controller.text = disk.content
         ..diskSha256 = disk.sha256
@@ -231,7 +234,7 @@ final class CodeBufferSession extends ChangeNotifier {
 
   void reloadCleanFiles() {
     if (_phase != CodeSessionPhase.ready) return;
-    _diffs = _io!.reloadClean(_open, _preRun, _load);
+    _diffs = _io!.reloadClean(_open, _preRun);
     notifyListeners();
   }
 
@@ -258,11 +261,9 @@ final class CodeBufferSession extends ChangeNotifier {
     return false;
   }
 
-  void _requireReady() {
-    if (_phase != CodeSessionPhase.ready) {
-      throw const CodeSessionException(CodeSessionFailure.localStore);
-    }
-  }
+  void _requireReady() => _phase == CodeSessionPhase.ready
+      ? null
+      : throw const CodeSessionException(CodeSessionFailure.localStore);
 
   OpenFile _find(String path) =>
       _open.firstWhere((file) => _io!.samePath(file.path, path),
@@ -270,8 +271,6 @@ final class CodeBufferSession extends ChangeNotifier {
               throw const CodeSessionException(CodeSessionFailure.invalidPath));
   workspace.CodeRecoveryConflict? _conflict(String path) =>
       _custody.conflicts.where((value) => value.path == path).firstOrNull;
-  void _addLoaded(workspace.OpenedWorkspaceFile source) =>
-      _active = _io!.addLoaded(_open, source);
   void _reset() {
     _custody.disposeFiles(_open);
     _custody.clear();
@@ -279,6 +278,7 @@ final class CodeBufferSession extends ChangeNotifier {
     _diffs = const [];
     _status = null;
     _presentationFailure = null;
+    _active = -1;
     _io = null;
     _phase = CodeSessionPhase.closed;
   }
@@ -290,9 +290,8 @@ final class CodeBufferSession extends ChangeNotifier {
   }
 }
 
-WorkspaceWriteResult _defaultWrite(String root, String path, String disk,
-        String buffer, List<int> bytes) =>
-    const WorkspaceFileTransaction().compareAndWrite(
+CodeCompareAndWrite _transactionWriter(WorkspaceFileTransaction transaction) =>
+    (root, path, disk, buffer, bytes) => transaction.compareAndWrite(
         canonicalRoot: root,
         requestedPath: path,
         expectedDiskSha256: disk,

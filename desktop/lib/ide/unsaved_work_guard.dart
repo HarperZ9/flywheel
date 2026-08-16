@@ -72,8 +72,9 @@ final class UnsavedWorkGuard {
     if (_pending) return false;
     final targets = _targets(filePath);
     if (targets.isEmpty) return _finish(scope, filePath);
-    final textAtPrompt = {
-      for (final target in targets) target.path: target.controller.text,
+    final stateAtPrompt = {
+      for (final target in targets)
+        target.path: (target.controller.text, target.editRevision),
     };
     _pending = true;
     try {
@@ -82,7 +83,7 @@ final class UnsavedWorkGuard {
           routeId: routeId,
           paths: targets.map((file) => file.relativePath).toList()));
       if (choice == CloseChoice.cancel ||
-          !_sameTargets(targets, textAtPrompt, filePath == null)) {
+          !_sameTargets(targets, stateAtPrompt, filePath == null)) {
         return false;
       }
       for (final target in targets) {
@@ -110,13 +111,14 @@ final class UnsavedWorkGuard {
     return targets;
   }
 
-  bool _sameTargets(
-      List<OpenFile> captured, Map<String, String> text, bool includeAllDirty) {
+  bool _sameTargets(List<OpenFile> captured, Map<String, (String, int)> state,
+      bool includeAllDirty) {
     final current = {for (final file in session.openFiles) file.path: file};
     for (final target in captured) {
       if (!identical(current[target.path], target) ||
           !target.dirty ||
-          target.controller.text != text[target.path]) {
+          target.controller.text != state[target.path]?.$1 ||
+          target.editRevision != state[target.path]?.$2) {
         return false;
       }
     }

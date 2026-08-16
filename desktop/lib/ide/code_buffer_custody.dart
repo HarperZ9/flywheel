@@ -26,10 +26,18 @@ final class CodeBufferCustody {
     final recovered = <workspace.CodeRecoveryOutcome>[];
     final blocked = <workspace.CodeRecoveryConflict>[];
     final retained = <StoredCodeDraft>[];
+    final cleanup = <StoredCodeDraft>[];
     try {
       for (final stored in loaded) {
         final keep = _stage(io, stored, files, recovered, blocked);
-        if (keep) retained.add(stored);
+        (keep ? retained : cleanup).add(stored);
+      }
+      for (final stored in cleanup) {
+        store.delete(
+            workspaceRef: io.workspaceRef,
+            path: stored.draft.path,
+            expectedBufferSha256: stored.draft.bufferSha256,
+            expectedRecordSha256: stored.recordSha256);
       }
     } catch (_) {
       disposeFiles(files);
@@ -116,11 +124,11 @@ final class CodeBufferCustody {
   }
 
   void addConflict(workspace.WorkspaceSessionIo io, workspace.OpenFile file,
-      CodeDiskFailure failure, workspace.LoadedFile Function(String) load) {
+      CodeDiskFailure failure) {
     final stored = record(file.relativePath);
     if (stored == null) return;
     final disk = failure == CodeDiskFailure.changed
-        ? io.openWith(file.path, load).loaded
+        ? io.openFile(file.path).loaded
         : null;
     file.readOnly = true;
     removeConflict(file.relativePath);
@@ -176,11 +184,6 @@ final class CodeBufferCustody {
     };
     recovered.add(workspace.CodeRecoveryOutcome(kind, draft.path));
     if (kind == workspace.CodeRecoveryKind.alreadySaved) {
-      store.delete(
-          workspaceRef: io.workspaceRef,
-          path: draft.path,
-          expectedBufferSha256: draft.bufferSha256,
-          expectedRecordSha256: stored.recordSha256);
       io.addLoaded(files, io.source(view.path, disk!));
       return false;
     }
