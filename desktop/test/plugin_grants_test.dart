@@ -7,6 +7,7 @@ import 'package:http/testing.dart';
 
 import 'package:flywheel_desktop/client/gateway_client.dart';
 import 'package:flywheel_desktop/controllers/gateway_operation_controller.dart';
+import 'package:flywheel_desktop/ide/agent_panel.dart';
 import 'package:flywheel_desktop/models/tool_spec.dart';
 import 'package:flywheel_desktop/theme/flywheel_theme.dart';
 import 'package:flywheel_desktop/views/plugins_view.dart';
@@ -27,11 +28,99 @@ GatewayClient _client() => GatewayClient(
         '{"witnessed":0,"uniquely_witnessed":[],"gaps":[]}}',
         200)));
 
+GatewayClient _agentClient() => GatewayClient(
+    baseUrl: 'https://plugins.invalid',
+    httpClient: MockClient((request) async => http.Response(
+        request.url.path == '/api/endpoints'
+            ? '{"endpoints":[{"name":"local","backend":"serve",'
+                '"credential":"local-none","provider_role":"local",'
+                '"configured":true}]}'
+            : '{}',
+        200)));
+
 void main() {
   _operationModelTest();
   _neutralStatusTest();
   _rawEditTest();
   _registerEditTest();
+  _marketplaceEditTest();
+  _agentContextEditTest();
+}
+
+void _marketplaceEditTest() {
+  testWidgets('editing marketplace fields rebuilds pending operation',
+      (tester) async {
+    final pending = Completer<Object?>();
+    late GatewayOperation captured;
+    late GatewayOperationSupplier current;
+    await tester.pumpWidget(
+        _authorized(PluginsView(client: _client(), alive: true),
+            (_, operation, supplier, dispatch) {
+      captured = operation;
+      current = supplier;
+      return pending.future;
+    }));
+    await tester.pump();
+    final fields = find.byType(TextField);
+    await tester.enterText(fields.at(2), 'custom');
+    await tester.enterText(fields.at(3), 'safe-mcp');
+    await tester.enterText(fields.at(4), 'detail');
+    await tester.enterText(fields.at(5), 'TOKEN_NAME');
+    await tester.ensureVisible(find.text('Save'));
+    await tester.tap(find.text('Save'));
+    await tester.pump();
+    expect(current(), captured);
+    await tester.enterText(fields.at(4), 'changed detail');
+    expect(current(), isNot(captured));
+    pending.complete();
+    await tester.pump();
+  });
+}
+
+void _agentContextEditTest() {
+  testWidgets('agent pending operation rebuilds attached context',
+      (tester) async {
+    final pending = Completer<Object?>();
+    late GatewayOperation captured;
+    late GatewayOperationSupplier current;
+    final goal = TextEditingController(text: 'inspect');
+    await tester.pumpWidget(_authorized(
+        AgentPanel(
+            client: _agentClient(),
+            alive: true,
+            workspaceRoot: 'workspace',
+            activeFile: 'file_a',
+            selection: 'old selection',
+            goalController: goal,
+            onRunStarted: () {},
+            onRunFinished: () {}), (_, operation, supplier, dispatch) {
+      captured = operation;
+      current = supplier;
+      return pending.future;
+    }));
+    await tester.pump();
+    await tester.tap(find.text('Run'));
+    await tester.pump();
+    expect(current(), captured);
+    await tester.pumpWidget(_authorized(
+        AgentPanel(
+            client: _agentClient(),
+            alive: true,
+            workspaceRoot: 'workspace',
+            activeFile: 'file_b',
+            selection: 'new selection',
+            goalController: goal,
+            onRunStarted: () {},
+            onRunFinished: () {}), (_, operation, supplier, dispatch) {
+      captured = operation;
+      current = supplier;
+      return pending.future;
+    }));
+    await tester.pump();
+    expect(current(), isNot(captured));
+    pending.complete();
+    await tester.pump();
+  });
 }
 
 void _operationModelTest() {

@@ -142,13 +142,18 @@ def test_wrong_owner_and_stale_head_are_non_echoing_and_zero_consume(tmp_path):
     assert stale.value.code == "HEAD_CONFLICT"
 
 
-def test_raw_secret_shape_is_refused_without_echo(tmp_path):
+@pytest.mark.parametrize("secret", [
+    "https://example.invalid/#token/rawvalue123456",
+    "https://example.invalid/#token:rawvalue123456",
+    "X-Api-Key: rawvalue123456",
+])
+def test_raw_secret_shape_is_refused_without_echo(tmp_path, secret):
     _journey(tmp_path)
-    operation = {"name": "custom", "tool": "run",
-                 "arguments": {"api_key": "never-echo"},
-                 "data_refs": [], "credential_refs": []}
+    operation = {"name": "custom", "command": ["tool", secret],
+                 "detail": "safe", "requires": [], "data_refs": [],
+                 "credential_refs": []}
     result, status = gateway_grant_post(
-        "/api/gateway-grants/prepare/plugin.call",
+        "/api/gateway-grants/prepare/plugin.register",
         json.dumps({"schema": "flywheel.gateway-operation/v1",
                     "journey_ref": JOURNEY,
                     "expected_event_head": JourneyStore(tmp_path).load(
@@ -157,7 +162,28 @@ def test_raw_secret_shape_is_refused_without_echo(tmp_path):
                     "operation": operation}).encode(),
         owner_ref=OWNER, state_root=tmp_path, clock=lambda: NOW)
     assert status == 422 and result["error"]["code"] == "INVALID_REQUEST"
-    assert "never-echo" not in json.dumps(result)
+    assert "rawvalue" not in json.dumps(result)
+    assert not list((tmp_path / "gateway-grant-proposals").rglob("*.json"))
+@pytest.mark.parametrize("secret", [
+    "https://example.invalid/#token/rawvalue123456",
+    "https://example.invalid/#token:rawvalue123456",
+    "X-Api-Key: rawvalue123456",
+])
+def test_final_secret_vector_is_fixed_and_creates_no_custody(tmp_path, secret):
+    head = _journey(tmp_path).event_head_sha256
+    body = {"schema": "flywheel.gateway-operation/v1",
+            "journey_ref": JOURNEY, "expected_event_head": head,
+            "client_request_id": "request-1", "grant_ref": "gnt_" + "a" * 32,
+            "name": "custom", "command": ["tool", secret],
+            "detail": "safe", "requires": [], "data_refs": [],
+            "credential_refs": []}
+    with pytest.raises(GatewayOperationError) as failure:
+        authorize_gateway_operation(
+            "plugin.register", json.dumps(body).encode(), owner_ref=OWNER,
+            state_root=tmp_path, clock=lambda: NOW)
+    assert failure.value.code == "INVALID_REQUEST"
+    assert "rawvalue" not in str(failure.value)
+    assert not list((tmp_path / "gateway-grant-proposals").rglob("*.json"))
 
 
 def test_unapproved_absent_and_expired_grants_never_authorize(tmp_path):

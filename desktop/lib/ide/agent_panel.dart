@@ -1,7 +1,5 @@
 import 'dart:async';
-
 import 'package:flutter/material.dart';
-
 import '../client/gateway_client.dart';
 import '../models/gateway_models.dart';
 import '../theme/flywheel_theme.dart';
@@ -80,40 +78,48 @@ class _AgentPanelState extends State<AgentPanel> {
         _events = [];
         _stored = _error = null;
       });
-  Future<void> _run() async {
-    final inputGoal = _goal.text.trim();
-    final authority = (_endpoint, inputGoal, _allowWrite, _allowExec);
-    var goal = inputGoal;
-    if (goal.isEmpty || _endpoint == null || _running) return;
+  GatewayOperation? _operation(String request) {
+    final endpoint = _endpoint, input = _goal.text.trim();
+    if (endpoint == null || input.isEmpty) return null;
+    var goal = input;
     if (_attachContext && widget.activeFile != null) {
-      final sel = widget.selection;
-      goal = 'Active file: ${widget.activeFile}\n'
-          '${sel != null && sel.isNotEmpty ? 'Selected text:\n$sel\n' : ''}'
+      final selection = widget.selection;
+      goal = 'Active source ${widget.activeFile}\n'
+          '${selection != null && selection.isNotEmpty ? 'Selected text\n$selection\n' : ''}'
           '\n$goal';
     }
+    try {
+      return GatewayOperation.exact(
+          action: 'agent.run',
+          clientRequestId: request,
+          operation: {
+            'goal': goal,
+            'endpoint': endpoint,
+            'max_steps': 10,
+            'allow_write': _allowWrite,
+            'allow_exec': _allowExec,
+            'stream': true,
+            'root': widget.workspaceRoot
+          });
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> _run() async {
+    if (_running) return;
+    final request = 'desktop-agent-${DateTime.now().microsecondsSinceEpoch}';
+    final operation = _operation(request);
+    if (operation == null) return;
+    final value = operation.operation;
     widget.onRunStarted();
     _beginRun();
-    final operation = GatewayOperation.exact(
-        action: 'agent.run',
-        dataRefs: const [],
-        credentialRefs: const [],
-        clientRequestId:
-            'desktop-agent-${DateTime.now().microsecondsSinceEpoch}',
-        operation: {
-          'goal': goal,
-          'endpoint': _endpoint!,
-          'max_steps': 10,
-          'allow_write': _allowWrite,
-          'allow_exec': _allowExec,
-          'stream': true,
-          'root': widget.workspaceRoot
-        });
     await authorizeGatewayStream(context, operation, (body) {
       _sub = widget.client
-          .agentStream(goal, _endpoint!,
+          .agentStream(value['goal'] as String, value['endpoint'] as String,
               maxSteps: 10,
-              allowWrite: _allowWrite,
-              allowExec: _allowExec,
+              allowWrite: value['allow_write'] as bool,
+              allowExec: value['allow_exec'] as bool,
               root: widget.workspaceRoot,
               authorizedBody: body)
           .listen(_onEvent, onError: (e) {
@@ -131,11 +137,7 @@ class _AgentPanelState extends State<AgentPanel> {
       if (!mounted) return;
       setState(() => _running = false);
       widget.onRunFinished();
-    },
-        currentOperation: () =>
-            (_endpoint, _goal.text.trim(), _allowWrite, _allowExec) == authority
-                ? operation
-                : null);
+    }, currentOperation: () => _operation(request));
   }
 
   void _onEvent(Map<String, dynamic> e) {

@@ -165,14 +165,33 @@ def remove_mcp(name: str) -> dict:
 
 def plugin_credentials(name: str) -> tuple[tuple[str, ...], tuple[str, ...]]:
     """Return safe frozen credential metadata, never credential values."""
-    if name in LANES or name == "tools":
-        return (), ()
+    return plugin_execution_plan(name)[2:]
+
+
+def plugin_execution_plan(name: str):
+    """Freeze launch and credential metadata from one registry read."""
+    if name == "tools":
+        return None, "builtin", (), ()
+    if name in LANES:
+        return resolve_mcp_launch(name), "lane", (), ()
     entry = next((row for row in _load_custom() if row.get("name") == name), None)
     if entry is None or not entry.get("enabled", True):
         raise PluginPermissionError
     _safe_plan(entry.get("name"), entry.get("command"), entry.get("detail", ""))
-    return _credential_metadata(entry.get("requires"),
-                                entry.get("credential_refs"))
+    slots, refs = _credential_metadata(
+        entry.get("requires"), entry.get("credential_refs"))
+    return tuple(entry["command"]), "mcp", slots, refs
+def _direct_refusal(name, probe):
+    if name in LANES or name == "tools":
+        return None
+    entry = next((row for row in _load_custom() if row.get("name") == name), None)
+    if entry is None:
+        return {"error": f"no plugin named '{name}'"}
+    if not entry.get("enabled", True):
+        return ({"name": name, "kind": "mcp", "status": "disabled",
+                 "detail": "enable it before probing"} if probe else
+                {"error": f"plugin '{name}' is disabled; enable it first"})
+    return None
 
 
 def _restricted_launch(command, bindings, slots):
@@ -193,8 +212,6 @@ def _restricted_launch(command, bindings, slots):
     else:
         argv, cwd = tuple(command), None
     return LaunchSpec(argv, cwd, tuple(sorted(child_env.items())), False)
-
-
 def _launch(command, slots, bindings):
     if bindings is None:
         if slots:
@@ -205,28 +222,20 @@ def _launch(command, slots, bindings):
 
 def call_plugin(name: str, tool: str, arguments: "dict | None" = None,
                 timeout: float = 45.0, client_factory=None,
-                credential_bindings=None) -> dict:
-    """Spawn a registered plugin's server and call ONE tool. Admission is
-    the same as probing: lanes and registered custom servers only, so this
-    route never launches an arbitrary command. The result is the server's
-    own answer under its own name, never an assumption."""
+                credential_bindings=None, execution_plan=None) -> dict:
+    """Call one tool through an admitted registered plugin plan."""
     if name == "tools":
         return {"error": "the builtin tool set runs inside gated agent "
                          "runs, not through this route"}
-    if name in LANES:
-        command = resolve_mcp_launch(name)
-        kind = "lane"
-    else:
-        entry = next((e for e in _load_custom() if e.get("name") == name), None)
-        if entry is None:
-            return {"error": f"no plugin named '{name}'"}
-        if not entry.get("enabled", True):
-            return {"error": f"plugin '{name}' is disabled; enable it first"}
-        command = entry.get("command", [])
-        kind = "mcp"
+    refusal = None if execution_plan is not None else _direct_refusal(name, False)
+    if refusal is not None:
+        return refusal
     try:
-        slots, _ = plugin_credentials(name)
-        command = _launch(command, slots, credential_bindings)
+        if execution_plan is None:
+            command, kind, slots, _ = plugin_execution_plan(name)
+            command = _launch(command, slots, credential_bindings)
+        else:
+            command, kind = execution_plan.launch, execution_plan.plugin_kind
     except PluginPermissionError:
         return _permission()
     from .mcp_client import MCPClient, MCPError
@@ -242,27 +251,20 @@ def call_plugin(name: str, tool: str, arguments: "dict | None" = None,
 
 
 def probe_plugin(name: str, timeout: float = 20.0, client_factory=None,
-                 credential_bindings=None) -> dict:
-    """Spawn the plugin's server and report its real tools. Lanes and custom
-    mcp plugins probe alike; builtins list their gated set directly."""
+                 credential_bindings=None, execution_plan=None) -> dict:
+    """Probe one admitted plugin plan and report its real tools."""
     if name == "tools":
         return {"name": name, "kind": "builtin", "status": "live",
                 "tools": list(BUILTIN_TOOLS)}
-    if name in LANES:
-        command = resolve_mcp_launch(name)
-        kind = "lane"
-    else:
-        entry = next((e for e in _load_custom() if e.get("name") == name), None)
-        if entry is None:
-            return {"error": f"no plugin named '{name}'"}
-        if not entry.get("enabled", True):
-            return {"name": name, "kind": "mcp", "status": "disabled",
-                    "detail": "enable it before probing"}
-        command = entry.get("command", [])
-        kind = "mcp"
+    refusal = None if execution_plan is not None else _direct_refusal(name, True)
+    if refusal is not None:
+        return refusal
     try:
-        slots, _ = plugin_credentials(name)
-        command = _launch(command, slots, credential_bindings)
+        if execution_plan is None:
+            command, kind, slots, _ = plugin_execution_plan(name)
+            command = _launch(command, slots, credential_bindings)
+        else:
+            command, kind = execution_plan.launch, execution_plan.plugin_kind
     except PluginPermissionError:
         return _permission()
     from .mcp_client import MCPClient, MCPError

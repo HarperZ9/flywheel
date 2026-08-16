@@ -1,16 +1,45 @@
 """Fixed public failures for authorized external-action adapters."""
 from __future__ import annotations
 
-from dataclasses import replace
+from dataclasses import dataclass, replace
 from pathlib import Path
 
 from .credential_handles import CredentialHandleStore
+from .evidence_json import canonical_sha256
 from .gateway_operation import GatewayOperationError
 
 
 _LOCAL_MODELS = frozenset((
     "", "flywheel", "flywheel-serve", "serve", "default", "local", "auto",
 ))
+
+
+@dataclass(frozen=True)
+class ExecutionPlan:
+    digest: str
+    required_slots: tuple[str, ...]
+    credential_refs: tuple[str, ...]
+    launch: object | None = None
+    plugin_kind: str | None = None
+
+
+def freeze_execution_plan(operation) -> ExecutionPlan:
+    """Snapshot server-derived dispatch metadata before approval."""
+    launch = kind = None
+    if operation.action in {"plugin.probe", "plugin.call"}:
+        from .plugins import plugin_execution_plan
+        launch, kind, required, refs = plugin_execution_plan(
+            operation.operation["name"])
+    else:
+        required, refs = _credential_plan(operation)
+    argv = tuple(launch.argv) if hasattr(launch, "argv") else (
+        tuple(launch) if launch is not None else ())
+    cwd = getattr(launch, "cwd", None)
+    digest = canonical_sha256({
+        "action": operation.action, "operation_sha256": operation.operation_sha256,
+        "required_slots": list(required), "credential_refs": list(refs),
+        "plugin_kind": kind, "argv": list(argv), "cwd": cwd})
+    return ExecutionPlan(digest, tuple(required), tuple(refs), launch, kind)
 
 
 def _credential_plan(operation) -> tuple[tuple[str, ...], tuple[str, ...]]:
@@ -37,11 +66,12 @@ def _credential_plan(operation) -> tuple[tuple[str, ...], tuple[str, ...]]:
     return (), ()
 
 
-def credential_slots(
-        operation, owner_ref: str, state_root: Path) -> tuple[str, ...]:
+def credential_slots(operation, owner_ref: str, state_root: Path,
+                     plan: ExecutionPlan | None = None) -> tuple[str, ...]:
     """Validate owner handle metadata against the server-derived frozen plan."""
     try:
-        required, frozen_refs = _credential_plan(operation)
+        plan = plan or freeze_execution_plan(operation)
+        required, frozen_refs = plan.required_slots, plan.credential_refs
         refs = operation.credential_refs
         store = CredentialHandleStore(
             state_root, keychain_get=lambda _slot: None)
@@ -57,13 +87,22 @@ def credential_slots(
 
 def resolve_credentials(operation, state_root: Path):
     """Resolve exact handle values only after grant consumption."""
-    required = credential_slots(operation, operation.owner_ref, state_root)
+    plan = operation.execution_plan
+    if not isinstance(plan, ExecutionPlan):
+        raise GatewayOperationError("PERMISSION_REQUIRED")
+    required = credential_slots(
+        operation, operation.owner_ref, state_root, plan=plan)
     try:
         from .keychain import keychain_get
         bindings = CredentialHandleStore(
             state_root, keychain_get=keychain_get).resolve_exact(
                 operation.owner_ref, operation.credential_refs, required)
-        return replace(operation, credential_bindings=bindings)
+        if plan.launch is not None:
+            from .plugins import _restricted_launch
+            plan = replace(
+                plan, launch=_restricted_launch(plan.launch, bindings, required))
+        return replace(operation, credential_bindings=bindings,
+                       execution_plan=plan)
     except Exception:
         raise GatewayOperationError("PERMISSION_REQUIRED") from None
 

@@ -50,6 +50,7 @@ class AuthorizedOperation(CanonicalOperation):
     client_request_id: str
     grant_ref: str
     expires_at: str
+    execution_plan: object | None = None
     credential_bindings: object | None = None
 
     @classmethod

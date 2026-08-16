@@ -15,7 +15,11 @@ _SECRET_FIELDS = frozenset((
 _SAFE_HANDLE_FIELDS = frozenset(("credential_ref", "credential_refs"))
 _HEADER = re.compile(
     r"(?i)(?:^|[\r\n])\s*(?:authorization|proxy-authorization|cookie|"
-    r"set-cookie)\s*:")
+    r"set-cookie|(?:x-)?api[-_]?key|access[-_]?token|refresh[-_]?token|"
+    r"token|password|secret|credential|private[-_]?key)\s*:")
+_FRAGMENT_SECRET = re.compile(
+    r"(?i)(?:^|[?&#;/])(?:api[-_]?key|access[-_]?token|refresh[-_]?token|"
+    r"token|password|secret|credential|private[-_]?key)(?:[=:/]|$)")
 _AUTH_VALUE = re.compile(r"(?i)(?:^|\s)(?:bearer|basic)\s+\S+")
 _SECRET_SWITCH = re.compile(
     r"^(?:(?i:--?(?:api[-_]?key|access[-_]?token|refresh[-_]?token|token|"
@@ -66,8 +70,10 @@ def _url_has_secret(value: str) -> bool:
         fragments = [parsed.query, parsed.fragment]
         if "?" in parsed.fragment:
             fragments.append(parsed.fragment.partition("?")[2])
-        return any(_secret_name(name) for component in fragments
-                   for name, _ in parse_qsl(component, keep_blank_values=True))
+        return (_FRAGMENT_SECRET.search(parsed.fragment) is not None
+                or any(_secret_name(name) for component in fragments
+                       for name, _ in parse_qsl(
+                           component, keep_blank_values=True)))
     except (TypeError, ValueError, UnicodeError):
         return True
 

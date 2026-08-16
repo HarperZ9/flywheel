@@ -4,7 +4,7 @@ import io
 import pytest
 
 from harness.gateway_actions import GatewayDispatchError, dispatch_authorized
-from harness.gateway_operation import AuthorizedOperation
+from harness.gateway_operation import AuthorizedOperation, GatewayOperationError
 from harness.gateway_provider_adapter import fixed_external_failure
 from harness.gateway_grant_route import (
     authorize_gateway_operation, gateway_grant_post)
@@ -122,6 +122,39 @@ def _final_body(root, action):
     final = {key: value for key, value in prepare.items() if key != "operation"}
     final.update(OPERATIONS[action]); final["grant_ref"] = approval["grant_ref"]
     return owner, now, final
+
+
+def _different(action, body):
+    field, value = {
+        "chat.complete": ("model", "other"),
+        "agent.run": ("goal", "other"),
+        "workflow.run": ("goal", "other"),
+        "plugin.probe": ("name", "forum"),
+        "plugin.call": ("tool", "query"),
+        "plugin.register": ("command", ["other"]),
+        "plugin.toggle": ("enabled", False),
+        "plugin.remove": ("name", "other"),
+        "marketplace.install": ("name", "filesystem"),
+        "marketplace.add": ("command", ["other"]),
+        "marketplace.remove": ("name", "filesystem"),
+    }[action]
+    return {**body, field: value}
+
+
+@pytest.mark.parametrize("action", OPERATIONS)
+def test_every_final_route_mismatch_preserves_exact_grant(tmp_path, action):
+    owner, now, body = _final_body(tmp_path, action)
+    with pytest.raises(GatewayOperationError):
+        authorize_gateway_operation(
+            action, json.dumps(_different(action, body)).encode(),
+            owner_ref=owner, state_root=tmp_path / "state", clock=lambda: now)
+    exact = authorize_gateway_operation(
+        action, json.dumps(body).encode(), owner_ref=owner,
+        state_root=tmp_path / "state", clock=lambda: now)
+    calls = []
+    dispatch_authorized(
+        exact, {action: lambda op: calls.append(op.action) or "ok"})
+    assert calls == [action]
 
 
 @pytest.mark.parametrize("path,action", [

@@ -42,10 +42,12 @@ def _plugin(operation: AuthorizedOperation) -> object:
     value = operation.operation
     result = {
         "plugin.probe": lambda: plugins.probe_plugin(
-            value["name"], credential_bindings=operation.credential_bindings),
+            value["name"], credential_bindings=operation.credential_bindings,
+            execution_plan=operation.execution_plan),
         "plugin.call": lambda: plugins.call_plugin(
             value["name"], value["tool"], dict(value["arguments"]),
-            credential_bindings=operation.credential_bindings),
+            credential_bindings=operation.credential_bindings,
+            execution_plan=operation.execution_plan),
         "plugin.register": lambda: plugins.register_mcp(
             value["name"], list(value["command"]), value["detail"],
             requires=list(value["requires"]),

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-
 import '../client/gateway_client.dart';
 import '../theme/flywheel_theme.dart';
 import '../widgets/fw.dart';
@@ -13,7 +12,6 @@ class PluginsView extends StatefulWidget {
   final GatewayClient client;
   final bool alive;
   const PluginsView({super.key, required this.client, required this.alive});
-
   @override
   State<PluginsView> createState() => _PluginsViewState();
 }
@@ -31,16 +29,25 @@ class _PluginsViewState extends State<PluginsView> {
   String get _requestId => 'desktop-plugin-${++_request}';
   Future<Map<String, dynamic>?> _authorize(
       String action, Map<String, Object?> raw, String path,
-      {List<String> credentialRefs = const [], bool Function()? isCurrent}) {
-    final operation = GatewayOperation.exact(
-        action: action,
-        operation: raw,
-        dataRefs: const [],
-        credentialRefs: credentialRefs,
-        clientRequestId: _requestId);
+      {List<String> credentialRefs = const [],
+      Map<String, Object?> Function()? currentRaw}) {
+    final request = _requestId;
+    GatewayOperation exact(Map<String, Object?> value) =>
+        GatewayOperation.exact(
+            action: action,
+            operation: value,
+            credentialRefs: credentialRefs,
+            clientRequestId: request);
+    final operation = exact(raw);
     return authorizeGatewayOperation(
         context, operation, (body) => widget.client.postJson(path, body),
-        currentOperation: () => isCurrent?.call() == false ? null : operation);
+        currentOperation: () {
+      try {
+        return currentRaw == null ? operation : exact(currentRaw());
+      } catch (_) {
+        return null;
+      }
+    });
   }
 
   @override
@@ -104,16 +111,19 @@ class _PluginsViewState extends State<PluginsView> {
 
   Future<void> _register() async {
     final name = _name.text.trim();
-    final command = _command.text.trim();
-    final argv = command.split(RegExp(r'\s+'));
+    final argv = _command.text.trim().split(RegExp(r'\s+'));
     if (name.isEmpty || argv.isEmpty || argv.first.isEmpty) return;
     try {
       final r = await _authorize(
           'plugin.register',
           {'name': name, 'command': argv, 'detail': '', 'requires': <String>[]},
           '/api/plugins/register',
-          isCurrent: () =>
-              _name.text.trim() == name && _command.text.trim() == command);
+          currentRaw: () => {
+                'name': _name.text.trim(),
+                'command': _command.text.trim().split(RegExp(r'\s+')),
+                'detail': '',
+                'requires': <String>[],
+              });
       if (r == null) return;
       if (r['error'] != null) {
         setState(() => _error = '${r['error']}');
@@ -193,16 +203,10 @@ class _PluginsViewState extends State<PluginsView> {
           ),
           const SizedBox(height: FwLayout.s3),
           MarketplaceAddCard(
-            onAdd: (name, command, detail, requires) async {
-              final r = await _authorize(
-                  'marketplace.add',
-                  {
-                    'name': name,
-                    'command': command,
-                    'detail': detail,
-                    'requires': requires,
-                  },
-                  '/api/marketplace/add');
+            onAuthorize: (draft, current) async {
+              final r = await _authorize('marketplace.add',
+                  marketplaceAddOperation(draft), '/api/marketplace/add',
+                  currentRaw: () => marketplaceAddOperation(current()));
               if (r == null) return {'error': 'approval required'};
               if (r['added'] == true) _load();
               return r;
