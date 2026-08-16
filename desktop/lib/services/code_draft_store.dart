@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:crypto/crypto.dart';
 
+import 'code_draft_transaction.dart';
 import 'journey_session_store.dart';
 
 const _schema = 'flywheel.desktop-code-draft/v1';
@@ -14,6 +15,7 @@ enum CodeDraftFailure {
   writeFailed,
   notFound,
   digestMismatch,
+  storeBusy,
 }
 
 class CodeDraftStoreException implements Exception {
@@ -28,6 +30,14 @@ typedef CodeDraftBeforeRename = void Function(File temporary);
 typedef CodeDraftRenameFile = void Function(File temporary, String targetPath);
 typedef CodeDraftTemporaryFile = File Function(File target);
 typedef CodeDraftDeleteFile = void Function(File target);
+
+enum CodeDraftDeleteResult { deleted, alreadyAbsent }
+
+final class StoredCodeDraft {
+  const StoredCodeDraft(this.draft, this.recordSha256);
+  final CodeDraft draft;
+  final String recordSha256;
+}
 
 final class CodeDraft {
   factory CodeDraft({
@@ -70,30 +80,35 @@ final class CodeDraftStore {
   final CodeDraftTemporaryFile? temporaryFile;
   final CodeDraftDeleteFile? deleteFile;
 
-  List<CodeDraft> load({required String workspaceRef}) {
+  List<StoredCodeDraft> load({required String workspaceRef}) {
     _workspaceRef(workspaceRef);
     try {
-      _safeRoot();
+      final transaction = _transaction(workspaceRef)
+        ..validateTarget(_record(workspaceRef, 'x'));
       final directory = Directory('${storageRoot.path}/$workspaceRef');
       if (!directory.existsSync()) return const [];
-      _notLink(directory.path);
-      final drafts = <CodeDraft>[];
+      transaction.recover(
+          (bytes, key) => _canDecode(bytes, workspaceRef, pathKey: key));
+      final drafts = <StoredCodeDraft>[];
       for (final entity in directory.listSync(followLinks: false)) {
         _valid(entity is File && entity.path.endsWith('.json'));
-        final root = readJourneyLocalObject(entity as File);
-        _keys(root, const {'draft', 'schema', 'workspace_ref'});
-        _valid(
-            root['schema'] == _schema && root['workspace_ref'] == workspaceRef);
-        final raw = root['draft'];
-        _valid(raw is Map<String, dynamic>);
-        final draft = _decode(raw as Map<String, dynamic>);
-        final expected = '${sha256.convert(utf8.encode(draft.path))}.json';
-        _valid(entity.uri.pathSegments.last == expected);
-        drafts.add(draft);
+        final file = entity as File;
+        final key = file.uri.pathSegments.last.substring(0, 64);
+        drafts.add(transaction.locked(key, () {
+          final bytes = file.readAsBytesSync();
+          final stored = _decodeRecord(bytes, workspaceRef);
+          final expected =
+              '${sha256.convert(utf8.encode(stored.draft.path))}.json';
+          _valid(file.uri.pathSegments.last == expected);
+          return stored;
+        }));
       }
-      drafts.sort((a, b) => a.path.compareTo(b.path));
+      drafts.sort((a, b) => a.draft.path.compareTo(b.draft.path));
       return List.unmodifiable(drafts);
     } catch (error) {
+      if (error is DraftTransactionException && error.busy) {
+        throw const CodeDraftStoreException(CodeDraftFailure.storeBusy);
+      }
       if (error is CodeDraftStoreException &&
           error.failure == CodeDraftFailure.invalidRecord) {
         throw const CodeDraftStoreException(CodeDraftFailure.corruptStore);
@@ -103,7 +118,8 @@ final class CodeDraftStore {
     }
   }
 
-  void save({required String workspaceRef, required CodeDraft draft}) {
+  StoredCodeDraft save(
+      {required String workspaceRef, required CodeDraft draft}) {
     _workspaceRef(workspaceRef);
     late final Map<String, dynamic> value;
     try {
@@ -116,98 +132,108 @@ final class CodeDraftStore {
       throw const CodeDraftStoreException(CodeDraftFailure.invalidRecord);
     }
     final target = _record(workspaceRef, draft.path);
-    _safeTarget(target);
-    final prior = target.existsSync() ? target.readAsBytesSync() : null;
+    final transaction = _transaction(workspaceRef)..validateTarget(target);
+    final bytes = utf8.encode(jsonEncode(value));
     try {
-      writeJourneyLocalObject(target, value,
-          beforeRename: beforeRename,
-          renameFile: renameFile,
-          temporaryFile: temporaryFile);
+      target.parent.createSync(recursive: true);
+      transaction
+          .recover((raw, key) => _canDecode(raw, workspaceRef, pathKey: key));
+      final key = target.uri.pathSegments.last.substring(0, 64);
+      final digest = transaction.locked(
+          key,
+          () => transaction.write(target, bytes,
+              valid: (raw, key) => _canDecode(raw, workspaceRef, pathKey: key),
+              beforeRename: beforeRename,
+              renameFile: renameFile,
+              temporaryFile: temporaryFile));
+      return StoredCodeDraft(draft, digest);
+    } on DraftTransactionException catch (error) {
+      if (error.busy) {
+        throw const CodeDraftStoreException(CodeDraftFailure.storeBusy);
+      }
+      throw const CodeDraftStoreException(CodeDraftFailure.writeFailed);
+    } on CodeDraftStoreException {
+      rethrow;
     } catch (_) {
-      _restore(target, prior);
       throw const CodeDraftStoreException(CodeDraftFailure.writeFailed);
     }
   }
 
-  void delete({
+  CodeDraftDeleteResult delete({
     required String workspaceRef,
     required String path,
     required String expectedBufferSha256,
+    required String expectedRecordSha256,
   }) {
     _workspaceRef(workspaceRef);
     final relative = normalizeCodeDraftPath(path);
     _valid(_sha256.hasMatch(expectedBufferSha256));
+    _valid(_sha256.hasMatch(expectedRecordSha256));
     final target = _record(workspaceRef, relative);
-    _safeTarget(target);
-    if (!target.existsSync()) {
-      throw const CodeDraftStoreException(CodeDraftFailure.notFound);
-    }
-    final matches =
-        load(workspaceRef: workspaceRef).where((item) => item.path == relative);
-    final draft = matches.isEmpty ? null : matches.single;
-    if (draft == null) {
-      throw const CodeDraftStoreException(CodeDraftFailure.notFound);
-    }
-    if (draft.bufferSha256 != expectedBufferSha256) {
-      throw const CodeDraftStoreException(CodeDraftFailure.digestMismatch);
-    }
+    final transaction = _transaction(workspaceRef)..validateTarget(target);
     try {
-      (deleteFile ?? (file) => file.deleteSync())(target);
+      if (target.parent.existsSync()) {
+        transaction
+            .recover((raw, key) => _canDecode(raw, workspaceRef, pathKey: key));
+      }
+      final key = target.uri.pathSegments.last.substring(0, 64);
+      final deleted = transaction.locked(
+          key,
+          () => transaction.delete(target,
+                  expectedRecordSha256: expectedRecordSha256, matches: (bytes) {
+                final stored = _decodeRecord(bytes, workspaceRef);
+                if (stored.draft.path != relative ||
+                    stored.draft.bufferSha256 != expectedBufferSha256) {
+                  throw const CodeDraftStoreException(
+                      CodeDraftFailure.digestMismatch);
+                }
+                return true;
+              }, deleteFile: deleteFile));
+      return deleted
+          ? CodeDraftDeleteResult.deleted
+          : CodeDraftDeleteResult.alreadyAbsent;
+    } on CodeDraftStoreException {
+      rethrow;
+    } on DraftTransactionException catch (error) {
+      if (error.busy) {
+        throw const CodeDraftStoreException(CodeDraftFailure.storeBusy);
+      }
+      throw const CodeDraftStoreException(CodeDraftFailure.writeFailed);
     } catch (_) {
       throw const CodeDraftStoreException(CodeDraftFailure.writeFailed);
     }
   }
+
+  CodeDraftTransaction _transaction(String workspaceRef) =>
+      CodeDraftTransaction(root: storageRoot, workspaceRef: workspaceRef);
 
   File _record(String workspaceRef, String path) {
     final name = sha256.convert(utf8.encode(path)).toString();
     return File('${storageRoot.path}/$workspaceRef/$name.json');
   }
+}
 
-  void _safeTarget(File target) {
-    _safeRoot();
-    final workspace = target.parent;
-    if (workspace.existsSync()) _notLink(workspace.path);
-    if (target.existsSync() ||
-        FileSystemEntity.typeSync(target.path, followLinks: false) !=
-            FileSystemEntityType.notFound) {
-      _notLink(target.path);
-    }
+StoredCodeDraft _decodeRecord(List<int> bytes, String workspaceRef) {
+  final root = decodeBoundedCanonicalJson(bytes);
+  _keys(root, const {'draft', 'schema', 'workspace_ref'});
+  _valid(root['schema'] == _schema && root['workspace_ref'] == workspaceRef);
+  _valid(root['draft'] is Map<String, dynamic>);
+  final draft = _decode(root['draft'] as Map<String, dynamic>);
+  return StoredCodeDraft(draft, sha256.convert(bytes).toString());
+}
+
+bool _canDecode(List<int> bytes, String workspaceRef, {String? pathKey}) {
+  late final StoredCodeDraft stored;
+  try {
+    stored = _decodeRecord(bytes, workspaceRef);
+  } catch (_) {
+    return false;
   }
-
-  void _safeRoot() {
-    var current = storageRoot.absolute;
-    while (true) {
-      if (FileSystemEntity.typeSync(current.path, followLinks: false) ==
-          FileSystemEntityType.link) {
-        _valid(false);
-      }
-      final parent = current.parent;
-      if (parent.path == current.path) break;
-      current = parent;
-    }
+  if (pathKey != null &&
+      sha256.convert(utf8.encode(stored.draft.path)).toString() != pathKey) {
+    throw const CodeDraftStoreException(CodeDraftFailure.invalidRecord);
   }
-
-  void _notLink(String path) =>
-      _valid(FileSystemEntity.typeSync(path, followLinks: false) !=
-          FileSystemEntityType.link);
-
-  void _restore(File target, List<int>? prior) {
-    try {
-      if (FileSystemEntity.typeSync(target.path, followLinks: false) ==
-          FileSystemEntityType.link) {
-        Link(target.path).deleteSync();
-      }
-      _safeTarget(target);
-      if (prior == null) {
-        if (target.existsSync()) target.deleteSync();
-      } else {
-        target.parent.createSync(recursive: true);
-        target.writeAsBytesSync(prior, flush: true);
-      }
-    } catch (_) {
-      throw const CodeDraftStoreException(CodeDraftFailure.writeFailed);
-    }
-  }
+  return true;
 }
 
 CodeDraft _decode(Map<String, dynamic> value) {

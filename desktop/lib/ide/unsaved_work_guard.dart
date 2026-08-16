@@ -68,6 +68,7 @@ final class UnsavedWorkGuard {
 
   Future<bool> _request(UnsavedWorkScope scope,
       {String? filePath, String? routeId}) async {
+    if (!session.closeAdmissionReady) return false;
     if (_pending) return false;
     final targets = _targets(filePath);
     if (targets.isEmpty) return _finish(scope, filePath);

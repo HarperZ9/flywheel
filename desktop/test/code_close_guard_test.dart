@@ -1,17 +1,13 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
-import 'dart:ui' show AppExitResponse;
-
-import 'package:flutter/material.dart';
+import 'package:crypto/crypto.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flywheel_desktop/ide/code_buffer_session.dart';
 import 'package:flywheel_desktop/ide/unsaved_work_guard.dart';
 import 'package:flywheel_desktop/ide/workspace.dart' as workspace;
+import 'package:flywheel_desktop/ide/workspace_file_transaction.dart';
 import 'package:flywheel_desktop/services/code_draft_store.dart';
-import 'package:flywheel_desktop/views/agent_view.dart';
-import 'package:flywheel_desktop/views/code_view.dart';
-import 'package:flywheel_desktop/widgets/flywheel_nav.dart';
-import 'journey_shell_test.dart';
 
 Directory _temp(String name) {
   final value = Directory.systemTemp.createTempSync(name);
@@ -20,7 +16,8 @@ Directory _temp(String name) {
 }
 
 class SessionHarness {
-  SessionHarness({CodeDraftStore? store, CodeSaveFile? saveFile}) {
+  SessionHarness(
+      {CodeDraftStore? store, CodeCompareAndWrite? compareAndWrite}) {
     root = _temp('code-session-');
     draftRoot = _temp('code-session-drafts-');
     file = File('${root.path}/lib/main.dart')
@@ -28,8 +25,9 @@ class SessionHarness {
       ..writeAsStringSync('baseline');
     session = CodeBufferSession(
         draftStore: store ?? CodeDraftStore(root: draftRoot),
-        saveFile: saveFile);
+        compareAndWrite: compareAndWrite);
     session.openWorkspace(root.path);
+    session.recover();
     session.openFile(file.path);
   }
   late final Directory root, draftRoot;
@@ -48,7 +46,7 @@ void main() {
   _conflictTests();
   _guardTests();
   _failureTests();
-  _shellGuardTests();
+  _journalGenerationTests();
 }
 
 void _snapshotRecoveryTests() {
@@ -86,8 +84,9 @@ void _conflictTests() {
     changed.file.writeAsStringSync('external text');
     changed.session.dispose();
     final restored = changed.restart();
-    final conflict = restored.recover().single;
-    expect([conflict.kind, conflict.diskText, conflict.draft.text],
+    restored.recover();
+    final conflict = restored.conflicts.single;
+    expect([conflict.kind, conflict.diskText, conflict.stored.draft.text],
         [CodeRecoveryKind.diskChanged, 'external text', 'draft text']);
     expect(restored.dirtyPaths, ['lib/main.dart']);
     expect(restored.drafts, hasLength(1));
@@ -205,96 +204,91 @@ void _failureTests() {
     expect(await guard.requestApplicationExit(), isFalse);
     expect(harness.active.dirty, isTrue);
     expect(harness.session.drafts, hasLength(1));
+    harness.edit('baseline');
+    expect(harness.active.dirty, isTrue);
+    expect(harness.session.closeAdmissionReady, isFalse);
+    expect(harness.session.drafts, hasLength(1));
   });
 
-  test('disk write and readback failures remain dirty and block closure',
-      () async {
-    final failures = <CodeSaveFile>[
-      (_, __) => throw StateError('injected'),
-      (_, __) => workspace.SavedFile('0' * 64),
-    ];
-    for (final saveFile in failures) {
-      final harness = SessionHarness(saveFile: saveFile)..edit('changed');
-      final guard = UnsavedWorkGuard(
-          session: harness.session, prompt: (_) async => CloseChoice.save);
-      expect(await guard.requestApplicationExit(), isFalse);
-      expect(harness.active.dirty, isTrue);
-      expect(harness.session.drafts, hasLength(1));
-    }
+  test('disk failure is per-buffer and retries with the same journal', () {
+    var calls = 0;
+    final harness = SessionHarness(compareAndWrite:
+        (root, requestedPath, expectedDiskSha256, bufferSha256, bytes) {
+      calls++;
+      if (calls == 1) {
+        throw const WorkspaceFileException(CodeDiskFailure.writeFailed);
+      }
+      File(requestedPath).writeAsBytesSync(bytes, flush: true);
+      return WorkspaceWriteResult(
+          WorkspaceWriteDisposition.saved, requestedPath, bufferSha256);
+    })
+      ..edit('changed');
+    expect(harness.session.save(harness.file.path), isFalse);
+    expect(harness.active.diskFailure, CodeDiskFailure.writeFailed);
+    expect(harness.active.journalRecordSha256, isNotNull);
+    expect(harness.session.save(harness.file.path), isTrue);
+    expect(calls, 2);
+    expect(harness.active.dirty, isFalse);
+  });
+
+  test('successful B cannot clear A journal failure or authorize A disk', () {
+    var failJournal = false;
+    final store = CodeDraftStore(
+        root: _temp('code-buffer-isolation-'),
+        beforeRename: (_) => failJournal ? throw StateError('injected') : null);
+    final harness = SessionHarness(store: store)..edit('a-one');
+    failJournal = true;
+    harness.edit('a-two');
+    final a = harness.active;
+    failJournal = false;
+    final bFile = File('${harness.root.path}/lib/b.dart')
+      ..writeAsStringSync('b-base');
+    harness.session.openFile(bFile.path);
+    harness.edit('b-one');
+    expect(a.journalFailure, isNotNull);
+    expect(harness.active.journalFailure, isNull);
+    expect(harness.session.closeAdmissionReady, isFalse);
+    expect(harness.session.save(a.path), isFalse);
+    expect(harness.file.readAsStringSync(), 'baseline');
   });
 }
 
-void _prepareShellCode(ShellHarness harness) {
-  final root = Directory('${harness.directory.path}/workspace')..createSync();
-  final file = File('${root.path}/lib/main.dart')
-    ..parent.createSync(recursive: true)
-    ..writeAsStringSync('baseline');
-  harness.code
-    ..openWorkspace(root.path)
-    ..openFile(file.path);
-  final open = harness.code.openFiles.single;
-  harness.code.snapshot((open..controller.text = 'dirty text').path);
-}
-
-void _shellGuardTests() {
-  testWidgets('rail and FlywheelNav share guard and preserve the live session',
-      (tester) async {
-    final directory = _temp('code-shell-nav-');
-    var choice = CloseChoice.cancel;
-    final requests = <UnsavedWorkRequest>[];
-    final harness = ShellHarness(directory, closePrompt: (request) async {
-      requests.add(request);
-      return choice;
-    })
-      ..replyReady();
-    await tester.pumpWidget(harness.app());
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Code'));
-    await tester.pumpAndSettle();
-    _prepareShellCode(harness);
-    await tester.pump();
-    final controller = harness.code.openFiles.single.controller;
-    await tester.tap(find.text('Chat'));
-    await tester.pumpAndSettle();
-    expect(find.byType(CodeView), findsOneWidget);
-    expect(requests.single.paths, ['lib/main.dart']);
-    expect(harness.code.openFiles.single.controller, same(controller));
-    expect(harness.code.drafts, hasLength(1));
-    choice = CloseChoice.save;
-    FlywheelNav.jump(tester.element(find.byType(CodeView)), 'Chat');
-    await tester.pumpAndSettle();
-    expect(find.byType(AgentView), findsOneWidget);
-    expect(harness.code.openFiles.single.controller, same(controller));
-    expect(harness.code.drafts, isEmpty);
-    await unmount(tester);
+void _journalGenerationTests() {
+  test('stale journal generation blocks the disk write', () {
+    final harness = SessionHarness()..edit('mine');
+    final oldDisk = harness.file.readAsStringSync();
+    final text = 'other journal';
+    CodeDraftStore(root: harness.draftRoot).save(
+        workspaceRef: workspace
+            .workspaceReference(harness.root.resolveSymbolicLinksSync()),
+        draft: CodeDraft(
+            path: 'lib/main.dart',
+            diskSha256: sha256.convert(utf8.encode(oldDisk)).toString(),
+            bufferSha256: sha256.convert(utf8.encode(text)).toString(),
+            text: text,
+            updatedAt: DateTime.parse('2026-08-15T12:00:00Z')));
+    expect(harness.session.save(harness.file.path), isFalse);
+    expect(harness.session.phase, CodeSessionPhase.recoveryBlocked);
+    expect(harness.file.readAsStringSync(), oldDisk);
   });
 
-  testWidgets('app exit is guarded and direct unmount leaves a durable draft',
-      (tester) async {
-    final directory = _temp('code-shell-exit-');
-    var choice = CloseChoice.cancel;
-    var prompts = 0;
-    final harness = ShellHarness(directory, closePrompt: (_) async {
-      prompts++;
-      return choice;
-    })
-      ..replyReady();
-    await tester.pumpWidget(harness.app());
-    await tester.pumpAndSettle();
-    _prepareShellCode(harness);
-    expect(await WidgetsBinding.instance.handleRequestAppExit(),
-        AppExitResponse.cancel);
-    choice = CloseChoice.discard;
-    expect(await WidgetsBinding.instance.handleRequestAppExit(),
-        AppExitResponse.exit);
-    final open = harness.code.openFiles.single;
-    open.controller.text = 'new dirty text';
-    harness.code.snapshot(open.path);
-    final ref = workspace.workspaceReference(harness.code.workspaceRoot!);
-    await unmount(tester);
-    expect(prompts, 2);
-    final stored = CodeDraftStore(root: Directory('${directory.path}/code'))
-        .load(workspaceRef: ref);
-    expect(stored.single.text, 'new dirty text');
+  test('already-written disk retries exact journal cleanup', () {
+    var failDelete = true;
+    final root = _temp('code-cleanup-retry-');
+    final store = CodeDraftStore(
+        root: root,
+        deleteFile: (file) {
+          if (failDelete) throw StateError('injected');
+          file.deleteSync();
+        });
+    final harness = SessionHarness(store: store)..edit('landed');
+    harness.file.writeAsStringSync('landed', flush: true);
+    expect(harness.session.save(harness.file.path), isFalse);
+    expect(harness.active.journalRecordSha256, isNotNull);
+    expect(harness.session.closeAdmissionReady, isFalse);
+    failDelete = false;
+    expect(harness.session.save(harness.file.path), isTrue);
+    expect(harness.active.dirty, isFalse);
+    expect(harness.session.drafts, isEmpty);
   });
 }

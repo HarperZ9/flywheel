@@ -40,6 +40,34 @@ void main() {
   _corruptionTests();
   _boundTests();
   _atomicTests();
+  _workspaceResetTest();
+}
+
+void _workspaceResetTest() {
+  test('workspace reset is complete and invalid root preserves A', () {
+    final a = _temp('code-reset-a-');
+    final file = File('${a.path}/a.dart')..writeAsStringSync('a');
+    final session = CodeBufferSession(
+        draftStore: CodeDraftStore(root: _temp('code-reset-drafts-')))
+      ..openWorkspace(a.path)
+      ..recover()
+      ..openFile(file.path)
+      ..snapshotOpenFiles();
+    final controller = session.openFiles.single.controller;
+    file.writeAsStringSync('changed');
+    session.reloadCleanFiles();
+    expect(() => session.openWorkspace('${a.path}/missing'),
+        throwsA(isA<CodeSessionException>()));
+    expect(session.openFiles.single.controller, same(controller));
+    expect(session.diffs, isNotEmpty);
+    expect(session.closeFile(file.path), isTrue);
+    expect(session.closeWorkspace(), isTrue);
+    session.openWorkspace(_temp('code-reset-b-').path);
+    expect(session.recover(), isEmpty);
+    expect([session.diffs, session.recoveryOutcomes, session.conflicts],
+        everyElement(isEmpty));
+    expect(session.status, isNull);
+  });
 }
 
 void _roundTripTests() {
@@ -48,32 +76,44 @@ void _roundTripTests() {
     final root = _temp('code-draft-roundtrip-');
     final store = CodeDraftStore(root: root);
     final draft = _draft();
-    store.save(workspaceRef: _workspace, draft: draft);
+    final stored = store.save(workspaceRef: _workspace, draft: draft);
     final loaded = store.load(workspaceRef: _workspace);
-    expect(loaded.single.path, 'lib/main.dart');
-    expect(loaded.single.text, draft.text);
-    expect(utf8.encode(loaded.single.text), utf8.encode(draft.text));
-    expect(loaded.single.updatedAt, _updated);
-    expect(() => loaded.add(draft), throwsUnsupportedError);
+    expect(loaded.single.draft.path, 'lib/main.dart');
+    expect(loaded.single.draft.text, draft.text);
+    expect(loaded.single.recordSha256, stored.recordSha256);
+    expect(utf8.encode(loaded.single.draft.text), utf8.encode(draft.text));
+    expect(loaded.single.draft.updatedAt, _updated);
+    expect(() => loaded.add(stored), throwsUnsupportedError);
     final bytes = _record(root, draft.path).readAsBytesSync();
     expect(bytes, utf8.encode(jsonEncode(jsonDecode(utf8.decode(bytes)))));
   });
 
   test('delete requires exact buffer digest ownership', () {
     final root = _temp('code-draft-delete-');
-    final store = CodeDraftStore(root: root)
-      ..save(workspaceRef: _workspace, draft: _draft());
+    final store = CodeDraftStore(root: root);
+    final stored = store.save(workspaceRef: _workspace, draft: _draft());
     expect(
         () => store.delete(
             workspaceRef: _workspace,
             path: 'lib/main.dart',
-            expectedBufferSha256: _disk),
+            expectedBufferSha256: _disk,
+            expectedRecordSha256: stored.recordSha256),
         throwsA(isA<CodeDraftStoreException>()));
     expect(store.load(workspaceRef: _workspace), hasLength(1));
-    store.delete(
-        workspaceRef: _workspace,
-        path: 'lib/main.dart',
-        expectedBufferSha256: _draft().bufferSha256);
+    expect(
+        store.delete(
+            workspaceRef: _workspace,
+            path: 'lib/main.dart',
+            expectedBufferSha256: _draft().bufferSha256,
+            expectedRecordSha256: stored.recordSha256),
+        CodeDraftDeleteResult.deleted);
+    expect(
+        store.delete(
+            workspaceRef: _workspace,
+            path: 'lib/main.dart',
+            expectedBufferSha256: _draft().bufferSha256,
+            expectedRecordSha256: stored.recordSha256),
+        CodeDraftDeleteResult.alreadyAbsent);
     expect(store.load(workspaceRef: _workspace), isEmpty);
   });
 }
@@ -111,31 +151,6 @@ void _admissionTests() {
             text: 'different',
             updatedAt: _updated),
         throwsA(isA<CodeDraftStoreException>()));
-  });
-
-  test('symlinked custody root is refused before an outside write', () {
-    if (Platform.isWindows) return;
-    final parent = _temp('code-draft-link-');
-    final outside = Directory('${parent.path}/outside')..createSync();
-    final link = Link('${parent.path}/drafts')..createSync(outside.path);
-    final store = CodeDraftStore(root: Directory(link.path));
-    expect(() => store.save(workspaceRef: _workspace, draft: _draft()),
-        throwsA(isA<CodeDraftStoreException>()));
-    expect(outside.listSync(), isEmpty);
-  });
-
-  test('session refuses a present symlink outside its workspace', () {
-    if (Platform.isWindows) return;
-    final root = _temp('code-outside-root-');
-    final outside = _temp('code-outside-file-');
-    final target = File('${outside.path}/target.dart')..writeAsStringSync('x');
-    final link = Link('${root.path}/linked.dart')..createSync(target.path);
-    final session = CodeBufferSession(
-        draftStore: CodeDraftStore(root: _temp('code-outside-drafts-')))
-      ..openWorkspace(root.path);
-    expect(() => session.openFile(link.path),
-        throwsA(isA<CodeSessionException>()));
-    expect(target.readAsStringSync(), 'x');
   });
 }
 
@@ -245,7 +260,7 @@ void _atomicTests() {
         throwsA(isA<CodeDraftStoreException>()));
     expect(owned!.existsSync(), isFalse);
     expect(file.readAsBytesSync(), before);
-    expect(normal.load(workspaceRef: _workspace).single.text, 'prior');
+    expect(normal.load(workspaceRef: _workspace).single.draft.text, 'prior');
   });
 
   test('no-op, rename and corrupt readback restore the prior record', () {

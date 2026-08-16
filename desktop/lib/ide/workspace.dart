@@ -6,6 +6,7 @@ import 'package:crypto/crypto.dart';
 import '../services/code_draft_store.dart';
 import 'diff.dart';
 import 'highlighter.dart';
+import 'workspace_file_transaction.dart';
 
 const _ignoredDirs = [
   '.git',
@@ -57,11 +58,6 @@ class LoadedFile {
       {this.readOnly = false, this.note});
 }
 
-class SavedFile {
-  final String sha256;
-  const SavedFile(this.sha256);
-}
-
 enum DraftDiskState { buffer, baseline, changed, missing }
 
 class DraftDiskView {
@@ -87,6 +83,10 @@ class OpenFile {
     this.readOnly = false,
     this.note,
     this.dirty = false,
+    this.journalBufferSha256,
+    this.journalRecordSha256,
+    this.journalFailure,
+    this.diskFailure,
   });
   final String path;
   final String relativePath;
@@ -95,6 +95,10 @@ class OpenFile {
   bool readOnly;
   String? note;
   bool dirty;
+  String? journalBufferSha256;
+  String? journalRecordSha256;
+  CodeSessionFailure? journalFailure;
+  CodeDiskFailure? diskFailure;
   String get name => relativePath.split('/').last;
 }
 
@@ -109,20 +113,30 @@ class CodeSessionException implements Exception {
   String toString() => 'Code session failure: ${failure.name}';
 }
 
-class CodeRecoveryConflict {
-  const CodeRecoveryConflict(
-      this.kind, this.path, this.draft, this.diskText, this.diskSha256);
+final class CodeRecoveryOutcome {
+  const CodeRecoveryOutcome(this.kind, this.path);
   final CodeRecoveryKind kind;
   final String path;
-  final CodeDraft draft;
+}
+
+final class CodeRecoveryConflict {
+  const CodeRecoveryConflict(
+      this.kind, this.path, this.stored, this.diskText, this.diskSha256);
+  final CodeRecoveryKind kind;
+  final String path;
+  final StoredCodeDraft stored;
   final String? diskText;
   final String? diskSha256;
 }
 
 class WorkspaceSessionIo {
   factory WorkspaceSessionIo.open(String root) {
-    final canonical = canonicalWorkspaceRoot(root);
-    return WorkspaceSessionIo._(canonical, workspaceReference(canonical));
+    try {
+      final canonical = canonicalWorkspaceRoot(root);
+      return WorkspaceSessionIo._(canonical, workspaceReference(canonical));
+    } catch (_) {
+      throw const CodeSessionException(CodeSessionFailure.invalidPath);
+    }
   }
 
   const WorkspaceSessionIo._(this.root, this.workspaceRef);
@@ -135,9 +149,13 @@ class WorkspaceSessionIo {
 
   OpenedWorkspaceFile openWith(
       String path, LoadedFile Function(String) loader) {
-    final admitted = containedFile(root, path);
-    return OpenedWorkspaceFile(
-        admitted, relativeFile(root, admitted), loader(admitted));
+    try {
+      final admitted = containedFile(root, path);
+      return OpenedWorkspaceFile(
+          admitted, relativeFile(root, admitted), loader(admitted));
+    } catch (_) {
+      throw const CodeSessionException(CodeSessionFailure.readFailed);
+    }
   }
 
   OpenedWorkspaceFile source(String path, LoadedFile loaded) =>
@@ -240,22 +258,6 @@ LoadedFile loadFile(String path) {
   }
 }
 
-SavedFile saveFile(String path, String content) {
-  final expected = utf8.encode(content);
-  final handle = File(path).openSync(mode: FileMode.writeOnly);
-  try {
-    handle.writeFromSync(expected);
-    handle.flushSync();
-  } finally {
-    handle.closeSync();
-  }
-  final actual = File(path).readAsBytesSync();
-  if (!_sameBytes(expected, actual)) {
-    throw const FileSystemException('readback');
-  }
-  return SavedFile(sha256.convert(actual).toString());
-}
-
 String canonicalWorkspaceRoot(String path) =>
     Directory(path).resolveSymbolicLinksSync();
 
@@ -283,14 +285,6 @@ String relativeFile(String canonicalRoot, String path) => path
 String absoluteFile(String canonicalRoot, String relative) =>
     '$canonicalRoot${Platform.pathSeparator}'
     '${relative.replaceAll('/', Platform.pathSeparator)}';
-
-bool _sameBytes(List<int> left, List<int> right) {
-  if (left.length != right.length) return false;
-  for (var index = 0; index < left.length; index++) {
-    if (left[index] != right[index]) return false;
-  }
-  return true;
-}
 
 String codeTextSha256(String text) =>
     sha256.convert(utf8.encode(text)).toString();

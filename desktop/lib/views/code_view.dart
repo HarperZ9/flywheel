@@ -175,6 +175,11 @@ class _CodeViewState extends State<CodeView> {
             onCloseWorkspace: () =>
                 unawaited(widget.guard.requestWorkspaceClose()),
           ),
+          if (_recoveryNotice case final String notice)
+            Padding(
+              padding: const EdgeInsets.all(FwLayout.s2),
+              child: HonestNull(notice),
+            ),
           if (widget.session.conflicts.isNotEmpty)
             _conflict(widget.session.conflicts.last)
           else
@@ -222,12 +227,24 @@ class _CodeViewState extends State<CodeView> {
               : '${conflict.path}: disk changed; draft retained'),
           Expanded(
             child: DiffViewPanel(diffs: [
-              diffFiles(
-                  conflict.path, conflict.diskText ?? '', conflict.draft.text)
+              diffFiles(conflict.path, conflict.diskText ?? '',
+                  conflict.stored.draft.text)
             ]),
           ),
         ]),
       );
+
+  String? get _recoveryNotice {
+    final values = widget.session.recoveryOutcomes;
+    if (values.isEmpty) return null;
+    final value = values.last;
+    return switch (value.kind) {
+      CodeRecoveryKind.restored => 'Draft restored: ${value.path}',
+      CodeRecoveryKind.alreadySaved =>
+        'Completed save recovered: ${value.path}',
+      _ => null,
+    };
+  }
 
   String? _selectionOf(OpenFile? file) {
     if (file == null) return null;
