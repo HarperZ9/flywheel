@@ -12,11 +12,10 @@ from .gateway_operation_process import MAX_RESULT_BYTES, OperationProcessFactory
 from .journey_service import JourneyService
 from .journey_store import JourneyStore, JourneyStoreError
 from .operation_grants import GrantStore, _secure_owner_only
-from .gateway_operation_recovery import (LIFECYCLE, history_state, normalize_outcome,
-    seal_outcome, started_event, validate_history,
-    validate_operation_value, validate_result)
-from .gateway_operation_route import (OperationEventBus, authorization_sha256,
-    operation_ref_for, queued_payload, replay_authorization_sha256)
+from .gateway_operation_recovery import (LIFECYCLE, history_state, normalize_outcome, seal_outcome,
+    started_event, validate_history, validate_operation_value, validate_result)
+from .gateway_operation_route import (OperationEventBus, authorization_sha256, operation_ref_for,
+    queued_payload, replay_authorization_sha256)
 SNAPSHOT_SCHEMA = "flywheel.gateway-operation-snapshot/v1"
 RESULT_SCHEMA = "flywheel.gateway-operation-result/v1"
 TERMINALS = frozenset(("completed", "failed", "cancelled"))
@@ -32,8 +31,7 @@ class OperationSnapshot:
             "journey_ref": self.journey_ref,
             "event_head_sha256": self.event_head_sha256, "state": self.state,
             "can_cancel": self.can_cancel,
-            "terminal_event_ref": self.terminal_event_ref,
-            "result_sha256": self.result_sha256,
+            "terminal_event_ref": self.terminal_event_ref, "result_sha256": self.result_sha256,
         }
 class GatewayOperations:
     """One gateway-lifetime registry over durable Journey operation events."""
@@ -47,10 +45,8 @@ class GatewayOperations:
             from .gateway_provider_adapter import resolve_credentials
             credential_resolver = resolve_credentials
         self.authorizer, self.credential_resolver = authorizer, credential_resolver
-        self._handles: dict[tuple[str, str], object] = {}
-        self._secrets: dict[tuple[str, str], tuple[str, ...]] = {}
-        self.events = OperationEventBus()
-        self.terminal_states = TERMINALS
+        self._handles: dict[tuple[str, str], object] = {}; self._secrets: dict[tuple[str, str], tuple[str, ...]] = {}
+        self.events = OperationEventBus(); self.terminal_states = TERMINALS
     def start(self, authorized: AuthorizedOperation,
               process_factory: OperationProcessFactory, *,
               already_guarded: bool = False) -> OperationSnapshot:
@@ -58,8 +54,7 @@ class GatewayOperations:
                                 authorized.client_request_id)
         payload = queued_payload(authorized)
         journey = self._journey(authorized.owner_ref)
-        guard = (nullcontext() if already_guarded else
-                 journey._owner_operation_guard(ref))
+        guard = nullcontext() if already_guarded else journey._owner_operation_guard(ref)
         with guard:
             history = self._history(journey, ref, authorized.journey_ref)
             if history:
@@ -75,11 +70,17 @@ class GatewayOperations:
                 operation="operation_queued", payload=payload)
             queued = OperationSnapshot(ref, authorized.journey_ref,
                                        ack.event_head_sha256, "queued", False)
-            self._secrets[(authorized.owner_ref, ref)] = tuple(
-                value for value in authorized.credential_bindings.values() if type(value) is str and value)
-        self._publish(authorized.owner_ref, ref, "snapshot", queued.as_json())
-        threading.Thread(target=self._control,
-                         args=(authorized, ref, process_factory), daemon=True).start()
+            self._secrets[(authorized.owner_ref, ref)] = tuple(value for value in
+                authorized.credential_bindings.values() if type(value) is str and value)
+        try: self._publish(authorized.owner_ref, ref, "snapshot", queued.as_json())
+        except Exception: pass
+        try:
+            threading.Thread(target=self._control,
+                             args=(authorized, ref, process_factory), daemon=True).start()
+        except Exception:
+            try: return self._terminal(authorized.owner_ref, ref, WorkerOutcome(
+                "failed", {"reason": "OWNERSHIP_UNAVAILABLE"}))
+            finally: self._secrets.pop((authorized.owner_ref, ref), None)
         return queued
     def cancel(self, *, action: str, raw: bytes, owner_ref: str) -> OperationSnapshot:
         envelope = parse_gateway_envelope(action, raw); ref = envelope.operation.operation["operation_ref"]
@@ -279,8 +280,7 @@ class GatewayOperations:
             raise GatewayOperationError("STORE_COMMIT_FAILED") from None
         return digest
     def _result_dir(self, owner_ref: str) -> Path:
-        directory = (self.state_root / "gateway-operations" / "v1" /
-                     "owners" / owner_ref / "results")
+        directory = self.state_root / "gateway-operations" / "v1" / "owners" / owner_ref / "results"
         try:
             directory.mkdir(parents=True, exist_ok=True)
             _secure_owner_only(directory, directory=True)

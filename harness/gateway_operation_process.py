@@ -4,8 +4,7 @@ from dataclasses import dataclass
 import os, sys, threading, time
 from pathlib import Path
 from typing import Callable, Mapping, Protocol
-from .cross_harness_process import (
-    OwnedProcess, ProcessLaunch, ProcessOutcome, start_owned_process)
+from .cross_harness_process import OwnedProcess, ProcessLaunch, ProcessOutcome, start_owned_process
 from .evidence_json import canonical_bytes, strict_load_json
 from .gateway_operation import (AuthorizedOperation, canonicalize_operation,
     materialize_agent_attachment, thaw_operation)
@@ -44,6 +43,7 @@ class GatewayWorker:
             if not confirmed: return False
             final = self._owned.wait(0); self._consume_current(final)
             with self._state_lock:
+                self._invalid = self._invalid or final is None or not self._capture_valid(final)
                 self._terminal_before_cancel = self._terminal is not None and not self._invalid
                 self._cancel_requested = True
             if self._outcome is None and final is not None: self._outcome = self._finish(final)
@@ -108,15 +108,15 @@ class GatewayWorker:
         if len(canonical_bytes(row["result"])) > MAX_RESULT_BYTES: raise ValueError
         self._terminal = WorkerOutcome(row["state"], row["result"])
         self._terminal_before_cancel = not self._cancel_requested
+    def _capture_valid(self, outcome: ProcessOutcome) -> bool:
+        try: validate_no_raw_secrets({"stderr": outcome.stderr})
+        except Exception: return False
+        return not (outcome.malformed_output or outcome.timed_out or any(secret and secret in outcome.stderr for secret in self._secrets))
     def _finish(self, outcome: ProcessOutcome) -> WorkerOutcome:
         if self._cancel_requested:
             return (self._terminal if self._terminal_before_cancel
                     else WorkerOutcome("cancelled", {"stopped": True}))
-        try:
-            validate_no_raw_secrets({"stderr": outcome.stderr})
-        except Exception: self._invalid = True
-        if (outcome.malformed_output or outcome.timed_out or self._invalid
-                or any(secret and secret in outcome.stderr for secret in self._secrets)):
+        if self._invalid or not self._capture_valid(outcome):
             return _failed()
         if outcome.returncode == 0 and self._terminal is not None: return self._terminal
         return _failed()

@@ -1,18 +1,27 @@
+from dataclasses import replace
 import json
+import threading, time
 
 import pytest
 
 from harness.gateway_envelope import parse_gateway_envelope
 from harness.gateway_operation import (
-    GatewayOperationError, canonicalize_operation, materialize_agent_attachment)
-from harness.gateway_operations import GatewayOperations
+    AuthorizedOperation, GatewayOperationError, canonicalize_operation,
+    materialize_agent_attachment)
+from harness.gateway_operation_process import WorkerOutcome
+from harness.gateway_operations import GatewayOperations, start_operation
 from harness.gateway_operation_recovery import validate_operation_value
+from harness.gateway_provider_adapter import ExecutionPlan
 from harness.gateway_secret_boundary import validate_no_raw_secrets
+from harness.journey_store import JourneyStore, MutationCommand
 
 
 HEAD = "a" * 64
 JOURNEY = "jrn_" + "a" * 32
 GRANT = "gnt_" + "a" * 32
+OWNER = "owner_" + "a" * 32
+NOW = "2026-08-16T12:00:00Z"
+LAUNCH_SECRET = "synthetic-launch-custody-marker-583201"
 
 
 def _raw(operation=None, **changes):
@@ -27,6 +36,70 @@ def _raw(operation=None, **changes):
         body.update(operation)
     body.update(changes)
     return json.dumps(body, separators=(",", ":")).encode()
+
+
+def _launch_authorized(root):
+    head = JourneyStore(root).create(MutationCommand(
+        OWNER, JOURNEY, None, "genesis", "intake",
+        {"legacy_label": None, "goal": "launch custody", "intake": {},
+         "occurred_at": NOW})).event_head_sha256
+    base = AuthorizedOperation.for_test(action="agent.run", operation={
+        "goal": "inspect", "endpoint": "local", "max_steps": 2,
+        "allow_write": False, "allow_exec": False, "stream": True,
+        "data_refs": [], "credential_refs": ["cred_" + "a" * 32]},
+        scopes=("network", "secrets"))
+    return replace(
+        base, owner_ref=OWNER, journey_ref=JOURNEY,
+        expected_event_head=head, client_request_id="launch-1",
+        execution_plan=ExecutionPlan("c" * 64, (), ()),
+        credential_bindings={"TOKEN": LAUNCH_SECRET})
+
+
+class _LaunchWorker:
+    control_class = "windows_job_v1"
+    def resume(self): return True
+    def wait(self, _timeout):
+        return WorkerOutcome("completed", {"final": "answer"})
+    def signal_tree(self): return True
+    def close(self): pass
+
+
+class _LaunchFactory:
+    def __init__(self): self.calls = 0
+    def create(self, _authorized, _progress):
+        self.calls += 1
+        return _LaunchWorker()
+
+
+@pytest.mark.parametrize(("fault", "state", "factory_calls"), (
+    ("event-cap", "completed", 1), ("thread-start", "failed", 0)))
+def test_review_post_queue_launch_fault_never_orphans_worker_or_credential(
+        monkeypatch, tmp_path, fault, state, factory_calls):
+    authorized, service = _launch_authorized(tmp_path), GatewayOperations(
+        tmp_path, clock=lambda: NOW)
+    factory = _LaunchFactory()
+    if fault == "event-cap":
+        publish, calls = service.events.publish, []
+        def fail_once(*args):
+            if not calls:
+                calls.append(args)
+                raise GatewayOperationError("EXTERNAL_ACTION_FAILED")
+            return publish(*args)
+        monkeypatch.setattr(service.events, "publish", fail_once)
+    else:
+        def fail_start(_thread): raise OSError("thread unavailable")
+        monkeypatch.setattr(threading.Thread, "start", fail_start)
+    snapshot = start_operation(
+        authorized=authorized, service=service, process_factory=factory)
+    terminal = (service.wait_terminal(OWNER, snapshot.operation_ref, 2)
+                if fault == "event-cap" else snapshot)
+    events = service._history(service._journey(OWNER), snapshot.operation_ref)
+    terminals = [event for event in events if event["event_type"] in {
+        "operation_completed", "operation_failed", "operation_cancelled"}]
+    deadline = time.monotonic() + 1
+    while service._secrets and time.monotonic() < deadline: time.sleep(.01)
+    assert terminal.state == state and factory.calls == factory_calls
+    assert len(terminals) == 1 and service._secrets == {}
 
 
 @pytest.mark.parametrize("field,value", [

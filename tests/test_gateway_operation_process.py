@@ -156,8 +156,6 @@ def test_concurrent_wait_decodes_one_worker_outcome_once():
     assert tree.waits == 1 and len(outcomes) == 2
     assert outcomes[0] == outcomes[1]
     assert progress == [{"step": 1}]
-
-
 @pytest.mark.parametrize("mode", ("result", "progress", "failure"))
 def test_review_critical_child_secret_leak_writes_no_artifact(
         monkeypatch, tmp_path, mode):
@@ -178,8 +176,11 @@ def test_review_critical_child_secret_leak_writes_no_artifact(
                         "result": {"reason": "EXTERNAL_ACTION_FAILED"}}]
     artifacts = [path for path in tmp_path.rglob("*") if path.is_file()]
     assert artifacts == []
-
-def test_review_w2_confirmed_tree_stop_is_cancelled_unless_natural_terminal():
+@pytest.mark.parametrize(("stderr", "malformed", "expected"), (
+    ("", False, "completed"), (SECRET, False, "cancelled"),
+    ("", True, "cancelled")), ids=("natural", "secret-stderr", "malformed"))
+def test_review_w2_final_drain_requires_wholly_valid_outcome(
+        stderr, malformed, expected):
     killed = Tree("")
     killed.wait = lambda _timeout: ProcessOutcome(-1, "", "", 1, False, True)
     worker = GatewayWorker(killed, lambda _event: None, ())
@@ -192,13 +193,13 @@ def test_review_w2_confirmed_tree_stop_is_cancelled_unless_natural_terminal():
         def stdout_snapshot(self): return b"", False
         def signal_tree(self): self.killed = True; return True
         def wait(self, _timeout):
-            return (ProcessOutcome(-1, terminal, "", 1, False)
+            return (ProcessOutcome(-1, terminal, stderr, 1, False, malformed)
                     if self.killed else None)
     natural = Natural()
-    worker = GatewayWorker(natural, lambda _event: None, ())
+    worker = GatewayWorker(natural, lambda _event: None, (SECRET,))
     assert worker.wait(0) is None
     assert worker.signal_tree() is True
-    assert worker.wait(1).state == "completed"
+    assert worker.wait(1).state == expected
 
 
 def test_review_w3_terminal_retry_keeps_exact_worker_outcome(tmp_path):
