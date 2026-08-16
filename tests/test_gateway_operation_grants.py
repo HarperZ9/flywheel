@@ -32,7 +32,8 @@ def _prepare(state, operation=None, *, owner=OWNER, clock=lambda: NOW,
     body = {"schema": "flywheel.gateway-operation/v1",
             "journey_ref": JOURNEY, "expected_event_head": head,
             "client_request_id": "request-1",
-            "operation": operation or {"name": "gather"}}
+            "operation": operation or {"name": "gather", "data_refs": [],
+                                         "credential_refs": []}}
     return gateway_grant_post(
         "/api/gateway-grants/prepare/plugin.probe",
         json.dumps(body).encode(), owner_ref=owner, state_root=state,
@@ -51,7 +52,8 @@ def _final(proposal, grant, **changes):
             "journey_ref": proposal["journey_ref"],
             "expected_event_head": proposal["expected_event_head"],
             "client_request_id": proposal["client_request_id"],
-            "grant_ref": grant, "name": "gather"}
+            "grant_ref": grant, "name": "gather", "data_refs": [],
+            "credential_refs": []}
     body.update(changes)
     return json.dumps(body, separators=(",", ":")).encode()
 
@@ -62,7 +64,8 @@ def test_prepare_approve_and_one_exact_dispatch_survive_new_instances(tmp_path):
     assert status == 200
     assert set(proposal) == {
         "schema", "proposal_ref", "planned_grant_ref", "action",
-        "journey_ref", "expected_event_head", "client_request_id", "tool",
+        "journey_ref", "expected_event_head", "client_request_id",
+        "destination", "tool",
         "operation_sha256", "arguments_sha256", "scopes", "data_refs",
         "credential_refs", "expires_at", "summary"}
     assert proposal["schema"] == "flywheel.gateway-grant-proposal/v1"
@@ -74,7 +77,8 @@ def test_prepare_approve_and_one_exact_dispatch_survive_new_instances(tmp_path):
         "plugin.probe", _final(proposal, approved["grant_ref"]),
         owner_ref=OWNER, state_root=tmp_path, clock=lambda: NOW)
     assert authorized.action == "plugin.probe"
-    assert dict(authorized.operation) == {"name": "gather"}
+    assert dict(authorized.operation) == {
+        "name": "gather", "data_refs": (), "credential_refs": ()}
     with pytest.raises(GatewayOperationError) as reused:
         authorize_gateway_operation(
             "plugin.probe", _final(proposal, approved["grant_ref"]),
@@ -87,6 +91,8 @@ def test_prepare_approve_and_one_exact_dispatch_survive_new_instances(tmp_path):
     {"expected_event_head": "b" * 64},
     {"client_request_id": "request-2"},
     {"name": "forum"},
+    {"data_refs": ["data_public_fixture"]},
+    {"credential_refs": ["cred_" + "b" * 32]},
     {"extra": "field"},
 ])
 def test_every_final_binding_difference_denies_before_consumption(tmp_path, change):
@@ -140,7 +146,7 @@ def test_raw_secret_shape_is_refused_without_echo(tmp_path):
     _journey(tmp_path)
     operation = {"name": "custom", "tool": "run",
                  "arguments": {"api_key": "never-echo"},
-                 "credential_refs": []}
+                 "data_refs": [], "credential_refs": []}
     result, status = gateway_grant_post(
         "/api/gateway-grants/prepare/plugin.call",
         json.dumps({"schema": "flywheel.gateway-operation/v1",
@@ -199,3 +205,69 @@ def test_busy_and_commit_failures_are_fixed_before_proposal(
     failed, failed_status = _prepare(tmp_path, head=head)
     assert failed_status == 500
     assert failed["error"]["code"] == "STORE_COMMIT_FAILED"
+
+
+@pytest.mark.parametrize("selector", [
+    "../../escaped", "/absolute", "C:\\outside", "\\\\host\\share",
+    ".", "jrn_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/child",
+])
+def test_invalid_final_selector_never_constructs_or_locks_a_path(
+        tmp_path, monkeypatch, selector):
+    calls = []
+    monkeypatch.setattr(
+        "harness.gateway_grant_route.ExclusiveJourneyLock.acquire",
+        lambda path, *_args: calls.append(path) or pytest.fail("lock acquired"))
+    raw = json.dumps({
+        "schema": "flywheel.gateway-operation/v1",
+        "journey_ref": selector, "expected_event_head": "a" * 64,
+        "client_request_id": "request-1", "grant_ref": "gnt_" + "a" * 32,
+        "name": "gather", "data_refs": [], "credential_refs": [],
+    }).encode()
+    before = sorted(str(path.relative_to(tmp_path)) for path in tmp_path.rglob("*"))
+    with pytest.raises(GatewayOperationError) as failure:
+        authorize_gateway_operation(
+            "plugin.probe", raw, owner_ref=OWNER, state_root=tmp_path,
+            clock=lambda: NOW)
+    assert failure.value.code == "INVALID_REQUEST"
+    assert calls == []
+    assert sorted(str(path.relative_to(tmp_path)) for path in tmp_path.rglob("*")) == before
+
+
+@pytest.mark.parametrize("field,selector", [
+    ("journey_ref", "../../escaped"), ("journey_ref", "%2e%2e/escaped"),
+    ("journey_ref", "/absolute"), ("journey_ref", "C:\\outside"),
+    ("journey_ref", "\\\\host\\share"), ("journey_ref", "."),
+    ("client_request_id", "bad%2Frequest"),
+])
+def test_invalid_prepare_selector_never_acquires_lock_or_mutates(
+        tmp_path, monkeypatch, field, selector):
+    calls = []
+    monkeypatch.setattr(
+        "harness.gateway_grant_route.ExclusiveJourneyLock.acquire",
+        lambda path, *_args: calls.append(path) or pytest.fail("lock acquired"))
+    body = {"schema": "flywheel.gateway-operation/v1",
+            "journey_ref": JOURNEY, "expected_event_head": "a" * 64,
+            "client_request_id": "request-1",
+            "operation": {"name": "gather", "data_refs": [],
+                          "credential_refs": []}}
+    body[field] = selector
+    before = sorted(str(path.relative_to(tmp_path)) for path in tmp_path.rglob("*"))
+    result, status = gateway_grant_post(
+        "/api/gateway-grants/prepare/plugin.probe", json.dumps(body).encode(),
+        owner_ref=OWNER, state_root=tmp_path, clock=lambda: NOW)
+    assert status == 422 and result["error"]["code"] == "INVALID_REQUEST"
+    assert calls == []
+    assert sorted(str(path.relative_to(tmp_path)) for path in tmp_path.rglob("*")) == before
+
+
+def test_invalid_approval_ref_never_acquires_lock_or_mutates(tmp_path, monkeypatch):
+    calls = []
+    monkeypatch.setattr(
+        "harness.gateway_grant_route.ExclusiveJourneyLock.acquire",
+        lambda path, *_args: calls.append(path) or pytest.fail("lock acquired"))
+    result, status = gateway_grant_post(
+        "/api/gateway-grants/approve-once",
+        json.dumps({"proposal_ref": "../../escaped"}).encode(),
+        owner_ref=OWNER, state_root=tmp_path, clock=lambda: NOW)
+    assert status == 422 and result["error"]["code"] == "INVALID_REQUEST"
+    assert calls == [] and not list(tmp_path.rglob("*"))

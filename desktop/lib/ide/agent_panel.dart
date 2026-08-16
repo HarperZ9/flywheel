@@ -19,7 +19,6 @@ class AgentPanel extends StatefulWidget {
   final String? selection;
   final VoidCallback onRunStarted;
   final VoidCallback onRunFinished;
-
   final TextEditingController? goalController;
   const AgentPanel(
       {super.key,
@@ -31,7 +30,6 @@ class AgentPanel extends StatefulWidget {
       this.activeFile,
       this.selection,
       this.goalController});
-
   @override
   State<AgentPanel> createState() => _AgentPanelState();
 }
@@ -49,7 +47,6 @@ class _AgentPanelState extends State<AgentPanel> {
   List<Map<String, dynamic>> _pastRuns = [];
   Map<String, dynamic>? _stored;
   String? _error;
-
   @override
   void initState() {
     super.initState();
@@ -77,8 +74,16 @@ class _AgentPanelState extends State<AgentPanel> {
     } catch (_) {}
   }
 
+  void _beginRun() => setState(() {
+        _running = true;
+        _detached = false;
+        _events = [];
+        _stored = _error = null;
+      });
   Future<void> _run() async {
-    var goal = _goal.text.trim();
+    final inputGoal = _goal.text.trim();
+    final authority = (_endpoint, inputGoal, _allowWrite, _allowExec);
+    var goal = inputGoal;
     if (goal.isEmpty || _endpoint == null || _running) return;
     if (_attachContext && widget.activeFile != null) {
       final sel = widget.selection;
@@ -87,15 +92,11 @@ class _AgentPanelState extends State<AgentPanel> {
           '\n$goal';
     }
     widget.onRunStarted();
-    setState(() {
-      _running = true;
-      _detached = false;
-      _events = [];
-      _stored = null;
-      _error = null;
-    });
+    _beginRun();
     final operation = GatewayOperation.exact(
         action: 'agent.run',
+        dataRefs: const [],
+        credentialRefs: const [],
         clientRequestId:
             'desktop-agent-${DateTime.now().microsecondsSinceEpoch}',
         operation: {
@@ -130,7 +131,11 @@ class _AgentPanelState extends State<AgentPanel> {
       if (!mounted) return;
       setState(() => _running = false);
       widget.onRunFinished();
-    });
+    },
+        currentOperation: () =>
+            (_endpoint, _goal.text.trim(), _allowWrite, _allowExec) == authority
+                ? operation
+                : null);
   }
 
   void _onEvent(Map<String, dynamic> e) {
@@ -155,10 +160,9 @@ class _AgentPanelState extends State<AgentPanel> {
 
   void _detach() {
     _sub?.cancel();
-    setState(() {
-      _running = false;
-      _detached = true;
-    });
+    _running = false;
+    _detached = true;
+    setState(() {});
     widget.onRunFinished();
   }
 
@@ -221,9 +225,7 @@ class _AgentPanelState extends State<AgentPanel> {
             ],
             if (_detached) ...[
               const SizedBox(height: FwLayout.s2),
-              const HonestNull(
-                  'Detached. The gated run continues in the engine and lands '
-                  'under past runs with its full trace.'),
+              const HonestNull('Detached. The run continues under past runs.'),
             ],
             if (_events.isNotEmpty) ...[
               const SizedBox(height: FwLayout.s2),
@@ -257,43 +259,40 @@ class _AgentPanelState extends State<AgentPanel> {
         ],
       );
 
-  Widget _pastSection() {
-    return ConstrainedBox(
-      constraints: const BoxConstraints(maxHeight: 280),
-      child: SingleChildScrollView(
-        child: _stored != null
-            ? StoredAgentRun(doc: _stored!, client: widget.client)
-            : AgentRunsList(runs: _pastRuns, onOpen: _openStored),
-      ),
-    );
-  }
+  Widget _pastSection() => ConstrainedBox(
+        constraints: const BoxConstraints(maxHeight: 280),
+        child: SingleChildScrollView(
+          child: _stored != null
+              ? StoredAgentRun(doc: _stored!, client: widget.client)
+              : AgentRunsList(runs: _pastRuns, onOpen: _openStored),
+        ),
+      );
 
-  Widget _composerRow() {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Expanded(
-          child: TextField(
-            controller: _goal,
-            maxLines: 2,
-            minLines: 1,
-            enabled: widget.alive,
-            style: const TextStyle(fontSize: 13),
-            decoration:
-                const InputDecoration(hintText: 'Change this workspace…'),
-            onSubmitted: (_) => unawaited(_run()),
+  Widget _composerRow() => Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: TextField(
+              controller: _goal,
+              maxLines: 2,
+              minLines: 1,
+              enabled: widget.alive,
+              style: const TextStyle(fontSize: 13),
+              decoration:
+                  const InputDecoration(hintText: 'Change this workspace…'),
+              onSubmitted: (_) => unawaited(_run()),
+            ),
           ),
-        ),
-        const SizedBox(width: FwLayout.s2),
-        if (_running) ...[
-          OutlinedButton(onPressed: _detach, child: const Text('Detach')),
           const SizedBox(width: FwLayout.s2),
+          if (_running) ...[
+            OutlinedButton(onPressed: _detach, child: const Text('Detach')),
+            const SizedBox(width: FwLayout.s2),
+          ],
+          FilledButton(
+            onPressed:
+                widget.alive && !_running ? () => unawaited(_run()) : null,
+            child: Text(_running ? 'Running…' : 'Run'),
+          ),
         ],
-        FilledButton(
-          onPressed: widget.alive && !_running ? () => unawaited(_run()) : null,
-          child: Text(_running ? 'Running…' : 'Run'),
-        ),
-      ],
-    );
-  }
+      );
 }

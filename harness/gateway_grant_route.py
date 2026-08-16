@@ -4,6 +4,7 @@ from __future__ import annotations
 from dataclasses import asdict
 from datetime import timedelta
 from pathlib import Path
+import re
 import secrets
 from typing import Callable
 
@@ -15,6 +16,9 @@ from .gateway_operation import (
     PROPOSAL_SCHEMA, REQUEST_SCHEMA, action_for_path, canonicalize_operation,
     thaw_operation,
 )
+from .gateway_envelope import parse_gateway_envelope
+from .gateway_secret_boundary import validate_no_raw_secrets
+from .gateway_provider_adapter import credential_slots
 from .journey_lock import ExclusiveJourneyLock, JourneyLockBusy
 from .journey_store import JourneyStore, JourneyStoreError
 from .journey_types import JOURNEY_REF_PATTERN, SHA256_PATTERN
@@ -41,20 +45,14 @@ def _directory(state_root: Path, owner_ref: str) -> Path:
     owner.mkdir(exist_ok=True)
     _secure_owner_only(owner, directory=True)
     return owner
-
-
 def _path(owner_dir: Path, proposal_ref: str) -> Path:
     if (type(proposal_ref) is not str
             or PROPOSAL_REF_PATTERN.fullmatch(proposal_ref) is None):
         raise GrantError("PERMISSION_REQUIRED")
     return owner_dir / f"{canonical_sha256(proposal_ref)}.json"
-
-
 def _digest(record: dict) -> str:
     return canonical_sha256({key: value for key, value in record.items()
                              if key != "record_sha256"})
-
-
 def _validate_record(value: object, owner_ref: str) -> dict:
     if (type(value) is not dict or set(value) != _RECORD_FIELDS
             or value.get("schema") != PROPOSAL_SCHEMA
@@ -72,8 +70,6 @@ def _validate_record(value: object, owner_ref: str) -> dict:
     if request != _request(value, operation):
         raise GrantError("PERMISSION_DENIED")
     return value
-
-
 def _read(owner_dir: Path, proposal_ref: str, owner_ref: str) -> dict:
     path = _path(owner_dir, proposal_ref)
     if not path.exists():
@@ -85,8 +81,6 @@ def _read(owner_dir: Path, proposal_ref: str, owner_ref: str) -> dict:
         raise GrantError("PERMISSION_DENIED") from None
     except (OSError, TypeError, ValueError):
         raise GrantError("PERMISSION_DENIED") from None
-
-
 def _request(record: dict, operation) -> GrantRequest:
     return GrantRequest(
         record["owner_ref"], record["journey_ref"],
@@ -94,8 +88,6 @@ def _request(record: dict, operation) -> GrantRequest:
         operation.tool, operation.arguments_sha256, operation.scopes,
         operation.data_refs, record["expires_at"], record["proposal_ref"],
     )
-
-
 def _current_head(store: JourneyStore, owner_ref: str, journey_ref: str) -> str:
     store._validate_selector(owner_ref, journey_ref)
     journey_dir = store._journey_dir(owner_ref, journey_ref)
@@ -106,8 +98,31 @@ def _current_head(store: JourneyStore, owner_ref: str, journey_ref: str) -> str:
         raise JourneyStoreError("JOURNEY_NOT_FOUND")
     store._events_at_head(journey_dir, head)
     return head["event_head_sha256"]
-
-
+def _proposal_response(record: dict, operation) -> dict:
+    summary = {
+        "schema": "flywheel.gateway-grant-summary/v1", "action": record["action"],
+        "journey_ref": record["journey_ref"],
+        "expected_event_head": record["expected_event_head"],
+        "destination": dict(operation.destination), "tool": operation.tool,
+        "operation_sha256": operation.operation_sha256,
+        "arguments_sha256": operation.arguments_sha256,
+        "scopes": list(operation.scopes), "data_refs": list(operation.data_refs),
+        "credential_refs": list(operation.credential_refs),
+        "effect": "one dispatch after approval", "expires_at": record["expires_at"],
+    }
+    return {
+        "schema": PROPOSAL_SCHEMA, "proposal_ref": record["proposal_ref"],
+        "planned_grant_ref": record["planned_grant_ref"],
+        "action": record["action"], "journey_ref": record["journey_ref"],
+        "expected_event_head": record["expected_event_head"],
+        "client_request_id": record["client_request_id"], "tool": operation.tool,
+        "destination": dict(operation.destination),
+        "operation_sha256": operation.operation_sha256,
+        "arguments_sha256": operation.arguments_sha256,
+        "scopes": list(operation.scopes), "data_refs": list(operation.data_refs),
+        "credential_refs": list(operation.credential_refs),
+        "expires_at": record["expires_at"], "summary": summary,
+    }
 def _prepare(action: str, body: dict, owner_ref: str, state_root: Path,
              clock: Callable[[], str]) -> dict:
     exact_request(body, _BASE | {"operation"})
@@ -116,9 +131,12 @@ def _prepare(action: str, body: dict, owner_ref: str, state_root: Path,
             or SHA256_PATTERN.fullmatch(
                 body.get("expected_event_head", "")) is None
             or type(body.get("client_request_id")) is not str
-            or not body["client_request_id"].strip()):
+            or re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._:-]{0,127}",
+                            body["client_request_id"]) is None):
         raise GatewayOperationError("INVALID_REQUEST")
+    validate_no_raw_secrets(body)
     operation = canonicalize_operation(action, body["operation"])
+    credential_slots(operation, owner_ref, state_root)
     store = JourneyStore(state_root)
     journey_dir = store._journey_dir(owner_ref, body["journey_ref"])
     with ExclusiveJourneyLock.acquire(journey_dir / ".lock"):
@@ -147,31 +165,13 @@ def _prepare(action: str, body: dict, owner_ref: str, state_root: Path,
         owner_dir = _directory(state_root, owner_ref)
         with ExclusiveJourneyLock.acquire(owner_dir / ".lock"):
             _replace(_path(owner_dir, proposal_ref), record)
-    summary = {
-        "operation": action, "journey_ref": body["journey_ref"],
-        "expected_event_head": body["expected_event_head"],
-        "tool": operation.tool, "arguments_sha256": operation.arguments_sha256,
-        "scopes": list(operation.scopes), "data_refs": list(operation.data_refs),
-        "credential_refs": list(operation.credential_refs),
-        "effect": "one dispatch after approval", "expires_at": expires,
-    }
-    return {
-        "schema": PROPOSAL_SCHEMA, "proposal_ref": proposal_ref,
-        "planned_grant_ref": grant_ref, "action": action,
-        "journey_ref": body["journey_ref"],
-        "expected_event_head": body["expected_event_head"],
-        "client_request_id": body["client_request_id"], "tool": operation.tool,
-        "operation_sha256": operation.operation_sha256,
-        "arguments_sha256": operation.arguments_sha256,
-        "scopes": list(operation.scopes), "data_refs": list(operation.data_refs),
-        "credential_refs": list(operation.credential_refs),
-        "expires_at": expires, "summary": summary,
-    }
-
-
+    return _proposal_response(record, operation)
 def _approve(body: dict, owner_ref: str, state_root: Path,
              clock: Callable[[], str]) -> dict:
     exact_request(body, {"proposal_ref"})
+    if (type(body.get("proposal_ref")) is not str
+            or PROPOSAL_REF_PATTERN.fullmatch(body["proposal_ref"]) is None):
+        raise GatewayOperationError("INVALID_REQUEST")
     owner_dir = _directory(state_root, owner_ref)
     with ExclusiveJourneyLock.acquire(owner_dir / ".lock"):
         record = _read(owner_dir, body["proposal_ref"], owner_ref)
@@ -191,18 +191,13 @@ def _approve(body: dict, owner_ref: str, state_root: Path,
 def _authorize(
         action: str, raw: bytes, *, owner_ref: str, state_root: Path,
         clock: Callable[[], str]) -> AuthorizedOperation:
-    body = parse_json(raw)
-    operation_fields = set(canonicalize_operation(action, {
-        key: value for key, value in body.items()
-        if key not in _BASE | {"grant_ref"}
-    }).operation)
-    exact_request(body, _BASE | {"grant_ref"} | operation_fields)
-    if body.get("schema") != REQUEST_SCHEMA:
-        raise GatewayOperationError("INVALID_REQUEST")
-    operation = canonicalize_operation(action, {
-        key: value for key, value in body.items()
-        if key not in _BASE | {"grant_ref"}
-    })
+    envelope = parse_gateway_envelope(action, raw)
+    operation = envelope.operation
+    credential_slots(operation, owner_ref, state_root)
+    body = {"journey_ref": envelope.journey_ref,
+            "expected_event_head": envelope.expected_event_head,
+            "client_request_id": envelope.client_request_id,
+            "grant_ref": envelope.grant_ref}
     owner_dir = _directory(state_root, owner_ref)
     proposal_ref = "prp_" + str(body.get("grant_ref", ""))[4:]
     store = JourneyStore(state_root)
@@ -228,7 +223,8 @@ def _authorize(
             GrantStore(state_root, clock=clock).consume(
                 body["grant_ref"], request, now=clock())
     return AuthorizedOperation(
-        operation.action, operation.tool, operation.operation,
+        operation.action, operation.tool, operation.destination,
+        operation.operation,
         operation.operation_sha256, operation.arguments_sha256,
         operation.scopes, operation.data_refs, operation.credential_refs,
         owner_ref, record["journey_ref"], record["expected_event_head"],
@@ -259,6 +255,9 @@ def authorize_gateway_operation(
 
 def gateway_error_response(exc: Exception) -> tuple[dict, int]:
     code = getattr(exc, "code", "STORE_COMMIT_FAILED")
+    if code == "EXTERNAL_ACTION_FAILED":
+        from .gateway_provider_adapter import fixed_external_failure
+        return fixed_external_failure()
     if isinstance(exc, TransportError):
         code = "INVALID_REQUEST"
     elif isinstance(exc, JourneyLockBusy):

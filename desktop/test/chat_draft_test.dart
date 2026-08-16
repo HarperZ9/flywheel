@@ -15,7 +15,8 @@ import 'package:flywheel_desktop/views/agent_view.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 
-const _ref = 'chd_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+const _a = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+const _ref = 'chd_$_a';
 const _done = ChatDraftState.admittedPendingCleanup,
     _dirty = ChatDraftState.dirty;
 const _history = ChatDraftState.admittedPendingHistory;
@@ -189,19 +190,16 @@ class _AgentHarness {
           if (++draftWrites == failWrite) throw StateError('injected');
         });
     history = ChatStore(file: File('${directory.path}/history.json'));
-    client = GatewayClient(
-        baseUrl: 'https://chat.invalid',
-        httpClient: MockClient((request) async {
-          if (request.url.path == '/api/endpoints') {
-            return http.Response(_roster, 200);
-          }
-          chatCalls++;
-          return delayed?.future ??
-              http.Response(empty ? 'data: [DONE]\n\n' : _reply, 200);
-        }));
+    client = GatewayClient(httpClient: MockClient((request) async {
+      if (request.url.path == '/api/endpoints') {
+        return http.Response(_roster, 200);
+      }
+      chatCalls++;
+      return delayed?.future ??
+          http.Response(empty ? 'data: [DONE]\n\n' : _reply, 200);
+    }));
   }
-  static const _roster =
-      '{"rows":[{"name":"local-public","backend":"local","credential":"local-none","provider_role":"","configured":true}]}';
+  static const _roster = '{"rows":[{"name":"l","credential":"local-none"}]}';
   static const _reply =
       'data: {"choices":[{"delta":{"content":"answer"}}]}\n\ndata: [DONE]\n\n';
   late final ChatDraftStore drafts;
@@ -223,25 +221,27 @@ Future<void> _pumpAgent(WidgetTester tester, AgentView view) async {
 }
 
 Widget _granted(Widget child) => GatewayOperationScope(
-    authorize: (_, operation, dispatch) => dispatch(
-        operation.finalBody('jrn_${'a' * 32}', 'a' * 64, 'gnt_${'a' * 32}')),
+    authorize: (_, operation, currentOperation, dispatch) =>
+        currentOperation() != operation
+            ? Future.value()
+            : dispatch(operation.finalBody(_binding, 'gnt_$_a')),
     child: child);
+const _binding = GatewayJourneyBinding('jrn_$_a', '$_a$_a');
 
-Future<(_AgentHarness, _Reply)> _pending(WidgetTester tester, String text,
-    [int? failWrite]) async {
+Future<(_AgentHarness, _Reply)> _p(WidgetTester t, String s, int? fail) async {
   final reply = _Reply();
-  final harness = _AgentHarness(delayed: reply, failWrite: failWrite);
-  await _pumpAgent(tester, harness.view());
-  await tester.enterText(find.byType(TextField), text);
-  await tester.pump();
-  await tester.tap(find.byTooltip('Send  (Enter)'));
-  await tester.pump();
+  final harness = _AgentHarness(delayed: reply, failWrite: fail);
+  await _pumpAgent(t, harness.view());
+  await t.enterText(find.byType(TextField), s);
+  await t.pump();
+  await t.tap(find.byTooltip('Send  (Enter)'));
+  await t.pump();
   return (harness, reply);
 }
 
 void _agentAdmissionTests() {
   testWidgets('new edit keeps an ambiguous attempt', (tester) async {
-    final (agent, reply) = await _pending(tester, 'old prompt', 4);
+    final (agent, reply) = await _p(tester, 'old prompt', 4);
     await tester.enterText(find.byType(TextField), 'newer draft');
     reply.complete(http.Response(_AgentHarness._reply, 200));
     await tester.pumpAndSettle();
@@ -260,7 +260,7 @@ void _agentAdmissionTests() {
     expect(_texts(fresh), {'old prompt', 'newer draft'});
   });
   testWidgets('accepted turn saves and preserves a newer edit', (tester) async {
-    final (agent, reply) = await _pending(tester, 'old prompt');
+    final (agent, reply) = await _p(tester, 'old prompt', null);
     expect(_states(agent.drafts), {_dirty, _submitting});
     await tester.enterText(find.byType(TextField), 'newer prompt');
     reply.complete(http.Response(_AgentHarness._reply, 200));
@@ -287,7 +287,7 @@ void _agentAdmissionTests() {
     expect(agent.chatCalls, 1);
   });
   testWidgets('dispose leaves recoverable admission custody', (tester) async {
-    final (agent, reply) = await _pending(tester, 'stay safe');
+    final (agent, reply) = await _p(tester, 'stay safe', null);
     await tester.pumpWidget(const SizedBox());
     reply.complete(http.Response(_AgentHarness._reply, 200));
     await tester.pumpAndSettle();

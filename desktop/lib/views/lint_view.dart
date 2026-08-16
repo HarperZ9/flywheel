@@ -1,8 +1,3 @@
-// lint_view.dart — the Lint surface: a native, integrated linter over a
-// registered project. Every finding carries a receipt hash and the run
-// carries a root hash, so the result re-checks. A finding can hand off to
-// the workspace agent as a scoped fix goal.
-
 import 'package:flutter/material.dart';
 
 import '../client/gateway_client.dart';
@@ -29,7 +24,6 @@ class _LintViewState extends State<LintView> {
   bool _linting = false;
   String? _error;
   final Map<String, String> _fixing = {};
-
   @override
   void initState() {
     super.initState();
@@ -89,6 +83,8 @@ class _LintViewState extends State<LintView> {
     try {
       final operation = GatewayOperation.exact(
           action: 'agent.run',
+          dataRefs: const [],
+          credentialRefs: const [],
           clientRequestId:
               'desktop-lint-${DateTime.now().microsecondsSinceEpoch}',
           operation: {
@@ -101,7 +97,11 @@ class _LintViewState extends State<LintView> {
             'root': _root!
           });
       final r = await authorizeGatewayOperation(context, operation,
-          (body) => widget.client.postJson('/api/agent', body));
+          (body) => widget.client.postJson('/api/agent', body),
+          currentOperation: () => _endpoint == operation.destination.ref &&
+                  _root == operation.operation['root']
+              ? operation
+              : null);
       if (r == null) return;
       final clean =
           (r['integrity'] is Map) ? (r['integrity']['clean'] == true) : null;
@@ -117,8 +117,7 @@ class _LintViewState extends State<LintView> {
   @override
   Widget build(BuildContext context) {
     if (!widget.alive) {
-      return const FwEmpty('The engine is offline. Lint appears when it runs.',
-          command: 'flywheel up');
+      return const FwEmpty('Engine offline.', command: 'flywheel up');
     }
     final t = context.fw;
     return ViewScroll(

@@ -593,11 +593,8 @@ def _flatten_messages(messages) -> tuple[str, str]:
     return system, "\n\n".join(lines)
 
 
-def _resolve_proposer(model: str, serve_url: str):
-    """Pick the proposer for an OpenAI `model` string. Returns
-    (proposer, error, code). Empty / a local alias -> the local serve model; a
-    roster endpoint name or `name:model` -> that provider (credential-gated,
-    honest error if absent); anything else -> 404."""
+def _resolve_proposer(model: str, serve_url: str, credential_bindings=None):
+    """Resolve one local or explicitly credential-bound proposer."""
     m = (model or "").strip()
     if m in ("", "flywheel", "flywheel-serve", "serve", "default", "local", "auto"):
         try:
@@ -607,18 +604,27 @@ def _resolve_proposer(model: str, serve_url: str):
         return ServeProposer(base_url=serve_url), None, 200
     name = m.split(":", 1)[0]
     sub = m.split(":", 1)[1] if ":" in m else None
-    roster = _unified_roster()
-    entry = next((e for e in roster.get("endpoints", []) if e["name"] == name), None)
-    if entry is None:
-        return None, f"unknown model {m!r}; see GET /v1/models", 404
-    if entry.get("credential") == "absent":
-        return None, f"model {name!r} has no credential present; set its API key in the environment", 400
+    if credential_bindings is None:
+        roster = _unified_roster()
+        entry = next((e for e in roster.get("endpoints", [])
+                      if e["name"] == name), None)
+        if entry is None:
+            return None, f"unknown model {m!r}; see GET /v1/models", 404
+        if entry.get("credential") == "absent":
+            return None, f"model {name!r} has no credential present", 400
     try:
-        from harness.endpoint_registry import make_endpoint_proposer
+        from harness.endpoint_registry import (
+            make_authorized_endpoint_proposer, make_endpoint_proposer)
     except Exception:
-        from endpoint_registry import make_endpoint_proposer
+        from endpoint_registry import (
+            make_authorized_endpoint_proposer, make_endpoint_proposer)
     try:
-        return make_endpoint_proposer(name, model=sub, ledger=_router_ledger()), None, 200
+        factory = (make_endpoint_proposer if credential_bindings is None else
+                   make_authorized_endpoint_proposer)
+        kwargs = {"model": sub, "ledger": _router_ledger()}
+        if credential_bindings is not None:
+            kwargs["credential_bindings"] = credential_bindings
+        return factory(name, **kwargs), None, 200
     except Exception as e:
         return None, f"cannot build proposer for {name!r}: {e}", 502
 
@@ -686,15 +692,8 @@ def get_router_stats():
     return _ROUTER_STATS
 
 
-def openai_chat(req: dict, serve_url: str):
-    """Core of POST /v1/chat/completions (non-stream). Returns (body, code, receipt,
-    text, model_ref). On error, receipt/text/model_ref are None.
-
-    Failover: a comma-separated `model` ("openai,anthropic,serve") is a fallback
-    chain, tried in order until one succeeds. The winning provider and any skipped
-    ones are recorded on the receipt (routed_via / failover_from), so the record
-    stays honest about which model actually answered. The reliability layer other
-    routers charge for, in the open."""
+def openai_chat(req: dict, serve_url: str, credential_bindings=None):
+    """Return one routed completion plus its receipt and provenance."""
     import time
     system, prompt = _flatten_messages(req.get("messages", []))
     if not prompt:
@@ -722,7 +721,10 @@ def openai_chat(req: dict, serve_url: str):
     resolution_failures = []
     for cand in candidates:
         t0 = time.time()
-        proposer, err, code = _resolve_proposer(cand, serve_url)
+        proposer, err, code = (_resolve_proposer(cand, serve_url)
+                               if credential_bindings is None else
+                               _resolve_proposer(
+                                   cand, serve_url, credential_bindings))
         if err is not None:
             # a resolution failure (typo'd name, credential absent on THIS
             # host, config error) is NOT the provider failing: never charge it
@@ -817,6 +819,13 @@ class _Handler(BaseHTTPRequestHandler):
         return None if n < 0 or n > self.MAX_BODY else n
 
     def _json(self, obj, code=200):
+        error = obj.get("error") if isinstance(obj, dict) else None
+        error_code = error.get("code") if isinstance(error, dict) else None
+        if (getattr(self, "_gateway_guarded", False)
+                and error_code != "PERMISSION_REQUIRED"
+                and (code >= 400 or error_code)):
+            from harness.gateway_provider_adapter import fixed_external_failure
+            obj, code = fixed_external_failure()
         body = json.dumps(obj).encode()
         self.send_response(code)
         self.send_header("Content-Type", "application/json")
@@ -826,17 +835,17 @@ class _Handler(BaseHTTPRequestHandler):
         self.wfile.write(body)
 
     def _sse_chat(self, req: dict):
-        """Stream a chat completion as OpenAI Server-Sent Events. The verified or
-        routed answer is produced whole (a receipt is a hash over the FULL response,
-        so we stand behind what we stream), then delivered as chat.completion.chunk
-        deltas ending with [DONE]. Any OpenAI streaming client consumes it as-is."""
+        """Stream a completed, receipted answer as OpenAI-compatible SSE."""
         import time
         from harness.scaffold import scaffold_answer, scaffold_turn
         # hash and freeze what the model was ACTUALLY sent (the flattened
         # prompt), not a naive join of raw content that reprs content-parts
         _sys, _prompt = _flatten_messages(req.get("messages", []))
         env = scaffold_turn("\n".join(x for x in (_sys, _prompt) if x))
-        body, code, receipt, text, model_ref = openai_chat(req, self.serve_url)
+        bindings = getattr(self, "_gateway_bindings", None)
+        body, code, receipt, text, model_ref = (
+            openai_chat(req, self.serve_url) if bindings is None else
+            openai_chat(req, self.serve_url, bindings))
         if code != 200:
             return self._json(body, code)          # errors are plain JSON, not a stream
         # the answer is produced whole before streaming, so the turn
@@ -875,9 +884,8 @@ class _Handler(BaseHTTPRequestHandler):
             pass                                   # client hung up mid-stream; nothing to do
 
     def _sse_agent(self, req: dict, goal: str, endpoint: str):
-        """Stream the agentic tool loop as Server-Sent Events: each assistant turn,
-        tool call, and tool result is emitted as it happens, then a final `done`
-        event carries the witnessed result (verdict + integrity)."""
+        """Stream the agent loop and its witnessed terminal result."""
+        guarded = getattr(self, "_gateway_guarded", False)
         try:
             max_steps = max(1, min(int(req.get("max_steps", 6)), 12))
         except (TypeError, ValueError):
@@ -894,6 +902,11 @@ class _Handler(BaseHTTPRequestHandler):
         def emit(evt):
             # tee: the stream shows the process live, the run root keeps it —
             # a streamed run lands in history exactly like a posted one
+            if (guarded and isinstance(evt, dict)
+                    and evt.get("type") == "error"):
+                evt = {"type": "error", "error": {
+                    "code": "EXTERNAL_ACTION_FAILED",
+                    "message": "authorized external action failed"}}
             events.append(evt)
             try:
                 self.wfile.write(("data: " + json.dumps(evt) + "\n\n").encode())
@@ -920,7 +933,9 @@ class _Handler(BaseHTTPRequestHandler):
                 allow_exec=bool(req.get("allow_exec", False)),
                 max_steps=max_steps, test_cmd=(req.get("test_cmd") or None),
                 model=(req.get("model") or None),
-                compact_budget=int(req.get("compact_budget", 0) or 0), on_event=emit)
+                compact_budget=int(req.get("compact_budget", 0) or 0),
+                credential_bindings=getattr(
+                    self, "_gateway_bindings", None), on_event=emit)
             # countersign ONCE, before persistence, so the stored doc and the
             # done event carry the same receipt (the store banks one witness)
             run_receipt = _countersign_run(result)
@@ -933,7 +948,8 @@ class _Handler(BaseHTTPRequestHandler):
                          events=trim_events(events),
                          run_receipt=run_receipt))["run_id"]
             except Exception as e:
-                receipt_note = f"run not persisted: {type(e).__name__}: {e}"
+                receipt_note = ("authorized external action failed" if guarded
+                                else f"run not persisted: {type(e).__name__}: {e}")
             emit({"type": "done", "run_id": run_id,
                   **({"receipt_note": receipt_note} if receipt_note else {}),
                   "final": result.get("final"), "steps": result.get("steps"),
@@ -952,7 +968,9 @@ class _Handler(BaseHTTPRequestHandler):
                                               env),
                   "run_receipt": run_receipt})
         except Exception as e:
-            emit({"type": "error", "error": f"{type(e).__name__}: {e}"})
+            error = ("authorized external action failed" if guarded
+                     else f"{type(e).__name__}: {e}")
+            emit({"type": "error", "error": error})
             # a failed run is the one most worth inspecting afterward: it
             # lands in history as ERROR carrying every event up to and
             # including the error itself, instead of vanishing with the stream
@@ -962,7 +980,7 @@ class _Handler(BaseHTTPRequestHandler):
                     self.run_root,
                     {"goal_excerpt": goal[:200], "endpoint": endpoint,
                      "status": "ERROR",
-                     "error": f"{type(e).__name__}: {e}",
+                     "error": error,
                      "events": trim_events(events)})
             except Exception:
                 pass  # the stream already carries the primary error
@@ -1010,20 +1028,15 @@ class _Handler(BaseHTTPRequestHandler):
         self.send_header("Content-Length", str(len(body)))
         self.end_headers()
         self.wfile.write(body)
-
     def _safe_500(self, e):
-        """Any uncaught handler error becomes a clean 500, never a dropped
-        connection or a stderr traceback. Only the exception TYPE is surfaced, so a
-        stack path never leaks to the client."""
+        """Return one non-echoing response for an uncaught handler error."""
         try:
             self._json({"error": {"message": f"internal error: {type(e).__name__}",
                                   "type": "api_error"}}, 500)
         except Exception:
             pass                                   # headers already partly sent; nothing safe to do
     def _req_json(self):
-        """The decoded JSON request body, or (None, error-response) when the
-        Content-Length is missing or oversized. One parse for every POST
-        route: the same seven lines were repeated dozens of times."""
+        """Return one admitted or bounded decoded request body."""
         admitted = getattr(self, "_gateway_operation", None)
         if admitted is not None:
             del self._gateway_operation
@@ -1042,7 +1055,8 @@ class _Handler(BaseHTTPRequestHandler):
         while private custody always requires a configured bearer token."""
         path = self.path.split("?", 1)[0]
         private = (path.startswith(("/api/journeys/", "/api/grants/",
-                                    "/api/gateway-grants/"))
+                                    "/api/gateway-grants/",
+                                    "/api/credential-handles"))
                    or path in {"/v1/chat/completions", "/api/agent",
                                "/api/workflow", "/api/plugins/probe",
                                "/api/plugins/call", "/api/plugins/register",
@@ -1379,6 +1393,12 @@ class _Handler(BaseHTTPRequestHandler):
                             for n in names],
                 "note": "presence and source only; values never leave "
                         "resolution inside a routed call"})
+        if p == "/api/credential-handles":
+            from harness.credential_handle_route import credential_handle_get
+            body, code = credential_handle_get(
+                p, owner_ref=self.owner_ref,
+                state_root=self.flywheel_home / "state")
+            return self._json(body, code)
         if p == "/api/plugins/probe":                # spawn a plugin's server, report its real tools
             return self._json({"schema": "flywheel.evidence-transport-error/v1",
                 "error": {"code": "INVALID_REQUEST",
@@ -1394,7 +1414,7 @@ class _Handler(BaseHTTPRequestHandler):
     def _post(self):
         p = self.path.split("?", 1)[0]
         if p.startswith(("/api/evidence/", "/api/journeys/", "/api/grants/",
-                         "/api/gateway-grants/")):
+                         "/api/gateway-grants/", "/api/credential-handles/")):
             length = self._content_length()
             if length is None:
                 return self._json({"schema": "flywheel.evidence-transport-error/v1",
@@ -1411,11 +1431,16 @@ class _Handler(BaseHTTPRequestHandler):
                 from harness.grant_route import grant_post
                 body, code = grant_post(p, raw, owner_ref=self.owner_ref, state_root=self.flywheel_home / "state",
                     evidence_root=self.flywheel_home / "state" / "artifacts", clock=self.clock)
-            else:
+            elif p.startswith("/api/gateway-grants/"):
                 from harness.gateway_grant_route import gateway_grant_post
                 body, code = gateway_grant_post(
                     p, raw, owner_ref=self.owner_ref,
                     state_root=self.flywheel_home / "state", clock=self.clock)
+            else:
+                from harness.credential_handle_route import credential_handle_post
+                body, code = credential_handle_post(
+                    p, raw, owner_ref=self.owner_ref,
+                    state_root=self.flywheel_home / "state")
             return self._json(body, code)
         from harness.gateway_operation import action_for_path, thaw_operation
         action = action_for_path(p)
@@ -1431,6 +1456,10 @@ class _Handler(BaseHTTPRequestHandler):
                 authorized = authorize_gateway_operation(
                     action, self.rfile.read(length), owner_ref=self.owner_ref,
                     state_root=self.flywheel_home / "state", clock=self.clock)
+                from harness.gateway_provider_adapter import resolve_credentials
+                authorized = resolve_credentials(
+                    authorized, self.flywheel_home / "state")
+                self._gateway_guarded = True
             except Exception as exc:
                 body, code = gateway_error_response(exc)
                 return self._json(body, code)
@@ -1443,6 +1472,7 @@ class _Handler(BaseHTTPRequestHandler):
             if dispatched is not None:
                 return self._json(*dispatched)
             self._gateway_operation = thaw_operation(authorized.operation)
+            self._gateway_bindings = authorized.credential_bindings
         if p == "/v1/chat/completions":              # OpenAI-compatible, routes to ANY provider
             req, bad = self._req_json()
             if bad:
@@ -1454,7 +1484,10 @@ class _Handler(BaseHTTPRequestHandler):
             # sent, so the turn receipt is reproducible by a stranger
             _sys, _prompt = _flatten_messages(req.get("messages", []))
             env = scaffold_turn("\n".join(x for x in (_sys, _prompt) if x))
-            body, code, _r, _t, _m = openai_chat(req, self.serve_url)
+            bindings = getattr(self, "_gateway_bindings", None)
+            body, code, _r, _t, _m = (
+                openai_chat(req, self.serve_url) if bindings is None else
+                openai_chat(req, self.serve_url, bindings))
             if code == 200 and isinstance(body, dict):
                 try:
                     content = body["choices"][0]["message"]["content"]
@@ -1841,8 +1874,10 @@ class _Handler(BaseHTTPRequestHandler):
                     max_steps=max_steps, test_cmd=(req.get("test_cmd") or None),
                     model=(req.get("model") or None),
                     compact_budget=int(req.get("compact_budget", 0) or 0),
+                    credential_bindings=getattr(
+                        self, "_gateway_bindings", None),
                     on_event=events.append)
-            except Exception as e:
+            except Exception:
                 # failed runs land in history too, with their partial trace
                 try:
                     from harness.eval_store import save_agent_run, trim_events
@@ -1850,11 +1885,11 @@ class _Handler(BaseHTTPRequestHandler):
                         self.run_root,
                         {"goal_excerpt": goal[:200], "endpoint": endpoint,
                          "status": "ERROR",
-                         "error": f"{type(e).__name__}: {e}",
+                         "error": "authorized external action failed",
                          "events": trim_events(events)})
                 except Exception:
                     pass  # the 502 already carries the primary error
-                return self._json({"error": f"{type(e).__name__}: {e}"}, 502)
+                return self._json({"error": "authorized external action failed"}, 502)
             if effort is not None:
                 # stamp what was ENFORCED, not the nominal dial: a caller
                 # max_steps override past the dial, and this route not fanning
@@ -1873,9 +1908,8 @@ class _Handler(BaseHTTPRequestHandler):
                     self.run_root,
                     dict(result, goal_excerpt=goal[:200],
                          events=trim_events(events)))["run_id"]
-            except Exception as e:
-                result["receipt_note"] = (
-                    f"run not persisted: {type(e).__name__}: {e}")
+            except Exception:
+                result["receipt_note"] = "authorized external action failed"
             return self._json(result)
         if p == "/api/workflow":                       # staged run with a chained receipt, any endpoint
             req, bad = self._req_json()
@@ -1900,7 +1934,9 @@ class _Handler(BaseHTTPRequestHandler):
                     allow_mcp=bool(req.get("allow_mcp", False)),
                     test_cmd=(req.get("test_cmd") or None),
                     system=profile.get("system", ""),
-                    run_root=self.run_root)
+                    run_root=self.run_root,
+                    credential_bindings=getattr(
+                        self, "_gateway_bindings", None), authorized=True)
             except Exception as e:
                 return self._json({"error": f"workflow failed: {type(e).__name__}: {e}"}, 502)
             doc["run_countersign"] = _countersign_workflow(doc)

@@ -76,8 +76,32 @@ REGISTRY: dict[str, ProviderSpec] = {s.name: s for s in (
 _BUILTIN = {"serve", "stub"}          # non-OpenAI-shaped proposers we also name
 
 
+class ProviderPermissionError(PermissionError):
+    code = "PERMISSION_REQUIRED"
+
+    def __init__(self):
+        super().__init__("explicit credential injection required")
+
+
 def provider_names() -> list[str]:
     return sorted(REGISTRY) + sorted(_BUILTIN)
+
+
+def credential_slots_for_provider(provider: str) -> tuple[str, ...]:
+    if provider in _BUILTIN:
+        return ()
+    spec = REGISTRY.get(provider)
+    if spec is None:
+        raise ValueError(
+            f"unknown provider {provider!r} — known: {', '.join(provider_names())}")
+    return (spec.api_key_env,) if spec.api_key_env else ()
+
+
+def _binding_value(bindings, slot: str) -> str:
+    try:
+        return bindings.value_for(slot)
+    except Exception:
+        raise ProviderPermissionError() from None
 
 
 def make_proposer(provider: str, *, model: str | None = None,
@@ -102,3 +126,26 @@ def make_proposer(provider: str, *, model: str | None = None,
         model=model or spec.default_model,
         api_key_env=spec.api_key_env or "OPENAI_API_KEY",
         model_ref=provider)
+
+
+def make_authorized_proposer(provider: str, *, credential_bindings,
+                             model: str | None = None,
+                             base_url: str | None = None,
+                             canned: str = "") -> Proposer:
+    """Build without ambient credential discovery for a consumed grant."""
+    if provider == "stub":
+        return StubProposer(canned or "pass\n")
+    if provider == "serve":
+        return ServeProposer(base_url or "http://127.0.0.1:8765")
+    spec = REGISTRY.get(provider)
+    if spec is None:
+        raise ValueError(
+            f"unknown provider {provider!r} — known: {', '.join(provider_names())}")
+    url = base_url or spec.base_url
+    if not url:
+        raise ValueError(f"provider {provider!r} needs an explicit base-url")
+    key = (_binding_value(credential_bindings, spec.api_key_env)
+           if spec.api_key_env else "")
+    return EnterpriseProposer(
+        base_url=url, model=model or spec.default_model,
+        api_key_env=spec.api_key_env, model_ref=provider, api_key=key)

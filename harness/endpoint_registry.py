@@ -23,6 +23,8 @@ import shutil
 from . import providers
 from .proposer import Proposer, ProposerOutput, prompt_hash
 
+ProviderPermissionError = providers.ProviderPermissionError
+
 
 class BackendProposer:
     """Adapt an endpoints.py backend (`.chat(messages, *, system, max_tokens,
@@ -66,6 +68,7 @@ _CLI_BINARY = {"claude-cli": "claude", "codex-cli": "codex", "opencode": "openco
 # roster name -> the backend name build_endpoints actually produces, so a
 # usable-looking endpoint can actually be turned into a proposer
 _BUILD_ALIAS = {"claude-cli": "claude", "codex-cli": "codex"}
+_LOCAL_ALIASES = frozenset(("local", "default", "auto", "flywheel", "flywheel-serve"))
 
 
 def _credential(key_env: str, *, local: bool, kind: str = "", name: str = "") -> str:
@@ -172,6 +175,58 @@ def make_endpoint_proposer(name: str, *, model: str | None = None,
     `ledger` is given, the proposer is wrapped so every call chains into it."""
     prop = _build_endpoint_proposer(name, model=model, base_url=base_url, extract=extract)
     return LedgeredProposer(prop, ledger, endpoint=name) if ledger is not None else prop
+
+
+def credential_slots_for_endpoint(name: str) -> tuple[str, ...]:
+    """Credential-slot names for an explicitly injectable API endpoint."""
+    if name in _LOCAL_ALIASES:
+        name = "serve"
+    if name in providers.REGISTRY or name in ("serve", "stub"):
+        return providers.credential_slots_for_provider(name)
+    native = next((row for row in _NATIVE if row[0] == name), None)
+    if native is None:
+        raise ValueError(f"unknown endpoint {name!r}")
+    if native[1] in ("cli", "opencode"):
+        raise ProviderPermissionError()
+    return (native[2],) if native[2] else ()
+
+
+def _binding_value(bindings, slot: str) -> str:
+    try:
+        return bindings.value_for(slot)
+    except Exception:
+        raise ProviderPermissionError() from None
+
+
+def make_authorized_endpoint_proposer(
+        name: str, *, credential_bindings, model: str | None = None,
+        base_url: str | None = None, extract: bool = True, ledger=None) -> Proposer:
+    """Build one proposer whose credentials come only from resolved handles."""
+    requested_name = name
+    if name in _LOCAL_ALIASES:
+        name = "serve"
+    if name in providers.REGISTRY or name in ("serve", "stub"):
+        prop = providers.make_authorized_proposer(
+            name, model=model, base_url=base_url,
+            credential_bindings=credential_bindings)
+    else:
+        slots = credential_slots_for_endpoint(name)
+        key = _binding_value(credential_bindings, slots[0]) if slots else ""
+        from . import endpoints
+        if name == "anthropic":
+            backend = endpoints.AnthropicBackend(
+                name=name, base_url=base_url or "https://api.anthropic.com",
+                model=model or "claude-sonnet-5", api_key=key)
+        elif name == "gemini":
+            backend = endpoints.GeminiBackend(
+                name=name,
+                base_url=base_url or "https://generativelanguage.googleapis.com/v1beta",
+                model=model or "gemini-2.5-flash", api_key=key)
+        else:
+            raise ProviderPermissionError()
+        prop = BackendProposer(backend, extract=extract)
+    return (LedgeredProposer(prop, ledger, endpoint=requested_name)
+            if ledger is not None else prop)
 
 
 def _build_endpoint_proposer(name: str, *, model: str | None, base_url: str | None,

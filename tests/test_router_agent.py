@@ -13,6 +13,7 @@ Success criteria (each test asserts one):
 """
 import os
 
+from harness import router_agent
 from harness.router_agent import RouterAgent, run_router_agent
 
 
@@ -133,3 +134,26 @@ def test_compaction_composes_with_the_routed_loop():
     assert agent.last_compaction is not None
     assert agent.last_compaction["method"] == "middle-fold"
     assert any(m["content"].startswith("[compacted:") for m in agent.history)
+
+
+def test_credential_bindings_use_only_authorized_proposer_factory(
+        tmp_path, monkeypatch):
+    bindings = object()
+    scripted = _StubProposer(["authorized final"])
+
+    def authorized(endpoint, **kwargs):
+        assert endpoint == "remote" and kwargs["credential_bindings"] is bindings
+        assert kwargs["extract"] is False
+        return scripted
+
+    monkeypatch.setattr(
+        router_agent, "make_endpoint_proposer",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(
+            AssertionError("ambient factory used")))
+    monkeypatch.setattr(
+        router_agent, "make_authorized_endpoint_proposer", authorized,
+        raising=False)
+    out = run_router_agent(
+        "answer", endpoint="remote", root=str(tmp_path),
+        credential_bindings=bindings)
+    assert out["final"] == "authorized final"

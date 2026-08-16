@@ -14,32 +14,42 @@ class GatewayDispatchError(RuntimeError):
         super().__init__(code)
 
 
+_ASSIGNED_ACTIONS = frozenset({
+    "chat.complete", "agent.run", "workflow.run", "plugin.probe",
+    "plugin.call", "plugin.register", "plugin.toggle", "plugin.remove",
+    "marketplace.install", "marketplace.add", "marketplace.remove",
+})
+
+
 def dispatch_authorized(
         operation: AuthorizedOperation,
         handlers: Mapping[str, Callable[[AuthorizedOperation], object]]) -> object:
     """Invoke only the handler named by an immutable authorized operation."""
-    if not isinstance(operation, AuthorizedOperation):
+    if (not isinstance(operation, AuthorizedOperation)
+            or operation.action not in _ASSIGNED_ACTIONS):
         raise GatewayDispatchError("INVALID_REQUEST")
     handler = handlers.get(operation.action)
     if not callable(handler):
         raise GatewayDispatchError("INVALID_REQUEST")
     try:
         return handler(operation)
-    except GatewayDispatchError:
-        raise
     except Exception:
-        raise GatewayDispatchError("STORE_COMMIT_FAILED") from None
+        raise GatewayDispatchError("EXTERNAL_ACTION_FAILED") from None
 
 
 def _plugin(operation: AuthorizedOperation) -> object:
     from . import plugins
     value = operation.operation
     result = {
-        "plugin.probe": lambda: plugins.probe_plugin(value["name"]),
+        "plugin.probe": lambda: plugins.probe_plugin(
+            value["name"], credential_bindings=operation.credential_bindings),
         "plugin.call": lambda: plugins.call_plugin(
-            value["name"], value["tool"], dict(value["arguments"])),
+            value["name"], value["tool"], dict(value["arguments"]),
+            credential_bindings=operation.credential_bindings),
         "plugin.register": lambda: plugins.register_mcp(
-            value["name"], list(value["command"]), value["detail"]),
+            value["name"], list(value["command"]), value["detail"],
+            requires=list(value["requires"]),
+            credential_refs=list(value["credential_refs"])),
         "plugin.toggle": lambda: plugins.toggle_mcp(
             value["name"], value["enabled"]),
         "plugin.remove": lambda: plugins.remove_mcp(value["name"]),
@@ -58,10 +68,11 @@ def _marketplace(operation: AuthorizedOperation) -> object:
     value = operation.operation
     return {
         "marketplace.install": lambda: marketplace.install_from_catalog(
-            value["name"]),
+            value["name"], credential_refs=list(value["credential_refs"])),
         "marketplace.add": lambda: marketplace.add_user_entry(
             value["name"], list(value["command"]), detail=value["detail"],
-            requires=list(value["requires"])),
+            requires=list(value["requires"]),
+            credential_refs=list(value["credential_refs"])),
         "marketplace.remove": lambda: marketplace.remove_user_entry(
             value["name"]),
     }[operation.action]()

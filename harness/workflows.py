@@ -14,6 +14,7 @@ import json
 import time
 from pathlib import Path
 
+from .endpoint_registry import ProviderPermissionError
 from .router_agent import run_router_agent
 
 WORKFLOWS = {
@@ -160,11 +161,80 @@ def _step_summary(name: str, kind: str, status: str, result: dict | None,
     return s
 
 
+def _fixed_if_authorized(authorized: bool, exc: Exception) -> None:
+    if not authorized:
+        return
+    if isinstance(exc, ProviderPermissionError):
+        raise ProviderPermissionError() from None
+    raise RuntimeError("authorized external action failed") from None
+
+
+def _verify_step(step, endpoint, *, root, allow_write, test_cmd, proposer,
+                 credential_bindings, authorized):
+    try:
+        result = run_router_agent(
+            "Run the test command and report the outcome honestly.", endpoint,
+            root=root, allow_exec=True, allow_write=allow_write, max_steps=2,
+            test_cmd=test_cmd, proposer=proposer,
+            credential_bindings=credential_bindings)
+    except Exception as exc:
+        _fixed_if_authorized(authorized, exc)
+        return _step_summary(step["name"], "verify", "ERROR", None,
+                             note=f"{type(exc).__name__}: {exc}"), "FAILED"
+    trusted = bool(result.get("tests_pass_trusted"))
+    status = "VERIFIED" if trusted else "FAILED"
+    return _step_summary(step["name"], "verify", status, result), status
+
+
+def _agent_step(step, goal, prev, endpoint, *, root, allow_write, allow_exec,
+                allow_mcp, system, proposer, credential_bindings, authorized):
+    step_goal = step["goal"].format(goal=goal, prev=prev)
+    if system:
+        step_goal = f"{system}\n\n{step_goal}"
+    try:
+        result = run_router_agent(
+            step_goal, endpoint, root=root, allow_write=allow_write,
+            allow_exec=allow_exec, allow_mcp=allow_mcp,
+            max_steps=step.get("max_steps", 6), proposer=proposer,
+            credential_bindings=credential_bindings)
+    except Exception as exc:
+        _fixed_if_authorized(authorized, exc)
+        note = f"{type(exc).__name__}: {exc}"
+        return _step_summary(step["name"], "agent", "ERROR", None,
+                             note=note), prev, "FAILED", True
+    summary = _step_summary(step["name"], "agent", "DONE", result)
+    reasons = []
+    if result.get("verified") is False:
+        reasons.append("ledger did not verify")
+    if summary.get("integrity_clean") is False:
+        reasons.append("trajectory integrity dirty")
+    if reasons:
+        summary["status"] = "FAILED"
+        summary["note"] = "; ".join(reasons)
+        return summary, str(result.get("final", "")), "FAILED", True
+    return summary, str(result.get("final", "")), None, False
+
+
+def _persist_workflow(doc: dict, run_root, authorized: bool) -> None:
+    if not run_root:
+        return
+    try:
+        directory = Path(run_root) / "workflow_runs"
+        directory.mkdir(parents=True, exist_ok=True)
+        out = directory / f"{doc['chain_hash'][:16]}.json"
+        out.write_text(json.dumps(doc, indent=1, default=str), encoding="utf-8")
+        doc["receipt_path"] = out.name
+    except Exception as exc:
+        _fixed_if_authorized(authorized, exc)
+        doc["receipt_note"] = f"run not persisted: {type(exc).__name__}: {exc}"
+
+
 def run_workflow(workflow: str, goal: str, endpoint: str, *, root: str = ".",
                  allow_write: bool = False, allow_exec: bool = False,
                  allow_mcp: bool = False, test_cmd: "str | None" = None,
                  system: str = "", run_root: "Path | str | None" = None,
-                 proposer=None) -> dict:
+                 proposer=None, credential_bindings=None,
+                 authorized: bool = False) -> dict:
     """Run every step in order over `endpoint`. The gates passed here are the
     caller's actual grants; workflow definitions cannot widen them."""
     spec = WORKFLOWS.get(workflow)
@@ -174,8 +244,6 @@ def run_workflow(workflow: str, goal: str, endpoint: str, *, root: str = ".",
                 "known": sorted(WORKFLOWS)}
     started = time.strftime("%Y-%m-%dT%H:%M:%S")
     steps_out: list = []
-    # seed the chain with the header so endpoint/goal/started are bound into
-    # chain_hash, not loose fields a tamper can rewrite undetected
     header = {"workflow": workflow, "endpoint": endpoint,
               "goal_excerpt": goal[:200], "started": started}
     chain = hashlib.sha256()
@@ -190,82 +258,27 @@ def run_workflow(workflow: str, goal: str, endpoint: str, *, root: str = ".",
                                         "nothing was executed")
                 status = "UNVERIFIED"
             else:
-                try:
-                    result = run_router_agent(
-                        "Run the test command and report the outcome honestly.",
-                        endpoint, root=root, allow_exec=True,
-                        allow_write=allow_write, max_steps=2,
-                        test_cmd=test_cmd, proposer=proposer)
-                    trusted = bool(result.get("tests_pass_trusted"))
-                    summary = _step_summary(step["name"], "verify",
-                                            "VERIFIED" if trusted else "FAILED",
-                                            result)
-                    if trusted:
-                        status = "VERIFIED"
-                    else:
-                        status = "FAILED"
-                except Exception as e:
-                    summary = _step_summary(step["name"], "verify", "ERROR",
-                                            None, note=f"{type(e).__name__}: {e}")
-                    status = "FAILED"
+                summary, status = _verify_step(
+                    step, endpoint, root=root, allow_write=allow_write,
+                    test_cmd=test_cmd, proposer=proposer,
+                    credential_bindings=credential_bindings,
+                    authorized=authorized)
         else:
-            step_goal = step["goal"].format(goal=goal, prev=prev)
-            if system:
-                # The profile preamble rides in the instruction itself; the
-                # agent system prompt stays owned by the tool loop.
-                step_goal = f"{system}\n\n{step_goal}"
-            try:
-                result = run_router_agent(
-                    step_goal, endpoint,
-                    root=root, allow_write=allow_write, allow_exec=allow_exec,
-                    allow_mcp=allow_mcp, max_steps=step.get("max_steps", 6),
-                    proposer=proposer)
-                prev = str(result.get("final", ""))
-                # an external check that fired FALSE is not a pass: a stage
-                # whose ledger did not verify or whose trajectory integrity is
-                # dirty (the agent edited the file that grades it) FAILS the
-                # run. It is never stamped DONE for a later clean verify stage
-                # to launder into VERIFIED.
-                summary = _step_summary(step["name"], "agent", "DONE", result)
-                if result.get("verified") is False or \
-                        summary.get("integrity_clean") is False:
-                    summary["status"] = "FAILED"
-                    reasons = []
-                    if result.get("verified") is False:
-                        reasons.append("ledger did not verify")
-                    if summary.get("integrity_clean") is False:
-                        reasons.append("trajectory integrity dirty")
-                    summary["note"] = "; ".join(reasons)
-                    steps_out.append(summary)
-                    chain.update(json.dumps(summary, sort_keys=True,
-                                            default=str).encode())
-                    status = "FAILED"
-                    break
-            except Exception as e:
-                summary = _step_summary(step["name"], "agent", "ERROR", None,
-                                        note=f"{type(e).__name__}: {e}")
-                steps_out.append(summary)
-                chain.update(json.dumps(summary, sort_keys=True,
-                                        default=str).encode())
-                status = "FAILED"
-                break
+            summary, prev, changed, stop = _agent_step(
+                step, goal, prev, endpoint, root=root,
+                allow_write=allow_write, allow_exec=allow_exec,
+                allow_mcp=allow_mcp, system=system, proposer=proposer,
+                credential_bindings=credential_bindings,
+                authorized=authorized)
+            status = changed or status
         steps_out.append(summary)
         chain.update(json.dumps(summary, sort_keys=True, default=str).encode())
-    # fold the final status so a hand-flip from FAILED to COMPLETED breaks
-    # the chain a stranger recomputes
+        if step["kind"] != "verify" and stop:
+            break
     chain.update(json.dumps({"final_status": status}, sort_keys=True).encode())
     doc = {"schema": "flywheel.workflow-run/v1", "workflow": workflow,
            "endpoint": endpoint, "goal_excerpt": goal[:200], "started": started,
            "steps": steps_out, "status": status,
            "chain_hash": chain.hexdigest()}
-    if run_root:
-        try:
-            d = Path(run_root) / "workflow_runs"
-            d.mkdir(parents=True, exist_ok=True)
-            out = d / f"{doc['chain_hash'][:16]}.json"
-            out.write_text(json.dumps(doc, indent=1, default=str),
-                           encoding="utf-8")
-            doc["receipt_path"] = out.name
-        except Exception as e:
-            doc["receipt_note"] = f"run not persisted: {type(e).__name__}: {e}"
+    _persist_workflow(doc, run_root, authorized)
     return doc

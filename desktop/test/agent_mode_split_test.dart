@@ -21,9 +21,13 @@ Future<void> _pump(WidgetTester tester, Widget child) =>
     tester.pumpWidget(MaterialApp(
         theme: flywheelLightTheme(), home: Scaffold(body: _granted(child))));
 Widget _granted(Widget child) => GatewayOperationScope(
-    authorize: (_, operation, dispatch) => dispatch(
-        operation.finalBody('jrn_${'a' * 32}', 'a' * 64, 'gnt_${'a' * 32}')),
+    authorize: (_, operation, currentOperation, dispatch) =>
+        currentOperation() != operation
+            ? Future.value()
+            : dispatch(operation.finalBody(_binding, 'gnt_$_a')),
     child: child);
+const _a = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+const _binding = GatewayJourneyBinding('jrn_$_a', '$_a$_a');
 void main() {
   _historyAndAvatarTruthTests();
   test('complete envelope rejects excess bytes depth and nodes', () {
@@ -53,8 +57,7 @@ void main() {
     expect(s.splitFraction('agent', 0.7), 0.7);
     s.cancelPendingSaves(); // the test never writes the real home dir
   });
-  testWidgets('the agent chip swaps chat for the tool loop and back',
-      (tester) async {
+  testWidgets('agent mode swaps panes and back', (tester) async {
     await _pump(
         tester,
         AgentView(
@@ -169,16 +172,13 @@ ChatThread _avatarThread(ReceiptState state) => ChatThread(messages: [
           receiptState: state == ReceiptState.presentUnchecked ? null : state)
     ], controller: ScrollController());
 void _remoteRecoveryTests() {
-  testWidgets('history crash carries pair',
-      (tester) => _exerciseRecovery(tester, 'one shot', 'first', 0, 1));
+  testWidgets('history', (t) => _exerciseRecovery(t, 'p', 'a', 0, 1));
   testWidgets('cleanup retry stays local',
-      (tester) => _exerciseRecovery(tester, 'cleanup prompt', 'answer', 5, 0));
-  testWidgets(
-      'failed tombstone is uncertain',
-      (tester) =>
-          _exerciseRecovery(tester, 'uncertain prompt', 'admitted', 3, 0));
-  testWidgets('pending history is idempotent',
-      (tester) => _exerciseRecovery(tester, 'one prompt', 'one answer', 4, 0));
+      (tester) => _exerciseRecovery(tester, 'p', 'a', 5, 0));
+  testWidgets('failed tombstone is uncertain',
+      (tester) => _exerciseRecovery(tester, 'p', 'a', 3, 0));
+  testWidgets('pending history replays once',
+      (tester) => _exerciseRecovery(tester, 'p', 'a', 4, 0));
   test('identical older history cannot satisfy a newer or legacy attempt', () {
     final directory = _temporary('chat-submitting-history-');
     for (final current in [null, 'att_${'b' * 32}']) {

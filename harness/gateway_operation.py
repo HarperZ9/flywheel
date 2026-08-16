@@ -6,11 +6,8 @@ import math
 import re
 from types import MappingProxyType
 from typing import Mapping
-from urllib.parse import parse_qsl, urlsplit
-
-from .bundle import scan_for_secrets
 from .evidence_json import canonical_sha256
-from .journey_types import JOURNEY_REF_PATTERN, SHA256_PATTERN
+from .gateway_secret_boundary import validate_no_raw_secrets
 
 REQUEST_SCHEMA = "flywheel.gateway-operation/v1"
 PROPOSAL_SCHEMA = "flywheel.gateway-grant-proposal/v1"
@@ -36,6 +33,7 @@ class GatewayOperationError(RuntimeError):
 class CanonicalOperation:
     action: str
     tool: str
+    destination: Mapping[str, str]
     operation: Mapping[str, object]
     operation_sha256: str
     arguments_sha256: str
@@ -52,33 +50,41 @@ class AuthorizedOperation(CanonicalOperation):
     client_request_id: str
     grant_ref: str
     expires_at: str
+    credential_bindings: object | None = None
 
     @classmethod
     def for_test(cls, *, action: str, operation: dict,
                  scopes: tuple[str, ...]) -> "AuthorizedOperation":
         frozen = _freeze(_snapshot(operation))
         digest = canonical_sha256(operation)
-        return cls(action, action, frozen, digest, digest, scopes, (), (),
+        destination = _freeze(_destination(action, operation))
+        tool = operation.get("tool", action)
+        return cls(action, tool, destination, frozen, digest, digest,
+                   scopes, tuple(operation.get("data_refs", ())),
+                   tuple(operation.get("credential_refs", ())),
                    "owner_" + "a" * 32, "jrn_" + "a" * 32, "a" * 64,
                    "test-request", "gnt_" + "a" * 32,
                    "2026-08-15T12:02:00Z")
 
 
+_REFS = {"data_refs", "credential_refs"}
 _FIELDS = {
-    "chat.complete": ({"model", "messages", "stream"}, set()),
+    "chat.complete": ({"model", "messages", "stream"} | _REFS, set()),
     "agent.run": ({"goal", "endpoint", "max_steps", "allow_write",
-                   "allow_exec", "stream"}, {"root", "test_cmd"}),
+                   "allow_exec", "stream"} | _REFS, {"root", "test_cmd"}),
     "workflow.run": ({"workflow", "goal", "endpoint", "allow_write",
-                      "allow_exec"}, {"profile", "root", "test_cmd"}),
-    "plugin.probe": ({"name"}, set()),
-    "plugin.call": ({"name", "tool", "arguments", "credential_refs"}, set()),
-    "plugin.register": ({"name", "command", "detail", "credential_refs"}, set()),
-    "plugin.toggle": ({"name", "enabled"}, set()),
-    "plugin.remove": ({"name"}, set()),
-    "marketplace.install": ({"name"}, set()),
+                      "allow_exec"} | _REFS,
+                     {"profile", "root", "test_cmd"}),
+    "plugin.probe": ({"name"} | _REFS, set()),
+    "plugin.call": ({"name", "tool", "arguments"} | _REFS, set()),
+    "plugin.register": ({"name", "command", "detail", "requires"}
+                        | _REFS, set()),
+    "plugin.toggle": ({"name", "enabled"} | _REFS, set()),
+    "plugin.remove": ({"name"} | _REFS, set()),
+    "marketplace.install": ({"name"} | _REFS, set()),
     "marketplace.add": ({"name", "command", "detail", "requires",
-                         "credential_refs"}, set()),
-    "marketplace.remove": ({"name"}, set()),
+                         } | _REFS, set()),
+    "marketplace.remove": ({"name"} | _REFS, set()),
 }
 
 
@@ -105,17 +111,22 @@ def canonicalize_operation(action: str, operation: object) -> CanonicalOperation
             raise ValueError
         snapshot = _snapshot(operation)
         _validate_shape(action, snapshot)
-        _reject_secrets(snapshot)
+        validate_no_raw_secrets(snapshot)
+        data_refs = tuple(snapshot["data_refs"])
         credentials = tuple(snapshot.get("credential_refs", ()))
-        if any(CREDENTIAL_REF_PATTERN.fullmatch(value) is None
-               for value in credentials):
+        if (any(not _safe_ref(value, "data_") for value in data_refs)
+                or any(CREDENTIAL_REF_PATTERN.fullmatch(value) is None
+                       for value in credentials)
+                or len(set(data_refs)) != len(data_refs)
+                or len(set(credentials)) != len(credentials)):
             raise ValueError
         scopes = _derived_scopes(action, snapshot, bool(credentials))
         operation_sha = canonical_sha256({"action": action, "operation": snapshot})
         arguments_sha = canonical_sha256(snapshot)
-        return CanonicalOperation(
-            action, action, _freeze(snapshot), operation_sha, arguments_sha,
-            scopes, credentials, credentials)
+        tool = snapshot.get("tool", action)
+        return CanonicalOperation(action, tool, _freeze(_destination(
+            action, snapshot)), _freeze(snapshot), operation_sha,
+            arguments_sha, scopes, data_refs, credentials)
     except GatewayOperationError:
         raise
     except (KeyError, TypeError, ValueError, UnicodeError, RecursionError):
@@ -183,7 +194,7 @@ def _validate_shape(action: str, value: dict) -> None:
         raise ValueError
     if "arguments" in value and type(value["arguments"]) is not dict:
         raise ValueError
-    for name in ("command", "requires", "credential_refs"):
+    for name in ("command", "requires", "data_refs", "credential_refs"):
         if name in value and (type(value[name]) is not list
                               or any(not _text(item) for item in value[name])):
             raise ValueError
@@ -191,41 +202,23 @@ def _validate_shape(action: str, value: dict) -> None:
         _validate_command(value["command"])
 
 
-def _secret_name(value: str) -> bool:
-    name = value.lower().replace("-", "_")
-    return name in _SECRET_NAMES or name.endswith((
-        "_api_key", "_private_key", "_password", "_secret", "_credential",
-        "_token"))
-
-
-def _reject_secrets(value: object, key: str = "") -> None:
-    if type(value) is dict:
-        for name, item in value.items():
-            if name != "credential_refs" and _secret_name(name):
-                raise ValueError
-            _reject_secrets(item, name)
-    elif type(value) is list:
-        for item in value:
-            _reject_secrets(item, key)
-    elif type(value) is str and key != "credential_refs":
-        if scan_for_secrets(value):
-            raise ValueError
-        try:
-            parsed = urlsplit(value)
-            names = [name for name, _ in parse_qsl(parsed.query)]
-            if parsed.username is not None or parsed.password is not None or any(
-                    _secret_name(name) for name in names):
-                raise ValueError
-        except ValueError:
-            raise
-
-
 def _validate_command(command: list) -> None:
-    for index, value in enumerate(command):
-        if ("=" in value and _COMMAND_SECRET.search(value.partition("=")[0])
-                or value.startswith("-") and _COMMAND_SECRET.search(value)
-                or index and _COMMAND_SECRET.search(command[index - 1])):
-            raise ValueError
+    validate_no_raw_secrets({"argv": command})
+
+
+def _safe_ref(value: object, prefix: str) -> bool:
+    return (type(value) is str and value.startswith(prefix)
+            and re.fullmatch(r"[A-Za-z0-9._:-]{1,128}", value) is not None)
+
+
+def _destination(action: str, value: dict) -> dict[str, str]:
+    if action == "chat.complete":
+        return {"kind": "model", "ref": value["model"]}
+    if action in {"agent.run", "workflow.run"}:
+        return {"kind": "endpoint", "ref": value["endpoint"]}
+    if action.startswith("plugin."):
+        return {"kind": "plugin", "ref": value["name"]}
+    return {"kind": "marketplace", "ref": value["name"]}
 
 
 def _derived_scopes(action: str, value: dict, secrets: bool) -> tuple[str, ...]:

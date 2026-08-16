@@ -3,78 +3,86 @@ import 'package:flutter/material.dart';
 import '../controllers/gateway_operation_controller.dart';
 import '../controllers/journey_controller.dart';
 import '../models/gateway_grant_models.dart';
-export '../models/gateway_grant_models.dart' show GatewayOperation;
+export '../models/gateway_grant_models.dart'
+    show GatewayDestination, GatewayOperation;
 
 Future<T?> showOperationGrantSheet<T>(
         BuildContext context,
         GatewayOperationController controller,
-        Future<T> Function(Map<String, dynamic> finalBody) dispatch,
-        {bool Function(GatewayGrantProposal proposal)? stillCurrent}) =>
+        Future<T> Function(Map<String, dynamic> finalBody) dispatch) =>
     showModalBottomSheet<T>(
         context: context,
         isScrollControlled: true,
-        builder: (_) =>
-            _OperationGrantSheet<T>(controller, dispatch, stillCurrent));
+        builder: (_) => _OperationGrantSheet<T>(controller, dispatch));
 
 Future<T?> authorizeGatewayOperation<T>(
     BuildContext context,
     GatewayOperation operation,
-    Future<T> Function(Map<String, dynamic> finalBody) dispatch) async {
+    Future<T> Function(Map<String, dynamic> finalBody) dispatch,
+    {required GatewayOperationSupplier currentOperation}) async {
   final scope = GatewayOperationScope.maybeOf(context);
   if (scope == null) return null;
-  final result = await scope.authorize(
-      context, operation, (body) async => await dispatch(body));
+  final result = await scope.authorize(context, operation, currentOperation,
+      (body) async => await dispatch(body));
   return result as T?;
 }
 
 GatewayOperationAuthorizer journeyGatewayAuthorizer(
         GatewayOperationController controller, JourneyController journey) =>
-    (context, operation, dispatch) => _authorizeJourneyOperation(
-        context, controller, journey, operation, dispatch);
+    (context, operation, currentOperation, dispatch) =>
+        _authorizeJourneyOperation(context, controller, journey, operation,
+            currentOperation, dispatch);
 
 Future<Object?> _authorizeJourneyOperation(
     BuildContext context,
     GatewayOperationController controller,
     JourneyController journey,
     GatewayOperation operation,
+    GatewayOperationSupplier currentOperation,
     Future<Object?> Function(Map<String, dynamic>) dispatch) async {
-  final active = journey.state.projection;
-  if (active == null ||
-      active.invalidResponse ||
-      journey.state.activeJourneyRef != active.journeyRef) {
-    return null;
+  GatewayJourneyBinding? currentBinding() {
+    final active = journey.state.projection;
+    return active == null ||
+            active.invalidResponse ||
+            journey.state.activeJourneyRef != active.journeyRef
+        ? null
+        : GatewayJourneyBinding(active.journeyRef, active.eventHeadSha256);
   }
+
+  final binding = currentBinding();
+  if (binding == null) return null;
   final prepared = await controller.prepare(operation,
-      journeyRef: active.journeyRef, eventHead: active.eventHeadSha256);
-  if (!prepared || !context.mounted) return null;
-  return showOperationGrantSheet<Object?>(context, controller, dispatch,
-      stillCurrent: (proposal) {
-    final current = journey.state.projection;
-    return current != null &&
-        journey.state.activeJourneyRef == proposal.journeyRef &&
-        current.journeyRef == proposal.journeyRef &&
-        current.eventHeadSha256 == proposal.eventHead;
-  });
+      binding: binding,
+      currentOperation: currentOperation,
+      currentBinding: currentBinding,
+      refreshOnHeadConflict: journey.refreshActiveProjection);
+  if (!context.mounted) return null;
+  if (!prepared) {
+    return controller.failure?.code == 'HEAD_CONFLICT'
+        ? showOperationGrantSheet<Object?>(context, controller, dispatch)
+        : null;
+  }
+  return showOperationGrantSheet<Object?>(context, controller, dispatch);
 }
 
 Future<void> authorizeGatewayStream(
     BuildContext context,
     GatewayOperation operation,
     void Function(Map<String, dynamic> finalBody) dispatch,
-    void Function() denied) async {
+    void Function() denied,
+    {required GatewayOperationSupplier currentOperation}) async {
   final started =
       await authorizeGatewayOperation(context, operation, (body) async {
     dispatch(body);
     return true;
-  });
+  }, currentOperation: currentOperation);
   if (started != true) denied();
 }
 
 final class _OperationGrantSheet<T> extends StatefulWidget {
   final GatewayOperationController controller;
   final Future<T> Function(Map<String, dynamic>) dispatch;
-  final bool Function(GatewayGrantProposal)? stillCurrent;
-  const _OperationGrantSheet(this.controller, this.dispatch, this.stillCurrent);
+  const _OperationGrantSheet(this.controller, this.dispatch);
   @override
   State<_OperationGrantSheet<T>> createState() =>
       _OperationGrantSheetState<T>();
@@ -100,11 +108,6 @@ final class _OperationGrantSheetState<T>
   }
 
   Future<void> _approve() async {
-    final proposal = widget.controller.proposal;
-    if (proposal == null || widget.stillCurrent?.call(proposal) == false) {
-      widget.controller.invalidate();
-      return;
-    }
     final result = await widget.controller.approveAndDispatch(widget.dispatch);
     if (mounted && result != null) Navigator.pop(context, result);
   }
@@ -112,12 +115,15 @@ final class _OperationGrantSheetState<T>
   @override
   Widget build(BuildContext context) {
     final proposal = widget.controller.proposal;
+    final failure = widget.controller.failure;
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.all(24),
         child: proposal == null
-            ? const Text('No current operation approval is available.')
-            : _content(proposal),
+            ? Text(failure == null
+                ? 'No current operation approval is available.'
+                : '${failure.code}: ${failure.message}')
+            : SingleChildScrollView(child: _content(proposal)),
       ),
     );
   }
@@ -129,11 +135,16 @@ final class _OperationGrantSheetState<T>
           Text('Approve one external operation',
               style: Theme.of(context).textTheme.titleLarge),
           const SizedBox(height: 12),
-          _line('Operation', proposal.summary.operation),
+          _line('Operation', proposal.summary.action),
           _line('Journey', proposal.summary.journeyRef),
           _line('Head', proposal.summary.eventHead),
+          _line('Destination',
+              '${proposal.summary.destination.kind}: ${proposal.summary.destination.ref}'),
           _line('Tool', proposal.summary.tool),
+          _line('Operation digest', proposal.summary.operationSha256),
           _line('Arguments', proposal.summary.argumentsSha256),
+          _refs('Data refs', proposal.summary.dataRefs),
+          _refs('Credential refs', proposal.summary.credentialRefs),
           _line('Effect', proposal.summary.effect),
           _line('Expires', proposal.summary.expiresAt),
           const SizedBox(height: 12),
@@ -156,6 +167,9 @@ final class _OperationGrantSheetState<T>
           ]),
         ],
       );
+
+  Widget _refs(String label, List<String> values) =>
+      _line(label, values.isEmpty ? 'None' : values.join(', '));
 
   Widget _line(String label, String value) => Padding(
         padding: const EdgeInsets.only(bottom: 6),

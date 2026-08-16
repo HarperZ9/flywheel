@@ -11,7 +11,12 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 
 import pytest
 
-from harness.providers import REGISTRY, make_proposer, provider_names
+from harness.providers import (
+    REGISTRY,
+    make_authorized_proposer,
+    make_proposer,
+    provider_names,
+)
 from harness.proposer import EnterpriseProposer
 
 
@@ -111,3 +116,60 @@ def test_provider_names_is_the_full_surface():
     names = provider_names()
     for expected in ("openai", "deepseek", "ollama", "vllm", "serve", "stub"):
         assert expected in names
+
+
+class _ExactBindings:
+    def __init__(self, values):
+        self.values = values
+
+    def value_for(self, name):
+        return self.values[name]
+
+
+def test_authorized_remote_proposer_uses_binding_not_ambient(monkeypatch):
+    captured = {}
+
+    class Response:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args):
+            return False
+
+        def read(self):
+            return json.dumps({"choices": [{"message": {"content": "ok"}}]}).encode()
+
+    def fake_urlopen(request, timeout):
+        captured["authorization"] = request.headers.get("Authorization")
+        return Response()
+
+    monkeypatch.setenv("OPENAI_API_KEY", "ambient-marker-must-not-be-used")
+    monkeypatch.setattr("urllib.request.urlopen", fake_urlopen)
+    proposer = make_authorized_proposer(
+        "openai", credential_bindings=_ExactBindings({"OPENAI_API_KEY": "exact-value"}))
+    proposer.generate("hello", seed=0, temperature=0, max_new_tokens=8)
+    assert captured == {"authorization": "Bearer exact-value"}
+
+
+def test_authorized_local_proposer_suppresses_ambient_key(monkeypatch):
+    captured = {}
+
+    class Response:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args):
+            return False
+
+        def read(self):
+            return json.dumps({"choices": [{"message": {"content": "ok"}}]}).encode()
+
+    monkeypatch.setenv("OPENAI_API_KEY", "ambient-marker-must-not-be-used")
+    monkeypatch.setattr(
+        "urllib.request.urlopen",
+        lambda request, timeout: captured.update(headers=dict(request.headers)) or Response())
+    proposer = make_authorized_proposer(
+        "ollama", base_url="http://127.0.0.1:9/v1",
+        credential_bindings=_ExactBindings({}))
+    proposer.generate("hello", seed=0, temperature=0, max_new_tokens=8)
+    assert "Authorization" not in captured["headers"]

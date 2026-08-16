@@ -5,6 +5,8 @@ UNVERIFIABLE, and a step failure fails the run instead of hiding."""
 
 import json
 
+import pytest
+
 from harness import workflows
 from harness.profiles import PROFILES, get_profile, profile_roster
 
@@ -244,3 +246,17 @@ def test_workflow_run_detail_reverifies_the_chain(tmp_path):
 def test_workflow_run_detail_unknown_prefix_is_named(tmp_path):
     assert "error" in workflows.workflow_run_detail(tmp_path, "ffffffff")
     assert "error" in workflows.workflow_run_detail(tmp_path, "ab")
+
+
+def test_authorized_workflow_failure_is_fixed_before_persistence(tmp_path):
+    class _Boom:
+        def generate(self, *_args, **_kwargs):
+            raise RuntimeError("synthetic-marker-must-not-persist")
+
+    with pytest.raises(RuntimeError) as failure:
+        workflows.run_workflow(
+            "research-brief", "goal", "remote", root=str(tmp_path),
+            run_root=tmp_path, proposer=_Boom(), authorized=True)
+    assert str(failure.value) == "authorized external action failed"
+    assert "synthetic-marker" not in str(failure.value)
+    assert not (tmp_path / "workflow_runs").exists()

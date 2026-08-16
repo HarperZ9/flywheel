@@ -4,6 +4,7 @@ import '../models/journey_models.dart';
 import '../services/journey_draft_store.dart';
 import '../services/journey_session_store.dart';
 part 'journey_controller_support.dart';
+part 'journey_controller_refresh.dart';
 
 final class JourneyController extends ChangeNotifier {
   JourneyController({
@@ -50,12 +51,6 @@ final class JourneyController extends ChangeNotifier {
     if (epoch != _epoch) return;
     _view.initialized(resumed, listed, failure);
   }
-
-  Future<void> selectJourney(String ref) => _select(ref, _view.lens, false);
-  Future<void> selectLens(JourneyLens lens) =>
-      _view.projection == null || lens == JourneyLens.invalidResponse
-          ? Future.sync(() => _view.remote(_invalid()))
-          : _select(_view.ref!, lens, true);
 
   Future<void> _select(String ref, JourneyLens lens, bool same) async {
     final intent = _desired = (epoch: ++_epoch, ref: ref, lens: lens);

@@ -21,7 +21,6 @@ class PlanView extends StatefulWidget {
       required this.client,
       required this.alive,
       required this.settings});
-
   @override
   State<PlanView> createState() => _PlanViewState();
 }
@@ -83,7 +82,6 @@ class _PlanViewState extends State<PlanView> {
 
   ProfileManifest? get _activeProfile =>
       _profiles.where((p) => p.name == _profile).firstOrNull;
-
   Future<void> _forge() async {
     final goal = _goal.text.trim();
     if (goal.isEmpty || _forging) return;
@@ -132,19 +130,21 @@ class _PlanViewState extends State<PlanView> {
       _error = null;
     });
     try {
-      final body = await authorizeGatewayOperation(
-          context,
-          GatewayOperation.workflow(
-              'desktop-plan-${DateTime.now().microsecondsSinceEpoch}', {
-            'workflow': p!.workflow!,
+      final request = 'desktop-plan-${DateTime.now().microsecondsSinceEpoch}';
+      GatewayOperation currentOperation() =>
+          GatewayOperation.workflow(request, {
+            'workflow': _activeProfile!.workflow!,
             'goal': _plan!.goal,
             'endpoint': _endpoint!,
             'allow_write': _allowWrite,
             'allow_exec': _allowExec,
             if (_profile != null) 'profile': _profile!,
             'root': _root!,
-          }),
-          (body) => widget.client.postJson('/api/workflow', body));
+          }, dataRefs: const [], credentialRefs: const []);
+      final operation = currentOperation();
+      final body = await authorizeGatewayOperation(context, operation,
+          (body) => widget.client.postJson('/api/workflow', body),
+          currentOperation: currentOperation);
       if (body == null) return;
       final run = WorkflowRun.fromJson(body);
       if (mounted) setState(() => _run = run);
@@ -158,8 +158,7 @@ class _PlanViewState extends State<PlanView> {
   @override
   Widget build(BuildContext context) {
     if (!widget.alive) {
-      return const FwEmpty('The engine is offline. Plan appears when it runs.',
-          command: 'flywheel up');
+      return const FwEmpty('Engine offline.', command: 'flywheel up');
     }
     final t = context.fw;
     return ComposerResults(
@@ -168,13 +167,8 @@ class _PlanViewState extends State<PlanView> {
       header: const SectionHeader('Plan', kicker: 'spec first, receipt after'),
       composer:
           Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        Text(
-          'The forge turns a goal into a plan whose validation gates are '
-          'marked by what an external oracle can actually run; confidence is '
-          'that ratio, not a vibe. The profile binds the discipline, the '
-          'project binds the root, and the run carries one chained receipt.',
-          style: Theme.of(context).textTheme.bodySmall,
-        ),
+        Text('Forge a plan, then approve its exact workflow run.',
+            style: Theme.of(context).textTheme.bodySmall),
         const SizedBox(height: FwLayout.s4),
         _composer(t),
       ]),

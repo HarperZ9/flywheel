@@ -13,7 +13,14 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from harness import endpoint_registry
 from harness.endpoint_registry import (
-    unified_roster, make_endpoint_proposer, BackendProposer, LedgeredProposer, _NATIVE,
+    BackendProposer,
+    LedgeredProposer,
+    ProviderPermissionError,
+    _NATIVE,
+    credential_slots_for_endpoint,
+    make_authorized_endpoint_proposer,
+    make_endpoint_proposer,
+    unified_roster,
 )
 from harness import providers
 from harness.local_session import SessionLedger
@@ -193,3 +200,45 @@ def test_roster_carries_a_digest_that_moves_when_the_routable_set_changes(monkey
         providers.REGISTRY.update(orig)
     # stable when nothing changes
     assert unified_roster()["roster_sha"] == before
+
+
+class _Bindings:
+    def __init__(self, values):
+        self.values = values
+
+    def value_for(self, name):
+        return self.values[name]
+
+
+def test_authorized_native_proposer_injects_exact_binding(monkeypatch):
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "ambient-marker-must-not-be-used")
+    proposer = make_authorized_endpoint_proposer(
+        "anthropic", credential_bindings=_Bindings({"ANTHROPIC_API_KEY": "exact-value"}),
+        extract=False)
+    captured = {}
+    proposer.backend.transport = lambda method, url, headers, body, timeout: (
+        captured.update(headers=headers) or (200, {"content": [
+            {"type": "text", "text": "answer"}]}))
+    proposer.generate("hello", seed=0, temperature=0, max_new_tokens=8)
+    assert captured["headers"]["x-api-key"] == "exact-value"
+
+
+def test_authorized_ambient_adapters_fail_before_construction(monkeypatch):
+    monkeypatch.setattr(endpoint_registry.shutil, "which", lambda _binary: "/bin/tool")
+    for name in ("claude-cli", "codex-cli", "opencode"):
+        try:
+            make_authorized_endpoint_proposer(name, credential_bindings=_Bindings({}))
+        except ProviderPermissionError as failure:
+            assert failure.code == "PERMISSION_REQUIRED"
+            assert str(failure) == "explicit credential injection required"
+        else:
+            raise AssertionError(f"{name} admitted ambient authorization")
+
+
+def test_endpoint_credential_slots_are_exact_and_local_is_empty():
+    assert credential_slots_for_endpoint("openai") == ("OPENAI_API_KEY",)
+    assert credential_slots_for_endpoint("anthropic") == ("ANTHROPIC_API_KEY",)
+    assert credential_slots_for_endpoint("ollama") == ()
+    assert credential_slots_for_endpoint("local") == ()
+    assert make_authorized_endpoint_proposer(
+        "local", credential_bindings=_Bindings({})).model_ref == "serve"

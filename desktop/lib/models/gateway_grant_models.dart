@@ -1,27 +1,12 @@
 import 'evidence_state.dart';
+import 'gateway_grant_summary.dart';
+
+export 'gateway_grant_summary.dart';
 
 const gatewayOperationSchema = 'flywheel.gateway-operation/v1';
-const gatewayProposalSchema = 'flywheel.gateway-grant-proposal/v1';
-const _proposalFields = {
-  'schema',
-  'proposal_ref',
-  'planned_grant_ref',
-  'action',
-  'journey_ref',
-  'expected_event_head',
-  'client_request_id',
-  'tool',
-  'operation_sha256',
-  'arguments_sha256',
-  'scopes',
-  'data_refs',
-  'credential_refs',
-  'expires_at',
-  'summary'
-};
-
-final _journeyRef = RegExp(r'^jrn_[0-9a-f]{32}$');
 final _credentialRef = RegExp(r'^cred_[0-9a-f]{32}$');
+final _dataRef = RegExp(r'^data_[A-Za-z0-9._:-]{0,123}$');
+final _requestId = RegExp(r'^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$');
 final _secretKey = RegExp(
     r'(?:^|[_-])(api[_-]?key|token|secret|password|credential)(?:$|[_-])',
     caseSensitive: false);
@@ -53,199 +38,132 @@ Object? _snapshot(Object? value, List<int> budget, int depth,
   return _invalid();
 }
 
-Map<String, Object?> _operation(Map<String, Object?> value) =>
-    _snapshot(value, [4096], 0) as Map<String, Object?>;
-
 final class GatewayOperation {
-  final String action, clientRequestId;
+  final String action, clientRequestId, tool;
+  final GatewayDestination destination;
   final Map<String, Object?> operation;
-  GatewayOperation._(
-      this.action, this.clientRequestId, Map<String, Object?> operation)
-      : operation = _operation(operation) {
-    if (clientRequestId.trim().isEmpty || !isSafePublicText(clientRequestId)) {
+  final List<String> scopes, dataRefs, credentialRefs;
+
+  GatewayOperation._(this.action, this.clientRequestId, this.destination,
+      this.tool, Map<String, Object?> raw)
+      : operation = _snapshot(raw, [4096], 0) as Map<String, Object?>,
+        scopes = List<String>.unmodifiable(_scopes(action, raw)),
+        dataRefs = List<String>.unmodifiable(raw['data_refs'] as List<String>),
+        credentialRefs =
+            List<String>.unmodifiable(raw['credential_refs'] as List<String>) {
+    if (!_requestId.hasMatch(clientRequestId) ||
+        [destination.kind, destination.ref, tool]
+            .any((v) => v.isEmpty || !isSafePublicText(v)) ||
+        dataRefs.any((ref) => !_dataRef.hasMatch(ref)) ||
+        credentialRefs.any((ref) => !_credentialRef.hasMatch(ref)) ||
+        dataRefs.toSet().length != dataRefs.length ||
+        credentialRefs.toSet().length != credentialRefs.length) {
       _invalid();
     }
   }
 
   factory GatewayOperation.pluginProbe(
-          {required String name, required String clientRequestId}) =>
-      GatewayOperation._('plugin.probe', clientRequestId, {'name': name});
+          {required String name,
+          required String clientRequestId,
+          List<String> dataRefs = const [],
+          List<String> credentialRefs = const []}) =>
+      GatewayOperation._withRefs('plugin.probe', clientRequestId,
+          GatewayDestination('plugin', name), 'plugin.probe', {'name': name},
+          dataRefs: dataRefs, credentialRefs: credentialRefs);
+
   factory GatewayOperation.pluginCall(
           {required String name,
           required String tool,
           required Map<String, dynamic> arguments,
           required List<String> credentialRefs,
+          List<String> dataRefs = const [],
           required String clientRequestId}) =>
-      GatewayOperation._('plugin.call', clientRequestId, {
-        'name': name,
-        'tool': tool,
-        'arguments': arguments,
-        'credential_refs': credentialRefs,
-      });
-  factory GatewayOperation.chat(String clientRequestId, String model,
-          List<Map<String, dynamic>> messages) =>
-      GatewayOperation._('chat.complete', clientRequestId,
-          {'model': model, 'messages': messages, 'stream': true});
+      GatewayOperation._withRefs(
+          'plugin.call',
+          clientRequestId,
+          GatewayDestination('plugin', name),
+          tool,
+          {'name': name, 'tool': tool, 'arguments': arguments},
+          dataRefs: dataRefs,
+          credentialRefs: credentialRefs);
+
+  factory GatewayOperation.chat(
+          String request, String model, List<Map<String, dynamic>> messages,
+          {List<String> dataRefs = const [],
+          List<String> credentialRefs = const []}) =>
+      GatewayOperation._withRefs(
+          'chat.complete',
+          request,
+          GatewayDestination('model', model),
+          'chat.complete',
+          {'model': model, 'messages': messages, 'stream': true},
+          dataRefs: dataRefs,
+          credentialRefs: credentialRefs);
+
   factory GatewayOperation.workflow(
-          String clientRequestId, Map<String, Object?> operation) =>
-      GatewayOperation._('workflow.run', clientRequestId, operation);
+          String request, Map<String, Object?> operation,
+          {List<String>? dataRefs, List<String>? credentialRefs}) =>
+      GatewayOperation.exact(
+          action: 'workflow.run',
+          operation: operation,
+          clientRequestId: request,
+          dataRefs: dataRefs,
+          credentialRefs: credentialRefs);
+
   factory GatewayOperation.exact(
           {required String action,
           required Map<String, Object?> operation,
-          required String clientRequestId}) =>
-      GatewayOperation._(action, clientRequestId, operation);
+          required String clientRequestId,
+          GatewayDestination? destination,
+          String? tool,
+          List<String>? dataRefs,
+          List<String>? credentialRefs}) =>
+      GatewayOperation._withRefs(
+          action,
+          clientRequestId,
+          destination ?? _destination(action, operation),
+          tool ?? _tool(action, operation),
+          operation,
+          dataRefs: dataRefs,
+          credentialRefs: credentialRefs);
 
-  Map<String, dynamic> prepareBody(String journeyRef, String eventHead) => {
+  factory GatewayOperation._withRefs(String action, String request,
+      GatewayDestination destination, String tool, Map<String, Object?> raw,
+      {List<String>? dataRefs, List<String>? credentialRefs}) {
+    final data = _refs(raw, 'data_refs', dataRefs);
+    final credentials = _refs(raw, 'credential_refs', credentialRefs);
+    return GatewayOperation._(action, request, destination, tool,
+        {...raw, 'data_refs': data, 'credential_refs': credentials});
+  }
+
+  Map<String, dynamic> prepareBody(GatewayJourneyBinding binding) => {
         'schema': gatewayOperationSchema,
-        'journey_ref': journeyRef,
-        'expected_event_head': eventHead,
+        'journey_ref': binding.journeyRef,
+        'expected_event_head': binding.eventHead,
         'client_request_id': clientRequestId,
-        'operation': operation,
+        'operation': operation
       };
-  Map<String, dynamic> finalBody(
-          String journeyRef, String eventHead, String grantRef) =>
+  Map<String, dynamic> finalBody(GatewayJourneyBinding binding, String grant) =>
       {
         'schema': gatewayOperationSchema,
-        'journey_ref': journeyRef,
-        'expected_event_head': eventHead,
+        'journey_ref': binding.journeyRef,
+        'expected_event_head': binding.eventHead,
         'client_request_id': clientRequestId,
-        'grant_ref': grantRef,
-        ...operation,
+        'grant_ref': grant,
+        ...operation
       };
-}
 
-final class GatewayGrantSummary extends DefensiveModel {
-  final String operation, journeyRef, eventHead, tool, argumentsSha256;
-  final String effect, expiresAt;
-  final List<String> scopes, dataRefs, credentialRefs;
-  GatewayGrantSummary._(
-      this.operation,
-      this.journeyRef,
-      this.eventHead,
-      this.tool,
-      this.argumentsSha256,
-      this.scopes,
-      this.dataRefs,
-      this.credentialRefs,
-      this.effect,
-      this.expiresAt,
-      super.parseIssues);
-  factory GatewayGrantSummary.fromJson(Map<String, Object?> json) {
-    final issues = <ParseIssue>[];
-    _exact(
-        json,
-        const {
-          'operation',
-          'journey_ref',
-          'expected_event_head',
-          'tool',
-          'arguments_sha256',
-          'scopes',
-          'data_refs',
-          'credential_refs',
-          'effect',
-          'expires_at'
-        },
-        issues,
-        'summary');
-    return GatewayGrantSummary._(
-        readText(json, 'operation', issues),
-        readText(json, 'journey_ref', issues, pattern: _journeyRef),
-        readText(json, 'expected_event_head', issues, pattern: sha256Pattern),
-        readText(json, 'tool', issues),
-        readText(json, 'arguments_sha256', issues, pattern: sha256Pattern),
-        readStringList(json['scopes'], 'scopes', issues),
-        readStringList(json['data_refs'], 'data_refs', issues),
-        _refs(json['credential_refs'], 'credential_refs', issues),
-        readText(json, 'effect', issues),
-        readText(json, 'expires_at', issues),
-        issues);
-  }
-}
-
-final class GatewayGrantProposal extends DefensiveModel {
-  final String proposalRef, plannedGrantRef, action, journeyRef, eventHead;
-  final String clientRequestId,
-      tool,
-      operationSha256,
-      argumentsSha256,
-      expiresAt;
-  final List<String> scopes, dataRefs, credentialRefs;
-  final GatewayGrantSummary summary;
-  GatewayGrantProposal._(
-      this.proposalRef,
-      this.plannedGrantRef,
-      this.action,
-      this.journeyRef,
-      this.eventHead,
-      this.clientRequestId,
-      this.tool,
-      this.operationSha256,
-      this.argumentsSha256,
-      this.scopes,
-      this.dataRefs,
-      this.credentialRefs,
-      this.expiresAt,
-      this.summary,
-      super.parseIssues);
-  factory GatewayGrantProposal.fromJson(Map<String, Object?> json) {
-    final issues = <ParseIssue>[];
-    _exact(json, _proposalFields, issues, 'proposal');
-    expectSchema(json, gatewayProposalSchema, issues);
-    final rawSummary = json['summary'];
-    final summary = rawSummary is Map<String, Object?>
-        ? GatewayGrantSummary.fromJson(rawSummary)
-        : GatewayGrantSummary.fromJson(const {});
-    issues.addAll(summary.parseIssues);
-    final proposal =
-        readText(json, 'proposal_ref', issues, pattern: proposalRefPattern);
-    final grant =
-        readText(json, 'planned_grant_ref', issues, pattern: grantRefPattern);
-    final action = readText(json, 'action', issues);
-    final journey = readText(json, 'journey_ref', issues, pattern: _journeyRef);
-    final head =
-        readText(json, 'expected_event_head', issues, pattern: sha256Pattern);
-    final tool = readText(json, 'tool', issues);
-    final arguments =
-        readText(json, 'arguments_sha256', issues, pattern: sha256Pattern);
-    final scopes = readStringList(json['scopes'], 'scopes', issues);
-    final data = readStringList(json['data_refs'], 'data_refs', issues);
-    final credentials =
-        _refs(json['credential_refs'], 'credential_refs', issues);
-    final expires = readText(json, 'expires_at', issues);
-    if (proposal.length == 36 &&
-        grant.length == 36 &&
-        proposal.substring(4) != grant.substring(4)) {
-      addParseIssue(issues, 'planned_grant_ref', grant);
-    }
-    if (summary.operation != action ||
-        summary.journeyRef != journey ||
-        summary.eventHead != head ||
-        summary.tool != tool ||
-        summary.argumentsSha256 != arguments ||
-        summary.expiresAt != expires ||
-        !_same(summary.scopes, scopes) ||
-        !_same(summary.dataRefs, data) ||
-        !_same(summary.credentialRefs, credentials)) {
-      addParseIssue(issues, 'summary', null);
-    }
-    return GatewayGrantProposal._(
-        proposal,
-        grant,
-        action,
-        journey,
-        head,
-        readText(json, 'client_request_id', issues),
-        tool,
-        readText(json, 'operation_sha256', issues, pattern: sha256Pattern),
-        arguments,
-        scopes,
-        data,
-        credentials,
-        expires,
-        summary,
-        issues);
-  }
+  @override
+  bool operator ==(Object other) =>
+      other is GatewayOperation &&
+      action == other.action &&
+      clientRequestId == other.clientRequestId &&
+      destination == other.destination &&
+      tool == other.tool &&
+      sameGatewayValue(operation, other.operation);
+  @override
+  int get hashCode => Object.hash(
+      action, clientRequestId, destination, tool, gatewayValueHash(operation));
 }
 
 final class GatewayGrantApproval extends DefensiveModel {
@@ -253,7 +171,7 @@ final class GatewayGrantApproval extends DefensiveModel {
   GatewayGrantApproval._(this.grantRef, this.expiresAt, super.parseIssues);
   factory GatewayGrantApproval.fromJson(Map<String, Object?> json) {
     final issues = <ParseIssue>[];
-    _exact(
+    exactGatewayFields(
         json, const {'schema', 'grant_ref', 'expires_at'}, issues, 'approval');
     expectSchema(json, 'flywheel.operation-grant-approval/v1', issues);
     return GatewayGrantApproval._(
@@ -263,23 +181,74 @@ final class GatewayGrantApproval extends DefensiveModel {
   }
 }
 
-List<String> _refs(Object? raw, String field, List<ParseIssue> issues) {
-  final values = readStringList(raw, field, issues);
-  if (values.any((value) => !_credentialRef.hasMatch(value))) {
-    addParseIssue(issues, field, raw);
-    return const [];
+List<String> _refs(
+    Map<String, Object?> raw, String field, List<String>? given) {
+  final present = raw[field];
+  if (present != null &&
+      (present is! List || present.any((value) => value is! String))) {
+    _invalid();
   }
-  return values;
+  final existing = present == null ? null : List<String>.from(present as List);
+  if (given != null &&
+      existing != null &&
+      !sameGatewayStringList(given, existing)) {
+    _invalid();
+  }
+  return List<String>.unmodifiable(given ?? existing ?? const []);
 }
 
-void _exact(Map<String, Object?> value, Set<String> fields,
-    List<ParseIssue> issues, String field) {
-  if (value.keys.toSet().length != fields.length ||
-      !value.keys.every(fields.contains)) {
-    addParseIssue(issues, field, value.keys.toList());
-  }
+GatewayDestination _destination(String action, Map<String, Object?> value) {
+  final plugin = action.startsWith('plugin.');
+  final market = action.startsWith('marketplace.');
+  final field = plugin || market
+      ? 'name'
+      : action == 'chat.complete'
+          ? 'model'
+          : 'endpoint';
+  final ref = value[field];
+  return ref is String
+      ? GatewayDestination(
+          plugin
+              ? 'plugin'
+              : market
+                  ? 'marketplace'
+                  : action == 'chat.complete'
+                      ? 'model'
+                      : 'endpoint',
+          ref)
+      : _invalid();
 }
 
-bool _same(List<String> left, List<String> right) =>
-    left.length == right.length &&
-    left.indexed.every((item) => item.$2 == right[item.$1]);
+String _tool(String action, Map<String, Object?> value) =>
+    action == 'plugin.call' && value['tool'] is String
+        ? value['tool'] as String
+        : action;
+
+List<String> _scopes(String action, Map<String, Object?> value) {
+  final selected = <String>{};
+  if (const {'chat.complete', 'agent.run', 'workflow.run'}.contains(action)) {
+    selected.add('network');
+  }
+  if (action == 'plugin.call') {
+    selected.addAll(const ['write', 'exec', 'network', 'plugin']);
+  } else if (action == 'plugin.probe') {
+    selected.addAll(const ['exec', 'network', 'plugin']);
+  } else if (action.startsWith('plugin.') ||
+      action.startsWith('marketplace.')) {
+    selected.addAll(const ['write', 'plugin']);
+  }
+  if (const {'agent.run', 'workflow.run'}.contains(action)) {
+    if (value['allow_write'] == true) {
+      selected.add('write');
+    }
+    if (value['allow_exec'] == true) {
+      selected.add('exec');
+    }
+  }
+  if ((value['credential_refs'] as List).isNotEmpty) {
+    selected.add('secrets');
+  }
+  return const ['write', 'exec', 'network', 'plugin', 'secrets']
+      .where(selected.contains)
+      .toList();
+}

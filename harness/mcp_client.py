@@ -30,6 +30,7 @@ class LaunchSpec:
     argv: tuple[str, ...]
     cwd: str | None = None
     env_overrides: tuple[tuple[str, str], ...] = ()
+    inherit_env: bool = True
 
 
 class MCPError(RuntimeError):
@@ -46,7 +47,7 @@ class StdioTransport:
             "stdin": subprocess.PIPE, "stdout": subprocess.PIPE,
             "stderr": subprocess.PIPE, "text": True, "bufsize": 1}
         if isinstance(command, LaunchSpec):
-            child_env = os.environ.copy()
+            child_env = os.environ.copy() if command.inherit_env else {}
             child_env.update(command.env_overrides)
             argv = list(command.argv)
             popen_kwargs.update(cwd=command.cwd, env=child_env)

@@ -16,6 +16,7 @@ const _errors = <String, (Set<int>, String)>{
   'HEAD_CONFLICT': ({409}, 'Journey state changed'),
   'STORE_BUSY': ({503}, 'Gateway approval custody is busy'),
   'STORE_COMMIT_FAILED': ({500}, 'Gateway approval custody failed'),
+  'EXTERNAL_ACTION_FAILED': ({502}, 'Authorized external action failed'),
   'INVALID_REQUEST': ({400, 405, 422}, 'Gateway request is invalid'),
   'NOT_FOUND': ({404}, 'Gateway operation was not found'),
 };
@@ -33,6 +34,9 @@ GatewayGrantException _failure(Object error) {
   }
   return _invalid();
 }
+
+GatewayGrantException gatewayGrantFailure(Object error) =>
+    error is GatewayGrantException ? error : _failure(error);
 
 final class GatewayGrantClient {
   final GatewayClient _client;
@@ -61,17 +65,21 @@ final class GatewayGrantClient {
   }
 
   Future<GatewayGrantProposal> prepare(GatewayOperation operation,
-      {required String journeyRef, required String eventHead}) async {
+      {required GatewayJourneyBinding binding}) async {
     final result = GatewayGrantProposal.fromJson(await _post(
         '/api/gateway-grants/prepare/${operation.action}',
-        operation.prepareBody(journeyRef, eventHead)));
+        operation.prepareBody(binding)));
     if (result.invalidResponse ||
         result.action != operation.action ||
-        result.journeyRef != journeyRef ||
-        result.eventHead != eventHead ||
+        result.journeyRef != binding.journeyRef ||
+        result.eventHead != binding.eventHead ||
         result.clientRequestId != operation.clientRequestId ||
-        result.summary.journeyRef != journeyRef ||
-        result.summary.eventHead != eventHead) {
+        result.destination != operation.destination ||
+        result.tool != operation.tool ||
+        !sameGatewayStringList(result.scopes, operation.scopes) ||
+        !sameGatewayStringList(result.dataRefs, operation.dataRefs) ||
+        !sameGatewayStringList(
+            result.credentialRefs, operation.credentialRefs)) {
       throw _invalid();
     }
     return result;
@@ -86,8 +94,7 @@ final class GatewayGrantClient {
 
   Future<Map<String, dynamic>> dispatch(GatewayOperation operation,
           {required String path,
-          required String journeyRef,
-          required String eventHead,
+          required GatewayJourneyBinding binding,
           required String grantRef}) =>
-      _post(path, operation.finalBody(journeyRef, eventHead, grantRef));
+      _post(path, operation.finalBody(binding, grantRef));
 }

@@ -20,7 +20,6 @@ class WorkflowsView extends StatefulWidget {
       required this.client,
       required this.alive,
       required this.settings});
-
   @override
   State<WorkflowsView> createState() => _WorkflowsViewState();
 }
@@ -99,19 +98,24 @@ class _WorkflowsViewState extends State<WorkflowsView> {
       _error = null;
     });
     try {
-      final operation = GatewayOperation.workflow(
-          'desktop-workflow-${DateTime.now().microsecondsSinceEpoch}', {
-        'workflow': _workflow!,
-        'goal': goal,
-        'endpoint': _endpoint!,
-        'allow_write': _allowWrite,
-        'allow_exec': _allowExec,
-        if (_profile != null) 'profile': _profile!,
-        if (_root.text.trim().isNotEmpty) 'root': _root.text.trim(),
-        if (_testCmd.text.trim().isNotEmpty) 'test_cmd': _testCmd.text.trim(),
-      });
+      final request =
+          'desktop-workflow-${DateTime.now().microsecondsSinceEpoch}';
+      GatewayOperation currentOperation() =>
+          GatewayOperation.workflow(request, {
+            'workflow': _workflow!,
+            'goal': _goal.text.trim(),
+            'endpoint': _endpoint!,
+            'allow_write': _allowWrite,
+            'allow_exec': _allowExec,
+            if (_profile != null) 'profile': _profile!,
+            if (_root.text.trim().isNotEmpty) 'root': _root.text.trim(),
+            if (_testCmd.text.trim().isNotEmpty)
+              'test_cmd': _testCmd.text.trim(),
+          }, dataRefs: const [], credentialRefs: const []);
+      final operation = currentOperation();
       final body = await authorizeGatewayOperation(context, operation,
-          (body) => widget.client.postJson('/api/workflow', body));
+          (body) => widget.client.postJson('/api/workflow', body),
+          currentOperation: currentOperation);
       if (body == null) return;
       final run = WorkflowRun.fromJson(body);
       if (mounted) setState(() => _run = run);
@@ -143,9 +147,7 @@ class _WorkflowsViewState extends State<WorkflowsView> {
   @override
   Widget build(BuildContext context) {
     if (!widget.alive) {
-      return const FwEmpty(
-          'The engine is offline. Workflows appear when it runs.',
-          command: 'flywheel up');
+      return const FwEmpty('Engine offline.', command: 'flywheel up');
     }
     final t = context.fw;
     return ComposerResults(
@@ -155,13 +157,8 @@ class _WorkflowsViewState extends State<WorkflowsView> {
           kicker: 'staged, receipted, any endpoint'),
       composer:
           Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        Text(
-          'A profile binds an operating discipline onto the same substrate; '
-          'the endpoint is a runtime choice. Older model generations run the '
-          'same staged workflow as the newest, and every run folds into one '
-          'chained receipt.',
-          style: Theme.of(context).textTheme.bodySmall,
-        ),
+        Text('Run one staged workflow against the selected endpoint.',
+            style: Theme.of(context).textTheme.bodySmall),
         const SizedBox(height: FwLayout.s4),
         _composer(t),
       ]),

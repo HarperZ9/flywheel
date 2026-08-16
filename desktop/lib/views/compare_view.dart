@@ -103,6 +103,7 @@ class _CompareViewState extends State<CompareView> {
 
   Future<void> _run(_Side s) async {
     if (s.model == null || s.messages.isEmpty) return;
+    final model = s.model!;
     final assistant = s.messages.last;
     s.streaming = true;
     final wire = s.messages
@@ -110,12 +111,11 @@ class _CompareViewState extends State<CompareView> {
         .map((m) => m.toWire())
         .toList();
     final operation = GatewayOperation.chat(
-        'desktop-compare-${DateTime.now().microsecondsSinceEpoch}',
-        s.model!,
-        wire);
+        'desktop-compare-${DateTime.now().microsecondsSinceEpoch}', model, wire,
+        dataRefs: const [], credentialRefs: const []);
     await authorizeGatewayStream(context, operation, (body) {
       s.sub =
-          widget.client.chatStream(wire, s.model!, authorizedBody: body).listen(
+          widget.client.chatStream(wire, model, authorizedBody: body).listen(
         (e) {
           if (!mounted) return;
           setState(() {
@@ -129,7 +129,8 @@ class _CompareViewState extends State<CompareView> {
         onError: (_) => _finish(s, assistant),
         onDone: () => _finish(s, assistant),
       );
-    }, () => _finish(s, assistant));
+    }, () => _finish(s, assistant),
+        currentOperation: () => s.model == model ? operation : null);
   }
 
   void _finish(_Side s, ChatMessage assistant) {

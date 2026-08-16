@@ -28,18 +28,20 @@ class _PluginsViewState extends State<PluginsView> {
   Map<String, dynamic>? _marketplace;
   String? _error;
   var _request = 0;
-
   String get _requestId => 'desktop-plugin-${++_request}';
-
   Future<Map<String, dynamic>?> _authorize(
-          String action, Map<String, Object?> operation, String path) =>
-      authorizeGatewayOperation(
-          context,
-          GatewayOperation.exact(
-              action: action,
-              operation: operation,
-              clientRequestId: _requestId),
-          (body) => widget.client.postJson(path, body));
+      String action, Map<String, Object?> raw, String path,
+      {List<String> credentialRefs = const [], bool Function()? isCurrent}) {
+    final operation = GatewayOperation.exact(
+        action: action,
+        operation: raw,
+        dataRefs: const [],
+        credentialRefs: credentialRefs,
+        clientRequestId: _requestId);
+    return authorizeGatewayOperation(
+        context, operation, (body) => widget.client.postJson(path, body),
+        currentOperation: () => isCurrent?.call() == false ? null : operation);
+  }
 
   @override
   void initState() {
@@ -83,14 +85,13 @@ class _PluginsViewState extends State<PluginsView> {
     }
   }
 
-  Future<void> _probe(String name) async {
+  Future<void> _probe(String name, List<String> credentialRefs) async {
     setState(() => _probing.add(name));
     try {
       final r = await _authorize(
-          'plugin.probe', {'name': name}, '/api/plugins/probe');
-      if (r == null) {
-        return;
-      }
+          'plugin.probe', {'name': name}, '/api/plugins/probe',
+          credentialRefs: credentialRefs);
+      if (r == null) return;
       if (mounted) setState(() => _probes[name] = r);
     } catch (e) {
       if (mounted) {
@@ -103,18 +104,16 @@ class _PluginsViewState extends State<PluginsView> {
 
   Future<void> _register() async {
     final name = _name.text.trim();
-    final argv = _command.text.trim().split(RegExp(r'\s+'));
+    final command = _command.text.trim();
+    final argv = command.split(RegExp(r'\s+'));
     if (name.isEmpty || argv.isEmpty || argv.first.isEmpty) return;
     try {
       final r = await _authorize(
           'plugin.register',
-          {
-            'name': name,
-            'command': argv,
-            'detail': '',
-            'credential_refs': <String>[]
-          },
-          '/api/plugins/register');
+          {'name': name, 'command': argv, 'detail': '', 'requires': <String>[]},
+          '/api/plugins/register',
+          isCurrent: () =>
+              _name.text.trim() == name && _command.text.trim() == command);
       if (r == null) return;
       if (r['error'] != null) {
         setState(() => _error = '${r['error']}');
@@ -132,22 +131,14 @@ class _PluginsViewState extends State<PluginsView> {
   @override
   Widget build(BuildContext context) {
     if (!widget.alive) {
-      return const FwEmpty(
-          'The engine is offline. Plugins appear when it runs.',
-          command: 'flywheel up');
+      return const FwEmpty('Engine offline.', command: 'flywheel up');
     }
     return ViewScroll(
       children: [
-        const SectionHeader('Plugins',
-            kicker: 'one manifest, every capability'),
+        const SectionHeader('Plugins', kicker: 'exact external operations'),
         const SizedBox(height: FwLayout.s3),
-        Text(
-          'Lanes, the gated builtin tool set, and your own MCP servers mount '
-          'through one registry. Registering grants nothing: outbound calls '
-          'stay behind the tool gate, and probing shows the server\'s own '
-          'answer, never an assumption.',
-          style: Theme.of(context).textTheme.bodySmall,
-        ),
+        Text('One registry, with one exact approval per external operation.',
+            style: Theme.of(context).textTheme.bodySmall),
         if (_error != null) ...[
           const SizedBox(height: FwLayout.s3),
           HonestNull(_error!),
@@ -210,7 +201,6 @@ class _PluginsViewState extends State<PluginsView> {
                     'command': command,
                     'detail': detail,
                     'requires': requires,
-                    'credential_refs': <String>[]
                   },
                   '/api/marketplace/add');
               if (r == null) return {'error': 'approval required'};
@@ -225,6 +215,7 @@ class _PluginsViewState extends State<PluginsView> {
     final name = '${p['name']}';
     final kind = '${p['kind']}';
     final enabled = p['enabled'] == true;
+    final credentialRefs = _refs(p['credential_refs']);
     final probe = _probes[name];
     return Padding(
       padding: const EdgeInsets.only(bottom: FwLayout.s3),
@@ -249,13 +240,14 @@ class _PluginsViewState extends State<PluginsView> {
             Text('${p['detail'] ?? ''}',
                 style: TextStyle(fontSize: 12.5, color: t.inkMuted)),
             const SizedBox(height: FwLayout.s3),
-            _pluginActions(name, enabled, p['removable'] == true),
+            _pluginActions(
+                name, enabled, p['removable'] == true, credentialRefs),
             if (probe != null) ...[
               const SizedBox(height: FwLayout.s3),
               ProbeResult(
                 probe: probe,
-                onCallTool: (spec) =>
-                    showToolCallSheet(context, widget.client, name, spec),
+                onCallTool: (spec) => showToolCallSheet(
+                    context, widget.client, name, spec, credentialRefs),
               ),
             ],
           ],
@@ -264,10 +256,14 @@ class _PluginsViewState extends State<PluginsView> {
     );
   }
 
-  Widget _pluginActions(String name, bool enabled, bool removable) => Row(
+  Widget _pluginActions(String name, bool enabled, bool removable,
+          List<String> credentialRefs) =>
+      Row(
         children: [
           OutlinedButton(
-            onPressed: _probing.contains(name) ? null : () => _probe(name),
+            onPressed: _probing.contains(name)
+                ? null
+                : () => _probe(name, credentialRefs),
             child: Text(_probing.contains(name) ? 'Probing…' : 'Probe'),
           ),
           const SizedBox(width: FwLayout.s3),
@@ -294,3 +290,6 @@ class _PluginsViewState extends State<PluginsView> {
         ],
       );
 }
+
+List<String> _refs(Object? raw) =>
+    raw is List ? List<String>.unmodifiable(raw.whereType<String>()) : const [];

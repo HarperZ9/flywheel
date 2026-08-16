@@ -32,7 +32,6 @@ class AgentView extends StatefulWidget {
   final DesktopSettings settings;
   final ChatStore? chatStore;
   final ChatDraftStore? draftStore;
-
   @override
   State<AgentView> createState() => _AgentViewState();
 }
@@ -51,7 +50,6 @@ class _AgentViewState extends State<AgentView> {
   bool _admitting = false, _accepted = false, _streaming = false;
   bool _agentMode = false;
   int _generation = 0;
-
   bool get _busy => _admitting || _streaming;
   List<Conversation> get _conversations => _admission.conversations;
   @override
@@ -152,17 +150,24 @@ class _AgentViewState extends State<AgentView> {
     _admitting = true;
     _disposition = Completer<PromptDisposition>();
     setState(() {});
-    final chosen = _chosenModels[_model];
-    final String model = chosen == null ? _model! : '$_model:$chosen';
+    final endpoint = _model!;
+    final chosen = _chosenModels[endpoint];
+    final model = chosen == null ? endpoint : '$endpoint:$chosen';
     final wire = _current.messages.map((message) => message.toWire()).toList();
     wire.add({'role': 'user', 'content': submitted.text});
-    final operation = GatewayOperation.chat(submitted.attemptRef!, model, wire);
+    final operation = GatewayOperation.chat(submitted.attemptRef!, model, wire,
+        dataRefs: const [], credentialRefs: const []);
     await authorizeGatewayStream(context, operation, (body) {
       _sub = widget.client.chatStream(wire, model, authorizedBody: body).listen(
           (event) => _onEvent(generation, event),
           onError: (_) => _onTerminal(generation),
           onDone: () => _onTerminal(generation));
-    }, () => _onTerminal(generation));
+    }, () => _onTerminal(generation),
+        currentOperation: () => _model == endpoint &&
+                _chosenModels[endpoint] == chosen &&
+                _admission.draftText(_current) == submitted.text
+            ? operation
+            : null);
   }
 
   void _onEvent(int generation, Map<String, dynamic> event) {
@@ -200,7 +205,8 @@ class _AgentViewState extends State<AgentView> {
   void _onTerminal(int generation) {
     if (!mounted || generation != _generation) return;
     if (_assistant == null) {
-      _retainAdmission();
+      _admission.retain(_submittedDraft!);
+      _finishDisposition(PromptDisposition.retained);
       return;
     }
     if (!_accepted) return;
@@ -210,11 +216,6 @@ class _AgentViewState extends State<AgentView> {
       _streaming = false;
     });
     _admission.persistHistory();
-  }
-
-  void _retainAdmission() {
-    _admission.retain(_submittedDraft!);
-    _finishDisposition(PromptDisposition.retained);
   }
 
   void _finishDisposition(PromptDisposition result) {
@@ -233,16 +234,13 @@ class _AgentViewState extends State<AgentView> {
 
   void _scrollToEnd() => WidgetsBinding.instance.addPostFrameCallback((_) {
         if (_scroll.hasClients) {
-          _scroll.animateTo(_scroll.position.maxScrollExtent,
-              duration: const Duration(milliseconds: 180),
-              curve: Curves.easeOut);
+          _scroll.jumpTo(_scroll.position.maxScrollExtent);
         }
       });
   @override
   Widget build(BuildContext context) {
     if (!widget.alive) {
-      return const FwEmpty('The engine is offline. Chat appears when it runs.',
-          command: 'flywheel up');
+      return const FwEmpty('Engine offline.', command: 'flywheel up');
     }
     return Row(children: [
       if (!_agentMode)
@@ -288,7 +286,6 @@ class _AgentViewState extends State<AgentView> {
       onDraftChanged: _draftChanged,
       onSend: _send,
       onStop: _stop,
-      hint: _model == null ? 'No model available…' : 'Message ${_model!}…',
       savedPrompts: widget.settings.savedPrompts,
       onSavePrompt: (text) => setState(() => widget.settings.savePrompt(text)));
 }
