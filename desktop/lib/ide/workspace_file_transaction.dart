@@ -182,9 +182,7 @@ final class _WindowsIo {
         free = library.lookupFunction<_FreeN, _Free>('LocalFree'),
         lastError = library.lookupFunction<_ErrorN, _Error>('GetLastError') {
     memory = alloc(0x40, _capacity + 65664);
-    if (memory.address == 0) {
-      throw const WorkspaceFileException(CodeDiskFailure.safeWriteUnavailable);
-    }
+    if (memory.address == 0) _fail(CodeDiskFailure.safeWriteUnavailable);
   }
 
   static _WindowsIo open() {
@@ -212,11 +210,12 @@ final class _WindowsIo {
   int _open(String path, int access, int sharing) {
     final handle = create(_wide(path), access, sharing, nullptr, 3, 0x80, 0);
     if (handle == -1) {
-      final failure = {
-            32: CodeDiskFailure.busy,
-            2: CodeDiskFailure.missing
-          }[lastError()] ??
-          CodeDiskFailure.unavailable;
+      final error = lastError();
+      final failure = error == 32
+          ? CodeDiskFailure.busy
+          : error == 2
+              ? CodeDiskFailure.missing
+              : CodeDiskFailure.unavailable;
       throw WorkspaceFileException(failure);
     }
     return handle;
@@ -229,12 +228,13 @@ final class _WindowsIo {
   }
 
   List<int> readAll(int handle) {
-    if (seek(handle, 0, nullptr, 0) == 0 ||
-        read(handle, _bytes, _capacity, _count, nullptr) == 0 ||
-        _count.value == _capacity) {
-      _fail(CodeDiskFailure.readbackFailed);
+    if (seek(handle, 0, nullptr, 0) == 0) _fail(CodeDiskFailure.readbackFailed);
+    final bytes = <int>[];
+    while (read(handle, _bytes, _capacity, _count, nullptr) != 0) {
+      if (_count.value == 0) return bytes;
+      bytes.addAll(_bytes.asTypedList(_count.value));
     }
-    return List<int>.from(_bytes.asTypedList(_count.value));
+    _fail(CodeDiskFailure.readbackFailed);
   }
 
   void writeAll(int handle, List<int> bytes) {

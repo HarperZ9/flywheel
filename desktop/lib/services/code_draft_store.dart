@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:crypto/crypto.dart';
 
+import 'code_custody_io.dart';
 import 'code_draft_transaction.dart';
 import 'journey_session_store.dart';
 
@@ -58,10 +59,7 @@ final class CodeDraft {
 
   const CodeDraft._(
       this.path, this.diskSha256, this.bufferSha256, this.text, this.updatedAt);
-  final String path;
-  final String diskSha256;
-  final String bufferSha256;
-  final String text;
+  final String path, diskSha256, bufferSha256, text;
   final DateTime updatedAt;
 }
 
@@ -72,6 +70,7 @@ final class CodeDraftStore {
     this.renameFile,
     this.temporaryFile,
     this.deleteFile,
+    this.readFile = readCodeCustodyFile,
   }) : storageRoot = root ?? Directory(journeyLocalDefaultPath('code-drafts'));
 
   final Directory storageRoot;
@@ -79,6 +78,7 @@ final class CodeDraftStore {
   final CodeDraftRenameFile? renameFile;
   final CodeDraftTemporaryFile? temporaryFile;
   final CodeDraftDeleteFile? deleteFile;
+  final CodeCustodyReadFile readFile;
 
   List<StoredCodeDraft> load({required String workspaceRef}) {
     _workspaceRef(workspaceRef);
@@ -95,7 +95,7 @@ final class CodeDraftStore {
         final file = entity as File;
         final key = file.uri.pathSegments.last.substring(0, 64);
         drafts.add(transaction.locked(key, () {
-          final bytes = file.readAsBytesSync();
+          final bytes = readFile(file);
           final stored = _decodeRecord(bytes, workspaceRef);
           final expected =
               '${sha256.convert(utf8.encode(stored.draft.path))}.json';
@@ -205,7 +205,8 @@ final class CodeDraftStore {
   }
 
   CodeDraftTransaction _transaction(String workspaceRef) =>
-      CodeDraftTransaction(root: storageRoot, workspaceRef: workspaceRef);
+      CodeDraftTransaction(
+          root: storageRoot, workspaceRef: workspaceRef, readFile: readFile);
 
   File _record(String workspaceRef, String path) {
     final name = sha256.convert(utf8.encode(path)).toString();

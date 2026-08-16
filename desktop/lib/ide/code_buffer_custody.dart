@@ -3,11 +3,13 @@ import 'workspace.dart' as workspace;
 import 'workspace_file_transaction.dart';
 
 final class CodeRecoveryBatch {
-  CodeRecoveryBatch(this.files, this.records, this.outcomes, this.conflicts);
+  CodeRecoveryBatch(
+      this.files, this.records, this.outcomes, this.conflicts, this.cleanup);
   final List<workspace.OpenFile> files;
   final List<StoredCodeDraft> records;
   final List<workspace.CodeRecoveryOutcome> outcomes;
   final List<workspace.CodeRecoveryConflict> conflicts;
+  final List<StoredCodeDraft> cleanup;
 }
 
 final class CodeBufferCustody {
@@ -16,11 +18,17 @@ final class CodeBufferCustody {
   final List<StoredCodeDraft> records = [];
   final List<workspace.CodeRecoveryOutcome> outcomes = [];
   final List<workspace.CodeRecoveryConflict> conflicts = [];
+  CodeRecoveryBatch? _pending;
 
   List<CodeDraft> get drafts =>
       List.unmodifiable(records.map((stored) => stored.draft));
 
   CodeRecoveryBatch recover(workspace.WorkspaceSessionIo io) {
+    final pending = _pending;
+    if (pending != null) {
+      _cleanup(io, pending);
+      return pending;
+    }
     final loaded = store.load(workspaceRef: io.workspaceRef);
     final files = <workspace.OpenFile>[];
     final recovered = <workspace.CodeRecoveryOutcome>[];
@@ -32,18 +40,19 @@ final class CodeBufferCustody {
         final keep = _stage(io, stored, files, recovered, blocked);
         (keep ? retained : cleanup).add(stored);
       }
-      for (final stored in cleanup) {
-        store.delete(
-            workspaceRef: io.workspaceRef,
-            path: stored.draft.path,
-            expectedBufferSha256: stored.draft.bufferSha256,
-            expectedRecordSha256: stored.recordSha256);
-      }
     } catch (_) {
       disposeFiles(files);
       rethrow;
     }
-    return CodeRecoveryBatch(files, retained, recovered, blocked);
+    final batch =
+        CodeRecoveryBatch(files, retained, recovered, blocked, cleanup);
+    try {
+      _cleanup(io, batch);
+      return batch;
+    } catch (_) {
+      _pending = batch;
+      rethrow;
+    }
   }
 
   void publish(CodeRecoveryBatch batch) {
@@ -152,6 +161,9 @@ final class CodeBufferCustody {
   void removeConflict(String path) =>
       conflicts.removeWhere((value) => value.path == path);
   void clear() {
+    final pending = _pending;
+    if (pending != null) disposeFiles(pending.files);
+    _pending = null;
     records.clear();
     outcomes.clear();
     conflicts.clear();
@@ -162,6 +174,19 @@ final class CodeBufferCustody {
       file.controller.dispose();
     }
     files.clear();
+  }
+
+  void _cleanup(workspace.WorkspaceSessionIo io, CodeRecoveryBatch batch) {
+    while (batch.cleanup.isNotEmpty) {
+      final stored = batch.cleanup.first;
+      store.delete(
+          workspaceRef: io.workspaceRef,
+          path: stored.draft.path,
+          expectedBufferSha256: stored.draft.bufferSha256,
+          expectedRecordSha256: stored.recordSha256);
+      batch.cleanup.removeAt(0);
+    }
+    _pending = null;
   }
 
   bool _stage(

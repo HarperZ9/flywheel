@@ -3,6 +3,8 @@ import 'dart:io';
 
 import 'package:crypto/crypto.dart';
 
+import 'code_custody_io.dart';
+
 typedef DraftBytesValidator = bool Function(List<int> bytes, String pathKey);
 typedef DraftTemporaryFile = File Function(File target);
 typedef DraftBeforeRename = void Function(File temporary);
@@ -15,10 +17,15 @@ final class DraftTransactionException implements Exception {
 }
 
 final class CodeDraftTransaction {
-  CodeDraftTransaction({required this.root, required this.workspaceRef});
+  CodeDraftTransaction({
+    required this.root,
+    required this.workspaceRef,
+    this.readFile = readCodeCustodyFile,
+  });
 
   final Directory root;
   final String workspaceRef;
+  final CodeCustodyReadFile readFile;
   static final _target = RegExp(r'^([0-9a-f]{64})\.json$');
   static final _owned =
       RegExp(r'^([0-9a-f]{64})\.json\.fw-(write|delete)\.([0-9]+)\.'
@@ -90,13 +97,13 @@ final class CodeDraftTransaction {
     try {
       temporary.parent.createSync(recursive: true);
       temporary.writeAsBytesSync(bytes, flush: true);
-      if (!_same(temporary.readAsBytesSync(), bytes)) {
+      if (!_same(readFile(temporary), bytes)) {
         throw const DraftTransactionException(false);
       }
       beforeRename?.call(temporary);
       (renameFile ?? (file, path) => file.renameSync(path))(
           temporary, target.path);
-      if (!target.existsSync() || !_same(target.readAsBytesSync(), bytes)) {
+      if (!target.existsSync() || !_same(readFile(target), bytes)) {
         throw const DraftTransactionException(false);
       }
       return recordSha;
@@ -114,7 +121,7 @@ final class CodeDraftTransaction {
     DraftDelete? deleteFile,
   }) {
     if (!target.existsSync()) return false;
-    final bytes = target.readAsBytesSync();
+    final bytes = readFile(target);
     if (sha256.convert(bytes).toString() != expectedRecordSha256 ||
         !matches(bytes)) {
       throw const DraftTransactionException(false);
@@ -123,7 +130,7 @@ final class CodeDraftTransaction {
         '$expectedRecordSha256.tmp');
     target.renameSync(tombstone.path);
     try {
-      final actual = tombstone.readAsBytesSync();
+      final actual = readFile(tombstone);
       if (sha256.convert(actual).toString() != expectedRecordSha256 ||
           !matches(actual)) {
         throw const DraftTransactionException(false);
@@ -177,7 +184,7 @@ final class CodeDraftTransaction {
     final deletes = <File>[];
     for (final file in owned) {
       final match = _owned.firstMatch(file.uri.pathSegments.last)!;
-      final bytes = file.readAsBytesSync();
+      final bytes = readFile(file);
       final complete = sha256.convert(bytes).toString() == match.group(5) &&
           valid(bytes, key);
       if (!complete) {
@@ -206,7 +213,7 @@ final class CodeDraftTransaction {
       if (prior != null) target.writeAsBytesSync(prior, flush: true);
       return;
     }
-    final current = target.readAsBytesSync();
+    final current = readFile(target);
     final digest = sha256.convert(current).toString();
     if (digest != attempted && valid(current, pathKey)) return;
     if (prior == null) {
@@ -218,7 +225,7 @@ final class CodeDraftTransaction {
 
   void _quarantine(File file) {
     if (!file.existsSync()) return;
-    final bytes = file.readAsBytesSync();
+    final bytes = readFile(file);
     final digest = sha256.convert(bytes).toString();
     final quarantine = _privateDirectory('.quarantine');
     final name =
@@ -235,11 +242,10 @@ final class CodeDraftTransaction {
       FileSystemEntity.typeSync(path, followLinks: false) !=
       FileSystemEntityType.notFound;
 
-  List<int>? _validTarget(
-      File target, String pathKey, DraftBytesValidator valid) {
+  List<int>? _validTarget(File target, String key, DraftBytesValidator valid) {
     if (!target.existsSync()) return null;
-    final bytes = target.readAsBytesSync();
-    if (!valid(bytes, pathKey)) throw const DraftTransactionException(false);
+    final bytes = readFile(target);
+    if (!valid(bytes, key)) throw const DraftTransactionException(false);
     return bytes;
   }
 
@@ -251,11 +257,8 @@ final class CodeDraftTransaction {
     return directory;
   }
 
-  String _nonce() => DateTime.now()
-      .microsecondsSinceEpoch
-      .toRadixString(16)
-      .padLeft(32, '0')
-      .substring(0, 32);
+  String _nonce() =>
+      DateTime.now().microsecondsSinceEpoch.toRadixString(16).padLeft(32, '0');
 
   void _regularOrMissing(String path, {bool allowDirectory = false}) {
     final type = FileSystemEntity.typeSync(path, followLinks: false);
@@ -291,10 +294,6 @@ void _guardJson(Object? value, int depth, List<int> nodes) {
   }
 }
 
-bool _same(List<int> left, List<int> right) {
-  if (left.length != right.length) return false;
-  for (var i = 0; i < left.length; i++) {
-    if (left[i] != right[i]) return false;
-  }
-  return true;
-}
+bool _same(List<int> left, List<int> right) =>
+    left.length == right.length &&
+    left.asMap().entries.every((entry) => right[entry.key] == entry.value);
