@@ -79,7 +79,7 @@ class GatewayOperations:
                              args=(authorized, ref, process_factory), daemon=True).start()
         except Exception:
             try: return self._terminal(authorized.owner_ref, ref, WorkerOutcome(
-                "failed", {"reason": "OWNERSHIP_UNAVAILABLE"}))
+                "failed", {"reason": "OWNERSHIP_UNAVAILABLE"}), already_guarded=already_guarded)
             finally: self._secrets.pop((authorized.owner_ref, ref), None)
         return queued
     def cancel(self, *, action: str, raw: bytes, owner_ref: str) -> OperationSnapshot:
@@ -226,10 +226,10 @@ class GatewayOperations:
                  factory: OperationProcessFactory) -> None:
         from .gateway_operation_process import supervise_gateway_operation
         supervise_gateway_operation(self, authorized, ref, factory)
-    def _terminal(self, owner_ref: str, ref: str,
-                  outcome: WorkerOutcome) -> OperationSnapshot:
+    def _terminal(self, owner_ref: str, ref: str, outcome: WorkerOutcome, *,
+                  already_guarded: bool = False) -> OperationSnapshot:
         journey = self._journey(owner_ref)
-        with journey._owner_operation_guard(ref):
+        with (nullcontext() if already_guarded else journey._owner_operation_guard(ref)):
             history = self._history(journey, ref)
             current = self._snapshot(journey, ref, history)
             if current.state in TERMINALS:
