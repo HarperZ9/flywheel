@@ -1,10 +1,11 @@
 import hashlib, json, pathlib, shutil, subprocess, sys, tempfile
 import pytest
+import harness.cross_harness_process as process_boundary
 from harness.cross_harness_adapters import (CodexCliProposer, DirectCodexAdapter,
     FlywheelRouterAdapter, LocalRouterAdapter, ProcessOutcome)
 from harness.cross_harness_artifacts import canonical_sha256
 from harness.cross_harness_executor import SHARED_TOOL_POLICY, execute_cross_harness_manifest
-from harness.cross_harness_process import run_process
+from harness.cross_harness_process import run_process, start_owned_process
 from harness.cross_harness_types import AttemptRequest
 
 
@@ -246,4 +247,45 @@ def test_real_provider_receives_no_output_path_or_stage_directory(tmp_path):
     code = f"import json,pathlib,sys;assert len(sys.argv)==1;assert not list(pathlib.Path.cwd().glob('.cross-harness-stage-*'));print(json.dumps({event!r}))"
     result = run_process([sys.executable, "-c", code], cwd=tmp_path, stdin_text="", timeout_seconds=2)
     assert result.returncode == 0 and json.loads(result.stdout)["item"]["text"] == "answer"
+
+
+def test_review_w5_job_ownership_exception_kills_suspended_child(
+        monkeypatch, tmp_path):
+    class Child:
+        _handle = 1
+        def __init__(self): self.kills = self.waits = 0
+        def kill(self): self.kills += 1
+        def wait(self, timeout): self.waits += 1; return -1
+        def poll(self): return None if not self.kills else -1
+    child = Child()
+    monkeypatch.setattr(process_boundary.sys, "platform", "win32")
+    monkeypatch.setattr(process_boundary.os, "name", "nt")
+    monkeypatch.setattr(process_boundary.subprocess, "Popen",
+                        lambda *_args, **_kwargs: child)
+    monkeypatch.setattr(process_boundary, "_windows_job",
+                        lambda _child: (_ for _ in ()).throw(OSError("job")))
+
+    with pytest.raises(OSError):
+        start_owned_process(["worker"], cwd=tmp_path, stdin_bytes=b"",
+                            env={})
+    assert child.kills == 1 and child.waits == 1
     assert not list(tmp_path.glob(".cross-harness-stage-*"))
+
+
+def test_review_w5_job_failure_still_bounds_wait_when_kill_raises(
+        monkeypatch, tmp_path):
+    class Child:
+        _handle = 1
+        def __init__(self): self.waits = 0
+        def kill(self): raise OSError("kill")
+        def wait(self, timeout): self.waits += 1; return None
+    child = Child()
+    monkeypatch.setattr(process_boundary.sys, "platform", "win32")
+    monkeypatch.setattr(process_boundary.os, "name", "nt")
+    monkeypatch.setattr(process_boundary.subprocess, "Popen",
+                        lambda *_args, **_kwargs: child)
+    monkeypatch.setattr(process_boundary, "_windows_job",
+                        lambda _child: (_ for _ in ()).throw(OSError("job")))
+    with pytest.raises(OSError, match="containment unavailable"):
+        start_owned_process(["worker"], cwd=tmp_path, stdin_bytes=b"", env={})
+    assert child.waits == 1

@@ -77,12 +77,18 @@ def _windows_job(proc: subprocess.Popen):
         wintypes.HANDLE, ctypes.c_int, ctypes.c_void_p, wintypes.DWORD)
     api.AssignProcessToJobObject.argtypes = (wintypes.HANDLE, wintypes.HANDLE)
     api.CloseHandle.argtypes = (wintypes.HANDLE,)
-    job, info = api.CreateJobObjectW(None, None), Extended()
-    info.BasicLimitInformation.LimitFlags = 0x2000
-    configured = job and api.SetInformationJobObject(
-        job, 9, ctypes.byref(info), ctypes.sizeof(info))
-    assigned = configured and api.AssignProcessToJobObject(
-        job, wintypes.HANDLE(proc._handle))
+    job = None
+    try:
+        job, info = api.CreateJobObjectW(None, None), Extended()
+        info.BasicLimitInformation.LimitFlags = 0x2000
+        configured = job and api.SetInformationJobObject(
+            job, 9, ctypes.byref(info), ctypes.sizeof(info))
+        assigned = configured and api.AssignProcessToJobObject(
+            job, wintypes.HANDLE(proc._handle))
+    except Exception:
+        if job:
+            api.CloseHandle(job)
+        raise
     if not assigned:
         if job:
             api.CloseHandle(job)
@@ -100,11 +106,13 @@ def _resume_windows(proc: subprocess.Popen) -> bool:
 
 def _capture(pipe, bucket: dict[str, Any], key: str) -> None:
     data, overflow = bytearray(), False
+    bucket[key] = b"", False
     try:
         while chunk := pipe.read(65536):
             room = max(0, MAX_CAPTURE_BYTES - len(data))
             data.extend(chunk[:room])
             overflow |= len(chunk) > room
+            bucket[key] = bytes(data), overflow
     except (OSError, ValueError):
         overflow = True
     finally:
@@ -168,6 +176,9 @@ class OwnedProcess:
     def close(self) -> None:
         self.signal_tree()
 
+    def stdout_snapshot(self) -> tuple[bytes, bool]:
+        return self._captured.get("stdout", (b"", False))
+
     def _start_io(self) -> None:
         streams = ((self._proc.stdout, "stdout"), (self._proc.stderr, "stderr"))
         self._readers = [threading.Thread(
@@ -215,6 +226,17 @@ class OwnedProcess:
                               timed_out, malformed)
 
 
+def _terminate_unowned(proc) -> None:
+    try:
+        proc.kill()
+    except Exception:
+        pass
+    try:
+        proc.wait(timeout=.5)
+    except Exception:
+        pass
+
+
 def start_owned_process(argv: Sequence[str], *, cwd: Path, stdin_bytes: bytes,
                         env: Mapping[str, str]) -> OwnedProcess:
     if sys.platform.startswith("linux"):
@@ -228,12 +250,23 @@ def start_owned_process(argv: Sequence[str], *, cwd: Path, stdin_bytes: bytes,
         "creationflags": subprocess.CREATE_NEW_PROCESS_GROUP | 0x4,
     }
     proc = subprocess.Popen(tuple(argv), **options)
-    job = _windows_job(proc)
+    try:
+        job = _windows_job(proc)
+    except Exception:
+        _terminate_unowned(proc)
+        raise OSError("Windows process containment unavailable") from None
     if job is None:
-        proc.kill()
-        proc.wait(timeout=.5)
+        _terminate_unowned(proc)
         raise OSError("Windows process containment unavailable")
-    return OwnedProcess(proc, job, bytes(stdin_bytes))
+    try:
+        return OwnedProcess(proc, job, bytes(stdin_bytes))
+    except Exception:
+        try:
+            job[0].CloseHandle(job[1])
+        except Exception:
+            pass
+        _terminate_unowned(proc)
+        raise OSError("Windows process containment unavailable") from None
 
 
 def run_process(argv: list[str], *, cwd: Path, stdin_text: str,

@@ -170,8 +170,9 @@ def test_snapshot_result_and_watch_are_owner_only_and_strict(tmp_path):
     assert snapshot.body["state"] == "completed"
     assert result.body["schema"] == "flywheel.gateway-operation-result/v1"
     assert hidden.status == 404 and hidden.body["error"]["code"] == "NOT_FOUND"
-    assert b"id: 5\r\nevent: terminal\r\n" in resumed_wire
-    assert resumed_wire.endswith(b"id: 6\r\nevent: terminal\r\ndata: [DONE]\r\n\r\n")
+    assert b"id: 5\r\nevent: snapshot\r\n" in resumed_wire
+    assert b"id: 6\r\nevent: terminal\r\n" in resumed_wire
+    assert resumed_wire.endswith(b"id: 7\r\nevent: terminal\r\ndata: [DONE]\r\n\r\n")
     assert oversized.status == 422
     assert oversized.body["error"]["code"] == "INVALID_REQUEST"
 

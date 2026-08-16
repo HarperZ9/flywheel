@@ -1,31 +1,24 @@
-"""Strict private HTTP/SSE boundary for durable gateway operations."""
 from __future__ import annotations
-
 from dataclasses import dataclass
 from pathlib import Path
 import re
 import threading
 from typing import Iterator
 from urllib.parse import parse_qs
-
 from .evidence_json import canonical_bytes, canonical_sha256
 from .gateway_operation import AuthorizedOperation, GatewayOperationError
 from .journey_types import SHA256_PATTERN
-
 _OPERATION_PATH = re.compile(
     r"/api/operations/(op_[0-9a-f]{32})(?:/(events|result))?\Z")
 _MAX_LINE_BYTES = 262_144
 _MAX_BUFFER_BYTES = 1_048_576
-
-
+_MAX_GATEWAY_BUFFER_BYTES = 8_388_608
 def operation_ref_for(owner_ref: str, journey_ref: str,
                       client_request_id: str) -> str:
     digest = canonical_sha256({"owner_ref": owner_ref,
                                "journey_ref": journey_ref,
-                               "client_request_id": client_request_id})
+                                "client_request_id": client_request_id})
     return f"op_{digest[:32]}"
-
-
 def authorization_sha256(authorized: AuthorizedOperation) -> str:
     plan = getattr(authorized.execution_plan, "digest", None)
     if type(plan) is not str or SHA256_PATTERN.fullmatch(plan) is None:
@@ -44,8 +37,6 @@ def authorization_sha256(authorized: AuthorizedOperation) -> str:
         "credential_refs": list(authorized.credential_refs),
         "execution_plan_sha256": plan,
     })
-
-
 def replay_authorization_sha256(envelope, owner_ref: str,
                                 state_root: Path) -> str:
     """Reconstruct one prior grant authorization without consuming it."""
@@ -81,8 +72,6 @@ def replay_authorization_sha256(envelope, owner_ref: str,
         return authorization_sha256(authorized)
     except Exception:
         raise GatewayOperationError("IDEMPOTENCY_MISMATCH") from None
-
-
 def queued_payload(authorized: AuthorizedOperation) -> dict:
     return {
         "operation_ref": operation_ref_for(
@@ -96,83 +85,107 @@ def queued_payload(authorized: AuthorizedOperation) -> dict:
         "grant_ref_sha256": canonical_sha256(authorized.grant_ref),
         "execution_plan_sha256": authorized.execution_plan.digest,
     }
-
-
 class OperationEventBus:
     def __init__(self) -> None:
         self._rows: dict[tuple[str, str], list[tuple[str, dict]]] = {}
-        self._bytes: dict[tuple[str, str], int] = {}
-        self._condition = threading.Condition()
-
+        self._bytes: dict[tuple[str, str], int] = {}; self._base = {}
+        self._subscribers: dict[tuple[str, str], int] = {}
+        self._completed: set[tuple[str, str]] = set(); self._total_bytes = 0; self._condition = threading.Condition()
+    def _drop(self, key: tuple[str, str]) -> None:
+        self._total_bytes -= self._bytes.pop(key, 0); self._rows.pop(key, None)
+        self._base.pop(key, None); self._completed.discard(key); self._subscribers.pop(key, None)
+    def _pop_first(self, key: tuple[str, str]) -> None:
+        rows, base = self._rows[key], self._base.get(key, 0)
+        event, data = rows.pop(0); size = len(_frame(base + 1, event, data))
+        self._base[key] = base + 1; self._bytes[key] -= size; self._total_bytes -= size
+    def _evict_completed(self, needed: int, exclude) -> None:
+        for key in tuple(self._completed):
+            if self._total_bytes + needed <= _MAX_GATEWAY_BUFFER_BYTES: return
+            if key != exclude and self._subscribers.get(key, 0) == 0:
+                self._drop(key)
+    def _admit(self, key: tuple[str, str], size: int, terminal: bool) -> None:
+        rows = self._rows.setdefault(key, [])
+        if terminal:
+            while rows and self._bytes.get(key, 0) + size > _MAX_BUFFER_BYTES:
+                self._pop_first(key)
+        self._evict_completed(size, key)
+        if terminal:
+            for candidate in tuple(self._rows):
+                while self._rows[candidate] and self._total_bytes + size > _MAX_GATEWAY_BUFFER_BYTES: self._pop_first(candidate)
+        if (self._bytes.get(key, 0) + size > _MAX_BUFFER_BYTES
+                or self._total_bytes + size > _MAX_GATEWAY_BUFFER_BYTES):
+            raise GatewayOperationError("EXTERNAL_ACTION_FAILED")
     def publish(self, owner_ref: str, operation_ref: str,
-                event: str, data: dict) -> None:
+                 event: str, data: dict) -> None:
+        if event == "terminal": data = {"operation_ref": operation_ref}
         encoded = canonical_bytes(data)
         if len(b"data: ") + len(encoded) > _MAX_LINE_BYTES:
             raise GatewayOperationError("EXTERNAL_ACTION_FAILED")
         with self._condition:
             key = owner_ref, operation_ref
             rows = self._rows.setdefault(key, [])
-            size = len(_frame(len(rows) + 1, event, data))
-            used = self._bytes.get(key, 0)
-            if used + size > _MAX_BUFFER_BYTES:
-                raise GatewayOperationError("EXTERNAL_ACTION_FAILED")
-            rows.append((event, data))
-            self._bytes[key] = used + size
+            sequence = self._base.get(key, 0) + len(rows) + 1
+            size = len(_frame(sequence, event, data))
+            self._admit(key, size, event == "terminal")
+            used = self._bytes.get(key, 0); rows.append((event, data))
+            self._bytes[key] = used + size; self._total_bytes += size
+            if event == "terminal":
+                self._completed.add(key); self._drop(key) if self._subscribers.get(key, 0) == 0 else None
             self._condition.notify_all()
-
     def watch(self, service, owner_ref: str, operation_ref: str,
               after_sequence: int) -> Iterator[dict]:
         if type(after_sequence) is not int or after_sequence < 0:
             raise GatewayOperationError("INVALID_REQUEST")
-        key, cursor = (owner_ref, operation_ref), after_sequence
-        while True:
-            snapshot = service.snapshot(owner_ref, operation_ref)
-            synthetic = None
-            with self._condition:
-                rows = list(self._rows.get(key, ()))
-                if not rows:
-                    synthetic = [("snapshot", snapshot.as_json())]
-                    if snapshot.state in service.terminal_states:
-                        synthetic.append(("terminal", {
-                            "snapshot": snapshot.as_json(),
-                            "result": service.result(owner_ref, operation_ref)}))
-                elif cursor < len(rows):
-                    event, data = rows[cursor]
-                    cursor += 1
-                elif snapshot.state in service.terminal_states:
-                    synthetic = [("terminal", {
-                        "snapshot": snapshot.as_json(),
-                        "result": service.result(owner_ref, operation_ref)})]
-                else:
-                    self._condition.wait(.25)
+        key, cursor, sent_snapshot = (owner_ref, operation_ref), after_sequence, False
+        with self._condition:
+            self._subscribers[key] = self._subscribers.get(key, 0) + 1
+        try:
+            while True:
+                snapshot = service.snapshot(owner_ref, operation_ref)
+                synthetic = None
+                with self._condition:
+                    rows, base = list(self._rows.get(key, ())), self._base.get(key, 0)
+                    cursor = max(cursor, base)
+                    if cursor < base + len(rows):
+                        event, data = rows[cursor - base]; cursor += 1
+                    elif snapshot.state in service.terminal_states:
+                        synthetic = [("snapshot", snapshot.as_json()), ("terminal", self._terminal_data(service, owner_ref, operation_ref, snapshot))]
+                    elif not sent_snapshot:
+                        synthetic = [("snapshot", snapshot.as_json())]
+                        sent_snapshot = True
+                    else:
+                        self._condition.wait(.25); continue
+                if synthetic is not None:
+                    for event, data in synthetic:
+                        cursor += 1; yield {"sequence": cursor, "event": event, "data": data}
+                    if snapshot.state in service.terminal_states: return
                     continue
-            if synthetic is not None:
-                for event, data in synthetic:
-                    cursor += 1
-                    yield {"sequence": cursor, "event": event, "data": data}
-                return
-            yield {"sequence": cursor, "event": event, "data": data}
-
+                if event == "terminal": data = self._terminal_data(
+                    service, owner_ref, operation_ref, snapshot)
+                yield {"sequence": cursor, "event": event, "data": data}
+        finally:
+            with self._condition:
+                self._subscribers[key] = max(0, self._subscribers.get(key, 1) - 1)
+                if key in self._completed and self._subscribers[key] == 0:
+                    self._drop(key)
+                elif self._subscribers[key] == 0: self._subscribers.pop(key)
+    @staticmethod
+    def _terminal_data(service, owner_ref: str, operation_ref: str,
+                       snapshot) -> dict:
+        return {"snapshot": snapshot.as_json(), "result": service.result(owner_ref, operation_ref)}
     def wake(self) -> None:
         with self._condition:
             self._condition.notify_all()
-
-
 @dataclass(frozen=True)
 class RouteResponse:
-    status: int
-    body: dict | None = None
+    status: int; body: dict | None = None
     stream: Iterator[bytes] | None = None
-
-
 def _frame(sequence: int, event: str, value) -> bytes:
     data = b"[DONE]" if value == "[DONE]" else canonical_bytes(value)
     if len(b"data: ") + len(data) > _MAX_LINE_BYTES:
         raise GatewayOperationError("EXTERNAL_ACTION_FAILED")
     return (f"id: {sequence}\r\nevent: {event}\r\ndata: ".encode()
             + data + b"\r\n\r\n")
-
-
 def _stream(service, owner_ref: str, operation_ref: str,
             initial=None, after: int = 0) -> Iterator[bytes]:
     sequence, terminal = after, False
@@ -195,8 +208,6 @@ def _stream(service, owner_ref: str, operation_ref: str,
                 break
     if terminal:
         yield _frame(sequence + 1, "terminal", "[DONE]")
-
-
 def _start_replay(service, owner_ref: str, envelope, journey):
     from .gateway_provider_adapter import freeze_execution_plan
     ref = operation_ref_for(owner_ref, envelope.journey_ref,
@@ -219,8 +230,6 @@ def _start_replay(service, owner_ref: str, envelope, journey):
             or any(queued.get(key) != value for key, value in expected.items())):
         raise GatewayOperationError("IDEMPOTENCY_MISMATCH")
     return service._snapshot(journey, ref, history)
-
-
 def _start(raw: bytes, owner_ref: str, service, process_factory) -> RouteResponse:
     from .gateway_envelope import parse_gateway_envelope
     envelope = parse_gateway_envelope("agent.run", raw)
@@ -247,8 +256,6 @@ def _start(raw: bytes, owner_ref: str, service, process_factory) -> RouteRespons
         raise GatewayOperationError("EXTERNAL_ACTION_FAILED")
     return RouteResponse(200, service.result(
         owner_ref, snapshot.operation_ref)["result"])
-
-
 def _read(method: str, path: str, query: str, owner_ref: str,
           service) -> RouteResponse:
     match = _OPERATION_PATH.fullmatch(path)
@@ -270,12 +277,9 @@ def _read(method: str, path: str, query: str, owner_ref: str,
     value = service.result(owner_ref, ref) if selector == "result" else (
         service.snapshot(owner_ref, ref).as_json())
     return RouteResponse(200, value)
-
-
 def route_gateway_operation(
         method: str, path: str, *, owner_ref: str, service, process_factory,
         raw: bytes = b"", query: str = "", content_type: str = "") -> RouteResponse:
-    """Route one already-authenticated operation request without enumeration."""
     try:
         if path == "/api/agent":
             if method != "POST" or query or content_type != "application/json":

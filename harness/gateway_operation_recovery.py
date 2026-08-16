@@ -155,6 +155,11 @@ def _validate_terminal(terminal: dict | None, basis: dict) -> None:
         return
     payload = terminal["payload"]
     common = {"operation_ref", "basis_event_sha256", "result_sha256"}
+    allowed = {
+        "operation_queued": {"operation_failed"},
+        "operation_started": {"operation_completed", "operation_failed"},
+        "cancel_requested": TERMINAL_EVENTS,
+    }
     expected = common | ({"reason"}
                          if terminal["event_type"] == "operation_failed"
                          else set())
@@ -162,8 +167,7 @@ def _validate_terminal(terminal: dict | None, basis: dict) -> None:
             or payload.get("operation_ref") != basis["payload"]["operation_ref"]
             or payload.get("basis_event_sha256") != basis["event_sha256"]
             or SHA256_PATTERN.fullmatch(payload.get("result_sha256", "")) is None
-            or terminal["event_type"] == "operation_cancelled"
-            and basis["event_type"] != "cancel_requested"
+            or terminal["event_type"] not in allowed.get(basis["event_type"], set())
             or terminal["event_type"] == "operation_failed"
             and payload.get("reason") not in FAILURE_REASONS):
         raise ValueError("ambiguous gateway operation history")
@@ -176,9 +180,7 @@ def _groups(service: JourneyService) -> list[tuple[str, list[dict]]]:
             ref = event["payload"].get("operation_ref")
             if event["event_type"] in LIFECYCLE and type(ref) is str:
                 groups.setdefault(ref, []).append(event)
-    return sorted((ref, history) for ref, history in groups.items()
-                  if any(event["event_type"] == "operation_queued"
-                         for event in history))
+    return sorted(groups.items())
 
 
 def recover_gateway_operations(state_root: Path, now: str) -> dict:

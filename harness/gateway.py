@@ -833,7 +833,7 @@ class _Handler(BaseHTTPRequestHandler):
         self.send_header("Content-Length", str(len(body)))
         self._cors()
         self.end_headers()
-        self.wfile.write(body)
+        if getattr(self, "command", "") != "HEAD": self.wfile.write(body)
 
     def _operation_components(self):
         state_root = self.flywheel_home / "state"
@@ -862,9 +862,8 @@ class _Handler(BaseHTTPRequestHandler):
 
     def _route_operation(self, method):
         path = self.path.split("?", 1)[0]
-        is_operation = (path.startswith("/api/operations/")
-                        if method == "GET" else path in {
-                            "/api/agent", "/api/operations/cancel"})
+        is_operation = (path == "/api/agent"
+                        or path.startswith("/api/operations/"))
         if not is_operation:
             return False
         from harness.gateway_operation_route import route_gateway_operation
@@ -1027,22 +1026,19 @@ class _Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
         return False
-    def do_GET(self):
+    def _gateway_method(self, method, fallback=None):
         if not self._authorized():
             return
         try:
-            if not self._route_operation("GET"):
-                self._get()
+            if not self._route_operation(method):
+                (fallback or (lambda: self.send_error(501)))()
         except Exception as e:
             self._safe_500(e)
-    def do_POST(self):
-        if not self._authorized():
-            return
-        try:
-            if not self._route_operation("POST"):
-                self._post()
-        except Exception as e:
-            self._safe_500(e)
+    def do_GET(self): self._gateway_method("GET", self._get)
+    def do_POST(self): self._gateway_method("POST", self._post)
+    def do_PUT(self): self._gateway_method("PUT")
+    def do_DELETE(self): self._gateway_method("DELETE")
+    def do_HEAD(self): self._gateway_method("HEAD")
     def _get(self):
         p = self.path.split("?", 1)[0]
         qs = self.path.split("?", 1)[1] if "?" in self.path else ""

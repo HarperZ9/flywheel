@@ -85,7 +85,7 @@ class _AgentPanelState extends State<AgentPanel> {
   OperationController _newOperationState() => OperationController(
       requestId: () => 'desktop-stop-${DateTime.now().microsecondsSinceEpoch}',
       grants: _stopGrants,
-      onTerminal: _finished)
+      onTerminalResult: _finished)
     ..addListener(_stateChanged);
   void _beginRun() {
     _operationState.dispose();
@@ -149,16 +149,18 @@ class _AgentPanelState extends State<AgentPanel> {
     _scrollTail();
   }
 
-  void _interrupted() {
-    if (mounted) setState(() => _error = 'INVALID_RESPONSE');
-  }
+  void _interrupted() => setState(() => _error = 'INVALID_RESPONSE');
 
-  void _stateChanged() {
-    if (mounted) setState(() {});
-  }
+  void _stateChanged() => setState(() {});
 
-  void _finished() {
-    _started = false;
+  void _finished(OperationResult result) {
+    setState(() {
+      _events = [
+        ..._events,
+        {...result.result, 'type': 'done'}
+      ];
+      _started = false;
+    });
     widget.onRunFinished();
     if (_pastOpen) _loadPastRuns();
   }
@@ -175,7 +177,7 @@ class _AgentPanelState extends State<AgentPanel> {
     await showOperationGrantSheet<OperationSnapshot>(context, _stopGrants,
         (body) async {
       final snapshot = await _operations.cancel(body);
-      if (!_operationState.acceptSnapshot(snapshot)) {
+      if (!_operationState.acceptCancelResponse(snapshot)) {
         throw StateError('invalid operation response');
       }
       return snapshot;

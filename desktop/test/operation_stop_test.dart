@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
+import 'package:crypto/crypto.dart';
 
 import 'package:flywheel_desktop/client/gateway_client.dart';
 import 'package:flywheel_desktop/client/gateway_sse_decoder.dart';
@@ -23,7 +24,7 @@ const _event =
     'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd';
 
 OperationSnapshot _snapshot(String state,
-        {String head = _headA, bool canCancel = false}) =>
+        {String head = _headA, bool canCancel = false, String? resultSha256}) =>
     OperationSnapshot.fromJson({
       'schema': 'flywheel.gateway-operation-snapshot/v1',
       'operation_ref': _operation,
@@ -32,14 +33,21 @@ OperationSnapshot _snapshot(String state,
       'state': state,
       'can_cancel': canCancel,
       'terminal_event_ref': state == 'cancelled' ? _event : null,
-      'result_sha256': state == 'cancelled' ? _headB : null,
+      'result_sha256': state == 'cancelled' ? resultSha256 ?? _headB : null,
     });
+
+String _resultDigest() => sha256
+    .convert(utf8.encode('{"action":"agent.run","operation_ref":"$_operation",'
+        '"result":{"stopped":true},"schema":"flywheel.gateway-operation-result/v1",'
+        '"state":"cancelled"}'))
+    .toString();
 
 void main() {
   _stopGrantTest();
   _stopStateTests();
   _stopWidgetTest();
   _operationClientTests();
+  _operationClientAdversaryTests();
 }
 
 void _stopGrantTest() {
@@ -118,9 +126,17 @@ void _stopStateTests() {
         requestId: () => 'stop-2', onTerminal: () => terminals++);
     active.acceptSnapshot(_snapshot('running', canCancel: true));
     active.acceptSnapshot(_snapshot('cancel_requested', head: _headB));
-    final terminal = _snapshot('cancelled', head: _headC);
-    expect(active.acceptSnapshot(terminal), isTrue);
-    expect(active.acceptSnapshot(terminal), isTrue);
+    final terminal =
+        _snapshot('cancelled', head: _headC, resultSha256: _resultDigest());
+    final result = OperationResult.fromJson({
+      'schema': operationResultSchema,
+      'operation_ref': _operation,
+      'action': 'agent.run',
+      'state': 'cancelled',
+      'result': {'stopped': true},
+    });
+    expect(active.acceptTerminal(terminal, result), isTrue);
+    expect(active.acceptTerminal(terminal, result), isTrue);
     expect((active.execution?.state, terminals), (OperationState.cancelled, 1));
     active.dispose();
   });
@@ -155,14 +171,16 @@ void _operationClientTests() {
       () async {
     final running = _snapshot('running', canCancel: true);
     final stopping = _snapshot('cancel_requested', head: _headB);
-    final terminal = _snapshot('cancelled', head: _headC);
-    final result = {
+    final result = <String, Object?>{
       'schema': 'flywheel.gateway-operation-result/v1',
       'operation_ref': _operation,
       'action': 'agent.run',
       'state': 'cancelled',
       'result': {'stopped': true},
     };
+    final terminal =
+        _snapshot('cancelled', head: _headC, resultSha256: _resultDigest());
+    var snapshotCalls = 0;
     String frame(int id, String type, Object data) =>
         'id: $id\r\nevent: $type\r\ndata: ${jsonEncode(data)}\r\n\r\n';
     final stream = '${frame(8, 'snapshot', running.toJson())}'
@@ -186,7 +204,9 @@ void _operationClientTests() {
             expect(jsonDecode(request.body)['operation_ref'], _operation);
             return http.Response(jsonEncode(stopping.toJson()), 200);
           }
-          return http.Response(jsonEncode(running.toJson()), 200);
+          return http.Response(
+              jsonEncode((++snapshotCalls == 1 ? running : terminal).toJson()),
+              200);
         }));
     final operations = GatewayOperations(client);
 
@@ -203,7 +223,9 @@ void _operationClientTests() {
         OperationState.cancelRequested);
     client.close();
   });
+}
 
+void _operationClientAdversaryTests() {
   test('watch rejects ids at or before requested sequence', () async {
     final client = GatewayClient(
         baseUrl: 'http://gateway.test',
@@ -222,6 +244,48 @@ void _operationClientTests() {
         httpClient: MockClient((_) async => http.Response('x' * 1048577, 502)));
     await expectLater(GatewayOperations(client).start({'request': 'exact'}),
         emitsError(isA<GatewaySseException>()));
+    client.close();
+  });
+
+  test('review W11 terminal event rejects noncanonical result digest',
+      () async {
+    final result = <String, Object?>{
+      'schema': 'flywheel.gateway-operation-result/v1',
+      'operation_ref': _operation,
+      'action': 'agent.run',
+      'state': 'cancelled',
+      'result': {'stopped': true},
+    };
+    final terminal = _snapshot('cancelled', head: _headC);
+    final wire = 'id: 1\nevent: terminal\ndata: ${jsonEncode({
+          'snapshot': terminal.toJson(),
+          'result': result
+        })}\n\n';
+    final client = GatewayClient(
+        baseUrl: 'http://gateway.test',
+        httpClient: MockClient((_) async => http.Response(wire, 200)));
+    await expectLater(GatewayOperations(client).start(const {}),
+        emitsError(isA<GatewaySseException>()));
+    client.close();
+  });
+
+  test('review W11 standalone result requires terminal snapshot', () async {
+    final result = <String, Object?>{
+      'schema': 'flywheel.gateway-operation-result/v1',
+      'operation_ref': _operation,
+      'action': 'agent.run',
+      'state': 'cancelled',
+      'result': {'stopped': true},
+    };
+    final client = GatewayClient(
+        baseUrl: 'http://gateway.test',
+        httpClient: MockClient((request) async => http.Response(
+            jsonEncode(request.url.path.endsWith('/result')
+                ? result
+                : _snapshot('running', canCancel: true).toJson()),
+            200)));
+    await expectLater(GatewayOperations(client).result(_operation),
+        throwsA(isA<GatewaySseException>()));
     client.close();
   });
 }

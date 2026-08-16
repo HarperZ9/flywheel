@@ -10,7 +10,7 @@ from typing import Callable, Iterator
 from .evidence_json import canonical_bytes, canonical_sha256
 from .gateway_envelope import parse_gateway_envelope
 from .gateway_operation import AuthorizedOperation, GatewayOperationError, OPERATION_REF_PATTERN
-from .gateway_operation_process import OperationProcessFactory, WorkerOutcome
+from .gateway_operation_process import MAX_RESULT_BYTES, OperationProcessFactory, WorkerOutcome
 from .journey_service import JourneyService
 from .journey_store import JourneyStore, JourneyStoreError
 from .operation_grants import GrantStore, _secure_owner_only
@@ -88,8 +88,7 @@ class GatewayOperations:
             if not history: raise GatewayOperationError("CANCEL_UNAVAILABLE")
             snapshot = self._snapshot(journey, ref, history)
             if snapshot.state in TERMINALS: return snapshot
-            prior = next((event for event in history
-                          if event["event_type"] == "cancel_requested"), None)
+            prior = next((e for e in history if e["event_type"] == "cancel_requested"), None)
             if prior is not None:
                 if (prior["payload"]["client_request_id"]
                         != envelope.client_request_id
@@ -107,8 +106,10 @@ class GatewayOperations:
                     raise GatewayOperationError("IDEMPOTENCY_MISMATCH")
                 return snapshot
             handle = self._handles.get((owner_ref, ref))
-            if (snapshot.state != "running" or handle is None
-                    or getattr(handle, "control_class", None) != "windows_job_v1"):
+            if (envelope.journey_ref != snapshot.journey_ref or
+                    envelope.expected_event_head != snapshot.event_head_sha256
+                    or snapshot.state != "running" or handle is None or getattr(
+                        handle, "control_class", None) != "windows_job_v1"):
                 raise GatewayOperationError("CANCEL_UNAVAILABLE")
             authorized = self.authorizer(
                 action, raw, owner_ref=owner_ref, state_root=self.state_root,
@@ -130,8 +131,7 @@ class GatewayOperations:
                 client_request_id=authorized.client_request_id,
                 operation="cancel_requested", payload=payload)
         stopping = OperationSnapshot(ref, snapshot.journey_ref,
-                                     ack.event_head_sha256,
-                                     "cancel_requested", False)
+                                     ack.event_head_sha256, "cancel_requested", False)
         self._publish(owner_ref, ref, "snapshot", stopping.as_json())
         timeout = authorized.operation["timeout_ms"] / 1000
         if not handle.signal_tree():
@@ -261,7 +261,7 @@ class GatewayOperations:
         value = {"schema": RESULT_SCHEMA, "operation_ref": ref,
                  "action": action, "state": state, "result": result}
         data = canonical_bytes(value)
-        if len(data) > 1_048_576:
+        if len(data) > MAX_RESULT_BYTES:
             raise GatewayOperationError("STORE_COMMIT_FAILED")
         digest, directory = canonical_sha256(value), self._result_dir(owner_ref)
         path = directory / f"{digest}.json"

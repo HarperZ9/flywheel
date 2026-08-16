@@ -48,10 +48,14 @@ final class GatewayOperations {
 
   Future<OperationResult> result(String operationRef) async {
     _validateRef(operationRef);
+    final terminal = await snapshot(operationRef);
+    if (!terminal.isTerminal) throw const GatewaySseException();
     final response = await _client._http.get(
         Uri.parse('${_client.baseUrl}/api/operations/$operationRef/result'));
-    return OperationResult.fromJson(
+    final result = OperationResult.fromJson(
         Map<String, Object?>.from(_client._decode(response)));
+    if (!_matchingTerminal(terminal, result)) throw const GatewaySseException();
+    return result;
   }
 
   Future<OperationSnapshot> cancel(Map<String, dynamic> finalBody) async {
@@ -128,14 +132,18 @@ GatewayOperationEvent _parseEvent(GatewaySseEvent event) {
       Map<String, Object?>.from(data['snapshot'] as Map<String, dynamic>));
   final result = OperationResult.fromJson(
       Map<String, Object?>.from(data['result'] as Map<String, dynamic>));
-  if (!snapshot.isTerminal ||
-      snapshot.operationRef != result.operationRef ||
-      snapshot.state != result.state) {
+  if (!_matchingTerminal(snapshot, result)) {
     throw const GatewaySseException();
   }
   return GatewayOperationEvent._(
       event.id, GatewayOperationEventType.terminal, snapshot, result, null);
 }
+
+bool _matchingTerminal(OperationSnapshot snapshot, OperationResult result) =>
+    snapshot.isTerminal &&
+    snapshot.operationRef == result.operationRef &&
+    snapshot.state == result.state &&
+    snapshot.resultSha256 == result.canonicalSha256;
 
 void _validateRef(String value) {
   if (!RegExp(r'^op_[0-9a-f]{32}$').hasMatch(value)) {

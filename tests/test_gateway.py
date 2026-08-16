@@ -534,6 +534,37 @@ def test_agent_http_delegates_to_operation_route(monkeypatch, tmp_path):
     assert captured["method"] == "GET" and captured["path"].endswith("a" * 32)
 
 
+def test_review_w10_all_operation_paths_reject_wrong_methods_in_route():
+    import io
+    h = gateway._Handler.__new__(gateway._Handler)
+    h.owner_ref = "owner_" + "a" * 32
+    h.headers, h.rfile, h.wfile = _FakeHeaders("0"), io.BytesIO(), io.BytesIO()
+    h._operation_components = lambda: (object(), object())
+    captured = []
+    h._operation_response = captured.append
+    ref = "op_" + "a" * 32
+    cases = (("GET", "/api/agent"), ("POST", f"/api/operations/{ref}"),
+             ("PUT", f"/api/operations/{ref}"),
+             ("DELETE", f"/api/operations/{ref}"),
+             ("HEAD", f"/api/operations/{ref}"))
+    for method, path in cases:
+        h.path = path
+        assert h._route_operation(method) is True
+        assert captured[-1].status == 422
+        assert captured[-1].body["error"]["code"] == "INVALID_REQUEST"
+
+
+def test_review_w10_put_delete_head_authenticate_before_strict_route():
+    for method in ("PUT", "DELETE", "HEAD"):
+        h, calls = gateway._Handler.__new__(gateway._Handler), []
+        h._authorized = lambda: calls.append("auth") or True
+        h._route_operation = lambda value: calls.append(value) or True
+        handler = getattr(h, f"do_{method}", None)
+        assert handler is not None
+        handler()
+        assert calls == ["auth", method]
+
+
 def test_router_stats_endpoint(monkeypatch):
     from harness.router_stats import RouterStats
     rs = RouterStats()

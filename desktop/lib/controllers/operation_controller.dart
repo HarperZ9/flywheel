@@ -14,8 +14,10 @@ final class OperationController extends ChangeNotifier {
   final String Function() _requestId;
   final int stopTimeoutMs;
   final VoidCallback? _onTerminal;
+  final ValueChanged<OperationResult>? _onTerminalResult;
   final GatewayOperationController? grants;
   OperationSnapshot? _execution;
+  OperationResult? _terminalResult;
   GatewayOperation? _pendingStop;
   String? _pendingHead;
   StreamSubscription<GatewayOperationEvent>? _watch;
@@ -26,15 +28,18 @@ final class OperationController extends ChangeNotifier {
     required String Function() requestId,
     this.stopTimeoutMs = 5000,
     VoidCallback? onTerminal,
+    ValueChanged<OperationResult>? onTerminalResult,
     this.grants,
   })  : _requestId = requestId,
-        _onTerminal = onTerminal {
+        _onTerminal = onTerminal,
+        _onTerminalResult = onTerminalResult {
     if (stopTimeoutMs < 1 || stopTimeoutMs > 30000) {
       throw ArgumentError('Invalid Stop timeout');
     }
   }
 
   OperationSnapshot? get execution => _execution;
+  OperationResult? get terminalResult => _terminalResult;
   OperationObserverState get observerState => _observer;
   GatewayJourneyBinding? get currentBinding => _execution?.binding;
   bool get hasTerminal => _execution?.isTerminal == true;
@@ -54,13 +59,16 @@ final class OperationController extends ChangeNotifier {
     _watch = stream.listen((event) {
       if (event.progress != null) onProgress(event.progress!);
       final snapshot = event.snapshot;
-      if (snapshot != null && !acceptSnapshot(snapshot)) onInterrupted();
+      final accepted = event.result == null
+          ? snapshot == null || acceptSnapshot(snapshot)
+          : snapshot != null && acceptTerminal(snapshot, event.result!);
+      if (!accepted) onInterrupted();
     }, onError: (_) {
       failObservation();
-      if (!hasTerminal) onInterrupted();
+      if (!_disposed && !hasTerminal) onInterrupted();
     }, onDone: () {
       closeObservation();
-      if (!hasTerminal) onInterrupted();
+      if (!_disposed && !hasTerminal) onInterrupted();
     });
   }
 
@@ -82,12 +90,39 @@ final class OperationController extends ChangeNotifier {
     _pendingStop = null;
     _pendingHead = null;
     grants?.invalidate();
-    if (next.isTerminal && !_terminalNotified) {
-      _terminalNotified = true;
-      _onTerminal?.call();
-    }
     notifyListeners();
     return true;
+  }
+
+  bool acceptTerminal(OperationSnapshot next, OperationResult result) {
+    final current = _execution;
+    if (_disposed ||
+        !next.isTerminal ||
+        next.operationRef != result.operationRef ||
+        next.state != result.state ||
+        next.resultSha256 != result.canonicalSha256 ||
+        current != null && next != current && !_validAdvance(current, next)) {
+      failObservation();
+      return false;
+    }
+    _terminalResult = result;
+    if (!acceptSnapshot(next)) return false;
+    if (!_terminalNotified) {
+      _terminalNotified = true;
+      _onTerminalResult?.call(result);
+      _onTerminal?.call();
+    }
+    return true;
+  }
+
+  bool acceptCancelResponse(OperationSnapshot response) {
+    final current = _execution;
+    return !_disposed &&
+        current != null &&
+        current.operationRef == response.operationRef &&
+        current.journeyRef == response.journeyRef &&
+        (response.state == OperationState.cancelRequested ||
+            response.isTerminal);
   }
 
   GatewayOperation? stopOperation() {

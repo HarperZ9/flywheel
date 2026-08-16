@@ -28,7 +28,7 @@ const _approval = {
   'expires_at': '2026-08-15T12:02:00Z'
 };
 const _operationDone =
-    'id: 1\r\nevent: terminal\r\ndata: {"snapshot":{"schema":"flywheel.gateway-operation-snapshot/v1","operation_ref":"op_$_a","journey_ref":"jrn_$_a","event_head_sha256":"$_a$_a","state":"completed","can_cancel":false,"terminal_event_ref":"$_a$_a","result_sha256":"$_a$_a"},"result":{"schema":"flywheel.gateway-operation-result/v1","operation_ref":"op_$_a","action":"agent.run","state":"completed","result":{"final":"done"}}}\r\n\r\nid: 2\r\nevent: terminal\r\ndata: [DONE]\r\n\r\n';
+    'id: 1\r\nevent: terminal\r\ndata: {"snapshot":{"schema":"flywheel.gateway-operation-snapshot/v1","operation_ref":"op_$_a","journey_ref":"jrn_$_a","event_head_sha256":"$_a$_a","state":"completed","can_cancel":false,"terminal_event_ref":"$_a$_a","result_sha256":"4e19f40df36fb27f1fa438e0320c339c1decfe2866d8b31b3daa34a918d3bb94"},"result":{"schema":"flywheel.gateway-operation-result/v1","operation_ref":"op_$_a","action":"agent.run","state":"completed","result":{"final":"done"}}}\r\n\r\nid: 2\r\nevent: terminal\r\ndata: [DONE]\r\n\r\n';
 
 typedef _Harness = ({
   CodeBufferSession session,

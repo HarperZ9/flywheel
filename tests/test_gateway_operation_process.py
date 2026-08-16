@@ -8,9 +8,12 @@ import time
 
 import pytest
 
+import harness.gateway_operation_process as worker_protocol
 from harness.cross_harness_process import ProcessOutcome, start_owned_process
-from harness.gateway_operation import AuthorizedOperation
-from harness.gateway_operation_process import GatewayAgentProcessFactory, GatewayWorker
+from harness.gateway_operation import AuthorizedOperation, thaw_operation
+from harness.gateway_operation_process import (
+    GatewayAgentProcessFactory, GatewayWorker, WorkerOutcome,
+)
 from harness.gateway_provider_adapter import ExecutionPlan
 
 
@@ -145,6 +148,134 @@ def test_concurrent_wait_decodes_one_worker_outcome_once():
     assert tree.waits == 1 and len(outcomes) == 2
     assert outcomes[0] == outcomes[1]
     assert progress == [{"step": 1}]
+
+
+def test_review_critical_child_secret_leak_writes_no_artifact(monkeypatch,
+                                                              tmp_path):
+    run_root, emitted = tmp_path / "runs", []
+    (tmp_path / "workspace").mkdir()
+    operation = thaw_operation(_authorized(tmp_path).operation)
+    operation["root"] = str(tmp_path / "workspace")
+
+    def leaking_run(*_args, on_event, **_kwargs):
+        try: on_event({"type": "assistant", "text": SECRET})
+        except Exception: pass
+        return {"final": "must-not-survive"}
+
+    monkeypatch.setattr("harness.router_agent.run_router_agent", leaking_run)
+    monkeypatch.setattr(worker_protocol, "_emit", emitted.append)
+    monkeypatch.setattr(worker_protocol, "_worker_request", lambda: (
+        operation, {"TOKEN": SECRET}, tmp_path, run_root))
+
+    assert worker_protocol._main() == 1
+    assert emitted == [{"type": "terminal", "state": "failed",
+                        "result": {"reason": "EXTERNAL_ACTION_FAILED"}}]
+    artifacts = [path for path in tmp_path.rglob("*") if path.is_file()]
+    assert artifacts == []
+
+def test_review_w2_confirmed_tree_stop_is_cancelled_unless_natural_terminal():
+    killed = Tree("")
+    killed.wait = lambda _timeout: ProcessOutcome(-1, "", "", 1, False, True)
+    worker = GatewayWorker(killed, lambda _event: None, ())
+    assert worker.signal_tree() is True
+    assert worker.wait(1).state == "cancelled"
+
+    terminal = json.dumps({"type": "terminal", "state": "completed",
+                           "result": {"final": "natural"}}) + "\n"
+    class Natural(Tree):
+        def __init__(self): super().__init__(terminal); self.killed = False
+        def stdout_snapshot(self): return terminal.encode(), False
+        def signal_tree(self): self.killed = True; return True
+        def wait(self, _timeout):
+            return (ProcessOutcome(-1, terminal, "", 1, False)
+                    if self.killed else None)
+    natural = Natural()
+    worker = GatewayWorker(natural, lambda _event: None, ())
+    assert worker.wait(0) is None
+    assert worker.signal_tree() is True
+    assert worker.wait(1).state == "completed"
+
+
+def test_review_w3_terminal_retry_keeps_exact_worker_outcome(tmp_path):
+    class Immediate:
+        control_class = "windows_job_v1"
+        def resume(self): return True
+        def signal_tree(self): return True
+        def wait(self, _timeout):
+            return WorkerOutcome("completed", {"final": "answer"})
+        def close(self): pass
+    attempts = []
+
+    def commit(outcome):
+        attempts.append(outcome)
+        if len(attempts) == 1: raise OSError("commit window")
+
+    worker_protocol.supervise_operation(
+        authorized=_authorized(tmp_path),
+        factory=type("F", (), {"create": lambda *_: Immediate()})(),
+        progress=lambda _event: None, started=lambda _control: None,
+        registered=lambda _worker: None, terminal=commit)
+    assert [attempt.state for attempt in attempts] == ["completed", "completed"]
+    assert attempts[0] == attempts[1]
+
+
+def test_review_w6_progress_is_published_before_worker_exit():
+    progress_line = json.dumps(
+        {"type": "progress", "event": {"step": 1}}) + "\n"
+    terminal_line = json.dumps(
+        {"type": "terminal", "state": "completed",
+         "result": {"final": "answer"}}) + "\n"
+
+    class Incremental(Tree):
+        def __init__(self):
+            super().__init__("")
+            self.release, self.visible = threading.Event(), progress_line
+        def stdout_snapshot(self): return self.visible.encode(), False
+        def wait(self, timeout):
+            if not self.release.wait(min(timeout, .02)): return None
+            self.stdout = self.visible + terminal_line
+            return ProcessOutcome(0, self.stdout, "", 1, False)
+
+    tree, progress, seen, outcomes = Incremental(), [], threading.Event(), []
+    worker = GatewayWorker(
+        tree, lambda event: (progress.append(event), seen.set()), ())
+    thread = threading.Thread(target=lambda: outcomes.append(worker.wait(1)))
+    thread.start()
+    try:
+        assert seen.wait(.2) and thread.is_alive()
+    finally:
+        tree.release.set(); thread.join(1)
+    assert progress == [{"step": 1}] and outcomes[0].state == "completed"
+
+
+def test_review_w14_failed_run_persists_only_bounded_fixed_diagnostics(
+        monkeypatch, tmp_path):
+    run_root, emitted = tmp_path / "runs", []
+    (tmp_path / "workspace").mkdir()
+    operation = thaw_operation(_authorized(tmp_path, secret="safe").operation)
+    operation["root"] = str(tmp_path / "workspace")
+
+    def failed_run(*_args, on_event, **_kwargs):
+        for index in range(205):
+            on_event({"type": "assistant", "text": "safe" * 300,
+                      "index": index})
+        raise RuntimeError("private provider diagnostic")
+
+    monkeypatch.setattr("harness.router_agent.run_router_agent", failed_run)
+    monkeypatch.setattr(worker_protocol, "_emit", emitted.append)
+    monkeypatch.setattr(worker_protocol, "_worker_request", lambda: (
+        operation, {}, tmp_path, run_root))
+
+    assert worker_protocol._main() == 1
+    files = list((run_root / "agent_runs").glob("*.json"))
+    assert len(files) == 1
+    stored = json.loads(files[0].read_bytes())
+    assert stored["status"] == "FAILED"
+    assert stored["failure"] == {"code": "EXTERNAL_ACTION_FAILED"}
+    assert len(stored["events"]) == 201
+    assert stored["events"][-1] == {"type": "truncated", "dropped": 5}
+    assert "private provider diagnostic" not in repr(stored)
+    assert emitted[-1]["result"] == {"reason": "EXTERNAL_ACTION_FAILED"}
 
 
 @pytest.mark.skipif(os.name != "nt", reason="Windows process-tree boundary")
