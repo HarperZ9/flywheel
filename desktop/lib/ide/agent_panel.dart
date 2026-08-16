@@ -7,6 +7,7 @@ import '../widgets/fw.dart';
 import '../widgets/operation_grant_sheet.dart';
 import 'agent_gates.dart';
 import 'agent_runs_panel.dart';
+import 'editor_pane.dart';
 import 'live_run_tail.dart';
 
 class AgentPanel extends StatefulWidget {
@@ -14,6 +15,7 @@ class AgentPanel extends StatefulWidget {
   final bool alive;
   final String workspaceRoot;
   final String? activeFile, selection;
+  final EditorAttachmentSupplier? currentAttachment;
   final VoidCallback onRunStarted, onRunFinished;
   final TextEditingController? goalController;
   const AgentPanel(
@@ -25,6 +27,7 @@ class AgentPanel extends StatefulWidget {
       required this.onRunFinished,
       this.activeFile,
       this.selection,
+      this.currentAttachment,
       this.goalController});
   @override
   State<AgentPanel> createState() => _AgentPanelState();
@@ -77,9 +80,9 @@ class _AgentPanelState extends State<AgentPanel> {
   GatewayOperation? _operation(String request) {
     final endpoint = _endpoint, input = _goal.text.trim();
     if (endpoint == null || input.isEmpty) return null;
-    final file = _attachContext ? widget.activeFile : null;
-    final selection = widget.selection;
     try {
+      final attachment = closedEditorAttachment(_attachContext,
+          widget.currentAttachment, widget.activeFile, widget.selection);
       return GatewayOperation.exact(
           action: 'agent.run',
           clientRequestId: request,
@@ -90,12 +93,7 @@ class _AgentPanelState extends State<AgentPanel> {
             'allow_write': _allowWrite,
             'allow_exec': _allowExec,
             'stream': true,
-            if (file != null)
-              'attachment': {
-                'relative_path': file,
-                if (selection != null && selection.isNotEmpty)
-                  'selection': selection,
-              },
+            if (attachment != null) 'attachment': attachment,
             'root': widget.workspaceRoot
           });
     } catch (_) {

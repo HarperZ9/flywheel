@@ -211,8 +211,7 @@ class _CodeViewState extends State<CodeView> {
             client: widget.client,
             alive: widget.alive,
             workspaceRoot: root,
-            activeFile: active?.relativePath,
-            selection: _selectionOf(active),
+            currentAttachment: () => editorAttachmentOf(_active),
             goalController: _agentGoal,
             onRunStarted: widget.session.snapshotOpenFiles,
             onRunFinished: widget.session.reloadCleanFiles,
@@ -244,12 +243,5 @@ class _CodeViewState extends State<CodeView> {
         'Completed save recovered: ${value.path}',
       _ => null,
     };
-  }
-
-  String? _selectionOf(OpenFile? file) {
-    if (file == null) return null;
-    final selection = file.controller.selection;
-    if (!selection.isValid || selection.isCollapsed) return null;
-    return selection.textInside(file.controller.text);
   }
 }
