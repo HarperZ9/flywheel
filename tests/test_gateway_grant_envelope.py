@@ -5,6 +5,8 @@ import pytest
 from harness.gateway_envelope import parse_gateway_envelope
 from harness.gateway_operation import (
     GatewayOperationError, canonicalize_operation, materialize_agent_attachment)
+from harness.gateway_operations import GatewayOperations
+from harness.gateway_operation_recovery import validate_operation_value
 from harness.gateway_secret_boundary import validate_no_raw_secrets
 
 
@@ -123,3 +125,24 @@ def test_cancel_envelope_has_exact_operation_destination_tool_and_scope():
             "data_refs": ["data_public"], "credential_refs": [],
         }))
     assert failure.value.code == "INVALID_REQUEST"
+
+
+def test_operation_result_uses_shared_signed64_integer_domain(tmp_path):
+    service = GatewayOperations(tmp_path, clock=lambda: "2026-08-16T12:00:00Z")
+    owner, operation = "owner_" + "a" * 32, "op_" + "a" * 32
+    valid = {"minus53": -(1 << 53), "plus53": 1 << 53,
+             "min64": -(1 << 63), "max64": (1 << 63) - 1}
+
+    assert service._seal(owner, operation, "agent.run", "completed", valid) == (
+        "ae2e1e88cc232bbe608404be0efb6ed20f43d72db9b018a1fd3d80cea64544a8")
+    for overflow in (1 << 63, -(1 << 63) - 1):
+        with pytest.raises(GatewayOperationError) as failure:
+            service._seal(owner, operation, "agent.run", "completed",
+                          {"nested": [overflow]})
+        assert failure.value.code == "STORE_COMMIT_FAILED"
+
+
+def test_exact_credential_guard_checks_decoded_values_not_schema_keys():
+    validate_operation_value({"state": "completed"}, ("state",))
+    with pytest.raises(ValueError):
+        validate_operation_value({"state": "contains-state"}, ("state",))

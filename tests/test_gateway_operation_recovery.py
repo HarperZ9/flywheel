@@ -1,4 +1,5 @@
 import json
+import threading
 import pytest
 
 from harness.evidence_json import canonical_bytes, canonical_sha256
@@ -8,7 +9,7 @@ from harness.gateway_operation_recovery import (
 )
 from harness.gateway_operation_route import OperationEventBus
 from harness.gateway_operation_process import WorkerOutcome
-from harness.gateway_operations import GatewayOperations
+from harness.gateway_operations import GatewayOperations, OperationSnapshot
 from harness.journey_store import JourneyStore, MutationCommand
 
 
@@ -186,6 +187,40 @@ def test_review_w4_terminal_replay_revalidates_durable_result(tmp_path):
         next(stream)
     assert getattr(failure.value, "code", None) == "STORE_COMMIT_FAILED"
     assert bus._subscribers == {}
+
+
+def test_review_w4_terminal_row_refetches_snapshot_after_publish():
+    entered, release, rows = threading.Event(), threading.Event(), []
+    running = OperationSnapshot(
+        OPERATION, JOURNEY, "a" * 64, "running", True)
+    terminal = OperationSnapshot(
+        OPERATION, JOURNEY, "b" * 64, "completed", False,
+        "c" * 64, "d" * 64)
+
+    class Service:
+        terminal_states = {"completed", "failed", "cancelled"}
+        calls = 0
+        def snapshot(self, _owner, _ref):
+            self.calls += 1
+            if self.calls == 1:
+                entered.set(); assert release.wait(1)
+                return running
+            return terminal
+        def result(self, _owner, _ref):
+            return {"state": "completed"}
+
+    bus, stream = OperationEventBus(), None
+    service = Service()
+    stream = bus.watch(service, OWNER, OPERATION, 0)
+    thread = threading.Thread(target=lambda: rows.append(next(stream)))
+    thread.start(); assert entered.wait(1)
+    bus.publish(OWNER, OPERATION, "terminal", {"durable": True})
+    release.set(); thread.join(1)
+    try:
+        assert not thread.is_alive()
+        assert rows[0]["data"]["snapshot"]["state"] == "completed"
+    finally:
+        stream.close()
 
 
 def test_review_w3_publish_retry_replays_exact_terminal_digest(tmp_path):

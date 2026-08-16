@@ -7,6 +7,7 @@ import 'package:http/testing.dart';
 import 'package:crypto/crypto.dart';
 
 import 'package:flywheel_desktop/client/gateway_client.dart';
+import 'package:flywheel_desktop/client/gateway_sse_decoder.dart';
 import 'package:flywheel_desktop/controllers/operation_controller.dart';
 import 'package:flywheel_desktop/models/operation_models.dart';
 
@@ -39,6 +40,7 @@ void main() {
   _snapshotTests();
   _controllerTests();
   _resultTests();
+  _numericDomainTests();
   _reviewTerminalResultTest();
   _reviewCancelRaceTest();
 }
@@ -146,6 +148,44 @@ void _resultTests() {
     });
     expect(canonical.canonicalSha256,
         '1dce483b3a485d2fcf2ab59b284ea7fd12b3d1822869109de58710e4790c93a8');
+  });
+}
+
+void _numericDomainTests() {
+  const valid = '{"action":"agent.run","operation_ref":"$_operation",'
+      '"result":{"max64":9223372036854775807,'
+      '"min64":-9223372036854775808,"minus53":-9007199254740992,'
+      '"plus53":9007199254740992},'
+      '"schema":"flywheel.gateway-operation-result/v1",'
+      '"state":"completed"}';
+  test('operation result shares exact signed64 integer domain with server', () {
+    final result = OperationResult.fromJson(
+        Map<String, Object?>.from(jsonDecode(valid) as Map));
+    expect(result.result['minus53'], -9007199254740992);
+    expect(result.result['plus53'], 9007199254740992);
+    expect(result.result['min64'], -9223372036854775808);
+    expect(result.result['max64'], 9223372036854775807);
+    expect(result.canonicalSha256,
+        'ae2e1e88cc232bbe608404be0efb6ed20f43d72db9b018a1fd3d80cea64544a8');
+  });
+
+  test('standalone result rejects an integer lexeme beyond signed64', () async {
+    const overflow = '{"schema":"flywheel.gateway-operation-result/v1",'
+        '"operation_ref":"$_operation","action":"agent.run",'
+        '"state":"completed","result":{"value":9223372036854775808}}';
+    final decoded = OperationResult.fromJson(
+        Map<String, Object?>.from(jsonDecode(overflow) as Map));
+    final terminal = _snapshot('completed',
+        terminal: _headC, result: decoded.canonicalSha256);
+    final client = GatewayClient(
+        baseUrl: 'http://gateway.test',
+        httpClient: MockClient((request) async =>
+            request.url.path.endsWith('/result')
+                ? http.Response(overflow, 200)
+                : http.Response(jsonEncode(terminal), 200)));
+    await expectLater(GatewayOperations(client).result(_operation),
+        throwsA(isA<GatewaySseException>()));
+    client.close();
   });
 }
 

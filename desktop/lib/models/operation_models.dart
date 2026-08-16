@@ -8,6 +8,8 @@ import 'gateway_grant_summary.dart';
 const operationSnapshotSchema = 'flywheel.gateway-operation-snapshot/v1';
 const operationResultSchema = 'flywheel.gateway-operation-result/v1';
 final _journeyRef = RegExp(r'^jrn_[0-9a-f]{32}$');
+final _minOperationInteger = BigInt.parse('-9223372036854775808');
+final _maxOperationInteger = BigInt.parse('9223372036854775807');
 
 enum OperationState {
   proposed,
@@ -41,7 +43,14 @@ Never _invalid() =>
 
 Object? _freezeJson(Object? value, List<int> budget, int depth) {
   if (depth > 16 || --budget[0] < 0) _invalid();
-  if (value == null || value is String || value is bool || value is int) {
+  if (value == null || value is String || value is bool) {
+    return value;
+  }
+  if (value is int) {
+    final integer = BigInt.from(value);
+    if (integer < _minOperationInteger || integer > _maxOperationInteger) {
+      _invalid();
+    }
     return value;
   }
   if (value is num) return value.isFinite ? value : _invalid();

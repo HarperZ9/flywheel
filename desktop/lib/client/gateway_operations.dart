@@ -52,6 +52,7 @@ final class GatewayOperations {
     if (!terminal.isTerminal) throw const GatewaySseException();
     final response = await _client._http.get(
         Uri.parse('${_client.baseUrl}/api/operations/$operationRef/result'));
+    validateGatewayJson(response.body);
     final result = OperationResult.fromJson(
         Map<String, Object?>.from(_client._decode(response)));
     if (!_matchingTerminal(terminal, result)) throw const GatewaySseException();

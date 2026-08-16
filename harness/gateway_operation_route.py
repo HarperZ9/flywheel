@@ -172,6 +172,7 @@ class OperationEventBus:
     @staticmethod
     def _terminal_data(service, owner_ref: str, operation_ref: str,
                        snapshot) -> dict:
+        snapshot = service.snapshot(owner_ref, operation_ref)
         return {"snapshot": snapshot.as_json(), "result": service.result(owner_ref, operation_ref)}
     def wake(self) -> None:
         with self._condition:

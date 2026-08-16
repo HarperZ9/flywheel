@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
 
+final _jsonIntegerLimit = BigInt.one << 63;
+
 final class GatewaySseException implements Exception {
   final String code;
   const GatewaySseException([this.code = 'INVALID_RESPONSE']);
@@ -158,7 +160,7 @@ final class _SseParser {
               !const {'snapshot', 'progress', 'terminal'}.contains(type))) {
         _fail();
       }
-      _JsonKeyScanner(payload).scan();
+      validateGatewayJson(payload);
       final decoded = jsonDecode(payload);
       if (decoded is! Map<String, dynamic>) _fail();
       final effective = type.isEmpty ? 'message' : type;
@@ -265,6 +267,11 @@ final class _JsonKeyScanner {
       index++;
     }
     if (index == start) _fail();
+    final integer = BigInt.tryParse(source.substring(start, index));
+    if (integer != null &&
+        (integer < -_jsonIntegerLimit || integer >= _jsonIntegerLimit)) {
+      _fail();
+    }
   }
 
   bool _take(int code) {
@@ -286,7 +293,8 @@ final class _JsonKeyScanner {
   }
 }
 
-bool _white(int code) =>
-    code == 0x20 || code == 0x09 || code == 0x0a || code == 0x0d;
+void validateGatewayJson(String source) => _JsonKeyScanner(source).scan();
+
+bool _white(int code) => code == 32 || code == 9 || code == 10 || code == 13;
 
 Never _fail() => throw const GatewaySseException();

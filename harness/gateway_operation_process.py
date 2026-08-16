@@ -7,9 +7,9 @@ from typing import Callable, Mapping, Protocol
 from .cross_harness_process import (
     OwnedProcess, ProcessLaunch, ProcessOutcome, start_owned_process)
 from .evidence_json import canonical_bytes, strict_load_json
-from .gateway_operation import (
-    AuthorizedOperation, canonicalize_operation, materialize_agent_attachment,
-    thaw_operation)
+from .gateway_operation import (AuthorizedOperation, canonicalize_operation,
+    materialize_agent_attachment, thaw_operation)
+from .gateway_operation_recovery import validate_operation_value
 from .gateway_secret_boundary import validate_no_raw_secrets
 _PRIVATE_SCHEMA = "flywheel.gateway-operation-worker/v1"
 MAX_RESULT_BYTES = 250_000
@@ -39,10 +39,14 @@ class GatewayWorker:
         self._cancel_requested = self._invalid = False
     def resume(self) -> bool: return self._owned.resume()
     def signal_tree(self) -> bool:
-        self._consume_current(); confirmed = self._owned.signal_tree()
-        if confirmed:
+        with self._poll_lock:
+            self._consume_current(); confirmed = self._owned.signal_tree()
+            if not confirmed: return False
+            final = self._owned.wait(0); self._consume_current(final)
             with self._state_lock:
+                self._terminal_before_cancel = self._terminal is not None and not self._invalid
                 self._cancel_requested = True
+            if self._outcome is None and final is not None: self._outcome = self._finish(final)
         return confirmed
     def wait(self, timeout_s: float) -> WorkerOutcome | None:
         deadline, first = time.monotonic() + max(0, timeout_s), True
@@ -92,7 +96,7 @@ class GatewayWorker:
             raise ValueError
         if set(row) == {"type", "event"} and row.get("type") == "progress":
             if type(row["event"]) is not dict: raise ValueError
-            validate_no_raw_secrets(row["event"])
+            validate_operation_value(row["event"], self._secrets); validate_no_raw_secrets(row["event"])
             if len(canonical_bytes(row["event"])) > MAX_RESULT_BYTES: raise ValueError
             self._progress(row["event"]); return
         if (set(row) != {"type", "state", "result"}
@@ -100,7 +104,7 @@ class GatewayWorker:
                 or row.get("state") not in {"completed", "cancelled", "failed"}
                 or type(row.get("result")) is not dict):
             raise ValueError
-        validate_no_raw_secrets(row["result"])
+        validate_operation_value(row["result"], self._secrets); validate_no_raw_secrets(row["result"])
         if len(canonical_bytes(row["result"])) > MAX_RESULT_BYTES: raise ValueError
         self._terminal = WorkerOutcome(row["state"], row["result"])
         self._terminal_before_cancel = not self._cancel_requested
@@ -112,8 +116,7 @@ class GatewayWorker:
             validate_no_raw_secrets({"stderr": outcome.stderr})
         except Exception: self._invalid = True
         if (outcome.malformed_output or outcome.timed_out or self._invalid
-                or any(secret and secret in outcome.stderr
-                       for secret in self._secrets)):
+                or any(secret and secret in outcome.stderr for secret in self._secrets)):
             return _failed()
         if outcome.returncode == 0 and self._terminal is not None: return self._terminal
         return _failed()
@@ -136,10 +139,8 @@ class GatewayAgentProcessFactory:
         spec = ProcessLaunch(
             (sys.executable, "-m", "harness.gateway_operation_process", "worker"),
             self.repo_root, canonical_bytes(payload), _minimal_env(self.repo_root))
-        return GatewayWorker(
-            self.launcher(spec), progress,
-            tuple(value for value in bindings.values()
-                  if type(value) is str and value))
+        return GatewayWorker(self.launcher(spec), progress, tuple(
+            value for value in bindings.values() if type(value) is str and value))
 def _commit_terminal(callback: Callable[[WorkerOutcome], None], outcome: WorkerOutcome) -> None:
     """Retry the same CAS outcome; never substitute a second terminal."""
     for _ in range(2):
@@ -227,11 +228,10 @@ def _worker_request() -> tuple[dict, dict, Path, Path]:
         raise ValueError
     return (thaw_operation(operation.operation), bindings,
             Path(value["repo_root"]), Path(value["run_root"]))
-class _SecretOutput(ValueError):
-    pass
+class _SecretOutput(ValueError): pass
 def _check_child_value(value: object, secrets: tuple[str, ...]) -> None:
     try:
-        validate_no_raw_secrets(value); data = canonical_bytes(value)
+        validate_no_raw_secrets(value); validate_operation_value(value, secrets); data = canonical_bytes(value)
     except Exception: raise _SecretOutput from None
     if any(secret.encode("utf-8") in data for secret in secrets if secret):
         raise _SecretOutput

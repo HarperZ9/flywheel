@@ -2,10 +2,8 @@
 from __future__ import annotations
 from contextlib import nullcontext
 from dataclasses import dataclass
-import os
+import os, threading, time
 from pathlib import Path
-import threading
-import time
 from typing import Callable, Iterator
 from .evidence_json import canonical_bytes, canonical_sha256
 from .gateway_envelope import parse_gateway_envelope
@@ -14,9 +12,9 @@ from .gateway_operation_process import MAX_RESULT_BYTES, OperationProcessFactory
 from .journey_service import JourneyService
 from .journey_store import JourneyStore, JourneyStoreError
 from .operation_grants import GrantStore, _secure_owner_only
-from .gateway_operation_recovery import (LIFECYCLE, history_state,
-    normalize_outcome, seal_outcome, started_event, validate_history,
-    validate_result)
+from .gateway_operation_recovery import (LIFECYCLE, history_state, normalize_outcome,
+    seal_outcome, started_event, validate_history,
+    validate_operation_value, validate_result)
 from .gateway_operation_route import (OperationEventBus, authorization_sha256,
     operation_ref_for, queued_payload, replay_authorization_sha256)
 SNAPSHOT_SCHEMA = "flywheel.gateway-operation-snapshot/v1"
@@ -50,6 +48,7 @@ class GatewayOperations:
             credential_resolver = resolve_credentials
         self.authorizer, self.credential_resolver = authorizer, credential_resolver
         self._handles: dict[tuple[str, str], object] = {}
+        self._secrets: dict[tuple[str, str], tuple[str, ...]] = {}
         self.events = OperationEventBus()
         self.terminal_states = TERMINALS
     def start(self, authorized: AuthorizedOperation,
@@ -76,6 +75,8 @@ class GatewayOperations:
                 operation="operation_queued", payload=payload)
             queued = OperationSnapshot(ref, authorized.journey_ref,
                                        ack.event_head_sha256, "queued", False)
+            self._secrets[(authorized.owner_ref, ref)] = tuple(
+                value for value in authorized.credential_bindings.values() if type(value) is str and value)
         self._publish(authorized.owner_ref, ref, "snapshot", queued.as_json())
         threading.Thread(target=self._control,
                          args=(authorized, ref, process_factory), daemon=True).start()
@@ -253,13 +254,15 @@ class GatewayOperations:
             terminal = OperationSnapshot(
                 ref, current.journey_ref, ack.event_head_sha256, state, False,
                 ack.event_sha256, digest)
-        self._publish(owner_ref, ref, "terminal", {
+        try: self._publish(owner_ref, ref, "terminal", {
             "snapshot": terminal.as_json(), "result": self.result(owner_ref, ref)})
+        finally: self._secrets.pop((owner_ref, ref), None)
         return terminal
     def _seal(self, owner_ref: str, ref: str, action: str,
               state: str, result: dict) -> str:
         value = {"schema": RESULT_SCHEMA, "operation_ref": ref,
                  "action": action, "state": state, "result": result}
+        self._validate(owner_ref, ref, value, "STORE_COMMIT_FAILED")
         data = canonical_bytes(value)
         if len(data) > MAX_RESULT_BYTES:
             raise GatewayOperationError("STORE_COMMIT_FAILED")
@@ -284,13 +287,14 @@ class GatewayOperations:
             return directory
         except (OSError, PermissionError):
             raise GatewayOperationError("STORE_COMMIT_FAILED") from None
-    def _publish(self, owner_ref: str, ref: str,
-                 kind: str, data: dict) -> None:
+    def _publish(self, owner_ref: str, ref: str, kind: str, data: dict) -> None:
+        self._validate(owner_ref, ref, data, "EXTERNAL_ACTION_FAILED")
         self.events.publish(owner_ref, ref, kind, data)
-def start_operation(*, authorized: AuthorizedOperation,
-                    service: GatewayOperations,
+    def _validate(self, owner_ref: str, ref: str, value: object, code: str) -> None:
+        try: validate_operation_value(value, self._secrets.get((owner_ref, ref), ()))
+        except Exception: raise GatewayOperationError(code) from None
+def start_operation(*, authorized: AuthorizedOperation, service: GatewayOperations,
                     process_factory: OperationProcessFactory) -> OperationSnapshot:
     return service.start(authorized, process_factory)
-def cancel_operation(*, action: str, raw: bytes, owner_ref: str,
-                     service: GatewayOperations) -> OperationSnapshot:
+def cancel_operation(*, action: str, raw: bytes, owner_ref: str, service: GatewayOperations) -> OperationSnapshot:
     return service.cancel(action=action, raw=raw, owner_ref=owner_ref)

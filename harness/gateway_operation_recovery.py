@@ -4,7 +4,7 @@ from __future__ import annotations
 from pathlib import Path
 import re
 
-from .evidence_json import canonical_sha256
+from .evidence_json import canonical_bytes, canonical_sha256
 from .journey_service import JourneyService
 from .journey_store import JourneyStore
 from .journey_types import SHA256_PATTERN
@@ -21,6 +21,26 @@ FAILURE_REASONS = frozenset((
     "EXTERNAL_ACTION_FAILED", "OWNERSHIP_UNAVAILABLE", "OPERATION_INTERRUPTED",
     "RESULT_SEAL_FAILED",
 ))
+_INT64_MIN, _INT64_MAX = -(1 << 63), (1 << 63) - 1
+
+
+def validate_operation_value(value: object,
+                             secrets: tuple[str, ...] = ()) -> None:
+    """Validate canonical JSON, signed integers, and decoded secret strings."""
+    canonical_bytes(value)
+    pending = [value]
+    while pending:
+        item = pending.pop()
+        if type(item) is str:
+            if any(secret and secret in item for secret in secrets):
+                raise ValueError("gateway operation value contains a secret")
+        elif type(item) is int:
+            if not _INT64_MIN <= item <= _INT64_MAX:
+                raise ValueError("gateway operation integer is out of range")
+        elif type(item) is dict:
+            pending.extend(item.values())
+        elif type(item) is list:
+            pending.extend(item)
 
 
 def _terminal(history: list[dict]) -> dict | None:
@@ -54,6 +74,7 @@ def validate_result(value: object, operation_ref: str,
             or value.get("action") != action or value.get("state") != state
             or type(value.get("result")) is not dict):
         raise ValueError("gateway operation result is invalid")
+    validate_operation_value(value)
 
 
 def normalize_outcome(current: str, state: object,

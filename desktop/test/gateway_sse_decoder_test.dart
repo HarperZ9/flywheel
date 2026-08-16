@@ -74,6 +74,8 @@ void main() {
       'id: 1\nevent: terminal\ndata: {bad}\n\n',
       'id: 1\nevent: terminal\ndata: {"state":1,"state":2}\n\n',
       'id: 1\nevent: terminal\ndata: {"a":1,"\\u0061":2}\n\n',
+      'id: 1\nevent: terminal\ndata: {"n":9223372036854775808}\n\n',
+      'id: 1\nevent: terminal\ndata: {"n":-9223372036854775809}\n\n',
       'id: 1\nevent: terminal\ndata: "[DONE]"\n\n',
       'id: 1\ndata: [DONE] \n\n',
     ]) {
