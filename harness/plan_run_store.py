@@ -15,7 +15,7 @@ from .operation_grants import (_parse_time, _secure_owner_only, _utc_text,
 from .plan_run_contract import (FORGE_SCHEMA, PLAN_RUN_REF, PRP_REF, ForgeRecord,
     PlanRunBinding, PlanRunContractError, VerifiedPlanRun,
     parse_plan_run_binding, validate_prp, verify_plan_result)
-
+from .plan_run_snapshot import freeze_json
 
 class PlanRunStoreError(RuntimeError):
     """Fixed durable-storage or replay failure."""
@@ -23,7 +23,6 @@ class PlanRunStoreError(RuntimeError):
     def __init__(self, code: str = "STORE_COMMIT_FAILED") -> None:
         self.code = code
         super().__init__(code)
-
 
 def _owner_dir(state_root: Path, family: str, owner_ref: str,
                *, create: bool) -> Path:
@@ -95,7 +94,7 @@ def _record(value: object, owner_ref: str) -> ForgeRecord:
             "prp_sha256": value["prp_sha256"]})[:32]
         if value["prp_id"] != expected:
             raise ValueError
-        return ForgeRecord(owner_ref, value["prp_id"], prp,
+        return ForgeRecord(freeze_json(value), owner_ref, value["prp_id"],
             value["prp_sha256"], value["prompt_sha256"],
             value["gates_sha256"], value["created_at"], value["seal_sha256"])
     except (KeyError, TypeError, ValueError, PlanRunContractError):
@@ -127,7 +126,7 @@ def seal_plan_prp(prp: object, *, owner_ref: str, state_root: Path,
         path = _path(owner, ref, PRP_REF)
         with ExclusiveJourneyLock.acquire(owner / ".lock"):
             if path.exists():
-                return _binding(_read_record(path, owner_ref))
+                return _binding(_read_record(path, owner_ref, ref))
             created = _utc_text(_parse_time(clock()))
             value = {"schema": FORGE_SCHEMA, "owner_ref": owner_ref,
                 "prp_id": ref, "prp": validated, "prp_sha256": prp_sha,
@@ -137,7 +136,7 @@ def seal_plan_prp(prp: object, *, owner_ref: str, state_root: Path,
                     validated["validation_gates"]), "created_at": created}
             value["seal_sha256"] = canonical_sha256(value)
             _replace(path, value, state_root)
-            return _binding(_record(value, owner_ref))
+            return _binding(_read_record(path, owner_ref, ref))
     except (PlanRunContractError, PlanRunStoreError):
         raise
     except JourneyLockBusy:
@@ -146,12 +145,18 @@ def seal_plan_prp(prp: object, *, owner_ref: str, state_root: Path,
         raise PlanRunStoreError() from None
 
 
-def _read_record(path: Path, owner_ref: str) -> ForgeRecord:
-    if not path.is_file():
+def _read_record(path: Path, owner_ref: str,
+                 expected_prp_id: str) -> ForgeRecord:
+    expected_name = f"{canonical_sha256(expected_prp_id)}.json"
+    if not path.is_file() or path.name != expected_name:
         raise PlanRunContractError("PLAN_BINDING_DRIFT")
     try:
         _secure_owner_only(path, directory=False)
-        return _record(strict_load_json(path.read_bytes(), max_depth=16), owner_ref)
+        record = _record(strict_load_json(path.read_bytes(), max_depth=16),
+                         owner_ref)
+        if record.prp_id != expected_prp_id:
+            raise PlanRunContractError("PLAN_BINDING_DRIFT")
+        return record
     except PlanRunContractError:
         raise
     except (OSError, TypeError, ValueError):
@@ -166,7 +171,7 @@ def load_plan_prp(prp_id: str, *, owner_ref: str,
             raise PlanRunContractError("PLAN_BINDING_DRIFT")
         _secure_owner_only(owner.parent, directory=True)
         _secure_owner_only(owner, directory=True)
-        return _read_record(_path(owner, prp_id, PRP_REF), owner_ref)
+        return _read_record(_path(owner, prp_id, PRP_REF), owner_ref, prp_id)
     except PlanRunContractError:
         raise
     except (OSError, TypeError, ValueError):
@@ -208,7 +213,9 @@ def load_plan_result(plan_run_ref: str, *, owner_ref: str, state_root: Path,
             return None
         _secure_owner_only(path, directory=False)
         value = strict_load_json(path.read_bytes(), max_depth=16)
-        if verifier(value).get("verdict") != "MATCH":
+        if (type(value) is not dict
+                or value.get("plan_run_ref") != plan_run_ref
+                or verifier(value).get("verdict") != "MATCH"):
             raise PlanRunStoreError()
         return value
     except PlanRunStoreError:

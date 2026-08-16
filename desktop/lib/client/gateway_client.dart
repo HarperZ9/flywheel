@@ -1,5 +1,4 @@
 // Typed loopback client. Durable agent operations live in the gateway.
-
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
@@ -9,11 +8,12 @@ import '../models/workflow_models.dart';
 import 'gateway_auth.dart';
 import 'gateway_error.dart';
 import 'gateway_sse_decoder.dart';
-
+import 'strict_plan_json.dart';
 export 'gateway_error.dart';
 
 part 'gateway_streams.dart';
 part 'gateway_operations.dart';
+part 'gateway_plan_transport.dart';
 
 class GatewayClient {
   final String baseUrl;

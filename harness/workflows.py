@@ -15,6 +15,7 @@ import time
 from pathlib import Path
 
 from .endpoint_registry import ProviderPermissionError
+from .plan_run_snapshot import FrozenJsonSnapshot, thaw_json
 from .router_agent import run_router_agent
 
 WORKFLOWS = {
@@ -214,7 +215,6 @@ def _agent_step(step, goal, prev, endpoint, *, root, allow_write, allow_exec,
         return summary, str(result.get("final", "")), "FAILED", True
     return summary, str(result.get("final", "")), None, False
 
-
 def _persist_workflow(doc: dict, run_root, authorized: bool) -> None:
     if not run_root:
         return
@@ -228,20 +228,36 @@ def _persist_workflow(doc: dict, run_root, authorized: bool) -> None:
         _fixed_if_authorized(authorized, exc)
         doc["receipt_note"] = f"run not persisted: {type(exc).__name__}: {exc}"
 
+def _frozen_workflow(raw: bytes, workflow: str) -> dict:
+    if type(raw) is not bytes:
+        raise ValueError("invalid workflow snapshot")
+    snapshot = FrozenJsonSnapshot(raw, hashlib.sha256(raw).hexdigest())
+    spec = thaw_json(snapshot)
+    if (set(spec) != {"name", "description", "steps"}
+            or spec.get("name") != workflow or not spec["name"]
+            or type(spec.get("description")) is not str
+            or not spec["description"]
+            or type(spec.get("steps")) is not list or not spec["steps"]):
+        raise ValueError("invalid workflow snapshot")
+    return spec
 
 def run_workflow(workflow: str, goal: str, endpoint: str, *, root: str = ".",
                  allow_write: bool = False, allow_exec: bool = False,
                  allow_mcp: bool = False, test_cmd: "str | None" = None,
                  system: str = "", run_root: "Path | str | None" = None,
                  proposer=None, credential_bindings=None,
-                 authorized: bool = False) -> dict:
+                 authorized: bool = False,
+                 workflow_snapshot: bytes | None = None) -> dict:
     """Run every step in order over `endpoint`. The gates passed here are the
     caller's actual grants; workflow definitions cannot widen them."""
-    spec = WORKFLOWS.get(workflow)
-    if spec is None:
-        return {"schema": "flywheel.workflow-run/v1", "workflow": workflow,
-                "status": "UNKNOWN_WORKFLOW",
-                "known": sorted(WORKFLOWS)}
+    if workflow_snapshot is None:
+        spec = WORKFLOWS.get(workflow)
+        if spec is None:
+            return {"schema": "flywheel.workflow-run/v1", "workflow": workflow,
+                    "status": "UNKNOWN_WORKFLOW",
+                    "known": sorted(WORKFLOWS)}
+    else:
+        spec = _frozen_workflow(workflow_snapshot, workflow)
     started = time.strftime("%Y-%m-%dT%H:%M:%S")
     steps_out: list = []
     header = {"workflow": workflow, "endpoint": endpoint,

@@ -15,7 +15,7 @@ final class GatewayPlan {
         throw const GatewayGrantException(
             'INVALID_RESPONSE', 'Gateway response was invalid');
       }
-      return await _client.postJson(path, body);
+      return await _client.postPlanJson(path, body);
     } on Object catch (error) {
       throw gatewayGrantFailure(error);
     }
@@ -91,6 +91,7 @@ bool _matchesEnvelope(
       operation.remove(field);
     }
     final receipt = result.receipt;
+    final workflow = result.workflowRun;
     return receipt['journey_ref'] == finalEnvelope['journey_ref'] &&
         receipt['expected_event_head'] ==
             finalEnvelope['expected_event_head'] &&
@@ -103,7 +104,11 @@ bool _matchesEnvelope(
                 {'action': 'plan.run', 'operation': operation}) &&
         receipt['arguments_sha256'] == canonicalPlanSha256(operation) &&
         receipt['grant_ref_sha256'] ==
-            canonicalPlanSha256(finalEnvelope['grant_ref']);
+            canonicalPlanSha256(finalEnvelope['grant_ref']) &&
+        receipt['workflow'] == finalEnvelope['workflow'] &&
+        receipt['endpoint'] == finalEnvelope['endpoint'] &&
+        workflow['workflow'] == finalEnvelope['workflow'] &&
+        workflow['endpoint'] == finalEnvelope['endpoint'];
   } on Object {
     return false;
   }

@@ -79,4 +79,23 @@ void main() {
         '8706b5798a29d65739b3d1bbb1d009f87d005c71c8130c5353c4990c15ddfec8');
     expect(() => canonicalPlanSha256({'ratio': 0.5}), throwsFormatException);
   });
+
+  test('canonicalizer rejects unpaired UTF-16 surrogates recursively', () {
+    final invalid = <Object?>[
+      {'value': '\uD800leading'},
+      {'value': 'trailing\uD800'},
+      {'value': '\uDC00'},
+      {
+        'nested': <Object?>['ok', '\uDFFF']
+      },
+      {'\uD800': 'key'},
+      {
+        'key': {'\uDC00': 'nested key'}
+      },
+    ];
+    for (final value in invalid) {
+      expect(() => canonicalPlanSha256(value), throwsFormatException,
+          reason: value.toString());
+    }
+  });
 }

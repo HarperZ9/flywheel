@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'package:crypto/crypto.dart';
 
+part 'plan_run_result.dart';
+
 const planRunLimitations = <String>[
   'forged gates ran or passed',
   'workflow output is correct',
@@ -16,6 +18,7 @@ final _sha = RegExp(r'^[0-9a-f]{64}$');
 final _prpRef = RegExp(r'^fpr_[0-9a-f]{32}$');
 final _runRef = RegExp(r'^plr_[0-9a-f]{32}$');
 final _journeyRef = RegExp(r'^jrn_[0-9a-f]{32}$');
+final _requestId = RegExp(r'^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$');
 Set<String> _f(String value) => value.split(' ').toSet();
 final _t = _f('code extraction transform analysis research writing qa general');
 final _prpFields = _f('schema goal task_type intent_sha256 '
@@ -26,14 +29,30 @@ final _bindingFields = _f('schema prp_id prp prp_sha256 prompt '
 final _receiptFields = _f('schema plan_run_ref binding journey_ref '
     'expected_event_head client_request_id operation_sha256 arguments_sha256 '
     'authorization_sha256 grant_ref_sha256 execution_plan_sha256 '
-    'workflow_sha256 profile_sha256 effective_system_sha256 '
+    'workflow endpoint workflow_sha256 profile_sha256 effective_system_sha256 '
     'workflow_run_sha256 workflow_status denominator does_not_prove '
     'receipt_sha256');
 final _receiptPlain = _f('schema plan_run_ref binding journey_ref '
-    'client_request_id workflow_status denominator does_not_prove');
+    'client_request_id workflow endpoint workflow_status denominator '
+    'does_not_prove');
 Never _invalid() => throw const FormatException('Invalid Plan run contract');
 void _reject(bool value) => value ? _invalid() : null;
+void _validateUnicode(String value) {
+  for (var index = 0; index < value.length; index++) {
+    final unit = value.codeUnitAt(index);
+    if (unit >= 0xd800 && unit <= 0xdbff) {
+      if (++index >= value.length) _invalid();
+      final low = value.codeUnitAt(index);
+      if (low < 0xdc00 || low > 0xdfff) _invalid();
+    } else if (unit >= 0xdc00 && unit <= 0xdfff) {
+      _invalid();
+    }
+  }
+}
+
 int _unicodeCompare(String left, String right) {
+  _validateUnicode(left);
+  _validateUnicode(right);
   final a = utf8.encode(left), b = utf8.encode(right);
   for (var index = 0; index < a.length && index < b.length; index++) {
     if (a[index] != b[index]) return a[index].compareTo(b[index]);
@@ -43,15 +62,21 @@ int _unicodeCompare(String left, String right) {
 
 Object? _canonical(Object? value, List<int> budget, int depth) {
   if (depth > 16 || --budget[0] < 0) return _invalid();
-  if (value == null || value is bool || value is int || value is String) {
+  if (value is String) {
+    _validateUnicode(value);
     return value;
   }
+  if (value == null || value is bool || value is int) return value;
   if (value is num) return _invalid();
   if (value is List) {
     return value.map((item) => _canonical(item, budget, depth + 1)).toList();
   }
   if (value is Map && value.keys.every((key) => key is String)) {
-    final keys = value.keys.cast<String>().toList()..sort(_unicodeCompare);
+    final keys = value.keys.cast<String>().toList();
+    for (final key in keys) {
+      _validateUnicode(key);
+    }
+    keys.sort(_unicodeCompare);
     return {
       for (final key in keys) key: _canonical(value[key], budget, depth + 1)
     };
@@ -207,94 +232,4 @@ final class PlanRunBinding {
         List<PlanRunGate>.unmodifiable(gates));
   }
   Map<String, Object?> toJson() => _copy(_value) as Map<String, Object?>;
-}
-
-final class PlanRunResult {
-  final Map<String, Object?> _value;
-  final PlanRunBinding binding;
-  PlanRunResult._(this._value, this.binding);
-  String get planRunRef => _value['plan_run_ref'] as String;
-  String get resultSha256 => _value['result_sha256'] as String;
-  Map<String, Object?> get receipt => _value['receipt'] as Map<String, Object?>;
-  Map<String, Object?> get workflowRun =>
-      _value['workflow_run'] as Map<String, Object?>;
-  factory PlanRunResult.fromJson(Map<String, dynamic> source) {
-    final value = _map(source);
-    final fields = _f('schema plan_run_ref receipt workflow_run result_sha256');
-    _reject(!_exact(value, fields) ||
-        value['schema'] != 'flywheel.plan-run-result/v1' ||
-        value['plan_run_ref'] is! String ||
-        !_runRef.hasMatch(value['plan_run_ref'] as String));
-    final receipt = _map(value['receipt']),
-        workflow = _map(value['workflow_run']);
-    final binding =
-        _validReceipt(receipt, workflow, value['plan_run_ref'] as String);
-    final unsigned = Map<String, Object?>.from(value)..remove('result_sha256');
-    if (value['result_sha256'] != canonicalPlanSha256(unsigned)) _invalid();
-    return PlanRunResult._(_freeze(value) as Map<String, Object?>, binding);
-  }
-  Map<String, Object?> toJson() => _copy(_value) as Map<String, Object?>;
-}
-
-PlanRunBinding _validReceipt(Map<String, Object?> receipt,
-    Map<String, Object?> workflow, String runRef) {
-  _reject(!_exact(receipt, _receiptFields) ||
-      receipt['schema'] != 'flywheel.plan-run-receipt/v1' ||
-      receipt['plan_run_ref'] != runRef ||
-      receipt['journey_ref'] is! String ||
-      !_journeyRef.hasMatch(receipt['journey_ref'] as String) ||
-      receipt['expected_event_head'] is! String ||
-      !_sha.hasMatch(receipt['expected_event_head'] as String) ||
-      receipt['client_request_id'] is! String ||
-      receipt['binding'] is! Map ||
-      !_validWorkflow(workflow) ||
-      receipt['workflow_status'] != workflow['status'] ||
-      receipt['does_not_prove'] is! List ||
-      canonicalPlanJson(receipt['does_not_prove']) !=
-          canonicalPlanJson(planRunLimitations));
-  for (final name in _receiptFields.difference(_receiptPlain)) {
-    if (!_hash(receipt[name])) _invalid();
-  }
-  final binding = PlanRunBinding.fromJson(
-      Map<String, dynamic>.from(receipt['binding'] as Map));
-  final counts = binding.prp['gate_counts'] as Map;
-  final steps = workflow['steps'];
-  final denominator = {
-    'forged_gates': counts['total'],
-    'checkable_gates': counts['checkable'],
-    'forged_gates_executed': 0,
-    'workflow_steps_recorded': steps is List ? steps.length : 0
-  };
-  final unsigned = Map<String, Object?>.from(receipt)..remove('receipt_sha256');
-  _reject(canonicalPlanJson(receipt['denominator']) !=
-          canonicalPlanJson(denominator) ||
-      receipt['workflow_run_sha256'] != canonicalPlanSha256(workflow) ||
-      receipt['receipt_sha256'] != canonicalPlanSha256(unsigned));
-  return binding;
-}
-
-bool _validWorkflow(Map<String, Object?> workflow) {
-  final steps = workflow['steps'];
-  _reject(workflow['schema'] != 'flywheel.workflow-run/v1' ||
-      workflow['workflow'] is! String ||
-      (workflow['workflow'] as String).isEmpty ||
-      workflow['endpoint'] is! String ||
-      (workflow['endpoint'] as String).isEmpty ||
-      !_hash(workflow['chain_hash']) ||
-      workflow['status'] is! String ||
-      steps is! List);
-  final sign = _map(workflow['run_countersign']);
-  final identity = {
-    'kind': 'workflow-run',
-    'workflow': workflow['workflow'],
-    'endpoint': workflow['endpoint'],
-    'status': workflow['status'],
-    'chain_hash': workflow['chain_hash'],
-    'n_steps': (steps as List).length
-  };
-  return sign.length == 8 &&
-      identity.entries.every((item) => sign[item.key] == item.value) &&
-      sign['stored'] is String &&
-      (sign['stored'] as String).isNotEmpty &&
-      _hash(sign['store_chain_hash']);
 }

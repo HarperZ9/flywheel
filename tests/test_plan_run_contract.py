@@ -9,9 +9,13 @@ from harness.plan_run_contract import (
     PLAN_LIMITATIONS, PlanRunContractError, build_plan_run_result,
     parse_plan_run_binding, verify_plan_result,
 )
+from harness.plan_workflow_contract import validate_plan_workflow_run
+from harness.plan_run_snapshot import PlanRunSnapshotError, freeze_json
+from harness.workflows import recompute_chain
 
 
 FIXTURE = Path(__file__).parent / "fixtures" / "plan_run_contract_v1.json"
+CHAIN_FIXTURE = Path(__file__).parent / "fixtures" / "plan_workflow_chain_v1.json"
 
 
 def _fixture():
@@ -19,19 +23,22 @@ def _fixture():
 
 
 def _workflow():
-    return {
+    value = {
         "schema": "flywheel.workflow-run/v1", "workflow": "code-change",
-        "endpoint": "local", "status": "completed", "steps": [],
-        "chain_hash": "a" * 64,
-        "run_countersign": {"kind": "workflow-run",
-            "workflow": "code-change", "endpoint": "local",
-            "status": "completed", "chain_hash": "a" * 64, "n_steps": 0,
-            "stored": "ent_1", "store_chain_hash": "b" * 64},
-    }
+        "endpoint": "local", "goal_excerpt": "goal",
+        "started": "2026-08-15T12:00:00", "status": "completed", "steps": []}
+    value["chain_hash"] = recompute_chain(value)
+    value["run_countersign"] = {
+            "kind": "workflow-run", "workflow": "code-change",
+            "endpoint": "local", "status": "completed",
+            "chain_hash": value["chain_hash"], "n_steps": 0,
+            "stored": "ent_1", "store_chain_hash": "b" * 64}
+    return value
 
 
 def _receipt_inputs(binding):
     return dict(
+        workflow="code-change", endpoint="local",
         plan_run_ref="plr_" + "a" * 32, binding=binding,
         journey_ref="jrn_" + "a" * 32, expected_event_head="b" * 64,
         client_request_id="request-1", operation_sha256="c" * 64,
@@ -190,3 +197,103 @@ def test_bool_never_substitutes_for_receipt_integer(target):
     result["result_sha256"] = canonical_sha256({
         key: value for key, value in result.items() if key != "result_sha256"})
     assert verify_plan_result(result)["verdict"] == "DRIFT"
+
+
+def test_binding_accessors_are_fresh_and_repr_exposes_no_authority():
+    binding = parse_plan_run_binding(_fixture()["binding"])
+    prp, gates, value = binding.prp, binding.gates, binding.to_dict()
+    prp["goal"] = "changed"
+    gates.clear()
+    value["prompt"] = "changed"
+    assert binding.to_dict() == _fixture()["binding"]
+    assert "Implement stable sorting" not in repr(binding)
+
+
+def test_shared_unicode_workflow_chain_fixture_matches_legacy_algorithm():
+    fixture = json.loads(CHAIN_FIXTURE.read_text(encoding="utf-8"))
+    run = fixture["workflow_run"]
+    assert recompute_chain(run) == fixture["chain_hash"]
+    assert validate_plan_workflow_run(run, workflow="code-change",
+        endpoint=run["endpoint"], require_countersign=False) == run
+
+
+def _three_step_result():
+    run = _workflow()
+    run.pop("run_countersign")
+    run["steps"] = [{"name": name, "kind": "agent", "status": "DONE",
+                     "excerpt": name} for name in ("first", "middle", "last")]
+    run["chain_hash"] = recompute_chain(run)
+    run["run_countersign"] = {"kind": "workflow-run",
+        "workflow": run["workflow"], "endpoint": run["endpoint"],
+        "status": run["status"], "chain_hash": run["chain_hash"],
+        "n_steps": 3, "stored": "ent_1", "store_chain_hash": "b" * 64}
+    return build_plan_run_result(workflow_run=run,
+        **_receipt_inputs(_fixture()["binding"]))
+
+
+def _outer_rehash(result):
+    run, receipt = result["workflow_run"], result["receipt"]
+    receipt["workflow_run_sha256"] = canonical_sha256(run)
+    receipt["workflow_status"] = run["status"]
+    receipt["denominator"]["workflow_steps_recorded"] = len(run["steps"])
+    receipt["receipt_sha256"] = canonical_sha256({
+        key: value for key, value in receipt.items() if key != "receipt_sha256"})
+    result["result_sha256"] = canonical_sha256({
+        key: value for key, value in result.items() if key != "result_sha256"})
+
+
+@pytest.mark.parametrize("mutate", [
+    lambda r: r.__setitem__("workflow", "research-brief"),
+    lambda r: r.__setitem__("endpoint", "remote-other"),
+    lambda r: r.__setitem__("goal_excerpt", "changed"),
+    lambda r: r.__setitem__("started", "2026-08-15T12:00:01"),
+    lambda r: r["steps"][0].__setitem__("excerpt", "changed"),
+    lambda r: r["steps"][1].__setitem__("excerpt", "changed"),
+    lambda r: r["steps"][2].__setitem__("excerpt", "changed"),
+    lambda r: r["steps"].reverse(),
+    lambda r: r["steps"].insert(1, deepcopy(r["steps"][0])),
+    lambda r: r["steps"].pop(1),
+    lambda r: r["steps"].append(deepcopy(r["steps"][-1])),
+    lambda r: r.__setitem__("status", "FAILED"),
+    lambda r: r.__setitem__("chain_hash", "0" * 64),
+    lambda r: r["run_countersign"].__setitem__("status", "FAILED"),
+])
+def test_outer_hashes_cannot_hide_any_nested_chain_or_identity_drift(mutate):
+    result = _three_step_result()
+    mutate(result["workflow_run"])
+    _outer_rehash(result)
+    assert verify_plan_result(result)["verdict"] == "DRIFT"
+
+
+@pytest.mark.parametrize("target,mutation", [
+    ("result", lambda value: value.__setitem__("schema",
+                                               "flywheel.plan-run-result/v1")),
+    ("receipt", lambda value: value.__setitem__("schema",
+                                                "flywheel.plan-run-receipt/v1")),
+    ("receipt", lambda value: value.pop("workflow")),
+    ("receipt", lambda value: value.__setitem__("unknown", None)),
+    ("receipt", lambda value: value.__setitem__("endpoint", None)),
+])
+def test_v1_missing_unknown_and_null_contracts_fail_closed(target, mutation):
+    result = _three_step_result()
+    mutation(result if target == "result" else result["receipt"])
+    _outer_rehash(result)
+    assert verify_plan_result(result)["verdict"] == "DRIFT"
+
+
+def test_snapshot_rejects_nonobject_float_cycle_unicode_depth_nodes_and_size():
+    cycle = {}
+    cycle["self"] = cycle
+    deep, cursor = {}, None
+    cursor = deep
+    for index in range(17):
+        cursor["next"] = {}
+        cursor = cursor["next"]
+    invalid = [[], {"float": 1.0}, {"cycle": cycle},
+               {"text": chr(0xD800)}, deep,
+               {str(index): index for index in range(4096)}]
+    for value in invalid:
+        with pytest.raises(PlanRunSnapshotError):
+            freeze_json(value)
+    with pytest.raises(PlanRunSnapshotError):
+        freeze_json({"over": "xx"}, max_bytes=1)

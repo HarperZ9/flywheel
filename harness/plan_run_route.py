@@ -15,11 +15,13 @@ from .gateway_operation_route import authorization_sha256
 from .gateway_provider_adapter import ExecutionPlan, resolve_credentials
 from .gateway_secret_boundary import validate_no_raw_secrets
 from .journey_lock import ExclusiveJourneyLock, JourneyLockBusy
-from .plan_run_contract import (SHA256, PlanRunContractError, VerifiedPlanRun,
-    build_plan_run_result)
+from .plan_run_contract import (PlanRunContractError, VerifiedPlanRun,
+                                build_plan_run_result)
+from .plan_run_snapshot import FrozenJsonSnapshot, thaw_json
 from .plan_run_store import (PlanRunStoreError, commit_plan_result,
     load_plan_prp, load_plan_result, plan_run_lock_path, seal_plan_prp,
     verify_plan_run)
+from .plan_workflow_contract import validate_plan_workflow_run
 from .workflows import run_workflow
 
 _FORGE_FIELDS = {"goal", "examples", "documentation", "context",
@@ -98,14 +100,19 @@ def _recheck(body: dict, owner_ref: str, state_root: Path) -> dict:
 
 def _replay_matches(result: dict, envelope) -> bool:
     receipt, operation = result["receipt"], envelope.operation
-    binding = thaw_operation(operation.operation)["binding"]
+    value = thaw_operation(operation.operation)
+    binding, workflow = value["binding"], result["workflow_run"]
     return (receipt["journey_ref"] == envelope.journey_ref
         and receipt["expected_event_head"] == envelope.expected_event_head
         and receipt["client_request_id"] == envelope.client_request_id
         and receipt["operation_sha256"] == operation.operation_sha256
         and receipt["arguments_sha256"] == operation.arguments_sha256
         and receipt["grant_ref_sha256"] == canonical_sha256(envelope.grant_ref)
-        and receipt["binding"] == binding)
+        and receipt["binding"] == binding
+        and receipt["workflow"] == value["workflow"]
+        and receipt["endpoint"] == value["endpoint"]
+        and workflow["workflow"] == value["workflow"]
+        and workflow["endpoint"] == value["endpoint"])
 
 
 def _secret_echo(value: object, bindings: object) -> bool:
@@ -125,24 +132,45 @@ def _secret_echo(value: object, bindings: object) -> bool:
     return visit(value)
 
 
-def _dispatch(authorized, root: Path, run_root, countersign) -> dict:
+def _dispatch_inputs(authorized):
     plan = authorized.execution_plan
     if (not isinstance(plan, ExecutionPlan)
             or not isinstance(plan.verified_plan, VerifiedPlanRun)
-            or plan.workflow_sha256 is None or plan.profile_sha256 is None):
+            or not isinstance(plan.workflow_snapshot, FrozenJsonSnapshot)
+            or not isinstance(plan.profile_snapshot, FrozenJsonSnapshot)
+            or plan.workflow_sha256 != plan.workflow_snapshot.sha256
+            or plan.profile_sha256 != plan.profile_snapshot.sha256):
         raise GatewayOperationError("PERMISSION_DENIED")
     operation = thaw_operation(authorized.operation)
     verified = plan.verified_plan
-    system = verified.binding.prompt
-    if plan.profile_system:
-        system += "\n\n" + plan.profile_system
     try:
-        workflow = run_workflow(operation["workflow"], verified.record.prp["goal"],
-            operation["endpoint"], root=str(root),
+        profile = thaw_json(plan.profile_snapshot)
+        prp = verified.record.prp
+        if (profile.get("workflow") != operation["workflow"]
+                or type(profile.get("system", "")) is not str
+                or prp != verified.binding.prp):
+            raise ValueError
+    except Exception:
+        raise GatewayOperationError("PERMISSION_DENIED") from None
+    system = verified.binding.prompt
+    if profile.get("system"):
+        system += "\n\n" + profile["system"]
+    return plan, operation, prp["goal"], system
+
+
+def _dispatch(authorized, root: Path, run_root, countersign) -> dict:
+    plan, operation, goal, system = _dispatch_inputs(authorized)
+    verified = plan.verified_plan
+    try:
+        returned = run_workflow(operation["workflow"], goal, operation["endpoint"],
+            root=str(root), workflow_snapshot=plan.workflow_snapshot.canonical,
             allow_write=operation["allow_write"], allow_exec=operation["allow_exec"],
             allow_mcp=False, test_cmd=operation.get("test_cmd"), system=system,
             run_root=None, credential_bindings=authorized.credential_bindings,
             authorized=True)
+        workflow = validate_plan_workflow_run(returned,
+            workflow=operation["workflow"], endpoint=operation["endpoint"],
+            require_countersign=False)
     except Exception:
         raise GatewayOperationError("EXTERNAL_ACTION_FAILED") from None
     if _secret_echo(workflow, authorized.credential_bindings):
@@ -150,19 +178,12 @@ def _dispatch(authorized, root: Path, run_root, countersign) -> dict:
     try:
         before_countersign = canonical_sha256(workflow)
         witness = countersign(workflow)
-        identity = {"kind": "workflow-run", "workflow": workflow.get("workflow"),
-            "endpoint": workflow.get("endpoint"), "status": workflow.get("status"),
-            "chain_hash": workflow.get("chain_hash"),
-            "n_steps": len(workflow.get("steps", ()))}
         if (canonical_sha256(workflow) != before_countersign
-                or type(witness) is not dict
-                or set(witness) != set(identity) | {"stored", "store_chain_hash"}
-                or any(witness.get(key) != value for key, value in identity.items())
-                or type(witness.get("stored")) is not str or not witness["stored"]
-                or SHA256.fullmatch(witness.get("store_chain_hash", "")) is None):
+                or type(witness) is not dict):
             raise ValueError
         workflow["run_countersign"] = witness
         return build_plan_run_result(workflow_run=workflow,
+            workflow=operation["workflow"], endpoint=operation["endpoint"],
             plan_run_ref=plan_run_ref_for(authorized.owner_ref,
                 authorized.journey_ref, authorized.client_request_id),
             binding=verified.binding, journey_ref=authorized.journey_ref,

@@ -8,6 +8,7 @@ import json
 import pytest
 
 from harness import workflows
+from harness.plan_run_snapshot import freeze_json
 from harness.profiles import PROFILES, get_profile, profile_roster
 
 
@@ -260,3 +261,29 @@ def test_authorized_workflow_failure_is_fixed_before_persistence(tmp_path):
     assert str(failure.value) == "authorized external action failed"
     assert "synthetic-marker" not in str(failure.value)
     assert not (tmp_path / "workflow_runs").exists()
+
+
+def test_plan_snapshot_runs_exact_frozen_order_without_registry_lookup(
+        tmp_path, monkeypatch):
+    value = {**workflows.WORKFLOWS["code-change"], "name": "code-change"}
+    snapshot = freeze_json(value)
+    changed = json.loads(json.dumps(workflows.WORKFLOWS["code-change"]))
+    changed["steps"].reverse()
+    monkeypatch.setitem(workflows.WORKFLOWS, "code-change", changed)
+    doc = workflows.run_workflow("code-change", "goal", "local",
+        root=str(tmp_path), proposer=_StubProposer(["plan", "applied"]),
+        workflow_snapshot=snapshot.canonical)
+    assert [step["name"] for step in doc["steps"]] == ["plan", "apply", "verify"]
+    assert workflows.recompute_chain(doc) == doc["chain_hash"]
+
+
+@pytest.mark.parametrize("raw", [
+    b'{"description":"x","name":"wrong","steps":[{}]}',
+    b'{"description":"x","name":"code-change","steps":[]}',
+    b'{"name":"code-change","description":"x","steps":[{}]}',
+    b'{"description":"x","extra":null,"name":"code-change","steps":[{}]}',
+])
+def test_plan_snapshot_rejects_wrong_empty_noncanonical_or_extra(raw):
+    with pytest.raises(ValueError):
+        workflows.run_workflow("code-change", "goal", "local",
+                               workflow_snapshot=raw)

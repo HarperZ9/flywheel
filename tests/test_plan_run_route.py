@@ -8,6 +8,7 @@ from harness.evidence_json import canonical_sha256
 from harness.gateway_grant_route import gateway_grant_post
 from harness.journey_store import JourneyStore, MutationCommand
 from harness.plan_run_route import plan_post
+from harness.workflows import recompute_chain
 
 
 NOW = "2026-08-15T12:00:00Z"
@@ -82,9 +83,12 @@ def _final(proposal, grant, binding, workspace, **changes):
 def _runner_spy(calls):
     def run(workflow, goal, endpoint, **kwargs):
         calls.append((workflow, goal, endpoint, kwargs))
-        return {"schema": "flywheel.workflow-run/v1", "workflow": workflow,
-                "endpoint": endpoint, "status": "completed", "steps": [],
-                "chain_hash": "a" * 64}
+        value = {"schema": "flywheel.workflow-run/v1", "workflow": workflow,
+            "endpoint": endpoint, "goal_excerpt": goal[:200],
+            "started": "2026-08-15T12:00:00", "status": "completed",
+            "steps": []}
+        value["chain_hash"] = recompute_chain(value)
+        return value
     return run
 
 
@@ -174,7 +178,7 @@ def test_tamper_before_final_does_not_burn_then_restore_succeeds(tmp_path, monke
     monkeypatch.setattr("harness.plan_run_route.run_workflow", _runner_spy(calls))
     completed, status = _post("/api/plan/run", final, tmp_path, tmp_path,
                               countersign=_countersign)
-    assert status == 200 and completed["schema"] == "flywheel.plan-run-result/v1"
+    assert status == 200 and completed["schema"] == "flywheel.plan-run-result/v2"
     assert len(calls) == 1
 
 
@@ -195,7 +199,7 @@ def test_root_resolution_fault_is_fixed_preconsume_and_restore_succeeds(
     monkeypatch.setattr("harness.plan_run_route.run_workflow", _runner_spy(calls))
     completed, status = _post("/api/plan/run", final, tmp_path, tmp_path,
                               countersign=_countersign)
-    assert status == 200 and completed["schema"] == "flywheel.plan-run-result/v1"
+    assert status == 200 and completed["schema"] == "flywheel.plan-run-result/v2"
     assert len(calls) == 1
 
 

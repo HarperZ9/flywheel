@@ -7,6 +7,7 @@ from pathlib import Path
 from .credential_handles import CredentialHandleStore
 from .evidence_json import canonical_sha256
 from .gateway_operation import GatewayOperationError
+from .plan_run_snapshot import (FrozenJsonSnapshot, freeze_json, thaw_json)
 
 
 _LOCAL_MODELS = frozenset((
@@ -24,7 +25,8 @@ class ExecutionPlan:
     marketplace: object | None = None
     workflow_sha256: str | None = None
     profile_sha256: str | None = None
-    profile_system: str = field(default="", repr=False)
+    workflow_snapshot: FrozenJsonSnapshot | None = field(default=None, repr=False)
+    profile_snapshot: FrozenJsonSnapshot | None = field(default=None, repr=False)
     verified_plan: object | None = field(default=None, repr=False)
 
 
@@ -33,7 +35,8 @@ def freeze_execution_plan(operation, *, owner_ref: str | None = None,
     """Snapshot server-derived dispatch metadata before approval."""
     launch = kind = market = None
     workflow_sha = profile_sha = None
-    system, verified = "", None
+    workflow_snapshot = profile_snapshot = None
+    verified = None
     if operation.action in {"plugin.probe", "plugin.call"}:
         from .plugins import plugin_execution_plan
         launch, kind, required, refs = plugin_execution_plan(
@@ -43,13 +46,16 @@ def freeze_execution_plan(operation, *, owner_ref: str | None = None,
         market = marketplace_execution_plan(operation.operation["name"])
         required, refs = market.required_slots, market.credential_refs
     elif operation.action == "plan.run":
-        workflow_sha, profile_sha, system, verified = _plan_snapshot(
+        workflow_snapshot, profile_snapshot, verified = _plan_snapshot(
             operation, owner_ref, state_root)
+        workflow_sha = workflow_snapshot.sha256
+        profile_sha = profile_snapshot.sha256
         required, refs = _credential_plan(operation)
     else:
         required, refs = _credential_plan(operation)
         workflow_sha = profile_sha = None
-        system, verified = "", None
+        workflow_snapshot = profile_snapshot = None
+        verified = None
     argv = tuple(launch.argv) if hasattr(launch, "argv") else (
         tuple(launch) if launch is not None else ())
     cwd = getattr(launch, "cwd", None)
@@ -63,9 +69,9 @@ def freeze_execution_plan(operation, *, owner_ref: str | None = None,
         "plugin_kind": kind, "argv": list(argv), "cwd": cwd,
         "marketplace": market_value, "workflow_sha256": workflow_sha,
         "profile_sha256": profile_sha})
-    return ExecutionPlan(
-        digest, tuple(required), tuple(refs), launch, kind, market,
-        workflow_sha, profile_sha, system, verified)
+    return ExecutionPlan(digest, tuple(required), tuple(refs), launch, kind,
+        market, workflow_sha, profile_sha, workflow_snapshot,
+        profile_snapshot, verified)
 
 
 def _plan_snapshot(operation, owner_ref, state_root):
@@ -79,15 +85,17 @@ def _plan_snapshot(operation, owner_ref, state_root):
         value = operation.operation
         profile = get_profile(value["profile"])
         workflow = WORKFLOWS.get(value["workflow"])
-        if (type(profile) is not dict or type(workflow) is not dict
-                or profile.get("workflow") != value["workflow"]
-                or type(profile.get("system", "")) is not str):
+        if type(profile) is not dict or type(workflow) is not dict:
+            raise GatewayOperationError("INVALID_REQUEST")
+        workflow_snapshot = freeze_json({**workflow, "name": value["workflow"]})
+        profile_snapshot = freeze_json(profile)
+        frozen_profile = thaw_json(profile_snapshot)
+        if (frozen_profile.get("workflow") != value["workflow"]
+                or type(frozen_profile.get("system", "")) is not str):
             raise GatewayOperationError("INVALID_REQUEST")
         verified = verify_plan_run(thaw_operation(value)["binding"],
             owner_ref=owner_ref, state_root=state_root)
-        workflow_value = {"name": value["workflow"], **workflow}
-        return (canonical_sha256(workflow_value), canonical_sha256(profile),
-                profile.get("system", ""), verified)
+        return workflow_snapshot, profile_snapshot, verified
     except GatewayOperationError:
         raise
     except Exception as exc:

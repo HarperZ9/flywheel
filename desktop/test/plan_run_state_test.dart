@@ -212,22 +212,26 @@ Map<String, dynamic> _result(Map<String, dynamic> binding,
     'schema': 'flywheel.workflow-run/v1',
     'workflow': 'code-change',
     'endpoint': 'local',
+    'goal_excerpt': 'goal',
+    'started': '2026-08-15T12:00:00',
     'status': 'completed',
     'steps': <Object>[],
-    'chain_hash': 'a' * 64,
+    'chain_hash':
+        '6f67e6f550d1dfd55933129b0d54878cded9c0aa539a17bdf98442df0b4fc51d',
     'run_countersign': {
       'kind': 'workflow-run',
       'workflow': 'code-change',
       'endpoint': 'local',
       'status': 'completed',
-      'chain_hash': 'a' * 64,
+      'chain_hash':
+          '6f67e6f550d1dfd55933129b0d54878cded9c0aa539a17bdf98442df0b4fc51d',
       'n_steps': 0,
       'stored': 'ent_1',
       'store_chain_hash': 'b' * 64
     }
   };
   final receipt = {
-    'schema': 'flywheel.plan-run-receipt/v1',
+    'schema': 'flywheel.plan-run-receipt/v2',
     'plan_run_ref': 'plr_${'a' * 32}',
     'binding': binding,
     'journey_ref': 'jrn_${'a' * 32}',
@@ -237,6 +241,8 @@ Map<String, dynamic> _result(Map<String, dynamic> binding,
         canonicalPlanSha256({'action': 'plan.run', 'operation': operation}),
     'arguments_sha256': canonicalPlanSha256(operation),
     'grant_ref_sha256': canonicalPlanSha256('gnt_${'a' * 32}'),
+    'workflow': 'code-change',
+    'endpoint': 'local',
     for (final key in [
       'authorization_sha256',
       'execution_plan_sha256',
@@ -257,7 +263,7 @@ Map<String, dynamic> _result(Map<String, dynamic> binding,
   };
   receipt['receipt_sha256'] = canonicalPlanSha256(receipt);
   final result = {
-    'schema': 'flywheel.plan-run-result/v1',
+    'schema': 'flywheel.plan-run-result/v2',
     'plan_run_ref': 'plr_${'a' * 32}',
     'receipt': receipt,
     'workflow_run': workflow
