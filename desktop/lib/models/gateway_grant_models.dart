@@ -1,5 +1,6 @@
 import 'evidence_state.dart';
 import 'gateway_grant_summary.dart';
+import 'plan_run_models.dart';
 
 export 'gateway_grant_summary.dart';
 
@@ -61,6 +62,7 @@ final class GatewayOperation {
       _invalid();
     }
     if (action == 'operation.cancel') _validateCancel(raw);
+    if (action == 'plan.run') validatePlanRunOperation(raw);
   }
 
   factory GatewayOperation.pluginProbe(
@@ -243,7 +245,8 @@ String _tool(String action, Map<String, Object?> value) =>
 List<String> _scopes(String action, Map<String, Object?> value) {
   if (action == 'operation.cancel') return const ['exec'];
   final selected = <String>{};
-  if (const {'chat.complete', 'agent.run', 'workflow.run'}.contains(action)) {
+  if (const {'chat.complete', 'agent.run', 'workflow.run', 'plan.run'}
+      .contains(action)) {
     selected.add('network');
   }
   if (action == 'plugin.call') {
@@ -254,7 +257,7 @@ List<String> _scopes(String action, Map<String, Object?> value) {
       action.startsWith('marketplace.')) {
     selected.addAll(const ['write', 'plugin']);
   }
-  if (const {'agent.run', 'workflow.run'}.contains(action)) {
+  if (const {'agent.run', 'workflow.run', 'plan.run'}.contains(action)) {
     if (value['allow_write'] == true) {
       selected.add('write');
     }

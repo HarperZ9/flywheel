@@ -46,6 +46,7 @@ if str(REPO) not in sys.path:
 from harness.run_paths import run_root_default
 from harness.gateway_auth import (authenticate_owner as _auth_owner,
     load_or_create_owner_ref, load_or_create_token, check as _auth_check, DEFAULT_HOSTS)
+from harness.plan_run_store import forge_recheck, persist_forge_seal
 def _resolve_credential(key_env: str) -> str:
     """Env first, OS keychain second; '' when neither. Import is lazy so a
     stripped deployment without keychain.py still serves env-only."""
@@ -343,73 +344,6 @@ def _countersign_workflow(doc: dict) -> dict:
                 "store_chain_hash": stored.get("chain_hash", "")}
     except Exception as e:
         return {**summary, "stored": f"store unavailable: {type(e).__name__}"}
-
-
-def persist_forge_seal(run_root, goal: str, *, intent_sha256: str = "",
-                       architecture_sha256: str = "") -> str:
-    """Persist the Y-chain seal SERVER-SIDE at forge time and return its
-    prp_id. The recheck later reads these hashes from disk, so the checked
-    party never supplies its own criterion."""
-    import hashlib as _h
-    import time as _t
-    body = f"{goal}\x1f{intent_sha256}\x1f{architecture_sha256}"
-    prp_id = _h.sha256(body.encode("utf-8")).hexdigest()[:16]
-    forge_dir = Path(run_root) / "forge"
-    forge_dir.mkdir(parents=True, exist_ok=True)
-    (forge_dir / f"{prp_id}.json").write_text(json.dumps({
-        "schema": "flywheel.forge-seal/v1", "prp_id": prp_id, "goal": goal,
-        "intent_sha256": intent_sha256,
-        "architecture_sha256": architecture_sha256,
-        "sealed_at": _t.time(),
-    }, sort_keys=True), encoding="utf-8")
-    return prp_id
-
-
-def forge_recheck(run_root, prp_id: str, req: dict) -> dict:
-    """The Y-chain drift check against the SERVER-HELD seal. The caller
-    supplies only current sources; the sealed hashes come from disk."""
-    import hashlib as _h
-    pid = str(prp_id or "").strip().lower()
-    if len(pid) != 16 or any(c not in "0123456789abcdef" for c in pid):
-        return {"error": "provide 'prp_id' (16 hex) from the forge response; "
-                         "sealed hashes are read from the server-side seal"}
-    path = Path(run_root) / "forge" / f"{pid}.json"
-    if not path.is_file():
-        return {"error": f"no forge seal on record for prp_id {pid!r}; "
-                         "a recheck needs the seal minted at forge time"}
-    seal = json.loads(path.read_text(encoding="utf-8"))
-    out = {"schema": "flywheel.prp-recheck/v2", "prp_id": pid,
-           "seal_path": str(path), "arms": {}}
-    for arm in ("intent", "architecture"):
-        sealed = str(seal.get(f"{arm}_sha256", ""))
-        current = req.get(f"{arm}_source")
-        if not sealed or current is None:
-            continue
-        if not str(current).strip():
-            return {"error": f"empty {arm}_source: an empty arm cannot be "
-                             "drift-checked (empty-vs-empty is moved:false "
-                             "for an arm that never existed)"}
-        now = _h.sha256(str(current).encode()).hexdigest()
-        out["arms"][arm] = {"sealed_sha256": sealed,
-                            "current_sha256": now,
-                            "moved": now != sealed}
-    if not out["arms"]:
-        return {"error": "no comparable arm: supply <arm>_source for an arm "
-                         "the seal actually recorded"}
-    hashes = [a["current_sha256"] for a in out["arms"].values()]
-    if len(hashes) == 2 and hashes[0] == hashes[1]:
-        # one string hashed twice is a test that cannot fail: name it,
-        # report no verdict
-        out["degenerate"] = True
-        out["note"] = ("degenerate Y-chain: both arms carry identical "
-                       "content, so the two-arm drift comparison decides "
-                       "nothing; no any_moved verdict is reported")
-        return out
-    out["any_moved"] = any(a["moved"] for a in out["arms"].values())
-    out["note"] = ("the Y-chain drift check against the server-held seal: "
-                   "an arm whose current text no longer hashes to the value "
-                   "sealed at forge time moved after the forge")
-    return out
 
 
 def _forge(goal: str, **kw) -> dict:
@@ -995,7 +929,7 @@ class _Handler(BaseHTTPRequestHandler):
         """Refuse before dispatch; public auth-off compatibility stays available,
         while private custody always requires a configured bearer token."""
         path = self.path.split("?", 1)[0]
-        private = (path.startswith(("/api/journeys/", "/api/grants/",
+        private = (path.startswith(("/api/journeys/", "/api/grants/", "/api/plan/",
                                     "/api/gateway-grants/",
                                     "/api/credential-handles",
                                     "/api/operations/"))
@@ -1352,8 +1286,22 @@ class _Handler(BaseHTTPRequestHandler):
             return self._proxy(self.serve_url.rstrip("/") + p)
         return self._static(p)
 
+    def _plan_request(self, path):
+        length = self._content_length()
+        if length is None:
+            return self._json({"schema": "flywheel.evidence-transport-error/v1",
+                "error": {"code": "INVALID_REQUEST",
+                          "message": "gateway operation is invalid"}}, 422)
+        from harness.plan_run_route import plan_post
+        body, code = plan_post(path, self.rfile.read(length), owner_ref=self.owner_ref,
+            state_root=self.flywheel_home / "state", default_root=self.root,
+            run_root=self.run_root, clock=self.clock,
+            resolve_root=_resolve_workspace_root, countersign=_countersign_workflow)
+        return self._json(body, code)
+
     def _post(self):
         p = self.path.split("?", 1)[0]
+        if p.startswith("/api/plan/"): return self._plan_request(p)
         if p.startswith(("/api/evidence/", "/api/journeys/", "/api/grants/",
                          "/api/gateway-grants/", "/api/credential-handles/")):
             length = self._content_length()
@@ -1416,8 +1364,7 @@ class _Handler(BaseHTTPRequestHandler):
             self._gateway_bindings = authorized.credential_bindings
         if p == "/v1/chat/completions":              # OpenAI-compatible, routes to ANY provider
             req, bad = self._req_json()
-            if bad:
-                return bad
+            if bad: return bad
             if req.get("stream"):
                 return self._sse_chat(req)
             from harness.scaffold import scaffold_answer, scaffold_turn

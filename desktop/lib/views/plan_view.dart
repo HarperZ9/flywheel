@@ -1,16 +1,20 @@
 import 'package:flutter/material.dart';
 
 import '../client/gateway_client.dart';
+import '../client/gateway_plan.dart';
+import '../controllers/plan_controller.dart';
 import '../models/gateway_models.dart';
 import '../models/plan_models.dart';
-import '../services/settings.dart';
+import '../models/plan_run_models.dart';
 import '../models/workflow_models.dart';
+import '../services/settings.dart';
 import '../theme/flywheel_theme.dart';
 import '../widgets/composer_results.dart';
 import '../widgets/fw.dart';
-import '../widgets/plan_cards.dart';
-import '../widgets/workflow_cards.dart';
 import '../widgets/operation_grant_sheet.dart';
+import '../widgets/plan_cards.dart';
+import '../widgets/plan_run_controls.dart';
+import '../widgets/workflow_cards.dart';
 
 class PlanView extends StatefulWidget {
   final GatewayClient client;
@@ -27,17 +31,19 @@ class PlanView extends StatefulWidget {
 
 class _PlanViewState extends State<PlanView> {
   final _goal = TextEditingController();
+  late final GatewayPlan _gateway;
+  late final PlanController _controller;
   List<Map<String, dynamic>> _projects = [];
   List<ProfileManifest> _profiles = [];
   List<EndpointRow> _endpoints = [];
-  String? _root, _profile, _endpoint, _error;
+  String? _root, _profile, _endpoint, _loadError;
   bool _allowWrite = false, _allowExec = false;
-  bool _forging = false, _running = false;
-  ForgedPlan? _plan;
-  WorkflowRun? _run;
+
   @override
   void initState() {
     super.initState();
+    _gateway = GatewayPlan(widget.client);
+    _controller = PlanController(_gateway)..addListener(_planChanged);
     _load();
   }
 
@@ -49,8 +55,14 @@ class _PlanViewState extends State<PlanView> {
 
   @override
   void dispose() {
+    _controller.removeListener(_planChanged);
+    _controller.dispose();
     _goal.dispose();
     super.dispose();
+  }
+
+  void _planChanged() {
+    if (mounted) setState(() {});
   }
 
   Future<void> _load() async {
@@ -61,98 +73,85 @@ class _PlanViewState extends State<PlanView> {
         widget.client.profiles(),
         widget.client.endpointRoster(),
       ]);
-      if (mounted) {
-        setState(() {
-          _projects = ((results[0] as Map<String, dynamic>)['projects'] ?? [])
-              .whereType<Map<String, dynamic>>()
-              .toList()
-              .cast<Map<String, dynamic>>();
-          _profiles = results[1] as List<ProfileManifest>;
-          _endpoints = results[2] as List<EndpointRow>;
-          _root ??= _projects.isNotEmpty ? '${_projects.first['root']}' : null;
-          _profile ??= _profiles.isNotEmpty ? _profiles.first.name : null;
-          _endpoint ??= _endpoints.isNotEmpty ? _endpoints.first.name : null;
-          _error = null;
-        });
-      }
-    } catch (e) {
-      if (mounted) setState(() => _error = '$e');
+      if (!mounted) return;
+      setState(() {
+        _projects = ((results[0] as Map<String, dynamic>)['projects'] ?? [])
+            .whereType<Map<String, dynamic>>()
+            .toList();
+        _profiles = results[1] as List<ProfileManifest>;
+        _endpoints = results[2] as List<EndpointRow>;
+        _root ??= _projects.isNotEmpty ? '${_projects.first['root']}' : null;
+        _profile ??= _profiles.isNotEmpty ? _profiles.first.name : null;
+        _endpoint ??= _endpoints.isNotEmpty ? _endpoints.first.name : null;
+        _loadError = null;
+      });
+    } catch (error) {
+      if (mounted) setState(() => _loadError = '$error');
     }
   }
 
   ProfileManifest? get _activeProfile =>
-      _profiles.where((p) => p.name == _profile).firstOrNull;
+      _profiles.where((item) => item.name == _profile).firstOrNull;
+
+  ForgedPlan? get _plan {
+    final binding = _controller.binding;
+    if (binding == null) return null;
+    return ForgedPlan.fromJson(
+        <String, dynamic>{...binding.prp, 'prp_id': binding.prpId});
+  }
+
+  WorkflowRun? get _workflowRun {
+    final result = _controller.result;
+    return result == null
+        ? null
+        : WorkflowRun.fromJson(Map<String, dynamic>.from(result.workflowRun));
+  }
+
   Future<void> _forge() async {
     final goal = _goal.text.trim();
-    if (goal.isEmpty || _forging) return;
-    setState(() {
-      _forging = true;
-      _plan = null;
-      _run = null;
-      _error = null;
-    });
-    try {
-      final p = _activeProfile;
-      final ctx = [
-        if (_root != null) 'Project root: $_root.',
-        if (p != null) 'Discipline (${p.name}): ${p.planning.join(' -> ')}.',
-      ].join(' ');
-      final plan = ForgedPlan.fromJson(
-          await widget.client.forge(goal, context: ctx.isEmpty ? null : ctx));
-      if (mounted) {
-        setState(() {
-          if (plan.error != null) {
-            _error = plan.error;
-          } else {
-            _plan = plan;
-          }
-        });
-      }
-    } catch (e) {
-      if (mounted) setState(() => _error = '$e');
-    } finally {
-      if (mounted) setState(() => _forging = false);
+    if (goal.isEmpty) return;
+    final profile = _activeProfile;
+    final forgeContext = [
+      if (_root != null) 'A registered project is selected.',
+      if (profile != null && profile.planning.isNotEmpty)
+        'Discipline (${profile.name}): ${profile.planning.join(' -> ')}.',
+    ].join(' ');
+    await _controller.forge(goal,
+        context: forgeContext.isEmpty ? null : forgeContext);
+  }
+
+  PlanRunRequest? _request(String requestId) {
+    final binding = _controller.binding;
+    final profile = _activeProfile;
+    if (binding == null ||
+        profile?.workflow == null ||
+        _root == null ||
+        _endpoint == null) {
+      return null;
     }
+    return PlanRunRequest(
+        workflow: profile!.workflow!,
+        profile: profile.name,
+        root: _root!,
+        endpoint: _endpoint!,
+        allowWrite: _allowWrite,
+        allowExec: _allowExec,
+        binding: binding,
+        dataRefs: const [],
+        credentialRefs: const [],
+        clientRequestId: requestId);
   }
 
   Future<void> _runPlan() async {
-    final p = _activeProfile;
-    if (_plan == null ||
-        p?.workflow == null ||
-        _endpoint == null ||
-        _root == null ||
-        _running) {
-      return;
-    }
-    setState(() {
-      _running = true;
-      _run = null;
-      _error = null;
-    });
-    try {
-      final request = 'desktop-plan-${DateTime.now().microsecondsSinceEpoch}';
-      GatewayOperation currentOperation() =>
-          GatewayOperation.workflow(request, {
-            'workflow': _activeProfile!.workflow!,
-            'goal': _plan!.goal,
-            'endpoint': _endpoint!,
-            'allow_write': _allowWrite,
-            'allow_exec': _allowExec,
-            if (_profile != null) 'profile': _profile!,
-            'root': _root!,
-          }, dataRefs: const [], credentialRefs: const []);
-      final operation = currentOperation();
-      final body = await authorizeGatewayOperation(context, operation,
-          (body) => widget.client.postJson('/api/workflow', body),
-          currentOperation: currentOperation);
-      if (body == null) return;
-      final run = WorkflowRun.fromJson(body);
-      if (mounted) setState(() => _run = run);
-    } catch (e) {
-      if (mounted) setState(() => _error = '$e');
-    } finally {
-      if (mounted) setState(() => _running = false);
-    }
+    final requestId = 'desktop-plan-${DateTime.now().microsecondsSinceEpoch}';
+    final request = _request(requestId);
+    if (request == null) return;
+    await _controller.run(request,
+        currentRequest: () => _request(requestId),
+        authorize: (operation, current, dispatch) =>
+            authorizeGatewayOperationDetailed<PlanRunResult>(
+                context, operation, dispatch,
+                currentOperation: current));
   }
 
   @override
@@ -160,135 +159,110 @@ class _PlanViewState extends State<PlanView> {
     if (!widget.alive) {
       return const FwEmpty('Engine offline.', command: 'flywheel up');
     }
-    final t = context.fw;
+    final plan = _plan;
+    final run = _workflowRun;
     return ComposerResults(
       settings: widget.settings,
       viewKey: 'plan',
       header: const SectionHeader('Plan', kicker: 'spec first, receipt after'),
       composer:
           Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        Text('Forge a plan, then approve its exact workflow run.',
+        Text('Forge a plan, then approve its exact bound workflow run.',
             style: Theme.of(context).textTheme.bodySmall),
         const SizedBox(height: FwLayout.s4),
-        _composer(t),
+        _composer(context.fw),
       ]),
       results: [
-        if (_error != null) HonestNull('Failed: $_error'),
-        if (_plan != null)
+        if (_loadError != null) HonestNull('Failed: $_loadError'),
+        if (plan != null)
           ForgedPlanCard(
-              plan: _plan!,
+              plan: plan,
               profile: _activeProfile,
-              recheck: widget.client.forgeRecheck),
-        if (_run != null) ...[
+              recheck: (prpId) => _gateway.recheck(prpId)),
+        if (run != null) ...[
           const SizedBox(height: FwLayout.s4),
-          WorkflowRunCard(run: _run!),
+          WorkflowRunCard(run: run),
         ],
       ],
     );
   }
 
-  Widget _composer(FwTokens t) {
-    return HairlineCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+  Widget _composer(FwTokens tokens) => HairlineCard(
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Wrap(
-            spacing: FwLayout.s4,
-            runSpacing: FwLayout.s2,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: [
-              _picker(
-                  'project',
-                  _root,
-                  [for (final p in _projects) '${p['root']}'],
-                  (v) => setState(() => _root = v)),
-              _picker('profile', _profile, [for (final p in _profiles) p.name],
-                  (v) => setState(() => _profile = v)),
-              _picker(
-                  'endpoint',
-                  _endpoint,
-                  [for (final e in _endpoints) e.name],
-                  (v) => setState(() => _endpoint = v)),
-              _gate(
-                  'write', _allowWrite, (v) => setState(() => _allowWrite = v)),
-              _gate('exec', _allowExec, (v) => setState(() => _allowExec = v)),
-            ],
-          ),
+              spacing: FwLayout.s4,
+              runSpacing: FwLayout.s2,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                _picker(
+                    'project',
+                    _root,
+                    [for (final item in _projects) '${item['root']}'],
+                    (value) => setState(() => _root = value)),
+                _picker(
+                    'profile',
+                    _profile,
+                    [for (final item in _profiles) item.name],
+                    (value) => setState(() => _profile = value)),
+                _picker(
+                    'endpoint',
+                    _endpoint,
+                    [for (final item in _endpoints) item.name],
+                    (value) => setState(() => _endpoint = value)),
+                _gate('write', _allowWrite,
+                    (value) => setState(() => _allowWrite = value)),
+                _gate('exec', _allowExec,
+                    (value) => setState(() => _allowExec = value)),
+              ]),
           if (_projects.isEmpty) ...[
             const SizedBox(height: FwLayout.s2),
             Text(
                 'No project registered. Forging works without one; running '
                 'the plan does not. Register a directory under Projects.',
-                style: fwMono(t, size: 11.5, color: t.inkMuted)),
+                style: fwMono(tokens, size: 11.5, color: tokens.inkMuted)),
           ],
           const SizedBox(height: FwLayout.s3),
           TextField(
-            controller: _goal,
-            maxLines: 3,
-            minLines: 2,
-            style: const TextStyle(fontSize: 13.5),
-            decoration: const InputDecoration(hintText: 'The goal…'),
-          ),
+              controller: _goal,
+              onChanged: (_) => setState(() {}),
+              maxLines: 3,
+              minLines: 2,
+              style: const TextStyle(fontSize: 13.5),
+              decoration: const InputDecoration(hintText: 'The goal…')),
           const SizedBox(height: FwLayout.s3),
-          _actions(),
-        ],
-      ),
-    );
-  }
-
-  Widget _actions() => Row(
-        children: [
-          FilledButton(
-            onPressed: _forging ? null : _forge,
-            child: Text(_forging ? 'Forging…' : 'Forge plan'),
-          ),
-          const SizedBox(width: FwLayout.s3),
-          OutlinedButton(
-            onPressed: _plan == null ||
-                    _running ||
-                    _activeProfile?.workflow == null ||
-                    _root == null ||
-                    _endpoint == null
-                ? null
-                : _runPlan,
-            child: Text(_running
-                ? 'Running…'
-                : 'Run as ${_activeProfile?.workflow ?? 'workflow'}'),
-          ),
-        ],
+          PlanRunControls(
+              controller: _controller,
+              canForge: _goal.text.trim().isNotEmpty,
+              canRun: _request('preview') != null,
+              runLabel: 'Run as ${_activeProfile?.workflow ?? 'workflow'}',
+              onForge: _forge,
+              onRun: _runPlan),
+        ]),
       );
 
   Widget _picker(String label, String? value, List<String> options,
-      ValueChanged<String?> onChanged) {
-    final t = context.fw;
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
+          ValueChanged<String?> changed) =>
+      Row(mainAxisSize: MainAxisSize.min, children: [
         Kicker(label),
         const SizedBox(width: FwLayout.s2),
         DropdownButton<String>(
-          value: options.contains(value) ? value : null,
-          underline: const SizedBox(),
-          style: fwMono(t, size: 12, color: t.inkSoft),
-          items: [
-            for (final o in options) DropdownMenuItem(value: o, child: Text(o)),
-          ],
-          onChanged: onChanged,
-        ),
-      ],
-    );
-  }
+            value: options.contains(value) ? value : null,
+            underline: const SizedBox(),
+            style: fwMono(context.fw, size: 12, color: context.fw.inkSoft),
+            items: [
+              for (final option in options)
+                DropdownMenuItem(value: option, child: Text(option)),
+            ],
+            onChanged: changed),
+      ]);
 
-  Widget _gate(String label, bool value, ValueChanged<bool> onChanged) => Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Checkbox(
-              value: value,
-              onChanged: (v) => onChanged(v ?? false),
-              visualDensity: VisualDensity.compact),
-          Text('allow $label',
-              style:
-                  fwMono(context.fw, size: 11.5, color: context.fw.inkMuted)),
-        ],
-      );
+  Widget _gate(String label, bool value, ValueChanged<bool> changed) =>
+      Row(mainAxisSize: MainAxisSize.min, children: [
+        Checkbox(
+            value: value,
+            onChanged: (next) => changed(next ?? false),
+            visualDensity: VisualDensity.compact),
+        Text('allow $label',
+            style: fwMono(context.fw, size: 11.5, color: context.fw.inkMuted)),
+      ]);
 }

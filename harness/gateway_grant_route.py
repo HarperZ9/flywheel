@@ -1,7 +1,6 @@
 """Durable exact proposals for external gateway operations."""
 from __future__ import annotations
-
-from dataclasses import asdict
+from dataclasses import asdict, replace
 from datetime import timedelta
 from pathlib import Path
 import re
@@ -10,25 +9,21 @@ from typing import Callable
 from .evidence_json import canonical_sha256, strict_load_json
 from .evidence_public import TransportError, error_response, exact_request, parse_json
 from .grant_route import _replace, _request_from
-from .gateway_operation import (AuthorizedOperation, GatewayOperationError,
-    PROPOSAL_REF_PATTERN, PROPOSAL_SCHEMA, REQUEST_SCHEMA,
-    canonicalize_operation, thaw_operation)
+from .gateway_operation import (AuthorizedOperation, GatewayOperationError, PROPOSAL_REF_PATTERN,
+    PROPOSAL_SCHEMA, REQUEST_SCHEMA, canonicalize_operation, thaw_operation)
 from .gateway_envelope import parse_gateway_envelope
 from .gateway_secret_boundary import validate_no_raw_secrets
 from .gateway_provider_adapter import credential_slots, freeze_execution_plan
 from .journey_lock import ExclusiveJourneyLock, JourneyLockBusy
 from .journey_store import JourneyStore, JourneyStoreError
 from .journey_types import JOURNEY_REF_PATTERN, SHA256_PATTERN
-from .operation_grants import (GrantError, GrantRequest, GrantStore, _parse_time,
-    _secure_owner_only, _utc_text, _validate_owner_ref)
+from .operation_grants import (GrantError, GrantRequest, GrantStore, _parse_time, _secure_owner_only, _utc_text, _validate_owner_ref)
 ROUTE_PREFIX = "/api/gateway-grants/"
 _BASE = {"schema", "journey_ref", "expected_event_head", "client_request_id"}
-_RECORD_FIELDS = {
-    "schema", "proposal_ref", "planned_grant_ref", "owner_ref", "action",
+_RECORD_FIELDS = {"schema", "proposal_ref", "planned_grant_ref", "owner_ref", "action",
     "journey_ref", "expected_event_head", "client_request_id", "operation",
     "execution_plan_sha256", "grant_request", "expires_at", "state",
-    "record_sha256",
-}
+    "record_sha256"}
 def _directory(state_root: Path, owner_ref: str) -> Path:
     _validate_owner_ref(owner_ref)
     state = Path(state_root)
@@ -133,7 +128,7 @@ def _prepare(action: str, body: dict, owner_ref: str, state_root: Path,
         raise GatewayOperationError("INVALID_REQUEST")
     validate_no_raw_secrets(body)
     operation = canonicalize_operation(action, body["operation"])
-    plan = freeze_execution_plan(operation)
+    plan = freeze_execution_plan(operation, owner_ref=owner_ref, state_root=state_root)
     credential_slots(operation, owner_ref, state_root, plan=plan)
     store = JourneyStore(state_root)
     journey_dir = store._journey_dir(owner_ref, body["journey_ref"])
@@ -185,12 +180,11 @@ def _approve(body: dict, owner_ref: str, state_root: Path,
             _replace(_path(owner_dir, record["proposal_ref"]), record)
     return {"schema": "flywheel.operation-grant-approval/v1",
             "grant_ref": issued["grant_ref"], "expires_at": issued["expires_at"]}
-def _authorize(
-        action: str, raw: bytes, *, owner_ref: str, state_root: Path,
-        clock: Callable[[], str]) -> AuthorizedOperation:
-    envelope = parse_gateway_envelope(action, raw)
+def _authorize(envelope, *, owner_ref: str, state_root: Path,
+               clock: Callable[[], str]) -> AuthorizedOperation:
+    action = envelope.action
     operation = envelope.operation
-    plan = freeze_execution_plan(operation)
+    plan = freeze_execution_plan(operation, owner_ref=owner_ref, state_root=state_root)
     credential_slots(operation, owner_ref, state_root, plan=plan)
     body = {"journey_ref": envelope.journey_ref,
             "expected_event_head": envelope.expected_event_head,
@@ -219,6 +213,11 @@ def _authorize(
             request = _request_from(record["grant_request"])
             if request != _request(record, operation):
                 raise GatewayOperationError("PERMISSION_DENIED")
+            if action == "plan.run":
+                from .plan_run_store import verify_plan_run
+                verified = verify_plan_run(thaw_operation(operation.operation)["binding"],
+                    owner_ref=owner_ref, state_root=state_root)
+                plan = replace(plan, verified_plan=verified)
             GrantStore(state_root, clock=clock).consume(
                 body["grant_ref"], request, now=clock())
     return AuthorizedOperation(
@@ -233,9 +232,11 @@ def _authorize(
 def authorize_gateway_operation(
         action: str, raw: bytes, *, owner_ref: str, state_root: Path,
         clock: Callable[[], str]) -> AuthorizedOperation:
-    """Consume one exact approved grant before returning immutable dispatch."""
+    return authorize_gateway_envelope(parse_gateway_envelope(action, raw), owner_ref=owner_ref, state_root=state_root, clock=clock)
+def authorize_gateway_envelope(envelope, *, owner_ref: str, state_root: Path,
+        clock: Callable[[], str]) -> AuthorizedOperation:
     try:
-        return _authorize(action, raw, owner_ref=owner_ref,
+        return _authorize(envelope, owner_ref=owner_ref,
                           state_root=state_root, clock=clock)
     except GatewayOperationError:
         raise
@@ -264,6 +265,7 @@ def gateway_error_response(exc: Exception) -> tuple[dict, int]:
         "APPROVAL_EXPIRED": (403, "gateway operation approval expired"),
         "NOT_FOUND": (404, "gateway operation was not found"),
         "HEAD_CONFLICT": (409, "Journey head changed"),
+        "PLAN_BINDING_DRIFT": (409, "plan run does not match its forged contract"),
         "IDEMPOTENCY_MISMATCH": (409, "operation request conflicts with its prior use"),
         "INVALID_TRANSITION": (409, "operation state does not allow this action"),
         "CANCEL_UNAVAILABLE": (409, "operation cancellation is unavailable"),
@@ -273,8 +275,6 @@ def gateway_error_response(exc: Exception) -> tuple[dict, int]:
     code = code if code in errors else "STORE_COMMIT_FAILED"
     status, message = errors[code]
     return error_response(TransportError(code, message, status))
-
-
 def gateway_grant_post(
         path: str, raw: bytes, *, owner_ref: str, state_root: Path,
         clock: Callable[[], str]) -> tuple[dict, int]:
@@ -291,7 +291,8 @@ def gateway_grant_post(
         if action not in {"chat.complete", "agent.run", "workflow.run",
                 "plugin.probe", "plugin.call", "plugin.register",
                 "plugin.toggle", "plugin.remove", "marketplace.install",
-                "marketplace.add", "marketplace.remove", "operation.cancel"}:
+                "marketplace.add", "marketplace.remove", "operation.cancel",
+                "plan.run"}:
             raise GatewayOperationError("NOT_FOUND")
         return _prepare(action, body, owner_ref, state_root, clock), 200
     except (TransportError, GatewayOperationError, GrantError,

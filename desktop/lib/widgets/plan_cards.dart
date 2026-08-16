@@ -1,7 +1,4 @@
-// plan_cards.dart — rendering for a forged plan: engine-scored stat tiles,
-// per-gate checkability verdicts, the profile's discipline steps, and the
-// full PRP as selectable mono provenance. Pure rendering; every number here
-// is the engine's.
+// plan_cards.dart — neutral rendering of a forged plan and its checkability.
 
 import 'package:flutter/material.dart';
 
@@ -23,7 +20,6 @@ class ForgedPlanCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = context.fw;
-    final p = profile;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -32,10 +28,15 @@ class ForgedPlanCard extends StatelessWidget {
         AdaptiveTiles(children: [
           StatTile(label: 'confidence', value: '${plan.confidence}/10'),
           StatTile(
-              label: 'oracle gates',
-              value: '${(plan.externalGateRatio * 100).round()}%'),
+              label: 'checkable gates',
+              value:
+                  '${plan.checkableGateCount}/${plan.totalGateCount} (${_percent(plan.externalGateRatio)}%)'),
           StatTile(label: 'gates', value: '${plan.gates.length}'),
         ]),
+        const SizedBox(height: FwLayout.s3),
+        Chip(
+            label: Text(
+                plan.wellPosed ? 'criterion stated' : 'criterion not stated')),
         if (!plan.wellPosed) ...[
           const SizedBox(height: FwLayout.s3),
           const HonestNull(
@@ -43,43 +44,7 @@ class ForgedPlanCard extends StatelessWidget {
               'proposed one. Confirm it before running the plan.'),
         ],
         const SizedBox(height: FwLayout.s3),
-        HairlineCard(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Kicker('validation gates'),
-              const SizedBox(height: FwLayout.s2),
-              for (final g in plan.gates)
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 3),
-                  child: Row(children: [
-                    VerdictPill(g.label, status: g.verdict),
-                    const SizedBox(width: FwLayout.s3),
-                    Expanded(
-                        child: Text(g.check,
-                            style:
-                                TextStyle(fontSize: 12.5, color: t.inkSoft))),
-                  ]),
-                ),
-              if (p != null && p.planning.isNotEmpty) ...[
-                const SizedBox(height: FwLayout.s3),
-                const Kicker('discipline'),
-                const SizedBox(height: FwLayout.s2),
-                for (final (i, step) in p.planning.indexed)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 2),
-                    child: Row(children: [
-                      Text('${i + 1}'.padLeft(2, '0'),
-                          style: fwMono(t, size: 11, color: t.inkFaint)),
-                      const SizedBox(width: FwLayout.s3),
-                      Text(step,
-                          style: TextStyle(fontSize: 12.5, color: t.inkSoft)),
-                    ]),
-                  ),
-              ],
-            ],
-          ),
-        ),
+        _validationCard(t),
         if (recheck != null && plan.prpId.isNotEmpty) ...[
           const SizedBox(height: FwLayout.s3),
           RecheckRow(prpId: plan.prpId, recheck: recheck!),
@@ -92,6 +57,51 @@ class ForgedPlanCard extends StatelessWidget {
         ),
       ],
     );
+  }
+
+  Widget _validationCard(FwTokens t) => HairlineCard(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Kicker('validation gates'),
+            const SizedBox(height: FwLayout.s2),
+            for (final g in plan.gates)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 3),
+                child: Row(children: [
+                  Chip(label: Text(g.label)),
+                  const SizedBox(width: FwLayout.s3),
+                  Expanded(
+                      child: Text(g.check,
+                          style: TextStyle(fontSize: 12.5, color: t.inkSoft))),
+                ]),
+              ),
+            if (profile != null && profile!.planning.isNotEmpty) ...[
+              const SizedBox(height: FwLayout.s3),
+              const Kicker('discipline'),
+              const SizedBox(height: FwLayout.s2),
+              for (final (i, step) in profile!.planning.indexed)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 2),
+                  child: Row(children: [
+                    Text('${i + 1}'.padLeft(2, '0'),
+                        style: fwMono(t, size: 11, color: t.inkFaint)),
+                    const SizedBox(width: FwLayout.s3),
+                    Text(step,
+                        style: TextStyle(fontSize: 12.5, color: t.inkSoft)),
+                  ]),
+                ),
+            ],
+          ],
+        ),
+      );
+
+  String _percent(String ratio) {
+    final parts = ratio.split('.');
+    if (parts.length != 2 || parts[0] != '0' && parts[0] != '1') return '0';
+    final milli = int.tryParse(parts[1]);
+    if (milli == null || parts[1].length != 3) return '0';
+    return '${int.parse(parts[0]) * 100 + milli ~/ 10}';
   }
 }
 
@@ -142,8 +152,7 @@ class _RecheckRowState extends State<RecheckRow> {
         for (final e in arms.entries) ...[
           VerdictPill(
               '${e.key} ${(e.value as Map)['moved'] == true ? 'moved' : 'held'}',
-              status:
-                  (e.value as Map)['moved'] == true ? 'drift' : 'verified'),
+              status: (e.value as Map)['moved'] == true ? 'drift' : 'verified'),
           const SizedBox(width: FwLayout.s2),
         ],
         if (out != null && arms.isEmpty)

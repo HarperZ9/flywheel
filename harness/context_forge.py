@@ -62,15 +62,26 @@ class PRP:
     architecture_source: str = ""
 
     @property
-    def external_gate_ratio(self) -> float:
-        g = self.validation_gates
-        return (sum(1 for _, ext in g if ext) / len(g)) if g else 0.0
+    def gate_counts(self) -> dict[str, int]:
+        gates = self.validation_gates
+        return {"checkable": sum(1 for _, ext in gates if ext),
+                "total": len(gates)}
+
+    @property
+    def external_gate_ratio(self) -> str:
+        counts = self.gate_counts
+        total, checkable = counts["total"], counts["checkable"]
+        if not total:
+            return "0.000"
+        milli = (1000 * checkable + total // 2) // total
+        return f"{milli // 1000}.{milli % 1000:03d}"
 
     def render(self) -> str:
         exs = "\n".join(f"- {e}" for e in self.examples) or "- (none -- add reference patterns to raise confidence)"
         docs = "\n".join(f"- {d}" for d in self.documentation) or "- (none)"
         gates = "\n".join(
-            f"- [{'oracle' if ext else 'manual'}] {g}" for g, ext in self.validation_gates)
+            f"- [{'checkable' if ext else 'manual'}] {g}"
+            for g, ext in self.validation_gates)
         return (
             f"# PRP -- {self.spec.task_type} task (confidence {self.confidence}/10)\n\n"
             f"## Goal\n{self.spec.goal.strip()}\n\n"
@@ -82,9 +93,9 @@ class PRP:
                                    or "- (none stated)") + "\n\n"
             f"## Output\n{self.spec.output_contract}\n\n"
             f"## Validation gates (must pass)\n{gates}\n"
-            f"  NOTE: [oracle] gates are run by an EXTERNAL verifier the model cannot\n"
-            f"  author or fake -- that is the difference from self-reported tests. The\n"
-            f"  work iterates until the oracle gates pass, not until the model says so.\n\n"
+            f"  NOTE: labels describe who could check; no gate is claimed run or passed.\n"
+            f"  A [checkable] gate can be run by a non-self-authored verifier; a\n"
+            f"  [manual] gate still needs review.\n\n"
             f"## Success criterion\n{self.spec.success_criterion}"
             + ("" if self.spec.well_posed else
                "\n  (auto-proposed; the goal did not state a checkable criterion -- confirm it)")
@@ -94,7 +105,7 @@ class PRP:
     def to_dict(self) -> dict:
         import hashlib as _h
         return {
-            "schema": "flywheel.prp/v1",
+            "schema": "flywheel.prp/v2",
             "goal": self.spec.goal, "task_type": self.spec.task_type,
             "intent_sha256": (_h.sha256(
                 self.intent_source.encode()).hexdigest()
@@ -103,7 +114,8 @@ class PRP:
                 self.architecture_source.encode()).hexdigest()
                 if self.architecture_source else ""),
             "confidence": self.confidence,
-            "external_gate_ratio": round(self.external_gate_ratio, 3),
+            "external_gate_ratio": self.external_gate_ratio,
+            "gate_counts": self.gate_counts,
             "well_posed": self.spec.well_posed,
             "validation_gates": [{"check": g, "externally_checkable": e}
                                  for g, e in self.validation_gates],

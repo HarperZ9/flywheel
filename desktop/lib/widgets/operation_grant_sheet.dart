@@ -20,11 +20,31 @@ Future<T?> authorizeGatewayOperation<T>(
     GatewayOperation operation,
     Future<T> Function(Map<String, dynamic> finalBody) dispatch,
     {required GatewayOperationSupplier currentOperation}) async {
+  final outcome = await authorizeGatewayOperationDetailed(
+      context, operation, dispatch,
+      currentOperation: currentOperation);
+  return outcome.value;
+}
+
+Future<GatewayAuthorizationOutcome<T>> authorizeGatewayOperationDetailed<T>(
+    BuildContext context,
+    GatewayOperation operation,
+    Future<T> Function(Map<String, dynamic> finalBody) dispatch,
+    {required GatewayOperationSupplier currentOperation}) async {
   final scope = GatewayOperationScope.maybeOf(context);
-  if (scope == null) return null;
+  if (scope == null) return const GatewayAuthorizationOutcome.denied();
   final result = await scope.authorize(context, operation, currentOperation,
       (body) async => await dispatch(body));
-  return result as T?;
+  if (result is GatewayAuthorizationOutcome) {
+    if (result.failure != null) {
+      return GatewayAuthorizationOutcome.failure(result.failure!);
+    }
+    if (result.denied) return const GatewayAuthorizationOutcome.denied();
+    return GatewayAuthorizationOutcome.value(result.value as T);
+  }
+  return result == null
+      ? const GatewayAuthorizationOutcome.denied()
+      : GatewayAuthorizationOutcome.value(result as T);
 }
 
 GatewayOperationAuthorizer journeyGatewayAuthorizer(
@@ -50,19 +70,28 @@ Future<Object?> _authorizeJourneyOperation(
   }
 
   final binding = currentBinding();
-  if (binding == null) return null;
+  if (binding == null) return const GatewayAuthorizationOutcome.denied();
   final prepared = await controller.prepare(operation,
       binding: binding,
       currentOperation: currentOperation,
       currentBinding: currentBinding,
       refreshOnHeadConflict: journey.refreshActiveProjection);
-  if (!context.mounted) return null;
+  if (!context.mounted) return const GatewayAuthorizationOutcome.denied();
   if (!prepared) {
-    return controller.failure?.code == 'HEAD_CONFLICT'
-        ? showOperationGrantSheet<Object?>(context, controller, dispatch)
-        : null;
+    final failure = controller.failure;
+    return failure == null
+        ? const GatewayAuthorizationOutcome.denied()
+        : GatewayAuthorizationOutcome.failure(failure);
   }
-  return showOperationGrantSheet<Object?>(context, controller, dispatch);
+  final result =
+      await showOperationGrantSheet<Object?>(context, controller, dispatch);
+  final failure = controller.failure;
+  if (result == null && failure != null) {
+    return GatewayAuthorizationOutcome.failure(failure);
+  }
+  return result == null
+      ? const GatewayAuthorizationOutcome.denied()
+      : GatewayAuthorizationOutcome.value(result);
 }
 
 Future<void> authorizeGatewayStream(

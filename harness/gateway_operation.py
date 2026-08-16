@@ -1,6 +1,5 @@
 """Strict canonical operations for exact gateway grants."""
 from __future__ import annotations
-
 from dataclasses import dataclass, field
 import math
 import re
@@ -9,7 +8,6 @@ from typing import Mapping
 from urllib.parse import unquote
 from .evidence_json import canonical_sha256
 from .gateway_secret_boundary import validate_no_raw_secrets
-
 REQUEST_SCHEMA = "flywheel.gateway-operation/v1"
 PROPOSAL_SCHEMA = "flywheel.gateway-grant-proposal/v1"
 PROPOSAL_REF_PATTERN = re.compile(r"prp_[0-9a-f]{32}\Z")
@@ -21,14 +19,12 @@ _SECRET_NAMES = frozenset(("api_key", "access_token", "refresh_token", "token",
     "authorization", "cookie", "environment", "env"))
 _COMMAND_SECRET = re.compile(
     r"(?i)(?:^|[_-])(api[_-]?key|token|secret|password|credential)(?:$|[=_-])")
-
 class GatewayOperationError(RuntimeError):
     """One fixed non-echoing operation-boundary failure."""
 
     def __init__(self, code: str) -> None:
         self.code = code
         super().__init__(code)
-
 @dataclass(frozen=True)
 class CanonicalOperation:
     action: str
@@ -40,8 +36,6 @@ class CanonicalOperation:
     scopes: tuple[str, ...]
     data_refs: tuple[str, ...]
     credential_refs: tuple[str, ...]
-
-
 @dataclass(frozen=True)
 class AuthorizedOperation(CanonicalOperation):
     owner_ref: str
@@ -66,8 +60,6 @@ class AuthorizedOperation(CanonicalOperation):
                    "owner_" + "a" * 32, "jrn_" + "a" * 32, "a" * 64,
                    "test-request", "gnt_" + "a" * 32,
                    "2026-08-15T12:02:00Z")
-
-
 _REFS = {"data_refs", "credential_refs"}
 _FIELDS = {
     "chat.complete": ({"model", "messages", "stream"} | _REFS, set()),
@@ -77,6 +69,8 @@ _FIELDS = {
     "workflow.run": ({"workflow", "goal", "endpoint", "allow_write",
                       "allow_exec"} | _REFS,
                      {"profile", "root", "test_cmd"}),
+    "plan.run": ({"workflow", "profile", "root", "endpoint", "allow_write",
+                  "allow_exec", "binding"} | _REFS, {"test_cmd"}),
     "plugin.probe": ({"name"} | _REFS, set()),
     "plugin.call": ({"name", "tool", "arguments"} | _REFS, set()),
     "plugin.register": ({"name", "command", "detail", "requires"}
@@ -89,12 +83,11 @@ _FIELDS = {
     "marketplace.remove": ({"name"} | _REFS, set()),
     "operation.cancel": ({"operation_ref", "timeout_ms"} | _REFS, set()),
 }
-
-
 def action_for_path(path: str) -> str | None:
     return {
         "/v1/chat/completions": "chat.complete", "/api/agent": "agent.run",
-        "/api/workflow": "workflow.run", "/api/plugins/probe": "plugin.probe",
+        "/api/workflow": "workflow.run", "/api/plan/run": "plan.run",
+        "/api/plugins/probe": "plugin.probe",
         "/api/plugins/call": "plugin.call",
         "/api/plugins/register": "plugin.register",
         "/api/plugins/toggle": "plugin.toggle",
@@ -104,8 +97,6 @@ def action_for_path(path: str) -> str | None:
         "/api/marketplace/remove": "marketplace.remove",
         "/api/operations/cancel": "operation.cancel",
     }.get(path)
-
-
 def canonicalize_operation(action: str, operation: object) -> CanonicalOperation:
     try:
         if action not in _FIELDS or type(operation) is not dict:
@@ -137,8 +128,6 @@ def canonicalize_operation(action: str, operation: object) -> CanonicalOperation
         raise
     except (KeyError, TypeError, ValueError, UnicodeError, RecursionError):
         raise GatewayOperationError("INVALID_REQUEST") from None
-
-
 def thaw_operation(value: Mapping[str, object]) -> dict:
     def thaw(item):
         if isinstance(item, Mapping):
@@ -147,8 +136,6 @@ def thaw_operation(value: Mapping[str, object]) -> dict:
             return [thaw(child) for child in item]
         return item
     return thaw(value)
-
-
 def materialize_agent_attachment(value: dict) -> dict:
     """Render an already-authorized relative attachment for the agent only."""
     result = dict(value)
@@ -161,8 +148,6 @@ def materialize_agent_attachment(value: dict) -> dict:
     parts.append(f"Request:\n{result['goal']}")
     result["goal"] = "\n".join(parts)
     return result
-
-
 def _snapshot(value: object) -> dict:
     remaining = [4096]
     def visit(item: object, depth: int):
@@ -255,6 +240,16 @@ def _validate_shape(action: str, value: dict) -> None:
             raise ValueError
     if "command" in value:
         _validate_command(value["command"])
+    if action == "plan.run":
+        _validate_plan(value)
+
+
+def _validate_plan(value: dict) -> None:
+    from .plan_run_contract import PlanRunContractError, parse_plan_run_binding
+    try:
+        parse_plan_run_binding(value.get("binding"))
+    except PlanRunContractError as exc:
+        raise GatewayOperationError(exc.code) from None
 
 
 def _validate_command(command: list) -> None:
@@ -271,7 +266,7 @@ def _destination(action: str, value: dict) -> dict[str, str]:
         return {"kind": "operation", "ref": value["operation_ref"]}
     if action == "chat.complete":
         return {"kind": "model", "ref": value["model"]}
-    if action in {"agent.run", "workflow.run"}:
+    if action in {"agent.run", "workflow.run", "plan.run"}:
         return {"kind": "endpoint", "ref": value["endpoint"]}
     if action.startswith("plugin."):
         return {"kind": "plugin", "ref": value["name"]}
@@ -282,7 +277,7 @@ def _derived_scopes(action: str, value: dict, secrets: bool) -> tuple[str, ...]:
     selected = set()
     if action == "operation.cancel":
         selected.add("exec")
-    if action in {"chat.complete", "agent.run", "workflow.run"}:
+    if action in {"chat.complete", "agent.run", "workflow.run", "plan.run"}:
         selected.add("network")
     if action in {"plugin.call"}:
         selected.update(("write", "exec", "network", "plugin"))
@@ -292,7 +287,7 @@ def _derived_scopes(action: str, value: dict, secrets: bool) -> tuple[str, ...]:
                   "marketplace.install", "marketplace.add",
                   "marketplace.remove"}:
         selected.update(("write", "plugin"))
-    if action in {"agent.run", "workflow.run"}:
+    if action in {"agent.run", "workflow.run", "plan.run"}:
         if value.get("allow_write") is True: selected.add("write")
         if value.get("allow_exec") is True: selected.add("exec")
     if secrets: selected.add("secrets")

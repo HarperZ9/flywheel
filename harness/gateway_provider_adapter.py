@@ -1,7 +1,7 @@
 """Fixed public failures for authorized external-action adapters."""
 from __future__ import annotations
 
-from dataclasses import dataclass, replace
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 
 from .credential_handles import CredentialHandleStore
@@ -22,11 +22,18 @@ class ExecutionPlan:
     launch: object | None = None
     plugin_kind: str | None = None
     marketplace: object | None = None
+    workflow_sha256: str | None = None
+    profile_sha256: str | None = None
+    profile_system: str = field(default="", repr=False)
+    verified_plan: object | None = field(default=None, repr=False)
 
 
-def freeze_execution_plan(operation) -> ExecutionPlan:
+def freeze_execution_plan(operation, *, owner_ref: str | None = None,
+                          state_root: Path | None = None) -> ExecutionPlan:
     """Snapshot server-derived dispatch metadata before approval."""
     launch = kind = market = None
+    workflow_sha = profile_sha = None
+    system, verified = "", None
     if operation.action in {"plugin.probe", "plugin.call"}:
         from .plugins import plugin_execution_plan
         launch, kind, required, refs = plugin_execution_plan(
@@ -35,8 +42,14 @@ def freeze_execution_plan(operation) -> ExecutionPlan:
         from .marketplace import marketplace_execution_plan
         market = marketplace_execution_plan(operation.operation["name"])
         required, refs = market.required_slots, market.credential_refs
+    elif operation.action == "plan.run":
+        workflow_sha, profile_sha, system, verified = _plan_snapshot(
+            operation, owner_ref, state_root)
+        required, refs = _credential_plan(operation)
     else:
         required, refs = _credential_plan(operation)
+        workflow_sha = profile_sha = None
+        system, verified = "", None
     argv = tuple(launch.argv) if hasattr(launch, "argv") else (
         tuple(launch) if launch is not None else ())
     cwd = getattr(launch, "cwd", None)
@@ -48,9 +61,38 @@ def freeze_execution_plan(operation) -> ExecutionPlan:
         "action": operation.action, "operation_sha256": operation.operation_sha256,
         "required_slots": list(required), "credential_refs": list(refs),
         "plugin_kind": kind, "argv": list(argv), "cwd": cwd,
-        "marketplace": market_value})
+        "marketplace": market_value, "workflow_sha256": workflow_sha,
+        "profile_sha256": profile_sha})
     return ExecutionPlan(
-        digest, tuple(required), tuple(refs), launch, kind, market)
+        digest, tuple(required), tuple(refs), launch, kind, market,
+        workflow_sha, profile_sha, system, verified)
+
+
+def _plan_snapshot(operation, owner_ref, state_root):
+    try:
+        from .plan_run_store import verify_plan_run
+        from .profiles import get_profile
+        from .workflows import WORKFLOWS
+        from .gateway_operation import thaw_operation
+        if type(owner_ref) is not str or state_root is None:
+            raise ValueError
+        value = operation.operation
+        profile = get_profile(value["profile"])
+        workflow = WORKFLOWS.get(value["workflow"])
+        if (type(profile) is not dict or type(workflow) is not dict
+                or profile.get("workflow") != value["workflow"]
+                or type(profile.get("system", "")) is not str):
+            raise GatewayOperationError("INVALID_REQUEST")
+        verified = verify_plan_run(thaw_operation(value)["binding"],
+            owner_ref=owner_ref, state_root=state_root)
+        workflow_value = {"name": value["workflow"], **workflow}
+        return (canonical_sha256(workflow_value), canonical_sha256(profile),
+                profile.get("system", ""), verified)
+    except GatewayOperationError:
+        raise
+    except Exception as exc:
+        code = getattr(exc, "code", "PLAN_BINDING_DRIFT")
+        raise GatewayOperationError(code) from None
 
 
 def _credential_plan(operation) -> tuple[tuple[str, ...], tuple[str, ...]]:
@@ -61,7 +103,7 @@ def _credential_plan(operation) -> tuple[tuple[str, ...], tuple[str, ...]]:
             return (), ()
         from .endpoint_registry import credential_slots_for_endpoint
         return credential_slots_for_endpoint(name), ()
-    if action in {"agent.run", "workflow.run"}:
+    if action in {"agent.run", "workflow.run", "plan.run"}:
         from .endpoint_registry import credential_slots_for_endpoint
         return credential_slots_for_endpoint(value["endpoint"]), ()
     if action in {"plugin.probe", "plugin.call"}:

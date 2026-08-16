@@ -14,6 +14,11 @@ const _errors = <String, (Set<int>, String)>{
   'PERMISSION_DENIED': ({403}, 'Gateway operation is not permitted'),
   'APPROVAL_EXPIRED': ({403}, 'Gateway approval expired'),
   'HEAD_CONFLICT': ({409}, 'Journey state changed'),
+  'PLAN_BINDING_DRIFT': ({409}, 'Plan run no longer matches its forge'),
+  'IDEMPOTENCY_MISMATCH': (
+    {409},
+    'Plan run request conflicts with its prior use'
+  ),
   'STORE_BUSY': ({503}, 'Gateway approval custody is busy'),
   'STORE_COMMIT_FAILED': ({500}, 'Gateway approval custody failed'),
   'EXTERNAL_ACTION_FAILED': ({502}, 'Authorized external action failed'),

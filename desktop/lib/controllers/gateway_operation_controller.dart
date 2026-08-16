@@ -19,6 +19,23 @@ final class GatewayOperationFailure implements Exception {
   const GatewayOperationFailure(this.code, this.message);
 }
 
+final class GatewayAuthorizationOutcome<T> {
+  final T? value;
+  final GatewayOperationFailure? failure;
+  final bool denied;
+  const GatewayAuthorizationOutcome.value(T this.value)
+      : failure = null,
+        denied = false;
+  const GatewayAuthorizationOutcome.failure(
+      GatewayOperationFailure this.failure)
+      : value = null,
+        denied = false;
+  const GatewayAuthorizationOutcome.denied()
+      : value = null,
+        failure = null,
+        denied = true;
+}
+
 final class GatewayOperationScope extends InheritedWidget {
   const GatewayOperationScope(
       {super.key, required this.authorize, required super.child});
