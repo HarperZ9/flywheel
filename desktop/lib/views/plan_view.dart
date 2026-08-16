@@ -124,6 +124,7 @@ class _PlanViewState extends State<PlanView> {
     final binding = _controller.binding;
     final profile = _activeProfile;
     if (binding == null ||
+        _goal.text.trim() != binding.prp['goal'] ||
         profile?.workflow == null ||
         _root == null ||
         _endpoint == null) {
@@ -224,7 +225,10 @@ class _PlanViewState extends State<PlanView> {
           const SizedBox(height: FwLayout.s3),
           TextField(
               controller: _goal,
-              onChanged: (_) => setState(() {}),
+              onChanged: (_) {
+                _controller.invalidateRun();
+                setState(() {});
+              },
               maxLines: 3,
               minLines: 2,
               style: const TextStyle(fontSize: 13.5),

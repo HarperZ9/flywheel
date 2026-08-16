@@ -10,6 +10,15 @@ Map<String, dynamic> _fixture() => jsonDecode(
     as Map<String, dynamic>;
 
 void main() {
+  _sharedFixtureTest();
+  _immutableCopiesTest();
+  _bindingFieldsTest();
+  _numberAndGateTest();
+  _canonicalizerTest();
+  _surrogateTest();
+}
+
+void _sharedFixtureTest() {
   test('shared fixture parses with exact Python-compatible hashes', () {
     final fixture = _fixture();
     final binding =
@@ -23,7 +32,9 @@ void main() {
     expect(binding.bindingSha256,
         '9d0cf21988848a801d2e90bc9bcb67445500bfaf1ae02246f0b2706f24514f85');
   });
+}
 
+void _immutableCopiesTest() {
   test('binding keeps immutable copies', () {
     final source = Map<String, dynamic>.from(_fixture()['binding'] as Map);
     final binding = PlanRunBinding.fromJson(source);
@@ -34,7 +45,9 @@ void main() {
     expect(() => binding.gates.add(const PlanRunGate('x', true)),
         throwsUnsupportedError);
   });
+}
 
+void _bindingFieldsTest() {
   test('every locally recomputable binding field fails closed', () {
     final original = _fixture()['binding'] as Map<String, dynamic>;
     for (final field in [
@@ -53,7 +66,9 @@ void main() {
           reason: field);
     }
   });
+}
 
+void _numberAndGateTest() {
   test('float bool-for-int duplicate gates and count drift are refused', () {
     final original = _fixture()['binding'] as Map<String, dynamic>;
     final mutations = <void Function(Map<String, dynamic>)>[
@@ -69,7 +84,9 @@ void main() {
       expect(() => PlanRunBinding.fromJson(changed), throwsFormatException);
     }
   });
+}
 
+void _canonicalizerTest() {
   test('canonicalizer sorts keys, preserves arrays, and rejects non-integers',
       () {
     expect(canonicalPlanSha256({'b': 2, 'a': 1}),
@@ -79,7 +96,9 @@ void main() {
         '8706b5798a29d65739b3d1bbb1d009f87d005c71c8130c5353c4990c15ddfec8');
     expect(() => canonicalPlanSha256({'ratio': 0.5}), throwsFormatException);
   });
+}
 
+void _surrogateTest() {
   test('canonicalizer rejects unpaired UTF-16 surrogates recursively', () {
     final invalid = <Object?>[
       {'value': '\uD800leading'},
