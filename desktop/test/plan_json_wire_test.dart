@@ -147,7 +147,11 @@ Map<String, dynamic> _threeStepResult() {
   return result;
 }
 
-void main() {
+GatewayPlan _planReturning(http.Response response) => GatewayPlan(GatewayClient(
+    baseUrl: 'https://gateway.invalid',
+    httpClient: MockClient((_) async => response)));
+
+void _registerJsonStructureTests() {
   test('Plan transport rejects decoded duplicate keys before jsonDecode',
       () async {
     final encoded = jsonEncode(_fixture()['binding']);
@@ -155,9 +159,7 @@ void main() {
         '"schema":"flywheel.prp/v2"',
         '"\\u0073chema":"flywheel.prp/v2",'
             '"schema":"flywheel.prp/v2"');
-    final plan = GatewayPlan(GatewayClient(
-        baseUrl: 'https://gateway.invalid',
-        httpClient: MockClient((_) async => http.Response(duplicate, 200))));
+    final plan = _planReturning(http.Response(duplicate, 200));
     await _expectInvalid(plan.forge('goal'));
   });
 
@@ -179,9 +181,7 @@ void main() {
           '"steps":[]', r'"steps":[{"name":"x","\u006eame":"x"}]'),
     ];
     for (final raw in mutations) {
-      final plan = GatewayPlan(GatewayClient(
-          baseUrl: 'https://gateway.invalid',
-          httpClient: MockClient((_) async => http.Response(raw, 200))));
+      final plan = _planReturning(http.Response(raw, 200));
       await _expectInvalid(plan.dispatch(_finalEnvelope()));
     }
   });
@@ -211,7 +211,9 @@ void main() {
     final run = Map<String, Object?>.from(fixture['workflow_run'] as Map);
     expect(recomputeWorkflowChain(run), fixture['chain_hash']);
   });
+}
 
+void _registerResultValidationTests() {
   test('Plan transport rejects invalid UTF-8 trailing scalar depth and nodes',
       () async {
     final responses = <http.Response>[
@@ -226,9 +228,7 @@ void main() {
       http.Response(' ' * 1048577, 200),
     ];
     for (final response in responses) {
-      final plan = GatewayPlan(GatewayClient(
-          baseUrl: 'https://gateway.invalid',
-          httpClient: MockClient((_) async => response)));
+      final plan = _planReturning(response);
       await _expectInvalid(plan.forge('goal'));
     }
   });
@@ -276,10 +276,7 @@ void main() {
     }
     final legacy = _result()..['schema'] = 'flywheel.plan-run-result/v1';
     _outerRehash(legacy);
-    final plan = GatewayPlan(GatewayClient(
-        baseUrl: 'https://gateway.invalid',
-        httpClient:
-            MockClient((_) async => http.Response(jsonEncode(legacy), 200))));
+    final plan = _planReturning(http.Response(jsonEncode(legacy), 200));
     await _expectInvalid(plan.dispatch(_finalEnvelope()));
   });
 
@@ -290,11 +287,13 @@ void main() {
     test('self-consistent wrong ${identity.$1}|${identity.$2} is refused',
         () async {
       final result = _result(workflow: identity.$1, endpoint: identity.$2);
-      final plan = GatewayPlan(GatewayClient(
-          baseUrl: 'https://gateway.invalid',
-          httpClient:
-              MockClient((_) async => http.Response(jsonEncode(result), 200))));
+      final plan = _planReturning(http.Response(jsonEncode(result), 200));
       await _expectInvalid(plan.dispatch(_finalEnvelope()));
     });
   }
+}
+
+void main() {
+  _registerJsonStructureTests();
+  _registerResultValidationTests();
 }
