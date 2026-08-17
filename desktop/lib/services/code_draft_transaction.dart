@@ -16,6 +16,8 @@ final class DraftTransactionException implements Exception {
   final bool busy;
 }
 
+Never _fail() => throw const DraftTransactionException(false);
+
 final class CodeDraftTransaction {
   CodeDraftTransaction({
     required this.root,
@@ -91,21 +93,15 @@ final class CodeDraftTransaction {
     final prior = _validTarget(target, pathKey, valid);
     final temporary = temporaryFile?.call(target) ??
         File('${target.path}.fw-write.$pid.${_nonce()}.$recordSha.tmp');
-    if (_entryExists(temporary.path)) {
-      throw const DraftTransactionException(false);
-    }
+    if (_entryExists(temporary.path)) _fail();
     try {
       temporary.parent.createSync(recursive: true);
       temporary.writeAsBytesSync(bytes, flush: true);
-      if (!_same(readFile(temporary), bytes)) {
-        throw const DraftTransactionException(false);
-      }
+      if (!_same(readFile(temporary), bytes)) _fail();
       beforeRename?.call(temporary);
       (renameFile ?? (file, path) => file.renameSync(path))(
           temporary, target.path);
-      if (!target.existsSync() || !_same(readFile(target), bytes)) {
-        throw const DraftTransactionException(false);
-      }
+      if (!target.existsSync() || !_same(readFile(target), bytes)) _fail();
       return recordSha;
     } catch (_) {
       if (temporary.existsSync()) temporary.deleteSync();
@@ -122,19 +118,15 @@ final class CodeDraftTransaction {
   }) {
     if (!target.existsSync()) return false;
     final bytes = readFile(target);
-    if (sha256.convert(bytes).toString() != expectedRecordSha256 ||
-        !matches(bytes)) {
-      throw const DraftTransactionException(false);
-    }
+    final digest = sha256.convert(bytes).toString();
+    if (digest != expectedRecordSha256 || !matches(bytes)) _fail();
     final tombstone = File('${target.path}.fw-delete.$pid.${_nonce()}.'
         '$expectedRecordSha256.tmp');
     target.renameSync(tombstone.path);
     try {
       final actual = readFile(tombstone);
-      if (sha256.convert(actual).toString() != expectedRecordSha256 ||
-          !matches(actual)) {
-        throw const DraftTransactionException(false);
-      }
+      final digest = sha256.convert(actual).toString();
+      if (digest != expectedRecordSha256 || !matches(actual)) _fail();
       (deleteFile ?? (file) => file.deleteSync())(tombstone);
       return true;
     } catch (_) {
@@ -150,17 +142,12 @@ final class CodeDraftTransaction {
   Map<String, List<File>> _admit() {
     final groups = <String, List<File>>{};
     for (final entity in directory.listSync(followLinks: false)) {
-      if (entity is! File ||
-          FileSystemEntity.typeSync(entity.path, followLinks: false) !=
-              FileSystemEntityType.file) {
-        throw const DraftTransactionException(false);
-      }
+      final type = FileSystemEntity.typeSync(entity.path, followLinks: false);
+      if (entity is! File || type != FileSystemEntityType.file) _fail();
       final name = entity.uri.pathSegments.last;
       final target = _target.firstMatch(name);
       final owned = _owned.firstMatch(name);
-      if (target == null && owned == null) {
-        throw const DraftTransactionException(false);
-      }
+      if (target == null && owned == null) _fail();
       final key = (target ?? owned)!.group(1)!;
       (groups[key] ??= []).add(entity);
     }
@@ -197,29 +184,42 @@ final class CodeDraftTransaction {
     }
     if (writes.length + deletes.length > 1 ||
         (writes.isNotEmpty && deletes.isNotEmpty)) {
-      throw const DraftTransactionException(false);
+      _fail();
     }
-    final candidate = writes.isNotEmpty
-        ? writes.single
-        : deletes.isNotEmpty
-            ? deletes.single
-            : null;
+    final candidate = writes.isNotEmpty ? writes.single : deletes.firstOrNull;
     candidate?.renameSync(target.path);
   }
 
   void _rollback(File target, List<int>? prior, String attempted,
       String pathKey, DraftBytesValidator valid) {
+    if (FileSystemEntity.typeSync(target.path, followLinks: false) ==
+        FileSystemEntityType.link) {
+      Link(target.path).deleteSync();
+    }
     if (!target.existsSync()) {
-      if (prior != null) target.writeAsBytesSync(prior, flush: true);
+      if (prior != null) _restore(target, prior);
       return;
     }
     final current = readFile(target);
-    final digest = sha256.convert(current).toString();
-    if (digest != attempted && valid(current, pathKey)) return;
-    if (prior == null) {
-      target.deleteSync();
-    } else {
-      target.writeAsBytesSync(prior, flush: true);
+    if (sha256.convert(current).toString() != attempted &&
+        valid(current, pathKey)) {
+      return;
+    }
+    if (prior == null) target.deleteSync();
+    if (prior != null) _restore(target, prior);
+  }
+
+  void _restore(File target, List<int> prior) {
+    final digest = sha256.convert(prior).toString();
+    final temp = File('${target.path}.fw-write.$pid.${_nonce()}.$digest.tmp');
+    if (_entryExists(temp.path)) _fail();
+    try {
+      temp.writeAsBytesSync(prior, flush: true);
+      if (!_same(readFile(temp), prior)) _fail();
+      temp.renameSync(target.path);
+    } catch (_) {
+      if (_entryExists(temp.path)) temp.deleteSync();
+      rethrow;
     }
   }
 
@@ -245,7 +245,7 @@ final class CodeDraftTransaction {
   List<int>? _validTarget(File target, String key, DraftBytesValidator valid) {
     if (!target.existsSync()) return null;
     final bytes = readFile(target);
-    if (!valid(bytes, key)) throw const DraftTransactionException(false);
+    if (!valid(bytes, key)) _fail();
     return bytes;
   }
 
@@ -265,7 +265,7 @@ final class CodeDraftTransaction {
     final accepted = type == FileSystemEntityType.notFound ||
         type == FileSystemEntityType.file ||
         allowDirectory && type == FileSystemEntityType.directory;
-    if (!accepted) throw const DraftTransactionException(false);
+    if (!accepted) _fail();
   }
 }
 

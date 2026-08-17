@@ -159,7 +159,7 @@ def test_cross_harness_source_wrapper_exposes_the_same_help_from_any_cwd(tmp_pat
 def test_built_wheel_exposes_root_and_cross_harness_help_outside_checkout(tmp_path):
     root, wheels, env = cli.Path(__file__).resolve().parents[1], tmp_path / "wheels", tmp_path / "env"
     wheels.mkdir()
-    built = subprocess.run([sys.executable, "-m", "pip", "wheel", ".", "--no-deps", "--no-build-isolation", "-w", str(wheels)], cwd=root, capture_output=True, text=True)
+    built = subprocess.run([sys.executable, "-m", "pip", "wheel", ".", "--no-deps", "-w", str(wheels)], cwd=root, capture_output=True, text=True)
     assert built.returncode == 0, built.stderr
     venv.EnvBuilder(with_pip=True).create(env)
     python = env / ("Scripts/python.exe" if sys.platform == "win32" else "bin/python")
@@ -212,6 +212,17 @@ def test_cmd_attached_command_switch_is_audited(command, tmp_path):
     assert "write_not_allowed" in result.policy_violations
 
 
+def test_linux_provider_execution_fails_closed_before_launch(tmp_path, monkeypatch):
+    import harness.cross_harness_process as process
+    marker = tmp_path / "launched"
+    monkeypatch.setattr(process.sys, "platform", "linux")
+    with pytest.raises(OSError, match="Linux provider containment unavailable"):
+        _run_process([sys.executable, "-c", f"open({str(marker)!r},'w').write('bad')"],
+                     cwd=tmp_path, stdin_text="", timeout_seconds=1)
+    assert not marker.exists()
+
+
+@pytest.mark.skipif(sys.platform != "win32", reason="Windows provider execution boundary")
 def test_real_child_streams_are_bounded_without_output_stage(tmp_path):
     code = "import sys;sys.stdout.buffer.write(b'x'*(2<<20));sys.stderr.buffer.write(b'y'*(2<<20))"
     result = _run_process([sys.executable, "-c", code], cwd=tmp_path, stdin_text="", timeout_seconds=3)
@@ -244,6 +255,7 @@ def test_nonfinite_provider_json_still_seals_executor_receipt(tmp_path):
     assert (run["rows"][0]["execution_state"], run["rows"][0]["receipt_state"]) == ("malformed", "verified")
 
 
+@pytest.mark.skipif(sys.platform != "win32", reason="Windows provider execution boundary")
 @pytest.mark.parametrize("rc", [0, 7])
 def test_inner_invalid_utf8_is_malformed_through_full_adapter(tmp_path, rc):
     process = _run_process([sys.executable, "-c", f"import sys;sys.stdout.buffer.write(b'\\xff');sys.exit({rc})"], cwd=tmp_path, stdin_text="", timeout_seconds=2)

@@ -1,6 +1,5 @@
 from datetime import UTC, datetime, timedelta
-import hashlib, json
-import pytest
+import hashlib, json, pytest, sys
 from harness.cross_harness_adapters import (CodexCliProposer, DirectCodexAdapter, FlywheelRouterAdapter,
     LocalRouterAdapter, ProcessOutcome, _run_process)
 from harness.cross_harness_artifacts import bind_attempt_receipt, canonical_sha256, write_artifact_index
@@ -80,16 +79,17 @@ def test_direct_codex_types_nonzero_and_timeout(tmp_path, process, state, failur
     result = adapter.execute(request(tmp_path))
     assert (result.execution_state, result.failure_class) == (state, failure)
 @pytest.mark.parametrize(("tail", "timeout", "state"), [("", 2, "returned"), ("sys.exit(7)", 2, "internal_error"), ("time.sleep(30)", .1, "timeout"), ("sys.stdout.buffer.write(b'\\xff');sys.exit(7)", 2, "malformed")])
+@pytest.mark.skipif(sys.platform != "win32", reason="Windows provider boundary")
 def test_process_runner_has_no_provider_writable_stage_and_types_boundaries(tmp_path, monkeypatch, tail, timeout, state):
-    import sys
     monkeypatch.setenv("CODEX_HOME", str(tmp_path / "custom-auth-home"))
     final = json.dumps({"type": "item.completed", "item": {"type": "agent_message", "text": "answer"}})
     code = f"import os,sys,time;assert os.environ['CODEX_HOME'];print({final!r});" + tail
     result = _run_process([sys.executable, "-c", code], cwd=tmp_path, stdin_text="", timeout_seconds=timeout)
     typed = DirectCodexAdapter(runner=lambda *a, **k: result, executable_resolver=lambda: "codex.cmd").execute(request(tmp_path))
     assert typed.execution_state == state and not list(tmp_path.glob(".cross-harness-stage-*"))
+@pytest.mark.skipif(sys.platform != "win32", reason="Windows provider boundary")
 def test_process_runner_terminates_descendants_within_bound(tmp_path):
-    import os, subprocess, sys, time
+    import os, subprocess, time
     marker, pidfile = tmp_path / "survived", tmp_path / "descendant.pid"
     grandchild = f"import os,pathlib,time;pathlib.Path({str(pidfile)!r}).write_text(str(os.getpid()));time.sleep(3);pathlib.Path({str(marker)!r}).write_text('bad')"
     child = "import os,subprocess,sys,time;subprocess.Popen([sys.executable,'-c',sys.argv[1]],creationflags=(8 if os.name=='nt' else 0),start_new_session=(os.name!='nt'));time.sleep(30)"; started = time.monotonic()

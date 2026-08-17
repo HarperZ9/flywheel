@@ -1,5 +1,5 @@
 from copy import deepcopy
-import hashlib, json, shutil, sys
+import contextlib, hashlib, json, shutil, sys
 from pathlib import Path
 import pytest
 import harness.evidence_packet as evidence_packet
@@ -138,6 +138,12 @@ def test_different_measurement_bytes_are_a_different_check(tmp_path):
     candidate.write_text(candidate.read_text(encoding="utf-8").replace("0.05", "0.04"), encoding="utf-8")
     second = run_journey_check(_journey(), "claim-root", "ml", candidate, context)
     assert first["receipt_claim_sha256"] != second["receipt_claim_sha256"]
+def test_measurement_check_canonicalizes_the_staging_root(tmp_path, monkeypatch):
+    real = tmp_path / "staging"; (real / "alias").mkdir(parents=True)
+    temporary = lambda **_: contextlib.nullcontext(str(real / "alias" / ".."))
+    monkeypatch.setattr(evidence_packet.tempfile, "TemporaryDirectory", temporary)
+    _, _, check = _checked(tmp_path / "fixture")
+    assert check["verdict"] == "FAIL" and check["receipt_ref"].startswith("receipts/")
 def test_pytest_target_admission_is_unreachable_without_containment(tmp_path):
     root, candidate, context = _software_fixture(tmp_path); context["raw_artifact_refs"] = ["candidate.py"]
     result = run_journey_check(_journey(), "claim-root", "code", candidate, context)

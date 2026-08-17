@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-
 import 'package:crypto/crypto.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flywheel_desktop/ide/code_buffer_session.dart';
@@ -15,7 +14,6 @@ const _workspace =
 const _disk =
     'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
 final _updated = DateTime.parse('2026-08-15T12:00:00.000Z');
-
 Directory _temp(String name) {
   final value = Directory.systemTemp.createTempSync(name);
   addTearDown(
@@ -29,7 +27,6 @@ CodeDraft _draft(String text, {String path = 'lib/main.dart'}) => CodeDraft(
     bufferSha256: sha256.convert(utf8.encode(text)).toString(),
     text: text,
     updatedAt: _updated);
-
 File _record(Directory root, [String path = 'lib/main.dart']) =>
     File('${root.path}/$_workspace/${sha256.convert(utf8.encode(path))}.json');
 
@@ -186,6 +183,38 @@ void _privateRootTests() {
     expect(outside.listSync(), isEmpty);
     expect(stored.draft.text, 'prior');
   });
+
+  test('a second process observes the active per-record lock', () async {
+    final r = _temp('code-record-lock-');
+    final ready = File('${r.path}/ready'), release = File('${r.path}/go');
+    final source =
+        "import 'dart:convert';import 'dart:io';import 'package:crypto/crypto.dart';import 'package:flywheel_desktop/services/code_draft_store.dart';void main(List<String> a){CodeDraftStore(root:Directory(a[0]),beforeRename:(_){File(a[1]).writeAsStringSync('ready');while(!File(a[2]).existsSync())sleep(const Duration(milliseconds:10));}).save(workspaceRef:'$_workspace',draft:CodeDraft(path:'lib/main.dart',diskSha256:'$_disk',bufferSha256:sha256.convert(utf8.encode('first')).toString(),text:'first',updatedAt:DateTime.parse('2026-08-15T12:00:00Z')));}";
+    final script = File('${r.path}/holder.dart')..writeAsStringSync(source);
+    final cache = File(Platform.resolvedExecutable).parent.parent.parent.parent;
+    final dart = File('${cache.path}/dart-sdk/bin/dart'
+        '${Platform.isWindows ? '.exe' : ''}');
+    final config = File('.dart_tool/package_config.json').absolute.path;
+    final process = await Process.start(dart.path,
+        ['--packages=$config', script.path, r.path, ready.path, release.path]);
+    try {
+      for (var i = 0; i < 500 && !ready.existsSync(); i++) {
+        await Future<void>.delayed(const Duration(milliseconds: 10));
+      }
+      expect(ready.existsSync(), isTrue);
+      try {
+        CodeDraftStore(root: r)
+            .save(workspaceRef: _workspace, draft: _draft('second'));
+        fail('second process lock was not observed');
+      } on CodeDraftStoreException catch (error) {
+        expect(error.failure, CodeDraftFailure.storeBusy);
+      }
+    } finally {
+      release.writeAsStringSync('release');
+    }
+    expect(await process.exitCode, 0);
+    final stored = CodeDraftStore(root: r).load(workspaceRef: _workspace);
+    expect(stored.single.draft.text, 'first');
+  });
 }
 
 void _transactionReadTests() {
@@ -245,7 +274,9 @@ void _batchRecoveryTests() {
     first.dispose();
     var fail = true, reads = 0;
     final transaction = WorkspaceFileTransaction(afterHandleValidated: () {
-      if (fail && ++reads == 2) throw StateError('injected');
+      if (fail && ++reads == 2) {
+        throw const WorkspaceFileException(CodeDiskFailure.unavailable);
+      }
     });
     final second = CodeBufferSession(
         draftStore: CodeDraftStore(root: drafts), fileTransaction: transaction)

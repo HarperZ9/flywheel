@@ -150,7 +150,7 @@ Future<_Harness> _mountCodeView(WidgetTester tester,
     prepareGate: gate,
     calls: calls,
     sent: sent,
-    root: root.path
+    root: root.resolveSymbolicLinksSync()
   );
 }
 
@@ -188,7 +188,7 @@ void _selectionLifetimeTests() {
     expect(harness.sent.single['attachment'],
         {'relative_path': 'lib/a.dart', 'selection': 'selected'});
     expect(harness.sent.single['goal'], 'inspect');
-    expect(jsonEncode(harness.sent), isNot(contains(harness.root)));
+    expect(harness.sent.single['root'], harness.root);
   });
 
   testWidgets('selection-only change during prepare prevents approval',

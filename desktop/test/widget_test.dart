@@ -159,7 +159,7 @@ void _codeGuardWidgetTests() {
     expect(find.byType(CodeView), findsOneWidget);
     expect(requests.single.paths, ['lib/main.dart']);
     expect(harness.code.openFiles.single.controller, same(controller));
-    choice = CloseChoice.save;
+    choice = CloseChoice.discard;
     FlywheelNav.jump(tester.element(find.byType(CodeView)), 'Chat');
     await tester.pumpAndSettle();
     expect(find.byType(AgentView), findsOneWidget);

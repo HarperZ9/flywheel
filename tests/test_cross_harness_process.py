@@ -218,7 +218,11 @@ def test_malformed_local_http_attempt_still_seals_receipt(monkeypatch, tmp_path)
 @pytest.mark.parametrize("mode", ["normal", "double-fork", "self-migrate"])
 def test_wsl_provider_execution_fails_closed_before_launch(mode):
     root = pathlib.Path(__file__).resolve().parents[1]
-    linux_root = subprocess.run(["wsl.exe", "-e", "wslpath", "-a", str(root)], capture_output=True, text=True, check=True).stdout.strip()
+    try: probe = subprocess.run(["wsl.exe", "-e", "wslpath", "-a", str(root)], capture_output=True, text=True, timeout=10)
+    except subprocess.TimeoutExpired: pytest.skip("wsl.exe is present but the WSL wslpath probe timed out")
+    if probe.returncode or not probe.stdout.strip():
+        pytest.skip("wsl.exe is present but no usable WSL distro with wslpath is available")
+    linux_root = probe.stdout.strip()
     script = r'''
 import pathlib,sys,tempfile
 sys.path.insert(0, sys.argv[1]); from harness.cross_harness_process import run_process
@@ -260,6 +264,8 @@ def test_review_w5_job_ownership_exception_kills_suspended_child(
     child = Child()
     monkeypatch.setattr(process_boundary.sys, "platform", "win32")
     monkeypatch.setattr(process_boundary.os, "name", "nt")
+    monkeypatch.setattr(process_boundary.subprocess,
+                        "CREATE_NEW_PROCESS_GROUP", 0x200, raising=False)
     monkeypatch.setattr(process_boundary.subprocess, "Popen",
                         lambda *_args, **_kwargs: child)
     monkeypatch.setattr(process_boundary, "_windows_job",
@@ -282,6 +288,8 @@ def test_review_w5_job_failure_still_bounds_wait_when_kill_raises(
     child = Child()
     monkeypatch.setattr(process_boundary.sys, "platform", "win32")
     monkeypatch.setattr(process_boundary.os, "name", "nt")
+    monkeypatch.setattr(process_boundary.subprocess,
+                        "CREATE_NEW_PROCESS_GROUP", 0x200, raising=False)
     monkeypatch.setattr(process_boundary.subprocess, "Popen",
                         lambda *_args, **_kwargs: child)
     monkeypatch.setattr(process_boundary, "_windows_job",

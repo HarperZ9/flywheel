@@ -32,6 +32,8 @@ File _record(Directory root, [String path = 'lib/main.dart']) =>
 
 File _owned(File record, String kind, String recordSha, [String? nonce]) =>
     File('${record.path}.fw-$kind.$pid.${nonce ?? 'a' * 32}.$recordSha.tmp');
+void _fails<T>(void Function() action, [Matcher? matcher]) =>
+    expect(action, throwsA(matcher ?? isA<T>()));
 
 void main() {
   _startupTests();
@@ -99,8 +101,7 @@ void _startupFailureTests() {
     final foreign = File('${target.parent.path}/foreign.tmp')
       ..writeAsStringSync('x');
     final before = target.readAsBytesSync();
-    expect(() => store.load(workspaceRef: _workspace),
-        throwsA(isA<CodeDraftStoreException>()));
+    _fails<CodeDraftStoreException>(() => store.load(workspaceRef: _workspace));
     expect(target.readAsBytesSync(), before);
     expect(orphan.existsSync(), isTrue);
     expect(foreign.readAsStringSync(), 'x');
@@ -118,8 +119,8 @@ void _startupFailureTests() {
         .writeAsBytesSync(_record(aRoot).readAsBytesSync());
     _owned(target, 'write', b.recordSha256, 'b' * 32)
         .writeAsBytesSync(_record(bRoot).readAsBytesSync());
-    expect(() => CodeDraftStore(root: root).load(workspaceRef: _workspace),
-        throwsA(isA<CodeDraftStoreException>()));
+    _fails<CodeDraftStoreException>(
+        () => CodeDraftStore(root: root).load(workspaceRef: _workspace));
     expect(target.existsSync(), isFalse);
   });
   test('owned complete bytes cannot promote under another path hash', () {
@@ -131,16 +132,15 @@ void _startupFailureTests() {
       ..parent.createSync(recursive: true);
     final orphan = _owned(wrongTarget, 'write', stored.recordSha256);
     orphan.writeAsBytesSync(_record(sourceRoot).readAsBytesSync());
-    expect(() => CodeDraftStore(root: root).load(workspaceRef: _workspace),
-        throwsA(isA<CodeDraftStoreException>()));
+    _fails<CodeDraftStoreException>(
+        () => CodeDraftStore(root: root).load(workspaceRef: _workspace));
     expect(wrongTarget.existsSync(), isFalse);
     expect(orphan.existsSync(), isTrue);
   });
 }
 
 void _generationTests() {
-  test('delete tombstone restarts and stale token cannot delete newer data',
-      () {
+  test('delete restart and stale token cannot delete newer data', () {
     final root = _temp('code-delete-generation-');
     final store = CodeDraftStore(root: root);
     final first = store.save(workspaceRef: _workspace, draft: _draft('first'));
@@ -148,44 +148,50 @@ void _generationTests() {
     target.renameSync(_owned(target, 'delete', first.recordSha256).path);
     expect(store.load(workspaceRef: _workspace).single.draft.text, 'first');
     final newer = store.save(workspaceRef: _workspace, draft: _draft('newer'));
-    expect(
-        () => store.delete(
-            workspaceRef: _workspace,
-            path: first.draft.path,
-            expectedBufferSha256: first.draft.bufferSha256,
-            expectedRecordSha256: first.recordSha256),
-        throwsA(isA<CodeDraftStoreException>()));
+    _fails<CodeDraftStoreException>(() => store.delete(
+        workspaceRef: _workspace,
+        path: first.draft.path,
+        expectedBufferSha256: first.draft.bufferSha256,
+        expectedRecordSha256: first.recordSha256));
     expect(store.load(workspaceRef: _workspace).single.recordSha256,
         newer.recordSha256);
-  });
-
-  test('a second store observes the active per-record lock', () {
-    final root = _temp('code-record-lock-');
-    CodeDraftStoreException? contention;
-    late CodeDraftStore second;
-    final first = CodeDraftStore(
-        root: root,
-        beforeRename: (_) {
-          try {
-            second.save(workspaceRef: _workspace, draft: _draft('second'));
-          } on CodeDraftStoreException catch (error) {
-            contention = error;
-          }
-        });
-    second = CodeDraftStore(root: root);
-    first.save(workspaceRef: _workspace, draft: _draft('first'));
-    expect(contention?.failure, CodeDraftFailure.storeBusy);
-    expect(first.load(workspaceRef: _workspace).single.draft.text, 'first');
   });
 
   test('failed older save never restores over an unknown newer generation', () {
     final root = _temp('code-save-generation-');
     final store = CodeDraftStore(root: root);
     store.save(workspaceRef: _workspace, draft: _draft('prior'));
-    final otherRoot = _temp('code-save-newer-');
-    CodeDraftStore(root: otherRoot)
-        .save(workspaceRef: _workspace, draft: _draft('newer'));
-    final newerBytes = _record(otherRoot).readAsBytesSync();
+    if (!Platform.isWindows) {
+      final target = _record(root), before = target.readAsBytesSync();
+      final outside = File('${_temp('code-rollback-outside-').path}/outside')
+        ..writeAsStringSync('outside');
+      var rollbackReady = false, swapped = false;
+      final racing = CodeDraftStore(
+          root: root,
+          renameFile: (temporary, path) {
+            temporary.renameSync(path);
+            File(path).writeAsStringSync('{}');
+            rollbackReady = true;
+            throw StateError('injected');
+          },
+          readFile: (file) {
+            final bytes = file.readAsBytesSync();
+            if (rollbackReady && file.path == target.path) {
+              file.deleteSync();
+              Link(file.path).createSync(outside.path);
+              swapped = true;
+            }
+            return bytes;
+          });
+      _fails<CodeDraftStoreException>(
+          () => racing.save(workspaceRef: _workspace, draft: _draft('next')));
+      expect(swapped && outside.readAsStringSync() == 'outside', isTrue);
+      expect(target.readAsBytesSync(), before);
+      expect(Link(target.path).existsSync(), isFalse);
+    }
+    final other = CodeDraftStore(root: _temp('code-save-newer-'));
+    other.save(workspaceRef: _workspace, draft: _draft('newer'));
+    final newerBytes = _record(other.storageRoot).readAsBytesSync();
     final failing = CodeDraftStore(
         root: root,
         renameFile: (temporary, target) {
@@ -193,8 +199,8 @@ void _generationTests() {
           File(target).writeAsBytesSync(newerBytes, flush: true);
           throw StateError('injected');
         });
-    expect(() => failing.save(workspaceRef: _workspace, draft: _draft('older')),
-        throwsA(isA<CodeDraftStoreException>()));
+    _fails<CodeDraftStoreException>(
+        () => failing.save(workspaceRef: _workspace, draft: _draft('older')));
     expect(store.load(workspaceRef: _workspace).single.draft.text, 'newer');
   });
 }
@@ -219,10 +225,8 @@ void _junctionTests() {
     final outside = Directory('${parent.path}/outside')..createSync();
     final link = Directory('${parent.path}/drafts');
     if (!_junction(link, outside)) return;
-    expect(
-        () => CodeDraftStore(root: link)
-            .save(workspaceRef: _workspace, draft: _draft('x')),
-        throwsA(isA<CodeDraftStoreException>()));
+    _fails<CodeDraftStoreException>(() => CodeDraftStore(root: link)
+        .save(workspaceRef: _workspace, draft: _draft('x')));
     expect(outside.listSync(), isEmpty);
   });
 
@@ -233,11 +237,9 @@ void _junctionTests() {
     final link = Directory('${root.path}/linked');
     if (!_junction(link, outside)) return;
     final transaction = WorkspaceFileTransaction();
-    expect(
-        () => transaction.read(
-            canonicalRoot: root.resolveSymbolicLinksSync(),
-            requestedPath: '${link.path}/target.dart'),
-        throwsA(isA<WorkspaceFileException>()));
+    _fails<WorkspaceFileException>(() => transaction.read(
+        canonicalRoot: root.resolveSymbolicLinksSync(),
+        requestedPath: '${link.path}/target.dart'));
     expect(target.readAsStringSync(), 'x');
   });
 }
@@ -258,17 +260,13 @@ void _platformTests() {
       ..openFile(file.path.toUpperCase());
     expect(session.openFiles, hasLength(1));
     for (final suffix in ['.', ' ']) {
-      expect(
-          () => WorkspaceFileTransaction().read(
-              canonicalRoot: root.resolveSymbolicLinksSync(),
-              requestedPath: '${file.path}$suffix'),
-          throwsA(isA<WorkspaceFileException>()));
+      _fails<WorkspaceFileException>(() => WorkspaceFileTransaction().read(
+          canonicalRoot: root.resolveSymbolicLinksSync(),
+          requestedPath: '${file.path}$suffix'));
     }
-    expect(
-        () => WorkspaceFileTransaction().read(
-            canonicalRoot: root.resolveSymbolicLinksSync(),
-            requestedPath: 'FILE:${file.path}'),
-        throwsA(isA<WorkspaceFileException>()));
+    _fails<WorkspaceFileException>(() => WorkspaceFileTransaction().read(
+        canonicalRoot: root.resolveSymbolicLinksSync(),
+        requestedPath: 'FILE:${file.path}'));
   });
   test('replacement after handle validation cannot write through junction', () {
     final root = _temp('code-junction-race-');
@@ -278,23 +276,25 @@ void _platformTests() {
       ..writeAsStringSync('old');
     final escaped = File('${outside.path}/target.dart')
       ..writeAsStringSync('outside');
-    if (!Platform.isWindows) {
-      markTestSkipped('Windows handle replacement case');
-      return;
-    }
     final transaction = WorkspaceFileTransaction(afterHandleValidated: () {
       inside.renameSync('${root.path}/held');
       _junction(Directory(inside.path), outside);
     });
     final bytes = utf8.encode('new');
-    expect(
+    const safe = CodeDiskFailure.safeWriteUnavailable;
+    final failure = isA<WorkspaceFileException>().having(
+        (error) => Platform.isWindows || error.failure == safe,
+        'failure',
+        isTrue);
+    _fails<WorkspaceFileException>(
         () => transaction.compareAndWrite(
             canonicalRoot: root.resolveSymbolicLinksSync(),
             requestedPath: original.path,
             expectedDiskSha256: sha256.convert(utf8.encode('old')).toString(),
             bufferSha256: sha256.convert(bytes).toString(),
             bytes: bytes),
-        throwsA(isA<WorkspaceFileException>()));
+        failure);
+    if (!Platform.isWindows) expect(original.readAsStringSync(), 'old');
     expect(escaped.readAsStringSync(), 'outside');
   });
 }

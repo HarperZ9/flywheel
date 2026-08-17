@@ -43,6 +43,7 @@ def _context(value: object) -> dict:
     parsed["timeout_seconds"] = timeout
     return parsed
 def _canonical(root: Path, ref: str) -> tuple[str, Path]:
+    root = Path(root).resolve(strict=True)
     path = admit_artifact_ref(root, ref)
     return path.relative_to(root).as_posix(), path
 def _read(path: Path, limit: int) -> bytes:

@@ -15,6 +15,17 @@ Directory _temp(String name) {
   return value;
 }
 
+WorkspaceWriteResult _testWrite(
+    String _, String path, String disk, String buffer, List<int> bytes) {
+  if (workspace.codeTextSha256(File(path).readAsStringSync()) != disk) {
+    throw const WorkspaceFileException(CodeDiskFailure.changed);
+  }
+  File(path).writeAsBytesSync(bytes, flush: true);
+  return WorkspaceWriteResult(WorkspaceWriteDisposition.saved, path, buffer);
+}
+
+CodeCompareAndWrite? get _hostWrite => Platform.isWindows ? null : _testWrite;
+
 class SessionHarness {
   SessionHarness(
       {CodeDraftStore? store, CodeCompareAndWrite? compareAndWrite}) {
@@ -50,8 +61,7 @@ void main() {
 }
 
 void _snapshotRecoveryTests() {
-  test('edit snapshots before return and same baseline restores dirty text',
-      () {
+  test('edit snapshots before return and baseline restores dirty text', () {
     final first = SessionHarness();
     first.edit('edited λ 100%');
     expect(first.active.dirty, isTrue);
@@ -78,8 +88,7 @@ void _snapshotRecoveryTests() {
 }
 
 void _conflictTests() {
-  test('changed and missing disk retain journal with read-only comparison',
-      () async {
+  test('changed and missing disk retain journal and read-only state', () async {
     final changed = SessionHarness()..edit('draft text');
     changed.file.writeAsStringSync('external text');
     changed.session.dispose();
@@ -104,7 +113,7 @@ void _conflictTests() {
   });
 
   test('save compares captured disk digest and writes nothing after drift', () {
-    final harness = SessionHarness()..edit('draft');
+    final harness = SessionHarness(compareAndWrite: _hostWrite)..edit('draft');
     harness.file.writeAsStringSync('external');
     expect(harness.session.save(harness.file.path), isFalse);
     expect(harness.file.readAsStringSync(), 'external');
@@ -114,9 +123,8 @@ void _conflictTests() {
 }
 
 void _guardTests() {
-  test('file and workspace Save Discard Cancel use stable relative paths',
-      () async {
-    final harness = SessionHarness()..edit('one');
+  test('file and workspace guard keeps paths through all choices', () async {
+    final harness = SessionHarness(compareAndWrite: _hostWrite)..edit('one');
     final choices = [CloseChoice.cancel, CloseChoice.save, CloseChoice.discard];
     final requests = <UnsavedWorkRequest>[];
     final guard = UnsavedWorkGuard(
@@ -143,8 +151,7 @@ void _guardTests() {
         ['one', 'other baseline']);
   });
 
-  test('one prompt is in flight and a concurrent request fails closed',
-      () async {
+  test('concurrent request fails closed while one prompt is pending', () async {
     final harness = SessionHarness()..edit('pending');
     final completer = Completer<CloseChoice>();
     var prompts = 0;
@@ -182,8 +189,7 @@ void _guardTests() {
 }
 
 void _failureTests() {
-  test('journal write or delete failure remains dirty and blocks closure',
-      () async {
+  test('journal failure keeps dirty state and blocks closure', () async {
     final root = _temp('code-failure-store-');
     var failWrite = false;
     var failDelete = false;

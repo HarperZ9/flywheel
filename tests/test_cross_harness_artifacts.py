@@ -88,9 +88,9 @@ def test_snapshot_separates_copy_comparison_from_workspace_identity(tmp_path):
             "input_sha256s": {}}
     assert comparison_key({**base, "workspace_snapshot_sha256": first["sha256"]}) == comparison_key(
         {**base, "workspace_snapshot_sha256": independent["sha256"]})
-    left.joinpath("same.txt").unlink(); left.joinpath("same.txt").write_text("same", encoding="utf-8")
+    replacement = left / "replacement.txt"; replacement.write_text("same", encoding="utf-8"); replacement.replace(left / "same.txt")
     replaced = snapshot_source_tree(left)
-    assert replaced["sha256"] == first["sha256"] and replaced != first
+    assert replaced["sha256"] == first["sha256"] and replaced["identity_sha256"] != first["identity_sha256"]
 
 @pytest.mark.parametrize("names", [
     ["/absolute.json"], ["../escape.json"], ["a/nested.json"], ["a\\nested.json"],
