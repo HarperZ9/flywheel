@@ -23,7 +23,7 @@ def _assert_no_stats_temp_leftovers(directory):
 
 def _record_many(path_text, endpoint, count, result_queue):
     try:
-        stats = RouterStats(Path(path_text))
+        stats = RouterStats(Path(path_text), lock_timeout_s=10.0)
         for _ in range(count):
             stats.record(endpoint, True, 0.001)
     except BaseException as exc:
