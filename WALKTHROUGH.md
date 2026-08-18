@@ -129,5 +129,5 @@ something because the check that produced it could have failed.
 ## Where to go next
 
 - **[README.md](README.md)**: the one-page overview and the honest benchmark table.
-- **[SUPERAPP.md](SUPERAPP.md)**: the full unification spec and the increment ladder.
+- **[SUPERAPP.md](project-docs/SUPERAPP.md)**: the full unification spec and the increment ladder.
 - **[docs/schematics/](docs/schematics/)**: the architecture and verified-loop diagrams.

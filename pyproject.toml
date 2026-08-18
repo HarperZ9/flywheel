@@ -6,7 +6,7 @@
 # inside it. See README.md and PROJECT.md.
 #
 # Zero runtime dependencies is a load-bearing invariant (mirrors the flagship
-# tools and SUPERAPP.md "stdlib only"). The heavy optional backends -- torch,
+# tools and project-docs/SUPERAPP.md "stdlib only"). The heavy optional backends -- torch,
 # transformers, bitsandbytes, peft -- belong to the local-serve lane and are
 # never required to import the package or run the gateway/lanes/loop-status.
 

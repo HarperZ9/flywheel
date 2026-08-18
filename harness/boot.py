@@ -114,7 +114,9 @@ def _system_slot(root: Path) -> dict:
 
 
 def _goals_slot(root: Path) -> dict:
-    state = root / "STATE.md"
+    state = root / "project-docs" / "STATE.md"
+    if not state.is_file():
+        state = root / "STATE.md"  # pre-move fallback
     phase, updated = "unknown", "unknown"
     if state.is_file():
         txt = state.read_text(encoding="utf-8", errors="replace")

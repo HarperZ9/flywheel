@@ -24,7 +24,7 @@ it is the research contribution and the thing worth publishing.
 ## Two layers
 
 **Layer A — the specialized model (the cheap part).**
-Adapt a strong open **code** base to the operator's `C:/dev` ecosystem so it
+Adapt a strong open **code** base to the operator's local workspace ecosystem so it
 speaks the actual codebases, idioms, and APIs. At 52.8M tokens this is
 continued domain-adaptation plus instruction tuning, not from-scratch
 pretraining. LoRA / QLoRA on the 4090.
@@ -48,9 +48,9 @@ on oracle-backed tasks, with receipts.
 - Drives: **C: only ~105 GB free (near full)**, **E: ~859 GB free**, D: 461 GB, H: 331 GB.
 - **Rule: nothing large touches C:.** All weights, caches, tokenized shards,
   checkpoints, and logs live on E:.
-- Run root: `E:\local-model-run\` = `{ venv, hf-cache, data, checkpoints, logs, models, pip-cache }`.
+- Run root: a dedicated large-disk run root = `{ venv, hf-cache, data, checkpoints, logs, models, pip-cache }`.
 - Env for every training/inference process:
-  `HF_HOME=E:\local-model-run\hf-cache`, `PIP_CACHE_DIR=E:\local-model-run\pip-cache`.
+  `HF_HOME=<run-root>/hf-cache`, `PIP_CACHE_DIR=<run-root>/pip-cache`.
 - Python 3.12.10. Stack: torch (cu124), transformers, peft, trl, accelerate,
   datasets, bitsandbytes, safetensors, sentencepiece.
 
@@ -68,10 +68,10 @@ on oracle-backed tasks, with receipts.
 ## Phase plan
 
 - **Phase 0 — env + data. (in progress)**
-  E: run root scaffolded; training stack installing into `E:\...\venv`; manifest
+  Run root scaffolded; training stack installing into `<run-root>/venv`; manifest
   regenerated from `allowlist.yaml`; safety gate verified (33 drops logged).
 - **Phase 1 — base model + tokenize/pack.**
-  Download base to `E:\...\models`; tokenize + pack the manifest into training
+  Download base to `<run-root>/models`; tokenize + pack the manifest into training
   shards on E:. Deterministic and re-runnable. Base choice = operator checkpoint
   (default below).
 - **Phase 2 — domain adaptation (QLoRA CPT).**
