@@ -1,9 +1,9 @@
 import 'dart:async';
-import 'dart:io';
 
 import 'package:flutter/material.dart';
 
 import 'code_buffer_session.dart';
+import 'workspace.dart' as workspace;
 
 enum CloseChoice { save, discard, cancel }
 
@@ -125,13 +125,7 @@ final class UnsavedWorkGuard {
     return !includeAllDirty || session.dirtyPaths.length == captured.length;
   }
 
-  String _pathKey(String path) {
-    final key = File(path)
-        .absolute
-        .path
-        .replaceAll(RegExp(r'[\\/]'), Platform.pathSeparator);
-    return Platform.isWindows ? key.toLowerCase() : key;
-  }
+  String _pathKey(String path) => workspace.canonicalPathKey(path);
 
   bool _finish(UnsavedWorkScope scope, String? filePath) => switch (scope) {
         UnsavedWorkScope.file => session.closeFile(filePath!),
