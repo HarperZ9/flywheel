@@ -39,7 +39,9 @@ def _sha(text: str) -> str:
 
 def _cursor(repo_root: Path) -> dict:
     """The work cursor: STATE.md's last-updated line + current top section."""
-    p = Path(repo_root) / "STATE.md"
+    p = Path(repo_root) / "project-docs" / "STATE.md"
+    if not p.is_file():
+        p = Path(repo_root) / "STATE.md"  # pre-move fallback
     if not p.is_file():
         return {"present": False}
     head = p.read_text(encoding="utf-8", errors="replace").splitlines()[:40]
