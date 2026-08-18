@@ -194,14 +194,8 @@ class WorkspaceSessionIo {
     return DraftDiskView(state, opened.path, opened.loaded);
   }
 
-  bool samePath(String left, String right) {
-    String normalized(String value) =>
-        File(value).absolute.path.replaceAll('/', Platform.pathSeparator);
-    final first = normalized(left), second = normalized(right);
-    return Platform.isWindows
-        ? first.toLowerCase() == second.toLowerCase()
-        : first == second;
-  }
+  bool samePath(String left, String right) =>
+      canonicalPathKey(left) == canonicalPathKey(right);
 
   int addLoaded(List<OpenFile> open, OpenedWorkspaceFile source,
       {String? text, bool dirty = false, bool? readOnly}) {
@@ -267,6 +261,43 @@ LoadedFile loadedFile(WorkspaceReadResult result) {
 
 String canonicalWorkspaceRoot(String path) =>
     Directory(path).resolveSymbolicLinksSync();
+
+/// A comparison key that identifies the same on-disk file across separator,
+/// case, symlink, and Windows 8.3 short-name differences. It resolves the real
+/// path when the target (or its parent directory) exists, so a short-form path
+/// such as `RUNNER~1\...\main.dart` matches its long-form canonical, then folds
+/// case on Windows where the filesystem is case-insensitive. It falls back to a
+/// lexical absolute path when nothing on disk can be resolved. On POSIX with no
+/// symlinks in play this returns the same value the plain absolute path did.
+String canonicalPathKey(String path) {
+  final resolved = _resolvedPath(path).replaceAll('/', Platform.pathSeparator);
+  return Platform.isWindows ? resolved.toLowerCase() : resolved;
+}
+
+String _resolvedPath(String path) {
+  try {
+    return File(path).resolveSymbolicLinksSync();
+  } catch (_) {
+    // Target may not exist (missing/deleted file); resolve the parent instead
+    // so short-name and symlink differences in the directory chain still fold.
+  }
+  final absolute = File(path).absolute.path;
+  try {
+    final normalized = absolute.replaceAll('/', Platform.pathSeparator);
+    final cut = normalized.lastIndexOf(Platform.pathSeparator);
+    if (cut > 0) {
+      final name = normalized.substring(cut + 1);
+      final parent = Directory(normalized.substring(0, cut));
+      if (name.isNotEmpty && parent.existsSync()) {
+        return '${parent.resolveSymbolicLinksSync()}'
+            '${Platform.pathSeparator}$name';
+      }
+    }
+  } catch (_) {
+    // Fall through to the lexical absolute path.
+  }
+  return absolute;
+}
 
 String workspaceReference(String canonicalRoot) {
   final identity =

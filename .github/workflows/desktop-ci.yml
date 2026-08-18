@@ -16,7 +16,14 @@ permissions:
 
 jobs:
   flutter:
-    runs-on: ubuntu-latest
+    # Analyze + test on both hosts. The product ships as a Windows installer,
+    # so the tests must pass on windows-latest -- ubuntu alone cannot see the
+    # Windows-only path break class (8.3 short names, backslashes, case-fold).
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
     defaults:
       run:
         working-directory: desktop
