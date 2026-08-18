@@ -16,7 +16,7 @@ from harness.provider_roles import PROVIDER_ROLES, provider_alias_map, provider_
 
 
 DEFAULT_PROVIDERS = "serve,codex,ollama,claude,opencode,dry"
-DEFAULT_ARTIFACT_ROOTS = "C:/tmp;C:/dev/local-model/artifacts"
+DEFAULT_ARTIFACT_ROOTS = "artifacts"
 
 
 METRIC_WEIGHTS = [
@@ -309,10 +309,10 @@ BENCHMARK_ROWS = [
         "failure_classes": ["missing_counterpart", "adapter_schema_drift", "provider_role_unknown", "noncomparable_task"],
         "granularity": "task x provider_role x harness x metric delta",
         "coverage_units": [
-            "codex_vs_flywheel",
-            "codex_vs_claude_code",
-            "codex_vs_opencode",
-            "flywheel_vs_local_endpoint",
+            "agt-001-index-fallback-integrity",
+            "agt-003-codex-flywheel-shared-task",
+            "agt-009-receipts-vs-guardrails-friction",
+            "agt-010-documentation-schematic-maintenance",
         ],
     },
     {
@@ -491,17 +491,19 @@ def build_profile(
     providers: str = DEFAULT_PROVIDERS,
     artifact_roots: str = DEFAULT_ARTIFACT_ROOTS,
     max_artifacts: int = 200,
+    benchmark_ids: list[str] | None = None,
 ) -> dict[str, Any]:
+    unknown = sorted(set(benchmark_ids or []) - {str(row["id"]) for row in BENCHMARK_ROWS})
+    if unknown: raise ValueError(f"unknown benchmark ids: {','.join(unknown)}")
+    benchmarks = [{**row, "status": "runnable" if benchmark_ids else row["status"]}
+                  for row in BENCHMARK_ROWS if not benchmark_ids or row["id"] in benchmark_ids]
+    dataset_lanes = ([{**row, "weight": 1.0} for row in DATASET_LANES if row["lane"] == "cross_harness_reproducibility"] if benchmark_ids else DATASET_LANES)
     provider_list = _split_csv(providers)
     provider_roles = provider_roles_for(provider_list)
     artifacts = inventory_existing_artifacts(artifact_roots, max_artifacts=max_artifacts)
-    metrics = sorted({metric for row in BENCHMARK_ROWS for metric in row.get("metrics", [])})
-    pressure_variables = sorted({
-        variable
-        for row in DATASET_LANES
-        for variable in row.get("pressure_variables", [])
-    })
-    runnable = [row for row in BENCHMARK_ROWS if row.get("status") == "runnable"]
+    metrics = sorted({metric for row in benchmarks for metric in row.get("metrics", [])})
+    pressure_variables = sorted({variable for row in dataset_lanes for variable in row.get("pressure_variables", [])})
+    runnable = [row for row in benchmarks if row.get("status") == "runnable"]
     return {
         "schema": "harness.benchmark-profile-manifest/v1",
         "timestamp_utc": _now(),
@@ -513,26 +515,26 @@ def build_profile(
         "provider_aliases": provider_alias_map(),
         "metric_weights": METRIC_WEIGHTS,
         "metric_weight_sum": round(sum(float(row["weight"]) for row in METRIC_WEIGHTS), 6),
-        "dataset_lanes": DATASET_LANES,
-        "dataset_lane_weight_sum": round(sum(float(row["weight"]) for row in DATASET_LANES), 6),
+        "dataset_lanes": dataset_lanes,
+        "dataset_lane_weight_sum": round(sum(float(row["weight"]) for row in dataset_lanes), 6),
         "pressure_variables": pressure_variables,
         "metrics": metrics,
-        "benchmark_suites": _suite_rows(BENCHMARK_ROWS),
-        "benchmarks": BENCHMARK_ROWS,
+        "benchmark_suites": _suite_rows(benchmarks),
+        "benchmarks": benchmarks,
         "existing_artifacts": artifacts,
         "summary": {
             "providers": len(provider_list),
             "provider_names": provider_list,
             "provider_roles": len(provider_roles),
             "provider_role_ids": provider_roles,
-            "benchmarks": len(BENCHMARK_ROWS),
+            "benchmarks": len(benchmarks),
             "runnable_benchmarks": len(runnable),
-            "planned_full_benchmarks": len(BENCHMARK_ROWS) - len(runnable),
-            "suites": len(_suite_rows(BENCHMARK_ROWS)),
+            "planned_full_benchmarks": len(benchmarks) - len(runnable),
+            "suites": len(_suite_rows(benchmarks)),
             "metrics": len(metrics),
-            "dataset_lanes": len(DATASET_LANES),
+            "dataset_lanes": len(dataset_lanes),
             "pressure_variables": len(pressure_variables),
-            "coverage_units": sum(len(row.get("coverage_units", [])) for row in BENCHMARK_ROWS),
+            "coverage_units": sum(len(row.get("coverage_units", [])) for row in benchmarks),
             "existing_artifacts": sum(1 for row in artifacts if row.get("path")),
             "missing_artifact_roots": sum(1 for row in artifacts if row.get("exists") is False and not row.get("path")),
         },
@@ -617,17 +619,15 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--providers", default=DEFAULT_PROVIDERS)
     parser.add_argument("--artifact-roots", default=DEFAULT_ARTIFACT_ROOTS)
     parser.add_argument("--max-artifacts", type=int, default=200)
+    parser.add_argument("--benchmark-ids", default="")
     parser.add_argument("--out", default="")
     parser.add_argument("--markdown-out", default="")
     parser.add_argument("--store-root", default="")
     parser.add_argument("--run-id", default="")
     args = parser.parse_args(argv)
 
-    profile = build_profile(
-        providers=args.providers,
-        artifact_roots=args.artifact_roots,
-        max_artifacts=args.max_artifacts,
-    )
+    profile = build_profile(providers=args.providers, artifact_roots=args.artifact_roots,
+                            max_artifacts=args.max_artifacts, benchmark_ids=_split_csv(args.benchmark_ids))
     json_text = json.dumps(profile, indent=2, sort_keys=True)
     md_text = render_markdown(profile)
     json_path = _write(args.out, json_text)

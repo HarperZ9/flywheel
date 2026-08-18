@@ -1,8 +1,3 @@
-// workflows_view.dart — staged runs over any endpoint, shaped by a profile
-// manifest. Every step carries its own verdict and the whole run carries one
-// chained receipt. A verify step without an exec grant says UNVERIFIABLE;
-// nothing here dresses up an unproven result.
-
 import 'package:flutter/material.dart';
 
 import '../client/gateway_client.dart';
@@ -14,6 +9,7 @@ import '../widgets/composer_controls.dart';
 import '../widgets/composer_results.dart';
 import '../widgets/fw.dart';
 import '../widgets/workflow_cards.dart';
+import '../widgets/operation_grant_sheet.dart';
 
 class WorkflowsView extends StatefulWidget {
   final GatewayClient client;
@@ -24,29 +20,21 @@ class WorkflowsView extends StatefulWidget {
       required this.client,
       required this.alive,
       required this.settings});
-
   @override
   State<WorkflowsView> createState() => _WorkflowsViewState();
 }
 
 class _WorkflowsViewState extends State<WorkflowsView> {
-  final _goal = TextEditingController();
-  final _root = TextEditingController();
+  final _goal = TextEditingController(), _root = TextEditingController();
   final _testCmd = TextEditingController();
   List<ProfileManifest> _profiles = [];
   WorkflowRoster? _roster;
   List<EndpointRow> _endpoints = [];
-  String? _profile;
-  String? _workflow;
-  String? _endpoint;
-  bool _allowWrite = false;
-  bool _allowExec = false;
-  bool _running = false;
-  WorkflowRun? _run;
-  WorkflowRun? _trace; // a STORED run opened from history
+  String? _profile, _workflow, _endpoint;
+  bool _allowWrite = false, _allowExec = false, _running = false;
+  WorkflowRun? _run, _trace;
   bool? _traceOk;
   String? _error;
-
   @override
   void initState() {
     super.initState();
@@ -95,7 +83,6 @@ class _WorkflowsViewState extends State<WorkflowsView> {
     final p = _profiles.where((p) => p.name == _profile).firstOrNull;
     if (p == null) return;
     _workflow = p.workflow ?? _workflow;
-    // Profile gates are requests; the checkboxes stay the actual grant.
     _allowWrite = false;
     _allowExec = false;
   }
@@ -111,18 +98,28 @@ class _WorkflowsViewState extends State<WorkflowsView> {
       _error = null;
     });
     try {
-      final run = await widget.client.runWorkflow(
-        workflow: _workflow!,
-        goal: goal,
-        endpoint: _endpoint!,
-        profile: _profile,
-        allowWrite: _allowWrite,
-        allowExec: _allowExec,
-        root: _root.text.trim(),
-        testCmd: _testCmd.text.trim(),
-      );
+      final request =
+          'desktop-workflow-${DateTime.now().microsecondsSinceEpoch}';
+      GatewayOperation currentOperation() =>
+          GatewayOperation.workflow(request, {
+            'workflow': _workflow!,
+            'goal': _goal.text.trim(),
+            'endpoint': _endpoint!,
+            'allow_write': _allowWrite,
+            'allow_exec': _allowExec,
+            if (_profile != null) 'profile': _profile!,
+            if (_root.text.trim().isNotEmpty) 'root': _root.text.trim(),
+            if (_testCmd.text.trim().isNotEmpty)
+              'test_cmd': _testCmd.text.trim(),
+          }, dataRefs: const [], credentialRefs: const []);
+      final operation = currentOperation();
+      final body = await authorizeGatewayOperation(context, operation,
+          (body) => widget.client.postJson('/api/workflow', body),
+          currentOperation: currentOperation);
+      if (body == null) return;
+      final run = WorkflowRun.fromJson(body);
       if (mounted) setState(() => _run = run);
-      _load(); // the new run's receipt belongs in history immediately
+      _load();
     } catch (e) {
       if (mounted) setState(() => _error = '$e');
     } finally {
@@ -130,7 +127,6 @@ class _WorkflowsViewState extends State<WorkflowsView> {
     }
   }
 
-  /// Open one stored run's full per-stage trace, chain-reverified at read.
   Future<void> _openTrace(Map<String, dynamic> row) async {
     final chain = '${row['chain_hash'] ?? ''}';
     if (chain.length < 4) return;
@@ -151,9 +147,7 @@ class _WorkflowsViewState extends State<WorkflowsView> {
   @override
   Widget build(BuildContext context) {
     if (!widget.alive) {
-      return const FwEmpty(
-          'The engine is offline. Workflows appear when it runs.',
-          command: 'flywheel up');
+      return const FwEmpty('Engine offline.', command: 'flywheel up');
     }
     final t = context.fw;
     return ComposerResults(
@@ -161,14 +155,10 @@ class _WorkflowsViewState extends State<WorkflowsView> {
       viewKey: 'workflows',
       header: const SectionHeader('Workflows',
           kicker: 'staged, receipted, any endpoint'),
-      composer: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        Text(
-          'A profile binds an operating discipline onto the same substrate; '
-          'the endpoint is a runtime choice. Older model generations run the '
-          'same staged workflow as the newest, and every run folds into one '
-          'chained receipt.',
-          style: Theme.of(context).textTheme.bodySmall,
-        ),
+      composer:
+          Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        Text('Run one staged workflow against the selected endpoint.',
+            style: Theme.of(context).textTheme.bodySmall),
         const SizedBox(height: FwLayout.s4),
         _composer(t),
       ]),
@@ -215,34 +205,15 @@ class _WorkflowsViewState extends State<WorkflowsView> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Wrap(
-            spacing: FwLayout.s4,
-            runSpacing: FwLayout.s2,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: [
-              _picker('profile', _profile,
-                  [for (final p in _profiles) p.name],
-                  (v) => setState(() {
-                        _profile = v;
-                        _applyProfile();
-                      })),
-              _picker('workflow', _workflow,
-                  [for (final w in _roster?.workflows ?? <WorkflowDef>[]) w.name],
-                  (v) => setState(() => _workflow = v)),
-              _picker('endpoint', _endpoint,
-                  [for (final e in _endpoints) e.name],
-                  (v) => setState(() => _endpoint = v)),
-              _gate('write', _allowWrite, (v) => setState(() => _allowWrite = v)),
-              _gate('exec', _allowExec, (v) => setState(() => _allowExec = v)),
-            ],
-          ),
+          _selectors(),
           if (selected != null) ...[
             const SizedBox(height: FwLayout.s2),
             Text(
                 '${selected.description}  Steps: ${selected.stepNames.join(' → ')}',
                 style: TextStyle(fontSize: 12, color: t.inkMuted)),
           ],
-          if (activeProfile != null) ProfileManifestCard(profile: activeProfile),
+          if (activeProfile != null)
+            ProfileManifestCard(profile: activeProfile),
           const SizedBox(height: FwLayout.s3),
           TextField(
             controller: _goal,
@@ -281,6 +252,31 @@ class _WorkflowsViewState extends State<WorkflowsView> {
       ),
     );
   }
+
+  Widget _selectors() => Wrap(
+        spacing: FwLayout.s4,
+        runSpacing: FwLayout.s2,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: [
+          _picker(
+              'profile',
+              _profile,
+              [for (final p in _profiles) p.name],
+              (v) => setState(() {
+                    _profile = v;
+                    _applyProfile();
+                  })),
+          _picker(
+              'workflow',
+              _workflow,
+              [for (final w in _roster?.workflows ?? <WorkflowDef>[]) w.name],
+              (v) => setState(() => _workflow = v)),
+          _picker('endpoint', _endpoint, [for (final e in _endpoints) e.name],
+              (v) => setState(() => _endpoint = v)),
+          _gate('write', _allowWrite, (v) => setState(() => _allowWrite = v)),
+          _gate('exec', _allowExec, (v) => setState(() => _allowExec = v)),
+        ],
+      );
 
   Widget _picker(String label, String? value, List<String> options,
           ValueChanged<String?> onChanged) =>

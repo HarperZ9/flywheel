@@ -78,3 +78,10 @@ def test_recheck_receipt_points_at_the_stored_seal(tmp_path):
     out = forge_recheck(tmp_path, prp_id, {"intent_source": INTENT})
     assert out["prp_id"] == prp_id
     assert out["seal_path"].endswith(f"{prp_id}.json")
+
+
+def test_legacy_studio_seal_explicitly_carries_no_plan_run_authority(tmp_path):
+    prp_id = _seal(tmp_path)
+    out = forge_recheck(tmp_path, prp_id, {"intent_source": INTENT})
+    assert out["run_authority"] is False
+    assert not prp_id.startswith("fpr_")

@@ -119,6 +119,7 @@ def test_a_local_only_signature_is_stripped_at_pack_time(tmp_path):
         os.listdir(d / "receipts"))[0]).read_text(encoding="utf-8"))
     assert body["signature"] is None
     assert "NOT_THIRD_PARTY_VERIFIABLE_SIGNATURE" in body["receipt"]["does_not_prove"]
+    assert verify_bundle(d)["verdict"] == "MATCH"
 
 
 def test_no_secret_reaches_the_packed_bundle(tmp_path):

@@ -1,0 +1,15 @@
+{
+  "schema": "harness.cross-harness-fixture.index-events/v1",
+  "task_id": "agt-001-index-fallback-integrity",
+  "failure_code_vocabulary": {
+    "common": ["artifact_set_mismatch", "artifact_not_regular", "artifact_not_utf8", "artifact_empty", "json_invalid", "json_duplicate_key", "task_id_mismatch", "input_hash_mismatch", "markdown_task_id_missing"],
+    "task": ["failure_classes_mismatch", "event_citation_mismatch", "stale_artifact_mutated", "unsupported_mcp_health_claim", "receipt_input_hash_mismatch"]
+  },
+  "events": [
+    {"event_id": "idx-001", "type": "mcp_call", "outcome": "failure", "detail": "transport unavailable"},
+    {"event_id": "idx-002", "type": "artifact_read", "source": "stale", "before_sha256": "6cffbf2818b8ebeb741964ed893a5e4d16e2b17f6e052d9e33e39d408c2a1f58", "after_sha256": "6cffbf2818b8ebeb741964ed893a5e4d16e2b17f6e052d9e33e39d408c2a1f58"},
+    {"event_id": "idx-003", "type": "json_parse", "outcome": "failure", "detail": "invalid document"},
+    {"event_id": "idx-004", "type": "match", "mode": "degraded", "detail": "fallback match emitted"}
+  ],
+  "notes": "Typed observations only. Provider-authored health and preservation booleans are not evidence."
+}

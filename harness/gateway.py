@@ -28,6 +28,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+from datetime import datetime, timezone
 import hashlib
 import json
 import os
@@ -36,18 +37,16 @@ import urllib.parse
 import urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-
 REPO = Path(__file__).resolve().parent.parent
 # Ensure `from harness.X import ...` resolves even when run as `python
 # harness/gateway.py` (script mode puts harness/ on the path, not the repo root),
 # so the on-demand endpoint_registry / context_forge imports work in both modes.
 if str(REPO) not in sys.path:
     sys.path.insert(0, str(REPO))
-
 from harness.run_paths import run_root_default
-from harness.gateway_auth import load_or_create_token, check as _auth_check, DEFAULT_HOSTS
-
-
+from harness.gateway_auth import (authenticate_owner as _auth_owner,
+    load_or_create_owner_ref, load_or_create_token, check as _auth_check, DEFAULT_HOSTS)
+from harness.plan_run_store import forge_recheck, persist_forge_seal
 def _resolve_credential(key_env: str) -> str:
     """Env first, OS keychain second; '' when neither. Import is lazy so a
     stripped deployment without keychain.py still serves env-only."""
@@ -56,17 +55,6 @@ def _resolve_credential(key_env: str) -> str:
         return resolve_credential(key_env)
     except Exception:
         return os.environ.get(key_env or "", "")
-
-
-def _resolve_credential(key_env: str) -> str:
-    """Env first, OS keychain second; '' when neither. Import is lazy so a
-    stripped deployment without keychain.py still serves env-only."""
-    try:
-        from harness.keychain import resolve_credential
-        return resolve_credential(key_env)
-    except Exception:
-        return os.environ.get(key_env or "", "")
-
 # Receipt catalog: in-repo, re-checkable artifacts that define the world state.
 # Relative to the served root. Missing files are reported honestly as absent.
 RECEIPT_CATALOG = (
@@ -81,8 +69,6 @@ RECEIPT_CATALOG = (
 # (organs of the reconcile), not peers. local-model is the trained-model lane.
 SPINE = ("flywheel", "local-model", "telos", "index", "forum", "gather",
          "crucible", "learn", "mneme", "relay", "plexus")
-
-
 def _probe(url: str, timeout: float = 2.0) -> tuple[bool, dict]:
     """GET a local health URL. Returns (healthy, parsed_json_or_empty).
     Any error is unhealthy — a down endpoint must read as down."""
@@ -95,8 +81,6 @@ def _probe(url: str, timeout: float = 2.0) -> tuple[bool, dict]:
             return True, {}
     except Exception:
         return False, {}
-
-
 def endpoint_roster(serve_url: str, ollama_url: str) -> dict:
     """Local tiers get a live probe; enterprise providers report credential
     presence only (no network, no value)."""
@@ -128,8 +112,6 @@ def endpoint_roster(serve_url: str, ollama_url: str) -> dict:
             "local": local, "enterprise": enterprise,
             "local_healthy": healthy_local, "local_total": len(local),
             "enterprise_configured": sum(1 for e in enterprise if e["credential_present"])}
-
-
 def world_state(root: Path, catalog=RECEIPT_CATALOG) -> dict:
     """The projected world v0: spine roster + receipt catalog with a root hash.
     Root hash is a sha256 over sorted 'path:filehash' lines, so any file change
@@ -153,8 +135,6 @@ def world_state(root: Path, catalog=RECEIPT_CATALOG) -> dict:
             "receipt_count": len(receipts),
             "present_count": sum(1 for r in receipts if r["present"]),
             "root_hash": root_hash}
-
-
 def receipts_ledger(root: Path, run_root: Path | str) -> dict:
     """The receipts ledger: the in-repo receipt catalog (re-hashed on every
     read) plus the accepted proof envelopes under the run root. Every entry
@@ -192,8 +172,6 @@ def receipts_ledger(root: Path, run_root: Path | str) -> dict:
             "merkle_note": "root over the ordered envelope hashes; GET "
                            "/api/receipts/proof?leaf=<sha256> returns an "
                            "inclusion proof re-checkable offline"}
-
-
 def _workspace_root_allowlist() -> "list[str]":
     """Permitted workspace-root prefixes, normalized for prefix comparison.
     Read from FLYWHEEL_WORKSPACE_ROOTS (os.pathsep-separated). Empty = open
@@ -211,8 +189,6 @@ def _workspace_root_allowlist() -> "list[str]":
         except (OSError, ValueError):
             continue
     return roots
-
-
 def _qs_value(qs: str, key: str) -> str:
     """First value for `key` in a raw query string, '' when absent."""
     for part in qs.split("&"):
@@ -279,11 +255,10 @@ def _forum_mcp_call(tool: str, args: dict) -> dict:
     dict so the desktop view can render a 'forum offline' state.
     """
     from harness.mcp_client import MCPClient, MCPError
-    from harness.lanes import resolve_mcp_command
+    from harness.lanes import resolve_mcp_launch
     try:
-        command = resolve_mcp_command("forum")
+        command = resolve_mcp_launch("forum")
         with MCPClient(command, timeout=20, client_name="flywheel-forum-proxy") as c:
-            c.start()
             res = c.call_text(tool, args)
             if not res["ok"]:
                 return {"error": f"forum {tool} error: {res['text'][:200]}"}
@@ -369,73 +344,6 @@ def _countersign_workflow(doc: dict) -> dict:
                 "store_chain_hash": stored.get("chain_hash", "")}
     except Exception as e:
         return {**summary, "stored": f"store unavailable: {type(e).__name__}"}
-
-
-def persist_forge_seal(run_root, goal: str, *, intent_sha256: str = "",
-                       architecture_sha256: str = "") -> str:
-    """Persist the Y-chain seal SERVER-SIDE at forge time and return its
-    prp_id. The recheck later reads these hashes from disk, so the checked
-    party never supplies its own criterion."""
-    import hashlib as _h
-    import time as _t
-    body = f"{goal}\x1f{intent_sha256}\x1f{architecture_sha256}"
-    prp_id = _h.sha256(body.encode("utf-8")).hexdigest()[:16]
-    forge_dir = Path(run_root) / "forge"
-    forge_dir.mkdir(parents=True, exist_ok=True)
-    (forge_dir / f"{prp_id}.json").write_text(json.dumps({
-        "schema": "flywheel.forge-seal/v1", "prp_id": prp_id, "goal": goal,
-        "intent_sha256": intent_sha256,
-        "architecture_sha256": architecture_sha256,
-        "sealed_at": _t.time(),
-    }, sort_keys=True), encoding="utf-8")
-    return prp_id
-
-
-def forge_recheck(run_root, prp_id: str, req: dict) -> dict:
-    """The Y-chain drift check against the SERVER-HELD seal. The caller
-    supplies only current sources; the sealed hashes come from disk."""
-    import hashlib as _h
-    pid = str(prp_id or "").strip().lower()
-    if len(pid) != 16 or any(c not in "0123456789abcdef" for c in pid):
-        return {"error": "provide 'prp_id' (16 hex) from the forge response; "
-                         "sealed hashes are read from the server-side seal"}
-    path = Path(run_root) / "forge" / f"{pid}.json"
-    if not path.is_file():
-        return {"error": f"no forge seal on record for prp_id {pid!r}; "
-                         "a recheck needs the seal minted at forge time"}
-    seal = json.loads(path.read_text(encoding="utf-8"))
-    out = {"schema": "flywheel.prp-recheck/v2", "prp_id": pid,
-           "seal_path": str(path), "arms": {}}
-    for arm in ("intent", "architecture"):
-        sealed = str(seal.get(f"{arm}_sha256", ""))
-        current = req.get(f"{arm}_source")
-        if not sealed or current is None:
-            continue
-        if not str(current).strip():
-            return {"error": f"empty {arm}_source: an empty arm cannot be "
-                             "drift-checked (empty-vs-empty is moved:false "
-                             "for an arm that never existed)"}
-        now = _h.sha256(str(current).encode()).hexdigest()
-        out["arms"][arm] = {"sealed_sha256": sealed,
-                            "current_sha256": now,
-                            "moved": now != sealed}
-    if not out["arms"]:
-        return {"error": "no comparable arm: supply <arm>_source for an arm "
-                         "the seal actually recorded"}
-    hashes = [a["current_sha256"] for a in out["arms"].values()]
-    if len(hashes) == 2 and hashes[0] == hashes[1]:
-        # one string hashed twice is a test that cannot fail: name it,
-        # report no verdict
-        out["degenerate"] = True
-        out["note"] = ("degenerate Y-chain: both arms carry identical "
-                       "content, so the two-arm drift comparison decides "
-                       "nothing; no any_moved verdict is reported")
-        return out
-    out["any_moved"] = any(a["moved"] for a in out["arms"].values())
-    out["note"] = ("the Y-chain drift check against the server-held seal: "
-                   "an arm whose current text no longer hashes to the value "
-                   "sealed at forge time moved after the forge")
-    return out
 
 
 def _forge(goal: str, **kw) -> dict:
@@ -619,11 +527,8 @@ def _flatten_messages(messages) -> tuple[str, str]:
     return system, "\n\n".join(lines)
 
 
-def _resolve_proposer(model: str, serve_url: str):
-    """Pick the proposer for an OpenAI `model` string. Returns
-    (proposer, error, code). Empty / a local alias -> the local serve model; a
-    roster endpoint name or `name:model` -> that provider (credential-gated,
-    honest error if absent); anything else -> 404."""
+def _resolve_proposer(model: str, serve_url: str, credential_bindings=None):
+    """Resolve one local or explicitly credential-bound proposer."""
     m = (model or "").strip()
     if m in ("", "flywheel", "flywheel-serve", "serve", "default", "local", "auto"):
         try:
@@ -633,18 +538,27 @@ def _resolve_proposer(model: str, serve_url: str):
         return ServeProposer(base_url=serve_url), None, 200
     name = m.split(":", 1)[0]
     sub = m.split(":", 1)[1] if ":" in m else None
-    roster = _unified_roster()
-    entry = next((e for e in roster.get("endpoints", []) if e["name"] == name), None)
-    if entry is None:
-        return None, f"unknown model {m!r}; see GET /v1/models", 404
-    if entry.get("credential") == "absent":
-        return None, f"model {name!r} has no credential present; set its API key in the environment", 400
+    if credential_bindings is None:
+        roster = _unified_roster()
+        entry = next((e for e in roster.get("endpoints", [])
+                      if e["name"] == name), None)
+        if entry is None:
+            return None, f"unknown model {m!r}; see GET /v1/models", 404
+        if entry.get("credential") == "absent":
+            return None, f"model {name!r} has no credential present", 400
     try:
-        from harness.endpoint_registry import make_endpoint_proposer
+        from harness.endpoint_registry import (
+            make_authorized_endpoint_proposer, make_endpoint_proposer)
     except Exception:
-        from endpoint_registry import make_endpoint_proposer
+        from endpoint_registry import (
+            make_authorized_endpoint_proposer, make_endpoint_proposer)
     try:
-        return make_endpoint_proposer(name, model=sub, ledger=_router_ledger()), None, 200
+        factory = (make_endpoint_proposer if credential_bindings is None else
+                   make_authorized_endpoint_proposer)
+        kwargs = {"model": sub, "ledger": _router_ledger()}
+        if credential_bindings is not None:
+            kwargs["credential_bindings"] = credential_bindings
+        return factory(name, **kwargs), None, 200
     except Exception as e:
         return None, f"cannot build proposer for {name!r}: {e}", 502
 
@@ -712,15 +626,8 @@ def get_router_stats():
     return _ROUTER_STATS
 
 
-def openai_chat(req: dict, serve_url: str):
-    """Core of POST /v1/chat/completions (non-stream). Returns (body, code, receipt,
-    text, model_ref). On error, receipt/text/model_ref are None.
-
-    Failover: a comma-separated `model` ("openai,anthropic,serve") is a fallback
-    chain, tried in order until one succeeds. The winning provider and any skipped
-    ones are recorded on the receipt (routed_via / failover_from), so the record
-    stays honest about which model actually answered. The reliability layer other
-    routers charge for, in the open."""
+def openai_chat(req: dict, serve_url: str, credential_bindings=None):
+    """Return one routed completion plus its receipt and provenance."""
     import time
     system, prompt = _flatten_messages(req.get("messages", []))
     if not prompt:
@@ -748,7 +655,10 @@ def openai_chat(req: dict, serve_url: str):
     resolution_failures = []
     for cand in candidates:
         t0 = time.time()
-        proposer, err, code = _resolve_proposer(cand, serve_url)
+        proposer, err, code = (_resolve_proposer(cand, serve_url)
+                               if credential_bindings is None else
+                               _resolve_proposer(
+                                   cand, serve_url, credential_bindings))
         if err is not None:
             # a resolution failure (typo'd name, credential absent on THIS
             # host, config error) is NOT the provider failing: never charge it
@@ -811,7 +721,10 @@ class _Handler(BaseHTTPRequestHandler):
     cors = False                              # opt-in (--cors) so browser OpenAI clients can call in
     auth_token = ""                           # set by main(); "" leaves the check off
     allowed_hosts = DEFAULT_HOSTS
-
+    flywheel_home = Path(os.environ.get("FLYWHEEL_HOME", str(Path.home() / ".flywheel")))
+    owner_ref, clock = None, staticmethod(
+        lambda: datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"))
+    operation_service = operation_process_factory = None
     def log_message(self, *a):  # quiet
         pass
 
@@ -841,26 +754,80 @@ class _Handler(BaseHTTPRequestHandler):
         return None if n < 0 or n > self.MAX_BODY else n
 
     def _json(self, obj, code=200):
+        error = obj.get("error") if isinstance(obj, dict) else None
+        error_code = error.get("code") if isinstance(error, dict) else None
+        if (getattr(self, "_gateway_guarded", False)
+                and error_code != "PERMISSION_REQUIRED"
+                and (code >= 400 or error_code)):
+            from harness.gateway_provider_adapter import fixed_external_failure
+            obj, code = fixed_external_failure()
         body = json.dumps(obj).encode()
         self.send_response(code)
         self.send_header("Content-Type", "application/json")
         self.send_header("Content-Length", str(len(body)))
         self._cors()
         self.end_headers()
-        self.wfile.write(body)
+        if getattr(self, "command", "") != "HEAD": self.wfile.write(body)
+
+    def _operation_components(self):
+        state_root = self.flywheel_home / "state"
+        service = type(self).operation_service
+        if service is None or service.state_root != state_root:
+            from harness.gateway_operations import GatewayOperations
+            from harness.gateway_operation_process import GatewayAgentProcessFactory
+            service = GatewayOperations(state_root, clock=self.clock)
+            type(self).operation_service = service
+            type(self).operation_process_factory = GatewayAgentProcessFactory(
+                repo_root=Path(self.root), run_root=Path(self.run_root))
+        return service, type(self).operation_process_factory
+
+    def _operation_response(self, response):
+        if response.stream is None:
+            return self._json(response.body, response.status)
+        self.send_response(response.status)
+        self.send_header("Content-Type", "text/event-stream")
+        self.send_header("Cache-Control", "no-cache")
+        self._cors(); self.end_headers()
+        try:
+            for chunk in response.stream:
+                self.wfile.write(chunk); self.wfile.flush()
+        except (BrokenPipeError, ConnectionError, OSError):
+            pass
+
+    def _route_operation(self, method):
+        path = self.path.split("?", 1)[0]
+        is_operation = (path == "/api/agent"
+                        or path.startswith("/api/operations/"))
+        if not is_operation:
+            return False
+        from harness.gateway_operation_route import route_gateway_operation
+        query = self.path.split("?", 1)[1] if "?" in self.path else ""
+        raw, content = b"", ""
+        if method == "POST":
+            length = self._content_length()
+            raw = self.rfile.read(length) if length is not None else b""
+            content = (self.headers.get("Content-Type", "") or "").split(
+                ";", 1)[0].strip()
+        service, factory = self._operation_components()
+        response = route_gateway_operation(
+            method, path, query=query, content_type=content,
+            owner_ref=self.owner_ref, raw=raw, service=service,
+            process_factory=factory)
+        self._operation_response(response)
+        return True
 
     def _sse_chat(self, req: dict):
-        """Stream a chat completion as OpenAI Server-Sent Events. The verified or
-        routed answer is produced whole (a receipt is a hash over the FULL response,
-        so we stand behind what we stream), then delivered as chat.completion.chunk
-        deltas ending with [DONE]. Any OpenAI streaming client consumes it as-is."""
+        """Stream a completed, receipted answer as OpenAI-compatible SSE."""
         import time
         from harness.scaffold import scaffold_answer, scaffold_turn
         # hash and freeze what the model was ACTUALLY sent (the flattened
         # prompt), not a naive join of raw content that reprs content-parts
         _sys, _prompt = _flatten_messages(req.get("messages", []))
         env = scaffold_turn("\n".join(x for x in (_sys, _prompt) if x))
-        body, code, receipt, text, model_ref = openai_chat(req, self.serve_url)
+        bindings = getattr(self, "_gateway_bindings", None)
+        body, code, receipt, text, model_ref = (
+            openai_chat(req, self.serve_url) if bindings is None else
+            openai_chat(req, self.serve_url, bindings))
         if code != 200:
             return self._json(body, code)          # errors are plain JSON, not a stream
         # the answer is produced whole before streaming, so the turn
@@ -897,104 +864,6 @@ class _Handler(BaseHTTPRequestHandler):
             self.wfile.flush()
         except Exception:
             pass                                   # client hung up mid-stream; nothing to do
-
-    def _sse_agent(self, req: dict, goal: str, endpoint: str):
-        """Stream the agentic tool loop as Server-Sent Events: each assistant turn,
-        tool call, and tool result is emitted as it happens, then a final `done`
-        event carries the witnessed result (verdict + integrity)."""
-        try:
-            max_steps = max(1, min(int(req.get("max_steps", 6)), 12))
-        except (TypeError, ValueError):
-            max_steps = 6
-        self.send_response(200)
-        self.send_header("Content-Type", "text/event-stream")
-        self.send_header("Cache-Control", "no-cache")
-        self.send_header("Connection", "keep-alive")
-        self._cors()
-        self.end_headers()
-
-        events: list = []
-
-        def emit(evt):
-            # tee: the stream shows the process live, the run root keeps it —
-            # a streamed run lands in history exactly like a posted one
-            events.append(evt)
-            try:
-                self.wfile.write(("data: " + json.dumps(evt) + "\n\n").encode())
-                self.wfile.flush()
-            except Exception:
-                pass
-
-        from harness.router_agent import run_router_agent
-        from harness.scaffold import scaffold_answer, scaffold_turn
-        env = scaffold_turn(goal)
-        root, root_err = _resolve_workspace_root(req.get("root"), self.root)
-        if root_err:
-            emit({"type": "error", "error": root_err})
-            try:
-                self.wfile.write(b"data: [DONE]\n\n")
-                self.wfile.flush()
-            except Exception:
-                pass
-            return
-        try:
-            result = run_router_agent(
-                goal, endpoint, root=str(root),
-                allow_write=bool(req.get("allow_write", False)),
-                allow_exec=bool(req.get("allow_exec", False)),
-                max_steps=max_steps, test_cmd=(req.get("test_cmd") or None),
-                model=(req.get("model") or None),
-                compact_budget=int(req.get("compact_budget", 0) or 0), on_event=emit)
-            # countersign ONCE, before persistence, so the stored doc and the
-            # done event carry the same receipt (the store banks one witness)
-            run_receipt = _countersign_run(result)
-            run_id, receipt_note = None, None
-            try:
-                from harness.eval_store import save_agent_run, trim_events
-                run_id = save_agent_run(
-                    self.run_root,
-                    dict(result, goal_excerpt=goal[:200],
-                         events=trim_events(events),
-                         run_receipt=run_receipt))["run_id"]
-            except Exception as e:
-                receipt_note = f"run not persisted: {type(e).__name__}: {e}"
-            emit({"type": "done", "run_id": run_id,
-                  **({"receipt_note": receipt_note} if receipt_note else {}),
-                  "final": result.get("final"), "steps": result.get("steps"),
-                  "verified": result.get("verified"), "integrity": result.get("integrity"),
-                  # the reviewability projection + checkpoint ride the done
-                  # event so the surface can offer a sign-this-run attestation
-                  "review": result.get("review"),
-                  "checkpoint": result.get("checkpoint"),
-                  # the window manifest: what the model actually saw
-                  "context_manifest": result.get("context_manifest"),
-                  "risk_review": result.get("risk_review"),
-                  "provenance": result.get("provenance"),
-                  "duration_s": result.get("duration_s"),
-                  "ttva_s": result.get("ttva_s"),
-                  "scaffold": scaffold_answer(str(result.get("final") or ""),
-                                              env),
-                  "run_receipt": run_receipt})
-        except Exception as e:
-            emit({"type": "error", "error": f"{type(e).__name__}: {e}"})
-            # a failed run is the one most worth inspecting afterward: it
-            # lands in history as ERROR carrying every event up to and
-            # including the error itself, instead of vanishing with the stream
-            try:
-                from harness.eval_store import save_agent_run, trim_events
-                save_agent_run(
-                    self.run_root,
-                    {"goal_excerpt": goal[:200], "endpoint": endpoint,
-                     "status": "ERROR",
-                     "error": f"{type(e).__name__}: {e}",
-                     "events": trim_events(events)})
-            except Exception:
-                pass  # the stream already carries the primary error
-        try:
-            self.wfile.write(b"data: [DONE]\n\n")
-            self.wfile.flush()
-        except Exception:
-            pass
 
     def _proxy(self, target: str):
         length = self._content_length()
@@ -1034,21 +903,19 @@ class _Handler(BaseHTTPRequestHandler):
         self.send_header("Content-Length", str(len(body)))
         self.end_headers()
         self.wfile.write(body)
-
     def _safe_500(self, e):
-        """Any uncaught handler error becomes a clean 500, never a dropped
-        connection or a stderr traceback. Only the exception TYPE is surfaced, so a
-        stack path never leaks to the client."""
+        """Return one non-echoing response for an uncaught handler error."""
         try:
             self._json({"error": {"message": f"internal error: {type(e).__name__}",
                                   "type": "api_error"}}, 500)
         except Exception:
             pass                                   # headers already partly sent; nothing safe to do
-
     def _req_json(self):
-        """The decoded JSON request body, or (None, error-response) when the
-        Content-Length is missing or oversized. One parse for every POST
-        route: the same seven lines were repeated dozens of times."""
+        """Return one admitted or bounded decoded request body."""
+        admitted = getattr(self, "_gateway_operation", None)
+        if admitted is not None:
+            del self._gateway_operation
+            return admitted, None
         length = self._content_length()
         if length is None:
             return None, self._json(
@@ -1058,43 +925,54 @@ class _Handler(BaseHTTPRequestHandler):
                     if length else {}), None
         except Exception:
             return {}, None
-
     def _authorized(self) -> bool:
-        """Refuse before dispatch. True when the request may proceed.
-
-        Off entirely when auth_token is empty, which is how the in-process tests
-        construct the handler; main() always sets one.
-        """
-        if not self.auth_token:
-            return True
-        ok, reason = _auth_check(self.headers, self.command, self.auth_token,
-                                 allowed_hosts=self.allowed_hosts)
+        """Refuse before dispatch; public auth-off compatibility stays available,
+        while private custody always requires a configured bearer token."""
+        path = self.path.split("?", 1)[0]
+        private = (path.startswith(("/api/journeys/", "/api/grants/", "/api/plan/",
+                                    "/api/gateway-grants/",
+                                    "/api/credential-handles",
+                                    "/api/operations/"))
+                   or path in {"/v1/chat/completions", "/api/agent",
+                               "/api/workflow", "/api/plugins/probe",
+                               "/api/plugins/call", "/api/plugins/register",
+                               "/api/plugins/toggle", "/api/plugins/remove",
+                               "/api/marketplace/install",
+                               "/api/marketplace/add",
+                               "/api/marketplace/remove"})
+        if not self.auth_token and not private: return True
+        if private:
+            owner, reason = ((None, "no_token") if not self.auth_token else _auth_owner(
+                self.headers, self.command, self.auth_token, self.flywheel_home, allowed_hosts=self.allowed_hosts))
+            ok = owner is not None
+            if ok: self.owner_ref = owner
+        else:
+            ok, reason = _auth_check(self.headers, self.command, self.auth_token, allowed_hosts=self.allowed_hosts)
         if ok:
             return True
-        body = json.dumps({"error": "unauthorized", "reason": reason}).encode()
+        refusal = ({"schema": "flywheel.evidence-transport-error/v1", "error": {
+            "code": "AUTH_REQUIRED", "message": "gateway authentication is required"}}
+            if private else {"error": "unauthorized", "reason": reason})
+        body = json.dumps(refusal).encode()
         self.send_response(401)
         self.send_header("Content-Type", "application/json")
         self.send_header("Content-Length", str(len(body)))
         self.end_headers()
         self.wfile.write(body)
         return False
-
-    def do_GET(self):
+    def _gateway_method(self, method, fallback=None):
         if not self._authorized():
             return
         try:
-            self._get()
+            if not self._route_operation(method):
+                (fallback or (lambda: self.send_error(501)))()
         except Exception as e:
             self._safe_500(e)
-
-    def do_POST(self):
-        if not self._authorized():
-            return
-        try:
-            self._post()
-        except Exception as e:
-            self._safe_500(e)
-
+    def do_GET(self): self._gateway_method("GET", self._get)
+    def do_POST(self): self._gateway_method("POST", self._post)
+    def do_PUT(self): self._gateway_method("PUT")
+    def do_DELETE(self): self._gateway_method("DELETE")
+    def do_HEAD(self): self._gateway_method("HEAD")
     def _get(self):
         p = self.path.split("?", 1)[0]
         qs = self.path.split("?", 1)[1] if "?" in self.path else ""
@@ -1390,15 +1268,16 @@ class _Handler(BaseHTTPRequestHandler):
                             for n in names],
                 "note": "presence and source only; values never leave "
                         "resolution inside a routed call"})
+        if p == "/api/credential-handles":
+            from harness.credential_handle_route import credential_handle_get
+            body, code = credential_handle_get(
+                p, owner_ref=self.owner_ref,
+                state_root=self.flywheel_home / "state")
+            return self._json(body, code)
         if p == "/api/plugins/probe":                # spawn a plugin's server, report its real tools
-            from harness.plugins import probe_plugin
-            name = ""
-            for part in qs.split("&"):
-                if part.startswith("name="):
-                    name = urllib.parse.unquote(part[5:])
-            if not name:
-                return self._json({"error": "provide ?name="}, 400)
-            return self._json(probe_plugin(name))
+            return self._json({"schema": "flywheel.evidence-transport-error/v1",
+                "error": {"code": "INVALID_REQUEST",
+                          "message": "plugin probe requires POST approval"}}, 405)
         if p == "/api/router/stats":                 # observed per-provider success/cost
             return self._json(get_router_stats().snapshot())
         if p == "/v1/models":                        # OpenAI-compatible model list (the roster)
@@ -1407,17 +1286,85 @@ class _Handler(BaseHTTPRequestHandler):
             return self._proxy(self.serve_url.rstrip("/") + p)
         return self._static(p)
 
+    def _plan_request(self, path):
+        length = self._content_length()
+        if length is None:
+            return self._json({"schema": "flywheel.evidence-transport-error/v1",
+                "error": {"code": "INVALID_REQUEST",
+                          "message": "gateway operation is invalid"}}, 422)
+        from harness.plan_run_route import plan_post
+        body, code = plan_post(path, self.rfile.read(length), owner_ref=self.owner_ref,
+            state_root=self.flywheel_home / "state", default_root=self.root,
+            run_root=self.run_root, clock=self.clock,
+            resolve_root=_resolve_workspace_root, countersign=_countersign_workflow)
+        return self._json(body, code)
+
     def _post(self):
         p = self.path.split("?", 1)[0]
-        if p == "/v1/chat/completions":              # OpenAI-compatible, routes to ANY provider
+        if p.startswith("/api/plan/"): return self._plan_request(p)
+        if p.startswith(("/api/evidence/", "/api/journeys/", "/api/grants/",
+                         "/api/gateway-grants/", "/api/credential-handles/")):
             length = self._content_length()
             if length is None:
-                return self._json({"error": {"message": "invalid or oversized Content-Length",
-                                             "type": "invalid_request_error"}}, 400)
+                return self._json({"schema": "flywheel.evidence-transport-error/v1",
+                    "error": {"code": "INVALID_LENGTH", "message": "request length is invalid"}}, 400)
+            raw = self.rfile.read(length)
+            if p.startswith("/api/evidence/"):
+                from harness.evidence_route import evidence_post
+                body, code = evidence_post(p, raw, root=self.root)
+            elif p.startswith("/api/journeys/"):
+                from harness.journey_route import journey_post
+                body, code = journey_post(p, raw, owner_ref=self.owner_ref, state_root=self.flywheel_home / "state",
+                    evidence_root=self.flywheel_home / "state" / "artifacts", clock=self.clock)
+            elif p.startswith("/api/grants/"):
+                from harness.grant_route import grant_post
+                body, code = grant_post(p, raw, owner_ref=self.owner_ref, state_root=self.flywheel_home / "state",
+                    evidence_root=self.flywheel_home / "state" / "artifacts", clock=self.clock)
+            elif p.startswith("/api/gateway-grants/"):
+                from harness.gateway_grant_route import gateway_grant_post
+                body, code = gateway_grant_post(
+                    p, raw, owner_ref=self.owner_ref,
+                    state_root=self.flywheel_home / "state", clock=self.clock)
+            else:
+                from harness.credential_handle_route import credential_handle_post
+                body, code = credential_handle_post(
+                    p, raw, owner_ref=self.owner_ref,
+                    state_root=self.flywheel_home / "state")
+            return self._json(body, code)
+        from harness.gateway_operation import action_for_path, materialize_agent_attachment, thaw_operation
+        action = action_for_path(p)
+        if action is not None:
+            length = self._content_length()
+            if length is None:
+                return self._json({"schema": "flywheel.evidence-transport-error/v1",
+                    "error": {"code": "INVALID_REQUEST",
+                              "message": "gateway operation is invalid"}}, 422)
+            from harness.gateway_grant_route import (
+                authorize_gateway_operation, gateway_error_response)
             try:
-                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
-            except Exception:
-                req = {}
+                authorized = authorize_gateway_operation(
+                    action, self.rfile.read(length), owner_ref=self.owner_ref,
+                    state_root=self.flywheel_home / "state", clock=self.clock)
+                from harness.gateway_provider_adapter import resolve_credentials
+                authorized = resolve_credentials(
+                    authorized, self.flywheel_home / "state")
+                self._gateway_guarded = True
+            except Exception as exc:
+                body, code = gateway_error_response(exc)
+                return self._json(body, code)
+            from harness.gateway_actions import dispatch_builtin
+            try:
+                dispatched = dispatch_builtin(authorized)
+            except Exception as exc:
+                body, code = gateway_error_response(exc)
+                return self._json(body, code)
+            if dispatched is not None:
+                return self._json(*dispatched)
+            self._gateway_operation = materialize_agent_attachment(thaw_operation(authorized.operation))
+            self._gateway_bindings = authorized.credential_bindings
+        if p == "/v1/chat/completions":              # OpenAI-compatible, routes to ANY provider
+            req, bad = self._req_json()
+            if bad: return bad
             if req.get("stream"):
                 return self._sse_chat(req)
             from harness.scaffold import scaffold_answer, scaffold_turn
@@ -1425,7 +1372,10 @@ class _Handler(BaseHTTPRequestHandler):
             # sent, so the turn receipt is reproducible by a stranger
             _sys, _prompt = _flatten_messages(req.get("messages", []))
             env = scaffold_turn("\n".join(x for x in (_sys, _prompt) if x))
-            body, code, _r, _t, _m = openai_chat(req, self.serve_url)
+            bindings = getattr(self, "_gateway_bindings", None)
+            body, code, _r, _t, _m = (
+                openai_chat(req, self.serve_url) if bindings is None else
+                openai_chat(req, self.serve_url, bindings))
             if code == 200 and isinstance(body, dict):
                 try:
                     content = body["choices"][0]["message"]["content"]
@@ -1812,8 +1762,10 @@ class _Handler(BaseHTTPRequestHandler):
                     max_steps=max_steps, test_cmd=(req.get("test_cmd") or None),
                     model=(req.get("model") or None),
                     compact_budget=int(req.get("compact_budget", 0) or 0),
+                    credential_bindings=getattr(
+                        self, "_gateway_bindings", None),
                     on_event=events.append)
-            except Exception as e:
+            except Exception:
                 # failed runs land in history too, with their partial trace
                 try:
                     from harness.eval_store import save_agent_run, trim_events
@@ -1821,11 +1773,11 @@ class _Handler(BaseHTTPRequestHandler):
                         self.run_root,
                         {"goal_excerpt": goal[:200], "endpoint": endpoint,
                          "status": "ERROR",
-                         "error": f"{type(e).__name__}: {e}",
+                         "error": "authorized external action failed",
                          "events": trim_events(events)})
                 except Exception:
                     pass  # the 502 already carries the primary error
-                return self._json({"error": f"{type(e).__name__}: {e}"}, 502)
+                return self._json({"error": "authorized external action failed"}, 502)
             if effort is not None:
                 # stamp what was ENFORCED, not the nominal dial: a caller
                 # max_steps override past the dial, and this route not fanning
@@ -1844,9 +1796,8 @@ class _Handler(BaseHTTPRequestHandler):
                     self.run_root,
                     dict(result, goal_excerpt=goal[:200],
                          events=trim_events(events)))["run_id"]
-            except Exception as e:
-                result["receipt_note"] = (
-                    f"run not persisted: {type(e).__name__}: {e}")
+            except Exception:
+                result["receipt_note"] = "authorized external action failed"
             return self._json(result)
         if p == "/api/workflow":                       # staged run with a chained receipt, any endpoint
             req, bad = self._req_json()
@@ -1871,7 +1822,9 @@ class _Handler(BaseHTTPRequestHandler):
                     allow_mcp=bool(req.get("allow_mcp", False)),
                     test_cmd=(req.get("test_cmd") or None),
                     system=profile.get("system", ""),
-                    run_root=self.run_root)
+                    run_root=self.run_root,
+                    credential_bindings=getattr(
+                        self, "_gateway_bindings", None), authorized=True)
             except Exception as e:
                 return self._json({"error": f"workflow failed: {type(e).__name__}: {e}"}, 502)
             doc["run_countersign"] = _countersign_workflow(doc)
@@ -1886,14 +1839,6 @@ class _Handler(BaseHTTPRequestHandler):
             from harness.memory_api import memory_recall
             return self._json(memory_recall(self.run_root, query,
                                             req.get("top_k", 5)))
-        if p == "/api/plugins/register":               # register a custom MCP server by argv
-            req, bad = self._req_json()
-            if bad:
-                return bad
-            from harness.plugins import register_mcp
-            out = register_mcp(req.get("name", ""), req.get("command", []),
-                               (req.get("detail") or "").strip())
-            return self._json(out, 400 if "error" in out else 200)
         if p in ("/api/auth/login", "/api/auth/token", "/api/auth/logout"):
             # Subscription sign-in. A browser flow runs in the background and
             # the surface polls /api/auth; a guided flow returns its steps and
@@ -2027,13 +1972,6 @@ class _Handler(BaseHTTPRequestHandler):
             from harness.injection_probe import probe
             return self._json(probe(allow_write=bool(req.get("allow_write")),
                                     allow_exec=bool(req.get("allow_exec"))))
-        if p == "/api/marketplace/install":            # catalog entry -> plugin registry
-            req, bad = self._req_json()
-            if bad:
-                return bad
-            from harness.marketplace import install_from_catalog
-            out = install_from_catalog((req.get("name") or "").strip())
-            return self._json(out, 400 if "error" in out else 200)
         if p in ("/api/typeface", "/api/typeface/publish",
                  "/api/typeface/family", "/api/typeface/variable"):
             # mint / publish / family / variable, one module (typeface_route.py)
@@ -2080,16 +2018,6 @@ class _Handler(BaseHTTPRequestHandler):
             profile = str(req.get("profile", "package")).strip() or "package"
             from harness.lanes import install_lane
             return self._json(install_lane(name, profile=profile))
-        if p == "/api/plugins/call":                   # one tool call on a registered plugin
-            req, bad = self._req_json()
-            if bad:
-                return bad
-            from harness.plugins import call_plugin
-            out = call_plugin(str(req.get("name", "")).strip(),
-                              str(req.get("tool", "")).strip(),
-                              req.get("arguments")
-                              if isinstance(req.get("arguments"), dict) else {})
-            return self._json(out, 400 if "error" in out else 200)
         if p == "/api/telos/kernel":                   # run a bridged telos creative kernel
             req, bad = self._req_json()
             if bad:
@@ -2156,39 +2084,6 @@ class _Handler(BaseHTTPRequestHandler):
                                 duration=_num("duration", 24.0),
                                 root=_num("root", 220.0))
             return self._json(out, 400 if out.get("refused") else 200)
-        if p == "/api/marketplace/add":                # a user catalog entry (env-var NAMES only)
-            req, bad = self._req_json()
-            if bad:
-                return bad
-            from harness.marketplace import add_user_entry
-            out = add_user_entry(
-                str(req.get("name", "")),
-                req.get("command") if isinstance(req.get("command"), list) else [],
-                detail=str(req.get("detail", "")),
-                requires=req.get("requires")
-                if isinstance(req.get("requires"), list) else [])
-            return self._json(out, 400 if "error" in out else 200)
-        if p == "/api/marketplace/remove":             # drop a user catalog entry
-            req, bad = self._req_json()
-            if bad:
-                return bad
-            from harness.marketplace import remove_user_entry
-            out = remove_user_entry(str(req.get("name", "")))
-            return self._json(out, 400 if "error" in out else 200)
-        if p == "/api/plugins/toggle":                 # enable/disable a custom plugin
-            req, bad = self._req_json()
-            if bad:
-                return bad
-            from harness.plugins import toggle_mcp
-            out = toggle_mcp(req.get("name", ""), bool(req.get("enabled", True)))
-            return self._json(out, 400 if "error" in out else 200)
-        if p == "/api/plugins/remove":                 # remove a custom plugin
-            req, bad = self._req_json()
-            if bad:
-                return bad
-            from harness.plugins import remove_mcp
-            out = remove_mcp(req.get("name", ""))
-            return self._json(out, 400 if "error" in out else 200)
         if p == "/api/lsp":                            # editor intelligence over any LSP server
             req, bad = self._req_json()
             if bad:
@@ -2313,8 +2208,6 @@ class _Handler(BaseHTTPRequestHandler):
                 400 if "error" in result else 200)
             return self._json(result, code)
         return self._json({"error": "not found"}, 404)
-
-
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description="flywheel superapp gateway (one origin)")
     ap.add_argument("--port", type=int, default=8799)
@@ -2331,8 +2224,19 @@ def main(argv=None) -> int:
     _Handler.run_root = a.run_root
     _Handler.cors = a.cors
     flywheel_home = Path(os.environ.get("FLYWHEEL_HOME", str(Path.home() / ".flywheel")))
+    _Handler.flywheel_home = flywheel_home
     _Handler.auth_token = load_or_create_token(flywheel_home)
     httpd = ThreadingHTTPServer(("127.0.0.1", a.port), _Handler)
+    state_root = flywheel_home / "state"
+    from harness.gateway_operations import GatewayOperations
+    from harness.gateway_operation_process import GatewayAgentProcessFactory
+    from harness.gateway_operation_recovery import recover_gateway_operations
+    from harness.journey_recovery import recover_store
+    _Handler.operation_service = GatewayOperations(state_root, clock=_Handler.clock)
+    _Handler.operation_process_factory = GatewayAgentProcessFactory(
+        repo_root=_Handler.root, run_root=Path(_Handler.run_root))
+    recover_store(state_root, now=_Handler.clock())
+    recover_gateway_operations(state_root, now=_Handler.clock())
     print(f"flywheel gateway: http://127.0.0.1:{a.port}  root={_Handler.root}")
     print(f"  token     {flywheel_home / 'gateway.token'}  (send as: Authorization: Bearer <token>)")
     print(f"  surface   Flywheel Desktop (the native client) talks to this gateway")
@@ -2353,6 +2257,9 @@ def main(argv=None) -> int:
         httpd.serve_forever()
     except KeyboardInterrupt:
         pass
+    finally:
+        _Handler.operation_service.shutdown()
+        httpd.server_close()
     return 0
 
 

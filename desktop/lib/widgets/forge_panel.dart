@@ -71,9 +71,8 @@ class _ForgePanelState extends State<ForgePanel> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-              'A goal with a machine-checkable outcome scores high; a vague '
-              'one scores low and says so. Both arms seal at forge time, so '
-              'drift has nowhere to hide.',
+              'Forge a criterion-bearing plan. Gate labels describe who could '
+              'check; no gate is claimed run or passed.',
               style: TextStyle(fontSize: 12.5, color: t.inkMuted)),
           const SizedBox(height: FwLayout.s3),
           Row(children: [
@@ -97,79 +96,99 @@ class _ForgePanelState extends State<ForgePanel> {
             const SizedBox(height: FwLayout.s2),
             HonestNull('Forge failed: $_error'),
           ],
-          if (d != null) ...[
-            const SizedBox(height: FwLayout.s3),
-            Row(children: [
-              VerdictPill(
-                  d['well_posed'] == true ? 'well-posed' : 'under-specified',
-                  status: d['well_posed'] == true ? 'verified' : 'drift'),
-              const SizedBox(width: FwLayout.s2),
-              Text('${d['task_type'] ?? ''}', style: fwMono(t, size: 11.5)),
-              const SizedBox(width: FwLayout.s3),
-              Text(
-                  'confidence ${d['confidence'] ?? '?'}   external gates '
-                  '${(((d['external_gate_ratio'] ?? 0) as num) * 100).round()}%',
-                  style: fwMono(t, size: 11.5).copyWith(color: t.inkMuted)),
-            ]),
-            if (d['validation_gates'] is List &&
-                (d['validation_gates'] as List).isNotEmpty) ...[
-              const SizedBox(height: FwLayout.s2),
-              for (final gate in (d['validation_gates'] as List))
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 2),
-                  child: Row(children: [
-                    const VerdictDot('verified'),
-                    const SizedBox(width: FwLayout.s2),
-                    Expanded(
-                        child: Text('$gate',
-                            style: fwMono(t, size: 11.5)
-                                .copyWith(color: t.inkSoft))),
-                  ]),
-                ),
-            ],
-            const SizedBox(height: FwLayout.s2),
-            Container(
-              width: double.infinity,
-              constraints: const BoxConstraints(maxHeight: 220),
-              padding: const EdgeInsets.all(FwLayout.s3),
-              decoration: BoxDecoration(
-                  border: Border.all(color: t.hairline),
-                  borderRadius: BorderRadius.circular(4)),
-              child: Stack(children: [
-                SingleChildScrollView(
-                  child: SelectableText('${d['prompt'] ?? ''}',
-                      style: fwMono(t, size: 11.5).copyWith(color: t.inkSoft)),
-                ),
-                Positioned(
-                  top: 0,
-                  right: 0,
-                  child: IconButton(
-                    tooltip: 'Copy the forged prompt',
-                    icon: const Icon(Icons.copy, size: 14),
-                    onPressed: () => Clipboard.setData(
-                        ClipboardData(text: '${d['prompt'] ?? ''}')),
-                  ),
-                ),
-              ]),
-            ),
-            const SizedBox(height: FwLayout.s2),
-            HashText('intent', '${d['intent_sha256'] ?? ''}', keep: 16),
-            HashText('architecture', '${d['architecture_sha256'] ?? ''}',
-                keep: 16),
-            const SizedBox(height: FwLayout.s3),
-            Row(children: [
-              OutlinedButton(
-                onPressed: _rechecking ? null : _driftCheck,
-                child: Text(_rechecking ? 'Rechecking…' : 'Recheck drift'),
-              ),
-              const SizedBox(width: FwLayout.s3),
-              if (_recheck != null)
-                Expanded(child: _recheckRow(t, _recheck!)),
-            ]),
-          ],
+          if (d != null) ..._document(t, d),
         ],
       ),
     );
+  }
+
+  List<Widget> _document(FwTokens t, Map<String, dynamic> d) => [
+        const SizedBox(height: FwLayout.s3),
+        ..._summary(t, d),
+        const SizedBox(height: FwLayout.s2),
+        _prompt(t, d),
+        const SizedBox(height: FwLayout.s2),
+        HashText('intent', '${d['intent_sha256'] ?? ''}', keep: 16),
+        HashText('architecture', '${d['architecture_sha256'] ?? ''}', keep: 16),
+        const SizedBox(height: FwLayout.s3),
+        Row(children: [
+          OutlinedButton(
+            onPressed: _rechecking ? null : _driftCheck,
+            child: Text(_rechecking ? 'Rechecking…' : 'Recheck drift'),
+          ),
+          const SizedBox(width: FwLayout.s3),
+          if (_recheck != null) Expanded(child: _recheckRow(t, _recheck!)),
+        ]),
+      ];
+
+  List<Widget> _summary(FwTokens t, Map<String, dynamic> d) => [
+        Row(children: [
+          Chip(
+              label: Text(d['well_posed'] == true
+                  ? 'criterion stated'
+                  : 'criterion not stated')),
+          const SizedBox(width: FwLayout.s2),
+          Text('${d['task_type'] ?? ''}', style: fwMono(t, size: 11.5)),
+          const SizedBox(width: FwLayout.s3),
+          Text(
+              'confidence ${d['confidence'] ?? '?'}   checkable gates '
+              '${_percent('${d['external_gate_ratio'] ?? '0.000'}')}%',
+              style: fwMono(t, size: 11.5).copyWith(color: t.inkMuted)),
+        ]),
+        if (d['validation_gates'] is List &&
+            (d['validation_gates'] as List).isNotEmpty) ...[
+          const SizedBox(height: FwLayout.s2),
+          for (final gate in (d['validation_gates'] as List))
+            Padding(
+              padding: const EdgeInsets.only(bottom: 2),
+              child: Row(children: [
+                Chip(
+                    label: Text(
+                        gate is Map && gate['externally_checkable'] == true
+                            ? 'checkable'
+                            : 'manual')),
+                const SizedBox(width: FwLayout.s2),
+                Expanded(
+                    child: Text(
+                        gate is Map ? '${gate['check'] ?? ''}' : '$gate',
+                        style:
+                            fwMono(t, size: 11.5).copyWith(color: t.inkSoft))),
+              ]),
+            ),
+        ],
+      ];
+
+  Widget _prompt(FwTokens t, Map<String, dynamic> d) => Container(
+        width: double.infinity,
+        constraints: const BoxConstraints(maxHeight: 220),
+        padding: const EdgeInsets.all(FwLayout.s3),
+        decoration: BoxDecoration(
+            border: Border.all(color: t.hairline),
+            borderRadius: BorderRadius.circular(4)),
+        child: Stack(children: [
+          SingleChildScrollView(
+            child: SelectableText('${d['prompt'] ?? ''}',
+                style: fwMono(t, size: 11.5).copyWith(color: t.inkSoft)),
+          ),
+          Positioned(
+            top: 0,
+            right: 0,
+            child: IconButton(
+              tooltip: 'Copy the forged prompt',
+              icon: const Icon(Icons.copy, size: 14),
+              onPressed: () => Clipboard.setData(
+                  ClipboardData(text: '${d['prompt'] ?? ''}')),
+            ),
+          ),
+        ]),
+      );
+
+  String _percent(String ratio) {
+    final parts = ratio.split('.');
+    if (parts.length != 2 || parts[0] != '0' && parts[0] != '1') return '0';
+    final milli = int.tryParse(parts[1]);
+    if (milli == null || parts[1].length != 3) return '0';
+    return '${int.parse(parts[0]) * 100 + milli ~/ 10}';
   }
 
   Widget _recheckRow(FwTokens t, Map<String, dynamic> r) {
@@ -179,8 +198,8 @@ class _ForgePanelState extends State<ForgePanel> {
       if (s == 'MATCH' || s == 'DRIFT') {
         pills.add(Padding(
           padding: const EdgeInsets.only(right: FwLayout.s2),
-          child: VerdictPill('$k $s',
-              status: s == 'MATCH' ? 'verified' : 'drift'),
+          child:
+              VerdictPill('$k $s', status: s == 'MATCH' ? 'verified' : 'drift'),
         ));
       }
     });

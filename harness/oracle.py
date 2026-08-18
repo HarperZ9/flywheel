@@ -214,6 +214,12 @@ class PytestOracle:
     def _cmd(self, task: Task) -> str:
         return f"{getattr(task, self.cmd_attr)} --junitxml={JUNIT_NAME} -q"
 
+    def verify_prepared(self, argv: list[str], task: Task,
+                        input_refs: list[str]) -> tuple[OracleResult, dict, dict]:
+        """Refuse the retired journey route until real containment exists."""
+        from .pytest_prepared import verify_prepared
+        return verify_prepared(self, argv, task, input_refs)
+
     def verify(self, candidate: str, task: Task) -> OracleResult:
         cpath = task.candidate_full()
         cpath.parent.mkdir(parents=True, exist_ok=True)

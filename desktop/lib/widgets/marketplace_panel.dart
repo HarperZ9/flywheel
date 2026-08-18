@@ -43,13 +43,12 @@ class MarketplacePanel extends StatelessWidget {
   Widget _entry(FwTokens t, Map<String, dynamic> e) {
     final installed = e['installed'] == true;
     final name = '${e['name']}';
-    final command = (e['command'] is List)
-        ? (e['command'] as List).join(' ')
-        : '';
+    final command =
+        (e['command'] is List) ? (e['command'] as List).join(' ') : '';
     return Container(
       padding: const EdgeInsets.symmetric(vertical: FwLayout.s2 + 2),
-      decoration: BoxDecoration(
-          border: Border(bottom: BorderSide(color: t.hairline))),
+      decoration:
+          BoxDecoration(border: Border(bottom: BorderSide(color: t.hairline))),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -103,11 +102,27 @@ class MarketplacePanel extends StatelessWidget {
 
 /// Publish your own server into the catalog: a name, the launch command,
 /// and the env var NAMES it needs. Values never leave the environment.
+typedef MarketplaceAddDraft = ({
+  String name,
+  List<String> command,
+  String detail,
+  List<String> requires,
+});
+Map<String, Object?> marketplaceAddOperation(MarketplaceAddDraft value) => {
+      'name': value.name,
+      'command': value.command,
+      'detail': value.detail,
+      'requires': value.requires,
+    };
+
 class MarketplaceAddCard extends StatefulWidget {
+  final Future<Map<String, dynamic>> Function(String name, List<String> command,
+      String detail, List<String> requires)? onAdd;
   final Future<Map<String, dynamic>> Function(
-          String name, List<String> command, String detail, List<String> requires)
-      onAdd;
-  const MarketplaceAddCard({super.key, required this.onAdd});
+          MarketplaceAddDraft draft, MarketplaceAddDraft Function() current)?
+      onAuthorize;
+  const MarketplaceAddCard({super.key, this.onAdd, this.onAuthorize})
+      : assert(onAdd != null || onAuthorize != null);
 
   @override
   State<MarketplaceAddCard> createState() => _MarketplaceAddCardState();
@@ -121,6 +136,17 @@ class _MarketplaceAddCardState extends State<MarketplaceAddCard> {
   String? _result;
   bool _ok = false, _busy = false;
 
+  MarketplaceAddDraft _draft() => (
+        name: _name.text.trim(),
+        command: _command.text.trim().split(RegExp(r'\s+')),
+        detail: _detail.text.trim(),
+        requires: _requires.text
+            .split(',')
+            .map((s) => s.trim())
+            .where((s) => s.isNotEmpty)
+            .toList(),
+      );
+
   @override
   void dispose() {
     _name.dispose();
@@ -131,24 +157,18 @@ class _MarketplaceAddCardState extends State<MarketplaceAddCard> {
   }
 
   Future<void> _submit() async {
-    final name = _name.text.trim();
-    final argv = _command.text.trim().split(RegExp(r'\s+'));
-    if (name.isEmpty || argv.isEmpty || argv.first.isEmpty || _busy) return;
+    final draft = _draft();
+    if (draft.name.isEmpty || draft.command.first.isEmpty || _busy) return;
     setState(() => _busy = true);
     try {
-      final r = await widget.onAdd(
-          name,
-          argv,
-          _detail.text.trim(),
-          _requires.text
-              .split(',')
-              .map((s) => s.trim())
-              .where((s) => s.isNotEmpty)
-              .toList());
+      final r = widget.onAuthorize != null
+          ? await widget.onAuthorize!(draft, _draft)
+          : await widget.onAdd!(
+              draft.name, draft.command, draft.detail, draft.requires);
       setState(() {
         _ok = r['added'] == true;
         _result = _ok
-            ? 'saved to your catalog: $name'
+            ? 'saved to your catalog: ${draft.name}'
             : '${r['error'] ?? 'not saved'}';
         if (_ok) {
           _name.clear();
@@ -237,8 +257,7 @@ class _MarketplaceAddCardState extends State<MarketplaceAddCard> {
                     const SizedBox(width: FwLayout.s2),
                     Expanded(
                         child: Text(_result!,
-                            style: TextStyle(
-                                fontSize: 12, color: t.inkMuted))),
+                            style: TextStyle(fontSize: 12, color: t.inkMuted))),
                   ])
                 : HonestNull(_result!),
           ],

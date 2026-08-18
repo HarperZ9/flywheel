@@ -74,6 +74,14 @@ def prompt_hash(text: str) -> str:
     return hashlib.sha256(text.encode()).hexdigest()[:16]
 
 
+def _ambient_credential(name: str) -> str:
+    try:
+        from .keychain import resolve_credential
+        return resolve_credential(name)
+    except Exception:
+        return os.environ.get(name, "")
+
+
 class StubProposer:
     def __init__(self, canned: str, model_ref: str = "stub"):
         self._canned = canned
@@ -113,20 +121,19 @@ class ServeProposer:
 
 class EnterpriseProposer:
     def __init__(self, base_url: str | None = None, model: str | None = None,
-                 api_key_env: str = "OPENAI_API_KEY", model_ref: str = "enterprise"):
+                 api_key_env: str = "OPENAI_API_KEY", model_ref: str = "enterprise",
+                 api_key: str | None = None):
         self.base_url = (base_url or os.environ.get("OPENAI_BASE_URL",
                           "https://api.openai.com/v1")).rstrip("/")
         self.model = model or os.environ.get("OPENAI_MODEL", "gpt-4o-mini")
         self.api_key_env = api_key_env
+        self._api_key = api_key
         self.model_ref = f"{model_ref}:{self.model}"
 
     def generate(self, prompt: str, *, seed: int, temperature: float,
                  max_new_tokens: int, system: str = "") -> ProposerOutput:
-        try:
-            from .keychain import resolve_credential
-            key = resolve_credential(self.api_key_env)
-        except Exception:
-            key = os.environ.get(self.api_key_env, "")
+        key = (_ambient_credential(self.api_key_env)
+               if self._api_key is None else self._api_key)
         msgs = ([{"role": "system", "content": system}] if system else []) \
             + [{"role": "user", "content": prompt}]
         body = json.dumps({
@@ -134,10 +141,11 @@ class EnterpriseProposer:
             "temperature": temperature, "max_tokens": max_new_tokens,
             "seed": seed,
         }).encode()
+        headers = {"Content-Type": "application/json"}
+        if key:
+            headers["Authorization"] = f"Bearer {key}"
         req = urllib.request.Request(
-            f"{self.base_url}/chat/completions", data=body,
-            headers={"Content-Type": "application/json",
-                     "Authorization": f"Bearer {key}"})
+            f"{self.base_url}/chat/completions", data=body, headers=headers)
         with urllib.request.urlopen(req, timeout=300) as r:
             obj = json.loads(r.read())
         from .extract import extract_code
@@ -160,20 +168,19 @@ class AnthropicProposer:
     def __init__(self, base_url: str = "https://api.anthropic.com",
                  model: str = "claude-opus-5",
                  api_key_env: str = "ANTHROPIC_API_KEY",
-                 version: str = "2023-06-01", model_ref: str = "anthropic"):
+                 version: str = "2023-06-01", model_ref: str = "anthropic",
+                 api_key: str | None = None):
         self.base_url = base_url.rstrip("/")
         self.model = model
         self.api_key_env = api_key_env
+        self._api_key = api_key
         self.version = version
         self.model_ref = f"{model_ref}:{model}"
 
     def generate(self, prompt: str, *, seed: int, temperature: float,
                  max_new_tokens: int, system: str = "") -> ProposerOutput:
-        try:
-            from .keychain import resolve_credential
-            key = resolve_credential(self.api_key_env)
-        except Exception:
-            key = os.environ.get(self.api_key_env, "")
+        key = (_ambient_credential(self.api_key_env)
+               if self._api_key is None else self._api_key)
         payload = {"model": self.model, "max_tokens": max_new_tokens,
                    "messages": [{"role": "user", "content": prompt}],
                    "temperature": temperature}

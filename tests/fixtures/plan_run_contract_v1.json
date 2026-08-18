@@ -1,0 +1,54 @@
+{
+  "binding": {
+    "binding_sha256": "9d0cf21988848a801d2e90bc9bcb67445500bfaf1ae02246f0b2706f24514f85",
+    "gates": [
+      {
+        "check": "pytest -q passes on the provided/derived tests",
+        "externally_checkable": true
+      },
+      {
+        "check": "the solution imports/compiles with no error",
+        "externally_checkable": true
+      }
+    ],
+    "gates_sha256": "601d634e6efb905184b88155a130e3a6ccbe84d58f7cc93327b6787902226e1d",
+    "prompt": "# PRP\nImplement stable sorting.\nLabels describe who could check; no gate is claimed run or passed.",
+    "prompt_sha256": "9f659ffe9479d348067183f70fbaf4792917313f147e185e7a961b5b242f02c7",
+    "prp": {
+      "architecture_sha256": "",
+      "confidence": 8,
+      "external_gate_ratio": "1.000",
+      "gate_counts": {
+        "checkable": 2,
+        "total": 2
+      },
+      "goal": "Implement stable sorting.",
+      "intent_sha256": "",
+      "prompt": "# PRP\nImplement stable sorting.\nLabels describe who could check; no gate is claimed run or passed.",
+      "schema": "flywheel.prp/v2",
+      "task_type": "code",
+      "validation_gates": [
+        {
+          "check": "pytest -q passes on the provided/derived tests",
+          "externally_checkable": true
+        },
+        {
+          "check": "the solution imports/compiles with no error",
+          "externally_checkable": true
+        }
+      ],
+      "well_posed": true
+    },
+    "prp_id": "fpr_71a3f28e871acfa7dde82ffbfa8ddab6",
+    "prp_sha256": "3a904233e6316f0dcc743efdb9c76928e678d3cedf814fd5229aa3d159e71334",
+    "schema": "flywheel.plan-run-binding/v1",
+    "seal_sha256": "ecb84a5a912c9198b027a268601cd60c3481ccee6df63e2c48019abfe5e5b447"
+  },
+  "created_at": "2026-08-15T12:00:00Z",
+  "gates_sha256": "601d634e6efb905184b88155a130e3a6ccbe84d58f7cc93327b6787902226e1d",
+  "owner_ref": "owner_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "prompt_sha256": "9f659ffe9479d348067183f70fbaf4792917313f147e185e7a961b5b242f02c7",
+  "prp_id": "fpr_71a3f28e871acfa7dde82ffbfa8ddab6",
+  "prp_sha256": "3a904233e6316f0dcc743efdb9c76928e678d3cedf814fd5229aa3d159e71334",
+  "seal_sha256": "ecb84a5a912c9198b027a268601cd60c3481ccee6df63e2c48019abfe5e5b447"
+}

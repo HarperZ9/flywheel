@@ -22,8 +22,14 @@ class ProbeResult extends StatelessWidget {
       children: [
         Row(
           children: [
-            VerdictPill(status,
-                status: status == 'live' ? 'verified' : 'drift'),
+            if (status == 'live')
+              Semantics(
+                label: 'Live reported; not verified',
+                excludeSemantics: true,
+                child: const VerdictPill('live', status: 'present_unchecked'),
+              )
+            else
+              VerdictPill(status, status: 'drift'),
             if ('${probe['detail'] ?? ''}'.isNotEmpty) ...[
               const SizedBox(width: FwLayout.s2),
               Expanded(
@@ -113,7 +119,8 @@ class RegisterForm extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: FwLayout.s3),
-              FilledButton(onPressed: onRegister, child: const Text('Register')),
+              FilledButton(
+                  onPressed: onRegister, child: const Text('Register')),
             ],
           ),
           const SizedBox(height: FwLayout.s2),

@@ -1,18 +1,4 @@
-"""endpoints.py — the chat-agent's multi-endpoint ladder: reach every provider.
-
-Extends the local agent from local-only to codex / claude / gemini / deepseek,
-each in whatever access modes the operator has credentials for, and fails over
-across them. Zero-dep (stdlib), and legitimate by construction: keys come from
-the environment, subscriptions from the official CLI's own auth, gateways from a
-configured base URL. Nothing is forged, harvested, or metered around; a missing
-credential just means that endpoint is absent from the ladder.
-
-Modes:
-  plan/max : the official CLI (claude/codex) using the operator's subscription
-  api      : the provider's public API + <PROVIDER>_API_KEY
-  provider : a gateway via <PROVIDER>_PROVIDER_BASE_URL (+ _PROVIDER_KEY)
-  cloud    : a cloud OpenAI-compatible endpoint via <PROVIDER>_CLOUD_BASE_URL (+ _CLOUD_KEY)
-"""
+"""Multi-endpoint chat ladder with injectable transports and credentials."""
 from __future__ import annotations
 
 import json
@@ -25,7 +11,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 import shlex
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from .local_agent import BackendError
 
@@ -47,6 +33,10 @@ def _http(method, url, headers, body, timeout):
 
 def _k(env_name: str) -> str:
     return os.environ.get(env_name, "")
+
+
+def _credential(env_name: str, direct: str | None) -> str:
+    return _k(env_name) if direct is None else direct
 
 
 def _env_prefix(provider_name: str) -> str:
@@ -76,15 +66,18 @@ class OpenAICompatBackend:
     key_env: str = ""
     transport: "callable" = _http
     timeout: float = 120.0
+    api_key: str | None = field(default=None, repr=False)
 
     def health(self) -> bool:
-        return bool(_k(self.key_env)) if self.key_env else bool(self.base_url)
+        return bool(_credential(self.key_env, self.api_key)) \
+            if self.key_env else bool(self.base_url)
 
     def chat(self, messages, *, system, max_tokens, temperature, seed) -> dict:
         msgs = ([{"role": "system", "content": system}] if system else []) + list(messages)
         headers = {"Content-Type": "application/json"}
-        if self.key_env and _k(self.key_env):
-            headers["Authorization"] = f"Bearer {_k(self.key_env)}"
+        key = _credential(self.key_env, self.api_key)
+        if key:
+            headers["Authorization"] = f"Bearer {key}"
         body = json.dumps({"model": self.model, "messages": msgs,
                            "temperature": temperature, "max_tokens": max_tokens}).encode()
         status, obj = _guard(self.transport, "POST", f"{self.base_url}/chat/completions",
@@ -106,12 +99,14 @@ class AnthropicBackend:
     version: str = "2023-06-01"
     transport: "callable" = _http
     timeout: float = 120.0
+    api_key: str | None = field(default=None, repr=False)
 
     def health(self) -> bool:
-        return bool(_k(self.key_env))
+        return bool(_credential(self.key_env, self.api_key))
 
     def chat(self, messages, *, system, max_tokens, temperature, seed) -> dict:
-        headers = {"Content-Type": "application/json", "x-api-key": _k(self.key_env),
+        headers = {"Content-Type": "application/json",
+                   "x-api-key": _credential(self.key_env, self.api_key),
                    "anthropic-version": self.version}
         payload = {"model": self.model, "max_tokens": max_tokens, "temperature": temperature,
                    "messages": [{"role": m["role"], "content": m["content"]} for m in messages]}
@@ -138,9 +133,10 @@ class GeminiBackend:
     key_env: str = "GEMINI_API_KEY"
     transport: "callable" = _http
     timeout: float = 120.0
+    api_key: str | None = field(default=None, repr=False)
 
     def health(self) -> bool:
-        return bool(_k(self.key_env))
+        return bool(_credential(self.key_env, self.api_key))
 
     def chat(self, messages, *, system, max_tokens, temperature, seed) -> dict:
         contents = [{"role": "model" if m["role"] == "assistant" else "user",
@@ -150,7 +146,8 @@ class GeminiBackend:
         if system:
             payload["systemInstruction"] = {"parts": [{"text": system}]}
         url = f"{self.base_url}/models/{self.model}:generateContent"
-        headers = {"Content-Type": "application/json", "x-goog-api-key": _k(self.key_env)}
+        headers = {"Content-Type": "application/json",
+                   "x-goog-api-key": _credential(self.key_env, self.api_key)}
         status, obj = _guard(self.transport, "POST", url, headers,
                              json.dumps(payload).encode(), self.timeout, self.name)
         try:
@@ -416,52 +413,40 @@ def build_endpoints(*, providers=None, modes=("plan", "api", "provider", "cloud"
     return ladder
 
 
+def _opencode_plan(pname: str, spec: dict, mode: str, up: str, model: str):
+    model = os.environ.get(f"{up}_MODEL") or os.environ.get("OPENCODE_MODEL") or model
+    port = os.environ.get(f"{up}_PORT") or os.environ.get("OPENCODE_PORT", "")
+    base = (os.environ.get(f"{up}_BASE_URL")
+            or os.environ.get("OPENCODE_BASE_URL", "")
+            or (f"http://127.0.0.1:{port}" if port else ""))
+    provider_id = (os.environ.get(f"{up}_PROVIDER_ID")
+                   or os.environ.get("OPENCODE_PROVIDER_ID") or "openai")
+
+    def alias(suffix, fallback):
+        name = f"{up}_{suffix}"
+        return name if _k(name) else fallback
+
+    if base:
+        return OpenCodeBackend(
+            name=f"{pname}-{mode}", base_url=base, provider_id=provider_id,
+            model=model, username_env=alias("USERNAME", "OPENCODE_USERNAME"),
+            password_env=alias("PASSWORD", "OPENCODE_PASSWORD"),
+            username_fallback_env=alias(
+                "SERVER_USERNAME", "OPENCODE_SERVER_USERNAME"),
+            password_fallback_env=alias(
+                "SERVER_PASSWORD", "OPENCODE_SERVER_PASSWORD"),
+            directory_env=alias("DIRECTORY", "OPENCODE_DIRECTORY"),
+            agent_env=alias("AGENT", "OPENCODE_AGENT"))
+    argv = _resolve_cli_command(spec, pname)
+    return CliBackend(name=f"{pname}-{mode}", argv=argv, model=model) if argv else None
+
+
 def _one(pname: str, spec: dict, mode: str):
     up = _env_prefix(pname)
     model = os.environ.get(f"{up}_MODEL", spec.get("model", ""))
     if mode in ("plan", "max"):
         if spec.get("kind") == "opencode":
-            model = os.environ.get(f"{up}_MODEL") or os.environ.get("OPENCODE_MODEL") or model
-            port = os.environ.get(f"{up}_PORT") or os.environ.get("OPENCODE_PORT", "")
-            base = (
-                os.environ.get(f"{up}_BASE_URL")
-                or os.environ.get("OPENCODE_BASE_URL", "")
-                or (f"http://127.0.0.1:{port}" if port else "")
-            )
-            provider_id = (
-                os.environ.get(f"{up}_PROVIDER_ID")
-                or os.environ.get("OPENCODE_PROVIDER_ID")
-                or "openai"
-            )
-            password_env = f"{up}_PASSWORD" if _k(f"{up}_PASSWORD") else "OPENCODE_PASSWORD"
-            username_env = f"{up}_USERNAME" if _k(f"{up}_USERNAME") else "OPENCODE_USERNAME"
-            password_fallback_env = (
-                f"{up}_SERVER_PASSWORD"
-                if _k(f"{up}_SERVER_PASSWORD")
-                else "OPENCODE_SERVER_PASSWORD"
-            )
-            username_fallback_env = (
-                f"{up}_SERVER_USERNAME"
-                if _k(f"{up}_SERVER_USERNAME")
-                else "OPENCODE_SERVER_USERNAME"
-            )
-            directory_env = f"{up}_DIRECTORY" if _k(f"{up}_DIRECTORY") else "OPENCODE_DIRECTORY"
-            agent_env = f"{up}_AGENT" if _k(f"{up}_AGENT") else "OPENCODE_AGENT"
-            if base:
-                return OpenCodeBackend(
-                    name=f"{pname}-{mode}",
-                    base_url=base,
-                    provider_id=provider_id,
-                    model=model,
-                    username_env=username_env,
-                    password_env=password_env,
-                    username_fallback_env=username_fallback_env,
-                    password_fallback_env=password_fallback_env,
-                    directory_env=directory_env,
-                    agent_env=agent_env,
-                )
-            argv = _resolve_cli_command(spec, pname)
-            return CliBackend(name=f"{pname}-{mode}", argv=argv, model=model) if argv else None
+            return _opencode_plan(pname, spec, mode, up, model)
         if spec.get("kind") == "cli":
             argv = _resolve_cli_command(spec, pname)
             return CliBackend(name=f"{pname}-{mode}", argv=argv, model=model) if argv else None

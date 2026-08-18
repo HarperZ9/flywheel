@@ -1,0 +1,43 @@
+{
+  "schema": "flywheel.evidence-journey-acceptance-fixture/v2",
+  "goal": "Accept durable Journey restart and custody export",
+  "intake": {
+    "summary": "Public deterministic evidence"
+  },
+  "commands": [
+    {"action": "create", "client_request_id": "create-1", "grant_prepare": true, "grant_approve": true, "expected_status": 200, "expected_error": null, "expected_effect": "intake_event"},
+    {"action": "record_claim", "client_request_id": "claim-1", "grant_prepare": true, "grant_approve": true, "expected_status": 200, "expected_error": null, "expected_effect": "record_claim_event"},
+    {"action": "advance_stage", "client_request_id": "stage-0", "grant_prepare": true, "grant_approve": true, "expected_status": 200, "expected_error": null, "expected_effect": "stage_decomposed"},
+    {"action": "advance_stage", "client_request_id": "stage-1", "grant_prepare": true, "grant_approve": true, "expected_status": 200, "expected_error": null, "expected_effect": "stage_preflight"},
+    {"action": "advance_stage", "client_request_id": "stage-2", "grant_prepare": true, "grant_approve": true, "expected_status": 200, "expected_error": null, "expected_effect": "stage_running"},
+    {"action": "advance_stage", "client_request_id": "stage-3", "grant_prepare": true, "grant_approve": true, "expected_status": 200, "expected_error": null, "expected_effect": "stage_concluded"},
+    {"action": "blocked_python_check", "client_request_id": "check-python", "grant_prepare": true, "grant_approve": true, "expected_status": 200, "expected_error": null, "expected_effect": "check_blocked"},
+    {"action": "deterministic_data_check", "client_request_id": "check-data", "grant_prepare": true, "grant_approve": true, "expected_status": 200, "expected_error": null, "expected_effect": "check_completed"},
+    {"action": "cancel_terminal_operation", "client_request_id": "cancel-1", "grant_prepare": true, "grant_approve": true, "expected_status": 409, "expected_error": "CANCEL_UNAVAILABLE", "expected_effect": "no_new_event"},
+    {"action": "export", "client_request_id": "export-1", "grant_prepare": true, "grant_approve": true, "expected_status": 200, "expected_error": null, "expected_effect": "exported_event_and_packet"}
+  ],
+  "expected_events": [
+    "intake",
+    "record_claim",
+    "decomposed",
+    "preflight",
+    "running",
+    "concluded",
+    "check_requested",
+    "check_blocked",
+    "check_requested",
+    "check_started",
+    "check_completed",
+    "exported"
+  ],
+  "expected_terminal_counts": {
+    "acknowledged_loss": 0,
+    "duplicate_logical_event": 0,
+    "silent_overwrite": 0,
+    "unclosed_check_request": 0,
+    "check_blocked": 1,
+    "check_completed": 1,
+    "check_failed": 0,
+    "check_cancelled": 0
+  }
+}

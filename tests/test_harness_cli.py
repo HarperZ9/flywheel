@@ -1,5 +1,4 @@
 from pathlib import Path
-
 from scripts.run_harness_cli import (
     build_command,
     build_manifest,
@@ -8,8 +7,8 @@ from scripts.run_harness_cli import (
     format_command,
     render_manifest_markdown,
     render_registry_html,
+    main as harness_main,
 )
-
 
 def test_dispatcher_inserts_repo_root_before_harness_import():
     script = Path("scripts/run_harness_cli.py").read_text(encoding="utf-8")
@@ -17,19 +16,15 @@ def test_dispatcher_inserts_repo_root_before_harness_import():
     assert "sys.path.insert(0, str(Path(__file__).resolve().parent.parent))" in script
     assert script.index("sys.path.insert") < script.index("from harness.file_backed_store")
 
-
 def parse(argv):
     return build_parser().parse_args(argv)
-
 
 def test_plan_command_targets_closed_loop_dry_plan():
     args = parse(["plan", "--out", "C:/tmp/plan.json"])
     command = build_command(args, repo_root=Path("C:/dev/local-model"))
-
     assert command[:2] == [args.python, "scripts/run_closed_loop_benchmark_seed.py"]
     assert "--dry-plan" in command
     assert "C:/tmp/plan.json" in command
-
 
 def test_benchmarks_command_targets_profile_manifest():
     args = parse([
@@ -48,7 +43,6 @@ def test_benchmarks_command_targets_profile_manifest():
     assert "serve,codex" in command
     assert "--artifact-roots" in command
     assert "C:/tmp" in command
-
 
 def test_forum_route_command_targets_route_receipt_generator():
     args = parse([
@@ -461,7 +455,6 @@ def test_agentic_tasks_command_targets_manifest_generator():
     assert "dry,codex_harness" in command
     assert "C:/tmp/agentic_task_manifest.json" in command
 
-
 def test_cross_harness_command_targets_manifest_generator():
     args = parse([
         "cross-harness",
@@ -469,6 +462,7 @@ def test_cross_harness_command_targets_manifest_generator():
         "C:/tmp/tasks.json",
         "--contract",
         "C:/tmp/cross.json",
+        "--source-root", "C:/tmp/source",
         "--artifact-dir",
         "C:/tmp/cross-runs",
         "--provider-roles",
@@ -477,8 +471,7 @@ def test_cross_harness_command_targets_manifest_generator():
         "C:/tmp/cross_harness_manifest.json",
     ])
     command = build_command(args, repo_root=Path("C:/dev/local-model"))
-
-    assert command[:2] == [args.python, "scripts/run_cross_harness_manifest.py"]
+    assert command[:2] == [args.python, "scripts/run_cross_harness_manifest.py"]; assert command[command.index("--source-root") + 1] == "C:/tmp/source"
     assert "--task-set" in command
     assert "C:/tmp/tasks.json" in command
     assert "--contract" in command
@@ -487,6 +480,13 @@ def test_cross_harness_command_targets_manifest_generator():
     assert "codex_harness,flywheel_harness" in command
     assert "C:/tmp/cross_harness_manifest.json" in command
 
+def test_cross_harness_execute_delegates_exact_argv_to_packaged_main(monkeypatch):
+    seen = {}
+    monkeypatch.setattr("harness.cross_harness_cli.main",
+                        lambda argv: (seen.__setitem__("argv", argv), 7)[1])
+    argv = ["cross-harness-execute", "--manifest", "m.json", "--strict-exit"]
+    assert harness_main(argv) == 7
+    assert seen["argv"] == argv[1:]
 
 def test_adapter_runtime_command_targets_matrix_generator():
     args = parse([

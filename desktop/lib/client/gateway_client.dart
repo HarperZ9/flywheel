@@ -1,23 +1,19 @@
-// gateway_client.dart — the typed HTTP client for the Flywheel Python gateway.
-//
-// The Flutter desktop app is a native CLIENT for the gateway API. The gateway
-// (harness/gateway.py, started by `flywheel up`) runs on 127.0.0.1:8799 and
-// exposes every route the UI needs as same-origin localhost JSON. This client
-// wraps those routes with typed Dart methods so the UI layers never touch raw
-// JSON or HTTP.
-//
-// The gateway is the backend; Flutter is the frontend. The verified-loop,
-// receipts, lanes, and corpus-export stay in Python — this client only reads
-// and posts to the API.
-
+// Typed loopback client. Durable agent operations live in the gateway.
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 import '../models/gateway_models.dart';
+import '../models/operation_models.dart';
 import '../models/workflow_models.dart';
 import 'gateway_auth.dart';
+import 'gateway_error.dart';
+import 'gateway_sse_decoder.dart';
+import 'strict_plan_json.dart';
+export 'gateway_error.dart';
 
 part 'gateway_streams.dart';
+part 'gateway_operations.dart';
+part 'gateway_plan_transport.dart';
 
 class GatewayClient {
   final String baseUrl;
@@ -28,15 +24,15 @@ class GatewayClient {
   /// 401, so a client without the header reports a healthy engine as offline.
   /// An injected [httpClient] is used verbatim, which keeps tests in control of
   /// their own headers.
-  GatewayClient({this.baseUrl = 'http://127.0.0.1:8799', http.Client? httpClient})
+  GatewayClient(
+      {this.baseUrl = 'http://127.0.0.1:8799', http.Client? httpClient})
       : _http = httpClient ?? AuthedClient(http.Client());
 
   /// True if the gateway is reachable (the gateway serves /api/world on GET).
   Future<bool> isAlive({Duration timeout = const Duration(seconds: 2)}) async {
     try {
-      final r = await _http
-          .get(Uri.parse('$baseUrl/api/world'))
-          .timeout(timeout);
+      final r =
+          await _http.get(Uri.parse('$baseUrl/api/world')).timeout(timeout);
       return r.statusCode == 200;
     } catch (_) {
       return false;
@@ -102,8 +98,7 @@ class GatewayClient {
   /// status code and a short body excerpt so the verdict stays inspectable.
   Future<(int, String)> runLessonCheck(String path) async {
     final r = await _http.get(Uri.parse('$baseUrl$path'));
-    final body =
-        r.body.length > 240 ? '${r.body.substring(0, 240)}…' : r.body;
+    final body = r.body.length > 240 ? '${r.body.substring(0, 240)}…' : r.body;
     return (r.statusCode, body);
   }
 
@@ -140,7 +135,8 @@ class GatewayClient {
 
   /// POST /api/typeface/publish — file a minted face in the witnessed gallery.
   Future<Map<String, dynamic>> typefacePublish(
-      Map<String, dynamic> params, int seed, {String family = ''}) async {
+      Map<String, dynamic> params, int seed,
+      {String family = ''}) async {
     final r = await _http.post(
       Uri.parse('$baseUrl/api/typeface/publish'),
       headers: {'Content-Type': 'application/json'},
@@ -178,8 +174,7 @@ class GatewayClient {
   }
 
   /// POST /api/learn/animate — a lesson rendered as a runnable manim scene.
-  Future<Map<String, dynamic>> learnAnimate(
-      Map<String, dynamic> lesson) async {
+  Future<Map<String, dynamic>> learnAnimate(Map<String, dynamic> lesson) async {
     final r = await _http.post(
       Uri.parse('$baseUrl/api/learn/animate'),
       headers: {'Content-Type': 'application/json'},
@@ -189,7 +184,8 @@ class GatewayClient {
   }
 
   /// POST /api/companion — answer locally, escalate the hard slice.
-  Future<CompanionResult> companion(String prompt, {String? solutionSig}) async {
+  Future<CompanionResult> companion(String prompt,
+      {String? solutionSig}) async {
     final r = await _http.post(
       Uri.parse('$baseUrl/api/companion'),
       headers: {'Content-Type': 'application/json'},
@@ -335,7 +331,8 @@ class GatewayClient {
 
   /// POST /api/discourse/digests — what the chorus daemon has synthesized on a
   /// schedule, newest first, so the app can show it without re-running anything.
-  Future<Map<String, dynamic>> discourseDigests(String store, {int limit = 20}) async {
+  Future<Map<String, dynamic>> discourseDigests(String store,
+      {int limit = 20}) async {
     final r = await _http.post(
       Uri.parse('$baseUrl/api/discourse/digests'),
       headers: {'Content-Type': 'application/json'},
@@ -474,31 +471,6 @@ class GatewayClient {
     return _decode(r);
   }
 
-  /// POST /api/agent — run a gated, witnessed tool loop (non-streaming).
-  /// `root` scopes the run to an open workspace; the engine refuses a root
-  /// that is not an existing directory.
-  Future<Map<String, dynamic>> agent(String goal, String endpoint,
-      {int maxSteps = 6,
-      bool allowWrite = false,
-      bool allowExec = false,
-      String? root,
-      String? testCmd}) async {
-    final r = await _http.post(
-      Uri.parse('$baseUrl/api/agent'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'goal': goal,
-        'endpoint': endpoint,
-        'max_steps': maxSteps,
-        'allow_write': allowWrite,
-        'allow_exec': allowExec,
-        if (root != null && root.isNotEmpty) 'root': root,
-        if (testCmd != null && testCmd.isNotEmpty) 'test_cmd': testCmd,
-      }),
-    );
-    return _decode(r);
-  }
-
   /// Generic GET returning decoded JSON, for lightweight read-only routes.
   Future<Map<String, dynamic>> getJson(String path) async {
     final r = await _http.get(Uri.parse('$baseUrl$path'));
@@ -543,35 +515,6 @@ class GatewayClient {
   Future<WorkflowRoster> workflows() async {
     final r = await _http.get(Uri.parse('$baseUrl/api/workflows'));
     return WorkflowRoster.fromJson(_decode(r));
-  }
-
-  /// POST /api/workflow — run a staged workflow over any endpoint. `root`
-  /// scopes the run to a workspace; the engine refuses a missing directory.
-  Future<WorkflowRun> runWorkflow({
-    required String workflow,
-    required String goal,
-    required String endpoint,
-    String? profile,
-    bool allowWrite = false,
-    bool allowExec = false,
-    String? testCmd,
-    String? root,
-  }) async {
-    final r = await _http.post(
-      Uri.parse('$baseUrl/api/workflow'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'workflow': workflow,
-        'goal': goal,
-        'endpoint': endpoint,
-        if (profile != null) 'profile': profile,
-        'allow_write': allowWrite,
-        'allow_exec': allowExec,
-        if (testCmd != null && testCmd.isNotEmpty) 'test_cmd': testCmd,
-        if (root != null && root.isNotEmpty) 'root': root,
-      }),
-    );
-    return WorkflowRun.fromJson(_decode(r));
   }
 
   /// GET /api/memory — durable memory stats.
@@ -628,7 +571,8 @@ class GatewayClient {
 
   /// GET /api/memory/list — browse stored spans verbatim (no query).
   Future<Map<String, dynamic>> memoryList({int limit = 20}) async {
-    final r = await _http.get(Uri.parse('$baseUrl/api/memory/list?limit=$limit'));
+    final r =
+        await _http.get(Uri.parse('$baseUrl/api/memory/list?limit=$limit'));
     return _decode(r);
   }
 
@@ -650,8 +594,7 @@ class GatewayClient {
 
   Map<String, dynamic> _decode(http.Response r) {
     if (r.statusCode != 200) {
-      throw GatewayException(
-          'gateway returned ${r.statusCode}: ${r.body.substring(0, r.body.length.clamp(0, 200))}');
+      throw GatewayException.fromResponse(r.statusCode, r.body);
     }
     return jsonDecode(r.body) as Map<String, dynamic>;
   }
@@ -670,11 +613,4 @@ class GatewayClient {
   }
 
   void close() => _http.close();
-}
-
-class GatewayException implements Exception {
-  final String message;
-  GatewayException(this.message);
-  @override
-  String toString() => 'GatewayException: $message';
 }

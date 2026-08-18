@@ -1,29 +1,63 @@
-"""plugins.py -- one manifest shape over every capability the surface mounts.
-
-A plugin is {name, kind, ...}. Three kinds ride runtime primitives that
-already exist:
-- lane:    a bundled flagship lane (from lanes.LANES); its MCP server is the
-           plugin body. Always registered, cannot be removed.
-- builtin: a tool set inside the gated ToolExecutor (read/grep/glob/edit/run).
-           Always registered; the gate, not the registry, decides use.
-- mcp:     an external MCP stdio server the user registers by command.
-
-Custom mcp entries persist at ~/.flywheel/plugins.json (FLYWHEEL_HOME
-override honored). Registration grants NOTHING: outbound MCP calls stay
-behind the ToolGate's allow_mcp and the run's allowlist. Probing spawns the
-server and reports its real tool list; the answer is the server's, never
-assumed."""
+"""One gated manifest for bundled lanes, tools, and custom MCP servers."""
 from __future__ import annotations
 
 import json
 import os
 from pathlib import Path
+import re
 
-from .lanes import LANES, resolve_mcp_command
+from .lanes import LANES, resolve_mcp_command, resolve_mcp_launch
 
 # The gated builtin tool sets (local_tools.ToolExecutor). Names only; the
 # gate decides what actually runs.
 BUILTIN_TOOLS = ("read", "grep", "glob", "apply_patch", "run")
+_CREDENTIAL_REF = re.compile(r"cred_[0-9a-f]{32}\Z")
+_SLOT_NAME = re.compile(r"[A-Za-z_][A-Za-z0-9_]*\Z")
+_WINDOWS_ENV = frozenset((
+    "PATH", "PATHEXT", "SYSTEMROOT", "WINDIR", "COMSPEC", "TEMP", "TMP"))
+_POSIX_ENV = frozenset(("PATH", "HOME", "TMPDIR", "LANG", "LC_ALL"))
+
+
+class PluginPermissionError(RuntimeError):
+    """A fixed non-enumerating launch/metadata refusal."""
+
+    code = "PERMISSION_REQUIRED"
+
+    def __init__(self) -> None:
+        super().__init__(self.code)
+
+
+def _permission() -> dict:
+    return {"code": "PERMISSION_REQUIRED", "error": "permission required"}
+
+
+def _safe_plan(name, command, detail) -> None:
+    try:
+        if (type(name) is not str or type(command) is not list or not command
+                or any(type(item) is not str or not item.strip()
+                       for item in command) or type(detail) is not str):
+            raise ValueError
+        from .gateway_secret_boundary import validate_no_raw_secrets
+        validate_no_raw_secrets({"name": name, "command": command,
+                                 "detail": detail})
+    except Exception:
+        raise PluginPermissionError from None
+
+
+def _credential_metadata(requires, credential_refs, *, allow_unbound=False):
+    if (type(requires) not in (list, tuple)
+            or type(credential_refs) not in (list, tuple)):
+        raise PluginPermissionError
+    slots, refs = list(requires or ()), list(credential_refs or ())
+    execution_names = _WINDOWS_ENV | _POSIX_ENV
+    valid = (all(type(slot) is str and _SLOT_NAME.fullmatch(slot)
+                 and slot.upper() not in execution_names for slot in slots)
+             and all(type(ref) is str and _CREDENTIAL_REF.fullmatch(ref)
+                     for ref in refs)
+             and len(slots) == len(set(slots)) and len(refs) == len(set(refs)))
+    if not valid or (len(slots) != len(refs) and not (allow_unbound and not refs)):
+        raise PluginPermissionError
+    return tuple(slots), tuple(refs)
 
 
 def _registry_path() -> Path:
@@ -64,18 +98,26 @@ def plugin_roster() -> dict:
         "detail": "gated in-process tool set; write/exec are grants, not defaults",
         "tools": list(BUILTIN_TOOLS)})
     for e in _load_custom():
+        try:
+            _safe_plan(e.get("name"), e.get("command"), e.get("detail", ""))
+            _credential_metadata(e.get("requires"), e.get("credential_refs"))
+        except PluginPermissionError:
+            continue
         plugins.append({
             "name": e.get("name", ""), "kind": "mcp",
             "enabled": bool(e.get("enabled", True)), "removable": True,
             "detail": e.get("detail", "user-registered MCP server"),
-            "command": e.get("command", [])})
+            "command": e.get("command", []),
+            "requires": e.get("requires", []),
+            "credential_refs": e.get("credential_refs", [])})
     return {"schema": "flywheel.plugins/v1", "plugins": plugins,
             "n": len(plugins),
             "note": "registration grants nothing; outbound MCP calls stay "
                     "behind the tool gate and the run allowlist"}
 
 
-def register_mcp(name: str, command: list, detail: str = "") -> dict:
+def register_mcp(name: str, command: list, detail: str = "", *,
+                 requires=(), credential_refs=()) -> dict:
     """Register a custom MCP stdio server by argv. Names must be new and
     must not shadow a lane or the builtin set."""
     name = (name or "").strip()
@@ -86,12 +128,18 @@ def register_mcp(name: str, command: list, detail: str = "") -> dict:
     if not isinstance(command, list) or not command or \
             not all(isinstance(c, str) and c.strip() for c in command):
         return {"error": "provide 'command' as a non-empty list of strings"}
+    try:
+        _safe_plan(name, command, detail)
+        slots, refs = _credential_metadata(requires, credential_refs)
+    except PluginPermissionError:
+        return _permission()
     entries = _load_custom()
     if any(e.get("name") == name for e in entries):
         return {"error": f"'{name}' is already registered"}
     entries.append({"name": name, "command": command,
                     "detail": detail or "user-registered MCP server",
-                    "enabled": True})
+                    "enabled": True, "requires": list(slots),
+                    "credential_refs": list(refs)})
     _save_custom(entries)
     return {"registered": name, "n_custom": len(entries)}
 
@@ -115,61 +163,115 @@ def remove_mcp(name: str) -> dict:
     return {"removed": name, "n_custom": len(kept)}
 
 
+def plugin_credentials(name: str) -> tuple[tuple[str, ...], tuple[str, ...]]:
+    """Return safe frozen credential metadata, never credential values."""
+    return plugin_execution_plan(name)[2:]
+
+
+def plugin_execution_plan(name: str):
+    """Freeze launch and credential metadata from one registry read."""
+    if name == "tools":
+        return None, "builtin", (), ()
+    if name in LANES:
+        return resolve_mcp_launch(name), "lane", (), ()
+    entry = next((row for row in _load_custom() if row.get("name") == name), None)
+    if entry is None or not entry.get("enabled", True):
+        raise PluginPermissionError
+    _safe_plan(entry.get("name"), entry.get("command"), entry.get("detail", ""))
+    slots, refs = _credential_metadata(
+        entry.get("requires"), entry.get("credential_refs"))
+    return tuple(entry["command"]), "mcp", slots, refs
+def _direct_refusal(name, probe):
+    if name in LANES or name == "tools":
+        return None
+    entry = next((row for row in _load_custom() if row.get("name") == name), None)
+    if entry is None:
+        return {"error": f"no plugin named '{name}'"}
+    if not entry.get("enabled", True):
+        return ({"name": name, "kind": "mcp", "status": "disabled",
+                 "detail": "enable it before probing"} if probe else
+                {"error": f"plugin '{name}' is disabled; enable it first"})
+    return None
+
+
+def _restricted_launch(command, bindings, slots):
+    from .mcp_client import LaunchSpec
+    platform = "windows" if os.name == "nt" else "posix"
+    try:
+        child_env = bindings.child_environment(os.environ, platform=platform)
+    except Exception:
+        raise PluginPermissionError from None
+    allowed = (_WINDOWS_ENV if platform == "windows" else _POSIX_ENV) | set(slots)
+    if (type(child_env) is not dict or set(slots) - set(child_env)
+            or set(child_env) - allowed
+            or any(type(key) is not str or type(value) is not str
+                   for key, value in child_env.items())):
+        raise PluginPermissionError
+    if isinstance(command, LaunchSpec):
+        argv, cwd = command.argv, command.cwd
+    else:
+        argv, cwd = tuple(command), None
+    return LaunchSpec(argv, cwd, tuple(sorted(child_env.items())), False)
+def _launch(command, slots, bindings):
+    if bindings is None:
+        if slots:
+            raise PluginPermissionError
+        return command
+    return _restricted_launch(command, bindings, slots)
+
+
 def call_plugin(name: str, tool: str, arguments: "dict | None" = None,
-                timeout: float = 45.0) -> dict:
-    """Spawn a registered plugin's server and call ONE tool. Admission is
-    the same as probing: lanes and registered custom servers only, so this
-    route never launches an arbitrary command. The result is the server's
-    own answer under its own name, never an assumption."""
+                timeout: float = 45.0, client_factory=None,
+                credential_bindings=None, execution_plan=None) -> dict:
+    """Call one tool through an admitted registered plugin plan."""
     if name == "tools":
         return {"error": "the builtin tool set runs inside gated agent "
                          "runs, not through this route"}
-    if name in LANES:
-        command = resolve_mcp_command(name)
-        kind = "lane"
-    else:
-        entry = next((e for e in _load_custom() if e.get("name") == name), None)
-        if entry is None:
-            return {"error": f"no plugin named '{name}'"}
-        if not entry.get("enabled", True):
-            return {"error": f"plugin '{name}' is disabled; enable it first"}
-        command = entry.get("command", [])
-        kind = "mcp"
-    from .mcp_client import MCPClient, MCPError
+    refusal = None if execution_plan is not None else _direct_refusal(name, False)
+    if refusal is not None:
+        return refusal
     try:
-        with MCPClient(command, timeout=timeout,
-                       client_name="flywheel-plugins") as c:
-            c.start()
+        if execution_plan is None:
+            command, kind, slots, _ = plugin_execution_plan(name)
+            command = _launch(command, slots, credential_bindings)
+        else:
+            command, kind = execution_plan.launch, execution_plan.plugin_kind
+    except PluginPermissionError:
+        return _permission()
+    from .mcp_client import MCPClient, MCPError
+    factory = client_factory or MCPClient
+    try:
+        with factory(command, timeout=timeout,
+                     client_name="flywheel-plugins") as c:
             out = c.call_text(tool, arguments or {})
             return {"name": name, "kind": kind, "tool": tool, "result": out}
-    except (MCPError, FileNotFoundError, OSError) as e:
-        return {"error": f"{type(e).__name__}: {e}", "name": name,
+    except (MCPError, FileNotFoundError, OSError) as error:
+        return {"error": f"{type(error).__name__}: {error}", "name": name,
                 "tool": tool}
 
 
-def probe_plugin(name: str, timeout: float = 20.0) -> dict:
-    """Spawn the plugin's server and report its real tools. Lanes and custom
-    mcp plugins probe alike; builtins list their gated set directly."""
+def probe_plugin(name: str, timeout: float = 20.0, client_factory=None,
+                 credential_bindings=None, execution_plan=None) -> dict:
+    """Probe one admitted plugin plan and report its real tools."""
     if name == "tools":
         return {"name": name, "kind": "builtin", "status": "live",
                 "tools": list(BUILTIN_TOOLS)}
-    if name in LANES:
-        command = resolve_mcp_command(name)
-        kind = "lane"
-    else:
-        entry = next((e for e in _load_custom() if e.get("name") == name), None)
-        if entry is None:
-            return {"error": f"no plugin named '{name}'"}
-        if not entry.get("enabled", True):
-            return {"name": name, "kind": "mcp", "status": "disabled",
-                    "detail": "enable it before probing"}
-        command = entry.get("command", [])
-        kind = "mcp"
-    from .mcp_client import MCPClient, MCPError
-    client = None
+    refusal = None if execution_plan is not None else _direct_refusal(name, True)
+    if refusal is not None:
+        return refusal
     try:
-        client = MCPClient(command, timeout=timeout,
-                           client_name="flywheel-plugins")
+        if execution_plan is None:
+            command, kind, slots, _ = plugin_execution_plan(name)
+            command = _launch(command, slots, credential_bindings)
+        else:
+            command, kind = execution_plan.launch, execution_plan.plugin_kind
+    except PluginPermissionError:
+        return _permission()
+    from .mcp_client import MCPClient, MCPError
+    factory, client = client_factory or MCPClient, None
+    try:
+        client = factory(command, timeout=timeout,
+                         client_name="flywheel-plugins")
         client.start()
         tools = client.list_tools()
         # Keep the FULL spec (name + description + inputSchema) so a caller
@@ -185,10 +287,8 @@ def probe_plugin(name: str, timeout: float = 20.0) -> dict:
                 "n_tools": len(specs),
                 "tools": [s["name"] for s in specs],
                 "tool_specs": specs}
-    except (MCPError, FileNotFoundError, OSError) as e:
-        detail = f"{type(e).__name__}: {e}"
-        # A server that died on launch said why on stderr; report the
-        # server's own words (bounded) instead of a bare connection error.
+    except (MCPError, FileNotFoundError, OSError) as error:
+        detail = f"{type(error).__name__}: {error}"
         tail = client.stderr_tail() if client is not None else ""
         if tail:
             detail += f" | server stderr: {tail[-400:]}"

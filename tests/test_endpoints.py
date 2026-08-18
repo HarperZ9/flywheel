@@ -150,3 +150,25 @@ def test_opencode_plan_uses_desktop_server_env_aliases(monkeypatch):
     assert lad[0].base_url == "http://127.0.0.1:4096"
     assert lad[0].health() is True
     assert "Authorization" in lad[0]._headers()
+
+
+def test_direct_api_key_overrides_ambient_credential(monkeypatch):
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "ambient-marker-must-not-be-used")
+    sink = {}
+    backend = AnthropicBackend(
+        "claude", "https://api.anthropic.com", "model", api_key="exact-value",
+        transport=_tx(200, {"content": [{"type": "text", "text": "ok"}]}, sink))
+    backend.chat(_MSG, system="", max_tokens=8, temperature=0, seed=0)
+    assert sink["headers"]["x-api-key"] == "exact-value"
+    assert "exact-value" not in repr(backend)
+
+
+def test_explicit_empty_key_never_falls_back_to_ambient(monkeypatch):
+    monkeypatch.setenv("OPENAI_API_KEY", "ambient-marker-must-not-be-used")
+    sink = {}
+    backend = OpenAICompatBackend(
+        "local", "http://127.0.0.1:9/v1", "model", key_env="OPENAI_API_KEY",
+        api_key="", transport=_tx(
+            200, {"choices": [{"message": {"content": "ok"}}]}, sink))
+    backend.chat(_MSG, system="", max_tokens=8, temperature=0, seed=0)
+    assert "Authorization" not in sink["headers"]

@@ -3,6 +3,7 @@ import json
 from scripts.run_benchmark_profile_manifest import (
     build_profile,
     inventory_existing_artifacts,
+    main,
     render_markdown,
 )
 
@@ -85,3 +86,29 @@ def test_render_markdown_includes_weights_suites_and_artifact_summary(tmp_path):
     assert "## Dataset lanes" in markdown
     assert "## Benchmark suites" in markdown
     assert "m7_source_mined" in markdown
+
+
+def test_cross_harness_profile_scope_is_runnable_and_has_four_canonical_tasks(tmp_path):
+    profile = build_profile(
+        artifact_roots=str(tmp_path), max_artifacts=0,
+        benchmark_ids=["cross_harness_reproducibility_matrix"],
+    )
+
+    assert [row["id"] for row in profile["benchmarks"]] == ["cross_harness_reproducibility_matrix"]
+    assert profile["benchmarks"][0]["status"] == "runnable"
+    assert profile["benchmarks"][0]["coverage_units"] == [
+        "agt-001-index-fallback-integrity",
+        "agt-003-codex-flywheel-shared-task",
+        "agt-009-receipts-vs-guardrails-friction",
+        "agt-010-documentation-schematic-maintenance",
+    ]
+    assert profile["summary"]["coverage_units"] == 4
+
+
+def test_main_rejects_unknown_benchmark_ids():
+    try:
+        main(["--benchmark-ids", "does-not-exist"])
+    except ValueError as exc:
+        assert str(exc) == "unknown benchmark ids: does-not-exist"
+    else:
+        raise AssertionError("unknown benchmark id was accepted")

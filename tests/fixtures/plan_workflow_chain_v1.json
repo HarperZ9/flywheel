@@ -1,0 +1,44 @@
+{
+  "schema": "flywheel.plan-workflow-chain-fixture/v1",
+  "chain_hash": "0e230ec32092b48598072af8f40698812d872f7b8dcf0c1d466de5da81dcfd77",
+  "workflow_run": {
+    "schema": "flywheel.workflow-run/v1",
+    "workflow": "code-change",
+    "endpoint": "local-\ud83d\ude00",
+    "goal_excerpt": "Line\n\"quote\"\\slash \u03a9 \ud83d\ude00",
+    "started": "2026-08-15T12:00:00",
+    "steps": [
+      {
+        "name": "\u03c0\ud83d\ude00",
+        "kind": "agent",
+        "status": "DONE",
+        "excerpt": "first\n\"quoted\"\\path",
+        "meta": {
+          "bmp": "\u03a9",
+          "astral": "\ud83d\ude00",
+          "null": null,
+          "bool": true,
+          "int": 7,
+          "nested": {
+            "\u00e9": "\u96ea",
+            "\ud83d\ude00": "rocket"
+          }
+        }
+      },
+      {
+        "name": "verify",
+        "kind": "verify",
+        "status": "UNVERIFIABLE",
+        "note": "no test\\command\navailable",
+        "ordered": [
+          1,
+          false,
+          null,
+          "\u7d42"
+        ]
+      }
+    ],
+    "status": "UNVERIFIED",
+    "chain_hash": "0e230ec32092b48598072af8f40698812d872f7b8dcf0c1d466de5da81dcfd77"
+  }
+}

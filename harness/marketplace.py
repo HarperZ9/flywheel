@@ -10,14 +10,18 @@ from __future__ import annotations
 
 import json
 import os
+from dataclasses import dataclass
 from pathlib import Path
 
 from .lanes import LANES
-from .plugins import _load_custom, register_mcp
+from .plugins import (
+    PluginPermissionError, _credential_metadata, _load_custom, _safe_plan,
+    register_mcp,
+)
 
-# Real, publicly documented MCP stdio servers. `requires` lists env var
-# NAMES the server needs; presence is the user's business, values never
-# appear anywhere in Flywheel.
+# Real, publicly documented MCP stdio servers. `requires` lists slot names;
+# approved opaque handles bind them before an authorized launch. Values never
+# persist in the marketplace or plugin registry.
 CATALOG = [
     {"name": "filesystem",
      "command": ["npx", "-y", "@modelcontextprotocol/server-filesystem", "."],
@@ -97,6 +101,17 @@ CATALOG = [
 ]
 
 
+@dataclass(frozen=True)
+class MarketplaceInstallPlan:
+    """One catalog entry frozen before its one-time grant is approved."""
+
+    name: str
+    command: tuple[str, ...]
+    detail: str
+    required_slots: tuple[str, ...]
+    credential_refs: tuple[str, ...]
+
+
 def _user_catalog_path() -> Path:
     home = os.environ.get("FLYWHEEL_HOME") or os.path.join(
         os.path.expanduser("~"), ".flywheel")
@@ -126,10 +141,14 @@ def marketplace_catalog() -> dict:
     registered = {e.get("name") for e in _load_custom()}
     out = []
     for e in _merged_catalog():
+        try:
+            _safe_plan(e.get("name"), e.get("command"), e.get("detail", ""))
+        except PluginPermissionError:
+            continue
         out.append({**e,
                     "installed": e["name"] in registered or e["name"] in LANES,
-                    "credential_note": ("needs " + ", ".join(e["requires"])
-                                        + " in the environment"
+                    "credential_note": ("needs approved handles for "
+                                        + ", ".join(e["requires"])
                                         if e["requires"] else "")})
     return {"schema": "flywheel.marketplace/v1",
             "entries": sorted(out, key=lambda e: e["name"]),
@@ -139,16 +158,45 @@ def marketplace_catalog() -> dict:
                     "granted in a gated run"}
 
 
-def install_from_catalog(name: str) -> dict:
+def marketplace_credentials(
+        name: str) -> tuple[tuple[str, ...], tuple[str, ...]]:
+    """Return safe frozen credential metadata, never credential values."""
+    plan = marketplace_execution_plan(name)
+    return plan.required_slots, plan.credential_refs
+
+
+def marketplace_execution_plan(name: str) -> MarketplaceInstallPlan:
+    """Freeze one complete safe catalog entry without installing it."""
     entry = next((e for e in _merged_catalog() if e["name"] == name), None)
     if entry is None:
-        return {"error": f"no catalog entry named '{name}'"}
-    return register_mcp(entry["name"], entry["command"],
-                        detail=entry.get("detail", ""))
+        raise PluginPermissionError
+    _safe_plan(entry.get("name"), entry.get("command"), entry.get("detail", ""))
+    slots, refs = _credential_metadata(
+        entry.get("requires") or (), entry.get("credential_refs") or (),
+        allow_unbound=True)
+    return MarketplaceInstallPlan(
+        entry["name"], tuple(entry["command"]), entry.get("detail", ""),
+        slots, refs)
+
+
+def install_from_catalog(name: str, *, credential_refs=None,
+                         execution_plan=None) -> dict:
+    try:
+        plan = (marketplace_execution_plan(name) if execution_plan is None
+                else execution_plan)
+        if not isinstance(plan, MarketplaceInstallPlan) or plan.name != name:
+            raise PluginPermissionError
+        refs = plan.credential_refs if credential_refs is None else credential_refs
+        return register_mcp(
+            plan.name, list(plan.command), detail=plan.detail,
+            requires=list(plan.required_slots), credential_refs=list(refs))
+    except PluginPermissionError:
+        return {"code": "PERMISSION_REQUIRED", "error": "permission required"}
 
 
 def add_user_entry(name: str, command: list, detail: str = "",
-                   requires: "list | None" = None) -> dict:
+                   requires: "list | None" = None,
+                   credential_refs: "list | None" = None) -> dict:
     """Add (or replace) an entry in the user catalog. It becomes discoverable
     in the merged catalog; nothing runs until installed AND probed or granted
     in a gated run. Builtin names cannot be shadowed, and `requires` carries
@@ -162,15 +210,12 @@ def add_user_entry(name: str, command: list, detail: str = "",
     if not isinstance(command, list) or not command or \
             not all(isinstance(c, str) and c.strip() for c in command):
         return {"error": "provide 'command' as a non-empty list of strings"}
-    reqs = []
-    for r in (requires or []):
-        r = str(r).strip()
-        if not r:
-            continue
-        if "=" in r or not r.replace("_", "").isalnum():
-            return {"error": f"'{r}' is not an env var NAME; requires lists "
-                             "names only, never values"}
-        reqs.append(r)
+    try:
+        _safe_plan(name, command, detail)
+        reqs, refs = _credential_metadata(
+            requires, credential_refs, allow_unbound=True)
+    except PluginPermissionError:
+        return {"code": "PERMISSION_REQUIRED", "error": "permission required"}
     p = _user_catalog_path()
     doc = {"entries": []}
     if p.exists():
@@ -184,7 +229,7 @@ def add_user_entry(name: str, command: list, detail: str = "",
                if isinstance(e, dict) and e.get("name") != name]
     entry = {"name": name, "command": [c.strip() for c in command],
              "detail": detail.strip() or "user-catalog entry",
-             "requires": reqs}
+             "requires": list(reqs), "credential_refs": list(refs)}
     entries.append(entry)
     p.parent.mkdir(parents=True, exist_ok=True)
     p.write_text(json.dumps({"entries": entries}, indent=2), encoding="utf-8")

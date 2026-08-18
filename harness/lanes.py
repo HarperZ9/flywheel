@@ -1,41 +1,17 @@
-"""lanes.py -- the lane layer: Flywheel as the umbrella over the tool family.
-
-Flywheel is the one platform. The flagship tools (gather, crucible, index,
-forum, learn, telos) and the trained-model lane (local-model) are LANES inside
-it -- each a provisioned, health-checked organ reachable through one surface.
-This module is the seam that composes them.
-
-Built on three things that already exist, so nothing is reinvented:
-
-  1. telos's mcp-server-manifest.json (public/telos/demo/integrations/) -- the
-     verified, host-portable manifest of the flagship MCP servers, with
-     source_checkout + package profiles, freshness probes, and failure codes.
-  2. superproject.MANIFEST/EXTENDED -- the organ model (perception,
-     verification, structure, orchestration, reconciliation) that already maps
-     each flagship to its role in the reconcile.
-  3. mcp_client.open_mcp + MCPAllowlist -- the gated, witnessed MCP consumption
-     path. A lane is health-checked by spawning its MCP server (allowlisted),
-     calling its `status`/`doctor` tool, and closing it.
-
-A lane's health is: live (MCP handshake + status tool answered), stale
-(connected but version/behavior drift), declared (present on disk, not
-probed), or missing (not installed). Graceful: a down lane never breaks the
-roster; it reports `missing`/`declared` honestly.
-"""
+"""Portable lane declarations, source-aware launches, and evidence-led probes."""
 from __future__ import annotations
 
 import importlib.util
 import json
 import os
-import shutil
 import subprocess
 import sys
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 
-REPO = Path(__file__).resolve().parent.parent
-TELOS_MANIFEST = REPO.parent / "public" / "telos" / "demo" / "integrations" / "mcp-server-manifest.json"
+from .mcp_client import LaunchSpec
 
+REPO = Path(__file__).resolve().parent.parent
 # Where the lane registry (installed versions + profiles) is recorded.
 LANE_REGISTRY_PATH = Path(os.environ.get("FLYWHEEL_HOME", str(Path.home() / ".flywheel"))) / "lanes.json"
 
@@ -48,16 +24,7 @@ MISSING = "missing"
 
 @dataclass
 class Lane:
-    """One lane of Flywheel: a flagship tool or the trained-model lane.
-
-    install_name: the pip/npm distribution name (differs from the command).
-    command:      the console-script or node entry invoked to start its MCP server.
-    mcp_args:     args following `command` to launch the MCP stdio server.
-    kind:         pip | npm | bundled.
-    version:      the version this lane declares (manifest cross-reference).
-    role:         one-line role in the reconcile.
-    organ:        the superproject organ this lane instantiates.
-    """
+    """One declared flagship or bundled engine lane."""
     name: str
     install_name: str
     command: str
@@ -111,20 +78,28 @@ LANES: dict[str, Lane] = {
 }
 
 
-def _node_mcp_command(lane: Lane) -> list[str]:
-    """Resolve a node lane's MCP command to an absolute path under its source repo.
-
-    telos's package profile uses a relative `demo/telos-mcp.mjs`; for the
-    source-checkout profile we resolve it against the lane's repo so the
-    command works from any cwd. Falls back to the bare command if the repo
-    is absent (declared, not installed).
-    """
-    if lane.kind != "npm" or not lane.source_repo:
-        return lane.mcp_command()
-    script = REPO.parent / lane.source_repo / lane.mcp_args[0]
-    if script.exists():
-        return ["node", str(script)]
-    return lane.mcp_command()
+def resolve_source_repo(lane: Lane) -> Path | None:
+    """Resolve a declared source path without embedding a host path in metadata."""
+    source = Path(lane.source_repo)
+    if not lane.source_repo:
+        return None
+    candidates = []
+    explicit = os.environ.get("FLYWHEEL_WORKSPACE_ROOT", "").strip()
+    if explicit:
+        candidates.append(Path(explicit).expanduser() / source)
+    candidates.append(REPO.parent / source)
+    if source.parts and REPO.parent.name == source.parts[0]:
+        candidates.append(REPO.parent.joinpath(*source.parts[1:]))
+    seen = set()
+    for candidate in candidates:
+        try:
+            resolved = candidate.resolve()
+        except OSError:
+            continue
+        if resolved not in seen and resolved.is_dir():
+            return resolved
+        seen.add(resolved)
+    return None
 
 
 def _importable(top_module: str) -> bool:
@@ -136,23 +111,12 @@ def _importable(top_module: str) -> bool:
 
 
 def _frozen() -> bool:
-    """True inside a PyInstaller bundle. There sys.executable is the frozen
-    gateway itself, NOT a Python -- handing it `-m anything` would relaunch
-    the gateway instead of a lane server. Seam for tests."""
+    """True when sys.executable is a frozen gateway, not a Python interpreter."""
     return bool(getattr(sys, "frozen", False))
 
 
 def _pip_mcp_command(lane: Lane) -> list[str]:
-    """Resolve a pip lane's MCP argv.
-
-    A console script on PATH is only as healthy as the interpreter its shim
-    was built for: a stale shim (moved venv, deleted editable source, another
-    Python's Scripts dir winning PATH) raises ModuleNotFoundError and the lane
-    reads as dead while the package works fine elsewhere. So prefer THIS
-    interpreter when it can actually import the lane -- same environment as
-    the engine, no PATH dependency -- and fall back to the console script.
-    Frozen builds have no Python behind sys.executable, so they go straight
-    to the console script and the probe reports its honest health."""
+    """Prefer this interpreter for an importable installed Python lane."""
     if lane.py_module and not _frozen():
         top = lane.py_module.split(".", 1)[0]
         if _importable(top):
@@ -160,29 +124,43 @@ def _pip_mcp_command(lane: Lane) -> list[str]:
     return lane.mcp_command()
 
 
+def _python_import_root(source: Path, lane: Lane) -> Path:
+    top = lane.py_module.split(".", 1)[0]
+    for root in (source / "src", source):
+        if (root / top).is_dir() or (root / f"{top}.py").is_file():
+            return root.resolve()
+    return source.resolve()
+
+
 def resolve_mcp_command(name: str) -> list[str]:
-    """The argv to launch lane `name`'s MCP server, profile-aware."""
+    """Return only the portable declared argv used by public roster surfaces."""
+    return LANES[name].mcp_command()
+
+
+def resolve_mcp_launch(name: str) -> LaunchSpec:
+    """Return the source/package-aware child launch used only at runtime."""
     lane = LANES[name]
-    if lane.kind == "npm":
-        return _node_mcp_command(lane)
+    if _frozen():
+        return LaunchSpec(tuple(lane.mcp_command()))
+    source = resolve_source_repo(lane)
+    if source and lane.kind == "npm":
+        return LaunchSpec(("node", str((source / lane.mcp_args[0]).resolve())))
     if lane.kind == "pip":
-        return _pip_mcp_command(lane)
+        if source and lane.py_module:
+            import_root = _python_import_root(source, lane)
+            inherited = os.environ.get("PYTHONPATH", "")
+            pythonpath = str(import_root) + (os.pathsep + inherited if inherited else "")
+            return LaunchSpec(
+                (sys.executable, "-m", lane.py_module, *lane.mcp_args), str(source),
+                (("PYTHONPATH", pythonpath), ("PYTHONSAFEPATH", "1")))
+        return LaunchSpec(tuple(_pip_mcp_command(lane)))
     if lane.command == "python" and not _frozen():
-        # the bundled lane runs in the engine's own interpreter, not
-        # whichever `python` happens to win PATH. In a frozen build there is
-        # no interpreter behind sys.executable; fall through to PATH python,
-        # and an absent one reports unreachable with its real error.
-        return [sys.executable, *lane.mcp_args]
-    return lane.mcp_command()
+        return LaunchSpec((sys.executable, *lane.mcp_args))
+    return LaunchSpec(tuple(lane.mcp_command()))
 
 
 def _installed_version(lane: Lane) -> str | None:
-    """Best-effort: the installed version of a lane, or None if absent.
-
-    For pip lanes, `pip show <install_name>` returns the version. For npm
-    lanes, `npm ls -g <install_name> --depth=0`. For bundled, the static
-    version. Presence-only: never returns a credential or value.
-    """
+    """Best-effort installed version; presence-only and credential-free."""
     try:
         if lane.kind == "bundled":
             return lane.version
@@ -218,55 +196,47 @@ def lane_status(name: str, *, probe: bool = True, timeout: float = 20.0) -> dict
     if lane is None:
         return {"name": name, "status": MISSING, "detail": "unknown lane"}
     installed = _installed_version(lane)
-    if installed is None and lane.kind != "bundled":
-        # Check the source checkout as a fallback (declared but not packaged).
-        repo = REPO.parent / lane.source_repo if lane.source_repo else None
-        if repo and repo.exists():
-            return {"name": name, "kind": lane.kind, "installed_version": None,
-                    "expected_version": lane.version, "status": DECLARED,
-                    "organ": lane.organ, "role": lane.role,
-                    "detail": f"source checkout at {lane.source_repo}, not pip/npm installed"}
+    source = resolve_source_repo(lane)
+    present = installed is not None or source is not None or lane.kind == "bundled"
+    if not present:
         return {"name": name, "kind": lane.kind, "installed_version": None,
                 "expected_version": lane.version, "status": MISSING,
                 "organ": lane.organ, "role": lane.role,
                 "detail": f"{lane.install_name} not installed"}
     if not probe:
         return {"name": name, "kind": lane.kind, "installed_version": installed,
-                "expected_version": lane.version,
-                "status": LIVE if installed else DECLARED,
+                "expected_version": lane.version, "status": DECLARED,
                 "organ": lane.organ, "role": lane.role,
-                "detail": "install-verified (not MCP-probed)"}
-    # Live MCP probe: spawn the server, call its status/doctor tool, close it.
-    return _probe_lane(name, installed, timeout)
+                "detail": ((f"source checkout at {lane.source_repo}; "
+                            "not MCP-probed") if source and installed is None else
+                           "install-presence verified; not MCP-probed")}
+    return _probe_lane(name, installed, timeout, present=present)
 
 
-def _probe_lane(name: str, installed: str | None, timeout: float) -> dict:
+def _probe_lane(name: str, installed: str | None, timeout: float, *,
+                present: bool) -> dict:
     """Spawn the lane's MCP server and verify it answers a status tool."""
     from .mcp_client import MCPClient, MCPError
     lane = LANES[name]
-    command = resolve_mcp_command(name)
+    launch = resolve_mcp_launch(name)
     try:
-        with MCPClient(command, timeout=timeout, client_name="flywheel-lanes") as c:
-            c.start()
+        with MCPClient(launch, timeout=timeout, client_name="flywheel-lanes") as c:
             tools = c.list_tools()
             tool_names = {t.get("name", "") for t in tools}
-            # Each lane exposes either <name>.status, <name>.doctor, or a bare
-            # status/doctor. Call the first match for a live health signal.
             status_tool = next(
                 (tn for tn in (
                     f"{name}.status", f"{name}.doctor", "status", "doctor",
                     f"{name}_status", f"{name}_doctor") if tn in tool_names),
                 None)
-            detail = f"server up, {len(tools)} tools"
-            verdict = LIVE
-            if status_tool:
+            verdict, detail = STALE, f"no status/doctor health tool; {len(tools)} tools"
+            if status_tool is not None:
                 try:
                     res = c.call_text(status_tool, {})
-                    # A status tool that answered is live; version drift => stale.
-                    verdict = LIVE
-                    detail = f"{status_tool} answered; {len(tools)} tools"
+                    if res.get("ok"):
+                        verdict, detail = LIVE, f"{status_tool} answered; {len(tools)} tools"
+                    else:
+                        detail = f"{status_tool} error: {res.get('text', '')[:200]}"
                 except MCPError as e:
-                    verdict = STALE
                     detail = f"{status_tool} error: {e}"
             return {"name": name, "kind": lane.kind, "installed_version": installed,
                     "expected_version": lane.version, "status": verdict,
@@ -274,7 +244,7 @@ def _probe_lane(name: str, installed: str | None, timeout: float) -> dict:
                     "tools": len(tools), "detail": detail}
     except (MCPError, FileNotFoundError, OSError) as e:
         return {"name": name, "kind": lane.kind, "installed_version": installed,
-                "expected_version": lane.version, "status": DECLARED if installed else MISSING,
+                "expected_version": lane.version, "status": DECLARED if present else MISSING,
                 "organ": lane.organ, "role": lane.role,
                 "detail": f"MCP probe failed: {e}"}
 
@@ -304,7 +274,8 @@ def lane_report(roster: dict | None = None, *, probe: bool = False) -> str:
     lines = [f"Flywheel lanes -- {roster['n_lanes']} lanes; "
              f"live {roster['by_status'].get(LIVE, 0)}, "
              f"declared {roster['by_status'].get(DECLARED, 0)}, "
-             f"missing {roster['by_status'].get(MISSING, 0)}"]
+             f"missing {roster['by_status'].get(MISSING, 0)}",
+             roster.get("note", "")]
     for r in roster["lanes"]:
         lines.append(f"  {r['name']:13} [{r['status']:8}] {r.get('organ', ''):14} "
                      f"{r.get('detail', '')}")
@@ -321,15 +292,18 @@ def install_lane(name: str, *, profile: str = "package") -> dict:
     if lane.kind == "bundled":
         return {"name": name, "installed": True, "detail": "bundled lane (no install needed)"}
     try:
+        if profile == "source":
+            repo = resolve_source_repo(lane)
+            if repo is None:
+                return {"name": name, "installed": False,
+                        "detail": f"source checkout not found: {lane.source_repo}"}
         if lane.kind == "pip":
-            if profile == "source" and lane.source_repo:
-                repo = REPO.parent / lane.source_repo
+            if profile == "source":
                 cmd = ["pip", "install", "-e", str(repo)]
             else:
                 cmd = ["pip", "install", lane.install_name]
         elif lane.kind == "npm":
-            if profile == "source" and lane.source_repo:
-                repo = REPO.parent / lane.source_repo
+            if profile == "source":
                 cmd = ["npm", "install", "-g", str(repo)]
             else:
                 cmd = ["npm", "install", "-g", lane.install_name]

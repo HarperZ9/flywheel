@@ -14,9 +14,10 @@ import '../models/tool_spec.dart';
 import '../theme/flywheel_theme.dart';
 import 'fw.dart';
 import 'tool_form.dart';
+import 'operation_grant_sheet.dart';
 
 void showToolCallSheet(BuildContext context, GatewayClient client,
-    String plugin, ToolSpec spec) {
+    String plugin, ToolSpec spec, List<String> credentialRefs) {
   showModalBottomSheet(
     context: context,
     isScrollControlled: true,
@@ -27,7 +28,11 @@ void showToolCallSheet(BuildContext context, GatewayClient client,
           right: FwLayout.s5,
           top: FwLayout.s5,
           bottom: MediaQuery.of(ctx).viewInsets.bottom + FwLayout.s5),
-      child: ToolCallSheet(client: client, plugin: plugin, spec: spec),
+      child: ToolCallSheet(
+          client: client,
+          plugin: plugin,
+          spec: spec,
+          credentialRefs: credentialRefs),
     ),
   );
 }
@@ -36,11 +41,13 @@ class ToolCallSheet extends StatefulWidget {
   final GatewayClient client;
   final String plugin;
   final ToolSpec spec;
+  final List<String> credentialRefs;
   const ToolCallSheet(
       {super.key,
       required this.client,
       required this.plugin,
-      required this.spec});
+      required this.spec,
+      required this.credentialRefs});
 
   @override
   State<ToolCallSheet> createState() => _ToolCallSheetState();
@@ -84,6 +91,27 @@ class _ToolCallSheetState extends State<ToolCallSheet> {
     }
   }
 
+  GatewayOperation _operation(String request, Map<String, dynamic> arguments) =>
+      GatewayOperation.pluginCall(
+          name: widget.plugin,
+          tool: widget.spec.name,
+          arguments: arguments,
+          dataRefs: const [],
+          credentialRefs: widget.credentialRefs,
+          clientRequestId: request);
+
+  GatewayOperation? _currentOperation(String request) {
+    if (!_raw) {
+      return _missing.isEmpty ? _operation(request, _formArgs) : null;
+    }
+    try {
+      final value = jsonDecode(_args.text.trim().isEmpty ? '{}' : _args.text);
+      return value is Map<String, dynamic> ? _operation(request, value) : null;
+    } catch (_) {
+      return null;
+    }
+  }
+
   Future<void> _call() async {
     if (_calling) return;
     final arguments = _resolveArgs();
@@ -94,8 +122,12 @@ class _ToolCallSheetState extends State<ToolCallSheet> {
       _result = null;
     });
     try {
-      final doc = await widget.client
-          .callPlugin(widget.plugin, widget.spec.name, arguments);
+      final request = 'desktop-tool-${DateTime.now().microsecondsSinceEpoch}';
+      final operation = _operation(request, arguments);
+      final doc = await authorizeGatewayOperation(context, operation,
+          (body) => widget.client.postJson('/api/plugins/call', body),
+          currentOperation: () => _currentOperation(request));
+      if (doc == null) return;
       if (mounted) {
         setState(
             () => _result = const JsonEncoder.withIndent('  ').convert(doc));
@@ -175,8 +207,7 @@ class _ToolCallSheetState extends State<ToolCallSheet> {
       maxLines: 5,
       minLines: 2,
       style: fwMono(t, size: 12),
-      decoration:
-          const InputDecoration(hintText: 'arguments as a JSON object'),
+      decoration: const InputDecoration(hintText: 'arguments as a JSON object'),
     );
   }
 
@@ -207,8 +238,7 @@ class _ToolCallSheetState extends State<ToolCallSheet> {
               color: active ? t.drift.withValues(alpha: 0.42) : t.line),
         ),
         child: Text(label.toUpperCase(),
-            style: fwKicker(t,
-                size: 10, color: active ? t.drift : t.inkFaint)),
+            style: fwKicker(t, size: 10, color: active ? t.drift : t.inkFaint)),
       ),
     );
   }

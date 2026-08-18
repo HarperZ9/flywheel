@@ -1,10 +1,12 @@
+import io
+import json
 import os
 import stat
 
 import pytest
 
 from harness.gateway_auth import (
-    load_or_create_token, check, TOKEN_FILENAME, DEFAULT_HOSTS,
+    authenticate_owner, load_or_create_token, check, TOKEN_FILENAME, DEFAULT_HOSTS,
 )
 
 TOK = "t" * 43
@@ -110,3 +112,55 @@ def test_refusal_reason_never_leaks_the_token():
     assert ok is False
     assert TOK not in reason
     assert "wrong" not in reason
+
+
+def test_owner_is_loaded_only_after_bearer_auth_and_survives_rotation(tmp_path, monkeypatch):
+    """Loading identity before auth or deriving it from token would weaken ownership."""
+    from harness import gateway_auth
+    calls = []
+    real = gateway_auth.load_or_create_owner_ref
+    monkeypatch.setattr(gateway_auth, "load_or_create_owner_ref",
+                        lambda home: calls.append(home) or real(home))
+    wrong, reason = authenticate_owner(
+        _h(Authorization="Bearer wrong", Host="localhost"), "POST", TOK, tmp_path,
+        allowed_hosts=DEFAULT_HOSTS)
+    first, first_reason = authenticate_owner(
+        _h(Authorization=f"Bearer {TOK}", Host="localhost",
+           Content_Type="application/json"), "POST", TOK, tmp_path,
+        allowed_hosts=DEFAULT_HOSTS)
+    rotated = "r" * 43
+    second, second_reason = authenticate_owner(
+        _h(Authorization=f"Bearer {rotated}", Host="localhost",
+           Content_Type="application/json"), "POST", rotated, tmp_path,
+        allowed_hosts=DEFAULT_HOSTS)
+    assert wrong is None and reason == "bad_token" and calls == [tmp_path, tmp_path]
+    assert first == second and first_reason == second_reason == "ok"
+
+
+@pytest.mark.parametrize(("method", "path"), [
+    ("GET", "/api/journeys/list?limit=1"),
+    ("POST", "/api/journeys/get"),
+    ("POST", "/api/grants/approve-once"),
+    ("POST", "/api/gateway-grants/prepare/plugin.probe"),
+    ("GET", "/api/credential-handles"),
+    ("POST", "/api/credential-handles/bind"),
+    ("POST", "/api/plugins/probe"),
+    ("POST", "/v1/chat/completions"),
+    ("GET", "/api/plugins/probe?name=gather"),
+])
+def test_private_routes_require_configured_auth_without_loading_owner(
+        method, path, tmp_path, monkeypatch):
+    from harness import gateway
+    handler = gateway._Handler.__new__(gateway._Handler)
+    handler.path, handler.command = path, method
+    handler.auth_token = ""; handler.flywheel_home = tmp_path
+    handler.headers = {}; handler.wfile = io.BytesIO(); statuses = []
+    handler.send_response = statuses.append
+    handler.send_header = lambda *_: None; handler.end_headers = lambda: None
+    monkeypatch.setattr(gateway, "load_or_create_owner_ref",
+                        lambda *_: pytest.fail("private refusal loaded owner custody"))
+    assert handler._authorized() is False
+    result = json.loads(handler.wfile.getvalue())
+    assert statuses == [401] and result == {
+        "schema": "flywheel.evidence-transport-error/v1", "error": {
+            "code": "AUTH_REQUIRED", "message": "gateway authentication is required"}}

@@ -1,43 +1,36 @@
 """Metadata-only schematic drift checks for closed-loop integration docs."""
-
 from __future__ import annotations
-
 import json
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
-
-
 SCHEMA = "harness.schematic-drift-check/v1"
 
-# Repo root, so the shipped source carries no build-machine absolute path.
 _REPO = Path(__file__).resolve().parent.parent
-
+INTEGRATION_MAP_SCHEMA = "harness.cross-harness-integration-map/v1"
 DEFAULT_REQUIRED_NODES = [
-    "agentic_task_manifest_generator",
-    "cross_harness_manifest",
-    "adapter_runtime_matrix",
-    "forum_route_receipts",
-    "mcp_tool_health",
-    "embodied_realtime_plan",
-    "benchmark_execution_matrix",
-    "closed_loop_seed",
-    "closed_loop_outcome",
-    "objective_evidence_matrix",
+    "agentic_task_manifest_generator", "cross_harness_manifest",
+    "adapter_runtime_matrix", "endpoint_gates", "forum_route_receipts",
+    "mcp_tool_health", "embodied_realtime_plan", "benchmark_execution_matrix",
+    "closed_loop_seed", "closed_loop_outcome", "benchmark_coverage",
+    "harness_comparison", "cross_harness_executor", "objective_evidence_matrix",
 ]
-
 DEFAULT_REQUIRED_EDGES = [
     ("agentic_task_manifest_generator", "benchmark_execution_matrix"),
     ("cross_harness_manifest", "benchmark_execution_matrix"),
     ("adapter_runtime_matrix", "benchmark_execution_matrix"),
+    ("cross_harness_manifest", "cross_harness_executor"),
+    ("adapter_runtime_matrix", "cross_harness_executor"),
+    ("endpoint_gates", "cross_harness_executor"),
+    ("cross_harness_executor", "benchmark_coverage"),
+    ("cross_harness_executor", "harness_comparison"),
+    ("cross_harness_executor", "closed_loop_seed"),
     ("forum_route_receipts", "closed_loop_seed"),
     ("mcp_tool_health", "closed_loop_seed"),
     ("embodied_realtime_plan", "benchmark_execution_matrix"),
     ("benchmark_execution_matrix", "closed_loop_seed"),
     ("closed_loop_seed", "closed_loop_outcome"),
 ]
-
-# Repo-relative script paths; resolved against _REPO where they are checked.
 DEFAULT_REQUIRED_FILES = {
     "agentic_task_manifest_generator": "scripts/run_agentic_task_set_manifest.py",
     "cross_harness_manifest": "scripts/run_cross_harness_manifest.py",
@@ -48,22 +41,17 @@ DEFAULT_REQUIRED_FILES = {
     "benchmark_execution_matrix": "scripts/run_benchmark_execution_matrix.py",
     "closed_loop_seed": "scripts/run_closed_loop_benchmark_seed.py",
     "closed_loop_outcome": "scripts/run_closed_loop_outcome_report.py",
+    "cross_harness_executor": "harness/cross_harness_executor.py",
+    "cross_harness_integration_map": "scripts/run_cross_harness_integration_map.py",
 }
-
 STALE_PHRASES = [
     "next highest-leverage implementation step is still a non-executing manifest generator",
     "agentic task-set manifest command is not implemented yet",
 ]
-
-
 def now_utc() -> str:
     return datetime.now(UTC).isoformat().replace("+00:00", "Z")
-
-
 def load_json(path: Path) -> dict[str, Any]:
     return json.loads(path.read_text(encoding="utf-8-sig"))
-
-
 def build_drift_report(
     graph: dict[str, Any],
     *,
@@ -77,7 +65,6 @@ def build_drift_report(
     required_nodes = required_nodes or list(DEFAULT_REQUIRED_NODES)
     required_edges = required_edges or list(DEFAULT_REQUIRED_EDGES)
     required_files = required_files or dict(DEFAULT_REQUIRED_FILES)
-
     observed_nodes = sorted({
         str(row.get("id", ""))
         for row in graph.get("nodes", [])
@@ -98,7 +85,7 @@ def build_drift_report(
         {
             "id": key,
             "path": path_text,
-            "exists": (_REPO / path_text).exists(),   # relative resolves against repo; absolute passes through
+            "exists": (_REPO / path_text).exists(),
         }
         for key, path_text in sorted(required_files.items())
     ]
@@ -108,7 +95,13 @@ def build_drift_report(
         for phrase in STALE_PHRASES
         if report_text and phrase.lower() in report_text.lower()
     ]
-    drift = bool(missing_nodes or missing_edges or missing_files or stale_phrases)
+    report_input_errors = []
+    if report_path:
+        marker = f"Schema: `{INTEGRATION_MAP_SCHEMA}`"
+        report_input_errors = ([] if marker in report_text else [
+            "integration_map_schema_missing" if not report_text else "integration_map_schema_mismatch"
+        ])
+    drift = bool(missing_nodes or missing_edges or missing_files or stale_phrases or report_input_errors)
     return {
         "schema": SCHEMA,
         "timestamp_utc": now_utc(),
@@ -126,6 +119,7 @@ def build_drift_report(
         "required_files": file_rows,
         "missing_files": missing_files,
         "stale_phrases": stale_phrases,
+        "report_input_errors": report_input_errors,
         "non_execution_guards": [
             "Does not run tests.",
             "Does not run benchmarks.",
@@ -139,10 +133,9 @@ def build_drift_report(
             "missing_edges": len(missing_edges),
             "missing_files": len(missing_files),
             "stale_phrases": len(stale_phrases),
+            "report_input_errors": len(report_input_errors),
         },
     }
-
-
 def render_markdown(report: dict[str, Any]) -> str:
     lines = [
         "# Schematic drift check",
@@ -154,6 +147,7 @@ def render_markdown(report: dict[str, Any]) -> str:
         f"- Missing edges: `{len(report['missing_edges'])}`",
         f"- Missing files: `{len(report['missing_files'])}`",
         f"- Stale phrases: `{len(report['stale_phrases'])}`",
+        f"- Report input errors: `{len(report['report_input_errors'])}`",
         "",
     ]
     if report["missing_nodes"]:
@@ -171,6 +165,10 @@ def render_markdown(report: dict[str, Any]) -> str:
     if report["stale_phrases"]:
         lines.extend(["## Stale phrases", ""])
         lines.extend(f"- `{phrase}`" for phrase in report["stale_phrases"])
+        lines.append("")
+    if report["report_input_errors"]:
+        lines.extend(["## Report input errors", ""])
+        lines.extend(f"- `{error}`" for error in report["report_input_errors"])
         lines.append("")
     lines.extend(["## Non-execution guards", ""])
     lines.extend(f"- {guard}" for guard in report.get("non_execution_guards", []))

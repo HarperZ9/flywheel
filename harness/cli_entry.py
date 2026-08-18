@@ -4,13 +4,8 @@ Flywheel is the one platform: routing + verification + the lane layer + the
 closed verified-inference loop. This module is the single console-script entry
 (``flywheel = harness.cli_entry:main`` in pyproject.toml).
 
-Design: it is a thin layer over the existing ``scripts/run_harness_cli.py``
-front controller. Every existing subcommand (app, manifest, registry,
-benchmarks, mcp-health, ...) passes through unchanged. The new umbrella
-subcommands -- ``lanes``, ``loop-status``, ``install``, ``up`` -- are handled
-here once their modules land (Phase 2: lanes.py; Phase 3: loop-closure
-updates). Until then they report a clear "not yet implemented" rather than
-silently falling through.
+It is a thin layer over the existing ``scripts/run_harness_cli.py`` front
+controller, plus direct packaged commands that do not require a checkout.
 
 Repo-root resolution mirrors ``scripts/local_harness_entry.py`` so the command
 works identically as a console-script, from a checkout, and from a frozen exe.
@@ -21,13 +16,10 @@ import os
 import runpy
 import sys
 from pathlib import Path
-
 # The new umbrella subcommands. Handled in cli_entry; everything else is
 # delegated to the existing run_harness_cli front controller.
 _UMBRELLA_COMMANDS = {"lanes", "loop-status", "install", "up", "down", "corpus-export",
                       "gate", "why", "auth"}
-
-
 def _candidate_roots() -> list[Path]:
     candidates: list[Path] = []
     explicit = os.environ.get("FLYWHEEL_REPO", "").strip() or os.environ.get("LOCAL_HARNESS_REPO", "").strip()
@@ -159,8 +151,6 @@ def _cmd_up(argv: list[str]) -> int:
     print("Starting the gateway ...")
     _sys.stdout.flush()
     return _launch_gateway(gateway_argv)
-
-
 def _dispatch_umbrella(command: str, argv: list[str]) -> int:
     """Handle the new umbrella subcommands. Phase 2/3 implement these fully."""
     if command == "loop-status":
@@ -176,7 +166,7 @@ def _dispatch_umbrella(command: str, argv: list[str]) -> int:
         return 0
     if command == "lanes":
         from harness.lanes import lane_roster, lane_report
-        roster = lane_roster()
+        roster = lane_roster(probe="--probe" in argv)
         print(lane_report(roster))
         return 0
     if command == "auth":
@@ -235,14 +225,29 @@ def _dispatch_umbrella(command: str, argv: list[str]) -> int:
         print(_json.dumps(r, indent=2))
         return 0
     return 2
-
-
+def _dispatch_packaged(command: str, raw: list[str]) -> int | None:
+    if command == "cross-harness-execute":
+        from harness.cross_harness_cli import main as packaged
+        rest = list(raw); rest.remove(command)
+        return packaged(rest)
+    if command in {"journey", "grant"}:
+        from harness.journey_cli import main as packaged
+        rest = list(raw); rest.remove(command)
+        return packaged([command, *rest])
+    if command == "evidence":
+        from harness.evidence_cli import main as packaged
+        rest = list(raw); rest.remove(command)
+        return packaged(rest)
+    return None
 def main(argv: list[str] | None = None) -> int:
     raw = list(argv if argv is not None else sys.argv[1:])
     # Peek at the first positional to decide umbrella-vs-passthrough. The
     # existing run_harness_cli parser requires a subcommand, so the first
     # non-flag token is the command name.
     command = next((a for a in raw if not a.startswith("-")), None)
+    packaged = _dispatch_packaged(command, raw)
+    if packaged is not None:
+        return packaged
     if command in _UMBRELLA_COMMANDS:
         rest = [a for a in raw if a is not command]
         return _dispatch_umbrella(command, rest)
@@ -271,7 +276,7 @@ def main(argv: list[str] | None = None) -> int:
             wants_help = any(a in ("-h", "--help") for a in raw)
             print("usage: flywheel <command> [options]\n"
                   "Umbrella commands (run from a bare install): up, lanes, "
-                  "loop-status, install, corpus-export, gate, why, down\n"
+                  "loop-status, install, corpus-export, gate, why, down, grant, journey, evidence, cross-harness-execute\n"
                   "Passthrough commands need a source checkout "
                   "(scripts/run_harness_cli.py).",
                   file=sys.stdout if wants_help else sys.stderr)

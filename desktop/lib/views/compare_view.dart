@@ -16,6 +16,7 @@ import '../widgets/chat_composer.dart';
 import '../widgets/chat_thread.dart';
 import '../widgets/fw.dart';
 import '../widgets/model_picker.dart';
+import '../widgets/operation_grant_sheet.dart';
 import '../widgets/split_pane.dart';
 
 class CompareView extends StatefulWidget {
@@ -76,15 +77,18 @@ class _CompareViewState extends State<CompareView> {
         setState(() {
           _endpoints = rows;
           _left.model ??= rows.isNotEmpty ? rows.first.name : null;
-          _right.model ??=
-              rows.length > 1 ? rows[1].name : (rows.isNotEmpty ? rows.first.name : null);
+          _right.model ??= rows.length > 1
+              ? rows[1].name
+              : (rows.isNotEmpty ? rows.first.name : null);
         });
       }
     } catch (_) {/* offline empty-state handles it */}
   }
 
-  void _send(String text) {
-    if (_left.model == null && _right.model == null) return;
+  Future<PromptDisposition> _send(String text) async {
+    if (_left.model == null && _right.model == null) {
+      return PromptDisposition.retained;
+    }
     setState(() {
       for (final s in [_left, _right]) {
         if (s.model == null) continue;
@@ -92,54 +96,55 @@ class _CompareViewState extends State<CompareView> {
         s.messages.add(ChatMessage(role: 'assistant', streaming: true));
       }
     });
-    _run(_left);
-    _run(_right);
+    await _run(_left);
+    await _run(_right);
+    return PromptDisposition.accepted;
   }
 
-  void _run(_Side s) {
+  Future<void> _run(_Side s) async {
     if (s.model == null || s.messages.isEmpty) return;
+    final model = s.model!;
     final assistant = s.messages.last;
     s.streaming = true;
     final wire = s.messages
         .where((m) => !(m.streaming && m.text.isEmpty))
         .map((m) => m.toWire())
         .toList();
-    s.sub = widget.client.chatStream(wire, s.model!).listen(
-      (e) {
-        if (!mounted) return;
-        setState(() {
-          if (e['type'] == 'delta') assistant.text += e['content'] as String;
-          if (e['type'] == 'done') {
-            assistant.receipt = e['receipt'] as Map<String, dynamic>?;
-          }
-        });
-        _scroll(s);
-      },
-      onError: (_) => _finish(s, assistant),
-      onDone: () => _finish(s, assistant),
-    );
+    final operation = GatewayOperation.chat(
+        'desktop-compare-${DateTime.now().microsecondsSinceEpoch}', model, wire,
+        dataRefs: const [], credentialRefs: const []);
+    await authorizeGatewayStream(context, operation, (body) {
+      s.sub =
+          widget.client.chatStream(wire, model, authorizedBody: body).listen(
+        (e) {
+          if (!mounted) return;
+          setState(() {
+            if (e['type'] == 'delta') assistant.text += e['content'] as String;
+            if (e['type'] == 'done') {
+              assistant.setReceipt(e['receipt'] as Map<String, dynamic>?);
+            }
+          });
+          _scroll(s);
+        },
+        onError: (_) => _finish(s, assistant),
+        onDone: () => _finish(s, assistant),
+      );
+    }, () => _finish(s, assistant),
+        currentOperation: () => s.model == model ? operation : null);
   }
 
   void _finish(_Side s, ChatMessage assistant) {
     if (!mounted) return;
     setState(() {
       assistant.streaming = false;
-      if (assistant.text.isEmpty) {
-        assistant.text = 'No reply. This model may be offline; pick another above.';
+      if (assistant.receipt == null) {
+        const unknown = 'Reply interrupted; completion is unknown.';
+        assistant.text = assistant.text.isEmpty
+            ? '$unknown Pick another model.'
+            : '${assistant.text}\n\n$unknown';
       }
       s.streaming = false;
     });
-  }
-
-  void _stop() {
-    for (final s in [_left, _right]) {
-      s.sub?.cancel();
-      for (final m in s.messages) {
-        m.streaming = false;
-      }
-      s.streaming = false;
-    }
-    setState(() {});
   }
 
   void _clear() {
@@ -162,7 +167,8 @@ class _CompareViewState extends State<CompareView> {
   @override
   Widget build(BuildContext context) {
     if (!widget.alive) {
-      return const FwEmpty('The engine is offline. Compare appears when it runs.',
+      return const FwEmpty(
+          'The engine is offline. Compare appears when it runs.',
           command: 'flywheel up');
     }
     final t = context.fw;
@@ -170,8 +176,8 @@ class _CompareViewState extends State<CompareView> {
       Container(
         padding: const EdgeInsets.symmetric(
             horizontal: FwLayout.s5, vertical: FwLayout.s3),
-        decoration:
-            BoxDecoration(border: Border(bottom: BorderSide(color: t.hairline))),
+        decoration: BoxDecoration(
+            border: Border(bottom: BorderSide(color: t.hairline))),
         child: Row(children: [
           Text('Compare', style: Theme.of(context).textTheme.titleMedium),
           const Spacer(),
@@ -196,7 +202,7 @@ class _CompareViewState extends State<CompareView> {
       ChatComposer(
         streaming: _busy,
         onSend: _send,
-        onStop: _stop,
+        onDraftChanged: (_) {},
         hint: 'Ask both models the same thing…',
         savedPrompts: widget.settings.savedPrompts,
         onSavePrompt: (t) => setState(() => widget.settings.savePrompt(t)),
@@ -209,8 +215,8 @@ class _CompareViewState extends State<CompareView> {
       Container(
         padding: const EdgeInsets.symmetric(
             horizontal: FwLayout.s4, vertical: FwLayout.s2),
-        decoration:
-            BoxDecoration(border: Border(bottom: BorderSide(color: t.hairline))),
+        decoration: BoxDecoration(
+            border: Border(bottom: BorderSide(color: t.hairline))),
         child: Row(children: [
           ModelPickerButton(
             endpoints: _endpoints,

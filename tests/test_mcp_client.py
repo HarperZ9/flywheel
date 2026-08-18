@@ -7,11 +7,42 @@ Success criteria:
   - as_external_tools bridges tools into the executor; allow_mcp gates them.
   - end to end: the loop advertises the tool, calls it, and the ledger records it.
 """
+import os
+import subprocess
+
 import pytest
 
 from harness.local_loop import run_agent
 from harness.local_tools import ToolExecutor, ToolGate
-from harness.mcp_client import MCPAllowlist, MCPClient, MCPError, as_external_tools, open_mcp
+from harness.mcp_client import (
+    LaunchSpec,
+    MCPAllowlist,
+    MCPClient,
+    MCPError,
+    StdioTransport,
+    as_external_tools,
+    open_mcp,
+)
+
+
+class _EmptyStream:
+    def __iter__(self):
+        return iter(())
+
+
+class _FakeProc:
+    stdin = None
+    stdout = _EmptyStream()
+    stderr = _EmptyStream()
+
+    def poll(self):
+        return None
+
+    def terminate(self):
+        pass
+
+    def wait(self, timeout=None):
+        return 0
 
 
 def _echo_server(req):
@@ -88,6 +119,89 @@ def test_notifications_are_skipped():
 def test_construction_requires_command_or_transport():
     with pytest.raises(ValueError):
         MCPClient()
+
+
+def test_stdio_transport_launch_spec_forwards_cwd_and_merged_child_env(monkeypatch):
+    seen = {}
+    monkeypatch.setattr(
+        subprocess,
+        "Popen",
+        lambda argv, **kwargs: seen.update(argv=argv, **kwargs) or _FakeProc(),
+    )
+
+    StdioTransport(
+        LaunchSpec(("python", "-m", "demo"), "/repo", (("PYTHONPATH", "/repo"),))
+    )
+
+    assert seen["argv"] == ["python", "-m", "demo"]
+    assert seen["cwd"] == "/repo"
+    assert seen["env"]["PYTHONPATH"] == "/repo"
+
+
+def test_stdio_transport_launch_spec_does_not_mutate_parent_environment(monkeypatch):
+    monkeypatch.setenv("FLYWHEEL_MCP_TEST_VALUE", "parent")
+    parent_env = dict(os.environ)
+    seen = {}
+    monkeypatch.setattr(
+        subprocess,
+        "Popen",
+        lambda argv, **kwargs: seen.update(argv=argv, **kwargs) or _FakeProc(),
+    )
+
+    StdioTransport(
+        LaunchSpec(("python",), env_overrides=(("FLYWHEEL_MCP_TEST_VALUE", "child"),))
+    )
+
+    assert dict(os.environ) == parent_env
+    assert seen["env"]["FLYWHEEL_MCP_TEST_VALUE"] == "child"
+
+
+def test_stdio_transport_plain_argv_keeps_existing_popen_contract(monkeypatch):
+    seen = {}
+    monkeypatch.setattr(
+        subprocess,
+        "Popen",
+        lambda argv, **kwargs: seen.update(argv=argv, kwargs=kwargs) or _FakeProc(),
+    )
+
+    StdioTransport(["python", "-m", "demo"])
+
+    assert seen == {
+        "argv": ["python", "-m", "demo"],
+        "kwargs": {
+            "stdin": subprocess.PIPE,
+            "stdout": subprocess.PIPE,
+            "stderr": subprocess.PIPE,
+            "text": True,
+            "bufsize": 1,
+        },
+    }
+
+
+def test_started_client_context_does_not_respawn_or_initialize_twice(monkeypatch):
+    popen_calls = []
+    monkeypatch.setattr(
+        subprocess,
+        "Popen",
+        lambda argv, **kwargs: popen_calls.append((argv, kwargs)) or _FakeProc(),
+    )
+    initialize_calls = 0
+
+    def handler(req):
+        nonlocal initialize_calls
+        if req.get("method") == "initialize":
+            initialize_calls += 1
+        return _echo_server(req)
+
+    client = MCPClient(LaunchSpec(("python", "-m", "demo")))
+    client._t = FakeTransport(handler)
+    client.start()
+
+    with client as entered:
+        assert entered is client
+
+    assert len(popen_calls) == 1
+    assert initialize_calls == 1
 
 
 def test_as_external_tools_bridges_into_the_executor():

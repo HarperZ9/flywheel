@@ -1,23 +1,17 @@
-// plugins_view.dart — the Plugins view: every capability the surface
-// mounts, one manifest shape. Bundled lanes and the gated builtin tool set
-// are always present; custom MCP servers register by command. Probing
-// spawns the server and shows its real tools; registration grants nothing.
-
 import 'package:flutter/material.dart';
-
 import '../client/gateway_client.dart';
 import '../theme/flywheel_theme.dart';
 import '../widgets/fw.dart';
 import '../widgets/marketplace_panel.dart';
 import '../widgets/plugin_forms.dart';
 import '../widgets/tool_call_sheet.dart';
+import '../widgets/operation_grant_sheet.dart';
 import '../widgets/parity_table.dart';
 
 class PluginsView extends StatefulWidget {
   final GatewayClient client;
   final bool alive;
   const PluginsView({super.key, required this.client, required this.alive});
-
   @override
   State<PluginsView> createState() => _PluginsViewState();
 }
@@ -31,6 +25,30 @@ class _PluginsViewState extends State<PluginsView> {
   Map<String, dynamic>? _parity;
   Map<String, dynamic>? _marketplace;
   String? _error;
+  var _request = 0;
+  String get _requestId => 'desktop-plugin-${++_request}';
+  Future<Map<String, dynamic>?> _authorize(
+      String action, Map<String, Object?> raw, String path,
+      {List<String> credentialRefs = const [],
+      Map<String, Object?> Function()? currentRaw}) {
+    final request = _requestId;
+    GatewayOperation exact(Map<String, Object?> value) =>
+        GatewayOperation.exact(
+            action: action,
+            operation: value,
+            credentialRefs: credentialRefs,
+            clientRequestId: request);
+    final operation = exact(raw);
+    return authorizeGatewayOperation(
+        context, operation, (body) => widget.client.postJson(path, body),
+        currentOperation: () {
+      try {
+        return currentRaw == null ? operation : exact(currentRaw());
+      } catch (_) {
+        return null;
+      }
+    });
+  }
 
   @override
   void initState() {
@@ -74,13 +92,18 @@ class _PluginsViewState extends State<PluginsView> {
     }
   }
 
-  Future<void> _probe(String name) async {
+  Future<void> _probe(String name, List<String> credentialRefs) async {
     setState(() => _probing.add(name));
     try {
-      final r = await widget.client.probePlugin(name);
+      final r = await _authorize(
+          'plugin.probe', {'name': name}, '/api/plugins/probe',
+          credentialRefs: credentialRefs);
+      if (r == null) return;
       if (mounted) setState(() => _probes[name] = r);
     } catch (e) {
-      if (mounted) setState(() => _probes[name] = {'status': 'error', 'detail': '$e'});
+      if (mounted) {
+        setState(() => _probes[name] = {'status': 'error', 'detail': '$e'});
+      }
     } finally {
       if (mounted) setState(() => _probing.remove(name));
     }
@@ -91,7 +114,17 @@ class _PluginsViewState extends State<PluginsView> {
     final argv = _command.text.trim().split(RegExp(r'\s+'));
     if (name.isEmpty || argv.isEmpty || argv.first.isEmpty) return;
     try {
-      final r = await widget.client.registerPlugin(name, argv);
+      final r = await _authorize(
+          'plugin.register',
+          {'name': name, 'command': argv, 'detail': '', 'requires': <String>[]},
+          '/api/plugins/register',
+          currentRaw: () => {
+                'name': _name.text.trim(),
+                'command': _command.text.trim().split(RegExp(r'\s+')),
+                'detail': '',
+                'requires': <String>[],
+              });
+      if (r == null) return;
       if (r['error'] != null) {
         setState(() => _error = '${r['error']}');
       } else {
@@ -108,21 +141,14 @@ class _PluginsViewState extends State<PluginsView> {
   @override
   Widget build(BuildContext context) {
     if (!widget.alive) {
-      return const FwEmpty(
-          'The engine is offline. Plugins appear when it runs.',
-          command: 'flywheel up');
+      return const FwEmpty('Engine offline.', command: 'flywheel up');
     }
     return ViewScroll(
       children: [
-        const SectionHeader('Plugins', kicker: 'one manifest, every capability'),
+        const SectionHeader('Plugins', kicker: 'exact external operations'),
         const SizedBox(height: FwLayout.s3),
-        Text(
-          'Lanes, the gated builtin tool set, and your own MCP servers mount '
-          'through one registry. Registering grants nothing: outbound calls '
-          'stay behind the tool gate, and probing shows the server\'s own '
-          'answer, never an assumption.',
-          style: Theme.of(context).textTheme.bodySmall,
-        ),
+        Text('One registry, with one exact approval per external operation.',
+            style: Theme.of(context).textTheme.bodySmall),
         if (_error != null) ...[
           const SizedBox(height: FwLayout.s3),
           HonestNull(_error!),
@@ -137,37 +163,7 @@ class _PluginsViewState extends State<PluginsView> {
           commandController: _command,
           onRegister: _register,
         ),
-        if (_marketplace != null) ...[
-          const SizedBox(height: FwLayout.s5),
-          const Kicker('marketplace · curated catalog + yours'),
-          const SizedBox(height: FwLayout.s3),
-          MarketplacePanel(
-            doc: _marketplace!,
-            onInstall: (name) async {
-              final r = await widget.client.installFromCatalog(name);
-              if (r['error'] != null && mounted) {
-                setState(() => _error = '${r['error']}');
-              }
-              _load();
-            },
-            onRemoveEntry: (name) async {
-              final r = await widget.client.marketplaceRemove(name);
-              if (r['error'] != null && mounted) {
-                setState(() => _error = '${r['error']}');
-              }
-              _load();
-            },
-          ),
-          const SizedBox(height: FwLayout.s3),
-          MarketplaceAddCard(
-            onAdd: (name, command, detail, requires) async {
-              final r = await widget.client.marketplaceAdd(name, command,
-                  detail: detail, requires: requires);
-              if (r['added'] == true) _load();
-              return r;
-            },
-          ),
-        ],
+        ..._marketplaceSection(),
         if (_parity != null) ...[
           const SizedBox(height: FwLayout.s5),
           const Kicker('parity · audited here, declared there'),
@@ -178,11 +174,52 @@ class _PluginsViewState extends State<PluginsView> {
     );
   }
 
+  List<Widget> _marketplaceSection() => _marketplace == null
+      ? const []
+      : [
+          const SizedBox(height: FwLayout.s5),
+          const Kicker('marketplace · curated catalog + yours'),
+          const SizedBox(height: FwLayout.s3),
+          MarketplacePanel(
+            doc: _marketplace!,
+            onInstall: (name) async {
+              final r = await _authorize('marketplace.install', {'name': name},
+                  '/api/marketplace/install');
+              if (r == null) return;
+              if (r['error'] != null && mounted) {
+                setState(() => _error = '${r['error']}');
+              }
+              _load();
+            },
+            onRemoveEntry: (name) async {
+              final r = await _authorize('marketplace.remove', {'name': name},
+                  '/api/marketplace/remove');
+              if (r == null) return;
+              if (r['error'] != null && mounted) {
+                setState(() => _error = '${r['error']}');
+              }
+              _load();
+            },
+          ),
+          const SizedBox(height: FwLayout.s3),
+          MarketplaceAddCard(
+            onAuthorize: (draft, current) async {
+              final r = await _authorize('marketplace.add',
+                  marketplaceAddOperation(draft), '/api/marketplace/add',
+                  currentRaw: () => marketplaceAddOperation(current()));
+              if (r == null) return {'error': 'approval required'};
+              if (r['added'] == true) _load();
+              return r;
+            },
+          ),
+        ];
+
   Widget _pluginCard(BuildContext context, Map<String, dynamic> p) {
     final t = context.fw;
     final name = '${p['name']}';
     final kind = '${p['kind']}';
     final enabled = p['enabled'] == true;
+    final credentialRefs = _refs(p['credential_refs']);
     final probe = _probes[name];
     return Padding(
       padding: const EdgeInsets.only(bottom: FwLayout.s3),
@@ -200,48 +237,21 @@ class _PluginsViewState extends State<PluginsView> {
                 VerdictPill(kind, status: 'unverifiable'),
                 const SizedBox(width: FwLayout.s2),
                 VerdictPill(enabled ? 'enabled' : 'disabled',
-                    status: enabled ? 'verified' : 'absent'),
+                    status: enabled ? 'unverifiable' : 'absent'),
               ],
             ),
             const SizedBox(height: FwLayout.s2),
             Text('${p['detail'] ?? ''}',
                 style: TextStyle(fontSize: 12.5, color: t.inkMuted)),
             const SizedBox(height: FwLayout.s3),
-            Row(
-              children: [
-                OutlinedButton(
-                  onPressed:
-                      _probing.contains(name) ? null : () => _probe(name),
-                  child:
-                      Text(_probing.contains(name) ? 'Probing…' : 'Probe'),
-                ),
-                const SizedBox(width: FwLayout.s3),
-                if (p['removable'] == true) ...[
-                  OutlinedButton(
-                    onPressed: () async {
-                      await widget.client.togglePlugin(name, !enabled);
-                      _load();
-                    },
-                    child: Text(enabled ? 'Disable' : 'Enable'),
-                  ),
-                  const SizedBox(width: FwLayout.s3),
-                  OutlinedButton(
-                    onPressed: () async {
-                      await widget.client.removePlugin(name);
-                      _probes.remove(name);
-                      _load();
-                    },
-                    child: const Text('Remove'),
-                  ),
-                ],
-              ],
-            ),
+            _pluginActions(
+                name, enabled, p['removable'] == true, credentialRefs),
             if (probe != null) ...[
               const SizedBox(height: FwLayout.s3),
               ProbeResult(
                 probe: probe,
-                onCallTool: (spec) =>
-                    showToolCallSheet(context, widget.client, name, spec),
+                onCallTool: (spec) => showToolCallSheet(
+                    context, widget.client, name, spec, credentialRefs),
               ),
             ],
           ],
@@ -250,4 +260,40 @@ class _PluginsViewState extends State<PluginsView> {
     );
   }
 
+  Widget _pluginActions(String name, bool enabled, bool removable,
+          List<String> credentialRefs) =>
+      Row(
+        children: [
+          OutlinedButton(
+            onPressed: _probing.contains(name)
+                ? null
+                : () => _probe(name, credentialRefs),
+            child: Text(_probing.contains(name) ? 'Probing…' : 'Probe'),
+          ),
+          const SizedBox(width: FwLayout.s3),
+          if (removable) ...[
+            OutlinedButton(
+              onPressed: () async {
+                await _authorize('plugin.toggle',
+                    {'name': name, 'enabled': !enabled}, '/api/plugins/toggle');
+                _load();
+              },
+              child: Text(enabled ? 'Disable' : 'Enable'),
+            ),
+            const SizedBox(width: FwLayout.s3),
+            OutlinedButton(
+              onPressed: () async {
+                await _authorize(
+                    'plugin.remove', {'name': name}, '/api/plugins/remove');
+                _probes.remove(name);
+                _load();
+              },
+              child: const Text('Remove'),
+            ),
+          ],
+        ],
+      );
 }
+
+List<String> _refs(Object? raw) =>
+    raw is List ? List<String>.unmodifiable(raw.whereType<String>()) : const [];

@@ -52,15 +52,43 @@ def test_unavailable_lane_is_unverifiable_not_a_crash():
     # Point at a bogus root and a lane command that cannot start; the producer
     # must return UNVERIFIABLE with a failure_code, never raise.
     import harness.lanes as lanes
-    orig = lanes.resolve_mcp_command
-    lanes.resolve_mcp_command = lambda name: ["definitely-not-a-real-binary-xyz"]
+    from harness.mcp_client import LaunchSpec
+    orig = lanes.resolve_mcp_launch
+    lanes.resolve_mcp_launch = lambda name: LaunchSpec(
+        ("definitely-not-a-real-binary-xyz",))
     try:
         env = build_context_envelope(".", budget=200, lane_timeout=3.0)
     finally:
-        lanes.resolve_mcp_command = orig
+        lanes.resolve_mcp_launch = orig
     assert env["verification_verdict"] == UNVERIFIABLE
     assert env["failure_code"] == "index_lane_unavailable"
     assert "reason" in env
+
+
+def test_context_envelope_uses_runtime_launch_spec(monkeypatch):
+    import harness.lanes as lanes
+    import harness.mcp_client as mcp_client
+    from harness.mcp_client import LaunchSpec
+
+    expected = LaunchSpec(("index-runtime",), "/source")
+    seen = []
+
+    class UnavailableClient:
+        def __init__(self, launch, **kwargs):
+            seen.append(launch)
+
+        def __enter__(self):
+            raise OSError("offline")
+
+        def __exit__(self, *args):
+            return False
+
+    monkeypatch.setattr(lanes, "resolve_mcp_launch", lambda name: expected,
+                        raising=False)
+    monkeypatch.setattr(lanes, "resolve_mcp_command", lambda name: ["portable"])
+    monkeypatch.setattr(mcp_client, "MCPClient", UnavailableClient)
+    build_context_envelope(".", lane_timeout=1.0)
+    assert seen == [expected]
 
 
 def test_fingerprint_moves_when_content_shape_changes():

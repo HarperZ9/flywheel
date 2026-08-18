@@ -37,12 +37,11 @@ def build_context_envelope(root: str | Path, *, budget: int = 1500,
     """
     root = str(Path(root).resolve())
     from .mcp_client import MCPClient, MCPError
-    from .lanes import resolve_mcp_command
-    command = resolve_mcp_command("index")
+    from .lanes import resolve_mcp_launch
+    command = resolve_mcp_launch("index")
     try:
         with MCPClient(command, timeout=lane_timeout,
                        client_name="flywheel-context-envelope") as c:
-            c.start()
             # Prefer the selection-aware envelope tool; fall back to plain context.
             # Index MCP tools use dotted names (index.context.envelope).
             tools = {t.get("name", "") for t in c.list_tools()}

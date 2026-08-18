@@ -3,7 +3,7 @@
   "contract_id": "cross_harness_adapter_contract_v1",
   "status": "draft_not_executed",
   "created_at": "2026-07-09",
-  "source_task_set": "C:/dev/local-model/benchmarks/agentic-task-set-v1.json",
+  "source_task_set": "benchmarks/agentic-task-set-v1.json",
   "purpose": "Standardize how Codex, Flywheel, Claude Code, OpenCode, local model endpoints, and dry/null providers consume identical tasks and emit comparable receipts.",
   "global_invariants": [
     "Each provider receives the same task_id and task prompt bytes for comparable runs.",
@@ -19,8 +19,9 @@
     {
       "provider_role": "codex_harness",
       "harness_id": "codex",
+      "adapter_id": "codex_cli_json/v1",
       "target_model": "5.3-Codex-Spark",
-      "current_evidence": ["C:/dev/local-model/harness.cmd exists"],
+      "current_evidence": ["repository adapter contract present; live authorization not inferred"],
       "adapter_state": "contract_only",
       "allowed_modes": ["manifest_only", "dry_plan", "focused_run_after_approval"],
       "required_receipts": ["raw_prompt", "raw_output", "tool_trace", "harness_receipt", "metric_row"]
@@ -28,8 +29,9 @@
     {
       "provider_role": "flywheel_harness",
       "harness_id": "flywheel",
+      "adapter_id": "flywheel_router/v1",
       "target_model": "5.3-Codex-Spark",
-      "current_evidence": ["C:/dev/local-model closed-loop scripts exist"],
+      "current_evidence": ["repository Flywheel harness present; live authorization not inferred"],
       "adapter_state": "contract_only",
       "allowed_modes": ["manifest_only", "dry_plan", "focused_run_after_approval"],
       "required_receipts": ["raw_prompt", "raw_output", "tool_trace", "harness_receipt", "metric_row"]
@@ -37,6 +39,7 @@
     {
       "provider_role": "claude_code",
       "harness_id": "claude_code",
+      "adapter_id": "claude_code_cli_json/v1",
       "target_model": "configured_by_operator",
       "current_evidence": ["no local execution evidence recorded in this contract"],
       "adapter_state": "needs_discovery",
@@ -46,8 +49,9 @@
     {
       "provider_role": "opencode",
       "harness_id": "opencode",
+      "adapter_id": "opencode_cli_json/v1",
       "target_model": "configured_by_operator",
-      "current_evidence": ["C:/Users/Zain/AppData/Local/Programs/@opencode-aidesktop exists"],
+      "current_evidence": ["operator://opencode-installation-root requires separate admission"],
       "adapter_state": "needs_adapter",
       "allowed_modes": ["manifest_only", "focused_run_after_approval"],
       "required_receipts": ["raw_prompt", "raw_output", "tool_trace_if_available", "harness_receipt", "metric_row"]
@@ -55,8 +59,10 @@
     {
       "provider_role": "local_14b",
       "harness_id": "local_endpoint",
+      "adapter_id": "openai_compatible_local/v1",
       "target_model": "14B",
-      "current_evidence": ["E:/local-model-run exists"],
+      "endpoint_selector": {"profile_id": "14B", "backend": "operator_configured", "model_reference": "operator_selected_14b"},
+      "current_evidence": ["operator://local-model-base-root requires a fresh endpoint profile and gate"],
       "adapter_state": "needs_endpoint_profile_and_gate",
       "allowed_modes": ["manifest_only", "endpoint_profile", "endpoint_gate_after_approval", "focused_run_after_approval"],
       "required_receipts": ["endpoint_profile", "endpoint_gate", "raw_prompt", "raw_output", "metric_row"]
@@ -64,8 +70,10 @@
     {
       "provider_role": "local_32b",
       "harness_id": "local_endpoint",
+      "adapter_id": "openai_compatible_local/v1",
       "target_model": "32B",
-      "current_evidence": ["E:/local-model-run exists"],
+      "endpoint_selector": {"profile_id": "32B", "backend": "operator_configured", "model_reference": "operator_selected_32b"},
+      "current_evidence": ["operator://local-model-base-root requires a fresh endpoint profile and gate"],
       "adapter_state": "needs_endpoint_profile_and_gate",
       "allowed_modes": ["manifest_only", "endpoint_profile", "endpoint_gate_after_approval", "focused_run_after_approval"],
       "required_receipts": ["endpoint_profile", "endpoint_gate", "raw_prompt", "raw_output", "metric_row"]
@@ -73,6 +81,7 @@
     {
       "provider_role": "dry",
       "harness_id": "dry_null",
+      "adapter_id": "dry_null/v1",
       "target_model": "none",
       "current_evidence": ["dry/null role is declared for command and receipt verification"],
       "adapter_state": "contract_only",
@@ -129,7 +138,7 @@
     "limitations present for skipped or failed rows"
   ],
   "artifact_layout": {
-    "base": "C:/tmp/cross_harness_runs/<run_id>/<provider_role>/<task_id>/",
+    "base": "external://cross-harness-runs/<run_id>/<provider_role>/<task_id>/",
     "files": ["prompt.txt", "output.txt", "tool_trace.json", "receipt.json", "metrics.json", "limitations.md"]
   },
   "next_steps": [

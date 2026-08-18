@@ -453,21 +453,6 @@ def test_content_length_guard_rejects_garbage_and_oversize():
     assert _content_length(str(gateway._Handler.MAX_BODY + 1)) is None   # oversized
 
 
-def _agent_post(body: dict, root):
-    import io
-    raw = json.dumps(body).encode()
-    h = gateway._Handler.__new__(gateway._Handler)
-    h.path = "/api/agent"
-    h.root = root
-    h.run_root = root  # hermetic: run persistence must never touch real history
-    h.headers = _FakeHeaders(str(len(raw)))
-    h.rfile = io.BytesIO(raw)
-    sent = {}
-    h._json = lambda b, code=200: sent.update(body=b, code=code)
-    h._post()
-    return sent
-
-
 def _fake_spec(base_url="https://api.x.com/v1", api_key_env="X_KEY"):
     s = type("Spec", (), {})()
     s.base_url, s.api_key_env, s.local, s.default_model = base_url, api_key_env, False, "e"
@@ -519,30 +504,65 @@ def test_embeddings_forwards_to_provider(monkeypatch):
     assert captured["body"]["model"] == "embed-3" and "adaptive" not in captured["body"]
 
 
-def test_sse_agent_streams_events(monkeypatch, tmp_path):
+def test_agent_http_delegates_to_operation_route(monkeypatch, tmp_path):
     import io
-    import harness.router_agent as RA
+    from harness.gateway_operation_route import RouteResponse
+    captured = {}
 
-    def fake_run(goal, endpoint, **kw):
-        oe = kw["on_event"]
-        oe({"type": "assistant", "step": 1, "text": "working"})
-        oe({"type": "tool_result", "name": "list_dir", "ok": True, "output": "a\nb"})
-        return {"final": "done", "steps": 1, "verified": True, "integrity": {"clean": True}}
+    def route(method, path, **values):
+        captured.update(method=method, path=path, **values)
+        return RouteResponse(200, {"accepted": True})
 
-    monkeypatch.setattr(RA, "run_router_agent", fake_run)
+    monkeypatch.setattr(
+        "harness.gateway_operation_route.route_gateway_operation", route)
+    raw = b'{"bounded":true}'
     h = gateway._Handler.__new__(gateway._Handler)
-    h.root = "."
-    h.run_root = tmp_path
+    h.path, h.owner_ref = "/api/agent", "owner_" + "a" * 32
+    h.headers = _FakeHeaders(str(len(raw)))
+    h.rfile = io.BytesIO(raw)
     h.wfile = io.BytesIO()
-    h.send_response = lambda *a, **k: None
-    h.send_header = lambda *a, **k: None
-    h.end_headers = lambda *a, **k: None
-    h._cors = lambda: None
-    h._sse_agent({"stream": True}, "the goal", "endpoint")
-    out = h.wfile.getvalue().decode()
-    assert "assistant" in out and "tool_result" in out
-    assert '"type": "done"' in out
-    assert out.rstrip().endswith("data: [DONE]")
+    h._operation_components = lambda: ("service", "factory")
+    h._operation_response = lambda response: captured.update(response=response)
+
+    h._route_operation("POST")
+
+    assert captured["method"] == "POST" and captured["path"] == "/api/agent"
+    assert captured["raw"] == raw and captured["owner_ref"] == h.owner_ref
+    assert captured["response"].body == {"accepted": True}
+    h.path = "/api/operations/op_" + "a" * 32
+    assert h._route_operation("GET") is True
+    assert captured["method"] == "GET" and captured["path"].endswith("a" * 32)
+
+
+def test_review_w10_all_operation_paths_reject_wrong_methods_in_route():
+    import io
+    h = gateway._Handler.__new__(gateway._Handler)
+    h.owner_ref = "owner_" + "a" * 32
+    h.headers, h.rfile, h.wfile = _FakeHeaders("0"), io.BytesIO(), io.BytesIO()
+    h._operation_components = lambda: (object(), object())
+    captured = []
+    h._operation_response = captured.append
+    ref = "op_" + "a" * 32
+    cases = (("GET", "/api/agent"), ("POST", f"/api/operations/{ref}"),
+             ("PUT", f"/api/operations/{ref}"),
+             ("DELETE", f"/api/operations/{ref}"),
+             ("HEAD", f"/api/operations/{ref}"))
+    for method, path in cases:
+        h.path = path
+        assert h._route_operation(method) is True
+        assert captured[-1].status == 422
+        assert captured[-1].body["error"]["code"] == "INVALID_REQUEST"
+
+
+def test_review_w10_put_delete_head_authenticate_before_strict_route():
+    for method in ("PUT", "DELETE", "HEAD"):
+        h, calls = gateway._Handler.__new__(gateway._Handler), []
+        h._authorized = lambda: calls.append("auth") or True
+        h._route_operation = lambda value: calls.append(value) or True
+        handler = getattr(h, f"do_{method}", None)
+        assert handler is not None
+        handler()
+        assert calls == ["auth", method]
 
 
 def test_router_stats_endpoint(monkeypatch):
@@ -598,54 +618,10 @@ def test_openai_chat_default_does_not_touch_stats(monkeypatch):
     assert spy.ordered is None and spy.recorded == []   # explicit order honored, no side effect
 
 
-def test_agent_route_validates_goal_and_endpoint(tmp_path):
-    sent = _agent_post({"goal": "", "endpoint": ""}, tmp_path)
-    assert sent["code"] == 400 and "goal" in sent["body"]["error"]
-
-
-def test_agent_route_dispatches_gated_and_caps_steps(tmp_path, monkeypatch):
+def test_gateway_agent_worker_persists_the_run_and_returns_run_id(
+        tmp_path, monkeypatch):
     monkeypatch.setenv("FLYWHEEL_HOME", str(tmp_path))  # countersign store
-    import harness.router_agent as RA
-    seen = {}
-
-    def fake_run(goal, endpoint, **kw):
-        seen.update(goal=goal, endpoint=endpoint, kw=kw)
-        emit = kw.get("on_event")
-        if emit:
-            emit({"type": "assistant", "step": 1, "text": "the plan"})
-            emit({"type": "tool_result", "name": "run", "ok": True,
-                  "output": "green"})
-        return {"final": "done", "steps": 1, "verified": True,
-                "checkpoint": "abc", "endpoint": endpoint}
-
-    monkeypatch.setattr(RA, "run_router_agent", fake_run)
-    sent = _agent_post({"goal": "fix the bug", "endpoint": "anthropic",
-                        "max_steps": 99}, tmp_path)
-    assert sent["code"] == 200 and sent["body"]["final"] == "done"
-    assert seen["goal"] == "fix the bug" and seen["endpoint"] == "anthropic"
-    assert seen["kw"]["max_steps"] == 12               # capped, no runaway loop
-    assert seen["kw"]["allow_write"] is False          # default-deny survives the HTTP hop
-    assert seen["kw"]["allow_exec"] is False
-    # the run persisted into HISTORY under the run root, content-addressed,
-    # and it CARRIES ITS TRACE: the same events a live stream would show
-    from harness.eval_store import agent_run_detail, agent_runs
-    hist = agent_runs(tmp_path)
-    assert hist["total"] == 1
-    assert hist["runs"][0]["run_id"] == sent["body"]["run_id"]
-    assert hist["runs"][0]["intact"] is True
-    assert hist["runs"][0]["goal_excerpt"] == "fix the bug"
-    detail = agent_run_detail(tmp_path, sent["body"]["run_id"])
-    assert [e["type"] for e in detail["events"]] == [
-        "assistant", "tool_result"]
-
-
-def test_sse_agent_persists_the_run_and_dones_with_run_id(tmp_path, monkeypatch):
-    # the STREAMED path is the primary surface; a streamed run must land in
-    # history exactly like a posted one, and the done event names its receipt
-    import io
-
-    monkeypatch.setenv("FLYWHEEL_HOME", str(tmp_path))  # countersign store
-    import harness.router_agent as RA
+    from harness import gateway_operation_process as process
 
     def fake_run(goal, endpoint, **kw):
         emit = kw.get("on_event")
@@ -654,22 +630,14 @@ def test_sse_agent_persists_the_run_and_dones_with_run_id(tmp_path, monkeypatch)
         return {"final": "answered", "steps": 1, "verified": True,
                 "checkpoint": "abc", "endpoint": endpoint}
 
-    monkeypatch.setattr(RA, "run_router_agent", fake_run)
-    h = gateway._Handler.__new__(gateway._Handler)
-    h.root = tmp_path
-    h.run_root = tmp_path
-    h.wfile = io.BytesIO()
-    h.send_response = lambda *a, **k: None
-    h.send_header = lambda *a, **k: None
-    h.end_headers = lambda: None
-    h._cors = lambda: None
-    h._sse_agent({"goal": "g"}, "g", "anthropic")
-    frames = [json.loads(line[6:])
-              for line in h.wfile.getvalue().decode().split("\n\n")
-              if line.startswith("data: {")]
-    done = [f for f in frames if f.get("type") == "done"][0]
+    monkeypatch.setattr("harness.router_agent.run_router_agent", fake_run)
+    monkeypatch.setattr(process, "_emit", lambda _event: None)
+    result = process._run_agent({
+        "goal": "g", "endpoint": "anthropic", "max_steps": 2,
+        "allow_write": False, "allow_exec": False,
+    }, {}, tmp_path, tmp_path)
     from harness.eval_store import agent_run_detail
-    detail = agent_run_detail(tmp_path, done["run_id"])
+    detail = agent_run_detail(tmp_path, result["run_id"])
     assert detail["intact"] is True
     assert detail["final"] == "answered"
     assert [e["type"] for e in detail["events"]] == ["assistant"]
@@ -759,42 +727,6 @@ def test_robustness_inject_route_honestly_opens_on_granted_flags():
     assert body["gate"]["allow_exec"] is True
     assert body["contained"] < body["total"]           # granting exec opens the shell scenarios
     assert len(body["receipt"]) == 16                  # a re-derivable receipt rides the result
-
-
-def test_sse_agent_persists_an_errored_run_with_its_trace(tmp_path, monkeypatch):
-    # a failed run is the one you most want to inspect afterward: it lands
-    # in history as status ERROR carrying every event up to and including
-    # the error itself, instead of vanishing with the stream
-    import io
-
-    monkeypatch.setenv("FLYWHEEL_HOME", str(tmp_path))
-    import harness.router_agent as RA
-
-    def fake_run(goal, endpoint, **kw):
-        emit = kw.get("on_event")
-        if emit:
-            emit({"type": "assistant", "step": 1, "text": "starting"})
-        raise RuntimeError("provider unreachable")
-
-    monkeypatch.setattr(RA, "run_router_agent", fake_run)
-    h = gateway._Handler.__new__(gateway._Handler)
-    h.root = tmp_path
-    h.run_root = tmp_path
-    h.wfile = io.BytesIO()
-    h.send_response = lambda *a, **k: None
-    h.send_header = lambda *a, **k: None
-    h.end_headers = lambda: None
-    h._cors = lambda: None
-    h._sse_agent({"goal": "g"}, "g", "anthropic")
-    from harness.eval_store import agent_runs
-    hist = agent_runs(tmp_path)
-    assert hist["total"] == 1
-    row = hist["runs"][0]
-    assert row["status"] == "ERROR" and row["intact"] is True
-    from harness.eval_store import agent_run_detail
-    detail = agent_run_detail(tmp_path, row["run_id"])
-    assert "provider unreachable" in detail["error"]
-    assert [e["type"] for e in detail["events"]] == ["assistant", "error"]
 
 
 def test_lanes_install_route_requires_a_name():

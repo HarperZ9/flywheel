@@ -1,7 +1,5 @@
-// plan_models.dart — typed reading of a forged plan (flywheel.prp/v1).
-// Checkability IS the verdict here: a gate an external oracle can run maps to
-// verified, a subjective gate to unverifiable. The confidence score is the
-// engine's, grounded in that ratio — never recomputed or dressed up client-side.
+// plan_models.dart — neutral presentation of flywheel.prp/v2 metadata.
+// Checkability names who could check a gate. It is never a pass verdict.
 
 /// One validation gate inside a forged plan.
 class PlanGate {
@@ -10,20 +8,23 @@ class PlanGate {
   const PlanGate({required this.check, required this.externallyCheckable});
 
   factory PlanGate.fromJson(Map<String, dynamic> j) => PlanGate(
-        check: j['check'] ?? '',
-        externallyCheckable: j['externally_checkable'] ?? false,
+        check: j['check'] is String ? j['check'] as String : '',
+        externallyCheckable: j['externally_checkable'] is bool
+            ? j['externally_checkable'] as bool
+            : false,
       );
 
-  String get label => externallyCheckable ? 'oracle' : 'manual';
-  String get verdict => externallyCheckable ? 'verified' : 'unverifiable';
+  String get label => externallyCheckable ? 'checkable' : 'manual';
 }
 
 /// A forged plan: the criterion-bearing spec returned by POST /api/forge.
 class ForgedPlan {
   final String goal;
   final String taskType;
-  final int confidence; // 1..10, scored by external-checkability
-  final double externalGateRatio; // 0..1, fraction of oracle-runnable gates
+  final int confidence;
+  final String externalGateRatio;
+  final int checkableGateCount;
+  final int totalGateCount;
   final bool wellPosed; // did the goal state its own criterion?
   final List<PlanGate> gates;
   final String prompt; // the full rendered PRP
@@ -35,6 +36,8 @@ class ForgedPlan {
       required this.taskType,
       required this.confidence,
       required this.externalGateRatio,
+      required this.checkableGateCount,
+      required this.totalGateCount,
       required this.wellPosed,
       required this.gates,
       required this.prompt,
@@ -42,19 +45,28 @@ class ForgedPlan {
       this.error});
 
   factory ForgedPlan.fromJson(Map<String, dynamic> j) => ForgedPlan(
-        goal: j['goal'] ?? '',
-        taskType: j['task_type'] ?? '',
-        confidence: j['confidence'] is num ? (j['confidence'] as num).toInt() : 0,
-        externalGateRatio: j['external_gate_ratio'] is num
-            ? (j['external_gate_ratio'] as num).toDouble()
-            : 0.0,
-        wellPosed: j['well_posed'] ?? false,
-        gates: ((j['validation_gates'] ?? []) as List)
+        goal: j['goal'] is String ? j['goal'] as String : '',
+        taskType: j['task_type'] is String ? j['task_type'] as String : '',
+        confidence: j['confidence'] is int ? j['confidence'] as int : 0,
+        externalGateRatio: j['external_gate_ratio'] is String
+            ? j['external_gate_ratio'] as String
+            : '0.000',
+        checkableGateCount: j['gate_counts'] is Map &&
+                (j['gate_counts'] as Map)['checkable'] is int
+            ? (j['gate_counts'] as Map)['checkable'] as int
+            : 0,
+        totalGateCount:
+            j['gate_counts'] is Map && (j['gate_counts'] as Map)['total'] is int
+                ? (j['gate_counts'] as Map)['total'] as int
+                : 0,
+        wellPosed: j['well_posed'] is bool ? j['well_posed'] as bool : false,
+        gates: List.unmodifiable((j['validation_gates'] is List
+                ? j['validation_gates'] as List
+                : const [])
             .whereType<Map<String, dynamic>>()
-            .map(PlanGate.fromJson)
-            .toList(),
-        prompt: j['prompt'] ?? '',
-        prpId: j['prp_id'] ?? '',
-        error: j['error'],
+            .map(PlanGate.fromJson)),
+        prompt: j['prompt'] is String ? j['prompt'] as String : '',
+        prpId: j['prp_id'] is String ? j['prp_id'] as String : '',
+        error: j['error'] is String ? j['error'] as String : null,
       );
 }

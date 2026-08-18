@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 
 import '../theme/flywheel_theme.dart';
 import '../widgets/fw.dart';
-import 'editor_pane.dart';
+import 'code_buffer_session.dart';
 
 class EditorTabBar extends StatelessWidget {
   final List<OpenFile> open;
@@ -71,7 +71,9 @@ class EditorTabBar extends StatelessWidget {
             border: Border(
               right: BorderSide(color: t.hairline),
               top: BorderSide(
-                  color: isActive ? t.ink : Colors.transparent, // selection = ink, not a verdict
+                  color: isActive
+                      ? t.ink
+                      : Colors.transparent, // selection = ink, not a verdict
                   width: 2),
             ),
           ),

@@ -1,27 +1,19 @@
 """Synthesize a closed-loop benchmark seed report into an outcome document."""
 
 from __future__ import annotations
-
 import argparse
 import json
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
+from statistics import median
 from typing import Any
-
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-
 from harness.file_backed_store import FileBackedHarnessStore  # noqa: E402
-
-
 def _now() -> str:
     return datetime.now(UTC).isoformat().replace("+00:00", "Z")
-
-
 def _load_json(path: Path) -> dict[str, Any]:
     return json.loads(path.read_text(encoding="utf-8"))
-
-
 def find_seed_report_in_store(*, store_root: str, run_id: str) -> str:
     if not store_root or not run_id:
         return ""
@@ -34,8 +26,6 @@ def find_seed_report_in_store(*, store_root: str, run_id: str) -> str:
     if not candidates:
         return ""
     return str(candidates[-1].get("stored_path", ""))
-
-
 def _step_rows(report: dict[str, Any]) -> list[dict[str, Any]]:
     results = report.get("results")
     if isinstance(results, list) and results:
@@ -53,15 +43,11 @@ def _step_rows(report: dict[str, Any]) -> list[dict[str, Any]]:
             if isinstance(row, dict)
         ]
     return []
-
-
 def _safe_float(value: Any) -> float:
     try:
         return float(value)
     except (TypeError, ValueError):
         return 0.0
-
-
 def _read_child_json(path_text: str) -> tuple[dict[str, Any] | None, str]:
     if not path_text or not path_text.lower().endswith(".json"):
         return None, "not_json_artifact"
@@ -72,8 +58,6 @@ def _read_child_json(path_text: str) -> tuple[dict[str, Any] | None, str]:
         return None, "missing_artifact"
     except (OSError, json.JSONDecodeError) as exc:
         return None, f"unreadable_artifact:{type(exc).__name__}"
-
-
 def _source_mined_summary(data: dict[str, Any], path_text: str) -> dict[str, Any]:
     rows = data.get("backend_rows") if isinstance(data.get("backend_rows"), list) else []
     return {
@@ -97,8 +81,6 @@ def _source_mined_summary(data: dict[str, Any], path_text: str) -> dict[str, Any
             if isinstance(row, dict)
         ],
     }
-
-
 def _governed_summary(data: dict[str, Any], path_text: str) -> dict[str, Any]:
     rows = data.get("backend_rows") if isinstance(data.get("backend_rows"), list) else []
     return {
@@ -122,8 +104,6 @@ def _governed_summary(data: dict[str, Any], path_text: str) -> dict[str, Any]:
             if isinstance(row, dict)
         ],
     }
-
-
 def _unisonai_summary(data: dict[str, Any], path_text: str) -> dict[str, Any]:
     rows = data.get("rows") if isinstance(data.get("rows"), list) else []
     return {
@@ -147,8 +127,6 @@ def _unisonai_summary(data: dict[str, Any], path_text: str) -> dict[str, Any]:
             if isinstance(row, dict)
         ],
     }
-
-
 def _classifier_friction_summary(data: dict[str, Any], path_text: str) -> dict[str, Any]:
     summary = data.get("summary") if isinstance(data.get("summary"), dict) else {}
     rows = summary.get("rows") if isinstance(summary.get("rows"), list) else []
@@ -193,8 +171,6 @@ def _classifier_friction_summary(data: dict[str, Any], path_text: str) -> dict[s
             if isinstance(row, dict)
         ],
     }
-
-
 def _context_inventory_summary(data: dict[str, Any], path_text: str) -> dict[str, Any]:
     summary = data.get("summary") if isinstance(data.get("summary"), dict) else {}
     roots = data.get("roots") if isinstance(data.get("roots"), list) else []
@@ -222,8 +198,6 @@ def _context_inventory_summary(data: dict[str, Any], path_text: str) -> dict[str
             if isinstance(row, dict)
         ],
     }
-
-
 def _tool_readiness_summary(data: dict[str, Any], path_text: str) -> dict[str, Any]:
     rows = data.get("tools") if isinstance(data.get("tools"), list) else []
     return {
@@ -246,8 +220,6 @@ def _tool_readiness_summary(data: dict[str, Any], path_text: str) -> dict[str, A
             if isinstance(row, dict)
         ],
     }
-
-
 def _tool_hardening_summary(data: dict[str, Any], path_text: str) -> dict[str, Any]:
     summary = data.get("summary") if isinstance(data.get("summary"), dict) else {}
     actions = data.get("actions") if isinstance(data.get("actions"), list) else []
@@ -279,8 +251,6 @@ def _tool_hardening_summary(data: dict[str, Any], path_text: str) -> dict[str, A
             if isinstance(row, dict)
         ],
     }
-
-
 def _model_release_summary(data: dict[str, Any], path_text: str) -> dict[str, Any]:
     rows = data.get("models") if isinstance(data.get("models"), list) else []
     return {
@@ -306,8 +276,6 @@ def _model_release_summary(data: dict[str, Any], path_text: str) -> dict[str, An
             if isinstance(row, dict)
         ],
     }
-
-
 def _model_publish_plan_summary(data: dict[str, Any], path_text: str) -> dict[str, Any]:
     summary = data.get("summary") if isinstance(data.get("summary"), dict) else {}
     rows = data.get("models") if isinstance(data.get("models"), list) else []
@@ -329,8 +297,6 @@ def _model_publish_plan_summary(data: dict[str, Any], path_text: str) -> dict[st
             if isinstance(row, dict)
         ],
     }
-
-
 def _model_endpoint_summary(data: dict[str, Any], path_text: str) -> dict[str, Any]:
     rows = data.get("profiles") if isinstance(data.get("profiles"), list) else []
     return {
@@ -354,8 +320,6 @@ def _model_endpoint_summary(data: dict[str, Any], path_text: str) -> dict[str, A
             if isinstance(row, dict)
         ],
     }
-
-
 def _model_endpoint_gate_summary(data: dict[str, Any], path_text: str) -> dict[str, Any]:
     rows = data.get("rows") if isinstance(data.get("rows"), list) else []
     return {
@@ -377,8 +341,6 @@ def _model_endpoint_gate_summary(data: dict[str, Any], path_text: str) -> dict[s
             if isinstance(row, dict)
         ],
     }
-
-
 def _gather_readiness_summary(data: dict[str, Any], path_text: str) -> dict[str, Any]:
     summary = data.get("summary") if isinstance(data.get("summary"), dict) else {}
     return {
@@ -986,15 +948,35 @@ def _harness_comparison_summary(data: dict[str, Any], path_text: str) -> dict[st
                 "benchmark_id": row.get("benchmark_id", ""),
                 "comparison_key": row.get("comparison_key", ""),
                 "available": bool(row.get("available")),
-                "pass_rate_delta_flywheel_minus_codex": _safe_float(row.get("pass_rate_delta_flywheel_minus_codex")),
-                "quality_delta_flywheel_minus_codex": _safe_float(row.get("quality_delta_flywheel_minus_codex")),
-                "latency_delta_ms_flywheel_minus_codex": _safe_float(row.get("latency_delta_ms_flywheel_minus_codex")),
+                "pass_rate_delta_flywheel_minus_codex": row.get("pass_rate_delta_flywheel_minus_codex"),
+                "quality_delta_flywheel_minus_codex": row.get("quality_delta_flywheel_minus_codex"),
+                "latency_delta_ms_flywheel_minus_codex": row.get("latency_delta_ms_flywheel_minus_codex"),
                 "winner_by_quality": row.get("winner_by_quality", ""),
             }
             for row in comparisons
             if isinstance(row, dict)
         ],
     }
+
+
+def _cross_harness_execution_summary(data: dict[str, Any], path_text: str) -> dict[str, Any]:
+    rows = [row for row in data.get("rows", []) if isinstance(row, dict)]
+    phase = str(rows[0].get("phase", "")) if rows else ""
+    quality = [1.0 if row.get("oracle_state") == "pass" else 0.0 for row in rows if row.get("execution_state") == "returned" and row.get("receipt_state") == "verified" and row.get("oracle_state") in {"pass", "fail"}]
+    latency = [float(row["metrics"]["latency_ms"]) for row in rows if row.get("execution_state") == "returned" and isinstance(row.get("metrics"), dict) and isinstance(row["metrics"].get("latency_ms"), (int, float))]
+    launched = sum(int(row.get("launched") is True) for row in rows)
+    returned = sum(int(row.get("execution_state") == "returned") for row in rows)
+    resource_rows = [row for row in rows if row.get("execution_state") == "returned"]
+    resources = sorted({json.dumps(row.get("metrics", {}).get("resource_observation"), sort_keys=True) for row in resource_rows if row.get("metrics", {}).get("resource_observation")})
+    nulls: dict[str, int] = {}
+    for row in rows:
+        for reason in row.get("metric_null_reasons", {}): nulls[reason] = nulls.get(reason, 0) + 1
+    return {"artifact_path": path_text, "schema": data.get("schema", ""), "kind": "cross_harness_execution", "phase": phase,
+        "planned_rows": len(rows), "provider_units": len({(str(row.get("provider_role", "")), str(row.get("coverage_unit") or row.get("task_id", ""))) for row in rows}),
+        "availability": {key: sum(int(row.get(key) is True) for row in rows) for key in ("planned", "admitted", "blocked", "launched")}, "execution_reliability": round(returned / launched, 4) if launched else None,
+        "deterministic_quality": round(sum(quality) / len(quality), 4) if quality else None, "quality_n": len(quality), "latency_ms": {"median": median(latency), "min": min(latency), "max": max(latency), "n": len(latency)} if latency else None,
+        "resources": {"observations": [json.loads(item) for item in resources], "n": len(resource_rows), "included_execution_state": "returned", "receipt_states": {state: sum(row.get("receipt_state") == state for row in resource_rows) for state in ("verified", "drift", "not_emitted")}}, "metric_null_reasons": dict(sorted(nulls.items())), "declared_tool_policy_sha256s": sorted({str(row.get("tool_policy_sha256")) for row in rows if row.get("tool_policy_sha256")}), "enforcement_sha256s": sorted({str(row.get("enforcement_sha256")) for row in rows if row.get("enforcement_sha256")}),
+        "policy_equivalence": "non_equivalent"}
 
 
 def _generic_child_summary(data: dict[str, Any], path_text: str) -> dict[str, Any]:
@@ -1029,6 +1011,8 @@ def _generic_child_summary(data: dict[str, Any], path_text: str) -> dict[str, An
         return _mcp_tool_health_summary(data, path_text)
     if schema == "harness.comparison-report/v1":
         return _harness_comparison_summary(data, path_text)
+    if schema == "harness.cross-harness-task-scorecard/v1":
+        return _cross_harness_execution_summary(data, path_text)
     if schema == "harness.context-inventory/v1":
         return _context_inventory_summary(data, path_text)
     if schema == "harness.tool-readiness/v1":
@@ -1156,6 +1140,19 @@ def comparison_report_signal_summary(child_summaries: list[dict[str, Any]]) -> d
         "verdict_counts": verdict_counts,
         "comparison_keys_observed": [str(row.get("comparison_key", "")) for row in comparisons if row.get("comparison_key")],
     }
+
+
+def cross_harness_execution_signal_summary(child_summaries: list[dict[str, Any]]) -> dict[str, Any]:
+    rows = [item for item in child_summaries if item.get("kind") == "cross_harness_execution"]; result: dict[str, Any] = {}
+    for phase in ("spark", "local"):
+        phase_rows = [row for row in rows if row.get("phase") == phase]
+        result[phase] = {"artifacts": len(phase_rows), "planned_rows": sum(int(row.get("planned_rows", 0)) for row in phase_rows), "provider_units": sum(int(row.get("provider_units", 0)) for row in phase_rows), "availability": {key: sum(int(row.get("availability", {}).get(key, 0)) for row in phase_rows) for key in ("planned", "admitted", "blocked", "launched")}}
+        for key in ("execution_reliability", "deterministic_quality", "quality_n", "latency_ms", "resources", "metric_null_reasons", "declared_tool_policy_sha256s", "enforcement_sha256s", "policy_equivalence"): result[phase][key] = phase_rows[0].get(key) if len(phase_rows) == 1 else None
+    result["scorecard_artifacts"], result["quality_n"], result["availability"] = len(rows), sum(int(row.get("quality_n", 0)) for row in rows), {key: sum(int(row.get("availability", {}).get(key, 0)) for row in rows) for key in ("planned", "admitted", "blocked", "launched")}
+    result["declared_tool_policy_sha256s"] = sorted({value for row in rows for value in row.get("declared_tool_policy_sha256s", [])})
+    result["enforcement_sha256s"] = sorted({value for row in rows for value in row.get("enforcement_sha256s", [])})
+    result["policy_equivalence"] = "non_equivalent" if rows else "unknown"
+    return result
 
 
 def context_signal_summary(child_summaries: list[dict[str, Any]]) -> dict[str, Any]:
@@ -2010,8 +2007,8 @@ def conclusion(report: dict[str, Any]) -> dict[str, Any]:
 
 
 def build_outcome(report: dict[str, Any], *, source_report_path: str) -> dict[str, Any]:
-    rows = _step_rows(report)
-    child_summaries = extract_child_artifact_summaries(report)
+    rows = _step_rows(report); child_summaries = extract_child_artifact_summaries(report)
+    cross_harness_signals = cross_harness_execution_signal_summary(child_summaries); benchmark_signals = benchmark_signal_summary(child_summaries)
     observed_steps = [
         {
             "step_id": row.get("step_id", ""),
@@ -2052,7 +2049,8 @@ def build_outcome(report: dict[str, Any], *, source_report_path: str) -> dict[st
             "embodied_realtime_signals": embodied_realtime_signal_summary(child_summaries),
             "model_card_claim_signals": model_card_claim_signal_summary(child_summaries),
             "comparison_report_signals": comparison_report_signal_summary(child_summaries),
-            "benchmark_signals": benchmark_signal_summary(child_summaries),
+            "cross_harness_execution_signals": cross_harness_signals, "scorecard_artifacts": {"benchmark_signals": benchmark_signals["scorecard_count"], "cross_harness": cross_harness_signals["scorecard_artifacts"], "total": benchmark_signals["scorecard_count"] + cross_harness_signals["scorecard_artifacts"]},
+            "benchmark_signals": benchmark_signals,
             "context_signals": context_signal_summary(child_summaries),
             "tool_readiness_signals": tool_readiness_signal_summary(child_summaries),
             "tool_hardening_signals": tool_hardening_signal_summary(child_summaries),
@@ -2067,7 +2065,7 @@ def build_outcome(report: dict[str, Any], *, source_report_path: str) -> dict[st
             "Step-level process success is not equivalent to model-quality success; child scorecards remain the authority for benchmark claims.",
         ],
         "unknowns": [
-            "No model-quality comparison can be concluded from a dry plan.",
+            *(["No model-quality comparison can be concluded from a dry plan."] if report.get("dry_plan") else ["No model-quality comparison can be concluded because the parsed cross-harness scorecards have a zero deterministic-quality denominator."] if cross_harness_signals["scorecard_artifacts"] and cross_harness_signals["quality_n"] == 0 else []),
             "Endpoint availability must be interpreted from endpoint-auth and child benchmark artifacts.",
             "Provider deltas extracted from child scorecards are only as strong as the executed benchmark scope.",
             "Full Codex/Flywheel/Claude/OpenCode/local-model conclusions require the full benchmark battery, not only the bounded seed slice.",
@@ -2078,7 +2076,7 @@ def build_outcome(report: dict[str, Any], *, source_report_path: str) -> dict[st
             "Benchmark coverage reports identify missing evidence; they do not infer quality for absent scorecards.",
         ],
         "next_checks": [
-            "Run the closed-loop seed dry plan if this outcome was built from stale or missing plan evidence.",
+            *(["Run the closed-loop seed dry plan if this outcome was built from stale or missing plan evidence."] if report.get("dry_plan") else []),
             "Execute the closed-loop seed command to create a shared-run receipt bundle.",
             "Inspect child scorecards for provider-level pass rates, latency, failure classes, and skipped endpoint posture.",
             "Extend orchestration to live gather receipts and live 14B/32B benchmark, checksum, and endpoint gates.",
@@ -2127,8 +2125,8 @@ def render_markdown(outcome: dict[str, Any]) -> str:
         f"- Model-card unresolved claim fields: `{outcome['observations']['model_card_claim_signals']['unresolved_fields']}`",
         f"- Comparison report artifacts parsed: `{outcome['observations']['comparison_report_signals']['comparison_artifacts']}`",
         f"- Available Codex/Flywheel comparisons: `{outcome['observations']['comparison_report_signals']['available_comparisons']}`",
-        f"- Missing runnable benchmarks: `{', '.join(outcome['observations']['benchmark_coverage_signals']['missing_runnable_benchmark_ids'])}`",
-        f"- Benchmark scorecards parsed: `{outcome['observations']['benchmark_signals']['scorecard_count']}`",
+        f"- Missing runnable benchmarks: `{', '.join(outcome['observations']['benchmark_coverage_signals']['missing_runnable_benchmark_ids'])}`", f"- Benchmark scorecards parsed: `{outcome['observations']['scorecard_artifacts']['total']}`",
+        f"- Cross-harness scorecards parsed: `{outcome['observations']['cross_harness_execution_signals']['scorecard_artifacts']}`", f"- Deterministic quality denominator: `{outcome['observations']['cross_harness_execution_signals']['quality_n']}`",
         f"- Providers observed: `{', '.join(outcome['observations']['benchmark_signals']['providers_observed'])}`",
         f"- Context inventory artifacts parsed: `{outcome['observations']['context_signals']['inventory_count']}`",
         f"- Context entries observed: `{outcome['observations']['context_signals']['entries']}`",

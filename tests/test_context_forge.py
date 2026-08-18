@@ -16,7 +16,8 @@ from harness.context_forge import forge_prp, PRP
 def test_code_prp_is_high_confidence_and_fully_external():
     prp = forge_prp("implement sort(nums) that passes the provided tests")
     assert prp.spec.well_posed is True
-    assert prp.external_gate_ratio == 1.0          # both code gates machine-checkable
+    assert prp.external_gate_ratio == "1.000"
+    assert prp.gate_counts == {"checkable": 2, "total": 2}
     assert prp.confidence >= 7
 
 
@@ -32,7 +33,8 @@ def test_confidence_is_grounded_in_externality_not_wording():
     code = forge_prp("implement a function that passes the tests")
     vague = forge_prp("do the thing well")
     assert code.confidence > vague.confidence
-    assert code.external_gate_ratio > vague.external_gate_ratio
+    assert code.gate_counts["checkable"] * vague.gate_counts["total"] > (
+        vague.gate_counts["checkable"] * code.gate_counts["total"])
 
 
 def test_real_context_raises_confidence():
@@ -47,9 +49,9 @@ def test_real_context_raises_confidence():
 def test_render_shows_gates_and_the_external_verifier_note():
     r = forge_prp("implement sort that passes the tests").render()
     assert "Validation gates" in r
-    assert "[oracle]" in r                          # machine-checkable gates marked
-    assert "EXTERNAL verifier" in r                 # the differentiator is explicit
-    assert "cannot\n  author or fake" in r
+    assert "[checkable]" in r
+    assert "[oracle]" not in r
+    assert "no gate is claimed run or passed" in r
 
 
 def test_extra_caller_gates_included():
@@ -63,8 +65,19 @@ def test_confidence_bounds_and_schema():
         prp = forge_prp(goal)
         assert 1 <= prp.confidence <= 10
     d = forge_prp("summarize under 100 words").to_dict()
-    assert d["schema"] == "flywheel.prp/v1"
+    assert d["schema"] == "flywheel.prp/v2"
+    assert type(d["external_gate_ratio"]) is str
+    assert d["gate_counts"] == {"checkable": 2, "total": 2}
     assert "validation_gates" in d and "prompt" in d
+
+
+def test_prp_is_no_float_and_has_exact_closed_fields():
+    d = forge_prp("implement sort that passes tests").to_dict()
+    assert set(d) == {"schema", "goal", "task_type", "intent_sha256",
+                     "architecture_sha256", "confidence",
+                     "external_gate_ratio", "gate_counts", "well_posed",
+                     "validation_gates", "prompt"}
+    assert all(type(value) is not float for value in d.values())
 
 
 def test_prp_carries_content_addressed_y_arms():

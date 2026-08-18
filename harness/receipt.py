@@ -2,7 +2,6 @@
 
 Field types and their validation live in receipt_fields.py; this module composes
 fields into a claim and digests it. Two properties are the whole point:
-
 1. TWO DIGESTS, because one cannot do both jobs.
    `subject_sha256` answers what was checked and stays VERDICT-FREE, so two
    verifiers who reach opposite conclusions about the same candidate still produce
@@ -10,11 +9,9 @@ fields into a claim and digests it. Two properties are the whole point:
    noticed.
    `claim_sha256` binds the verdict, the objective, and the raw oracle output. It
    is what a signature covers and what a stranger re-derives.
-
 2. `does_not_prove` is MECHANICALLY DERIVED from the receipt's own contents and is
    never empty. A receipt that reports only its proof is how a true explanation
    becomes a fake passport, and deriving it means nobody has to remember.
-
 `SIGNED_OVER` is fixed here, per schema version, and is deliberately NOT a receipt
 field. If a receipt could declare what its own signature covers, an attacker would
 declare the narrowest possible coverage.
@@ -22,7 +19,7 @@ declare the narrowest possible coverage.
 from __future__ import annotations
 
 import hashlib
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 from .receipt_fields import (
     Budget, Denominator, EvidenceKind, GradedScore, Tier, ReceiptError,
@@ -30,18 +27,12 @@ from .receipt_fields import (
 )
 from .verdict import Verdict, Attribution
 
-# v3 adds the compute denominator's missing half: the budget CEILING, the retry
-# count, whether oracle feedback was visible between attempts, and an optional
-# exact graded score. The version moves because the claim digest covers all of
-# them, so a v2 reader must refuse a v3 claim rather than hash a subset of it.
-#
-# NOT done here, and left visible rather than stubbed: the QA card carries no
-# grading-oracle battery. Its false-accept and false-reject counts assume an
-# oracle that binarises, and every oracle in this repository does. Inventing card
-# fields for a grading oracle that does not exist yet would publish a shape
-# nothing produces, so `GradedScore` is honoured on the receipt and the battery
-# waits for the first grading oracle to exist.
-SCHEMA = "flywheel.receipt/v3"
+LEGACY_SCHEMA = "flywheel.receipt/v3"
+# v4 is the first schema whose claim preimage binds oracle-specific limits.
+# v3 remains readable with its original preimage; schema names never get a
+# second interpretation after publication.
+SCHEMA = "flywheel.receipt/v4"
+SUPPORTED_SCHEMAS = frozenset((LEGACY_SCHEMA, SCHEMA))
 
 # What a signature covers. Fixed in code, never read from a receipt. This is a
 # security property, not a configuration choice.
@@ -52,7 +43,7 @@ def subject_fields(*, criterion_id, criterion_version, criterion_sha256, family,
                    family_instance_id, generator_id, generator_seed,
                    candidate_sha256, prompt_hash, checker_module,
                    checker_source_sha256, executes_candidate_code, evidence_kind,
-                   tier, input_tier_multiset=()) -> dict:
+                   tier, input_tier_multiset=(), schema=SCHEMA) -> dict:
     """What was checked, as a plain mapping. THE one definition of the subject.
 
     `Receipt._subject` calls this rather than restating it, so the standalone
@@ -70,7 +61,7 @@ def subject_fields(*, criterion_id, criterion_version, criterion_sha256, family,
         "executes_candidate_code": executes_candidate_code,
         "evidence_kind": getattr(evidence_kind, "value", evidence_kind),
         "tier": getattr(tier, "value", tier),
-        "input_tier_multiset": list(input_tier_multiset), "schema": SCHEMA,
+        "input_tier_multiset": list(input_tier_multiset), "schema": schema,
     }
 
 
@@ -128,6 +119,7 @@ class Receipt:
     unverifiable_reason: str = ""
     undecided_reason: str = ""
     extra_does_not_prove: tuple = ()
+    schema: str = SCHEMA
 
     def __post_init__(self) -> None:
         if self.denominator is None:
@@ -141,6 +133,8 @@ class Receipt:
         if self.graded_score is not None and not isinstance(self.graded_score,
                                                             GradedScore):
             raise ReceiptError("graded_score must be a GradedScore or None")
+        if self.schema not in SUPPORTED_SCHEMAS:
+            raise ReceiptError(f"unsupported receipt schema {self.schema!r}")
         for name in ("objective", "incumbent_objective", "coverage",
                      "input_tier_multiset"):
             no_floats(getattr(self, name), name)
@@ -159,7 +153,7 @@ class Receipt:
             checker_source_sha256=self.checker_source_sha256,
             executes_candidate_code=self.executes_candidate_code,
             evidence_kind=self.evidence_kind, tier=self.tier,
-            input_tier_multiset=self.input_tier_multiset)
+            input_tier_multiset=self.input_tier_multiset, schema=self.schema)
 
     def _claim(self) -> dict:
         d = dict(self._subject())
@@ -184,6 +178,8 @@ class Receipt:
             "unverifiable_reason": self.unverifiable_reason,
             "undecided_reason": self.undecided_reason,
         })
+        if self.schema == SCHEMA:
+            d["extra_does_not_prove"] = list(self.extra_does_not_prove)
         return d
 
     def subject_sha256(self) -> str:
@@ -249,12 +245,17 @@ class Receipt:
         # A reader that ignores the version silently reinterprets fields whose
         # meaning changed between them, and then reports a claim digest over a
         # different set of fields than the writer covered.
-        if d.get("schema") != SCHEMA:
-            raise ReceiptError(
-                f"refusing to read schema {d.get('schema')!r} as {SCHEMA}")
+        schema = d.get("schema")
+        if schema not in SUPPORTED_SCHEMAS:
+            raise ReceiptError(f"refusing unsupported receipt schema {schema!r}")
         den = d["denominator"]
         graded = d.get("graded_score")
-        return cls(
+        if schema == LEGACY_SCHEMA and "extra_does_not_prove" in d:
+            raise ReceiptError("v3 does not define extra_does_not_prove")
+        extra = d.get("extra_does_not_prove", ()) if schema == SCHEMA else ()
+        if type(extra) not in (list, tuple) or any(type(item) is not str for item in extra):
+            raise ReceiptError("extra_does_not_prove must be a list of strings")
+        receipt = cls(
             criterion_id=d["criterion_id"],
             criterion_version=d["criterion_version"],
             criterion_sha256=d["criterion_sha256"],
@@ -284,4 +285,16 @@ class Receipt:
             input_tier_multiset=tuple(d.get("input_tier_multiset", ())),
             novelty_verdict=d.get("novelty_verdict", "UNKNOWN"),
             unverifiable_reason=d.get("unverifiable_reason", ""),
-            undecided_reason=d.get("undecided_reason", ""))
+            undecided_reason=d.get("undecided_reason", ""),
+            extra_does_not_prove=tuple(extra), schema=schema)
+        claimed_limits = d.get("does_not_prove")
+        if schema == LEGACY_SCHEMA:
+            base = receipt.does_not_prove()
+            if (type(claimed_limits) is not list or claimed_limits[:len(base)] != base
+                    or any(type(item) is not str for item in claimed_limits)):
+                raise ReceiptError("does_not_prove does not match legacy v3 limits")
+            receipt = replace(receipt,
+                extra_does_not_prove=tuple(claimed_limits[len(base):]))
+        if claimed_limits != receipt.does_not_prove():
+            raise ReceiptError("does_not_prove does not exactly match receipt limits")
+        return receipt

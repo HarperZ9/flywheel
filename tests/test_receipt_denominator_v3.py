@@ -290,3 +290,11 @@ def test_the_wire_form_roundtrips_with_every_new_field():
     assert back.graded_score == r.graded_score
     assert back.denominator.retries == 2
     assert back.to_dict()["schema"] == SCHEMA
+
+
+def test_oracle_specific_limits_roundtrip_exactly_and_are_claim_bound():
+    receipt = _r(extra_does_not_prove=("NOT_PROVES_ORACLE_SPECIFIC_BOUNDARY",))
+    body = receipt.to_dict(); back = Receipt.from_dict(body)
+    assert back.extra_does_not_prove == receipt.extra_does_not_prove
+    assert back.to_dict() == body
+    assert receipt.claim_sha256() != _r().claim_sha256()

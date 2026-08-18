@@ -1,7 +1,5 @@
 """Zero-dependency front controller for the local Codex/Flywheel harness."""
-
 from __future__ import annotations
-
 import argparse
 import html
 import json
@@ -10,9 +8,7 @@ import subprocess
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
-
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-
 from harness.file_backed_store import FileBackedHarnessStore
 
 
@@ -885,6 +881,7 @@ def build_parser() -> argparse.ArgumentParser:
     _add_common_io(cross)
     cross.add_argument("--task-set", default="C:/dev/local-model/benchmarks/agentic-task-set-v1.json")
     cross.add_argument("--contract", default="C:/dev/local-model/benchmarks/cross-harness-adapter-contract-v1.json")
+    cross.add_argument("--source-root", default="")
     cross.add_argument("--provider-roles", default="")
     cross.add_argument("--artifact-dir", default="C:/tmp/cross_harness_runs")
 
@@ -1269,12 +1266,9 @@ def build_command(args, *, repo_root: Path) -> list[str]:
         command = [
             py,
             "scripts/run_cross_harness_manifest.py",
-            "--task-set",
-            args.task_set,
-            "--contract",
-            args.contract,
-            "--artifact-dir",
-            args.artifact_dir,
+            "--task-set", args.task_set, "--contract", args.contract,
+            "--source-root", args.source_root or str(repo_root),
+            "--artifact-dir", args.artifact_dir,
         ]
         _append_if(command, "--provider-roles", args.provider_roles)
         _common_outputs(command, args)
@@ -1494,8 +1488,12 @@ def format_command(command: list[str]) -> str:
 
 
 def main(argv: list[str] | None = None) -> int:
+    raw = list(argv if argv is not None else sys.argv[1:])
+    if raw and raw[0] == "cross-harness-execute":
+        from harness.cross_harness_cli import main as cross_harness_main
+        return cross_harness_main(raw[1:])
     parser = build_parser()
-    args = parser.parse_args(argv)
+    args = parser.parse_args(raw)
     root = _repo_root()
     if args.command_name == "manifest":
         manifest = build_manifest(store_root=args.store_root)

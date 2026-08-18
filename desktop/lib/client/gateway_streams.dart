@@ -1,100 +1,37 @@
-// gateway_streams.dart — the streaming and plugin surface of the client,
-// as a same-library extension so it shares the private http client.
-
 part of 'gateway_client.dart';
 
-/// Live streams and the plugin registry. Same client, same base URL; split
-/// only to keep each file within the size gate.
 extension GatewayStreamsAndPlugins on GatewayClient {
-  /// POST /api/agent with stream:true — the live agent event stream.
-  /// Yields one decoded event map per SSE frame (assistant, tool_call,
-  /// tool_result, done, error) and closes on the [DONE] sentinel.
-  Stream<Map<String, dynamic>> agentStream(String goal, String endpoint,
-      {int maxSteps = 8,
-      bool allowWrite = false,
-      bool allowExec = false,
-      String? root,
-      String? testCmd}) async* {
-    final req = http.Request('POST', Uri.parse('$baseUrl/api/agent'))
-      ..headers['Content-Type'] = 'application/json'
-      ..body = jsonEncode({
-        'goal': goal,
-        'endpoint': endpoint,
-        'max_steps': maxSteps,
-        'allow_write': allowWrite,
-        'allow_exec': allowExec,
-        'stream': true,
-        if (root != null && root.isNotEmpty) 'root': root,
-        if (testCmd != null && testCmd.isNotEmpty) 'test_cmd': testCmd,
-      });
-    final res = await _http.send(req);
-    if (res.statusCode != 200) {
-      throw GatewayException('gateway returned ${res.statusCode}');
-    }
-    var buffer = '';
-    await for (final chunk in res.stream.transform(utf8.decoder)) {
-      buffer += chunk;
-      while (true) {
-        final sep = buffer.indexOf('\n\n');
-        if (sep < 0) break;
-        final frame = buffer.substring(0, sep);
-        buffer = buffer.substring(sep + 2);
-        for (final line in frame.split('\n')) {
-          if (!line.startsWith('data: ')) continue;
-          final payload = line.substring(6).trim();
-          if (payload == '[DONE]') return;
-          try {
-            yield jsonDecode(payload) as Map<String, dynamic>;
-          } catch (_) {
-            // A malformed frame is skipped, never fatal to the stream.
-          }
-        }
-      }
-    }
-  }
-
   /// POST /v1/chat/completions with stream:true — a conversational turn over any
   /// endpoint in the roster. Yields `{type:'delta', content:'…'}` as the answer
   /// arrives and a final `{type:'done', receipt:{…}}` carrying the turn's
-  /// re-derivable receipt. Malformed frames are skipped, never fatal.
+  /// re-derivable receipt. Invalid framing closes observation as unknown.
   Stream<Map<String, dynamic>> chatStream(
-      List<Map<String, String>> messages, String model) async* {
+      List<Map<String, String>> messages, String model,
+      {Map<String, dynamic>? authorizedBody}) async* {
     final req = http.Request('POST', Uri.parse('$baseUrl/v1/chat/completions'))
       ..headers['Content-Type'] = 'application/json'
-      ..body = jsonEncode({'model': model, 'messages': messages, 'stream': true});
+      ..body = jsonEncode(authorizedBody ??
+          {'model': model, 'messages': messages, 'stream': true});
     final res = await _http.send(req);
     if (res.statusCode != 200) {
       throw GatewayException('gateway returned ${res.statusCode}');
     }
-    var buffer = '';
-    await for (final chunk in res.stream.transform(utf8.decoder)) {
-      buffer += chunk;
-      while (true) {
-        final sep = buffer.indexOf('\n\n');
-        if (sep < 0) break;
-        final frame = buffer.substring(0, sep);
-        buffer = buffer.substring(sep + 2);
-        for (final line in frame.split('\n')) {
-          if (!line.startsWith('data: ')) continue;
-          final payload = line.substring(6).trim();
-          if (payload == '[DONE]') return;
-          try {
-            final obj = jsonDecode(payload) as Map<String, dynamic>;
-            final choices = obj['choices'];
-            final delta = (choices is List && choices.isNotEmpty)
-                ? (choices.first as Map<String, dynamic>)['delta']
-                : null;
-            final content = (delta is Map) ? delta['content'] : null;
-            if (content is String && content.isNotEmpty) {
-              yield {'type': 'delta', 'content': content};
-            }
-            if (obj['x_receipt'] is Map<String, dynamic>) {
-              yield {'type': 'done', 'receipt': obj['x_receipt']};
-            }
-          } catch (_) {
-            // a malformed frame is skipped, never fatal to the stream
-          }
-        }
+    const decoder =
+        GatewaySseDecoder(requireIds: false, requireTerminal: false);
+    await for (final event in res.stream.transform(decoder)) {
+      if (event.isDone) return;
+      final obj = event.data as Map<String, dynamic>;
+      final choices = obj['choices'];
+      final delta =
+          choices is List && choices.isNotEmpty && choices.first is Map
+              ? (choices.first as Map)['delta']
+              : null;
+      final content = delta is Map ? delta['content'] : null;
+      if (content is String && content.isNotEmpty) {
+        yield {'type': 'delta', 'content': content};
+      }
+      if (obj['x_receipt'] is Map<String, dynamic>) {
+        yield {'type': 'done', 'receipt': obj['x_receipt']};
       }
     }
   }
@@ -125,9 +62,8 @@ extension GatewayStreamsAndPlugins on GatewayClient {
 
   /// GET /api/feeds — cross-domain live feeds through the gather lane.
   Future<Map<String, dynamic>> feeds({String? domain}) async {
-    final q = domain == null
-        ? ''
-        : '?domain=${Uri.encodeQueryComponent(domain)}';
+    final q =
+        domain == null ? '' : '?domain=${Uri.encodeQueryComponent(domain)}';
     final r = await _http.get(Uri.parse('$baseUrl/api/feeds$q'));
     return _decode(r);
   }
@@ -161,18 +97,6 @@ extension GatewayStreamsAndPlugins on GatewayClient {
       Uri.parse('$baseUrl/api/lanes/install'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({'name': name, 'profile': profile}),
-    );
-    return _decode(r);
-  }
-
-  /// POST /api/plugins/call — one tool call on a registered plugin, args and
-  /// result verbatim. The probe shows what a server offers; this runs it.
-  Future<Map<String, dynamic>> callPlugin(
-      String name, String tool, Map<String, dynamic> arguments) async {
-    final r = await _http.post(
-      Uri.parse('$baseUrl/api/plugins/call'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'name': name, 'tool': tool, 'arguments': arguments}),
     );
     return _decode(r);
   }
@@ -243,7 +167,8 @@ extension GatewayStreamsAndPlugins on GatewayClient {
   }
 
   /// POST /api/projects/add — register a project directory.
-  Future<Map<String, dynamic>> addProject(String root, {String name = ''}) async {
+  Future<Map<String, dynamic>> addProject(String root,
+      {String name = ''}) async {
     final r = await _http.post(
       Uri.parse('$baseUrl/api/projects/add'),
       headers: {'Content-Type': 'application/json'},
@@ -362,83 +287,6 @@ extension GatewayStreamsAndPlugins on GatewayClient {
   /// GET /api/marketplace — the curated catalog over the plugin registry.
   Future<Map<String, dynamic>> marketplace() async {
     final r = await _http.get(Uri.parse('$baseUrl/api/marketplace'));
-    return _decode(r);
-  }
-
-  /// POST /api/marketplace/install — register a catalog entry.
-  Future<Map<String, dynamic>> installFromCatalog(String name) async {
-    final r = await _http.post(
-      Uri.parse('$baseUrl/api/marketplace/install'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'name': name}),
-    );
-    return _decode(r);
-  }
-
-  /// POST /api/marketplace/add — save a user entry into the catalog.
-  /// `requires` lists env var NAMES only; the engine refuses values.
-  Future<Map<String, dynamic>> marketplaceAdd(
-      String name, List<String> command,
-      {String detail = '', List<String> requires = const []}) async {
-    final r = await _http.post(
-      Uri.parse('$baseUrl/api/marketplace/add'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'name': name,
-        'command': command,
-        'detail': detail,
-        'requires': requires,
-      }),
-    );
-    return _decode(r);
-  }
-
-  /// POST /api/marketplace/remove — drop a user catalog entry.
-  Future<Map<String, dynamic>> marketplaceRemove(String name) async {
-    final r = await _http.post(
-      Uri.parse('$baseUrl/api/marketplace/remove'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'name': name}),
-    );
-    return _decode(r);
-  }
-
-  /// GET /api/plugins/probe — spawn a plugin's server, report its real tools.
-  Future<Map<String, dynamic>> probePlugin(String name) async {
-    final r = await _http.get(Uri.parse(
-        '$baseUrl/api/plugins/probe?name=${Uri.encodeQueryComponent(name)}'));
-    return _decode(r);
-  }
-
-  /// POST /api/plugins/register — register a custom MCP server by argv.
-  Future<Map<String, dynamic>> registerPlugin(
-      String name, List<String> command,
-      {String detail = ''}) async {
-    final r = await _http.post(
-      Uri.parse('$baseUrl/api/plugins/register'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'name': name, 'command': command, 'detail': detail}),
-    );
-    return _decode(r);
-  }
-
-  /// POST /api/plugins/toggle — enable or disable a custom plugin.
-  Future<Map<String, dynamic>> togglePlugin(String name, bool enabled) async {
-    final r = await _http.post(
-      Uri.parse('$baseUrl/api/plugins/toggle'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'name': name, 'enabled': enabled}),
-    );
-    return _decode(r);
-  }
-
-  /// POST /api/plugins/remove — remove a custom plugin.
-  Future<Map<String, dynamic>> removePlugin(String name) async {
-    final r = await _http.post(
-      Uri.parse('$baseUrl/api/plugins/remove'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'name': name}),
-    );
     return _decode(r);
   }
 }

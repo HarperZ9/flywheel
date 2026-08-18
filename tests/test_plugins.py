@@ -4,8 +4,10 @@ or malformed entries, toggles persist, and probing a dead command reports
 unreachable instead of inventing a tool list."""
 
 import json
+from pathlib import PurePosixPath, PureWindowsPath
 
 from harness import plugins
+from harness.mcp_client import LaunchSpec
 
 
 def _isolate(monkeypatch, tmp_path):
@@ -21,6 +23,27 @@ def test_roster_includes_lanes_and_builtins(monkeypatch, tmp_path):
     builtin = next(p for p in doc["plugins"] if p["name"] == "tools")
     assert set(builtin["tools"]) == set(plugins.BUILTIN_TOOLS)
     assert "grants nothing" in doc["note"]
+    decoded = json.loads(json.dumps(doc))
+    strings = []
+
+    def collect_strings(value):
+        if isinstance(value, str):
+            strings.append(value)
+        elif isinstance(value, dict):
+            for item in value.values():
+                collect_strings(item)
+        elif isinstance(value, list):
+            for item in value:
+                collect_strings(item)
+
+    collect_strings(decoded)
+    repo_root = str(plugins.Path(__file__).resolve().parents[1]).replace(
+        "\\", "/").casefold()
+    assert all(repo_root not in value.replace("\\", "/").casefold()
+               for value in strings)
+    assert all(not PureWindowsPath(value).is_absolute()
+               and not PurePosixPath(value).is_absolute()
+               for value in strings)
 
 
 def test_register_refuses_reserved_and_malformed(monkeypatch, tmp_path):
@@ -71,3 +94,43 @@ def test_builtin_probe_lists_gated_set(monkeypatch, tmp_path):
     out = plugins.probe_plugin("tools")
     assert out["status"] == "live"
     assert set(out["tools"]) == set(plugins.BUILTIN_TOOLS)
+
+
+def test_lane_call_uses_runtime_launch_spec(monkeypatch, tmp_path):
+    _isolate(monkeypatch, tmp_path)
+    expected = LaunchSpec(("gather-runtime",), "/source")
+    seen = []
+
+    class FakeClient:
+        def __init__(self, launch, **kwargs):
+            seen.append(launch)
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            return False
+
+        def call_text(self, tool, arguments):
+            return {"ok": True, "text": "called"}
+
+    monkeypatch.setattr(plugins, "resolve_mcp_launch", lambda name: expected,
+                        raising=False)
+    monkeypatch.setattr("harness.mcp_client.MCPClient", FakeClient)
+    assert plugins.call_plugin("gather", "gather.run")["result"]["ok"] is True
+    assert seen == [expected]
+
+
+def test_probe_uses_injected_client_and_always_closes(monkeypatch, tmp_path):
+    _isolate(monkeypatch, tmp_path)
+    calls = []
+
+    class FakeClient:
+        def start(self): calls.append("start")
+        def list_tools(self): return [{"name": "gather.run"}]
+        def close(self): calls.append("close")
+
+    out = plugins.probe_plugin(
+        "gather", client_factory=lambda *_args, **_kwargs: FakeClient())
+    assert out["status"] == "live"
+    assert calls == ["start", "close"]

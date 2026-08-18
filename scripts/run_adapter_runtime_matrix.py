@@ -38,6 +38,15 @@ def _optional_json(path_text: str) -> tuple[dict[str, Any], str, str]:
     return load_json(path), str(path), file_sha256(path)
 
 
+def _optional_gate_json(path_text: str) -> tuple[Any, str, str]:
+    if not path_text:
+        return None, "", ""
+    path = Path(path_text)
+    if not path.exists():
+        return None, str(path), ""
+    return load_json(path), str(path), file_sha256(path)
+
+
 def store_matrix(
     matrix: dict[str, Any],
     *,
@@ -66,6 +75,9 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--contract", default=DEFAULT_CONTRACT)
     parser.add_argument("--endpoint-profiles", default="")
+    parser.add_argument("--endpoint-gate", default="")
+    parser.add_argument("--endpoint-gate-run-id", "--expected-gate-run-id", default="")
+    parser.add_argument("--endpoint-gate-max-age-seconds", "--max-age-seconds", type=int, default=900)
     parser.add_argument("--endpoint-auth-status", default="")
     parser.add_argument("--out", default="C:/tmp/adapter_runtime_matrix.json")
     parser.add_argument("--markdown-out", default="C:/tmp/adapter_runtime_matrix.md")
@@ -76,6 +88,7 @@ def main(argv: list[str] | None = None) -> int:
     contract_path = Path(args.contract)
     contract = load_json(contract_path)
     endpoint_profiles, endpoint_profiles_path, endpoint_profiles_sha256 = _optional_json(args.endpoint_profiles)
+    endpoint_gate, endpoint_gate_path, endpoint_gate_sha256 = _optional_gate_json(args.endpoint_gate)
     endpoint_auth, endpoint_auth_path, endpoint_auth_sha256 = _optional_json(args.endpoint_auth_status)
     matrix = build_matrix(
         contract,
@@ -84,6 +97,11 @@ def main(argv: list[str] | None = None) -> int:
         endpoint_profiles=endpoint_profiles,
         endpoint_profiles_path=endpoint_profiles_path,
         endpoint_profiles_sha256=endpoint_profiles_sha256,
+        endpoint_gate=endpoint_gate,
+        endpoint_gate_path=endpoint_gate_path,
+        endpoint_gate_sha256=endpoint_gate_sha256,
+        expected_gate_run_id=args.endpoint_gate_run_id,
+        max_age_seconds=args.endpoint_gate_max_age_seconds,
         endpoint_auth_status=endpoint_auth,
         endpoint_auth_status_path=endpoint_auth_path,
         endpoint_auth_status_sha256=endpoint_auth_sha256,

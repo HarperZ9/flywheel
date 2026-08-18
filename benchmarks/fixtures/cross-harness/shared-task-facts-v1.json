@@ -1,0 +1,18 @@
+{
+  "schema": "harness.cross-harness-fixture.shared-task-facts/v1",
+  "task_id": "agt-003-codex-flywheel-shared-task",
+  "failure_code_vocabulary": {
+    "common": ["artifact_set_mismatch", "artifact_not_regular", "artifact_not_utf8", "artifact_empty", "json_invalid", "json_duplicate_key", "task_id_mismatch", "input_hash_mismatch", "markdown_task_id_missing"],
+    "task": ["prompt_hash_mismatch", "tool_policy_hash_mismatch", "raw_artifact_path_invalid", "raw_artifact_hash_mismatch", "failure_modes_mismatch", "receipt_path_invalid", "forbidden_claim"]
+  },
+  "state_axes": [
+    {"axis": "execution_state", "failure_values": ["internal_error", "malformed", "timeout", "unavailable"]},
+    {"axis": "oracle_state", "failure_values": ["fail", "unverifiable"]},
+    {"axis": "receipt_state", "failure_values": ["drift"]}
+  ],
+  "artifact_facts": [
+    {"path_field": "raw_artifact_path", "hash_fact": "raw_artifact_sha256"},
+    {"path_field": "receipt_path", "hash_fact": "receipt_sha256"}
+  ],
+  "forbidden_claim_phrases": ["same model behavior", "identical controls", "pure harness ablation"]
+}

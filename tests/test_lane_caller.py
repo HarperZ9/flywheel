@@ -111,3 +111,32 @@ def test_successful_mcp_call():
     # Result depends on whether the mock was actually used; the test verifies
     # that call_lane_tool doesn't crash on a mocked path
     assert isinstance(result, dict)
+
+
+def test_lane_caller_uses_runtime_launch_spec(monkeypatch):
+    import harness.lanes as lanes
+    import harness.mcp_client as mcp_client
+    from harness.mcp_client import LaunchSpec
+
+    expected = LaunchSpec(("gather-runtime",), "/source")
+    seen = []
+
+    class FakeClient:
+        def __init__(self, launch, **kwargs):
+            seen.append(launch)
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            return False
+
+        def call_text(self, tool, arguments):
+            return {"ok": True, "text": '{"status":"ok"}'}
+
+    monkeypatch.setattr(lanes, "resolve_mcp_launch", lambda name: expected,
+                        raising=False)
+    monkeypatch.setattr(lanes, "resolve_mcp_command", lambda name: ["portable"])
+    monkeypatch.setattr(mcp_client, "MCPClient", FakeClient)
+    assert call_lane_tool("gather", "gather.run") == {"status": "ok"}
+    assert seen == [expected]

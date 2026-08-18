@@ -1,25 +1,28 @@
 // chat_thread.dart — the conversation thread: user and assistant turns as
 // bubbles, streaming text as it arrives, fenced code rendered in a mono card
-// with copy, and a quiet 'verified' mark under an assistant turn that carried a
-// receipt. Accountability is present but small; the conversation is the subject.
+// with copy and an explicit receipt state. Accountability is present but small;
+// the conversation is the subject.
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../models/chat.dart';
+import '../models/evidence_state.dart';
 import '../theme/flywheel_theme.dart';
 import 'turn_receipt.dart';
 
 class ChatThread extends StatelessWidget {
   final List<ChatMessage> messages;
   final ScrollController controller;
-  const ChatThread({super.key, required this.messages, required this.controller});
+  const ChatThread(
+      {super.key, required this.messages, required this.controller});
 
   @override
   Widget build(BuildContext context) {
     return ListView.builder(
       controller: controller,
-      padding: const EdgeInsets.symmetric(horizontal: FwLayout.s5, vertical: FwLayout.s5),
+      padding: const EdgeInsets.symmetric(
+          horizontal: FwLayout.s5, vertical: FwLayout.s5),
       itemCount: messages.length,
       itemBuilder: (context, i) => _Bubble(message: messages[i]),
     );
@@ -36,7 +39,14 @@ class _Bubble extends StatefulWidget {
 
 class _BubbleState extends State<_Bubble> {
   bool _receiptOpen = false;
+  final _receiptFocus = FocusNode();
   ChatMessage get message => widget.message;
+
+  @override
+  void dispose() {
+    _receiptFocus.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -46,9 +56,16 @@ class _BubbleState extends State<_Bubble> {
       padding: const EdgeInsets.only(bottom: FwLayout.s5),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
+        mainAxisAlignment:
+            isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
         children: [
-          if (!isUser) _avatar(t, 'AI', t.verified),
+          if (!isUser)
+            _avatar(
+                t,
+                'AI',
+                message.receiptState == ReceiptState.match
+                    ? t.verified
+                    : t.inkMuted),
           if (!isUser) const SizedBox(width: FwLayout.s3),
           Flexible(
             child: Column(
@@ -62,7 +79,8 @@ class _BubbleState extends State<_Bubble> {
                   decoration: BoxDecoration(
                     color: isUser ? t.ground2 : t.panel,
                     borderRadius: BorderRadius.circular(FwLayout.radius),
-                    border: Border.all(color: isUser ? Colors.transparent : t.hairline),
+                    border: Border.all(
+                        color: isUser ? Colors.transparent : t.hairline),
                   ),
                   child: _MessageBody(message: message),
                 ),
@@ -97,6 +115,7 @@ class _BubbleState extends State<_Bubble> {
 
   Widget _footer(BuildContext context, FwTokens t) {
     final receipt = message.receipt;
+    final label = _receiptLabel(message.receiptState);
     return Padding(
       padding: const EdgeInsets.only(top: 6, left: 4),
       child: Row(mainAxisSize: MainAxisSize.min, children: [
@@ -111,39 +130,68 @@ class _BubbleState extends State<_Bubble> {
           color: t.inkFaint,
           tooltip: 'Copy',
         ),
-        if (receipt != null) ...[
-          const SizedBox(width: 6),
-          Tooltip(
-            message: 'Witnessed turn: open the receipt',
-            child: InkWell(
-              borderRadius: BorderRadius.circular(FwLayout.radiusSmall),
-              onTap: () => setState(() => _receiptOpen = !_receiptOpen),
-              child: Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                child: Row(mainAxisSize: MainAxisSize.min, children: [
-                  Icon(Icons.verified_outlined, size: 12, color: t.verified),
-                  const SizedBox(width: 4),
-                  Text('verified',
-                      style: fwMono(t, size: 10.5, color: t.verified)),
-                  AnimatedRotation(
+        const SizedBox(width: 6),
+        if (receipt == null)
+          Text(label, style: fwMono(t, size: 10.5, color: t.inkFaint))
+        else
+          Semantics(
+            container: true,
+            label: 'Receipt state $label',
+            button: true,
+            enabled: true,
+            expanded: _receiptOpen,
+            onTap: _toggleReceipt,
+            excludeSemantics: true,
+            child: TextButton(
+              key: const ValueKey('chat-receipt-control'),
+              focusNode: _receiptFocus,
+              onPressed: _toggleReceipt,
+              style: ButtonStyle(
+                minimumSize: const WidgetStatePropertyAll(Size(44, 44)),
+                side: WidgetStateProperty.resolveWith((states) => BorderSide(
+                    color: states.contains(WidgetState.focused)
+                        ? t.ink
+                        : Colors.transparent,
+                    width: states.contains(WidgetState.focused) ? 2 : 1)),
+              ),
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                Text(label,
+                    style: fwMono(t,
+                        size: 10.5,
+                        color: _receiptColor(t, message.receiptState))),
+                AnimatedRotation(
                     turns: _receiptOpen ? 0.5 : 0,
                     duration: MediaQuery.of(context).disableAnimations
                         ? Duration.zero
                         : const Duration(milliseconds: 180),
-                    curve: Curves.easeOutQuart,
                     child:
-                        Icon(Icons.expand_more, size: 12, color: t.inkFaint),
-                  ),
-                ]),
-              ),
+                        Icon(Icons.expand_more, size: 12, color: t.inkFaint)),
+              ]),
             ),
           ),
-        ],
       ]),
     );
   }
+
+  void _toggleReceipt() => setState(() => _receiptOpen = !_receiptOpen);
 }
+
+String _receiptLabel(ReceiptState state) => switch (state) {
+      ReceiptState.missing => 'missing',
+      ReceiptState.presentUnchecked => 'present_unchecked',
+      ReceiptState.match => 'MATCH',
+      ReceiptState.drift => 'DRIFT',
+      ReceiptState.tampered => 'TAMPERED',
+      ReceiptState.unverifiable => 'UNVERIFIABLE',
+      ReceiptState.invalidResponse => 'invalid response',
+    };
+
+Color _receiptColor(FwTokens tokens, ReceiptState state) => switch (state) {
+      ReceiptState.match => tokens.verified,
+      ReceiptState.drift || ReceiptState.tampered => tokens.drift,
+      ReceiptState.unverifiable => tokens.unverifiable,
+      _ => tokens.inkFaint,
+    };
 
 /// Renders message text with fenced ``` code ``` blocks as mono cards; the rest
 /// is selectable body text. A streaming turn shows a caret while it grows.
@@ -167,9 +215,10 @@ class _MessageBody extends StatelessWidget {
               : Padding(
                   padding: const EdgeInsets.symmetric(vertical: 1),
                   child: SelectableText(
-                    part.text + (message.streaming && part == parts.last ? '▍' : ''),
-                    style: TextStyle(
-                        fontSize: 14, height: 1.5, color: t.inkSoft),
+                    part.text +
+                        (message.streaming && part == parts.last ? '▍' : ''),
+                    style:
+                        TextStyle(fontSize: 14, height: 1.5, color: t.inkSoft),
                   ),
                 ),
       ],
@@ -187,7 +236,9 @@ class _MessageBody extends StatelessWidget {
       parts.add(_Part((m.group(1) ?? '').trimRight(), true));
       last = m.end;
     }
-    if (last < text.length) parts.add(_Part(text.substring(last).trim(), false));
+    if (last < text.length) {
+      parts.add(_Part(text.substring(last).trim(), false));
+    }
     return parts.where((p) => p.text.isNotEmpty || p.code).toList();
   }
 }
@@ -229,7 +280,8 @@ class _CodeCard extends StatelessWidget {
               FwLayout.s3, 0, FwLayout.s3, FwLayout.s3),
           child: SingleChildScrollView(
             scrollDirection: Axis.horizontal,
-            child: SelectableText(code, style: fwMono(t, size: 12.5, color: t.ink)),
+            child: SelectableText(code,
+                style: fwMono(t, size: 12.5, color: t.ink)),
           ),
         ),
       ]),

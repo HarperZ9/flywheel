@@ -57,13 +57,16 @@ def test_user_catalog_merges_and_broken_file_degrades(monkeypatch, tmp_path):
 
 def test_add_user_entry_roundtrip_and_origin(monkeypatch, tmp_path):
     _isolate(monkeypatch, tmp_path)
+    credential_ref = "cred_" + "a" * 32
     out = marketplace.add_user_entry(
         "mytool", ["npx", "-y", "mytool-mcp"],
-        detail="my own server", requires=["MYTOOL_API_KEY"])
+        detail="my own server", requires=["MYTOOL_API_KEY"],
+        credential_refs=[credential_ref])
     assert out.get("added") is True
     doc = marketplace.marketplace_catalog()
     mine = next(e for e in doc["entries"] if e["name"] == "mytool")
     assert mine["origin"] == "user" and mine["requires"] == ["MYTOOL_API_KEY"]
+    assert mine["credential_refs"] == [credential_ref]
     builtin = next(e for e in doc["entries"] if e["name"] == "filesystem")
     assert builtin["origin"] == "builtin"
     # And it installs like any catalog entry.
