@@ -38,7 +38,7 @@ dataset/manifest.jsonl
 *.pt
 *.pth
 checkpoints/
-models/
+/models/
 data/packed/
 
 # --- os / editor noise ---

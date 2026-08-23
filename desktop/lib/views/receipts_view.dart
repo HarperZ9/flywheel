@@ -10,6 +10,7 @@ import '../models/gateway_models.dart';
 import '../models/render_status.dart';
 import '../theme/flywheel_theme.dart';
 import '../widgets/fw.dart';
+import '../widgets/receipt_proof_panel.dart';
 
 class ReceiptsView extends StatefulWidget {
   final GatewayClient client;
@@ -172,7 +173,11 @@ class _ReceiptsViewState extends State<ReceiptsView> {
           const SizedBox(height: FwLayout.s5),
           const Kicker('inclusion proof · re-walkable offline', hot: true),
           const SizedBox(height: FwLayout.s3),
-          _proofPanel(t),
+          ReceiptProofPanel(
+              leaf: _proofLeaf,
+              proof: _proof,
+              proving: _proving,
+              error: _proofError),
         ],
         const SizedBox(height: FwLayout.s5),
         const Kicker('envelopes · proof of accepted verified work'),
@@ -250,50 +255,6 @@ class _ReceiptsViewState extends State<ReceiptsView> {
             ],
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _proofPanel(FwTokens t) {
-    return HairlineCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SelectableText('leaf  ${_proofLeaf ?? ''}',
-              style: fwMono(t, size: 11.5, color: t.inkMuted)),
-          const SizedBox(height: FwLayout.s2),
-          if (_proving)
-            Row(children: [
-              const SizedBox(
-                  width: 14,
-                  height: 14,
-                  child: CircularProgressIndicator(strokeWidth: 2)),
-              const SizedBox(width: FwLayout.s2),
-              Text('walking the log…',
-                  style: fwMono(t, size: 11.5, color: t.inkMuted)),
-            ])
-          else if (_proofError != null)
-            HonestNull(_proofError!)
-          else if (_proof != null) ...[
-            Row(children: [
-              const VerdictPill('included', status: 'verified'),
-              const SizedBox(width: FwLayout.s2),
-              Text('index ${_proof!['index'] ?? '?'} of '
-                  '${_proof!['tree_size'] ?? _proof!['n'] ?? '?'}',
-                  style: fwMono(t, size: 11.5, color: t.inkMuted)),
-            ]),
-            const SizedBox(height: FwLayout.s2),
-            SelectableText('merkle root  ${_proof!['merkle_root'] ?? ''}',
-                style: fwMono(t, size: 11, color: t.inkSoft)),
-            if (_proof!['audit_path'] is List) ...[
-              const SizedBox(height: FwLayout.s2),
-              Text('${(_proof!['audit_path'] as List).length} sibling hashes '
-                  'on the path; recompute the root from the leaf to re-verify '
-                  'offline',
-                  style: fwMono(t, size: 10.5, color: t.inkFaint)),
-            ],
-          ],
-        ],
       ),
     );
   }

@@ -1150,29 +1150,11 @@ class _Handler(BaseHTTPRequestHandler):
         if p == "/api/receipts":                     # the receipts ledger (catalog + envelopes)
             return self._json(receipts_ledger(self.root, self.run_root))
         if p == "/api/receipts/proof":               # prove one receipt is in the log
-            leaf = ""
-            for part in qs.split("&"):
-                if part.startswith("leaf="):
-                    leaf = part[5:].strip()
-            if len(leaf) != 64:
-                return self._json({"error": "provide 'leaf' (a 64-hex "
-                                            "envelope sha256)"}, 400)
-            from harness.transparency_log import (inclusion_proof,
-                                                  merkle_root)
+            from harness.receipt_proof import route_payload
             led = receipts_ledger(self.root, self.run_root)
             leaves = [e["sha256"] for e in led["envelopes"]]
-            if leaf not in leaves:
-                return self._json({"error": "leaf not in the receipts log",
-                                   "leaf": leaf, "merkle_root":
-                                   led["merkle_root"]}, 404)
-            idx = leaves.index(leaf)
-            return self._json({"schema": "flywheel.receipts-proof/v1",
-                               "leaf": leaf,
-                               "merkle_root": merkle_root(leaves),
-                               "proof": inclusion_proof(leaves, idx),
-                               "note": "verify offline with "
-                                       "transparency_log.verify_inclusion("
-                                       "leaf, proof, merkle_root)"})
+            body, code = route_payload(_qs_value(qs, "leaf").strip(), leaves)
+            return self._json(body, code)
         if p == "/api/profiles":                     # profile manifests over the one substrate
             from harness.profiles import profile_roster
             return self._json(profile_roster())
