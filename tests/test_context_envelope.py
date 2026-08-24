@@ -23,7 +23,11 @@ REJECTION = "index.focus-rejection/v1"
 
 
 def test_envelope_carries_the_context_envelope_schema():
-    env = build_context_envelope(".", budget=400, focus=FOCUS, lane_timeout=30.0)
+    # lane_timeout is generous on purpose: each call spawns the index MCP
+    # server and rescans the workspace, and on a cold or loaded runner that
+    # costs far more than a warm local run. The test bounds correctness,
+    # not speed.
+    env = build_context_envelope(".", budget=400, focus=FOCUS, lane_timeout=180.0)
     # Named separately from the assertion below so a rejection reports itself as
     # a rejection rather than as a mysterious schema mismatch.
     assert env["schema"] != REJECTION, (
@@ -42,8 +46,8 @@ def test_fingerprint_is_stable_across_calls_for_unchanged_content():
     # needs it for a second reason: with an unknown focus both calls returned
     # the SAME rejection document, so the fingerprints matched while the
     # producer was never exercised at all.
-    env1 = build_context_envelope(".", budget=400, focus=FOCUS, lane_timeout=30.0)
-    env2 = build_context_envelope(".", budget=400, focus=FOCUS, lane_timeout=30.0)
+    env1 = build_context_envelope(".", budget=400, focus=FOCUS, lane_timeout=180.0)
+    env2 = build_context_envelope(".", budget=400, focus=FOCUS, lane_timeout=180.0)
     assert env1["schema"] != REJECTION
     assert envelope_fingerprint(env1) == envelope_fingerprint(env2)
 

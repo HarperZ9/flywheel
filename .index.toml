@@ -1,0 +1,13 @@
+# Index-lane configuration for the Flywheel monorepo.
+#
+# The context-envelope producer calls the index lane with this repo as the
+# workspace root, and a focus on "flywheel" must resolve. The scan root is
+# itself a repo, so include_root_repo has to be on; without it the root repo
+# is filtered out of the key map and every focus="flywheel" call comes back
+# as an index.focus-rejection/v1 document.
+#
+# Worktree checkouts and build output are real git repos or noise, not
+# workspace members; prune them so they never enter the graph.
+[scan]
+include_root_repo = true
+prune = [".worktrees", ".claude", "artifacts", "build", "dist", "site"]
