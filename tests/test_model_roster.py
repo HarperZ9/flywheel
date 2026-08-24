@@ -176,11 +176,39 @@ def test_route_request_threads_model_into_the_proposer_factory(monkeypatch):
     assert "model" not in captured
 
 
+def _granted(monkeypatch):
+    """The route is grant-gated now: authorize returns a test-bound
+    operation carrying the posted body, with the frozen execution plan
+    the real authorize path would produce, so the handler reads the
+    admitted operation exactly as an approved grant delivers it."""
+    import json as _json
+
+    from harness.gateway_operation import AuthorizedOperation
+    from harness.gateway_provider_adapter import freeze_execution_plan
+
+    def fake(action_name, raw, *, owner_ref, state_root, clock):
+        envelope = _json.loads(raw)
+        op = {k: v for k, v in envelope.items()
+              if k not in ("schema", "journey_ref", "expected_event_head",
+                           "client_request_id", "grant_ref")}
+        authorized = AuthorizedOperation.for_test(action=action_name,
+                                                  operation=op,
+                                                  scopes=("network",))
+        plan = freeze_execution_plan(authorized, owner_ref=owner_ref,
+                                     state_root=state_root)
+        import dataclasses
+        return dataclasses.replace(authorized, execution_plan=plan)
+
+    monkeypatch.setattr(
+        "harness.gateway_grant_route.authorize_gateway_operation", fake)
+
+
 def test_route_post_passes_stripped_model(monkeypatch):
     import harness.scaffold as SC
     monkeypatch.setattr(SC, "scaffold_turn", lambda p: {})
     monkeypatch.setattr(SC, "scaffold_answer",
                         lambda text, env, provenance=None: {"ok": True})
+    _granted(monkeypatch)
     seen = {}
 
     def fake_route(prompt, endpoint, model=""):
@@ -193,12 +221,16 @@ def test_route_post_passes_stripped_model(monkeypatch):
     assert sent["code"] == 200 and seen["model"] == "m1"
 
 
-def test_route_post_oversize_model_is_400():
+def test_route_post_oversize_model_is_refused_at_the_grant_boundary():
+    # Shape validation moved into the exact-grant operation: an oversize
+    # model is refused before any handler or dispatch exists to see it.
     sent = _post("/api/route",
                  {"prompt": "hi", "endpoint": "ollama", "model": "x" * 201})
-    assert sent["code"] == 400 and "model" in sent["body"]["error"]
+    assert sent["code"] == 422
+    assert sent["body"]["error"]["code"] == "INVALID_REQUEST"
 
 
-def test_route_post_non_string_model_is_400():
+def test_route_post_non_string_model_is_refused_at_the_grant_boundary():
     sent = _post("/api/route", {"prompt": "hi", "endpoint": "ollama", "model": 7})
-    assert sent["code"] == 400 and "model" in sent["body"]["error"]
+    assert sent["code"] == 422
+    assert sent["body"]["error"]["code"] == "INVALID_REQUEST"
