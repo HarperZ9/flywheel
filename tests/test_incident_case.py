@@ -37,5 +37,7 @@ def test_raw_paths_and_secret_keys_are_refused():
 
 
 def test_unknown_top_level_fields_are_refused():
-    with pytest.raises(ValueError):
+    # The constructor's signature is the allowlist: an unknown field
+    # cannot even be passed, let alone stored.
+    with pytest.raises(TypeError):
         _case(command="rm -rf /")
