@@ -1,4 +1,4 @@
-"""Domain pack manifest verification: a pack is admitted as a manifest
+﻿"""Domain pack manifest verification: a pack is admitted as a manifest
 plus admitted data, never as executable authority. The verifier refuses
 false accepts, dynamic imports, plugin discovery, commands, missing
 license or owner or limits, and secret-shaped or host-path fields.
@@ -55,7 +55,7 @@ def _fixture_verdict(fixture: dict) -> str:
     return str(fixture.get("expectation", ""))
 
 
-def verify_pack_manifest(manifest: dict, *, fixtures_root: Path) -> dict:
+def verify_pack_manifest(manifest: dict, *, fixtures_root: Path | str) -> dict:
     if manifest.get("schema") != SCHEMA:
         _refuse("the manifest is not a domain-pack/v1 document")
     missing = [f for f in _REQUIRED if f not in manifest]
@@ -101,9 +101,10 @@ def verify_pack_manifest(manifest: dict, *, fixtures_root: Path) -> dict:
     fixtures = manifest.get("fixtures")
     if not isinstance(fixtures, list) or not fixtures:
         _refuse("the pack carries no fixtures")
+    root = Path(fixtures_root)
     for fixture in fixtures:
         name = fixture.get("file", "")
-        path = fixtures_root / str(name)
+        path = root / str(name)
         if not path.is_file():
             _refuse(f"fixture {name!r} is not in the fixtures root")
         if _fixture_verdict(fixture) not in ("correct", "incorrect",
