@@ -143,7 +143,9 @@ def test_absent_capability_grants_nothing():
 
 
 def test_authorize_requires_exact_operation_schema_and_hash():
-    doc = _doc()
+    # With containment accepted the incident row is available and its
+    # advertised operation authorizes against the exact schemas and hash.
+    doc = _doc(containment={"process": True})
     base = dict(
         capability_id="incident-compiler",
         operation="incident.propose",
