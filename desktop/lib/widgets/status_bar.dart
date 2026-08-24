@@ -4,6 +4,7 @@
 
 import 'package:flutter/material.dart';
 
+import '../accessibility/accessible_action.dart';
 import '../models/gateway_models.dart';
 import '../theme/flywheel_theme.dart';
 import 'fw.dart';
@@ -39,14 +40,12 @@ class StatusBar extends StatelessWidget {
           Text(message, style: fwMono(t, size: 11, color: t.inkMuted)),
           if (!alive) ...[
             const SizedBox(width: FwLayout.s3),
-            MouseRegion(
-              cursor: SystemMouseCursors.click,
-              child: GestureDetector(
-                onTap: onStartEngine,
-                child: Text('start engine',
-                    style: fwMono(t, size: 11, color: t.drift)
-                        .copyWith(decoration: TextDecoration.underline)),
-              ),
+            AccessibleAction(
+              semanticLabel: 'Start engine',
+              onActivate: onStartEngine,
+              child: Text('start engine',
+                  style: fwMono(t, size: 11, color: t.drift)
+                      .copyWith(decoration: TextDecoration.underline)),
             ),
           ],
           if (startError != null) ...[
