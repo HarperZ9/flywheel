@@ -9,6 +9,8 @@
 //   - Two typefaces: Hanken Grotesk (text, hierarchy from weight) and
 //     Conso (mono: labels, hashes, numerals).
 
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 export '../widgets/fw_layout.dart';
@@ -115,6 +117,31 @@ class FwTokens extends ThemeExtension<FwTokens> {
       default: // stale, missing, drift, error
         return drift;
     }
+  }
+
+  /// The high-contrast variant of this token set: hairlines and faint ink
+  /// strengthen to meet WCAG contrast, verdict hues stay recognizable so
+  /// verdict semantics never change with the mode.
+  FwTokens highContrast() {
+    final darkGround = _luminance(ground) < 0.5;
+    return copyWith(
+      ink: darkGround ? const Color(0xFFFFFFFF) : const Color(0xFF000000),
+      inkSoft: darkGround ? const Color(0xFFE6EAE6) : const Color(0xFF1A1D22),
+      inkMuted: darkGround ? const Color(0xFFCFD5D1) : const Color(0xFF3A3E45),
+      inkFaint: darkGround ? const Color(0xFFB4BCB6) : const Color(0xFF555A62),
+      line: darkGround ? const Color(0xFF8A938C) : const Color(0xFF5A5E66),
+      hairline: darkGround ? const Color(0xFF6B736C) : const Color(0xFF8A8E96),
+    );
+  }
+
+  static double _luminance(Color c) {
+    double linear(double channel) => channel <= 0.03928
+        ? channel / 12.92
+        : math.pow((channel + 0.055) / 1.055, 2.4).toDouble();
+
+    return 0.2126 * linear(c.r) +
+        0.7152 * linear(c.g) +
+        0.0722 * linear(c.b);
   }
 
   @override

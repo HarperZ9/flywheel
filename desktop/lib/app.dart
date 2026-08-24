@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'accessibility/display_preferences.dart';
 import 'services/settings.dart';
 import 'shell/flywheel_shell.dart';
 import 'theme/flywheel_theme.dart';
@@ -39,6 +40,7 @@ class _FlywheelAppState extends State<FlywheelApp> {
   @override
   Widget build(BuildContext context) {
     final settings = widget.settings;
+    final prefs = DisplayPreferences.fromMediaQuery(context);
     return MaterialApp(
       title: 'Flywheel',
       debugShowCheckedModeBanner: false,
@@ -46,11 +48,13 @@ class _FlywheelAppState extends State<FlywheelApp> {
         textFamily: settings.textFamily,
         monoFamily: settings.monoFamily,
         groundPreset: settings.groundPreset,
+        highContrast: prefs.highContrast,
       ),
       darkTheme: flywheelDarkTheme(
         textFamily: settings.textFamily,
         monoFamily: settings.monoFamily,
         groundPreset: settings.groundPreset,
+        highContrast: prefs.highContrast,
       ),
       themeMode: _mode,
       builder: (context, child) => MediaQuery(

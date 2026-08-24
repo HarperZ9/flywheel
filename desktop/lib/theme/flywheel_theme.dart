@@ -34,24 +34,35 @@ FwTokens _withGround(FwTokens t, String? preset, bool dark) {
 
 /// Theme builders. The canon pair and ground are the defaults; a user-chosen
 /// family or ground rides the tokens so every widget follows without re-plumbing.
+/// [highContrast] strengthens ink and hairlines without changing verdict hues.
 ThemeData flywheelLightTheme(
-        {String? textFamily, String? monoFamily, String? groundPreset}) =>
+        {String? textFamily,
+        String? monoFamily,
+        String? groundPreset,
+        bool highContrast = false}) =>
     _themeFrom(
         _withGround(
-            FwTokens.light
-                .copyWith(textFamily: textFamily, monoFamily: monoFamily),
+            _finish(FwTokens.light, textFamily, monoFamily, highContrast),
             groundPreset,
             false),
         Brightness.light);
 ThemeData flywheelDarkTheme(
-        {String? textFamily, String? monoFamily, String? groundPreset}) =>
+        {String? textFamily,
+        String? monoFamily,
+        String? groundPreset,
+        bool highContrast = false}) =>
     _themeFrom(
         _withGround(
-            FwTokens.dark
-                .copyWith(textFamily: textFamily, monoFamily: monoFamily),
+            _finish(FwTokens.dark, textFamily, monoFamily, highContrast),
             groundPreset,
             true),
         Brightness.dark);
+
+FwTokens _finish(
+    FwTokens base, String? textFamily, String? monoFamily, bool highContrast) {
+  final t = base.copyWith(textFamily: textFamily, monoFamily: monoFamily);
+  return highContrast ? t.highContrast() : t;
+}
 
 ThemeData _themeFrom(FwTokens t, Brightness brightness) {
   final base = ThemeData(
