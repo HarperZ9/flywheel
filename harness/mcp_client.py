@@ -111,7 +111,16 @@ class StdioTransport:
 
     def close(self) -> None:
         try:
-            self.proc.terminate()
+            if os.name == "nt":
+                # terminate() kills only the direct child. A pip-installed
+                # server runs shim -> real interpreter, so the grandchild
+                # survives and orphans pile up one per timed-out call.
+                # taskkill /T takes the whole tree.
+                subprocess.run(
+                    ["taskkill", "/PID", str(self.proc.pid), "/T", "/F"],
+                    capture_output=True, timeout=10)
+            else:
+                self.proc.terminate()
             self.proc.wait(timeout=5)
         except Exception:
             try:
