@@ -15,6 +15,7 @@ import '../navigation/app_route.dart';
 import '../navigation/navigation_controller.dart';
 import '../navigation/view_cache.dart';
 import '../services/code_draft_store.dart';
+import '../services/chat_draft_store.dart';
 import '../services/gateway_process.dart';
 import '../services/gateway_status.dart';
 import '../services/journey_draft_store.dart';
@@ -27,6 +28,10 @@ import '../widgets/command_palette.dart';
 import '../widgets/flywheel_nav.dart';
 import '../widgets/operation_grant_sheet.dart';
 import '../widgets/shell_rail.dart';
+import '../models/recovery_item.dart';
+import '../services/recovery_catalog.dart';
+import '../services/recovery_sources.dart';
+import '../views/recovery_center.dart';
 import '../widgets/status_bar.dart';
 import 'gateway_status_coordinator.dart';
 import 'view_factory.dart';
@@ -111,6 +116,36 @@ class _FlywheelShellState extends State<FlywheelShell> {
   final ViewCache _views = ViewCache();
   final TextEditingController _search = TextEditingController();
   Object? _pendingArgument;
+
+  /// The recovery center opens as an overlay from the shell footer; it is
+  /// deliberately not a thirty-first destination.
+  void _openRecoveryCenter() {
+    final code = _dependencies.code;
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) => Dialog(
+        insetPadding: const EdgeInsets.all(32),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 720),
+          child: Scaffold(
+            body: RecoveryCenter(
+              catalog: RecoveryCatalog([
+                ChatRecoverySource(ChatDraftStore()),
+                CodeRecoverySource(code),
+                JourneyRecoverySource(JourneyDraftStore(),
+                    acknowledgement: JourneyDraftAcknowledgement(
+                        'recovery-center-${DateTime.now().microsecondsSinceEpoch}',
+                        'a' * 64)),
+                InterruptedOperationRecoverySource(() => const []),
+                IncompleteMigrationRecoverySource(),
+                FailedUpdateRecoverySource(),
+              ]),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 
   @override
   void initState() {
@@ -238,6 +273,7 @@ class _FlywheelShellState extends State<FlywheelShell> {
                 widget.settings,
                 widget.onAppearanceChanged ?? () {},
               ),
+              onOpenRecovery: _openRecoveryCenter,
             ));
   }
 

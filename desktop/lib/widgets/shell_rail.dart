@@ -22,6 +22,7 @@ class ShellRail extends StatelessWidget {
   final VoidCallback onToggleCollapse;
   final VoidCallback onToggleTheme;
   final VoidCallback onOpenAppearance;
+  final VoidCallback onOpenRecovery;
 
   const ShellRail({
     super.key,
@@ -34,6 +35,7 @@ class ShellRail extends StatelessWidget {
     required this.onToggleCollapse,
     required this.onToggleTheme,
     required this.onOpenAppearance,
+    required this.onOpenRecovery,
   });
 
   @override
@@ -140,6 +142,13 @@ class ShellRail extends StatelessWidget {
           semanticLabel: 'Toggle theme',
           onActivate: onToggleTheme,
           child: Icon(Icons.contrast, size: 15, color: t.inkFaint),
+        ),
+        const SizedBox(width: 8),
+        AccessibleAction(
+          semanticLabel: 'Open recovery center',
+          onActivate: onOpenRecovery,
+          child:
+              Icon(Icons.restore_rounded, size: 15, color: t.inkFaint),
         ),
         const SizedBox(width: 8),
         AccessibleAction(
