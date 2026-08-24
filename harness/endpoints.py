@@ -86,6 +86,11 @@ class OpenAICompatBackend:
             text = obj["choices"][0]["message"]["content"]
         except (KeyError, IndexError, TypeError):
             raise BackendError(f"{self.name} returned {status}: {obj.get('error', obj)}")
+        if not isinstance(text, str) or not text.strip():
+            # A 200 with content: null (a reasoning model that spent its
+            # whole budget) is a refusal-shaped answer, not an empty reply.
+            raise BackendError(
+                f"{self.name} returned {status} with no message content")
         return {"text": text, "model_ref": f"{self.name}:{self.model}", "seed": seed}
 
 
@@ -385,6 +390,11 @@ PROVIDERS = {
                  "key": "GEMINI_API_KEY", "model": "gemini-2.5-flash"},
     "deepseek": {"kind": "openai", "base": "https://api.deepseek.com/v1",
                  "key": "DEEPSEEK_API_KEY", "model": "deepseek-chat"},
+    # ox-alpha: OpenRouter's stealth reasoning model (slug stealth/ox-alpha,
+    # OpenAI-compatible, 1M context, tool calling). Dormant until
+    # OX_ALPHA_API_KEY is set, so an unconfigured slot can never dispatch.
+    "ox-alpha": {"kind": "openai", "base": "https://openrouter.ai/api/v1",
+                 "key": "OX_ALPHA_API_KEY", "model": "stealth/ox-alpha"},
 }
 
 _KINDS = {"openai": OpenAICompatBackend, "anthropic": AnthropicBackend, "gemini": GeminiBackend}
@@ -455,7 +465,10 @@ def _one(pname: str, spec: dict, mode: str):
     if mode == "api":
         if spec.get("kind") not in _KINDS:
             return None
-        return _api_backend(pname, spec, spec["base"], spec["key"])
+        base = os.environ.get(f"{up}_BASE_URL", spec.get("base", ""))
+        if not base:
+            return None          # env-routed slot with no host: dormant
+        return _api_backend(pname, spec, base, spec["key"])
     if mode == "provider":
         if spec.get("kind") != "openai":
             return None
