@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 
 import 'package:flywheel_desktop/client/gateway_client.dart';
+import 'package:flywheel_desktop/controllers/gateway_operation_controller.dart';
 import 'package:flywheel_desktop/models/plan_models.dart';
 import 'package:flywheel_desktop/theme/flywheel_theme.dart';
 import 'package:flywheel_desktop/widgets/forge_panel.dart';
@@ -56,7 +57,18 @@ void main() {
         baseUrl: 'https://gateway.invalid',
         httpClient:
             MockClient((_) async => http.Response(jsonEncode(_prp()), 200)));
-    await tester.pumpWidget(_app(ForgePanel(client: client)));
+    // The forge dispatches only through an approved grant now; the scope
+    // stands in for the approval flow so the test exercises the panel's
+    // wiring and its truth copy, not the grant sheet itself.
+    await tester.pumpWidget(_app(GatewayOperationScope(
+      authorize: (context, operation, currentOperation, dispatch) async {
+        final body = Map<String, dynamic>.from(operation.finalBody(
+            GatewayJourneyBinding('jrn_${'a' * 32}', 'a' * 64),
+            'gnt_${'a' * 32}'));
+        return await dispatch(body);
+      },
+      child: ForgePanel(client: client),
+    )));
     await tester.enterText(find.byType(TextField), 'implement sort');
     await tester.tap(find.text('Forge'));
     await tester.pumpAndSettle();

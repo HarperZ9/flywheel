@@ -124,6 +124,67 @@ final class GatewayOperation {
           dataRefs: const [],
           credentialRefs: const []);
 
+  factory GatewayOperation.companionAsk(String request, String prompt,
+          {String? solutionSig}) =>
+      GatewayOperation._withRefs(
+          'companion.ask',
+          request,
+          const GatewayDestination('model', 'companion'),
+          'companion.ask',
+          {
+            'prompt': prompt,
+            if (solutionSig != null) 'solution_sig': solutionSig,
+          },
+          dataRefs: const [],
+          credentialRefs: const []);
+
+  factory GatewayOperation.routeSend(String request, String prompt,
+          String endpoint,
+          {String? model}) =>
+      GatewayOperation._withRefs(
+          'route.send',
+          request,
+          GatewayDestination('endpoint', endpoint),
+          'route.send',
+          {
+            'prompt': prompt,
+            'endpoint': endpoint,
+            if (model != null && model.isNotEmpty) 'model': model,
+          },
+          dataRefs: const [],
+          credentialRefs: const []);
+
+  factory GatewayOperation.forgeCreate(String request, String goal,
+          {String? context,
+          List<String>? examples,
+          String? intentSource,
+          String? architectureSource}) =>
+      GatewayOperation._withRefs(
+          'forge.create',
+          request,
+          const GatewayDestination('forge', 'forge'),
+          'forge.create',
+          {
+            'goal': goal,
+            if (context != null) 'context': context,
+            if (examples != null) 'examples': examples,
+            if (intentSource != null) 'intent_source': intentSource,
+            if (architectureSource != null)
+              'architecture_source': architectureSource,
+          },
+          dataRefs: const [],
+          credentialRefs: const []);
+
+  factory GatewayOperation.forgeRecheck(String request, String prpId) =>
+      GatewayOperation._withRefs(
+          'forge.recheck',
+          request,
+          GatewayDestination('forge', prpId),
+          'forge.recheck',
+          {'prp_id': prpId},
+          dataRefs: const [],
+          credentialRefs: const []);
+
   factory GatewayOperation.exact(
           {required String action,
           required Map<String, Object?> operation,
@@ -216,6 +277,21 @@ GatewayDestination _destination(String action, Map<String, Object?> value) {
     final ref = value['operation_ref'];
     return ref is String ? GatewayDestination('operation', ref) : _invalid();
   }
+  if (action == 'companion.ask') {
+    return const GatewayDestination('model', 'companion');
+  }
+  if (action == 'forge.create') {
+    return const GatewayDestination('forge', 'forge');
+  }
+  if (action == 'forge.recheck') {
+    final ref = value['prp_id'];
+    return ref is String ? GatewayDestination('forge', ref) : _invalid();
+  }
+  if (action == 'embeddings.create') {
+    final ref = value['model'];
+    return GatewayDestination(
+        'model', ref is String && ref.isNotEmpty ? ref : 'embeddings');
+  }
   final plugin = action.startsWith('plugin.');
   final market = action.startsWith('marketplace.');
   final field = plugin || market
@@ -245,8 +321,17 @@ String _tool(String action, Map<String, Object?> value) =>
 List<String> _scopes(String action, Map<String, Object?> value) {
   if (action == 'operation.cancel') return const ['exec'];
   final selected = <String>{};
-  if (const {'chat.complete', 'agent.run', 'workflow.run', 'plan.run'}
-      .contains(action)) {
+  if (const {
+        'chat.complete',
+        'agent.run',
+        'workflow.run',
+        'plan.run',
+        'companion.ask',
+        'route.send',
+        'forge.create',
+        'forge.recheck',
+        'embeddings.create',
+      }.contains(action)) {
     selected.add('network');
   }
   if (action == 'plugin.call') {

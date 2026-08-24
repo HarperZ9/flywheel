@@ -82,6 +82,13 @@ _FIELDS = {
                          } | _REFS, set()),
     "marketplace.remove": ({"name"} | _REFS, set()),
     "operation.cancel": ({"operation_ref", "timeout_ms"} | _REFS, set()),
+    "companion.ask": ({"prompt"} | _REFS, {"solution_sig"}),
+    "route.send": ({"prompt", "endpoint"} | _REFS, {"model"}),
+    "forge.create": ({"goal"} | _REFS,
+                     {"examples", "documentation", "context",
+                      "intent_source", "architecture_source"}),
+    "forge.recheck": ({"prp_id"} | _REFS, set()),
+    "embeddings.create": ({"input"} | _REFS, {"model"}),
 }
 def action_for_path(path: str) -> str | None:
     return {
@@ -96,6 +103,11 @@ def action_for_path(path: str) -> str | None:
         "/api/marketplace/add": "marketplace.add",
         "/api/marketplace/remove": "marketplace.remove",
         "/api/operations/cancel": "operation.cancel",
+        "/api/companion": "companion.ask",
+        "/api/route": "route.send",
+        "/api/forge": "forge.create",
+        "/api/forge/recheck": "forge.recheck",
+        "/v1/embeddings": "embeddings.create",
     }.get(path)
 def canonicalize_operation(action: str, operation: object) -> CanonicalOperation:
     try:
@@ -197,32 +209,10 @@ def _relative_path(value: object) -> bool:
 
 
 def _validate_shape(action: str, value: dict) -> None:
-    text_fields = {"model", "goal", "endpoint", "workflow", "profile", "root",
-                   "test_cmd", "name", "tool", "detail"}
-    if any(key in value and not _text(value[key]) for key in text_fields):
-        raise ValueError
-    if action == "chat.complete":
-        messages = value["messages"]
-        if (type(messages) is not list or not messages
-                or any(type(item) is not dict
-                       or set(item) != {"role", "content"}
-                       or item["role"] not in {"system", "user", "assistant"}
-                       or type(item["content"]) is not str for item in messages)):
-            raise ValueError
-    for name in ("stream", "allow_write", "allow_exec", "enabled"):
-        if name in value and type(value[name]) is not bool:
-            raise ValueError
-    if "max_steps" in value and (type(value["max_steps"]) is not int
-                                  or not 1 <= value["max_steps"] <= 12):
-        raise ValueError
-    if ("timeout_ms" in value and (type(value["timeout_ms"]) is not int
-                                   or not 1 <= value["timeout_ms"] <= 30_000)):
-        raise ValueError
-    if ("operation_ref" in value and OPERATION_REF_PATTERN.fullmatch(
-            value["operation_ref"]) is None):
-        raise ValueError
-    if "arguments" in value and type(value["arguments"]) is not dict:
-        raise ValueError
+    # Lazy import: the shape module reads this module's patterns, so a
+    # module-level import would cycle.
+    from .gateway_operation_shape import validate_operation_shape
+    validate_operation_shape(action, value)
     if "attachment" in value:
         attachment = value["attachment"]
         if (type(attachment) is not dict
@@ -266,6 +256,16 @@ def _destination(action: str, value: dict) -> dict[str, str]:
         return {"kind": "operation", "ref": value["operation_ref"]}
     if action == "chat.complete":
         return {"kind": "model", "ref": value["model"]}
+    if action == "companion.ask":
+        return {"kind": "model", "ref": "companion"}
+    if action == "route.send":
+        return {"kind": "endpoint", "ref": value["endpoint"]}
+    if action == "forge.create":
+        return {"kind": "forge", "ref": "forge"}
+    if action == "forge.recheck":
+        return {"kind": "forge", "ref": value["prp_id"]}
+    if action == "embeddings.create":
+        return {"kind": "model", "ref": value.get("model", "embeddings")}
     if action in {"agent.run", "workflow.run", "plan.run"}:
         return {"kind": "endpoint", "ref": value["endpoint"]}
     if action.startswith("plugin."):
@@ -277,7 +277,9 @@ def _derived_scopes(action: str, value: dict, secrets: bool) -> tuple[str, ...]:
     selected = set()
     if action == "operation.cancel":
         selected.add("exec")
-    if action in {"chat.complete", "agent.run", "workflow.run", "plan.run"}:
+    if action in {"chat.complete", "agent.run", "workflow.run", "plan.run",
+                  "companion.ask", "route.send", "forge.create",
+                  "forge.recheck", "embeddings.create"}:
         selected.add("network")
     if action in {"plugin.call"}:
         selected.update(("write", "exec", "network", "plugin"))

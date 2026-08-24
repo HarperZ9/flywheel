@@ -1,4 +1,4 @@
-// companion_view.dart — the Companion view: ask once, the seat answers from
+﻿// companion_view.dart â€” the Companion view: ask once, the seat answers from
 // the cheapest honest source. Cache and locally-verified answers carry a
 // verified chip; consensus is labeled as agreement, not proof; hard prompts
 // escalate with the failed local attempt on record. The chip never lies.
@@ -11,6 +11,7 @@ import '../models/render_status.dart';
 import '../theme/flywheel_theme.dart';
 import '../widgets/escalate_row.dart';
 import '../widgets/fw.dart';
+import '../widgets/operation_grant_sheet.dart';
 import '../widgets/scaffold_strip.dart';
 
 class CompanionView extends StatefulWidget {
@@ -71,8 +72,16 @@ class _CompanionViewState extends State<CompanionView> {
       turn.routeError = null;
     });
     try {
-      final r = await widget.client
-          .route(turn.prompt, endpoint, model: _chosenModels[endpoint]);
+      final requestId =
+          'companion-route-${DateTime.now().microsecondsSinceEpoch}';
+      final r = await authorizeGatewayOperation<Map<String, dynamic>>(
+        context,
+        GatewayOperation.routeSend(requestId, turn.prompt, endpoint,
+            model: _chosenModels[endpoint]),
+        (body) => widget.client.route(turn.prompt, endpoint,
+            model: _chosenModels[endpoint], authorizedBody: body),
+        currentOperation: () => null,
+      );
       if (mounted) setState(() => turn.routed = r);
     } catch (e) {
       if (mounted) setState(() => turn.routeError = '$e');
@@ -98,7 +107,14 @@ class _CompanionViewState extends State<CompanionView> {
     });
     _scrollToEnd();
     try {
-      final r = await widget.client.companion(prompt);
+      final requestId =
+          'companion-ask-${DateTime.now().microsecondsSinceEpoch}';
+      final r = await authorizeGatewayOperation<CompanionResult>(
+        context,
+        GatewayOperation.companionAsk(requestId, prompt),
+        (body) => widget.client.companion(prompt, authorizedBody: body),
+        currentOperation: () => null,
+      );
       setState(() {
         turn.result = r;
         turn.pending = false;
@@ -161,7 +177,7 @@ class _CompanionViewState extends State<CompanionView> {
           Text(turn.prompt, style: Theme.of(context).textTheme.bodyLarge),
           const SizedBox(height: FwLayout.s3),
           if (turn.pending)
-            Text('routing…', style: fwMono(t, size: 11.5, color: t.inkFaint))
+            Text('routingâ€¦', style: fwMono(t, size: 11.5, color: t.inkFaint))
           else if (turn.error != null)
             HonestNull('The request failed: ${turn.error}')
           else
@@ -179,14 +195,14 @@ class _CompanionViewState extends State<CompanionView> {
     // a cache hit or a local run is transport, not an acceptance.
     final status = companionStatus(r.verdict);
     final (chip, note) = switch (r.source) {
-      'cache' => ('verified · cache', null),
-      'local-verified' => ('verified · local', null),
+      'cache' => ('verified Â· cache', null),
+      'local-verified' => ('verified Â· local', null),
       'local-consensus' => (
-          'consensus · local',
+          'consensus Â· local',
           'Agreement across local samples, not a proof. Treat accordingly.'
         ),
       'escalate' => (
-          'escalate → ${r.escalateTo ?? 'frontier'}',
+          'escalate â†’ ${r.escalateTo ?? 'frontier'}',
           'The local model could not verify an answer. The failed attempt is '
               'on the ledger; route this prompt to a stronger endpoint.'
         ),
@@ -263,7 +279,7 @@ class _CompanionViewState extends State<CompanionView> {
               minLines: 1,
               style: const TextStyle(fontSize: 13.5),
               decoration:
-                  const InputDecoration(hintText: 'Ask the companion…'),
+                  const InputDecoration(hintText: 'Ask the companionâ€¦'),
               onSubmitted: (_) => _send(),
             ),
           ),

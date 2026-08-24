@@ -1,4 +1,4 @@
-// Typed loopback client. Durable agent operations live in the gateway.
+﻿// Typed loopback client. Durable agent operations live in the gateway.
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
@@ -39,7 +39,7 @@ class GatewayClient {
     }
   }
 
-  /// GET /api/lanes — the lane roster (7 lanes, live/declared/missing).
+  /// GET /api/lanes â€” the lane roster (7 lanes, live/declared/missing).
   Future<LaneRoster> laneRoster({bool probe = false}) async {
     final r = await _http.get(
       Uri.parse('$baseUrl/api/lanes${probe ? '?probe=true' : ''}'),
@@ -47,13 +47,13 @@ class GatewayClient {
     return LaneRoster.fromJson(_decode(r));
   }
 
-  /// GET /api/world — the projected world (spine + root hash + findings + cursor).
+  /// GET /api/world â€” the projected world (spine + root hash + findings + cursor).
   Future<WorldDoc> projectedWorld() async {
     final r = await _http.get(Uri.parse('$baseUrl/api/world'));
     return WorldDoc.fromJson(_decode(r));
   }
 
-  /// GET /api/endpoints — the universal router roster (credential presence).
+  /// GET /api/endpoints â€” the universal router roster (credential presence).
   Future<List<EndpointRow>> endpointRoster() async {
     final r = await _http.get(Uri.parse('$baseUrl/api/endpoints'));
     final body = _decode(r);
@@ -65,30 +65,30 @@ class GatewayClient {
         .toList();
   }
 
-  /// GET /api/models?endpoint=NAME — one endpoint's model roster. The
+  /// GET /api/models?endpoint=NAME â€” one endpoint's model roster. The
   /// default is flagged; a failed listing degrades to an honest reason.
   Future<Map<String, dynamic>> models(String endpoint) =>
       getJson('/api/models?endpoint=${Uri.encodeQueryComponent(endpoint)}');
 
-  /// GET /api/endpoints/health — live health probe of local tiers.
+  /// GET /api/endpoints/health â€” live health probe of local tiers.
   Future<Map<String, dynamic>> endpointHealth() async {
     final r = await _http.get(Uri.parse('$baseUrl/api/endpoints/health'));
     return _decode(r);
   }
 
-  /// GET /api/router/stats — observed per-provider success rate + cost.
+  /// GET /api/router/stats â€” observed per-provider success rate + cost.
   Future<Map<String, dynamic>> routerStats() async {
     final r = await _http.get(Uri.parse('$baseUrl/api/router/stats'));
     return _decode(r);
   }
 
-  /// GET /api/instruments — the evaluation-engineering register.
+  /// GET /api/instruments â€” the evaluation-engineering register.
   Future<Map<String, dynamic>> instruments() async {
     final r = await _http.get(Uri.parse('$baseUrl/api/instruments'));
     return _decode(r);
   }
 
-  /// GET /api/academy — the curriculum derived from the live code.
+  /// GET /api/academy â€” the curriculum derived from the live code.
   Future<Map<String, dynamic>> academy() async {
     final r = await _http.get(Uri.parse('$baseUrl/api/academy'));
     return _decode(r);
@@ -98,11 +98,11 @@ class GatewayClient {
   /// status code and a short body excerpt so the verdict stays inspectable.
   Future<(int, String)> runLessonCheck(String path) async {
     final r = await _http.get(Uri.parse('$baseUrl$path'));
-    final body = r.body.length > 240 ? '${r.body.substring(0, 240)}…' : r.body;
+    final body = r.body.length > 240 ? '${r.body.substring(0, 240)}â€¦' : r.body;
     return (r.statusCode, body);
   }
 
-  /// POST /api/academy/complete — bind a passed comprehension receipt to a
+  /// POST /api/academy/complete â€” bind a passed comprehension receipt to a
   /// lesson; completion is a re-checkable receipt, never prose.
   Future<Map<String, dynamic>> academyComplete(
       String lessonId, String comprehensionEid) async {
@@ -115,7 +115,7 @@ class GatewayClient {
     return _decode(r);
   }
 
-  /// POST /api/typeface — mint a parametric face; outlines + receipt back.
+  /// POST /api/typeface â€” mint a parametric face; outlines + receipt back.
   Future<Map<String, dynamic>> typefaceMint(
       Map<String, dynamic> params, int seed) async {
     final r = await _http.post(
@@ -133,7 +133,7 @@ class GatewayClient {
     return _decode(r);
   }
 
-  /// POST /api/typeface/publish — file a minted face in the witnessed gallery.
+  /// POST /api/typeface/publish â€” file a minted face in the witnessed gallery.
   Future<Map<String, dynamic>> typefacePublish(
       Map<String, dynamic> params, int seed,
       {String family = ''}) async {
@@ -149,15 +149,15 @@ class GatewayClient {
     return _decode(r);
   }
 
-  /// GET /api/typeface/gallery — the marketplace listing (metadata only).
+  /// GET /api/typeface/gallery â€” the marketplace listing (metadata only).
   Future<Map<String, dynamic>> typefaceGallery({int limit = 60}) =>
       getJson('/api/typeface/gallery?limit=$limit');
 
-  /// GET /api/typeface/face — one published face with its .ttf bytes.
+  /// GET /api/typeface/face â€” one published face with its .ttf bytes.
   Future<Map<String, dynamic>> typefaceFace(String eid) =>
       getJson('/api/typeface/face?eid=$eid');
 
-  /// POST /api/typeface/variable — the family's weights as ONE variable font
+  /// POST /api/typeface/variable â€” the family's weights as ONE variable font
   /// with a wght axis; the response carries the .ttf and a receipt.
   Future<Map<String, dynamic>> typefaceVariable(
       Map<String, dynamic> params, int seed) async {
@@ -173,7 +173,7 @@ class GatewayClient {
     return _decode(r);
   }
 
-  /// POST /api/learn/animate — a lesson rendered as a runnable manim scene.
+  /// POST /api/learn/animate â€” a lesson rendered as a runnable manim scene.
   Future<Map<String, dynamic>> learnAnimate(Map<String, dynamic> lesson) async {
     final r = await _http.post(
       Uri.parse('$baseUrl/api/learn/animate'),
@@ -183,13 +183,14 @@ class GatewayClient {
     return _decode(r);
   }
 
-  /// POST /api/companion — answer locally, escalate the hard slice.
+  /// POST /api/companion â€” answer locally, escalate the hard slice.
+  /// [authorizedBody] is the grant-approved operation body, sent verbatim.
   Future<CompanionResult> companion(String prompt,
-      {String? solutionSig}) async {
+      {String? solutionSig, Map<String, dynamic>? authorizedBody}) async {
     final r = await _http.post(
       Uri.parse('$baseUrl/api/companion'),
       headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
+      body: jsonEncode(authorizedBody ?? {
         'prompt': prompt,
         if (solutionSig != null) 'solution_sig': solutionSig,
       }),
@@ -197,14 +198,15 @@ class GatewayClient {
     return CompanionResult.fromJson(_decode(r));
   }
 
-  /// POST /api/route — route a prompt to a named provider, get a receipt.
+  /// POST /api/route â€” route a prompt to a named provider, get a receipt.
   /// [model] overrides the endpoint's default model; null keeps the default.
+  /// [authorizedBody] is the grant-approved operation body, sent verbatim.
   Future<Map<String, dynamic>> route(String prompt, String endpoint,
-      {String? model}) async {
+      {String? model, Map<String, dynamic>? authorizedBody}) async {
     final r = await _http.post(
       Uri.parse('$baseUrl/api/route'),
       headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
+      body: jsonEncode(authorizedBody ?? {
         'prompt': prompt,
         'endpoint': endpoint,
         if (model != null && model.isNotEmpty) 'model': model,
@@ -213,7 +215,7 @@ class GatewayClient {
     return _decode(r);
   }
 
-  /// POST /api/eval/run — run a real eval through [endpoint] and get back a
+  /// POST /api/eval/run â€” run a real eval through [endpoint] and get back a
   /// sealed, offline-verifiable receipt. [model] overrides the endpoint's
   /// default model (null/empty keeps it); [n] is the task count (1..5, capped
   /// by the engine). A provider or credential error is returned as its JSON
@@ -233,7 +235,7 @@ class GatewayClient {
     return _decodeLenient(r);
   }
 
-  /// POST /api/eval/verify — re-check a receipt offline. The verdict (MATCH /
+  /// POST /api/eval/verify â€” re-check a receipt offline. The verdict (MATCH /
   /// TAMPERED / UNVERIFIABLE) is the answer, so the route always returns 200 and
   /// a corrupted receipt is a first-class result, never an HTTP error.
   Future<Map<String, dynamic>> evalVerify(Map<String, dynamic> receipt) async {
@@ -245,7 +247,7 @@ class GatewayClient {
     return _decodeLenient(r);
   }
 
-  /// POST /api/audit/run — review a completed [workReceipt] and seal the review
+  /// POST /api/audit/run â€” review a completed [workReceipt] and seal the review
   /// into an audit receipt CHAINED onto it (prev_receipt_sha256 = the work
   /// receipt's seal hex). The reviewer is cheap: it runs deterministically with
   /// no model, and adds a narrative only when [endpoint] is supplied and
@@ -267,7 +269,7 @@ class GatewayClient {
     return _decodeLenient(r);
   }
 
-  /// POST /api/audit/verify — re-check an audit receipt offline. With
+  /// POST /api/audit/verify â€” re-check an audit receipt offline. With
   /// [workReceipt] supplied it ALSO confirms the chain link back to the work (a
   /// wrong prev is CHAIN_BROKEN). The verdict (MATCH / TAMPERED / UNVERIFIABLE)
   /// is the answer, so the route always returns 200 and a corrupted receipt is a
@@ -285,7 +287,7 @@ class GatewayClient {
     return _decodeLenient(r);
   }
 
-  /// GET /api/usage — the signed usage-metering session summary. Rolls the
+  /// GET /api/usage â€” the signed usage-metering session summary. Rolls the
   /// emitted usage receipts into token totals, per-endpoint splits, a priced
   /// total that sums ONLY the receipts carrying a dollar amount, an unpriced
   /// count, and the receipts themselves so the UI re-verifies each one offline.
@@ -294,7 +296,7 @@ class GatewayClient {
   /// provider-billed number.
   Future<Map<String, dynamic>> usageSummary() => getJson('/api/usage');
 
-  /// POST /api/usage/verify — re-check one usage receipt offline. The verdict
+  /// POST /api/usage/verify â€” re-check one usage receipt offline. The verdict
   /// (MATCH / TAMPERED / UNVERIFIABLE) is the answer, so the route always returns
   /// 200 and a corrupted receipt is a first-class result, never an HTTP error.
   Future<Map<String, dynamic>> usageVerify(Map<String, dynamic> receipt) async {
@@ -306,7 +308,7 @@ class GatewayClient {
     return _decodeLenient(r);
   }
 
-  /// POST /api/discourse — drive the chorus satellite over a gathered comment
+  /// POST /api/discourse â€” drive the chorus satellite over a gathered comment
   /// corpus (a gather corpus directory or a JSON row list) and return chorus's
   /// own weighted, clustered, re-checkable discourse digest verbatim.
   Future<Map<String, dynamic>> discourse(String corpus) async {
@@ -318,7 +320,7 @@ class GatewayClient {
     return _decode(r);
   }
 
-  /// POST /api/discourse/corpora — discover gather corpora under a root, so a
+  /// POST /api/discourse/corpora â€” discover gather corpora under a root, so a
   /// gathered run can be picked as a discourse source without typing its path.
   Future<Map<String, dynamic>> discourseCorpora(String root) async {
     final r = await _http.post(
@@ -329,7 +331,7 @@ class GatewayClient {
     return _decode(r);
   }
 
-  /// POST /api/discourse/digests — what the chorus daemon has synthesized on a
+  /// POST /api/discourse/digests â€” what the chorus daemon has synthesized on a
   /// schedule, newest first, so the app can show it without re-running anything.
   Future<Map<String, dynamic>> discourseDigests(String store,
       {int limit = 20}) async {
@@ -341,17 +343,18 @@ class GatewayClient {
     return _decode(r);
   }
 
-  /// POST /api/forge/recheck — has an arm drifted since the forge sealed it?
-  Future<Map<String, dynamic>> forgeRecheck(String prpId) async {
+  /// POST /api/forge/recheck â€” has an arm drifted since the forge sealed it?
+  Future<Map<String, dynamic>> forgeRecheck(String prpId,
+      {Map<String, dynamic>? authorizedBody}) async {
     final r = await _http.post(
       Uri.parse('$baseUrl/api/forge/recheck'),
       headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'prp_id': prpId}),
+      body: jsonEncode(authorizedBody ?? {'prp_id': prpId}),
     );
     return _decode(r);
   }
 
-  /// POST /api/studio/poster — plate + minted face + copy under one receipt.
+  /// POST /api/studio/poster â€” plate + minted face + copy under one receipt.
   Future<Map<String, dynamic>> studioPoster(String title,
       {String subtitle = '',
       String format = 'poster',
@@ -375,7 +378,7 @@ class GatewayClient {
     return _decode(r);
   }
 
-  /// POST /api/telos/kernel — run a bridged telos creative kernel; the
+  /// POST /api/telos/kernel â€” run a bridged telos creative kernel; the
   /// answer (points, bounds, receipt hashes) is the kernel's own.
   Future<Map<String, dynamic>> telosKernel(
       String kernel, Map<String, dynamic> args) async {
@@ -387,7 +390,7 @@ class GatewayClient {
     return _decode(r);
   }
 
-  /// POST /api/telos/raster — dither or pixel-sort over a plate or PNG;
+  /// POST /api/telos/raster â€” dither or pixel-sort over a plate or PNG;
   /// the receipt carries the kernel's own hashes.
   Future<Map<String, dynamic>> telosRaster(String kernel,
       {Map<String, dynamic>? source, Map<String, dynamic>? args}) async {
@@ -403,7 +406,7 @@ class GatewayClient {
     return _decode(r);
   }
 
-  /// POST /api/studio/graph — a branching creative DAG; every node's chain
+  /// POST /api/studio/graph â€” a branching creative DAG; every node's chain
   /// folds its inputs' chains, so the graph id witnesses everything.
   Future<Map<String, dynamic>> studioGraph(List<Map<String, dynamic>> nodes,
       List<Map<String, dynamic>> edges) async {
@@ -415,7 +418,7 @@ class GatewayClient {
     return _decode(r);
   }
 
-  /// POST /api/studio/pipeline — ordered creative stages, one chained
+  /// POST /api/studio/pipeline â€” ordered creative stages, one chained
   /// receipt; the pipeline id witnesses the whole line in order.
   Future<Map<String, dynamic>> studioPipeline(
       List<Map<String, dynamic>> stages) async {
@@ -427,7 +430,7 @@ class GatewayClient {
     return _decode(r);
   }
 
-  /// POST /api/studio/brandkit — one seed + a name -> a whole identity.
+  /// POST /api/studio/brandkit â€” one seed + a name -> a whole identity.
   Future<Map<String, dynamic>> brandKit(String name,
       {String tagline = '',
       int seed = 58,
@@ -445,7 +448,7 @@ class GatewayClient {
     return _decode(r);
   }
 
-  /// POST /api/studio/sound — the seeded chime study; the score is the receipt.
+  /// POST /api/studio/sound â€” the seeded chime study; the score is the receipt.
   Future<Map<String, dynamic>> studioSound(
       {int seed = 58, double duration = 24, double root = 220}) async {
     final r = await _http.post(
@@ -456,13 +459,16 @@ class GatewayClient {
     return _decode(r);
   }
 
-  /// POST /api/forge — turn a plain goal into a structured prompt with gates.
+  /// POST /api/forge â€” turn a plain goal into a structured prompt with gates.
+  /// [authorizedBody] is the grant-approved operation body, sent verbatim.
   Future<Map<String, dynamic>> forge(String goal,
-      {String? context, List<String>? examples}) async {
+      {String? context,
+      List<String>? examples,
+      Map<String, dynamic>? authorizedBody}) async {
     final r = await _http.post(
       Uri.parse('$baseUrl/api/forge'),
       headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
+      body: jsonEncode(authorizedBody ?? {
         'goal': goal,
         if (context != null) 'context': context,
         if (examples != null) 'examples': examples,
@@ -488,13 +494,13 @@ class GatewayClient {
     return _decode(r);
   }
 
-  /// GET /api/receipts — the receipts ledger (catalog + proof envelopes).
+  /// GET /api/receipts â€” the receipts ledger (catalog + proof envelopes).
   Future<ReceiptsLedger> receipts() async {
     final r = await _http.get(Uri.parse('$baseUrl/api/receipts'));
     return ReceiptsLedger.fromJson(_decode(r));
   }
 
-  /// GET /api/receipts/proof — prove one receipt (a 64-hex leaf) is in the
+  /// GET /api/receipts/proof â€” prove one receipt (a 64-hex leaf) is in the
   /// Merkle log, with the audit path anyone can re-walk offline.
   Future<Map<String, dynamic>> receiptsProof(String leaf) async {
     final r = await _http.get(Uri.parse(
@@ -502,7 +508,7 @@ class GatewayClient {
     return _decode(r);
   }
 
-  /// GET /api/profiles — the profile manifests over the one substrate.
+  /// GET /api/profiles â€” the profile manifests over the one substrate.
   Future<List<ProfileManifest>> profiles() async {
     final r = await _http.get(Uri.parse('$baseUrl/api/profiles'));
     final body = _decode(r);
@@ -511,19 +517,19 @@ class GatewayClient {
         .toList();
   }
 
-  /// GET /api/workflows — workflow definitions plus recent runs.
+  /// GET /api/workflows â€” workflow definitions plus recent runs.
   Future<WorkflowRoster> workflows() async {
     final r = await _http.get(Uri.parse('$baseUrl/api/workflows'));
     return WorkflowRoster.fromJson(_decode(r));
   }
 
-  /// GET /api/memory — durable memory stats.
+  /// GET /api/memory â€” durable memory stats.
   Future<Map<String, dynamic>> memoryStats() async {
     final r = await _http.get(Uri.parse('$baseUrl/api/memory'));
     return _decode(r);
   }
 
-  /// POST /api/memory/recall — verbatim recall from the fold index.
+  /// POST /api/memory/recall â€” verbatim recall from the fold index.
   Future<Map<String, dynamic>> memoryRecall(String query,
       {int topK = 5}) async {
     final r = await _http.post(
@@ -534,23 +540,23 @@ class GatewayClient {
     return _decode(r);
   }
 
-  /// GET /api/science/runs — persisted science history, chain-reverified.
+  /// GET /api/science/runs â€” persisted science history, chain-reverified.
   Future<Map<String, dynamic>> scienceRuns({int limit = 20}) =>
       getJson('/api/science/runs?limit=$limit');
 
-  /// GET /api/science/run — one stored science run by chain prefix.
+  /// GET /api/science/run â€” one stored science run by chain prefix.
   Future<Map<String, dynamic>> scienceRunDetail(String chain) =>
       getJson('/api/science/run?chain=$chain');
 
-  /// GET /api/workflow/run — one stored per-stage trace, chain-reverified.
+  /// GET /api/workflow/run â€” one stored per-stage trace, chain-reverified.
   Future<Map<String, dynamic>> workflowRunDetail(String chain) =>
       getJson('/api/workflow/run?chain=$chain');
 
-  /// GET /api/agent/runs — persisted agent runs, content-addressed.
+  /// GET /api/agent/runs â€” persisted agent runs, content-addressed.
   Future<Map<String, dynamic>> agentRuns({int limit = 20}) =>
       getJson('/api/agent/runs?limit=$limit');
 
-  /// GET /api/agent/run — one stored agent run with its trace events.
+  /// GET /api/agent/run â€” one stored agent run with its trace events.
   Future<Map<String, dynamic>> agentRunDetail(String id) =>
       getJson('/api/agent/run?id=$id');
 
@@ -569,14 +575,14 @@ class GatewayClient {
   Future<Map<String, dynamic>> lessonRetire(String lessonId) =>
       postJson('/api/lessons/retire', {'lesson_id': lessonId});
 
-  /// GET /api/memory/list — browse stored spans verbatim (no query).
+  /// GET /api/memory/list â€” browse stored spans verbatim (no query).
   Future<Map<String, dynamic>> memoryList({int limit = 20}) async {
     final r =
         await _http.get(Uri.parse('$baseUrl/api/memory/list?limit=$limit'));
     return _decode(r);
   }
 
-  /// POST /api/memory/note — store a durable content-addressed note.
+  /// POST /api/memory/note â€” store a durable content-addressed note.
   Future<Map<String, dynamic>> memoryNote(String content) async {
     final r = await _http.post(
       Uri.parse('$baseUrl/api/memory/note'),
@@ -586,7 +592,7 @@ class GatewayClient {
     return _decode(r);
   }
 
-  /// GET /api/training/status — read-only 32B training lane status.
+  /// GET /api/training/status â€” read-only 32B training lane status.
   Future<Map<String, dynamic>> trainingStatus() async {
     final r = await _http.get(Uri.parse('$baseUrl/api/training/status'));
     return _decode(r);

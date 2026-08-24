@@ -1,4 +1,4 @@
-// forge_panel.dart — the prompt forge, in the app where it can do more:
+﻿// forge_panel.dart â€” the prompt forge, in the app where it can do more:
 // a plain goal becomes a structured prompt whose success gates a machine
 // can check, both arms sealed by hash, and drift re-checkable in place.
 
@@ -8,6 +8,7 @@ import 'package:flutter/services.dart';
 import '../client/gateway_client.dart';
 import '../theme/flywheel_theme.dart';
 import 'fw.dart';
+import 'operation_grant_sheet.dart';
 
 class ForgePanel extends StatefulWidget {
   final GatewayClient client;
@@ -39,7 +40,13 @@ class _ForgePanelState extends State<ForgePanel> {
       _recheck = null;
     });
     try {
-      final r = await widget.client.forge(goal);
+      final requestId = 'forge-${DateTime.now().microsecondsSinceEpoch}';
+      final r = await authorizeGatewayOperation<Map<String, dynamic>>(
+        context,
+        GatewayOperation.forgeCreate(requestId, goal),
+        (body) => widget.client.forge(goal, authorizedBody: body),
+        currentOperation: () => null,
+      );
       if (mounted) setState(() => _doc = r);
     } catch (e) {
       if (mounted) setState(() => _error = '$e');
@@ -53,7 +60,14 @@ class _ForgePanelState extends State<ForgePanel> {
     if (prp.isEmpty || _rechecking) return;
     setState(() => _rechecking = true);
     try {
-      final r = await widget.client.forgeRecheck(prp);
+      final requestId =
+          'forge-recheck-${DateTime.now().microsecondsSinceEpoch}';
+      final r = await authorizeGatewayOperation<Map<String, dynamic>>(
+        context,
+        GatewayOperation.forgeRecheck(requestId, prp),
+        (body) => widget.client.forgeRecheck(prp, authorizedBody: body),
+        currentOperation: () => null,
+      );
       if (mounted) setState(() => _recheck = r);
     } catch (e) {
       if (mounted) setState(() => _error = '$e');
@@ -89,7 +103,7 @@ class _ForgePanelState extends State<ForgePanel> {
             const SizedBox(width: FwLayout.s3),
             FilledButton(
               onPressed: _busy ? null : _forge,
-              child: Text(_busy ? 'Forging…' : 'Forge'),
+              child: Text(_busy ? 'Forgingâ€¦' : 'Forge'),
             ),
           ]),
           if (_error != null) ...[
@@ -114,7 +128,7 @@ class _ForgePanelState extends State<ForgePanel> {
         Row(children: [
           OutlinedButton(
             onPressed: _rechecking ? null : _driftCheck,
-            child: Text(_rechecking ? 'Rechecking…' : 'Recheck drift'),
+            child: Text(_rechecking ? 'Recheckingâ€¦' : 'Recheck drift'),
           ),
           const SizedBox(width: FwLayout.s3),
           if (_recheck != null) Expanded(child: _recheckRow(t, _recheck!)),
