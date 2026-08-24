@@ -1,0 +1,12 @@
+﻿{
+  "_comment": "Release policy: the first candidate profile is exactly the non-executing v1 profile. Calling it sandboxed is prohibited. Signing facts are BLOCKED until the operator accepts a provider and key custody.",
+  "blocked": ["authenticode_provider", "key_custody", "timestamp_url", "certificate_subject", "retention_days"],
+  "profile": "flywheel.desktop-profile/non-executing/v1",
+  "desktop_product_id": "BLOCKED",
+  "installer_app_id": "BLOCKED",
+  "api_schema": "flywheel.evidence-journey-projection/v2",
+  "authenticode_provider": "BLOCKED",
+  "timestamp_url": "BLOCKED",
+  "retention_days": "BLOCKED",
+  "denied_operations": ["arbitrary_python", "user_tests", "shell_runners", "build_runners", "agent_write", "agent_exec", "plugin_calls", "executable_packs", "incident_generated_execution"]
+}

@@ -1,0 +1,12 @@
+﻿{
+  "_comment": "Default-reject payload policy: only explicitly declared rows may ship. Font provenance is BLOCKED: the current font files have no accepted redistribution evidence and must be licensed, replaced, or removed.",
+  "blocked": ["font_provenance", "third_party_notices"],
+  "allow": [],
+  "reject_globs": true,
+  "reject_symlinks": true,
+  "reject_alternate_data_streams": true,
+  "reject_case_collisions": true,
+  "reject_reserved_names": true,
+  "font_provenance": "BLOCKED",
+  "third_party_notices": "BLOCKED"
+}

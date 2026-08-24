@@ -1,4 +1,4 @@
-# Desktop CI: analyze + widget tests on the fast runner, plus the Windows
+﻿# Desktop CI: analyze + widget tests on the fast runner, plus the Windows
 # release-exe compile proof (the break class ubuntu analyze/test cannot see).
 # Path-filtered so engine-only changes stay on the Python pipeline.
 # desktop-release.yml repeats the gates on windows-latest before packaging.
@@ -28,8 +28,8 @@ jobs:
       run:
         working-directory: desktop
     steps:
-      - uses: actions/checkout@v4
-      - uses: subosito/flutter-action@v2
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: subosito/flutter-action@6292cfc21e60a8e80b17aa5c8c44be81236112f8 # v2.12.0
         with:
           channel: stable
           flutter-version: 3.44.6
@@ -46,8 +46,8 @@ jobs:
       run:
         working-directory: desktop
     steps:
-      - uses: actions/checkout@v4
-      - uses: subosito/flutter-action@v2
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: subosito/flutter-action@6292cfc21e60a8e80b17aa5c8c44be81236112f8 # v2.12.0
         with:
           channel: stable
           flutter-version: 3.44.6

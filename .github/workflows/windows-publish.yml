@@ -1,0 +1,60 @@
+# Protected Windows publishing: a REUSABLE workflow that alone holds
+# repository-write permission. It must be called explicitly (workflow_call)
+# with the candidate's hash receipt; nothing in this repository calls it.
+# Publishing is a separate explicit authorization and always consumes the
+# candidate's exact hashes: an existing release or asset is a hard
+# no-clobber failure, never an overwrite.
+name: windows-publish
+
+on:
+  workflow_call:
+    inputs:
+      tag:
+        description: "The v* tag the candidate was built from"
+        required: true
+        type: string
+      installer_sha256:
+        description: "The candidate installer's SHA-256 (lowercase hex)"
+        required: true
+        type: string
+    secrets:
+      publish_token:
+        description: "Fine-grained token with release-write on this repo"
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  publish-installer:
+    runs-on: windows-latest
+    steps:
+      - name: Download the candidate
+        uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
+        with:
+          name: windows-installer-candidate
+          path: candidate
+
+      - name: Verify the candidate hash before any publish
+        shell: pwsh
+        run: |
+          $exe = Get-ChildItem candidate\Flywheel-Setup-*.exe | Select-Object -First 1
+          $hash = (Get-FileHash $exe.FullName -Algorithm SHA256).Hash.ToLower()
+          if ($hash -ne "${{ inputs.installer_sha256 }}") {
+            throw "candidate hash $hash does not match the accepted ${{ inputs.installer_sha256 }} -- refusing to publish"
+          }
+          "hash verified: $hash"
+
+      - name: Publish the GitHub Release (no-clobber)
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.publish_token }}
+        run: |
+          $tag = "${{ inputs.tag }}"
+          $exe = Get-ChildItem candidate\Flywheel-Setup-*.exe | Select-Object -First 1
+          $sums = "candidate\SHA256SUMS.txt"
+          gh release view $tag *> $null
+          if ($LASTEXITCODE -eq 0) {
+            throw "release $tag already exists; existing release assets are immutable"
+          }
+          gh release create $tag $exe $sums --title "Flywheel $tag" --generate-notes --verify-tag

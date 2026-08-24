@@ -1,0 +1,8 @@
+﻿{
+  "_comment": "Supported Windows targets. Every fact here needs owner-accepted primary-source evidence; BLOCKED facts stop the release identity.",
+  "blocked": ["editions_build_ranges_architectures", "clean_snapshot_runner"],
+  "editions": "BLOCKED",
+  "architectures": "BLOCKED",
+  "clean_runner_label": "BLOCKED",
+  "previous_signed_installer": "BLOCKED"
+}

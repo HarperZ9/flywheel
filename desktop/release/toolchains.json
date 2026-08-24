@@ -1,0 +1,10 @@
+﻿{
+  "_comment": "Exact toolchain pins for a reproducible build. Versions are real and pinned; the runner image digests need owner acceptance.",
+  "blocked": ["runner_image_digests"],
+  "python": "3.12",
+  "flutter": "3.44.6",
+  "dart": "3.6+",
+  "pyinstaller": "6.21.0",
+  "inno_setup": "6",
+  "runner_images": "BLOCKED"
+}
