@@ -14,25 +14,8 @@ import shlex
 from dataclasses import dataclass, field
 
 from .local_agent import BackendError
-
-
-def _http(method, url, headers, body, timeout):
-    """(method,url,headers,body,timeout)->(status,json). Injectable for tests."""
-    req = urllib.request.Request(url, data=body, method=method, headers=headers or {})
-    try:
-        with urllib.request.urlopen(req, timeout=timeout) as r:
-            raw = r.read()
-            return r.status, (json.loads(raw) if raw else {})
-    except urllib.error.HTTPError as e:
-        raw = e.read()
-        try:
-            return e.code, (json.loads(raw) if raw else {})
-        except json.JSONDecodeError:
-            return e.code, {"error": raw.decode("utf-8", "replace")[:300]}
-
-
-def _k(env_name: str) -> str:
-    return os.environ.get(env_name, "")
+from .endpoints_http import _http, _guard, _k
+from .endpoint_opencode import OpenCodeBackend  # noqa: F401 (re-exported)
 
 
 def _credential(env_name: str, direct: str | None) -> str:
@@ -49,13 +32,6 @@ def _decode(data) -> str:
     return str(data or "")
 
 
-def _guard(transport, method, url, headers, body, timeout, name):
-    try:
-        return transport(method, url, headers, body, timeout)
-    except (urllib.error.URLError, OSError, ConnectionError) as e:
-        raise BackendError(f"{name} unreachable: {e}") from e
-
-
 @dataclass
 class OpenAICompatBackend:
     """OpenAI-compatible /chat/completions: OpenAI (codex api), DeepSeek, a
@@ -67,6 +43,8 @@ class OpenAICompatBackend:
     transport: "callable" = _http
     timeout: float = 120.0
     api_key: str | None = field(default=None, repr=False)
+    tools: list | None = None
+    tool_choice: "str | dict | None" = None
 
     def health(self) -> bool:
         return bool(_credential(self.key_env, self.api_key)) \
@@ -78,20 +56,60 @@ class OpenAICompatBackend:
         key = _credential(self.key_env, self.api_key)
         if key:
             headers["Authorization"] = f"Bearer {key}"
-        body = json.dumps({"model": self.model, "messages": msgs,
-                           "temperature": temperature, "max_tokens": max_tokens}).encode()
-        status, obj = _guard(self.transport, "POST", f"{self.base_url}/chat/completions",
-                             headers, body, self.timeout, self.name)
+        payload = {"model": self.model, "messages": msgs,
+                   "temperature": temperature, "max_tokens": max_tokens}
+        if self.tools:
+            payload["tools"] = self.tools
+            if self.tool_choice is not None:
+                payload["tool_choice"] = self.tool_choice
+        status, obj = _guard(self.transport, "POST",
+                             f"{self.base_url}/chat/completions",
+                             headers, json.dumps(payload).encode(),
+                             self.timeout, self.name)
         try:
-            text = obj["choices"][0]["message"]["content"]
+            message = obj["choices"][0]["message"]
+            text = message["content"]
         except (KeyError, IndexError, TypeError):
             raise BackendError(f"{self.name} returned {status}: {obj.get('error', obj)}")
+        out = {"model_ref": f"{self.name}:{self.model}", "seed": seed}
+        calls = message.get("tool_calls") if isinstance(message, dict) else None
+        if isinstance(calls, list) and calls:
+            out["tool_calls"] = [_parse_tool_call(c) for c in calls]
         if not isinstance(text, str) or not text.strip():
-            # A 200 with content: null (a reasoning model that spent its
-            # whole budget) is a refusal-shaped answer, not an empty reply.
-            raise BackendError(
-                f"{self.name} returned {status} with no message content")
-        return {"text": text, "model_ref": f"{self.name}:{self.model}", "seed": seed}
+            if out.get("tool_calls"):
+                text = ""          # a pure tool-call turn carries no prose
+            else:
+                # A 200 with content: null (a reasoning model that spent
+                # its whole budget) is refusal-shaped, not an empty reply.
+                raise BackendError(
+                    f"{self.name} returned {status} with no message content")
+        out["text"] = text
+        return out
+
+
+def _parse_tool_call(call: dict) -> dict:
+    """One native tool call, parsed strictly: malformed JSON arguments are
+    reported, never silently executed with guessed arguments."""
+    fn = call.get("function") if isinstance(call, dict) else None
+    name = fn.get("name", "") if isinstance(fn, dict) else ""
+    raw = fn.get("arguments", "{}") if isinstance(fn, dict) else "{}"
+    parsed: dict = {}
+    error = ""
+    if isinstance(raw, dict):
+        parsed = raw
+    else:
+        try:
+            loaded = json.loads(raw)
+            if isinstance(loaded, dict):
+                parsed = loaded
+            else:
+                error = "arguments are not a JSON object"
+        except (json.JSONDecodeError, TypeError):
+            error = "arguments are not parseable JSON"
+    out = {"id": call.get("id", ""), "name": name, "arguments": parsed}
+    if error:
+        out["arguments_error"] = error
+    return out
 
 
 @dataclass
@@ -160,118 +178,6 @@ class GeminiBackend:
         except (KeyError, IndexError, TypeError):
             raise BackendError(f"{self.name} returned {status}: {obj.get('error', obj)}")
         return {"text": text, "model_ref": f"{self.name}:{self.model}", "seed": seed}
-
-
-@dataclass
-class OpenCodeBackend:
-    """OpenCode desktop/server API.
-
-    Verified against OpenCode Desktop 1.17.15 packaged API surface:
-      POST /session
-      POST /session/{id}/message
-
-    The desktop app starts its own password-protected sidecar with a random
-    password. This backend therefore only activates when the operator exposes a
-    reachable OpenCode server/sidecar and provides its basic-auth credentials
-    via env vars.
-    """
-    name: str
-    base_url: str
-    provider_id: str
-    model: str
-    username_env: str = "OPENCODE_USERNAME"
-    password_env: str = "OPENCODE_PASSWORD"
-    username_fallback_env: str = "OPENCODE_SERVER_USERNAME"
-    password_fallback_env: str = "OPENCODE_SERVER_PASSWORD"
-    directory_env: str = "OPENCODE_DIRECTORY"
-    agent_env: str = "OPENCODE_AGENT"
-    transport: "callable" = _http
-    timeout: float = 300.0
-
-    def health(self) -> bool:
-        password = _k(self.password_env) or _k(self.password_fallback_env)
-        return bool(self.base_url and self.provider_id and self.model and password)
-
-    def _headers(self) -> dict:
-        headers = {"Content-Type": "application/json"}
-        username = _k(self.username_env) or _k(self.username_fallback_env) or "opencode"
-        password = _k(self.password_env) or _k(self.password_fallback_env)
-        if password:
-            token = base64.b64encode(f"{username}:{password}".encode()).decode()
-            headers["Authorization"] = f"Basic {token}"
-        return headers
-
-    def _url(self, path: str) -> str:
-        base = self.base_url.rstrip("/")
-        params = {}
-        directory = _k(self.directory_env) or os.getcwd()
-        if directory:
-            params["directory"] = directory
-        qs = urllib.parse.urlencode(params)
-        return f"{base}{path}?{qs}" if qs else f"{base}{path}"
-
-    def _request(self, method: str, path: str, payload: dict | None = None) -> dict:
-        body = json.dumps(payload or {}).encode() if payload is not None else None
-        status, obj = _guard(
-            self.transport,
-            method,
-            self._url(path),
-            self._headers(),
-            body,
-            self.timeout,
-            self.name,
-        )
-        if status >= 400:
-            raise BackendError(f"{self.name} returned {status}: {obj.get('error', obj)}")
-        return obj
-
-    def _collect_text(self, obj) -> list[str]:
-        found = []
-        if isinstance(obj, dict):
-            if obj.get("type") == "text" and isinstance(obj.get("text"), str):
-                found.append(obj["text"])
-            for value in obj.values():
-                found.extend(self._collect_text(value))
-        elif isinstance(obj, list):
-            for value in obj:
-                found.extend(self._collect_text(value))
-        return found
-
-    def _latest_assistant_text(self, session_id: str) -> str:
-        obj = self._request("GET", f"/session/{urllib.parse.quote(session_id)}/message")
-        messages = obj if isinstance(obj, list) else obj.get("messages", [])
-        for message in reversed(messages):
-            if isinstance(message, dict) and message.get("info", {}).get("role") == "assistant":
-                text = "\n".join(self._collect_text(message)).strip()
-                if text:
-                    return text
-        return ""
-
-    def chat(self, messages, *, system, max_tokens, temperature, seed) -> dict:
-        del max_tokens, temperature
-        prompt = "\n".join(f"{m['role']}: {m['content']}" for m in messages)
-        session = self._request("POST", "/session", {})
-        session_id = session.get("id") or session.get("sessionID") or session.get("info", {}).get("id")
-        if not session_id:
-            raise BackendError(f"{self.name} did not return a session id")
-
-        payload = {
-            "model": {"providerID": self.provider_id, "modelID": self.model},
-            "parts": [{"type": "text", "text": prompt}],
-        }
-        if system:
-            payload["system"] = system
-        agent = _k(self.agent_env)
-        if agent:
-            payload["agent"] = agent
-
-        obj = self._request("POST", f"/session/{urllib.parse.quote(session_id)}/message", payload)
-        text = "\n".join(self._collect_text(obj)).strip()
-        if not text:
-            text = self._latest_assistant_text(session_id)
-        if not text:
-            raise BackendError(f"{self.name} returned no assistant text")
-        return {"text": text, "model_ref": f"{self.name}:{self.provider_id}/{self.model}", "seed": seed}
 
 
 @dataclass

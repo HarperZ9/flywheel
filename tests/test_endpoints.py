@@ -7,6 +7,8 @@ never a silent default; (3) an error response is a typed BackendError; (4) the
 CLI (subscription) backend runs the operator's client and surfaces failures;
 (5) build_endpoints assembles only the modes whose credentials are present.
 """
+import json
+
 import pytest
 
 from harness.endpoints import (
@@ -221,3 +223,63 @@ def test_openai_compat_null_content_is_a_typed_error_not_none_text():
                                 "role": "assistant", "content": None}}]}))
     with pytest.raises(BackendError):
         b.chat(_MSG, system="", max_tokens=8, temperature=0, seed=0)
+
+
+def test_openai_compat_passthrough_tools_and_parses_tool_calls():
+    # Native tool calling: the backend carries the tools block verbatim and
+    # returns parsed tool calls, so a provider-native agent lane exists
+    # beside the text TOOL protocol.
+    captured = {}
+
+    def tx(method, url, headers, body, timeout):
+        captured["body"] = json.loads(body)
+        return 200, {"choices": [{"message": {
+            "role": "assistant",
+            "content": None,
+            "tool_calls": [
+                {"id": "c1", "type": "function",
+                 "function": {"name": "verify_receipt_inclusion",
+                              "arguments": "{\"leaf\": \"ab\"}"}},
+                {"id": "c2", "type": "function",
+                 "function": {"name": "world_root_hash",
+                              "arguments": "not json"}},
+            ]}}]}
+
+    tools = [{"type": "function", "function": {
+        "name": "verify_receipt_inclusion",
+        "parameters": {"type": "object",
+                       "properties": {"leaf": {"type": "string"}}}}}]
+    b = OpenAICompatBackend("ox-alpha", "https://openrouter.ai/api/v1",
+                            "stealth/ox-alpha", key_env="OX_ALPHA_API_KEY",
+                            transport=tx, tools=tools)
+    out = b.chat(_MSG, system="", max_tokens=8, temperature=0, seed=0)
+    assert captured["body"]["tools"] == tools
+    calls = out["tool_calls"]
+    assert calls[0] == {"id": "c1", "name": "verify_receipt_inclusion",
+                        "arguments": {"leaf": "ab"}}
+    assert calls[1]["arguments"] == {}
+    assert "parse" in calls[1]["arguments_error"]
+    assert out["model_ref"] == "ox-alpha:stealth/ox-alpha"
+
+
+def test_openai_compat_tool_choice_travels_and_absent_tools_stay_off_wire():
+    captured = {}
+
+    def tx(method, url, headers, body, timeout):
+        captured["body"] = json.loads(body)
+        return 200, {"choices": [{"message": {"content": "ok"}}]}
+
+    b = OpenAICompatBackend("ox-alpha", "https://x/v1", "m", key_env="K",
+                            transport=tx,
+                            tools=[{"type": "function", "function": {
+                                "name": "f", "parameters": {}}}],
+                            tool_choice={"type": "function",
+                                         "function": {"name": "f"}})
+    b.chat(_MSG, system="", max_tokens=4, temperature=0, seed=0)
+    assert captured["body"]["tool_choice"] == {"type": "function",
+                                               "function": {"name": "f"}}
+
+    plain = OpenAICompatBackend("ox-alpha", "https://x/v1", "m", key_env="K",
+                                transport=tx)
+    plain.chat(_MSG, system="", max_tokens=4, temperature=0, seed=0)
+    assert "tools" not in captured["body"] and "tool_choice" not in captured["body"]
