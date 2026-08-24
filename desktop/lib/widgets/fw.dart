@@ -7,6 +7,8 @@
 
 import 'package:flutter/material.dart';
 
+import '../accessibility/accessible_action.dart';
+import '../navigation/app_route.dart';
 import '../theme/flywheel_theme.dart';
 import 'flywheel_nav.dart';
 
@@ -103,15 +105,14 @@ class HashText extends StatelessWidget {
         decoration: canLink ? TextDecoration.underline : null,
         decorationColor: canLink ? t.drift.withValues(alpha: 0.4) : null);
     final value = canLink
-        ? MouseRegion(
-            cursor: SystemMouseCursors.click,
-            child: GestureDetector(
-              onTap: () => FlywheelNav.jump(context, 'Receipts', arg: hash),
-              child: Text(short,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: valueStyle),
-            ),
+        ? AccessibleAction(
+            semanticLabel: 'Verify receipt $short in the ledger',
+            onActivate: () =>
+                FlywheelNav.jump(context, DestinationId.receipts, arg: hash),
+            child: Text(short,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: valueStyle),
           )
         : SelectableText(short, maxLines: 1, style: valueStyle);
     return Row(

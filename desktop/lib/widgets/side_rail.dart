@@ -91,8 +91,8 @@ class SideRail extends StatelessWidget {
                   ],
                   RailItem(
                     key: ValueKey('rail-${destinations[i].label}'),
-                    index: i,
-                    dest: destinations[i],
+                    label: destinations[i].label,
+                    code: destinations[i].code,
                     selected: i == selectedIndex,
                     collapsed: collapsed,
                     onTap: () => onSelect(i),

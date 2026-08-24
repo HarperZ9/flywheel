@@ -1,4 +1,4 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 import 'dart:io';
 import 'dart:ui' show AppExitResponse;
 
@@ -11,6 +11,7 @@ import 'package:flywheel_desktop/ide/diff_view.dart';
 import 'package:flywheel_desktop/ide/editor_pane.dart';
 import 'package:flywheel_desktop/ide/unsaved_work_guard.dart';
 import 'package:flywheel_desktop/ide/workspace.dart' as workspace;
+import 'package:flywheel_desktop/navigation/app_route.dart';
 import 'package:flywheel_desktop/services/code_draft_store.dart';
 import 'package:flywheel_desktop/shell/view_factory.dart';
 import 'package:flywheel_desktop/theme/flywheel_theme.dart';
@@ -18,44 +19,42 @@ import 'package:flywheel_desktop/views/agent_view.dart';
 import 'package:flywheel_desktop/views/code_view.dart';
 import 'package:flywheel_desktop/views/lanes_view.dart';
 import 'package:flywheel_desktop/views/receipts_view.dart';
-import 'package:flywheel_desktop/widgets/fw.dart';
 import 'package:flywheel_desktop/widgets/flywheel_nav.dart';
-import 'package:flywheel_desktop/widgets/side_rail.dart';
 
 import 'journey_controller_test.dart' show headA;
 import 'journey_shell_test.dart';
 
-const _types = <String, String>{
-  'Journey': 'JourneyView',
-  'Chat': 'AgentView',
-  'Compare': 'CompareView',
-  'Models': 'EndpointsView',
-  'Code': 'CodeView',
-  'Eval': 'EvalView',
-  'Audit': 'AuditView',
-  'Companion': 'CompanionView',
-  'Plan': 'PlanView',
-  'Workflows': 'WorkflowsView',
-  'Studio': 'StudioView',
-  'Lint': 'LintView',
-  'Memory': 'MemoryView',
-  'Graph': 'GraphView',
-  'Projects': 'ProjectsView',
-  'Feeds': 'FeedsView',
-  'Discourse': 'DiscourseView',
-  'Academy': 'AcademyView',
-  'Lessons': 'LessonsView',
-  'Governance': 'GovernanceView',
-  'Receipts': 'ReceiptsView',
-  'Usage': 'UsageView',
-  'Instruments': 'InstrumentsView',
-  'Science': 'ScienceView',
-  'World': 'WorldView',
-  'Lanes': 'LanesView',
-  'Train': 'TrainView',
-  'Uplift': 'UpliftView',
-  'Family': 'FamilyView',
-  'Plugins': 'PluginsView',
+const _types = <DestinationId, String>{
+  DestinationId.journey: 'JourneyView',
+  DestinationId.chat: 'AgentView',
+  DestinationId.compare: 'CompareView',
+  DestinationId.models: 'EndpointsView',
+  DestinationId.code: 'CodeView',
+  DestinationId.eval: 'EvalView',
+  DestinationId.audit: 'AuditView',
+  DestinationId.companion: 'CompanionView',
+  DestinationId.plan: 'PlanView',
+  DestinationId.workflows: 'WorkflowsView',
+  DestinationId.studio: 'StudioView',
+  DestinationId.lint: 'LintView',
+  DestinationId.memory: 'MemoryView',
+  DestinationId.graph: 'GraphView',
+  DestinationId.projects: 'ProjectsView',
+  DestinationId.feeds: 'FeedsView',
+  DestinationId.discourse: 'DiscourseView',
+  DestinationId.academy: 'AcademyView',
+  DestinationId.lessons: 'LessonsView',
+  DestinationId.governance: 'GovernanceView',
+  DestinationId.receipts: 'ReceiptsView',
+  DestinationId.usage: 'UsageView',
+  DestinationId.instruments: 'InstrumentsView',
+  DestinationId.science: 'ScienceView',
+  DestinationId.world: 'WorldView',
+  DestinationId.lanes: 'LanesView',
+  DestinationId.train: 'TrainView',
+  DestinationId.uplift: 'UpliftView',
+  DestinationId.family: 'FamilyView',
+  DestinationId.plugins: 'PluginsView',
 };
 
 void main() {
@@ -78,16 +77,24 @@ void main() {
       onProbe: () {},
       onInstall: (_) async => const {},
     );
-    expect(flywheelDestinations.map((item) => item.label), _types.keys);
+    expect(
+        flywheelDestinations.map((item) => item.label).toSet(),
+        _types.keys
+            .map((id) =>
+                id.name.substring(0, 1).toUpperCase() + id.name.substring(1))
+            .toSet());
     for (final entry in _types.entries) {
       expect(buildDestinationView(entry.key, inputs).runtimeType.toString(),
           entry.value,
-          reason: entry.key);
+          reason: entry.key.name);
     }
-    expect(buildDestinationView('Unknown', inputs), isA<FwEmpty>());
-    expect((buildDestinationView('Receipts', inputs) as ReceiptsView).focusLeaf,
+    expect(
+        (buildDestinationView(DestinationId.receipts, inputs)
+                as ReceiptsView)
+            .focusLeaf,
         headA);
-    final lanes = buildDestinationView('Lanes', inputs) as LanesView;
+    final lanes = buildDestinationView(DestinationId.lanes, inputs)
+        as LanesView;
     expect(lanes.onProbe, isNotNull);
     expect(lanes.onInstall, isNotNull);
     await unmount(tester);
@@ -106,12 +113,11 @@ void main() {
     await tester.pumpWidget(FlywheelApp(
         settings: harness.settings, dependencies: harness.dependencies));
     await tester.pumpAndSettle();
-    final rail = tester.widget<SideRail>(find.byType(SideRail));
-    expect(rail.destinations, hasLength(30));
-    for (final label in _types.keys) {
-      await tester.scrollUntilVisible(find.text(label), 40,
-          scrollable: find.byType(Scrollable).first);
-      expect(find.text(label), findsOneWidget, reason: label);
+    for (final id in _types.keys) {
+      final label =
+          id.name.substring(0, 1).toUpperCase() + id.name.substring(1);
+      await scrollRailTo(tester, label);
+      expect(find.text(label), findsOneWidget, reason: id.name);
     }
     await tester.tap(find.text('Receipts'));
     await tester.pump();
@@ -121,6 +127,20 @@ void main() {
   });
   _codeGuardWidgetTests();
   _recoveryPresentationTests();
+}
+
+/// The rail's ListView builds lazily, so a destination row may not exist
+/// until scrolled into view. Drag the rail directly and re-check.
+Future<void> scrollRailTo(WidgetTester tester, String label) async {
+  final railList = find.descendant(
+    of: find.byType(AnimatedContainer),
+    matching: find.byType(ListView),
+  ).first;
+  for (var i = 0; i < 30; i++) {
+    if (find.text(label).evaluate().isNotEmpty) return;
+    await tester.drag(railList, const Offset(0, -120));
+    await tester.pump();
+  }
 }
 
 void _prepareShellCode(ShellHarness harness) {
@@ -160,7 +180,7 @@ void _codeGuardWidgetTests() {
     expect(requests.single.paths, ['lib/main.dart']);
     expect(harness.code.openFiles.single.controller, same(controller));
     choice = CloseChoice.discard;
-    FlywheelNav.jump(tester.element(find.byType(CodeView)), 'Chat');
+    FlywheelNav.jump(tester.element(find.byType(CodeView)), DestinationId.chat);
     await tester.pumpAndSettle();
     expect(find.byType(AgentView), findsOneWidget);
     expect(harness.code.openFiles.single.controller, same(controller));

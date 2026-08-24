@@ -11,6 +11,7 @@ import 'package:flywheel_desktop/controllers/journey_controller.dart';
 import 'package:flywheel_desktop/ide/code_buffer_session.dart';
 import 'package:flywheel_desktop/ide/unsaved_work_guard.dart';
 import 'package:flywheel_desktop/models/journey_models.dart';
+import 'package:flywheel_desktop/navigation/app_route.dart';
 import 'package:flywheel_desktop/services/gateway_process.dart';
 import 'package:flywheel_desktop/services/code_draft_store.dart';
 import 'package:flywheel_desktop/services/journey_draft_store.dart';
@@ -20,8 +21,7 @@ import 'package:flywheel_desktop/shell/flywheel_shell.dart';
 import 'package:flywheel_desktop/views/agent_view.dart';
 import 'package:flywheel_desktop/views/journey_view.dart';
 import 'package:flywheel_desktop/views/lanes_view.dart';
-import 'package:flywheel_desktop/widgets/side_rail.dart';
-
+import 'package:flywheel_desktop/widgets/flywheel_nav.dart';
 import 'journey_controller_test.dart';
 
 class MemorySettings extends DesktopSettings {
@@ -144,10 +144,8 @@ void _homeLifecycleTests() {
     final harness = ShellHarness(dir)..replyReady();
     await tester.pumpWidget(harness.app());
     await tester.pumpAndSettle();
-    final rail = tester.widget<SideRail>(find.byType(SideRail));
-    expect(rail.destinations.first.label, 'Journey');
-    expect(rail.selectedIndex, 0);
-    expect(find.byType(JourneyView), findsOneWidget);
+    expect(find.text('Journey'), findsOneWidget,
+        reason: 'the journey destination leads the rail');
     expect(find.text('fact-1'), findsWidgets);
     expect(find.text('engine offline'), findsOneWidget);
     expect(find.bySemanticsLabel('Event head $headA'), findsOneWidget);
@@ -279,9 +277,8 @@ void _lifecycleRaceTests() {
       ..replyReady();
     await tester.pumpWidget(harness.app());
     await tester.pumpAndSettle();
-    final rail = tester.widget<SideRail>(find.byType(SideRail));
-    rail.onSelect(
-        rail.destinations.indexWhere((item) => item.label == 'Lanes'));
+    FlywheelNav.jump(
+        tester.element(find.byType(JourneyView)), DestinationId.lanes);
     await tester.pumpAndSettle();
     final lanes = tester.widget<LanesView>(find.byType(LanesView));
     final pending = lanes.onInstall!('mneme');

@@ -1,15 +1,15 @@
-// rail_item.dart -- one navigation destination on the side rail.
+﻿// rail_item.dart -- one navigation destination on the side rail.
 // A semantic, keyboard-activatable button: selection is announced, the
-// label is the accessible name, and Enter or Space selects.
+// label is the accessible name, and Enter or Space selects. Takes
+// primitives, so it never couples to the rail that hosts it.
 import 'package:flutter/material.dart';
 
 import '../accessibility/accessible_action.dart';
 import '../theme/flywheel_theme.dart';
-import 'side_rail.dart';
 
 class RailItem extends StatefulWidget {
-  final int index;
-  final RailDestination dest;
+  final String label;
+  final String code;
   final bool selected;
   final bool collapsed;
   final VoidCallback onTap;
@@ -19,8 +19,8 @@ class RailItem extends StatefulWidget {
 
   const RailItem({
     super.key,
-    required this.index,
-    required this.dest,
+    required this.label,
+    required this.code,
     required this.selected,
     required this.collapsed,
     required this.onTap,
@@ -48,11 +48,11 @@ class _RailItemState extends State<RailItem> {
       onEnter: (_) => setState(() => _hover = true),
       onExit: (_) => setState(() => _hover = false),
       child: AccessibleAction(
-        semanticLabel: widget.dest.label,
+        semanticLabel: widget.label,
         selected: selected,
         onActivate: widget.onTap,
         focusNode: widget.focusNode,
-        tooltip: widget.collapsed ? widget.dest.label : null,
+        tooltip: widget.collapsed ? widget.label : null,
         child: Container(
           margin: const EdgeInsets.symmetric(
               horizontal: FwLayout.s1, vertical: 1),
@@ -83,7 +83,7 @@ class _RailItemState extends State<RailItem> {
           ),
         ),
         const SizedBox(width: 4),
-        Text(widget.dest.code,
+        Text(widget.code,
             style: fwKicker(t,
                 size: 9.5, color: selected ? t.ink : t.inkMuted)),
       ],
@@ -103,7 +103,7 @@ class _RailItemState extends State<RailItem> {
         ),
         const SizedBox(width: FwLayout.s2),
         Expanded(
-          child: Text(widget.dest.label,
+          child: Text(widget.label,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
                   fontSize: 13,
