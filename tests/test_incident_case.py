@@ -8,15 +8,16 @@ FACT = {"fact_id": "fact_" + "a" * 8, "statement": "the gate refused"}
 
 
 def _case(**over):
-    return new_incident_case(
+    kwargs = dict(
         case_id="case_" + "a" * 8,
         journey_ref="jrn_" + "a" * 32,
         event_head_sha256="a" * 64,
         source_refs=[FACT],
         failure={"summary": "check failed on the submitted object"},
         created_at="2026-08-22T12:00:00Z",
-        **over,
     )
+    kwargs.update(over)
+    return new_incident_case(**kwargs)
 
 
 def test_case_schema_and_sha():
