@@ -3,6 +3,7 @@
 // the view so the shell stays small and the list is its own testable piece.
 
 import 'package:flutter/material.dart';
+import '../accessibility/accessible_action.dart';
 
 import '../models/chat.dart';
 import '../theme/flywheel_theme.dart';
@@ -111,8 +112,10 @@ class _ConvItemState extends State<_ConvItem> {
                             : FontWeight.w400)),
               ),
               if (_hover && widget.onDelete != null)
-                GestureDetector(
-                  onTap: widget.onDelete,
+                AccessibleAction(
+                  semanticLabel: 'Delete conversation ${widget.title}',
+                  tooltip: 'Delete',
+                  onActivate: widget.onDelete,
                   child: Padding(
                     padding: const EdgeInsets.only(left: 4),
                     child: Icon(Icons.close_rounded, size: 14, color: t.inkFaint),

@@ -1,11 +1,15 @@
 // side_rail.dart — the navigation sidebar. Collapsible so the working
 // surface stays the largest thing on screen: full shows numbered labels,
-// collapsed shows a thin mono-code rail. Denser rows, trimmer chrome.
-
+// collapsed shows a thin mono-code rail. Items, the resize handle, and
+// the footer buttons are all keyboard-activatable semantic controls;
+// the pieces live in rail_item.dart and rail_resizer.dart.
 import 'package:flutter/material.dart';
 
+import '../accessibility/accessible_action.dart';
 import '../theme/flywheel_theme.dart';
 import 'aperture.dart';
+import 'rail_item.dart';
+import 'rail_resizer.dart';
 
 class RailDestination {
   final String label;
@@ -33,6 +37,10 @@ class SideRail extends StatelessWidget {
   final VoidCallback onToggleCollapse;
   final VoidCallback? onOpenAppearance;
 
+  /// Injectable focus nodes per destination index (tests, or callers that
+  /// own focus order). Null entries use the item's own node.
+  final Map<int, FocusNode>? itemFocusNodes;
+
   const SideRail({
     super.key,
     required this.destinations,
@@ -45,6 +53,7 @@ class SideRail extends StatelessWidget {
     this.onResize,
     required this.onToggleCollapse,
     this.onOpenAppearance,
+    this.itemFocusNodes,
   });
 
   @override
@@ -80,12 +89,14 @@ class SideRail extends StatelessWidget {
                     else
                       _GroupHeader(destinations[i].group, first: i == 0),
                   ],
-                  _RailItem(
+                  RailItem(
+                    key: ValueKey('rail-${destinations[i].label}'),
                     index: i,
                     dest: destinations[i],
                     selected: i == selectedIndex,
                     collapsed: collapsed,
                     onTap: () => onSelect(i),
+                    focusNode: itemFocusNodes?[i],
                   ),
                 ],
               ],
@@ -96,7 +107,7 @@ class SideRail extends StatelessWidget {
       ),
     );
     if (collapsed || onResize == null) return rail;
-    // a drag handle on the right edge widens or narrows the rail
+    // a focusable drag handle on the right edge widens or narrows the rail
     return Stack(children: [
       rail,
       Positioned(
@@ -104,15 +115,7 @@ class SideRail extends StatelessWidget {
         top: 0,
         bottom: 0,
         width: 6,
-        child: MouseRegion(
-          cursor: SystemMouseCursors.resizeLeftRight,
-          child: GestureDetector(
-            behavior: HitTestBehavior.translucent,
-            onHorizontalDragUpdate: (d) =>
-                onResize!((w + d.delta.dx).clamp(148.0, 320.0)),
-            child: const SizedBox.expand(),
-          ),
-        ),
+        child: RailResizer(width: w, onResize: onResize!),
       ),
     ]);
   }
@@ -141,7 +144,8 @@ class SideRail extends StatelessWidget {
                       fontWeight: FontWeight.w700,
                       color: t.ink)),
             ),
-            _iconBtn(t, Icons.chevron_left, onToggleCollapse),
+            _iconBtn(t, Icons.chevron_left, onToggleCollapse,
+                'Collapse navigation rail'),
           ],
         ],
       ),
@@ -154,12 +158,13 @@ class SideRail extends StatelessWidget {
         padding: const EdgeInsets.all(FwLayout.s2),
         child: Column(
           children: [
-            _iconBtn(t, Icons.chevron_right, onToggleCollapse),
+            _iconBtn(t, Icons.chevron_right, onToggleCollapse,
+                'Expand navigation rail'),
             const SizedBox(height: FwLayout.s2),
-            _iconBtn(t, _themeIcon, onToggleTheme),
+            _iconBtn(t, _themeIcon, onToggleTheme, 'Toggle theme'),
             if (onOpenAppearance != null) ...[
               const SizedBox(height: FwLayout.s2),
-              _iconBtn(t, Icons.tune, onOpenAppearance!),
+              _iconBtn(t, Icons.tune, onOpenAppearance!, 'Appearance'),
             ],
           ],
         ),
@@ -173,7 +178,7 @@ class SideRail extends StatelessWidget {
               child: _ThemeToggle(mode: themeMode, onToggle: onToggleTheme)),
           if (onOpenAppearance != null) ...[
             const SizedBox(width: FwLayout.s2),
-            _iconBtn(t, Icons.tune, onOpenAppearance!),
+            _iconBtn(t, Icons.tune, onOpenAppearance!, 'Appearance'),
           ],
         ],
       ),
@@ -186,118 +191,16 @@ class SideRail extends StatelessWidget {
         ThemeMode.system => Icons.contrast,
       };
 
-  Widget _iconBtn(FwTokens t, IconData icon, VoidCallback onTap) {
-    return MouseRegion(
-      cursor: SystemMouseCursors.click,
-      child: GestureDetector(
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(4),
-          child: Icon(icon, size: 15, color: t.inkFaint),
-        ),
+  Widget _iconBtn(FwTokens t, IconData icon, VoidCallback? onTap,
+          String label) {
+    return AccessibleAction(
+      semanticLabel: label,
+      tooltip: label,
+      onActivate: onTap,
+      child: Padding(
+        padding: const EdgeInsets.all(4),
+        child: Icon(icon, size: 15, color: t.inkFaint),
       ),
-    );
-  }
-}
-
-class _RailItem extends StatefulWidget {
-  final int index;
-  final RailDestination dest;
-  final bool selected;
-  final bool collapsed;
-  final VoidCallback onTap;
-  const _RailItem(
-      {required this.index,
-      required this.dest,
-      required this.selected,
-      required this.collapsed,
-      required this.onTap});
-
-  @override
-  State<_RailItem> createState() => _RailItemState();
-}
-
-class _RailItemState extends State<_RailItem> {
-  bool _hover = false;
-
-  @override
-  Widget build(BuildContext context) {
-    final t = context.fw;
-    final selected = widget.selected;
-    final bg = selected
-        ? t.panel
-        : _hover
-            ? t.panel.withValues(alpha: 0.5)
-            : Colors.transparent;
-    return MouseRegion(
-      cursor: SystemMouseCursors.click,
-      onEnter: (_) => setState(() => _hover = true),
-      onExit: (_) => setState(() => _hover = false),
-      child: Tooltip(
-        message: widget.collapsed ? widget.dest.label : '',
-        waitDuration: const Duration(milliseconds: 400),
-        child: GestureDetector(
-          onTap: widget.onTap,
-          behavior: HitTestBehavior.opaque,
-          child: Container(
-            margin: const EdgeInsets.symmetric(
-                horizontal: FwLayout.s1, vertical: 1),
-            padding: EdgeInsets.symmetric(
-                horizontal: widget.collapsed ? 0 : FwLayout.s2, vertical: 6),
-            decoration: BoxDecoration(
-              color: bg,
-              borderRadius: BorderRadius.circular(FwLayout.radiusSmall),
-            ),
-            child: widget.collapsed
-                ? _compact(t, selected)
-                : _full(t, selected),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _compact(FwTokens t, bool selected) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Container(
-          width: 2.5,
-          height: 14,
-          decoration: BoxDecoration(
-            color: selected ? t.ink : Colors.transparent, // selection = ink emphasis, not a verdict
-            borderRadius: BorderRadius.circular(2),
-          ),
-        ),
-        const SizedBox(width: 4),
-        Text(widget.dest.code,
-            style: fwKicker(t,
-                size: 9.5, color: selected ? t.ink : t.inkMuted)),
-      ],
-    );
-  }
-
-  Widget _full(FwTokens t, bool selected) {
-    return Row(
-      children: [
-        Container(
-          width: 2.5,
-          height: 13,
-          decoration: BoxDecoration(
-            color: selected ? t.ink : Colors.transparent, // selection = ink emphasis, not a verdict
-            borderRadius: BorderRadius.circular(2),
-          ),
-        ),
-        const SizedBox(width: FwLayout.s2),
-        Expanded(
-          child: Text(widget.dest.label,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
-                  color: selected ? t.ink : t.inkMuted)),
-        ),
-      ],
     );
   }
 }
@@ -332,36 +235,34 @@ class _ThemeToggle extends StatelessWidget {
       ThemeMode.light => 'theme: light',
       ThemeMode.dark => 'theme: dark',
     };
-    return MouseRegion(
-      cursor: SystemMouseCursors.click,
-      child: GestureDetector(
-        onTap: onToggle,
-        child: Container(
-          padding: const EdgeInsets.symmetric(
-              horizontal: FwLayout.s2, vertical: 6),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(FwLayout.radiusSmall),
-            border: Border.all(color: t.line),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                  switch (mode) {
-                    ThemeMode.light => Icons.light_mode_outlined,
-                    ThemeMode.dark => Icons.dark_mode_outlined,
-                    ThemeMode.system => Icons.contrast,
-                  },
-                  size: 13,
-                  color: t.inkMuted),
-              const SizedBox(width: FwLayout.s2),
-              Flexible(
-                child: Text(label,
-                    overflow: TextOverflow.ellipsis,
-                    style: fwMono(t, size: 10, color: t.inkMuted)),
-              ),
-            ],
-          ),
+    return AccessibleAction(
+      semanticLabel: label,
+      onActivate: onToggle,
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+            horizontal: FwLayout.s2, vertical: 6),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(FwLayout.radiusSmall),
+          border: Border.all(color: t.line),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+                switch (mode) {
+                  ThemeMode.light => Icons.light_mode_outlined,
+                  ThemeMode.dark => Icons.dark_mode_outlined,
+                  ThemeMode.system => Icons.contrast,
+                },
+                size: 13,
+                color: t.inkMuted),
+            const SizedBox(width: FwLayout.s2),
+            Flexible(
+              child: Text(label,
+                  overflow: TextOverflow.ellipsis,
+                  style: fwMono(t, size: 10, color: t.inkMuted)),
+            ),
+          ],
         ),
       ),
     );

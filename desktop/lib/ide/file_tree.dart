@@ -3,6 +3,7 @@
 // workspace.listDir so the ignore rules live in one place.
 
 import 'package:flutter/material.dart';
+import '../accessibility/accessible_action.dart';
 
 import '../theme/flywheel_theme.dart';
 import 'workspace.dart';
@@ -70,12 +71,10 @@ class _FileTreeState extends State<FileTree> {
                     overflow: TextOverflow.ellipsis,
                     style: fwMono(t, size: 11.5, weight: FontWeight.w600)),
               ),
-              MouseRegion(
-                cursor: SystemMouseCursors.click,
-                child: GestureDetector(
-                  onTap: _refresh,
-                  child: Icon(Icons.refresh, size: 13, color: t.inkFaint),
-                ),
+              AccessibleAction(
+                semanticLabel: 'Refresh file tree',
+                onActivate: _refresh,
+                child: Icon(Icons.refresh, size: 13, color: t.inkFaint),
               ),
             ],
           ),
@@ -105,22 +104,24 @@ class _FileTreeState extends State<FileTree> {
   Widget _row(WorkspaceEntry e, int depth) {
     final t = context.fw;
     final active = e.path == widget.activePath;
-    return MouseRegion(
-      cursor: SystemMouseCursors.click,
-      child: GestureDetector(
-        onTap: () {
-          if (e.isDir) {
-            setState(() {
-              _expanded.contains(e.path)
-                  ? _expanded.remove(e.path)
-                  : _expanded.add(e.path);
-            });
-          } else {
-            widget.onOpen(e.path);
-          }
-        },
-        behavior: HitTestBehavior.opaque,
-        child: Container(
+    return AccessibleAction(
+      semanticLabel: e.isDir
+          ? '${_expanded.contains(e.path) ? 'Collapse' : 'Expand'} folder '
+              '${e.name}'
+          : 'Open file ${e.name}',
+      selected: active,
+      onActivate: () {
+        if (e.isDir) {
+          setState(() {
+            _expanded.contains(e.path)
+                ? _expanded.remove(e.path)
+                : _expanded.add(e.path);
+          });
+        } else {
+          widget.onOpen(e.path);
+        }
+      },
+      child: Container(
           padding: EdgeInsets.only(
               left: FwLayout.s3 + depth * 14.0,
               top: 3,
@@ -150,7 +151,6 @@ class _FileTreeState extends State<FileTree> {
             ],
           ),
         ),
-      ),
     );
   }
 }

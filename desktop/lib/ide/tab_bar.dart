@@ -1,9 +1,11 @@
 // tab_bar.dart — the Code view's open-file tabs: dirty markers in drift,
 // the active tab carrying the single hot bar, close per tab, and the
-// close-workspace action.
+// close-workspace action. Every tab and close control is a semantic,
+// keyboard-activatable action.
 
 import 'package:flutter/material.dart';
 
+import '../accessibility/accessible_action.dart';
 import '../theme/flywheel_theme.dart';
 import '../widgets/fw.dart';
 import 'code_buffer_session.dart';
@@ -43,13 +45,11 @@ class EditorTabBar extends StatelessWidget {
           ),
           Padding(
             padding: const EdgeInsets.only(right: FwLayout.s2),
-            child: MouseRegion(
-              cursor: SystemMouseCursors.click,
-              child: GestureDetector(
-                onTap: onCloseWorkspace,
-                child: Text('close workspace',
-                    style: fwMono(t, size: 10.5, color: t.inkFaint)),
-              ),
+            child: AccessibleAction(
+              semanticLabel: 'Close workspace',
+              onActivate: onCloseWorkspace,
+              child: Text('close workspace',
+                  style: fwMono(t, size: 10.5, color: t.inkFaint)),
             ),
           ),
         ],
@@ -60,41 +60,41 @@ class EditorTabBar extends StatelessWidget {
   Widget _tab(FwTokens t, int i) {
     final f = open[i];
     final isActive = i == active;
-    return MouseRegion(
-      cursor: SystemMouseCursors.click,
-      child: GestureDetector(
-        onTap: () => onSelect(i),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: FwLayout.s3),
-          decoration: BoxDecoration(
-            color: isActive ? t.ground : Colors.transparent,
-            border: Border(
-              right: BorderSide(color: t.hairline),
-              top: BorderSide(
-                  color: isActive
-                      ? t.ink
-                      : Colors.transparent, // selection = ink, not a verdict
-                  width: 2),
-            ),
+    return AccessibleAction(
+      semanticLabel: 'Open file ${f.name}${f.dirty ? ' (unsaved changes)' : ''}',
+      selected: isActive,
+      onActivate: () => onSelect(i),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: FwLayout.s3),
+        decoration: BoxDecoration(
+          color: isActive ? t.ground : Colors.transparent,
+          border: Border(
+            right: BorderSide(color: t.hairline),
+            top: BorderSide(
+                color: isActive
+                    ? t.ink
+                    : Colors.transparent, // selection = ink, not a verdict
+                width: 2),
           ),
-          child: Row(
-            children: [
-              if (f.dirty) ...[
-                const VerdictDot('drift', size: 6),
-                const SizedBox(width: 5),
-              ],
-              Text(f.name,
-                  style: fwMono(t,
-                      size: 11.5,
-                      color: isActive ? t.ink : t.inkMuted,
-                      weight: isActive ? FontWeight.w600 : FontWeight.w400)),
-              const SizedBox(width: 6),
-              GestureDetector(
-                onTap: () => onClose(i),
-                child: Icon(Icons.close, size: 11, color: t.inkFaint),
-              ),
+        ),
+        child: Row(
+          children: [
+            if (f.dirty) ...[
+              const VerdictDot('drift', size: 6),
+              const SizedBox(width: 5),
             ],
-          ),
+            Text(f.name,
+                style: fwMono(t,
+                    size: 11.5,
+                    color: isActive ? t.ink : t.inkMuted,
+                    weight: isActive ? FontWeight.w600 : FontWeight.w400)),
+            const SizedBox(width: 6),
+            AccessibleAction(
+              semanticLabel: 'Close file ${f.name}',
+              onActivate: () => onClose(i),
+              child: Icon(Icons.close, size: 11, color: t.inkFaint),
+            ),
+          ],
         ),
       ),
     );

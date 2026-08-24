@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 
 import '../client/gateway_client.dart';
 import '../theme/flywheel_theme.dart';
+import '../accessibility/accessible_action.dart';
 import '../widgets/fw.dart';
 
 void showLintIndexSheet(BuildContext context, GatewayClient client,
@@ -47,14 +48,12 @@ class EditorQualityBar extends StatelessWidget {
 
   Widget _link(FwTokens t, String label, VoidCallback onTap,
           {bool hot = false}) =>
-      MouseRegion(
-        cursor: SystemMouseCursors.click,
-        child: GestureDetector(
-          onTap: onTap,
-          child: Text(label,
-              style: fwMono(t, size: 10.5, color: hot ? t.drift : t.inkMuted)
-                  .copyWith(decoration: TextDecoration.underline)),
-        ),
+      AccessibleAction(
+        semanticLabel: label,
+        onActivate: onTap,
+        child: Text(label,
+            style: fwMono(t, size: 10.5, color: hot ? t.drift : t.inkMuted)
+                .copyWith(decoration: TextDecoration.underline)),
       );
 
   @override

@@ -7,6 +7,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../models/graph_models.dart';
 import '../theme/flywheel_theme.dart';
@@ -52,7 +53,7 @@ String statusOf(GraphNode n) => switch (n.verdict) {
       _ => n.verdict,
     };
 
-class GraphCanvas extends StatelessWidget {
+class GraphCanvas extends StatefulWidget {
   final KnowledgeGraph graph;
   final String? selectedId;
   final ValueChanged<GraphNode?> onSelect;
@@ -63,30 +64,72 @@ class GraphCanvas extends StatelessWidget {
       required this.onSelect});
 
   @override
+  State<GraphCanvas> createState() => _GraphCanvasState();
+}
+
+class _GraphCanvasState extends State<GraphCanvas> {
+  int _keyboardIndex = -1;
+
+  KeyEventResult _cycle(int delta) {
+    final nodes = widget.graph.nodes;
+    if (nodes.isEmpty) return KeyEventResult.ignored;
+    setState(() => _keyboardIndex = (_keyboardIndex + delta) % nodes.length);
+    widget.onSelect(nodes[_keyboardIndex]);
+    return KeyEventResult.handled;
+  }
+
+  @override
   Widget build(BuildContext context) {
     final t = context.fw;
     return LayoutBuilder(builder: (context, constraints) {
       final size = Size(constraints.maxWidth, constraints.maxHeight);
-      final pos = graphPositions(graph.nodes, size);
-      return GestureDetector(
-        onTapUp: (d) {
-          GraphNode? hit;
-          for (final n in graph.nodes) {
-            final p = pos[n.id];
-            if (p != null && (p - d.localPosition).distance < 16) hit = n;
-          }
-          onSelect(hit);
-        },
-        child: CustomPaint(
-          size: size,
-          painter: _KnowledgeGraphPainter(
-              tokens: t,
-              graph: graph,
-              positions: pos,
-              selectedId: selectedId),
+      final pos = graphPositions(widget.graph.nodes, size);
+      return Semantics(
+        label: 'Knowledge graph canvas. Use arrow keys to move between '
+            'nodes.',
+        child: Focus(
+          key: const Key('graph-canvas-focus'),
+          onKeyEvent: (node, event) {
+            if (event is! KeyDownEvent) return KeyEventResult.ignored;
+            return switch (event.logicalKey) {
+              LogicalKeyboardKey.arrowRight ||
+              LogicalKeyboardKey.arrowDown =>
+                _cycle(1),
+              LogicalKeyboardKey.arrowLeft ||
+              LogicalKeyboardKey.arrowUp =>
+                _cycle(-1),
+              LogicalKeyboardKey.escape => _clear(),
+              _ => KeyEventResult.ignored,
+            };
+          },
+          child: GestureDetector(
+            onTapUp: (d) {
+              GraphNode? hit;
+              for (final n in widget.graph.nodes) {
+                final p = pos[n.id];
+                if (p != null && (p - d.localPosition).distance < 16) hit = n;
+              }
+              setState(() => _keyboardIndex = -1);
+              widget.onSelect(hit);
+            },
+            child: CustomPaint(
+              size: size,
+              painter: _KnowledgeGraphPainter(
+                  tokens: t,
+                  graph: widget.graph,
+                  positions: pos,
+                  selectedId: widget.selectedId),
+            ),
+          ),
         ),
       );
     });
+  }
+
+  KeyEventResult _clear() {
+    setState(() => _keyboardIndex = -1);
+    widget.onSelect(null);
+    return KeyEventResult.handled;
   }
 }
 

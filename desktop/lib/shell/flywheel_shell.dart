@@ -8,8 +8,10 @@ import '../client/gateway_grants.dart';
 import '../client/journey_api.dart';
 import '../controllers/gateway_operation_controller.dart';
 import '../controllers/journey_controller.dart';
+import '../models/connection_state.dart';
 import '../models/gateway_models.dart';
 import '../services/gateway_process.dart';
+import '../services/gateway_status.dart';
 import '../services/code_draft_store.dart';
 import '../services/journey_draft_store.dart';
 import '../services/journey_session_store.dart';
@@ -30,6 +32,7 @@ final class FlywheelDependencies {
     required this.journey,
     required this.code,
     this.closePrompt,
+    this.status,
   });
 
   factory FlywheelDependencies.production() {
@@ -43,6 +46,10 @@ final class FlywheelDependencies {
         draftStore: JourneyDraftStore(),
         sessionStore: JourneySessionStore(),
       ),
+      status: GatewayStatusService.production(
+        baseUrl: client.baseUrl,
+        fallbackAlive: () => client.isAlive(),
+      ),
     );
   }
 
@@ -51,6 +58,12 @@ final class FlywheelDependencies {
   final JourneyController journey;
   final CodeBufferSession code;
   final CloseChoicePrompt? closePrompt;
+
+  /// The typed connection probe. Null in hand-built test dependencies,
+  /// where the shell falls back to the client's own liveness check; the
+  /// typed route is covered by connection_state_test and the engine's
+  /// desktop-status route tests.
+  final GatewayStatusService? status;
 
   void dispose() {
     journey.dispose();
@@ -86,6 +99,7 @@ class _FlywheelShellState extends State<FlywheelShell> {
   late double _railWidth = widget.settings.railWidth;
   int _selectedIndex = 0;
   bool _gatewayAlive = false;
+  ConnectionStatus _connection = ConnectionStatus.starting;
   String _statusMessage = 'connecting…';
   String? _startError;
   LaneRoster? _roster;
@@ -94,6 +108,7 @@ class _FlywheelShellState extends State<FlywheelShell> {
   Object? _pendingArgument;
   late final UnsavedWorkGuard _guard;
   late final GatewayOperationController _operations;
+  GatewayStatusService? get _status => widget.dependencies?.status;
   late final AppLifecycleListener _lifecycle;
   int _navigationGeneration = 0;
 
@@ -152,16 +167,29 @@ class _FlywheelShellState extends State<FlywheelShell> {
           : AppExitResponse.cancel;
 
   Future<void> _poll() async {
-    final alive = await _dependencies.client.isAlive();
-    if (!alive) {
-      if (mounted) {
-        setState(() {
-          _gatewayAlive = false;
-          _statusMessage = 'engine offline';
-        });
-      }
+    final service = _status;
+    if (service == null) {
+      // Hand-built dependencies (tests): the legacy liveness check.
+      final alive = await _dependencies.client.isAlive();
+      if (!mounted) return;
+      setState(() {
+        _gatewayAlive = alive;
+        _connection =
+            alive ? _connection : ConnectionStatus.offline;
+        _statusMessage =
+            alive ? _statusMessage : ConnectionStatus.offline.detail;
+      });
+      if (alive) await _loadGatewayStatus();
       return;
     }
+    final status = await service.probe();
+    if (!mounted) return;
+    setState(() {
+      _connection = status;
+      _gatewayAlive = status.alive;
+      _statusMessage = status.detail;
+    });
+    if (!status.alive) return;
     await _loadGatewayStatus();
   }
 
@@ -179,12 +207,23 @@ class _FlywheelShellState extends State<FlywheelShell> {
             '${roster.byStatus['live'] ?? 0}/${roster.nLanes} lanes live';
       });
     } catch (error) {
-      if (mounted) setState(() => _statusMessage = 'error: $error');
+      if (mounted) {
+        setState(() {
+          _connection = ConnectionStatus.typed(ConnectionPhase.degraded,
+              lanesLive: _connection.lanesLive,
+              lanesTotal: _connection.lanesTotal,
+              detail: 'lanes unreadable · degraded');
+          _statusMessage = 'error: $error';
+        });
+      }
     }
   }
 
   Future<void> _startEngine() async {
-    setState(() => _statusMessage = 'starting engine…');
+    setState(() {
+      _connection = ConnectionStatus.starting;
+      _statusMessage = 'starting engine…';
+    });
     final error = await _dependencies.gateway.start();
     if (!mounted) {
       if (error == null) _dependencies.gateway.stopIfOwned();

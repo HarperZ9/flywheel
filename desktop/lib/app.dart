@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'services/settings.dart';
 import 'shell/flywheel_shell.dart';
 import 'theme/flywheel_theme.dart';
+import 'widgets/system_text_scaler.dart' as scaler;
 
 class FlywheelApp extends StatefulWidget {
   const FlywheelApp({
@@ -54,7 +55,10 @@ class _FlywheelAppState extends State<FlywheelApp> {
       themeMode: _mode,
       builder: (context, child) => MediaQuery(
         data: MediaQuery.of(context).copyWith(
-          textScaler: TextScaler.linear(settings.uiScale.clamp(0.8, 1.4)),
+          textScaler: scaler.ComposedTextScaler(
+            system: MediaQuery.textScalerOf(context),
+            userScale: settings.uiScale.clamp(0.8, 1.4),
+          ),
         ),
         child: child!,
       ),

@@ -4,6 +4,7 @@
 // dragged out of existence.
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../theme/flywheel_theme.dart';
 
@@ -43,14 +44,16 @@ class _SplitPaneState extends State<SplitPane> {
       final total =
           (horizontal ? constraints.maxWidth : constraints.maxHeight) - _grip;
       final firstExtent = (total * _fraction).clamp(0.0, total);
-      void drag(DragUpdateDetails d) {
-        final delta = horizontal ? d.delta.dx : d.delta.dy;
+      void nudge(double delta) {
         setState(() {
           _fraction = ((firstExtent + delta) / total)
               .clamp(widget.minFraction, widget.maxFraction);
         });
         widget.onFraction?.call(_fraction);
       }
+
+      void drag(DragUpdateDetails d) =>
+          nudge(horizontal ? d.delta.dx : d.delta.dy);
 
       final divider = MouseRegion(
         cursor: horizontal
@@ -60,16 +63,41 @@ class _SplitPaneState extends State<SplitPane> {
           key: const Key('split-divider'),
           behavior: HitTestBehavior.opaque,
           onPanUpdate: drag,
-          child: SizedBox(
-            width: horizontal ? _grip : null,
-            height: horizontal ? null : _grip,
-            child: Center(
-              child: Container(
-                width: horizontal ? 1 : null,
-                height: horizontal ? null : 1,
-                color: t.line,
-              ),
-            ),
+          child: Focus(
+            key: const Key('split-divider-focus'),
+            onKeyEvent: (node, event) {
+              if (event is! KeyDownEvent) return KeyEventResult.ignored;
+              final step = horizontal
+                  ? (event.logicalKey == LogicalKeyboardKey.arrowLeft
+                      ? -16.0
+                      : event.logicalKey == LogicalKeyboardKey.arrowRight
+                          ? 16.0
+                          : 0.0)
+                  : (event.logicalKey == LogicalKeyboardKey.arrowUp
+                      ? -16.0
+                      : event.logicalKey == LogicalKeyboardKey.arrowDown
+                          ? 16.0
+                          : 0.0);
+              if (step == 0.0) return KeyEventResult.ignored;
+              nudge(step);
+              return KeyEventResult.handled;
+            },
+            child: Builder(builder: (context) {
+              return Tooltip(
+                message: 'Resize panes (arrow keys when focused)',
+                child: SizedBox(
+                  width: horizontal ? _grip : null,
+                  height: horizontal ? null : _grip,
+                  child: Center(
+                    child: Container(
+                      width: horizontal ? 1 : null,
+                      height: horizontal ? null : 1,
+                      color: t.line,
+                    ),
+                  ),
+                ),
+              );
+            }),
           ),
         ),
       );

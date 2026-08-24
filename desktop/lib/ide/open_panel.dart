@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 
 import '../services/settings.dart';
 import '../theme/flywheel_theme.dart';
+import '../accessibility/accessible_action.dart';
 import '../widgets/fw.dart';
 
 class OpenWorkspacePanel extends StatefulWidget {
@@ -72,16 +73,14 @@ class _OpenWorkspacePanelState extends State<OpenWorkspacePanel> {
               const Kicker('recent'),
               const SizedBox(height: FwLayout.s2),
               for (final r in widget.settings.recentWorkspaces)
-                MouseRegion(
-                  cursor: SystemMouseCursors.click,
-                  child: GestureDetector(
-                    onTap: () => widget.onOpen(r),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 3),
-                      child: Text(r,
-                          overflow: TextOverflow.ellipsis,
-                          style: fwMono(t, size: 12, color: t.drift)),
-                    ),
+                AccessibleAction(
+                  semanticLabel: 'Open workspace $r',
+                  onActivate: () => widget.onOpen(r),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 3),
+                    child: Text(r,
+                        overflow: TextOverflow.ellipsis,
+                        style: fwMono(t, size: 12, color: t.drift)),
                   ),
                 ),
             ],

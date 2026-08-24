@@ -992,6 +992,10 @@ class _Handler(BaseHTTPRequestHandler):
             from harness.lanes import lane_roster
             probe = "probe=true" in qs or "probe=1" in qs
             return self._json(lane_roster(probe=probe))
+        if p == "/api/desktop/status":               # read-only connection facts
+            from harness.desktop_status import desktop_status
+            from harness.lanes import lane_roster
+            return self._json(desktop_status(lane_roster()))
         if p == "/api/forum/status":                  # forum lane status (via MCP)
             return self._json(_forum_mcp_call("forum.status", {}))
         if p == "/api/forum/ledger":                  # forum ledger summary
