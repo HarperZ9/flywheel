@@ -1,8 +1,10 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../models/evidence_extensions.dart';
 import '../models/journey_models.dart';
 import '../theme/flywheel_theme.dart';
+import 'evidence_extensions.dart';
 import 'fw.dart';
 import 'journey_cards.dart';
 
@@ -181,8 +183,17 @@ class LensDetail extends StatelessWidget {
 }
 
 class DiagnoseLens extends StatelessWidget {
-  const DiagnoseLens({super.key, required this.projection});
   final JourneyProjection projection;
+
+  /// Contextual extensions render only when the server advertises them;
+  /// the lens never invents a surface for an absent capability.
+  final EvidenceCapability? frontierCapability;
+  final FrontierAxes? frontierAxes;
+  const DiagnoseLens(
+      {super.key,
+      required this.projection,
+      this.frontierCapability,
+      this.frontierAxes});
 
   @override
   Widget build(BuildContext context) {
@@ -192,6 +203,9 @@ class DiagnoseLens extends StatelessWidget {
         ];
     return _LensColumn(children: [
       LensDetail(projection.detail),
+      if (frontierCapability != null)
+        FrontierClaimExtension(
+            capability: frontierCapability, axes: frontierAxes),
       RecordSection(
         title: 'Support',
         emptyText: 'No PASS verdicts were supplied in this projection.',
@@ -220,8 +234,16 @@ class DiagnoseLens extends StatelessWidget {
 }
 
 class VerifyLens extends StatelessWidget {
-  const VerifyLens({super.key, required this.projection});
   final JourneyProjection projection;
+
+  /// Contextual extensions: frontier claims render in Verify too.
+  final EvidenceCapability? frontierCapability;
+  final FrontierAxes? frontierAxes;
+  const VerifyLens(
+      {super.key,
+      required this.projection,
+      this.frontierCapability,
+      this.frontierAxes});
 
   @override
   Widget build(BuildContext context) {
@@ -235,6 +257,9 @@ class VerifyLens extends StatelessWidget {
     ];
     return _LensColumn(children: [
       LensDetail(projection.detail),
+      if (frontierCapability != null)
+        FrontierClaimExtension(
+            capability: frontierCapability, axes: frontierAxes),
       RecordSection(
         title: 'Checks',
         emptyText: 'No checks were supplied in this projection.',

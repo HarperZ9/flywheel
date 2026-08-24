@@ -1298,6 +1298,55 @@ class _Handler(BaseHTTPRequestHandler):
             if p.startswith("/api/evidence/"):
                 from harness.evidence_route import evidence_post
                 body, code = evidence_post(p, raw, root=self.root)
+            elif p.startswith("/api/journeys/extensions/"):
+                # Contextual extensions: fail-closed. The server-side
+                # contract registry is empty, so the sheet has zero rows
+                # and every extension denies until contracts are accepted.
+                from harness.evidence_extension_route import (
+                    handle_capabilities as _caps,
+                    handle_domain_pack_project,
+                    handle_frontier_axis,
+                    handle_frontier_project,
+                    handle_incident_propose,
+                )
+                from harness.evidence_public import parse_json
+                from harness.evidence_extension_contracts import (
+                    capability_document as _empty_doc)
+                length = self._content_length()
+                if length is None:
+                    return self._json({"schema": "flywheel.evidence-transport-error/v1",
+                        "error": {"code": "INVALID_LENGTH", "message": "request length is invalid"}}, 400)
+                action = p.rsplit("/", 1)[-1]
+                if action == "capabilities":
+                    body, code = _caps(_empty_doc(
+                        journey={"schema": "flywheel.evidence-journey-projection/v2",
+                                 "event_head_sha256": "0" * 64},
+                        incident_contract=None, frontier_contract=None,
+                        pack_contracts=[], containment={"process": False}))
+                else:
+                    try:
+                        req = parse_json(self.rfile.read(length))
+                    except Exception:
+                        req = {}
+                    empty = _empty_doc(
+                        journey={"schema": "flywheel.evidence-journey-projection/v2",
+                                 "event_head_sha256": "0" * 64},
+                        incident_contract=None, frontier_contract=None,
+                        pack_contracts=[], containment={"process": False})
+                    if action == "incident-propose":
+                        body, code = handle_incident_propose(req, empty)
+                    elif action == "frontier-project":
+                        body, code = handle_frontier_project(req, empty)
+                    elif action == "frontier-axis":
+                        body, code = handle_frontier_axis(
+                            req, empty, self.clock)
+                    elif action == "domain-pack-project":
+                        body, code = handle_domain_pack_project(req, empty)
+                    else:
+                        body, code = {"schema": "flywheel.evidence-transport-error/v1",
+                            "error": {"code": "NOT_FOUND",
+                                      "message": "unknown extension"}}, 404
+                return self._json(body, code)
             elif p.startswith("/api/journeys/"):
                 from harness.journey_route import journey_post
                 body, code = journey_post(p, raw, owner_ref=self.owner_ref, state_root=self.flywheel_home / "state",
