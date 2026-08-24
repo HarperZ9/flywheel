@@ -114,7 +114,6 @@ class _FlywheelShellState extends State<FlywheelShell> {
   late final GatewayOperationController _operations;
   late final AppLifecycleListener _lifecycle;
   final ViewCache _views = ViewCache();
-  final TextEditingController _search = TextEditingController();
   Object? _pendingArgument;
 
   /// The recovery center opens as an overlay from the shell footer; it is
@@ -173,7 +172,6 @@ class _FlywheelShellState extends State<FlywheelShell> {
     _coordinator.disposePolling();
     _coordinator.dispose();
     _navigation.dispose();
-    _search.dispose();
     _lifecycle.dispose();
     _operations.dispose();
     _dependencies.dispose();
@@ -263,7 +261,6 @@ class _FlywheelShellState extends State<FlywheelShell> {
               collapsed: _railCollapsed,
               width: _railWidth,
               selected: _navigation.current.routeId,
-              search: _search,
               onGo: _goTo,
               onResize: _resizeRail,
               onToggleCollapse: _toggleRail,
