@@ -58,22 +58,24 @@ competitor it answers.
    automations (file change, git event, journey stage) where every hook
    run is itself receipted and a failing hook blocks the action
    fail-closed. Nobody's hooks are accountable.
-4. **PM surface (FIRST LIGHT SHIPPED 2026-08-24)** -- answers the
-    manager use case. `GET /api/pm/roadmap` builds the one-page view:
-    goals (swarm receipts), decomposed child work with per-child
-    verification status, a verification floor of bound skills, and its
-    own does-not-prove notes on the page. See
+4. **PM surface (FIRST LIGHT SHIPPED 2026-08-24; desktop 2026-08-25)**
+    -- answers the manager use case. `GET /api/pm/roadmap` builds the
+    one-page view: goals (swarm receipts), decomposed child work with
+    per-child verification status, a verification floor of bound
+    skills, and its own does-not-prove notes on the page. The Roadmap
+    destination renders it on the desktop. See
     `project-docs/features/2026-08-24-pm-roadmap.md`. Still open:
-    journey stages on the page and the desktop destination for it.
+    journey stages on the page.
 5. **Domain packs for medicine/finance/design (FIRST THREE SHIPPED
-   2026-08-24)** -- the extension mechanism now carries three
-   first-party data-only packs as repo data (terminology checklist,
-   claims-compliance screens, design-token rules), each admitted by the
-   shipped verifier with hash-pinned oracle evidence and zero code
-   changes. See
+   2026-08-24; admission flow 2026-08-25)** -- the extension mechanism
+   now carries three first-party data-only packs as repo data
+   (terminology checklist, claims-compliance screens, design-token
+   rules), each admitted by the shipped verifier with hash-pinned
+   oracle evidence and zero code changes. Admission is a route now:
+   verify, persist immutable run-root state, fire `pack.admitted`
+   hooks. See
    `project-docs/features/2026-08-24-first-domain-packs.md`. Still
-   open: operator-side admission flow and per-domain depth beyond the
-   seed checklists.
+   open: per-domain depth beyond the seed checklists.
 6. **Skill from experience (SHIPPED 2026-08-24)** -- answers Hermes. An
     admitted skill is now mechanically a procedure plus a passing gate
     receipt: only an ADMITTED lesson binds, evidence is an all-pass

@@ -41,6 +41,7 @@ const _types = <DestinationId, String>{
   DestinationId.graph: 'GraphView',
   DestinationId.projects: 'ProjectsView',
   DestinationId.swarms: 'SwarmsView',
+  DestinationId.roadmap: 'RoadmapView',
   DestinationId.feeds: 'FeedsView',
   DestinationId.discourse: 'DiscourseView',
   DestinationId.academy: 'AcademyView',
@@ -59,7 +60,7 @@ const _types = <DestinationId, String>{
 };
 
 void main() {
-  testWidgets('factory preserves all thirty-one exact destination mappings',
+  testWidgets('factory preserves all thirty-two exact destination mappings',
       (tester) async {
     final dir = Directory.systemTemp.createTempSync('journey-factory-');
     addTearDown(() => dir.deleteSync(recursive: true));
@@ -101,7 +102,7 @@ void main() {
     await unmount(tester);
   });
 
-  testWidgets('thirty-one labels remain reachable at ordinary scaled viewport',
+  testWidgets('thirty-two labels remain reachable at ordinary scaled viewport',
       (tester) async {
     tester.view.physicalSize = const Size(1440, 900);
     tester.view.devicePixelRatio = 1;
@@ -131,15 +132,17 @@ void main() {
 }
 
 /// The rail's ListView builds lazily, so a destination row may not exist
-/// until scrolled into view. Drag the rail directly and re-check.
+/// until scrolled into view. Drag the rail directly in small steps -- a
+/// large step can jump a whole lazy build window and skip a row -- and
+/// re-check after each.
 Future<void> scrollRailTo(WidgetTester tester, String label) async {
   final railList = find.descendant(
     of: find.byType(AnimatedContainer),
     matching: find.byType(ListView),
   ).first;
-  for (var i = 0; i < 30; i++) {
+  for (var i = 0; i < 60; i++) {
     if (find.text(label).evaluate().isNotEmpty) return;
-    await tester.drag(railList, const Offset(0, -120));
+    await tester.drag(railList, const Offset(0, -60));
     await tester.pump();
   }
 }

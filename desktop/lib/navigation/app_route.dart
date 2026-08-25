@@ -12,6 +12,7 @@ enum DestinationId {
   workflows,
   projects,
   swarms,
+  roadmap,
   chat,
   compare,
   models,

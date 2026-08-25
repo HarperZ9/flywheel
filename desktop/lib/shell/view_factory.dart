@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../client/gateway_client.dart';
+import '../client/gateway_roadmap.dart';
 import '../client/gateway_swarms.dart';
 import '../controllers/journey_controller.dart';
 import '../ide/code_buffer_session.dart';
@@ -32,6 +33,7 @@ import '../views/plan_view.dart';
 import '../views/plugins_view.dart';
 import '../views/projects_view.dart';
 import '../views/receipts_view.dart';
+import '../views/roadmap_view.dart';
 import '../views/science_view.dart';
 import '../views/swarms_view.dart';
 import '../views/studio_view.dart';
@@ -101,6 +103,8 @@ Widget? _work(DestinationId id, DestinationInputs i) => switch (id) {
       DestinationId.projects => ProjectsView(client: i.client, alive: i.alive),
       DestinationId.swarms => SwarmsView(
           api: SwarmsApi(baseUrl: i.client.baseUrl), alive: i.alive),
+      DestinationId.roadmap => RoadmapView(
+          api: RoadmapApi(baseUrl: i.client.baseUrl), alive: i.alive),
       _ => null,
     };
 
