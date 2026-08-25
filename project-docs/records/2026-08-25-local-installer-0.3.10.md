@@ -1,11 +1,12 @@
 # Local enterprise release build: Flywheel-Setup-0.3.10-x64
 
-Date: 2026-08-25
+Date: 2026-08-25 (rebuilt 2026-08-25 after pack admission + Roadmap
+destination landed; this candidate supersedes the earlier same-day
+build)
 Artifact: `desktop/build/installer/Flywheel-Setup-0.3.10-x64.exe`
 (20.7 MB, gitignored build output)
-SHA-256: `b0e931c6d7b7d1841ec56771054dca68f3492eaaf830c1dc58e41cfd5955e233`
-Source commit: be562ea on feat/p3-t6-receipt-proof (43 commits ahead of
-release/0.3.10 at build time)
+SHA-256: `bbabe0211acbc19f1f50fdaf12963fbad2e486845847340263b2169ccfad7dbc`
+Source commit: 4ba1057 on feat/p3-t6-receipt-proof
 Built with: desktop/scripts/build_installer.ps1 -- the same script the
 desktop-release CI workflow runs.
 
@@ -18,7 +19,7 @@ One platform, one version: pyproject.toml 0.3.10 == pubspec.yaml
 
 ```text
 flutter analyze --no-pub            # no issues
-flutter test --no-pub               # 571 passed, 4 skipped
+flutter test --no-pub               # 573 passed, 4 skipped
 python -m pytest tests/ -q          # exit 0 (full suite)
 scripts/check_file_gate.py          # clean, 0 new, 0 grown
 scripts/check_verifier_stdlib.py    # clean
@@ -48,11 +49,13 @@ GET /api/subagents   -> 200 flywheel.subagent-list/v1
 GET /api/skills      -> 200 flywheel.skill-list/v1
 GET /api/pm/roadmap  -> 200
 GET /api/hooks       -> 200 flywheel.hook-registry/v1
+GET /api/packs       -> 200 flywheel.pack-list/v1
 ```
 
-Every surface shipped in this branch's sessions answers from inside
-the exe. (/api/bench/traces is a POST route; a GET probe failing there
-is the probe's fault.)
+Every surface shipped on this branch answers from inside the exe,
+including the pack-admission store and the roadmap's data source.
+(/api/bench/traces is a POST route; a GET probe failing there is the
+probe's fault.)
 
 ## Does not prove
 
