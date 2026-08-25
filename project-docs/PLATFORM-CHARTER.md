@@ -58,10 +58,13 @@ competitor it answers.
    automations (file change, git event, journey stage) where every hook
    run is itself receipted and a failing hook blocks the action
    fail-closed. Nobody's hooks are accountable.
-4. **PM surface** â€” answers the manager use case. Journey stages are
-   already a pipeline; add the roadmap view: goals â†’ decomposed tasks â†’
-   per-task verification status â†’ one-page status a PM can read.
-   Verification makes "done" mean something.
+4. **PM surface (FIRST LIGHT SHIPPED 2026-08-24)** -- answers the
+    manager use case. `GET /api/pm/roadmap` builds the one-page view:
+    goals (swarm receipts), decomposed child work with per-child
+    verification status, a verification floor of bound skills, and its
+    own does-not-prove notes on the page. See
+    `project-docs/features/2026-08-24-pm-roadmap.md`. Still open:
+    journey stages on the page and the desktop destination for it.
 5. **Domain packs for medicine/finance/design (FIRST THREE SHIPPED
    2026-08-24)** -- the extension mechanism now carries three
    first-party data-only packs as repo data (terminology checklist,

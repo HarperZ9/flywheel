@@ -401,8 +401,7 @@ def get_companion_seat(serve_url: str):
     with a real oracle uses the seat directly. Graceful: returns None if the seat
     cannot be constructed (the route then reports the reason honestly)."""
     global _COMPANION_SEAT
-    if _COMPANION_SEAT is not None:
-        return _COMPANION_SEAT
+    if _COMPANION_SEAT is not None: return _COMPANION_SEAT
     try:
         from harness.companion import CompanionSeat
         from harness.proposer import ServeProposer
@@ -593,11 +592,9 @@ def openai_embeddings(req: dict):
                           "type": "invalid_request_error"}}, 400
     fwd = dict(req)
     fwd.pop("adaptive", None)
-    if ":" in model:
-        fwd["model"] = model.split(":", 1)[1]
+    if ":" in model: fwd["model"] = model.split(":", 1)[1]
     headers = {"Content-Type": "application/json"}
-    if key:
-        headers["Authorization"] = f"Bearer {key}"
+    if key: headers["Authorization"] = f"Bearer {key}"
     request = urllib.request.Request(spec.base_url.rstrip("/") + "/embeddings",
                                      data=json.dumps(fwd).encode(), method="POST", headers=headers)
     try:
@@ -680,8 +677,7 @@ def openai_chat(req: dict, serve_url: str, credential_bindings=None):
             get_router_stats().record(cand or "flywheel", True, time.time() - t0)
         receipt = _chat_receipt(prompt, system, max_tokens, temperature, seed, out)
         receipt["routed_via"] = cand or "flywheel"
-        if routing is not None:
-            receipt["routing"] = routing
+        if routing is not None: receipt["routing"] = routing
         if resolution_failures:
             receipt["resolution_failures"] = resolution_failures
         if tried:
@@ -798,8 +794,7 @@ class _Handler(BaseHTTPRequestHandler):
         path = self.path.split("?", 1)[0]
         is_operation = (path == "/api/agent"
                         or path.startswith("/api/operations/"))
-        if not is_operation:
-            return False
+        if not is_operation: return False
         from harness.gateway_operation_route import route_gateway_operation
         query = self.path.split("?", 1)[1] if "?" in self.path else ""
         raw, content = b"", ""
@@ -987,6 +982,11 @@ class _Handler(BaseHTTPRequestHandler):
         if p == "/api/skills":
             from harness.skill_route import handle_skills_get
             body, code = handle_skills_get(p, run_root=self.run_root)
+            return self._json(body, code)
+        if p == "/api/pm/roadmap":
+            from harness.pm_roadmap_route import handle_pm_get
+            body, code = handle_pm_get(p, run_root=self.run_root,
+                                       clock=self.clock)
             return self._json(body, code)
         if p == "/api/endpoints/health":
             return self._json(endpoint_roster(self.serve_url, self.ollama_url))
