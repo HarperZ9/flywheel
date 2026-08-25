@@ -71,10 +71,12 @@ competitor it answers.
    `project-docs/features/2026-08-24-first-domain-packs.md`. Still
    open: operator-side admission flow and per-domain depth beyond the
    seed checklists.
-6. **Skill from experience** â€” answers Hermes. A lesson that carries a
-   gate: an admitted skill is a procedure plus a passing gate receipt.
-   Trace-bench already produces the evidence; lessons already have
-   admission.
+6. **Skill from experience (SHIPPED 2026-08-24)** -- answers Hermes. An
+    admitted skill is now mechanically a procedure plus a passing gate
+    receipt: only an ADMITTED lesson binds, evidence is an all-pass
+    verified bench or a zero-regression trace report, bindings store
+    digests only, and the registry refuses tampered rows. See
+    `project-docs/features/2026-08-24-skill-from-experience.md`.
 
 ## The rule that stays fixed
 
