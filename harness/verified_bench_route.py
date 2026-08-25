@@ -55,5 +55,24 @@ def handle_bench_run(body: dict, *, run_root: Path,
                 "BENCH_FAILED", "the benchmark run failed", 500))
     frontier = verified_frontier(bench, cost_per_task=body.get(
         "cost_per_task"))
+
+    # Accountable hooks: fire bench.completed automations from the run
+    # root's registry. A failing blocking hook marks the event blocked
+    # for downstream automation; the bench itself is sealed either way.
+    from .accountable_hooks import (
+        event_blocked,
+        load_registry,
+        run_hooks,
+        subprocess_runner,
+    )
+    registry = load_registry(Path(run_root) / "hooks" / "registry.json")
+    hook_receipts = run_hooks(
+        "bench.completed", registry,
+        runner=subprocess_runner(timeout_s=30.0),
+        context={"bench_sha256": bench["bench_sha256"],
+                 "endpoints": bench["endpoints"],
+                 "attempts": bench["denominator"]["attempts"]})
     return {"schema": "flywheel.verified-bench-run/v1",
-            "bench": bench, "frontier": frontier}, 200
+            "bench": bench, "frontier": frontier,
+            "hook_receipts": hook_receipts,
+            "event_blocked": event_blocked(hook_receipts)}, 200

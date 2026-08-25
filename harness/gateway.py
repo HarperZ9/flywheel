@@ -976,6 +976,10 @@ class _Handler(BaseHTTPRequestHandler):
     def _get(self):
         p = self.path.split("?", 1)[0]
         qs = self.path.split("?", 1)[1] if "?" in self.path else ""
+        if p.startswith("/api/hooks"):
+            from harness.hooks_route import handle_hooks_get
+            body, code = handle_hooks_get(p, run_root=Path(self.run_root))
+            return self._json(body, code)
         if p == "/api/endpoints/health":
             return self._json(endpoint_roster(self.serve_url, self.ollama_url))
         if p == "/api/endpoints":
@@ -1367,6 +1371,21 @@ class _Handler(BaseHTTPRequestHandler):
                     state_root=self.flywheel_home / "state")
             return self._json(body, code)
         from harness.gateway_operation import action_for_path, materialize_agent_attachment, thaw_operation
+        if p.startswith("/api/hooks/"):
+            from harness.evidence_public import parse_json
+            from harness.hooks_route import handle_hooks_post
+            length = self._content_length()
+            if length is None:
+                return self._json({"schema": "flywheel.evidence-transport-error/v1",
+                    "error": {"code": "INVALID_LENGTH", "message": "request length is invalid"}}, 400)
+            try:
+                req = parse_json(self.rfile.read(length))
+            except Exception:
+                req = {}
+            body, code = handle_hooks_post(
+                p, req, run_root=self.run_root,
+                owner_ref=self.owner_ref, clock=self.clock)
+            return self._json(body, code)
         action = action_for_path(p)
         if action is not None:
             length = self._content_length()
