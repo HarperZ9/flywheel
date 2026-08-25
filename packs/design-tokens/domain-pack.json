@@ -1,0 +1,56 @@
+{
+  "schema": "flywheel.domain-pack/v1",
+  "pack_id": "flywheel.design.tokens",
+  "version": "1.0.0",
+  "domain_id": "design",
+  "claim_types": [
+    "a token pair meets the referenced contrast minimum",
+    "a surface uses at most the two typeface families in the referenced rule"
+  ],
+  "journey_schema": "flywheel.journey-projection/v2",
+  "packet_schema": "flywheel.tokens-check-packet/v1",
+  "oracle_bindings": [
+    {
+      "oracle_id": "des-contrast-rows",
+      "oracle_version": "2",
+      "source_file": "fixtures/contrast_rows.json",
+      "source_sha256": "3ae7d0a3c0df258bba6dee1641a4e73805281c797c87c3e92465349ced1990fd",
+      "evidence_kind": "contrast_threshold_table",
+      "deterministic": true
+    },
+    {
+      "oracle_id": "des-two-face-rule",
+      "oracle_version": "1",
+      "source_file": "fixtures/two_face_rule.json",
+      "source_sha256": "793eac4506c13842ed826da2c41ede0fd3c9204e775447bc9fc8b88b89d8507b",
+      "evidence_kind": "typeface_family_rule",
+      "deterministic": true
+    }
+  ],
+  "fixtures": [
+    {"file": "fixtures/contrast_rows.json", "expectation": "correct"},
+    {"file": "fixtures/two_face_rule.json", "expectation": "incorrect"},
+    {"file": "fixtures/malformed_row.json", "expectation": "malformed"},
+    {"file": "fixtures/withdrawn_set.json", "expectation": "stale"}
+  ],
+  "capabilities": ["data"],
+  "containment_class": "data_only",
+  "license": "SPDX-License-Identifier: MIT",
+  "resource_limits": {
+    "cpu_seconds": 10,
+    "memory_mb": 64,
+    "processes": 0,
+    "output_bytes": 262144,
+    "time_seconds": 30
+  },
+  "public_metadata_policy": {"no_personal_data": true},
+  "limitations": [
+    "the pack checks tokens against the referenced tables only",
+    "it grades no aesthetic merit"
+  ],
+  "does_not_prove": [
+    "a passed token check does not prove a surface is well designed"
+  ],
+  "owner": "HarperZ9",
+  "review_due_at": "2027-02-24"
+}

@@ -1,0 +1,9 @@
+{
+  "set_ref": "med-term-preferred/v3",
+  "rows": [
+    {"input": "myocardial infarction", "class": "preferred"},
+    {"input": "ST-elevation myocardial infarction", "class": "preferred"},
+    {"input": "cerebrovascular accident", "class": "preferred"},
+    {"input": "hypertension", "class": "preferred"}
+  ]
+}

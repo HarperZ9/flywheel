@@ -51,9 +51,9 @@ competitor it answers.
     every child carries a sealed spec and is sealed a run receipt;
     fan-in is deterministic quorum arithmetic that fires the
     accountable hooks `agent.completed` event. Swarms reattach after a
-    gateway restart and cancel cleanly by pid. See
-    `project-docs/features/2026-08-24-subagent-swarms.md`. Still open
-    on this pillar: the desktop surface for swarms.
+    gateway restart, cancel cleanly by pid, and render on the desktop
+    as the Swarms destination. See
+    `project-docs/features/2026-08-24-subagent-swarms.md`.
 3. **Hooks with teeth** â€” answers Claude Code's hooks. Event-triggered
    automations (file change, git event, journey stage) where every hook
    run is itself receipted and a failing hook blocks the action
@@ -62,10 +62,15 @@ competitor it answers.
    already a pipeline; add the roadmap view: goals â†’ decomposed tasks â†’
    per-task verification status â†’ one-page status a PM can read.
    Verification makes "done" mean something.
-5. **Domain packs for medicine/finance/design** â€” the extension
-   mechanism exists; ship the first three packs as admitted data-only
-   packs (terminology checklists, compliance gates, design tokens) to
-   prove any domain plugs in without code changes.
+5. **Domain packs for medicine/finance/design (FIRST THREE SHIPPED
+   2026-08-24)** -- the extension mechanism now carries three
+   first-party data-only packs as repo data (terminology checklist,
+   claims-compliance screens, design-token rules), each admitted by the
+   shipped verifier with hash-pinned oracle evidence and zero code
+   changes. See
+   `project-docs/features/2026-08-24-first-domain-packs.md`. Still
+   open: operator-side admission flow and per-domain depth beyond the
+   seed checklists.
 6. **Skill from experience** â€” answers Hermes. A lesson that carries a
    gate: an admitted skill is a procedure plus a passing gate receipt.
    Trace-bench already produces the evidence; lessons already have

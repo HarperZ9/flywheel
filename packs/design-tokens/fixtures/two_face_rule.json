@@ -1,0 +1,8 @@
+{
+  "set_ref": "des-tokens-typefaces/v1",
+  "rows": [
+    {"surface": "shell", "families": ["grotesk", "mono"], "class": "acceptable"},
+    {"surface": "marketing", "families": ["grotesk", "mono", "script"],
+     "problem": "a third family breaks the two-face rule"}
+  ]
+}

@@ -1,0 +1,7 @@
+{
+  "set_ref": "fin-figures-denominators/v1",
+  "rows": [
+    {"figure": "97% win rate", "problem": "percentage without its denominator"},
+    {"figure": "18 of 19 audited quarters", "class": "acceptable"}
+  ]
+}

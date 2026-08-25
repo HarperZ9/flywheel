@@ -1,0 +1,56 @@
+{
+  "schema": "flywheel.domain-pack/v1",
+  "pack_id": "flywheel.medicine.terminology",
+  "version": "1.0.0",
+  "domain_id": "medicine",
+  "claim_types": [
+    "a clinical note uses the preferred term from the referenced set",
+    "a flagged term is a known misspelling in the referenced set"
+  ],
+  "journey_schema": "flywheel.journey-projection/v2",
+  "packet_schema": "flywheel.terminology-check-packet/v1",
+  "oracle_bindings": [
+    {
+      "oracle_id": "med-term-preferred-set",
+      "oracle_version": "3",
+      "source_file": "fixtures/preferred_terms.json",
+      "source_sha256": "8e06a937dcc7c82d22814b0b03e401471ded1ca799e63d154240d670444c0eb7",
+      "evidence_kind": "terminology_reference_set",
+      "deterministic": true
+    },
+    {
+      "oracle_id": "med-term-misspell-set",
+      "oracle_version": "2",
+      "source_file": "fixtures/known_misspells.json",
+      "source_sha256": "6bf392ba484f9758db91b42f14d681974fd0a5d219ec42be3c6ff1ea9b6788a3",
+      "evidence_kind": "known_error_set",
+      "deterministic": true
+    }
+  ],
+  "fixtures": [
+    {"file": "fixtures/preferred_terms.json", "expectation": "correct"},
+    {"file": "fixtures/known_misspells.json", "expectation": "incorrect"},
+    {"file": "fixtures/malformed_row.json", "expectation": "malformed"},
+    {"file": "fixtures/withdrawn_set.json", "expectation": "stale"}
+  ],
+  "capabilities": ["data"],
+  "containment_class": "data_only",
+  "license": "SPDX-License-Identifier: MIT",
+  "resource_limits": {
+    "cpu_seconds": 10,
+    "memory_mb": 64,
+    "processes": 0,
+    "output_bytes": 262144,
+    "time_seconds": 30
+  },
+  "public_metadata_policy": {"no_patient_data": true, "no_personal_data": true},
+  "limitations": [
+    "the pack checks terminology against the referenced sets only",
+    "it carries no clinical decision content and grades no treatment"
+  ],
+  "does_not_prove": [
+    "a passed terminology check does not prove clinical correctness of a note"
+  ],
+  "owner": "HarperZ9",
+  "review_due_at": "2027-02-24"
+}

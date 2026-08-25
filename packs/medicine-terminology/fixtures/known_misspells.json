@@ -1,0 +1,8 @@
+{
+  "set_ref": "med-term-misspells/v2",
+  "rows": [
+    {"input": "asprin", "problem": "misspelling of aspirin"},
+    {"input": "digoxin 0.25mg", "problem": "dose glued to unit without space"},
+    {"input": "heparin induced thrombocytopenia", "problem": "missing hyphens"}
+  ]
+}

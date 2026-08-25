@@ -1,0 +1,8 @@
+{
+  "set_ref": "fin-claims-forbidden/v2",
+  "rows": [
+    {"phrase": "guaranteed return", "problem": "a performance guarantee is a prohibited claim"},
+    {"phrase": "risk-free investment", "problem": "no investment is risk-free; prohibited phrasing"},
+    {"phrase": "cannot lose", "problem": "absolute-safety claim is prohibited"}
+  ]
+}

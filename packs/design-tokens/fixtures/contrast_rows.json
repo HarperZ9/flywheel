@@ -1,0 +1,7 @@
+{
+  "set_ref": "des-tokens-contrast/v2",
+  "rows": [
+    {"token": "ink.on.ground", "ratio": 16.2, "minimum": 7.0, "class": "acceptable"},
+    {"token": "muted.on.panel", "ratio": 4.1, "minimum": 4.5, "problem": "below AA for body text"}
+  ]
+}

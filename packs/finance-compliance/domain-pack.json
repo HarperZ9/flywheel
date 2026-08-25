@@ -1,0 +1,56 @@
+{
+  "schema": "flywheel.domain-pack/v1",
+  "pack_id": "flywheel.finance.claims",
+  "version": "1.0.0",
+  "domain_id": "finance",
+  "claim_types": [
+    "a marketing sentence avoids the prohibited phrases in the referenced set",
+    "every quoted figure carries its denominator"
+  ],
+  "journey_schema": "flywheel.journey-projection/v2",
+  "packet_schema": "flywheel.claims-check-packet/v1",
+  "oracle_bindings": [
+    {
+      "oracle_id": "fin-forbidden-phrases",
+      "oracle_version": "2",
+      "source_file": "fixtures/forbidden_phrases.json",
+      "source_sha256": "66db5354aa3b0dd5dcef0749193b53f28d71259dff80506f9450e21bd4258a77",
+      "evidence_kind": "prohibited_phrase_set",
+      "deterministic": true
+    },
+    {
+      "oracle_id": "fin-denominator-rule",
+      "oracle_version": "1",
+      "source_file": "fixtures/denominator_rule.json",
+      "source_sha256": "9e5a7e5f5af2506e58c9dd241fb539a0512653389006f4a3fd233599139803f5",
+      "evidence_kind": "figure_format_rule",
+      "deterministic": true
+    }
+  ],
+  "fixtures": [
+    {"file": "fixtures/forbidden_phrases.json", "expectation": "correct"},
+    {"file": "fixtures/denominator_rule.json", "expectation": "correct"},
+    {"file": "fixtures/malformed_row.json", "expectation": "malformed"},
+    {"file": "fixtures/withdrawn_set.json", "expectation": "stale"}
+  ],
+  "capabilities": ["data"],
+  "containment_class": "data_only",
+  "license": "SPDX-License-Identifier: MIT",
+  "resource_limits": {
+    "cpu_seconds": 10,
+    "memory_mb": 64,
+    "processes": 0,
+    "output_bytes": 262144,
+    "time_seconds": 30
+  },
+  "public_metadata_policy": {"no_client_data": true, "no_personal_data": true},
+  "limitations": [
+    "the pack screens sentences against the referenced phrase and figure rules only",
+    "it grades no investment merit and renders no advice"
+  ],
+  "does_not_prove": [
+    "a passed claims screen does not prove regulatory compliance of a document"
+  ],
+  "owner": "HarperZ9",
+  "review_due_at": "2027-02-24"
+}

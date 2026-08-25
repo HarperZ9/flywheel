@@ -1,0 +1,5 @@
+{
+  "set_ref": "med-term-preferred/v1",
+  "withdrawn": true,
+  "note": "superseded by v3; a checker must refuse this set, not grade against it"
+}
