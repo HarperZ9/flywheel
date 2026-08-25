@@ -7,9 +7,9 @@ import 'package:flywheel_desktop/navigation/destination_catalog.dart';
 
 void main() {
   test('the catalog holds exactly 30 unique destinations', () {
-    expect(destinationCatalog.length, 30);
+    expect(destinationCatalog.length, 31);
     final ids = destinationCatalog.map((d) => d.id).toSet();
-    expect(ids.length, 30);
+    expect(ids.length, 31);
   });
 
   test('the five groups carry the exact planned membership and order', () {
@@ -20,7 +20,7 @@ void main() {
             .where((d) => group(d.id) == 'work')
             .map((d) => d.id.name)
             .toList(),
-        ['journey', 'plan', 'workflows', 'projects']);
+        ['journey', 'plan', 'workflows', 'projects', 'swarms']);
     expect(
         destinationCatalog
             .where((d) => group(d.id) == 'chat')

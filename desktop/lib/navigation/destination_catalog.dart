@@ -25,6 +25,9 @@ const destinationCatalog = <DestinationSpec>[
       abbr: 'WF', group: DestinationGroup.work),
   DestinationSpec(DestinationId.projects, 'Projects',
       abbr: 'PR', group: DestinationGroup.work),
+
+  DestinationSpec(DestinationId.swarms, 'Swarms',
+      abbr: 'SW', group: DestinationGroup.work),
   DestinationSpec(DestinationId.chat, 'Chat',
       abbr: 'CH', group: DestinationGroup.chat),
   DestinationSpec(DestinationId.compare, 'Compare',

@@ -33,7 +33,7 @@ void main() {
     expect(find.text('Journey'), findsOneWidget);
 
     // 2. The catalog holds exactly thirty destinations in five groups.
-    expect(destinationCatalog, hasLength(30));
+    expect(destinationCatalog, hasLength(31));
     expect(destinationCatalog.map((d) => d.group.name).toSet(),
         hasLength(5));
 

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../client/gateway_client.dart';
+import '../client/gateway_swarms.dart';
 import '../controllers/journey_controller.dart';
 import '../ide/code_buffer_session.dart';
 import '../ide/unsaved_work_guard.dart';
@@ -32,6 +33,7 @@ import '../views/plugins_view.dart';
 import '../views/projects_view.dart';
 import '../views/receipts_view.dart';
 import '../views/science_view.dart';
+import '../views/swarms_view.dart';
 import '../views/studio_view.dart';
 import '../views/train_view.dart';
 import '../views/uplift_view.dart';
@@ -97,6 +99,8 @@ Widget? _work(DestinationId id, DestinationInputs i) => switch (id) {
       DestinationId.workflows => WorkflowsView(
           client: i.client, alive: i.alive, settings: i.settings),
       DestinationId.projects => ProjectsView(client: i.client, alive: i.alive),
+      DestinationId.swarms => SwarmsView(
+          api: SwarmsApi(baseUrl: i.client.baseUrl), alive: i.alive),
       _ => null,
     };
 
