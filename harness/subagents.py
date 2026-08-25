@@ -52,14 +52,19 @@ from .subagent_roles import (
     with_role_prompt,
 )
 from .subagent_store import (
+    LIVE_SCHEMA,
     child_env,
+    detached_summaries,
+    load_live_state,
     load_swarm_receipt,
     popen_handle,
+    save_live_state,
     save_swarm_receipt,
     sealed_summaries,
     swarm_dir,
     worker_command,
 )
+from .subagent_rejoin import cancel_swarm, maybe_adopt
 
 
 def _refuse(msg: str) -> None:
@@ -114,6 +119,7 @@ class SwarmRunner:
         sdir = swarm_dir(self.root, swarm_id)
         sdir.mkdir(parents=True, exist_ok=True)
         created_at = self._clock()
+        factory = handle_factory or popen_handle
         records = []
         for child in sealed_children:
             child_id = "sa_" + secrets.token_hex(4)
@@ -127,14 +133,31 @@ class SwarmRunner:
             spec_path.write_text(
                 json.dumps(spec, indent=2, sort_keys=True),
                 encoding="utf-8")
+            try:
+                handle = factory(spec_path, workspace)
+            except Exception:
+                handle = None
             records.append({"child_id": child_id, "role": child["role"],
                             "spec": spec, "spec_path": spec_path,
-                            "workspace": workspace})
+                            "workspace": workspace, "handle": handle})
+        # The live state is what a restarted process adopts from: pids,
+        # workspaces, and seals -- no in-memory handles required.
+        save_live_state({
+            "schema": LIVE_SCHEMA, "swarm_id": swarm_id,
+            "created_at": created_at,
+            "timeout_at": time.time() + float(timeout_s),
+            "quorum_policy": quorum_policy, "goal": goal,
+            "endpoint": endpoint,
+            "children": [{"child_id": c["child_id"], "role": c["role"],
+                          "pid": getattr(c["handle"], "pid", None),
+                          "workspace": str(c["workspace"]),
+                          "spec_sha256": c["spec"]["spec_sha256"]}
+                         for c in records],
+        }, run_root=self.root)
         rec = {"swarm_id": swarm_id, "status": "running",
                "quorum_policy": quorum_policy, "timeout_s": timeout_s,
                "goal": goal, "endpoint": endpoint, "created_at": created_at,
-               "handle_factory": handle_factory or popen_handle,
-               "children": records}
+               "cancel_requested": False, "children": records}
         with self._lock:
             self._live[swarm_id] = rec
         threading.Thread(target=self._orchestrate, args=(rec,),
@@ -146,12 +169,13 @@ class SwarmRunner:
                              for c in records]}
 
     def _orchestrate(self, rec: dict) -> None:
-        factory = rec["handle_factory"]
         for c in rec["children"]:
             started = time.monotonic()
             timed_out = False
+            handle = c["handle"]
             try:
-                handle = factory(c["spec_path"], c["workspace"])
+                if handle is None:
+                    raise ValueError("the child never launched")
                 exit_code, output = handle.wait(rec["timeout_s"])
             except TimeoutError:
                 timed_out = True
@@ -167,6 +191,12 @@ class SwarmRunner:
             result_ok = bool(result) \
                 and result.get("spec_sha256") == c["spec"]["spec_sha256"] \
                 and result.get("status") == "completed"
+            if rec.get("cancel_requested") and not result_ok:
+                status = "cancelled"
+            elif timed_out:
+                status = "timeout"
+            else:
+                status = child_status(exit_code, result_ok)
             c["receipt"] = {
                 "schema": RUN_SCHEMA, "swarm_id": rec["swarm_id"],
                 "child_id": c["child_id"], "role": c["role"],
@@ -177,8 +207,7 @@ class SwarmRunner:
                                   if output else ""),
                 "duration_ms": duration_ms, "timed_out": timed_out,
                 "result_ok": result_ok,
-                "status": ("timeout" if timed_out
-                           else child_status(exit_code, result_ok)),
+                "status": status,
             }
         self._finalize(rec)
 
@@ -215,6 +244,9 @@ class SwarmRunner:
     def snapshot(self, swarm_id: str) -> "dict | None":
         with self._lock:
             rec = self._live.get(swarm_id)
+        if rec is None and maybe_adopt(self, swarm_id):
+            with self._lock:
+                rec = self._live.get(swarm_id)
         if rec is None:
             return None
         if rec["status"] == "running":
@@ -224,6 +256,9 @@ class SwarmRunner:
                                  for c in rec["children"]]}
         return {"swarm_id": swarm_id, "status": "sealed",
                 "receipt": rec["receipt"]}
+
+    def cancel(self, swarm_id: str, *, killer=None) -> dict:
+        return cancel_swarm(self, swarm_id, killer=killer)
 
     def live_summaries(self) -> list[dict]:
         with self._lock:

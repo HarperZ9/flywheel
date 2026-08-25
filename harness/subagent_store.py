@@ -15,6 +15,8 @@ from pathlib import Path
 
 from .subagent_roles import SWARM_SCHEMA
 
+LIVE_SCHEMA = "flywheel.subagent-live/v1"
+
 _PKG_ROOT = str(Path(__file__).resolve().parent.parent)
 
 
@@ -45,6 +47,43 @@ def load_swarm_receipt(path: Path) -> "dict | None":
             or receipt.get("schema") != SWARM_SCHEMA:
         _refuse("the persisted swarm receipt is not a swarm receipt")
     return receipt
+
+
+def save_live_state(live: dict, *, run_root: Path) -> Path:
+    if live.get("schema") != LIVE_SCHEMA:
+        _refuse("only a live-state record persists here")
+    path = swarm_dir(run_root, live["swarm_id"]) / "live.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(live, indent=2, sort_keys=True),
+                    encoding="utf-8")
+    return path
+
+
+def load_live_state(path: Path) -> "dict | None":
+    p = Path(path)
+    if not p.is_file():
+        return None
+    live = json.loads(p.read_text(encoding="utf-8"))
+    if not isinstance(live, dict) or live.get("schema") != LIVE_SCHEMA \
+            or not isinstance(live.get("children"), list):
+        _refuse("the persisted live state is not a live state record")
+    return live
+
+
+def detached_summaries(run_root: Path) -> list[dict]:
+    """Swarms with a live state but no sealed receipt: the restart case."""
+    root = Path(run_root) / "subagents"
+    rows = []
+    if root.is_dir():
+        for entry in sorted(root.iterdir()):
+            if (entry / "swarm.json").is_file():
+                continue
+            live = load_live_state(entry / "live.json")
+            if live is not None:
+                rows.append({"swarm_id": entry.name,
+                             "status": "detached",
+                             "children": len(live["children"])})
+    return rows
 
 
 def _summary(receipt: dict) -> dict:
@@ -82,6 +121,10 @@ def child_env() -> dict:
 class _PopenHandle:
     def __init__(self, proc: "subprocess.Popen") -> None:
         self._proc = proc
+
+    @property
+    def pid(self) -> "int | None":
+        return self._proc.pid
 
     def wait(self, timeout_s: float) -> tuple[int, str]:
         try:

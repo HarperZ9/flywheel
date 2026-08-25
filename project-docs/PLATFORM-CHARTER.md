@@ -50,10 +50,10 @@ competitor it answers.
     under fixed roles whose authority is enforced at registration;
     every child carries a sealed spec and is sealed a run receipt;
     fan-in is deterministic quorum arithmetic that fires the
-    accountable hooks `agent.completed` event. See
+    accountable hooks `agent.completed` event. Swarms reattach after a
+    gateway restart and cancel cleanly by pid. See
     `project-docs/features/2026-08-24-subagent-swarms.md`. Still open
-    on this pillar: cross-restart job control (reattach and cancel a
-    running swarm) and the desktop surface for swarms.
+    on this pillar: the desktop surface for swarms.
 3. **Hooks with teeth** â€” answers Claude Code's hooks. Event-triggered
    automations (file change, git event, journey stage) where every hook
    run is itself receipted and a failing hook blocks the action

@@ -26,6 +26,10 @@ class _FakeHandle:
         self.hang = hang
         self.stopped = False
 
+    @property
+    def pid(self):
+        return None
+
     def wait(self, timeout_s):
         if self.hang:
             raise TimeoutError
@@ -33,6 +37,28 @@ class _FakeHandle:
 
     def stop(self):
         self.stopped = True
+        return True
+
+
+class _BlockingHandle:
+    """A child that runs until stopped, like a real worker process."""
+
+    def __init__(self):
+        import threading
+        self.stopped = False
+        self._done = threading.Event()
+
+    @property
+    def pid(self):
+        return None
+
+    def wait(self, timeout_s):
+        self._done.wait(timeout=min(float(timeout_s), 5.0))
+        return (1, "") if self.stopped else (0, "")
+
+    def stop(self):
+        self.stopped = True
+        self._done.set()
         return True
 
 

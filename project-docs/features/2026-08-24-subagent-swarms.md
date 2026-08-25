@@ -36,7 +36,17 @@ accountability.
 4. Fan-in is deterministic arithmetic against a declared quorum policy
    (all / majority / any). No learned model decides whether the swarm
    satisfied its goal.
-5. Fan-in fires the accountable hooks `agent.completed` event from the
+5. Swarms survive a gateway restart. Spawn persists a live state
+   (`flywheel.subagent-live/v1`) carrying each child's pid, workspace,
+   and spec seal; a later process adopts the detached swarm from that
+   file alone, watches the workspaces for result files, and seals the
+   same receipts. Adopted children are stamped `reattached: true`,
+   because disk evidence honestly differs from holding the handle.
+6. Cancellation works in-process or after a restart: it stops handles
+   or kills recorded pids, then seals what actually finished. Children
+   that did not complete are marked `cancelled`, never silently
+   successful. Routes: `POST /api/subagents/cancel`.
+7. Fan-in fires the accountable hooks `agent.completed` event from the
    run root's registry, so a failing blocking hook marks the swarm
    blocked exactly like any other event on this platform.
 
@@ -51,7 +61,8 @@ do not.
 
 ```text
 python -m pytest tests/test_subagents.py -q                  # 10/10
-python -m pytest tests/test_subagents_route.py -q            # 4/4
+python -m pytest tests/test_subagent_rejoin.py -q            # 6/6
+python -m pytest tests/test_subagents_route.py -q            # 6/6
 python -m pytest tests/ -q                                   # exit 0
 python scripts/check_file_gate.py                            # clean
 python scripts/check_verifier_stdlib.py                      # clean
@@ -63,7 +74,8 @@ python scripts/check_claim_language.py                       # clean
 A satisfied quorum attests the children ran and reported; it does not
 prove the goal was achieved -- that travels on the swarm receipt's
 `does_not_prove` list. Children run the real gated agent loop through
-`router_agent`, but cross-restart job control (spawn, disconnect,
-reattach, cancel a running swarm) is not built yet: a spawn is bounded
-by its own timeout window in this process. Desktop surfaces for swarms
-are not drawn yet either; the API is the contract.
+`router_agent`. An adopted receipt carries no exit code or output hash,
+because the parent no longer holds the pipe; it attests from workspace
+evidence only, which is exactly why the `reattached` stamp exists.
+Desktop surfaces for swarms are not drawn yet either; the API is the
+contract.

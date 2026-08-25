@@ -15,6 +15,7 @@ import urllib.parse
 from pathlib import Path
 
 from .evidence_public import TransportError, error_response
+from .subagent_store import detached_summaries
 from .subagents import (
     MAX_CHILDREN,
     SwarmRunner,
@@ -58,8 +59,13 @@ def handle_subagents_get(path: str, qs: str, *,
     if path == "/api/subagents":
         live = runner.live_summaries()
         live_ids = {row["swarm_id"] for row in live}
-        rows = live + [row for row in sealed_summaries(root)
-                       if row["swarm_id"] not in live_ids]
+        sealed = [row for row in sealed_summaries(root)
+                  if row["swarm_id"] not in live_ids]
+        sealed_ids = {row["swarm_id"] for row in sealed}
+        detached = [row for row in detached_summaries(root)
+                    if row["swarm_id"] not in live_ids
+                    and row["swarm_id"] not in sealed_ids]
+        rows = live + sealed + detached
         return {"schema": "flywheel.subagent-list/v1",
                 "swarms": rows, "count": len(rows)}, 200
     if path == "/api/subagents/swarm":
@@ -83,9 +89,20 @@ def handle_subagents_get(path: str, qs: str, *,
 def handle_subagents_post(path: str, body: dict, *, run_root,
                           clock=None) -> tuple[dict, int]:
     action = path.rsplit("/", 1)[-1]
-    if action != "spawn":
+    if action not in ("spawn", "cancel"):
         return error_response(TransportError("NOT_FOUND",
                                              "unknown subagent route", 404))
+    if action == "cancel":
+        swarm_id = str((body or {}).get("swarm_id") or "")
+        if not _safe_id(swarm_id):
+            return _invalid("the cancel request names no valid swarm")
+        res = _runner(Path(run_root), clock).cancel(swarm_id)
+        if res.get("code") == "CANCEL_UNAVAILABLE":
+            status = 409 if res.get("state") == "sealed" else 404
+            return error_response(TransportError(
+                "CANCEL_UNAVAILABLE", f"the swarm is {res.get('state')}",
+                status))
+        return res, 200
     if not isinstance(body, dict):
         return _invalid("the spawn request is a JSON object")
     children_raw = body.get("children")
