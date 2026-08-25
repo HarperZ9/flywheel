@@ -125,7 +125,33 @@ class _UsageProposer:
                               usage={"prompt": 1200, "completion": 300, "total": 1500})
 
 
+def _granted(monkeypatch):
+    """The route is grant-gated: authorize returns a test-bound
+    operation carrying the posted body, with the frozen execution plan,
+    exactly as an approved grant would deliver it."""
+    import json as _json
+    from harness.gateway_operation import AuthorizedOperation
+    from harness.gateway_provider_adapter import freeze_execution_plan
+
+    def fake(action_name, raw, *, owner_ref, state_root, clock):
+        envelope = _json.loads(raw)
+        op = {k: v for k, v in envelope.items()
+              if k not in ('schema', 'journey_ref', 'expected_event_head',
+                           'client_request_id', 'grant_ref')}
+        authorized = AuthorizedOperation.for_test(action=action_name,
+                                                  operation=op,
+                                                  scopes=('network',))
+        import dataclasses
+        plan = freeze_execution_plan(authorized, owner_ref=owner_ref,
+                                     state_root=state_root)
+        return dataclasses.replace(authorized, execution_plan=plan)
+
+    monkeypatch.setattr(
+        'harness.gateway_grant_route.authorize_gateway_operation', fake)
+
+
 def test_gateway_route_answer_emits_a_verifying_usage_receipt(tmp_path, monkeypatch):
+    _granted(monkeypatch)
     # no real model: a monkeypatched roster + proposer, and a no-op scaffold.
     import harness.endpoint_registry as er
     import harness.scaffold as sc

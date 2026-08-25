@@ -24,7 +24,7 @@
     {
       "claim_hash": "23450831b0b42121",
       "envelope_hash": "1993af18b980c95d",
-      "path": "C:\\dev\\local-model\\artifacts\\gate\\gate_envelope.json",
+      "path": "C:\\dev\\public\\flywheel\\artifacts\\gate\\gate_envelope.json",
       "step": "seal"
     },
     {

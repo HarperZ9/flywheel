@@ -1,4 +1,4 @@
-﻿"""evidence_extension_route.py -- capability-gated contextual routes.
+"""evidence_extension_route.py -- capability-gated contextual routes.
 
 GET  /api/journeys/capabilities        the fail-closed capability sheet
 POST /api/journeys/incident-propose    deterministic incident proposal

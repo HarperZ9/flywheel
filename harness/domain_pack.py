@@ -1,4 +1,4 @@
-﻿"""Domain pack manifest verification: a pack is admitted as a manifest
+"""Domain pack manifest verification: a pack is admitted as a manifest
 plus admitted data, never as executable authority. The verifier refuses
 false accepts, dynamic imports, plugin discovery, commands, missing
 license or owner or limits, and secret-shaped or host-path fields.
