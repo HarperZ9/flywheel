@@ -76,6 +76,6 @@ prove the goal was achieved -- that travels on the swarm receipt's
 `does_not_prove` list. Children run the real gated agent loop through
 `router_agent`. An adopted receipt carries no exit code or output hash,
 because the parent no longer holds the pipe; it attests from workspace
-evidence only, which is exactly why the `reattached` stamp exists.
-Desktop surfaces for swarms are not drawn yet either; the API is the
-contract.
+evidence only, which is exactly why the `reattached` stamp exists. The
+Swarms destination on the desktop renders this contract; the API
+remains the contract of record.
