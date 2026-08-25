@@ -24,6 +24,7 @@ design studio alike â€” and then it gets out of the way.
 | Model freedom | multi-provider ladder (Claude, ox-alpha, DeepSeek, GLM, Gemini, local), BYOK | `harness/endpoints.py` |
 | Accountability floor | receipts, Merkle transparency log, disproof gate, certificates, exact grants | `harness/receipts.py`, `transparency_log.py`, `operation_grants.py` |
 | Evaluation | private verified benchmarks, verified frontier, regression loop from traces | `verified_bench.py`, `trace_bench.py` |
+| Parallel agents | role-prompted swarms, per-child receipts, quorum fan-in, `agent.completed` hooks | `subagents.py`, `/api/subagents` |
 | Improvement loop | traces â†’ task sets â†’ regression report | `trace_bench.py` |
 | Planning | forge â†’ PRP â†’ gated plan runs | `plan_run_contract.py` |
 | Memory | fold index, recall, durable notes | `memory_api.py` |
@@ -44,10 +45,15 @@ competitor it answers.
    Prime Intellect's training loop with one they cannot match: rewards
    minted from cryptographic evidence, on-device, no cloud. "Train
    local models" becomes "your harness teaches your model on proofs."
-2. **Subagents + parallel sessions** â€” answers Claude Code's
-   background agents. The gateway already runs owned process trees with
-   terminal Stop; spawn N agent loops against one goal with role
-   prompts, fan-out/fan-in, and per-child receipts.
+2. **Subagents + parallel sessions (SHIPPED 2026-08-24)** -- answers
+    Claude Code's background agents. One goal fans out to N children
+    under fixed roles whose authority is enforced at registration;
+    every child carries a sealed spec and is sealed a run receipt;
+    fan-in is deterministic quorum arithmetic that fires the
+    accountable hooks `agent.completed` event. See
+    `project-docs/features/2026-08-24-subagent-swarms.md`. Still open
+    on this pillar: cross-restart job control (reattach and cancel a
+    running swarm) and the desktop surface for swarms.
 3. **Hooks with teeth** â€” answers Claude Code's hooks. Event-triggered
    automations (file change, git event, journey stage) where every hook
    run is itself receipted and a failing hook blocks the action
