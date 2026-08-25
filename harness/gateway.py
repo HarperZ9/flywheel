@@ -41,8 +41,7 @@ REPO = Path(__file__).resolve().parent.parent
 # Ensure `from harness.X import ...` resolves even when run as `python
 # harness/gateway.py` (script mode puts harness/ on the path, not the repo root),
 # so the on-demand endpoint_registry / context_forge imports work in both modes.
-if str(REPO) not in sys.path:
-    sys.path.insert(0, str(REPO))
+if str(REPO) not in sys.path: sys.path.insert(0, str(REPO))
 from harness.run_paths import run_root_default
 from harness.gateway_auth import (authenticate_owner as _auth_owner,
     load_or_create_owner_ref, load_or_create_token, check as _auth_check, DEFAULT_HOSTS)
@@ -182,8 +181,7 @@ def _workspace_root_allowlist() -> "list[str]":
     roots = []
     for part in raw.split(os.pathsep):
         part = part.strip()
-        if not part:
-            continue
+        if not part: continue
         try:
             roots.append(str(Path(part).expanduser().resolve()))
         except (OSError, ValueError):
@@ -192,8 +190,7 @@ def _workspace_root_allowlist() -> "list[str]":
 def _qs_value(qs: str, key: str) -> str:
     """First value for `key` in a raw query string, '' when absent."""
     for part in qs.split("&"):
-        if part.startswith(key + "="):
-            return part[len(key) + 1:]
+        if part.startswith(key + "="): return part[len(key) + 1:]
     return ""
 
 
@@ -214,8 +211,7 @@ def _resolve_workspace_root(requested, default: Path) -> "tuple[Path, str | None
     root must equal or sit under an allowlisted prefix, else it is refused BY
     NAME. Existence is not authorization -- without this a request could scope
     the executor to a home or credentials directory just by naming it."""
-    if not requested:
-        return default, None
+    if not requested: return default, None
     try:
         p = Path(str(requested)).expanduser().resolve()
     except (OSError, ValueError) as e:
@@ -518,8 +514,7 @@ def _flatten_messages(messages) -> tuple[str, str]:
             system = (system + "\n" + content).strip() if system else content
         elif role in ("user", "assistant", "tool"):
             convo.append((role, content))
-    if len(convo) <= 1:
-        return system, (convo[0][1] if convo else "")
+    if len(convo) <= 1: return system, (convo[0][1] if convo else "")
     label = {"user": "User", "assistant": "Assistant", "tool": "Tool"}
     lines = [f"{label.get(r, 'User')}: {c}" for r, c in convo]
     lines.append("Assistant:")
@@ -555,8 +550,7 @@ def _resolve_proposer(model: str, serve_url: str, credential_bindings=None):
         factory = (make_endpoint_proposer if credential_bindings is None else
                    make_authorized_endpoint_proposer)
         kwargs = {"model": sub, "ledger": _router_ledger()}
-        if credential_bindings is not None:
-            kwargs["credential_bindings"] = credential_bindings
+        if credential_bindings is not None: kwargs["credential_bindings"] = credential_bindings
         return factory(name, **kwargs), None, 200
     except Exception as e:
         return None, f"cannot build proposer for {name!r}: {e}", 502
@@ -678,8 +672,7 @@ def openai_chat(req: dict, serve_url: str, credential_bindings=None):
         receipt = _chat_receipt(prompt, system, max_tokens, temperature, seed, out)
         receipt["routed_via"] = cand or "flywheel"
         if routing is not None: receipt["routing"] = routing
-        if resolution_failures:
-            receipt["resolution_failures"] = resolution_failures
+        if resolution_failures: receipt["resolution_failures"] = resolution_failures
         if tried:
             receipt["failover_from"] = tried       # honest: which providers were skipped, and why
         body = {"id": "chatcmpl-" + receipt["receipt_id"], "object": "chat.completion",
@@ -778,8 +771,7 @@ class _Handler(BaseHTTPRequestHandler):
         return service, type(self).operation_process_factory
 
     def _operation_response(self, response):
-        if response.stream is None:
-            return self._json(response.body, response.status)
+        if response.stream is None: return self._json(response.body, response.status)
         self.send_response(response.status)
         self.send_header("Content-Type", "text/event-stream")
         self.send_header("Cache-Control", "no-cache")
@@ -840,8 +832,7 @@ class _Handler(BaseHTTPRequestHandler):
         def emit(choice, extra=None):
             obj = {"id": cid, "object": "chat.completion.chunk", "created": created,
                    "model": model_ref, "choices": [choice]}
-            if extra:
-                obj.update(extra)
+            if extra: obj.update(extra)
             self.wfile.write(("data: " + json.dumps(obj) + "\n\n").encode())
             self.wfile.flush()
 
@@ -883,12 +874,9 @@ class _Handler(BaseHTTPRequestHandler):
         rel = path.lstrip("/") or "site/index.html"
         target = (self.root / rel).resolve()
         # path-traversal guard: must stay inside root
-        if self.root.resolve() not in target.parents and target != self.root.resolve():
-            return self._json({"error": "forbidden"}, 403)
-        if target.is_dir():
-            target = target / "index.html"
-        if not target.is_file():
-            return self._json({"error": "not found"}, 404)
+        if self.root.resolve() not in target.parents and target != self.root.resolve(): return self._json({"error": "forbidden"}, 403)
+        if target.is_dir(): target = target / "index.html"
+        if not target.is_file(): return self._json({"error": "not found"}, 404)
         ctype = {"html": "text/html", "js": "text/javascript", "css": "text/css",
                  "json": "application/json", "svg": "image/svg+xml"}.get(
                      target.suffix.lstrip("."), "application/octet-stream")
@@ -987,6 +975,10 @@ class _Handler(BaseHTTPRequestHandler):
             from harness.pm_roadmap_route import handle_pm_get
             body, code = handle_pm_get(p, run_root=self.run_root,
                                        clock=self.clock)
+            return self._json(body, code)
+        if p.startswith("/api/packs"):
+            from harness.pack_admission_route import handle_pack_get
+            body, code = handle_pack_get(p, run_root=self.run_root)
             return self._json(body, code)
         if p == "/api/endpoints/health":
             return self._json(endpoint_roster(self.serve_url, self.ollama_url))
@@ -1486,6 +1478,14 @@ class _Handler(BaseHTTPRequestHandler):
             body, code = handle_bench_run(
                 req, run_root=Path(self.run_root),
                 build_endpoints=build_endpoints)
+            return self._json(body, code)
+        if p == "/api/packs/admit":                  # admit a domain pack
+            from harness.pack_admission_route import handle_pack_post
+            req, bad = self._req_json()
+            if bad:
+                return bad
+            body, code = handle_pack_post(p, req, run_root=self.run_root,
+                                          clock=self.clock)
             return self._json(body, code)
         if p == "/v1/embeddings":                    # OpenAI-compatible, routed to a provider
             length = self._content_length()
