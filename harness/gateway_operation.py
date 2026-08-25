@@ -84,6 +84,8 @@ _FIELDS = {
     "operation.cancel": ({"operation_ref", "timeout_ms"} | _REFS, set()),
     "companion.ask": ({"prompt"} | _REFS, {"solution_sig"}),
     "route.send": ({"prompt", "endpoint"} | _REFS, {"model"}),
+    "bench.run": ({"tasks", "endpoints"} | _REFS,
+                  {"timeout_s", "cost_per_task", "created_at"}),
     "forge.create": ({"goal"} | _REFS,
                      {"examples", "documentation", "context",
                       "intent_source", "architecture_source"}),
@@ -108,6 +110,7 @@ def action_for_path(path: str) -> str | None:
         "/api/forge": "forge.create",
         "/api/forge/recheck": "forge.recheck",
         "/v1/embeddings": "embeddings.create",
+        "/api/bench/run": "bench.run",
     }.get(path)
 def canonicalize_operation(action: str, operation: object) -> CanonicalOperation:
     try:
@@ -246,51 +249,18 @@ def _validate_command(command: list) -> None:
     validate_no_raw_secrets({"argv": command})
 
 
+def _derived_scopes(action: str, value: dict, secrets: bool) -> tuple[str, ...]:
+    from .gateway_operation_shape import derived_scopes
+    return derived_scopes(action, value, secrets)
+
+
 def _safe_ref(value: object, prefix: str) -> bool:
     return (type(value) is str and value.startswith(prefix)
             and re.fullmatch(r"[A-Za-z0-9._:-]{1,128}", value) is not None)
 
 
 def _destination(action: str, value: dict) -> dict[str, str]:
-    if action == "operation.cancel":
-        return {"kind": "operation", "ref": value["operation_ref"]}
-    if action == "chat.complete":
-        return {"kind": "model", "ref": value["model"]}
-    if action == "companion.ask":
-        return {"kind": "model", "ref": "companion"}
-    if action == "route.send":
-        return {"kind": "endpoint", "ref": value["endpoint"]}
-    if action == "forge.create":
-        return {"kind": "forge", "ref": "forge"}
-    if action == "forge.recheck":
-        return {"kind": "forge", "ref": value["prp_id"]}
-    if action == "embeddings.create":
-        return {"kind": "model", "ref": value.get("model", "embeddings")}
-    if action in {"agent.run", "workflow.run", "plan.run"}:
-        return {"kind": "endpoint", "ref": value["endpoint"]}
-    if action.startswith("plugin."):
-        return {"kind": "plugin", "ref": value["name"]}
-    return {"kind": "marketplace", "ref": value["name"]}
-
-
-def _derived_scopes(action: str, value: dict, secrets: bool) -> tuple[str, ...]:
-    selected = set()
-    if action == "operation.cancel":
-        selected.add("exec")
-    if action in {"chat.complete", "agent.run", "workflow.run", "plan.run",
-                  "companion.ask", "route.send", "forge.create",
-                  "forge.recheck", "embeddings.create"}:
-        selected.add("network")
-    if action in {"plugin.call"}:
-        selected.update(("write", "exec", "network", "plugin"))
-    if action == "plugin.probe":
-        selected.update(("exec", "network", "plugin"))
-    if action in {"plugin.register", "plugin.toggle", "plugin.remove",
-                  "marketplace.install", "marketplace.add",
-                  "marketplace.remove"}:
-        selected.update(("write", "plugin"))
-    if action in {"agent.run", "workflow.run", "plan.run"}:
-        if value.get("allow_write") is True: selected.add("write")
-        if value.get("allow_exec") is True: selected.add("exec")
-    if secrets: selected.add("secrets")
-    return tuple(scope for scope in _SCOPES if scope in selected)
+    # Lazy import: the shape module owns the per-action tables and reads
+    # this module's patterns, so a module-level import would cycle.
+    from .gateway_operation_shape import destination_for
+    return destination_for(action, value)

@@ -1422,6 +1422,16 @@ class _Handler(BaseHTTPRequestHandler):
                     provenance={"endpoint": "v1",
                                 "model_ref": str(body.get("model") or "")})
             return self._json(body, code)
+        if p == "/api/bench/run":                    # private verified benchmark
+            from harness.endpoints import build_endpoints
+            from harness.verified_bench_route import handle_bench_run
+            req, bad = self._req_json()
+            if bad:
+                return bad
+            body, code = handle_bench_run(
+                req, run_root=Path(self.run_root),
+                build_endpoints=build_endpoints)
+            return self._json(body, code)
         if p == "/v1/embeddings":                    # OpenAI-compatible, routed to a provider
             length = self._content_length()
             if length is None:
