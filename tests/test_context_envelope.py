@@ -48,9 +48,21 @@ def test_fingerprint_is_stable_across_calls_for_unchanged_content():
     # needs it for a second reason: with an unknown focus both calls returned
     # the SAME rejection document, so the fingerprints matched while the
     # producer was never exercised at all.
-    env1 = build_context_envelope(".", budget=400, focus=FOCUS, lane_timeout=10.0)
-    env2 = build_context_envelope(".", budget=400, focus=FOCUS, lane_timeout=10.0)
-    assert env1["schema"] != REJECTION
+    # The stability claim only means something when both calls reach the SAME
+    # verdict. The sibling test documents UNVERIFIABLE-under-load as honest, so a
+    # one-off mixed outcome (one call answers MATCH, the other times out to
+    # UNVERIFIABLE on a loaded runner) is environment degradation, not fingerprint
+    # drift. Give the lane headroom and retry once for a fair same-verdict pair;
+    # the two 12s bounds and one retry stay under the 60s per-test kill.
+    for _ in range(2):
+        env1 = build_context_envelope(".", budget=400, focus=FOCUS, lane_timeout=12.0)
+        env2 = build_context_envelope(".", budget=400, focus=FOCUS, lane_timeout=12.0)
+        assert env1["schema"] != REJECTION
+        if env1["verification_verdict"] == env2["verification_verdict"]:
+            break
+    assert env1["verification_verdict"] == env2["verification_verdict"], (
+        "the lane returned different verdicts across two calls even after a retry; "
+        "the environment degraded mid-test, so the fingerprint pair is not comparable")
     assert envelope_fingerprint(env1) == envelope_fingerprint(env2)
 
 

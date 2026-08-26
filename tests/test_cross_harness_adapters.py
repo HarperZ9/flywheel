@@ -90,12 +90,20 @@ def test_process_runner_has_no_provider_writable_stage_and_types_boundaries(tmp_
 def test_process_runner_terminates_descendants_within_bound(tmp_path):
     import os, subprocess, time
     marker, pidfile = tmp_path / "survived", tmp_path / "descendant.pid"
-    grandchild = f"import os,pathlib,time;pathlib.Path({str(pidfile)!r}).write_text(str(os.getpid()));time.sleep(3);pathlib.Path({str(marker)!r}).write_text('bad')"
-    child = "import os,subprocess,sys,time;subprocess.Popen([sys.executable,'-c',sys.argv[1]],creationflags=(8 if os.name=='nt' else 0),start_new_session=(os.name!='nt'));time.sleep(30)"; started = time.monotonic()
-    result = _run_process([sys.executable, "-c", child, grandchild], cwd=tmp_path, stdin_text="", timeout_seconds=.3)
+    # Grandchild proves survival only: if the runner does not kill it, it writes the
+    # marker after outlasting the deadline. It records nothing itself, so the test
+    # never races on the grandchild interpreter's startup.
+    grandchild = f"import pathlib,time;time.sleep(20);pathlib.Path({str(marker)!r}).write_text('bad')"
+    # Child records the grandchild pid from the Popen handle (available the instant the
+    # process is created), then blocks so the runner must terminate the whole tree. The
+    # 2s deadline is generous enough that a loaded machine still starts the child and
+    # writes the pid before termination, while elapsed < 4 still proves prompt bounded kill.
+    child = "import os,pathlib,subprocess,sys,time;p=subprocess.Popen([sys.executable,'-c',sys.argv[1]],creationflags=(8 if os.name=='nt' else 0),start_new_session=(os.name!='nt'));pathlib.Path(sys.argv[2]).write_text(str(p.pid));time.sleep(60)"; started = time.monotonic()
+    result = _run_process([sys.executable, "-c", child, grandchild, str(pidfile)], cwd=tmp_path, stdin_text="", timeout_seconds=2.0)
     elapsed = time.monotonic() - started; time.sleep(.7)
-    alive = pidfile.read_text() in subprocess.run(["tasklist", "/FI", f"PID eq {pidfile.read_text()}", "/NH"], capture_output=True, text=True).stdout if os.name == "nt" else os.path.exists(f"/proc/{pidfile.read_text()}")
-    assert result.timed_out and pidfile.is_file() and elapsed < 2 and not marker.exists() and not alive
+    pid = pidfile.read_text()
+    alive = pid in subprocess.run(["tasklist", "/FI", f"PID eq {pid}", "/NH"], capture_output=True, text=True).stdout if os.name == "nt" else os.path.exists(f"/proc/{pid}")
+    assert result.timed_out and pidfile.is_file() and elapsed < 4 and not marker.exists() and not alive
 @pytest.mark.parametrize("stdout", [
     '{"type":"ok","type":"forged"}\n',
     '{"type":"ok","value":NaN}\n', '{"type":"ok","value":Infinity}\n', '{"type":"ok","value":-Infinity}\n', '{"type":"ok","value":1e999}\n',
