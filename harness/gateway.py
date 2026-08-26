@@ -914,6 +914,7 @@ class _Handler(BaseHTTPRequestHandler):
         path = self.path.split("?", 1)[0]
         private = (path.startswith(("/api/journeys/", "/api/grants/", "/api/plan/",
                                     "/api/gateway-grants/",
+                                    "/api/pm/",
                                     "/api/credential-handles",
                                     "/api/operations/"))
                    or path in {"/v1/chat/completions", "/api/agent",
@@ -945,8 +946,7 @@ class _Handler(BaseHTTPRequestHandler):
     def _gateway_method(self, method, fallback=None):
         if not self._authorized(): return
         try:
-            if not self._route_operation(method):
-                (fallback or (lambda: self.send_error(501)))()
+            if not self._route_operation(method): (fallback or (lambda: self.send_error(501)))()
         except Exception as e:
             self._safe_500(e)
     def do_GET(self): self._gateway_method("GET", self._get)

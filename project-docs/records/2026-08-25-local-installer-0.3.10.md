@@ -1,12 +1,13 @@
 # Local enterprise release build: Flywheel-Setup-0.3.10-x64
 
-Date: 2026-08-25 (rebuilt 2026-08-25 after pack admission + Roadmap
-destination landed; this candidate supersedes the earlier same-day
-build)
+Date: 2026-08-25 (rebuilt twice after pack admission, the Roadmap
+destination, journey pipelines on the PM page, and the roadmap's
+private-custody fix; this candidate supersedes all earlier same-day
+builds)
 Artifact: `desktop/build/installer/Flywheel-Setup-0.3.10-x64.exe`
 (20.7 MB, gitignored build output)
-SHA-256: `bbabe0211acbc19f1f50fdaf12963fbad2e486845847340263b2169ccfad7dbc`
-Source commit: 4ba1057 on feat/p3-t6-receipt-proof
+SHA-256: `b9d58953d12faa38bf3a06f76a859dfec704843e94edc8d378bf00c669dd05f0`
+Source commit: 18d1077 on feat/p3-t6-receipt-proof
 Built with: desktop/scripts/build_installer.ps1 -- the same script the
 desktop-release CI workflow runs.
 
@@ -47,13 +48,15 @@ scratch port and run root, authenticated with its own minted token:
 GET /api/world       -> 200
 GET /api/subagents   -> 200 flywheel.subagent-list/v1
 GET /api/skills      -> 200 flywheel.skill-list/v1
-GET /api/pm/roadmap  -> 200
+GET /api/pm/roadmap  -> 200 (journeys tracked: 1; row carries kind,
+                        stage=intake, goal from the sealed genesis)
 GET /api/hooks       -> 200 flywheel.hook-registry/v1
 GET /api/packs       -> 200 flywheel.pack-list/v1
 ```
 
-Every surface shipped on this branch answers from inside the exe,
-including the pack-admission store and the roadmap's data source.
+Every surface shipped on this branch answers from inside the exe. The
+roadmap smoke seeded a real hash-chained journey under the gateway's
+own derived owner and read it back through the frozen binary.
 (/api/bench/traces is a POST route; a GET probe failing there is the
 probe's fault.)
 
