@@ -4,36 +4,44 @@ tools onto the gateway-operations plane.
 These tools are NOT domain packs. Domain packs (harness/domain_pack.py) are
 data-only and deterministic, and the admission verifier never grants them
 network, write, or secrets. Offensive tools need execution and network, so they
-run as grant-gated gateway operations: an operation carries an action, a tool, a
-destination, and derived scopes, and runs under a one-use exact-scope grant with
-a secret boundary and a receipt.
+run as grant-gated gateway operations.
 
-This module is the declaration + build layer. It defines each connector, the
-operation it produces, and the invariants (proprietary license, containment for
-anything that executes or reaches the network, scopes within the gateway set, no
-raw secrets in arguments). Wiring the `op.invoke` action into the gateway's own
-action table (_FIELDS), shape validation, derived scopes, destination routing,
-and supervisor dispatch is a separate, coordinated increment on the live gateway;
-see project-docs for that plan. Until then this layer builds and validates the
-operation an OP connector would submit, and its tests hold the contract.
+The gateway already has a complete, tested plane for invoking a named tool on a
+named MCP server under a one-use grant: the plugin plane. `plugin.register`
+records an MCP stdio server by argv, `plugin.probe` lists its real tools, and
+`plugin.call` invokes one tool with arguments through `authorize_gateway_operation`
+-> `dispatch_builtin` -> `plugins.call_plugin` -> a real MCP `tools/call`, under a
+restricted child environment, the secret boundary, and a receipt. An offensive
+tool IS an MCP stdio server (ORCA `orca-mcp`, Array `python -m
+red_team_platform.mcp_server`), so OP rides this plane rather than adding a
+parallel gateway action that would duplicate `plugin.call`.
+
+OP is therefore a curated, proprietary registry. It declares each connector and
+builds the exact gateway operations that register, probe, and invoke it. Every
+built operation is validated by the real `canonicalize_operation`, so an
+OP-emitted operation is a genuine gateway operation the existing pipeline runs,
+not a bespoke shape nothing consumes. OP adds what the generic plugin plane does
+not carry: a proprietary license class that never converts to open, a
+containment requirement for anything that executes or reaches the network, and a
+`does_not_prove` line per connector.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from types import MappingProxyType
 from typing import Mapping
 
-from .evidence_json import canonical_sha256
-from .gateway_secret_boundary import validate_no_raw_secrets
+# The gateway actions OP rides. Each is a real, wired, grant-gated action.
+REGISTER_ACTION = "plugin.register"
+PROBE_ACTION = "plugin.probe"
+CALL_ACTION = "plugin.call"
 
-# The action an OP connector submits on the gateway-operations plane. Adding it to
-# harness/gateway_operation.py `_FIELDS` (+ shape, derived_scopes, destination,
-# supervisor dispatch) is the coordinated gateway increment.
-OP_ACTION = "op.invoke"
-OP_SCHEMA = "flywheel.op-operation/v1"
+# OP plugin names are namespaced so they never shadow a bundled lane or the
+# builtin tool set, which `plugins.register_mcp` reserves.
+OP_NAME_PREFIX = "op-"
 
-# The scopes an OP operation may request. Kept equal to the gateway's own
-# operation scopes; test_flywheel_op asserts this set matches, so a change to the
+# The scopes an OP operation may request, kept equal to the gateway's own
+# operation scopes. test_flywheel_op asserts this set matches, so a change to the
 # gateway scope vocabulary fails the OP contract test rather than drifting.
 ALLOWED_SCOPES: frozenset[str] = frozenset(
     ("write", "exec", "network", "plugin", "secrets"))
@@ -42,6 +50,12 @@ ALLOWED_SCOPES: frozenset[str] = frozenset(
 # domain packs. This is a declaration the build layer enforces, not a license.
 LICENSE_CLASS = "proprietary"
 
+# The scopes the gateway derives for a plugin.call, regardless of the tool. Every
+# OP invocation runs under this grant; a connector's own `scopes` field states
+# the capabilities the tool actually uses (least privilege), which must be a
+# subset of what the plane grants.
+CALL_GRANT_SCOPES: frozenset[str] = frozenset(("write", "exec", "network", "plugin"))
+
 
 class OPConnectorError(ValueError):
     """A connector or operation that violates the OP contract."""
@@ -49,15 +63,21 @@ class OPConnectorError(ValueError):
 
 @dataclass(frozen=True)
 class OPConnector:
-    """One offensive, dual-use, or security tool on the operations plane."""
+    """One offensive, dual-use, or security tool on the operations plane.
+
+    mcp_command is the argv registered as the plugin `command`; an empty command
+    means the tool ships no MCP server yet, so it is a declared target that
+    cannot be registered or invoked until its surface exists.
+    """
     connector_id: str
     display_name: str
     tool: str
-    mcp_server: tuple[str, ...]
+    mcp_command: tuple[str, ...]
     scopes: tuple[str, ...]
     containment_required: bool
     mcp_available: bool
     does_not_prove: str
+    requires: tuple[str, ...] = ()
     license_class: str = LICENSE_CLASS
 
     def __post_init__(self) -> None:
@@ -76,8 +96,13 @@ class OPConnector:
         if ({"exec", "network", "write"} & set(self.scopes)) and not self.containment_required:
             raise OPConnectorError(
                 f"{self.connector_id}: exec/network/write connectors require containment")
-        if self.mcp_available and not self.mcp_server:
-            raise OPConnectorError(f"{self.connector_id}: available connector names no mcp_server")
+        if self.mcp_available and not self.mcp_command:
+            raise OPConnectorError(f"{self.connector_id}: available connector names no mcp_command")
+
+    @property
+    def plugin_name(self) -> str:
+        """The name this connector registers under on the plugin plane."""
+        return OP_NAME_PREFIX + self.connector_id
 
 
 # The registry. mcp_available reflects whether the tool ships a running MCP server
@@ -87,8 +112,8 @@ _CONNECTORS: tuple[OPConnector, ...] = (
     OPConnector(
         connector_id="orca",
         display_name="ORCA",
-        tool="orca",
-        mcp_server=("orca-mcp",),
+        tool="assess",
+        mcp_command=("orca-mcp",),
         scopes=("exec",),
         containment_required=True,
         mcp_available=True,
@@ -98,8 +123,8 @@ _CONNECTORS: tuple[OPConnector, ...] = (
     OPConnector(
         connector_id="array",
         display_name="Array",
-        tool="array",
-        mcp_server=("python", "-m", "red_team_platform.mcp_server"),
+        tool="plan_wave",
+        mcp_command=("python", "-m", "red_team_platform.mcp_server"),
         scopes=("exec", "network"),
         containment_required=True,
         mcp_available=True,
@@ -109,8 +134,8 @@ _CONNECTORS: tuple[OPConnector, ...] = (
     OPConnector(
         connector_id="isomorph",
         display_name="Isomorph",
-        tool="isomorph",
-        mcp_server=("isomorph-mcp",),
+        tool="transform",
+        mcp_command=("isomorph-mcp",),
         scopes=("network", "exec"),
         containment_required=True,
         mcp_available=False,
@@ -120,8 +145,8 @@ _CONNECTORS: tuple[OPConnector, ...] = (
     OPConnector(
         connector_id="sofer",
         display_name="Sofer",
-        tool="sofer",
-        mcp_server=("python", "-m", "sofer.mcp"),
+        tool="run",
+        mcp_command=("python", "-m", "sofer.mcp"),
         scopes=("exec", "network"),
         containment_required=True,
         mcp_available=False,
@@ -131,8 +156,8 @@ _CONNECTORS: tuple[OPConnector, ...] = (
     OPConnector(
         connector_id="bounds",
         display_name="Bounds",
-        tool="bounds",
-        mcp_server=(),
+        tool="verify",
+        mcp_command=(),
         scopes=("exec",),
         containment_required=True,
         mcp_available=False,
@@ -142,8 +167,8 @@ _CONNECTORS: tuple[OPConnector, ...] = (
     OPConnector(
         connector_id="phantom",
         display_name="Phantom",
-        tool="phantom",
-        mcp_server=(),
+        tool="rotate",
+        mcp_command=(),
         scopes=("exec",),
         containment_required=True,
         mcp_available=False,
@@ -168,40 +193,77 @@ def get_connector(connector_id: str) -> OPConnector:
     return connector
 
 
-def build_op_operation(connector: OPConnector, arguments: dict) -> dict:
-    """Build the gateway operation an OP connector submits.
+def _require_server(connector: OPConnector) -> None:
+    if not connector.mcp_command:
+        raise OPConnectorError(
+            f"{connector.connector_id}: no MCP server, cannot register or invoke")
+    if connector.license_class != LICENSE_CLASS:
+        raise OPConnectorError("OP connectors are proprietary")
+    if ({"exec", "network", "write"} & set(connector.scopes)) and not connector.containment_required:
+        raise OPConnectorError("executing or networking connector requires containment")
 
-    The result is shaped for the gateway-operations plane: an action, the tool,
-    a destination that names the connector and its MCP server, the derived
-    scopes, and canonical operation/argument digests computed the same way the
-    gateway computes them. Raises if arguments carry raw secrets (the gateway's
-    own secret boundary), if scopes fall outside the gateway set, or if an
-    executing/networking connector is not contained.
+
+def build_op_registration(connector: OPConnector) -> dict:
+    """Build the `plugin.register` operation that mounts this connector.
+
+    The result is a genuine gateway operation: `canonicalize_operation` accepts
+    it and routes it to `plugins.register_mcp` under the plugin scope.
     """
+    _require_server(connector)
+    return {
+        "name": connector.plugin_name,
+        "command": list(connector.mcp_command),
+        "detail": f"Flywheel OP connector ({connector.display_name}); "
+                  f"proprietary. {connector.does_not_prove}",
+        "requires": list(connector.requires),
+        "data_refs": [],
+        "credential_refs": [],
+    }
+
+
+def build_op_probe(connector: OPConnector) -> dict:
+    """Build the `plugin.probe` operation that lists this connector's real tools."""
+    _require_server(connector)
+    return {
+        "name": connector.plugin_name,
+        "data_refs": [],
+        "credential_refs": [],
+    }
+
+
+def build_op_call(connector: OPConnector, tool: str, arguments: dict,
+                  *, credential_refs: tuple[str, ...] = ()) -> dict:
+    """Build the `plugin.call` operation that invokes one tool on this connector.
+
+    Raises if arguments carry raw secrets (the gateway's own secret boundary
+    runs again in canonicalization; this fails early with a clear error).
+    """
+    _require_server(connector)
     if type(arguments) is not dict:
         raise OPConnectorError("operation arguments must be a dict")
+    if not tool or type(tool) is not str:
+        raise OPConnectorError("a tool name is required")
+    from .gateway_secret_boundary import validate_no_raw_secrets
     validate_no_raw_secrets(arguments)
-    unknown = set(connector.scopes) - ALLOWED_SCOPES
-    if unknown:
-        raise OPConnectorError(f"connector requests unknown scopes {sorted(unknown)}")
-    if ({"exec", "network", "write"} & set(connector.scopes)) and not connector.containment_required:
-        raise OPConnectorError("executing or networking operation requires containment")
-    operation = {
-        "tool": connector.tool,
-        "connector_id": connector.connector_id,
-        "mcp_server": list(connector.mcp_server),
-        "arguments": arguments,
-    }
     return {
-        "schema": OP_SCHEMA,
-        "action": OP_ACTION,
-        "tool": connector.tool,
-        "destination": {"connector": connector.connector_id,
-                        "mcp_server": list(connector.mcp_server)},
-        "scopes": list(connector.scopes),
-        "containment_required": connector.containment_required,
-        "license_class": connector.license_class,
-        "operation_sha256": canonical_sha256({"action": OP_ACTION, "operation": operation}),
-        "arguments_sha256": canonical_sha256(arguments),
-        "does_not_prove": connector.does_not_prove,
+        "name": connector.plugin_name,
+        "tool": tool,
+        "arguments": dict(arguments),
+        "data_refs": [],
+        "credential_refs": list(credential_refs),
     }
+
+
+def canonical_op_call(connector: OPConnector, tool: str, arguments: dict,
+                      *, credential_refs: tuple[str, ...] = ()):
+    """Return the real CanonicalOperation for an OP invocation.
+
+    This is the proof that OP is connected: the built operation goes through the
+    gateway's own `canonicalize_operation`, so it carries the gateway's digests,
+    destination (kind "plugin", ref the connector's plugin name), and derived
+    scopes. Raises GatewayOperationError on any shape the gateway refuses.
+    """
+    from .gateway_operation import canonicalize_operation
+    return canonicalize_operation(
+        CALL_ACTION, build_op_call(connector, tool, arguments,
+                                   credential_refs=credential_refs))
