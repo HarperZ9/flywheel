@@ -58,14 +58,14 @@ competitor it answers.
    automations (file change, git event, journey stage) where every hook
    run is itself receipted and a failing hook blocks the action
    fail-closed. Nobody's hooks are accountable.
-4. **PM surface (FIRST LIGHT SHIPPED 2026-08-24; desktop 2026-08-25)**
-    -- answers the manager use case. `GET /api/pm/roadmap` builds the
-    one-page view: goals (swarm receipts), decomposed child work with
-    per-child verification status, a verification floor of bound
-    skills, and its own does-not-prove notes on the page. The Roadmap
-    destination renders it on the desktop. See
-    `project-docs/features/2026-08-24-pm-roadmap.md`. Still open:
-    journey stages on the page.
+4. **PM surface (SHIPPED 2026-08-24/25)** -- answers the manager use
+    case. `GET /api/pm/roadmap` builds the one-page view from sealed
+    receipts AND the journey store now: swarm goals with per-child
+    verification status, journey pipelines with their stage and sealed
+    check counts (PASS already requires receipt MATCH upstream), a
+    verification floor of bound skills, and its own does-not-prove
+    notes on the page. The Roadmap destination renders it on the
+    desktop. See `project-docs/features/2026-08-24-pm-roadmap.md`.
 5. **Domain packs for medicine/finance/design (FIRST THREE SHIPPED
    2026-08-24; admission flow 2026-08-25)** -- the extension mechanism
    now carries three first-party data-only packs as repo data

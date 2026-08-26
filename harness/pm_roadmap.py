@@ -18,6 +18,36 @@ from .subagent_store import load_swarm_receipt
 
 SCHEMA = "flywheel.pm-roadmap/v1"
 
+_STAGES = ("intake", "decomposed", "preflight", "running", "concluded",
+           "exported")
+
+
+def journey_row(projection: dict, *, goal: str) -> dict:
+    """One journey pipeline as a roadmap row: its stage is the state,
+    its sealed checks are the decomposed work, and a PASS verdict here
+    already means receipt MATCH upstream -- no re-grading happens."""
+    checks = projection.get("checks") or []
+    passed = sum(1 for c in checks if c.get("verdict") == "PASS")
+    stage = str(projection.get("stage") or "intake")
+    if stage not in _STAGES:
+        stage = "intake"
+    conclusion = projection.get("conclusion")
+    verdict = None
+    if isinstance(conclusion, dict) and conclusion.get("verdict"):
+        verdict = str(conclusion["verdict"])
+    return {
+        "ref": projection.get("journey_ref", ""),
+        "kind": "journey",
+        "goal": str(goal or ""),
+        "state": f"journey:{stage}",
+        "stage": stage,
+        "verdict": verdict,
+        "verified_children": f"{passed} of {len(checks)}",
+        "total": len(checks),
+        "children": [{"role": c.get("claim_id"), "status":
+                      c.get("verdict")} for c in checks],
+    }
+
 
 def _goal_from_receipt(receipt: dict) -> dict:
     children = receipt.get("children", [])
@@ -49,15 +79,19 @@ def _goal_from_live(row: dict) -> dict:
 
 
 def build_pm_roadmap(*, swarms: list[dict], skills: list[dict],
-                     generated_at: str) -> dict:
+                     generated_at: str,
+                     journeys: "list[dict] | None" = None) -> dict:
     goals = []
     for row in swarms:
         if row.get("schema") == SWARM_SCHEMA or (
                 row.get("schema") is None and "children" in row
                 and "verdict" in row):
-            goals.append(_goal_from_receipt(row))
+            entry = _goal_from_receipt(row)
         else:
-            goals.append(_goal_from_live(row))
+            entry = _goal_from_live(row)
+        entry["kind"] = "swarm"
+        goals.append(entry)
+    goals.extend(journeys or [])
     doc = {
         "schema": SCHEMA,
         "generated_at": generated_at,
@@ -65,12 +99,17 @@ def build_pm_roadmap(*, swarms: list[dict], skills: list[dict],
         "verification": {
             "skills_bound": len(skills),
             "sealed_goals": sum(1 for g in goals if g["state"] == "sealed"),
-            "open_goals": sum(1 for g in goals if g["state"] != "sealed"),
+            "open_goals": sum(1 for g in goals
+                              if g.get("kind") == "swarm"
+                              and g["state"] != "sealed"),
+            "journeys": sum(1 for g in goals if g.get("kind") == "journey"),
         },
         "does_not_prove": [
             "a satisfied quorum attests children ran and reported; it "
             "does not prove the goal was achieved",
             "open rows are known-running or detached work, not estimates",
+            "journey PASS verdicts require receipt MATCH upstream; the "
+            "roadmap re-grades nothing",
         ],
     }
     doc["roadmap_sha256"] = canonical_sha256(
@@ -93,14 +132,16 @@ def render_markdown(doc: dict) -> str:
     lines += ["", "## Verification floor", "",
               f"- skills bound: {v.get('skills_bound', 0)}",
               f"- sealed goals: {v.get('sealed_goals', 0)}",
-              f"- open goals: {v.get('open_goals', 0)}"]
+              f"- open goals: {v.get('open_goals', 0)}",
+              f"- journeys tracked: {v.get('journeys', 0)}"]
     lines += ["", "## Does not prove", ""]
     for note in doc.get("does_not_prove", []):
         lines.append(f"- {note}")
     return "\n".join(lines) + "\n"
 
 
-def roadmap_from_run_root(run_root: Path) -> dict:
+def roadmap_from_run_root(run_root: Path, *, journeys_state_root=None,
+                          owner_ref: str = None) -> dict:
     root = Path(run_root)
     swarms: list[dict] = []
     sroot = root / "subagents"
@@ -121,11 +162,44 @@ def roadmap_from_run_root(run_root: Path) -> dict:
                     pass
                 swarms.append({"swarm_id": entry.name,
                                "status": "detached", "children": kids})
+    journeys: list[dict] = []
+    if journeys_state_root and owner_ref:
+        journeys = _journey_rows(Path(journeys_state_root), owner_ref)
     skills = load_skill_gates(root / "skills" / "gates.jsonl")
     import time
     stamp = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
     return build_pm_roadmap(swarms=swarms, skills=skills,
-                            generated_at=stamp)
+                            journeys=journeys, generated_at=stamp)
+
+
+def _journey_rows(state_root: Path, owner_ref: str) -> list[dict]:
+    """Verified journey projections only; an unreadable store degrades
+    to zero rows, never to unverified rows."""
+    try:
+        from .journey_store import JourneyStore
+        projections = JourneyStore(state_root).list(owner_ref)
+    except Exception:
+        return []
+    rows = []
+    for projection in projections:
+        ref = projection.get("journey_ref", "")
+        rows.append(journey_row(projection,
+                                goal=_genesis_goal(state_root, owner_ref,
+                                                   ref)))
+    return rows
+
+
+def _genesis_goal(state_root: Path, owner_ref: str, ref: str) -> str:
+    import json
+    events_dir = (Path(state_root) / "journeys" / "v2" / "owners" /
+                  owner_ref / str(ref) / "events")
+    try:
+        genesis_path = next(events_dir.glob("00000000000000000000-*.json"))
+        event = json.loads(genesis_path.read_text(encoding="utf-8"))
+        goal = (event.get("payload") or {}).get("goal", "")
+        return str(goal)[:120]
+    except (OSError, ValueError, StopIteration):
+        return ""
 
 
 def goal_head(doc: dict) -> str:

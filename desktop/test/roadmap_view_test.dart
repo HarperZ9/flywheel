@@ -31,6 +31,16 @@ const _roadmapBody = {
         'verified_children': null,
         'total': 3,
       },
+      {
+        'ref': 'jrn_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+        'kind': 'journey',
+        'goal': 'land the finance pack',
+        'state': 'journey:preflight',
+        'stage': 'preflight',
+        'verdict': null,
+        'verified_children': '1 of 2',
+        'total': 2,
+      },
     ],
     'verification': {'skills_bound': 2, 'sealed_goals': 1,
                      'open_goals': 1},
@@ -60,6 +70,10 @@ void main() {
     expect(find.text('swarm_aaaaaaaaaaaaaaaa'), findsOneWidget);
     expect(find.text('SATISFIED'), findsOneWidget);
     expect(find.text('2 of 2'), findsOneWidget);
+    // a journey row titles itself with its goal; the stage is the state
+    expect(find.text('land the finance pack'), findsOneWidget);
+    expect(find.text('preflight'), findsOneWidget);
+    expect(find.text('1 of 2'), findsOneWidget);
     // open rows stay visible with their state, not a fake verdict
     expect(find.text('detached'), findsWidgets);
 

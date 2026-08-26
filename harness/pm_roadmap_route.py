@@ -11,9 +11,13 @@ from .evidence_public import TransportError, error_response
 from .pm_roadmap import render_markdown, roadmap_from_run_root
 
 
-def handle_pm_get(path: str, *, run_root, clock=None) -> tuple[dict, int]:
+def handle_pm_get(path: str, *, run_root, clock=None,
+                  journeys_state_root=None,
+                  owner_ref=None) -> tuple[dict, int]:
     if path == "/api/pm/roadmap":
-        roadmap = roadmap_from_run_root(Path(run_root))
+        roadmap = roadmap_from_run_root(
+            Path(run_root), journeys_state_root=journeys_state_root,
+            owner_ref=owner_ref)
         return {"roadmap": roadmap,
                 "one_page": render_markdown(roadmap)}, 200
     return error_response(TransportError("NOT_FOUND",

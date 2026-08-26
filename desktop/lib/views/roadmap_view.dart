@@ -118,7 +118,7 @@ class _RoadmapViewState extends State<RoadmapView> {
             VerdictDot(_stateStatus(g['state']?.toString())),
             const SizedBox(width: FwLayout.s2),
             Expanded(
-                child: Text('${g['ref'] ?? ''}',
+                child: Text(_title(g),
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(fontSize: 12, color: t.ink))),
             Text('${g['verified_children'] ?? '-'}',
@@ -127,9 +127,12 @@ class _RoadmapViewState extends State<RoadmapView> {
             if ((g['verdict'] as String?)?.isNotEmpty == true)
               VerdictPill(g['verdict'],
                   status:
-                      g['verdict'] == 'satisfied' ? 'verified' : 'pending')
+                      g['verdict'] == 'satisfied' ||
+                              g['verdict'] == 'PASS'
+                          ? 'verified'
+                          : 'pending')
             else
-              Text('${g['state'] ?? ''}',
+              Text(_stateText(g['state']?.toString()),
                   style: TextStyle(fontSize: 12, color: t.inkMuted)),
           ]),
           const SizedBox(height: FwLayout.s1),
@@ -173,6 +176,7 @@ class _RoadmapViewState extends State<RoadmapView> {
 /// Status maps onto the verdict palette; satisfied is the accept mark,
 /// open states are unverifiable grey, drift is the caution verdict.
 String _stateStatus(String? state) {
+  if (state != null && state.startsWith('journey:')) return 'pending';
   switch (state) {
     case 'sealed':
       return 'verified';
@@ -182,6 +186,20 @@ String _stateStatus(String? state) {
     default:
       return 'drift';
   }
+}
+
+/// Journeys carry their stage after a colon ("journey:preflight");
+/// the stage IS the honest state text for a pipeline.
+String _stateText(String? state) {
+  if (state != null && state.contains(':')) return state.split(':').last;
+  return state ?? '';
+}
+
+/// A journey row titles itself with its goal; swarms keep their id.
+String _title(Map<String, dynamic> g) {
+  final goal = (g['goal'] as String?) ?? '';
+  if (goal.isNotEmpty) return goal;
+  return '${g['ref'] ?? ''}';
 }
 
 Map<String, dynamic> _asMap(Map<dynamic, dynamic> m) =>

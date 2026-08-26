@@ -931,8 +931,7 @@ class _Handler(BaseHTTPRequestHandler):
             if ok: self.owner_ref = owner
         else:
             ok, reason = _auth_check(self.headers, self.command, self.auth_token, allowed_hosts=self.allowed_hosts)
-        if ok:
-            return True
+        if ok: return True
         refusal = ({"schema": "flywheel.evidence-transport-error/v1", "error": {
             "code": "AUTH_REQUIRED", "message": "gateway authentication is required"}}
             if private else {"error": "unauthorized", "reason": reason})
@@ -944,8 +943,7 @@ class _Handler(BaseHTTPRequestHandler):
         self.wfile.write(body)
         return False
     def _gateway_method(self, method, fallback=None):
-        if not self._authorized():
-            return
+        if not self._authorized(): return
         try:
             if not self._route_operation(method):
                 (fallback or (lambda: self.send_error(501)))()
@@ -974,7 +972,9 @@ class _Handler(BaseHTTPRequestHandler):
         if p == "/api/pm/roadmap":
             from harness.pm_roadmap_route import handle_pm_get
             body, code = handle_pm_get(p, run_root=self.run_root,
-                                       clock=self.clock)
+                clock=self.clock,
+                journeys_state_root=self.flywheel_home / "state",
+                owner_ref=self.owner_ref)
             return self._json(body, code)
         if p.startswith("/api/packs"):
             from harness.pack_admission_route import handle_pack_get
