@@ -6,18 +6,10 @@ serve.py, or an Ollama model — with automatic failover between them. It proxie
 no hosted account and harvests no session token; it speaks only to local model
 servers over localhost.
 
-Design:
-  - Backends implement a tiny protocol (name / health / chat). Two ship:
-    ServeBackend (serve.py's /generate, the trained 14B/32B) and OllamaBackend
-    (Ollama's native /api/chat). Both are health-probed; the router picks the
-    first live backend in preference order and fails over on a chat error.
-  - Every turn is wrapped through messages_api, so the fallback tier still emits
-    a re-checkable per-turn receipt (request ⊕ prompt ⊕ model ⊕ response).
-  - Zero runtime deps (stdlib urllib). Transport is injectable, so the router,
-    failover, and receipt logic are falsifiable without a GPU or a live server.
+Backends are health-gated and transport-injectable. Every completion passes
+through messages_api so offline turns retain re-checkable receipts.
 """
 from __future__ import annotations
-
 import json
 import urllib.error
 import urllib.request
@@ -26,15 +18,11 @@ from typing import Callable, Optional, Protocol
 
 from . import compaction
 from .messages_api import make_receipt, translate_response
-
 # A transport is (method, url, body_bytes_or_none, timeout) -> (status, parsed_json).
 # The default hits the network; tests inject a fake to stay hermetic.
 Transport = Callable[[str, str, Optional[bytes], float], "tuple[int, dict]"]
-
 SERVE_URL = "http://127.0.0.1:8765"
 OLLAMA_URL = "http://127.0.0.1:11434"
-
-
 def _http(method: str, url: str, body: Optional[bytes], timeout: float) -> "tuple[int, dict]":
     req = urllib.request.Request(url, data=body, method=method,
                                  headers={"Content-Type": "application/json"})
@@ -52,8 +40,7 @@ def _http(method: str, url: str, body: Optional[bytes], timeout: float) -> "tupl
 
 class BackendError(RuntimeError):
     """A backend failed to produce a completion (down, HTTP error, malformed)."""
-
-
+class MalformedBackendOutput(BackendError): """A backend response violates its typed identity contract."""
 class Backend(Protocol):
     name: str
 
@@ -67,8 +54,7 @@ def _flatten(messages: list[dict]) -> str:
     """Conversation -> single prompt (serve.py takes one prompt + system)."""
     return "\n".join(f"{m.get('role', 'user')}: {m.get('content', '')}"
                      for m in messages)
-
-
+def _ollama_native_model(value: str) -> str: return value[7:] if value.startswith("ollama:") else value
 @dataclass
 class ServeBackend:
     """The trained 14B/32B served by harness/serve.py over /generate."""
@@ -96,7 +82,7 @@ class ServeBackend:
             raise BackendError(f"serve unreachable: {e}") from e
         if status != 200 or "text" not in obj:
             raise BackendError(f"serve returned {status}: {obj.get('error', obj)}")
-        gen = {"text": obj["text"], "model_ref": obj.get("model_ref", "serve"),
+        gen = {"text": obj["text"], "model_ref": obj.get("model_ref", ""),
                "seed": obj.get("seed", seed)}
         if obj.get("prompt_hash"):        # only when served; else make_receipt hashes the prompt
             gen["prompt_hash"] = obj["prompt_hash"]
@@ -132,7 +118,7 @@ class OllamaBackend:
         return bool(self._resolved)
 
     def chat(self, messages, *, system, max_tokens, temperature, seed) -> dict:
-        model = self._resolved or self.model
+        model = _ollama_native_model(self._resolved or self.model)
         if not model:
             raise BackendError("no ollama model resolved (call health() or pass model=)")
         msgs = ([{"role": "system", "content": system}] if system else []) + messages
@@ -148,10 +134,13 @@ class OllamaBackend:
         text = (obj.get("message") or {}).get("content")
         if status != 200 or text is None:
             raise BackendError(f"ollama returned {status}: {obj.get('error', obj)}")
-        return {"text": text, "model_ref": f"ollama:{model}", "seed": seed}
+        observed = obj.get("model")
+        if not isinstance(observed, str) or not observed or observed != model:
+            raise MalformedBackendOutput("ollama response model missing or mismatched")
+        return {"text": text, "model_ref": f"ollama:{observed}", "seed": seed}
 
     def _body(self, messages, system, max_tokens, temperature, seed, stream):
-        model = self._resolved or self.model
+        model = _ollama_native_model(self._resolved or self.model)
         msgs = ([{"role": "system", "content": system}] if system else []) + messages
         return model, json.dumps({
             "model": model, "messages": msgs, "stream": stream,
@@ -160,14 +149,22 @@ class OllamaBackend:
 
     def chat_stream(self, messages, *, system, max_tokens, temperature, seed):
         """Yield text chunks as the model produces them (Ollama NDJSON stream)."""
-        model = self._resolved or self.model
+        model, body = self._body(messages, system, max_tokens, temperature, seed, True)
         if not model:
             raise BackendError("no ollama model resolved (call health() first)")
-        _, body = self._body(messages, system, max_tokens, temperature, seed, True)
+        observed = ""
         for chunk in self._iter_stream(body):
+            identity = chunk.get("model")
+            if identity is not None:
+                if not isinstance(identity, str) or not identity or identity != model:
+                    raise MalformedBackendOutput("ollama streaming model missing or mismatched")
+                observed = identity
             piece = (chunk.get("message") or {}).get("content")
             if piece:
                 yield piece
+        if not observed:
+            raise MalformedBackendOutput("ollama streaming model missing or mismatched")
+        return f"ollama:{observed}"
 
     def _iter_stream(self, body):
         if self.stream_transport is not None:
@@ -180,7 +177,6 @@ class OllamaBackend:
                 line = line.strip()
                 if line:
                     yield json.loads(line)
-
 
 def _prefer_largest(tags: list[str]) -> str:
     """Pick the biggest model by the NNb tag (32b > 14b > 7b), else the first.
@@ -333,12 +329,16 @@ class LocalAgent:
             stream_fn = getattr(b, "chat_stream", None)
             if stream_fn is None:
                 continue
-            full = ""
-            for piece in stream_fn(self.history, system=self.system, max_tokens=self.max_tokens,
-                                   temperature=self.temperature, seed=self.seed):
+            full, stream = "", iter(stream_fn(self.history, system=self.system, max_tokens=self.max_tokens,
+                                               temperature=self.temperature, seed=self.seed))
+            while True:
+                try: piece = next(stream)
+                except StopIteration as completed:
+                    ref = completed.value
+                    break
                 full += piece
                 on_chunk(piece)
-            ref = f"{b.name}:{getattr(b, '_resolved', '') or getattr(b, 'model', '')}".rstrip(":")
+            if not isinstance(ref, str) or not ref: raise MalformedBackendOutput("streaming backend omitted validated model reference")
             return self._finalize({"text": full, "model_ref": ref, "seed": self.seed}, b.name)
         # no streaming backend: fall back to a normal turn, emit once
         self.history.pop()                       # send() re-appends the user turn

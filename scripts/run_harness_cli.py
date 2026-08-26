@@ -880,14 +880,14 @@ def build_parser() -> argparse.ArgumentParser:
     cross = subparsers.add_parser("cross-harness", help="emit non-executing cross-harness manifest")
     _add_common_io(cross)
     cross.add_argument("--task-set", default="C:/dev/local-model/benchmarks/agentic-task-set-v1.json")
-    cross.add_argument("--contract", default="C:/dev/local-model/benchmarks/cross-harness-adapter-contract-v1.json")
+    cross.add_argument("--contract", default="C:/dev/local-model/benchmarks/cross-harness-adapter-contract-v2.json")
     cross.add_argument("--source-root", default="")
     cross.add_argument("--provider-roles", default="")
     cross.add_argument("--artifact-dir", default="C:/tmp/cross_harness_runs")
 
     adapter_runtime = subparsers.add_parser("adapter-runtime", help="emit metadata-only adapter/runtime compatibility matrix")
     _add_common_io(adapter_runtime)
-    adapter_runtime.add_argument("--contract", default="C:/dev/local-model/benchmarks/cross-harness-adapter-contract-v1.json")
+    adapter_runtime.add_argument("--contract", default="C:/dev/local-model/benchmarks/cross-harness-adapter-contract-v2.json")
     adapter_runtime.add_argument("--endpoint-profiles", default="")
     adapter_runtime.add_argument("--endpoint-auth-status", default="")
 

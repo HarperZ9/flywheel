@@ -1,5 +1,4 @@
 """Synthesize a closed-loop benchmark seed report into an outcome document."""
-
 from __future__ import annotations
 import argparse
 import json
@@ -10,6 +9,7 @@ from statistics import median
 from typing import Any
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from harness.file_backed_store import FileBackedHarnessStore  # noqa: E402
+from harness.cross_harness_types import project_model_identity  # noqa: E402
 def _now() -> str:
     return datetime.now(UTC).isoformat().replace("+00:00", "Z")
 def _load_json(path: Path) -> dict[str, Any]:
@@ -357,8 +357,6 @@ def _gather_readiness_summary(data: dict[str, Any], path_text: str) -> dict[str,
             "verdict": summary.get("verdict", ""),
         },
     }
-
-
 def _executable_manifest_summary(data: dict[str, Any], path_text: str) -> dict[str, Any]:
     rows = data.get("commands") if isinstance(data.get("commands"), list) else []
     return {
@@ -380,8 +378,6 @@ def _executable_manifest_summary(data: dict[str, Any], path_text: str) -> dict[s
             if isinstance(row, dict)
         ],
     }
-
-
 def _command_registry_summary(data: dict[str, Any], path_text: str) -> dict[str, Any]:
     names = data.get("command_names") if isinstance(data.get("command_names"), list) else []
     risk_counts = data.get("risk_counts") if isinstance(data.get("risk_counts"), dict) else {}
@@ -864,7 +860,8 @@ def _adapter_runtime_matrix_summary(data: dict[str, Any], path_text: str) -> dic
             {
                 "provider_role": row.get("provider_role", ""),
                 "harness_id": row.get("harness_id", ""),
-                "target_model": row.get("target_model", ""),
+                **project_model_identity(row, source_schema=str(row.get("schema") or data.get("schema", ""))),
+                "model_identity": project_model_identity(row, source_schema=str(row.get("schema") or data.get("schema", ""))),
                 "adapter_state": row.get("adapter_state", ""),
                 "manifest_ready": bool(row.get("manifest_ready")),
                 "focused_run_ready": bool(row.get("focused_run_ready")),
@@ -952,6 +949,7 @@ def _harness_comparison_summary(data: dict[str, Any], path_text: str) -> dict[st
                 "quality_delta_flywheel_minus_codex": row.get("quality_delta_flywheel_minus_codex"),
                 "latency_delta_ms_flywheel_minus_codex": row.get("latency_delta_ms_flywheel_minus_codex"),
                 "winner_by_quality": row.get("winner_by_quality", ""),
+                "model_identities": row.get("model_identities", []) if isinstance(row.get("model_identities"), list) else [],
             }
             for row in comparisons
             if isinstance(row, dict)
@@ -976,7 +974,8 @@ def _cross_harness_execution_summary(data: dict[str, Any], path_text: str) -> di
         "availability": {key: sum(int(row.get(key) is True) for row in rows) for key in ("planned", "admitted", "blocked", "launched")}, "execution_reliability": round(returned / launched, 4) if launched else None,
         "deterministic_quality": round(sum(quality) / len(quality), 4) if quality else None, "quality_n": len(quality), "latency_ms": {"median": median(latency), "min": min(latency), "max": max(latency), "n": len(latency)} if latency else None,
         "resources": {"observations": [json.loads(item) for item in resources], "n": len(resource_rows), "included_execution_state": "returned", "receipt_states": {state: sum(row.get("receipt_state") == state for row in resource_rows) for state in ("verified", "drift", "not_emitted")}}, "metric_null_reasons": dict(sorted(nulls.items())), "declared_tool_policy_sha256s": sorted({str(row.get("tool_policy_sha256")) for row in rows if row.get("tool_policy_sha256")}), "enforcement_sha256s": sorted({str(row.get("enforcement_sha256")) for row in rows if row.get("enforcement_sha256")}),
-        "policy_equivalence": "non_equivalent"}
+        "policy_equivalence": "non_equivalent",
+        "model_identities": [json.loads(item) for item in sorted({json.dumps(project_model_identity(row, source_schema=str(row.get("schema") or data.get("schema", ""))), sort_keys=True) for row in rows})]}
 
 
 def _generic_child_summary(data: dict[str, Any], path_text: str) -> dict[str, Any]:
@@ -1139,6 +1138,7 @@ def comparison_report_signal_summary(child_summaries: list[dict[str, Any]]) -> d
         "quality_ties": sum(1 for row in comparisons if row.get("winner_by_quality") == "tie"),
         "verdict_counts": verdict_counts,
         "comparison_keys_observed": [str(row.get("comparison_key", "")) for row in comparisons if row.get("comparison_key")],
+        "model_identities": [json.loads(item) for item in sorted({json.dumps(identity, sort_keys=True) for row in comparisons for identity in row.get("model_identities", []) if isinstance(identity, dict)})],
     }
 
 
@@ -1147,7 +1147,7 @@ def cross_harness_execution_signal_summary(child_summaries: list[dict[str, Any]]
     for phase in ("spark", "local"):
         phase_rows = [row for row in rows if row.get("phase") == phase]
         result[phase] = {"artifacts": len(phase_rows), "planned_rows": sum(int(row.get("planned_rows", 0)) for row in phase_rows), "provider_units": sum(int(row.get("provider_units", 0)) for row in phase_rows), "availability": {key: sum(int(row.get("availability", {}).get(key, 0)) for row in phase_rows) for key in ("planned", "admitted", "blocked", "launched")}}
-        for key in ("execution_reliability", "deterministic_quality", "quality_n", "latency_ms", "resources", "metric_null_reasons", "declared_tool_policy_sha256s", "enforcement_sha256s", "policy_equivalence"): result[phase][key] = phase_rows[0].get(key) if len(phase_rows) == 1 else None
+        for key in ("execution_reliability", "deterministic_quality", "quality_n", "latency_ms", "resources", "metric_null_reasons", "declared_tool_policy_sha256s", "enforcement_sha256s", "policy_equivalence", "model_identities"): result[phase][key] = phase_rows[0].get(key) if len(phase_rows) == 1 else None
     result["scorecard_artifacts"], result["quality_n"], result["availability"] = len(rows), sum(int(row.get("quality_n", 0)) for row in rows), {key: sum(int(row.get("availability", {}).get(key, 0)) for row in rows) for key in ("planned", "admitted", "blocked", "launched")}
     result["declared_tool_policy_sha256s"] = sorted({value for row in rows for value in row.get("declared_tool_policy_sha256s", [])})
     result["enforcement_sha256s"] = sorted({value for row in rows for value in row.get("enforcement_sha256s", [])})
@@ -1917,6 +1917,7 @@ def adapter_runtime_signal_summary(child_summaries: list[dict[str, Any]]) -> dic
         "endpoint_probe_observed": any(bool(item.get("summary", {}).get("endpoint_probe")) for item in artifacts),
         "model_weight_read_observed": any(bool(item.get("summary", {}).get("model_weight_read")) for item in artifacts),
         "token_store_read_observed": any(bool(item.get("summary", {}).get("token_store_read")) for item in artifacts),
+        "model_identities": [json.loads(item) for item in sorted({json.dumps(row.get("model_identity", {}), sort_keys=True) for row in rows})],
     }
 
 

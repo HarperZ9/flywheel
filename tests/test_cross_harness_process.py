@@ -17,12 +17,12 @@ def _profile(url):
 
 def _request(tmp_path):
     return AttemptRequest("run", "local", "set", "agt-001-task", "prompt", "a" * 64, "local_14b", "local", "openai_compatible_local/v1",
-        "14B", tmp_path, "b" * 64, {}, SHARED_TOOL_POLICY, "c" * 64, 1, "cold_declared", 2, tmp_path)
+        "flywheel-local-coder-14b", "local:14b", tmp_path, "b" * 64, {}, SHARED_TOOL_POLICY, "c" * 64, 1, "cold_declared", 2, tmp_path)
 
 
 def _spark_request(tmp_path, role="codex_harness", adapter="codex_cli_json/v1"):
     return AttemptRequest("run", "spark", "set", "agt-001-task", "prompt", "a" * 64, role, role.split("_")[0], adapter,
-        "5.3-Codex-Spark", tmp_path, "b" * 64, {}, SHARED_TOOL_POLICY, "c" * 64, 1, "cold_declared", 2, tmp_path)
+        "gpt-5.3-codex-spark", "gpt-5.3-codex-spark", tmp_path, "b" * 64, {}, SHARED_TOOL_POLICY, "c" * 64, 1, "cold_declared", 2, tmp_path)
 
 
 def _execute_spark_rows(tmp_path, process, adapters):
@@ -32,7 +32,7 @@ def _execute_spark_rows(tmp_path, process, adapters):
     roles = list(adapters)
     manifest = {"task_set_id": "set", "task_rows": [task], "provider_specs": [{"provider_role": role,
         "harness_id": role.split("_")[0], "adapter_id": "codex_cli_json/v1" if role == "codex_harness" else "flywheel_router/v1",
-        "target_model": "5.3-Codex-Spark"} for role in roles]}
+        "model_id": "gpt-5.3-codex-spark", "model_display_name": "GPT-5.3-Codex-Spark", "requested_model_reference": "gpt-5.3-codex-spark"} for role in roles]}
     runtime = {"runtime_rows": [{"provider_role": role, "focused_run_ready": True, "blocking_gates": []} for role in roles]}
     return execute_cross_harness_manifest(manifest, runtime, adapters, artifact_root=tmp_path / "artifacts", source_root=source,
         run_id="run", phase="spark", selectors=["agt-001"], roles=roles, repetitions=1)["rows"]
@@ -88,7 +88,7 @@ def test_structured_model_rejection_beats_missing_final_message_for_direct_and_i
         "flywheel_harness": FlywheelRouterAdapter(runner=lambda *a, **k: process, executable_resolver=lambda: "codex.cmd")}
     for row in _execute_spark_rows(tmp_path, process, adapters):
         assert (row["launched"], row["admitted"], row["blocked"], row["failure_class"]) == (True, True, False, "provider_model_unsupported")
-        assert (row["execution_state"], row["receipt_state"], row["model_observed"]) == ("internal_error", "verified", "5.3-Codex-Spark")
+        assert (row["execution_state"], row["receipt_state"], row["model_observed"], row["model_observation_basis"]) == ("internal_error", "verified", "", "unknown")
         trace = json.loads(pathlib.Path(row["tool_trace_path"]).read_text())
         assert any(event.get("type") == "turn.failed" for event in trace)
         assert "opaque-value-that-must-not-escape" not in repr(trace)
@@ -171,7 +171,7 @@ def test_malformed_nested_terminal_errors_outrank_final_message(event, tmp_path)
         adapters = {"codex_harness": DirectCodexAdapter(runner=lambda *a, **k: process, executable_resolver=lambda: "codex.cmd"),
             "flywheel_harness": FlywheelRouterAdapter(runner=lambda *a, **k: process, executable_resolver=lambda: "codex.cmd")}
         for row in _execute_spark_rows(tmp_path, process, adapters):
-            assert (row["execution_state"], row["receipt_state"], row["model_observed"]) == ("malformed", "verified", "5.3-Codex-Spark")
+            assert (row["execution_state"], row["receipt_state"], row["model_observed"], row["model_observation_basis"]) == ("malformed", "verified", "", "unknown")
             assert row["failure_class"] in {"malformed_jsonl", "malformed_provider_output"}
             trace = pathlib.Path(row["tool_trace_path"]).read_text()
             assert "\\ud800" not in trace and '"malformed_provider_message":true' in trace
@@ -208,7 +208,7 @@ def test_malformed_local_http_attempt_still_seals_receipt(monkeypatch, tmp_path)
     monkeypatch.setattr("harness.cross_harness_adapters._local_http", lambda *a: (_ for _ in ()).throw(malformed("bad local JSON")))
     source = tmp_path / "source"; source.mkdir(); prompt = "prompt"
     task = {"task_id": "agt-001-task", "raw_prompt": prompt, "raw_prompt_sha256": __import__("hashlib").sha256(prompt.encode()).hexdigest(), "input_sha256s": {}, "required_inputs": [], "expected_artifacts": [], "oracle": {}}
-    manifest = {"task_set_id": "set", "task_rows": [task], "provider_specs": [{"provider_role": "local_14b", "harness_id": "local", "adapter_id": "openai_compatible_local/v1", "target_model": "14B"}]}
+    manifest = {"task_set_id": "set", "task_rows": [task], "provider_specs": [{"provider_role": "local_14b", "harness_id": "local", "adapter_id": "openai_compatible_local/v1", "model_id": "flywheel-local-coder-14b", "model_display_name": "Local 14B", "requested_model_reference": "local:14b"}]}
     runtime = {"runtime_rows": [{"provider_role": "local_14b", "focused_run_ready": True, "blocking_gates": []}]}
     run = execute_cross_harness_manifest(manifest, runtime, {"local_14b": LocalRouterAdapter("local_14b", _profile("http://127.0.0.1:8765"))}, artifact_root=tmp_path / "artifacts", source_root=source, run_id="run", phase="local", selectors=["agt-001"], roles=["local_14b"], repetitions=1)
     assert (run["rows"][0]["execution_state"], run["rows"][0]["receipt_state"]) == ("malformed", "verified")

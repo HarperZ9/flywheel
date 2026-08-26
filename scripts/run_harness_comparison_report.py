@@ -1,5 +1,4 @@
 """Synthesize Codex-vs-Flywheel comparisons from existing scorecard artifacts."""
-
 from __future__ import annotations
 import argparse
 import json
@@ -10,11 +9,10 @@ from statistics import mean, median
 from typing import Any
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from harness.file_backed_store import FileBackedHarnessStore  # noqa: E402
-from harness.cross_harness_executor import comparison_key as executor_comparison_key  # noqa: E402
+from harness.cross_harness_executor import comparison_key as executor_comparison_key, legacy_comparison_key  # noqa: E402
+from harness.cross_harness_types import model_observation_pair_error, project_model_identity  # noqa: E402
 from harness.provider_roles import provider_role as canonical_provider_role  # noqa: E402
 SCHEMA = "harness.comparison-report/v1"
-
-
 def now_utc() -> str:
     return datetime.now(UTC).isoformat().replace("+00:00", "Z")
 def split_paths(value: str) -> list[Path]:
@@ -31,12 +29,8 @@ def load_json(path: Path) -> tuple[dict[str, Any] | None, str]:
         return None, "missing_artifact"
     except (OSError, json.JSONDecodeError) as exc:
         return None, type(exc).__name__
-
-
 def _provider_role(row: dict[str, Any]) -> str:
     return str(row.get("provider_role") or canonical_provider_role(str(row.get("provider", ""))))
-
-
 def _metric_row(
     *,
     artifact_path: str,
@@ -56,8 +50,6 @@ def _metric_row(
             "provider": provider, "provider_role": provider_role, "model_ref": str(row.get("model_ref", "")),
             "pass_rate": safe_float(pass_rate), "quality_score": safe_float(quality_score),
             "latency_ms": safe_float(latency_ms), "failure_class": str(failure_class or "")}
-
-
 def _m7_rows(data: dict[str, Any], path_text: str, *, benchmark_id: str) -> list[dict[str, Any]]:
     rows = data.get("backend_rows")
     if not isinstance(rows, list) and benchmark_id == "m7_source_mined":
@@ -178,25 +170,32 @@ def _quality_duel_rows(data: dict[str, Any], path_text: str) -> list[dict[str, A
             failure_class=row.get("failure_class", ""),
         ))
     return metric_rows
-
-
+def _row_comparison_key(row: dict[str, Any], identity: dict[str, str]) -> str:
+    return executor_comparison_key(row) if identity["identity_schema"] == "v2" else legacy_comparison_key(row)
 def _cross_harness_rows(data: dict[str, Any], path_text: str) -> list[dict[str, Any]]:
     rows = [row for row in data.get("rows", []) if isinstance(row, dict) and str(row.get("phase", "")) == "spark"]
     rows = [row for row in rows if str(row.get("provider_role", "")) in {"codex_harness", "flywheel_harness"}]
     for row in rows:
-        if row.get("comparison_key") != executor_comparison_key(row): raise ValueError("cross-harness comparison hash mismatch")
+        identity = project_model_identity(row, source_schema=str(data.get("schema", ""))); error = model_observation_pair_error(identity["model_observed"], identity["model_observation_basis"])
+        if identity["identity_schema"] == "v2" and error: raise ValueError("cross-harness invalid model observation pair")
+        if row.get("comparison_key") != _row_comparison_key(row, identity): raise ValueError("cross-harness comparison hash mismatch")
     for task in sorted({str(row.get("task_id", "")) for row in rows}):
         for repetition in sorted({int(row.get("repetition", 0) or 0) for row in rows if str(row.get("task_id", "")) == task}):
             pair = [row for row in rows if str(row.get("task_id", "")) == task and int(row.get("repetition", 0) or 0) == repetition]
             if len({str(row.get("comparison_key", "")) for row in pair}) > 1: raise ValueError("cross-harness comparison hash mismatch")
             if len({str(row.get("tool_policy_sha256", "")) for row in pair}) > 1: raise ValueError("cross-harness policy hash mismatch")
+            observed = {str(row.get("model_observed")) for row in pair if row.get("model_observed")}
+            if len(observed) > 1: raise ValueError("cross-harness observed model mismatch")
     result = []
     for row in rows:
         returned = row.get("execution_state") == "returned"; verified = row.get("receipt_state") == "verified"; oracle = str(row.get("oracle_state", "")); metrics = row.get("metrics") if isinstance(row.get("metrics"), dict) else {}
+        identity = project_model_identity(row, source_schema=str(data.get("schema", "")))
         result.append({"schema": "harness.comparison-report.metric-row/v1", "artifact_path": path_text,
             "artifact_schema": data.get("schema", ""), "benchmark_id": "cross_harness_reproducibility_matrix",
-            "comparison_key": executor_comparison_key(row), "provider": "", "provider_role": row.get("provider_role", ""),
-            "model_ref": row.get("model_id", ""), "pass_rate": 1.0 if returned else 0.0,
+            "comparison_key": _row_comparison_key(row, identity), "provider": "", "provider_role": row.get("provider_role", ""),
+            "model_ref": identity["model_id"], "model_identity": identity,
+            **{field: identity[field] for field in ("model_id", "model_display_name", "requested_model_reference", "model_observed", "model_observation_basis")},
+            "pass_rate": 1.0 if returned else 0.0,
             "quality_score": (1.0 if oracle == "pass" else 0.0) if returned and verified and oracle in {"pass", "fail"} else None, "latency_ms": metrics.get("latency_ms") if returned else None, "failure_class": row.get("failure_class", ""), "planned": bool(row.get("planned")), "admitted": bool(row.get("admitted")), "blocked": bool(row.get("blocked")), "launched": bool(row.get("launched")), "returned_well_formed": returned, "receipt_state": row.get("receipt_state", ""), "tool_policy_sha256": row.get("tool_policy_sha256", ""), "enforcement_sha256": row.get("enforcement_sha256", ""), "policy_equivalence": "non_equivalent"})
     return result
 
@@ -253,6 +252,7 @@ def build_comparisons(metric_rows: list[dict[str, Any]], *, flywheel_role: str, 
             "quality_delta_flywheel_minus_codex": None,
             "latency_delta_ms_flywheel_minus_codex": None,
             "winner_by_quality": "insufficient_evidence",
+            "model_identities": [json.loads(item) for item in sorted({json.dumps(row.get("model_identity", {}), sort_keys=True) for row in rows})],
         }
         if benchmark_id == "cross_harness_reproducibility_matrix":
             policies = sorted({str(row.get("tool_policy_sha256")) for row in rows if row.get("tool_policy_sha256")})

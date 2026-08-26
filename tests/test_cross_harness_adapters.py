@@ -7,9 +7,8 @@ from harness.cross_harness_cli import _apply_admission, _csv, _exit, _recheck_lo
 from harness.cross_harness_executor import SHARED_TOOL_POLICY, execute_cross_harness_manifest
 from harness.cross_harness_types import AttemptRequest
 from harness.proposer import StubProposer
-def request(tmp_path, role="codex_harness", adapter="codex_cli_json/v1", model="5.3-Codex-Spark"):
-    return AttemptRequest("run", "spark", "set", "agt-001-full", "do the task", "a" * 64, role, role.split("_")[0], adapter,
-        model, tmp_path, "b" * 64, {}, SHARED_TOOL_POLICY, "c" * 64, 1, "cold_declared", 3, tmp_path)
+def request(tmp_path, role="codex_harness", adapter="codex_cli_json/v1", model="gpt-5.3-codex-spark", requested=None):
+    return AttemptRequest("run", "spark", "set", "agt-001-full", "do the task", "a" * 64, role, role.split("_")[0], adapter, model, requested or model, tmp_path, "b" * 64, {}, SHARED_TOOL_POLICY, "c" * 64, 1, "cold_declared", 3, tmp_path)
 def outcome(stdout="", output="answer", *, rc=0, stderr="", elapsed=7):
     if output is not None:
         final = json.dumps({"type": "item.completed", "item": {"type": "agent_message", "text": output}})
@@ -29,7 +28,7 @@ def test_direct_codex_uses_stdin_hardened_read_only_argv_and_captures_jsonl(tmp_
     adapter = DirectCodexAdapter(runner=runner, executable_resolver=lambda: "C:/bin/codex.cmd", task_identity_by_id={"agt-001-full": identity})
     result = adapter.execute(request(tmp_path))
     assert seen["argv"] == [
-        "C:/bin/codex.cmd", "exec", "--model", "5.3-Codex-Spark", "--sandbox", "read-only", "--cd", str(tmp_path),
+        "C:/bin/codex.cmd", "exec", "--model", "gpt-5.3-codex-spark", "--sandbox", "read-only", "--cd", str(tmp_path),
         "--ephemeral", "--ignore-user-config", "--skip-git-repo-check", "--json", "-",
     ]
     assert seen["stdin_text"] == "do the task" and seen["cwd"] == tmp_path
@@ -133,7 +132,7 @@ def test_flywheel_runs_outer_loop_with_read_only_gate_and_distinct_enforcement(t
     req = request(tmp_path, "flywheel_harness", "flywheel_router/v1")
     result = adapter.execute(req)
     direct = DirectCodexAdapter(executable_resolver=lambda: "codex.cmd")
-    assert result.execution_state == "returned" and result.model_observed == "spark"
+    assert result.execution_state == "returned" and (result.model_observed, result.model_observation_basis) == ("", "unknown")
     assert any(event["source"] == "flywheel_outer" for event in result.tool_trace)
     assert "write_not_allowed" in result.policy_violations and not (tmp_path / "x").exists()
     assert adapter.enforcement(req).description_sha256 != direct.enforcement(req).description_sha256
@@ -151,7 +150,7 @@ def local_profile(url="http://127.0.0.1:8765"):
 def test_local_adapter_uses_exact_injected_backend_without_extracting_tool_protocol(tmp_path):
     backend = FakeBackend()
     adapter = LocalRouterAdapter("local_14b", local_profile(), backend_factory=lambda p, t: backend)
-    req = request(tmp_path, "local_14b", "openai_compatible_local/v1", "14B")
+    req = request(tmp_path, "local_14b", "openai_compatible_local/v1", "flywheel-local-coder-14b", "local:14b")
     assert adapter.availability(req).available is True and backend.calls == 0
     result = adapter.execute(req)
     assert result.output_text == "local answer" and backend.calls == 1
@@ -159,17 +158,17 @@ def test_local_adapter_uses_exact_injected_backend_without_extracting_tool_proto
 @pytest.mark.parametrize(("field", "value", "code"), [
     ("provider_role", "local_32b", "endpoint_role_mismatch"),
     ("adapter_id", "wrong", "endpoint_adapter_mismatch"),
-    ("model_id", "32B", "endpoint_model_mismatch"),
+    ("requested_model_reference", "local:32b", "endpoint_model_mismatch"),
 ])
 def test_local_adapter_binds_request_identity(field, value, code, tmp_path):
-    req = request(tmp_path, "local_14b", "openai_compatible_local/v1", "14B")
+    req = request(tmp_path, "local_14b", "openai_compatible_local/v1", "flywheel-local-coder-14b", "local:14b")
     req = AttemptRequest(**{**req.__dict__, field: value})
     available = LocalRouterAdapter("local_14b", local_profile()).availability(req)
     assert not available.available and available.failure_class == code
 def test_local_adapter_rejects_observed_model_drift(tmp_path):
     backend = FakeBackend(); backend.chat = lambda *a, **k: {"text": "x", "model_ref": "local:other", "seed": 0}
     result = LocalRouterAdapter("local_14b", local_profile(), backend_factory=lambda p, t: backend).execute(
-        request(tmp_path, "local_14b", "openai_compatible_local/v1", "14B"))
+        request(tmp_path, "local_14b", "openai_compatible_local/v1", "flywheel-local-coder-14b", "local:14b"))
     assert result.execution_state == "malformed" and result.failure_class == "observed_model_drift"
 @pytest.mark.parametrize(("field", "value", "code"), [
     ("profile_sha256", "0" * 64, "endpoint_profile_hash_mismatch"),
@@ -179,7 +178,7 @@ def test_local_adapter_rejects_observed_model_drift(tmp_path):
 def test_local_adapter_rejects_profile_identity_or_readiness_drift(field, value, code, tmp_path):
     profile = {**local_profile(), field: value}
     result = LocalRouterAdapter("local_14b", profile).availability(
-        request(tmp_path, "local_14b", "openai_compatible_local/v1", "14B"))
+        request(tmp_path, "local_14b", "openai_compatible_local/v1", "flywheel-local-coder-14b", "local:14b"))
     assert not result.available and result.failure_class == code
 def test_local_default_transport_rejects_redirects(tmp_path):
     import http.server, socketserver, threading
@@ -198,7 +197,7 @@ def test_local_default_transport_rejects_redirects(tmp_path):
     try:
         profile = local_profile(f"http://127.0.0.1:{redirect.server_address[1]}")
         result = LocalRouterAdapter("local_14b", profile).execute(
-            request(tmp_path, "local_14b", "openai_compatible_local/v1", "14B"))
+            request(tmp_path, "local_14b", "openai_compatible_local/v1", "flywheel-local-coder-14b", "local:14b"))
         assert result.execution_state != "returned" and hits == []
     finally:
         redirect.shutdown(); target.shutdown(); redirect.server_close(); target.server_close()
@@ -206,7 +205,7 @@ def test_local_default_transport_rejects_redirects(tmp_path):
 def test_local_adapter_rejects_non_loopback_or_credential_bearing_endpoint_before_call(tmp_path, url):
     backend = FakeBackend()
     adapter = LocalRouterAdapter("local_14b", local_profile(url), backend_factory=lambda p, t: backend)
-    available = adapter.availability(request(tmp_path, "local_14b", "openai_compatible_local/v1", "14B"))
+    available = adapter.availability(request(tmp_path, "local_14b", "openai_compatible_local/v1", "flywheel-local-coder-14b", "local:14b"))
     assert available.available is False and backend.calls == 0
 def _receipt_hash(row):
     body = {key: value for key, value in row.items() if key not in {"receipt_hash", "latency_ms"}}
@@ -216,8 +215,8 @@ def test_local_phase_rechecks_bound_gate_and_emits_all_eight_sanitized_unavailab
     tasks = [{"task_id": f"agt-{n:03d}-full", "raw_prompt": f"p{n}", "raw_prompt_sha256": f"{n:064x}", "input_sha256s": {}, "required_inputs": [],
               "expected_artifacts": [], "oracle": {}} for n in (1, 3, 9, 10)]
     roles = ["local_14b", "local_32b"]
-    manifest = {"schema": "harness.cross-harness-manifest/v1", "task_set_id": "set", "task_rows": tasks, "provider_specs": [
-        {"provider_role": role, "harness_id": "local_endpoint", "adapter_id": "openai_compatible_local/v1", "target_model": role[-3:].upper()} for role in roles]}
+    manifest = {"schema": "harness.cross-harness-manifest/v1", "contract_schema": "harness.cross-harness-adapter-contract/v2", "task_set_id": "set", "task_rows": tasks, "provider_specs": [
+        {"provider_role": role, "harness_id": "local_endpoint", "adapter_id": "openai_compatible_local/v1", "model_id": f"flywheel-local-coder-{role[-3:].lower()}", "model_display_name": role, "requested_model_reference": f"local:{role[-3:].upper()}"} for role in roles]}
     profiles = {"schema": "harness.model-endpoint-profiles/v1", "profiles": []}
     gate_rows, runtime_rows = [], []
     stale = (datetime.now(UTC) - timedelta(hours=1)).isoformat().replace("+00:00", "Z")
@@ -260,7 +259,7 @@ def test_local_phase_rechecks_bound_gate_and_emits_all_eight_sanitized_unavailab
         assert "token" not in json.dumps(evidence).lower()
 @pytest.mark.parametrize(("path", "value", "code"), [
     ("raw_prompt_sha256", "bad", "admission_prompt_mismatch"), ("input_sha256s", {"x": "bad"}, "admission_input_mismatch"),
-    ("availability_evidence.adapter_evidence.oracle_spec_sha256", "bad", "admission_oracle_mismatch"), ("model_id", "bad", "admission_model_mismatch"),
+    ("availability_evidence.adapter_evidence.oracle_spec_sha256", "bad", "admission_oracle_mismatch"), ("model_id", "bad", "admission_model_mismatch"), ("requested_model_reference", "bad", "admission_requested_model_mismatch"), ("model_observed", "bad", "admission_observed_model_mismatch"),
     ("adapter_id", "bad", "admission_adapter_mismatch"), ("tool_policy_sha256", "bad", "admission_policy_mismatch"),
     ("source_commit", "bad", "admission_source_mismatch"), ("source_snapshot_sha256", "bad", "admission_source_mismatch"), ("cache_state", "warm", "admission_cache_mismatch"),
     ("execution_mode", "bad", "admission_execution_mismatch"), ("task_set_id", "bad", "admission_execution_mismatch"),
@@ -268,7 +267,7 @@ def test_local_phase_rechecks_bound_gate_and_emits_all_eight_sanitized_unavailab
 def test_admission_binds_current_identity_and_blocks_only_affected_role(tmp_path, path, value, code):
     roles = ["codex_harness", "flywheel_harness"]
     tasks = [{"task_id": f"agt-00{i}-full", "raw_prompt_sha256": str(i) * 64, "input_sha256s": {}, "oracle": {"checker_id": str(i)}} for i in (1, 3)]
-    manifest = {"task_set_id": "set", "task_rows": tasks, "provider_specs": [{"provider_role": role, "adapter_id": "adapter", "target_model": "model"} for role in roles]}
+    manifest = {"task_set_id": "set", "task_rows": tasks, "provider_specs": [{"provider_role": role, "adapter_id": "adapter", "model_id": "model", "model_display_name": "Model", "requested_model_reference": "model"} for role in roles]}
     current = {"source_commit": "commit", "source_snapshot_sha256": "s" * 64, "cache_state": "cold_declared", "execution_mode": "focused_run"}
     rows = []
     for role in roles:
@@ -276,13 +275,14 @@ def test_admission_binds_current_identity_and_blocks_only_affected_role(tmp_path
         attempt = tmp_path / role / task["task_id"]; attempt.mkdir(parents=True); receipt = attempt / "receipt.json"
         row = {"phase": "admission-smoke", "provider_role": role, "task_id": task["task_id"], "repetition": 1,
             "primary_outcome": "completed", "receipt_path": str(receipt), "task_set_id": "set",
-            "raw_prompt_sha256": task["raw_prompt_sha256"], "input_sha256s": {}, "adapter_id": "adapter", "model_id": "model",
+            "raw_prompt_sha256": task["raw_prompt_sha256"], "input_sha256s": {}, "adapter_id": "adapter", "model_id": "model", "model_display_name": "Model",
+            "requested_model_reference": "model", "model_observed": "", "model_observation_basis": "unknown",
             "tool_policy_sha256": canonical_sha256(SHARED_TOOL_POLICY), **current,
             "availability_evidence": {"adapter_evidence": {"oracle_spec_sha256": canonical_sha256(task["oracle"])}}}
         if role == roles[1]:
             target, parts = row, path.split(".")
             for part in parts[:-1]: target = target[part]
-            target[parts[-1]] = value
+            target[parts[-1]] = value; row["model_observation_basis"] = "structured_provider_event" if path == "model_observed" else row["model_observation_basis"]
         bind_attempt_receipt(row, {}, receipt); rows.append(row)
     admission = tmp_path / "admission.json"
     admission.write_text(json.dumps({"schema": "harness.cross-harness-run-receipt/v1", "phase": "admission-smoke", "rows": rows}), encoding="utf-8")

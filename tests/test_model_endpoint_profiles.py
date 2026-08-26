@@ -1,3 +1,10 @@
+import hashlib
+import json
+
+import pytest
+
+from harness.model_profiles import (MODEL_PROFILES, RELEASE_IDENTITY_PROVENANCE,
+                                    validate_release_identity_provenance)
 from scripts.run_model_endpoint_profiles import build_report, split_names
 
 
@@ -118,4 +125,36 @@ def test_release_ollama_profile_root_exists_tracks_trained_artifact_presence(tmp
     assert release["selectors"] == ["flywheel-local-coder-14b"]
     assert release["model_root"] == str(release_dir)
     assert release["release_artifact"] == "telos-coder-14b-cpt2020-q4_k_m.gguf"
+    assert release["release_asset_sha256"] == "613db240e3efc6730f24042a4602d1f12f1c6b397af1d5a4d74f4e064d4064be"
+    assert release["expected_ollama_digest"] == "sha256:7ff88ed3fd95eac7e79cb38a0a5ee3db39b7103a09d5a51d75fcda908522f6d8"
     assert release["launch_command_template"] == "ollama run flywheel-local-coder-14b"
+
+
+def test_release_ollama_profile_binds_exact_32b_release_identity(tmp_path):
+    (tmp_path / "models" / "Qwen2.5-Coder-32B-Instruct").mkdir(parents=True)
+    report = build_report(models=["32B"], base_root=tmp_path, serve_url="", ollama_url="http://127.0.0.1:11434")
+    release = next(row for row in report["profiles"] if row["profile_id"] == "ollama-release-32b")
+    assert release["release_asset_sha256"] == "65e6133fbe4d12579a776047a71bebb98ab86f9e3d343ed821b51dac0ce312f4"
+    assert release["expected_ollama_digest"] == "sha256:35fa696e662eb83293491d4b87de1d1308254d82be7aa8244f4fa442bf0e09d9"
+
+
+def test_release_digest_constants_match_public_safe_provenance_receipt():
+    receipt = validate_release_identity_provenance()
+    payload = {key: value for key, value in receipt.items() if key != "evidence_sha256"}
+    evidence = hashlib.sha256(json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+    assert RELEASE_IDENTITY_PROVENANCE.name == "ollama-manifest-digest-provenance-v1.json"
+    assert receipt["schema"] == "harness.ollama-manifest-digest-provenance/v1"
+    assert receipt["evidence_sha256"] == evidence
+    rows = {row["native_model_name"]: row for row in receipt["models"]}
+    for profile in MODEL_PROFILES.values():
+        release = profile["release"]; row = rows[release["ollama_model_name"]]
+        assert row["release_asset_sha256"] == release["artifact_sha256"]
+        assert row["ollama_manifest_digest"] == release["ollama_manifest_digest"]
+
+
+def test_release_digest_provenance_rejects_tampered_evidence(tmp_path):
+    receipt = json.loads(RELEASE_IDENTITY_PROVENANCE.read_text(encoding="utf-8"))
+    receipt["models"][0]["ollama_manifest_digest"] = "sha256:" + "0" * 64
+    tampered = tmp_path / "tampered.json"; tampered.write_text(json.dumps(receipt), encoding="utf-8")
+    with pytest.raises(ValueError, match="evidence hash mismatch"):
+        validate_release_identity_provenance(tampered)

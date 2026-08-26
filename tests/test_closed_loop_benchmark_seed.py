@@ -36,7 +36,7 @@ class Args:
     agentic_task_set = "C:/dev/local-model/benchmarks/agentic-task-set-v1.json"
     agentic_task_adapter = "C:/dev/local-model/benchmarks/agentic-task-set-adapter-v1.json"
     agentic_task_provider_roles = "dry"
-    cross_harness_contract = "C:/dev/local-model/benchmarks/cross-harness-adapter-contract-v1.json"
+    cross_harness_contract = "C:/dev/local-model/benchmarks/cross-harness-adapter-contract-v2.json"
     cross_harness_source_root = "C:/dev/local-model"
     cross_harness_provider_roles = "codex_harness,flywheel_harness,claude_code,opencode,local_14b,local_32b,dry"
     embodied_realtime_contract = "C:/dev/local-model/benchmarks/embodied-realtime-multimodal-v1.json"
@@ -288,7 +288,7 @@ def test_adapter_runtime_matrix_step_consumes_endpoint_and_auth_metadata(tmp_pat
 
     assert "scripts/run_adapter_runtime_matrix.py" in matrix.command
     assert "--contract" in matrix.command
-    assert "C:/dev/local-model/benchmarks/cross-harness-adapter-contract-v1.json" in matrix.command
+    assert "C:/dev/local-model/benchmarks/cross-harness-adapter-contract-v2.json" in matrix.command
     assert "--endpoint-profiles" in matrix.command
     assert str(tmp_path / "model_endpoint_profiles.json") in matrix.command
     assert "--endpoint-auth-status" in matrix.command
@@ -387,7 +387,7 @@ def test_cross_harness_manifest_step_is_metadata_only(tmp_path):
     assert "--task-set" in manifest.command
     assert "C:/dev/local-model/benchmarks/agentic-task-set-v1.json" in manifest.command
     assert "--contract" in manifest.command
-    assert "C:/dev/local-model/benchmarks/cross-harness-adapter-contract-v1.json" in manifest.command
+    assert "C:/dev/local-model/benchmarks/cross-harness-adapter-contract-v2.json" in manifest.command
     assert "--provider-roles" in manifest.command
     assert "codex_harness,flywheel_harness,claude_code,opencode,local_14b,local_32b,dry" in manifest.command
     assert str(tmp_path / "cross_harness_manifest.json") in manifest.expected_artifacts

@@ -3,13 +3,11 @@ import json
 from pathlib import Path, PurePosixPath
 
 import pytest
-
 from harness.cross_harness_manifest import _input_hashes, build_manifest, load_json, render_markdown
-from scripts.run_cross_harness_manifest import main as manifest_main
+from harness.cross_harness_cli import main as execute_main
+from scripts.run_cross_harness_manifest import DEFAULT_CONTRACT, main as manifest_main
 
 ROOT = Path(__file__).resolve().parent.parent
-
-
 def _task_set():
     return {
         "schema": "harness.agentic-task-set/v1",
@@ -31,11 +29,9 @@ def _task_set():
             }
         ],
     }
-
-
 def _contract():
     return {
-        "schema": "harness.cross-harness-adapter-contract/v1",
+        "schema": "harness.cross-harness-adapter-contract/v2",
         "contract_id": "sample_cross_harness",
         "global_invariants": ["same prompt hash"],
         "planned_scorecard_schema": "harness.cross-harness-task-scorecard/v1",
@@ -44,7 +40,9 @@ def _contract():
             {
                 "provider_role": "codex_harness",
                 "harness_id": "codex",
-                "target_model": "5.3-Codex-Spark",
+                "model_id": "gpt-5.3-codex-spark",
+                "model_display_name": "GPT-5.3-Codex-Spark",
+                "requested_model_reference": "gpt-5.3-codex-spark",
                 "adapter_state": "contract_only",
                 "allowed_modes": ["manifest_only"],
                 "required_receipts": ["raw_prompt", "raw_output"],
@@ -52,7 +50,9 @@ def _contract():
             {
                 "provider_role": "flywheel_harness",
                 "harness_id": "flywheel",
-                "target_model": "5.3-Codex-Spark",
+                "model_id": "gpt-5.3-codex-spark",
+                "model_display_name": "GPT-5.3-Codex-Spark",
+                "requested_model_reference": "gpt-5.3-codex-spark",
                 "adapter_state": "contract_only",
                 "allowed_modes": ["manifest_only"],
                 "required_receipts": ["raw_prompt", "raw_output"],
@@ -64,6 +64,39 @@ def _contract():
         "comparability_checks": ["same raw_prompt_sha256"],
     }
 
+def test_v2_contract_binds_canonical_spark_and_exact_local_release_selectors():
+    contract = load_json(ROOT / "benchmarks/cross-harness-adapter-contract-v2.json")
+
+    assert contract["schema"] == "harness.cross-harness-adapter-contract/v2"
+    roles = {row["provider_role"]: row for row in contract["provider_roles"]}
+    for role in ("codex_harness", "flywheel_harness"):
+        assert roles[role]["model_id"] == "gpt-5.3-codex-spark"
+        assert roles[role]["model_display_name"] == "GPT-5.3-Codex-Spark"
+        assert roles[role]["requested_model_reference"] == "gpt-5.3-codex-spark"
+        assert "target_model" not in roles[role]
+    assert roles["local_14b"]["endpoint_selector"] == {
+        "profile_id": "ollama-release-14b", "backend": "ollama",
+        "model_reference": "ollama:flywheel-local-coder-14b",
+        "release_asset_sha256": "613db240e3efc6730f24042a4602d1f12f1c6b397af1d5a4d74f4e064d4064be",
+    }
+    assert roles["local_32b"]["endpoint_selector"] == {
+        "profile_id": "ollama-release-32b", "backend": "ollama",
+        "model_reference": "ollama:flywheel-local-coder-32b",
+        "release_asset_sha256": "65e6133fbe4d12579a776047a71bebb98ab86f9e3d343ed821b51dac0ce312f4",
+    }
+
+def test_manifest_rejects_v1_contract_instead_of_coercing_overloaded_model_identity():
+    v1 = load_json(ROOT / "benchmarks/cross-harness-adapter-contract-v1.json")
+    with pytest.raises(ValueError, match="unsupported cross-harness contract schema"):
+        build_manifest(_task_set(), v1, provider_roles=["codex_harness"])
+
+
+def test_execution_cli_rejects_manifest_from_v1_contract_before_loading_runtime(tmp_path):
+    manifest, matrix = tmp_path / "manifest.json", tmp_path / "matrix.json"
+    manifest.write_text(json.dumps({"schema": "harness.cross-harness-manifest/v1", "contract_schema": "harness.cross-harness-adapter-contract/v1"}), encoding="utf-8")
+    matrix.write_text(json.dumps({"schema": "harness.adapter-runtime-matrix/v1"}), encoding="utf-8")
+    with pytest.raises(ValueError, match="manifest contract schema mismatch"):
+        execute_main(["--manifest", str(manifest), "--runtime-matrix", str(matrix), "--artifact-root", str(tmp_path / "artifacts"), "--roles", "codex_harness", "--source-commit", "test", "--source-root", str(tmp_path), "--phase", "test", "--run-id", "test", "--tasks", "agt-001", "--cache", "cold_declared", "--repetitions", "1", "--timeout", "1"])
 
 def test_cross_harness_manifest_expands_same_prompt_across_provider_roles():
     manifest = build_manifest(_task_set(), _contract(), provider_roles=["codex_harness", "flywheel_harness"])
@@ -82,12 +115,16 @@ def test_cross_harness_manifest_expands_same_prompt_across_provider_roles():
     }
     assert len({row["raw_prompt_sha256"] for row in manifest["dry_scorecard_rows"]}) == 1
     assert all(row["failure_class"] == "not_executed" for row in manifest["dry_scorecard_rows"])
-
+    for row in manifest["dry_scorecard_rows"]:
+        assert {field: row[field] for field in ("model_id", "model_display_name", "requested_model_reference", "model_observed", "model_observation_basis")} == {
+            "model_id": "gpt-5.3-codex-spark", "model_display_name": "GPT-5.3-Codex-Spark",
+            "requested_model_reference": "gpt-5.3-codex-spark", "model_observed": "", "model_observation_basis": "unknown"}
+    required = load_json(ROOT / "benchmarks/cross-harness-adapter-contract-v2.json")["scorecard_row_contract"]["required_fields"]
+    assert set(("model_id", "model_display_name", "requested_model_reference", "model_observed", "model_observation_basis")) <= set(required)
 
 def test_cross_harness_manifest_rejects_unknown_provider_role():
     with pytest.raises(ValueError, match="unknown cross-harness provider roles"):
         build_manifest(_task_set(), _contract(), provider_roles=["missing_provider"])
-
 
 def test_cross_harness_manifest_markdown_declares_non_execution():
     markdown = render_markdown(build_manifest(_task_set(), _contract(), provider_roles=["codex_harness"]))
@@ -95,7 +132,6 @@ def test_cross_harness_manifest_markdown_declares_non_execution():
     assert "# Cross-harness manifest" in markdown
     assert "Provider execution: `false`" in markdown
     assert "codex_harness" in markdown
-
 
 def test_manifest_preserves_replayable_prompt_oracle_and_input_hash(tmp_path):
     source = tmp_path / "fixture.json"
@@ -174,19 +210,15 @@ def test_canonical_pilots_reject_typed_inputs(tmp_path, task_id, checker, ref):
     task_set = _task_set(); task_set["tasks"][0].update(id=task_id, required_inputs=[ref], oracle={"checker_id": checker})
     with pytest.raises(ValueError, match="required input"):
         build_manifest(task_set, _contract(), task_set_path=str(tmp_path / "benchmarks" / "tasks.json"))
-
-
 @pytest.mark.parametrize(("task_id", "checker"), [("renamed", "index_fallback_integrity/v1"),
                                                      ("agt-001-index-fallback-integrity", "shared_task_artifact/v1")])
 def test_registered_checker_and_canonical_task_id_must_pair(tmp_path, task_id, checker):
     task_set = _task_set(); task_set["tasks"][0].update(id=task_id, oracle={"checker_id": checker})
     with pytest.raises(ValueError, match="checker"):
         build_manifest(task_set, _contract(), task_set_path=str(tmp_path / "benchmarks" / "tasks.json"))
-
-
 def test_frozen_pilot_contract_is_public_clean_and_replayable():
     task_path = ROOT / "benchmarks" / "agentic-task-set-v1.json"
-    contract_path = ROOT / "benchmarks" / "cross-harness-adapter-contract-v1.json"
+    contract_path = ROOT / "benchmarks" / "cross-harness-adapter-contract-v2.json"
     task_set = json.loads(task_path.read_text(encoding="utf-8"))
     contract = json.loads(contract_path.read_text(encoding="utf-8"))
     manifest = build_manifest(task_set, contract, task_set_path=str(task_path), source_root=str(ROOT))
@@ -215,15 +247,11 @@ def test_frozen_pilot_contract_is_public_clean_and_replayable():
         assert fixture["failure_code_vocabulary"]["common"] == oracle_contract["common_failure_codes"]
         assert fixture["failure_code_vocabulary"]["task"] == oracle_contract["checkers"][oracle["checker_id"]]["failure_codes"]
         assert oracle["required_json_fields"]
-
-
 def _copied_contract(tmp_path):
     task, contract = tmp_path / "copied-tasks.json", tmp_path / "copied-contract.json"
     task.write_bytes((ROOT / "benchmarks/agentic-task-set-v1.json").read_bytes())
-    contract.write_bytes((ROOT / "benchmarks/cross-harness-adapter-contract-v1.json").read_bytes())
+    contract.write_bytes((ROOT / "benchmarks/cross-harness-adapter-contract-v2.json").read_bytes())
     return task, contract
-
-
 def test_external_contract_uses_explicit_source_root_without_serializing_it(tmp_path):
     task_path, contract_path = _copied_contract(tmp_path)
     manifest = build_manifest(load_json(task_path), load_json(contract_path), task_set_path=str(task_path),
@@ -232,22 +260,16 @@ def test_external_contract_uses_explicit_source_root_without_serializing_it(tmp_
     assert row["input_sha256s"] == {ref: hashlib.sha256((ROOT / ref).read_bytes()).hexdigest()}
     assert "source_root" not in manifest and str(ROOT.resolve()) not in str(manifest)
     assert (ROOT / ref).read_text(encoding="utf-8") not in json.dumps(manifest)
-
-
 def test_external_canonical_contract_requires_explicit_source_root(tmp_path):
     task_path, contract_path = _copied_contract(tmp_path)
     with pytest.raises(ValueError, match="source root"):
         build_manifest(load_json(task_path), load_json(contract_path), task_set_path=str(task_path))
-
-
 @pytest.mark.parametrize("kind", ["missing", "file"])
 def test_source_root_must_be_an_existing_directory(tmp_path, kind):
     root = tmp_path / "source"
     if kind == "file": root.write_text("not a directory", encoding="utf-8")
     with pytest.raises(ValueError, match="source root"):
         build_manifest(_task_set(), _contract(), source_root=str(root))
-
-
 def test_input_hash_binds_source_bytes_not_contract_location(tmp_path):
     source, copied = tmp_path / "source", tmp_path / "external/tasks.json"; source.mkdir(); copied.parent.mkdir()
     fixture = source / "fixture.json"; fixture.write_bytes(b"first")
@@ -258,8 +280,6 @@ def test_input_hash_binds_source_bytes_not_contract_location(tmp_path):
     assert first["input_sha256s"] != second["input_sha256s"]
     assert (first["task_set_id"], first["task_id"], first["raw_prompt_sha256"]) == (second["task_set_id"], second["task_id"], second["raw_prompt_sha256"])
     assert "first" not in json.dumps(first) and "second" not in json.dumps(second)
-
-
 def test_manifest_cli_requires_source_root_and_supports_external_contract(tmp_path, capsys):
     task_path, contract_path = _copied_contract(tmp_path); out, markdown = tmp_path / "manifest.json", tmp_path / "manifest.md"
     base = ["--task-set", str(task_path), "--contract", str(contract_path), "--provider-roles", "codex_harness", "--out", str(out), "--markdown-out", str(markdown)]
@@ -268,14 +288,13 @@ def test_manifest_cli_requires_source_root_and_supports_external_contract(tmp_pa
     assert manifest_main([*base, "--source-root", str(ROOT)]) == 0
     assert json.loads(out.read_text(encoding="utf-8"))["schema"] == "harness.cross-harness-manifest/v1"
     capsys.readouterr()
-
-
 def test_manifest_cli_safely_defaults_source_root_for_checkout_contract(tmp_path, capsys):
     out = tmp_path / "manifest.json"
+    assert DEFAULT_CONTRACT.endswith("cross-harness-adapter-contract-v2.json")
     assert manifest_main(["--task-set", str(ROOT / "benchmarks/agentic-task-set-v1.json"), "--contract",
-                          str(ROOT / "benchmarks/cross-harness-adapter-contract-v1.json"), "--provider-roles", "codex_harness", "--out", str(out)]) == 0
+                          str(ROOT / "benchmarks/cross-harness-adapter-contract-v2.json"), "--provider-roles", "codex_harness", "--out", str(out)]) == 0
     assert json.loads(out.read_text(encoding="utf-8"))["schema"] == "harness.cross-harness-manifest/v1"
     deck = json.loads((ROOT / "benchmarks/dry-run-preflight-command-deck-v1.json").read_text(encoding="utf-8"))
     command = next(row["command"] for row in deck["commands"] if row["id"] == "deck-012-cross-harness-manifest")
-    assert "--source-root C:/dev/local-model" in command
+    assert "--source-root C:/dev/local-model" in command and "cross-harness-adapter-contract-v2.json" in command
     capsys.readouterr()

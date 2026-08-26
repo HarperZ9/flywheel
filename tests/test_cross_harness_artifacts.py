@@ -193,7 +193,7 @@ def _execute_fixture(tmp_path, adapter, task_ids=("agt-001-task",), expected=("r
               "expected_artifacts": list(expected), "oracle": oracle or {"expected_artifacts": list(expected)}}
              for task_id in task_ids]
     manifest = {"task_set_id": "set", "task_rows": tasks, "provider_specs": [
-        {"provider_role": "local_14b", "harness_id": "local", "adapter_id": "local/v1", "target_model": "14B"}]}
+        {"provider_role": "local_14b", "harness_id": "local", "adapter_id": "local/v1", "model_id": "flywheel-local-coder-14b", "model_display_name": "Local 14B", "requested_model_reference": "local:14b"}]}
     runtime = {"runtime_rows": [{"provider_role": "local_14b", "focused_run_ready": True,
                 "blocking_gates": [], "endpoint_profile_matches": [], "endpoint_gate_matches": []}]}
     root = tmp_path / "artifacts"
@@ -203,7 +203,7 @@ def _execute_fixture(tmp_path, adapter, task_ids=("agt-001-task",), expected=("r
 
 @pytest.mark.parametrize("mutation", ["create", "replace", "relink", "mode"])
 def test_workspace_mutation_is_typed_drift_preserved_and_indexed(tmp_path, mutation):
-    result = AdapterResult("returned", '{"artifacts":{"result.json":{}}}', [], 1, "14B", "seeded", "", "", {}, {}, [], [])
+    result = AdapterResult("returned", '{"artifacts":{"result.json":{}}}', [], 1, "14B", "seeded", "", "", {}, {}, [], [], "structured_provider_response")
     run, root = _execute_fixture(tmp_path, _ExecAdapter(result, mutation))
     row = run["rows"][0]
     assert (row["execution_state"], row["failure_class"], row["workspace_state"]) == ("malformed", "workspace_drift", "drift")
@@ -214,7 +214,7 @@ def test_workspace_mutation_is_typed_drift_preserved_and_indexed(tmp_path, mutat
     assert any(item["path"].endswith("workspace-after.json") for item in index["artifacts"])
 
 def test_missing_workspace_is_typed_indexed_and_does_not_abort_later_tasks(tmp_path):
-    result = AdapterResult("returned", '{"artifacts":{"result.json":{}}}', [], 1, "14B", "seeded", "", "", {}, {}, [], [])
+    result = AdapterResult("returned", '{"artifacts":{"result.json":{}}}', [], 1, "14B", "seeded", "", "", {}, {}, [], [], "structured_provider_response")
     adapter = _ExecAdapter(result, "delete_first")
     run, root = _execute_fixture(tmp_path, adapter, ("agt-001-task", "agt-002-task"))
     assert adapter.calls == ["agt-001-task", "agt-002-task"]
@@ -234,7 +234,7 @@ def test_secret_values_are_redacted_from_every_serialized_surface(tmp_path):
     result = AdapterResult("malformed", "terminal bytes", [{"note": "Authorization: Bearer TOP-SECRET"}], 1,
         "token=TOP-SECRET", "secret=TOP-SECRET", "failure", "password=TOP-SECRET",
         {"note": "api_key=TOP-SECRET"}, {"note": "token=TOP-SECRET"},
-        ["Authorization: Bearer TOP-SECRET"], ["secret=TOP-SECRET"])
+        ["Authorization: Bearer TOP-SECRET"], ["secret=TOP-SECRET"], "structured_provider_response")
     run, root = _execute_fixture(tmp_path, _SecretAdapter(result))
     assert run["rows"][0]["execution_state"] == "malformed"
     assert "TOP-SECRET" not in "\n".join(path.read_text(errors="ignore") for path in root.rglob("*") if path.is_file())
@@ -243,7 +243,7 @@ def test_secret_values_are_redacted_from_every_serialized_surface(tmp_path):
 @pytest.mark.parametrize("state", ["malformed", "timeout", "internal_error", "unavailable"])
 def test_nonreturn_terminal_output_is_preserved_with_denominator_fields(tmp_path, state):
     output = f"exact terminal bytes {state}"
-    result = AdapterResult(state, output, [], 4, "14B", "unsupported", state, "detail", {}, {}, [], [])
+    result = AdapterResult(state, output, [], 4, "14B", "unsupported", state, "detail", {}, {}, [], [], "structured_provider_response")
     run, _ = _execute_fixture(tmp_path, _ExecAdapter(result)); row = run["rows"][0]
     assert Path(row["raw_output_path"]).read_bytes() == output.encode()
     assert (row["planned"], row["admitted"], row["launched"], row["blocked"]) == (True, True, True, state == "unavailable")
@@ -258,7 +258,7 @@ def test_live_timeout_is_typed_and_sealed(tmp_path):
 
 @pytest.mark.parametrize("elapsed", [float("nan"), -1, True])
 def test_invalid_elapsed_is_isolated_internal_error(tmp_path, elapsed):
-    result = AdapterResult("returned", '{"artifacts":{"result.json":{}}}', [], elapsed, "14B", "seeded", "", "", {}, {}, [], [])
+    result = AdapterResult("returned", '{"artifacts":{"result.json":{}}}', [], elapsed, "14B", "seeded", "", "", {}, {}, [], [], "structured_provider_response")
     run, _ = _execute_fixture(tmp_path, _ExecAdapter(result)); row = run["rows"][0]
     assert row["execution_state"] == "internal_error" and row["receipt_state"] == "verified"
 
@@ -266,7 +266,7 @@ def test_invalid_elapsed_is_isolated_internal_error(tmp_path, elapsed):
 def test_multirow_adapter_exception_is_isolated(tmp_path):
     def result(request):
         if request.task_id == "agt-001-task": raise ValueError("first row bug")
-        return AdapterResult("returned", '{"artifacts":{"result.json":{}}}', [], 1, "14B", "seeded", "", "", {}, {}, [], [])
+        return AdapterResult("returned", '{"artifacts":{"result.json":{}}}', [], 1, "14B", "seeded", "", "", {}, {}, [], [], "structured_provider_response")
     run, _ = _execute_fixture(tmp_path, _ExecAdapter(result), ("agt-001-task", "agt-002-task"))
     assert [row["execution_state"] for row in run["rows"]] == ["internal_error", "returned"]
 
@@ -288,7 +288,7 @@ def test_live_oracle_fail_and_final_row_receipt_tamper(tmp_path):
         report = {"task_id": request.task_id, "input_sha256s": request.input_sha256s,
                   "failure_classes": ["wrong"], "cited_event_ids": [], "receipt_input_sha256s": request.input_sha256s}
         output = json.dumps({"artifacts": {"result.json": report, "result.md": f"# {request.task_id}\n"}})
-        return AdapterResult("returned", output, [], 1, "14B", "seeded", "", "", {}, {}, [], [])
+        return AdapterResult("returned", output, [], 1, "14B", "seeded", "", "", {}, {}, [], [], "structured_provider_response")
     oracle = {"checker_id": "index_fallback_integrity/v1", "fixture": "input.txt",
               "expected_artifacts": ["result.json", "result.md"]}
     run, _ = _execute_fixture(tmp_path, _ExecAdapter(result), ("agt-001-index-fallback-integrity",),

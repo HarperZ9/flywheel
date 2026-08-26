@@ -10,6 +10,7 @@ from .adapter_runtime_matrix import _endpoint_gate_result
 from .cross_harness_adapters import DirectCodexAdapter, FlywheelRouterAdapter, LocalRouterAdapter
 from .cross_harness_artifacts import canonical_sha256, recheck_attempt_receipt, snapshot_source_tree, write_artifact_index
 from .cross_harness_executor import SHARED_TOOL_POLICY, execute_cross_harness_manifest, resolve_task_ids
+from .cross_harness_types import model_observation_pair_error, project_model_identity
 
 def _pairs(rows: list[tuple[str, Any]]) -> dict[str, Any]:
     out = {}
@@ -17,14 +18,10 @@ def _pairs(rows: list[tuple[str, Any]]) -> dict[str, Any]:
         if key in out: raise ValueError(f"duplicate JSON key: {key}")
         out[key] = value
     return out
-
-
 def _load(path: Path) -> dict[str, Any]:
     value = json.loads(path.read_text(encoding="utf-8-sig"), object_pairs_hook=_pairs)
     if not isinstance(value, dict): raise ValueError(f"JSON object required: {path}")
     return value
-
-
 def _sha(path: Path) -> str:
     digest = hashlib.sha256()
     with path.open("rb") as handle:
@@ -38,8 +35,7 @@ def _csv(value: str) -> list[str]:
     return rows
 
 
-def _exit(rows: list[dict[str, Any]], strict: bool) -> int:
-    return 1 if strict and (not rows or any(row.get("primary_outcome") != "completed" for row in rows)) else 0
+def _exit(rows: list[dict[str, Any]], strict: bool) -> int: return 1 if strict and (not rows or any(row.get("primary_outcome") != "completed" for row in rows)) else 0
 
 
 def _runtime(matrix: dict[str, Any], role: str) -> dict[str, Any]:
@@ -55,13 +51,17 @@ def _block(row: dict[str, Any], code: str) -> None:
 
 
 def _admission_identity_code(row: dict[str, Any], task: dict[str, Any], spec: dict[str, Any],
-                             manifest: dict[str, Any], current: dict[str, Any]) -> str:
+                             manifest: dict[str, Any], current: dict[str, Any], runtime: dict[str, Any]) -> str:
+    try: identity = project_model_identity(row, source_schema=str(row.get("schema", "")))
+    except ValueError: return "admission_model_identity_schema_mismatch"
+    if identity["identity_schema"] != "v2": return "admission_model_identity_schema_mismatch"
     oracle = ((row.get("availability_evidence") or {}).get("adapter_evidence") or {}).get("oracle_spec_sha256")
     checks = (
         ("admission_prompt_mismatch", row.get("raw_prompt_sha256"), task.get("raw_prompt_sha256")),
         ("admission_input_mismatch", row.get("input_sha256s"), task.get("input_sha256s", {})),
         ("admission_oracle_mismatch", oracle, canonical_sha256(task.get("oracle", {}))),
-        ("admission_model_mismatch", row.get("model_id"), spec.get("target_model")),
+        ("admission_model_mismatch", row.get("model_id"), spec.get("model_id")),
+        ("admission_requested_model_mismatch", row.get("requested_model_reference"), spec.get("requested_model_reference")),
         ("admission_adapter_mismatch", (row.get("harness_id"), row.get("adapter_id")),
          (spec.get("harness_id"), spec.get("adapter_id"))),
         ("admission_policy_mismatch", row.get("tool_policy_sha256"), canonical_sha256(SHARED_TOOL_POLICY)),
@@ -71,7 +71,21 @@ def _admission_identity_code(row: dict[str, Any], task: dict[str, Any], spec: di
         ("admission_execution_mismatch", (row.get("task_set_id"), row.get("execution_mode")),
          (manifest.get("task_set_id"), current.get("execution_mode"))),
     )
-    return next((code for code, observed, expected in checks if observed != expected), "")
+    mismatch = next((code for code, observed, expected in checks if observed != expected), "")
+    if mismatch: return mismatch
+    observed, basis = identity["model_observed"], identity["model_observation_basis"]
+    if model_observation_pair_error(observed, basis): return "admission_model_observation_invalid"
+    if observed and observed != spec.get("requested_model_reference"): return "admission_observed_model_mismatch"
+    if str(row.get("provider_role", "")).startswith("local_"):
+        profiles, gates = runtime.get("endpoint_profile_matches", []), runtime.get("endpoint_gate_matches", [])
+        profile = profiles[0] if len(profiles) == 1 and isinstance(profiles[0], dict) else {}
+        gate = gates[0] if len(gates) == 1 and isinstance(gates[0], dict) else {}
+        keys = ("endpoint_profile_id", "endpoint_profile_sha256", "release_asset_sha256", "expected_ollama_digest", "observed_ollama_digest")
+        expected = (profile.get("profile_id", ""), profile.get("profile_sha256", ""), profile.get("release_asset_sha256", ""),
+                    profile.get("expected_ollama_digest", ""), gate.get("ollama_digest", ""))
+        evidence = row.get("availability_evidence") if isinstance(row.get("availability_evidence"), dict) else {}
+        if not all(expected) or tuple(evidence.get(key, "") for key in keys) != expected: return "admission_local_endpoint_identity_mismatch"
+    return ""
 
 
 def _apply_admission(matrix: dict[str, Any], path: Path, manifest: dict[str, Any], selectors: list[str],
@@ -113,7 +127,7 @@ def _apply_admission(matrix: dict[str, Any], path: Path, manifest: dict[str, Any
             task = next(item for item in manifest.get("task_rows", []) if item.get("task_id") == row.get("task_id"))
             spec = next(item for item in manifest.get("provider_specs", []) if item.get("provider_role") == role)
             if row.get("primary_outcome") != "completed": failed = True; break
-            code = _admission_identity_code(row, task, spec, manifest, current)
+            code = _admission_identity_code(row, task, spec, manifest, current, runtime)
             if code: _block(runtime, code); failed = False; break
         if failed: _block(runtime, "admission_role_failed")
 
@@ -224,6 +238,7 @@ def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     manifest, matrix = _load(Path(args.manifest)), _load(Path(args.runtime_matrix))
     if manifest.get("schema") != "harness.cross-harness-manifest/v1": raise ValueError("manifest schema mismatch")
+    if manifest.get("contract_schema") != "harness.cross-harness-adapter-contract/v2": raise ValueError("manifest contract schema mismatch")
     if matrix.get("schema") != "harness.adapter-runtime-matrix/v1": raise ValueError("runtime matrix schema mismatch")
     roles, selectors = _csv(args.roles), _csv(args.tasks)
     if args.repetitions < 1: raise ValueError("repetitions must be positive")

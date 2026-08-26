@@ -10,11 +10,12 @@ from typing import Any
 
 
 SCHEMA = "harness.adapter-runtime-matrix/v1"
-DEFAULT_CONTRACT = str(Path(__file__).resolve().parent.parent / "benchmarks" / "cross-harness-adapter-contract-v1.json")
+DEFAULT_CONTRACT = str(Path(__file__).resolve().parent.parent / "benchmarks" / "cross-harness-adapter-contract-v2.json")
 GATE_FIELDS = (
     "selected_profile_id", "profile_sha256", "model", "backend",
     "expected_model_ref", "observed_model_ref", "health_ok", "generation_ok",
-    "failure_class", "ollama_digest", "run_id", "observed_at",
+    "failure_class", "release_asset_sha256", "expected_ollama_digest",
+    "ollama_digest", "run_id", "observed_at",
 )
 
 
@@ -100,11 +101,11 @@ def render_markdown(matrix: dict[str, Any]) -> str:
         f"- Endpoint auth status: `{matrix.get('endpoint_auth_status_path', '')}`",
         f"- Runtime rows: `{summary['runtime_rows']}`", f"- Manifest-ready roles: `{summary['manifest_ready_roles']}`",
         f"- Focused-run-ready roles: `{summary['focused_run_ready_roles']}`", "",
-        "| Role | Harness | Target model | Adapter state | Manifest | Focused run | Blocking gates |",
+        "| Role | Harness | Model | Adapter state | Manifest | Focused run | Blocking gates |",
         "|---|---|---|---|---:|---:|---|",
     ]
     for row in matrix["runtime_rows"]:
-        lines.append("| {provider_role} | {harness_id} | {target_model} | {adapter_state} | {manifest} | {focused} | {gates} |".format(
+        lines.append("| {provider_role} | {harness_id} | {model_display_name} | {adapter_state} | {manifest} | {focused} | {gates} |".format(
             **row, manifest=str(row["manifest_ready"]).lower(), focused=str(row["focused_run_ready"]).lower(),
             gates=", ".join(row["blocking_gates"])))
     lines.extend(["", "## Non-execution guards", ""] + [f"- {guard}" for guard in matrix["non_execution_guards"]])
@@ -116,14 +117,17 @@ def _runtime_row(
     endpoint_auth_status: dict[str, Any], expected_gate_run_id: str, now: datetime,
     max_age_seconds: int,
 ) -> dict[str, Any]:
-    role, target = str(row.get("provider_role", "")), str(row.get("target_model", ""))
+    role = str(row.get("provider_role", "")); selector = row.get("endpoint_selector") if isinstance(row.get("endpoint_selector"), dict) else {}
     modes = [str(item) for item in row.get("allowed_modes", []) if item] if isinstance(row.get("allowed_modes"), list) else []
-    profiles = _profile_matches(role, target, endpoint_profiles)
+    profiles = _profile_matches(selector, endpoint_profiles)
     auth = _auth_matches(role, endpoint_auth_status)
     needs_endpoint = role in {"local_14b", "local_32b"}
     needs_auth = role in {"codex_harness", "flywheel_harness", "claude_code"}
-    profile_ready = any(item["root_exists"] and item["supports_agentic_workflow"] for item in profiles) if needs_endpoint else True
-    gate_matches, gate_code = _endpoint_gate_result(profiles, endpoint_gate, expected_gate_run_id, now, max_age_seconds) if needs_endpoint else ([], "")
+    profile_code = ("endpoint_profile_selection_mismatch" if needs_endpoint and len(profiles) != 1 else
+                    _profile_failure(profiles[0], selector) if needs_endpoint else "")
+    profile_ready = len(profiles) == 1 and profiles[0]["root_exists"] and profiles[0]["supports_agentic_workflow"] and not profile_code if needs_endpoint else True
+    gate_evaluated = needs_endpoint and len(profiles) == 1 and not profile_code
+    gate_matches, gate_code = _endpoint_gate_result(profiles, endpoint_gate, expected_gate_run_id, now, max_age_seconds) if gate_evaluated else ([], "")
     auth_ready = any(item["configured"] for item in auth) if needs_auth else True
     blocking = []
     if str(row.get("adapter_state", "")) in {"needs_discovery", "needs_adapter"}:
@@ -131,36 +135,49 @@ def _runtime_row(
     if needs_auth and not auth_ready:
         blocking.append("account_auth")
     if needs_endpoint and not profile_ready:
-        blocking.append("endpoint_profile")
+        blocking.append(profile_code or "endpoint_profile")
     if needs_endpoint and gate_code:
         blocking.append(gate_code)
     manifest_ready = "manifest_only" in modes
     focused_ready = "focused_run_after_approval" in modes and not blocking
     return {
         "schema": "harness.adapter-runtime-matrix.row/v1", "provider_role": role,
-        "harness_id": str(row.get("harness_id", "")), "target_model": target,
+        "harness_id": str(row.get("harness_id", "")), "model_id": str(row.get("model_id", "")),
+        "model_display_name": str(row.get("model_display_name", "")), "requested_model_reference": str(row.get("requested_model_reference", "")),
+        "model_observed": "", "model_observation_basis": "unknown",
+        "endpoint_selector": dict(selector),
         "adapter_state": str(row.get("adapter_state", "")), "allowed_modes": modes,
         "required_receipts": _strings(row.get("required_receipts")),
         "current_evidence": _strings(row.get("current_evidence")),
         "endpoint_profile_matches": profiles, "endpoint_profile_ready": profile_ready,
-        "endpoint_gate_matches": gate_matches, "endpoint_gate_ready": needs_endpoint and not gate_code,
+        "endpoint_gate_matches": gate_matches, "endpoint_gate_ready": gate_evaluated and not gate_code,
         "auth_matches": auth, "auth_ready": auth_ready, "manifest_ready": manifest_ready,
         "focused_run_ready": focused_ready, "blocking_gates": blocking,
         "non_execution": {"provider_execution": False, "endpoint_probe": False, "model_weight_read": False, "token_store_read": False},
     }
 
 
-def _profile_matches(role: str, target: str, data: dict[str, Any]) -> list[dict[str, Any]]:
-    wanted = {"local_14b": "14B", "local_32b": "32B"}.get(role, target)
+def _profile_matches(selector: dict[str, Any], data: dict[str, Any]) -> list[dict[str, Any]]:
+    wanted = {"profile_id": selector.get("profile_id"), "backend": selector.get("backend"), "model_ref": selector.get("model_reference")}
     rows = data.get("profiles") if isinstance(data.get("profiles"), list) else []
     return [{
         "profile_id": item.get("profile_id", ""), "model": item.get("model", ""),
         "backend": item.get("backend", ""), "provider_role": item.get("provider_role", ""),
         "model_ref": item.get("model_ref", ""), "profile_sha256": _canonical_sha256(item),
+        "release_asset_sha256": item.get("release_asset_sha256", ""),
+        "expected_ollama_digest": item.get("expected_ollama_digest", ""),
         "root_exists": item.get("root_exists") is True,
         "supports_agentic_workflow": item.get("supports_agentic_workflow") is True,
         "live_probed": bool(item.get("live_probed")),
-    } for item in rows if isinstance(item, dict) and str(item.get("model", "")).lower() == wanted.lower()]
+    } for item in rows if isinstance(item, dict) and all(item.get(key) == value for key, value in wanted.items())]
+
+
+def _profile_failure(profile: dict[str, Any], selector: dict[str, Any]) -> str:
+    if profile.get("release_asset_sha256") != selector.get("release_asset_sha256"):
+        return "endpoint_profile_release_asset_sha256_mismatch"
+    if profile.get("backend") == "ollama" and not str(profile.get("expected_ollama_digest", "")).strip():
+        return "endpoint_profile_ollama_digest_missing"
+    return ""
 
 
 def _strings(value: Any) -> list[str]:
@@ -203,18 +220,27 @@ def _gate_failure(gate: dict[str, Any], profile: dict[str, Any], run_id: str, no
         return "endpoint_gate_stale"
     if not run_id or gate.get("run_id") != run_id:
         return "endpoint_gate_run_mismatch"
-    checks = (
+    identity_checks = (
         (gate.get("selected_profile_id") != profile["profile_id"], "endpoint_gate_profile_mismatch"),
         (gate.get("model") != profile["model"], "endpoint_gate_model_mismatch"),
         (gate.get("backend") != profile["backend"], "endpoint_gate_backend_mismatch"),
         (gate.get("profile_sha256") != profile["profile_sha256"], "endpoint_gate_profile_hash_mismatch"),
+        (gate.get("release_asset_sha256") != profile["release_asset_sha256"], "endpoint_gate_release_asset_sha256_mismatch"),
         (gate.get("expected_model_ref") != profile["model_ref"], "endpoint_gate_expected_ref_mismatch"),
+    )
+    identity_error = next((code for failed, code in identity_checks if failed), "")
+    if identity_error: return identity_error
+    producer_digest_failures = {"ollama_digest_missing": "endpoint_gate_ollama_digest_missing",
+                                "ollama_digest_mismatch": "endpoint_gate_ollama_digest_mismatch"}
+    if gate.get("failure_class") in producer_digest_failures: return producer_digest_failures[gate["failure_class"]]
+    checks = (
         (gate.get("observed_model_ref") != profile["model_ref"], "endpoint_gate_observed_ref_mismatch"),
         (gate.get("health_ok") is not True or gate.get("generation_ok") is not True
          or gate.get("failure_class") != "", "endpoint_gate_failed"),
-        (profile["backend"].lower() == "ollama"
-         and (not isinstance(gate.get("ollama_digest"), str) or not gate["ollama_digest"].strip()),
-         "endpoint_gate_ollama_digest_missing"),
+        (profile["backend"].lower() == "ollama" and (not isinstance(gate.get("ollama_digest"), str)
+         or not gate["ollama_digest"].strip()), "endpoint_gate_ollama_digest_missing"),
+        (profile["backend"].lower() == "ollama" and (gate.get("expected_ollama_digest") != profile["expected_ollama_digest"]
+         or gate.get("ollama_digest") != profile["expected_ollama_digest"]), "endpoint_gate_ollama_digest_mismatch"),
     )
     return next((code for failed, code in checks if failed), "")
 

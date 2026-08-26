@@ -1,98 +1,97 @@
 import hashlib
 import json
 from datetime import UTC, datetime, timedelta
-
 import pytest
-
 from harness.adapter_runtime_matrix import build_matrix, render_markdown
 from scripts.run_adapter_runtime_matrix import main as matrix_main
-
-
 NOW = datetime(2026, 8, 11, 12, 0, tzinfo=UTC)
-
-
 def canonical_sha256(value):
     body = json.dumps(value, ensure_ascii=False, separators=(",", ":"), sort_keys=True)
     return hashlib.sha256(body.encode("utf-8")).hexdigest()
-
-
-def contract_fixture():
+def contract_fixture(selector):
     def row(role, harness, model, state="contract_only", modes=None):
         return {
-            "provider_role": role, "harness_id": harness, "target_model": model,
+            "provider_role": role, "harness_id": harness, "model_id": model,
+            "model_display_name": model, "requested_model_reference": model,
             "adapter_state": state,
             "allowed_modes": modes or ["manifest_only", "focused_run_after_approval"],
             "required_receipts": [],
         }
+    local = row("local_14b", "local_endpoint", "flywheel-local-coder-14b", "needs_endpoint_profile_and_gate")
+    local["endpoint_selector"] = {key: selector[key] for key in ("profile_id", "backend", "model_ref")}
+    local["endpoint_selector"]["model_reference"] = local["endpoint_selector"].pop("model_ref")
+    local["endpoint_selector"]["release_asset_sha256"] = "a" * 64
     return {"provider_roles": [
         row("codex_harness", "codex", "5.3-Codex-Spark"),
         row("flywheel_harness", "flywheel", "5.3-Codex-Spark"),
-        row("local_14b", "local_endpoint", "14B", "needs_endpoint_profile_and_gate"),
+        local,
         row("dry", "dry_null", "none", modes=["manifest_only"]),
     ]}
-
-
 def profile_fixture(*, backend="serve"):
     profile = {
         "profile_id": f"{backend}-14b", "model": "14B", "model_key": "14b",
         "backend": backend, "provider_role": "flywheel", "root_exists": True,
         "supports_agentic_workflow": True,
         "model_ref": "serve:expected" if backend == "serve" else "ollama:qwen:14b",
+        "release_asset_sha256": "a" * 64, "expected_ollama_digest": "sha256:abc" if backend == "ollama" else "",
     }
     if backend == "ollama":
         profile["selectors"] = ["qwen:14b"]
     return {"profiles": [profile]}
-
-
 def auth_fixture(*, configured=True):
     return {"lanes": [{
         "id": "codex_subscription", "provider": "codex", "mode": "plan",
         "kind": "subscription_cli", "configured": configured,
         "evidence": {"path": "operator://codex-cli", "found": configured},
     }]}
-
-
 def gate_fixture(profile, *, observed_at=None, run_id="gate-run"):
     return {"schema": "harness.model-endpoint-gate/v1", "run_id": run_id, "rows": [{
         "selected_profile_id": profile["profile_id"], "profile_sha256": canonical_sha256(profile),
         "model": profile["model"], "backend": profile["backend"],
         "expected_model_ref": profile["model_ref"], "observed_model_ref": profile["model_ref"],
         "health_ok": True, "generation_ok": True, "failure_class": "",
-        "ollama_digest": "sha256:abc" if profile["backend"] == "ollama" else "",
+        "ollama_digest": profile["expected_ollama_digest"] if profile["backend"] == "ollama" else "",
+        "release_asset_sha256": profile["release_asset_sha256"], "expected_ollama_digest": profile["expected_ollama_digest"],
         "run_id": run_id, "observed_at": observed_at or NOW.isoformat().replace("+00:00", "Z"),
     }]}
-
-
 def matrix(*, profiles=None, gate=None, auth=None, now=NOW, expected_run="gate-run", max_age=900):
+    profiles = profiles or profile_fixture()
     return build_matrix(
-        contract_fixture(), contract_path="contract.json", contract_sha256="contract-hash",
-        endpoint_profiles=profiles or profile_fixture(), endpoint_gate=gate,
+        contract_fixture(profiles["profiles"][0]), contract_path="contract.json", contract_sha256="contract-hash",
+        endpoint_profiles=profiles, endpoint_gate=gate,
         endpoint_gate_path="gate.json" if gate else "", endpoint_gate_sha256="gate-hash" if gate else "",
         endpoint_auth_status=auth or auth_fixture(), expected_gate_run_id=expected_run,
         now=now, max_age_seconds=max_age, run_id="matrix-run",
     )
-
-
 def local_row(result):
     return next(row for row in result["runtime_rows"] if row["provider_role"] == "local_14b")
-
-
 def test_exact_fresh_endpoint_gate_allows_local_focused_run():
     profiles = profile_fixture()
     row = local_row(matrix(profiles=profiles, gate=gate_fixture(profiles["profiles"][0])))
-
     assert row["endpoint_gate_ready"] is True
     assert row["focused_run_ready"] is True
+    assert (row["model_observed"], row["model_observation_basis"]) == ("", "unknown")
     assert row["blocking_gates"] == []
     assert row["endpoint_gate_matches"] == [{
         "selected_profile_id": "serve-14b", "profile_sha256": canonical_sha256(profiles["profiles"][0]),
         "model": "14B", "backend": "serve", "expected_model_ref": "serve:expected",
         "observed_model_ref": "serve:expected", "health_ok": True, "generation_ok": True,
-        "failure_class": "", "ollama_digest": "", "run_id": "gate-run",
+        "failure_class": "", "release_asset_sha256": "a" * 64, "expected_ollama_digest": "",
+        "ollama_digest": "", "run_id": "gate-run",
         "observed_at": "2026-08-11T12:00:00Z",
     }]
-
-
+def test_exact_32b_release_sha_and_digest_allow_local_focused_run():
+    profile = profile_fixture(backend="ollama")["profiles"][0]
+    profile.update(profile_id="ollama-release-32b", model="32B", model_key="32b",
+        model_ref="ollama:flywheel-local-coder-32b",
+        release_asset_sha256="65e6133fbe4d12579a776047a71bebb98ab86f9e3d343ed821b51dac0ce312f4",
+        expected_ollama_digest="sha256:35fa696e662eb83293491d4b87de1d1308254d82be7aa8244f4fa442bf0e09d9")
+    contract = contract_fixture(profile); local = next(row for row in contract["provider_roles"] if row["provider_role"] == "local_14b")
+    local.update(provider_role="local_32b", model_id="flywheel-local-coder-32b",
+        requested_model_reference=profile["model_ref"]); local["endpoint_selector"]["release_asset_sha256"] = profile["release_asset_sha256"]
+    result = build_matrix(contract, contract_path="contract.json", contract_sha256="hash", endpoint_profiles={"profiles": [profile]},
+        endpoint_gate=gate_fixture(profile), expected_gate_run_id="gate-run", now=NOW); row = next(item for item in result["runtime_rows"] if item["provider_role"] == "local_32b")
+    assert row["focused_run_ready"] is True and row["blocking_gates"] == []
 @pytest.mark.parametrize(("mutate", "code"), [
     (lambda gate, profile: gate.update(rows=[]), "endpoint_gate_missing"),
     (lambda gate, profile: gate["rows"][0].update(health_ok=False, failure_class="endpoint_unavailable"), "endpoint_gate_failed"),
@@ -107,9 +106,7 @@ def test_endpoint_identity_or_probe_mismatch_blocks_local_run(mutate, code):
     profiles = profile_fixture()
     gate = gate_fixture(profiles["profiles"][0])
     mutate(gate, profiles["profiles"][0])
-
     row = local_row(matrix(profiles=profiles, gate=gate))
-
     assert row["endpoint_gate_ready"] is False
     assert row["focused_run_ready"] is False
     assert row["blocking_gates"] == [code]
@@ -120,10 +117,19 @@ def test_ollama_gate_requires_digest(digest):
     profiles = profile_fixture(backend="ollama")
     gate = gate_fixture(profiles["profiles"][0])
     gate["rows"][0]["ollama_digest"] = digest
-
     row = local_row(matrix(profiles=profiles, gate=gate))
-
     assert row["blocking_gates"] == ["endpoint_gate_ollama_digest_missing"]
+
+
+@pytest.mark.parametrize(("mutate", "code"), [
+    (lambda profile, gate: profile.update(release_asset_sha256="b" * 64), "endpoint_profile_release_asset_sha256_mismatch"),
+    (lambda profile, gate: profile.update(expected_ollama_digest=""), "endpoint_profile_ollama_digest_missing"),
+    (lambda profile, gate: gate["rows"][0].update(ollama_digest="sha256:other"), "endpoint_gate_ollama_digest_mismatch"),
+])
+def test_release_and_ollama_digest_identity_fail_closed(mutate, code):
+    profiles = profile_fixture(backend="ollama"); gate = gate_fixture(profiles["profiles"][0])
+    mutate(profiles["profiles"][0], gate)
+    assert local_row(matrix(profiles=profiles, gate=gate))["blocking_gates"] == [code]
 
 
 @pytest.mark.parametrize(("observed_at", "expected_run", "code"), [
@@ -257,14 +263,13 @@ def test_matrix_records_gate_metadata_and_renders_guards():
     assert result["max_age_seconds"] == 900
     assert "must not call Codex" in render_markdown(result)
 
-
 def cli_matrix(tmp_path, gate):
     contract_path = tmp_path / "contract.json"
     profiles_path = tmp_path / "profiles.json"
     gate_path = tmp_path / "gate.json"
     out = tmp_path / "matrix.json"
     profiles = profile_fixture()
-    contract_path.write_text(json.dumps(contract_fixture()), encoding="utf-8")
+    contract_path.write_text(json.dumps(contract_fixture(profiles["profiles"][0])), encoding="utf-8")
     profiles_path.write_text(json.dumps(profiles), encoding="utf-8")
     args = [
         "--contract", str(contract_path), "--endpoint-profiles", str(profiles_path),
@@ -276,8 +281,6 @@ def cli_matrix(tmp_path, gate):
         args.extend(["--endpoint-gate", str(gate_path)])
     assert matrix_main(args) == 0
     return json.loads(out.read_text(encoding="utf-8")), gate_path
-
-
 def test_metadata_cli_reads_gate_and_records_path_hash_run_and_age(tmp_path):
     profile = profile_fixture()["profiles"][0]
     gate = gate_fixture(profile, observed_at=datetime.now(UTC).isoformat())
@@ -288,8 +291,6 @@ def test_metadata_cli_reads_gate_and_records_path_hash_run_and_age(tmp_path):
     assert result["max_age_seconds"] == 600
     assert result["summary"]["endpoint_probe"] is False
     assert result["summary"]["token_store_read"] is False
-
-
 @pytest.mark.parametrize(("gate", "code"), [
     ("omitted", "endpoint_gate_missing"), ("missing", "endpoint_gate_missing"),
     ({}, "endpoint_gate_schema_mismatch"), ([], "endpoint_gate_schema_mismatch"),

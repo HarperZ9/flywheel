@@ -1,6 +1,5 @@
 """Typed cross-harness row expansion and execution."""
 from __future__ import annotations
-
 import hashlib, json
 from pathlib import Path
 from typing import Any
@@ -8,16 +7,14 @@ from harness.cross_harness_artifacts import (bind_attempt_receipt, canonical_sha
     materialize_response_envelope, preflight_artifact_root, recheck_attempt_receipt, remove_readonly_tree,
     snapshot_source_tree, validate_execution_components, write_artifact_index)
 from harness.cross_harness_oracles import OracleContext, evaluate_task_oracle
-from harness.cross_harness_types import (AttemptRequest, metric_null_reasons, sanitize_evidence,
+from harness.cross_harness_types import (AttemptRequest, metric_null_reasons, model_observation_pair_error, sanitize_evidence,
     validate_elapsed_ms)
 class _MalformedAttempt(ValueError): pass
-
 SHARED_TOOL_POLICY = {
     "version": "cross-harness-read-only/v1", "allow_read": True,
     "allow_write": False, "allow_exec": False, "allow_mcp": False,
     "max_steps": 6, "max_output_tokens": 2048,
 }
-
 def resolve_task_ids(task_rows: list[dict[str, Any]], selectors: list[str]) -> list[str]:
     task_ids = [str(row.get("task_id", "")) for row in task_rows]
     resolved: list[str] = []
@@ -59,20 +56,23 @@ def derive_primary_outcome(execution_state: str, oracle_state: str, receipt_stat
     status = ({"unavailable": "skipped", "receipt_drift": "invalid"}.get(outcome)
               or ("failed" if outcome in {"timeout", "malformed", "internal_error"} else "executed"))
     return outcome, status
-
 def comparison_key(row: dict[str, Any]) -> str:
     fields = ("task_set_id", "task_id", "raw_prompt_sha256", "input_sha256s", "tool_policy_sha256",
-              "model_id", "cache_state", "phase", "execution_mode", "source_snapshot_sha256",
+              "model_id", "requested_model_reference", "cache_state", "phase", "execution_mode", "source_snapshot_sha256",
               "workspace_snapshot_sha256")
-    return canonical_sha256({field: row.get(field) for field in fields})
-
+    evidence = row.get("availability_evidence") if isinstance(row.get("availability_evidence"), dict) else {}
+    route_fields = ("endpoint_profile_id", "endpoint_profile_sha256", "release_asset_sha256",
+                    "expected_ollama_digest", "observed_ollama_digest")
+    return canonical_sha256({**{field: row.get(field) for field in fields},
+                             "local_route_identity": {field: evidence.get(field, "") for field in route_fields}})
+def legacy_comparison_key(row: dict[str, Any]) -> str:
+    fields = ("task_set_id", "task_id", "raw_prompt_sha256", "input_sha256s", "tool_policy_sha256", "model_id", "cache_state", "phase", "execution_mode", "source_snapshot_sha256", "workspace_snapshot_sha256")
+    return canonical_sha256({field: row.get("target_model") if field == "model_id" and "model_id" not in row else row.get(field) for field in fields})
 def _one(rows: list[dict[str, Any]], field: str, value: str) -> dict[str, Any]:
     matches = [row for row in rows if str(row.get(field, "")) == value]
     if len(matches) != 1:
         raise ValueError(f"expected exactly one {field} row for {value}")
     return matches[0]
-
-
 def _unavailable_evidence(role: str, runtime: dict[str, Any], matrix: dict[str, Any]) -> dict[str, Any]:
     profiles = runtime.get("endpoint_profile_matches", [])
     gates = runtime.get("endpoint_gate_matches", [])
@@ -85,13 +85,14 @@ def _unavailable_evidence(role: str, runtime: dict[str, Any], matrix: dict[str, 
         "observed_model_reference": str(gate.get("observed_model_ref", "")),
         "endpoint_profile_id": str(profile.get("profile_id", "")),
         "endpoint_profile_sha256": str(profile.get("profile_sha256", "")),
+        "release_asset_sha256": str(profile.get("release_asset_sha256", "")),
+        "expected_ollama_digest": str(profile.get("expected_ollama_digest", "")),
+        "observed_ollama_digest": str(gate.get("ollama_digest", "")),
         "attempted_gate_path": str(matrix.get("endpoint_gate_path", "")),
         "attempted_gate_sha256": str(matrix.get("endpoint_gate_sha256", "")),
         "attempted_gate_run_id": str(matrix.get("expected_gate_run_id", "")),
         "blocking_gates": blocking, "failure_reason": ",".join(blocking),
     }
-
-
 def expand_attempt_rows(
     manifest: dict[str, Any], runtime_matrix: dict[str, Any], *, artifact_root: Path,
     run_id: str, phase: str, selectors: list[str], roles: list[str], repetitions: int,
@@ -118,7 +119,8 @@ def expand_attempt_rows(
                     "attempt_key": list(key), "run_id": run_id, "phase": phase,
                     "provider_role": role, "harness_id": str(spec.get("harness_id", "")),
                     "adapter_id": str(spec.get("adapter_id", "")),
-                    "model_id": str(spec.get("target_model", "")),
+                    "model_id": str(spec.get("model_id", "")), "model_display_name": str(spec.get("model_display_name", "")),
+                    "requested_model_reference": str(spec.get("requested_model_reference", "")),
                     "task_set_id": str(manifest.get("task_set_id", "")), "task_id": task_id,
                     "benchmark_id": str(task.get("benchmark_id", "")), "coverage_unit": str(task.get("coverage_unit", "")),
                     "task": task, "repetition": repetition, "attempt_dir": str(attempt),
@@ -128,7 +130,6 @@ def expand_attempt_rows(
                     "runtime_evidence": _unavailable_evidence(role, runtime, runtime_matrix),
                 })
     return rows
-
 
 def _write_json(path: Path, value: Any) -> Path:
     path.write_text(json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False,
@@ -178,7 +179,7 @@ def execute_cross_harness_manifest(
                         "source_snapshot_sha256": before["sha256"], "input_sha256s": dict(task.get("input_sha256s", {})),
                         "execution_state": "not_started", "oracle_state": "not_run", "receipt_state": "not_emitted",
                         "raw_prompt_sha256": str(task.get("raw_prompt_sha256", "")), "raw_output_sha256": "",
-                        "raw_output_path": "", "tool_trace_path": "", "failure_class": "", "failure_detail": "",
+                        "raw_output_path": "", "tool_trace_path": "", "failure_class": "", "failure_detail": "", "model_observed": "", "model_observation_basis": "unknown",
                         "metrics": {}, "limitations": ["Actual enforcement is not assumed equivalent across adapters."],
                         "policy_equivalence": "non_equivalent", "availability_evidence": dict(plan["runtime_evidence"]),
                         "planned": True, "admitted": False, "launched": False, "blocked": False})
@@ -193,7 +194,7 @@ def execute_cross_harness_manifest(
                 prompt = attempt / "prompt.txt"; prompt.write_text(str(task.get("raw_prompt", "")), encoding="utf-8", newline=""); files[prompt.name] = prompt
                 row["raw_prompt_path"] = str(prompt)
                 request = AttemptRequest(run_id, phase, row["task_set_id"], row["task_id"], task.get("raw_prompt", ""),
-                    row["raw_prompt_sha256"], row["provider_role"], row["harness_id"], row["adapter_id"], row["model_id"],
+                    row["raw_prompt_sha256"], row["provider_role"], row["harness_id"], row["adapter_id"], row["model_id"], row["requested_model_reference"],
                     workspace, workspace_snapshot["sha256"], observed, dict(SHARED_TOOL_POLICY), row["tool_policy_sha256"],
                     row["repetition"], cache_state, timeout_seconds, attempt)
                 adapter = adapters.get(row["provider_role"])
@@ -230,21 +231,20 @@ def execute_cross_harness_manifest(
                                 raw = attempt / "output.txt"; raw.write_text(result.output_text, encoding="utf-8", newline=""); files[raw.name] = raw
                                 row.update(raw_output_path=str(raw), raw_output_sha256=hashlib.sha256(raw.read_bytes()).hexdigest())
                             elapsed_ms = validate_elapsed_ms(result.elapsed_ms)
-                            metadata = sanitize_evidence({"usage": result.usage, "resource": result.resource_observation,
-                                "capabilities": result.observed_capabilities, "violations": result.policy_violations,
-                                "tool_trace": result.tool_trace, "model": result.model_observed,
-                                "randomness": result.randomness_control, "failure_detail": result.failure_detail})
-                            row.update(execution_state=result.execution_state, failure_class=sanitize_evidence(result.failure_class),
-                                       failure_detail=metadata["failure_detail"],
-                                       metrics={"latency_ms": elapsed_ms, "usage": metadata["usage"], "resource_observation": metadata["resource"]},
-                                       model_observed=metadata["model"], randomness_control=metadata["randomness"],
+                            observation_error = model_observation_pair_error(result.model_observed, result.model_observation_basis)
+                            metadata = sanitize_evidence({"usage": result.usage, "resource": result.resource_observation, "capabilities": result.observed_capabilities,
+                                "violations": result.policy_violations, "tool_trace": result.tool_trace, "model": result.model_observed, "model_observation_basis": result.model_observation_basis, "randomness": result.randomness_control, "failure_detail": result.failure_detail})
+                            row.update(execution_state="malformed" if observation_error else result.execution_state, failure_class="invalid_model_observation" if observation_error else sanitize_evidence(result.failure_class), failure_detail=observation_error or metadata["failure_detail"],
+                                       metrics={"latency_ms": elapsed_ms, "usage": metadata["usage"], "resource_observation": metadata["resource"]}, model_observed="" if observation_error or metadata["model_observation_basis"] == "unknown" else metadata["model"], model_observation_basis="unknown" if observation_error else metadata["model_observation_basis"], randomness_control=metadata["randomness"],
                                        observed_capabilities=metadata["capabilities"], policy_violations=metadata["violations"])
                             trace = attempt / "tool_trace.json"; _write_json(trace, metadata["tool_trace"]); files[trace.name] = trace; row["tool_trace_path"] = str(trace)
-                            if result.execution_state == "returned":
+                            if row["execution_state"] == "returned":
+                                if row["model_observation_basis"] == "unknown":
+                                    row["limitations"].append("provider_request_accepted_not_model_attested")
                                 try: raw, artifacts = materialize_response_envelope(result.output_text, list(task.get("expected_artifacts", [])), attempt)
                                 except ValueError as exc: raise _MalformedAttempt(str(exc)) from exc
                                 files.update(artifacts); row.update(raw_output_path=str(raw), raw_output_sha256=hashlib.sha256(raw.read_bytes()).hexdigest())
-                                provider_receipt = attempt / "provider-receipt.json"; _write_json(provider_receipt, {"model_observed": row["model_observed"], "elapsed_ms": elapsed_ms}); files[provider_receipt.name] = provider_receipt
+                                provider_receipt = attempt / "provider-receipt.json"; _write_json(provider_receipt, {"model_observed": row["model_observed"], "model_observation_basis": row["model_observation_basis"], "elapsed_ms": elapsed_ms}); files[provider_receipt.name] = provider_receipt
                                 core = {"workspace_root": str(workspace), "attempt_dir": str(attempt),
                                         "raw_prompt_sha256": row["raw_prompt_sha256"], "tool_policy_sha256": row["tool_policy_sha256"],
                                         "raw_artifact_sha256": row["raw_output_sha256"], "receipt_sha256": hashlib.sha256(provider_receipt.read_bytes()).hexdigest(),

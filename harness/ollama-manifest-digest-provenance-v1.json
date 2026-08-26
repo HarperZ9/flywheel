@@ -1,0 +1,27 @@
+{
+  "schema": "harness.ollama-manifest-digest-provenance/v1",
+  "derivation": {
+    "method": "sha256_exact_ollama_manifest_bytes",
+    "source_kind": "Ollama manifest JSON bytes",
+    "tool": "python-stdlib-hashlib.sha256",
+    "tool_version": "Python 3.12.10"
+  },
+  "models": [
+    {
+      "native_model_name": "flywheel-local-coder-14b",
+      "release_asset_sha256": "613db240e3efc6730f24042a4602d1f12f1c6b397af1d5a4d74f4e064d4064be",
+      "ollama_manifest_digest": "sha256:7ff88ed3fd95eac7e79cb38a0a5ee3db39b7103a09d5a51d75fcda908522f6d8"
+    },
+    {
+      "native_model_name": "flywheel-local-coder-32b",
+      "release_asset_sha256": "65e6133fbe4d12579a776047a71bebb98ab86f9e3d343ed821b51dac0ce312f4",
+      "ollama_manifest_digest": "sha256:35fa696e662eb83293491d4b87de1d1308254d82be7aa8244f4fa442bf0e09d9"
+    }
+  ],
+  "does_not_prove": [
+    "current Ollama service or tag availability",
+    "current endpoint generation readiness",
+    "manifest source bytes, which are not embedded in this public receipt"
+  ],
+  "evidence_sha256": "875d99198b6a01547644457c0d71eb2e52abc916e664a7cf90c5764da3e822ca"
+}

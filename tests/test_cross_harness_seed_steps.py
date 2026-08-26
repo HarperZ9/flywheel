@@ -123,13 +123,27 @@ def _manifest():
     tasks = [{"task_id": full, "raw_prompt_sha256": key[-3:] * 21 + "a", "input_sha256s": {}, "oracle": {"checker_id": key}}
              for key, full in FULL_IDS.items()]
     specs = [{"provider_role": role, "harness_id": "direct" if role == "codex_harness" else "router",
-              "adapter_id": "adapter", "target_model": "model"} for role in ROLES]
+              "adapter_id": "adapter", "model_id": "model", "model_display_name": "Model", "requested_model_reference": "model"} for role in ROLES]
     return {"task_set_id": "set", "task_rows": tasks, "provider_specs": specs}
 
 
 def _current():
     return {"source_commit": "commit", "source_snapshot_sha256": "s" * 64,
             "cache_state": "cold_declared", "execution_mode": "focused_run"}
+
+
+def _local_identity(role):
+    return {"endpoint_profile_id": f"release-{role}", "endpoint_profile_sha256": "p" * 64,
+            "release_asset_sha256": "a" * 64, "expected_ollama_digest": f"sha256:{role}",
+            "observed_ollama_digest": f"sha256:{role}"}
+
+
+def _runtime_row(role):
+    identity = _local_identity(role)
+    return {"provider_role": role, "focused_run_ready": True, "blocking_gates": [],
+            "endpoint_profile_matches": [{"profile_id": identity["endpoint_profile_id"], "profile_sha256": identity["endpoint_profile_sha256"],
+                "release_asset_sha256": identity["release_asset_sha256"], "expected_ollama_digest": identity["expected_ollama_digest"]}],
+            "endpoint_gate_matches": [{"ollama_digest": identity["observed_ollama_digest"]}]}
 
 
 def _admission(tmp_path, *, mutate=None):
@@ -143,8 +157,11 @@ def _admission(tmp_path, *, mutate=None):
             row = {"phase": "admission-smoke", "provider_role": role, "task_id": task["task_id"], "repetition": 1,
                    "primary_outcome": "completed", "receipt_path": str(receipt), "task_set_id": "set",
                    "raw_prompt_sha256": task["raw_prompt_sha256"], "input_sha256s": {}, "harness_id": spec["harness_id"],
-                   "adapter_id": "adapter", "model_id": "model", "tool_policy_sha256": canonical_sha256(SHARED_TOOL_POLICY),
+                   "schema": "harness.cross-harness-task-scorecard/v1", "adapter_id": "adapter", "model_id": "model",
+                   "model_display_name": "Model", "requested_model_reference": "model",
+                   "model_observed": "", "model_observation_basis": "unknown", "tool_policy_sha256": canonical_sha256(SHARED_TOOL_POLICY),
                    **current, "availability_evidence": {"adapter_evidence": {"oracle_spec_sha256": canonical_sha256(task["oracle"])}}}
+            if role.startswith("local_"): row["availability_evidence"].update(_local_identity(role))
             rows.append(row)
     if mutate: mutate(rows)
     for row in rows:
@@ -161,11 +178,20 @@ def _admission(tmp_path, *, mutate=None):
 ])
 def test_admission_smoke_is_canonical_not_later_phase_selection(tmp_path, selectors, roles, repetitions):
     manifest, current, receipt = _admission(tmp_path)
-    matrix = {"runtime_rows": [{"provider_role": role, "focused_run_ready": True, "blocking_gates": []} for role in roles]}
+    matrix = {"runtime_rows": [_runtime_row(role) if role.startswith("local_") else
+                               {"provider_role": role, "focused_run_ready": True, "blocking_gates": []} for role in roles]}
 
     _apply_admission(matrix, receipt, manifest, selectors, roles, repetitions, current=current)
 
     assert all(row["focused_run_ready"] for row in matrix["runtime_rows"])
+
+
+def test_local_admission_rejects_conflicting_endpoint_identity(tmp_path):
+    manifest, current, receipt = _admission(tmp_path)
+    runtime = _runtime_row("local_14b"); runtime["endpoint_gate_matches"][0]["ollama_digest"] = "sha256:conflict"
+    matrix = {"runtime_rows": [runtime]}
+    _apply_admission(matrix, receipt, manifest, ["agt-009"], ["local_14b"], 1, current=current)
+    assert runtime["blocking_gates"] == ["admission_local_endpoint_identity_mismatch"]
 
 
 def test_unavailable_admission_role_preserves_static_gates_without_oracle_mismatch(tmp_path):

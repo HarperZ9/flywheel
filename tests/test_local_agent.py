@@ -12,6 +12,7 @@ no GPU):
   (5) the strongest local model (32b > 14b > 7b) is preferred automatically, so
       pulling the 14B/32B upgrades the backend with no code change.
 """
+import json
 import urllib.error
 
 import pytest
@@ -19,6 +20,7 @@ import pytest
 from harness.local_agent import (
     BackendError,
     LocalAgent,
+    MalformedBackendOutput,
     OllamaBackend,
     ServeBackend,
     _prefer_largest,
@@ -51,7 +53,7 @@ SERVE_LIVE = {"/health": (200, {"ok": True, "model_ref": "14b"}),
               "/generate": (200, {"text": "from serve", "model_ref": "14b",
                                    "prompt_hash": "aa", "seed": 0})}
 OLLAMA_LIVE = {"/api/tags": (200, {"models": [{"name": "qwen2.5:7b"}]}),
-               "/api/chat": (200, {"message": {"content": "from ollama"}})}
+               "/api/chat": (200, {"model": "qwen2.5:7b", "message": {"content": "from ollama"}})}
 
 
 def _agent(routes, prefer="auto"):
@@ -139,11 +141,11 @@ def test_health_report_shape():
     assert {tier["backend"] for tier in rep["tiers"]} == {"serve", "ollama"}
 
 
-def _stream_pieces(pieces):
+def _stream_pieces(pieces, model="qwen2.5:7b"):
     def st(body):
         for p in pieces:
-            yield {"message": {"content": p}}
-        yield {"done": True}
+            yield {"model": model, "message": {"content": p}}
+        yield {"model": model, "done": True}
     return st
 
 
@@ -165,6 +167,47 @@ def test_agent_stream_accumulates_and_still_receipts():
     assert resp["content"][0]["text"] == "answer" and resp["backend"] == "ollama"
     assert resp["x_receipt"]["receipt_id"]
     assert [h["role"] for h in agent.history] == ["user", "assistant"]
+
+
+@pytest.mark.parametrize("observed", [None, "other:7b"])
+def test_ollama_chat_rejects_missing_or_mismatched_model_identity(observed):
+    reply = {"message": {"content": "ok"}}
+    if observed is not None:
+        reply["model"] = observed
+    backend = OllamaBackend(model="ollama:qwen2.5:7b", transport=lambda *_: (200, reply))
+    with pytest.raises(MalformedBackendOutput):
+        backend.chat([], system="", max_tokens=1, temperature=0, seed=0)
+
+
+def test_ollama_chat_normalizes_exactly_one_namespace_prefix():
+    seen = {}
+    def transport(_method, _url, body, _timeout):
+        seen.update(json.loads(body)); return 200, {"model": "ollama:qwen2.5:7b", "message": {"content": "ok"}}
+    result = OllamaBackend(model="ollama:ollama:qwen2.5:7b", transport=transport).chat(
+        [], system="", max_tokens=1, temperature=0, seed=0)
+    assert seen["model"] == "ollama:qwen2.5:7b"
+    assert result["model_ref"] == "ollama:ollama:qwen2.5:7b"
+
+
+@pytest.mark.parametrize("chunks", [
+    [{"message": {"content": "unattested"}}, {"done": True}],
+    [{"model": "other:7b", "message": {"content": "wrong"}}],
+])
+def test_ollama_stream_rejects_missing_or_mismatched_model_identity(chunks):
+    backend = OllamaBackend(model="ollama:qwen2.5:7b", stream_transport=lambda _body: iter(chunks))
+    with pytest.raises(MalformedBackendOutput):
+        list(backend.chat_stream([], system="", max_tokens=1, temperature=0, seed=0))
+
+
+def test_agent_stream_uses_backend_validated_canonical_reference_once():
+    seen = {}
+    def stream(body):
+        seen.update(json.loads(body)); yield {"model": "ollama:qwen2.5:7b", "message": {"content": "ok"}}
+    tags = FakeTransport({"/api/tags": (200, {"models": [{"name": "ollama:qwen2.5:7b"}]})})
+    agent = LocalAgent(backends=[OllamaBackend(model="ollama:ollama:qwen2.5:7b", transport=tags, stream_transport=stream)])
+    response = agent.stream("hi", lambda _piece: None)
+    assert seen["model"] == "ollama:qwen2.5:7b"
+    assert response["x_receipt"]["model_ref"] == "ollama:ollama:qwen2.5:7b"
 
 
 def test_stream_falls_back_when_no_streaming_backend():

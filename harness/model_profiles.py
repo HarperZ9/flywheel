@@ -2,8 +2,12 @@
 
 from __future__ import annotations
 
+import hashlib
+import json
 from pathlib import Path
 
+
+RELEASE_IDENTITY_PROVENANCE = Path(__file__).with_name("ollama-manifest-digest-provenance-v1.json")
 
 MODEL_PROFILES = {
     "14b": {
@@ -22,6 +26,7 @@ MODEL_PROFILES = {
             "base_license": "Apache-2.0",
             "adapter": "checkpoint-2020 (QLoRA CPT, 2020 steps / 2 epochs; final logged loss 0.444, min 0.359)",
             "artifact_sha256": "613db240e3efc6730f24042a4602d1f12f1c6b397af1d5a4d74f4e064d4064be",
+            "ollama_manifest_digest": "sha256:7ff88ed3fd95eac7e79cb38a0a5ee3db39b7103a09d5a51d75fcda908522f6d8",
             "ship_manifest": "tasks/research/gguf_ship_manifest_checkpoint2020.json",
             "ollama_model_name": "flywheel-local-coder-14b",
         },
@@ -42,6 +47,7 @@ MODEL_PROFILES = {
             "base_license": "Apache-2.0",
             "adapter": "checkpoint-2019 (QLoRA CPT, continued pretraining, 2019/2019 steps, completed 2026-07-12)",
             "artifact_sha256": "65e6133fbe4d12579a776047a71bebb98ab86f9e3d343ed821b51dac0ce312f4",
+            "ollama_manifest_digest": "sha256:35fa696e662eb83293491d4b87de1d1308254d82be7aa8244f4fa442bf0e09d9",
             "ship_manifest": "tasks/research/gguf_ship_manifest_checkpoint2019_32b.json",
             "ollama_model_name": "flywheel-local-coder-32b",
         },
@@ -61,6 +67,33 @@ def release_profile(model: str) -> dict:
     profile = MODEL_PROFILES.get(model_key(model), {})
     release = profile.get("release")
     return dict(release) if isinstance(release, dict) else {}
+
+
+def validate_release_identity_provenance(path: Path = RELEASE_IDENTITY_PROVENANCE) -> dict:
+    """Validate the durable digest receipt against release constants without probing Ollama."""
+    try:
+        receipt = json.loads(Path(path).read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise ValueError("release identity provenance unreadable") from exc
+    if not isinstance(receipt, dict) or receipt.get("schema") != "harness.ollama-manifest-digest-provenance/v1":
+        raise ValueError("release identity provenance schema mismatch")
+    payload = {key: value for key, value in receipt.items() if key != "evidence_sha256"}
+    evidence = hashlib.sha256(json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+    if receipt.get("evidence_sha256") != evidence:
+        raise ValueError("release identity provenance evidence hash mismatch")
+    derivation = receipt.get("derivation")
+    expected_derivation = {"method": "sha256_exact_ollama_manifest_bytes", "source_kind": "Ollama manifest JSON bytes",
+                           "tool": "python-stdlib-hashlib.sha256", "tool_version": "Python 3.12.10"}
+    if derivation != expected_derivation:
+        raise ValueError("release identity provenance derivation mismatch")
+    expected = {profile["release"]["ollama_model_name"]: (profile["release"]["artifact_sha256"],
+                profile["release"]["ollama_manifest_digest"]) for profile in MODEL_PROFILES.values()}
+    rows = receipt.get("models") if isinstance(receipt.get("models"), list) else []
+    observed = {row.get("native_model_name"): (row.get("release_asset_sha256"), row.get("ollama_manifest_digest"))
+                for row in rows if isinstance(row, dict)}
+    if len(observed) != len(rows) or observed != expected:
+        raise ValueError("release identity provenance constants mismatch")
+    return receipt
 
 
 def release_root(model: str, base_root: Path) -> Path | None:

@@ -21,7 +21,7 @@ TASKS = [
 def test_typed_request_and_declared_policy_are_exact():
     request = AttemptRequest(
         "run", "spark", "set", "agt-001-index-fallback-integrity", "prompt", "a" * 64,
-        "codex_harness", "codex", "codex_cli_json/v1", "spark", Path("work"), "b" * 64,
+        "codex_harness", "codex", "codex_cli_json/v1", "spark", "spark", Path("work"), "b" * 64,
         {"input.json": "c" * 64}, SHARED_TOOL_POLICY, "d" * 64, 1, "cold_declared", 30, Path("out"),
     )
     assert request.provider_role == "codex_harness"
@@ -65,16 +65,22 @@ def test_comparison_key_uses_declared_policy_not_actual_enforcement():
     row = {"task_set_id": "set", "task_id": "task", "raw_prompt_sha256": "a" * 64,
            "tool_policy_sha256": "b" * 64, "execution_mode": "focused_run",
            "enforcement_sha256": "c" * 64, "input_sha256s": {"z": "d" * 64},
-           "model_id": "Spark", "cache_state": "cold_declared", "phase": "spark",
+           "model_id": "Spark", "requested_model_reference": "5.3-Codex-Spark", "cache_state": "cold_declared", "phase": "spark",
            "source_snapshot_sha256": "e" * 64, "workspace_snapshot_sha256": "f" * 64,
            "provider_role": "codex_harness", "repetition": 1}
     key = comparison_key(row)
     assert isinstance(key, str) and len(key) == 64
     assert comparison_key({**row, "provider_role": "flywheel_harness", "repetition": 3,
                            "enforcement_sha256": "0" * 64}) == key
-    for field in ("task_id", "input_sha256s", "model_id", "cache_state", "phase",
+    for field in ("task_id", "input_sha256s", "model_id", "requested_model_reference", "cache_state", "phase",
                   "source_snapshot_sha256", "workspace_snapshot_sha256"):
         assert comparison_key({**row, field: "changed"}) != key
+    local = {**row, "availability_evidence": {"endpoint_profile_id": "release-14b", "endpoint_profile_sha256": "1" * 64,
+             "release_asset_sha256": "2" * 64, "expected_ollama_digest": "sha256:expected", "observed_ollama_digest": "sha256:expected"}}
+    local_key = comparison_key(local)
+    for field in ("endpoint_profile_id", "endpoint_profile_sha256", "release_asset_sha256", "expected_ollama_digest", "observed_ollama_digest"):
+        evidence = {**local["availability_evidence"], field: "changed"}
+        assert comparison_key({**local, "availability_evidence": evidence}) != local_key
 def _manifest(roles):
     tasks = [{"task_id": f"agt-{n:03d}-task", "raw_prompt": f"prompt-{n}",
               "raw_prompt_sha256": f"{n:064x}", "input_sha256s": {},
@@ -82,7 +88,7 @@ def _manifest(roles):
              for n in (1, 3, 9, 10)]
     return {"task_set_id": "set", "task_rows": tasks,
             "provider_specs": [{"provider_role": role, "harness_id": role.split("_")[0],
-                                "adapter_id": f"{role}/v1", "target_model": role}
+                                "adapter_id": f"{role}/v1", "model_id": role, "model_display_name": role, "requested_model_reference": role}
                                for role in roles]}
 def _runtime(roles, *, ready=True):
     return {"endpoint_gate_path": "gate.json", "endpoint_gate_sha256": "e" * 64,
@@ -115,20 +121,16 @@ def test_expansion_rejects_duplicate_attempt_keys(tmp_path):
 class FakeAdapter:
     role = "local_14b"
     adapter_id = "local_14b/v1"
-
     def __init__(self, *, available=True, result=None):
         self.available, self.result, self.calls = available, result, []
-
     def enforcement(self, request):
         self.calls.append("enforcement")
         description = {"boundary": "fake-read-only"}
         return EnforcementResult(description, canonical_hash(description), "verified_live_and_fixture", "equivalent")
-
     def availability(self, request):
         self.calls.append("availability")
         return AvailabilityResult(self.available, "" if self.available else "endpoint_unavailable",
                                   "ready" if self.available else "offline", {"probe": "fixture"})
-
     def execute(self, request):
         self.calls.append("execute")
         if isinstance(self.result, Exception): raise self.result
@@ -136,8 +138,6 @@ class FakeAdapter:
 class SecretEnforcementAdapter(FakeAdapter):
     def enforcement(self, request):
         return EnforcementResult({"authorization_token": "never-write-me"}, "x" * 64, "described", "non_equivalent")
-
-
 def canonical_hash(value):
     return hashlib.sha256(json.dumps(value, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
 
@@ -148,7 +148,7 @@ def _one_task(source, *, expected=(), oracle=None, inputs=(), task_id="agt-001-t
              "raw_prompt_sha256": hashlib.sha256(b"prompt\n").hexdigest(), "input_sha256s": hashes,
              "required_inputs": list(inputs), "expected_artifacts": list(expected), "oracle": oracle or {}}],
             "provider_specs": [{"provider_role": "local_14b", "harness_id": "local_endpoint",
-                                "adapter_id": "local_14b/v1", "target_model": "14B"}]}
+                                "adapter_id": "local_14b/v1", "model_id": "flywheel-local-coder-14b", "model_display_name": "Local 14B", "requested_model_reference": "serve:local_14b"}]}
 
 
 def test_unavailable_row_hashes_enforcement_first_and_preserves_gate_evidence_and_workspace(tmp_path):
@@ -175,7 +175,7 @@ def test_unavailable_row_hashes_enforcement_first_and_preserves_gate_evidence_an
 def test_returned_unverifiable_attempt_rechecks_receipt_and_preserves_workspace(tmp_path):
     source = tmp_path / "source"; source.mkdir()
     result = AdapterResult("returned", '{"artifacts":{"result.json":{}}}', [{"authorization_token": "hide", "event": "read"}], 7, "14B", "seeded", "", "",
-                           {"memory": None}, {"tokens": None}, ["read"], [])
+                           {"memory": None}, {"tokens": None}, ["read"], [], "structured_provider_response")
     run = execute_cross_harness_manifest(
         _one_task(source, expected=("result.json",), oracle={"expected_artifacts": ["result.json"]}),
         _runtime(["local_14b"]), {"local_14b": FakeAdapter(result=result)},
@@ -210,7 +210,7 @@ def test_successful_attempt_cleans_workspace_only_after_oracle_and_receipt_reche
               "receipt_input_sha256s": {"fixture.json": input_hash}, "mcp_healthy": False}
     output = json.dumps({"artifacts": {"report.json": report,
                                        "report.md": "# agt-001-index-fallback-integrity\n"}})
-    result = AdapterResult("returned", output, [], 1, "14B", "seeded", "", "", {}, {}, [], [])
+    result = AdapterResult("returned", output, [], 1, "14B", "seeded", "", "", {}, {}, [], [], "structured_provider_response")
     manifest = _one_task(source, task_id="agt-001-index-fallback-integrity",
                          expected=("report.json", "report.md"), inputs=("fixture.json",),
                          oracle={"checker_id": "index_fallback_integrity/v1", "fixture": "fixture.json",
@@ -226,7 +226,7 @@ def test_oracle_malformed_normalizes_to_execution_malformed_and_preserves_worksp
     source = tmp_path / "source"; source.mkdir()
     fixture = source / "fixture.json"; fixture.write_text('{"state_axes":[]}', encoding="utf-8")
     result = AdapterResult("returned", '{"artifacts":{"one.json":{},"one.md":"bad"}}', [], 1,
-                           "14B", "seeded", "", "", {}, {}, [], [])
+                           "14B", "seeded", "", "", {}, {}, [], [], "structured_provider_response")
     manifest = _one_task(source, expected=("one.json", "one.md"),
                          oracle={"checker_id": "shared_task_artifact/v1", "fixture": "fixture.json",
                                  "expected_artifacts": ["one.json", "one.md"]}, inputs=("fixture.json",))
@@ -242,7 +242,7 @@ def test_oracle_malformed_normalizes_to_execution_malformed_and_preserves_worksp
     assert Path(row["workspace_root"]).is_dir()
 def test_malformed_provider_envelope_preserves_exact_output_bytes(tmp_path):
     source = tmp_path / "source"; source.mkdir(); output = '{"not_artifacts":true}'
-    result = AdapterResult("returned", output, [], 1, "14B", "seeded", "", "", {}, {}, [], [])
+    result = AdapterResult("returned", output, [], 1, "14B", "seeded", "", "", {}, {}, [], [], "structured_provider_response")
     run = execute_cross_harness_manifest(_one_task(source, expected=("result.json",)), _runtime(["local_14b"]),
         {"local_14b": FakeAdapter(result=result)}, artifact_root=tmp_path / "artifacts", source_root=source,
         run_id="run", phase="local", selectors=["agt-001"], roles=["local_14b"], repetitions=1)
@@ -251,7 +251,7 @@ def test_malformed_provider_envelope_preserves_exact_output_bytes(tmp_path):
     assert Path(row["raw_output_path"]).read_bytes() == output.encode()
 def test_adapter_value_error_is_internal_not_malformed(tmp_path):
     source = tmp_path / "source"; source.mkdir()
-    nonfinite = AdapterResult("returned", "{}", [], 1, "14B", "seeded", "", "", {"memory": float("nan")}, {}, [], [])
+    nonfinite = AdapterResult("returned", "{}", [], 1, "14B", "seeded", "", "", {"memory": float("nan")}, {}, [], [], "structured_provider_response")
     for index, result in enumerate((ValueError("adapter bug"), nonfinite)):
         run = execute_cross_harness_manifest(_one_task(source), _runtime(["local_14b"]),
             {"local_14b": FakeAdapter(result=result)}, artifact_root=tmp_path / f"artifacts-{index}",
@@ -267,7 +267,7 @@ def test_secret_shaped_enforcement_is_rejected_before_artifact_write(tmp_path):
     assert not (Path(row["attempt_dir"]) / "enforcement.json").exists()
 def test_source_mutation_fails_run_and_preserves_attempt_workspace(tmp_path):
     source = tmp_path / "source"; source.mkdir()
-    result = AdapterResult("returned", '{"artifacts":{"result.json":{}}}', [], 1, "14B", "seeded", "", "", {}, {}, [], [])
+    result = AdapterResult("returned", '{"artifacts":{"result.json":{}}}', [], 1, "14B", "seeded", "", "", {}, {}, [], [], "structured_provider_response")
     adapter = FakeAdapter(result=result); original = adapter.execute
     adapter.execute = lambda request: ((source / "mutated.txt").write_text("changed"), original(request))[1]
     with pytest.raises(RuntimeError, match="source_tree_changed"):
