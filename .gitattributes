@@ -10,3 +10,8 @@
 # Receipt hashes cover captured bytes, so Git must not normalize the streams.
 artifacts/closeout/**/stdout.txt -text -diff
 artifacts/closeout/**/stderr.txt -text -diff
+
+# Domain-pack oracle bindings hash their fixture bytes (source_sha256), so Git
+# must not normalize them. Without this, a Windows checkout (core.autocrlf=true)
+# rewrites the fixtures to CRLF and the hash check fails.
+packs/**/fixtures/** -text -diff
