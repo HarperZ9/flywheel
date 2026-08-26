@@ -65,9 +65,11 @@ class OPConnectorError(ValueError):
 class OPConnector:
     """One offensive, dual-use, or security tool on the operations plane.
 
-    mcp_command is the argv registered as the plugin `command`; an empty command
-    means the tool ships no MCP server yet, so it is a declared target that
-    cannot be registered or invoked until its surface exists.
+    mcp_command is the argv for the connector's MCP server. It may name a known
+    target whose server is not live yet; `mcp_available` is the gate that decides
+    whether the connector can be registered, probed, or invoked. A connector with
+    mcp_available=False is a declared target only, whether its command is empty
+    (no server exists) or a known argv (server not shipped/vetted yet).
     """
     connector_id: str
     display_name: str
@@ -194,6 +196,13 @@ def get_connector(connector_id: str) -> OPConnector:
 
 
 def _require_server(connector: OPConnector) -> None:
+    # mcp_available is the single gate. A connector marked unavailable is a
+    # declared target only and must not reach the live grant-gated plugin plane,
+    # even if it carries a known-but-not-yet-shipped command argv.
+    if not connector.mcp_available:
+        raise OPConnectorError(
+            f"{connector.connector_id}: MCP surface not available yet, "
+            "cannot register, probe, or invoke")
     if not connector.mcp_command:
         raise OPConnectorError(
             f"{connector.connector_id}: no MCP server, cannot register or invoke")

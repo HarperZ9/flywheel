@@ -142,14 +142,20 @@ def test_call_rejects_non_dict_arguments():
         build_op_call(get_connector("orca"), "assess", ["not", "a", "dict"])
 
 
-def test_connector_without_a_server_cannot_register_probe_or_call():
-    bounds = get_connector("bounds")
-    assert not bounds.mcp_command
-    for build in (build_op_registration, build_op_probe):
+def test_unavailable_connectors_cannot_register_probe_or_call():
+    # mcp_available is the gate, not command emptiness: isomorph/sofer carry a
+    # known argv but are marked not-available, so they must be blocked exactly
+    # like bounds/phantom (which carry no argv at all).
+    unavailable = [c for c in OP_REGISTRY.values() if not c.mcp_available]
+    assert {"isomorph", "sofer", "bounds", "phantom"} <= {c.connector_id for c in unavailable}
+    for c in unavailable:
+        for build in (build_op_registration, build_op_probe):
+            with pytest.raises(OPConnectorError):
+                build(c)
         with pytest.raises(OPConnectorError):
-            build(bounds)
-    with pytest.raises(OPConnectorError):
-        build_op_call(bounds, "verify", {})
+            build_op_call(c, c.tool, {})
+        with pytest.raises(OPConnectorError):
+            canonical_op_call(c, c.tool, {})
 
 
 def test_connector_validation_rejects_bad_declarations():

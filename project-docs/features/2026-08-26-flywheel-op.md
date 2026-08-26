@@ -44,8 +44,10 @@ that would duplicate `plugin.call` and cut into the actively developed durable
 - `OP_REGISTRY`: the six tools. ORCA (`orca-mcp`) and Array
   (`python -m red_team_platform.mcp_server`) have live MCP surfaces today;
   Isomorph, Sofer, Bounds, and Phantom are declared with `mcp_available=False`
-  until their surface is wired, stated honestly rather than pretended-ready. A
-  connector with no server argv cannot be registered, probed, or called.
+  until their surface is wired, stated honestly rather than pretended-ready.
+  `mcp_available` is the single gate: any connector marked not-available cannot be
+  registered, probed, or called, whether its command is empty (no server) or a
+  known argv whose server is not shipped yet.
 - `build_op_registration` / `build_op_probe` / `build_op_call`: build the exact
   `plugin.register` / `plugin.probe` / `plugin.call` operations that mount and
   invoke a connector. Each is validated by the real `canonicalize_operation`, so
