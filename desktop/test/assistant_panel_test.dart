@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:flywheel_desktop/assistant/assistant_executor.dart';
+import 'package:flywheel_desktop/assistant/voice.dart';
 import 'package:flywheel_desktop/theme/flywheel_theme.dart';
 import 'package:flywheel_desktop/widgets/assistant_panel.dart';
 
@@ -24,6 +25,21 @@ class _Device implements DeviceSink {
     opened.add(link);
     return true;
   }
+}
+
+class _ScriptedVoice implements VoiceInput {
+  _ScriptedVoice(this._transcript);
+  final String? _transcript;
+  @override
+  bool get available => true;
+  @override
+  Future<String?> listen() async => _transcript;
+}
+
+class _RecordingVoice implements VoiceOutput {
+  final List<String> spoken = [];
+  @override
+  Future<void> speak(String text) async => spoken.add(text);
 }
 
 void main() {
@@ -62,5 +78,32 @@ void main() {
     expect(find.textContaining('run run-7'), findsOneWidget);
     expect(find.text('On it. I will start on that and keep the receipts.'),
         findsOneWidget); // the spoken reply, distinct from the panel's description
+  });
+
+  testWidgets('a spoken command runs and the reply is spoken back', (tester) async {
+    final device = _Device();
+    final voiceOut = _RecordingVoice();
+    await tester.pumpWidget(MaterialApp(
+      theme: flywheelLightTheme(),
+      home: Scaffold(
+        body: AssistantPanel(
+          executor: AssistantExecutor(agent: _Agent(), device: device),
+          voiceInput: _ScriptedVoice('navigate to home'),
+          voiceOutput: voiceOut,
+        ),
+      ),
+    ));
+
+    await tester.tap(find.byKey(const Key('assistant-mic')));
+    await tester.pumpAndSettle();
+
+    expect(device.opened.single, contains('destination=home'));
+    expect(voiceOut.spoken.single, contains('directions to home'));
+  });
+
+  testWidgets('no microphone is shown when no speech engine is present',
+      (tester) async {
+    await tester.pumpWidget(host(AssistantExecutor(agent: _Agent(), device: _Device())));
+    expect(find.byKey(const Key('assistant-mic')), findsNothing);
   });
 }

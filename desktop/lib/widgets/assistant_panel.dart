@@ -10,11 +10,16 @@ import 'package:flutter/material.dart';
 
 import '../assistant/assistant_executor.dart';
 import '../assistant/assistant_intent.dart';
+import '../assistant/voice.dart';
 import '../theme/flywheel_theme.dart';
 import 'fw.dart';
 
-Future<void> showAssistantPanel(BuildContext context,
-    {required AssistantExecutor executor}) {
+Future<void> showAssistantPanel(
+  BuildContext context, {
+  required AssistantExecutor executor,
+  VoiceInput voiceInput = const SilentVoice(),
+  VoiceOutput voiceOutput = const SilentVoice(),
+}) {
   return showDialog(
     context: context,
     builder: (ctx) => Dialog(
@@ -23,7 +28,8 @@ Future<void> showAssistantPanel(BuildContext context,
         constraints: const BoxConstraints(maxWidth: 460, maxHeight: 560),
         child: Padding(
           padding: const EdgeInsets.all(FwLayout.s5),
-          child: AssistantPanel(executor: executor),
+          child: AssistantPanel(
+              executor: executor, voiceInput: voiceInput, voiceOutput: voiceOutput),
         ),
       ),
     ),
@@ -32,7 +38,14 @@ Future<void> showAssistantPanel(BuildContext context,
 
 class AssistantPanel extends StatefulWidget {
   final AssistantExecutor executor;
-  const AssistantPanel({super.key, required this.executor});
+  final VoiceInput voiceInput;
+  final VoiceOutput voiceOutput;
+  const AssistantPanel({
+    super.key,
+    required this.executor,
+    this.voiceInput = const SilentVoice(),
+    this.voiceOutput = const SilentVoice(),
+  });
 
   @override
   State<AssistantPanel> createState() => _AssistantPanelState();
@@ -48,14 +61,24 @@ class _AssistantPanelState extends State<AssistantPanel> {
     super.dispose();
   }
 
-  Future<void> _send() async {
-    final text = _input.text.trim();
+  Future<void> _run(String text) async {
     if (text.isEmpty || _busy) return;
     setState(() => _busy = true);
-    await widget.executor.handle(text);
+    final record = await widget.executor.handle(text);
     if (!mounted) return;
     _input.clear();
     setState(() => _busy = false);
+    await widget.voiceOutput.speak(record.reply); // no-op unless a speaker is wired
+  }
+
+  void _send() => _run(_input.text.trim());
+
+  Future<void> _listen() async {
+    if (_busy) return;
+    final heard = await widget.voiceInput.listen();
+    if (mounted && heard != null && heard.trim().isNotEmpty) {
+      await _run(heard.trim());
+    }
   }
 
   @override
@@ -89,6 +112,15 @@ class _AssistantPanelState extends State<AssistantPanel> {
         ),
         const SizedBox(height: FwLayout.s3),
         Row(children: [
+          if (widget.voiceInput.available) ...[
+            IconButton(
+              key: const Key('assistant-mic'),
+              icon: const Icon(Icons.mic, size: 20),
+              tooltip: 'Speak a command',
+              onPressed: _busy ? null : _listen,
+            ),
+            const SizedBox(width: FwLayout.s1),
+          ],
           Expanded(
             child: TextField(
               key: const Key('assistant-input'),
