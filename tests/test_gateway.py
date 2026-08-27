@@ -748,3 +748,45 @@ def test_lanes_install_route_bundled_lane_is_a_noop():
     assert sent["code"] == 200
     assert sent["body"]["installed"] is True
     assert "bundled" in sent["body"]["detail"]
+
+
+# --- the exec-lane proxy: the gateway is the one origin, relay is a route ---
+
+def test_relay_get_routes_forward_to_the_exec_lane(monkeypatch):
+    calls = []
+    monkeypatch.setattr(gateway, "_relay_mcp_call",
+                        lambda tool, args: (calls.append((tool, args)) or {"ok": tool}))
+    h = gateway._Handler.__new__(gateway._Handler)
+    seen = {}
+    h._json = lambda body, code=200: seen.update(body=body, code=code)
+
+    h.path = "/api/relay/status?run_id=abc123"
+    h._get()
+    assert calls[-1] == ("local_agent_status", {"run_id": "abc123"})
+    assert seen["body"] == {"ok": "local_agent_status"}
+
+    h.path = "/api/relay/result?run_id=xyz"
+    h._get()
+    assert calls[-1] == ("local_agent_result", {"run_id": "xyz"})
+
+    h.path = "/api/relay/runs"
+    h._get()
+    assert calls[-1][0] == "local_agent_runs"
+
+    h.path = "/api/relay/sessions"
+    h._get()
+    assert calls[-1][0] == "local_agent_sessions"
+
+
+def test_relay_start_route_forwards_the_body(monkeypatch):
+    calls = []
+    monkeypatch.setattr(gateway, "_relay_mcp_call",
+                        lambda tool, args: (calls.append((tool, args)) or {"run_id": "r1"}))
+    h = gateway._Handler.__new__(gateway._Handler)
+    seen = {}
+    h._json = lambda body, code=200: seen.update(body=body, code=code)
+    h._req_json = lambda: ({"goal": "fix the parser", "allow_write": True}, None)
+    h.path = "/api/relay/start"
+    h._post()
+    assert calls[-1] == ("local_agent_start", {"goal": "fix the parser", "allow_write": True})
+    assert seen["body"] == {"run_id": "r1"}

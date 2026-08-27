@@ -267,6 +267,31 @@ def _forum_mcp_call(tool: str, args: dict) -> dict:
         return {"error": f"forum lane unavailable: {e}"}
 
 
+def _relay_mcp_call(tool: str, args: dict) -> dict:
+    """Call one relay MCP tool, gracefully degraded.
+
+    relay is the execution lane (an accountable, witnessed coding agent). Forwarding
+    to it here makes the gateway the single phone-facing origin: a phone drives the
+    gateway (one auth, one tunnel), and a relay-backed run comes back with relay's
+    verifiable run_id and ledger checkpoint, the same receipts a desktop run gets.
+    """
+    from harness.lanes import resolve_mcp_launch
+    from harness.mcp_client import MCPClient, MCPError
+    try:
+        command = resolve_mcp_launch("relay")
+        with MCPClient(command, timeout=30, client_name="flywheel-relay-proxy") as c:
+            res = c.call_text(tool, args)
+            if not res["ok"]:
+                return {"error": f"relay {tool} error: {res['text'][:200]}"}
+            import json as _json
+            try:
+                return _json.loads(res["text"])
+            except _json.JSONDecodeError:
+                return {"raw": res["text"][:500]}
+    except (MCPError, FileNotFoundError, OSError) as e:
+        return {"error": f"relay lane unavailable: {e}"}
+
+
 def _projected_world(root: Path) -> dict:
     """The full projected world (world.py: roster + findings + cursor, root-hashed).
     Falls back to the inline v0 receipt catalog if world.py is unavailable."""
@@ -1008,6 +1033,15 @@ class _Handler(BaseHTTPRequestHandler):
             return self._json(_forum_mcp_call("gate_list", {}))
         if p == "/api/forum/run-room":                # the current run room snapshot
             return self._json(_forum_mcp_call("forum.run.room", {}))
+        if p in ("/api/relay/status", "/api/relay/result"):  # a relay run, via the exec lane
+            from urllib.parse import parse_qs
+            rid = parse_qs(qs).get("run_id", [""])[0]
+            tool = "local_agent_status" if p.endswith("status") else "local_agent_result"
+            return self._json(_relay_mcp_call(tool, {"run_id": rid}))
+        if p == "/api/relay/runs":                     # recent relay runs (survive a restart)
+            return self._json(_relay_mcp_call("local_agent_runs", {}))
+        if p == "/api/relay/sessions":                 # saved relay sessions (follow you)
+            return self._json(_relay_mcp_call("local_agent_sessions", {}))
         if p == "/api/lessons":                       # the organizational learning loop
             from harness.lesson_store import LessonStore
             store = LessonStore.load(Path(self.run_root) / "lessons.jsonl")
@@ -1500,6 +1534,11 @@ class _Handler(BaseHTTPRequestHandler):
             return self._json(body, code)
         if p.startswith("/v1/") or p == "/generate":
             return self._proxy(self.serve_url.rstrip("/") + p)
+        if p == "/api/relay/start":                  # start a witnessed relay run via the exec lane
+            req, bad = self._req_json()
+            if bad:
+                return bad
+            return self._json(_relay_mcp_call("local_agent_start", req))
         if p == "/api/forge":                        # goal -> verified PRP (the studio)
             req, bad = self._req_json()
             if bad:
