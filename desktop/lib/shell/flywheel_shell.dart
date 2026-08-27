@@ -2,6 +2,7 @@
 // navigation over the frozen 30-destination catalog, the command palette,
 // and the status coordinator. Views render; this composes and routes.
 import 'dart:async';
+import 'dart:io' show Platform;
 import 'dart:ui' show AppExitResponse;
 
 import 'package:flutter/material.dart';
@@ -28,6 +29,9 @@ import '../ide/code_buffer_session.dart';
 import '../ide/unsaved_work_guard.dart';
 import '../widgets/appearance_panel.dart';
 import '../assistant/assistant_executor.dart';
+import '../assistant/speech_voice.dart';
+import '../assistant/url_device_sink.dart';
+import '../assistant/voice.dart';
 import '../widgets/assistant_panel.dart';
 import '../widgets/command_palette.dart';
 import '../widgets/connection_panel.dart';
@@ -129,6 +133,15 @@ class _FlywheelShellState extends State<FlywheelShell> {
   late final AppLifecycleListener _lifecycle;
   final ViewCache _views = ViewCache();
   Object? _pendingArgument;
+
+  // Voice is a phone capability: a real speech engine on android and ios, a silent
+  // stub on desktop so the assistant stays typed-only there. The panel shows a
+  // microphone only where a real engine is present.
+  final bool _mobile = Platform.isAndroid || Platform.isIOS;
+  late final VoiceInput _voiceInput =
+      _mobile ? SpeechVoiceInput() : const SilentVoice();
+  late final VoiceOutput _voiceOutput =
+      _mobile ? FlutterTtsVoiceOutput() : const SilentVoice();
 
   /// The recovery center opens as an overlay from the shell footer; it is
   /// deliberately not a thirty-first destination.
@@ -346,8 +359,10 @@ class _FlywheelShellState extends State<FlywheelShell> {
                 context,
                 executor: AssistantExecutor(
                   agent: GatewayAgentSink(_dependencies.client),
-                  device: PreviewDeviceSink(),
+                  device: UrlLauncherDeviceSink(),
                 ),
+                voiceInput: _voiceInput,
+                voiceOutput: _voiceOutput,
               ),
               onOpenRecovery: _openRecoveryCenter,
             ));
