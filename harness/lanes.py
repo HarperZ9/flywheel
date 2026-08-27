@@ -87,6 +87,11 @@ LANES: dict[str, Lane] = {
         "mneme", "mneme-memory", "mneme", ("mcp",), "pip", "0.1.0",
         "accountable memory: recall with re-derivable ranking receipts + drift verdicts",
         "memory", source_repo="public/mneme", py_module="mneme.cli"),
+    "calibrate-pro": Lane(
+        "calibrate-pro", "calibrate-pro", "calibrate-pro", ("mcp",), "pip", "1.1.0",
+        "evidence-labeled display calibration: color-target and characterized-panel "
+        "catalog + readiness doctor (read-only over MCP; actuation stays GUI-gated)",
+        "calibration", source_repo="public/calibrate-pro", py_module="calibrate_pro.main"),
 }
 
 
