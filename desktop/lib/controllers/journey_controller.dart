@@ -98,6 +98,13 @@ final class JourneyController extends ChangeNotifier {
   Future<void> runCheck(JourneyCheckDraft d) =>
       _q(() => _run(d.draft, _M.check));
   Future<void> requestCancel(String ref) => _q(() => _cancel(ref));
+
+  /// Switch to a journey picked from the sessions view and make it current,
+  /// reusing the same resume-and-persist path as launch, so a session started on
+  /// one device reopens on another that points at the same gateway.
+  Future<void> openSession(String ref, JourneyLens lens) =>
+      _q(() => _select(ref, lens, false));
+
   Future<void> _run(JourneyDraft source, _M kind) async {
     final target = _capture();
     _view.busy(JourneyViewPhase.values[kind.index + 3]);

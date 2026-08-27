@@ -27,6 +27,10 @@ class ShellRail extends StatefulWidget {
   /// compiling; the action renders only when a handler is supplied.
   final VoidCallback? onOpenConnection;
 
+  /// Opens the sessions view (your resumable work, on any device). Optional for
+  /// the same reason; renders only when supplied.
+  final VoidCallback? onOpenSessions;
+
   const ShellRail({
     super.key,
     required this.collapsed,
@@ -39,6 +43,7 @@ class ShellRail extends StatefulWidget {
     required this.onOpenAppearance,
     required this.onOpenRecovery,
     this.onOpenConnection,
+    this.onOpenSessions,
   });
 
   @override
@@ -173,6 +178,14 @@ class _ShellRailState extends State<ShellRail> {
           child: Icon(Icons.restore_rounded, size: 15, color: t.inkFaint),
         ),
         const SizedBox(width: 8),
+        if (widget.onOpenSessions != null) ...[
+          AccessibleAction(
+            semanticLabel: 'Open sessions',
+            onActivate: widget.onOpenSessions!,
+            child: Icon(Icons.history_rounded, size: 15, color: t.inkFaint),
+          ),
+          const SizedBox(width: 8),
+        ],
         if (widget.onOpenConnection != null) ...[
           AccessibleAction(
             semanticLabel: 'Pair a gateway connection',

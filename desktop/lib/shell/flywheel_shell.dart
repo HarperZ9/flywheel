@@ -30,6 +30,7 @@ import '../widgets/appearance_panel.dart';
 import '../widgets/command_palette.dart';
 import '../widgets/connection_panel.dart';
 import '../widgets/flywheel_nav.dart';
+import '../widgets/sessions_panel.dart';
 import '../widgets/operation_grant_sheet.dart';
 import '../widgets/shell_rail.dart';
 import '../models/recovery_item.dart';
@@ -334,6 +335,11 @@ class _FlywheelShellState extends State<FlywheelShell> {
                 widget.onAppearanceChanged ?? () {},
               ),
               onOpenConnection: () => showConnectionPanel(context),
+              onOpenSessions: () => showSessionsPanel(
+                context,
+                api: GatewayJourneyApi(_dependencies.client),
+                onOpen: (ref, lens) => _dependencies.journey.openSession(ref, lens),
+              ),
               onOpenRecovery: _openRecoveryCenter,
             ));
   }
