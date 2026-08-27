@@ -23,6 +23,10 @@ class ShellRail extends StatefulWidget {
   final VoidCallback onOpenAppearance;
   final VoidCallback onOpenRecovery;
 
+  /// Opens the gateway-pairing panel. Optional so hand-built rails in tests keep
+  /// compiling; the action renders only when a handler is supplied.
+  final VoidCallback? onOpenConnection;
+
   const ShellRail({
     super.key,
     required this.collapsed,
@@ -34,6 +38,7 @@ class ShellRail extends StatefulWidget {
     required this.onToggleTheme,
     required this.onOpenAppearance,
     required this.onOpenRecovery,
+    this.onOpenConnection,
   });
 
   @override
@@ -168,6 +173,14 @@ class _ShellRailState extends State<ShellRail> {
           child: Icon(Icons.restore_rounded, size: 15, color: t.inkFaint),
         ),
         const SizedBox(width: 8),
+        if (widget.onOpenConnection != null) ...[
+          AccessibleAction(
+            semanticLabel: 'Pair a gateway connection',
+            onActivate: widget.onOpenConnection!,
+            child: Icon(Icons.devices_rounded, size: 15, color: t.inkFaint),
+          ),
+          const SizedBox(width: 8),
+        ],
         AccessibleAction(
           semanticLabel: 'Open appearance settings',
           onActivate: widget.onOpenAppearance,
