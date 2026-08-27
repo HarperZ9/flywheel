@@ -48,6 +48,10 @@ def execute(spec: dict, *, agent=None) -> int:
     extra = {"final_excerpt": str(result.get("final") or "")[:2000]}
     if result.get("tests_pass_trusted") is not None:
         extra["tests_pass_trusted"] = bool(result["tests_pass_trusted"])
+    if isinstance(result.get("verdict"), dict):
+        extra["verdict"] = result["verdict"]              # the child's re-derivable accept/reject
+    if isinstance(result.get("ledger_jsonl"), str):
+        extra["ledger_jsonl"] = result["ledger_jsonl"]    # the witnessed run a verifier can replay
     write_result(workspace, spec, "completed", **extra)
     return EXIT_COMPLETED
 

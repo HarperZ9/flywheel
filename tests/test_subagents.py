@@ -178,6 +178,48 @@ def test_failed_and_tampered_children_are_not_completed(tmp_path):
     assert snap["receipt"]["completed"] == 0
 
 
+def _verdict_factory(accepted):
+    def factory(spec_path, workspace):
+        spec = json.loads(Path(spec_path).read_text(encoding="utf-8"))
+        _write_result(workspace, spec, verdict={
+            "schema": "flywheel.run-verdict/v1", "accepted": accepted,
+            "chain_intact": True, "integrity_clean": accepted,
+            "tests_pass_trusted": accepted, "chain_head": "head_" + spec["role"],
+            "integrity_sha256": "abc123"})
+        return _FakeHandle()
+    return factory
+
+
+def test_verified_quorum_counts_accepted_verdicts_and_seals_a_swarm_cert(tmp_path):
+    runner = SwarmRunner(run_root=tmp_path)
+    ack = _spawn(runner, handle_factory=_verdict_factory(True))
+    r = _await_sealed(runner, ack["swarm_id"])["receipt"]
+    assert r["completed"] == 2
+    assert r["verified"]["accepted"] == 2 and r["verified"]["verdict"] == "satisfied"
+    assert r["swarm_cert"]["accepted"] == 2 and len(r["swarm_cert"]["cert_sha256"]) == 16
+    assert all(c["accepted"] and c["chain_head"] for c in r["swarm_cert"]["children"])
+
+
+def test_a_completed_but_unaccepted_child_fails_the_verified_quorum(tmp_path):
+    # both children exit 0 (completed), but their witnessed verdict is NOT accepted
+    # (a tampered grader): the completed quorum is satisfied, the verified one is not.
+    runner = SwarmRunner(run_root=tmp_path)
+    ack = _spawn(runner, handle_factory=_verdict_factory(False))
+    r = _await_sealed(runner, ack["swarm_id"])["receipt"]
+    assert r["completed"] == 2 and r["verdict"] == "satisfied"        # ran and reported
+    assert r["verified"]["accepted"] == 0 and r["verified"]["verdict"] == "unsatisfied"
+    assert not any(c["accepted"] for c in r["swarm_cert"]["children"])
+
+
+def test_a_verdictless_child_completes_but_is_never_verified(tmp_path):
+    # a child that reports with no witnessed verdict counts as completed, never accepted
+    runner = SwarmRunner(run_root=tmp_path)
+    ack = _spawn(runner, handle_factory=_ok_factory)
+    r = _await_sealed(runner, ack["swarm_id"])["receipt"]
+    assert r["completed"] == 2 and r["verified"]["accepted"] == 0
+    assert r["verified"]["verdict"] == "unsatisfied"
+
+
 def test_fanin_fires_agent_completed_hooks_with_teeth(tmp_path):
     from harness.accountable_hooks import register_hook, save_registry
 

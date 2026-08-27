@@ -144,6 +144,9 @@ def _finalize_run(result, *, endpoint, agent, executor, receipt_dir,
     out["provenance"] = provenance_trace(
         ledger.entries, checkpoint=str(out.get("checkpoint", "")),
         author=f"model:{endpoint}")
+    from .run_verdict import seal_verdict
+    out["verdict"] = seal_verdict(ledger, result)     # re-derivable accept/reject
+    out["ledger_jsonl"] = ledger.to_jsonl()           # so the run stays independently verifiable
     return out
 
 
