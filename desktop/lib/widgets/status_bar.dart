@@ -33,37 +33,48 @@ class StatusBar extends StatelessWidget {
         color: t.ground2,
         border: Border(top: BorderSide(color: t.line)),
       ),
-      child: Row(
-        children: [
-          VerdictDot(alive ? 'live' : 'missing', size: 7),
-          const SizedBox(width: FwLayout.s2),
-          Text(message, style: fwMono(t, size: 11, color: t.inkMuted)),
-          if (!alive) ...[
-            const SizedBox(width: FwLayout.s3),
-            AccessibleAction(
-              semanticLabel: 'Start engine',
-              onActivate: onStartEngine,
-              child: Text('start engine',
-                  style: fwMono(t, size: 11, color: t.drift)
-                      .copyWith(decoration: TextDecoration.underline)),
-            ),
-          ],
-          if (startError != null) ...[
-            const SizedBox(width: FwLayout.s3),
-            Expanded(
-              child: Text(startError!,
+      // The strip fits a phone: the message shrinks first, the world hash keeps
+      // fewer characters, and the host label drops below a narrow width, so the
+      // desktop strip is unchanged while nothing overflows on a small screen.
+      child: LayoutBuilder(builder: (context, constraints) {
+        final narrow = constraints.maxWidth < 520;
+        return Row(
+          children: [
+            VerdictDot(alive ? 'live' : 'missing', size: 7),
+            const SizedBox(width: FwLayout.s2),
+            Flexible(
+              child: Text(message,
                   overflow: TextOverflow.ellipsis,
-                  style: fwMono(t, size: 11, color: t.drift)),
+                  style: fwMono(t, size: 11, color: t.inkMuted)),
             ),
-          ] else
-            const Spacer(),
-          if (world != null && world!.rootHash.isNotEmpty) ...[
-            HashText('world', world!.rootHash, keep: 16),
-            const SizedBox(width: FwLayout.s4),
+            if (!alive) ...[
+              const SizedBox(width: FwLayout.s3),
+              AccessibleAction(
+                semanticLabel: 'Start engine',
+                onActivate: onStartEngine,
+                child: Text('start engine',
+                    style: fwMono(t, size: 11, color: t.drift)
+                        .copyWith(decoration: TextDecoration.underline)),
+              ),
+            ],
+            if (startError != null) ...[
+              const SizedBox(width: FwLayout.s3),
+              Expanded(
+                child: Text(startError!,
+                    overflow: TextOverflow.ellipsis,
+                    style: fwMono(t, size: 11, color: t.drift)),
+              ),
+            ] else
+              const Spacer(),
+            if (world != null && world!.rootHash.isNotEmpty) ...[
+              HashText('world', world!.rootHash, keep: narrow ? 6 : 16),
+              const SizedBox(width: FwLayout.s4),
+            ],
+            if (!narrow)
+              Text('127.0.0.1:8799', style: fwMono(t, size: 11, color: t.inkFaint)),
           ],
-          Text('127.0.0.1:8799', style: fwMono(t, size: 11, color: t.inkFaint)),
-        ],
-      ),
+        );
+      }),
     );
   }
 }

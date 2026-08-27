@@ -229,6 +229,10 @@ class _FlywheelShellState extends State<FlywheelShell> {
             }));
   }
 
+  /// Below this width the app is one pane and the rail moves into a drawer, so
+  /// the same shell fits a phone.
+  static const double narrowBreakpoint = 640;
+
   @override
   Widget build(BuildContext context) {
     return PaletteShortcuts(
@@ -236,43 +240,91 @@ class _FlywheelShellState extends State<FlywheelShell> {
       child: GatewayOperationScope(
         authorize:
             journeyGatewayAuthorizer(_operations, _dependencies.journey),
-        child: Scaffold(
-          body: FlywheelNav(
-            goTo: _goTo,
-            child: Column(
-              children: [
-                Expanded(
-                  child: Row(children: [
-                    _rail(),
-                    Expanded(child: _activeView()),
-                  ]),
-                ),
-                AnimatedBuilder(
-                    animation: _coordinator,
-                    builder: (context, _) => StatusBar(
-                          alive: _coordinator.alive,
-                          message: _coordinator.message,
-                          startError: _coordinator.startError,
-                          world: _coordinator.world,
-                          onStartEngine: () =>
-                              unawaited(_coordinator.start()),
-                        )),
-              ],
+        child: LayoutBuilder(builder: (context, constraints) {
+          final narrow = constraints.maxWidth < narrowBreakpoint;
+          return Scaffold(
+            drawer: narrow
+                ? Drawer(child: SafeArea(child: _rail(inDrawer: true)))
+                : null,
+            body: FlywheelNav(
+              goTo: _goTo,
+              child: narrow ? _narrowBody(context) : _wideBody(),
             ),
-          ),
-        ),
+          );
+        }),
       ),
     );
   }
 
-  Widget _rail() {
+  // Desktop: the side rail beside the active view. Byte-identical to before.
+  Widget _wideBody() => Column(
+        children: [
+          Expanded(
+            child: Row(children: [
+              _rail(),
+              Expanded(child: _activeView()),
+            ]),
+          ),
+          _statusBar(),
+        ],
+      );
+
+  // Phone: one pane, the rail reachable from the drawer via the top-bar menu.
+  Widget _narrowBody(BuildContext context) => SafeArea(
+        child: Column(
+          children: [
+            _mobileTopBar(),
+            Expanded(child: _activeView()),
+            _statusBar(),
+          ],
+        ),
+      );
+
+  Widget _statusBar() => AnimatedBuilder(
+        animation: _coordinator,
+        builder: (context, _) => StatusBar(
+              alive: _coordinator.alive,
+              message: _coordinator.message,
+              startError: _coordinator.startError,
+              world: _coordinator.world,
+              onStartEngine: () => unawaited(_coordinator.start()),
+            ),
+      );
+
+  Widget _mobileTopBar() => Material(
+        color: Colors.transparent,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+          child: Row(children: [
+            Builder(
+              builder: (ctx) => IconButton(
+                icon: const Icon(Icons.menu, size: 20),
+                tooltip: 'Open navigation',
+                onPressed: () => Scaffold.of(ctx).openDrawer(),
+              ),
+            ),
+            const SizedBox(width: 4),
+            const Text('Flywheel',
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+          ]),
+        ),
+      );
+
+  Widget _rail({bool inDrawer = false}) {
     return AnimatedBuilder(
         animation: Listenable.merge([_navigation, _coordinator]),
         builder: (context, _) => ShellRail(
-              collapsed: _railCollapsed,
-              width: _railWidth,
+              // In the drawer the rail is always expanded at a drawer width, and a
+              // tap navigates then closes the drawer.
+              collapsed: inDrawer ? false : _railCollapsed,
+              width: inDrawer ? 264 : _railWidth,
               selected: _navigation.current.routeId,
-              onGo: _goTo,
+              onGo: inDrawer
+                  ? (routeId) {
+                      _goTo(routeId);
+                      Navigator.of(context).maybePop();
+                    }
+                  : _goTo,
               onResize: _resizeRail,
               onToggleCollapse: _toggleRail,
               onToggleTheme: widget.onToggleTheme,

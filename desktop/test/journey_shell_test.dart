@@ -134,6 +134,48 @@ void main() {
   _restartLensTests();
   _recoveryTests();
   _lifecycleRaceTests();
+  _responsiveTests();
+}
+
+void _responsiveTests() {
+  testWidgets('a phone width moves the rail into a drawer behind a menu',
+      (tester) async {
+    tester.view.physicalSize = const Size(375, 812);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final dir = Directory.systemTemp.createTempSync('journey-shell-narrow-');
+    addTearDown(() => dir.deleteSync(recursive: true));
+    final harness = ShellHarness(dir)..replyReady();
+    await tester.pumpWidget(harness.app());
+    await tester.pumpAndSettle();
+
+    // The phone shows a menu, and the rail (its appearance action) lives in the
+    // closed drawer, offstage, until the menu opens it.
+    expect(find.byIcon(Icons.menu), findsOneWidget);
+    expect(find.bySemanticsLabel('Open appearance settings'), findsNothing);
+    await tester.tap(find.byIcon(Icons.menu));
+    await tester.pumpAndSettle();
+    expect(find.bySemanticsLabel('Open appearance settings'), findsOneWidget);
+    await unmount(tester);
+  });
+
+  testWidgets('a desktop width keeps the rail inline with no menu',
+      (tester) async {
+    tester.view.physicalSize = const Size(1280, 800);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final dir = Directory.systemTemp.createTempSync('journey-shell-wide-');
+    addTearDown(() => dir.deleteSync(recursive: true));
+    final harness = ShellHarness(dir)..replyReady();
+    await tester.pumpWidget(harness.app());
+    await tester.pumpAndSettle();
+
+    expect(find.byIcon(Icons.menu), findsNothing);
+    expect(find.bySemanticsLabel('Open appearance settings'), findsOneWidget);
+    await unmount(tester);
+  });
 }
 
 void _homeLifecycleTests() {
