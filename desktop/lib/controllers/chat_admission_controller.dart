@@ -101,16 +101,19 @@ final class ChatAdmissionController {
     }
     var pending = _admitted[_admissionKey(submitted)]!;
     final priorTitle = conversation.title;
+    final priorUpdatedAt = conversation.updatedAt;
     conversation.messages.addAll([
       ChatMessage(
           role: 'user', text: submitted.text, attemptRef: submitted.attemptRef),
       assistant,
     ]);
     conversation.titleFromFirstMessage();
+    conversation.touch();
     if (!historyStore.save(conversations)) {
       conversation.messages.removeRange(
           conversation.messages.length - 2, conversation.messages.length);
       conversation.title = priorTitle;
+      conversation.updatedAt = priorUpdatedAt;
       return (disposition: PromptDisposition.retained, visible: false);
     }
     if (!_markAdmitted(pending, ChatDraftState.admittedPendingCleanup,
@@ -159,6 +162,7 @@ final class ChatAdmissionController {
     }
     final pairExists = chatHasAdmittedPair(conversation, pending.attemptRef);
     final priorTitle = conversation.title;
+    final priorUpdatedAt = conversation.updatedAt;
     if (!pairExists) {
       conversation.messages.addAll([
         ChatMessage(
@@ -166,12 +170,14 @@ final class ChatAdmissionController {
         ChatMessage.fromJson(event),
       ]);
       conversation.titleFromFirstMessage();
+      conversation.touch();
     }
     if (!historyStore.save(conversations)) {
       if (!pairExists) {
         conversation.messages.removeRange(
             conversation.messages.length - 2, conversation.messages.length);
         conversation.title = priorTitle;
+        conversation.updatedAt = priorUpdatedAt;
       }
       return PromptDisposition.retained;
     }

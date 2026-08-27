@@ -108,8 +108,10 @@ class Conversation {
     List<ChatMessage>? messages,
     this.model,
     DateTime? createdAt,
+    DateTime? updatedAt,
   })  : messages = messages ?? [],
-        createdAt = createdAt ?? DateTime.now();
+        createdAt = createdAt ?? DateTime.now(),
+        updatedAt = updatedAt ?? createdAt ?? DateTime.now();
 
   final String id;
   String title;
@@ -117,13 +119,23 @@ class Conversation {
   String? model;
   final DateTime createdAt;
 
+  /// When this conversation last changed. Advancing it on every content change
+  /// makes two devices' histories deterministically last-write-wins mergeable,
+  /// which is the precondition for chat that follows the user across devices.
+  DateTime updatedAt;
+
   bool get isEmpty => messages.isEmpty;
+
+  /// Mark the conversation as just changed. Called before a history save so the
+  /// persisted timestamp reflects the newest edit.
+  void touch() => updatedAt = DateTime.now();
 
   Map<String, dynamic> toJson() => {
         'id': id,
         'title': title,
         if (model != null) 'model': model,
         'created_at': createdAt.millisecondsSinceEpoch,
+        'updated_at': updatedAt.millisecondsSinceEpoch,
         'messages': [for (final message in messages) message.toJson()],
       };
 
@@ -133,6 +145,11 @@ class Conversation {
         model: json['model'] is String ? json['model'] as String : null,
         createdAt: json['created_at'] is int
             ? DateTime.fromMillisecondsSinceEpoch(json['created_at'] as int)
+            : null,
+        // Older histories predate updated_at; fall back to created_at so a merge
+        // still has a comparable timestamp.
+        updatedAt: json['updated_at'] is int
+            ? DateTime.fromMillisecondsSinceEpoch(json['updated_at'] as int)
             : null,
         messages: [
           for (final message in (json['messages'] as List? ?? const []))

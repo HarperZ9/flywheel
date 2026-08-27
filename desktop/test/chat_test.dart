@@ -63,6 +63,24 @@ void _modelTests() {
     expect(back.messages[1].receipt?['receipt_id'], 'r1');
     expect(back.messages[1].streaming, isFalse);
   });
+
+  test('updated_at round-trips and falls back to created_at on legacy history', () {
+    final created = DateTime.fromMillisecondsSinceEpoch(1000);
+    final updated = DateTime.fromMillisecondsSinceEpoch(2000);
+    final back =
+        Conversation.fromJson(Conversation(id: 'c1', createdAt: created, updatedAt: updated).toJson());
+    expect(back.updatedAt, updated);
+    // a history written before updated_at existed still gets a comparable timestamp
+    final legacy = Conversation.fromJson({'id': 'c2', 'created_at': 1000, 'messages': []});
+    expect(legacy.updatedAt, created);
+  });
+
+  test('touch advances updatedAt so a later write wins a merge', () {
+    final c = Conversation(id: 'c3', updatedAt: DateTime.fromMillisecondsSinceEpoch(1000));
+    final before = c.updatedAt;
+    c.touch();
+    expect(c.updatedAt.isAfter(before), isTrue);
+  });
 }
 
 void _admissionTests() {
