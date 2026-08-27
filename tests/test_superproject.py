@@ -4,7 +4,18 @@ Five organs (perception, verification, structure, orchestration, reconciliation)
 flagship peer plus its native harness cluster, composing over the flagships' own
 next-action routing. The spine must be CLOSED (no dangling route) and telos the reconciler.
 """
+from harness.lanes import LANES
 from harness.superproject import spine, probe_live, MANIFEST, compose_report
+
+
+def test_manifest_versions_do_not_drift_from_the_lane_registry():
+    # harness/lanes.py is the canonical lane version; the superproject MANIFEST must
+    # mirror it, so the spine report never shows a stale version. This test is the gate.
+    for organ in MANIFEST.values():
+        lane = LANES.get(organ.flagship)
+        assert lane is not None, f"{organ.flagship} is in the MANIFEST but not the lane registry"
+        assert organ.version == lane.version, (
+            f"{organ.flagship}: MANIFEST v{organ.version} != lanes.py v{lane.version} (drift)")
 
 LIVE = {f: {"status": "MATCH"} for f in ("gather", "index", "crucible", "forum", "telos")}
 

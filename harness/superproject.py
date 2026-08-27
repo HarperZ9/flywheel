@@ -30,17 +30,17 @@ class Organ:
 # The five organs of the reconcile, each a flagship peer + its native harness cluster.
 MANIFEST: dict[str, Organ] = {
     "perception": Organ(
-        "gather", "1.6.0", "source receipt + witnessed digest + re-verifiable corpus",
+        "gather", "1.6.1", "source receipt + witnessed digest + re-verifiable corpus",
         ["scout", "feeds", "intake", "gather adapters"], routes_to="crucible"),
     "verification": Organ(
-        "crucible", "1.1.0", "register -> steelman -> measure -> refine -> witness MATCH/DRIFT",
+        "crucible", "1.2.0", "register -> steelman -> measure -> refine -> witness MATCH/DRIFT",
         ["oracle", "witness", "adversarial_corpus", "calibration",
          "externalization_ablation", "quorum"], routes_to="gather"),
     "structure": Organ(
-        "index", "2.8.0", "workspace map + verified wiki + structural verification",
+        "index", "2.9.0", "workspace map + verified wiki + structural verification",
         ["wiki", "second_brain", "structure_mapping"], routes_to="forum"),
     "orchestration": Organ(
-        "forum", "1.12.0", "witnessed causal ledger + model-agnostic routing",
+        "forum", "1.13.0", "witnessed causal ledger + model-agnostic routing",
         ["router", "escalation", "budget_control", "evolve"], routes_to="index"),
     "reconciliation": Organ(
         "telos", "0.2.0", "the primary engine: perceive->verify->carry-proof, five-tool workflow",

@@ -77,6 +77,7 @@ LANE_MIN_TIERS: dict[str, str] = {
     "telos": "T1",
     "local-model": "T2",  # the propose-verify engine; can execute code
     "accountable-surface": "T2",  # actuates via effectors (fs/command/web/browser)
+    "relay": "T2",  # the execution lane: a gated agent loop that runs code (run/exec)
 }
 
 
