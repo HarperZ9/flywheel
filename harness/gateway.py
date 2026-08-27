@@ -2308,7 +2308,7 @@ class _Handler(BaseHTTPRequestHandler):
                 400 if "error" in result else 200)
             return self._json(result, code)
         return self._json({"error": "not found"}, 404)
-def main(argv=None) -> int:
+def _build_parser() -> argparse.ArgumentParser:
     ap = argparse.ArgumentParser(description="flywheel superapp gateway (one origin)")
     ap.add_argument("--port", type=int, default=8799)
     ap.add_argument("--root", default=str(REPO))
@@ -2317,16 +2317,34 @@ def main(argv=None) -> int:
     ap.add_argument("--run-root", default=run_root_default())
     ap.add_argument("--cors", action="store_true",
                     help="allow cross-origin browser clients (off by default; the gateway is local)")
-    a = ap.parse_args(argv)
+    ap.add_argument("--host", default="127.0.0.1",
+                    help="bind address (default 127.0.0.1, loopback only). Set 0.0.0.0 to accept "
+                         "connections from other devices; the bearer token and the Host allowlist "
+                         "still gate every request, and a TLS tunnel should front a routable bind.")
+    ap.add_argument("--allow-host", action="append", default=[], dest="allow_host",
+                    help="add a Host header value to the DNS-rebinding allowlist (repeatable). "
+                         "Give the public tunnel hostname here so a phone can reach this gateway.")
+    return ap
+
+
+def main(argv=None) -> int:
+    a = _build_parser().parse_args(argv)
     _Handler.root = Path(a.root).resolve()
     _Handler.serve_url = a.serve_url
     _Handler.ollama_url = a.ollama_url
     _Handler.run_root = a.run_root
     _Handler.cors = a.cors
+    # Default is unchanged: nothing goes remote unless the operator opts in with
+    # --host and names the public hostname with --allow-host. The token and the
+    # Host allowlist remain the guard on every request.
+    _Handler.allowed_hosts = DEFAULT_HOSTS | frozenset(a.allow_host)
     flywheel_home = Path(os.environ.get("FLYWHEEL_HOME", str(Path.home() / ".flywheel")))
     _Handler.flywheel_home = flywheel_home
     _Handler.auth_token = load_or_create_token(flywheel_home)
-    httpd = ThreadingHTTPServer(("127.0.0.1", a.port), _Handler)
+    if a.host not in ("127.0.0.1", "localhost", "::1"):
+        print(f"  REMOTE    binding {a.host}: reachable off-box. Front it with a TLS tunnel; "
+              f"allowlisted hosts = {sorted(_Handler.allowed_hosts)}")
+    httpd = ThreadingHTTPServer((a.host, a.port), _Handler)
     state_root = flywheel_home / "state"
     from harness.gateway_operations import GatewayOperations
     from harness.gateway_operation_process import GatewayAgentProcessFactory

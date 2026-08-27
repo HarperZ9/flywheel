@@ -164,3 +164,32 @@ def test_private_routes_require_configured_auth_without_loading_owner(
     assert statuses == [401] and result == {
         "schema": "flywheel.evidence-transport-error/v1", "error": {
             "code": "AUTH_REQUIRED", "message": "gateway authentication is required"}}
+
+
+# --- the remote bind seam: --host to bind off-box, --allow-host to allowlist the
+#     tunnel hostname. The token + Host allowlist stay the guard on every request.
+
+def test_an_allowlisted_remote_host_passes_and_others_still_fail():
+    hosts = DEFAULT_HOSTS | frozenset({"tunnel.example.com"})
+    ok, _ = check(_h(Authorization=f"Bearer {TOK}", Host="tunnel.example.com"),
+                  "GET", TOK, allowed_hosts=hosts)
+    assert ok is True
+    bad, reason = check(_h(Authorization=f"Bearer {TOK}", Host="evil.example"),
+                        "GET", TOK, allowed_hosts=hosts)
+    assert bad is False and reason == "bad_host"
+
+
+def test_gateway_parser_exposes_host_and_allow_host():
+    from harness.gateway import _build_parser
+    a = _build_parser().parse_args(
+        ["--host", "0.0.0.0", "--allow-host", "t.example", "--allow-host", "u.example"])
+    assert a.host == "0.0.0.0"
+    assert a.allow_host == ["t.example", "u.example"]
+
+
+def test_gateway_defaults_stay_loopback_and_empty_allowlist():
+    from harness.gateway import _build_parser
+    a = _build_parser().parse_args([])
+    assert a.host == "127.0.0.1" and a.allow_host == []
+    # the effective allowlist with no --allow-host is exactly the loopback default
+    assert DEFAULT_HOSTS | frozenset(a.allow_host) == DEFAULT_HOSTS
