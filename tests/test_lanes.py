@@ -18,7 +18,7 @@ from harness.lanes import (
 def test_registry_covers_the_expected_lanes():
     # the six spine flagships + local-model (the engine) + relay (the execution lane)
     assert set(LANES) == {"gather", "crucible", "index", "forum",
-                          "learn", "telos", "local-model", "relay"}
+                          "learn", "telos", "local-model", "relay", "plexus", "mneme"}
 
 
 def test_install_name_to_command_asymmetry_is_mapped():

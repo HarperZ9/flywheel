@@ -66,7 +66,7 @@ LANES: dict[str, Lane] = {
     "learn": Lane(
         "learn", "@harperz9/learn", "node", ("src/mcp.mjs",), "npm", "1.6.0",
         "accountable learning forge (spaced repetition + retrieval practice)",
-        "memory", source_repo="public/learn"),
+        "learning", source_repo="public/learn"),
     "telos": Lane(
         "telos", "project-telos-mcp", "node", ("demo/telos-mcp.mjs",), "npm", "0.2.0",
         "the reconciliation lane: five-tool workflow + creative engine + doctors",
@@ -79,6 +79,14 @@ LANES: dict[str, Lane] = {
         "relay", "relay-agent", "relay", ("--mcp",), "pip", "0.1.0",
         "accountable coding agent on any model endpoint (local-first, witnessed runs)",
         "execution", source_repo="public/relay", py_module="relay.local_agent_cli"),
+    "plexus": Lane(
+        "plexus", "plexus-mesh", "plexus", ("mcp",), "pip", "0.2.0",
+        "capability discovery + auto-wiring of the tool mesh (the layer above a flat tool list)",
+        "wiring", source_repo="public/plexus", py_module="plexus.cli"),
+    "mneme": Lane(
+        "mneme", "mneme-memory", "mneme", ("mcp",), "pip", "0.1.0",
+        "accountable memory: recall with re-derivable ranking receipts + drift verdicts",
+        "memory", source_repo="public/mneme", py_module="mneme.cli"),
 }
 
 
