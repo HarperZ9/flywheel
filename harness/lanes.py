@@ -1,6 +1,8 @@
 """Portable lane declarations, source-aware launches, and evidence-led probes."""
 from __future__ import annotations
 
+import functools
+import importlib.metadata
 import importlib.util
 import json
 import os
@@ -211,27 +213,53 @@ def resolve_mcp_launch(name: str) -> LaunchSpec:
     return LaunchSpec(tuple(lane.mcp_command()))
 
 
+@functools.lru_cache(maxsize=1)
+def _npm_global_root() -> Path | None:
+    """Global npm module root, resolved once per process; None when npm is absent.
+
+    Reading each lane's package.json under this root is a filesystem read, so
+    the whole npm side of the roster costs one `npm root -g` spawn instead of
+    one `npm ls -g` spawn per lane.
+    """
+    try:
+        npm = "npm.cmd" if os.name == "nt" else "npm"
+        r = subprocess.run(
+            [npm, "root", "-g"], capture_output=True, text=True, timeout=20)
+    except (FileNotFoundError, subprocess.TimeoutExpired):
+        return None
+    line = r.stdout.strip()
+    return Path(line) if line else None
+
+
 def _installed_version(lane: Lane) -> str | None:
-    """Best-effort installed version; presence-only and credential-free."""
+    """Best-effort installed version; presence-only and credential-free.
+
+    Resolved in-process: importlib.metadata for pip lanes and one cached global
+    npm root for npm lanes. Both read the same install metadata the old
+    subprocess path read, so lane detection is unchanged; only the per-lane
+    process spawn is gone. Spawning `pip show` per lane cost ~2s each and pushed
+    /api/desktop/status past the desktop client's probe timeout, so a paired
+    device read the engine as offline while the socket was in fact connecting.
+    """
     try:
         if lane.kind == "bundled":
             return lane.version
         if lane.kind == "pip":
-            r = subprocess.run(
-                ["pip", "show", lane.install_name],
-                capture_output=True, text=True, timeout=15)
-            for ln in r.stdout.splitlines():
-                if ln.lower().startswith("version:"):
-                    return ln.split(":", 1)[1].strip()
-            return None
+            try:
+                return importlib.metadata.version(lane.install_name)
+            except importlib.metadata.PackageNotFoundError:
+                return None
         if lane.kind == "npm":
-            npm = "npm.cmd" if os.name == "nt" else "npm"
-            r = subprocess.run(
-                [npm, "ls", "-g", lane.install_name, "--depth=0", "--json"],
-                capture_output=True, text=True, timeout=20)
-            deps = json.loads(r.stdout or "{}").get("dependencies", {})
-            entry = deps.get(lane.install_name)
-            return entry.get("version") if isinstance(entry, dict) else None
+            root = _npm_global_root()
+            if root is None:
+                return None
+            manifest = root / lane.install_name / "package.json"
+            try:
+                data = json.loads(manifest.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError):
+                return None
+            version = data.get("version")
+            return version if isinstance(version, str) else None
     except (FileNotFoundError, subprocess.TimeoutExpired, json.JSONDecodeError):
         return None
     return None
