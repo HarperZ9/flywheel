@@ -81,6 +81,14 @@ class AssistantExecutor {
   }
 }
 
+/// A device sink for builds that do not launch links yet: it reports success so
+/// the assistant is usable now, and the record carries the deep link the panel
+/// surfaces. On the phone build, swap this for a sink that actually opens the link.
+class PreviewDeviceSink implements DeviceSink {
+  @override
+  Future<bool> open(String deepLink) async => true;
+}
+
 /// The accountable agent target: post a work task to the gateway's relay route so
 /// the run is witnessed and its receipts travel. Testable with a mock http client.
 class GatewayAgentSink implements AgentSink {

@@ -27,6 +27,8 @@ import '../services/settings.dart';
 import '../ide/code_buffer_session.dart';
 import '../ide/unsaved_work_guard.dart';
 import '../widgets/appearance_panel.dart';
+import '../assistant/assistant_executor.dart';
+import '../widgets/assistant_panel.dart';
 import '../widgets/command_palette.dart';
 import '../widgets/connection_panel.dart';
 import '../widgets/flywheel_nav.dart';
@@ -339,6 +341,13 @@ class _FlywheelShellState extends State<FlywheelShell> {
                 context,
                 api: GatewayJourneyApi(_dependencies.client),
                 onOpen: (ref, lens) => _dependencies.journey.openSession(ref, lens),
+              ),
+              onOpenAssistant: () => showAssistantPanel(
+                context,
+                executor: AssistantExecutor(
+                  agent: GatewayAgentSink(_dependencies.client),
+                  device: PreviewDeviceSink(),
+                ),
               ),
               onOpenRecovery: _openRecoveryCenter,
             ));

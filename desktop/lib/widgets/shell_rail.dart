@@ -31,6 +31,10 @@ class ShellRail extends StatefulWidget {
   /// the same reason; renders only when supplied.
   final VoidCallback? onOpenSessions;
 
+  /// Opens the assistant (ask for work, or a device action). Optional; renders
+  /// only when supplied.
+  final VoidCallback? onOpenAssistant;
+
   const ShellRail({
     super.key,
     required this.collapsed,
@@ -44,6 +48,7 @@ class ShellRail extends StatefulWidget {
     required this.onOpenRecovery,
     this.onOpenConnection,
     this.onOpenSessions,
+    this.onOpenAssistant,
   });
 
   @override
@@ -178,6 +183,14 @@ class _ShellRailState extends State<ShellRail> {
           child: Icon(Icons.restore_rounded, size: 15, color: t.inkFaint),
         ),
         const SizedBox(width: 8),
+        if (widget.onOpenAssistant != null) ...[
+          AccessibleAction(
+            semanticLabel: 'Open assistant',
+            onActivate: widget.onOpenAssistant!,
+            child: Icon(Icons.assistant_rounded, size: 15, color: t.inkFaint),
+          ),
+          const SizedBox(width: 8),
+        ],
         if (widget.onOpenSessions != null) ...[
           AccessibleAction(
             semanticLabel: 'Open sessions',
