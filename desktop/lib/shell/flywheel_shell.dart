@@ -5,7 +5,9 @@ import 'dart:async';
 import 'dart:ui' show AppExitResponse;
 
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 
+import '../client/gateway_auth.dart';
 import '../client/gateway_client.dart';
 import '../client/gateway_grants.dart';
 import '../client/journey_api.dart';
@@ -18,6 +20,7 @@ import '../services/code_draft_store.dart';
 import '../services/chat_draft_store.dart';
 import '../services/gateway_process.dart';
 import '../services/gateway_status.dart';
+import '../services/connection_config.dart';
 import '../services/journey_draft_store.dart';
 import '../services/journey_session_store.dart';
 import '../services/settings.dart';
@@ -47,7 +50,14 @@ final class FlywheelDependencies {
   });
 
   factory FlywheelDependencies.production() {
-    final client = GatewayClient();
+    // The paired connection decides where the one app talks: loopback + the local
+    // gateway.token by default (desktop unchanged), or a remote gateway URL + a
+    // paired token when this device reaches another machine's engine.
+    final conn = ConnectionStore().load();
+    final client = GatewayClient(
+      baseUrl: conn.effectiveBaseUrl,
+      httpClient: AuthedClient(http.Client(), readToken: conn.tokenSource),
+    );
     return FlywheelDependencies(
       client: client,
       gateway: GatewayProcess(),

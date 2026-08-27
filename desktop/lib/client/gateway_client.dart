@@ -16,6 +16,9 @@ part 'gateway_operations.dart';
 part 'gateway_plan_transport.dart';
 
 class GatewayClient {
+  /// The gateway origin for a locally run engine (the desktop default).
+  static const String loopback = 'http://127.0.0.1:8799';
+
   final String baseUrl;
   final http.Client _http;
 
@@ -23,9 +26,9 @@ class GatewayClient {
   /// (see gateway_auth.dart). The gateway rejects an unauthenticated call with
   /// 401, so a client without the header reports a healthy engine as offline.
   /// An injected [httpClient] is used verbatim, which keeps tests in control of
-  /// their own headers.
-  GatewayClient(
-      {this.baseUrl = 'http://127.0.0.1:8799', http.Client? httpClient})
+  /// their own headers. [baseUrl] may point at a remote gateway (another device
+  /// reaching this machine's engine); it defaults to [loopback].
+  GatewayClient({this.baseUrl = loopback, http.Client? httpClient})
       : _http = httpClient ?? AuthedClient(http.Client());
 
   /// True if the gateway is reachable (the gateway serves /api/world on GET).
