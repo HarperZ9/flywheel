@@ -35,6 +35,9 @@ class Lane:
     organ: str
     source_repo: str = ""           # for the source-checkout install profile
     py_module: str = ""             # `python -m` entry for a pip lane
+    extra_source_repos: tuple = ()  # sibling repos this lane imports at runtime; each
+    #                                 repo's /src is added to the child PYTHONPATH so a
+    #                                 lane that composes uninstalled siblings still probes live
 
     def mcp_command(self) -> list[str]:
         """The argv that launches this lane's MCP stdio server."""
@@ -92,13 +95,21 @@ LANES: dict[str, Lane] = {
         "evidence-labeled display calibration: color-target and characterized-panel "
         "catalog + readiness doctor (read-only over MCP; actuation stays GUI-gated)",
         "calibration", source_repo="public/calibrate-pro", py_module="calibrate_pro.main"),
+    "accountable-surface": Lane(
+        "accountable-surface", "accountable-surface", "accountable-surface-server", (),
+        "pip", "0.1.0",
+        "live accountability seam: witnessed perception + operator-grant pre-execution "
+        "gate + self-verifying effectors + tamper-evident journal (actuates, so T2)",
+        "actuation", source_repo="public/accountable-surface",
+        py_module="accountable_surface.server",
+        extra_source_repos=("public/coherence-membrane", "public/proof-surface")),
 }
 
 
-def resolve_source_repo(lane: Lane) -> Path | None:
-    """Resolve a declared source path without embedding a host path in metadata."""
-    source = Path(lane.source_repo)
-    if not lane.source_repo:
+def _resolve_repo(source_repo: str) -> Path | None:
+    """Resolve one declared source path without embedding a host path in metadata."""
+    source = Path(source_repo)
+    if not source_repo:
         return None
     candidates = []
     explicit = os.environ.get("FLYWHEEL_WORKSPACE_ROOT", "").strip()
@@ -117,6 +128,25 @@ def resolve_source_repo(lane: Lane) -> Path | None:
             return resolved
         seen.add(resolved)
     return None
+
+
+def resolve_source_repo(lane: Lane) -> Path | None:
+    """Resolve a lane's own declared source path."""
+    return _resolve_repo(lane.source_repo)
+
+
+def _extra_import_roots(lane: Lane) -> list:
+    """The /src import root of each sibling repo a lane composes at runtime, so a
+    lane importing uninstalled siblings (e.g. accountable-surface -> coherence-membrane
+    + proof-surface) still imports and probes live."""
+    roots = []
+    for spec in getattr(lane, "extra_source_repos", ()) or ():
+        repo = _resolve_repo(spec)
+        if repo is None:
+            continue
+        src = repo / "src"
+        roots.append(str((src if src.is_dir() else repo).resolve()))
+    return roots
 
 
 def _importable(top_module: str) -> bool:
@@ -166,7 +196,12 @@ def resolve_mcp_launch(name: str) -> LaunchSpec:
         if source and lane.py_module:
             import_root = _python_import_root(source, lane)
             inherited = os.environ.get("PYTHONPATH", "")
-            pythonpath = str(import_root) + (os.pathsep + inherited if inherited else "")
+            # the lane's own import root stays FIRST (so its package wins), then any
+            # sibling roots it composes, then the inherited path.
+            roots = [str(import_root), *_extra_import_roots(lane)]
+            if inherited:
+                roots.append(inherited)
+            pythonpath = os.pathsep.join(roots)
             return LaunchSpec(
                 (sys.executable, "-m", lane.py_module, *lane.mcp_args), str(source),
                 (("PYTHONPATH", pythonpath), ("PYTHONSAFEPATH", "1")))

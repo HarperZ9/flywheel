@@ -44,6 +44,32 @@ def test_current_python_source_launch_imports_from_src_checkout(name):
     assert dict(launch.env_overrides)["PYTHONSAFEPATH"] == "1"
 
 
+def test_extra_source_repos_join_the_child_pythonpath(tmp_path, monkeypatch):
+    # a lane that composes uninstalled siblings puts its OWN src first, then each
+    # sibling's src, so the child imports the siblings without an editable install.
+    lane = ln.Lane("acc", "acc", "acc", (), "pip", "0.1.0", "seam", "actuation",
+                   source_repo="public/acc", py_module="acc",
+                   extra_source_repos=("public/sib-a", "public/sib-b"))
+    for name in ("acc", "sib-a", "sib-b"):
+        (tmp_path / "public" / name / "src").mkdir(parents=True)
+    (tmp_path / "public" / "acc" / "src" / "acc").mkdir()
+    monkeypatch.setattr(ln, "REPO", tmp_path / "public" / "flywheel")
+    monkeypatch.setattr(ln, "LANES", {"acc": lane})
+    monkeypatch.delenv("PYTHONPATH", raising=False)
+    launch = ln.resolve_mcp_launch("acc")
+    parts = dict(launch.env_overrides)["PYTHONPATH"].split(os.pathsep)
+    assert parts[0] == str((tmp_path / "public" / "acc" / "src").resolve())  # own root first
+    assert str((tmp_path / "public" / "sib-a" / "src").resolve()) in parts
+    assert str((tmp_path / "public" / "sib-b" / "src").resolve()) in parts
+
+
+def test_extra_source_repos_absent_leaves_pythonpath_unchanged(monkeypatch):
+    # a lane with no siblings behaves exactly as before (own root, then inherited).
+    monkeypatch.setattr(ln, "resolve_source_repo", lambda lane: None)
+    monkeypatch.setattr(ln, "_importable", lambda top: False)
+    assert ln.resolve_mcp_launch("gather") == LaunchSpec(("gather", "mcp"))
+
+
 def test_public_pip_command_stays_portable_when_importable(monkeypatch):
     monkeypatch.setattr(ln, "_importable", lambda top: True)
     cmd = ln.resolve_mcp_command("gather")

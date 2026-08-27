@@ -76,6 +76,7 @@ LANE_MIN_TIERS: dict[str, str] = {
     "learn": "T1",
     "telos": "T1",
     "local-model": "T2",  # the propose-verify engine; can execute code
+    "accountable-surface": "T2",  # actuates via effectors (fs/command/web/browser)
 }
 
 
