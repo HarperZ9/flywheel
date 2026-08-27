@@ -77,6 +77,7 @@ final class FlywheelDependencies {
       ),
       status: GatewayStatusService.production(
         baseUrl: client.baseUrl,
+        readToken: conn.tokenSource,
         fallbackAlive: () => client.isAlive(),
       ),
     );

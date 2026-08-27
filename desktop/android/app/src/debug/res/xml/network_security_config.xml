@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- DEBUG-ONLY override, applied only to debug builds via the src/debug source
+     set. Debug builds are the local dev and personal-device builds that reach
+     your own gateway directly over http on a loopback, LAN, or Tailscale
+     address. On Android, dart:io's HttpClient consults only the
+     GLOBAL cleartext policy (it ignores the per-domain exceptions that a Java
+     HTTP stack would honour), so a base-config of false blocks cleartext to
+     127.0.0.1 as well, and the app reports the engine offline while a shell
+     curl to the same address succeeds. Permitting cleartext at the base config
+     is what lets Dart open the socket. This file affects debug builds ONLY;
+     the release config in src/main stays https-only for the shipped tunnel. -->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true"/>
+</network-security-config>

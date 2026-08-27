@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 
+import '../client/gateway_auth.dart' show flywheelHome;
 import '../models/chat.dart';
 import 'journey_session_store.dart';
 
@@ -22,12 +23,8 @@ class ChatStore {
   final JourneyRenameFile? renameFile;
   final JourneyTemporaryFile? temporaryFile;
 
-  static File _defaultFile() {
-    final home = Platform.environment['FLYWHEEL_HOME'] ??
-        '${Platform.environment['USERPROFILE'] ?? Platform.environment['HOME'] ?? '.'}'
-            '${Platform.pathSeparator}.flywheel';
-    return File('$home${Platform.pathSeparator}chats.json');
-  }
+  static File _defaultFile() =>
+      File('${flywheelHome()}${Platform.pathSeparator}chats.json');
 
   List<Conversation> load() {
     if (!storageFile.existsSync()) return [];

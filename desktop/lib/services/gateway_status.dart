@@ -42,11 +42,18 @@ class GatewayStatusService {
   })  : endpoint = endpoint ??
             (() => Uri.parse('http://127.0.0.1:8799/api/desktop/status'));
 
-  /// Production probe: its own authed client reading the same gateway
-  /// token as the main client, so auth parity holds across pollers.
+  /// Production probe: its own authed client, but reading the SAME token
+  /// source as the main client so auth parity holds across pollers. On a
+  /// desktop that source is the local gateway.token; on a paired device
+  /// (a phone, a second machine) it is the paired bearer. Passing the
+  /// source in is what keeps the status bar honest on mobile: without it
+  /// the probe fell back to the absent gateway.token file and reported
+  /// authRequired even though the data client was authenticating fine.
   factory GatewayStatusService.production(
-      {String? baseUrl, Future<bool> Function()? fallbackAlive}) {
-    final authed = AuthedClient(http.Client());
+      {String? baseUrl,
+      String? Function()? readToken,
+      Future<bool> Function()? fallbackAlive}) {
+    final authed = AuthedClient(http.Client(), readToken: readToken);
     final base = baseUrl ?? 'http://127.0.0.1:8799';
     return GatewayStatusService(
       endpoint: () => Uri.parse('$base/api/desktop/status'),

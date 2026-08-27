@@ -23,15 +23,42 @@
 import 'dart:io';
 
 import 'package:http/http.dart' as http;
+import 'package:path_provider/path_provider.dart';
 
 const String tokenFilename = 'gateway.token';
 
+/// Cached writable home for platforms where the environment names none. Null on
+/// desktop, where HOME/USERPROFILE already resolve. Set once by
+/// [initFlywheelHome] at startup, so [flywheelHome] stays synchronous for its
+/// many callers.
+String? _mobileHome;
+
+/// Resolve a writable home on Android and iOS, where HOME is `/` (unwritable)
+/// and USERPROFILE is unset, so every store that hangs off [flywheelHome]
+/// (the paired connection, chat history, sessions, settings) persists. Uses the
+/// app-private support directory, namespaced with `.flywheel` to mirror the
+/// desktop layout. A no-op on desktop. It never throws: if the platform channel
+/// fails the override stays null and the app runs with persistence degraded
+/// rather than crashing at launch. Call it once, awaited, before the first
+/// store loads.
+Future<void> initFlywheelHome() async {
+  if (!(Platform.isAndroid || Platform.isIOS)) return;
+  try {
+    final dir = await getApplicationSupportDirectory();
+    _mobileHome = '${dir.path}${Platform.pathSeparator}.flywheel';
+  } catch (_) {
+    // Leave _mobileHome null; flywheelHome() falls back to its default.
+  }
+}
+
 /// The engine's home directory, resolved exactly as the rest of the app and the
-/// engine resolve it: `FLYWHEEL_HOME`, else the user profile plus `.flywheel`.
+/// engine resolve it: `FLYWHEEL_HOME`, else the mobile app-private home when one
+/// was resolved, else the user profile plus `.flywheel`.
 String flywheelHome() {
   final env = Platform.environment;
   final explicit = env['FLYWHEEL_HOME'];
   if (explicit != null && explicit.isNotEmpty) return explicit;
+  if (_mobileHome != null) return _mobileHome!;
   final profile = env['USERPROFILE'] ?? env['HOME'] ?? '.';
   return '$profile${Platform.pathSeparator}.flywheel';
 }

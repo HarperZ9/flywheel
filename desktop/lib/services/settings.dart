@@ -10,6 +10,8 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 
+import '../client/gateway_auth.dart' show flywheelHome;
+
 class DesktopSettings {
   ThemeMode themeMode;
   List<String> recentWorkspaces;
@@ -87,12 +89,8 @@ class DesktopSettings {
     save();
   }
 
-  static File _file() {
-    final home = Platform.environment['FLYWHEEL_HOME'] ??
-        '${Platform.environment['USERPROFILE'] ?? Platform.environment['HOME'] ?? '.'}'
-            '${Platform.pathSeparator}.flywheel';
-    return File('$home${Platform.pathSeparator}desktop.json');
-  }
+  static File _file() =>
+      File('${flywheelHome()}${Platform.pathSeparator}desktop.json');
 
   static DesktopSettings load() {
     try {
