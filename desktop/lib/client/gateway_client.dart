@@ -118,6 +118,31 @@ class GatewayClient {
     return _decode(r);
   }
 
+  /// POST /api/relay/start â€” start a witnessed relay run through the one gateway.
+  /// Returns the run_id and checkpoint so the accountable receipts travel with it.
+  Future<Map<String, dynamic>> startRelayRun(Map<String, dynamic> task) async {
+    final r = await _http.post(
+      Uri.parse('$baseUrl/api/relay/start'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(task),
+    );
+    return _decode(r);
+  }
+
+  /// GET /api/relay/status â€” a relay run's progress.
+  Future<Map<String, dynamic>> relayStatus(String runId) =>
+      getJson('/api/relay/status?run_id=${Uri.encodeQueryComponent(runId)}');
+
+  /// GET /api/relay/result â€” a relay run's verified result once it is done.
+  Future<Map<String, dynamic>> relayResult(String runId) =>
+      getJson('/api/relay/result?run_id=${Uri.encodeQueryComponent(runId)}');
+
+  /// GET /api/relay/runs â€” recent relay runs (they survive a restart).
+  Future<Map<String, dynamic>> relayRuns() => getJson('/api/relay/runs');
+
+  /// GET /api/relay/sessions â€” saved relay sessions (they follow you).
+  Future<Map<String, dynamic>> relaySessions() => getJson('/api/relay/sessions');
+
   /// POST /api/typeface â€” mint a parametric face; outlines + receipt back.
   Future<Map<String, dynamic>> typefaceMint(
       Map<String, dynamic> params, int seed) async {
