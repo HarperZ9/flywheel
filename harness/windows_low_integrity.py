@@ -200,6 +200,36 @@ def _environment(env: dict) -> ctypes.Array:
     return ctypes.create_unicode_buffer("\0".join(entries) + "\0\0")
 
 
+def _open_streams(stdout_path: Path | None, stderr_path: Path | None):
+    """Open the child's stdin/stdout/stderr handles, inheritable by the child.
+
+    Captures to `stdout_path`/`stderr_path` when both are given; otherwise
+    falls back to devnull for all three (the historical, byte-identical
+    default behavior).
+    """
+    streams: list = []
+    if stdout_path and stderr_path:
+        f_out = open(stdout_path, "wb"); streams.append(f_out)
+        f_err = open(stderr_path, "wb"); streams.append(f_err)
+        f_in = open(os.devnull, "rb"); streams.append(f_in)
+    else:
+        for mode in ("rb", "wb", "wb"):
+            f = open(os.devnull, mode); streams.append(f)
+        f_in, f_out, f_err = streams[0], streams[1], streams[2]
+    for f in streams:
+        os.set_handle_inheritable(__import__("msvcrt").get_osfhandle(f.fileno()), True)
+    return streams, f_in, f_out, f_err
+
+
+def _startup_info(f_in, f_out, f_err) -> STARTUPINFO:
+    startup = STARTUPINFO(); startup.cb = ctypes.sizeof(startup)
+    startup.dwFlags = STARTF_USESTDHANDLES
+    startup.hStdInput = __import__("msvcrt").get_osfhandle(f_in.fileno())
+    startup.hStdOutput = __import__("msvcrt").get_osfhandle(f_out.fileno())
+    startup.hStdError = __import__("msvcrt").get_osfhandle(f_err.fileno())
+    return startup
+
+
 class LowIntegrityRunner:
     def __init__(self, source: Path, output: Path):
         self.source, self.output, self.token = source, output, None
@@ -213,19 +243,15 @@ class LowIntegrityRunner:
     def __exit__(self, *_):
         _close(self.token); self.token = None
 
-    def run(self, argv: list[str], *, env: dict, timeout_seconds: int) -> int:
+    def run(self, argv: list[str], *, env: dict, timeout_seconds: int,
+            stdout_path: Path | None = None,
+            stderr_path: Path | None = None) -> int:
         if not self.token or not argv or Path(argv[0]).resolve() != Path(argv[0]):
             raise ExecutionInputProtectionUnavailable("protected argv is not absolute")
-        job = _job(); process = PROCESS_INFORMATION(); nulls = []
+        job = _job(); process = PROCESS_INFORMATION(); streams = []
         try:
-            for mode in ("rb", "wb", "wb"):
-                stream = open(os.devnull, mode); nulls.append(stream)
-                os.set_handle_inheritable(__import__("msvcrt").get_osfhandle(stream.fileno()), True)
-            startup = STARTUPINFO(); startup.cb = ctypes.sizeof(startup)
-            startup.dwFlags = STARTF_USESTDHANDLES
-            startup.hStdInput = __import__("msvcrt").get_osfhandle(nulls[0].fileno())
-            startup.hStdOutput = __import__("msvcrt").get_osfhandle(nulls[1].fileno())
-            startup.hStdError = __import__("msvcrt").get_osfhandle(nulls[2].fileno())
+            streams, f_in, f_out, f_err = _open_streams(stdout_path, stderr_path)
+            startup = _startup_info(f_in, f_out, f_err)
             command = ctypes.create_unicode_buffer(subprocess.list2cmdline(argv))
             environment = _environment(env)
             flags = CREATE_SUSPENDED | CREATE_UNICODE_ENVIRONMENT | CREATE_NO_WINDOW
@@ -259,5 +285,5 @@ class LowIntegrityRunner:
             return int(code.value)
         finally:
             _close(process.hThread); _close(process.hProcess); _close(job)
-            for stream in nulls:
+            for stream in streams:
                 stream.close()
