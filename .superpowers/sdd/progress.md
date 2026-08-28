@@ -1,18 +1,25 @@
-# Subagent-driven development progress
+# SDD Progress: Agent Key Storage & Sandboxed Execution
 
-Spec: `C:/dev/project-docs/specs/SPEC-QCR-FALSIFIABLE-LANES-20260721.md`
-Plan: `docs/superpowers/plans/2026-07-21-qcr-falsifiable-lanes.md`
+Branch: feat/agent-key-storage-and-sandbox
+Plan: docs/superpowers/plans/2026-08-27-agent-key-storage-and-sandboxed-execution.md
+Started: 2026-08-27
+Base: e4ff5f1
 
-| Task | Implementer | Spec review | Quality review | Verification | Commit |
-|---|---|---|---|---|---|
-| Branch invariant oracle | `qcr_branch_red` + `qcr_branch_impl` | PASS | PASS | RED: missing task; GREEN: 10 passed | same slice |
-| Projected-sector audit | `qcr_projection_red` + `qcr_projection_impl` | PASS | PASS | RED: missing task; GREEN: 12 passed | same slice |
-| Research-lane document | `qcr_research_doc` | PASS | PASS | UTF-8/Markdown and claim-boundary review passed | same slice |
-| Orchestration dry run | root | PASS (claim-state boundaries) | PASS after JUnit/inventory remediation; publication revision sealed externally after commit | Forum chain/deep true; Mneme 5 MATCH; Crucible seals re-derived; replay coverage blocked (0 descriptors, 5 skipped) | same slice |
+## Tasks
 
-Final bounded gate: 141 passed twice across physics, task curator, science bench,
-tension ledger, conjecture forge, Lean oracle, discovery flywheel, and gateway
-slices. Final review exposed and closed a disparate-scale selected-sector
-underflow defect with a RED/GREEN hidden regression. The final receipt-backed
-JUnit run records 141 tests, 0 failures/errors/skips, and 92.212 seconds.
-`git diff --check` passed; whole-slice review returned READY TO COMMIT.
+- Task 1: Session Token Store — COMPLETE (commits e4ff5f1..106870f, review clean)
+- Task 2: Session Token Gateway Routes — COMPLETE (mint/list/revoke wired into gateway; 4 route tests green)
+- Task 3: Sandboxed Runner with Output Capture — PENDING
+- Task 4: Wire Sandbox into Tool Execution — PENDING
+- Task 5: Receipt Integration — PENDING
+- Task 6: Flutter Session Tokens Panel — PENDING
+
+## Minor Findings
+
+- T1: `resolve()` reads token snapshot under lock then validates outside lock; narrow TOCTOU window on concurrent revoke (low risk, 128-bit unguessable ref)
+- T1: `ttl_seconds` not validated; negative value silently produces already-expired token
+- T1: No test for `resolve()` on nonexistent token_ref, no test for `revoke()` returning False on unknown token
+- T1: `list_active()`/`reap()` duplicate the revoked/expired check instead of reusing `active()` (reviewer noted `active()` calls time.time() per-token vs snapshot `now`)
+
+## Log
+

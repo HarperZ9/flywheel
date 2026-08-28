@@ -739,6 +739,7 @@ class _Handler(BaseHTTPRequestHandler):
     owner_ref, clock = None, staticmethod(
         lambda: datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"))
     operation_service = operation_process_factory = None
+    session_token_store = _session_token_state_root = None
     def log_message(self, *a):  # quiet
         pass
 
@@ -794,6 +795,24 @@ class _Handler(BaseHTTPRequestHandler):
             type(self).operation_process_factory = GatewayAgentProcessFactory(
                 repo_root=Path(self.root), run_root=Path(self.run_root))
         return service, type(self).operation_process_factory
+
+    def _session_tokens(self):
+        """Lazily build (and rebuild on flywheel_home change) the one
+        in-memory SessionTokenStore this process holds. Mints and revokes
+        must land in the same store a later request reads, so it cannot be
+        recreated per-call the way the (stateless, disk-backed)
+        CredentialHandleStore is; mirrors _operation_components so a test
+        that repoints flywheel_home doesn't inherit a stale store."""
+        state_root = self.flywheel_home / "state"
+        cls = type(self)
+        if cls.session_token_store is None or cls._session_token_state_root != state_root:
+            from harness.credential_handles import CredentialHandleStore
+            from harness.keychain import keychain_get
+            from harness.session_token import SessionTokenStore
+            cls.session_token_store = SessionTokenStore(
+                CredentialHandleStore(state_root, keychain_get=keychain_get))
+            cls._session_token_state_root = state_root
+        return cls.session_token_store
 
     def _operation_response(self, response):
         if response.stream is None: return self._json(response.body, response.status)
@@ -941,6 +960,7 @@ class _Handler(BaseHTTPRequestHandler):
                                     "/api/gateway-grants/",
                                     "/api/pm/",
                                     "/api/credential-handles",
+                                    "/api/session-tokens",
                                     "/api/operations/"))
                    or path in {"/v1/chat/completions", "/api/agent",
                                "/api/workflow", "/api/plugins/probe",
@@ -1298,6 +1318,11 @@ class _Handler(BaseHTTPRequestHandler):
                 p, owner_ref=self.owner_ref,
                 state_root=self.flywheel_home / "state")
             return self._json(body, code)
+        if p == "/api/session-tokens":
+            from harness.session_token_route import session_token_get
+            body, code = session_token_get(
+                owner_ref=self.owner_ref, token_store=self._session_tokens())
+            return self._json(body, code)
         if p == "/api/plugins/probe":                # spawn a plugin's server, report its real tools
             return self._json({"schema": "flywheel.evidence-transport-error/v1",
                 "error": {"code": "INVALID_REQUEST",
@@ -1326,6 +1351,21 @@ class _Handler(BaseHTTPRequestHandler):
     def _post(self):
         p = self.path.split("?", 1)[0]
         if p.startswith("/api/plan/"): return self._plan_request(p)
+        if p.startswith("/api/session-tokens/"):
+            length = self._content_length()
+            if length is None:
+                return self._json({"schema": "flywheel.evidence-transport-error/v1",
+                    "error": {"code": "INVALID_LENGTH", "message": "request length is invalid"}}, 400)
+            try:
+                req = json.loads(self.rfile.read(length) or b"{}")
+            except Exception:
+                req = {}
+            action = p.rsplit("/", 1)[-1]
+            from harness.session_token_route import session_token_post
+            body, code = session_token_post(
+                action, req, owner_ref=self.owner_ref,
+                token_store=self._session_tokens())
+            return self._json(body, code)
         if p.startswith(("/api/evidence/", "/api/journeys/", "/api/grants/",
                          "/api/gateway-grants/", "/api/credential-handles/")):
             length = self._content_length()
@@ -2453,6 +2493,12 @@ def main(argv=None) -> int:
     _Handler.operation_service = GatewayOperations(state_root, clock=_Handler.clock)
     _Handler.operation_process_factory = GatewayAgentProcessFactory(
         repo_root=_Handler.root, run_root=Path(_Handler.run_root))
+    from harness.credential_handles import CredentialHandleStore
+    from harness.keychain import keychain_get
+    from harness.session_token import SessionTokenStore
+    _Handler.session_token_store = SessionTokenStore(
+        CredentialHandleStore(state_root, keychain_get=keychain_get))
+    _Handler._session_token_state_root = state_root
     recover_store(state_root, now=_Handler.clock())
     recover_gateway_operations(state_root, now=_Handler.clock())
     print(f"flywheel gateway: http://127.0.0.1:{a.port}  root={_Handler.root}")
