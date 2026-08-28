@@ -9,8 +9,8 @@ Base: e4ff5f1
 
 - Task 1: Session Token Store — COMPLETE (commits e4ff5f1..106870f, review clean)
 - Task 2: Session Token Gateway Routes — COMPLETE (mint/list/revoke wired into gateway; 4 route tests green)
-- Task 3: Sandboxed Runner with Output Capture — PENDING
-- Task 4: Wire Sandbox into Tool Execution — PENDING
+- Task 3: Sandboxed Runner with Output Capture — COMPLETE (commits 501ae6f..11c3157, review clean after fix round)
+- Task 4: Wire Sandbox into Tool Execution — COMPLETE (bridge wired into local_agent_cli.py/local_mcp.py; fail-open fallback and unsandboxed path now disclose via [UNVERIFIABLE: sandbox unavailable] / [unsandboxed] markers)
 - Task 5: Receipt Integration — PENDING
 - Task 6: Flutter Session Tokens Panel — PENDING
 
