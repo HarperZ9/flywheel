@@ -7,6 +7,7 @@ from harness.cross_harness_artifacts import (bind_attempt_receipt, canonical_sha
     materialize_response_envelope, preflight_artifact_root, recheck_attempt_receipt, remove_readonly_tree,
     snapshot_source_tree, validate_execution_components, write_artifact_index)
 from harness.cross_harness_oracles import OracleContext, evaluate_task_oracle
+from harness.cross_harness_runtime_context import stage_runtime_context
 from harness.cross_harness_types import (AttemptRequest, metric_null_reasons, model_observation_pair_error, sanitize_evidence,
     validate_elapsed_ms)
 class _MalformedAttempt(ValueError): pass
@@ -186,13 +187,12 @@ def execute_cross_harness_manifest(
             try:
                 try: workspace, observed = create_attempt_workspace(source, list(task.get("required_inputs", [])), dict(task.get("input_sha256s", {})), attempt)
                 except ValueError as exc: raise _MalformedAttempt(str(exc)) from exc
-                workspace_snapshot = snapshot_source_tree(workspace)
-                workspace_before = workspace_snapshot
+                context, context_path = stage_runtime_context(workspace, attempt, task, row, observed); files[context_path.name] = context_path
+                workspace_snapshot = snapshot_source_tree(workspace); workspace_before = workspace_snapshot
                 workspace_before_path = attempt / "workspace-before.json"; _write_json(workspace_before_path, workspace_before); files[workspace_before_path.name] = workspace_before_path
                 row.update(workspace_root=str(workspace), workspace_snapshot_sha256=workspace_snapshot["sha256"],
-                           input_sha256s=observed, workspace_state="verified")
-                prompt = attempt / "prompt.txt"; prompt.write_text(str(task.get("raw_prompt", "")), encoding="utf-8", newline=""); files[prompt.name] = prompt
-                row["raw_prompt_path"] = str(prompt)
+                           input_sha256s=observed, runtime_context_sha256=canonical_sha256(context), workspace_state="verified")
+                prompt = attempt / "prompt.txt"; prompt.write_text(str(task.get("raw_prompt", "")), encoding="utf-8", newline=""); files[prompt.name] = prompt; row["raw_prompt_path"] = str(prompt)
                 request = AttemptRequest(run_id, phase, row["task_set_id"], row["task_id"], task.get("raw_prompt", ""),
                     row["raw_prompt_sha256"], row["provider_role"], row["harness_id"], row["adapter_id"], row["model_id"], row["requested_model_reference"],
                     workspace, workspace_snapshot["sha256"], observed, dict(SHARED_TOOL_POLICY), row["tool_policy_sha256"],

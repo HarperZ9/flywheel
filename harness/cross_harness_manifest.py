@@ -241,6 +241,7 @@ def _prompt_text(task_set: dict[str, Any], contract: dict[str, Any], task: dict[
         "Cross-harness invariants:",
         *[f"- {item}" for item in contract.get("global_invariants", [])],
         "",
+        "Execution protocol:\n- Read benchmark/context.json before composing artifacts; it contains role-neutral harness facts and required JSON fields.\n- Use only the staged workspace inputs and benchmark/context.json. Do not run commands or inspect outside the workspace.\n- Return one compact JSON object on one line. Escape every markdown newline, quote, and backslash as valid JSON.\n",
         "Response envelope (JSON only):",
         json.dumps(envelope, sort_keys=True, separators=(",", ":")),
     ]
