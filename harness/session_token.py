@@ -60,7 +60,15 @@ class SessionTokenStore:
         required_slots: list[str] | tuple[str, ...],
         ttl_seconds: int,
     ) -> SessionToken:
-        self._handle_store.slot_names_exact(owner_ref, list(credential_refs))
+        try:
+            actual_slots = self._handle_store.slot_names_exact(
+                owner_ref, list(credential_refs))
+        except CredentialHandleError:
+            raise SessionTokenError("INVALID_CREDENTIAL") from None
+        required_set = set(required_slots)
+        actual_set = set(actual_slots)
+        if not required_set.issubset(actual_set):
+            raise SessionTokenError("SLOT_MISMATCH")
         now = time.time()
         token_ref = f"{TOKEN_REF_PREFIX}{secrets.token_hex(16)}"
         token = SessionToken(

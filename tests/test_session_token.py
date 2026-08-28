@@ -1,6 +1,5 @@
 """Session tokens: scoped, time-bounded credential derivation."""
 import time
-from unittest.mock import MagicMock
 
 import pytest
 
@@ -130,6 +129,34 @@ def test_reap_removes_expired_tokens(tmp_path):
     removed = store.reap()
     assert removed == 1
     assert len(store.list_active(OWNER)) == 1
+
+
+def test_mint_rejects_invalid_credential_refs(tmp_path):
+    from harness.session_token import SessionTokenError
+    store = _make_store(tmp_path)
+    with pytest.raises(SessionTokenError, match="INVALID_CREDENTIAL"):
+        store.mint(
+            owner_ref=OWNER,
+            session_ref="sess_001",
+            credential_refs=["invalid_ref"],
+            required_slots=["OPENROUTER_API_KEY"],
+            ttl_seconds=900,
+        )
+
+
+def test_mint_rejects_mismatched_required_slots(tmp_path):
+    from harness.session_token import SessionTokenError
+    store = _make_store(tmp_path)
+    hs = store._handle_store
+    h = hs.bind(OWNER, "OPENROUTER_API_KEY")
+    with pytest.raises(SessionTokenError, match="SLOT_MISMATCH"):
+        store.mint(
+            owner_ref=OWNER,
+            session_ref="sess_001",
+            credential_refs=[h.credential_ref],
+            required_slots=["OPENROUTER_API_KEY", "NONEXISTENT_SLOT"],
+            ttl_seconds=900,
+        )
 
 
 def test_repr_never_contains_credential_value(tmp_path):
