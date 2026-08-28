@@ -27,6 +27,10 @@ class ChatHeader extends StatelessWidget {
   final ValueChanged<String> onModel;
   final Future<Map<String, dynamic>> Function() loadModels;
 
+  /// On narrow widths the inline sidebar is hidden; this callback opens it as
+  /// a sheet. When null, no conversations button renders.
+  final VoidCallback? onShowConversations;
+
   const ChatHeader({
     super.key,
     required this.agentMode,
@@ -38,6 +42,7 @@ class ChatHeader extends StatelessWidget {
     required this.onEndpoint,
     required this.onModel,
     required this.loadModels,
+    this.onShowConversations,
   });
 
   @override
@@ -54,6 +59,16 @@ class ChatHeader extends StatelessWidget {
 
   Widget _row(BuildContext context, FwTokens t, bool showReceiptCopy) =>
       Row(children: [
+        if (onShowConversations != null) ...[
+          IconButton(
+            onPressed: onShowConversations,
+            icon: Icon(Icons.forum_outlined, size: 18, color: t.inkMuted),
+            tooltip: 'Conversations',
+            constraints: const BoxConstraints(minWidth: 34, minHeight: 34),
+            padding: const EdgeInsets.all(4),
+          ),
+          const SizedBox(width: FwLayout.s1),
+        ],
         Text('Chat', style: Theme.of(context).textTheme.titleMedium),
         const SizedBox(width: FwLayout.s4),
         FwModeChip(

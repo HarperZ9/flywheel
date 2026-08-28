@@ -15,6 +15,10 @@ class ChatSidebar extends StatelessWidget {
   final VoidCallback onNew;
   final ValueChanged<Conversation> onSelect;
   final ValueChanged<Conversation> onDelete;
+
+  /// When non-null, the sidebar renders inside a DraggableScrollableSheet and
+  /// delegates its list scrolling to this controller.
+  final ScrollController? scrollController;
   const ChatSidebar({
     super.key,
     required this.conversations,
@@ -23,45 +27,52 @@ class ChatSidebar extends StatelessWidget {
     required this.onNew,
     required this.onSelect,
     required this.onDelete,
+    this.scrollController,
   });
 
   @override
   Widget build(BuildContext context) {
     final t = context.fw;
+    final inSheet = scrollController != null;
+    final body = Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(FwLayout.s3),
+            child: OutlinedButton.icon(
+              onPressed: streaming ? null : onNew,
+              icon: const Icon(Icons.add_rounded, size: 16),
+              label: const Text('New chat'),
+              style: OutlinedButton.styleFrom(
+                  alignment: Alignment.centerLeft,
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: FwLayout.s3, vertical: FwLayout.s3)),
+            ),
+          ),
+          Expanded(
+            child: ListView(
+              controller: scrollController,
+              padding: const EdgeInsets.symmetric(horizontal: FwLayout.s2),
+              children: [
+                for (final c in conversations)
+                  _ConvItem(
+                    title: c.isEmpty ? 'New chat' : c.title,
+                    selected: identical(c, current),
+                    onTap: () => onSelect(c),
+                    onDelete: streaming ? null : () => onDelete(c),
+                  ),
+              ],
+            ),
+          ),
+        ]);
+    if (inSheet) return body;
     return Container(
       width: 232,
       decoration: BoxDecoration(
         color: t.ground2,
         border: Border(right: BorderSide(color: t.hairline)),
       ),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        Padding(
-          padding: const EdgeInsets.all(FwLayout.s3),
-          child: OutlinedButton.icon(
-            onPressed: streaming ? null : onNew,
-            icon: const Icon(Icons.add_rounded, size: 16),
-            label: const Text('New chat'),
-            style: OutlinedButton.styleFrom(
-                alignment: Alignment.centerLeft,
-                padding: const EdgeInsets.symmetric(
-                    horizontal: FwLayout.s3, vertical: FwLayout.s3)),
-          ),
-        ),
-        Expanded(
-          child: ListView(
-            padding: const EdgeInsets.symmetric(horizontal: FwLayout.s2),
-            children: [
-              for (final c in conversations)
-                _ConvItem(
-                  title: c.isEmpty ? 'New chat' : c.title,
-                  selected: identical(c, current),
-                  onTap: () => onSelect(c),
-                  onDelete: streaming ? null : () => onDelete(c),
-                ),
-            ],
-          ),
-        ),
-      ]),
+      child: body,
     );
   }
 }
