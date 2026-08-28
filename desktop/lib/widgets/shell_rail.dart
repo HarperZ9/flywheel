@@ -103,6 +103,7 @@ class _ShellRailState extends State<ShellRail> {
                     destinations: entry.value,
                     selected: widget.selected,
                     collapsed: widget.collapsed,
+                    foldable: widget.inDrawer,
                     onSelect: widget.onGo,
                   ),
                 if (groups.isEmpty)
@@ -225,11 +226,7 @@ class _ShellRailState extends State<ShellRail> {
       children: [
         Divider(color: t.line, height: 1),
         const SizedBox(height: FwLayout.s2),
-        _drawerAction(t, Icons.contrast, 'Theme', widget.onToggleTheme,
-            semantic: 'Toggle theme'),
-        _drawerAction(t, Icons.restore_rounded, 'Recovery',
-            widget.onOpenRecovery,
-            semantic: 'Open recovery center'),
+        _footerKicker(t, 'TOOLS'),
         if (widget.onOpenAssistant != null)
           _drawerAction(t, Icons.assistant_rounded, 'Assistant',
               widget.onOpenAssistant!,
@@ -238,14 +235,34 @@ class _ShellRailState extends State<ShellRail> {
           _drawerAction(t, Icons.history_rounded, 'Sessions',
               widget.onOpenSessions!,
               semantic: 'Open sessions'),
+        _drawerAction(t, Icons.restore_rounded, 'Recovery',
+            widget.onOpenRecovery,
+            semantic: 'Open recovery center'),
+        Container(
+          height: 1,
+          margin: const EdgeInsets.symmetric(
+              horizontal: FwLayout.s3, vertical: FwLayout.s1),
+          color: t.hairline,
+        ),
+        _footerKicker(t, 'SETTINGS'),
+        _drawerAction(t, Icons.contrast, 'Theme', widget.onToggleTheme,
+            semantic: 'Toggle theme'),
+        _drawerAction(t, Icons.tune, 'Appearance', widget.onOpenAppearance,
+            semantic: 'Open appearance settings'),
         if (widget.onOpenConnection != null)
           _drawerAction(t, Icons.devices_rounded, 'Connection',
               widget.onOpenConnection!,
               semantic: 'Pair a gateway connection'),
-        _drawerAction(t, Icons.tune, 'Appearance', widget.onOpenAppearance,
-            semantic: 'Open appearance settings'),
         const SizedBox(height: FwLayout.s2),
       ],
+    );
+  }
+
+  Widget _footerKicker(FwTokens t, String text) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 4, 12, 2),
+      child:
+          Text(text, style: fwKicker(t, size: 9, color: t.inkFaint)),
     );
   }
 
