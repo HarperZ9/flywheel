@@ -26,21 +26,32 @@ class SessionTokensPanel extends StatefulWidget {
 
 class _SessionTokensPanelState extends State<SessionTokensPanel> {
   String? _busy;
+  String? _note;
 
   @override
   Widget build(BuildContext context) {
     final t = context.fw;
-    final tokens =
-        (widget.doc['tokens'] as List?)?.cast<Map<String, dynamic>>() ?? [];
+    final tokens = ((widget.doc['tokens'] as List?) ?? [])
+        .whereType<Map<String, dynamic>>()
+        .toList();
     if (tokens.isEmpty) {
       return const HonestNull('No active session tokens.');
     }
-    return HairlineCard(
-      padding: const EdgeInsets.symmetric(
-          horizontal: FwLayout.s4, vertical: FwLayout.s2),
-      child: Column(
-        children: [for (final tok in tokens) _row(t, tok)],
-      ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        HairlineCard(
+          padding: const EdgeInsets.symmetric(
+              horizontal: FwLayout.s4, vertical: FwLayout.s2),
+          child: Column(
+            children: [for (final tok in tokens) _row(t, tok)],
+          ),
+        ),
+        if (_note != null) ...[
+          const SizedBox(height: FwLayout.s2),
+          Text(_note!, style: fwMono(t, size: 10.5, color: t.inkMuted)),
+        ],
+      ],
     );
   }
 
@@ -86,11 +97,19 @@ class _SessionTokensPanelState extends State<SessionTokensPanel> {
   }
 
   Future<void> _revoke(String ref) async {
-    setState(() => _busy = ref);
+    setState(() {
+      _busy = ref;
+      _note = null;
+    });
     try {
       await widget.onRevoke(ref);
+      if (!mounted) return;
+      setState(() => _note = null);
       widget.onChanged();
-    } catch (_) {}
-    if (mounted) setState(() => _busy = null);
+    } catch (e) {
+      if (mounted) setState(() => _note = 'could not revoke: $e');
+    } finally {
+      if (mounted) setState(() => _busy = null);
+    }
   }
 }
