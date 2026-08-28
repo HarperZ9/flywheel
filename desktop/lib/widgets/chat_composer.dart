@@ -8,7 +8,8 @@ import '../models/chat.dart';
 import '../theme/flywheel_theme.dart';
 
 /// Curated starting points so the composer is never a cold blank box.
-const _starters = <Map<String, String>>[
+/// Public so ChatWelcome can render tappable chips from the same list.
+const chatStarters = <Map<String, String>>[
   {
     'title': 'Explain this code',
     'text': 'Explain what this code does, step by step:\n\n'
@@ -192,7 +193,7 @@ class _ChatComposerState extends State<ChatComposer> {
       },
       itemBuilder: (context) => [
         _menuHeader(t, 'Starters'),
-        for (final p in _starters)
+        for (final p in chatStarters)
           PopupMenuItem(
               value: p['text'], height: 38, child: _menuRow(t, p['title']!)),
         if (widget.savedPrompts.isNotEmpty) ...[

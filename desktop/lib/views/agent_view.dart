@@ -48,7 +48,7 @@ class _AgentViewState extends State<AgentView> {
   ChatMessage? _assistant;
   bool _admitting = false, _accepted = false, _streaming = false;
   bool _agentMode = false;
-  int _generation = 0;
+  int _generation = 0, _starterSeq = 0;
   bool get _busy => _admitting || _streaming;
   List<Conversation> get _conversations => _admission.conversations;
   @override
@@ -122,6 +122,7 @@ class _AgentViewState extends State<AgentView> {
   }
 
   void _draftChanged(String text) => _admission.changeDraft(_current, text);
+  void _useStarter(String t) { _admission.changeDraft(_current, t); setState(() => _starterSeq++); }
   Future<PromptDisposition> _send(String text) {
     const retained = PromptDisposition.retained;
     if (_busy) return Future.value(retained);
@@ -280,11 +281,11 @@ class _AgentViewState extends State<AgentView> {
       ? AgentModePane(
           client: widget.client, alive: widget.alive, settings: widget.settings)
       : _current.isEmpty
-          ? const ChatWelcome()
+          ? ChatWelcome(onStarter: _useStarter)
           : ChatThread(messages: _current.messages, controller: _scroll);
 
   Widget _composer() => ChatComposer(
-      key: ValueKey(_current.id),
+      key: ValueKey('${_current.id}:$_starterSeq'),
       streaming: _streaming,
       initialText: _admission.draftText(_current),
       onDraftChanged: _draftChanged,
@@ -292,7 +293,6 @@ class _AgentViewState extends State<AgentView> {
       savedPrompts: widget.settings.savedPrompts,
       onSavePrompt: (text) => setState(() => widget.settings.savePrompt(text)));
 }
-
 bool _validEvent(Map<String, dynamic> event) => switch (event) {
       {'type': 'delta', 'content': final String value} => value.isNotEmpty,
       {'type': 'done', 'receipt': final Map<String, dynamic> _} => true,

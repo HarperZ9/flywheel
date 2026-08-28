@@ -20,6 +20,11 @@ class StatusBar extends StatelessWidget {
   /// reaches a paired engine over the network, so it shows where the engine
   /// lives instead of a start action it cannot honor.
   final bool local;
+
+  /// The address the client uses to reach the gateway. Shown in the status
+  /// strip so the user knows where they are connected, especially on phones
+  /// paired to a remote engine.
+  final String gatewayAddress;
   const StatusBar({
     super.key,
     required this.alive,
@@ -28,6 +33,7 @@ class StatusBar extends StatelessWidget {
     required this.world,
     required this.onStartEngine,
     this.local = true,
+    this.gatewayAddress = '127.0.0.1:8799',
   });
 
   @override
@@ -86,7 +92,7 @@ class StatusBar extends StatelessWidget {
               const SizedBox(width: FwLayout.s4),
             ],
             if (!narrow)
-              Text('127.0.0.1:8799', style: fwMono(t, size: 11, color: t.inkFaint)),
+              Text(gatewayAddress, style: fwMono(t, size: 11, color: t.inkFaint)),
           ],
         );
       }),
