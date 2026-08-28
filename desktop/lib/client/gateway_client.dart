@@ -635,6 +635,13 @@ class GatewayClient {
     return _decode(r);
   }
 
+  /// GET /api/session-tokens â€” active scoped, time-bounded agent tokens.
+  Future<Map<String, dynamic>> sessionTokens() => getJson('/api/session-tokens');
+
+  /// POST /api/session-tokens/revoke â€” revoke one session token by ref.
+  Future<Map<String, dynamic>> sessionTokenRevoke(String tokenRef) =>
+      postJson('/api/session-tokens/revoke', {'token_ref': tokenRef});
+
   Map<String, dynamic> _decode(http.Response r) {
     if (r.statusCode != 200) {
       throw GatewayException.fromResponse(r.statusCode, r.body);

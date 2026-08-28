@@ -16,6 +16,7 @@ import '../theme/flywheel_theme.dart';
 import '../widgets/charts.dart';
 import '../widgets/fw.dart';
 import '../widgets/keys_panel.dart';
+import '../widgets/session_tokens_panel.dart';
 import '../widgets/signin_panel.dart';
 import '../widgets/training_card.dart';
 
@@ -38,6 +39,7 @@ class _EndpointsViewState extends State<EndpointsView> {
   Map<String, dynamic>? _training;
   Map<String, dynamic>? _keychain;
   Map<String, dynamic>? _auth;
+  Map<String, dynamic>? _sessionTokens;
   String? _error;
   bool _loading = false;
 
@@ -64,6 +66,7 @@ class _EndpointsViewState extends State<EndpointsView> {
         widget.client.trainingStatus(),
         widget.client.keychainRoster(),
         widget.client.getJson('/api/auth'),
+        widget.client.sessionTokens(),
       ]);
       if (mounted) {
         setState(() {
@@ -75,6 +78,7 @@ class _EndpointsViewState extends State<EndpointsView> {
           _training = results[3] as Map<String, dynamic>;
           _keychain = results[4] as Map<String, dynamic>;
           _auth = results[5] as Map<String, dynamic>;
+          _sessionTokens = results[6] as Map<String, dynamic>;
           _error = null;
           _loading = false;
         });
@@ -184,6 +188,16 @@ class _EndpointsViewState extends State<EndpointsView> {
                 .postJson('/api/auth/token', {'provider': p, 'token': token}),
             onLogout: (p) => widget.client
                 .postJson('/api/auth/logout', {'provider': p}),
+            onChanged: _load,
+          ),
+        ],
+        if (_sessionTokens != null) ...[
+          const SizedBox(height: FwLayout.s5),
+          const Kicker('session tokens · scoped, time-bounded agent credentials'),
+          const SizedBox(height: FwLayout.s3),
+          SessionTokensPanel(
+            doc: _sessionTokens!,
+            onRevoke: widget.client.sessionTokenRevoke,
             onChanged: _load,
           ),
         ],
