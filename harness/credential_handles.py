@@ -68,6 +68,19 @@ class CredentialBindings:
         result.update(self._values)
         return result
 
+    def redact(self, text: str) -> str:
+        """Scrub every bound credential value out of `text`.
+
+        Longer values are redacted first so that one bound value which is a
+        substring of another (e.g. "abc" and "abcdef") can't leave a
+        fragment of the longer value behind after the shorter value's pass
+        has already carved a "[REDACTED]" hole out of it.
+        """
+        for value in sorted((v for v in self._values.values() if v),
+                            key=len, reverse=True):
+            text = text.replace(value, "[REDACTED]")
+        return text
+
 
 class CredentialHandleStore:
     """Metadata-only persistent handles with explicit keychain resolution."""

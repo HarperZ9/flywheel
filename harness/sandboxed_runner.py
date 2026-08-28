@@ -86,12 +86,8 @@ def _execute(source: Path, work: Path, cmd: str, env: dict[str, str],
 
 
 def _build_env(bindings: CredentialBindings | None) -> dict[str, str]:
-    if bindings is not None:
-        return bindings.child_environment(os.environ, platform="windows")
-    allowed = ("PATH", "PATHEXT", "SYSTEMROOT", "WINDIR", "COMSPEC",
-               "TEMP", "TMP")
-    return {k: os.environ[k] for k in allowed
-            if type(os.environ.get(k)) is str}
+    active = bindings if bindings is not None else CredentialBindings({})
+    return active.child_environment(os.environ, platform="windows")
 
 
 def _read_output(stdout_path: Path, stderr_path: Path) -> str:
@@ -116,7 +112,4 @@ def _redact(text: str, bindings: CredentialBindings | None) -> str:
     """
     if bindings is None:
         return text
-    for value in bindings._values.values():
-        if value:
-            text = text.replace(value, "[REDACTED]")
-    return text
+    return bindings.redact(text)
