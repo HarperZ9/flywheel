@@ -34,9 +34,12 @@ def make_sandboxed_runner(
             # downstream code (and a human) can tell this call never saw
             # OS-enforced isolation, instead of reading like a normal
             # sandboxed result.
-            return _bare_run(
+            ok, out = _bare_run(
                 cmd, root, timeout_seconds,
                 prefix="[UNVERIFIABLE: sandbox unavailable] ")
+            if bindings is not None:
+                out = bindings.redact(out)
+            return ok, out
     return _run
 
 

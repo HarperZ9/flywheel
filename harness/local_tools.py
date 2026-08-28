@@ -220,7 +220,7 @@ class ToolExecutor:
     root: str = "."
     gate: ToolGate = field(default_factory=ToolGate)
     max_output: int = 4000
-    runner: "callable" = None      # inject for tests; default = subprocess
+    runner: "callable" = None      # inject sandbox bridge or custom runner
     external: dict = field(default_factory=dict)   # name -> {"fn": args->(ok,str), "description": str}
     # Sealed tool-call receipt emission (opt-in). When receipt_dir is set and
     # _receipt_run_id is non-empty, execute() emits one sealed receipt per call.
