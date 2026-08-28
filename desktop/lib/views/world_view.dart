@@ -240,12 +240,15 @@ class _WorldViewState extends State<WorldView> {
             child: VerdictDot(verdict, size: 7),
           ),
           const SizedBox(width: FwLayout.s3),
-          SizedBox(
-            width: 170,
+          Expanded(
+            flex: 3,
             child: Text('${f['key'] ?? ''}',
+                overflow: TextOverflow.ellipsis,
                 style: fwMono(t, size: 11.5, color: t.inkSoft)),
           ),
+          const SizedBox(width: FwLayout.s2),
           Expanded(
+            flex: 4,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [

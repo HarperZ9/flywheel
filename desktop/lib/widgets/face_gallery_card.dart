@@ -136,8 +136,8 @@ class _FaceGalleryCardState extends State<FaceGalleryCard> {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 3),
       child: Row(children: [
-        SizedBox(
-          width: 220,
+        Expanded(
+          flex: 3,
           child: Text('the quick brown fox 0123',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
@@ -147,10 +147,15 @@ class _FaceGalleryCardState extends State<FaceGalleryCard> {
                   color: t.ink)),
         ),
         const SizedBox(width: FwLayout.s3),
-        Text('${f['family'] ?? ''} · seed ${f['seed']}'
-            '${w != null ? ' · w${w.toStringAsFixed(3)}' : ''}',
-            style: fwMono(t, size: 10.5, color: t.inkMuted)),
-        const Spacer(),
+        Expanded(
+          flex: 2,
+          child: Text('${f['family'] ?? ''} · seed ${f['seed']}'
+              '${w != null ? ' · w${w.toStringAsFixed(3)}' : ''}',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: fwMono(t, size: 10.5, color: t.inkMuted)),
+        ),
+        const SizedBox(width: FwLayout.s2),
         HashText('mint', '${f['mint_id']}', keep: 16),
         const SizedBox(width: FwLayout.s2),
         TextButton(

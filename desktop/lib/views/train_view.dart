@@ -144,12 +144,15 @@ class _TrainViewState extends State<TrainView> {
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 3),
             child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              SizedBox(
-                  width: 210,
+              Expanded(
+                  flex: 3,
                   child: Text('${r['path']}',
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                       style: fwMono(t, size: 10.5, color: t.inkFaint))),
               const SizedBox(width: FwLayout.s3),
               Expanded(
+                  flex: 4,
                 child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [

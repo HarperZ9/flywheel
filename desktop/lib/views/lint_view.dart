@@ -196,25 +196,18 @@ class _LintViewState extends State<LintView> {
     final n = r['n_findings'] ?? 0;
     return Column(
       children: [
-        Row(
-          children: [
-            Expanded(
-                child: StatTile(
-                    label: 'files', value: '${r['files_scanned'] ?? 0}')),
-            const SizedBox(width: FwLayout.s3),
-            Expanded(
-                child: StatTile(
-                    label: 'findings',
-                    value: '$n',
-                    status: n == 0 ? 'verified' : 'drift')),
-            const SizedBox(width: FwLayout.s3),
-            Expanded(
-                child: StatTile(
-                    label: 'high',
-                    value: '${sev['high'] ?? 0}',
-                    status: 'drift')),
-          ],
-        ),
+        AdaptiveTiles(children: [
+          StatTile(
+              label: 'files', value: '${r['files_scanned'] ?? 0}'),
+          StatTile(
+              label: 'findings',
+              value: '$n',
+              status: n == 0 ? 'verified' : 'drift'),
+          StatTile(
+              label: 'high',
+              value: '${sev['high'] ?? 0}',
+              status: 'drift'),
+        ]),
         const SizedBox(height: FwLayout.s3),
         if ('${r['root_hash'] ?? ''}'.isNotEmpty)
           HairlineCard(

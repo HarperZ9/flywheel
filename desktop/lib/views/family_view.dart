@@ -122,10 +122,11 @@ class _FamilyViewState extends State<FamilyView> {
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 3),
                   child: Row(children: [
-                    SizedBox(
-                        width: 170,
+                    Expanded(
                         child: Text('${tool['name']}',
+                            overflow: TextOverflow.ellipsis,
                             style: fwMono(t, size: 11.5))),
+                    const SizedBox(width: FwLayout.s3),
                     VerdictPill(
                         tool['ready'] == true
                             ? 'ready'

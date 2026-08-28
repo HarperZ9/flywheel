@@ -32,40 +32,41 @@ class ComposerResults extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(children: [
-      Padding(
-        padding: const EdgeInsets.fromLTRB(
-            FwLayout.s6, FwLayout.s5, FwLayout.s6, FwLayout.s3),
-        child: header,
-      ),
-      Expanded(
-        child: SplitPane(
-          axis: Axis.vertical,
-          initialFraction: settings.splitFraction(viewKey, 0.42),
-          minFraction: 0.15,
-          maxFraction: 0.8,
-          onFraction: (f) => settings.setSplitFraction(viewKey, f),
-          first: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(
-                FwLayout.s6, 0, FwLayout.s6, FwLayout.s4),
-            child: composer,
-          ),
-          second: results.isEmpty
-              ? (placeholder ??
-                  Center(
-                      child: Text('Run it to see the result here.',
-                          style: TextStyle(
-                              fontSize: 12.5,
-                              color: context.fw.inkFaint))))
-              : SingleChildScrollView(
-                  padding: const EdgeInsets.fromLTRB(FwLayout.s6, FwLayout.s4,
-                      FwLayout.s6, FwLayout.s6),
-                  child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: results),
-                ),
+    return LayoutBuilder(builder: (context, box) {
+      final h = box.maxWidth < 480 ? FwLayout.s4 : FwLayout.s6;
+      return Column(children: [
+        Padding(
+          padding: EdgeInsets.fromLTRB(h, FwLayout.s5, h, FwLayout.s3),
+          child: header,
         ),
-      ),
-    ]);
+        Expanded(
+          child: SplitPane(
+            axis: Axis.vertical,
+            initialFraction: settings.splitFraction(viewKey, 0.42),
+            minFraction: 0.15,
+            maxFraction: 0.8,
+            onFraction: (f) => settings.setSplitFraction(viewKey, f),
+            first: SingleChildScrollView(
+              padding: EdgeInsets.fromLTRB(h, 0, h, FwLayout.s4),
+              child: composer,
+            ),
+            second: results.isEmpty
+                ? (placeholder ??
+                    Center(
+                        child: Text('Run it to see the result here.',
+                            style: TextStyle(
+                                fontSize: 12.5,
+                                color: context.fw.inkFaint))))
+                : SingleChildScrollView(
+                    padding: EdgeInsets.fromLTRB(
+                        h, FwLayout.s4, h, FwLayout.s6),
+                    child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: results),
+                  ),
+          ),
+        ),
+      ]);
+    });
   }
 }

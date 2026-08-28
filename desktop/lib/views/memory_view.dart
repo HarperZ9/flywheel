@@ -129,21 +129,16 @@ class _MemoryViewState extends State<MemoryView> {
           style: Theme.of(context).textTheme.bodySmall,
         ),
         const SizedBox(height: FwLayout.s4),
-        Row(
-          children: [
-            Expanded(child: StatTile(label: 'spans', value: '$spans')),
-            const SizedBox(width: FwLayout.s3),
-            Expanded(child: StatTile(label: 'indexed terms', value: '$terms')),
-            const SizedBox(width: FwLayout.s3),
-            Expanded(
-                child: StatTile(
-                    label: 'persisted',
-                    value: (_stats?['persisted'] ?? false) ? 'yes' : 'empty',
-                    status: (_stats?['persisted'] ?? false)
-                        ? 'verified'
-                        : 'absent')),
-          ],
-        ),
+        AdaptiveTiles(children: [
+          StatTile(label: 'spans', value: '$spans'),
+          StatTile(label: 'indexed terms', value: '$terms'),
+          StatTile(
+              label: 'persisted',
+              value: (_stats?['persisted'] ?? false) ? 'yes' : 'empty',
+              status: (_stats?['persisted'] ?? false)
+                  ? 'verified'
+                  : 'absent'),
+        ]),
         if (_error != null) ...[
           const SizedBox(height: FwLayout.s3),
           HonestNull('Memory request failed: $_error'),

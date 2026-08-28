@@ -22,44 +22,30 @@ class IndexPanel extends StatelessWidget {
     final errors = (ix['errors'] ?? {}) as Map;
     return Column(
       children: [
-        Row(
-          children: [
-            Expanded(
-                child: StatTile(
-                    label: 'repositories', value: '${ix['repo_count'] ?? 0}')),
-            const SizedBox(width: FwLayout.s3),
-            Expanded(
-                child: StatTile(
-                    label: 'classes', value: '${ix['class_total'] ?? 0}')),
-            const SizedBox(width: FwLayout.s3),
-            Expanded(
-                child: StatTile(
-                    label: 'dirty',
-                    value: '${ix['dirty_count'] ?? 0}',
-                    status:
-                        (ix['dirty_count'] ?? 0) == 0 ? 'verified' : 'drift')),
-          ],
-        ),
+        AdaptiveTiles(children: [
+          StatTile(
+              label: 'repositories', value: '${ix['repo_count'] ?? 0}'),
+          StatTile(
+              label: 'classes', value: '${ix['class_total'] ?? 0}'),
+          StatTile(
+              label: 'dirty',
+              value: '${ix['dirty_count'] ?? 0}',
+              status:
+                  (ix['dirty_count'] ?? 0) == 0 ? 'verified' : 'drift'),
+        ]),
         const SizedBox(height: FwLayout.s3),
-        Row(
-          children: [
-            Expanded(
-                child: StatTile(
-                    label: 'graph relations',
-                    value: '${ix['relation_count'] ?? 0}')),
-            const SizedBox(width: FwLayout.s3),
-            Expanded(
-                child: StatTile(
-                    label: 'roles', value: '${ix['role_count'] ?? 0}')),
-            const SizedBox(width: FwLayout.s3),
-            Expanded(
-                child: StatTile(
-                    label: 'cycles',
-                    value: '${ix['cycle_count'] ?? 0}',
-                    status:
-                        (ix['cycle_count'] ?? 0) == 0 ? 'verified' : 'drift')),
-          ],
-        ),
+        AdaptiveTiles(children: [
+          StatTile(
+              label: 'graph relations',
+              value: '${ix['relation_count'] ?? 0}'),
+          StatTile(
+              label: 'roles', value: '${ix['role_count'] ?? 0}'),
+          StatTile(
+              label: 'cycles',
+              value: '${ix['cycle_count'] ?? 0}',
+              status:
+                  (ix['cycle_count'] ?? 0) == 0 ? 'verified' : 'drift'),
+        ]),
         if (errors.isNotEmpty) ...[
           const SizedBox(height: FwLayout.s3),
           HonestNull('Index partial: '
@@ -84,22 +70,15 @@ class StorePanel extends StatelessWidget {
     final t = context.fw;
     return Column(
       children: [
-        Row(
-          children: [
-            Expanded(
-                child: StatTile(
-                    label: 'entities', value: '${store['entities'] ?? 0}')),
-            const SizedBox(width: FwLayout.s3),
-            Expanded(
-                child: StatTile(
-                    label: 'relations', value: '${store['relations'] ?? 0}')),
-            const SizedBox(width: FwLayout.s3),
-            Expanded(
-                child: StatTile(
-                    label: 'audit entries',
-                    value: '${store['audit_entries'] ?? 0}')),
-          ],
-        ),
+        AdaptiveTiles(children: [
+          StatTile(
+              label: 'entities', value: '${store['entities'] ?? 0}'),
+          StatTile(
+              label: 'relations', value: '${store['relations'] ?? 0}'),
+          StatTile(
+              label: 'audit entries',
+              value: '${store['audit_entries'] ?? 0}'),
+        ]),
         const SizedBox(height: FwLayout.s3),
         Row(
           children: [
