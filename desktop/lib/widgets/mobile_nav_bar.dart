@@ -90,15 +90,18 @@ class _NavItem extends StatelessWidget {
       semanticLabel: label,
       selected: selected,
       onActivate: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        decoration: BoxDecoration(
+          color: selected ? t.panel : Colors.transparent,
+          borderRadius: BorderRadius.circular(FwLayout.radiusSmall),
+        ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // The selected accent: an ink tick, the rail's grammar turned
-            // horizontal for a bottom bar.
             Container(
-              width: 16,
+              width: 20,
               height: 2.5,
               decoration: BoxDecoration(
                 color: selected ? t.ink : Colors.transparent,

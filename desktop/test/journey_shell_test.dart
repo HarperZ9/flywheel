@@ -150,13 +150,13 @@ void _responsiveTests() {
     await tester.pumpWidget(harness.app());
     await tester.pumpAndSettle();
 
-    // The phone shows a bottom bar of first-run destinations plus More; there
-    // is no top-bar menu. The full rail (its appearance action) lives in the
-    // closed drawer, offstage, until More opens it.
-    expect(find.byIcon(Icons.menu), findsNothing);
+    // The phone shows a top-bar hamburger and a bottom bar with More; both
+    // open the drawer. The full rail (its appearance action) lives in the
+    // closed drawer, offstage, until the hamburger or More opens it.
+    expect(find.byIcon(Icons.menu), findsOneWidget);
     expect(find.text('More'), findsOneWidget);
     expect(find.bySemanticsLabel('Open appearance settings'), findsNothing);
-    await tester.tap(find.text('More'));
+    await tester.tap(find.byIcon(Icons.menu));
     await tester.pumpAndSettle();
     expect(find.bySemanticsLabel('Open appearance settings'), findsOneWidget);
     await unmount(tester);

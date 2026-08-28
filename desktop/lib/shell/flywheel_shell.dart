@@ -336,15 +336,27 @@ class _FlywheelShellState extends State<FlywheelShell> {
       );
 
   Widget _mobileTopBar() => AnimatedBuilder(
-        animation: _coordinator,
+        animation: Listenable.merge([_coordinator, _navigation]),
         builder: (context, _) {
           final t = context.fw;
+          final spec = specFor(_navigation.current.routeId);
           return Padding(
-            padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
+            padding: const EdgeInsets.fromLTRB(4, 6, 8, 2),
             child: Row(children: [
-              Text('Flywheel',
+              IconButton(
+                icon: Icon(Icons.menu, size: 20, color: t.inkMuted),
+                tooltip: 'Open navigation',
+                constraints:
+                    const BoxConstraints(minWidth: 36, minHeight: 36),
+                padding: const EdgeInsets.all(6),
+                onPressed: () => Scaffold.of(context).openDrawer(),
+              ),
+              const SizedBox(width: 2),
+              Text(spec?.label ?? 'Flywheel',
                   style: TextStyle(
-                      fontSize: 14, fontWeight: FontWeight.w600, color: t.ink)),
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: t.ink)),
               const SizedBox(width: 6),
               VerdictDot(
                   _coordinator.alive ? 'verified' : 'absent', size: 6),
