@@ -15,6 +15,7 @@ import '../client/journey_api.dart';
 import '../controllers/gateway_operation_controller.dart';
 import '../controllers/journey_controller.dart';
 import '../navigation/app_route.dart';
+import '../navigation/destination_catalog.dart';
 import '../navigation/navigation_controller.dart';
 import '../navigation/view_cache.dart';
 import '../services/code_draft_store.dart';
@@ -36,6 +37,7 @@ import '../widgets/assistant_panel.dart';
 import '../widgets/command_palette.dart';
 import '../widgets/connection_panel.dart';
 import '../widgets/flywheel_nav.dart';
+import '../widgets/mobile_nav_bar.dart';
 import '../widgets/sessions_panel.dart';
 import '../widgets/operation_grant_sheet.dart';
 import '../widgets/shell_rail.dart';
@@ -184,7 +186,14 @@ class _FlywheelShellState extends State<FlywheelShell> {
         session: _dependencies.code,
         prompt: _dependencies.closePrompt ??
             (request) => showUnsavedWorkPrompt(context, request));
-    _navigation = NavigationController(guard: _guard.requestNavigation);
+    _navigation = NavigationController(
+      guard: _guard.requestNavigation,
+      // A phone opens on Chat, the surface a personal agent answers from;
+      // desktop keeps Journey.
+      initial: _mobile
+          ? const AppLocation(routeId: DestinationId.chat)
+          : null,
+    );
     _coordinator = GatewayStatusCoordinator(
       client: _dependencies.client,
       status: _dependencies.status,
@@ -286,13 +295,27 @@ class _FlywheelShellState extends State<FlywheelShell> {
         ],
       );
 
-  // Phone: one pane, the rail reachable from the drawer via the top-bar menu.
+  // Phone: one pane under a slim brand strip, a bottom bar of the first-run
+  // destinations, and More for the full catalog. The bottom bar's own SafeArea
+  // owns the bottom inset, so the outer one does not double-pad it.
   Widget _narrowBody(BuildContext context) => SafeArea(
+        bottom: false,
         child: Column(
           children: [
             _mobileTopBar(),
             Expanded(child: _activeView()),
             _statusBar(),
+            Builder(
+              builder: (ctx) => AnimatedBuilder(
+                animation: _navigation,
+                builder: (_, __) => MobileNavBar(
+                  primaries: mobilePrimaryDestinations,
+                  selected: _navigation.current.routeId,
+                  onGo: _goTo,
+                  onMore: () => Scaffold.of(ctx).openDrawer(),
+                ),
+              ),
+            ),
           ],
         ),
       );
@@ -308,22 +331,17 @@ class _FlywheelShellState extends State<FlywheelShell> {
             ),
       );
 
-  Widget _mobileTopBar() => Material(
+  // A slim brand strip. Navigation lives in the bottom bar, so there is no
+  // top-bar hamburger: one entry to the full catalog (More), not two.
+  Widget _mobileTopBar() => const Material(
         color: Colors.transparent,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-          child: Row(children: [
-            Builder(
-              builder: (ctx) => IconButton(
-                icon: const Icon(Icons.menu, size: 20),
-                tooltip: 'Open navigation',
-                onPressed: () => Scaffold.of(ctx).openDrawer(),
-              ),
-            ),
-            const SizedBox(width: 4),
-            const Text('Flywheel',
+          padding: EdgeInsets.fromLTRB(12, 8, 12, 4),
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: Text('Flywheel',
                 style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
-          ]),
+          ),
         ),
       );
 

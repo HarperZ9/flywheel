@@ -10,13 +10,20 @@ import 'app_route.dart';
 import 'destination_catalog.dart';
 
 class NavigationController extends ChangeNotifier {
-  NavigationController({required Future<bool> Function(String label) guard})
-      : _guard = guard;
+  // initial sets where the app opens. Desktop lands on Journey; a phone lands
+  // on Chat, the surface a personal agent opens to. An unknown route falls
+  // back to Journey rather than opening on nothing.
+  NavigationController({
+    required Future<bool> Function(String label) guard,
+    AppLocation? initial,
+  })  : _guard = guard,
+        _current = initial != null && specFor(initial.routeId) != null
+            ? initial
+            : const AppLocation(routeId: DestinationId.journey);
 
   final Future<bool> Function(String label) _guard;
 
-  AppLocation _current =
-      const AppLocation(routeId: DestinationId.journey);
+  AppLocation _current;
   final List<AppLocation> _back = [];
   final List<AppLocation> _forward = [];
 

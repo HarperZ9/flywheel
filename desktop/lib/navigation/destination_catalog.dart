@@ -12,13 +12,19 @@ class DestinationSpec {
   final String label;
   final String abbr;
   final DestinationGroup group;
+
+  /// A phone opens on one clear surface and shows a few first-run
+  /// destinations in a bottom bar, not the whole catalog behind a drawer.
+  /// The rest stay one tap away under More; nothing is removed.
+  final bool mobilePrimary;
+
   const DestinationSpec(this.id, this.label,
-      {required this.abbr, required this.group});
+      {required this.abbr, required this.group, this.mobilePrimary = false});
 }
 
 const destinationCatalog = <DestinationSpec>[
   DestinationSpec(DestinationId.journey, 'Journey',
-      abbr: 'JN', group: DestinationGroup.work),
+      abbr: 'JN', group: DestinationGroup.work, mobilePrimary: true),
   DestinationSpec(DestinationId.plan, 'Plan',
       abbr: 'PN', group: DestinationGroup.work),
   DestinationSpec(DestinationId.workflows, 'Workflows',
@@ -32,13 +38,13 @@ const destinationCatalog = <DestinationSpec>[
   DestinationSpec(DestinationId.roadmap, 'Roadmap',
       abbr: 'RM', group: DestinationGroup.work),
   DestinationSpec(DestinationId.chat, 'Chat',
-      abbr: 'CH', group: DestinationGroup.chat),
+      abbr: 'CH', group: DestinationGroup.chat, mobilePrimary: true),
   DestinationSpec(DestinationId.compare, 'Compare',
       abbr: 'CP', group: DestinationGroup.chat),
   DestinationSpec(DestinationId.models, 'Models',
       abbr: 'MD', group: DestinationGroup.chat),
   DestinationSpec(DestinationId.companion, 'Companion',
-      abbr: 'CN', group: DestinationGroup.chat),
+      abbr: 'CN', group: DestinationGroup.chat, mobilePrimary: true),
   DestinationSpec(DestinationId.code, 'Code',
       abbr: 'CO', group: DestinationGroup.code),
   DestinationSpec(DestinationId.eval, 'Eval',
@@ -48,7 +54,7 @@ const destinationCatalog = <DestinationSpec>[
   DestinationSpec(DestinationId.lint, 'Lint',
       abbr: 'LT', group: DestinationGroup.code),
   DestinationSpec(DestinationId.receipts, 'Receipts',
-      abbr: 'RC', group: DestinationGroup.evidence),
+      abbr: 'RC', group: DestinationGroup.evidence, mobilePrimary: true),
   DestinationSpec(DestinationId.science, 'Science',
       abbr: 'SC', group: DestinationGroup.evidence),
   DestinationSpec(DestinationId.world, 'World',
@@ -91,3 +97,10 @@ DestinationSpec? specFor(DestinationId id) {
   }
   return null;
 }
+
+/// The phone's first-run destinations, in catalog order: Journey, Chat,
+/// Companion, Receipts. The bottom bar shows these and a More that opens the
+/// full catalog, so the whole set stays reachable. The flag on each spec is
+/// the source of truth; this list follows it.
+final List<DestinationSpec> mobilePrimaryDestinations =
+    destinationCatalog.where((spec) => spec.mobilePrimary).toList();

@@ -138,7 +138,7 @@ void main() {
 }
 
 void _responsiveTests() {
-  testWidgets('a phone width moves the rail into a drawer behind a menu',
+  testWidgets('a phone width shows a bottom bar and More opens the full rail',
       (tester) async {
     tester.view.physicalSize = const Size(375, 812);
     tester.view.devicePixelRatio = 1.0;
@@ -150,11 +150,13 @@ void _responsiveTests() {
     await tester.pumpWidget(harness.app());
     await tester.pumpAndSettle();
 
-    // The phone shows a menu, and the rail (its appearance action) lives in the
-    // closed drawer, offstage, until the menu opens it.
-    expect(find.byIcon(Icons.menu), findsOneWidget);
+    // The phone shows a bottom bar of first-run destinations plus More; there
+    // is no top-bar menu. The full rail (its appearance action) lives in the
+    // closed drawer, offstage, until More opens it.
+    expect(find.byIcon(Icons.menu), findsNothing);
+    expect(find.text('More'), findsOneWidget);
     expect(find.bySemanticsLabel('Open appearance settings'), findsNothing);
-    await tester.tap(find.byIcon(Icons.menu));
+    await tester.tap(find.text('More'));
     await tester.pumpAndSettle();
     expect(find.bySemanticsLabel('Open appearance settings'), findsOneWidget);
     await unmount(tester);

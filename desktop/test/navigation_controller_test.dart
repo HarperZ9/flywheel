@@ -83,4 +83,15 @@ void main() {
     expect(c.canBack, depthBefore,
         reason: 'a same-location commit must not add a history entry');
   });
+
+  test('an explicit initial location is where the app opens', () {
+    // A phone opens on Chat; the default without an initial stays Journey.
+    final phone = NavigationController(
+        guard: (_) async => true,
+        initial: const AppLocation(routeId: DestinationId.chat));
+    expect(phone.current.routeId, DestinationId.chat);
+    expect(phone.canBack, isFalse, reason: 'the landing is not a history entry');
+    final desktop = NavigationController(guard: (_) async => true);
+    expect(desktop.current.routeId, DestinationId.journey);
+  });
 }
