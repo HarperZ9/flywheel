@@ -1,0 +1,29 @@
+{
+  "schema": "flywheel.anchor/v1",
+  "signed_head": {
+    "schema": "flywheel.signed-tree-head/v1",
+    "log_id": "sha256:4de456a538e8c723ecfe0edb650903214fc29c017fd898e7f23fa6e478e8ae40",
+    "size": 8,
+    "root": "sha256:09534043bb1ea740004b3775acd0b9bcc5308a4372fe1a937f2c7e07f418c9ec",
+    "timestamp": "2026-07-28T21:01:50Z",
+    "signature": "9ca65fe4a5bc272364e5c05586ce09cf4866ce9c056ddaebae3c0553d5a13fc35158773208197025f710e344c4e33fcac68b108cddcbc411e88fa5cb0b69a00b",
+    "public_key": "1f85627e7e0dd4c6c73593d785b669b2abe4701ea780e26d1024b45dc1546111",
+    "sig_alg": "ed25519"
+  },
+  "anchor_digest": "sha256:728c15a4ff1567ca5de929f89a71bc8c88a48f74b092fc9a2d4a309afed2c015",
+  "digest_hex": "728c15a4ff1567ca5de929f89a71bc8c88a48f74b092fc9a2d4a309afed2c015",
+  "does_not_prove": [
+    "NOT_PROVES_COMPLETENESS: a signed head attests to the tree the log chose to build. A log can be honest about everything in it and silent about what was never added.",
+    "NOT_PROVES_NON_EQUIVOCATION_ALONE: one signed head proves one view. Detecting two views needs the head to be gossiped to someone else, or contested. The signature is what makes that possible, not what does it.",
+    "NOT_PROVES_KEY_OWNERSHIP: the holder of the signing key is whoever holds it. Binding that key to a person is outside this module.",
+    "NOT_PROVES_BEFORE_ANY_TIME_UNTIL_CONFIRMED: an OpenTimestamps proof only bounds time once it has upgraded into a Bitcoin block. A pending proof names a calendar that promised to anchor it, which is not yet a block.",
+    "NOT_PROVES_THE_DIGEST_IS_MEANINGFUL: the timestamp bounds when these bytes existed, not that the head they carry is honest about the tree.",
+    "NOT_PROVES_THE_HEADER_IS_A_REAL_BLOCK: the offline proof-of-work recheck confirms a bundle-carried header is internally consistent and clears a real target, which refuses a zero-work forgery. It does not establish that the header sits on the real Bitcoin chain; a header is only as trustworthy as its source. Cross-check the block hash against an independent chain view for linkage, not just this internal recheck."
+  ],
+  "ots": {
+    "state": "pending",
+    "submitted_hex": "010f51daf6e9af7eed84155d5b4d3180fde69b735b24bc0caa119035d8fb264f",
+    "nonce_hex": "75f068450bf8543d45bd2483d9f9ae76",
+    "calendar": "https://alice.btc.calendar.opentimestamps.org"
+  }
+}
