@@ -122,39 +122,55 @@ class _BrandKitPanelState extends State<BrandKitPanel> {
               'every artifact hash, so the identity re-derives end to end.',
               style: TextStyle(fontSize: 12.5, color: t.inkMuted)),
           const SizedBox(height: FwLayout.s3),
-          Row(children: [
-            Expanded(
-              child: TextField(
-                controller: _name,
-                style: const TextStyle(fontSize: 13),
-                decoration: const InputDecoration(hintText: 'brand name'),
-              ),
-            ),
-            const SizedBox(width: FwLayout.s3),
-            Expanded(
-              flex: 2,
-              child: TextField(
-                controller: _tagline,
-                style: const TextStyle(fontSize: 12.5),
-                decoration:
-                    const InputDecoration(hintText: 'tagline (optional)'),
-              ),
-            ),
-            const SizedBox(width: FwLayout.s3),
-            SizedBox(
-              width: 80,
-              child: TextField(
-                controller: _seed,
-                style: fwMono(t, size: 12),
-                decoration: const InputDecoration(hintText: 'seed'),
-              ),
-            ),
-            const SizedBox(width: FwLayout.s3),
-            FilledButton(
+          LayoutBuilder(builder: (context, box) {
+            final narrow = box.maxWidth < 480;
+            final nameField = TextField(
+              controller: _name,
+              style: const TextStyle(fontSize: 13),
+              decoration:
+                  const InputDecoration(hintText: 'brand name'),
+            );
+            final tagField = TextField(
+              controller: _tagline,
+              style: const TextStyle(fontSize: 12.5),
+              decoration: const InputDecoration(
+                  hintText: 'tagline (optional)'),
+            );
+            final seedField = TextField(
+              controller: _seed,
+              style: fwMono(t, size: 12),
+              decoration: const InputDecoration(hintText: 'seed'),
+            );
+            final mintBtn = FilledButton(
               onPressed: _busy ? null : _mint,
               child: Text(_busy ? 'Minting…' : 'Mint kit'),
-            ),
-          ]),
+            );
+            if (narrow) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  nameField,
+                  const SizedBox(height: FwLayout.s2),
+                  tagField,
+                  const SizedBox(height: FwLayout.s2),
+                  Row(children: [
+                    Expanded(child: seedField),
+                    const SizedBox(width: FwLayout.s3),
+                    mintBtn,
+                  ]),
+                ],
+              );
+            }
+            return Row(children: [
+              Expanded(child: nameField),
+              const SizedBox(width: FwLayout.s3),
+              Expanded(flex: 2, child: tagField),
+              const SizedBox(width: FwLayout.s3),
+              SizedBox(width: 80, child: seedField),
+              const SizedBox(width: FwLayout.s3),
+              mintBtn,
+            ]);
+          }),
           if (_error != null) ...[
             const SizedBox(height: FwLayout.s2),
             HonestNull(_error!),

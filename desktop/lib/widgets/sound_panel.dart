@@ -101,43 +101,85 @@ class _SoundPanelState extends State<SoundPanel> {
               'system player\'s job; this station composes and proves.',
               style: TextStyle(fontSize: 12.5, color: t.inkMuted)),
           const SizedBox(height: FwLayout.s3),
-          Row(children: [
-            SizedBox(
-              width: 80,
-              child: TextField(
-                controller: _seed,
-                style: fwMono(t, size: 12),
-                decoration: const InputDecoration(hintText: 'seed'),
+          LayoutBuilder(builder: (context, box) {
+            final narrow = box.maxWidth < 480;
+            if (narrow) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(children: [
+                    SizedBox(
+                      width: 80,
+                      child: TextField(
+                        controller: _seed,
+                        style: fwMono(t, size: 12),
+                        decoration:
+                            const InputDecoration(hintText: 'seed'),
+                      ),
+                    ),
+                    const Spacer(),
+                    FilledButton(
+                      onPressed: _busy ? null : _compose,
+                      child: Text(_busy ? 'Composing…' : 'Compose'),
+                    ),
+                  ]),
+                  const SizedBox(height: FwLayout.s2),
+                  _sliderRow(t, 'duration', '${_duration.round()}s',
+                      _duration, 6, 60,
+                      (v) => _duration = v.roundToDouble()),
+                  const SizedBox(height: FwLayout.s1),
+                  _sliderRow(t, 'root', '${_root.round()}hz',
+                      _root, 110, 440,
+                      (v) => _root = v.roundToDouble()),
+                ],
+              );
+            }
+            return Row(children: [
+              SizedBox(
+                width: 80,
+                child: TextField(
+                  controller: _seed,
+                  style: fwMono(t, size: 12),
+                  decoration: const InputDecoration(hintText: 'seed'),
+                ),
               ),
-            ),
-            const SizedBox(width: FwLayout.s4),
-            Text('duration', style: fwMono(t, size: 11).copyWith(color: t.inkMuted)),
-            Expanded(
-              child: Slider(
-                value: _duration,
-                min: 6,
-                max: 60,
-                onChanged: (v) => setState(() => _duration = v.roundToDouble()),
+              const SizedBox(width: FwLayout.s4),
+              Text('duration',
+                  style: fwMono(t, size: 11)
+                      .copyWith(color: t.inkMuted)),
+              Expanded(
+                child: Slider(
+                  value: _duration,
+                  min: 6,
+                  max: 60,
+                  onChanged: (v) =>
+                      setState(() => _duration = v.roundToDouble()),
+                ),
               ),
-            ),
-            Text('${_duration.round()}s', style: fwMono(t, size: 11.5)),
-            const SizedBox(width: FwLayout.s4),
-            Text('root', style: fwMono(t, size: 11).copyWith(color: t.inkMuted)),
-            Expanded(
-              child: Slider(
-                value: _root,
-                min: 110,
-                max: 440,
-                onChanged: (v) => setState(() => _root = v.roundToDouble()),
+              Text('${_duration.round()}s',
+                  style: fwMono(t, size: 11.5)),
+              const SizedBox(width: FwLayout.s4),
+              Text('root',
+                  style: fwMono(t, size: 11)
+                      .copyWith(color: t.inkMuted)),
+              Expanded(
+                child: Slider(
+                  value: _root,
+                  min: 110,
+                  max: 440,
+                  onChanged: (v) =>
+                      setState(() => _root = v.roundToDouble()),
+                ),
               ),
-            ),
-            Text('${_root.round()}hz', style: fwMono(t, size: 11.5)),
-            const SizedBox(width: FwLayout.s3),
-            FilledButton(
-              onPressed: _busy ? null : _compose,
-              child: Text(_busy ? 'Composing…' : 'Compose'),
-            ),
-          ]),
+              Text('${_root.round()}hz',
+                  style: fwMono(t, size: 11.5)),
+              const SizedBox(width: FwLayout.s3),
+              FilledButton(
+                onPressed: _busy ? null : _compose,
+                child: Text(_busy ? 'Composing…' : 'Compose'),
+              ),
+            ]);
+          }),
           if (_error != null) ...[
             const SizedBox(height: FwLayout.s2),
             HonestNull(_error!),
@@ -173,5 +215,25 @@ class _SoundPanelState extends State<SoundPanel> {
         ],
       ),
     );
+  }
+
+  Widget _sliderRow(FwTokens t, String label, String display,
+      double value, double min, double max, void Function(double) set) {
+    return Row(children: [
+      SizedBox(
+        width: 64,
+        child: Text(label,
+            style: fwMono(t, size: 11).copyWith(color: t.inkMuted)),
+      ),
+      Expanded(
+        child: Slider(
+          value: value,
+          min: min,
+          max: max,
+          onChanged: (v) => setState(() => set(v)),
+        ),
+      ),
+      Text(display, style: fwMono(t, size: 11.5)),
+    ]);
   }
 }

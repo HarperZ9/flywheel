@@ -108,62 +108,100 @@ class _RasterFxPanelState extends State<RasterFxPanel> {
               'kernel\'s own hashes beside the png hash you can re-check.',
               style: TextStyle(fontSize: 12.5, color: t.inkMuted)),
           const SizedBox(height: FwLayout.s3),
-          Row(children: [
-            DropdownButton<String>(
+          LayoutBuilder(builder: (context, box) {
+            final narrow = box.maxWidth < 480;
+            final kernelDrop = DropdownButton<String>(
               value: _kernel,
               isDense: true,
               style: fwMono(t, size: 11.5).copyWith(color: t.ink),
               items: const [
                 DropdownMenuItem(
-                    value: 'raster.ordered-dither', child: Text('dither')),
+                    value: 'raster.ordered-dither',
+                    child: Text('dither')),
                 DropdownMenuItem(
                     value: 'raster.pixel-sort-rows',
                     child: Text('pixel-sort')),
               ],
-              onChanged: (v) =>
-                  setState(() => _kernel = v ?? 'raster.ordered-dither'),
-            ),
-            const SizedBox(width: FwLayout.s3),
-            DropdownButton<String>(
+              onChanged: (v) => setState(
+                  () => _kernel = v ?? 'raster.ordered-dither'),
+            );
+            final groundDrop = DropdownButton<String>(
               value: _ground,
               isDense: true,
               style: fwMono(t, size: 11.5).copyWith(color: t.ink),
               items: const [
-                DropdownMenuItem(value: 'dark', child: Text('dark')),
-                DropdownMenuItem(value: 'ceramic', child: Text('ceramic')),
+                DropdownMenuItem(
+                    value: 'dark', child: Text('dark')),
+                DropdownMenuItem(
+                    value: 'ceramic', child: Text('ceramic')),
               ],
-              onChanged: (v) => setState(() => _ground = v ?? 'dark'),
-            ),
-            const SizedBox(width: FwLayout.s3),
-            SizedBox(
+              onChanged: (v) =>
+                  setState(() => _ground = v ?? 'dark'),
+            );
+            final seedField = SizedBox(
               width: 80,
               child: TextField(
                 controller: _seed,
                 style: fwMono(t, size: 12),
                 decoration: const InputDecoration(hintText: 'seed'),
               ),
-            ),
-            const SizedBox(width: FwLayout.s3),
-            if (dither) ...[
-              Expanded(
-                child: _knob(t, 'levels', _levels, 2, 8,
-                    (v) => _levels = v.roundToDouble()),
+            );
+            if (narrow) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(children: [
+                    kernelDrop,
+                    const SizedBox(width: FwLayout.s3),
+                    groundDrop,
+                    const SizedBox(width: FwLayout.s3),
+                    seedField,
+                  ]),
+                  const SizedBox(height: FwLayout.s2),
+                  if (dither) ...[
+                    _knob(t, 'levels', _levels, 2, 8,
+                        (v) => _levels = v.roundToDouble()),
+                    _knob(t, 'matrix', _matrix, 2, 16,
+                        (v) => _matrix = _pow2(v)),
+                  ] else
+                    _knob(t, 'threshold', _threshold, 32, 224,
+                        (v) => _threshold = v.roundToDouble()),
+                  const SizedBox(height: FwLayout.s2),
+                  FilledButton(
+                    onPressed: _busy ? null : _apply,
+                    child: Text(_busy ? 'Running…' : 'Apply'),
+                  ),
+                ],
+              );
+            }
+            return Row(children: [
+              kernelDrop,
+              const SizedBox(width: FwLayout.s3),
+              groundDrop,
+              const SizedBox(width: FwLayout.s3),
+              seedField,
+              const SizedBox(width: FwLayout.s3),
+              if (dither) ...[
+                Expanded(
+                  child: _knob(t, 'levels', _levels, 2, 8,
+                      (v) => _levels = v.roundToDouble()),
+                ),
+                Expanded(
+                  child: _knob(t, 'matrix', _matrix, 2, 16,
+                      (v) => _matrix = _pow2(v)),
+                ),
+              ] else
+                Expanded(
+                  child: _knob(t, 'threshold', _threshold, 32,
+                      224, (v) => _threshold = v.roundToDouble()),
+                ),
+              const SizedBox(width: FwLayout.s3),
+              FilledButton(
+                onPressed: _busy ? null : _apply,
+                child: Text(_busy ? 'Running…' : 'Apply'),
               ),
-              Expanded(
-                child: _knob(t, 'matrix', _matrix, 2, 16,
-                    (v) => _matrix = _pow2(v)),
-              ),
-            ] else
-              Expanded(
-                child: _knob(t, 'threshold', _threshold, 32, 224,
-                    (v) => _threshold = v.roundToDouble()),
-              ),
-            const SizedBox(width: FwLayout.s3),
-            FilledButton(
-              onPressed: _busy ? null : _apply,
-              child: Text(_busy ? 'Running…' : 'Apply'),
-            ),
-          ]),
+            ]);
+          }),
           if (_error != null) ...[
             const SizedBox(height: FwLayout.s2),
             HonestNull(_error!),
