@@ -119,6 +119,16 @@ def apply_upgrade(anchor_rec: dict, digest: bytes, nonce: bytes,
     return rec, new_ots
 
 
+def _zenodo_metadata(*, title: str = None, description: str = None,
+                     creators: list = None) -> dict:
+    """The deposit metadata, from overrides or the reviewed defaults. Shared by
+    the dry run and the live deposit so both carry identical metadata."""
+    return zenodo_deposit.build_metadata(
+        title=title or _ZENODO_TITLE,
+        description=description or _ZENODO_DESC,
+        creators=creators or [dict(c) for c in _ZENODO_CREATORS])
+
+
 def zenodo_dry_run(anchor_rec: dict, *, title: str = None,
                    description: str = None, creators: list = None) -> dict:
     """What a Zenodo deposit of this anchor WOULD carry, computed offline.
@@ -132,10 +142,8 @@ def zenodo_dry_run(anchor_rec: dict, *, title: str = None,
     terminal, not at the network.
     """
     name, data = anchor_zenodo.deposit_bytes(anchor_rec)
-    metadata = zenodo_deposit.build_metadata(
-        title=title or _ZENODO_TITLE,
-        description=description or _ZENODO_DESC,
-        creators=creators or [dict(c) for c in _ZENODO_CREATORS])
+    metadata = _zenodo_metadata(title=title, description=description,
+                                creators=creators)
     return {
         "filename": name,
         "size_bytes": len(data),
@@ -144,6 +152,26 @@ def zenodo_dry_run(anchor_rec: dict, *, title: str = None,
         "metadata": metadata,
         "does_not_prove": anchor_zenodo.does_not_prove(),
     }
+
+
+def zenodo_live(anchor_rec: dict, request, *, token: str, title: str = None,
+                description: str = None, creators: list = None,
+                sandbox: bool = False, publish: bool = False) -> dict:
+    """Deposit this anchor's bound bytes for real, through the injected transport.
+
+    The uploaded file is the canonical signed head (`deposit_bytes`), so the DOI
+    witnesses exactly the digest the Bitcoin leg timestamps. A corrupt record is
+    refused inside `deposit_anchor` before any network call. Draft by default; a
+    created-but-unpublished deposition is a private draft the operator can inspect
+    or discard. `publish=True` is the one switch that mints the permanent public
+    DOI, and it is the caller's explicit choice. The transport is injected: a fake
+    in tests, `zenodo_deposit.urllib_transport` at the terminal.
+    """
+    metadata = _zenodo_metadata(title=title, description=description,
+                                creators=creators)
+    return anchor_zenodo.deposit_anchor(
+        request, anchor_rec, token=token, metadata=metadata,
+        sandbox=sandbox, publish=publish)
 
 
 def zenodo_report_lines(report: dict) -> list[str]:
@@ -168,6 +196,57 @@ def zenodo_report_lines(report: dict) -> list[str]:
         "  a live deposit is a separate, gated step: it needs the Zenodo token "
         "and an explicit go, and publish is irreversible.")
     return lines
+
+
+def zenodo_live_report_lines(result: dict, *, sandbox: bool) -> list[str]:
+    """The lines a live deposit prints: where it landed, the draft or the DOI, and
+    the standing caveats. The token is never among them."""
+    where = ("SANDBOX (throwaway DOI, not citable)" if sandbox
+             else "PRODUCTION (permanent public DOI)")
+    lines = [
+        f"Zenodo durability leg -- LIVE deposit to {where}:",
+        f"  deposition : {result.get('deposition_id')}",
+        f"  api record : {result.get('self_url')}  (REST endpoint, not a browsable page)",
+        f"  files      : {', '.join(str(f) for f in (result.get('files') or []))}",
+        f"  bound to   : {result.get('anchor_digest')}",
+        f"  published  : {result.get('published')}",
+    ]
+    if result.get("published"):
+        lines.append(f"  DOI        : {result.get('doi')}")
+        lines.append(f"  DOI url    : {result.get('doi_url')}")
+    else:
+        lines.append("  a draft was created; no DOI minted. Re-run with --publish "
+                     "to mint the permanent DOI (irreversible).")
+    lines.append("  does not prove:")
+    lines += [f"    - {r}" for r in result.get("does_not_prove", [])]
+    return lines
+
+
+def _read_token(path: str | None) -> str:
+    """The deposit token, read from a file, stripped. Never argv, never a URL.
+
+    A live deposit takes its credential from a file so it never rides the command
+    line or process table. A missing or empty file is a `DepositError`, refused
+    before any network call.
+    """
+    if not path:
+        raise zenodo_deposit.DepositError(
+            "a live deposit needs --token-file (the token is never passed on argv)")
+    p = Path(path)
+    if not p.exists():
+        raise zenodo_deposit.DepositError(f"token file not found: {path}")
+    # utf-8-sig transparently strips a UTF-8 BOM (PowerShell's default Out-File
+    # writes one); a BOM is not whitespace, so .strip() would leave it on the token
+    # and corrupt the Bearer header. Any read error (a directory, wrong ACL,
+    # non-UTF-8 bytes) leaves through DepositError, not a raw traceback.
+    try:
+        token = p.read_text(encoding="utf-8-sig").strip()
+    except (OSError, UnicodeDecodeError) as e:
+        raise zenodo_deposit.DepositError(
+            f"token file could not be read: {path} ({e})") from e
+    if not token:
+        raise zenodo_deposit.DepositError(f"token file is empty: {path}")
+    return token
 
 
 # --- CLI wiring -------------------------------------------------------------
@@ -256,14 +335,45 @@ def cmd_verify(args) -> int:
 
 
 def cmd_zenodo(args) -> int:
-    rec = json.loads(Path(args.anchor).read_text(encoding="utf-8"))
-    creators = [{"name": args.creator}] if args.creator else None
+    # --publish only means something with --live; a dry run mints nothing. Refuse
+    # the nonsensical combination rather than ignore it silently.
+    if args.publish and not args.live:
+        print("REFUSED: --publish requires --live (a dry run mints nothing)",
+              file=sys.stderr)
+        return 3
     try:
-        report = zenodo_dry_run(rec, title=args.title, creators=creators)
+        rec = json.loads(Path(args.anchor).read_text(encoding="utf-8"))
+    except (OSError, ValueError) as e:
+        print(f"REFUSED: could not read anchor record {args.anchor}: {e}",
+              file=sys.stderr)
+        return 3
+    creators = [{"name": args.creator}] if args.creator else None
+    if not args.live:
+        try:
+            report = zenodo_dry_run(rec, title=args.title, creators=creators)
+        except zenodo_deposit.DepositError as e:
+            print(f"REFUSED: {e}", file=sys.stderr)
+            return 3
+        for line in zenodo_report_lines(report):
+            print(line)
+        return 0
+    # Live path: the token comes from a file, and publish is the one irreversible
+    # switch. The corrupt-record guard in deposit_anchor still runs before the net.
+    try:
+        token = _read_token(args.token_file)
+        result = zenodo_live(rec, zenodo_deposit.urllib_transport, token=token,
+                             title=args.title, creators=creators,
+                             sandbox=args.sandbox, publish=args.publish)
     except zenodo_deposit.DepositError as e:
         print(f"REFUSED: {e}", file=sys.stderr)
+        # If create() had already succeeded, a draft exists on Zenodo; surface it
+        # so the operator can find and discard it instead of re-running blind.
+        if getattr(e, "deposition_id", None) or getattr(e, "self_url", None):
+            print(f"  a draft may already exist on Zenodo: deposition "
+                  f"{e.deposition_id} at {e.self_url} -- find and discard it "
+                  f"before re-running", file=sys.stderr)
         return 3
-    for line in zenodo_report_lines(report):
+    for line in zenodo_live_report_lines(result, sandbox=args.sandbox):
         print(line)
     return 0
 
@@ -300,12 +410,23 @@ def main(argv=None) -> int:
 
     z = sub.add_parser(
         "zenodo",
-        help="dry-run the durability DOI leg: show the exact bytes and metadata "
-             "a deposit would carry, without touching the network")
+        help="the durability DOI leg: dry-run by default (show the exact bytes and "
+             "metadata a deposit would carry, no network); --live to deposit")
     z.add_argument("--anchor", required=True, help="anchor record from `stamp`")
     z.add_argument("--title", default=None, help="override the deposit title")
     z.add_argument("--creator", default=None,
                    help="override the sole creator, as 'Family, Given'")
+    z.add_argument("--live", action="store_true",
+                   help="deposit for real (default is a dry run that touches nothing)")
+    z.add_argument("--token-file", default=None,
+                   help="path to the Zenodo token (read from a file, never argv); "
+                        "required with --live")
+    z.add_argument("--sandbox", action="store_true",
+                   help="deposit to sandbox.zenodo.org (a throwaway DOI) instead of "
+                        "production")
+    z.add_argument("--publish", action="store_true",
+                   help="mint the permanent DOI (IRREVERSIBLE); without it a draft "
+                        "is created and left unpublished")
     z.set_defaults(func=cmd_zenodo)
 
     args = p.parse_args(argv)

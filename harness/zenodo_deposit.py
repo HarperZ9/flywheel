@@ -29,7 +29,15 @@ _AGENT = "flywheel-anchor/1"
 
 
 class DepositError(RuntimeError):
-    """A deposit step could not be completed or returned an unexpected status."""
+    """A deposit step could not be completed or returned an unexpected status.
+
+    Once `create` has succeeded a real draft exists on Zenodo, so a failure after
+    that point carries the deposition id and self_url of the draft it orphaned.
+    These stay None for a failure before any deposition exists.
+    """
+
+    deposition_id = None
+    self_url = None
 
 
 def api_base(*, sandbox: bool) -> str:
@@ -151,29 +159,40 @@ def deposit(request, *, token: str, files: list, metadata: dict,
     self_url = links.get("self")
     if not bucket or not self_url:
         raise DepositError("create reply missing bucket or self link")
-    uploaded = [upload_file(request, token=token, bucket_url=bucket, name=name,
-                            data=data) for name, data in files]
-    set_metadata(request, token=token, deposition_url=self_url, metadata=metadata)
-    result = {
-        "deposition_id": record.get("id"),
-        "self_url": self_url,
-        "files": [f.get("key") for f in uploaded],
-        "published": False,
-        "doi": None,
-        "doi_url": None,
-        "does_not_prove": does_not_prove(),
-    }
-    if publish:
-        publish_url = links.get("publish")
-        if not publish_url:
-            raise DepositError("create reply missing publish link")
-        pub = _publish_action(request, token=token, publish_url=publish_url)
-        result["published"] = True
-        result["doi"] = pub.get("doi")
-        result["doi_url"] = (pub.get("doi_url")
-                             or (pub.get("links") or {}).get("doi"))
-        result["record"] = pub
-    return result
+    # The deposition now exists on Zenodo. Any later failure re-raises through
+    # DepositError carrying this draft's id and url, so the operator can find and
+    # discard it instead of re-running blind and orphaning a second draft.
+    try:
+        uploaded = [upload_file(request, token=token, bucket_url=bucket, name=name,
+                                data=data) for name, data in files]
+        set_metadata(request, token=token, deposition_url=self_url,
+                     metadata=metadata)
+        result = {
+            "deposition_id": record.get("id"),
+            "self_url": self_url,
+            "files": [f.get("key") for f in uploaded],
+            "published": False,
+            "doi": None,
+            "doi_url": None,
+            "does_not_prove": does_not_prove(),
+        }
+        if publish:
+            publish_url = links.get("publish")
+            if not publish_url:
+                raise DepositError("create reply missing publish link")
+            pub = _publish_action(request, token=token, publish_url=publish_url)
+            result["published"] = True
+            result["doi"] = pub.get("doi")
+            result["doi_url"] = (pub.get("doi_url")
+                                 or (pub.get("links") or {}).get("doi"))
+            result["record"] = pub
+        return result
+    except DepositError as e:
+        if e.deposition_id is None:
+            e.deposition_id = record.get("id")
+        if e.self_url is None:
+            e.self_url = self_url
+        raise
 
 
 def urllib_transport(method: str, url: str, *, headers: dict = None,

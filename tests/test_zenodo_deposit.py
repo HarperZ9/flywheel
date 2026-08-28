@@ -215,3 +215,33 @@ def test_deposit_rejects_an_empty_file_list_before_any_network_call():
         zenodo_deposit.deposit(ft, token=TOKEN, files=[],
                                metadata=_md(), sandbox=True)
     assert ft.calls == []
+
+
+def test_a_mid_sequence_failure_carries_the_created_deposition_id_and_url():
+    import pytest
+    # create() succeeds, so a real draft now exists server-side; then set_metadata
+    # fails. The raised error must carry the deposition id and self_url, so the
+    # operator can find and discard the orphaned draft instead of re-running blind
+    # and creating a second one.
+    ft = FakeTransport([
+        (201, _created()),               # create -- a draft now exists
+        (201, {"key": "anchor.json"}),   # upload
+        (500, {"message": "server error"}),  # set metadata blows up
+    ])
+    with pytest.raises(zenodo_deposit.DepositError) as ei:
+        zenodo_deposit.deposit(ft, token=TOKEN, files=[("anchor.json", b'{"a":1}')],
+                               metadata=_md(), sandbox=True, publish=False)
+    assert ei.value.deposition_id == 42
+    assert str(ei.value.self_url).endswith("/deposit/depositions/42")
+
+
+def test_a_create_time_failure_claims_no_deposition():
+    import pytest
+    # If create() itself fails, no deposition exists yet, so the error must not
+    # claim a phantom id/url.
+    ft = FakeTransport([(500, {"message": "server error"})])
+    with pytest.raises(zenodo_deposit.DepositError) as ei:
+        zenodo_deposit.deposit(ft, token=TOKEN, files=[("anchor.json", b'{"a":1}')],
+                               metadata=_md(), sandbox=True, publish=False)
+    assert ei.value.deposition_id is None
+    assert ei.value.self_url is None
