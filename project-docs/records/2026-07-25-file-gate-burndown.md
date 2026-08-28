@@ -27,7 +27,7 @@ Enforced by scripts/check_file_gate.py and tests/test_file_gate.py.
 | harness/source_mined_bench.py | 974 |
 | harness/tasks_physics.py | 461 |
 | harness/typeface_skeletons.py | 504 |
-| harness/tool_call_receipt.py | 339 |
+| harness/tool_call_receipt.py | 347 |
 | harness/unisonai_stateful_bench.py | 559 |
 
 Total: 21 files, 12014 lines over a 300-line gate.

@@ -107,6 +107,8 @@ def build_receipt(
     prev_receipt_sha256: str = "",
     outcome: str = COMPLETED,
     rationale: dict[str, Any] | None = None,
+    session_token_ref: str | None = None,
+    sandbox: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Build a sealed tool-call receipt dict from the witnessed call facts.
 
@@ -120,6 +122,7 @@ def build_receipt(
     the receipt, so the rationale is re-verifiable, not asserted. A receipt
     without rationale is byte-identical to a receipt built before this field
     existed (backward-compatible: the field is absent, not null-padded).
+    ``session_token_ref`` and ``sandbox`` follow the same honest-null pattern.
     """
     args_bytes = json.dumps(args, sort_keys=True, ensure_ascii=False).encode("utf-8") if args else b""
     output_bytes = (output or "").encode("utf-8")
@@ -144,6 +147,11 @@ def build_receipt(
     # byte-identical to the pre-rationale schema (backward-compatible).
     if rationale is not None:
         receipt["rationale"] = _normalize_rationale(rationale)
+    if session_token_ref is not None:
+        receipt["session_token_ref"] = str(session_token_ref)
+    if sandbox is not None:
+        receipt["sandbox"] = {"kind": str(sandbox.get("kind", "unknown")),
+                               "integrity_level": str(sandbox.get("integrity_level", "unknown"))}
     _seal_receipt(receipt)
     return receipt
 
