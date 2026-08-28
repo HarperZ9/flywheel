@@ -67,7 +67,7 @@ class SessionTokenStore:
             raise SessionTokenError("INVALID_CREDENTIAL") from None
         required_set = set(required_slots)
         actual_set = set(actual_slots)
-        if not required_set.issubset(actual_set):
+        if required_set != actual_set:
             raise SessionTokenError("SLOT_MISMATCH")
         now = time.time()
         token_ref = f"{TOKEN_REF_PREFIX}{secrets.token_hex(16)}"

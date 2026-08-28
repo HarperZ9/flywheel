@@ -159,6 +159,18 @@ def test_mint_rejects_mismatched_required_slots(tmp_path):
         )
 
 
+def test_mint_rejects_superset_required_slots(tmp_path):
+    from harness.session_token import SessionTokenError
+    store = _make_store(tmp_path)
+    hs = store._handle_store
+    h1 = hs.bind(OWNER, "OPENROUTER_API_KEY")
+    h2 = hs.bind(OWNER, "OPENAI_API_KEY")
+    with pytest.raises(SessionTokenError, match="SLOT_MISMATCH"):
+        store.mint(OWNER, "sess_001",
+                   [h1.credential_ref, h2.credential_ref],
+                   ["OPENROUTER_API_KEY"], 900)
+
+
 def test_repr_never_contains_credential_value(tmp_path):
     store = _make_store(tmp_path)
     hs = store._handle_store
