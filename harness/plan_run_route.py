@@ -116,14 +116,11 @@ def _replay_matches(result: dict, envelope) -> bool:
 
 
 def _secret_echo(value: object, bindings: object) -> bool:
-    secrets = getattr(bindings, "_values", {})
-    needles = tuple(item for item in getattr(secrets, "values", lambda: ())()
-                    if type(item) is str and item)
-    if not needles:
+    if not hasattr(bindings, "contains_secret"):
         return False
     def visit(item: object) -> bool:
         if type(item) is str:
-            return any(secret in item for secret in needles)
+            return bindings.contains_secret(item)
         if type(item) is list:
             return any(visit(child) for child in item)
         if type(item) is dict:

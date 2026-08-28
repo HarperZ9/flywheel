@@ -68,6 +68,10 @@ class CredentialBindings:
         result.update(self._values)
         return result
 
+    def contains_secret(self, text: str) -> bool:
+        """Return True if any bound credential value appears in *text*."""
+        return any(v in text for v in self._values.values() if v)
+
     def redact(self, text: str) -> str:
         """Scrub every bound credential value out of `text`.
 
