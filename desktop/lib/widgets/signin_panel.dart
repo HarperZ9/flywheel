@@ -45,54 +45,87 @@ class _SigninPanelState extends State<SigninPanel> {
     super.dispose();
   }
 
+  // Every handler follows the same shape: set _busy, do the work in a try, and
+  // reset _busy in a finally so the button always re-enables. _busy is one
+  // field shared by every row, so a stuck call would otherwise disable the
+  // whole panel. A throw (a non-200 from the engine, or a timed-out call to a
+  // remote/paired engine) surfaces its reason in _note instead of vanishing.
   Future<void> _start(String provider) async {
     setState(() {
       _busy = true;
       _note = null;
     });
-    final r = await widget.onLogin(provider);
-    if (!mounted) return;
-    setState(() {
-      _busy = false;
-      if (r['mode'] == 'guided' && r['ok'] == true) {
-        _guided = provider;
-        _steps = ((r['steps'] ?? []) as List).map((s) => '$s').toList();
-      } else {
-        _note = r['ok'] == true
-            ? '${r['note'] ?? 'sign-in started'}'
-            : '${r['error'] ?? 'sign-in did not start'}';
+    try {
+      final r = await widget.onLogin(provider);
+      if (!mounted) return;
+      setState(() {
+        if (r['mode'] == 'guided' && r['ok'] == true) {
+          _guided = provider;
+          _steps = ((r['steps'] ?? []) as List).map((s) => '$s').toList();
+        } else {
+          _note = r['ok'] == true
+              ? '${r['note'] ?? 'sign-in started'}'
+              : '${r['error'] ?? 'sign-in did not start'}';
+        }
+      });
+      widget.onChanged();
+    } catch (e) {
+      if (mounted) {
+        setState(() => _note = 'sign-in could not reach the engine: $e');
       }
-    });
-    widget.onChanged();
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
   }
 
   Future<void> _submit(String provider) async {
     final value = _paste.text;
     if (value.isEmpty) return;
-    setState(() => _busy = true);
-    final r = await widget.onToken(provider, value);
-    _paste.clear(); // the token leaves this widget immediately
-    if (!mounted) return;
     setState(() {
-      _busy = false;
-      _guided = null;
-      _steps = const [];
-      _note = r['ok'] == true
-          ? 'signed in; stored ${r['stored']}'
-          : '${r['error']}';
+      _busy = true;
+      _note = null;
     });
-    widget.onChanged();
+    try {
+      final r = await widget.onToken(provider, value);
+      if (!mounted) return;
+      final ok = r['ok'] == true;
+      setState(() {
+        _guided = null;
+        _steps = const [];
+        _note = ok ? 'signed in; stored ${r['stored']}' : '${r['error']}';
+      });
+      // The token leaves this widget only once it is stored, so a failed
+      // attempt keeps the paste and the user can retry without re-entering it.
+      if (ok) _paste.clear();
+      widget.onChanged();
+    } catch (e) {
+      if (mounted) {
+        setState(() => _note = 'could not store the token: $e');
+      }
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
   }
 
   Future<void> _out(String provider) async {
-    setState(() => _busy = true);
-    final r = await widget.onLogout(provider);
-    if (!mounted) return;
     setState(() {
-      _busy = false;
-      _note = r['ok'] == true ? 'signed out of $provider' : '${r['error']}';
+      _busy = true;
+      _note = null;
     });
-    widget.onChanged();
+    try {
+      final r = await widget.onLogout(provider);
+      if (!mounted) return;
+      setState(() {
+        _note = r['ok'] == true ? 'signed out of $provider' : '${r['error']}';
+      });
+      widget.onChanged();
+    } catch (e) {
+      if (mounted) {
+        setState(() => _note = 'could not sign out: $e');
+      }
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
   }
 
   @override

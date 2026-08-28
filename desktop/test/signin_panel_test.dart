@@ -161,4 +161,56 @@ void main() {
         {'credential_store': true, 'note': '', 'providers': []})));
     expect(find.textContaining('declared no sign-in providers'), findsOneWidget);
   });
+
+  // The reported bug: on mobile the sign-in call to a remote engine threw (a
+  // non-200, or a timed-out request), _busy never reset, and the button stayed
+  // grey with no reason shown. These prove the handler now always recovers.
+  testWidgets('a sign-in that throws re-enables the button and shows why',
+      (tester) async {
+    await tester.pumpWidget(_wrap(_panel(_doc(),
+        onLogin: (p) async => throw Exception('gateway returned 400'))));
+    final signIn = find.widgetWithText(FilledButton, 'Sign in').first;
+    await tester.tap(signIn);
+    await tester.pumpAndSettle();
+    // the reason is surfaced, not swallowed
+    expect(find.textContaining('could not reach the engine'), findsOneWidget);
+    expect(find.textContaining('gateway returned 400'), findsOneWidget);
+    // and the button is live again, not stuck disabled
+    expect(tester.widget<FilledButton>(signIn).onPressed, isNotNull);
+  });
+
+  testWidgets('a token store that throws keeps the paste and shows why',
+      (tester) async {
+    await tester.pumpWidget(_wrap(_panel(
+      _doc(),
+      onLogin: (p) async => {
+        'ok': true,
+        'mode': 'guided',
+        'steps': ['Run the tool', 'Paste below'],
+      },
+      onToken: (p, t) async => throw Exception('gateway returned 400'),
+    )));
+    await tester.tap(find.widgetWithText(FilledButton, 'Sign in').last);
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), 'sk-ant-oat-KEEP');
+    await tester.tap(find.widgetWithText(FilledButton, 'Store'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('could not store the token'), findsOneWidget);
+    final store = find.widgetWithText(FilledButton, 'Store');
+    expect(tester.widget<FilledButton>(store).onPressed, isNotNull);
+    // the paste is retained so the user can retry without re-entering it
+    final field = tester.widget<TextField>(find.byType(TextField));
+    expect(field.controller?.text, 'sk-ant-oat-KEEP');
+  });
+
+  testWidgets('a sign-out that throws re-enables the button and shows why',
+      (tester) async {
+    await tester.pumpWidget(_wrap(_panel(_doc(present: true),
+        onLogout: (p) async => throw Exception('gateway returned 400'))));
+    final out = find.widgetWithText(TextButton, 'Sign out');
+    await tester.tap(out);
+    await tester.pumpAndSettle();
+    expect(find.textContaining('could not sign out'), findsOneWidget);
+    expect(tester.widget<TextButton>(out).onPressed, isNotNull);
+  });
 }

@@ -506,19 +506,28 @@ class GatewayClient {
   }
 
   /// Generic GET returning decoded JSON, for lightweight read-only routes.
-  Future<Map<String, dynamic>> getJson(String path) async {
-    final r = await _http.get(Uri.parse('$baseUrl$path'));
+  /// A bounded [timeout] keeps a read against a remote/paired engine from
+  /// hanging forever; on expiry it throws TimeoutException for the caller.
+  Future<Map<String, dynamic>> getJson(String path,
+      {Duration timeout = const Duration(seconds: 15)}) async {
+    final r = await _http.get(Uri.parse('$baseUrl$path')).timeout(timeout);
     return _decode(r);
   }
 
   /// Generic POST returning decoded JSON, for small parameterless verbs.
+  /// A bounded [timeout] keeps a call against a remote/paired engine (a phone
+  /// reaching the PC over the mesh) from hanging forever; on expiry it throws
+  /// TimeoutException so the caller surfaces a reason instead of stalling.
   Future<Map<String, dynamic>> postJson(
-      String path, Map<String, dynamic> body) async {
-    final r = await _http.post(
-      Uri.parse('$baseUrl$path'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode(body),
-    );
+      String path, Map<String, dynamic> body,
+      {Duration timeout = const Duration(seconds: 15)}) async {
+    final r = await _http
+        .post(
+          Uri.parse('$baseUrl$path'),
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode(body),
+        )
+        .timeout(timeout);
     return _decode(r);
   }
 
