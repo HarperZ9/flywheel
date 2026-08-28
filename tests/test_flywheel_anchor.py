@@ -127,3 +127,85 @@ def test_a_stamped_anchor_serializes_to_json_without_raw_bytes():
     anchor_rec, _ = fa.build_stamp(HEAD, key, TS, submit=_fake_submit())
     round_tripped = json.loads(json.dumps(anchor_rec))
     assert round_tripped["ots"]["submitted_hex"] == anchor_rec["ots"]["submitted_hex"]
+
+
+# --- the Zenodo durability leg: a dry run before the one live mint ----------
+#
+# The DOI is irreversible: a published record cannot be unpublished. So the
+# producer step before it is a dry run that computes the exact (filename, size,
+# bound digest) a deposit WOULD carry and a metadata skeleton to review, and
+# calls nothing. It must also refuse a record whose stored digest disagrees with
+# its own head here, at the terminal, not at the network, so a corrupt record is
+# caught before the operator crosses the live gate.
+
+def test_zenodo_dry_run_reports_the_bound_bytes_and_the_digest():
+    key = _key()
+    anchor_rec, _ = fa.build_stamp(HEAD, key, TS, submit=None)
+    report = fa.zenodo_dry_run(anchor_rec)
+    assert report["filename"] == "signed-head.json"
+    # the deposited bytes are the canonical signed head, and their sha256 IS the
+    # record's digest, so the DOI witnesses the same digest the Bitcoin leg does
+    from harness.receipt_fields import canonical
+    assert report["size_bytes"] == len(canonical(anchor_rec["signed_head"]).encode())
+    assert report["bound_digest"] == anchor_rec["anchor_digest"]
+    assert report["digest_hex"] == anchor_rec["digest_hex"]
+    assert report["metadata"]["metadata"]["title"]        # a fillable skeleton
+    assert report["metadata"]["metadata"]["creators"]
+
+
+def test_zenodo_dry_run_refuses_a_record_whose_digest_disagrees_with_its_head():
+    key = _key()
+    anchor_rec, _ = fa.build_stamp(HEAD, key, TS, submit=None)
+    anchor_rec["digest_hex"] = "00" * 32          # no longer matches the head
+    with pytest.raises(fa.zenodo_deposit.DepositError):
+        fa.zenodo_dry_run(anchor_rec)
+
+
+def test_zenodo_dry_run_surfaces_the_binding_caveats():
+    key = _key()
+    anchor_rec, _ = fa.build_stamp(HEAD, key, TS, submit=None)
+    report = fa.zenodo_dry_run(anchor_rec)
+    joined = " ".join(report["does_not_prove"])
+    assert "NOT_PROVES_THE_TIMESTAMP" in joined     # a DOI alone orders nothing
+
+
+def test_zenodo_dry_run_metadata_is_overridable():
+    key = _key()
+    anchor_rec, _ = fa.build_stamp(HEAD, key, TS, submit=None)
+    report = fa.zenodo_dry_run(
+        anchor_rec, title="Custom title",
+        creators=[{"name": "Doe, Jane"}])
+    md = report["metadata"]["metadata"]
+    assert md["title"] == "Custom title"
+    assert md["creators"] == [{"name": "Doe, Jane"}]
+
+
+def test_cmd_zenodo_is_a_dry_run_and_never_touches_the_network(tmp_path, capsys,
+                                                               monkeypatch):
+    key = _key()
+    anchor_rec, _ = fa.build_stamp(HEAD, key, TS, submit=None)
+    path = tmp_path / "anchor.json"
+    path.write_text(json.dumps(anchor_rec), encoding="utf-8")
+
+    def _boom(*a, **k):
+        raise AssertionError("a dry run must not reach the deposit client")
+
+    monkeypatch.setattr(fa.zenodo_deposit, "deposit", _boom)
+    code = fa.main(["zenodo", "--anchor", str(path)])
+    assert code == 0
+    out = capsys.readouterr().out
+    assert "signed-head.json" in out
+    assert anchor_rec["anchor_digest"] in out
+    assert "dry run" in out.lower()          # says plainly it minted nothing
+
+
+def test_cmd_zenodo_refuses_a_corrupt_record_with_a_nonzero_exit(tmp_path, capsys):
+    key = _key()
+    anchor_rec, _ = fa.build_stamp(HEAD, key, TS, submit=None)
+    anchor_rec["digest_hex"] = "00" * 32
+    path = tmp_path / "anchor.json"
+    path.write_text(json.dumps(anchor_rec), encoding="utf-8")
+    code = fa.main(["zenodo", "--anchor", str(path)])
+    assert code != 0
+    err = capsys.readouterr().err
+    assert "REFUSED" in err
