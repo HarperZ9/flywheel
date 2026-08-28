@@ -100,6 +100,8 @@ def test_manifest_prompt_requires_role_neutral_runtime_context_and_compact_json(
     assert "benchmark/context.json" in prompt
     assert "Do not run commands" in prompt
     assert "one compact JSON object on one line" in prompt
+    assert "values for .json artifact names must be json objects" in prompt.lower()
+    assert "Do not JSON-encode an artifact object into a string" in prompt
     assert "codex_harness" not in prompt and "flywheel_harness" not in prompt
 
 
