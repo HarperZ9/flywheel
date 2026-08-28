@@ -72,18 +72,27 @@ def _headers(token: str, content_type: str) -> dict:
             "User-Agent": _AGENT}
 
 
+def _snippet(body: bytes) -> str:
+    """First 200 bytes of a reply, for a debuggable error. The token never rides
+    a response body, so this cannot leak the credential."""
+    return bytes(body or b"")[:200].decode("utf-8", "replace")
+
+
 def _parse(status: int, body: bytes, *, ok: set, ctx: str) -> dict:
     """Turn a (status, body) reply into JSON, or a named DepositError.
 
-    A short snippet of the body rides the error for debugging. Zenodo never
-    echoes the token in a response, so this cannot leak the credential.
+    Every failure a leg can meet leaves through DepositError: a wrong status, and
+    a body that is accepted but is not the JSON the API contract promises.
     """
     if status not in ok:
-        snippet = bytes(body or b"")[:200].decode("utf-8", "replace")
-        raise DepositError(f"{ctx}: HTTP {status} {snippet}".rstrip())
+        raise DepositError(f"{ctx}: HTTP {status} {_snippet(body)}".rstrip())
     if not body:
         return {}
-    return json.loads(body)
+    try:
+        return json.loads(body)
+    except (json.JSONDecodeError, ValueError):
+        raise DepositError(
+            f"{ctx}: non-JSON body (HTTP {status}) {_snippet(body)}".rstrip())
 
 
 def create(request, *, token: str, sandbox: bool = False) -> dict:

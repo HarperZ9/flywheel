@@ -144,6 +144,16 @@ def test_a_non_2xx_status_raises_deposit_error():
         zenodo_deposit.create(ft, token=TOKEN, sandbox=True)
 
 
+def test_a_non_json_body_on_a_2xx_status_raises_deposit_error_not_valueerror():
+    import pytest
+    # An intermediary (proxy, captive portal) can serve a 200 with an HTML body
+    # over the real API. The module's whole error contract is DepositError; a raw
+    # JSONDecodeError would punch through it unnamed.
+    ft = FakeTransport([(200, b"<html>not json</html>")])
+    with pytest.raises(zenodo_deposit.DepositError):
+        zenodo_deposit.create(ft, token=TOKEN, sandbox=True)
+
+
 # ---- the orchestrator and its irreversibility guard ---------------------
 
 def _md():
