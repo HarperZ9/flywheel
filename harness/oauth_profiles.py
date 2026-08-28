@@ -49,19 +49,23 @@ PROFILES = {
                  "OAuth client of its own and claims no provider sanction. "
                  "Permitted use is governed by the provider's terms",
         guide=(
-            "Run `claude setup-token` in a terminal (the official Claude "
-            "Code CLI; it opens the provider's own browser sign-in).",
-            "Approve the sign-in in the browser.",
-            "Paste the token the CLI prints when asked below. The paste is "
+            "On the computer running the engine, run `claude setup-token`. "
+            "That is the official Claude Code CLI, and it opens the "
+            "provider's own browser sign-in. On a phone the engine is your "
+            "paired computer, not the phone itself.",
+            "Approve the sign-in in the browser that opens.",
+            "Paste the token the CLI prints into the box below. The paste is "
             "hidden and lands only in the OS credential store.",
         ),
     ),
     "openai": OAuthProfile(
         provider="openai", kind="registered",
         keychain_name="CHATGPT_OAUTH_TOKEN",
-        sanction="needs an app registration the operator owns; set "
-                 "FLYWHEEL_OPENAI_OAUTH_CLIENT_ID plus _AUTHORIZE_URL and "
-                 "_EXCHANGE_URL to enable it",
+        sanction="needs an app registration you own. Set "
+                 "FLYWHEEL_OPENAI_OAUTH_CLIENT_ID, "
+                 "FLYWHEEL_OPENAI_OAUTH_AUTHORIZE_URL, and "
+                 "FLYWHEEL_OPENAI_OAUTH_EXCHANGE_URL in the engine's "
+                 "environment to enable it",
         client_id_env="FLYWHEEL_OPENAI_OAUTH_CLIENT_ID",
         wire=WIRE_OAUTH2,
     ),
