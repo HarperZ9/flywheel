@@ -95,3 +95,45 @@ def test_timeout_returns_none_and_closes_the_socket():
     # and the port must no longer answer.
     server.server_close()
     assert _get(server.callback_url) is None
+
+
+def test_default_callback_binds_loopback_only():
+    # Absent an advertise host nothing changes: the socket binds loopback and
+    # the URL names loopback, so a local sign-in is never exposed on the wire.
+    server = CallbackServer()
+    try:
+        assert server.server_address[0] == "127.0.0.1"
+        assert server.advertise_host == "127.0.0.1"
+        assert server.callback_url.startswith("http://127.0.0.1:")
+    finally:
+        server.server_close()
+
+
+def test_advertise_host_binds_all_interfaces_and_names_that_host():
+    # A remote sign-in advertises the address the phone reached and binds every
+    # interface so the phone's browser can deliver the redirect. The nonce path
+    # still guards it, and a delivery arriving over any interface is captured.
+    server = CallbackServer(advertise_host="203.0.113.9")  # TEST-NET-3 label
+    try:
+        assert server.callback_url.startswith("http://203.0.113.9:")
+        assert server.server_address[0] == "0.0.0.0"
+        port = server.server_address[1]
+        # The URL names 203.0.113.9, but the socket answers on every interface,
+        # so a delivery over loopback lands on the same nonce path.
+        local = f"http://127.0.0.1:{port}/cb/{server.nonce}?code=REMOTE"
+        threading.Timer(0.2, lambda: _get(local)).start()
+        assert server.wait_for_code(timeout=10) == "REMOTE"
+    finally:
+        server.server_close()
+
+
+def test_advertise_host_still_rejects_the_wrong_nonce_path():
+    # Binding every interface does not relax the guard: a request on the wrong
+    # path is a 404 and never becomes the captured code.
+    server = CallbackServer(advertise_host="203.0.113.9")
+    port = server.server_address[1]
+    threading.Timer(0.2, lambda: _get(
+        f"http://127.0.0.1:{port}/cb/wrong?code=ATTACKER")).start()
+    threading.Timer(0.6, lambda: _get(
+        f"http://127.0.0.1:{port}/cb/{server.nonce}?code=REAL")).start()
+    assert server.wait_for_code(timeout=15) == "REAL"

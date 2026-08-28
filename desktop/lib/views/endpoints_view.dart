@@ -3,7 +3,10 @@
 // presence only (the env var name, never a value); the scoreboard shows
 // observed routing outcomes, not promises.
 
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../client/gateway_client.dart';
 import '../models/endpoint_models.dart';
@@ -26,6 +29,9 @@ class EndpointsView extends StatefulWidget {
 }
 
 class _EndpointsViewState extends State<EndpointsView> {
+  // dart:io Platform, not defaultTargetPlatform: the latter reads android under
+  // flutter test and would send a callback_base on the desktop test host.
+  final bool _mobile = Platform.isAndroid || Platform.isIOS;
   EndpointHealthDoc? _health;
   List<EndpointRow> _roster = [];
   List<ProviderScore> _scores = [];
@@ -165,8 +171,15 @@ class _EndpointsViewState extends State<EndpointsView> {
           const SizedBox(height: FwLayout.s3),
           SigninPanel(
             doc: _auth!,
-            onLogin: (p) => widget.client
-                .postJson('/api/auth/login', {'provider': p}),
+            // On a paired phone the engine's browser is on the other machine,
+            // so send the engine address this client reached (callback_base)
+            // and open the returned authorize URL here. On desktop neither is
+            // sent, and the engine opens its own browser as before.
+            onLogin: (p) => widget.client.postJson('/api/auth/login', {
+              'provider': p,
+              if (_mobile) 'callback_base': widget.client.baseUrl,
+            }),
+            onOpenUrl: _mobile ? _openSignInUrl : null,
             onToken: (p, token) => widget.client
                 .postJson('/api/auth/token', {'provider': p, 'token': token}),
             onLogout: (p) => widget.client
@@ -298,4 +311,16 @@ class _EndpointsViewState extends State<EndpointsView> {
         child: Text(text, style: fwMono(t, size: 11.5, color: t.inkMuted)),
       );
 
+  // Open the provider's sign-in page in the phone's own browser. Returns
+  // whether it launched, so the panel can say so honestly instead of claiming
+  // a browser started. A launch that throws is a failure, not a crash.
+  Future<bool> _openSignInUrl(String url) async {
+    final uri = Uri.tryParse(url);
+    if (uri == null) return false;
+    try {
+      return await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } catch (_) {
+      return false;
+    }
+  }
 }

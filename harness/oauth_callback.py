@@ -36,12 +36,21 @@ class CallbackServer(HTTPServer):
     # Never let another process co-bind this port (the default 1 permits it).
     allow_reuse_address = False
 
-    def __init__(self):
+    def __init__(self, advertise_host: Optional[str] = None):
         self.nonce = secrets.token_urlsafe(16)
         self.code: Optional[str] = None
         self.error: Optional[str] = None
         self._captured = threading.Event()
-        super().__init__(("127.0.0.1", 0), _CallbackHandler)
+        # A local sign-in keeps loopback: the browser and the engine share the
+        # machine. A phone reaches a paired engine over the network, so a
+        # remote sign-in binds every interface and advertises the address the
+        # phone can reach. The guard is the same on both paths: a 128-bit
+        # nonce path, constant-time match, one-shot capture, and a code that
+        # is useless without the PKCE verifier, which never leaves this
+        # process. Absent an advertise host, nothing changes.
+        self.advertise_host = advertise_host or "127.0.0.1"
+        bind_host = "0.0.0.0" if advertise_host else "127.0.0.1"
+        super().__init__((bind_host, 0), _CallbackHandler)
 
     def server_bind(self):
         # Windows honors SO_REUSEADDR as "steal the port"; SO_EXCLUSIVEADDRUSE
@@ -56,8 +65,8 @@ class CallbackServer(HTTPServer):
 
     @property
     def callback_url(self) -> str:
-        host, port = self.server_address[0], self.server_address[1]
-        return f"http://{host}:{port}/cb/{self.nonce}"
+        return (f"http://{self.advertise_host}:{self.server_address[1]}"
+                f"/cb/{self.nonce}")
 
     def path_matches(self, path: str) -> bool:
         given = urllib.parse.urlparse(path).path

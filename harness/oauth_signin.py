@@ -114,22 +114,25 @@ def _exchange_request(profile: OAuthProfile, code: str, verifier: str,
                                   headers=headers)
 
 
-def _login_pkce(profile: OAuthProfile, opener=None, timeout: float = 300,
-                browser=None) -> dict:
-    """Authorization-code + PKCE against a hardened loopback callback."""
-    refusal = _preflight(profile)
-    if refusal is not None:
-        return refusal
-    opener = opener or urllib.request.urlopen
-    browser = browser or webbrowser.open
+def _pkce_begin(profile: OAuthProfile, advertise_host=None):
+    """Mint the PKCE pair and stand up the hardened callback listener, and
+    return the authorize URL plus what redemption will need. No browser opens
+    here, so a remote caller can hand the URL to a phone to open itself. Pass
+    advertise_host to make the callback reachable from another device; omit it
+    for a loopback sign-in on this machine."""
     verifier, challenge = _pkce_pair()
     state = secrets.token_urlsafe(16)
-    server = CallbackServer()
+    server = CallbackServer(advertise_host=advertise_host)
     callback = server.callback_url
-    print(f"Opening the {profile.provider} sign-in page. Approve it there;")
-    print(f"the callback returns to 127.0.0.1 on port "
-          f"{server.server_address[1]}.")
-    browser(_authorize_url(profile, callback, challenge, state))
+    authorize_url = _authorize_url(profile, callback, challenge, state)
+    return server, callback, verifier, authorize_url
+
+
+def _pkce_finish(profile: OAuthProfile, server, callback: str, verifier: str,
+                 opener=None, timeout: float = 300) -> dict:
+    """Wait for the redirect, exchange the code, and store the token. Always
+    lets the server close its own socket."""
+    opener = opener or urllib.request.urlopen
     code = server.wait_for_code(timeout)   # always closes its socket
     if not code:
         detail = f" ({server.error})" if server.error else ""
@@ -153,6 +156,23 @@ def _login_pkce(profile: OAuthProfile, opener=None, timeout: float = 300,
         return _fail(profile.provider,
                      "the exchange response carried no token field")
     return _store(profile, key)
+
+
+def _login_pkce(profile: OAuthProfile, opener=None, timeout: float = 300,
+                browser=None) -> dict:
+    """Authorization-code + PKCE against a hardened loopback callback. The
+    browser opens on this machine and the callback listens on loopback."""
+    refusal = _preflight(profile)
+    if refusal is not None:
+        return refusal
+    browser = browser or webbrowser.open
+    server, callback, verifier, authorize_url = _pkce_begin(profile)
+    print(f"Opening the {profile.provider} sign-in page. Approve it there;")
+    print(f"the callback returns to 127.0.0.1 on port "
+          f"{server.server_address[1]}.")
+    browser(authorize_url)
+    return _pkce_finish(profile, server, callback, verifier,
+                        opener=opener, timeout=timeout)
 
 
 def _login_guided(profile: OAuthProfile, prompt=None, **_) -> dict:

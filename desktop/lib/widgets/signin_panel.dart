@@ -19,6 +19,12 @@ class SigninPanel extends StatefulWidget {
   final Future<Map<String, dynamic>> Function(String provider) onLogout;
   final VoidCallback onChanged;
 
+  /// Open a sign-in URL on this device. A remote (paired-phone) browser flow
+  /// returns the provider's authorize URL for the phone to open itself, since
+  /// the engine's own browser is on the other machine. Null on desktop, where
+  /// the engine opens its own browser and no URL comes back.
+  final Future<bool> Function(String url)? onOpenUrl;
+
   const SigninPanel({
     super.key,
     required this.doc,
@@ -26,6 +32,7 @@ class SigninPanel extends StatefulWidget {
     required this.onToken,
     required this.onLogout,
     required this.onChanged,
+    this.onOpenUrl,
   });
 
   @override
@@ -58,16 +65,30 @@ class _SigninPanelState extends State<SigninPanel> {
     try {
       final r = await widget.onLogin(provider);
       if (!mounted) return;
-      setState(() {
-        if (r['mode'] == 'guided' && r['ok'] == true) {
+      final url = r['authorize_url'];
+      if (r['mode'] == 'guided' && r['ok'] == true) {
+        setState(() {
           _guided = provider;
           _steps = ((r['steps'] ?? []) as List).map((s) => '$s').toList();
-        } else {
+        });
+      } else if (url is String && url.isNotEmpty && widget.onOpenUrl != null) {
+        // A remote browser flow: the engine handed back the provider URL for
+        // this device to open. Launch it and report whether it opened, rather
+        // than claiming a browser started somewhere the user cannot see.
+        final opened = await widget.onOpenUrl!(url);
+        if (!mounted) return;
+        setState(() {
+          _note = opened
+              ? 'opening the sign-in page; approve it, then return here'
+              : 'could not open the sign-in page on this device';
+        });
+      } else {
+        setState(() {
           _note = r['ok'] == true
               ? '${r['note'] ?? 'sign-in started'}'
               : '${r['error'] ?? 'sign-in did not start'}';
-        }
-      });
+        });
+      }
       widget.onChanged();
     } catch (e) {
       if (mounted) {

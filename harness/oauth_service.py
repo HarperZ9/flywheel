@@ -19,6 +19,7 @@ roster, a job record, a log, or an error.
 from __future__ import annotations
 
 import threading
+import urllib.parse
 from typing import Optional
 
 from . import keychain, oauth_signin
@@ -61,10 +62,16 @@ def auth_rows() -> dict:
                     "the name the router reads. Values are never displayed."}
 
 
-def begin(provider: str) -> dict:
+def begin(provider: str, callback_base: Optional[str] = None) -> dict:
     """Start a sign-in. A browser flow runs in the background and the caller
     polls; a guided flow returns steps for the surface to render; a
-    registered provider returns its honest refusal."""
+    registered provider returns its honest refusal.
+
+    callback_base is set only by a remote client (a paired phone): it is the
+    engine address that client reached, and the browser flow returns the
+    authorize URL for the phone to open, with a callback bound to that address
+    instead of loopback. Omitted, the flow is unchanged: the browser opens on
+    the engine and the callback stays on loopback."""
     profile = PROFILES.get(provider)
     if profile is None:
         return {"ok": False, "provider": provider,
@@ -87,6 +94,8 @@ def begin(provider: str) -> dict:
     if _job(provider).get("state") == "running":
         return {"ok": True, "provider": provider, "mode": "browser",
                 "note": "a sign-in is already running; finish it in the browser"}
+    if callback_base:
+        return _begin_remote_pkce(provider, profile, callback_base)
 
     def _run():
         try:
@@ -100,6 +109,35 @@ def begin(provider: str) -> dict:
     threading.Thread(target=_run, daemon=True, name=f"signin-{provider}").start()
     return {"ok": True, "provider": provider, "mode": "browser",
             "note": "a browser window is opening; approve the sign-in there"}
+
+
+def _begin_remote_pkce(provider: str, profile, callback_base: str) -> dict:
+    """Run a PKCE flow whose callback a paired phone can reach. The engine
+    builds the authorize URL and listens on an advertised address; the phone
+    opens the URL and its browser delivers the redirect back over the network.
+    The code is useless without the verifier, which never leaves this engine."""
+    host = urllib.parse.urlparse(callback_base).hostname
+    if not host:
+        return {"ok": False, "provider": provider, "mode": "browser",
+                "error": "could not read the engine address to return the "
+                         "sign-in to; sign in on the computer instead"}
+    server, callback, verifier, authorize_url = oauth_signin._pkce_begin(
+        profile, advertise_host=host)
+
+    def _run():
+        try:
+            result = oauth_signin._pkce_finish(profile, server, callback,
+                                               verifier)
+            _set_job(provider, "done" if result.get("ok") else "failed",
+                     result.get("error"))
+        except Exception as exc:                 # never leak a body or value
+            _set_job(provider, "failed", f"sign-in failed ({type(exc).__name__})")
+
+    _set_job(provider, "running")
+    threading.Thread(target=_run, daemon=True, name=f"signin-{provider}").start()
+    return {"ok": True, "provider": provider, "mode": "browser",
+            "authorize_url": authorize_url,
+            "note": "open the sign-in link on this device and approve it"}
 
 
 def submit(provider: str, token: str) -> dict:

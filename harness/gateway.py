@@ -1989,7 +1989,12 @@ class _Handler(BaseHTTPRequestHandler):
             from harness import oauth_service
             provider = (req.get("provider") or "").strip()
             if p == "/api/auth/login":
-                out = oauth_service.begin(provider)
+                # A remote client (a paired phone) sends the engine address it
+                # reached as callback_base, so the browser flow can return a
+                # callback the phone can deliver to. A local client omits it
+                # and the flow stays on loopback.
+                out = oauth_service.begin(
+                    provider, callback_base=(req.get("callback_base") or None))
             elif p == "/api/auth/token":
                 out = oauth_service.submit(provider, req.get("token") or "")
             else:

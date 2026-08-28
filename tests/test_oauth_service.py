@@ -136,6 +136,56 @@ def test_unknown_provider_is_named_on_every_verb():
     assert svc.sign_out("nonesuch")["ok"] is False
 
 
+def test_remote_pkce_returns_the_url_and_advertises_the_reached_host(monkeypatch):
+    # A paired phone sends the engine address it reached as callback_base. The
+    # browser flow returns the authorize URL for the phone to open, and the
+    # callback listener advertises that same address, not loopback.
+    _clear_jobs()
+    monkeypatch.setattr(svc.keychain, "keychain_available", lambda: True)
+    seen = {}
+
+    def _fake_begin(profile, advertise_host=None):
+        seen["host"] = advertise_host
+        return (object(), "http://10.0.0.5:55555/cb/n", "verifier",
+                "https://openrouter.ai/auth?callback_url=http%3A%2F%2F10.0.0.5")
+
+    def _fake_finish(profile, server, callback, verifier, **k):
+        return {"ok": True, "provider": profile.provider,
+                "stored": "OPENROUTER_API_KEY"}
+
+    monkeypatch.setattr(svc.oauth_signin, "_pkce_begin", _fake_begin)
+    monkeypatch.setattr(svc.oauth_signin, "_pkce_finish", _fake_finish)
+    out = svc.begin("openrouter", callback_base="http://10.0.0.5:8799")
+    assert out["ok"] is True and out["mode"] == "browser"
+    assert out["authorize_url"].startswith("https://openrouter.ai/auth")
+    assert seen["host"] == "10.0.0.5"        # the reached engine, not loopback
+    assert _settle("openrouter").get("state") == "done"
+
+
+def test_local_pkce_returns_no_authorize_url(monkeypatch):
+    # Without callback_base the browser opens on the engine itself, so there is
+    # no URL to hand back and the loopback path is untouched.
+    _clear_jobs()
+    monkeypatch.setattr(svc.keychain, "keychain_available", lambda: True)
+    monkeypatch.setattr(svc.oauth_signin, "login",
+                        lambda p, **k: {"ok": True, "provider": p})
+    out = svc.begin("openrouter")
+    assert "authorize_url" not in out
+    _settle("openrouter")
+
+
+def test_remote_pkce_refuses_an_unreadable_callback_base(monkeypatch):
+    # A callback_base with no host cannot be returned to; refuse before any
+    # listener is stood up rather than silently falling back to loopback.
+    _clear_jobs()
+    monkeypatch.setattr(svc.keychain, "keychain_available", lambda: True)
+    monkeypatch.setattr(svc.oauth_signin, "_pkce_begin",
+                        lambda *a, **k: (_ for _ in ()).throw(
+                            AssertionError("must not build a listener with no host")))
+    out = svc.begin("openrouter", callback_base="not-a-url")
+    assert out["ok"] is False and "engine address" in out["error"]
+
+
 def test_sign_out_clears_the_job_record(monkeypatch):
     _clear_jobs()
     svc._set_job("openrouter", "failed", "some error")

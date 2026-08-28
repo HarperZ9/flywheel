@@ -50,12 +50,14 @@ SigninPanel _panel(
   Future<Map<String, dynamic>> Function(String)? onLogin,
   Future<Map<String, dynamic>> Function(String, String)? onToken,
   Future<Map<String, dynamic>> Function(String)? onLogout,
+  Future<bool> Function(String)? onOpenUrl,
 }) =>
     SigninPanel(
       doc: doc,
       onLogin: onLogin ?? (p) async => {'ok': true, 'mode': 'browser'},
       onToken: onToken ?? (p, t) async => {'ok': true, 'stored': 'X'},
       onLogout: onLogout ?? (p) async => {'ok': true},
+      onOpenUrl: onOpenUrl,
       onChanged: () {},
     );
 
@@ -201,6 +203,47 @@ void main() {
     // the paste is retained so the user can retry without re-entering it
     final field = tester.widget<TextField>(find.byType(TextField));
     expect(field.controller?.text, 'sk-ant-oat-KEEP');
+  });
+
+  // The remote (paired-phone) browser flow: the engine's browser is on the
+  // other machine, so the engine hands back the provider's authorize URL and
+  // the panel opens it on this device, reporting honestly whether it launched.
+  testWidgets('a returned authorize_url is opened on this device',
+      (tester) async {
+    final opened = <String>[];
+    await tester.pumpWidget(_wrap(_panel(
+      _doc(),
+      onLogin: (p) async => {
+        'ok': true,
+        'mode': 'browser',
+        'authorize_url': 'https://openrouter.ai/auth?callback_url=x',
+      },
+      onOpenUrl: (url) async {
+        opened.add(url);
+        return true;
+      },
+    )));
+    await tester.tap(find.widgetWithText(FilledButton, 'Sign in').first);
+    await tester.pumpAndSettle();
+    expect(opened, ['https://openrouter.ai/auth?callback_url=x']);
+    expect(find.textContaining('opening the sign-in page'), findsOneWidget);
+  });
+
+  testWidgets('a browser that will not open says so, not a false success',
+      (tester) async {
+    await tester.pumpWidget(_wrap(_panel(
+      _doc(),
+      onLogin: (p) async => {
+        'ok': true,
+        'mode': 'browser',
+        'authorize_url': 'https://openrouter.ai/auth?callback_url=x',
+      },
+      onOpenUrl: (url) async => false,
+    )));
+    await tester.tap(find.widgetWithText(FilledButton, 'Sign in').first);
+    await tester.pumpAndSettle();
+    expect(find.textContaining('could not open the sign-in page'),
+        findsOneWidget);
   });
 
   testWidgets('a sign-out that throws re-enables the button and shows why',
