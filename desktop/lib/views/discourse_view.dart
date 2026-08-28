@@ -104,7 +104,7 @@ class _DiscourseViewState extends State<DiscourseView> {
   @override
   Widget build(BuildContext context) {
     if (!widget.alive) {
-      return const FwEmpty('The engine is offline.', command: 'flywheel app --port 8799');
+      return const FwEmpty('The engine is offline.', command: 'flywheel up');
     }
     final d = _digest;
     return ComposerResults(
