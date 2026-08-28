@@ -15,6 +15,11 @@ class StatusBar extends StatelessWidget {
   final String? startError;
   final WorldDoc? world;
   final VoidCallback onStartEngine;
+
+  /// The engine runs on this device. Desktop can start it here; a phone
+  /// reaches a paired engine over the network, so it shows where the engine
+  /// lives instead of a start action it cannot honor.
+  final bool local;
   const StatusBar({
     super.key,
     required this.alive,
@@ -22,6 +27,7 @@ class StatusBar extends StatelessWidget {
     required this.startError,
     required this.world,
     required this.onStartEngine,
+    this.local = true,
   });
 
   @override
@@ -47,7 +53,7 @@ class StatusBar extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: fwMono(t, size: 11, color: t.inkMuted)),
             ),
-            if (!alive) ...[
+            if (!alive && local) ...[
               const SizedBox(width: FwLayout.s3),
               AccessibleAction(
                 semanticLabel: 'Start engine',
@@ -55,6 +61,15 @@ class StatusBar extends StatelessWidget {
                 child: Text('start engine',
                     style: fwMono(t, size: 11, color: t.drift)
                         .copyWith(decoration: TextDecoration.underline)),
+              ),
+            ] else if (!alive) ...[
+              // A phone cannot start the engine; it lives on the paired
+              // computer. Name that instead of offering a dead action.
+              const SizedBox(width: FwLayout.s3),
+              Flexible(
+                child: Text('on your computer',
+                    overflow: TextOverflow.ellipsis,
+                    style: fwMono(t, size: 11, color: t.inkFaint)),
               ),
             ],
             if (startError != null) ...[

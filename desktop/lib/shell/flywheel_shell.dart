@@ -328,6 +328,8 @@ class _FlywheelShellState extends State<FlywheelShell> {
               startError: _coordinator.startError,
               world: _coordinator.world,
               onStartEngine: () => unawaited(_coordinator.start()),
+              // A phone reaches a paired engine; it cannot start one locally.
+              local: !_mobile,
             ),
       );
 
