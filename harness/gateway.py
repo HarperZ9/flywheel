@@ -2356,14 +2356,64 @@ def _build_parser() -> argparse.ArgumentParser:
     ap.add_argument("--run-root", default=run_root_default())
     ap.add_argument("--cors", action="store_true",
                     help="allow cross-origin browser clients (off by default; the gateway is local)")
-    ap.add_argument("--host", default="127.0.0.1",
-                    help="bind address (default 127.0.0.1, loopback only). Set 0.0.0.0 to accept "
-                         "connections from other devices; the bearer token and the Host allowlist "
-                         "still gate every request, and a TLS tunnel should front a routable bind.")
+    ap.add_argument("--host", action="append", default=None, dest="host", metavar="ADDR",
+                    help="bind address, repeatable (default 127.0.0.1, loopback only). Repeat to "
+                         "bind several interfaces at once, e.g. --host 127.0.0.1 --host 100.x.y.z "
+                         "serves the local app on loopback AND a Tailscale phone, without exposing "
+                         "every LAN the way 0.0.0.0 does. 0.0.0.0 accepts all IPv4 and subsumes the "
+                         "rest. The bearer token and the Host allowlist still gate every request, "
+                         "and a TLS tunnel should front a routable bind.")
     ap.add_argument("--allow-host", action="append", default=[], dest="allow_host",
                     help="add a Host header value to the DNS-rebinding allowlist (repeatable). "
                          "Give the public tunnel hostname here so a phone can reach this gateway.")
     return ap
+
+
+def _resolve_hosts(requested):
+    """Turn the raw --host list into the bind order. Default stays loopback only.
+    Duplicates collapse while keeping first-seen order. 0.0.0.0 accepts every
+    IPv4, so it cannot share a port with a specific IPv4 bind; when present it
+    wins and the rest are dropped."""
+    hosts, seen = [], set()
+    for h in (requested or ["127.0.0.1"]):
+        if h not in seen:
+            seen.add(h)
+            hosts.append(h)
+    if "0.0.0.0" in hosts:
+        return ["0.0.0.0"]
+    return hosts
+
+
+def _bind_hosts(hosts, port):
+    """Bind one ThreadingHTTPServer per host, all sharing the one _Handler class.
+    A host whose address this machine does not hold (e.g. the Tailscale interface
+    is down) is reported and skipped, so a working interface still serves instead
+    of the whole gateway refusing to start. Returns the bound servers in order;
+    empty when none bound."""
+    servers = []
+    for h in hosts:
+        try:
+            servers.append(ThreadingHTTPServer((h, port), _Handler))
+        except OSError as e:
+            print(f"  SKIP      cannot bind {h}:{port}: {e}")
+    return servers
+
+
+def _serve_all(servers):
+    """Serve every bound socket. All but the last run in daemon threads; the last
+    blocks the main thread so Ctrl-C still stops the process. On shutdown the
+    operation service is stopped once and every socket is closed."""
+    import threading
+    for s in servers[:-1]:
+        threading.Thread(target=s.serve_forever, daemon=True).start()
+    try:
+        servers[-1].serve_forever()
+    except KeyboardInterrupt:
+        pass
+    finally:
+        _Handler.operation_service.shutdown()
+        for s in servers:
+            s.server_close()
 
 
 def main(argv=None) -> int:
@@ -2380,10 +2430,16 @@ def main(argv=None) -> int:
     flywheel_home = Path(os.environ.get("FLYWHEEL_HOME", str(Path.home() / ".flywheel")))
     _Handler.flywheel_home = flywheel_home
     _Handler.auth_token = load_or_create_token(flywheel_home)
-    if a.host not in ("127.0.0.1", "localhost", "::1"):
-        print(f"  REMOTE    binding {a.host}: reachable off-box. Front it with a TLS tunnel; "
-              f"allowlisted hosts = {sorted(_Handler.allowed_hosts)}")
-    httpd = ThreadingHTTPServer((a.host, a.port), _Handler)
+    hosts = _resolve_hosts(a.host)
+    servers = _bind_hosts(hosts, a.port)
+    if not servers:
+        print(f"no interface bound on port {a.port}; nothing to serve")
+        return 1
+    bound = [s.server_address[0] for s in servers]
+    remote = [h for h in bound if h not in ("127.0.0.1", "localhost", "::1")]
+    if remote:
+        print(f"  REMOTE    binding {', '.join(remote)}: reachable off-box. Front a routable "
+              f"bind with a TLS tunnel; allowlisted hosts = {sorted(_Handler.allowed_hosts)}")
     state_root = flywheel_home / "state"
     from harness.gateway_operations import GatewayOperations
     from harness.gateway_operation_process import GatewayAgentProcessFactory
@@ -2395,6 +2451,7 @@ def main(argv=None) -> int:
     recover_store(state_root, now=_Handler.clock())
     recover_gateway_operations(state_root, now=_Handler.clock())
     print(f"flywheel gateway: http://127.0.0.1:{a.port}  root={_Handler.root}")
+    print(f"  bound     {', '.join(f'{h}:{a.port}' for h in bound)}")
     print(f"  token     {flywheel_home / 'gateway.token'}  (send as: Authorization: Bearer <token>)")
     print(f"  surface   Flywheel Desktop (the native client) talks to this gateway")
     print(f"  dev shell http://127.0.0.1:{a.port}/site/index.html  (dev/CI fallback only)")
@@ -2410,13 +2467,7 @@ def main(argv=None) -> int:
     print(f"  training  http://127.0.0.1:{a.port}/api/training/status  (read-only supervisor status)")
     print(f"  stats     http://127.0.0.1:{a.port}/api/router/stats  (adaptive-routing scoreboard)")
     print(f"  openai    POST /v1/chat/completions  +  GET /v1/models  (drop-in, model=any provider, stream ok)")
-    try:
-        httpd.serve_forever()
-    except KeyboardInterrupt:
-        pass
-    finally:
-        _Handler.operation_service.shutdown()
-        httpd.server_close()
+    _serve_all(servers)
     return 0
 
 

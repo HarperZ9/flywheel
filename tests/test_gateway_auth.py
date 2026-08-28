@@ -183,13 +183,32 @@ def test_gateway_parser_exposes_host_and_allow_host():
     from harness.gateway import _build_parser
     a = _build_parser().parse_args(
         ["--host", "0.0.0.0", "--allow-host", "t.example", "--allow-host", "u.example"])
-    assert a.host == "0.0.0.0"
+    # --host is repeatable now, so it parses to a list even for a single value.
+    assert a.host == ["0.0.0.0"]
     assert a.allow_host == ["t.example", "u.example"]
 
 
-def test_gateway_defaults_stay_loopback_and_empty_allowlist():
+def test_gateway_host_is_repeatable_for_multi_bind():
     from harness.gateway import _build_parser
+    a = _build_parser().parse_args(
+        ["--host", "127.0.0.1", "--host", "100.64.0.7"])
+    assert a.host == ["127.0.0.1", "100.64.0.7"]
+
+
+def test_gateway_defaults_stay_loopback_and_empty_allowlist():
+    from harness.gateway import _build_parser, _resolve_hosts
     a = _build_parser().parse_args([])
-    assert a.host == "127.0.0.1" and a.allow_host == []
+    # No --host leaves the raw value None; the default is applied at resolve time.
+    assert a.host is None and a.allow_host == []
+    assert _resolve_hosts(a.host) == ["127.0.0.1"]
     # the effective allowlist with no --allow-host is exactly the loopback default
     assert DEFAULT_HOSTS | frozenset(a.allow_host) == DEFAULT_HOSTS
+
+
+def test_resolve_hosts_dedupes_and_lets_wildcard_subsume():
+    from harness.gateway import _resolve_hosts
+    # first-seen order is kept, duplicates collapse
+    assert _resolve_hosts(["127.0.0.1", "100.64.0.7", "127.0.0.1"]) == \
+        ["127.0.0.1", "100.64.0.7"]
+    # 0.0.0.0 accepts every IPv4, so it cannot co-bind a specific IPv4: it wins
+    assert _resolve_hosts(["127.0.0.1", "0.0.0.0"]) == ["0.0.0.0"]
