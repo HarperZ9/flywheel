@@ -20,9 +20,11 @@ RunnerFn = Callable[[str, str], "tuple[bool, str]"]
 
 
 def make_sandboxed_runner(
-    *, bindings: CredentialBindings | None = None,
+    *, bindings: "CredentialBindings | dict[str, str] | None" = None,
     timeout_seconds: int = 120,
 ) -> RunnerFn:
+    if isinstance(bindings, dict):
+        bindings = CredentialBindings(bindings)
     def _run(cmd: str, root: str) -> tuple[bool, str]:
         from .sandboxed_runner import SandboxUnavailable, sandboxed_run
         try:
