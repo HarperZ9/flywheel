@@ -150,8 +150,7 @@ def build_receipt(
     if session_token_ref is not None:
         receipt["session_token_ref"] = str(session_token_ref)
     if sandbox is not None:
-        receipt["sandbox"] = {"kind": str(sandbox.get("kind", "unknown")),
-                               "integrity_level": str(sandbox.get("integrity_level", "unknown"))}
+        receipt["sandbox"] = _normalize_sandbox(sandbox)
     _seal_receipt(receipt)
     return receipt
 
@@ -182,6 +181,19 @@ def _normalize_rationale(rationale: dict[str, Any]) -> dict[str, Any]:
         else:
             normalized[field] = str(val) if val is not None else ""
     return normalized
+
+
+def _normalize_sandbox(sandbox: dict[str, Any]) -> dict[str, Any]:
+    """Normalize a sandbox dict to the fixed schema shape.
+
+    Extracts kind and integrity_level as strings. Unknown fields are dropped.
+    """
+    if not isinstance(sandbox, dict):
+        raise ValueError("sandbox must be a dict or None")
+    return {
+        "kind": str(sandbox.get("kind", "unknown")),
+        "integrity_level": str(sandbox.get("integrity_level", "unknown")),
+    }
 
 
 def emit_receipt(receipt: dict[str, Any], receipt_dir: Path, *, nonce: str = "") -> Path | None:
