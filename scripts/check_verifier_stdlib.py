@@ -35,6 +35,8 @@ VERIFIER_ENTRY_POINTS = [
     "audit_receipt",    # the Layer-2 audit receipt a stranger re-derives + chain-checks
     "usage_receipt",    # the usage-metering receipt a stranger re-derives + re-checks
     "receipt_sign",     # the signature check a stranger runs
+    "ots_verify",       # the OpenTimestamps -> Bitcoin proof a stranger rechecks
+    "anchor",           # ties a signed head to its timestamp over one digest
     "why",              # answering doubt from the record alone
     "ledger",           # the receipt log and its inclusion proofs
     "merkle",           # the tree a stranger recomputes
