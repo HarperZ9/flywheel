@@ -135,3 +135,25 @@ def test_a_truncated_proof_never_raises():
     r = ots.verify(_genesis_leaf()[:25], GENESIS_MERKLE, _provider(GENESIS_HEADER))
     assert r["ok"] is False
     assert "malformed" in r["reason"]
+
+
+def test_a_long_linear_operation_chain_is_refused_not_a_stack_overflow():
+    # A hostile proof: thousands of sha256 ops in a line. The walk must not
+    # recurse per op, or Python's own recursion limit turns a malformed proof
+    # into an uncaught RecursionError. It stays a named reason on the dict.
+    digest = hashlib.sha256(b"x").digest()
+    body = b"\x08" * 3000  # sha256 op takes no argument; a linear chain
+    r = ots.verify(_ots(digest, body), digest)
+    assert r["ok"] is False
+    assert "malformed" in r["reason"]
+
+
+def test_a_deeply_nested_fork_chain_is_refused_not_a_stack_overflow():
+    # Each op-edge's sub-timestamp is itself a fork, nesting the walk. Depth is
+    # guarded so a crafted proof cannot exhaust the stack; the refusal is named.
+    digest = hashlib.sha256(b"y").digest()
+    # 0xff introduces a forked edge; 0x08 is an op whose sub-timestamp follows.
+    body = (b"\xff\x08") * 3000 + b"\x00" + _raw_pending("https://x")
+    r = ots.verify(_ots(digest, body), digest)
+    assert r["ok"] is False
+    assert "malformed" in r["reason"]

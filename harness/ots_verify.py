@@ -34,6 +34,11 @@ LITECOIN_TAG = bytes.fromhex("06869a0d73d71b45")
 MAX_MSG = 4096
 MAX_OPS = 4096
 MAX_RESULT_LEN = 8192
+# Fork nesting only; a linear operation chain is walked iteratively and so is
+# bounded by MAX_OPS, not by the interpreter's recursion limit. Real proofs fork
+# a handful of levels deep; this is low enough that the guard trips well before
+# Python's own recursion limit would, turning a hostile proof into a named reason.
+MAX_DEPTH = 128
 
 
 class OtsError(ValueError):
@@ -138,37 +143,59 @@ def _check_bitcoin(height: int, msg: bytes, header_provider) -> dict:
     return leaf
 
 
-def _walk(r: _Reader, msg: bytes, acc: dict, budget: list) -> None:
-    """Recurse the timestamp tree, collecting attestations into `acc`."""
-    if len(msg) > MAX_MSG:
-        raise OtsError("message exceeded the size guard")
+def _record_attestation(r: _Reader, msg: bytes, acc: dict) -> None:
+    """Read one `0x00` attestation edge and file it under its kind."""
+    att_tag = r.bytes(8)
+    payload = r.varbytes()
+    sub = _Reader(payload)
+    if att_tag == BITCOIN_TAG:
+        acc["bitcoin"].append(_check_bitcoin(sub.varuint(), msg, acc["_provider"]))
+    elif att_tag == PENDING_TAG:
+        acc["pending"].append({"uri": sub.varbytes().decode("utf-8", "replace"),
+                               "reached": msg.hex()})
+    else:
+        acc["unknown"].append({"tag": att_tag.hex(), "reached": msg.hex()})
 
-    def one(tag: int) -> None:
-        if tag == 0x00:  # an attestation
-            att_tag = r.bytes(8)
-            payload = r.varbytes()
-            sub = _Reader(payload)
-            if att_tag == BITCOIN_TAG:
-                acc["bitcoin"].append(_check_bitcoin(
-                    sub.varuint(), msg, acc["_provider"]))
-            elif att_tag in (PENDING_TAG,):
-                acc["pending"].append(
-                    {"uri": sub.varbytes().decode("utf-8", "replace"),
-                     "reached": msg.hex()})
-            else:
-                acc["unknown"].append(
-                    {"tag": att_tag.hex(), "reached": msg.hex()})
-        else:  # an operation; its sub-timestamp continues from the new message
-            budget[0] += 1
-            if budget[0] > MAX_OPS:
-                raise OtsError("too many operations")
-            _walk(r, _apply_op(tag, r, msg), acc, budget)
 
+def _count_op(budget: list) -> None:
+    budget[0] += 1
+    if budget[0] > MAX_OPS:
+        raise OtsError("too many operations")
+
+
+def _edge(r: _Reader, msg: bytes, acc: dict, budget: list, depth: int) -> None:
+    """One forked (`0xff`-introduced) edge: an attestation, or an operation whose
+    sub-timestamp is a fresh branch. Only the branch recurses, guarded by depth."""
     tag = r.bytes(1)[0]
-    while tag == 0xFF:
-        one(r.bytes(1)[0])
+    if tag == 0x00:
+        _record_attestation(r, msg, acc)
+        return
+    _count_op(budget)
+    _walk(r, _apply_op(tag, r, msg), acc, budget, depth + 1)
+
+
+def _walk(r: _Reader, msg: bytes, acc: dict, budget: list, depth: int = 0) -> None:
+    """Walk one timestamp to its attestations, collecting them into `acc`.
+
+    A linear operation chain continues this same timestamp and is followed by the
+    loop, so a proof of thousands of sequential ops costs no stack. Only a forked
+    edge starts a new branch, and that recursion is bounded by MAX_DEPTH, so a
+    crafted proof cannot exhaust the interpreter stack instead of proving a time.
+    """
+    if depth > MAX_DEPTH:
+        raise OtsError("timestamp tree nested too deeply")
+    while True:
+        if len(msg) > MAX_MSG:
+            raise OtsError("message exceeded the size guard")
         tag = r.bytes(1)[0]
-    one(tag)
+        while tag == 0xFF:  # forked edges: each is a complete sub-timestamp
+            _edge(r, msg, acc, budget, depth)
+            tag = r.bytes(1)[0]
+        if tag == 0x00:  # the final edge is an attestation: this timestamp ends
+            _record_attestation(r, msg, acc)
+            return
+        _count_op(budget)  # the final edge is an operation: continue by looping
+        msg = _apply_op(tag, r, msg)
 
 
 def verify(ots_bytes: bytes, expected_digest: bytes, header_provider=None) -> dict:
