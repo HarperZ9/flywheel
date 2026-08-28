@@ -152,13 +152,16 @@ class _CompanionViewState extends State<CompanionView> {
                   'Ask once. Verified and cached answers come from the local '
                   'model; agreement without proof is labeled consensus; hard '
                   'prompts escalate with the failed local attempt on record.')
-              : ListView.builder(
-                  controller: _scroll,
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: FwLayout.s6, vertical: FwLayout.s5),
-                  itemCount: _turns.length,
-                  itemBuilder: (ctx, i) => _turnBlock(ctx, _turns[i]),
-                ),
+              : LayoutBuilder(builder: (context, box) {
+                  final pad = box.maxWidth < 480 ? FwLayout.s4 : FwLayout.s6;
+                  return ListView.builder(
+                    controller: _scroll,
+                    padding: EdgeInsets.symmetric(
+                        horizontal: pad, vertical: FwLayout.s5),
+                    itemCount: _turns.length,
+                    itemBuilder: (ctx, i) => _turnBlock(ctx, _turns[i]),
+                  );
+                }),
         ),
         _inputBar(context),
       ],

@@ -15,6 +15,7 @@ import 'rail_resizer.dart';
 class ShellRail extends StatefulWidget {
   final bool collapsed;
   final double width;
+  final bool inDrawer;
   final DestinationId selected;
   final ValueChanged<DestinationId> onGo;
   final ValueChanged<double> onResize;
@@ -39,6 +40,7 @@ class ShellRail extends StatefulWidget {
     super.key,
     required this.collapsed,
     required this.width,
+    this.inDrawer = false,
     required this.selected,
     required this.onGo,
     required this.onResize,
@@ -167,6 +169,7 @@ class _ShellRailState extends State<ShellRail> {
   }
 
   Widget _footer(BuildContext context) {
+    if (widget.inDrawer) return _drawerFooter(context);
     final t = context.fw;
     return Padding(
       padding: const EdgeInsets.all(8),
@@ -213,6 +216,55 @@ class _ShellRailState extends State<ShellRail> {
           child: Icon(Icons.tune, size: 15, color: t.inkFaint),
         ),
       ]),
+    );
+  }
+
+  Widget _drawerFooter(BuildContext context) {
+    final t = context.fw;
+    return Column(
+      children: [
+        Divider(color: t.line, height: 1),
+        const SizedBox(height: FwLayout.s2),
+        _drawerAction(t, Icons.contrast, 'Theme', widget.onToggleTheme,
+            semantic: 'Toggle theme'),
+        _drawerAction(t, Icons.restore_rounded, 'Recovery',
+            widget.onOpenRecovery,
+            semantic: 'Open recovery center'),
+        if (widget.onOpenAssistant != null)
+          _drawerAction(t, Icons.assistant_rounded, 'Assistant',
+              widget.onOpenAssistant!,
+              semantic: 'Open assistant'),
+        if (widget.onOpenSessions != null)
+          _drawerAction(t, Icons.history_rounded, 'Sessions',
+              widget.onOpenSessions!,
+              semantic: 'Open sessions'),
+        if (widget.onOpenConnection != null)
+          _drawerAction(t, Icons.devices_rounded, 'Connection',
+              widget.onOpenConnection!,
+              semantic: 'Pair a gateway connection'),
+        _drawerAction(t, Icons.tune, 'Appearance', widget.onOpenAppearance,
+            semantic: 'Open appearance settings'),
+        const SizedBox(height: FwLayout.s2),
+      ],
+    );
+  }
+
+  Widget _drawerAction(
+      FwTokens t, IconData icon, String label, VoidCallback onTap,
+      {String? semantic}) {
+    return AccessibleAction(
+      semanticLabel: semantic ?? label,
+      onActivate: onTap,
+      child: ExcludeSemantics(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+          child: Row(children: [
+            Icon(icon, size: 17, color: t.inkMuted),
+            const SizedBox(width: 10),
+            Text(label, style: TextStyle(fontSize: 13, color: t.inkSoft)),
+          ]),
+        ),
+      ),
     );
   }
 }

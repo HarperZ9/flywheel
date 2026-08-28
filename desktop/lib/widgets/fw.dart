@@ -202,24 +202,29 @@ class SectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.end,
+    final heading = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (kicker != null) ...[
-                Kicker(kicker!),
-                const SizedBox(height: FwLayout.s1),
-              ],
-              Text(title, style: Theme.of(context).textTheme.titleLarge),
-            ],
-          ),
-        ),
-        if (trailing != null) trailing!,
+        if (kicker != null) ...[
+          Kicker(kicker!),
+          const SizedBox(height: FwLayout.s1),
+        ],
+        Text(title, style: Theme.of(context).textTheme.titleLarge),
       ],
     );
+    if (trailing == null) return heading;
+    return LayoutBuilder(builder: (_, box) {
+      if (box.maxWidth < 400) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [heading, const SizedBox(height: FwLayout.s3), trailing!],
+        );
+      }
+      return Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [Expanded(child: heading), trailing!],
+      );
+    });
   }
 }
 
@@ -233,12 +238,14 @@ class ViewScroll extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListView(
-      key: storageKey == null ? null : PageStorageKey<String>(storageKey!),
-      padding: const EdgeInsets.symmetric(
-          horizontal: FwLayout.s6, vertical: FwLayout.s5),
-      children: children,
-    );
+    return LayoutBuilder(builder: (context, box) {
+      final pad = box.maxWidth < 480 ? FwLayout.s4 : FwLayout.s6;
+      return ListView(
+        key: storageKey == null ? null : PageStorageKey<String>(storageKey!),
+        padding: EdgeInsets.symmetric(horizontal: pad, vertical: FwLayout.s5),
+        children: children,
+      );
+    });
   }
 }
 

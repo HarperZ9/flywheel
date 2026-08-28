@@ -137,27 +137,19 @@ class _ReceiptsViewState extends State<ReceiptsView> {
           ),
         ),
         const SizedBox(height: FwLayout.s4),
-        Row(
-          children: [
-            Expanded(
-                child: StatTile(
-                    label: 'catalog present',
-                    value: '${l.catalogPresent}/${l.catalog.length}',
-                    status: l.catalogPresent == l.catalog.length
-                        ? 'verified'
-                        : 'drift')),
-            const SizedBox(width: FwLayout.s3),
-            Expanded(
-                child: StatTile(
-                    label: 'envelopes', value: '${l.envelopeCount}')),
-            const SizedBox(width: FwLayout.s3),
-            Expanded(
-                child: StatTile(
-                    label: 'accepted pass',
-                    value: '${l.passCount}',
-                    status: countStatus(l.passCount))),
-          ],
-        ),
+        AdaptiveTiles(children: [
+          StatTile(
+              label: 'catalog present',
+              value: '${l.catalogPresent}/${l.catalog.length}',
+              status: l.catalogPresent == l.catalog.length
+                  ? 'verified'
+                  : 'drift'),
+          StatTile(label: 'envelopes', value: '${l.envelopeCount}'),
+          StatTile(
+              label: 'accepted pass',
+              value: '${l.passCount}',
+              status: countStatus(l.passCount)),
+        ]),
         const SizedBox(height: FwLayout.s5),
         const Kicker('catalog · in-repo artifacts, re-hashed on every read',
             hot: true),

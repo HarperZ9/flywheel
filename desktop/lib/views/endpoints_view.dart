@@ -117,36 +117,24 @@ class _EndpointsViewState extends State<EndpointsView> {
           ),
         ),
         const SizedBox(height: FwLayout.s4),
-        Row(
-          children: [
-            Expanded(
-                child: StatTile(
-                    label: 'local healthy',
-                    value: '${h.localHealthy}/${h.localTotal}',
-                    status: fractionStatus(h.localHealthy, h.localTotal))),
-            const SizedBox(width: FwLayout.s3),
-            Expanded(
-                child: StatTile(
-                    label: 'subscriptions',
-                    value: '${h.subscriptionAvailable}',
-                    status: h.subscriptionAvailable > 0 ? 'verified' : null)),
-            const SizedBox(width: FwLayout.s3),
-            Expanded(
-                child: StatTile(
-                    label: 'keys present',
-                    value: '${h.hostedConfigured}/${h.hosted.length}')),
-          ],
-        ),
+        AdaptiveTiles(children: [
+          StatTile(
+              label: 'local healthy',
+              value: '${h.localHealthy}/${h.localTotal}',
+              status: fractionStatus(h.localHealthy, h.localTotal)),
+          StatTile(
+              label: 'subscriptions',
+              value: '${h.subscriptionAvailable}',
+              status: h.subscriptionAvailable > 0 ? 'verified' : null),
+          StatTile(
+              label: 'keys present',
+              value: '${h.hostedConfigured}/${h.hosted.length}'),
+        ]),
         const SizedBox(height: FwLayout.s5),
         const Kicker('local tiers · probed live', hot: true),
         const SizedBox(height: FwLayout.s3),
-        Row(
-          children: [
-            for (final l in h.local) ...[
-              Expanded(child: _localCard(t, l)),
-              if (l != h.local.last) const SizedBox(width: FwLayout.s3),
-            ],
-          ],
+        AdaptiveTiles(
+          children: [for (final l in h.local) _localCard(t, l)],
         ),
         if (_training != null && _training!['error'] == null) ...[
           const SizedBox(height: FwLayout.s3),
@@ -223,13 +211,20 @@ class _EndpointsViewState extends State<EndpointsView> {
               'No routed traffic recorded yet. The scoreboard fills from '
               'real outcomes as prompts route; nothing here is a promise.')
         else
-          HairlineCard(
-            padding: const EdgeInsets.symmetric(
-                horizontal: FwLayout.s4, vertical: FwLayout.s2),
-            child: Column(
-              children: [for (final s in _scores) _scoreRow(t, s)],
-            ),
-          ),
+          LayoutBuilder(builder: (context, box) {
+            final card = HairlineCard(
+              padding: const EdgeInsets.symmetric(
+                  horizontal: FwLayout.s4, vertical: FwLayout.s2),
+              child: Column(
+                children: [for (final s in _scores) _scoreRow(t, s)],
+              ),
+            );
+            if (box.maxWidth >= 560) return card;
+            return SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: SizedBox(width: 560, child: card),
+            );
+          }),
       ],
     );
   }
@@ -275,16 +270,20 @@ class _EndpointsViewState extends State<EndpointsView> {
           border: Border(bottom: BorderSide(color: t.hairline))),
       child: Row(
         children: [
-          SizedBox(
-            width: 170,
+          Expanded(
+            flex: 3,
             child: Text(r.name,
+                overflow: TextOverflow.ellipsis,
                 style: fwMono(t, size: 12, weight: FontWeight.w600)),
           ),
+          const SizedBox(width: FwLayout.s3),
           Expanded(
+            flex: 4,
             child: Text(r.providerRole.isNotEmpty ? r.providerRole : r.backend,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(fontSize: 12, color: t.inkMuted)),
           ),
+          const SizedBox(width: FwLayout.s3),
           VerdictPill(label, status: status),
         ],
       ),

@@ -41,14 +41,13 @@ class LanesView extends StatelessWidget {
         SectionHeader(
           'Lanes',
           kicker: 'one surface, every engine',
-          trailing: Row(
-            mainAxisSize: MainAxisSize.min,
+          trailing: Wrap(
+            spacing: FwLayout.s2,
+            runSpacing: FwLayout.s2,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
-              for (final e in by.entries) ...[
+              for (final e in by.entries)
                 VerdictPill('${e.value} ${e.key}', status: e.key),
-                const SizedBox(width: FwLayout.s2),
-              ],
-              const SizedBox(width: FwLayout.s2),
               OutlinedButton(
                   onPressed: onProbe, child: const Text('Probe now')),
             ],

@@ -37,6 +37,8 @@ import '../widgets/assistant_panel.dart';
 import '../widgets/command_palette.dart';
 import '../widgets/connection_panel.dart';
 import '../widgets/flywheel_nav.dart';
+import '../theme/flywheel_theme.dart';
+import '../widgets/fw.dart';
 import '../widgets/mobile_nav_bar.dart';
 import '../widgets/sessions_panel.dart';
 import '../widgets/operation_grant_sheet.dart';
@@ -333,18 +335,47 @@ class _FlywheelShellState extends State<FlywheelShell> {
             ),
       );
 
-  // A slim brand strip. Navigation lives in the bottom bar, so there is no
-  // top-bar hamburger: one entry to the full catalog (More), not two.
-  Widget _mobileTopBar() => const Material(
-        color: Colors.transparent,
-        child: Padding(
-          padding: EdgeInsets.fromLTRB(12, 8, 12, 4),
-          child: Align(
-            alignment: Alignment.centerLeft,
-            child: Text('Flywheel',
-                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
-          ),
+  Widget _mobileTopBar() => AnimatedBuilder(
+        animation: _coordinator,
+        builder: (context, _) {
+          final t = context.fw;
+          return Padding(
+            padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
+            child: Row(children: [
+              Text('Flywheel',
+                  style: TextStyle(
+                      fontSize: 14, fontWeight: FontWeight.w600, color: t.ink)),
+              const SizedBox(width: 6),
+              VerdictDot(
+                  _coordinator.alive ? 'verified' : 'absent', size: 6),
+              const Spacer(),
+              _topAction(context, Icons.contrast, 'Theme',
+                  widget.onToggleTheme),
+              _topAction(context, Icons.assistant_rounded, 'Assistant',
+                  _showAssistant),
+            ]),
+          );
+        },
+      );
+
+  Widget _topAction(
+          BuildContext ctx, IconData icon, String tip, VoidCallback onTap) =>
+      IconButton(
+        icon: Icon(icon, size: 16, color: ctx.fw.inkMuted),
+        tooltip: tip,
+        constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+        padding: const EdgeInsets.all(4),
+        onPressed: onTap,
+      );
+
+  void _showAssistant() => showAssistantPanel(
+        context,
+        executor: AssistantExecutor(
+          agent: GatewayAgentSink(_dependencies.client),
+          device: UrlLauncherDeviceSink(),
         ),
+        voiceInput: _voiceInput,
+        voiceOutput: _voiceOutput,
       );
 
   Widget _rail({bool inDrawer = false}) {
@@ -376,15 +407,8 @@ class _FlywheelShellState extends State<FlywheelShell> {
                 api: GatewayJourneyApi(_dependencies.client),
                 onOpen: (ref, lens) => _dependencies.journey.openSession(ref, lens),
               ),
-              onOpenAssistant: () => showAssistantPanel(
-                context,
-                executor: AssistantExecutor(
-                  agent: GatewayAgentSink(_dependencies.client),
-                  device: UrlLauncherDeviceSink(),
-                ),
-                voiceInput: _voiceInput,
-                voiceOutput: _voiceOutput,
-              ),
+              inDrawer: inDrawer,
+              onOpenAssistant: _showAssistant,
               onOpenRecovery: _openRecoveryCenter,
             ));
   }
