@@ -172,50 +172,36 @@ class _ShellRailState extends State<ShellRail> {
   Widget _footer(BuildContext context) {
     if (widget.inDrawer) return _drawerFooter(context);
     final t = context.fw;
+    if (widget.collapsed) {
+      return Padding(
+        padding: const EdgeInsets.all(8),
+        child: Column(children: [
+          _footerIcon(t, Icons.contrast, 'Toggle theme',
+              widget.onToggleTheme),
+          const SizedBox(height: 8),
+          _footerIcon(t, Icons.tune, 'Open appearance settings',
+              widget.onOpenAppearance),
+        ]),
+      );
+    }
     return Padding(
       padding: const EdgeInsets.all(8),
-      child: Row(children: [
-        AccessibleAction(
-          semanticLabel: 'Toggle theme',
-          onActivate: widget.onToggleTheme,
-          child: Icon(Icons.contrast, size: 15, color: t.inkFaint),
-        ),
-        const SizedBox(width: 8),
-        AccessibleAction(
-          semanticLabel: 'Open recovery center',
-          onActivate: widget.onOpenRecovery,
-          child: Icon(Icons.restore_rounded, size: 15, color: t.inkFaint),
-        ),
-        const SizedBox(width: 8),
-        if (widget.onOpenAssistant != null) ...[
-          AccessibleAction(
-            semanticLabel: 'Open assistant',
-            onActivate: widget.onOpenAssistant!,
-            child: Icon(Icons.assistant_rounded, size: 15, color: t.inkFaint),
-          ),
-          const SizedBox(width: 8),
-        ],
-        if (widget.onOpenSessions != null) ...[
-          AccessibleAction(
-            semanticLabel: 'Open sessions',
-            onActivate: widget.onOpenSessions!,
-            child: Icon(Icons.history_rounded, size: 15, color: t.inkFaint),
-          ),
-          const SizedBox(width: 8),
-        ],
-        if (widget.onOpenConnection != null) ...[
-          AccessibleAction(
-            semanticLabel: 'Pair a gateway connection',
-            onActivate: widget.onOpenConnection!,
-            child: Icon(Icons.devices_rounded, size: 15, color: t.inkFaint),
-          ),
-          const SizedBox(width: 8),
-        ],
-        AccessibleAction(
-          semanticLabel: 'Open appearance settings',
-          onActivate: widget.onOpenAppearance,
-          child: Icon(Icons.tune, size: 15, color: t.inkFaint),
-        ),
+      child: Wrap(spacing: 8, runSpacing: 4, children: [
+        _footerIcon(t, Icons.contrast, 'Toggle theme',
+            widget.onToggleTheme),
+        _footerIcon(t, Icons.restore_rounded, 'Open recovery center',
+            widget.onOpenRecovery),
+        if (widget.onOpenAssistant != null)
+          _footerIcon(t, Icons.assistant_rounded, 'Open assistant',
+              widget.onOpenAssistant!),
+        if (widget.onOpenSessions != null)
+          _footerIcon(t, Icons.history_rounded, 'Open sessions',
+              widget.onOpenSessions!),
+        if (widget.onOpenConnection != null)
+          _footerIcon(t, Icons.devices_rounded, 'Pair a gateway connection',
+              widget.onOpenConnection!),
+        _footerIcon(t, Icons.tune, 'Open appearance settings',
+            widget.onOpenAppearance),
       ]),
     );
   }
@@ -228,14 +214,14 @@ class _ShellRailState extends State<ShellRail> {
         const SizedBox(height: FwLayout.s2),
         _footerKicker(t, 'TOOLS'),
         if (widget.onOpenAssistant != null)
-          _drawerAction(t, Icons.assistant_rounded, 'Assistant',
+          _labeledAction(t, Icons.assistant_rounded, 'Assistant',
               widget.onOpenAssistant!,
               semantic: 'Open assistant'),
         if (widget.onOpenSessions != null)
-          _drawerAction(t, Icons.history_rounded, 'Sessions',
+          _labeledAction(t, Icons.history_rounded, 'Sessions',
               widget.onOpenSessions!,
               semantic: 'Open sessions'),
-        _drawerAction(t, Icons.restore_rounded, 'Recovery',
+        _labeledAction(t, Icons.restore_rounded, 'Recovery',
             widget.onOpenRecovery,
             semantic: 'Open recovery center'),
         Container(
@@ -245,12 +231,12 @@ class _ShellRailState extends State<ShellRail> {
           color: t.hairline,
         ),
         _footerKicker(t, 'SETTINGS'),
-        _drawerAction(t, Icons.contrast, 'Theme', widget.onToggleTheme,
+        _labeledAction(t, Icons.contrast, 'Theme', widget.onToggleTheme,
             semantic: 'Toggle theme'),
-        _drawerAction(t, Icons.tune, 'Appearance', widget.onOpenAppearance,
+        _labeledAction(t, Icons.tune, 'Appearance', widget.onOpenAppearance,
             semantic: 'Open appearance settings'),
         if (widget.onOpenConnection != null)
-          _drawerAction(t, Icons.devices_rounded, 'Connection',
+          _labeledAction(t, Icons.devices_rounded, 'Connection',
               widget.onOpenConnection!,
               semantic: 'Pair a gateway connection'),
         const SizedBox(height: FwLayout.s2),
@@ -266,7 +252,19 @@ class _ShellRailState extends State<ShellRail> {
     );
   }
 
-  Widget _drawerAction(
+  Widget _footerIcon(
+      FwTokens t, IconData icon, String tip, VoidCallback onTap) {
+    return Tooltip(
+      message: tip,
+      child: AccessibleAction(
+        semanticLabel: tip,
+        onActivate: onTap,
+        child: Icon(icon, size: 15, color: t.inkFaint),
+      ),
+    );
+  }
+
+  Widget _labeledAction(
       FwTokens t, IconData icon, String label, VoidCallback onTap,
       {String? semantic}) {
     return AccessibleAction(
@@ -278,7 +276,11 @@ class _ShellRailState extends State<ShellRail> {
           child: Row(children: [
             Icon(icon, size: 17, color: t.inkMuted),
             const SizedBox(width: 10),
-            Text(label, style: TextStyle(fontSize: 13, color: t.inkSoft)),
+            Expanded(
+              child: Text(label,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(fontSize: 13, color: t.inkSoft)),
+            ),
           ]),
         ),
       ),
