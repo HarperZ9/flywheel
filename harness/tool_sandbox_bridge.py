@@ -3,8 +3,11 @@
 make_sandboxed_runner() returns a callable with the signature
 (cmd: str, root: str) -> tuple[bool, str] that local_tools.py's ToolExecutor
 accepts as its `runner` callback. On Windows, it routes through the
-low-integrity sandbox. Elsewhere, make_unsandboxed_runner() provides bare
-subprocess execution with an honest-null note.
+low-integrity sandbox. Where the sandbox is unavailable, it fails OPEN with
+disclosure: output is prefixed `[UNVERIFIABLE: sandbox unavailable] ` rather
+than reading like a verified sandboxed result. make_unsandboxed_runner()
+provides bare subprocess execution unconditionally, marked `[unsandboxed] `
+for the same reason.
 """
 from __future__ import annotations
 
@@ -27,7 +30,13 @@ def make_sandboxed_runner(
                 cmd, root, bindings=bindings,
                 timeout_seconds=timeout_seconds)
         except SandboxUnavailable:
-            return _bare_run(cmd, root, timeout_seconds)
+            # Fail OPEN with disclosure, not silently: mark the output so
+            # downstream code (and a human) can tell this call never saw
+            # OS-enforced isolation, instead of reading like a normal
+            # sandboxed result.
+            return _bare_run(
+                cmd, root, timeout_seconds,
+                prefix="[UNVERIFIABLE: sandbox unavailable] ")
     return _run
 
 
@@ -35,12 +44,12 @@ def make_unsandboxed_runner(
     *, timeout_seconds: int = 120,
 ) -> RunnerFn:
     def _run(cmd: str, root: str) -> tuple[bool, str]:
-        return _bare_run(cmd, root, timeout_seconds)
+        return _bare_run(cmd, root, timeout_seconds, prefix="[unsandboxed] ")
     return _run
 
 
 def _bare_run(
-    cmd: str, root: str, timeout: int,
+    cmd: str, root: str, timeout: int, prefix: str = "",
 ) -> tuple[bool, str]:
     try:
         proc = subprocess.run(
@@ -51,6 +60,6 @@ def _bare_run(
                    else (e.stdout or b"").decode("utf-8", "replace"))
         partial += ((e.stderr or "") if isinstance(e.stderr, str)
                     else (e.stderr or b"").decode("utf-8", "replace"))
-        return False, f"[timeout after {timeout}s]\n{partial}"
+        return False, f"{prefix}[timeout after {timeout}s]\n{partial}"
     out = (proc.stdout or "") + (proc.stderr or "")
-    return proc.returncode == 0, f"[exit {proc.returncode}]\n{out}"
+    return proc.returncode == 0, f"{prefix}[exit {proc.returncode}]\n{out}"

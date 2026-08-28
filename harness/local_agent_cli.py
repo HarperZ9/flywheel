@@ -24,6 +24,7 @@ from .local_git import commit_run
 from .local_loop import run_agent
 from .local_session import SessionLedger
 from .local_tools import ToolExecutor, ToolGate
+from .tool_sandbox_bridge import make_sandboxed_runner
 
 
 def _all_backends(args) -> list:
@@ -102,7 +103,8 @@ def _run_agentic(args) -> int:
         print("[error] no local backend is healthy (start serve.py or ollama)", file=sys.stderr)
         return 1
     executor = ToolExecutor(root=args.root,
-                            gate=ToolGate(allow_write=args.allow_write, allow_exec=args.allow_exec))
+                            gate=ToolGate(allow_write=args.allow_write, allow_exec=args.allow_exec),
+                            runner=make_sandboxed_runner(bindings=None))
     ledger = SessionLedger()
     from harness import tool_receipts
     result = run_agent(agent, _context_preamble(args.file) + args.prompt, executor, ledger,
