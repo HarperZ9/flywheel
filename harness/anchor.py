@@ -97,4 +97,10 @@ def does_not_prove() -> list[str]:
         "names a calendar that promised to anchor it, which is not yet a block.",
         "NOT_PROVES_THE_DIGEST_IS_MEANINGFUL: the timestamp bounds when these "
         "bytes existed, not that the head they carry is honest about the tree.",
+        "NOT_PROVES_THE_HEADER_IS_A_REAL_BLOCK: the offline proof-of-work recheck "
+        "confirms a bundle-carried header is internally consistent and clears a "
+        "real target, which refuses a zero-work forgery. It does not establish "
+        "that the header sits on the real Bitcoin chain; a header is only as "
+        "trustworthy as its source. Cross-check the block hash against an "
+        "independent chain view for linkage, not just this internal recheck.",
     ]

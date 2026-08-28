@@ -22,6 +22,7 @@ GENESIS_MERKLE = GENESIS_HEADER[36:68]
 
 BITCOIN_TAG = bytes.fromhex("0588960d73d71901")
 PENDING_TAG = bytes.fromhex("83dfe30d2ef90c8e")
+LITECOIN_TAG = bytes.fromhex("06869a0d73d71b45")
 MAGIC = b"\x00OpenTimestamps\x00\x00Proof\x00\xbf\x89\xe2\xe8\x84\xe8\x92\x94"
 
 
@@ -57,6 +58,13 @@ def _genesis_leaf():
 
 def _provider(header):
     return lambda height: header
+
+
+def _forged_header(merkle32, nbits_le):
+    """An 80-byte header an attacker controls: version, zero prev, chosen merkle
+    field, zero time, chosen nBits (little-endian), zero nonce."""
+    return (b"\x01\x00\x00\x00" + b"\x00" * 32 + merkle32
+            + b"\x00\x00\x00\x00" + nbits_le + b"\x00\x00\x00\x00")
 
 
 def test_a_bitcoin_leaf_verifies_against_a_pow_checked_header():
@@ -157,3 +165,74 @@ def test_a_deeply_nested_fork_chain_is_refused_not_a_stack_overflow():
     r = ots.verify(_ots(digest, body), digest)
     assert r["ok"] is False
     assert "malformed" in r["reason"]
+
+
+def test_an_oversize_exponent_target_is_not_a_zero_work_pass():
+    # The zero-work forgery: a digest that was never anchored, wearing a header
+    # whose nBits exponent inflates the target past 2**256 so ANY hash clears it.
+    # Bitcoin never mines above the network maximum; a header claiming to must be
+    # refused, or the proof-of-work check proves nothing.
+    forged = bytes.fromhex("de" * 32)
+    header = _forged_header(forged, bytes.fromhex("ffff7f21"))  # nBits 0x217fffff
+    assert ots._pow_ok(header) is False
+    r = ots.verify(_ots(forged, b"\x00" + _raw_bitcoin(0)), forged,
+                   _provider(header))
+    assert r["ok"] is False
+    assert r["bitcoin"][0]["pow_ok"] is False
+    assert "proof_of_work" in r["bitcoin"][0]["reason"]
+
+
+def test_a_target_above_the_network_maximum_is_refused():
+    # nBits 0x2100ffff decodes to a target far above the mainnet powLimit but
+    # still inside a plausible exponent range, so the exponent-size guard alone
+    # would miss it. The powLimit cap is what refuses it.
+    forged = bytes.fromhex("ab" * 32)
+    header = _forged_header(forged, bytes.fromhex("ffff0021"))  # nBits 0x2100ffff
+    assert ots._pow_ok(header) is False
+    r = ots.verify(_ots(forged, b"\x00" + _raw_bitcoin(0)), forged,
+                   _provider(header))
+    assert r["ok"] is False
+    assert r["bitcoin"][0]["pow_ok"] is False
+
+
+def test_the_genesis_block_still_verifies_at_the_powlimit_boundary():
+    # The cap is inclusive: the genesis block's target equals powLimit exactly,
+    # so a correct fix must still admit it. Guards the cap against off-by-one.
+    assert ots._pow_ok(GENESIS_HEADER) is True
+    r = ots.verify(_genesis_leaf(), GENESIS_MERKLE, _provider(GENESIS_HEADER))
+    assert r["ok"] is True
+
+
+def test_a_flood_of_attestations_is_refused_not_accumulated_without_bound():
+    # Attestations are recorded but never counted against MAX_OPS, so a proof of
+    # thousands of empty attestation edges grows the accumulator without limit.
+    # The walk must refuse the flood with a named reason.
+    d = b"\x33" * 32
+    edge = b"\xff\x00" + b"\x22" * 8 + b"\x00"  # fork -> unknown 8-byte tag, empty
+    body = edge * 400 + b"\x00" + b"\x22" * 8 + b"\x00"
+    r = ots.verify(_ots(d, body), d)
+    assert r["ok"] is False
+    assert "malformed" in r["reason"]
+
+
+def test_a_sha1_file_hash_proof_is_parsed_at_its_true_length():
+    # A proof whose file-hash op is SHA1 carries a 20-byte digest, not 32. Reading
+    # a fixed 32 bytes swallows the first bytes of the tree and falsely rejects a
+    # correct proof. The op tag dictates the length.
+    sha1d = hashlib.sha1(b"hello").digest()
+    proof = (MAGIC + b"\x01" + b"\x02" + sha1d
+             + b"\x00" + _raw_pending("https://one.example/digest"))
+    r = ots.verify(proof, sha1d)
+    assert r["file_digest"] == sha1d.hex()
+    assert r["pending"] and "pending" in r["reason"]
+
+
+def test_an_unverifiable_attestation_is_named_not_reported_absent():
+    # A Litecoin (or any unregistered) attestation is present but this verifier
+    # cannot check it. Reporting "no_attestation" is a lie: an attestation IS
+    # there, it is simply unverifiable here. The reason must say so.
+    d = b"\x44" * 32
+    r = ots.verify(_ots(d, b"\x00" + LITECOIN_TAG + _varbytes(_varuint(999))), d)
+    assert r["ok"] is False
+    assert r["unknown"]
+    assert "unverifiable" in r["reason"]

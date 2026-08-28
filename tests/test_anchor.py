@@ -98,3 +98,16 @@ def test_verify_anchor_rejects_a_head_signed_by_another_key():
     # signed with key A's callable but claiming key B; the signature will not check
     r = anchor.verify_anchor(a, other_pub)
     assert r["head_ok"] is False
+
+
+def test_does_not_prove_carries_the_header_trust_limitation():
+    # The proof-of-work recheck bounds internal consistency and real work: it kills
+    # the zero-work forgery. It does NOT establish that a bundle-carried header sits
+    # on the real Bitcoin chain rather than being a header ground against the
+    # maximum target off-chain. That residual limitation must be stated, or a reader
+    # over-reads the offline check as chain linkage.
+    limits = anchor.does_not_prove()
+    header_note = [s for s in limits if "HEADER_IS_A_REAL_BLOCK" in s]
+    assert header_note, "the header-trust honest null is missing"
+    text = header_note[0].lower()
+    assert "source" in text or "chain" in text

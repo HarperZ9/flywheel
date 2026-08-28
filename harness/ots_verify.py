@@ -5,7 +5,10 @@ timestamp existed before a Bitcoin block, needing nothing but a Python that ship
 with the standard library and the block header carried in the bundle. This module
 is that check. It never trusts the recorded result of anything: it walks the
 commitment operations from the digest we expected, and where the walk reaches a
-Bitcoin attestation it rechecks the block's proof of work itself.
+Bitcoin attestation it rechecks the header's proof of work against a real target.
+That recheck is internal consistency plus real work, not chain linkage: it
+refuses a zero-work forgery, but a bundle-carried header is only as trustworthy
+as its source (see `anchor.does_not_prove`).
 
 The proof format is OpenTimestamps' detached-timestamp serialization: a magic
 header, a version, the operation used to hash the file and that file's digest,
@@ -28,12 +31,26 @@ MAGIC = b"\x00OpenTimestamps\x00\x00Proof\x00\xbf\x89\xe2\xe8\x84\xe8\x92\x94"
 # 8-byte attestation tags from the OpenTimestamps registry.
 BITCOIN_TAG = bytes.fromhex("0588960d73d71901")
 PENDING_TAG = bytes.fromhex("83dfe30d2ef90c8e")
-LITECOIN_TAG = bytes.fromhex("06869a0d73d71b45")
+
+# The op that hashed the file fixes the length of the digest that follows it.
+# sha1 and ripemd160 are 20 bytes, sha256 is 32; reading a fixed 32 corrupts the
+# first two and falsely rejects an otherwise valid non-sha256 proof.
+_FILE_HASH_LEN = {0x02: 20, 0x03: 20, 0x08: 32}
+
+# Bitcoin's maximum target (compact 0x1d00ffff). No mainnet block is mined with a
+# target above this, so a header whose nBits decodes higher carries no work and
+# must be refused. The genesis block's target equals it exactly, so the cap is
+# inclusive.
+POW_LIMIT = 0xFFFF << 208
 
 # Guards against a proof that tries to exhaust memory rather than prove anything.
 MAX_MSG = 4096
 MAX_OPS = 4096
 MAX_RESULT_LEN = 8192
+# Attestations are not operations, so MAX_OPS does not bound them. A proof of
+# thousands of empty attestation edges would otherwise grow the accumulator
+# without limit; real proofs carry a handful.
+MAX_ATTESTATIONS = 256
 # Fork nesting only; a linear operation chain is walked iteratively and so is
 # bounded by MAX_OPS, not by the interpreter's recursion limit. Real proofs fork
 # a handful of levels deep; this is low enough that the guard trips well before
@@ -100,15 +117,29 @@ def _apply_op(tag: int, r: _Reader, msg: bytes) -> bytes:
 
 
 def _pow_ok(header: bytes) -> bool:
-    """A header clears its own target: double-sha256, little-endian, <= target."""
+    """A header clears a real target: double-sha256, little-endian, <= target.
+
+    Faithful to Bitcoin Core's CheckProofOfWork. The compact nBits must be a
+    positive target (no sign bit), must not overflow, and must not exceed the
+    network maximum; only then must the hash fall at or below it. Without the
+    range checks this is a zero-work forgery: an nBits whose target is inflated
+    past 2**256 is satisfied by any hash at all, so a fabricated header would
+    verify against a digest that was never anchored.
+    """
     if len(header) != 80:
         return False
     bits = int.from_bytes(header[72:76], "little")
     exponent, mantissa = bits >> 24, bits & 0x007FFFFF
+    if mantissa and (bits & 0x00800000):  # a negative target: Bitcoin rejects it
+        return False
+    if exponent > 34:  # target would exceed 2**256; also bounds the shift below
+        return False
     if exponent <= 3:
         target = mantissa >> (8 * (3 - exponent))
     else:
         target = mantissa << (8 * (exponent - 3))
+    if not 0 < target <= POW_LIMIT:  # above the network maximum is not real work
+        return False
     digest = hashlib.sha256(hashlib.sha256(header).digest()).digest()
     value = int.from_bytes(digest, "little")
     return 0 < value <= target
@@ -145,6 +176,9 @@ def _check_bitcoin(height: int, msg: bytes, header_provider) -> dict:
 
 def _record_attestation(r: _Reader, msg: bytes, acc: dict) -> None:
     """Read one `0x00` attestation edge and file it under its kind."""
+    acc["_atts"] += 1
+    if acc["_atts"] > MAX_ATTESTATIONS:
+        raise OtsError("too many attestations")
     att_tag = r.bytes(8)
     payload = r.varbytes()
     sub = _Reader(payload)
@@ -207,7 +241,7 @@ def verify(ots_bytes: bytes, expected_digest: bytes, header_provider=None) -> di
     `ok` is True only when the digest binds and at least one Bitcoin attestation
     verifies against a proof-of-work-checked header.
     """
-    acc = {"ok": False, "reason": "", "file_digest": None,
+    acc = {"ok": False, "reason": "", "file_digest": None, "_atts": 0,
            "bitcoin": [], "pending": [], "unknown": [], "_provider": header_provider}
     try:
         r = _Reader(bytes(ots_bytes))
@@ -215,8 +249,11 @@ def verify(ots_bytes: bytes, expected_digest: bytes, header_provider=None) -> di
             acc["reason"] = "malformed: not an OpenTimestamps proof"
             return _finish(acc)
         r.varuint()  # major version; forward-compatible, not pinned here
-        r.bytes(1)  # file-hash op tag; the digest length is fixed at 32 below
-        file_digest = r.bytes(32)
+        hash_op = r.bytes(1)[0]  # the file-hash op fixes the digest length
+        if hash_op not in _FILE_HASH_LEN:
+            acc["reason"] = f"malformed: unsupported file-hash op 0x{hash_op:02x}"
+            return _finish(acc)
+        file_digest = r.bytes(_FILE_HASH_LEN[hash_op])
         acc["file_digest"] = file_digest.hex()
         if file_digest != bytes(expected_digest):
             acc["reason"] = "digest_mismatch: proof does not cover this artifact"
@@ -230,6 +267,7 @@ def verify(ots_bytes: bytes, expected_digest: bytes, header_provider=None) -> di
 
 def _finish(acc: dict) -> dict:
     acc.pop("_provider", None)
+    acc.pop("_atts", None)
     if not acc["reason"]:
         if any(b["verified"] for b in acc["bitcoin"]):
             acc["ok"], acc["reason"] = True, "ok"
@@ -237,6 +275,9 @@ def _finish(acc: dict) -> dict:
             acc["reason"] = acc["bitcoin"][0]["reason"]
         elif acc["pending"]:
             acc["reason"] = "pending: submitted to a calendar, not yet in a block"
+        elif acc["unknown"]:
+            tags = ", ".join(sorted({u["tag"] for u in acc["unknown"]}))
+            acc["reason"] = f"unverifiable_attestation: present but not checkable here ({tags})"
         else:
             acc["reason"] = "no_attestation"
     return acc
