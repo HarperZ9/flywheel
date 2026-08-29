@@ -10,8 +10,9 @@ a random 16-byte nonce is appended and re-hashed, so what is submitted is
 `sha256(digest + nonce)` and the artifact stays private until the operator chooses
 to reveal it. Second, a fresh submission returns a PENDING proof, which names a
 calendar that promised to anchor the digest but is not yet a Bitcoin block. The
-proof only bounds time after `upgrade` replaces that promise with a block
-attestation, typically hours later. `build_ots` is pure and tested; the network
+proof only bounds time after `upgrade_proof` polls the calendar on the pending
+message and splices the block attestation in place of that promise, typically
+hours later. `build_ots` and the splice are pure and tested; the network
 functions are thin and used by the CLI and a live smoke test.
 """
 from __future__ import annotations
@@ -21,7 +22,15 @@ import secrets
 import urllib.error
 import urllib.request
 
+from harness import ots_verify
+
 MAGIC = b"\x00OpenTimestamps\x00\x00Proof\x00\xbf\x89\xe2\xe8\x84\xe8\x92\x94"
+
+# The pending-attestation tag, used to locate the promise this leg replaces with
+# a block. The producer depends on the verifier for the parse (`pending_target`);
+# the verifier never depends on the producer, so the stranger's closure stays
+# standard-library-only.
+PENDING_TAG = bytes.fromhex("83dfe30d2ef90c8e")
 
 # The default Bitcoin calendars. Submitting to more than one means no single
 # calendar's disappearance loses the proof.
@@ -107,13 +116,83 @@ def submit(digest: bytes, *, nonce: bytes = None, calendars=CALENDARS,
     raise SubmitError("no calendar accepted the digest: " + "; ".join(errors))
 
 
-def upgrade(submitted_hex: str, *, calendar: str, timeout: float = 15.0):
-    """Fetch the upgraded timestamp for a submitted digest, or None if not ready.
+def _read_varuint(data: bytes, i: int):
+    """Read a base-128 varuint at offset `i`; return (value, offset_after)."""
+    result = shift = 0
+    while True:
+        b = data[i]
+        i += 1
+        result |= (b & 0x7F) << shift
+        if not b & 0x80:
+            return result, i
+        shift += 7
+        if shift > 63:  # a 64-bit length never needs more; refuse the overlong form
+            raise SubmitError("malformed varuint: overlong encoding")
 
-    A calendar answers `/timestamp/<hex>` with the Bitcoin-attested continuation
-    once the digest is in a block, and 404 while it is still pending.
+
+def pending_target(ots_bytes: bytes, expected_digest: bytes):
+    """The (message, calendar_uri) a pending proof's Bitcoin upgrade is keyed on.
+
+    A calendar folds the submitted digest into an aggregation tree and puts the
+    pending attestation on the tree message, not on the submitted digest. That
+    message is what the calendar's `/timestamp/<hex>` endpoint answers to once the
+    block lands; polling anything else, the submitted digest included, 404s
+    forever. Returns None when the proof carries no pending attestation for this
+    digest, so a confirmed or digest-mismatched proof has nothing to upgrade. The
+    parse is the verifier's, so there is one reader of these bytes, not two.
     """
-    url = f"{calendar}/timestamp/{submitted_hex}"
+    result = ots_verify.verify(bytes(ots_bytes), bytes(expected_digest))
+    pending = result.get("pending") or []
+    if not pending:
+        return None
+    first = pending[0]
+    return bytes.fromhex(first["reached"]), first["uri"]
+
+
+def splice_upgrade(pending_ots: bytes, continuation: bytes) -> bytes:
+    """Replace the terminal pending attestation with a calendar's continuation.
+
+    The continuation runs from the same message the pending attestation sat on
+    (the message `pending_target` returns), so it grafts on exactly where the
+    promise was and keeps every operation that reached that message. Rebuilding
+    the proof from the artifact digest instead would drop those operations and
+    break it. Refuses a proof that does not end in one pending attestation reaching
+    the end of the bytes, rather than corrupt it.
+    """
+    pending_ots = bytes(pending_ots)
+    marker = b"\x00" + PENDING_TAG
+    idx = pending_ots.rfind(marker)
+    if idx < 0:
+        raise SubmitError("no terminal pending attestation to splice onto")
+    i = idx + len(marker)
+    try:
+        length, i = _read_varuint(pending_ots, i)
+    except IndexError:
+        raise SubmitError("malformed pending attestation length")
+    if i + length != len(pending_ots):
+        raise SubmitError("pending attestation is not the terminal edge")
+    return pending_ots[:idx] + bytes(continuation)
+
+
+def _http_get_text(url: str, timeout: float) -> str:
+    req = urllib.request.Request(url, method="GET")
+    req.add_header("User-Agent", _AGENT)
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            return resp.read().decode("ascii", "strict").strip()
+    except (urllib.error.URLError, OSError, UnicodeDecodeError) as e:
+        raise SubmitError(f"{url}: {e}")
+
+
+def _get_timestamp(uri: str, r_hex: str, *, timeout: float = 15.0):
+    """GET a calendar's Bitcoin continuation for message `r_hex`, or None if 404.
+
+    The calendar answers `/timestamp/<message>` with the serialized operations
+    from that message down to the Bitcoin attestation once the block lands, and
+    404 while the message is still pending. `r_hex` is the pending message from
+    `pending_target`, not the submitted digest.
+    """
+    url = f"{uri}/timestamp/{r_hex}"
     req = urllib.request.Request(url, method="GET")
     req.add_header("Accept", _ACCEPT)
     req.add_header("User-Agent", _AGENT)
@@ -126,3 +205,86 @@ def upgrade(submitted_hex: str, *, calendar: str, timeout: float = 15.0):
         raise SubmitError(f"{url}: {e}")
     except (urllib.error.URLError, OSError) as e:
         raise SubmitError(f"{url}: {e}")
+
+
+def upgrade_proof(pending_ots: bytes, expected_digest: bytes, *,
+                  get=None, timeout: float = 15.0):
+    """A pending proof upgraded to carry the Bitcoin block, or None if not ready.
+
+    Polls the calendar on the pending message and, on a hit, splices the
+    continuation in place of the promise (`splice_upgrade`). `get` is the poll,
+    `get(uri, message_hex) -> bytes | None`, injected in tests; the CLI lets it
+    default to the live HTTP fetch. Returns None when the proof has nothing to
+    upgrade or the calendar has not upgraded the message yet.
+
+    Two refusals guard the splice, because it writes over the sole pending proof.
+    A proof carrying more than one pending attestation is refused: `pending_target`
+    reads the first pending but `splice_upgrade` replaces the last, so on a
+    multi-calendar proof the two name different branches and the graft would be
+    unverifiable. And the spliced proof is re-verified before it is returned; a
+    continuation that does not reach a Bitcoin attestation binding this digest (an
+    error page, a calendar bug) is refused rather than returned as a proof that
+    verifies to nothing. Both raise SubmitError, leaving the good pending proof for
+    the caller to keep.
+    """
+    pending_ots = bytes(pending_ots)
+    expected_digest = bytes(expected_digest)
+    before = ots_verify.verify(pending_ots, expected_digest)
+    pending = before.get("pending") or []
+    if not pending:
+        return None
+    if len(pending) > 1:
+        raise SubmitError(
+            "proof carries more than one pending attestation; the single-branch "
+            "splice would graft onto the wrong calendar, so it refuses rather than "
+            "write an unverifiable proof")
+    message = bytes.fromhex(pending[0]["reached"])
+    uri = pending[0]["uri"]
+    if get is None:
+        get = lambda u, r_hex: _get_timestamp(u, r_hex, timeout=timeout)
+    continuation = get(uri, message.hex())
+    if continuation is None:
+        return None
+    spliced = splice_upgrade(pending_ots, continuation)
+    after = ots_verify.verify(spliced, expected_digest)
+    if after.get("file_digest") != expected_digest.hex() or not after.get("bitcoin"):
+        raise SubmitError(
+            "the calendar's continuation did not splice into a proof reaching a "
+            "Bitcoin attestation over this digest; refusing to overwrite the good "
+            "pending proof")
+    return spliced
+
+
+def _fetch_block_header(height: int, *, timeout: float = 15.0) -> bytes:
+    """Fetch a block header by height from a public explorer (blockstream.info).
+
+    Two GETs: the block hash for the height, then that block's raw 80-byte header.
+    The header is not trusted for chain linkage (see `anchor.does_not_prove`); it
+    is the input the offline proof-of-work recheck needs, and a wrong header simply
+    fails that recheck rather than passing a forgery.
+    """
+    base = "https://blockstream.info/api"
+    block_hash = _http_get_text(f"{base}/block-height/{height}", timeout)
+    header_hex = _http_get_text(f"{base}/block/{block_hash}/header", timeout)
+    try:
+        return bytes.fromhex(header_hex)
+    except ValueError as e:
+        raise SubmitError(f"block {height}: explorer returned a non-hex header: {e}")
+
+
+def block_header(height: int, *, fetch=None, timeout: float = 15.0) -> bytes:
+    """The 80-byte header for a block height, stored so the proof verifies offline.
+
+    A confirmed proof commits a block's merkle root; a stranger's verifier needs
+    that block's header to recheck the proof of work and the merkle root with no
+    network. `fetch` is injected as `fetch(height) -> bytes` in tests; the CLI
+    defaults to a public explorer. Refuses a reply that is not exactly 80 bytes
+    rather than store a header that cannot verify.
+    """
+    if fetch is None:
+        fetch = lambda h: _fetch_block_header(h, timeout=timeout)
+    header = fetch(height)
+    if header is None or len(header) != 80:
+        got = 0 if header is None else len(header)
+        raise SubmitError(f"block {height}: expected an 80-byte header, got {got} bytes")
+    return bytes(header)

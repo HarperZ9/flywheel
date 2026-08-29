@@ -21,9 +21,11 @@
     "NOT_PROVES_THE_HEADER_IS_A_REAL_BLOCK: the offline proof-of-work recheck confirms a bundle-carried header is internally consistent and clears a real target, which refuses a zero-work forgery. It does not establish that the header sits on the real Bitcoin chain; a header is only as trustworthy as its source. Cross-check the block hash against an independent chain view for linkage, not just this internal recheck."
   ],
   "ots": {
-    "state": "pending",
+    "state": "confirmed",
     "submitted_hex": "010f51daf6e9af7eed84155d5b4d3180fde69b735b24bc0caa119035d8fb264f",
     "nonce_hex": "75f068450bf8543d45bd2483d9f9ae76",
-    "calendar": "https://alice.btc.calendar.opentimestamps.org"
+    "calendar": "https://alice.btc.calendar.opentimestamps.org",
+    "block_height": 964462,
+    "block_header": "00208c2725a3751751929cfa9d451b01f396041a9b465b58237501000000000000000000ee3eceac24b01c9ae5d358c948929757e46009e64ba7de3f6844c685de363753dcc0916ac13c02177970d503"
   }
 }

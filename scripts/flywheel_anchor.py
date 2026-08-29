@@ -101,22 +101,56 @@ def verify_stamp(anchor_rec: dict, ots_bytes, public_key: bytes, *,
                                 header_provider=header_provider)
 
 
-def apply_upgrade(anchor_rec: dict, digest: bytes, nonce: bytes,
-                  upgraded_reply: bytes) -> tuple[dict, bytes]:
-    """Rebuild the full proof from a calendar's upgraded reply.
+def apply_upgrade(anchor_rec: dict, full_ots: bytes, *,
+                  header: bytes | None = None) -> tuple[dict, bytes]:
+    """Record the state of an already-spliced full proof, storing a verified header.
 
-    The reply continues from the SUBMITTED digest; `build_ots` prepends the path
-    (nonce, sha256) back to the artifact digest, so the result is a standalone
-    proof. The state becomes `confirmed` only when the rebuilt proof actually
-    carries a Bitcoin attestation, `pending` while it does not.
+    `full_ots` is the proof `upgrade_proof` produced, standalone from the artifact
+    digest. The state becomes `confirmed` when it carries a Bitcoin attestation,
+    `pending` while it does not. When a block landed, the height is recorded, and
+    the supplied header is stored only when it actually verifies that block (right
+    proof of work, right merkle root); a header that does not verify is left out
+    rather than persist a value that lies. With the header stored, a stranger
+    rechecks the block offline from the record alone.
     """
-    new_ots = anchor_submit.build_ots(digest, nonce, upgraded_reply)
-    checked = ots_verify.verify(new_ots, digest)
+    digest = bytes.fromhex(anchor_rec["digest_hex"])
+    provider = (lambda h: header) if header is not None else None
+    checked = ots_verify.verify(bytes(full_ots), digest, provider)
     block = dict(anchor_rec.get("ots") or {})
-    block["state"] = "confirmed" if checked["bitcoin"] else "pending"
+    leaves = checked.get("bitcoin") or []
+    if leaves:
+        leaf = leaves[0]
+        block["state"] = "confirmed"
+        block["block_height"] = leaf["height"]
+        if header is not None and leaf["verified"]:
+            block["block_header"] = bytes(header).hex()
+        else:
+            block.pop("block_header", None)
+    else:
+        block["state"] = "pending"
+        block.pop("block_height", None)
+        block.pop("block_header", None)
     rec = dict(anchor_rec)
     rec["ots"] = block
-    return rec, new_ots
+    return rec, bytes(full_ots)
+
+
+def _header_provider(anchor_rec: dict):
+    """A `header_provider(height)` from the record's stored block header, or None.
+
+    A confirmed record carries the block header the proof commits, so `verify` can
+    recheck the proof of work and merkle root with no network. The provider hands
+    that header back only for its own height, so a proof asking for any other
+    height gets nothing. Returns None when no header is stored, which is the honest
+    state for a pending or absent anchor.
+    """
+    block = anchor_rec.get("ots") or {}
+    header_hex = block.get("block_header")
+    if not header_hex:
+        return None
+    header = bytes.fromhex(header_hex)
+    height = block.get("block_height")
+    return lambda h: header if (height is None or h == height) else None
 
 
 def _zenodo_metadata(*, title: str = None, description: str = None,
@@ -294,23 +328,58 @@ def cmd_stamp(args) -> int:
     return 0
 
 
+def _print_confirmed_block(full_ots: bytes, digest: bytes, rec: dict) -> None:
+    """Re-verify a confirmed proof offline from the record's own stored header and
+    print the block it lands in, so a poll re-run and a later `verify` agree."""
+    final = ots_verify.verify(full_ots, digest, _header_provider(rec))
+    leaf = (final.get("bitcoin") or [{}])[0]
+    print(f"  block     : height {leaf.get('height')}  "
+          f"(verified offline: {final['ok']})")
+
+
 def cmd_upgrade(args) -> int:
     rec = json.loads(Path(args.anchor).read_text(encoding="utf-8"))
     block = rec.get("ots") or {}
     if block.get("state") == "absent" or "submitted_hex" not in block:
         print("this anchor has no submitted timestamp to upgrade")
         return 1
-    reply = anchor_submit.upgrade(block["submitted_hex"], calendar=block["calendar"])
-    if reply is None:
-        print("the calendar has not upgraded yet -- still pending, try again later")
-        return 0
+    ots_path = _ots_sibling(args.anchor)
+    if not ots_path.exists():
+        print(f"no pending proof beside the anchor: {ots_path}")
+        return 1
     digest = bytes.fromhex(rec["digest_hex"])
-    nonce = bytes.fromhex(block["nonce_hex"])
-    rec, new_ots = apply_upgrade(rec, digest, nonce, reply)
+    # Already confirmed: a re-run has nothing to poll -- a confirmed proof carries
+    # no pending message. Re-verify offline from the stored header and report, so a
+    # poller re-run agrees with `verify` instead of misreading it as still pending.
+    if block.get("state") == "confirmed":
+        print(f"already confirmed: {ots_path}")
+        _print_confirmed_block(ots_path.read_bytes(), digest, rec)
+        return 0
+    pending_ots = ots_path.read_bytes()
+    # Poll the calendar and splice the block in place of the promise, then fetch the
+    # block header so the confirmed record verifies offline. A transient calendar or
+    # explorer failure, or a continuation that does not improve the proof, leaves
+    # through SubmitError with the good pending .ots on disk untouched.
+    try:
+        full_ots = anchor_submit.upgrade_proof(pending_ots, digest)
+        if full_ots is None:
+            print("the calendar has not upgraded yet -- still pending, try again later")
+            return 0
+        checked = ots_verify.verify(full_ots, digest)
+        leaves = checked.get("bitcoin") or []
+        header = anchor_submit.block_header(leaves[0]["height"]) if leaves else None
+    except anchor_submit.SubmitError as e:
+        print(f"upgrade did not complete: {e}", file=sys.stderr)
+        print(f"  the pending proof is left untouched: {ots_path}", file=sys.stderr)
+        return 3
+    rec, full_ots = apply_upgrade(rec, full_ots, header=header)
     Path(args.anchor).write_text(json.dumps(rec, indent=2), encoding="utf-8")
-    _ots_sibling(args.anchor).write_bytes(new_ots)
-    print(f"proof rebuilt: {_ots_sibling(args.anchor)}  ({len(new_ots)} bytes)")
-    print(f"  state     : {rec['ots']['state']}")
+    ots_path.write_bytes(full_ots)
+    state = rec["ots"]["state"]
+    print(f"proof upgraded: {ots_path}  ({len(full_ots)} bytes)")
+    print(f"  state     : {state}")
+    if state == "confirmed":
+        _print_confirmed_block(full_ots, digest, rec)
     return 0
 
 
@@ -319,7 +388,9 @@ def cmd_verify(args) -> int:
     pub, out_of_band = _load_pub(args.pub, rec)
     ots_path = Path(args.ots) if args.ots else _ots_sibling(args.anchor)
     ots_bytes = ots_path.read_bytes() if ots_path.exists() else None
-    r = verify_stamp(rec, ots_bytes, pub)
+    # A confirmed record carries the block header; supply it so the Bitcoin leg
+    # verifies offline instead of reporting present-but-unproven.
+    r = verify_stamp(rec, ots_bytes, pub, header_provider=_header_provider(rec))
     print(f"head_ok   : {r['head_ok']}  ({r['head_reason']})")
     print(f"digest    : {r['anchor_digest']}")
     ts = r["timestamp"]
