@@ -12,6 +12,7 @@ import 'package:flywheel_desktop/ide/editor_pane.dart';
 import 'package:flywheel_desktop/ide/unsaved_work_guard.dart';
 import 'package:flywheel_desktop/ide/workspace.dart' as workspace;
 import 'package:flywheel_desktop/navigation/app_route.dart';
+import 'package:flywheel_desktop/navigation/destination_catalog.dart';
 import 'package:flywheel_desktop/services/code_draft_store.dart';
 import 'package:flywheel_desktop/shell/view_factory.dart';
 import 'package:flywheel_desktop/theme/flywheel_theme.dart';
@@ -56,11 +57,12 @@ const _types = <DestinationId, String>{
   DestinationId.train: 'TrainView',
   DestinationId.uplift: 'UpliftView',
   DestinationId.family: 'FamilyView',
+  DestinationId.relay: 'RelayView',
   DestinationId.plugins: 'PluginsView',
 };
 
 void main() {
-  testWidgets('factory preserves all thirty-two exact destination mappings',
+  testWidgets('factory preserves all thirty-three exact destination mappings',
       (tester) async {
     final dir = Directory.systemTemp.createTempSync('journey-factory-');
     addTearDown(() => dir.deleteSync(recursive: true));
@@ -102,7 +104,7 @@ void main() {
     await unmount(tester);
   });
 
-  testWidgets('thirty-two labels remain reachable at ordinary scaled viewport',
+  testWidgets('thirty-three labels remain reachable at ordinary scaled viewport',
       (tester) async {
     tester.view.physicalSize = const Size(1440, 900);
     tester.view.devicePixelRatio = 1;
@@ -115,11 +117,9 @@ void main() {
     await tester.pumpWidget(FlywheelApp(
         settings: harness.settings, dependencies: harness.dependencies));
     await tester.pumpAndSettle();
-    for (final id in _types.keys) {
-      final label =
-          id.name.substring(0, 1).toUpperCase() + id.name.substring(1);
-      await scrollRailTo(tester, label);
-      expect(find.text(label), findsOneWidget, reason: id.name);
+    for (final spec in destinationCatalog) {
+      await scrollRailTo(tester, spec.label);
+      expect(find.text(spec.label), findsOneWidget, reason: spec.id.name);
     }
     await tester.tap(find.text('Receipts'));
     await tester.pump();

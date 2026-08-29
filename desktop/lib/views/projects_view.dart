@@ -1,8 +1,3 @@
-// projects_view.dart — the productive home: register project directories,
-// then read each one's monorepo catalog and knowledge graph straight from
-// the index engine, over the verifiable store substrate. This is where work
-// starts — a project, its structure, its provenance.
-
 import 'package:flutter/material.dart';
 
 import '../client/gateway_client.dart';
@@ -23,9 +18,11 @@ class _ProjectsViewState extends State<ProjectsView> {
   final _root = TextEditingController();
   List<Map<String, dynamic>> _projects = [];
   Map<String, dynamic>? _store;
+  List<Map<String, dynamic>>? _auditTail;
   String? _selected;
   Map<String, dynamic>? _index;
   bool _indexing = false;
+  bool _auditOpen = false;
   String? _error;
 
   @override
@@ -76,6 +73,26 @@ class _ProjectsViewState extends State<ProjectsView> {
       _error = null;
       _load();
     }
+  }
+
+  Future<void> _loadAudit() async {
+    try {
+      final r = await widget.client.storeAudit(n: 50);
+      if (!mounted) return;
+      final entries = (r['entries'] is List)
+          ? (r['entries'] as List)
+              .whereType<Map<String, dynamic>>()
+              .toList()
+          : <Map<String, dynamic>>[];
+      setState(() => _auditTail = entries);
+    } catch (e) {
+      if (mounted) setState(() => _error = '$e');
+    }
+  }
+
+  void _toggleAudit() {
+    setState(() => _auditOpen = !_auditOpen);
+    if (_auditOpen && _auditTail == null) _loadAudit();
   }
 
   Future<void> _openIndex(String root) async {
@@ -151,8 +168,6 @@ class _ProjectsViewState extends State<ProjectsView> {
               onVerify: () async {
                 final v = await widget.client.storeVerify();
                 if (mounted) {
-                  // the gateway nests the two walks: chain (ledger links)
-                  // and records (content re-hash); read both defensively.
                   final chain =
                       v['chain'] is Map ? v['chain'] as Map : const {};
                   final records =
@@ -165,8 +180,61 @@ class _ProjectsViewState extends State<ProjectsView> {
                           '${chain['reason'] ?? 'a record no longer matches its hash'}');
                 }
               }),
+          const SizedBox(height: FwLayout.s3),
+          _auditSection(t),
         ],
       ],
+    );
+  }
+
+  Widget _auditSection(FwTokens t) {
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      InkWell(
+        onTap: _toggleAudit,
+        child: Row(children: [
+          Icon(_auditOpen ? Icons.expand_less : Icons.expand_more,
+              size: 16, color: t.inkFaint),
+          const SizedBox(width: FwLayout.s1),
+          Text('Audit trail',
+              style: TextStyle(
+                  fontSize: 12, fontWeight: FontWeight.w600, color: t.ink)),
+          const Spacer(),
+          if (_auditTail != null)
+            Text('${_auditTail!.length} entries',
+                style: fwMono(t, size: 10.5, color: t.inkFaint)),
+        ]),
+      ),
+      if (_auditOpen) ...[
+        const SizedBox(height: FwLayout.s2),
+        if (_auditTail == null)
+          const Center(child: CircularProgressIndicator(strokeWidth: 2))
+        else if (_auditTail!.isEmpty)
+          const HonestNull('No audit entries recorded yet.')
+        else
+          for (final entry in _auditTail!) _auditRow(t, entry),
+      ],
+    ]);
+  }
+
+  Widget _auditRow(FwTokens t, Map<String, dynamic> entry) {
+    final kind = '${entry['kind'] ?? ''}';
+    final hash = '${entry['hash'] ?? ''}';
+    final ts = '${entry['ts'] ?? ''}';
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: FwLayout.s1),
+      decoration: BoxDecoration(
+          border: Border(bottom: BorderSide(color: t.hairline))),
+      child: Row(children: [
+        VerdictDot('verified', size: 6),
+        const SizedBox(width: FwLayout.s2),
+        Text(kind, style: fwMono(t, size: 11, color: t.ink)),
+        const Spacer(),
+        if (hash.isNotEmpty)
+          HashText('', hash, keep: 12),
+        const SizedBox(width: FwLayout.s3),
+        if (ts.isNotEmpty)
+          Text(ts, style: fwMono(t, size: 10, color: t.inkFaint)),
+      ]),
     );
   }
 

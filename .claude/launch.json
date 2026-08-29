@@ -6,6 +6,12 @@
       "runtimeExecutable": "python",
       "runtimeArgs": ["-m", "http.server", "8791"],
       "port": 8791
+    },
+    {
+      "name": "flywheel-app",
+      "runtimeExecutable": "C:\\flutter\\bin\\flutter.bat",
+      "runtimeArgs": ["run", "-d", "chrome", "--web-port", "8792"],
+      "port": 8792
     }
   ]
 }
