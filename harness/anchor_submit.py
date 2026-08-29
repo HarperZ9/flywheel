@@ -208,24 +208,26 @@ def _get_timestamp(uri: str, r_hex: str, *, timeout: float = 15.0):
 
 
 def upgrade_proof(pending_ots: bytes, expected_digest: bytes, *,
-                  get=None, timeout: float = 15.0):
+                  get=None, fetch_header=None, timeout: float = 15.0):
     """A pending proof upgraded to carry the Bitcoin block, or None if not ready.
 
     Polls the calendar on the pending message and, on a hit, splices the
     continuation in place of the promise (`splice_upgrade`). `get` is the poll,
     `get(uri, message_hex) -> bytes | None`, injected in tests; the CLI lets it
-    default to the live HTTP fetch. Returns None when the proof has nothing to
-    upgrade or the calendar has not upgraded the message yet.
+    default to the live HTTP fetch. `fetch_header(height) -> bytes` supplies the
+    block header the re-verify checks, injected in tests and defaulting to the
+    live explorer. Returns None when the proof has nothing to upgrade or the
+    calendar has not upgraded the message yet.
 
     Two refusals guard the splice, because it writes over the sole pending proof.
     A proof carrying more than one pending attestation is refused: `pending_target`
     reads the first pending but `splice_upgrade` replaces the last, so on a
     multi-calendar proof the two name different branches and the graft would be
-    unverifiable. And the spliced proof is re-verified before it is returned; a
-    continuation that does not reach a Bitcoin attestation binding this digest (an
-    error page, a calendar bug) is refused rather than returned as a proof that
-    verifies to nothing. Both raise SubmitError, leaving the good pending proof for
-    the caller to keep.
+    unverifiable. And the spliced proof is re-verified against the real block
+    header before it is returned; a continuation that does not verify to a
+    proof-of-work-checked Bitcoin attestation over this digest (an error page, a
+    forged block, a calendar bug) is refused, not returned as a proof that verifies
+    to nothing. Both raise SubmitError, leaving the good pending proof to keep.
     """
     pending_ots = bytes(pending_ots)
     expected_digest = bytes(expected_digest)
@@ -242,14 +244,21 @@ def upgrade_proof(pending_ots: bytes, expected_digest: bytes, *,
     uri = pending[0]["uri"]
     if get is None:
         get = lambda u, r_hex: _get_timestamp(u, r_hex, timeout=timeout)
+    if fetch_header is None:
+        fetch_header = lambda h: block_header(h, timeout=timeout)
     continuation = get(uri, message.hex())
     if continuation is None:
         return None
     spliced = splice_upgrade(pending_ots, continuation)
-    after = ots_verify.verify(spliced, expected_digest)
-    if after.get("file_digest") != expected_digest.hex() or not after.get("bitcoin"):
+    # Re-verify WITH the block header the spliced proof names, not merely that a
+    # Bitcoin edge parsed. Header-less, verify() records a bitcoin leaf as
+    # present-but-unproven, so a forged continuation clears a non-emptiness check
+    # and overwrites the good pending proof. Require the proof-of-work-checked
+    # verdict, so only a genuine upgrade is returned.
+    after = ots_verify.verify(spliced, expected_digest, fetch_header)
+    if not after.get("ok"):
         raise SubmitError(
-            "the calendar's continuation did not splice into a proof reaching a "
+            "the calendar's continuation did not verify to a proof-of-work-checked "
             "Bitcoin attestation over this digest; refusing to overwrite the good "
             "pending proof")
     return spliced
