@@ -97,10 +97,19 @@ def _parse(status: int, body: bytes, *, ok: set, ctx: str) -> dict:
     if not body:
         return {}
     try:
-        return json.loads(body)
+        result = json.loads(body)
     except (json.JSONDecodeError, ValueError):
         raise DepositError(
             f"{ctx}: non-JSON body (HTTP {status}) {_snippet(body)}".rstrip())
+    if not isinstance(result, dict):
+        # Valid JSON, but not the object every leg's contract assumes. Without this
+        # a bare true/null/number/string/array slips through and the first
+        # record.get(...) downstream raises AttributeError, punching through the
+        # module's DepositError contract.
+        raise DepositError(
+            f"{ctx}: reply body is not a JSON object (HTTP {status}) "
+            f"{_snippet(body)}".rstrip())
+    return result
 
 
 def create(request, *, token: str, sandbox: bool = False) -> dict:

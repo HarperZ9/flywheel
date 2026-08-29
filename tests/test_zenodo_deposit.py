@@ -267,6 +267,23 @@ def test_a_create_reply_missing_bucket_still_carries_the_created_deposition_id()
     assert len(ft.calls) == 1
 
 
+def test_a_non_object_json_create_reply_raises_deposit_error_not_attribute_error():
+    import pytest
+    # A 200 whose body is valid JSON but not an object -- a bare `true`, `null`,
+    # number, string, or array -- passes json.loads, so `_parse` returned it
+    # unguarded. The next `record.get("links")` in `deposit` then raises
+    # AttributeError, which is not the DepositError the module's whole error
+    # contract promises. (A non-JSON body already fails closed one branch over;
+    # this is the valid-JSON-wrong-shape sibling, and the isinstance guard rejects
+    # every non-object scalar and array uniformly.)
+    ft = FakeTransport([(200, b"true")])  # create reply: valid JSON, not an object
+    with pytest.raises(zenodo_deposit.DepositError):
+        zenodo_deposit.deposit(ft, token=TOKEN, files=[("anchor.json", b'{"a":1}')],
+                               metadata=_md(), sandbox=True, publish=False)
+    # The guard fires inside create, before any upload, so only create was called.
+    assert len(ft.calls) == 1
+
+
 def test_publish_with_a_create_reply_missing_the_publish_link_refuses_before_posting():
     import pytest
     # publish=True but the create reply omits the publish link (its own distinct
