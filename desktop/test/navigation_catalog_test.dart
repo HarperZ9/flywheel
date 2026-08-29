@@ -1,4 +1,4 @@
-// The destination catalog: exactly 30 stable IDs in five groups. Labels
+// The destination catalog: exactly 33 stable IDs in five groups. Labels
 // may be renamed; identities never move. This test freezes the contract.
 import 'package:flutter_test/flutter_test.dart';
 
@@ -7,9 +7,9 @@ import 'package:flywheel_desktop/navigation/destination_catalog.dart';
 
 void main() {
   test('the catalog holds exactly 30 unique destinations', () {
-    expect(destinationCatalog.length, 32);
+    expect(destinationCatalog.length, 33);
     final ids = destinationCatalog.map((d) => d.id).toSet();
-    expect(ids.length, 32);
+    expect(ids.length, 33);
   });
 
   test('the five groups carry the exact planned membership and order', () {
@@ -32,7 +32,7 @@ void main() {
             .where((d) => group(d.id) == 'code')
             .map((d) => d.id.name)
             .toList(),
-        ['code', 'eval', 'audit', 'lint']);
+        ['code', 'eval', 'audit', 'lint', 'relay']);
     expect(
         destinationCatalog
             .where((d) => group(d.id) == 'evidence')

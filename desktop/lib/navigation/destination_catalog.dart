@@ -81,6 +81,8 @@ const destinationCatalog = <DestinationSpec>[
       abbr: 'IS', group: DestinationGroup.advanced),
   DestinationSpec(DestinationId.lanes, 'Lanes',
       abbr: 'LN', group: DestinationGroup.advanced),
+  DestinationSpec(DestinationId.relay, 'Relay',
+      abbr: 'RL', group: DestinationGroup.code),
   DestinationSpec(DestinationId.train, 'Train',
       abbr: 'TR', group: DestinationGroup.advanced),
   DestinationSpec(DestinationId.uplift, 'Uplift',

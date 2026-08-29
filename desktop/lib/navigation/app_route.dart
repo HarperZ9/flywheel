@@ -35,6 +35,7 @@ enum DestinationId {
   lessons,
   instruments,
   lanes,
+  relay,
   train,
   uplift,
   family,

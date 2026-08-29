@@ -26,6 +26,7 @@ import '../views/graph_view.dart';
 import '../views/instruments_view.dart';
 import '../views/journey_view.dart';
 import '../views/lanes_view.dart';
+import '../views/relay_view.dart';
 import '../views/lessons_view.dart';
 import '../views/lint_view.dart';
 import '../views/memory_view.dart';
@@ -128,6 +129,7 @@ Widget? _code(DestinationId id, DestinationInputs i) => switch (id) {
       DestinationId.eval => EvalView(client: i.client, alive: i.alive),
       DestinationId.audit => AuditView(client: i.client, alive: i.alive),
       DestinationId.lint => LintView(client: i.client, alive: i.alive),
+      DestinationId.relay => RelayView(client: i.client, alive: i.alive),
       _ => null,
     };
 

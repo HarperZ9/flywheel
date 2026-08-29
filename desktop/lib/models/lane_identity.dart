@@ -70,4 +70,13 @@ const Map<String, LaneIdentity> laneIdentities = {
         'The oracle decides, the model proposes. No receipt, no accept.',
     surface: 'training and benchmark receipts',
   ),
+  'relay': LaneIdentity(
+    title: 'Relay',
+    identity:
+        'A zero-dependency coding agent with model failover and a '
+        'hash-chained session ledger. Runs on any endpoint (local, '
+        'Ollama, hosted), with gated tools and re-verifiable receipts. '
+        'Serves a remote MCP endpoint for phone access via connectors.',
+    surface: 'agent runs + remote MCP',
+  ),
 };
