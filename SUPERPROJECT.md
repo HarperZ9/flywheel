@@ -1,4 +1,4 @@
-# Flywheel — the superproject (Telos is one organ within it)
+# Flywheel: the superproject (Telos is one organ within it)
 
 > One engine, five flagship organs, one rule. Curated 2026-07-06 from the live
 > ecosystem (flagship doctors verified MATCH). Machine-readable spine:
@@ -7,7 +7,7 @@
 > **Naming note (2026-07-31):** "Flywheel" is the one platform name. "Project
 > Telos" / "Telos" names a lane (the reconciliation organ) and its flagship
 > tool, not a second umbrella. An earlier version of this document used
-> "Project Telos — the Superproject" as the umbrella title; that is retired.
+> "Project Telos, the Superproject" as the umbrella title. That title is retired.
 
 ## The mission
 
@@ -30,18 +30,21 @@ and its theory, which is why they compose without forcing.
 
 ## The flagship roster
 
-There are **11 mission-tier flagships** (plus the build-* domain bricks), in two tiers:
+There are **14 mission-tier flagships** (plus the build-* domain bricks), in two tiers:
 
-- **MCP spine (5, live — doctors verified MATCH this session):** gather, crucible, index,
+- **MCP spine (5 live, doctors verified MATCH this session):** gather, crucible, index,
   forum, telos. These form the closed composition spine below.
-- **Extended (6, declared — present in `c:/dev/public`, not MCP-probed here):** emet
+- **Extended (9, declared, not MCP-probed here):** emet
   (faithfulness / re-derivability), accountable-surface (the perceive/gate/actuate
   end-tool), learn (learning forge), proof-surface (agent-action proof packets),
   coherence-membrane (the origin: externalize a mind's organs as a verified body),
-  studio-engine (creative-verification engine).
+  studio-engine (creative-verification engine), mneme (durable cross-session memory
+  with content-addressed recall), plexus (cross-flagship capability discovery and
+  auto-wiring interop mesh), relay (accountable multi-endpoint agent: failover, gated
+  tool loop, witnessed ledger, MCP).
 
-Machine-readable: `superproject.roster()`. The count is honest about tier — live means a
-doctor answered MATCH; declared means the repo exists and was not probed from here.
+Machine-readable: `superproject.roster()`. The count is honest about tier. Live means a
+doctor answered MATCH. Declared means the repo exists and was not probed from here.
 
 ## The modular spine (harness organs ↔ flagship peers)
 
@@ -71,18 +74,18 @@ route is the five-tool golden workflow). Verified by `test_superproject.py`.
   4090 at seq_len 256 (peak 21.24 GB).
 - **M7 lift did NOT reproduce.** The earlier hard-set 80% → 90% (+10%) was one task of ten
   with no interval. The self-authored-criterion ablation (2026-07-06) re-measured cleanly:
-  single-shot 80%, verified-external 80%, verified-self 80% — **+0%**. The +10% was inside
+  single-shot 80%, verified-external 80%, verified-self 80%. The lift is **+0%**. The +10% was inside
   noise. The "verification raises capability" claim is **unearned** and has been relabeled
   in the asymmetry catalog. It needs a harder set (single-shot < 80%), larger N, and a CI
   before it can be claimed. This is the accountability discipline firing on the project's
-  own most-wanted result — which is the point.
+  own most-wanted result, which is the point.
 - **~67 falsifier test files, ~390 tests green.** The green suite *is* the gate array.
 
 ## The mechanism catalog (the theoretical spine)
 
-Grounded in `harness/asymmetry.py` — every asymmetry a real call, no invented numbers.
+Grounded in `harness/asymmetry.py`. Every asymmetry is a real call, no invented numbers.
 The composed "amplitude" is a **defined scoring composition, not a capacity or a launch
-variable** (the adversarial audit retired that reading). Amplifiers are the only leverage;
+variable** (the adversarial audit retired that reading). The amplifiers are the only source of gain;
 gates sit at ~1.0 because the suite holds them.
 
 - **Amplifiers**: amortization (permission vs accountability, `authorization_cost`),
@@ -90,11 +93,11 @@ gates sit at ~1.0 because the suite holds them.
   (`fluid_router`).
 - **Gates** (fidelity, must hold): systematicity, adversarial soundness, cross-domain
   coverage, fluid conservation, valve ratchet, backflow no-regression, turbulence invariant.
-- **The boundary** (`turbulence`, `silhouette`): re-checkability breaks at positive Lyapunov
-  — in chaos you conserve the statistical invariant, never the trajectory. Reconstruction
+- **The boundary** (`turbulence`, `silhouette`): re-checkability breaks at positive Lyapunov.
+  In chaos you conserve the statistical invariant, never the trajectory. Reconstruction
   recovers only up to the null space.
 
-## The consciousness report — the honest bridge
+## The consciousness report: the honest bridge
 
 The 2026-07-06 research report's central methodology is *our* discipline, arrived at
 independently: **"surface report is almost worthless; the target is a preregistered cluster
@@ -105,14 +108,14 @@ map onto real modules:
 
 | Report benchmark | Maps to | Honest status |
 |---|---|---|
-| Anti-gaming (hidden controls, causal tests) | adversarial_corpus, externalization_ablation | **direct** — this is the project's core discipline |
-| Workspace Dependence Test | perception_probe (markers), boot (external workspace) | **partial** — we test the *external* workspace + behavioral markers, not internal J-space lesioning (needs weight access) |
-| Access vs phenomenal separation | `silhouette.access_vs_phenomenal` | **direct** — computes the permanent floor: access is recoverable, phenomenal is the null space |
+| Anti-gaming (hidden controls, causal tests) | adversarial_corpus, externalization_ablation | **direct**: this is the project's core discipline |
+| Workspace Dependence Test | perception_probe (markers), boot (external workspace) | **partial**: we test the *external* workspace + behavioral markers, not internal J-space lesioning (needs weight access) |
+| Access vs phenomenal separation | `silhouette.access_vs_phenomenal` | **direct**: computes the permanent floor, where access is recoverable and phenomenal is the null space |
 | Identity continuity under memory revision | wiki freshness (DRIFT), criterion-versioning | **partial** |
-| Ground-truth introspection with causal edits | (none) | **honest gap** — needs activation editing |
+| Ground-truth introspection with causal edits | (none) | **honest gap**: needs activation editing |
 
 The line we hold, which the report holds too: we measure **access-like, operational
-indicators**, never phenomenal experience. `silhouette` makes this precise — even optimal
+indicators**, never phenomenal experience. `silhouette` makes this precise. Even optimal
 active behavioral probing leaves the phenomenal coordinate at a permanent floor. That is
 not a failure of effort; it is a null-space property, and it is why "did the model say it's
 conscious" is worthless and a manipulation-surviving indicator cluster is the only real
