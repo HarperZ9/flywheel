@@ -1,0 +1,38 @@
+{
+  "digest_hex": "728c15a4ff1567ca5de929f89a71bc8c88a48f74b092fc9a2d4a309afed2c015",
+  "expect": "728c15a4ff1567ca5de929f89a71bc8c88a48f74b092fc9a2d4a309afed2c015",
+  "pending": [
+    {
+      "calendar": "https://alice.btc.calendar.opentimestamps.org",
+      "submitted_hex": "010f51daf6e9af7eed84155d5b4d3180fde69b735b24bc0caa119035d8fb264f",
+      "nonce_hex": "75f068450bf8543d45bd2483d9f9ae76",
+      "state": "confirmed",
+      "proof_file": "head-0008-anchor.json.ots",
+      "block_height": 964462,
+      "block_header": "00208c2725a3751751929cfa9d451b01f396041a9b465b58237501000000000000000000ee3eceac24b01c9ae5d358c948929757e46009e64ba7de3f6844c685de363753dcc0916ac13c02177970d503"
+    },
+    {
+      "calendar": "https://bob.btc.calendar.opentimestamps.org",
+      "submitted_hex": "64b62e67429319316e960feb7d8d999ca3fadfd3e6ac153438d70bc029ff59c3",
+      "nonce_hex": "97eb950c2fde8d66a499742db36c6831",
+      "state": "confirmed",
+      "proof_file": "head-0008-anchor.bob.ots",
+      "block_height": 964502,
+      "block_header": "0000ff3f4880d43bb5350c204d4fc57c328aea58f16fad70999900000000000000000000dcb98dbe9c1262dd29894efa98a44df12532f9b9b1cc58555367cd71f8db4f68f72a926ac13c02175478f0ee"
+    },
+    {
+      "calendar": "https://finney.calendar.eternitywall.com",
+      "submitted_hex": "3604a30d1d4d24ef96c58bcaae01aad493345d43e7aef983123691b7c16be56f",
+      "nonce_hex": "2de6f20348ef42fb853611309e3140b5",
+      "state": "confirmed",
+      "proof_file": "head-0008-anchor.finney.ots",
+      "block_height": 964513,
+      "block_header": "0000ff3fc3b65d968ec6f7fc14d305555aa41d941eec004aa5270000000000000000000045f42fb40abbbe3ccc21d01b81d95e23a28aece06dfc1e8d6fd34bd77f74837ccc40926ac13c0217e1332848"
+    }
+  ],
+  "confirmed_by": [
+    "https://alice.btc.calendar.opentimestamps.org",
+    "https://bob.btc.calendar.opentimestamps.org",
+    "https://finney.calendar.eternitywall.com"
+  ]
+}
