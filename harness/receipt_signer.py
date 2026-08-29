@@ -21,6 +21,7 @@ path `ssh-keygen` was told to use.
 from __future__ import annotations
 
 import base64
+import binascii
 import hashlib
 import os
 import subprocess
@@ -83,7 +84,14 @@ def _raw_public_key_from_openssh(pub_path: Path) -> bytes:
     parts = pub_path.read_text(encoding="utf-8").split()
     if len(parts) < 2 or parts[0] != "ssh-ed25519":
         raise SigningKeyError(f"{pub_path} is not an ssh-ed25519 public key")
-    blob = base64.b64decode(parts[1])
+    try:
+        blob = base64.b64decode(parts[1])
+    except (binascii.Error, ValueError) as e:
+        # A corrupt blob raises binascii.Error (a ValueError subclass). This
+        # function is a caller-supplied trust anchor on the verify path, so a bad
+        # `.pub` must be a named refusal, not an uncaught crash.
+        raise SigningKeyError(
+            f"{pub_path} has a corrupt ssh-ed25519 key blob: {e}") from e
     # wire = s("ssh-ed25519") s(pubkey); the pubkey is the last length-prefixed
     # string and is 32 bytes for ed25519.
     name_len = int.from_bytes(blob[:4], "big")

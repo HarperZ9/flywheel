@@ -95,3 +95,16 @@ def test_refuses_to_overwrite_an_existing_key(tmp_path):
     with pytest.raises(receipt_signer.SigningKeyError):
         receipt_signer.generate_signing_key(
             tmp_path / "receipt-signing-ed25519", comment="again@flywheel")
+
+
+def test_a_corrupt_base64_pub_is_a_named_refusal_not_a_binascii_error(tmp_path):
+    # A stranger passes a `.pub` as the trust anchor on the verify path
+    # (scripts/flywheel_anchor.py _load_pub -> _raw_public_key_from_openssh). If
+    # the first token is "ssh-ed25519" but the base64 blob is corrupt,
+    # base64.b64decode raises binascii.Error, which is not the SigningKeyError
+    # this module contracts for a bad key. Five 'A's is a base64 length of
+    # 1-mod-4, the one length b64decode always rejects.
+    pub = tmp_path / "corrupt.pub"
+    pub.write_text("ssh-ed25519 AAAAA corrupt@flywheel\n", encoding="utf-8")
+    with pytest.raises(receipt_signer.SigningKeyError):
+        receipt_signer._raw_public_key_from_openssh(pub)
