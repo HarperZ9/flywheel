@@ -265,3 +265,23 @@ def test_a_create_reply_missing_bucket_still_carries_the_created_deposition_id()
     assert ei.value.self_url == self_url
     # The guard fires before any upload, so only the create call was made.
     assert len(ft.calls) == 1
+
+
+def test_publish_with_a_create_reply_missing_the_publish_link_refuses_before_posting():
+    import pytest
+    # publish=True but the create reply omits the publish link (its own distinct
+    # guard, separate from the bucket/self one). The deposit runs create, upload,
+    # and set_metadata, then refuses rather than POST an unknown publish action;
+    # no publish call is made and the draft id is carried for cleanup.
+    created = _created()
+    created["links"].pop("publish")
+    ft = FakeTransport([
+        (201, created),                  # create -- bucket + self, no publish link
+        (201, {"key": "anchor.json"}),   # upload
+        (200, _created()),               # set metadata
+    ])
+    with pytest.raises(zenodo_deposit.DepositError, match="publish link") as ei:
+        zenodo_deposit.deposit(ft, token=TOKEN, files=[("anchor.json", b'{"a":1}')],
+                               metadata=_md(), sandbox=True, publish=True)
+    assert ei.value.deposition_id == 42
+    assert all("actions/publish" not in u for (_m, u, _h, _b) in ft.calls)
