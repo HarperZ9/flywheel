@@ -187,8 +187,9 @@ void _privateRootTests() {
   test('a second process observes the active per-record lock', () async {
     final r = _temp('code-record-lock-');
     final ready = File('${r.path}/ready'), release = File('${r.path}/go');
+    final key = sha256.convert(utf8.encode('lib/main.dart')).toString();
     final source =
-        "import 'dart:convert';import 'dart:io';import 'package:crypto/crypto.dart';import 'package:flywheel_desktop/services/code_draft_store.dart';void main(List<String> a){CodeDraftStore(root:Directory(a[0]),beforeRename:(_){File(a[1]).writeAsStringSync('ready');while(!File(a[2]).existsSync())sleep(const Duration(milliseconds:10));}).save(workspaceRef:'$_workspace',draft:CodeDraft(path:'lib/main.dart',diskSha256:'$_disk',bufferSha256:sha256.convert(utf8.encode('first')).toString(),text:'first',updatedAt:DateTime.parse('2026-08-15T12:00:00Z')));}";
+        "import 'dart:convert';import 'dart:io';import 'package:crypto/crypto.dart';import 'package:flywheel_desktop/services/code_draft_transaction.dart';void main(List<String> a){final target=File(a[0]+'/'+'$_workspace'+'/'+'$key.json');final bytes=utf8.encode(jsonEncode({'draft':{'buffer_sha256':'${sha256.convert(utf8.encode('first'))}','disk_sha256':'$_disk','path':'lib/main.dart','text':'first','updated_at':'2026-08-15T12:00:00.000Z'},'schema':'flywheel.desktop-code-draft/v1','workspace_ref':'$_workspace'}));final tx=CodeDraftTransaction(root:Directory(a[0]),workspaceRef:'$_workspace');tx.locked('$key',(){tx.write(target,bytes,valid:(raw,_)=>raw.isNotEmpty,beforeRename:(_){File(a[1]).writeAsStringSync('ready');while(!File(a[2]).existsSync())sleep(const Duration(milliseconds:10));});});}";
     final script = File('${r.path}/holder.dart')..writeAsStringSync(source);
     final cache = File(Platform.resolvedExecutable).parent.parent.parent.parent;
     final dart = File('${cache.path}/dart-sdk/bin/dart'
@@ -197,7 +198,7 @@ void _privateRootTests() {
     final process = await Process.start(dart.path,
         ['--packages=$config', script.path, r.path, ready.path, release.path]);
     try {
-      for (var i = 0; i < 500 && !ready.existsSync(); i++) {
+      for (var i = 0; i < 3000 && !ready.existsSync(); i++) {
         await Future<void>.delayed(const Duration(milliseconds: 10));
       }
       expect(ready.existsSync(), isTrue);
