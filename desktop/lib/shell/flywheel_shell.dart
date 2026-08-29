@@ -1,111 +1,35 @@
-﻿// flywheel_shell.dart -- the desktop shell: one dependency graph, typed
-// navigation over the frozen 30-destination catalog, the command palette,
-// and the status coordinator. Views render; this composes and routes.
 import 'dart:async';
 import 'dart:io' show Platform;
 import 'dart:ui' show AppExitResponse;
 
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 
-import '../client/gateway_auth.dart';
-import '../client/gateway_client.dart';
 import '../client/gateway_grants.dart';
 import '../client/journey_api.dart';
 import '../controllers/gateway_operation_controller.dart';
-import '../controllers/journey_controller.dart';
 import '../navigation/app_route.dart';
 import '../navigation/destination_catalog.dart';
 import '../navigation/navigation_controller.dart';
 import '../navigation/view_cache.dart';
-import '../services/code_draft_store.dart';
-import '../services/chat_draft_store.dart';
-import '../services/gateway_process.dart';
-import '../services/gateway_status.dart';
-import '../services/connection_config.dart';
-import '../services/journey_draft_store.dart';
-import '../services/journey_session_store.dart';
 import '../services/settings.dart';
-import '../ide/code_buffer_session.dart';
 import '../ide/unsaved_work_guard.dart';
-import '../widgets/appearance_panel.dart';
-import '../assistant/assistant_executor.dart';
 import '../assistant/speech_voice.dart';
-import '../assistant/url_device_sink.dart';
 import '../assistant/voice.dart';
-import '../widgets/assistant_panel.dart';
+import '../widgets/appearance_panel.dart';
 import '../widgets/command_palette.dart';
 import '../widgets/connection_panel.dart';
 import '../widgets/flywheel_nav.dart';
-import '../theme/flywheel_theme.dart';
-import '../widgets/fw.dart';
 import '../widgets/mobile_nav_bar.dart';
 import '../widgets/sessions_panel.dart';
 import '../widgets/operation_grant_sheet.dart';
 import '../widgets/shell_rail.dart';
-import '../models/recovery_item.dart';
-import '../services/recovery_catalog.dart';
-import '../services/recovery_sources.dart';
-import '../views/recovery_center.dart';
 import '../widgets/status_bar.dart';
+import 'flywheel_dependencies.dart';
 import 'gateway_status_coordinator.dart';
+import 'shell_chrome.dart';
 import 'view_factory.dart';
 
-final class FlywheelDependencies {
-  const FlywheelDependencies({
-    required this.client,
-    required this.gateway,
-    required this.journey,
-    required this.code,
-    this.closePrompt,
-    this.status,
-  });
-
-  factory FlywheelDependencies.production() {
-    // The paired connection decides where the one app talks: loopback + the local
-    // gateway.token by default (desktop unchanged), or a remote gateway URL + a
-    // paired token when this device reaches another machine's engine.
-    final conn = ConnectionStore().load();
-    final client = GatewayClient(
-      baseUrl: conn.effectiveBaseUrl,
-      httpClient: AuthedClient(http.Client(), readToken: conn.tokenSource),
-    );
-    return FlywheelDependencies(
-      client: client,
-      gateway: GatewayProcess(),
-      code: CodeBufferSession(draftStore: CodeDraftStore()),
-      journey: JourneyController(
-        api: GatewayJourneyApi(client),
-        draftStore: JourneyDraftStore(),
-        sessionStore: JourneySessionStore(),
-      ),
-      status: GatewayStatusService.production(
-        baseUrl: client.baseUrl,
-        readToken: conn.tokenSource,
-        fallbackAlive: () => client.isAlive(),
-      ),
-    );
-  }
-
-  final GatewayClient client;
-  final GatewayProcess gateway;
-  final JourneyController journey;
-  final CodeBufferSession code;
-  final CloseChoicePrompt? closePrompt;
-
-  /// The typed connection probe. Null in hand-built test dependencies,
-  /// where the shell falls back to the client's own liveness check; the
-  /// typed route is covered by connection_state_test and the engine's
-  /// desktop-status route tests.
-  final GatewayStatusService? status;
-
-  void dispose() {
-    journey.dispose();
-    code.dispose();
-    client.close();
-    gateway.stopIfOwned();
-  }
-}
+export 'flywheel_dependencies.dart';
 
 class FlywheelShell extends StatefulWidget {
   const FlywheelShell({
@@ -139,44 +63,11 @@ class _FlywheelShellState extends State<FlywheelShell> {
   final ViewCache _views = ViewCache();
   Object? _pendingArgument;
 
-  // Voice is a phone capability: a real speech engine on android and ios, a silent
-  // stub on desktop so the assistant stays typed-only there. The panel shows a
-  // microphone only where a real engine is present.
   final bool _mobile = Platform.isAndroid || Platform.isIOS;
   late final VoiceInput _voiceInput =
       _mobile ? SpeechVoiceInput() : const SilentVoice();
   late final VoiceOutput _voiceOutput =
       _mobile ? FlutterTtsVoiceOutput() : const SilentVoice();
-
-  /// The recovery center opens as an overlay from the shell footer; it is
-  /// deliberately not a thirty-first destination.
-  void _openRecoveryCenter() {
-    final code = _dependencies.code;
-    showDialog<void>(
-      context: context,
-      builder: (dialogContext) => Dialog(
-        insetPadding: const EdgeInsets.all(32),
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 720),
-          child: Scaffold(
-            body: RecoveryCenter(
-              catalog: RecoveryCatalog([
-                ChatRecoverySource(ChatDraftStore()),
-                CodeRecoverySource(code),
-                JourneyRecoverySource(JourneyDraftStore(),
-                    acknowledgement: JourneyDraftAcknowledgement(
-                        'recovery-center-${DateTime.now().microsecondsSinceEpoch}',
-                        'a' * 64)),
-                InterruptedOperationRecoverySource(() => const []),
-                IncompleteMigrationRecoverySource(),
-                FailedUpdateRecoverySource(),
-              ]),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
 
   @override
   void initState() {
@@ -190,8 +81,6 @@ class _FlywheelShellState extends State<FlywheelShell> {
             (request) => showUnsavedWorkPrompt(context, request));
     _navigation = NavigationController(
       guard: _guard.requestNavigation,
-      // A phone opens on Chat, the surface a personal agent answers from;
-      // desktop keeps Journey.
       initial: _mobile
           ? const AppLocation(routeId: DestinationId.chat)
           : null,
@@ -201,7 +90,8 @@ class _FlywheelShellState extends State<FlywheelShell> {
       status: _dependencies.status,
       startEngine: () => _dependencies.gateway.start(),
       onOrphanStart: _dependencies.gateway.stopIfOwned,
-    );    _lifecycle = AppLifecycleListener(onExitRequested: _requestExit);
+    );
+    _lifecycle = AppLifecycleListener(onExitRequested: _requestExit);
     unawaited(_dependencies.journey.initialize());
     _coordinator.beginPolling();
   }
@@ -257,8 +147,6 @@ class _FlywheelShellState extends State<FlywheelShell> {
             }));
   }
 
-  /// Below this width the app is one pane and the rail moves into a drawer, so
-  /// the same shell fits a phone.
   static const double narrowBreakpoint = 640;
 
   @override
@@ -284,7 +172,6 @@ class _FlywheelShellState extends State<FlywheelShell> {
     );
   }
 
-  // Desktop: the side rail beside the active view. Byte-identical to before.
   Widget _wideBody() => Column(
         children: [
           Expanded(
@@ -297,14 +184,18 @@ class _FlywheelShellState extends State<FlywheelShell> {
         ],
       );
 
-  // Phone: one pane under a slim brand strip, a bottom bar of the first-run
-  // destinations, and More for the full catalog. The bottom bar's own SafeArea
-  // owns the bottom inset, so the outer one does not double-pad it.
   Widget _narrowBody(BuildContext context) => SafeArea(
         bottom: false,
         child: Column(
           children: [
-            _mobileTopBar(),
+            ShellMobileTopBar(
+              navigation: _navigation,
+              coordinator: _coordinator,
+              onToggleTheme: widget.onToggleTheme,
+              onAssistant: () => openAssistant(
+                  context, _dependencies.client,
+                  _voiceInput, _voiceOutput),
+            ),
             Expanded(child: _activeView()),
             _statusBar(),
             Builder(
@@ -331,72 +222,16 @@ class _FlywheelShellState extends State<FlywheelShell> {
               world: _coordinator.world,
               onStartEngine: () => unawaited(_coordinator.start()),
               local: !_mobile,
-              gatewayAddress: Uri.tryParse(_dependencies.client.baseUrl)?.authority
-                  ?? _dependencies.client.baseUrl,
+              gatewayAddress:
+                  Uri.tryParse(_dependencies.client.baseUrl)?.authority
+                      ?? _dependencies.client.baseUrl,
             ),
-      );
-
-  Widget _mobileTopBar() => AnimatedBuilder(
-        animation: Listenable.merge([_coordinator, _navigation]),
-        builder: (context, _) {
-          final t = context.fw;
-          final spec = specFor(_navigation.current.routeId);
-          return Padding(
-            padding: const EdgeInsets.fromLTRB(4, 6, 8, 2),
-            child: Row(children: [
-              IconButton(
-                icon: Icon(Icons.menu, size: 20, color: t.inkMuted),
-                tooltip: 'Open navigation',
-                constraints:
-                    const BoxConstraints(minWidth: 36, minHeight: 36),
-                padding: const EdgeInsets.all(6),
-                onPressed: () => Scaffold.of(context).openDrawer(),
-              ),
-              const SizedBox(width: 2),
-              Text(spec?.label ?? 'Flywheel',
-                  style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                      color: t.ink)),
-              const SizedBox(width: 6),
-              VerdictDot(
-                  _coordinator.alive ? 'verified' : 'absent', size: 6),
-              const Spacer(),
-              _topAction(context, Icons.contrast, 'Theme',
-                  widget.onToggleTheme),
-              _topAction(context, Icons.assistant_rounded, 'Assistant',
-                  _showAssistant),
-            ]),
-          );
-        },
-      );
-
-  Widget _topAction(
-          BuildContext ctx, IconData icon, String tip, VoidCallback onTap) =>
-      IconButton(
-        icon: Icon(icon, size: 16, color: ctx.fw.inkMuted),
-        tooltip: tip,
-        constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-        padding: const EdgeInsets.all(4),
-        onPressed: onTap,
-      );
-
-  void _showAssistant() => showAssistantPanel(
-        context,
-        executor: AssistantExecutor(
-          agent: GatewayAgentSink(_dependencies.client),
-          device: UrlLauncherDeviceSink(),
-        ),
-        voiceInput: _voiceInput,
-        voiceOutput: _voiceOutput,
       );
 
   Widget _rail({bool inDrawer = false}) {
     return AnimatedBuilder(
         animation: Listenable.merge([_navigation, _coordinator]),
         builder: (context, _) => ShellRail(
-              // In the drawer the rail is always expanded at a drawer width, and a
-              // tap navigates then closes the drawer.
               collapsed: inDrawer ? false : _railCollapsed,
               width: inDrawer ? 264 : _railWidth,
               selected: _navigation.current.routeId,
@@ -418,11 +253,15 @@ class _FlywheelShellState extends State<FlywheelShell> {
               onOpenSessions: () => showSessionsPanel(
                 context,
                 api: GatewayJourneyApi(_dependencies.client),
-                onOpen: (ref, lens) => _dependencies.journey.openSession(ref, lens),
+                onOpen: (ref, lens) =>
+                    _dependencies.journey.openSession(ref, lens),
               ),
               inDrawer: inDrawer,
-              onOpenAssistant: _showAssistant,
-              onOpenRecovery: _openRecoveryCenter,
+              onOpenAssistant: () => openAssistant(
+                  context, _dependencies.client,
+                  _voiceInput, _voiceOutput),
+              onOpenRecovery: () =>
+                  openRecoveryCenter(context, _dependencies),
             ));
   }
 
@@ -438,5 +277,3 @@ class _FlywheelShellState extends State<FlywheelShell> {
     widget.settings.save();
   }
 }
-
-// keyboard shortcut support lives with the palette.
