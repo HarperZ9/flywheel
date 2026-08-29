@@ -131,37 +131,40 @@ class _GraphViewState extends State<GraphView> {
   }
 
   Widget _controls(FwTokens t) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
+    return Wrap(
+      spacing: FwLayout.s3,
+      runSpacing: FwLayout.s2,
+      crossAxisAlignment: WrapCrossAlignment.center,
       children: [
-        const Kicker('query'),
-        const SizedBox(width: FwLayout.s2),
-        SizedBox(
-          width: 160,
-          child: TextField(
-            controller: _query,
-            style: fwMono(t, size: 12),
-            decoration: const InputDecoration(
-                isDense: true, hintText: 'rerank terms…'),
+        Row(mainAxisSize: MainAxisSize.min, children: [
+          const Kicker('query'),
+          const SizedBox(width: FwLayout.s2),
+          SizedBox(
+            width: 160,
+            child: TextField(
+              controller: _query,
+              style: fwMono(t, size: 12),
+              decoration: const InputDecoration(
+                  isDense: true, hintText: 'rerank terms…'),
+            ),
           ),
-        ),
-        const SizedBox(width: FwLayout.s3),
-        const Kicker('budget'),
-        const SizedBox(width: FwLayout.s2),
-        SizedBox(
-          width: 72,
-          child: TextField(
-            controller: _budget,
-            style: fwMono(t, size: 12),
-            decoration: const InputDecoration(isDense: true),
+        ]),
+        Row(mainAxisSize: MainAxisSize.min, children: [
+          const Kicker('budget'),
+          const SizedBox(width: FwLayout.s2),
+          SizedBox(
+            width: 72,
+            child: TextField(
+              controller: _budget,
+              style: fwMono(t, size: 12),
+              decoration: const InputDecoration(isDense: true),
+            ),
           ),
-        ),
-        const SizedBox(width: FwLayout.s3),
+        ]),
         OutlinedButton(
           onPressed: _loading ? null : () => _load(withBudget: true),
           child: const Text('Plan context'),
         ),
-        const SizedBox(width: FwLayout.s2),
         OutlinedButton(
           onPressed: _loading ? null : _load,
           child: const Text('Refresh'),

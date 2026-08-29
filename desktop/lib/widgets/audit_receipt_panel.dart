@@ -12,6 +12,7 @@ import 'package:flutter/material.dart';
 
 import '../theme/flywheel_theme.dart';
 import 'fw.dart';
+import 'receipt_verify_controls.dart';
 
 class AuditReceiptPanel extends StatefulWidget {
   /// Runs the audit over a parsed work receipt → {reviews, verdict, confidence,
@@ -86,7 +87,7 @@ class _AuditReceiptPanelState extends State<AuditReceiptPanel> {
     if (receipt == null || _verifying) return;
     // CORRUPT flips one hex char of a COPY, client-side; the stored receipt is
     // never touched — this proves the refusal without corrupting the record.
-    final subject = corrupt ? _flipOneHexChar(receipt) : receipt;
+    final subject = corrupt ? flipOneHexChar(receipt) : receipt;
     setState(() => _verifying = true);
     final v = await widget.onVerify(subject, _workReceipt);
     if (!mounted) return;
@@ -98,16 +99,6 @@ class _AuditReceiptPanelState extends State<AuditReceiptPanel> {
         _verifyDoc = v;
       }
     });
-  }
-
-  static Map<String, dynamic> _flipOneHexChar(Map<String, dynamic> receipt) {
-    final copy = jsonDecode(jsonEncode(receipt)) as Map<String, dynamic>;
-    final seal = copy['seal'];
-    final hex = (seal is Map ? seal['hex'] : null);
-    if (hex is String && hex.isNotEmpty) {
-      seal['hex'] = (hex[0] == '0' ? '1' : '0') + hex.substring(1);
-    }
-    return copy;
   }
 
   @override
@@ -205,11 +196,15 @@ class _AuditReceiptPanelState extends State<AuditReceiptPanel> {
         ]),
         if (_verifyDoc != null) ...[
           const SizedBox(height: FwLayout.s3),
-          _verifyState(t, _verifyDoc!),
+          VerifyStateRow(
+            doc: _verifyDoc!,
+            chainLabel: 'chain → work receipt',
+            chainHash: '${_receipt?['prev_receipt_sha256'] ?? ''}',
+          ),
         ],
         if (_corruptDoc != null) ...[
           const SizedBox(height: FwLayout.s3),
-          _tamperState(t, _corruptDoc!),
+          TamperStateCard(doc: _corruptDoc!),
         ],
       ]),
     );
@@ -235,66 +230,10 @@ class _AuditReceiptPanelState extends State<AuditReceiptPanel> {
         ]),
       );
 
-  // The MATCH branch: the accept color, plus the chain link to the work receipt.
-  Widget _verifyState(FwTokens t, Map<String, dynamic> doc) {
-    final verdict = '${doc['verdict'] ?? ''}';
-    final prev = '${_receipt?['prev_receipt_sha256'] ?? ''}';
-    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Row(children: [
-        VerdictDot(_verifyStatus(verdict), size: 8),
-        const SizedBox(width: FwLayout.s2),
-        VerdictPill(verdict.toLowerCase(), status: _verifyStatus(verdict)),
-        const SizedBox(width: FwLayout.s2),
-        Expanded(
-          child: Text('${doc['detail'] ?? ''}',
-              style: fwMono(t, size: 10.5, color: t.inkMuted)),
-        ),
-      ]),
-      if (verdict.toUpperCase() == 'MATCH' && prev.isNotEmpty) ...[
-        const SizedBox(height: FwLayout.s2),
-        HashText('chain → work receipt', prev, keep: 24),
-      ],
-    ]);
-  }
-
-  // The TAMPERED branch: the one hot mark in a distinct card that NAMES the
-  // check that refused it.
-  Widget _tamperState(FwTokens t, Map<String, dynamic> doc) {
-    final verdict = '${doc['verdict'] ?? ''}';
-    final failure = '${doc['failure_class'] ?? ''}';
-    return Container(
-      padding: const EdgeInsets.all(FwLayout.s3),
-      decoration: BoxDecoration(
-        color: t.drift.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(FwLayout.radiusSmall),
-        border: Border.all(color: t.drift.withValues(alpha: 0.45)),
-      ),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Row(children: [
-          const VerdictDot('tampered', size: 8),
-          const SizedBox(width: FwLayout.s2),
-          VerdictPill(
-              failure.isEmpty ? verdict.toLowerCase() : 'tampered · $failure',
-              status: 'drift'),
-        ]),
-        const SizedBox(height: FwLayout.s2),
-        Text('One flipped byte, refused. ${doc['detail'] ?? ''}',
-            style: fwMono(t, size: 11, color: t.inkSoft)),
-      ]),
-    );
-  }
-
-  // PASS → accept; FAIL → the hot mark; CONCERNS → unproven.
   String _verdictStatus(String v) =>
       {'PASS': 'verified', 'FAIL': 'drift'}[v.toUpperCase()] ?? 'unverifiable';
 
-  // INFO → clean; CRITICAL → the hot mark; WARN → caution.
   String _severityStatus(String s) =>
       {'INFO': 'verified', 'CRITICAL': 'drift'}[s.toUpperCase()] ??
-      'unverifiable';
-
-  // MATCH → accept; TAMPERED → the hot mark; else unproven.
-  String _verifyStatus(String v) =>
-      {'MATCH': 'verified', 'TAMPERED': 'drift'}[v.toUpperCase()] ??
       'unverifiable';
 }
