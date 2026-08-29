@@ -169,6 +169,58 @@ def test_cmd_verify_reports_not_anchored_with_a_nonzero_exit(tmp_path, capsys):
     assert "head_ok   : True" in out
     assert "ANCHORED  : False" in out
 
+def test_cmd_upgrade_never_strands_a_confirmed_record_over_a_stale_proof(
+        tmp_path, capsys, monkeypatch):
+    # The record and its .ots are two separate on-disk artifacts, written in
+    # sequence, and a process can die between them. Writing the record first and
+    # the proof second (or non-atomically) lets a crash during the proof write
+    # leave a `confirmed` record beside the stale pending .ots; the confirmed
+    # short-circuit then refuses to re-poll, so the obtained block is unrecoverable
+    # from the CLI (Finding 7). Persisting the proof before the record, each atomic,
+    # keeps every interruption on the safe side: the intact old pending pair, or a
+    # confirmed pair, never a confirmed record over a proof that cannot back it.
+    digest = GENESIS_MERKLE
+    rec = {"schema": "flywheel.anchor/v1", "digest_hex": digest.hex(),
+           "signed_head": {"public_key": "00" * 32},
+           "ots": {"state": "pending", "submitted_hex": "de", "nonce_hex": "ad",
+                   "calendar": "https://cal.example"}}
+    apath = tmp_path / "anchor.json"
+    apath.write_text(json.dumps(rec), encoding="utf-8")
+    pending = (MAGIC + b"\x01" + b"\x08" + digest + b"\x00" + PENDING_TAG
+               + _varbytes(_varbytes(b"https://cal.example")))
+    opath = tmp_path / "anchor.json.ots"
+    opath.write_bytes(pending)
+
+    monkeypatch.setattr(fa.anchor_submit, "_get_timestamp",
+                        lambda uri, r_hex, **k: _bitcoin_edge(0))
+    monkeypatch.setattr(fa.anchor_submit, "_fetch_block_header",
+                        lambda height, **k: GENESIS_HEADER)
+
+    # The process dies the instant it goes to persist the proof bytes (the real
+    # .ots or its temp sibling). Proof-first, this is reached before the record is
+    # touched; record-first, the confirmed record has already landed.
+    real_write_bytes = Path.write_bytes
+
+    def _die_on_ots_write(self, data):
+        if ".ots" in self.name:
+            raise OSError("process killed mid-write")
+        return real_write_bytes(self, data)
+
+    monkeypatch.setattr(Path, "write_bytes", _die_on_ots_write)
+
+    with pytest.raises(OSError):
+        fa.main(["upgrade", "--anchor", str(apath)])
+
+    # The record must never claim confirmed while its .ots cannot verify offline.
+    persisted = json.loads(apath.read_text(encoding="utf-8"))
+    if persisted["ots"]["state"] == "confirmed":
+        checked = ots_verify.verify(opath.read_bytes(), digest,
+                                    fa._header_provider(persisted))
+        assert checked["ok"] is True, (
+            "record says confirmed but its .ots does not verify offline -- the "
+            "confirmed short-circuit now blocks a re-run from finishing")
+
+
 # Honest null: no fa.main(["verify"]) test drives the timestamp leg to ok=True
 # offline. `verify_anchor` checks the .ots against sha256(canonical(signed_head)),
 # so a Bitcoin leaf verifies only when that digest equals a real block's merkle
