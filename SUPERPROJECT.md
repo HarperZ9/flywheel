@@ -50,13 +50,17 @@ five MCP-spine flagships are the **mature external peers** of the same organs. T
 through the shared action-envelope protocol; neither absorbs the other; **MCP is the lone
 optional edge**. The flagships' own `next_action` routes already form a closed spine.
 
-| Organ | Flagship (live) | Role | Native harness modules |
+| Organ | Flagship | Role | Native harness modules |
 |---|---|---|---|
-| perception | **gather** 1.6.0 | source receipt + witnessed digest + re-verifiable corpus | scout, feeds, intake |
-| verification | **crucible** 1.1.0 | register → steelman → measure → refine → witness MATCH/DRIFT | oracle, witness, adversarial_corpus, calibration, externalization_ablation, quorum |
-| structure | **index** 2.8.0 | workspace map + verified wiki + structural verification | wiki, second_brain, structure_mapping |
-| orchestration | **forum** 1.12.0 | witnessed causal ledger + model-agnostic routing | router, escalation, budget_control, evolve |
-| reconciliation | **telos** 0.2.0 | the primary engine: perceive→verify→carry-proof, five-tool workflow | loop, chain, transitive_witness, proof_cache, boot, flywheel |
+| perception | **gather** | source receipt + witnessed digest + re-verifiable corpus | scout, feeds, intake |
+| verification | **crucible** | register → steelman → measure → refine → witness MATCH/DRIFT | oracle, witness, adversarial_corpus, calibration, externalization_ablation, quorum |
+| structure | **index** | workspace map + verified wiki + structural verification | wiki, second_brain, structure_mapping |
+| orchestration | **forum** | witnessed causal ledger + model-agnostic routing | router, escalation, budget_control, evolve |
+| reconciliation | **telos** | the primary engine: perceive→verify→carry-proof, five-tool workflow | loop, chain, transitive_witness, proof_cache, boot, flywheel |
+
+Live versions are single-sourced in `harness/lanes_registry.py` and surfaced by
+`superproject.probe_live()`. This table names each organ and its flagship, so it
+stays correct as versions change.
 
 Spine is **closed** (every route target is a flagship); **telos is the reconciler** (its
 route is the five-tool golden workflow). Verified by `test_superproject.py`.

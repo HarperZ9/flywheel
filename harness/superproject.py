@@ -17,33 +17,42 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
+from .lanes_registry import LANES
+
 
 @dataclass
 class Organ:
     flagship: str
-    version: str                 # live version confirmed via doctor
     role: str                    # the organ's function in the reconcile
     harness_modules: list        # the local native modules that instantiate it
     routes_to: str               # next_actions target (the spine edge)
+    version: str = field(init=False, default="")   # single-sourced, see __post_init__
+
+    def __post_init__(self) -> None:
+        # The lane registry (harness/lanes_registry.py) is the one version
+        # source. Deriving the organ version here removes the duplicate literal
+        # the MANIFEST used to carry, so an organ can never drift from its lane.
+        self.version = LANES[self.flagship].version
 
 
-# The five organs of the reconcile, each a flagship peer + its native harness cluster.
+# The five organs of the reconcile, each a flagship peer + its native harness
+# cluster. Versions are NOT written here; each derives from the lane registry.
 MANIFEST: dict[str, Organ] = {
     "perception": Organ(
-        "gather", "1.6.1", "source receipt + witnessed digest + re-verifiable corpus",
+        "gather", "source receipt + witnessed digest + re-verifiable corpus",
         ["scout", "feeds", "intake", "gather adapters"], routes_to="crucible"),
     "verification": Organ(
-        "crucible", "1.2.0", "register -> steelman -> measure -> refine -> witness MATCH/DRIFT",
+        "crucible", "register -> steelman -> measure -> refine -> witness MATCH/DRIFT",
         ["oracle", "witness", "adversarial_corpus", "calibration",
          "externalization_ablation", "quorum"], routes_to="gather"),
     "structure": Organ(
-        "index", "2.9.0", "workspace map + verified wiki + structural verification",
+        "index", "workspace map + verified wiki + structural verification",
         ["wiki", "second_brain", "structure_mapping"], routes_to="forum"),
     "orchestration": Organ(
-        "forum", "1.13.0", "witnessed causal ledger + model-agnostic routing",
+        "forum", "witnessed causal ledger + model-agnostic routing",
         ["router", "escalation", "budget_control", "evolve"], routes_to="index"),
     "reconciliation": Organ(
-        "telos", "0.2.0", "the primary engine: perceive->verify->carry-proof, five-tool workflow",
+        "telos", "the primary engine: perceive->verify->carry-proof, five-tool workflow",
         ["loop", "chain", "transitive_witness", "proof_cache", "boot", "flywheel"],
         routes_to="telos"),
 }

@@ -8,14 +8,37 @@ from harness.lanes import LANES
 from harness.superproject import spine, probe_live, MANIFEST, compose_report
 
 
-def test_manifest_versions_do_not_drift_from_the_lane_registry():
-    # harness/lanes.py is the canonical lane version; the superproject MANIFEST must
-    # mirror it, so the spine report never shows a stale version. This test is the gate.
-    for organ in MANIFEST.values():
-        lane = LANES.get(organ.flagship)
-        assert lane is not None, f"{organ.flagship} is in the MANIFEST but not the lane registry"
-        assert organ.version == lane.version, (
-            f"{organ.flagship}: MANIFEST v{organ.version} != lanes.py v{lane.version} (drift)")
+def test_spine_organ_to_flagship_mapping_is_pinned():
+    # Versions are single-sourced now: Organ.__post_init__ derives each from the lane
+    # registry, so a version VALUE can no longer drift and asserting organ.version ==
+    # LANES[flagship].version would be a tautology (self == self). What CAN still be
+    # mis-wired is the organ -> flagship mapping. Swap two flagships and spine() stays
+    # closed, every version still derives, every other test passes -- while the spine
+    # reports the wrong pairing. Pin the exact five pairs so a mis-wire fails HERE.
+    assert {name: o.flagship for name, o in MANIFEST.items()} == {
+        "perception": "gather",
+        "verification": "crucible",
+        "structure": "index",
+        "orchestration": "forum",
+        "reconciliation": "telos",
+    }
+    # Every named flagship must resolve in the registry (else __post_init__ KeyErrors at
+    # import); assert it explicitly so the contract has a named home, not a stack trace.
+    for o in MANIFEST.values():
+        assert o.flagship in LANES, f"{o.flagship} is in the MANIFEST but not the lane registry"
+
+
+def test_organ_version_is_single_sourced_not_a_constructor_arg():
+    # The version is derived in __post_init__ from the lane registry, never passed
+    # in, so it cannot be hand-set to a value that drifts from the lane. Guard the
+    # mechanism itself: if a refactor makes version an init field again, fail here.
+    import dataclasses
+    from harness.superproject import Organ
+    version_field = {f.name: f for f in dataclasses.fields(Organ)}["version"]
+    assert version_field.init is False, (
+        "Organ.version must stay derived (init=False), not a constructor arg that can drift")
+    fresh = Organ("gather", "role", ["m"], routes_to="crucible")
+    assert fresh.version == LANES["gather"].version
 
 LIVE = {f: {"status": "MATCH"} for f in ("gather", "index", "crucible", "forum", "telos")}
 
