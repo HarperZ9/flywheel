@@ -1,14 +1,8 @@
-"""cli_entry.py -- the `flywheel` command dispatcher.
+"""cli_entry.py — the ``flywheel`` command dispatcher.
 
-Flywheel is the one platform: routing + verification + the lane layer + the
-closed verified-inference loop. This module is the single console-script entry
-(``flywheel = harness.cli_entry:main`` in pyproject.toml).
-
-It is a thin layer over the existing ``scripts/run_harness_cli.py`` front
-controller, plus direct packaged commands that do not require a checkout.
-
-Repo-root resolution mirrors ``scripts/local_harness_entry.py`` so the command
-works identically as a console-script, from a checkout, and from a frozen exe.
+Single console-script entry (``flywheel = harness.cli_entry:main``). Thin
+layer over run_harness_cli.py plus umbrella commands that work without a
+checkout (frozen exe, bare pip install, or relay submodule).
 """
 from __future__ import annotations
 
@@ -19,7 +13,7 @@ from pathlib import Path
 # The new umbrella subcommands. Handled in cli_entry; everything else is
 # delegated to the existing run_harness_cli front controller.
 _UMBRELLA_COMMANDS = {"lanes", "loop-status", "install", "up", "down", "corpus-export",
-                      "gate", "why", "auth"}
+                      "gate", "why", "auth", "remote", "relay"}
 def _candidate_roots() -> list[Path]:
     candidates: list[Path] = []
     explicit = os.environ.get("FLYWHEEL_REPO", "").strip() or os.environ.get("LOCAL_HARNESS_REPO", "").strip()
@@ -51,6 +45,7 @@ def find_repo_root() -> Path:
         "could not locate the flywheel repo root; set FLYWHEEL_REPO to the "
         "checkout containing scripts/run_harness_cli.py and harness/"
     )
+
 
 
 def _parse_lane_args(argv: list[str]) -> tuple[str, str]:
@@ -108,10 +103,7 @@ def _cmd_install(argv: list[str]) -> int:
 
 
 def _launch_gateway(gateway_argv: list[str]) -> int:
-    """Start the gateway. Prefer a source checkout (dev: run_harness_cli.py wires
-    up cwd-relative dispatch and serves site/); otherwise -- a frozen exe or a
-    bare `pip install`, neither of which ships scripts/ -- run the gateway
-    straight from the installed harness package."""
+    """Prefer a source checkout; fall back to the installed harness package."""
     repo_root = None
     if not getattr(sys, "frozen", False):
         try:
@@ -132,12 +124,7 @@ def _launch_gateway(gateway_argv: list[str]) -> int:
 
 
 def _cmd_up(argv: list[str]) -> int:
-    """`flywheel up [--port 8799] [--probe]` -- start the one surface.
-
-    Preflight: print the lane roster so the operator sees what is live before
-    the gateway starts. Then delegate to the existing `app` subcommand (which
-    launches harness/gateway.py). The gateway serves /api/lanes, /api/world,
-    and the shell on one origin."""
+    """`flywheel up [--port 8799] [--probe]` — preflight lane roster then gateway."""
     import sys as _sys
     # Preflight lane roster (fast, install-presence only, unless --probe).
     probe = "--probe" in argv
@@ -208,22 +195,28 @@ def _dispatch_umbrella(command: str, argv: list[str]) -> int:
     if command == "up":
         return _cmd_up(argv)
     if command == "down":
-        print("`flywheel down` stops a gateway started by `flywheel up`.", file=sys.stderr)
-        print("On Windows, close the gateway process (Ctrl-C in its console).", file=sys.stderr)
+        print("`flywheel down` stops a gateway started by `flywheel up`.\n"
+              "On Windows, close the gateway process (Ctrl-C in its console).",
+              file=sys.stderr)
         return 0
     if command == "corpus-export":
-        # Gap E: export verified envelopes to a training shard (operator-gated).
         import json as _json
-        import sys as _sys
         from harness.corpus_export import export_corpus
         args = [a for a in argv if not a.startswith("-")]
         if len(args) < 2:
-            print("usage: flywheel corpus-export <envelopes_dir> <out.jsonl> [verdict_filter]", file=_sys.stderr)
+            print("usage: flywheel corpus-export <envelopes_dir> <out.jsonl> "
+                  "[verdict_filter]", file=sys.stderr)
             return 2
-        verdict = args[2] if len(args) > 2 else "PASS"
-        r = export_corpus(args[0], args[1], verdict_filter=verdict)
+        r = export_corpus(args[0], args[1],
+                          verdict_filter=args[2] if len(args) > 2 else "PASS")
         print(_json.dumps(r, indent=2))
         return 0
+    if command == "remote":
+        from harness.relay_bridge import cmd_remote
+        return cmd_remote(argv)
+    if command == "relay":
+        from harness.relay_bridge import cmd_relay
+        return cmd_relay(argv)
     return 2
 def _dispatch_packaged(command: str, raw: list[str]) -> int | None:
     if command == "cross-harness-execute":
@@ -276,7 +269,8 @@ def main(argv: list[str] | None = None) -> int:
             wants_help = any(a in ("-h", "--help") for a in raw)
             print("usage: flywheel <command> [options]\n"
                   "Umbrella commands (run from a bare install): up, lanes, "
-                  "loop-status, install, corpus-export, gate, why, down, grant, journey, evidence, cross-harness-execute\n"
+                  "loop-status, install, corpus-export, gate, why, down, "
+                  "remote, relay, grant, journey, evidence, cross-harness-execute\n"
                   "Passthrough commands need a source checkout "
                   "(scripts/run_harness_cli.py).",
                   file=sys.stdout if wants_help else sys.stderr)
