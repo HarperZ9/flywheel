@@ -290,3 +290,10 @@ def test_read_varuint_refuses_an_overlong_encoding():
     # the reader silently accepts it as 0. Refuse it, matching the verifier's guard.
     with pytest.raises(anchor_submit.SubmitError):
         anchor_submit._read_varuint(b"\x80" * 10 + b"\x00", 0)
+
+
+def test_splice_upgrade_refuses_a_pending_edge_with_trailing_bytes():
+    # trailing bytes after a terminal-looking pending payload: refuse, do not drop them
+    proof = _pending_on(GENESIS_MERKLE) + b"\xde\xad"
+    with pytest.raises(anchor_submit.SubmitError, match="terminal edge"):
+        anchor_submit.splice_upgrade(proof, _bitcoin_edge(0))
