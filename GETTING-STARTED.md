@@ -93,11 +93,12 @@ From a dev checkout:
 cd desktop && flutter run -d windows
 ```
 
-The desktop client shows 28 views in a collapsible side rail, organized by
-group: Start (World, Endpoints, Lanes), Do (Agent, Companion, Code, Train,
-Studio), Know (Graph, Academy, Lessons, Governance, Receipts, Feeds,
-Discourse, Projects), Advanced (Instruments, Science, Memory, Plugins,
-Workflows, Compare, Uplift, Plan, Lint).
+The desktop client shows 33 destinations in a collapsible side rail,
+organized by group: Work (Journey, Plan, Workflows, Projects, Swarms,
+Roadmap), Chat (Chat, Compare, Models, Companion), Code (Code, Eval, Audit,
+Lint, Relay), Evidence (Receipts, Science, World, Memory, Governance,
+Usage), Advanced (Studio, Graph, Feeds, Discourse, Academy, Lessons,
+Instruments, Lanes, Train, Uplift, Family, Plugins).
 
 ## Your first receipt
 

@@ -27,7 +27,9 @@ live panels (router, world, companion, studio, training) appear.
 
 Any of these works. Flywheel routes to whatever is reachable.
 
-- **Local, one file (~9 GB):**
+- **Local, one file (~9 GB):** download the
+  [published 14B weights](https://huggingface.co/zaindanaharper/flywheel-local-coder-14b)
+  (the repo hosts the `Modelfile`), then:
   ```
   ollama create flywheel-local-coder-14b -f Modelfile
   ollama run flywheel-local-coder-14b
@@ -128,6 +130,6 @@ something because the check that produced it could have failed.
 
 ## Where to go next
 
-- **[README.md](README.md)**: the one-page overview and the honest benchmark table.
+- **[README.md](README.md)**: the one-page overview.
 - **[SUPERAPP.md](project-docs/SUPERAPP.md)**: the full unification spec and the increment ladder.
 - **[docs/schematics/](docs/schematics/)**: the architecture and verified-loop diagrams.

@@ -6,8 +6,9 @@ read the receipts. No browser, no terminal.
 
 ## What you get
 
-- **Tools**: the flagship tool family (gather, crucible, index, forum, learn,
-  telos, local-model) with live health. Probing spawns each tool's own MCP
+- **Tools**: the twelve-lane tool roster (gather, crucible, index, forum,
+  learn, telos, local-model, relay, plexus, mneme, calibrate-pro,
+  accountable-surface) with live health. Probing spawns each tool's own MCP
   server and asks it directly; the verdict shown is the tool's answer.
 - **World**: the projected, root-hashed state. Recomputed on every read:
   tamper any cataloged receipt and the hash moves.
@@ -60,6 +61,10 @@ read the receipts. No browser, no terminal.
   opens the provider's page, and a provider-tool flow takes the paste in an
   obscured field. The token goes straight to the OS credential store and is
   never displayed.
+- **Relay**: the same loop from your phone: Claude on your phone drives the
+  agent running on this PC over HTTPS, through the same gates and onto the
+  same hash-chained ledger; runs and sessions are listed live in the app.
+  Setup: [docs/REMOTE-ACCESS.md](../docs/REMOTE-ACCESS.md).
 
 ## Install it
 
@@ -71,7 +76,7 @@ every release is built from its version tag by a public pipeline and ships
 with a `SHA256SUMS.txt` receipt. Verify the copy you downloaded:
 
 ```
-Get-FileHash Flywheel-Setup-0.3.5-x64.exe -Algorithm SHA256
+Get-FileHash Flywheel-Setup-<version>-x64.exe -Algorithm SHA256
 ```
 
 The installer is not code-signed yet, so Windows SmartScreen will warn on

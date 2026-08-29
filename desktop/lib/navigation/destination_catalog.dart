@@ -1,4 +1,4 @@
-// destination_catalog.dart -- the frozen 30-destination map.
+// destination_catalog.dart -- the frozen 33-destination map.
 //
 // Five stable groups, exactly as the completion spec fixes them. Labels
 // are presentation; the DestinationId is the contract, so a label can be

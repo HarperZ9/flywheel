@@ -390,7 +390,7 @@ hidden.
 The loop reached the separate public flagship repos. Two consulted,
 reconciled, and executed this cycle; forum and telos queued.
 
-**index** (code-graph / context / wiki, `C:/dev/public/index`): 13
+**index** (code-graph / context / wiki, [HarperZ9/index](https://github.com/HarperZ9/index)): 13
 findings (2 HIGH, 8 MEDIUM, 3 LOW), all three tiers COMPLETE, flutter-free
 Python suite green, on `fix/cycle8-verified-map`. The theme was the
 verified map claiming structure it never re-derived. HIGH: the
@@ -407,7 +407,7 @@ reports the true cost and names an overflow. LOW: honest-null grounding on
 zero edges, scoped packet tokens, and no MATCH over a scan narrowed by
 unreadable directories.
 
-**gather** (accountable research-intake, `C:/dev/public/gather`): 19
+**gather** (accountable research-intake, [HarperZ9/gather](https://github.com/HarperZ9/gather)): 19
 survived (10 MEDIUM, 9 LOW); all confirmed MEDIUM shipped, on
 `fix/cycle8-provenance`, full suite 428 green. The headline: the
 differentiator (a block/challenge page is named, never passed off as the

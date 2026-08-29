@@ -7,10 +7,10 @@ Flywheel is the engine and native client for a verified-inference loop: a model
 perceives only through witnessed organs, acts only through a gate it cannot
 talk past, journals everything, and verifies its own work by re-perceiving.
 
-The flagship tools (gather, crucible, index, forum, learn, telos) are lanes
-inside Flywheel, each a provisioned, health-checked organ reachable through one
-surface. Every agent tool call carries a sealed, chain-linked receipt a third
-party re-verifies offline.
+The flagship tools (gather, crucible, index, forum, learn, telos) lead a
+twelve-lane roster inside Flywheel, each lane a provisioned, health-checked
+organ reachable through one surface. Every agent tool call carries a sealed,
+chain-linked receipt a third party re-verifies offline.
 
 **Proof before trust.**
 
@@ -21,8 +21,8 @@ This is a monorepo containing both halves of the platform:
 - **`harness/`** is the Python engine: the gateway (localhost HTTP API), the
   agent loop, the receipt discipline, the lane layer, the verified-inference
   loop, the tool-call receipt system. Zero runtime dependencies (stdlib only).
-- **`desktop/`** is the Flutter native client: 24 views, 50 widgets, zero
-  webview embedding. Talks to the gateway over localhost. Launches a bundled
+- **`desktop/`** is the Flutter native client: 33 destinations on one side
+  rail, zero webview embedding. Talks to the gateway over localhost. Launches a bundled
   frozen engine by absolute path on a clean machine (no Python, no PATH, no
   network).
 - **`site/`** is a dev/CI fallback browser shell (not the primary UI).
@@ -46,7 +46,8 @@ The gateway also serves a `/site/index.html` shell as a dev/CI fallback.
 
 ## The lane model
 
-Flywheel encompasses the tool family. Each flagship is a lane:
+Flywheel encompasses the tool family. The registry ships twelve lanes; the
+six flagship repos:
 
 | Lane | Repo | Role |
 | --- | --- | --- |
@@ -57,6 +58,8 @@ Flywheel encompasses the tool family. Each flagship is a lane:
 | learn | [learn](https://github.com/HarperZ9/learn) | Accountable learning forge |
 | telos | [telos](https://github.com/HarperZ9/telos) | The reconciliation lane |
 
+Six more lanes ship in the same registry: local-model (bundled), relay
+(remote access), plexus, mneme, calibrate-pro, and accountable-surface.
 Check their health through one surface:
 
 ```
@@ -74,7 +77,7 @@ Every agent tool invocation carries a sealed receipt binding:
 - **whether a stranger can re-walk it** (offline-verifiable, chain-linked)
 
 Receipts compose into a transitive-witness DAG where a drifted action degrades
-exactly its downstream dependents. The five flagships emit organ-bundle entries
+exactly its downstream dependents. The flagship lanes emit organ-bundle entries
 on a shared proof-surface spine so cross-tool receipts compose end-to-end.
 
 ## The organizational learning loop
@@ -84,7 +87,7 @@ resolution. The learning loop feeds forward: it derives lessons from witnessed
 divergences (an allowed action that rolled back, a memory whose source drifted,
 a graded failure), stores them in a durable, hash-chained, append-only memory,
 and surfaces recurring patterns as improvement candidates for human admission.
-A lesson is not a note an operator wrote; it is a claim bound by hash to its
+A lesson is not a note a person wrote; it is a claim bound by hash to its
 evidence, re-checkable offline, fail-closed when the evidence is gone. See
 [docs/LESSON-LOOP.md](docs/LESSON-LOOP.md).
 
@@ -140,7 +143,9 @@ against the release's `SHA256SUMS.txt`.
 ## Documentation
 
 - [QUICKSTART.md](QUICKSTART.md): first ten minutes
+- [GETTING-STARTED.md](GETTING-STARTED.md): install, sign in, first run
 - [WALKTHROUGH.md](WALKTHROUGH.md): guided tour
+- [docs/REMOTE-ACCESS.md](docs/REMOTE-ACCESS.md): drive the same loop from your phone
 - [docs/LESSON-LOOP.md](docs/LESSON-LOOP.md): the organizational learning loop (architecture)
 - [docs/GUIDE-LESSON-LOOP.md](docs/GUIDE-LESSON-LOOP.md): the organizational learning loop (full guide and spec)
 - [docs/ASSESSMENT-AGENTIC-SECURITY-2026-08.md](docs/ASSESSMENT-AGENTIC-SECURITY-2026-08.md): Flywheel against the July 2026 agentic security convergence
