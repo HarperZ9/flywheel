@@ -81,7 +81,15 @@ def openssh_public_line(public_key_bytes: bytes, comment: str) -> str:
 
 def _raw_public_key_from_openssh(pub_path: Path) -> bytes:
     """Read the 32 raw public-key bytes out of an OpenSSH `.pub` line."""
-    parts = pub_path.read_text(encoding="utf-8").split()
+    try:
+        parts = pub_path.read_text(encoding="utf-8").split()
+    except UnicodeDecodeError as e:
+        # This read is the first step on the stranger's verify seam (_load_pub).
+        # A `.pub` whose bytes are not valid utf-8 must be a named refusal, not a
+        # UnicodeDecodeError that escapes -- the same never-raises contract the
+        # corrupt-blob branch below already honours one step later.
+        raise SigningKeyError(
+            f"{pub_path} is not a utf-8 ssh-ed25519 public key: {e}") from e
     if len(parts) < 2 or parts[0] != "ssh-ed25519":
         raise SigningKeyError(f"{pub_path} is not an ssh-ed25519 public key")
     try:

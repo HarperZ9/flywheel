@@ -108,3 +108,17 @@ def test_a_corrupt_base64_pub_is_a_named_refusal_not_a_binascii_error(tmp_path):
     pub.write_text("ssh-ed25519 AAAAA corrupt@flywheel\n", encoding="utf-8")
     with pytest.raises(receipt_signer.SigningKeyError):
         receipt_signer._raw_public_key_from_openssh(pub)
+
+
+def test_a_non_utf8_pub_is_a_named_refusal_not_a_unicode_error(tmp_path):
+    # Same verify-path trust anchor, but the `.pub` bytes are not valid utf-8. The
+    # read sits on the stranger's verify seam (_load_pub -> here), so a file that
+    # cannot even be decoded must be a named SigningKeyError, not a
+    # UnicodeDecodeError that escapes _raw_public_key_from_openssh uncaught -- the
+    # same never-raises contract the corrupt-blob branch honours one step later.
+    # The first token still looks like a key so the read, not the ssh-ed25519
+    # gate, is what meets the bad bytes.
+    pub = tmp_path / "non_utf8.pub"
+    pub.write_bytes(b"ssh-ed25519 \xff\xfe garbage\n")
+    with pytest.raises(receipt_signer.SigningKeyError):
+        receipt_signer._raw_public_key_from_openssh(pub)
