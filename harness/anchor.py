@@ -82,10 +82,12 @@ def verify_anchor(anchor: dict, public_key: bytes, *, ots_bytes: bytes = None,
     result["head_ok"], result["head_reason"] = head_ok, head_reason
     try:
         prefixed, raw = anchor_digest(signed)
-    except ValueError as e:
-        # json.loads accepts NaN/Infinity, but canonical() forbids them
-        # (allow_nan=False). A record whose signed_head carries a non-finite float
-        # cannot be canonicalized: name it, do not let the verifier raise.
+    except (ValueError, RecursionError) as e:
+        # canonical() refuses a signed_head it cannot encode. json.loads accepts
+        # NaN/Infinity but canonical() forbids them (allow_nan=False, a ValueError),
+        # and a head nested past the interpreter's limit raises RecursionError, which
+        # is not a ValueError. Both are a malformed record, named here so the
+        # verifier keeps its "raises nothing" promise instead of crashing.
         result["head_reason"] = f"malformed_anchor: non-canonical head ({e})"
         return result
     result["anchor_digest"] = prefixed

@@ -132,6 +132,31 @@ def test_a_digest_signature_cannot_be_replayed_as_a_head_signature(keys):
     assert head_preimage(head).startswith(HEAD_DOMAIN)
 
 
+def test_check_signed_head_returns_a_verdict_on_a_deeply_nested_field(keys):
+    """A stranger runs this on an attacker-supplied head; it must stay (ok, reason).
+
+    A SIGNED_OVER field nested past the interpreter's recursion limit makes
+    canonical() inside head_preimage raise RecursionError, which is not a
+    ValueError, so the `except (TreeHeadError, ValueError)` below head_preimage
+    would let it escape and break the contract the docstring promises. The head
+    clears the cheap schema / sig_alg / log_id gates, so the recursion -- not an
+    earlier refusal -- is what the call meets. The signature is never reached.
+    """
+    _, pub = keys
+    deep = []
+    cur = deep
+    for _ in range(3000):
+        nxt = []
+        cur.append(nxt)
+        cur = nxt
+    head = {"schema": SCHEMA, "sig_alg": "ed25519", "log_id": log_id_for(pub),
+            "size": 1, "root": deep, "timestamp": "2026-08-29T00:00:00Z",
+            "signature": "00" * 64, "public_key": pub.hex()}
+    ok, reason = check_signed_head(head, pub)
+    assert ok is False
+    assert "malformed_head" in reason
+
+
 # --- what the ledger now carries --------------------------------------------
 
 def test_proofs_carry_the_log_id_when_the_ledger_has_one(tmp_path, keys):

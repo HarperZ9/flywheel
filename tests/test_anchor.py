@@ -115,6 +115,26 @@ def test_verify_anchor_names_a_non_finite_float_head_instead_of_crashing():
         assert "malformed_anchor" in r["head_reason"]
 
 
+def test_verify_anchor_returns_a_verdict_on_a_deeply_nested_head():
+    # A stranger runs verify on an attacker record whose signed_head is nested past
+    # the recursion limit. canonical() inside anchor_digest raises RecursionError,
+    # which is not a ValueError, so the `except ValueError` guarding that call would
+    # let it escape -- the same "raises nothing" contract the NaN case honours one
+    # branch over. The wrong schema makes check_signed_head refuse cheaply, so
+    # anchor_digest (not the head check) is where the deep nesting is met.
+    deep = []
+    cur = deep
+    for _ in range(3000):
+        nxt = []
+        cur.append(nxt)
+        cur = nxt
+    rec = {"schema": anchor.SCHEMA,
+           "signed_head": {"schema": "nope", "root": deep}}
+    r = anchor.verify_anchor(rec, b"\x00" * 32)
+    assert r["ok"] is False
+    assert "malformed_anchor" in r["head_reason"]
+
+
 def test_does_not_prove_carries_the_header_trust_limitation():
     # The proof-of-work recheck bounds internal consistency and real work: it kills
     # the zero-work forgery. It does NOT establish that a bundle-carried header sits

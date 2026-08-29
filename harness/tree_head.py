@@ -140,7 +140,10 @@ def check_signed_head(signed: dict, public_key: bytes) -> tuple[bool, str]:
     try:
         preimage = head_preimage(signed)
         sig = bytes.fromhex(signed.get("signature", ""))
-    except (TreeHeadError, ValueError) as e:
+    except (TreeHeadError, ValueError, RecursionError) as e:
+        # A signed field nested past the interpreter's limit makes canonical()
+        # inside head_preimage raise RecursionError, which is not a ValueError. A
+        # stranger's check must stay a named (False, reason), not an escape.
         return False, f"malformed_head: {e}"
     if len(sig) != 64:
         return False, "malformed_head: signature is not 64 bytes"
