@@ -236,3 +236,29 @@ def test_an_unverifiable_attestation_is_named_not_reported_absent():
     assert r["ok"] is False
     assert r["unknown"]
     assert "unverifiable" in r["reason"]
+
+
+def test_non_bytes_proof_or_digest_is_a_named_refusal_not_an_exception():
+    # bytes(ots_bytes) and bytes(expected_digest) run inside a try that catches
+    # only OtsError; a str/None argument raises TypeError, which the module's
+    # "raises nothing to its caller" contract must not let escape. A stranger who
+    # opened the proof in text mode, or passed a hex string, gets a verdict.
+    r = ots.verify("not-bytes", b"\x00" * 32)
+    assert r["ok"] is False
+    assert "malformed" in r["reason"]
+    r2 = ots.verify(_genesis_leaf(), None)
+    assert r2["ok"] is False
+    assert "malformed" in r2["reason"]
+
+
+def test_a_header_provider_returning_a_non_bytes_value_is_unproven_not_crashing():
+    # A provider that returns a length-80 str or list (a header file opened in text
+    # mode, a hex string) passes the truthy and length gates but is not bytes.
+    # _pow_ok would then TypeError inside int.from_bytes; the module must turn a
+    # bad provider return into a named header_unavailable, not an escaping crash.
+    for bad in ("x" * 80, [0] * 80, [7] * 80):
+        r = ots.verify(_genesis_leaf(), GENESIS_MERKLE, lambda h, v=bad: v)
+        leaf = r["bitcoin"][0]
+        assert leaf["verified"] is False
+        assert "header_unavailable" in leaf["reason"]
+        assert r["ok"] is False

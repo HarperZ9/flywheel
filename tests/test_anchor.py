@@ -100,6 +100,21 @@ def test_verify_anchor_rejects_a_head_signed_by_another_key():
     assert r["head_ok"] is False
 
 
+def test_verify_anchor_names_a_non_finite_float_head_instead_of_crashing():
+    # json.loads accepts NaN/Infinity/-Infinity by default, but canonical() forbids
+    # them (allow_nan=False). A stranger running verify on an attacker record whose
+    # signed_head carries one must get a named reason, not a ValueError escaping the
+    # verifier the module docstring promises "raises nothing".
+    import json
+    for bad in ('{"signed_head": {"size": NaN}}',
+                '{"signed_head": {"size": Infinity}}',
+                '{"signed_head": {"size": -Infinity}}'):
+        rec = json.loads(bad)
+        r = anchor.verify_anchor(rec, b"\x00" * 32)
+        assert r["ok"] is False
+        assert "malformed_anchor" in r["head_reason"]
+
+
 def test_does_not_prove_carries_the_header_trust_limitation():
     # The proof-of-work recheck bounds internal consistency and real work: it kills
     # the zero-work forgery. It does NOT establish that a bundle-carried header sits

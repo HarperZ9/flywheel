@@ -80,7 +80,14 @@ def verify_anchor(anchor: dict, public_key: bytes, *, ots_bytes: bytes = None,
     signed = anchor["signed_head"]
     head_ok, head_reason = tree_head.check_signed_head(signed, public_key)
     result["head_ok"], result["head_reason"] = head_ok, head_reason
-    prefixed, raw = anchor_digest(signed)
+    try:
+        prefixed, raw = anchor_digest(signed)
+    except ValueError as e:
+        # json.loads accepts NaN/Infinity, but canonical() forbids them
+        # (allow_nan=False). A record whose signed_head carries a non-finite float
+        # cannot be canonicalized: name it, do not let the verifier raise.
+        result["head_reason"] = f"malformed_anchor: non-canonical head ({e})"
+        return result
     result["anchor_digest"] = prefixed
     if ots_bytes is not None:
         result["timestamp"] = ots_verify.verify(ots_bytes, raw, header_provider)
