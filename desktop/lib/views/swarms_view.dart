@@ -34,11 +34,18 @@ class _SwarmsViewState extends State<SwarmsView> {
   Map<String, dynamic>? _detail;
   String? _error;
   bool _busy = false;
+  bool _loaded = false;
 
   @override
   void initState() {
     super.initState();
     _refresh();
+  }
+
+  @override
+  void didUpdateWidget(SwarmsView old) {
+    super.didUpdateWidget(old);
+    if (!old.alive && widget.alive) _refresh();
   }
 
   @override
@@ -49,22 +56,27 @@ class _SwarmsViewState extends State<SwarmsView> {
   }
 
   Future<void> _refresh() async {
+    if (!widget.alive) return;
     setState(() => _busy = true);
     try {
       final body = await widget.api.list();
       final rows = body['swarms'];
+      if (!mounted) return;
       setState(() {
         _rows = rows is List
             ? rows.whereType<Map>().map(asSwarmMap).toList()
             : <Map<String, dynamic>>[];
         _error = null;
+        _loaded = true;
       });
     } on GatewayException catch (e) {
-      setState(() => _error = e.message);
+      if (mounted) setState(() => _error = e.message);
     } catch (_) {
-      setState(() => _error = 'the swarm roster could not be read');
+      if (mounted) {
+        setState(() => _error = 'the swarm roster could not be read');
+      }
     } finally {
-      setState(() => _busy = false);
+      if (mounted) setState(() => _busy = false);
     }
   }
 
@@ -83,15 +95,19 @@ class _SwarmsViewState extends State<SwarmsView> {
         ],
         quorumPolicy: _quorum,
       );
+      if (!mounted) return;
       _goal.clear();
       await _refresh();
     } on GatewayException catch (e) {
-      setState(() => _error =
-          e.statusCode == 422 ? 'the spawn was refused by the engine' : e.message);
+      if (mounted) {
+        setState(() => _error = e.statusCode == 422
+            ? 'the spawn was refused by the engine'
+            : e.message);
+      }
     } catch (_) {
-      setState(() => _error = 'the spawn could not be issued');
+      if (mounted) setState(() => _error = 'the spawn could not be issued');
     } finally {
-      setState(() => _busy = false);
+      if (mounted) setState(() => _busy = false);
     }
   }
 
@@ -101,12 +117,14 @@ class _SwarmsViewState extends State<SwarmsView> {
       await widget.api.cancel(swarmId);
       await _refresh();
     } on GatewayException catch (e) {
-      setState(() =>
-          _error = e.statusCode == 409 ? 'that swarm already sealed' : e.message);
+      if (mounted) {
+        setState(() => _error =
+            e.statusCode == 409 ? 'that swarm already sealed' : e.message);
+      }
     } catch (_) {
-      setState(() => _error = 'the cancel could not be issued');
+      if (mounted) setState(() => _error = 'the cancel could not be issued');
     } finally {
-      setState(() => _busy = false);
+      if (mounted) setState(() => _busy = false);
     }
   }
 
@@ -116,13 +134,15 @@ class _SwarmsViewState extends State<SwarmsView> {
     setState(() => _busy = true);
     try {
       final snap = await widget.api.snapshot(id);
-      setState(() => _detail = snap);
+      if (mounted) setState(() => _detail = snap);
     } on GatewayException catch (e) {
-      setState(() => _error = e.message);
+      if (mounted) setState(() => _error = e.message);
     } catch (_) {
-      setState(() => _error = 'the swarm snapshot could not be read');
+      if (mounted) {
+        setState(() => _error = 'the swarm snapshot could not be read');
+      }
     } finally {
-      setState(() => _busy = false);
+      if (mounted) setState(() => _busy = false);
     }
   }
 
@@ -134,7 +154,14 @@ class _SwarmsViewState extends State<SwarmsView> {
     }
     final t = context.fw;
     return ViewScroll(storageKey: 'swarms', children: [
-      const SectionHeader('Subagent swarms', kicker: 'parallel sessions'),
+      SectionHeader('Subagent swarms',
+          kicker: 'parallel sessions',
+          trailing: IconButton(
+            key: const Key('swarms-refresh'),
+            onPressed: _busy ? null : _refresh,
+            tooltip: 'Re-read the swarm roster',
+            icon: const Icon(Icons.refresh),
+          )),
       const SizedBox(height: FwLayout.s3),
       Text(
         'One goal fans out to role-prompted children, each in its own '
@@ -151,7 +178,12 @@ class _SwarmsViewState extends State<SwarmsView> {
           padding: const EdgeInsets.only(bottom: FwLayout.s3),
           child: HonestNull(_error!),
         ),
-      if (_rows.isEmpty && !_busy)
+      if (!_loaded && _busy)
+        const Padding(
+          padding: EdgeInsets.only(top: FwLayout.s2),
+          child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+        )
+      else if (_rows.isEmpty && _loaded)
         const HonestNull(
             'No swarms yet. Spawn one above; sealed receipts persist here.')
       else

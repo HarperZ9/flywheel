@@ -65,14 +65,33 @@ class _ProjectsViewState extends State<ProjectsView> {
   Future<void> _add() async {
     final root = _root.text.trim();
     if (root.isEmpty) return;
-    final r = await widget.client.addProject(root);
-    if (r['error'] != null) {
-      setState(() => _error = '${r['error']}');
-    } else {
-      _root.clear();
-      _error = null;
-      _load();
+    try {
+      await widget.client.addProject(root);
+    } catch (e) {
+      if (mounted) setState(() => _error = '$e');
+      return;
     }
+    if (!mounted) return;
+    _root.clear();
+    setState(() => _error = null);
+    _load();
+  }
+
+  Future<void> _remove(String root) async {
+    try {
+      await widget.client.removeProject(root);
+    } catch (e) {
+      if (mounted) setState(() => _error = '$e');
+      return;
+    }
+    if (!mounted) return;
+    if (_selected == root) {
+      setState(() {
+        _selected = null;
+        _index = null;
+      });
+    }
+    _load();
   }
 
   Future<void> _loadAudit() async {
@@ -166,7 +185,13 @@ class _ProjectsViewState extends State<ProjectsView> {
           StorePanel(
               store: _store!,
               onVerify: () async {
-                final v = await widget.client.storeVerify();
+                Map<String, dynamic> v;
+                try {
+                  v = await widget.client.storeVerify();
+                } catch (e) {
+                  if (mounted) setState(() => _error = '$e');
+                  return;
+                }
                 if (mounted) {
                   final chain =
                       v['chain'] is Map ? v['chain'] as Map : const {};
@@ -211,31 +236,9 @@ class _ProjectsViewState extends State<ProjectsView> {
         else if (_auditTail!.isEmpty)
           const HonestNull('No audit entries recorded yet.')
         else
-          for (final entry in _auditTail!) _auditRow(t, entry),
+          for (final entry in _auditTail!) AuditRow(entry: entry),
       ],
     ]);
-  }
-
-  Widget _auditRow(FwTokens t, Map<String, dynamic> entry) {
-    final kind = '${entry['kind'] ?? ''}';
-    final hash = '${entry['hash'] ?? ''}';
-    final ts = '${entry['ts'] ?? ''}';
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: FwLayout.s1),
-      decoration: BoxDecoration(
-          border: Border(bottom: BorderSide(color: t.hairline))),
-      child: Row(children: [
-        VerdictDot('verified', size: 6),
-        const SizedBox(width: FwLayout.s2),
-        Text(kind, style: fwMono(t, size: 11, color: t.ink)),
-        const Spacer(),
-        if (hash.isNotEmpty)
-          HashText('', hash, keep: 12),
-        const SizedBox(width: FwLayout.s3),
-        if (ts.isNotEmpty)
-          Text(ts, style: fwMono(t, size: 10, color: t.inkFaint)),
-      ]),
-    );
   }
 
   Widget _projectCard(FwTokens t, Map<String, dynamic> p) {
@@ -273,16 +276,7 @@ class _ProjectsViewState extends State<ProjectsView> {
                 ),
                 const SizedBox(width: FwLayout.s3),
                 OutlinedButton(
-                  onPressed: () async {
-                    await widget.client.removeProject(root);
-                    if (_selected == root) {
-                      setState(() {
-                        _selected = null;
-                        _index = null;
-                      });
-                    }
-                    _load();
-                  },
+                  onPressed: () => _remove(root),
                   child: const Text('Remove'),
                 ),
               ],

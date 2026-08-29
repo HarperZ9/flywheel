@@ -80,6 +80,12 @@ class _InstrumentsViewState extends State<InstrumentsView> {
     _load();
   }
 
+  @override
+  void didUpdateWidget(InstrumentsView old) {
+    super.didUpdateWidget(old);
+    if (!old.alive && widget.alive) _load();
+  }
+
   Future<void> _load() async {
     if (!widget.alive || _loading) return;
     setState(() => _loading = true);

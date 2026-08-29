@@ -69,7 +69,12 @@ class _EvalReceiptPanelState extends State<EvalReceiptPanel> {
       _verifyDoc = null;
       _corruptDoc = null;
     });
-    final r = await widget.onRun();
+    Map<String, dynamic> r;
+    try {
+      r = await widget.onRun();
+    } catch (e) {
+      r = {'error': '$e'};
+    }
     if (!mounted) return;
     setState(() {
       _running = false;
@@ -86,7 +91,12 @@ class _EvalReceiptPanelState extends State<EvalReceiptPanel> {
     final receipt = _receipt;
     if (receipt == null || _verifying) return;
     setState(() => _verifying = true);
-    final v = await widget.onVerify(receipt);
+    Map<String, dynamic> v;
+    try {
+      v = await widget.onVerify(receipt);
+    } catch (e) {
+      v = {'verdict': 'UNVERIFIABLE', 'detail': '$e'};
+    }
     if (!mounted) return;
     setState(() {
       _verifying = false;
@@ -101,7 +111,12 @@ class _EvalReceiptPanelState extends State<EvalReceiptPanel> {
     // touched: this proves the seal's refusal without corrupting the record.
     final copy = flipOneHexChar(receipt);
     setState(() => _verifying = true);
-    final v = await widget.onVerify(copy);
+    Map<String, dynamic> v;
+    try {
+      v = await widget.onVerify(copy);
+    } catch (e) {
+      v = {'verdict': 'UNVERIFIABLE', 'detail': '$e'};
+    }
     if (!mounted) return;
     setState(() {
       _verifying = false;

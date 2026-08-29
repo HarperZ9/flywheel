@@ -95,13 +95,21 @@ class _EmptyJourney extends StatelessWidget {
   Widget build(BuildContext context) {
     final detail = state.remoteFailure?.detail;
     final local = state.localFailure?.name;
+    final loading = detail == null && local == null && _busy(state.phase);
     return ViewScroll(storageKey: 'journey-empty', children: [
       SectionHeader('Evidence Journey', kicker: state.phase.name),
       const SizedBox(height: FwLayout.s4),
-      HonestNull(detail ??
-          (local == null
-              ? 'No Journey projection was supplied.'
-              : 'The local Journey record could not be read: $local.')),
+      if (loading)
+        const Center(
+            child: Padding(
+          padding: EdgeInsets.all(FwLayout.s4),
+          child: CircularProgressIndicator(strokeWidth: 2),
+        ))
+      else
+        HonestNull(detail ??
+            (local == null
+                ? 'No Journey projection was supplied.'
+                : 'The local Journey record could not be read: $local.')),
     ]);
   }
 }

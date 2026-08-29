@@ -73,7 +73,12 @@ class _AuditReceiptPanelState extends State<AuditReceiptPanel> {
       _corruptDoc = null;
       _workReceipt = work;
     });
-    final r = await widget.onRun(work);
+    Map<String, dynamic> r;
+    try {
+      r = await widget.onRun(work);
+    } catch (e) {
+      r = {'error': '$e'};
+    }
     if (!mounted) return;
     setState(() {
       _running = false;
@@ -89,7 +94,12 @@ class _AuditReceiptPanelState extends State<AuditReceiptPanel> {
     // never touched — this proves the refusal without corrupting the record.
     final subject = corrupt ? flipOneHexChar(receipt) : receipt;
     setState(() => _verifying = true);
-    final v = await widget.onVerify(subject, _workReceipt);
+    Map<String, dynamic> v;
+    try {
+      v = await widget.onVerify(subject, _workReceipt);
+    } catch (e) {
+      v = {'verdict': 'UNVERIFIABLE', 'detail': '$e'};
+    }
     if (!mounted) return;
     setState(() {
       _verifying = false;

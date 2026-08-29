@@ -60,6 +60,35 @@ class IndexPanel extends StatelessWidget {
   }
 }
 
+class AuditRow extends StatelessWidget {
+  final Map<String, dynamic> entry;
+  const AuditRow({super.key, required this.entry});
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.fw;
+    final kind = '${entry['kind'] ?? ''}';
+    final hash = '${entry['hash'] ?? ''}';
+    final ts = '${entry['ts'] ?? ''}';
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: FwLayout.s1),
+      decoration: BoxDecoration(
+          border: Border(bottom: BorderSide(color: t.hairline))),
+      child: Row(children: [
+        VerdictDot('verified', size: 6),
+        const SizedBox(width: FwLayout.s2),
+        Text(kind, style: fwMono(t, size: 11, color: t.ink)),
+        const Spacer(),
+        if (hash.isNotEmpty)
+          HashText('', hash, keep: 12),
+        const SizedBox(width: FwLayout.s3),
+        if (ts.isNotEmpty)
+          Text(ts, style: fwMono(t, size: 10, color: t.inkFaint)),
+      ]),
+    );
+  }
+}
+
 class StorePanel extends StatelessWidget {
   final Map<String, dynamic> store;
   final Future<void> Function() onVerify;

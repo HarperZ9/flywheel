@@ -103,7 +103,7 @@ class _StudioViewState extends State<StudioView> {
         const Kicker('the loop · drawn from live state'),
         const SizedBox(height: FwLayout.s3),
         _loopSchematic(context),
-        if (widget.client != null) ...[
+        if (widget.client != null && widget.alive) ...[
           const SizedBox(height: FwLayout.s5),
           const Kicker('typeface forge · parametric type'),
           const SizedBox(height: FwLayout.s3),
@@ -113,8 +113,7 @@ class _StudioViewState extends State<StudioView> {
             onMinted: (params) => setState(() => _mintedFace = params),
           ),
           const SizedBox(height: FwLayout.s3),
-          VariableFamilyCard(
-              client: widget.client!, faceParams: _mintedFace),
+          VariableFamilyCard(client: widget.client!, faceParams: _mintedFace),
           const SizedBox(height: FwLayout.s3),
           const Kicker('face gallery · publish, browse, wear a minted face'),
           const SizedBox(height: FwLayout.s3),
@@ -159,10 +158,14 @@ class _StudioViewState extends State<StudioView> {
           SoundPanel(client: widget.client!),
         ] else ...[
           const SizedBox(height: FwLayout.s5),
-          const Kicker('music'),
+          const Kicker('live studio · offline'),
           const SizedBox(height: FwLayout.s3),
           const HonestNull(
-              'The engine is offline; the chime study composes when it runs.'),
+              'The engine is offline. The typeface forge, variable family, '
+              'face gallery, poster composer, plotter and raster kernels, '
+              'creative line and graph, brand kit, prompt forge, and chime '
+              'study all compose when it runs. The seeded field plate above '
+              'needs no engine.'),
         ],
       ],
     );

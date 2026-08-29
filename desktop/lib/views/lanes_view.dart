@@ -113,11 +113,16 @@ class LaneCard extends StatelessWidget {
   Future<void> _install(BuildContext context) async {
     final messenger = ScaffoldMessenger.of(context);
     messenger.showSnackBar(SnackBar(content: Text('Installing ${lane.name}…')));
-    final r = await onInstall!(lane.name);
-    messenger.showSnackBar(SnackBar(
-        content: Text(r['installed'] == true
-            ? '${lane.name} installed: ${r['detail'] ?? 'ok'}'
-            : '${lane.name} install failed: ${r['detail'] ?? r['error'] ?? '?'}')));
+    try {
+      final r = await onInstall!(lane.name);
+      messenger.showSnackBar(SnackBar(
+          content: Text(r['installed'] == true
+              ? '${lane.name} installed: ${r['detail'] ?? 'ok'}'
+              : '${lane.name} install failed: ${r['detail'] ?? r['error'] ?? '?'}')));
+    } catch (e) {
+      messenger.showSnackBar(
+          SnackBar(content: Text('${lane.name} install failed: $e')));
+    }
   }
 
   @override

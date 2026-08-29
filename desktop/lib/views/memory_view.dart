@@ -24,6 +24,7 @@ class _MemoryViewState extends State<MemoryView> {
   List<Map<String, dynamic>> _results = [];
   List<Map<String, dynamic>> _browse = [];
   bool _searched = false;
+  bool _browseLoaded = false;
   String? _error;
 
   @override
@@ -48,11 +49,16 @@ class _MemoryViewState extends State<MemoryView> {
     try {
       final r = await widget.client.memoryList(limit: 30);
       if (mounted) {
-        setState(() => _browse = ((r['spans'] ?? []) as List)
-            .whereType<Map<String, dynamic>>()
-            .toList());
+        setState(() {
+          _browse = ((r['spans'] ?? []) as List)
+              .whereType<Map<String, dynamic>>()
+              .toList();
+          _browseLoaded = true;
+        });
       }
-    } catch (_) {/* stats error already surfaced */}
+    } catch (e) {
+      if (mounted && _error == null) setState(() => _error = '$e');
+    }
   }
 
   @override
@@ -129,16 +135,23 @@ class _MemoryViewState extends State<MemoryView> {
           style: Theme.of(context).textTheme.bodySmall,
         ),
         const SizedBox(height: FwLayout.s4),
-        AdaptiveTiles(children: [
-          StatTile(label: 'spans', value: '$spans'),
-          StatTile(label: 'indexed terms', value: '$terms'),
-          StatTile(
-              label: 'persisted',
-              value: (_stats?['persisted'] ?? false) ? 'yes' : 'empty',
-              status: (_stats?['persisted'] ?? false)
-                  ? 'verified'
-                  : 'absent'),
-        ]),
+        if (_stats == null && _error == null)
+          const Center(
+              child: Padding(
+            padding: EdgeInsets.all(FwLayout.s4),
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ))
+        else
+          AdaptiveTiles(children: [
+            StatTile(label: 'spans', value: '$spans'),
+            StatTile(label: 'indexed terms', value: '$terms'),
+            StatTile(
+                label: 'persisted',
+                value: (_stats?['persisted'] ?? false) ? 'yes' : 'empty',
+                status: (_stats?['persisted'] ?? false)
+                    ? 'verified'
+                    : 'absent'),
+          ]),
         if (_error != null) ...[
           const SizedBox(height: FwLayout.s3),
           HonestNull('Memory request failed: $_error'),
@@ -173,7 +186,13 @@ class _MemoryViewState extends State<MemoryView> {
         Kicker('stored · ${_browse.length} span${_browse.length == 1 ? '' : 's'}, '
             'browse without a query'),
         const SizedBox(height: FwLayout.s3),
-        if (_browse.isEmpty)
+        if (!_browseLoaded && _error == null)
+          const Center(
+              child: Padding(
+            padding: EdgeInsets.all(FwLayout.s4),
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ))
+        else if (_browse.isEmpty && _browseLoaded)
           const HonestNull(
               'Nothing stored yet. Notes you add and spans the loop folds '
               'appear here, verbatim, each bound to its content hash.')

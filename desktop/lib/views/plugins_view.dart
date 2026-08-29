@@ -5,8 +5,8 @@ import '../widgets/fw.dart';
 import '../widgets/marketplace_panel.dart';
 import '../widgets/plugin_forms.dart';
 import '../widgets/tool_call_sheet.dart';
-import '../widgets/operation_grant_sheet.dart';
 import '../widgets/parity_table.dart';
+import '../widgets/plugin_authorize.dart';
 
 class PluginsView extends StatefulWidget {
   final GatewayClient client;
@@ -25,30 +25,15 @@ class _PluginsViewState extends State<PluginsView> {
   Map<String, dynamic>? _parity;
   Map<String, dynamic>? _marketplace;
   String? _error;
+  bool _loaded = false;
   var _request = 0;
-  String get _requestId => 'desktop-plugin-${++_request}';
   Future<Map<String, dynamic>?> _authorize(
-      String action, Map<String, Object?> raw, String path,
-      {List<String> credentialRefs = const [],
-      Map<String, Object?> Function()? currentRaw}) {
-    final request = _requestId;
-    GatewayOperation exact(Map<String, Object?> value) =>
-        GatewayOperation.exact(
-            action: action,
-            operation: value,
-            credentialRefs: credentialRefs,
-            clientRequestId: request);
-    final operation = exact(raw);
-    return authorizeGatewayOperation(
-        context, operation, (body) => widget.client.postJson(path, body),
-        currentOperation: () {
-      try {
-        return currentRaw == null ? operation : exact(currentRaw());
-      } catch (_) {
-        return null;
-      }
-    });
-  }
+          String action, Map<String, Object?> raw, String path,
+          {List<String> credentialRefs = const [],
+          Map<String, Object?> Function()? currentRaw}) =>
+      authorizePluginOperation(context, widget.client,
+          'desktop-plugin-${++_request}', action, raw, path,
+          credentialRefs: credentialRefs, currentRaw: currentRaw);
 
   @override
   void initState() {
@@ -85,6 +70,7 @@ class _PluginsViewState extends State<PluginsView> {
           _parity = results[1];
           _marketplace = results[2];
           _error = null;
+          _loaded = true;
         });
       }
     } catch (e) {
@@ -154,7 +140,18 @@ class _PluginsViewState extends State<PluginsView> {
           HonestNull(_error!),
         ],
         const SizedBox(height: FwLayout.s4),
-        for (final p in _plugins) _pluginCard(context, p),
+        if (!_loaded && _error == null)
+          const Center(
+              child: Padding(
+            padding: EdgeInsets.all(FwLayout.s4),
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ))
+        else if (_plugins.isEmpty && _loaded)
+          const HonestNull(
+              'No plugins are registered yet. Register an MCP server below '
+              'or install one from the marketplace.')
+        else
+          for (final p in _plugins) _pluginCard(context, p),
         const SizedBox(height: FwLayout.s4),
         const Kicker('register an mcp server', hot: true),
         const SizedBox(height: FwLayout.s3),

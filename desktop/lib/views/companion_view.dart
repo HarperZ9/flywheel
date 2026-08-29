@@ -1,4 +1,4 @@
-﻿// companion_view.dart â€” the Companion view: ask once, the seat answers from
+// companion_view.dart -- the Companion view: ask once, the seat answers from
 // the cheapest honest source. Cache and locally-verified answers carry a
 // verified chip; consensus is labeled as agreement, not proof; hard prompts
 // escalate with the failed local attempt on record. The chip never lies.
@@ -181,7 +181,7 @@ class _CompanionViewState extends State<CompanionView> {
           Text(turn.prompt, style: Theme.of(context).textTheme.bodyLarge),
           const SizedBox(height: FwLayout.s3),
           if (turn.pending)
-            Text('routingâ€¦', style: fwMono(t, size: 11.5, color: t.inkFaint))
+            Text('routing…', style: fwMono(t, size: 11.5, color: t.inkFaint))
           else if (turn.error != null)
             HonestNull('The request failed: ${turn.error}')
           else
@@ -199,14 +199,14 @@ class _CompanionViewState extends State<CompanionView> {
     // a cache hit or a local run is transport, not an acceptance.
     final status = companionStatus(r.verdict);
     final (chip, note) = switch (r.source) {
-      'cache' => ('verified Â· cache', null),
-      'local-verified' => ('verified Â· local', null),
+      'cache' => ('verified · cache', null),
+      'local-verified' => ('verified · local', null),
       'local-consensus' => (
-          'consensus Â· local',
+          'consensus · local',
           'Agreement across local samples, not a proof. Treat accordingly.'
         ),
       'escalate' => (
-          'escalate â†’ ${r.escalateTo ?? 'frontier'}',
+          'escalate → ${r.escalateTo ?? 'frontier'}',
           'The local model could not verify an answer. The failed attempt is '
               'on the ledger; route this prompt to a stronger endpoint.'
         ),

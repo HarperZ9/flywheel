@@ -50,6 +50,12 @@ void main() {
 void _marketplaceEditTest() {
   testWidgets('editing marketplace fields rebuilds pending operation',
       (tester) async {
+    // The plugins page carries a full register form, the marketplace add
+    // card, and the empty-plugins honest null above them, so it runs taller
+    // than the default 800x600 surface. Give it room so the marketplace Save
+    // button is reachable; the assertions below are unchanged.
+    await tester.binding.setSurfaceSize(const Size(800, 1400));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
     final pending = Completer<Object?>();
     late GatewayOperation captured;
     late GatewayOperationSupplier current;

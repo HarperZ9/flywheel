@@ -1,4 +1,4 @@
-﻿// forge_panel.dart â€” the prompt forge, in the app where it can do more:
+// forge_panel.dart -- the prompt forge, in the app where it can do more:
 // a plain goal becomes a structured prompt whose success gates a machine
 // can check, both arms sealed by hash, and drift re-checkable in place.
 
@@ -103,7 +103,7 @@ class _ForgePanelState extends State<ForgePanel> {
             const SizedBox(width: FwLayout.s3),
             FilledButton(
               onPressed: _busy ? null : _forge,
-              child: Text(_busy ? 'Forgingâ€¦' : 'Forge'),
+              child: Text(_busy ? 'Forging…' : 'Forge'),
             ),
           ]),
           if (_error != null) ...[
@@ -128,7 +128,7 @@ class _ForgePanelState extends State<ForgePanel> {
         Row(children: [
           OutlinedButton(
             onPressed: _rechecking ? null : _driftCheck,
-            child: Text(_rechecking ? 'Recheckingâ€¦' : 'Recheck drift'),
+            child: Text(_rechecking ? 'Rechecking…' : 'Recheck drift'),
           ),
           const SizedBox(width: FwLayout.s3),
           if (_recheck != null) Expanded(child: _recheckRow(t, _recheck!)),
