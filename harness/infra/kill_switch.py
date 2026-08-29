@@ -112,16 +112,18 @@ def isolate_network() -> dict[str, Any]:
 
     This is a stub that records the intent. In a real deployment, this would
     flush iptables, disable the network interface, or call a cloud security
-    group API. The stub always records the action but does NOT execute it
-    unless FLYWHEEL_KILL_SWITCH_LIVE=1 is set in the environment.
+    group API. No live backend is wired yet, so the result always reports
+    executed: False; FLYWHEEL_KILL_SWITCH_LIVE=1 only changes the reason
+    string from "dry run" to "not implemented".
     """
     live = __import__("os").environ.get("FLYWHEEL_KILL_SWITCH_LIVE") == "1"
     if not live:
         return {"action": "network-isolation", "executed": False,
                 "reason": "FLYWHEEL_KILL_SWITCH_LIVE not set; dry run"}
-    # Real implementation would go here
-    return {"action": "network-isolation", "executed": True,
-            "reason": "network isolated (live mode)"}
+    # No live isolation backend is wired yet. Reporting executed: True here
+    # would fabricate a safety action that never happened.
+    return {"action": "network-isolation", "executed": False,
+            "reason": "network isolation not implemented; no action taken"}
 
 
 def revoke_credentials(

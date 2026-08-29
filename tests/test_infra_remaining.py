@@ -161,3 +161,11 @@ def test_isolate_network_dry_run_by_default():
     assert result["executed"] is False
     assert "dry run" in result["reason"]
 
+
+def test_isolate_network_live_mode_reports_not_implemented(monkeypatch):
+    # No live isolation backend exists; live mode must not fabricate success.
+    monkeypatch.setenv("FLYWHEEL_KILL_SWITCH_LIVE", "1")
+    result = isolate_network()
+    assert result["executed"] is False
+    assert "not implemented" in result["reason"]
+
