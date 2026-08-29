@@ -5,6 +5,7 @@ import '../services/journey_draft_store.dart';
 import '../services/journey_session_store.dart';
 part 'journey_controller_support.dart';
 part 'journey_controller_refresh.dart';
+part 'journey_controller_cancel.dart';
 
 final class JourneyController extends ChangeNotifier {
   JourneyController({
@@ -195,47 +196,6 @@ final class JourneyController extends ChangeNotifier {
           candidateRef: _t(draft, 'candidate_ref'),
           contextRef: _t(draft, 'context_ref'))),
     };
-  }
-
-  Future<void> _cancel(String operation) async {
-    final current = _view.projection;
-    if (current == null || !operationRefPattern.hasMatch(operation)) {
-      _view.remote(_invalid());
-      return;
-    }
-    final target = _capture();
-    _view.busy(JourneyViewPhase.cancelling, operation: operation);
-    _view.cancelResult = null;
-    final key = '${current.journeyRef}:$operation';
-    final head = _cancelHeads.putIfAbsent(key, () => current.eventHeadSha256);
-    try {
-      final request = 'cancel:$operation';
-      final granted = await _grant(
-          GrantIntent.cancel(
-              journeyRef: current.journeyRef,
-              expectedEventHead: head,
-              clientRequestId: request,
-              operationRef: operation),
-          'cancel');
-      final result = await _api.cancel(JourneyCancelRequest(
-          journeyRef: current.journeyRef,
-          expectedEventHead: head,
-          clientRequestId: request,
-          grantRef: granted.$1,
-          operationRef: operation));
-      _accept(_terminal(result, operation));
-      final token = _acks.add(current.journeyRef, result.eventHeadSha256);
-      _cancelHeads.remove(key);
-      if (_view.ref == current.journeyRef) _view.cancelResult = result;
-      await _refreshAck(token, target.lens);
-    } on Object catch (error) {
-      final failure = _fail(error);
-      if (failure.code == 'HEAD_CONFLICT') {
-        await _conflict(failure, target, operation: operation);
-      } else if (_current(target)) {
-        _view.remote(failure);
-      }
-    }
   }
 
   Future<(String, String?)> _grant(GrantIntent intent, String action) async {

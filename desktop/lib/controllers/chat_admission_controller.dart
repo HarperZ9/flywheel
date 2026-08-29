@@ -6,6 +6,8 @@ import '../models/chat.dart';
 import '../services/chat_draft_store.dart';
 import '../services/chat_store.dart';
 
+part 'chat_admission_support.dart';
+
 typedef ChatAdmissionDecision = ({
   PromptDisposition disposition,
   bool visible,
@@ -280,27 +282,4 @@ final class ChatAdmissionController {
     }
     return newest;
   }
-}
-
-String _draftReference(String conversationRef) =>
-    'chd_${sha256.convert(utf8.encode('chat:$conversationRef')).toString().substring(0, 32)}';
-
-String _admissionKey(ChatDraft draft) =>
-    draft.attemptRef ?? 'legacy:${draft.draftRef}:${draft.textSha256}';
-
-String _attemptReference(String attemptRef) =>
-    'chd_${sha256.convert(utf8.encode('admitted:$attemptRef')).toString().substring(0, 32)}';
-
-bool _isAdmittedState(ChatDraftState state) =>
-    state == ChatDraftState.admittedPendingHistory ||
-    state == ChatDraftState.admittedPendingCleanup;
-
-int _nextSequence(List<Conversation> conversations) {
-  var next = 0;
-  for (final conversation in conversations) {
-    if (!conversation.id.startsWith('c')) continue;
-    final parsed = int.tryParse(conversation.id.substring(1));
-    if (parsed != null && parsed >= next) next = parsed + 1;
-  }
-  return next;
 }
