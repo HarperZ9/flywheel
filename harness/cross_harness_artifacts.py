@@ -123,7 +123,7 @@ def _safe_relative(value: str, label: str) -> Path:
 
 _STANDARD_NAMES = {"prompt.txt", "output.txt", "tool_trace.json", "receipt.json", "metrics.json",
                    "limitations.md", "enforcement.json", "availability.json", "provider-receipt.json",
-                   "oracle.json", "resource.json", "workspace-before.json", "workspace-after.json"}
+                   "oracle.json", "resource.json", "workspace-before.json", "workspace-after.json", "benchmark-context.json"}
 _DEVICES = {"con", "prn", "aux", "nul", *(f"com{i}" for i in range(1, 10)),
             *(f"lpt{i}" for i in range(1, 10))}
 
@@ -174,13 +174,13 @@ def create_attempt_workspace(
         directory.chmod(stat.S_IREAD | stat.S_IEXEC)
     return workspace, observed
 
-
 def remove_readonly_tree(root: Path) -> None:
     root = Path(root); root.chmod(0o700)
     def retry(function, path, _error):
-        Path(path).chmod(0o700 if Path(path).is_dir() else 0o600); function(path)
+        target = Path(path)
+        target.chmod(0o700 if target.is_dir() else 0o600); target.parent.chmod(0o700)
+        function(path)
     shutil.rmtree(root, onerror=retry)
-
 
 def _pairs(rows: list[tuple[str, Any]]) -> dict[str, Any]:
     result: dict[str, Any] = {}
