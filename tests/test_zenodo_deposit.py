@@ -245,3 +245,23 @@ def test_a_create_time_failure_claims_no_deposition():
                                metadata=_md(), sandbox=True, publish=False)
     assert ei.value.deposition_id is None
     assert ei.value.self_url is None
+
+
+def test_a_create_reply_missing_bucket_still_carries_the_created_deposition_id():
+    import pytest
+    # create() returns 201 with a real id but a reply whose links omit bucket (a
+    # HATEOAS violation a mangling proxy could induce). A draft 12345 now exists
+    # server-side, so the guard that rejects the partial reply fires *after* create
+    # succeeded; the raised error must carry the draft's id and self_url, or the
+    # operator cannot find and discard the orphan the reply already named.
+    self_url = "https://sandbox.zenodo.org/api/deposit/depositions/12345"
+    ft = FakeTransport([
+        (201, {"id": 12345, "links": {"self": self_url}}),  # no "bucket"
+    ])
+    with pytest.raises(zenodo_deposit.DepositError) as ei:
+        zenodo_deposit.deposit(ft, token=TOKEN, files=[("anchor.json", b'{"a":1}')],
+                               metadata=_md(), sandbox=True, publish=False)
+    assert ei.value.deposition_id == 12345
+    assert ei.value.self_url == self_url
+    # The guard fires before any upload, so only the create call was made.
+    assert len(ft.calls) == 1

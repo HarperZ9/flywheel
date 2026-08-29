@@ -154,15 +154,18 @@ def deposit(request, *, token: str, files: list, metadata: dict,
     if not files:
         raise DepositError("deposit needs at least one file")
     record = create(request, token=token, sandbox=sandbox)
-    links = record.get("links") or {}
-    bucket = links.get("bucket")
-    self_url = links.get("self")
-    if not bucket or not self_url:
-        raise DepositError("create reply missing bucket or self link")
-    # The deposition now exists on Zenodo. Any later failure re-raises through
+    # The deposition now exists on Zenodo. Any later failure -- including the guard
+    # below, which rejects a create reply missing its links -- re-raises through
     # DepositError carrying this draft's id and url, so the operator can find and
-    # discard it instead of re-running blind and orphaning a second draft.
+    # discard it instead of re-running blind and orphaning a second draft. The
+    # extraction and guard sit inside the try so that same handler covers them; the
+    # three dict.get lookups cannot raise, so self_url is bound before the guard.
     try:
+        links = record.get("links") or {}
+        bucket = links.get("bucket")
+        self_url = links.get("self")
+        if not bucket or not self_url:
+            raise DepositError("create reply missing bucket or self link")
         uploaded = [upload_file(request, token=token, bucket_url=bucket, name=name,
                                 data=data) for name, data in files]
         set_metadata(request, token=token, deposition_url=self_url,
