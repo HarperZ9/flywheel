@@ -1,18 +1,31 @@
 from __future__ import annotations
 
-import json
+import json, os
 from pathlib import Path
 
 import pytest
 
 from harness.cross_harness_adapters import _enforcement
-from harness.cross_harness_artifacts import materialize_response_envelope
+from harness.cross_harness_artifacts import materialize_response_envelope, remove_readonly_tree
 from harness.cross_harness_executor import execute_cross_harness_manifest
 from harness.cross_harness_manifest import build_manifest, load_json
 from harness.cross_harness_types import AdapterResult, AvailabilityResult
 
 
 ROOT = Path(__file__).resolve().parent.parent
+
+
+@pytest.mark.skipif(os.name == "nt", reason="POSIX directory permissions are required")
+def test_remove_readonly_tree_handles_read_only_parent_directories(tmp_path):
+    root = tmp_path / "readonly"
+    nested = root / "fixtures" / "cross-harness"
+    nested.mkdir(parents=True)
+    (nested / "fixture.json").write_text("{}", encoding="utf-8")
+    for directory in (root, root / "fixtures", nested):
+        directory.chmod(0o555)
+    (nested / "fixture.json").chmod(0o444)
+    remove_readonly_tree(root)
+    assert not root.exists()
 
 
 class ContextReadingAdapter:
