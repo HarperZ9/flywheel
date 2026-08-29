@@ -87,6 +87,17 @@ def test_lane_listing_includes_tier():
         assert lane["min_tier"] in ("T1", "T2", "T3")
 
 
+def test_lane_listing_carries_the_registry_description():
+    # The listing feeds the gateway /lanes endpoint straight to the client, so a
+    # blank description ships a blank card. The value comes from the lane's role
+    # field (Lane has no `description` attr), so every lane must carry non-empty text.
+    from harness.lanes import LANES
+    lanes = list_available_lanes()
+    for lane in lanes:
+        assert lane["description"], f"{lane['name']} listing has an empty description"
+        assert lane["description"] == LANES[lane["name"]].role
+
+
 def test_local_model_requires_t2():
     assert LANE_MIN_TIERS.get("local-model") == "T2"
 

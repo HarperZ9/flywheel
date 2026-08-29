@@ -94,7 +94,7 @@ def list_available_lanes() -> list[dict[str, str]]:
         {
             "name": name,
             "min_tier": LANE_MIN_TIERS.get(name, "T1"),
-            "description": getattr(lane, "description", ""),
+            "description": getattr(lane, "role", ""),
             "organ": getattr(lane, "organ", ""),
         }
         for name, lane in LANES.items()
