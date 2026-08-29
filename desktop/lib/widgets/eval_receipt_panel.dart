@@ -5,14 +5,13 @@
 // one hex char of a COPY — never the stored receipt — and verifies THAT: the
 // same verifier now refuses and NAMES the failing check. The refusal is a
 // first-class visual state. Dumb widget: async callbacks in, no client.
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
 
 import '../models/gateway_models.dart';
 import '../theme/flywheel_theme.dart';
 import 'fw.dart';
 import 'model_picker.dart';
+import 'receipt_verify_controls.dart';
 import 'model_selector.dart';
 
 class EvalReceiptPanel extends StatefulWidget {
@@ -100,7 +99,7 @@ class _EvalReceiptPanelState extends State<EvalReceiptPanel> {
     if (receipt == null || _verifying) return;
     // Flip one hex char of a COPY, client-side. The stored receipt is never
     // touched: this proves the seal's refusal without corrupting the record.
-    final copy = _flipOneHexChar(receipt);
+    final copy = flipOneHexChar(receipt);
     setState(() => _verifying = true);
     final v = await widget.onVerify(copy);
     if (!mounted) return;
@@ -108,16 +107,6 @@ class _EvalReceiptPanelState extends State<EvalReceiptPanel> {
       _verifying = false;
       _corruptDoc = v;
     });
-  }
-
-  static Map<String, dynamic> _flipOneHexChar(Map<String, dynamic> receipt) {
-    final copy = jsonDecode(jsonEncode(receipt)) as Map<String, dynamic>;
-    final seal = copy['seal'];
-    final hex = (seal is Map ? seal['hex'] : null);
-    if (hex is String && hex.isNotEmpty) {
-      seal['hex'] = (hex[0] == '0' ? '1' : '0') + hex.substring(1);
-    }
-    return copy;
   }
 
   @override
@@ -214,11 +203,11 @@ class _EvalReceiptPanelState extends State<EvalReceiptPanel> {
         ]),
         if (_verifyDoc != null) ...[
           const SizedBox(height: FwLayout.s3),
-          _verifyState(t, _verifyDoc!),
+          VerifyStateRow(doc: _verifyDoc!),
         ],
         if (_corruptDoc != null) ...[
           const SizedBox(height: FwLayout.s3),
-          _tamperState(t, _corruptDoc!),
+          TamperStateCard(doc: _corruptDoc!),
         ],
       ]),
     );
@@ -240,48 +229,6 @@ class _EvalReceiptPanelState extends State<EvalReceiptPanel> {
         ]),
       );
 
-  // The MATCH branch: the accept color, the seal held.
-  Widget _verifyState(FwTokens t, Map<String, dynamic> doc) {
-    final verdict = '${doc['verdict'] ?? ''}';
-    return Row(children: [
-      VerdictDot(_verifyStatus(verdict), size: 8),
-      const SizedBox(width: FwLayout.s2),
-      VerdictPill(verdict.toLowerCase(), status: _verifyStatus(verdict)),
-      const SizedBox(width: FwLayout.s2),
-      Expanded(
-        child: Text('${doc['detail'] ?? ''}',
-            style: fwMono(t, size: 10.5, color: t.inkMuted)),
-      ),
-    ]);
-  }
-
-  // The TAMPERED branch: the one hot mark in a distinct card that NAMES the
-  // check that refused it.
-  Widget _tamperState(FwTokens t, Map<String, dynamic> doc) {
-    final verdict = '${doc['verdict'] ?? ''}';
-    final failure = '${doc['failure_class'] ?? ''}';
-    return Container(
-      padding: const EdgeInsets.all(FwLayout.s3),
-      decoration: BoxDecoration(
-        color: t.drift.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(FwLayout.radiusSmall),
-        border: Border.all(color: t.drift.withValues(alpha: 0.45)),
-      ),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Row(children: [
-          VerdictDot('tampered', size: 8),
-          const SizedBox(width: FwLayout.s2),
-          VerdictPill(
-              failure.isEmpty ? verdict.toLowerCase() : 'tampered · $failure',
-              status: 'drift'),
-        ]),
-        const SizedBox(height: FwLayout.s2),
-        Text('One flipped byte, refused. ${doc['detail'] ?? ''}',
-            style: fwMono(t, size: 11, color: t.inkSoft)),
-      ]),
-    );
-  }
-
   String _taskStatus(Map r) {
     final accepted = '${r['accepted']}' == 'true' || r['accepted'] == true;
     final verdict = '${r['verdict'] ?? ''}'.toUpperCase();
@@ -290,10 +237,4 @@ class _EvalReceiptPanelState extends State<EvalReceiptPanel> {
     return 'drift';
   }
 
-  // MATCH -> the accept color; TAMPERED -> the one hot mark; else unproven.
-  String _verifyStatus(String verdict) => switch (verdict.toUpperCase()) {
-        'MATCH' => 'verified',
-        'TAMPERED' => 'drift',
-        _ => 'unverifiable',
-      };
 }

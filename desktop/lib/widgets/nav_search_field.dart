@@ -29,13 +29,27 @@ class NavSearchField extends StatelessWidget {
             prefixIcon: Icon(Icons.search_rounded,
                 size: 14, color: t.inkFaint),
             suffixIcon: value.text.isEmpty
-                ? null
+                ? Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 5, vertical: 1),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: t.hairline),
+                        borderRadius: BorderRadius.circular(3),
+                      ),
+                      child: Text('/',
+                          style: fwMono(t, size: 10, color: t.inkFaint)),
+                    ),
+                  )
                 : AccessibleAction(
                     semanticLabel: 'Clear destination search',
                     onActivate: () => controller.clear(),
                     child: Icon(Icons.close_rounded,
                         size: 13, color: t.inkFaint),
                   ),
+            suffixIconConstraints:
+                const BoxConstraints(minHeight: 0, minWidth: 0),
             hintText: 'Find a destination',
             hintStyle: TextStyle(fontSize: 12, color: t.inkFaint),
             border: OutlineInputBorder(

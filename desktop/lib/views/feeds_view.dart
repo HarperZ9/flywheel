@@ -39,6 +39,12 @@ class _FeedsViewState extends State<FeedsView> {
   String? _error;
   bool _fetched = false;
 
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
   Future<void> _load() async {
     if (!widget.alive || _loading) return;
     setState(() {

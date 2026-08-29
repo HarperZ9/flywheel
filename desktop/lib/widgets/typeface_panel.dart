@@ -60,6 +60,7 @@ class _TypefacePanelState extends State<TypefacePanel> {
     'aperture': (0.2, 1.0),
   };
   int _seed = 58;
+  final _seedCtrl = TextEditingController(text: '58');
   Map<String, dynamic>? _face;
   bool _minting = false, _wearing = false;
   String? _error, _wornFamily;
@@ -69,6 +70,7 @@ class _TypefacePanelState extends State<TypefacePanel> {
 
   @override
   void dispose() {
+    _seedCtrl.dispose();
     _wearText.dispose();
     super.dispose();
   }
@@ -141,7 +143,7 @@ class _TypefacePanelState extends State<TypefacePanel> {
             SizedBox(
               width: 90,
               child: TextField(
-                controller: TextEditingController(text: '$_seed'),
+                controller: _seedCtrl,
                 style: fwMono(t, size: 12.5),
                 keyboardType: TextInputType.number,
                 onSubmitted: (v) =>

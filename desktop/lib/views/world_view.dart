@@ -9,6 +9,7 @@ import '../client/gateway_client.dart';
 import '../models/gateway_models.dart';
 import '../models/render_status.dart';
 import '../theme/flywheel_theme.dart';
+import '../widgets/findings_strip.dart';
 import '../widgets/fw.dart';
 
 class WorldView extends StatefulWidget {
@@ -131,7 +132,7 @@ class _WorldViewState extends State<WorldView> {
           Row(children: [
             const Kicker('findings', hot: true),
             const SizedBox(width: FwLayout.s3),
-            Expanded(child: _FindingsStrip(items: items)),
+            Expanded(child: FindingsStrip(items: items)),
           ]),
           const SizedBox(height: FwLayout.s3),
           HairlineCard(
@@ -269,37 +270,6 @@ class _WorldViewState extends State<WorldView> {
                 style: fwMono(t, size: 10.5, color: t.inkFaint)),
         ],
       ),
-    );
-  }
-}
-
-/// The findings strip: one square per finding, verdict-tinted. A chart in
-/// the same hairline language as everything else.
-class _FindingsStrip extends StatelessWidget {
-  final List<Map<String, dynamic>> items;
-  const _FindingsStrip({required this.items});
-
-  @override
-  Widget build(BuildContext context) {
-    final t = context.fw;
-    return Wrap(
-      spacing: 3,
-      runSpacing: 3,
-      children: [
-        for (final f in items)
-          Container(
-            width: 14,
-            height: 14,
-            decoration: BoxDecoration(
-              color: (f['status'] == 'measured'
-                      ? t.verified
-                      : t.unverifiable)
-                  .withValues(alpha: f['status'] == 'measured' ? 0.75 : 0.35),
-              borderRadius: BorderRadius.circular(3),
-              border: Border.all(color: t.line, width: 0.5),
-            ),
-          ),
-      ],
     );
   }
 }

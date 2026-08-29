@@ -10,6 +10,7 @@ import '../models/gateway_models.dart';
 import '../models/render_status.dart';
 import '../theme/flywheel_theme.dart';
 import '../widgets/escalate_row.dart';
+import '../widgets/companion_input_bar.dart';
 import '../widgets/fw.dart';
 import '../widgets/operation_grant_sheet.dart';
 import '../widgets/scaffold_strip.dart';
@@ -163,7 +164,7 @@ class _CompanionViewState extends State<CompanionView> {
                   );
                 }),
         ),
-        _inputBar(context),
+        CompanionInputBar(controller: _controller, onSend: _send),
       ],
     );
   }
@@ -265,31 +266,4 @@ class _CompanionViewState extends State<CompanionView> {
     );
   }
 
-  Widget _inputBar(BuildContext context) {
-    final t = context.fw;
-    return Container(
-      padding: const EdgeInsets.all(FwLayout.s4),
-      decoration: BoxDecoration(
-        color: t.ground2,
-        border: Border(top: BorderSide(color: t.line)),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: TextField(
-              controller: _controller,
-              maxLines: 3,
-              minLines: 1,
-              style: const TextStyle(fontSize: 13.5),
-              decoration:
-                  const InputDecoration(hintText: 'Ask the companionâ€¦'),
-              onSubmitted: (_) => _send(),
-            ),
-          ),
-          const SizedBox(width: FwLayout.s3),
-          FilledButton(onPressed: _send, child: const Text('Send')),
-        ],
-      ),
-    );
-  }
 }

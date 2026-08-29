@@ -236,10 +236,15 @@ class _TrainViewState extends State<TrainView> {
   Widget _arm(FwTokens t, String label, double rate, String status) {
     return Row(
       children: [
-        SizedBox(
-            width: 140,
-            child: Text(label, style: fwMono(t, size: 12, color: t.inkSoft))),
-        Expanded(child: MiniBar(rate, status: status, width: 200)),
+        ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 140),
+            child: Text(label,
+                style: fwMono(t, size: 12, color: t.inkSoft),
+                overflow: TextOverflow.ellipsis)),
+        const SizedBox(width: FwLayout.s2),
+        Expanded(
+          child: MiniBar(rate, status: status, width: double.infinity),
+        ),
         const SizedBox(width: FwLayout.s3),
         Text('${(rate * 100).toStringAsFixed(0)}%',
             style: fwMono(t, size: 12, weight: FontWeight.w600)),

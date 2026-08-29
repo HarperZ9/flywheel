@@ -13,7 +13,7 @@ import '../models/endpoint_models.dart';
 import '../models/gateway_models.dart';
 import '../models/render_status.dart';
 import '../theme/flywheel_theme.dart';
-import '../widgets/charts.dart';
+import '../widgets/endpoint_details.dart';
 import '../widgets/fw.dart';
 import '../widgets/keys_panel.dart';
 import '../widgets/session_tokens_panel.dart';
@@ -30,8 +30,6 @@ class EndpointsView extends StatefulWidget {
 }
 
 class _EndpointsViewState extends State<EndpointsView> {
-  // dart:io Platform, not defaultTargetPlatform: the latter reads android under
-  // flutter test and would send a callback_base on the desktop test host.
   final bool _mobile = Platform.isAndroid || Platform.isIOS;
   EndpointHealthDoc? _health;
   List<EndpointRow> _roster = [];
@@ -143,30 +141,13 @@ class _EndpointsViewState extends State<EndpointsView> {
         const SizedBox(height: FwLayout.s5),
         const Kicker('providers · credential presence only, never values'),
         const SizedBox(height: FwLayout.s3),
-        HairlineCard(
-          padding: const EdgeInsets.symmetric(
-              horizontal: FwLayout.s4, vertical: FwLayout.s2),
-          child: Column(
-            children: [
-              for (final r in (_roster.toList()
-                    ..sort((a, b) => endpointRank(a).compareTo(endpointRank(b)))))
-                _providerRow(t, r)
-            ],
-          ),
-        ),
-        // Sign-in sits above raw keys because it is the cheaper path: a
-        // subscription the user already pays for, rather than a key to mint
-        // and rotate by hand.
+        ProviderRoster(roster: _roster),
         if (_auth != null) ...[
           const SizedBox(height: FwLayout.s5),
           const Kicker('sign in · a subscription can carry usage'),
           const SizedBox(height: FwLayout.s3),
           SigninPanel(
             doc: _auth!,
-            // On a paired phone the engine's browser is on the other machine,
-            // so send the engine address this client reached (callback_base)
-            // and open the returned authorize URL here. On desktop neither is
-            // sent, and the engine opens its own browser as before.
             onLogin: (p) => widget.client.postJson('/api/auth/login', {
               'provider': p,
               if (_mobile) 'callback_base': widget.client.baseUrl,
@@ -189,9 +170,6 @@ class _EndpointsViewState extends State<EndpointsView> {
             onChanged: _load,
           ),
         ],
-        // The keys section always renders once the doc arrives: on a fresh
-        // machine every entry reads absent, and hiding the panel then would
-        // hide the only in-GUI way to set a key (the first-run dead-end).
         if (_keychain != null) ...[
           const SizedBox(height: FwLayout.s5),
           const Kicker('keys · stored in the OS keychain, shown as presence'),
@@ -206,25 +184,7 @@ class _EndpointsViewState extends State<EndpointsView> {
         const SizedBox(height: FwLayout.s5),
         const Kicker('scoreboard · observed routing outcomes'),
         const SizedBox(height: FwLayout.s3),
-        if (_scores.isEmpty)
-          const HonestNull(
-              'No routed traffic recorded yet. The scoreboard fills from '
-              'real outcomes as prompts route; nothing here is a promise.')
-        else
-          LayoutBuilder(builder: (context, box) {
-            final card = HairlineCard(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: FwLayout.s4, vertical: FwLayout.s2),
-              child: Column(
-                children: [for (final s in _scores) _scoreRow(t, s)],
-              ),
-            );
-            if (box.maxWidth >= 560) return card;
-            return SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: SizedBox(width: 560, child: card),
-            );
-          }),
+        EndpointScoreboard(scores: _scores),
       ],
     );
   }
@@ -257,76 +217,6 @@ class _EndpointsViewState extends State<EndpointsView> {
     );
   }
 
-  Widget _providerRow(FwTokens t, EndpointRow r) {
-    final (label, status) = switch (r.credential) {
-      'present' => ('key present', 'verified'),
-      'cli-auth' => ('subscription', 'verified'),
-      'local-none' => ('local', 'verified'),
-      _ => ('no key', 'absent'),
-    };
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: FwLayout.s2 + 2),
-      decoration: BoxDecoration(
-          border: Border(bottom: BorderSide(color: t.hairline))),
-      child: Row(
-        children: [
-          Expanded(
-            flex: 3,
-            child: Text(r.name,
-                overflow: TextOverflow.ellipsis,
-                style: fwMono(t, size: 12, weight: FontWeight.w600)),
-          ),
-          const SizedBox(width: FwLayout.s3),
-          Expanded(
-            flex: 4,
-            child: Text(r.providerRole.isNotEmpty ? r.providerRole : r.backend,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(fontSize: 12, color: t.inkMuted)),
-          ),
-          const SizedBox(width: FwLayout.s3),
-          VerdictPill(label, status: status),
-        ],
-      ),
-    );
-  }
-
-  Widget _scoreRow(FwTokens t, ProviderScore s) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: FwLayout.s2 + 2),
-      decoration: BoxDecoration(
-          border: Border(bottom: BorderSide(color: t.hairline))),
-      child: Row(
-        children: [
-          SizedBox(
-            width: 170,
-            child: Text(s.name,
-                style: fwMono(t, size: 12, weight: FontWeight.w600)),
-          ),
-          _cell(t, '${s.attempts} tried'),
-          MiniBar(s.successRate,
-              status: s.successRate >= 0.5 ? 'verified' : 'drift'),
-          const SizedBox(width: FwLayout.s3),
-          _cell(t, '${(s.successRate * 100).toStringAsFixed(0)}% ok'),
-          _cell(t, '${s.meanLatency.toStringAsFixed(1)}s'),
-          const Spacer(),
-          if (s.circuitOpen)
-            const VerdictPill('circuit open', status: 'drift')
-          else
-            Text('score ${s.score.toStringAsFixed(2)}',
-                style: fwMono(t, size: 11, color: t.inkMuted)),
-        ],
-      ),
-    );
-  }
-
-  Widget _cell(FwTokens t, String text) => SizedBox(
-        width: 90,
-        child: Text(text, style: fwMono(t, size: 11.5, color: t.inkMuted)),
-      );
-
-  // Open the provider's sign-in page in the phone's own browser. Returns
-  // whether it launched, so the panel can say so honestly instead of claiming
-  // a browser started. A launch that throws is a failure, not a crash.
   Future<bool> _openSignInUrl(String url) async {
     final uri = Uri.tryParse(url);
     if (uri == null) return false;

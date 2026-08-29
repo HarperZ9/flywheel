@@ -1,5 +1,4 @@
 import 'dart:async';
-
 import 'package:flutter/material.dart';
 
 import '../client/gateway_client.dart';
@@ -49,27 +48,26 @@ class _AgentViewState extends State<AgentView> {
   ChatMessage? _assistant;
   bool _admitting = false, _accepted = false, _streaming = false;
   bool _agentMode = false;
-  int _generation = 0;
+  int _generation = 0, _starterSeq = 0;
   bool get _busy => _admitting || _streaming;
   List<Conversation> get _conversations => _admission.conversations;
   @override
   void initState() {
     super.initState();
     _admission = ChatAdmissionController(
-        widget.chatStore ?? ChatStore(), widget.draftStore ?? ChatDraftStore());
-    _admission.restore();
+        widget.chatStore ?? ChatStore(), widget.draftStore ?? ChatDraftStore())
+      ..restore();
     _current = _conversations.isEmpty
-        ? _admission.blankConversation(null)
-        : _conversations.first;
+        ? _admission.blankConversation(null) : _conversations.first;
     if (_conversations.isEmpty) _conversations.add(_current);
     _model = _current.model;
     _loadEndpoints();
   }
 
   @override
-  void didUpdateWidget(AgentView oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (!oldWidget.alive && widget.alive) _loadEndpoints();
+  void didUpdateWidget(AgentView old) {
+    super.didUpdateWidget(old);
+    if (!old.alive && widget.alive) _loadEndpoints();
   }
 
   @override
@@ -105,22 +103,18 @@ class _AgentViewState extends State<AgentView> {
     _admission.persistHistory();
   }
 
-  void _select(Conversation conversation) {
-    if (identical(conversation, _current) || _busy) return;
-    setState(() {
-      _current = conversation;
-      _model = conversation.model ?? _model;
-    });
+  void _select(Conversation c) {
+    if (identical(c, _current) || _busy) return;
+    setState(() { _current = c; _model = c.model ?? _model; });
   }
 
-  void _delete(Conversation conversation) {
+  void _delete(Conversation c) {
     if (_busy) return;
     setState(() {
-      _conversations.remove(conversation);
-      if (identical(conversation, _current)) {
+      _conversations.remove(c);
+      if (identical(c, _current)) {
         _current = _conversations.isEmpty
-            ? _admission.blankConversation(_model)
-            : _conversations.first;
+            ? _admission.blankConversation(_model) : _conversations.first;
         if (_conversations.isEmpty) _conversations.add(_current);
       }
     });
@@ -128,16 +122,15 @@ class _AgentViewState extends State<AgentView> {
   }
 
   void _draftChanged(String text) => _admission.changeDraft(_current, text);
+  void _useStarter(String t) { _admission.changeDraft(_current, t); setState(() => _starterSeq++); }
   Future<PromptDisposition> _send(String text) {
-    if (_busy) return Future.value(PromptDisposition.retained);
+    const retained = PromptDisposition.retained;
+    if (_busy) return Future.value(retained);
     final reconciled = _admission.reconcileAdmitted(_current, text);
-    if (reconciled != null) {
-      setState(() {});
-      return Future.value(reconciled);
-    }
-    if (_model == null) return Future.value(PromptDisposition.retained);
+    if (reconciled != null) { setState(() {}); return Future.value(reconciled); }
+    if (_model == null) return Future.value(retained);
     final submitted = _admission.prepare(_current, text);
-    if (submitted == null) return Future.value(PromptDisposition.retained);
+    if (submitted == null) return Future.value(retained);
     unawaited(_beginAdmission(submitted));
     return _disposition!.future;
   }
@@ -230,54 +223,69 @@ class _AgentViewState extends State<AgentView> {
   }
 
   void _scrollToEnd() => WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (_scroll.hasClients) {
-          _scroll.jumpTo(_scroll.position.maxScrollExtent);
-        }
+        if (_scroll.hasClients) _scroll.jumpTo(_scroll.position.maxScrollExtent);
       });
+  void _showConversations() => showModalBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        constraints: const BoxConstraints(maxWidth: 400),
+        builder: (_) => DraggableScrollableSheet(
+          initialChildSize: 0.55, minChildSize: 0.3, maxChildSize: 0.85,
+          expand: false,
+          builder: (sc, ctrl) => ChatSidebar(
+            conversations: _conversations,
+            current: _current, streaming: _busy, scrollController: ctrl,
+            onNew: () { _newChat(); Navigator.of(sc).pop(); },
+            onSelect: (c) { _select(c); Navigator.of(sc).pop(); },
+            onDelete: _delete,
+          ),
+        ),
+      );
+
   @override
   Widget build(BuildContext context) {
     if (!widget.alive) {
       return const FwEmpty('Engine offline.', command: 'flywheel up');
     }
-    return Row(children: [
-      if (!_agentMode)
-        ChatSidebar(
-            conversations: _conversations,
-            current: _current,
-            streaming: _busy,
-            onNew: _newChat,
-            onSelect: _select,
-            onDelete: _delete),
-      Expanded(
-          child: Column(children: [
-        _header(),
-        Expanded(child: _body()),
-        if (!_agentMode) _composer(),
-      ])),
-    ]);
+    return LayoutBuilder(builder: (context, constraints) {
+      final narrow = constraints.maxWidth < 600;
+      return Row(children: [
+        if (!_agentMode && !narrow)
+          ChatSidebar(
+              conversations: _conversations,
+              current: _current,
+              streaming: _busy,
+              onNew: _newChat,
+              onSelect: _select,
+              onDelete: _delete),
+        Expanded(
+            child: Column(children: [
+          _header(showConversations: narrow && !_agentMode),
+          Expanded(child: _body()),
+          if (!_agentMode) _composer(),
+        ])),
+      ]);
+    });
   }
 
-  Widget _header() => ChatHeader(
-      agentMode: _agentMode,
-      streaming: _busy,
-      endpoints: _endpoints,
-      endpoint: _model,
-      chosenModel: _chosenModels[_model],
-      onMode: (value) => setState(() => _agentMode = value),
-      onEndpoint: (value) => setState(() => _model = value),
-      onModel: (value) => setState(() => value.isEmpty
-          ? _chosenModels.remove(_model)
-          : _chosenModels[_model!] = value),
+  Widget _header({bool showConversations = false}) => ChatHeader(
+      agentMode: _agentMode, streaming: _busy, endpoints: _endpoints,
+      endpoint: _model, chosenModel: _chosenModels[_model],
+      onMode: (v) => setState(() => _agentMode = v),
+      onEndpoint: (v) => setState(() => _model = v),
+      onModel: (v) => setState(() => v.isEmpty
+          ? _chosenModels.remove(_model) : _chosenModels[_model!] = v),
+      onShowConversations: showConversations ? _showConversations : null,
       loadModels: () => widget.client.models(_model ?? ''));
   Widget _body() => _agentMode
       ? AgentModePane(
           client: widget.client, alive: widget.alive, settings: widget.settings)
       : _current.isEmpty
-          ? const ChatWelcome()
+          ? ChatWelcome(onStarter: _useStarter)
           : ChatThread(messages: _current.messages, controller: _scroll);
 
   Widget _composer() => ChatComposer(
-      key: ValueKey(_current.id),
+      key: ValueKey('${_current.id}:$_starterSeq'),
       streaming: _streaming,
       initialText: _admission.draftText(_current),
       onDraftChanged: _draftChanged,
@@ -285,7 +293,6 @@ class _AgentViewState extends State<AgentView> {
       savedPrompts: widget.settings.savedPrompts,
       onSavePrompt: (text) => setState(() => widget.settings.savePrompt(text)));
 }
-
 bool _validEvent(Map<String, dynamic> event) => switch (event) {
       {'type': 'delta', 'content': final String value} => value.isNotEmpty,
       {'type': 'done', 'receipt': final Map<String, dynamic> _} => true,
