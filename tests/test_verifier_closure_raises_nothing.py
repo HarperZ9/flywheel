@@ -101,6 +101,19 @@ def test_bundle_names_a_non_string_public_key_instead_of_crashing(tmp_path,
     assert "malformed_public_key" in v["receipts"][0]["signature"]
 
 
+@pytest.mark.parametrize("bad_files", [5, True, 1.5, None])
+def test_bundle_survives_a_non_list_files_manifest(tmp_path, bad_files):
+    # `manifest["files"]` binds inside the try, but `for f in listed` iterates it
+    # outside; a non-iterable scalar raises TypeError there, past the except.
+    d = _pack_one(tmp_path)
+    mp = d / MANIFEST_NAME
+    m = json.loads(mp.read_text(encoding="utf-8"))
+    m["files"] = bad_files
+    mp.write_text(json.dumps(m, indent=1, sort_keys=True), encoding="utf-8")
+    v = verify_bundle(d)                              # must not raise
+    assert v["verdict"] == "UNVERIFIABLE"
+
+
 # --- ledger.check_consistency -----------------------------------------------
 
 def _proof(**over):

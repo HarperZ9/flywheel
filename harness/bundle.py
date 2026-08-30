@@ -155,6 +155,8 @@ def verify_bundle(bundle_dir) -> dict:
     try:
         manifest = json.loads(mp.read_text(encoding="utf-8"))
         listed = manifest["files"]
+        if not isinstance(listed, list):
+            raise BundleError("manifest 'files' must be a list")
     except Exception as e:
         return {"verdict": "UNVERIFIABLE", "files_checked": 0, "receipts": [],
                 "detail": f"{MANIFEST_NAME} is unreadable: {e}"}
