@@ -18,7 +18,7 @@ Two further properties the base enforces so no subclass has to remember them:
 import pytest
 
 from harness.certificates.base import (
-    CertificateOracle, Coverage, CertificateError, parse_certificate,
+    CertificateOracle, Coverage, CertificateError, OutOfScope, parse_certificate,
 )
 from harness.verdict import Verdict, Attribution, UnverifiableReason
 
@@ -218,3 +218,48 @@ def test_parse_certificate_accepts_a_clean_object():
     ok, cert, why = parse_certificate('{"a": 1}')
     assert ok is True
     assert cert == {"a": 1}
+
+
+# --- verify never raises on hostile candidate bytes --------------------------
+#
+# A stranger runs the offline verifier on bytes they json.loads into Python
+# objects. json accepts two things that have no canonical form and would escape
+# verify() as an uncaught exception: non-finite numbers (canonical() sets
+# allow_nan=False) and lone surrogates in strings (the raw excerpt is hashed and
+# a strict utf-8 encode refuses them). Both must land as a named verdict.
+
+def test_parse_certificate_rejects_nonfinite_numbers():
+    # NaN/Infinity/-Infinity are the bare literals json accepts via parse_constant;
+    # 1e400 overflows to inf through parse_float, a second channel a constant-only
+    # guard would miss. All four have no canonical form, so all four are refused.
+    for src in ('{"x": NaN}', '{"x": Infinity}', '{"x": -Infinity}', '{"x": 1e400}'):
+        ok, cert, why = parse_certificate(src)
+        assert ok is False, src
+        assert "non-finite" in why, (src, why)
+
+
+def test_verify_does_not_raise_on_a_nonfinite_certificate():
+    for src in ('{"items":[1,2,3],"target":Infinity}',
+                '{"items":[1,2,3],"target":1e400}'):
+        r = _SumOracle().verify(src, None)
+        assert r.verdict() == "FAIL", src
+        assert r.attribution is Attribution.CANDIDATE
+
+
+class _SurrogateExcerptOracle(CertificateOracle):
+    """A checker whose out-of-scope message carries a lone surrogate, so the
+    base's excerpt-hashing sink is exercised directly, independent of any one
+    subclass's error strings."""
+
+    family = "surrogate_toy"
+
+    def declared_parameters(self, cert: dict) -> dict:
+        return {}
+
+    def check(self, cert: dict):
+        raise OutOfScope("a value the candidate supplied: \ud800")
+
+
+def test_verify_does_not_raise_when_an_excerpt_holds_a_lone_surrogate():
+    r = _SurrogateExcerptOracle().verify('{"x": 1}', None)
+    assert r.verdict() == "UNVERIFIABLE"
