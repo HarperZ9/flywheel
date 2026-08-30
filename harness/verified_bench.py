@@ -154,11 +154,16 @@ def subprocess_gate(gate_cmd: str, proposed: str, *,
     if not argv:
         return {"passed": False, "gate_ref": ""}
     import os
+    repo_root = str(Path(__file__).resolve().parent.parent)
+    inherited_pythonpath = os.environ.get("PYTHONPATH", "")
+    pythonpath = repo_root + (os.pathsep + inherited_pythonpath
+                              if inherited_pythonpath else "")
     try:
         completed = subprocess.run(
             argv, cwd=workspace, capture_output=True,
             timeout=timeout_s,
-            env={**os.environ, "PYTEST_DISABLE_PLUGIN_AUTOLOAD": "1"})
+            env={**os.environ, "PYTHONPATH": pythonpath,
+                 "PYTEST_DISABLE_PLUGIN_AUTOLOAD": "1"})
         passed = completed.returncode == 0
         output = (completed.stdout + completed.stderr).decode(
             "utf-8", "replace")[-4000:]
@@ -180,6 +185,9 @@ def run_private_benchmark(
 ) -> dict:
     """The real loop: propose through each ladder backend's chat, dispose
     through the subprocess gate in a fresh per-attempt workspace."""
+    workspace_root = Path(workspace_root)
+    workspace_root.mkdir(parents=True, exist_ok=True)
+
     def propose(endpoint: str, prompt: str) -> str:
         for backend in ladder:
             if backend.name == endpoint:
