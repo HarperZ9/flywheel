@@ -113,7 +113,10 @@ class Contest:
             ok = _ed_verify(bytes.fromhex(self.contester_public_key),
                             self.signing_payload().encode(),
                             bytes.fromhex(self.sig_hex))
-        except (Ed25519Error, ValueError):
+        except (Ed25519Error, ValueError, TypeError):
+            # A contester_public_key arriving from JSON as a non-string makes
+            # bytes.fromhex raise TypeError, a sibling of the ValueError a bad
+            # hex string raises. Both are a bad signature, not a crash.
             return False, "bad_signature"
         return (True, "ok") if ok else (False, "bad_signature")
 

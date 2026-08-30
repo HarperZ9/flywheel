@@ -224,7 +224,7 @@ class Ledger:
                 [bytes.fromhex(h) for h in proof["path"]])
         except MerkleError as e:
             return False, f"not_a_growth_claim: {e}"
-        except (KeyError, ValueError, IndexError) as e:
+        except (KeyError, ValueError, IndexError, AttributeError, TypeError) as e:
             return False, f"malformed_proof: {e}"
         return (True, "ok") if ok else (False, "prefix_was_modified")
 

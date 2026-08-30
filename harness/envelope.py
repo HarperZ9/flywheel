@@ -128,7 +128,11 @@ def verify_citations(citations: list, resolve) -> dict:
     offsets); unverifiable means the source could not be resolved. Only
     all-verified counts as verified overall."""
     verdicts = []
-    for c in citations or []:
+    for c in citations if isinstance(citations, list) else []:
+        if not isinstance(c, dict):
+            verdicts.append({"verdict": "drift",
+                             "reason": "citation is not an object"})
+            continue
         src = resolve(str(c.get("source_sha256", "")))
         if src is None:
             verdicts.append({**c, "verdict": "unverifiable",
