@@ -135,6 +135,26 @@ def test_verify_anchor_returns_a_verdict_on_a_deeply_nested_head():
     assert "malformed_anchor" in r["head_reason"]
 
 
+@pytest.mark.parametrize("bad_sig", [123, [1, 2], {"x": 1}, True, None])
+def test_verify_anchor_returns_a_verdict_on_a_non_string_signature(bad_sig):
+    # A stranger runs verify on an attacker record whose signed_head carries a
+    # non-string signature. check_signed_head does bytes.fromhex(signature), which
+    # raises TypeError -- a sibling of ValueError -- on int/list/dict/bool/None, and
+    # verify_anchor calls check_signed_head outside any try, so the crash escapes
+    # the verifier the module docstring promises "raises nothing". The signed_head
+    # clears the schema / sig_alg / log_id gates so line 142, not an earlier
+    # refusal, is what the call meets. The head check fails; the record is named.
+    _, _, pub = _key()
+    signed = {"schema": tree_head.SCHEMA, "sig_alg": "ed25519",
+              "log_id": tree_head.log_id_for(pub), "size": 1, "root": "ab",
+              "timestamp": TS, "signature": bad_sig, "public_key": pub.hex()}
+    rec = {"schema": anchor.SCHEMA, "signed_head": signed}
+    r = anchor.verify_anchor(rec, pub)
+    assert r["ok"] is False
+    assert r["head_ok"] is False
+    assert "malformed_head" in r["head_reason"]
+
+
 def test_does_not_prove_carries_the_header_trust_limitation():
     # The proof-of-work recheck bounds internal consistency and real work: it kills
     # the zero-work forgery. It does NOT establish that a bundle-carried header sits

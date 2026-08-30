@@ -140,9 +140,11 @@ def check_signed_head(signed: dict, public_key: bytes) -> tuple[bool, str]:
     try:
         preimage = head_preimage(signed)
         sig = bytes.fromhex(signed.get("signature", ""))
-    except (TreeHeadError, ValueError, RecursionError) as e:
+    except (TreeHeadError, ValueError, RecursionError, TypeError) as e:
         # A signed field nested past the interpreter's limit makes canonical()
-        # inside head_preimage raise RecursionError, which is not a ValueError. A
+        # inside head_preimage raise RecursionError, which is not a ValueError. And
+        # a non-string signature (json.loads yields int/list/dict/bool/None) makes
+        # bytes.fromhex raise TypeError, a sibling of ValueError, not a subclass. A
         # stranger's check must stay a named (False, reason), not an escape.
         return False, f"malformed_head: {e}"
     if len(sig) != 64:

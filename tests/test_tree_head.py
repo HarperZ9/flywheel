@@ -157,6 +157,28 @@ def test_check_signed_head_returns_a_verdict_on_a_deeply_nested_field(keys):
     assert "malformed_head" in reason
 
 
+@pytest.mark.parametrize("bad_sig", [123, [1, 2], {"x": 1}, True, None])
+def test_check_signed_head_returns_a_verdict_on_a_non_string_signature(
+        keys, bad_sig):
+    """A stranger runs this on an attacker-supplied head; it must stay (ok, reason).
+
+    bytes.fromhex on a non-string `signature` raises TypeError, a sibling of
+    ValueError rather than a subclass, so the `except (TreeHeadError, ValueError,
+    RecursionError)` below head_preimage lets it escape. json.loads yields
+    int / list / dict / bool / None for a signature field, and each is present (so
+    the .get default does not apply). The head clears the cheap schema / sig_alg /
+    log_id gates -- log_id is just sha256 of the public key, which is public -- so
+    line 142, not an earlier refusal, is what the call meets.
+    """
+    _, pub = keys
+    head = {"schema": SCHEMA, "sig_alg": "ed25519", "log_id": log_id_for(pub),
+            "size": 1, "root": "ab", "timestamp": "2026-08-29T00:00:00Z",
+            "signature": bad_sig, "public_key": pub.hex()}
+    ok, reason = check_signed_head(head, pub)
+    assert ok is False
+    assert "malformed_head" in reason
+
+
 # --- what the ledger now carries --------------------------------------------
 
 def test_proofs_carry_the_log_id_when_the_ledger_has_one(tmp_path, keys):
