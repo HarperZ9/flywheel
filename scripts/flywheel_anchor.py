@@ -134,16 +134,31 @@ def cmd_upgrade(args) -> int:
     try:
         full_ots = anchor_submit.upgrade_proof(pending_ots, digest)
         if full_ots is None:
-            print("the calendar has not upgraded yet -- still pending, try again later")
-            return 0
-        checked = ots_verify.verify(full_ots, digest)
-        leaves = checked.get("bitcoin") or []
-        header = anchor_submit.block_header(leaves[0]["height"]) if leaves else None
+            # upgrade_proof also returns None for a proof that is ALREADY a full
+            # block under a record that never caught up -- the mirror of the
+            # proof-first crash window below (Finding 7). A Bitcoin leaf on the
+            # on-disk proof means self-heal the record; none means truly pending.
+            leaves = ots_verify.verify(pending_ots, digest).get("bitcoin") or []
+            if not leaves:
+                print("the calendar has not upgraded yet -- still pending, try again later")
+                return 0
+            full_ots = pending_ots
+            header = anchor_submit.block_header(leaves[0]["height"])
+            print("the on-disk proof already carries a block; reconciling the record")
+        else:
+            leaves = ots_verify.verify(full_ots, digest).get("bitcoin") or []
+            header = anchor_submit.block_header(leaves[0]["height"]) if leaves else None
     except anchor_submit.SubmitError as e:
         print(f"upgrade did not complete: {e}", file=sys.stderr)
         print(f"  the pending proof is left untouched: {ots_path}", file=sys.stderr)
         return 3
     rec, full_ots = apply_upgrade(rec, full_ots, header=header)
+    if rec["ots"]["state"] == "confirmed" and "block_header" not in rec["ots"]:
+        # apply_upgrade sets confirmed but stores the header only when the proof
+        # verifies to a PoW-checked block; without one, refuse to persist confirmed.
+        print("the on-disk proof does not verify to a block over this digest; "
+              "refusing to confirm the record over it", file=sys.stderr)
+        return 3
     # Persist the proof before the record, each atomically. The two artifacts are
     # written in sequence and a process can die between them; proof-first means any
     # interruption lands on the safe side -- the intact old pending pair, or a
