@@ -114,3 +114,23 @@ def test_fingerprint_moves_when_content_shape_changes():
     env_a = {"retained_names": ["index", "gather"], "root": "/x", "verification_verdict": MATCH}
     env_b = {"retained_names": ["index", "forum"], "root": "/x", "verification_verdict": MATCH}
     assert envelope_fingerprint(env_a) != envelope_fingerprint(env_b)
+
+
+def test_unverifiable_fingerprint_ignores_unstable_partial_selection():
+    # A timed-out lane can return either the minimal fallback or a partial
+    # budget-overflow envelope. Both are UNVERIFIABLE and must share a stable
+    # fingerprint while the lane is unavailable.
+    fallback = {
+        "root": "/x",
+        "verification_verdict": UNVERIFIABLE,
+        "failure_code": "index_lane_unavailable",
+    }
+    partial = {
+        "root": "/x",
+        "verification_verdict": UNVERIFIABLE,
+        "selection": {
+            "retained_names": ["repo"],
+            "omitted_failure_codes": ["budget_exceeded"],
+        },
+    }
+    assert envelope_fingerprint(fallback) == envelope_fingerprint(partial)
