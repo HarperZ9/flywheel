@@ -33,6 +33,8 @@ def test_install_name_to_command_asymmetry_is_mapped():
     assert LANES["crucible"].command == "crucible"
     assert LANES["forum"].install_name == "forum-engine"
     assert LANES["forum"].command == "forum"
+    assert LANES["index"].version == "2.10.0"
+    assert LANES["mneme"].version == "0.2.0"
 
 
 def test_every_lane_has_an_mcp_command_and_organ():
