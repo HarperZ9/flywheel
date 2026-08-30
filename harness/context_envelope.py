@@ -91,10 +91,15 @@ def envelope_fingerprint(envelope: dict) -> str:
     """A stable hash over the envelope's retained content (not its metadata), so
     two calls over an unchanged workspace produce the same fingerprint and a
     change moves it. Used by boot.py to detect drift."""
+    verdict = envelope.get("verification_verdict", "")
     payload = json.dumps({
-        "retained": envelope.get("retained_names", envelope.get("selection", {})),
+        # An unavailable lane may return either the minimal fallback or a
+        # partial budget-overflow envelope. Neither selection is verified, so
+        # exclude it from the fingerprint until the envelope is MATCH.
+        "retained": (envelope.get("retained_names", envelope.get("selection", {}))
+                     if verdict == MATCH else None),
         "root": envelope.get("root", ""),
-        "verdict": envelope.get("verification_verdict", ""),
+        "verdict": verdict,
     }, sort_keys=True, default=str)
     return hashlib.sha256(payload.encode()).hexdigest()[:16]
 
