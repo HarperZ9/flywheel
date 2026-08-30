@@ -41,7 +41,7 @@ LANES: dict[str, Lane] = {
         "falsifiable verification + re-check (register -> steelman -> measure -> witness)",
         "verification", source_repo="public/crucible", py_module="crucible.cli"),
     "index": Lane(
-        "index", "index-graph", "index", ("mcp",), "pip", "2.9.0",
+        "index", "index-graph", "index", ("mcp",), "pip", "2.10.0",
         "workspace map + symbol graph + verified wiki (the catalog lane)",
         "structure", source_repo="public/index", py_module="index_graph"),
     "forum": Lane(
@@ -69,7 +69,7 @@ LANES: dict[str, Lane] = {
         "capability discovery + auto-wiring of the tool mesh (the layer above a flat tool list)",
         "wiring", source_repo="public/plexus", py_module="plexus.cli"),
     "mneme": Lane(
-        "mneme", "mneme-memory", "mneme", ("mcp",), "pip", "0.1.0",
+        "mneme", "mneme-memory", "mneme", ("mcp",), "pip", "0.2.0",
         "accountable memory: recall with re-derivable ranking receipts + drift verdicts",
         "memory", source_repo="public/mneme", py_module="mneme.cli"),
     "calibrate-pro": Lane(
