@@ -132,7 +132,7 @@ def explain(target, *, prefix: str = "") -> dict:
             raise WhyError(
                 f"no receipt whose claim digest starts with {prefix!r}. "
                 f"searched {len(candidates)} record(s) under {target}")
-        digests = {e["receipt"]["claim_sha256"] for _, e in matched}
+        digests = {str(e["receipt"].get("claim_sha256", "")) for _, e in matched}
         if len(digests) > 1:
             raise WhyError(
                 f"prefix {prefix!r} is ambiguous across {len(digests)} distinct "
@@ -149,6 +149,13 @@ def explain(target, *, prefix: str = "") -> dict:
         receipt = Receipt.from_dict(body)
     except Exception as e:
         raise WhyError(f"record at {path} is not a receipt: {e}")
+
+    # from_dict does not type-check these two, but _what_would_change_it slices
+    # them; a non-string here is a malformed record, named rather than a crash.
+    for _field in ("criterion_sha256", "checker_source_sha256"):
+        if not isinstance(body.get(_field), str):
+            raise WhyError(f"record at {path} is not a receipt: "
+                           f"{_field} must be a string")
 
     recomputed = receipt.claim_sha256()
     integrity = "MATCH" if recomputed == body.get("claim_sha256") else "DRIFT"

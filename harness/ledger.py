@@ -95,7 +95,7 @@ class Ledger:
         is that record's id. Every kind shares one tree, because a contest that
         lived in a side channel could be dropped without breaking anything.
         """
-        return [r["key"].encode() for r in self._rows()]
+        return [str(r["key"]).encode("utf-8", "surrogatepass") for r in self._rows()]
 
     def root(self) -> str:
         return "sha256:" + merkle_root(self._leaves()).hex()
@@ -234,7 +234,7 @@ class Ledger:
         """Walk the chain, recomputing every link and every entry digest."""
         try:
             rows = self._rows()
-        except LedgerError as e:
+        except (LedgerError, UnicodeDecodeError) as e:
             return {"verdict": "UNVERIFIABLE", "size": 0, "broken_at": None,
                     "detail": str(e)}
         prev = self.GENESIS
@@ -260,7 +260,7 @@ class Ledger:
             if r["prev_hash"] != prev:
                 return {"verdict": "DRIFT", "size": len(rows), "broken_at": i,
                         "detail": f"entry {i} prev_hash does not link"}
-            if r["entry_hash"] != expected:
+            if r.get("entry_hash") != expected:
                 return {"verdict": "DRIFT", "size": len(rows), "broken_at": i,
                         "detail": f"entry {i} entry_hash does not match"}
             prev = r["entry_hash"]
