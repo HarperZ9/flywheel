@@ -2,7 +2,6 @@
 candidate the oracle actually saw and the pytest error. Pinpoints the 0%."""
 import sys
 from pathlib import Path
-sys.path.insert(0, "/mnt/c/dev/local-model")
 
 from harness.tasks_lib import REGISTRY, materialize_all
 from harness.task import load_task

@@ -9,7 +9,6 @@ import sys
 import urllib.request
 from pathlib import Path
 
-sys.path.insert(0, "/mnt/c/dev/local-model")
 from harness.perception_probe import make_scene, conserving_encode, flexible_queries
 
 FUNCS = ["locate", "nearest", "count_left", "quadrant"]

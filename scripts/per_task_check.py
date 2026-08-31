@@ -2,7 +2,6 @@
 so the aggregate 80->90 lift is grounded in exactly which tasks greedy fails."""
 import sys
 from pathlib import Path
-sys.path.insert(0, "/mnt/c/dev/local-model")
 
 from harness.tasks_hard import HARD_REGISTRY
 from harness.tasks_lib import materialize_all
