@@ -74,7 +74,7 @@ def _canonical_bytes(receipt: dict[str, Any]) -> bytes:
     Matches Rust serde_json::to_vec byte-for-byte when the dict is built in the
     schema's fixed field order and contains no floats.
     """
-    return json.dumps(receipt, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+    return json.dumps(receipt, separators=(",", ":"), ensure_ascii=False).encode("utf-8", "surrogatepass")
 
 
 def _seal_receipt(receipt: dict[str, Any]) -> None:

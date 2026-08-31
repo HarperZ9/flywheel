@@ -188,7 +188,7 @@ def verify_usage_receipt(receipt: dict[str, Any]) -> dict[str, Any]:
                      f"tokens fields != {_TOKEN_FIELDS}")
     for f in _TOKEN_FIELDS:
         v = tokens.get(f)
-        if not (isinstance(v, str) and v.isdigit()):
+        if not (isinstance(v, str) and v.isdecimal()):
             return _fail("FIELD_CONTRACT_VIOLATION",
                          f"tokens.{f} is not a non-negative digit string")
     if int(tokens["total"]) != int(tokens["prompt"]) + int(tokens["completion"]):
@@ -197,7 +197,7 @@ def verify_usage_receipt(receipt: dict[str, Any]) -> dict[str, Any]:
                      f"{tokens['prompt']} + completion {tokens['completion']}")
 
     # --- field contracts: source ---------------------------------------------
-    if receipt.get("source") not in SOURCE_LABELS:
+    if not isinstance(receipt.get("source"), str) or receipt.get("source") not in SOURCE_LABELS:
         return _fail("FIELD_CONTRACT_VIOLATION",
                      f"source {receipt.get('source')!r} is not a known label")
 

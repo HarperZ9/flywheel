@@ -182,7 +182,7 @@ def verify_audit_receipt(receipt: dict[str, Any],
     if not isinstance(reviews, list):
         return _fail("FIELD_CONTRACT_VIOLATION", "reviews is not a list")
     n_reviews = subject.get("n_reviews", "")
-    if not (isinstance(n_reviews, str) and n_reviews.isdigit()
+    if not (isinstance(n_reviews, str) and n_reviews.isdecimal()
             and int(n_reviews) == len(reviews)):
         return _fail("FIELD_CONTRACT_VIOLATION",
                      "subject.n_reviews is not a digit string equal to len(reviews)")
@@ -190,18 +190,18 @@ def verify_audit_receipt(receipt: dict[str, Any],
         if not isinstance(r, dict) or set(r.keys()) != set(_REVIEW_FIELDS):
             return _fail("FIELD_CONTRACT_VIOLATION",
                          f"review {i} fields != {_REVIEW_FIELDS}")
-        if r.get("severity") not in SEVERITIES:
+        if not isinstance(r.get("severity"), str) or r.get("severity") not in SEVERITIES:
             return _fail("FIELD_CONTRACT_VIOLATION",
                          f"review {i} severity {r.get('severity')!r} is not a "
                          f"known severity")
-        if r.get("dimension") not in DIMENSIONS:
+        if not isinstance(r.get("dimension"), str) or r.get("dimension") not in DIMENSIONS:
             return _fail("FIELD_CONTRACT_VIOLATION",
                          f"review {i} dimension {r.get('dimension')!r} is not a "
                          f"known dimension")
-    if receipt.get("verdict") not in VERDICTS:
+    if not isinstance(receipt.get("verdict"), str) or receipt.get("verdict") not in VERDICTS:
         return _fail("FIELD_CONTRACT_VIOLATION",
                      f"verdict {receipt.get('verdict')!r} is not PASS/CONCERNS/FAIL")
-    if receipt.get("confidence") not in CONFIDENCE_LABELS:
+    if not isinstance(receipt.get("confidence"), str) or receipt.get("confidence") not in CONFIDENCE_LABELS:
         return _fail("FIELD_CONTRACT_VIOLATION",
                      f"confidence {receipt.get('confidence')!r} is not a known label")
     if not str(receipt.get("does_not_prove", "")).strip():
