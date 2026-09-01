@@ -43,7 +43,7 @@ def load_manifest(p: Path) -> list[dict]:
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--manifest",
-                    default="C:/dev/local-model/dataset/manifest.jsonl")
+                    default="C:/dev/public/flywheel/dataset/manifest.jsonl")
     ap.add_argument("--base", default="C:/dev")
     ap.add_argument("--model",
                     default=r"E:\local-model-run\models\Qwen2.5-Coder-14B-Instruct")

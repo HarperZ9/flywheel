@@ -25,7 +25,7 @@ LOG="$RUN/logs/chain-phase01.log"
   [ "$ok" = "1" ] || { echo "TIMEOUT waiting for torch; abort"; exit 1; }
 
   echo "--- installing rest of the training stack ---"
-  bash /c/dev/local-model/scripts/install_rest.sh
+  bash /c/dev/public/flywheel/scripts/install_rest.sh
   if ! "$PY" -c "import transformers,peft,trl,accelerate,datasets,bitsandbytes,safetensors,sentencepiece; print('stack import ok')"; then
     echo "stack import FAILED; abort"; exit 2
   fi
@@ -37,7 +37,7 @@ LOG="$RUN/logs/chain-phase01.log"
   done
 
   echo "--- tokenize + pack corpus ---"
-  "$PY" "C:/dev/local-model/dataset/tokenize_pack.py"
+  "$PY" "C:/dev/public/flywheel/dataset/tokenize_pack.py"
   rc=$?
   echo "=== $(date) chain phase0->1 DONE tokenize_rc=$rc ==="
 } >> "$LOG" 2>&1

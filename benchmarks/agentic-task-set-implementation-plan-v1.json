@@ -2,21 +2,21 @@
   "schema": "harness.agentic-task-set-implementation-plan/v1",
   "plan_id": "agentic_task_set_manifest_adapter_implementation_v1",
   "status": "implemented_not_validated",
-  "source_task_set": "C:/dev/local-model/benchmarks/agentic-task-set-v1.json",
-  "adapter_contract": "C:/dev/local-model/benchmarks/agentic-task-set-adapter-v1.json",
+  "source_task_set": "C:/dev/public/flywheel/benchmarks/agentic-task-set-v1.json",
+  "adapter_contract": "C:/dev/public/flywheel/benchmarks/agentic-task-set-adapter-v1.json",
   "target_files": [
-    "C:/dev/local-model/scripts/run_agentic_task_set_manifest.py",
-    "C:/dev/local-model/tests/test_agentic_task_set_manifest.py",
-    "C:/dev/local-model/scripts/run_benchmark_profile_manifest.py",
-    "C:/dev/local-model/scripts/run_benchmark_profile_coverage.py",
-    "C:/dev/local-model/scripts/run_closed_loop_benchmark_seed.py",
-    "C:/dev/local-model/scripts/run_closed_loop_outcome_report.py",
-    "C:/dev/local-model/scripts/run_harness_cli.py",
-    "C:/dev/local-model/tests/test_benchmark_profile_manifest.py",
-    "C:/dev/local-model/tests/test_benchmark_profile_coverage.py",
-    "C:/dev/local-model/tests/test_closed_loop_benchmark_seed.py",
-    "C:/dev/local-model/tests/test_closed_loop_outcome_report.py",
-    "C:/dev/local-model/tests/test_harness_cli.py"
+    "C:/dev/public/flywheel/scripts/run_agentic_task_set_manifest.py",
+    "C:/dev/public/flywheel/tests/test_agentic_task_set_manifest.py",
+    "C:/dev/public/flywheel/scripts/run_benchmark_profile_manifest.py",
+    "C:/dev/public/flywheel/scripts/run_benchmark_profile_coverage.py",
+    "C:/dev/public/flywheel/scripts/run_closed_loop_benchmark_seed.py",
+    "C:/dev/public/flywheel/scripts/run_closed_loop_outcome_report.py",
+    "C:/dev/public/flywheel/scripts/run_harness_cli.py",
+    "C:/dev/public/flywheel/tests/test_benchmark_profile_manifest.py",
+    "C:/dev/public/flywheel/tests/test_benchmark_profile_coverage.py",
+    "C:/dev/public/flywheel/tests/test_closed_loop_benchmark_seed.py",
+    "C:/dev/public/flywheel/tests/test_closed_loop_outcome_report.py",
+    "C:/dev/public/flywheel/tests/test_harness_cli.py"
   ],
   "new_command": {
     "script": "scripts/run_agentic_task_set_manifest.py",
@@ -38,8 +38,8 @@
       "--run-id"
     ],
     "defaults": {
-      "task_set": "C:/dev/local-model/benchmarks/agentic-task-set-v1.json",
-      "adapter": "C:/dev/local-model/benchmarks/agentic-task-set-adapter-v1.json",
+      "task_set": "C:/dev/public/flywheel/benchmarks/agentic-task-set-v1.json",
+      "adapter": "C:/dev/public/flywheel/benchmarks/agentic-task-set-adapter-v1.json",
       "out": "C:/tmp/agentic_task_manifest.json",
       "markdown_out": "C:/tmp/agentic_task_manifest.md"
     }

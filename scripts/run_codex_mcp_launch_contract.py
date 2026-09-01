@@ -33,7 +33,7 @@ EXPECTED: dict[str, dict[str, Any]] = {
         "env_keys": ["PYTHONPATH", "PYTHONIOENCODING"],
         "fallback_commands": [
             "set PYTHONPATH=C:/dev/public/index/src && python -m index_graph map --root C:/dev --output C:/tmp/index_map.json",
-            "set PYTHONPATH=C:/dev/public/index/src && python -m index_graph router --root C:/dev/local-model",
+            "set PYTHONPATH=C:/dev/public/index/src && python -m index_graph router --root C:/dev/public/flywheel",
         ],
         "reload_hint": "Restart the Codex MCP server/session after source or config changes; use direct index CLI until the host reloads stale transports.",
     },

@@ -16,7 +16,7 @@ def _task_set():
                 "lane": "agentic_tool_workflows",
                 "difficulty": "focused",
                 "prompt": "Prepare a manifest-only task.",
-                "required_inputs": ["C:/dev/local-model/benchmarks/agentic-task-set-v1.json"],
+                "required_inputs": ["C:/dev/public/flywheel/benchmarks/agentic-task-set-v1.json"],
                 "expected_artifacts": ["manifest.json"],
                 "scoring_focus": ["quality", "reproducibility"],
                 "must_not": ["run providers"],

@@ -20,7 +20,7 @@ from harness.model_card_claims import (  # noqa: E402
 )
 
 
-DEFAULT_CONTRACT = "C:/dev/local-model/benchmarks/embodied-realtime-multimodal-v1.json"
+DEFAULT_CONTRACT = "C:/dev/public/flywheel/benchmarks/embodied-realtime-multimodal-v1.json"
 
 
 def write_text(path_text: str, text: str) -> str:

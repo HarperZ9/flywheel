@@ -255,9 +255,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--roots",
         default=(
-            "C:/dev/local-model/.scratch;"
-            "C:/dev/local-model/scratch;"
-            "C:/dev/local-model/artifacts;"
+            "C:/dev/public/flywheel/.scratch;"
+            "C:/dev/public/flywheel/scratch;"
+            "C:/dev/public/flywheel/artifacts;"
             "C:/tmp;"
             "C:/Users/Zain/.codex;"
             "C:/Users/Zain/.claude;"

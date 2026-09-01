@@ -31,7 +31,7 @@ DEFAULT_TOOLS: dict[str, dict[str, str]] = {
     "relay": {"role": "event-transport", "root": "C:/dev/public/relay"},
     "plexus": {"role": "planning-routing", "root": "C:/dev/public/plexus"},
     "pubscan": {"role": "public-scan-tooling", "root": "C:/dev/public/pubscan"},
-    "local-model": {"role": "benchmark-harness", "root": "C:/dev/local-model"},
+    "local-model": {"role": "benchmark-harness", "root": "C:/dev/public/flywheel"},
 }
 
 HEALTHY_STATUSES = {"MATCH", "OK", "READY", "CALLABLE", "HEALTHY"}

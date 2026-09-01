@@ -5,15 +5,15 @@
   "created_at": "2026-07-09",
   "purpose": "Exact command deck for turning the current Codex/Flywheel local-model roadmap into metadata receipts and later benchmark evidence.",
   "common_paths": {
-    "workspace": "C:/dev/local-model",
+    "workspace": "C:/dev/public/flywheel",
     "store_root": "C:/tmp/harness_file_store",
     "artifact_dir": "C:/tmp/harness_closed_loop_seed_20260709",
     "run_label": "20260709",
-    "task_set": "C:/dev/local-model/benchmarks/agentic-task-set-v1.json",
-    "task_set_adapter": "C:/dev/local-model/benchmarks/agentic-task-set-adapter-v1.json",
-    "task_set_implementation_plan": "C:/dev/local-model/benchmarks/agentic-task-set-implementation-plan-v1.json",
-    "cross_harness_contract": "C:/dev/local-model/benchmarks/cross-harness-adapter-contract-v2.json",
-    "embodied_realtime_contract": "C:/dev/local-model/benchmarks/embodied-realtime-multimodal-v1.json"
+    "task_set": "C:/dev/public/flywheel/benchmarks/agentic-task-set-v1.json",
+    "task_set_adapter": "C:/dev/public/flywheel/benchmarks/agentic-task-set-adapter-v1.json",
+    "task_set_implementation_plan": "C:/dev/public/flywheel/benchmarks/agentic-task-set-implementation-plan-v1.json",
+    "cross_harness_contract": "C:/dev/public/flywheel/benchmarks/cross-harness-adapter-contract-v2.json",
+    "embodied_realtime_contract": "C:/dev/public/flywheel/benchmarks/embodied-realtime-multimodal-v1.json"
   },
   "guards": [
     "Commands in metadata_only may generate local JSON/Markdown artifacts but must not call model providers.",
@@ -76,13 +76,13 @@
       "id": "deck-003a-schematic-drift-check",
       "tier": "metadata_only",
       "purpose": "Check closed-loop schematic graph/report drift without running tests, benchmarks, endpoints, or providers.",
-      "command": "python scripts/run_schematic_drift_check.py --graph C:/dev/local-model/project-docs/schematics/closed-loop-integration.graph.json --report C:/dev/local-model/project-docs/records/CLOSED-LOOP-INTEGRATION-SCHEMATIC-2026-07-09.md --out C:/tmp/schematic_drift_check_20260709.json --markdown-out C:/tmp/schematic_drift_check_20260709.md --store-root C:/tmp/harness_file_store"
+      "command": "python scripts/run_schematic_drift_check.py --graph C:/dev/public/flywheel/project-docs/schematics/closed-loop-integration.graph.json --report C:/dev/public/flywheel/project-docs/records/CLOSED-LOOP-INTEGRATION-SCHEMATIC-2026-07-09.md --out C:/tmp/schematic_drift_check_20260709.json --markdown-out C:/tmp/schematic_drift_check_20260709.md --store-root C:/tmp/harness_file_store"
     },
     {
       "id": "deck-004-benchmark-profile",
       "tier": "metadata_only",
       "purpose": "Generate the benchmark contract, provider roles, metric weights, dataset lanes, and existing artifact inventory.",
-      "command": "python scripts/run_benchmark_profile_manifest.py --providers serve,codex,ollama,claude,opencode,dry --artifact-roots \"C:/tmp;C:/dev/local-model/artifacts\" --out C:/tmp/benchmark_profile_manifest_20260709.json --markdown-out C:/tmp/benchmark_profile_manifest_20260709.md --store-root C:/tmp/harness_file_store"
+      "command": "python scripts/run_benchmark_profile_manifest.py --providers serve,codex,ollama,claude,opencode,dry --artifact-roots \"C:/tmp;C:/dev/public/flywheel/artifacts\" --out C:/tmp/benchmark_profile_manifest_20260709.json --markdown-out C:/tmp/benchmark_profile_manifest_20260709.md --store-root C:/tmp/harness_file_store"
     },
     {
       "id": "deck-005-context-inventory",
@@ -112,43 +112,43 @@
       "id": "deck-008a-adapter-runtime-matrix",
       "tier": "metadata_only",
       "purpose": "Join cross-harness adapter roles with endpoint profile metadata without provider calls or endpoint probes.",
-      "command": "python scripts/run_adapter_runtime_matrix.py --contract C:/dev/local-model/benchmarks/cross-harness-adapter-contract-v2.json --endpoint-profiles C:/tmp/model_endpoint_profiles_20260709.json --endpoint-auth-status C:/tmp/endpoint_auth_status_20260709.json --out C:/tmp/adapter_runtime_matrix_20260709.json --markdown-out C:/tmp/adapter_runtime_matrix_20260709.md --store-root C:/tmp/harness_file_store"
+      "command": "python scripts/run_adapter_runtime_matrix.py --contract C:/dev/public/flywheel/benchmarks/cross-harness-adapter-contract-v2.json --endpoint-profiles C:/tmp/model_endpoint_profiles_20260709.json --endpoint-auth-status C:/tmp/endpoint_auth_status_20260709.json --out C:/tmp/adapter_runtime_matrix_20260709.json --markdown-out C:/tmp/adapter_runtime_matrix_20260709.md --store-root C:/tmp/harness_file_store"
     },
     {
       "id": "deck-009-gather-readiness",
       "tier": "metadata_only",
       "purpose": "Generate static gather/source-intake readiness receipts.",
-      "command": "python scripts/run_gather_readiness.py --gather-root C:/dev/public/gather --config-roots C:/dev/local-model/configs --config-pattern \"gather-*.json\" --credential-vars GATHER_DISCORD_BOT_TOKEN,DISCORD_TOKEN --out C:/tmp/gather_readiness_20260709.json --markdown-out C:/tmp/gather_readiness_20260709.md --store-root C:/tmp/harness_file_store"
+      "command": "python scripts/run_gather_readiness.py --gather-root C:/dev/public/gather --config-roots C:/dev/public/flywheel/configs --config-pattern \"gather-*.json\" --credential-vars GATHER_DISCORD_BOT_TOKEN,DISCORD_TOKEN --out C:/tmp/gather_readiness_20260709.json --markdown-out C:/tmp/gather_readiness_20260709.md --store-root C:/tmp/harness_file_store"
     },
     {
       "id": "deck-010-index-fallback-receipt",
       "tier": "metadata_only",
       "purpose": "Use the local Index fallback receipt while MCP index.context.envelope is unavailable.",
-      "command": "python scripts/run_index_receipt.py --lane context-envelope --root C:/dev/local-model --index-root C:/dev/public/index --budget 12000 --focus local-model --hops 2 --mcp-tool index_context_envelope --mcp-status transport_closed --mcp-error-code transport_closed --mcp-error-summary \"Transport closed\" --artifact-out C:/tmp/index_context_envelope_fallback_20260709.json --out C:/tmp/index_context_envelope_fallback_receipt_20260709.json --store-root C:/tmp/harness_file_store"
+      "command": "python scripts/run_index_receipt.py --lane context-envelope --root C:/dev/public/flywheel --index-root C:/dev/public/index --budget 12000 --focus local-model --hops 2 --mcp-tool index_context_envelope --mcp-status transport_closed --mcp-error-code transport_closed --mcp-error-summary \"Transport closed\" --artifact-out C:/tmp/index_context_envelope_fallback_20260709.json --out C:/tmp/index_context_envelope_fallback_receipt_20260709.json --store-root C:/tmp/harness_file_store"
     },
     {
       "id": "deck-011-agentic-task-manifest",
       "tier": "metadata_only",
       "purpose": "Generate the non-executing custom agentic task manifest with prompt hashes, planned artifacts, and dry/null scorecard rows.",
-      "command": "python scripts/run_agentic_task_set_manifest.py --task-set C:/dev/local-model/benchmarks/agentic-task-set-v1.json --adapter C:/dev/local-model/benchmarks/agentic-task-set-adapter-v1.json --out C:/tmp/agentic_task_manifest_20260709.json --markdown-out C:/tmp/agentic_task_manifest_20260709.md --store-root C:/tmp/harness_file_store"
+      "command": "python scripts/run_agentic_task_set_manifest.py --task-set C:/dev/public/flywheel/benchmarks/agentic-task-set-v1.json --adapter C:/dev/public/flywheel/benchmarks/agentic-task-set-adapter-v1.json --out C:/tmp/agentic_task_manifest_20260709.json --markdown-out C:/tmp/agentic_task_manifest_20260709.md --store-root C:/tmp/harness_file_store"
     },
     {
       "id": "deck-012-cross-harness-manifest",
       "tier": "metadata_only",
       "purpose": "Generate the non-executing cross-harness manifest with same-task prompt hashes and provider-role receipt plans.",
-      "command": "python scripts/run_cross_harness_manifest.py --task-set C:/dev/local-model/benchmarks/agentic-task-set-v1.json --contract C:/dev/local-model/benchmarks/cross-harness-adapter-contract-v2.json --source-root C:/dev/local-model --provider-roles codex_harness,flywheel_harness,claude_code,opencode,local_14b,local_32b,dry --out C:/tmp/cross_harness_manifest_20260709.json --markdown-out C:/tmp/cross_harness_manifest_20260709.md --store-root C:/tmp/harness_file_store"
+      "command": "python scripts/run_cross_harness_manifest.py --task-set C:/dev/public/flywheel/benchmarks/agentic-task-set-v1.json --contract C:/dev/public/flywheel/benchmarks/cross-harness-adapter-contract-v2.json --source-root C:/dev/public/flywheel --provider-roles codex_harness,flywheel_harness,claude_code,opencode,local_14b,local_32b,dry --out C:/tmp/cross_harness_manifest_20260709.json --markdown-out C:/tmp/cross_harness_manifest_20260709.md --store-root C:/tmp/harness_file_store"
     },
     {
       "id": "deck-013-embodied-realtime-plan",
       "tier": "metadata_only",
       "purpose": "Generate the non-executing embodied realtime multimodal plan with planned probes and dry scorecard rows.",
-      "command": "python scripts/run_embodied_realtime_multimodal_plan.py --contract C:/dev/local-model/benchmarks/embodied-realtime-multimodal-v1.json --providers dry --latency-budgets-ms 250,500,1000 --out C:/tmp/embodied_realtime_multimodal_plan_20260709.json --markdown-out C:/tmp/embodied_realtime_multimodal_plan_20260709.md --store-root C:/tmp/harness_file_store"
+      "command": "python scripts/run_embodied_realtime_multimodal_plan.py --contract C:/dev/public/flywheel/benchmarks/embodied-realtime-multimodal-v1.json --providers dry --latency-budgets-ms 250,500,1000 --out C:/tmp/embodied_realtime_multimodal_plan_20260709.json --markdown-out C:/tmp/embodied_realtime_multimodal_plan_20260709.md --store-root C:/tmp/harness_file_store"
     },
     {
       "id": "deck-013a-model-card-claim-table",
       "tier": "metadata_only",
       "purpose": "Generate the non-executing model-card claim table for embodied realtime model leads before any result claims.",
-      "command": "python scripts/run_model_card_claim_table.py --contract C:/dev/local-model/benchmarks/embodied-realtime-multimodal-v1.json --out C:/tmp/model_card_claim_table_20260709.json --markdown-out C:/tmp/model_card_claim_table_20260709.md --store-root C:/tmp/harness_file_store"
+      "command": "python scripts/run_model_card_claim_table.py --contract C:/dev/public/flywheel/benchmarks/embodied-realtime-multimodal-v1.json --out C:/tmp/model_card_claim_table_20260709.json --markdown-out C:/tmp/model_card_claim_table_20260709.md --store-root C:/tmp/harness_file_store"
     },
     {
       "id": "deck-014-targeted-adapter-tests",

@@ -21,7 +21,7 @@ def parse(argv):
 
 def test_plan_command_targets_closed_loop_dry_plan():
     args = parse(["plan", "--out", "C:/tmp/plan.json"])
-    command = build_command(args, repo_root=Path("C:/dev/local-model"))
+    command = build_command(args, repo_root=Path("C:/dev/public/flywheel"))
     assert command[:2] == [args.python, "scripts/run_closed_loop_benchmark_seed.py"]
     assert "--dry-plan" in command
     assert "C:/tmp/plan.json" in command
@@ -36,7 +36,7 @@ def test_benchmarks_command_targets_profile_manifest():
         "--out",
         "C:/tmp/benchmark_profile.json",
     ])
-    command = build_command(args, repo_root=Path("C:/dev/local-model"))
+    command = build_command(args, repo_root=Path("C:/dev/public/flywheel"))
 
     assert command[:2] == [args.python, "scripts/run_benchmark_profile_manifest.py"]
     assert "--providers" in command
@@ -58,7 +58,7 @@ def test_forum_route_command_targets_route_receipt_generator():
         "--out",
         "C:/tmp/forum_route_receipts.json",
     ])
-    command = build_command(args, repo_root=Path("C:/dev/local-model"))
+    command = build_command(args, repo_root=Path("C:/dev/public/flywheel"))
 
     assert command[:2] == [args.python, "scripts/run_forum_route_receipts.py"]
     assert "--route" in command
@@ -82,7 +82,7 @@ def test_mcp_health_command_targets_tool_health_generator():
         "--out",
         "C:/tmp/mcp_tool_health.json",
     ])
-    command = build_command(args, repo_root=Path("C:/dev/local-model"))
+    command = build_command(args, repo_root=Path("C:/dev/public/flywheel"))
 
     assert command[:2] == [args.python, "scripts/run_mcp_tool_health_receipts.py"]
     assert "--tools" in command
@@ -104,7 +104,7 @@ def test_codex_mcp_contract_command_targets_launch_contract_generator():
         "--out",
         "C:/tmp/codex_mcp.json",
     ])
-    command = build_command(args, repo_root=Path("C:/dev/local-model"))
+    command = build_command(args, repo_root=Path("C:/dev/public/flywheel"))
 
     assert command[:2] == [args.python, "scripts/run_codex_mcp_launch_contract.py"]
     assert "--codex-config" in command
@@ -122,18 +122,18 @@ def test_package_doctor_command_targets_ship_doctor():
         "--package-summary",
         "C:/tmp/local-harness.package.json",
         "--repo-root",
-        "C:/dev/local-model",
+        "C:/dev/public/flywheel",
         "--strict-exit",
         "--out",
         "C:/tmp/package_doctor.json",
     ])
-    command = build_command(args, repo_root=Path("C:/dev/local-model"))
+    command = build_command(args, repo_root=Path("C:/dev/public/flywheel"))
 
     assert command[:2] == [args.python, "scripts/run_package_ship_doctor.py"]
     assert "--package-summary" in command
     assert "C:/tmp/local-harness.package.json" in command
     assert "--repo-root" in command
-    assert "C:/dev/local-model" in command
+    assert "C:/dev/public/flywheel" in command
     assert "--strict-exit" in command
     assert "C:/tmp/package_doctor.json" in command
 
@@ -164,7 +164,7 @@ def test_architecture_report_command_targets_report_generator():
         "--out",
         "C:/tmp/architecture.json",
     ])
-    command = build_command(args, repo_root=Path("C:/dev/local-model"))
+    command = build_command(args, repo_root=Path("C:/dev/public/flywheel"))
 
     assert command[:2] == [args.python, "scripts/run_harness_architecture_report.py"]
     assert "--dist" in command
@@ -200,7 +200,7 @@ def test_enterprise_readiness_command_targets_report_generator():
         "--out",
         "C:/tmp/enterprise.json",
     ])
-    command = build_command(args, repo_root=Path("C:/dev/local-model"))
+    command = build_command(args, repo_root=Path("C:/dev/public/flywheel"))
 
     assert command[:2] == [args.python, "scripts/run_enterprise_readiness_report.py"]
     assert "--tool-contract" in command
@@ -218,13 +218,13 @@ def test_tool_contract_command_targets_contract_generator():
         "--base-root",
         "C:/dev/public",
         "--tool-root",
-        "local-model=C:/dev/local-model",
+        "local-model=C:/dev/public/flywheel",
         "--package-root",
-        "C:/dev/local-model/artifacts/exe",
+        "C:/dev/public/flywheel/artifacts/exe",
         "--out",
         "C:/tmp/tool_contract.json",
     ])
-    command = build_command(args, repo_root=Path("C:/dev/local-model"))
+    command = build_command(args, repo_root=Path("C:/dev/public/flywheel"))
 
     assert command[:2] == [args.python, "scripts/run_tool_integration_contract.py"]
     assert "--tools" in command
@@ -232,9 +232,9 @@ def test_tool_contract_command_targets_contract_generator():
     assert "--base-root" in command
     assert "C:/dev/public" in command
     assert "--tool-root" in command
-    assert "local-model=C:/dev/local-model" in command
+    assert "local-model=C:/dev/public/flywheel" in command
     assert "--package-root" in command
-    assert "C:/dev/local-model/artifacts/exe" in command
+    assert "C:/dev/public/flywheel/artifacts/exe" in command
     assert "C:/tmp/tool_contract.json" in command
 
 
@@ -242,9 +242,9 @@ def test_runtime_contract_command_targets_runtime_contract_generator():
     args = parse([
         "runtime-contract",
         "--package-root",
-        "C:/dev/local-model/artifacts/exe",
+        "C:/dev/public/flywheel/artifacts/exe",
         "--repo-root",
-        "C:/dev/local-model",
+        "C:/dev/public/flywheel",
         "--store-root",
         "C:/tmp/store",
         "--model-run-root",
@@ -252,13 +252,13 @@ def test_runtime_contract_command_targets_runtime_contract_generator():
         "--out",
         "C:/tmp/runtime_contract.json",
     ])
-    command = build_command(args, repo_root=Path("C:/dev/local-model"))
+    command = build_command(args, repo_root=Path("C:/dev/public/flywheel"))
 
     assert command[:2] == [args.python, "scripts/run_runtime_activation_contract.py"]
     assert "--package-root" in command
-    assert "C:/dev/local-model/artifacts/exe" in command
+    assert "C:/dev/public/flywheel/artifacts/exe" in command
     assert "--repo-root" in command
-    assert "C:/dev/local-model" in command
+    assert "C:/dev/public/flywheel" in command
     assert "--store-root" in command
     assert "C:/tmp/store" in command
     assert "--model-run-root" in command
@@ -276,7 +276,7 @@ def test_benchmark_coverage_command_targets_profile_coverage_report():
         "--out",
         "C:/tmp/coverage.json",
     ])
-    command = build_command(args, repo_root=Path("C:/dev/local-model"))
+    command = build_command(args, repo_root=Path("C:/dev/public/flywheel"))
 
     assert command[:2] == [args.python, "scripts/run_benchmark_profile_coverage.py"]
     assert "--profile" in command
@@ -293,7 +293,7 @@ def test_comparison_command_targets_harness_comparison_report():
         "--out",
         "C:/tmp/comparison.json",
     ])
-    command = build_command(args, repo_root=Path("C:/dev/local-model"))
+    command = build_command(args, repo_root=Path("C:/dev/public/flywheel"))
 
     assert command[:2] == [args.python, "scripts/run_harness_comparison_report.py"]
     assert "--artifacts" in command
@@ -311,7 +311,7 @@ def test_tool_hardening_command_targets_hardening_plan():
         "--out",
         "C:/tmp/tool_hardening_plan.json",
     ])
-    command = build_command(args, repo_root=Path("C:/dev/local-model"))
+    command = build_command(args, repo_root=Path("C:/dev/public/flywheel"))
 
     assert command[:2] == [args.python, "scripts/run_tool_hardening_plan.py"]
     assert "--readiness-artifact" in command
@@ -332,7 +332,7 @@ def test_readiness_tools_command_passes_full_tool_set_and_tool_roots():
         "--out",
         "C:/tmp/tool_readiness.json",
     ])
-    command = build_command(args, repo_root=Path("C:/dev/local-model"))
+    command = build_command(args, repo_root=Path("C:/dev/public/flywheel"))
 
     assert command[:2] == [args.python, "scripts/run_tool_readiness_receipts.py"]
     assert "--tools" in command
@@ -357,7 +357,7 @@ def test_endpoint_gate_command_targets_model_endpoint_gate():
         "--out",
         "C:/tmp/model_endpoint_gate.json",
     ])
-    command = build_command(args, repo_root=Path("C:/dev/local-model"))
+    command = build_command(args, repo_root=Path("C:/dev/public/flywheel"))
 
     assert command[:2] == [args.python, "scripts/run_model_endpoint_gate.py"]
     assert "--profile-artifact" in command
@@ -380,7 +380,7 @@ def test_model_publish_command_targets_publish_plan():
         "--out",
         "C:/tmp/model_publish_plan.json",
     ])
-    command = build_command(args, repo_root=Path("C:/dev/local-model"))
+    command = build_command(args, repo_root=Path("C:/dev/public/flywheel"))
 
     assert command[:2] == [args.python, "scripts/run_model_publish_plan.py"]
     assert "--release-readiness-artifact" in command
@@ -400,7 +400,7 @@ def test_execution_matrix_command_targets_matrix_generator():
         "--out",
         "C:/tmp/benchmark_execution_matrix.json",
     ])
-    command = build_command(args, repo_root=Path("C:/dev/local-model"))
+    command = build_command(args, repo_root=Path("C:/dev/public/flywheel"))
 
     assert command[:2] == [args.python, "scripts/run_benchmark_execution_matrix.py"]
     assert "--providers" in command
@@ -420,7 +420,7 @@ def test_schematic_drift_command_targets_metadata_checker():
         "--out",
         "C:/tmp/schematic_drift_check.json",
     ])
-    command = build_command(args, repo_root=Path("C:/dev/local-model"))
+    command = build_command(args, repo_root=Path("C:/dev/public/flywheel"))
 
     assert command[:2] == [args.python, "scripts/run_schematic_drift_check.py"]
     assert "--graph" in command
@@ -444,7 +444,7 @@ def test_agentic_tasks_command_targets_manifest_generator():
         "--out",
         "C:/tmp/agentic_task_manifest.json",
     ])
-    command = build_command(args, repo_root=Path("C:/dev/local-model"))
+    command = build_command(args, repo_root=Path("C:/dev/public/flywheel"))
 
     assert command[:2] == [args.python, "scripts/run_agentic_task_set_manifest.py"]
     assert "--task-set" in command
@@ -470,7 +470,7 @@ def test_cross_harness_command_targets_manifest_generator():
         "--out",
         "C:/tmp/cross_harness_manifest.json",
     ])
-    command = build_command(args, repo_root=Path("C:/dev/local-model"))
+    command = build_command(args, repo_root=Path("C:/dev/public/flywheel"))
     assert command[:2] == [args.python, "scripts/run_cross_harness_manifest.py"]; assert command[command.index("--source-root") + 1] == "C:/tmp/source"
     assert "--task-set" in command
     assert "C:/tmp/tasks.json" in command
@@ -500,7 +500,7 @@ def test_adapter_runtime_command_targets_matrix_generator():
         "--out",
         "C:/tmp/adapter_runtime_matrix.json",
     ])
-    command = build_command(args, repo_root=Path("C:/dev/local-model"))
+    command = build_command(args, repo_root=Path("C:/dev/public/flywheel"))
 
     assert command[:2] == [args.python, "scripts/run_adapter_runtime_matrix.py"]
     assert "--contract" in command
@@ -526,7 +526,7 @@ def test_embodied_realtime_command_targets_metadata_plan_generator():
         "--out",
         "C:/tmp/embodied_plan.json",
     ])
-    command = build_command(args, repo_root=Path("C:/dev/local-model"))
+    command = build_command(args, repo_root=Path("C:/dev/public/flywheel"))
 
     assert command[:2] == [args.python, "scripts/run_embodied_realtime_multimodal_plan.py"]
     assert "--contract" in command
@@ -552,7 +552,7 @@ def test_model_card_claims_command_targets_claim_table_generator():
         "--out",
         "C:/tmp/model_card_claim_table.json",
     ])
-    command = build_command(args, repo_root=Path("C:/dev/local-model"))
+    command = build_command(args, repo_root=Path("C:/dev/public/flywheel"))
 
     assert command[:2] == [args.python, "scripts/run_model_card_claim_table.py"]
     assert "--contract" in command
@@ -575,7 +575,7 @@ def test_classifier_friction_command_targets_classifier_runner():
         "--out",
         "C:/tmp/classifier.json",
     ])
-    command = build_command(args, repo_root=Path("C:/dev/local-model"))
+    command = build_command(args, repo_root=Path("C:/dev/public/flywheel"))
 
     assert command[:2] == [args.python, "scripts/run_classifier_friction_benchmark.py"]
     assert "--providers" in command
@@ -597,7 +597,7 @@ def test_seed_command_preserves_store_artifact_and_repair_flags():
         "C:/tmp/seed.json",
         "--unisonai-repair-json",
     ])
-    command = build_command(args, repo_root=Path("C:/dev/local-model"))
+    command = build_command(args, repo_root=Path("C:/dev/public/flywheel"))
 
     assert command[:2] == [args.python, "scripts/run_closed_loop_benchmark_seed.py"]
     assert "--store-root" in command
@@ -616,7 +616,7 @@ def test_readiness_command_dispatches_model_release():
         "--markdown-out",
         "C:/tmp/models.md",
     ])
-    command = build_command(args, repo_root=Path("C:/dev/local-model"))
+    command = build_command(args, repo_root=Path("C:/dev/public/flywheel"))
 
     assert command[:2] == [args.python, "scripts/run_model_release_readiness.py"]
     assert "--out" in command
@@ -632,7 +632,7 @@ def test_readiness_command_dispatches_model_endpoint_profiles():
         "--out",
         "C:/tmp/model_endpoints.json",
     ])
-    command = build_command(args, repo_root=Path("C:/dev/local-model"))
+    command = build_command(args, repo_root=Path("C:/dev/public/flywheel"))
 
     assert command[:2] == [args.python, "scripts/run_model_endpoint_profiles.py"]
     assert "--base-root" in command

@@ -17,7 +17,7 @@ from harness.provider_roles import provider_roles_for  # noqa: E402
 
 
 SCHEMA = "harness.embodied-realtime-multimodal/v1"
-DEFAULT_CONTRACT = "C:/dev/local-model/benchmarks/embodied-realtime-multimodal-v1.json"
+DEFAULT_CONTRACT = "C:/dev/public/flywheel/benchmarks/embodied-realtime-multimodal-v1.json"
 DEFAULT_ARTIFACT_DIR = "C:/tmp/embodied_realtime_multimodal"
 
 
