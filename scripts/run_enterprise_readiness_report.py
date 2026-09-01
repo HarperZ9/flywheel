@@ -14,7 +14,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from harness.file_backed_store import FileBackedHarnessStore
 
 SCHEMA = "harness.enterprise-readiness-report/v1"
-DEFAULT_TOOL_CONTRACT = Path("C:/dev/local-model/artifacts/exe/tool_integration_contract.local.json")
+DEFAULT_TOOL_CONTRACT = Path("C:/dev/public/flywheel/artifacts/exe/tool_integration_contract.local.json")
 DEFAULT_TOOLS = ["mneme", "relay", "plexus"]
 ENTERPRISE_CRITERIA = [
     "clear package purpose and positioning",

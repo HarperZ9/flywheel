@@ -6,7 +6,7 @@
     {
       "id": "buildc-receipt-bridge-local",
       "title": "BuildLang/buildc receipt bridge into flywheel byte witness",
-      "url": "C:/dev/local-model/harness/buildc_receipt_bridge.py",
+      "url": "C:/dev/public/flywheel/harness/buildc_receipt_bridge.py",
       "observed_claims": [
         "Buildc receipts can be imported into a flywheel byte-witness packet.",
         "Raw receipts are UNVERIFIABLE until buildc verification succeeds.",
@@ -21,7 +21,7 @@
     {
       "id": "m7-source-mined-scorecards-local",
       "title": "M7 source-mined scorecard with attached witnesses",
-      "url": "C:/dev/local-model/scripts/run_m7_eval.py",
+      "url": "C:/dev/public/flywheel/scripts/run_m7_eval.py",
       "observed_claims": [
         "M7 source-mined mode compares Codex/frontier and flywheel/local rows on identical custom cases.",
         "Attached witnesses are recorded in scorecard metadata.",
@@ -35,7 +35,7 @@
     {
       "id": "governed-agent-workflow-local",
       "title": "Governed-agent workflow and schematic drift benchmark",
-      "url": "C:/dev/local-model/harness/governed_agent_bench.py",
+      "url": "C:/dev/public/flywheel/harness/governed_agent_bench.py",
       "observed_claims": [
         "Governed-agent checks use source-of-truth state, maturity gates, HITL, sandboxed mutation, receipts, and schematic drift metrics.",
         "Documentation and execution graph coverage are release-gate variables."
@@ -48,7 +48,7 @@
     {
       "id": "classifier-friction-accountability-local",
       "title": "Classifier-friction benchmark with accountability-first mode",
-      "url": "C:/dev/local-model/harness/classifier_friction_bench.py",
+      "url": "C:/dev/public/flywheel/harness/classifier_friction_bench.py",
       "observed_claims": [
         "Prompt-layer guardrail modes can be compared against accountability-first receipts.",
         "Unnecessary refusal and provider guardrail observations can be measured."

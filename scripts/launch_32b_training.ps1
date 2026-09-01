@@ -25,7 +25,7 @@ if ($free -lt 20) {
 }
 
 # Launch the supervisor inside a detached WSL screen session named train32b.
-wsl.exe -e bash -lc "screen -dmS train32b bash /mnt/c/dev/local-model/scripts/run_phase2_32b_supervised.sh"
+wsl.exe -e bash -lc "screen -dmS train32b bash /mnt/c/dev/public/flywheel/scripts/run_phase2_32b_supervised.sh"
 Start-Sleep -Seconds 3
 wsl.exe -e bash -lc "screen -ls" 2>$null
 

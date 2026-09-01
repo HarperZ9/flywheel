@@ -31,7 +31,7 @@ CONSTRAINTS: single 24GB RTX 4090. 32B in 4-bit approx 18GB. We CAN train the
 model (QLoRA), not just prompt it. Local inference only for the proposer; frontier
 models may be called only as BASELINES to beat.
 
-CURRENT DESIGN: read C:/dev/local-model/HARNESS.md and C:/dev/local-model/ROADMAP.md
+CURRENT DESIGN: read C:/dev/public/flywheel/HARNESS.md and C:/dev/public/flywheel/ROADMAP.md
 for the existing plan (escalating verifier-guided search + proof envelopes + a
 verified-output self-improvement flywheel). Build on it, improve it, or refute it.
 `

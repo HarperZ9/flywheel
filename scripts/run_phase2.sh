@@ -18,6 +18,6 @@ LOG="$RUN/logs/phase2-${TAG}.log"
 {
   echo "=== $(date) phase2 ($TAG) START ==="
   # Windows venv python needs a Windows-form script path, not an MSYS /c/ path
-  "$PY" "C:/dev/local-model/train/qlora_cpt.py" "$@"
+  "$PY" "C:/dev/public/flywheel/train/qlora_cpt.py" "$@"
   echo "=== $(date) phase2 ($TAG) DONE rc=$? ==="
 } >> "$LOG" 2>&1

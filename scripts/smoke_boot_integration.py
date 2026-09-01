@@ -13,7 +13,7 @@ CORRECT = "def add(a, b):\n    return a + b\n"
 
 task = load_task("tasks/example_pass",
                  workdir="C:/Users/Zain/AppData/Local/Temp/boot-smoke")
-pkt = boot("C:/dev/local-model", budget=1500, focus="example_pass")
+pkt = boot("C:/dev/public/flywheel", budget=1500, focus="example_pass")
 print("BOOT verdict:", pkt.verdict, "| root_hash:", pkt.root_hash,
       "| files:", pkt.summary.get("source_files"),
       "| tokens~:", pkt.packet_tokens_approx)

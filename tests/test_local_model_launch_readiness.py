@@ -97,7 +97,7 @@ def test_launch_readiness_marks_harness_serve_as_candidate_running(tmp_path):
         owner_lookup=lambda host, port: [{
             "pid": 456,
             "process_name": "python.exe",
-            "command_line": "python C:/dev/local-model/harness/serve.py --model-profile 14b",
+            "command_line": "python C:/dev/public/flywheel/harness/serve.py --model-profile 14b",
         }],
         port_probe=lambda host, port, timeout: True,
     )

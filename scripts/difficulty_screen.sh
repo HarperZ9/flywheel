@@ -7,7 +7,7 @@ set -uo pipefail
 
 RUN=/mnt/e/local-model-run
 PY="$HOME/venv-lm/bin/python"
-SRC=/mnt/c/dev/local-model
+SRC=/mnt/c/dev/public/flywheel
 PORT="${SERVE_PORT:-8765}"
 
 CKPT_DIR="$RUN/checkpoints/phase2-linux-qlora-cpt-14b"

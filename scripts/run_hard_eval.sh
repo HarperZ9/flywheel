@@ -9,8 +9,8 @@ for i in $(seq 1 50); do
   sleep 6
 done
 [ "$up" = "0" ] && { echo "serve not up; tail serve-hard.log:"; tail -8 /mnt/e/local-model-run/logs/serve-hard.log; exit 3; }
-cd /mnt/c/dev/local-model
-PYTHONPATH=/mnt/c/dev/local-model "$HOME/venv-lm/bin/python" scripts/run_m7_eval.py \
+cd /mnt/c/dev/public/flywheel
+PYTHONPATH=/mnt/c/dev/public/flywheel "$HOME/venv-lm/bin/python" scripts/run_m7_eval.py \
   --hard --serve http://127.0.0.1:8765 \
   --out /mnt/e/local-model-run/m7_hard_scorecard.json \
   --workroot /mnt/e/local-model-run/tmp/m7hard

@@ -215,8 +215,8 @@ def _store_outputs(contract: dict[str, Any], *, store_root: str, run_id: str, ar
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--package-root", default="C:/dev/local-model/artifacts/exe")
-    parser.add_argument("--repo-root", default="C:/dev/local-model")
+    parser.add_argument("--package-root", default="C:/dev/public/flywheel/artifacts/exe")
+    parser.add_argument("--repo-root", default="C:/dev/public/flywheel")
     parser.add_argument("--store-root", default="C:/tmp/harness_file_store")
     parser.add_argument("--model-run-root", default="E:/local-model-run")
     parser.add_argument("--log-root", default="C:/tmp/local_model_serve_logs")

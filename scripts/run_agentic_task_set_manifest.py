@@ -21,8 +21,8 @@ from harness.agentic_task_manifest import (  # noqa: E402
 from harness.file_backed_store import FileBackedHarnessStore  # noqa: E402
 
 
-DEFAULT_TASK_SET = "C:/dev/local-model/benchmarks/agentic-task-set-v1.json"
-DEFAULT_ADAPTER = "C:/dev/local-model/benchmarks/agentic-task-set-adapter-v1.json"
+DEFAULT_TASK_SET = "C:/dev/public/flywheel/benchmarks/agentic-task-set-v1.json"
+DEFAULT_ADAPTER = "C:/dev/public/flywheel/benchmarks/agentic-task-set-adapter-v1.json"
 
 
 def write_text(path_text: str, text: str) -> str:

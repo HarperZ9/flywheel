@@ -14,7 +14,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from harness.file_backed_store import FileBackedHarnessStore
 
 SCHEMA = "harness.architecture-report/v1"
-DEFAULT_DIST = Path("C:/dev/local-model/artifacts/exe")
+DEFAULT_DIST = Path("C:/dev/public/flywheel/artifacts/exe")
 DEFAULT_DOCUMENTATION_RECORDS = [
     "ROADMAP-STATUS-2026-07-09.md",
     "CAPABILITY-CATALOG-2026-07-09.md",
@@ -648,10 +648,10 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--tool-readiness", default="")
     parser.add_argument("--tool-hardening", default="")
     parser.add_argument("--tool-operator-guide", default="")
-    parser.add_argument("--documentation-records-root", default="C:/dev/local-model/project-docs/records")
-    parser.add_argument("--documentation-reports-root", default="C:/dev/local-model/project-docs/reports")
-    parser.add_argument("--model-release-docs-root", default="C:/dev/local-model/project-docs/releases")
-    parser.add_argument("--flagship-docs-root", default="C:/dev/local-model/project-docs/flagship")
+    parser.add_argument("--documentation-records-root", default="C:/dev/public/flywheel/project-docs/records")
+    parser.add_argument("--documentation-reports-root", default="C:/dev/public/flywheel/project-docs/reports")
+    parser.add_argument("--model-release-docs-root", default="C:/dev/public/flywheel/project-docs/releases")
+    parser.add_argument("--flagship-docs-root", default="C:/dev/public/flywheel/project-docs/flagship")
     parser.add_argument("--runtime-contract", default="")
     parser.add_argument("--codex-mcp-contract", default="")
     parser.add_argument("--enterprise-readiness", default="")

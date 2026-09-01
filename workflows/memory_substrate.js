@@ -30,7 +30,7 @@ ASSETS (organs): crucible (verifier/witness), index (code retrieval), gather
 (external retrieval with receipts), forum (orchestration), telos. Real oracles:
 pytest/mypy, cargo, Lean/Coq, sympy/mpmath.
 
-CURRENT SPEC: read C:/dev/local-model/MEMORY-SUBSTRATE.md and HARNESS.md. Build
+CURRENT SPEC: read C:/dev/public/flywheel/MEMORY-SUBSTRATE.md and HARNESS.md. Build
 on the six layers (prefix KV reuse, paged tiered KV HBM->CPU->NVMe, persistent
 cross-iteration KV, content-addressed verified-result cache, verifier
 memoization, speculative decoding + quantized KV). Improve, quantify, or refute.

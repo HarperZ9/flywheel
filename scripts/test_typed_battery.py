@@ -22,7 +22,7 @@ from harness.tasks_lib import materialize_all
 from harness.task import load_task
 from scripts.run_ablation import consensus_select, _infer_param_types, _battery
 
-REGISTRY = Path("C:/dev/local-model/tasks/curated/hard_v2.jsonl")
+REGISTRY = Path("C:/dev/public/flywheel/tasks/curated/hard_v2.jsonl")
 SCREEN = Path("E:/local-model-run/difficulty_screen_hard_v2_110.json")
 ABLATION_WORK = Path("E:/local-model-run/tmp/ablation")
 CONSENSUS_REACHABLE = ["sliding_window_max", "splice_pure", "matrix_transpose"]
