@@ -140,7 +140,7 @@ def verify_citations(citations: list, resolve) -> dict:
             continue
         try:
             start, end = int(c["start_byte"]), int(c["end_byte"])
-        except (KeyError, TypeError, ValueError):
+        except (KeyError, TypeError, ValueError, OverflowError):
             verdicts.append({**c, "verdict": "drift",
                              "reason": "missing or non-integer offsets"})
             continue

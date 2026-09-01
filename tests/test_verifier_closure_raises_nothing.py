@@ -194,6 +194,22 @@ def test_verify_citations_survives_a_non_list_citations_block(bad_block):
     assert result["all_verified"] is False
 
 
+@pytest.mark.parametrize("non_finite", [float("inf"), float("-inf")])
+def test_verify_citations_names_a_non_finite_offset_instead_of_crashing(
+        non_finite):
+    # json.loads parses a bare `Infinity` / `-Infinity` to float('inf'), so a
+    # stranger can seat one in start_byte. int(float('inf')) raises OverflowError
+    # -- an ArithmeticError, sibling of none of (KeyError, TypeError, ValueError)
+    # the offset except catches -- so it escapes the drift verdict. (A NaN offset
+    # already lands as drift: int(nan) raises the ValueError that except catches.)
+    result = verify_citations(
+        [{"source_sha256": "de", "start_byte": non_finite,
+          "end_byte": 10, "quote_sha256": "x"}],
+        lambda s: b"hello world")            # non-None src reaches the int() line
+    assert result["all_verified"] is False
+    assert result["verdicts"][0]["verdict"] == "drift"
+
+
 # --- chain.validate_chain ---------------------------------------------------
 
 @pytest.mark.parametrize("bad_stage", ["forged", ["forged"], 5, None])
