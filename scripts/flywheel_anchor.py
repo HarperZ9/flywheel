@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -41,6 +42,23 @@ from scripts.anchor_core import (  # noqa: E402,F401
 def _ots_sibling(anchor_path: str) -> Path:
     """The proof sits beside its anchor: anchor.json -> anchor.json.ots."""
     return Path(str(anchor_path) + ".ots")
+
+
+def _atomic_write_bytes(path: Path, data: bytes) -> None:
+    """Write bytes to a temp sibling, then os.replace onto `path`. os.replace is
+    atomic on one filesystem, so a reader (or a crashing writer) never leaves a
+    half-written file: the target is either the whole old content or the whole
+    new content, never a truncation."""
+    tmp = Path(str(path) + ".tmp")
+    tmp.write_bytes(data)
+    os.replace(tmp, path)
+
+
+def _atomic_write_text(path: Path, text: str) -> None:
+    """The utf-8 text sibling of _atomic_write_bytes, for the JSON record."""
+    tmp = Path(str(path) + ".tmp")
+    tmp.write_text(text, encoding="utf-8")
+    os.replace(tmp, path)
 
 
 def _load_pub(spec: str | None, rec: dict) -> tuple[bytes, bool]:
@@ -116,18 +134,38 @@ def cmd_upgrade(args) -> int:
     try:
         full_ots = anchor_submit.upgrade_proof(pending_ots, digest)
         if full_ots is None:
-            print("the calendar has not upgraded yet -- still pending, try again later")
-            return 0
-        checked = ots_verify.verify(full_ots, digest)
-        leaves = checked.get("bitcoin") or []
-        header = anchor_submit.block_header(leaves[0]["height"]) if leaves else None
+            # upgrade_proof also returns None for a proof that is ALREADY a full
+            # block under a record that never caught up -- the mirror of the
+            # proof-first crash window below (Finding 7). A Bitcoin leaf on the
+            # on-disk proof means self-heal the record; none means truly pending.
+            leaves = ots_verify.verify(pending_ots, digest).get("bitcoin") or []
+            if not leaves:
+                print("the calendar has not upgraded yet -- still pending, try again later")
+                return 0
+            full_ots = pending_ots
+            header = anchor_submit.block_header(leaves[0]["height"])
+            print("the on-disk proof already carries a block; reconciling the record")
+        else:
+            leaves = ots_verify.verify(full_ots, digest).get("bitcoin") or []
+            header = anchor_submit.block_header(leaves[0]["height"]) if leaves else None
     except anchor_submit.SubmitError as e:
         print(f"upgrade did not complete: {e}", file=sys.stderr)
         print(f"  the pending proof is left untouched: {ots_path}", file=sys.stderr)
         return 3
     rec, full_ots = apply_upgrade(rec, full_ots, header=header)
-    Path(args.anchor).write_text(json.dumps(rec, indent=2), encoding="utf-8")
-    ots_path.write_bytes(full_ots)
+    if rec["ots"]["state"] == "confirmed" and "block_header" not in rec["ots"]:
+        # apply_upgrade sets confirmed but stores the header only when the proof
+        # verifies to a PoW-checked block; without one, refuse to persist confirmed.
+        print("the on-disk proof does not verify to a block over this digest; "
+              "refusing to confirm the record over it", file=sys.stderr)
+        return 3
+    # Persist the proof before the record, each atomically. The two artifacts are
+    # written in sequence and a process can die between them; proof-first means any
+    # interruption lands on the safe side -- the intact old pending pair, or a
+    # confirmed pair -- never a `confirmed` record over a stale/truncated .ots that
+    # the confirmed short-circuit above would then refuse to re-poll (Finding 7).
+    _atomic_write_bytes(ots_path, full_ots)
+    _atomic_write_text(Path(args.anchor), json.dumps(rec, indent=2))
     state = rec["ots"]["state"]
     print(f"proof upgraded: {ots_path}  ({len(full_ots)} bytes)")
     print(f"  state     : {state}")

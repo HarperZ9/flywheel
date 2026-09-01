@@ -41,6 +41,16 @@ FANO_EDGES = [(p, li) for li, pts in enumerate(FANO_LINES) for p in pts]
 
 # --- the independent predicate agrees with the original ----------------------
 
+def test_verify_does_not_raise_on_a_lone_surrogate_in_a_cert_field():
+    # A stranger's certificate can carry a lone surrogate where s belongs. The
+    # checker echoes it into an out-of-scope message the base then hashes; a
+    # strict utf-8 encode of that excerpt would escape verify() as a
+    # UnicodeEncodeError rather than land as a verdict.
+    cert = _cert(2, 2, [], s="\ud800")
+    r = IndependentZarankiewiczOracle().verify(cert, None)
+    assert r.verdict() == "UNVERIFIABLE"
+
+
 def test_both_predicates_agree_on_the_four_cycle():
     e = [(0, 0), (0, 1), (1, 0), (1, 1)]
     assert k22_free(2, 2, e) is False

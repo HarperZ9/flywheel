@@ -132,6 +132,84 @@ def test_a_digest_signature_cannot_be_replayed_as_a_head_signature(keys):
     assert head_preimage(head).startswith(HEAD_DOMAIN)
 
 
+def test_check_signed_head_returns_a_verdict_on_a_deeply_nested_field(keys):
+    """A stranger runs this on an attacker-supplied head; it must stay (ok, reason).
+
+    A SIGNED_OVER field nested deep enough makes canonical() inside head_preimage
+    raise RecursionError, which the `except` below head_preimage turns into a
+    named drift verdict rather than an escape. Whether json.dumps trips at a given
+    depth is a property of the interpreter's C stack, which differs by platform
+    and build, so the REASON is not pinned here: malformed_head when the recursion
+    fires, bad_signature when the platform serialises the structure and the
+    all-zero signature is simply wrong. Both are drift verdicts. What holds on
+    every platform is the contract the docstring promises -- a named (ok, reason),
+    never an escape. The RecursionError branch itself is pinned deterministically
+    in the test below.
+    """
+    _, pub = keys
+    deep = []
+    cur = deep
+    for _ in range(3000):
+        nxt = []
+        cur.append(nxt)
+        cur = nxt
+    head = {"schema": SCHEMA, "sig_alg": "ed25519", "log_id": log_id_for(pub),
+            "size": 1, "root": deep, "timestamp": "2026-08-29T00:00:00Z",
+            "signature": "00" * 64, "public_key": pub.hex()}
+    ok, reason = check_signed_head(head, pub)
+    assert ok is False
+    assert isinstance(reason, str) and reason
+
+
+def test_a_recursion_error_from_head_preimage_is_named_malformed_head(
+        keys, monkeypatch):
+    """The except clause names a RecursionError instead of letting it escape.
+
+    A field nested deep enough trips canonical() with RecursionError, which is not
+    a ValueError, so a bare `except (TreeHeadError, ValueError)` would let it break
+    the (ok, reason) contract. Whether a real structure trips the interpreter is
+    platform-variant (see the test above), so the branch is pinned directly here:
+    head_preimage raises RecursionError and the stranger still gets a named drift
+    verdict. This mirrors the non-string-signature test, which pins the sibling
+    TypeError branch through a deterministic trigger.
+    """
+    import harness.tree_head as th
+    _, pub = keys
+
+    def boom(_fields):
+        raise RecursionError("maximum recursion depth exceeded")
+
+    monkeypatch.setattr(th, "head_preimage", boom)
+    head = {"schema": SCHEMA, "sig_alg": "ed25519", "log_id": log_id_for(pub),
+            "size": 1, "root": "ab", "timestamp": "2026-08-29T00:00:00Z",
+            "signature": "00" * 64, "public_key": pub.hex()}
+    ok, reason = check_signed_head(head, pub)
+    assert ok is False
+    assert "malformed_head" in reason
+
+
+@pytest.mark.parametrize("bad_sig", [123, [1, 2], {"x": 1}, True, None])
+def test_check_signed_head_returns_a_verdict_on_a_non_string_signature(
+        keys, bad_sig):
+    """A stranger runs this on an attacker-supplied head; it must stay (ok, reason).
+
+    bytes.fromhex on a non-string `signature` raises TypeError, a sibling of
+    ValueError rather than a subclass, so the `except (TreeHeadError, ValueError,
+    RecursionError)` below head_preimage lets it escape. json.loads yields
+    int / list / dict / bool / None for a signature field, and each is present (so
+    the .get default does not apply). The head clears the cheap schema / sig_alg /
+    log_id gates -- log_id is just sha256 of the public key, which is public -- so
+    line 142, not an earlier refusal, is what the call meets.
+    """
+    _, pub = keys
+    head = {"schema": SCHEMA, "sig_alg": "ed25519", "log_id": log_id_for(pub),
+            "size": 1, "root": "ab", "timestamp": "2026-08-29T00:00:00Z",
+            "signature": bad_sig, "public_key": pub.hex()}
+    ok, reason = check_signed_head(head, pub)
+    assert ok is False
+    assert "malformed_head" in reason
+
+
 # --- what the ledger now carries --------------------------------------------
 
 def test_proofs_carry_the_log_id_when_the_ledger_has_one(tmp_path, keys):

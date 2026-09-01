@@ -146,3 +146,42 @@ def test_emit_writes_a_bare_filename_that_reverifies(tmp_path):
     assert path.name.startswith("usage-receipt-") and path.name.endswith(".json")
     reloaded = json.loads(path.read_text(encoding="utf-8"))
     assert verify_usage_receipt(reloaded)["verdict"] == "MATCH"
+
+
+# --- verify never raises on a stranger's bytes -------------------------------
+#
+# A stranger runs verify on bytes an ADVERSARY json.loads. A JSON \uXXXX escape
+# decodes to a lone surrogate; a Unicode digit passes str.isdigit() but int()
+# rejects it; a list is unhashable where a frozenset membership is tested. Each
+# had to become a verdict, never an escaping UnicodeEncodeError/ValueError/
+# TypeError.
+
+def test_verify_does_not_raise_on_a_lone_surrogate_in_a_body_field():
+    # canonical bytes .encode("utf-8") raised UnicodeEncodeError on the surrogate.
+    r = _priced()
+    r["run_id"] = "\ud800"                    # json.loads('"\\ud800"') hands this over
+    v = verify_usage_receipt(r)
+    assert v["verdict"] == "TAMPERED"
+    assert v["failure_class"] == "SEAL_MISMATCH"
+
+
+def test_verify_does_not_raise_on_a_unicode_digit_token_count():
+    # "²" (superscript two) is str.isdigit() True but int() ValueError.
+    from harness.usage_receipt import _seal_receipt
+    r = _priced()
+    r["tokens"] = {"prompt": "²", "completion": "²", "total": "²"}
+    _seal_receipt(r)                          # re-seal so the seal passes over the bad body
+    v = verify_usage_receipt(r)
+    assert v["verdict"] == "UNVERIFIABLE"
+    assert v["failure_class"] == "FIELD_CONTRACT_VIOLATION"
+
+
+def test_verify_does_not_raise_on_an_unhashable_source():
+    # `x in SOURCE_LABELS` raises TypeError when source is unhashable (a list).
+    from harness.usage_receipt import _seal_receipt
+    r = _priced()
+    r["source"] = ["provider_reported"]
+    _seal_receipt(r)
+    v = verify_usage_receipt(r)
+    assert v["verdict"] == "UNVERIFIABLE"
+    assert v["failure_class"] == "FIELD_CONTRACT_VIOLATION"

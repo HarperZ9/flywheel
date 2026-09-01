@@ -159,6 +159,12 @@ def _check_bitcoin(height: int, msg: bytes, header_provider) -> dict:
     if not header:
         leaf["reason"] = f"header_unavailable: no header supplied for height {height}"
         return leaf
+    if not isinstance(header, (bytes, bytearray, memoryview)):
+        # A provider is caller code; a length-80 str or list of ints passes the
+        # truthy and length gates but is not bytes, and _pow_ok would TypeError on
+        # it. Refuse it as a named reason rather than let the crash escape.
+        leaf["reason"] = "header_unavailable: header is not bytes"
+        return leaf
     if len(header) != 80:
         leaf["reason"] = "header_unavailable: header is not 80 bytes"
         return leaf
@@ -243,6 +249,12 @@ def verify(ots_bytes: bytes, expected_digest: bytes, header_provider=None) -> di
     """
     acc = {"ok": False, "reason": "", "file_digest": None, "_atts": 0,
            "bitcoin": [], "pending": [], "unknown": [], "_provider": header_provider}
+    if not isinstance(ots_bytes, (bytes, bytearray, memoryview)):
+        acc["reason"] = "malformed: proof is not bytes"
+        return _finish(acc)
+    if not isinstance(expected_digest, (bytes, bytearray, memoryview)):
+        acc["reason"] = "malformed: expected_digest is not bytes"
+        return _finish(acc)
     try:
         r = _Reader(bytes(ots_bytes))
         if r.bytes(len(MAGIC)) != MAGIC:

@@ -69,6 +69,16 @@ def canonical(obj) -> str:
                       allow_nan=False)
 
 
+def _finite_number(token: str) -> float:
+    # json accepts NaN/Infinity/-Infinity (parse_constant) and overflow literals
+    # like 1e400 (parse_float) as non-finite floats; canonical()'s allow_nan=False
+    # would then raise deep in verify(), so refuse them into an honest parse FAIL.
+    f = float(token)
+    if f != f or f in (float("inf"), float("-inf")):
+        raise ValueError(f"non-finite number {token!r} has no canonical form")
+    return f
+
+
 def parse_certificate(text: str) -> tuple[bool, dict, str]:
     """(ok, cert, why). A certificate is exactly one JSON object. Trailing
     garbage is refused: it is the cheapest smuggling channel there is."""
@@ -78,7 +88,7 @@ def parse_certificate(text: str) -> tuple[bool, dict, str]:
     if not s:
         return False, {}, "empty certificate"
     try:
-        decoder = json.JSONDecoder()
+        decoder = json.JSONDecoder(parse_constant=_finite_number, parse_float=_finite_number)
         obj, end = decoder.raw_decode(s)
     except Exception as e:
         return False, {}, f"not valid json: {e}"
@@ -215,7 +225,7 @@ class CertificateOracle:
             verdict_=verdict,
             execution=Execution.COMPLETED,
             attribution=attribution,
-            raw_stdout_sha256=hashlib.sha256(excerpt.encode()).hexdigest(),
+            raw_stdout_sha256=hashlib.sha256(excerpt.encode("utf-8", "surrogatepass")).hexdigest(),
             objective=objective,
             unverifiable_reason=unverifiable_reason,
             coverage=dict(cov, instance_bound=binding is not None,

@@ -33,3 +33,33 @@ def test_tampered_part_fails_verification():
 def test_invalid_part_raises():
     with pytest.raises(ValueError):
         world.world_inclusion_proof(world.project_world(), "nonsense")
+
+
+# --- verify_world_part never raises on a stranger's doc/proof ----------------
+#
+# "so a stranger checks one part without the whole world" -- the doc and proof
+# are the stranger's, so every field is attacker-chosen. A non-string
+# merkle_root, a non-string leaf, or a non-integer index/size each raised
+# instead of returning the False a bool verifier owes.
+
+def test_verify_world_part_returns_false_on_a_non_string_merkle_root():
+    doc = world.project_world()
+    proof = world.world_inclusion_proof(doc, "cursor")
+    doc = {**doc, "merkle_root": 123}                 # root.startswith on an int
+    assert world.verify_world_part(doc, proof) is False
+
+
+@pytest.mark.parametrize("bad_leaf", [123, None, ["x"], {"a": 1}])
+def test_verify_world_part_returns_false_on_a_non_string_leaf(bad_leaf):
+    doc = world.project_world()
+    proof = world.world_inclusion_proof(doc, "cursor")
+    proof["leaf"] = bad_leaf                          # proof["leaf"].encode()
+    assert world.verify_world_part(doc, proof) is False
+
+
+@pytest.mark.parametrize("field", ["index", "size"])
+def test_verify_world_part_returns_false_on_a_non_integer_index_or_size(field):
+    doc = world.project_world()
+    proof = world.world_inclusion_proof(doc, "cursor")
+    proof[field] = str(proof[field])                  # "3" reaches verify_inclusion
+    assert world.verify_world_part(doc, proof) is False

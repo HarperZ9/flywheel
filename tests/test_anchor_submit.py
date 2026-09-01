@@ -147,7 +147,8 @@ def test_upgrade_proof_polls_R_not_the_submitted_digest_and_splices():
         seen["uri"], seen["r_hex"] = uri, r_hex
         return _bitcoin_edge(0)
 
-    full = anchor_submit.upgrade_proof(pending, GENESIS_MERKLE, get=get)
+    full = anchor_submit.upgrade_proof(pending, GENESIS_MERKLE, get=get,
+                                       fetch_header=lambda h: GENESIS_HEADER)
     assert seen["r_hex"] == GENESIS_MERKLE.hex()
     assert seen["uri"] == "https://alice.calendar.example"
     checked = ots_verify.verify(full, GENESIS_MERKLE, lambda h: GENESIS_HEADER)
@@ -214,17 +215,21 @@ def test_upgrade_proof_preserves_aggregation_ops_when_R_differs_from_the_digest(
         seen["r_hex"] = r_hex
         return _bitcoin_edge(0)
 
-    full = anchor_submit.upgrade_proof(pending, digest, get=get)
-    assert seen["r_hex"] == R.hex()
-    # the append+sha256 ops survived the splice: the block is reached THROUGH them,
-    # so the bitcoin leaf sits on R, not on the artifact digest.
-    checked = ots_verify.verify(full, digest)
+    # The fabricated block sits directly on R, and no real header has merkle root R
+    # (that needs a sha256 preimage), so the strengthened re-verify refuses it. The
+    # poll still happened on R, which is the R != digest invariant under test.
+    with pytest.raises(anchor_submit.SubmitError):
+        anchor_submit.upgrade_proof(pending, digest, get=get,
+                                    fetch_header=lambda h: GENESIS_HEADER)
+    assert seen["r_hex"] == R.hex()  # polled R, not the digest
+    # the append+sha256 ops survive the splice structurally: the block is reached
+    # THROUGH them, so the bitcoin leaf sits on R, not on the artifact digest. This
+    # is the splice_upgrade layer; full proof-of-work verify needs a real header
+    # whose merkle root equals R, which is not constructible without a preimage.
+    spliced = anchor_submit.splice_upgrade(pending, _bitcoin_edge(0))
+    checked = ots_verify.verify(spliced, digest)
     assert checked["file_digest"] == digest.hex()
     assert checked["bitcoin"][0]["reached"] == R.hex()
-    # honest null: a full proof-of-work verify would need a real 80-byte header
-    # whose merkle root equals R, which is not constructible without a sha256
-    # preimage. This proves the ops survive structurally (the block reaches R), not
-    # a walk all the way to a real block. The zero-op splice test covers full verify.
 
 
 def test_upgrade_proof_refuses_a_proof_carrying_more_than_one_pending_attestation():
@@ -254,6 +259,23 @@ def test_upgrade_proof_refuses_a_continuation_that_does_not_reach_a_block():
                                     get=lambda uri, r_hex: b"not-a-real-continuation")
 
 
+def test_upgrade_proof_refuses_a_continuation_whose_block_header_fails_pow():
+    # The re-verify must check the block, not just that a Bitcoin edge parsed.
+    # Header-less, verify() records the leaf present-but-unproven, so a forged
+    # continuation carrying a fabricated Bitcoin attestation would clear a mere
+    # non-emptiness check and overwrite the good pending proof. A flipped nonce bit
+    # makes the PoW recheck fail; upgrade_proof must refuse and keep the pending
+    # proof rather than emit one that verifies to nothing.
+    pending = _pending_on(GENESIS_MERKLE)
+    tampered = bytearray(GENESIS_HEADER)
+    tampered[79] ^= 0x01
+    with pytest.raises(anchor_submit.SubmitError):
+        anchor_submit.upgrade_proof(
+            pending, GENESIS_MERKLE,
+            get=lambda uri, r_hex: _bitcoin_edge(0),
+            fetch_header=lambda h: bytes(tampered))
+
+
 def test_splice_upgrade_refuses_a_truncated_pending_length():
     # a pending marker whose length varuint never terminates (a lone 0x80 at the
     # end): the reader runs off the buffer. That is a SubmitError, not a raw crash.
@@ -268,3 +290,10 @@ def test_read_varuint_refuses_an_overlong_encoding():
     # the reader silently accepts it as 0. Refuse it, matching the verifier's guard.
     with pytest.raises(anchor_submit.SubmitError):
         anchor_submit._read_varuint(b"\x80" * 10 + b"\x00", 0)
+
+
+def test_splice_upgrade_refuses_a_pending_edge_with_trailing_bytes():
+    # trailing bytes after a terminal-looking pending payload: refuse, do not drop them
+    proof = _pending_on(GENESIS_MERKLE) + b"\xde\xad"
+    with pytest.raises(anchor_submit.SubmitError, match="terminal edge"):
+        anchor_submit.splice_upgrade(proof, _bitcoin_edge(0))

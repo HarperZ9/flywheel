@@ -10,6 +10,8 @@ from __future__ import annotations
 
 import json
 
+import pytest
+
 from harness.audit_receipt import (
     MATCH,
     TAMPERED,
@@ -139,3 +141,60 @@ def test_body_has_no_float_and_no_absolute_path():
             assert "\\" not in s, f"backslash (path) in the body: {s!r}"
             assert not (len(s) > 1 and s[1] == ":" and s[0].isalpha()), \
                 f"drive-letter path in the body: {s!r}"
+
+
+# --- verify never raises on a stranger's bytes -------------------------------
+#
+# The audit receipt is checked by strangers, so every field is attacker-chosen.
+# A JSON \uXXXX escape decodes to a lone surrogate; a Unicode digit passes
+# str.isdigit() but int() rejects it; a list is unhashable where a frozenset
+# membership is tested. Each had to become a verdict, never an escaping
+# UnicodeEncodeError / ValueError / TypeError.
+
+def test_verify_does_not_raise_on_a_lone_surrogate():
+    # canonical bytes .encode("utf-8") raised UnicodeEncodeError on the surrogate.
+    work = _work_receipt()
+    r = _audit_for(work)
+    r["reviewer"] = "\ud800"
+    v = verify_audit_receipt(r)
+    assert v["verdict"] == TAMPERED
+    assert v["failure_class"] == "SEAL_MISMATCH"
+
+
+def test_verify_does_not_raise_on_a_unicode_digit_n_reviews():
+    # "²" is str.isdigit() True but int("²") ValueError.
+    from harness.tool_call_receipt import _seal_receipt
+    work = _work_receipt()
+    r = _audit_for(work)
+    r["subject"]["n_reviews"] = "²"
+    _seal_receipt(r)
+    v = verify_audit_receipt(r)
+    assert v["verdict"] == UNVERIFIABLE
+    assert v["failure_class"] == "FIELD_CONTRACT_VIOLATION"
+
+
+@pytest.mark.parametrize("field,value", [
+    ("severity", ["INFO"]),            # review[i] severity -> `x in SEVERITIES`
+    ("dimension", ["correctness"]),    # review[i] dimension -> `x in DIMENSIONS`
+])
+def test_verify_does_not_raise_on_an_unhashable_review_field(field, value):
+    from harness.tool_call_receipt import _seal_receipt
+    work = _work_receipt()
+    r = _audit_for(work)
+    r["reviews"][0][field] = value     # unhashable: `x in frozenset` raises TypeError
+    _seal_receipt(r)
+    v = verify_audit_receipt(r)
+    assert v["verdict"] == UNVERIFIABLE
+    assert v["failure_class"] == "FIELD_CONTRACT_VIOLATION"
+
+
+@pytest.mark.parametrize("field", ["verdict", "confidence"])
+def test_verify_does_not_raise_on_an_unhashable_top_level_label(field):
+    from harness.tool_call_receipt import _seal_receipt
+    work = _work_receipt()
+    r = _audit_for(work)
+    r[field] = ["PASS"]                # unhashable: `x in frozenset` raises TypeError
+    _seal_receipt(r)
+    v = verify_audit_receipt(r)
+    assert v["verdict"] == UNVERIFIABLE
+    assert v["failure_class"] == "FIELD_CONTRACT_VIOLATION"

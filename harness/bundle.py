@@ -155,6 +155,8 @@ def verify_bundle(bundle_dir) -> dict:
     try:
         manifest = json.loads(mp.read_text(encoding="utf-8"))
         listed = manifest["files"]
+        if not isinstance(listed, list):
+            raise BundleError("manifest 'files' must be a list")
     except Exception as e:
         return {"verdict": "UNVERIFIABLE", "files_checked": 0, "receipts": [],
                 "detail": f"{MANIFEST_NAME} is unreadable: {e}"}
@@ -211,16 +213,24 @@ def verify_bundle(bundle_dir) -> dict:
         sig = env.get("signature")
         if sig is None:
             state = "unsigned"
-        elif sig.get("sig_alg") in LOCAL_ONLY_ALGS:
-            state = "local-only (not third-party checkable)"
+        elif not isinstance(sig, dict):
+            # json.loads can hand a stranger a list/str/int/bool here; sig.get
+            # below would raise AttributeError, escaping this verifier.
+            state = "malformed (signature is not an object)"
         else:
-            pub = sig.get("public_key", "")
-            try:
-                ok, why = verify_signed(env, bytes.fromhex(pub)) if pub else (
-                    False, "no_public_key")
-            except ValueError:
-                ok, why = False, "malformed_public_key"
-            state = f"ed25519 verified" if ok else f"ed25519 FAILED ({why})"
+            alg = sig.get("sig_alg")
+            if isinstance(alg, str) and alg in LOCAL_ONLY_ALGS:
+                state = "local-only (not third-party checkable)"
+            else:
+                pub = sig.get("public_key", "")
+                try:
+                    ok, why = verify_signed(env, bytes.fromhex(pub)) if pub else (
+                        False, "no_public_key")
+                except (ValueError, TypeError):
+                    # A non-string public_key makes bytes.fromhex raise TypeError,
+                    # a sibling of the ValueError a malformed hex string raises.
+                    ok, why = False, "malformed_public_key"
+                state = "ed25519 verified" if ok else f"ed25519 FAILED ({why})"
         receipts.append({"path": rel.as_posix(),
                          "claim_sha256": recomputed, "signature": state})
 

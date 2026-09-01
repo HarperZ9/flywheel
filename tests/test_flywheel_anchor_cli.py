@@ -169,6 +169,125 @@ def test_cmd_verify_reports_not_anchored_with_a_nonzero_exit(tmp_path, capsys):
     assert "head_ok   : True" in out
     assert "ANCHORED  : False" in out
 
+def test_cmd_upgrade_never_strands_a_confirmed_record_over_a_stale_proof(
+        tmp_path, capsys, monkeypatch):
+    # The record and its .ots are two separate on-disk artifacts, written in
+    # sequence, and a process can die between them. Writing the record first and
+    # the proof second (or non-atomically) lets a crash during the proof write
+    # leave a `confirmed` record beside the stale pending .ots; the confirmed
+    # short-circuit then refuses to re-poll, so the obtained block is unrecoverable
+    # from the CLI (Finding 7). Persisting the proof before the record, each atomic,
+    # keeps every interruption on the safe side: the intact old pending pair, or a
+    # confirmed pair, never a confirmed record over a proof that cannot back it.
+    digest = GENESIS_MERKLE
+    rec = {"schema": "flywheel.anchor/v1", "digest_hex": digest.hex(),
+           "signed_head": {"public_key": "00" * 32},
+           "ots": {"state": "pending", "submitted_hex": "de", "nonce_hex": "ad",
+                   "calendar": "https://cal.example"}}
+    apath = tmp_path / "anchor.json"
+    apath.write_text(json.dumps(rec), encoding="utf-8")
+    pending = (MAGIC + b"\x01" + b"\x08" + digest + b"\x00" + PENDING_TAG
+               + _varbytes(_varbytes(b"https://cal.example")))
+    opath = tmp_path / "anchor.json.ots"
+    opath.write_bytes(pending)
+
+    monkeypatch.setattr(fa.anchor_submit, "_get_timestamp",
+                        lambda uri, r_hex, **k: _bitcoin_edge(0))
+    monkeypatch.setattr(fa.anchor_submit, "_fetch_block_header",
+                        lambda height, **k: GENESIS_HEADER)
+
+    # The process dies the instant it goes to persist the proof bytes (the real
+    # .ots or its temp sibling). Proof-first, this is reached before the record is
+    # touched; record-first, the confirmed record has already landed.
+    real_write_bytes = Path.write_bytes
+
+    def _die_on_ots_write(self, data):
+        if ".ots" in self.name:
+            raise OSError("process killed mid-write")
+        return real_write_bytes(self, data)
+
+    monkeypatch.setattr(Path, "write_bytes", _die_on_ots_write)
+
+    with pytest.raises(OSError):
+        fa.main(["upgrade", "--anchor", str(apath)])
+
+    # The record must never claim confirmed while its .ots cannot verify offline.
+    persisted = json.loads(apath.read_text(encoding="utf-8"))
+    if persisted["ots"]["state"] == "confirmed":
+        checked = ots_verify.verify(opath.read_bytes(), digest,
+                                    fa._header_provider(persisted))
+        assert checked["ok"] is True, (
+            "record says confirmed but its .ots does not verify offline -- the "
+            "confirmed short-circuit now blocks a re-run from finishing")
+
+
+def test_cmd_upgrade_reconciles_a_confirmed_proof_under_a_pending_record(
+        tmp_path, capsys, monkeypatch):
+    # The mirror of the proof-first crash window (Finding 7): a process can die
+    # after the confirmed .ots is written but before the record is, leaving a full
+    # block proof beside a still-pending record. The confirmed short-circuit keys
+    # off the record's state, so it does not fire; upgrade_proof, handed a proof
+    # with no pending message, returns None, and the old code then printed "still
+    # pending" forever though the .ots on disk already proves a block. upgrade must
+    # instead notice the block on disk and reconcile the record to confirmed.
+    digest = GENESIS_MERKLE
+    rec = {"schema": "flywheel.anchor/v1", "digest_hex": digest.hex(),
+           "signed_head": {"public_key": "00" * 32},
+           "ots": {"state": "pending", "submitted_hex": "de", "nonce_hex": "ad",
+                   "calendar": "https://cal.example"}}
+    apath = tmp_path / "anchor.json"
+    apath.write_text(json.dumps(rec), encoding="utf-8")
+    opath = tmp_path / "anchor.json.ots"
+    opath.write_bytes(_full_block_proof(digest))    # already a full block proof
+
+    def _boom(*a, **k):
+        raise AssertionError("a confirmed proof carries no pending message to poll")
+
+    monkeypatch.setattr(fa.anchor_submit, "_get_timestamp", _boom)
+    monkeypatch.setattr(fa.anchor_submit, "_fetch_block_header",
+                        lambda height, **k: GENESIS_HEADER)
+
+    code = fa.main(["upgrade", "--anchor", str(apath)])
+    assert code == 0
+    written = json.loads(apath.read_text(encoding="utf-8"))
+    assert written["ots"]["state"] == "confirmed"
+    assert written["ots"]["block_height"] == 0
+    assert written["ots"]["block_header"] == GENESIS_HEADER.hex()
+    # the record now verifies offline from its own stored header
+    checked = ots_verify.verify(opath.read_bytes(), digest,
+                                fa._header_provider(written))
+    assert checked["ok"] is True
+    assert "still pending" not in capsys.readouterr().out.lower()
+
+
+def test_cmd_upgrade_refuses_to_confirm_a_pending_record_over_an_unverifiable_proof(
+        tmp_path, capsys, monkeypatch):
+    # The reconcile above must be as strict as a normal upgrade: it may flip the
+    # record to confirmed only if the on-disk proof verifies to a proof-of-work-
+    # checked block over this digest. A .ots whose Bitcoin edge does not check
+    # against the real header (a forged or corrupt proof dropped in place) must NOT
+    # confirm the record; it must refuse and leave the pending record as it was.
+    digest = GENESIS_MERKLE
+    rec = {"schema": "flywheel.anchor/v1", "digest_hex": digest.hex(),
+           "signed_head": {"public_key": "00" * 32},
+           "ots": {"state": "pending", "submitted_hex": "de", "nonce_hex": "ad",
+                   "calendar": "https://cal.example"}}
+    apath = tmp_path / "anchor.json"
+    apath.write_text(json.dumps(rec), encoding="utf-8")
+    opath = tmp_path / "anchor.json.ots"
+    opath.write_bytes(_full_block_proof(digest))
+
+    # the explorer returns a header that does NOT verify this block (80 zero bytes)
+    monkeypatch.setattr(fa.anchor_submit, "_get_timestamp", lambda *a, **k: None)
+    monkeypatch.setattr(fa.anchor_submit, "_fetch_block_header",
+                        lambda height, **k: bytes(80))
+
+    code = fa.main(["upgrade", "--anchor", str(apath)])
+    assert code != 0
+    written = json.loads(apath.read_text(encoding="utf-8"))
+    assert written["ots"]["state"] == "pending"     # never confirmed over a bad proof
+
+
 # Honest null: no fa.main(["verify"]) test drives the timestamp leg to ok=True
 # offline. `verify_anchor` checks the .ots against sha256(canonical(signed_head)),
 # so a Bitcoin leaf verifies only when that digest equals a real block's merkle

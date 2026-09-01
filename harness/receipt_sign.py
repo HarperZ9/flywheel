@@ -124,9 +124,13 @@ def verify_signed(envelope: dict, public_key: bytes) -> tuple[bool, str]:
         return False, "malformed_envelope"
 
     alg = sig["sig_alg"]
-    if alg not in KNOWN_ALGS:
+    if not isinstance(alg, str) or alg not in KNOWN_ALGS:
+        # A json.loads'd sig_alg can be an unhashable list/dict; `x in frozenset`
+        # would raise TypeError, escaping a verifier that promises a named refusal.
         return False, "unknown_algorithm"
-    if list(sig.get("signed_over", [])) != list(SIGNED_OVER):
+    so = sig.get("signed_over", [])
+    if not isinstance(so, (list, tuple)) or list(so) != list(SIGNED_OVER):
+        # A non-iterable signed_over makes list() raise TypeError; name it instead.
         return False, "signed_over_mismatch"
 
     # Recompute the digest from the BODY. Trusting the recorded one would verify
@@ -146,7 +150,10 @@ def verify_signed(envelope: dict, public_key: bytes) -> tuple[bool, str]:
     try:
         ok = _ed_verify(bytes(public_key), recomputed.encode(),
                         bytes.fromhex(sig["sig"]))
-    except (Ed25519Error, ValueError):
+    except (Ed25519Error, ValueError, KeyError, TypeError):
+        # A missing sig (KeyError) or a non-string sig (TypeError from fromhex)
+        # are siblings of the ValueError a bad hex string raises: all a bad
+        # signature, none a reason to crash the stranger running this offline.
         return False, "bad_signature"
     return (True, "ok") if ok else (False, "bad_signature")
 

@@ -236,3 +236,61 @@ def test_an_unverifiable_attestation_is_named_not_reported_absent():
     assert r["ok"] is False
     assert r["unknown"]
     assert "unverifiable" in r["reason"]
+
+
+def test_non_bytes_proof_or_digest_is_a_named_refusal_not_an_exception():
+    # bytes(ots_bytes) and bytes(expected_digest) run inside a try that catches
+    # only OtsError; a str/None argument raises TypeError, which the module's
+    # "raises nothing to its caller" contract must not let escape. A stranger who
+    # opened the proof in text mode, or passed a hex string, gets a verdict.
+    r = ots.verify("not-bytes", b"\x00" * 32)
+    assert r["ok"] is False
+    assert "malformed" in r["reason"]
+    r2 = ots.verify(_genesis_leaf(), None)
+    assert r2["ok"] is False
+    assert "malformed" in r2["reason"]
+
+
+def test_a_header_provider_returning_a_non_bytes_value_is_unproven_not_crashing():
+    # A provider that returns a length-80 str or list (a header file opened in text
+    # mode, a hex string) passes the truthy and length gates but is not bytes.
+    # _pow_ok would then TypeError inside int.from_bytes; the module must turn a
+    # bad provider return into a named header_unavailable, not an escaping crash.
+    for bad in ("x" * 80, [0] * 80, [7] * 80):
+        r = ots.verify(_genesis_leaf(), GENESIS_MERKLE, lambda h, v=bad: v)
+        leaf = r["bitcoin"][0]
+        assert leaf["verified"] is False
+        assert "header_unavailable" in leaf["reason"]
+        assert r["ok"] is False
+
+
+def test_a_hexlify_chain_that_doubles_the_message_hits_the_size_guard():
+    # Each 0xf3 hexlify op doubles the message (32->64->...); MAX_OPS never trips,
+    # so the MAX_MSG guard in _walk is the only thing between a stranger's verifier
+    # and a 32*2**30-byte OOM. Drive the message past it and assert the named
+    # refusal, so a refactor that loosens that guard fails here.
+    d = hashlib.sha256(b"z").digest()
+    body = b"\xf3" * 30 + b"\x00" + _raw_pending("https://x")
+    r = ots.verify(_ots(d, body), d)
+    assert r["ok"] is False
+    assert "size guard" in r["reason"]
+
+
+def test_a_header_provider_that_raises_is_a_named_reason_not_an_escaping_crash():
+    # header_provider is the one place caller code runs inside verify. A provider
+    # that raises must become a header_provider_error leaf, never an exception out
+    # of verify -- the module's "raises nothing to its caller" contract.
+    r = ots.verify(_genesis_leaf(), GENESIS_MERKLE, lambda h: 1 / 0)
+    leaf = r["bitcoin"][0]
+    assert leaf["verified"] is False
+    assert "header_provider_error" in leaf["reason"]
+    assert r["ok"] is False
+
+
+def test_an_overlong_varuint_in_the_verifier_is_a_named_refusal():
+    # verify reads a varuint for the major version straight after MAGIC, on
+    # attacker bytes. A run of 0x80 continuation bytes would build an ever-wider
+    # integer without the shift>63 guard; assert the named refusal instead.
+    r = ots.verify(MAGIC + b"\x80" * 10, b"\x00" * 32)
+    assert r["ok"] is False
+    assert "varint too long" in r["reason"]

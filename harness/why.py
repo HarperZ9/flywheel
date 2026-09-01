@@ -54,7 +54,13 @@ def _envelopes(target: Path) -> list[tuple[Path, dict]]:
         if not out:
             raise WhyError(f"no receipt envelopes found under {target}")
         return out
-    return [(target, _load(target))]
+    d = _load(target)
+    if not (isinstance(d, dict) and isinstance(d.get("receipt"), dict)):
+        # The single-file path must apply the same shape guard the directory path
+        # does; without it env["receipt"] raises TypeError/KeyError past the CLI's
+        # WhyError-only catch on a non-receipt record a stranger hands us.
+        raise WhyError(f"record at {target} is not a receipt envelope")
+    return [(target, d)]
 
 
 def _signature_state(env: dict) -> dict:
@@ -62,8 +68,11 @@ def _signature_state(env: dict) -> dict:
     if sig is None:
         return {"state": "unsigned", "third_party_checkable": False,
                 "verified": False, "reason": "unsigned", "key_id": ""}
+    if not isinstance(sig, dict):
+        return {"state": "malformed", "third_party_checkable": False,
+                "verified": False, "reason": "malformed_signature", "key_id": ""}
     alg = sig.get("sig_alg", "")
-    if alg in LOCAL_ONLY_ALGS:
+    if isinstance(alg, str) and alg in LOCAL_ONLY_ALGS:
         # Honest about the ceiling: a local tag detects local tampering and tells
         # a stranger nothing, because checking it needs the secret.
         return {"state": f"local-only ({alg})", "third_party_checkable": False,
@@ -74,7 +83,7 @@ def _signature_state(env: dict) -> dict:
     if pub:
         try:
             ok, reason = verify_signed(env, bytes.fromhex(pub))
-        except ValueError:
+        except (ValueError, TypeError):
             ok, reason = False, "malformed_public_key"
     return {"state": f"signed ({alg})", "third_party_checkable": True,
             "verified": bool(ok), "reason": reason,
@@ -117,13 +126,13 @@ def explain(target, *, prefix: str = "") -> dict:
     candidates = _envelopes(Path(target))
     if prefix:
         matched = [(p, e) for p, e in candidates
-                   if e["receipt"].get("claim_sha256", "").split(":", 1)[-1]
+                   if str(e["receipt"].get("claim_sha256", "")).split(":", 1)[-1]
                    .startswith(prefix)]
         if not matched:
             raise WhyError(
                 f"no receipt whose claim digest starts with {prefix!r}. "
                 f"searched {len(candidates)} record(s) under {target}")
-        digests = {e["receipt"]["claim_sha256"] for _, e in matched}
+        digests = {str(e["receipt"].get("claim_sha256", "")) for _, e in matched}
         if len(digests) > 1:
             raise WhyError(
                 f"prefix {prefix!r} is ambiguous across {len(digests)} distinct "
@@ -140,6 +149,13 @@ def explain(target, *, prefix: str = "") -> dict:
         receipt = Receipt.from_dict(body)
     except Exception as e:
         raise WhyError(f"record at {path} is not a receipt: {e}")
+
+    # from_dict does not type-check these two, but _what_would_change_it slices
+    # them; a non-string here is a malformed record, named rather than a crash.
+    for _field in ("criterion_sha256", "checker_source_sha256"):
+        if not isinstance(body.get(_field), str):
+            raise WhyError(f"record at {path} is not a receipt: "
+                           f"{_field} must be a string")
 
     recomputed = receipt.claim_sha256()
     integrity = "MATCH" if recomputed == body.get("claim_sha256") else "DRIFT"

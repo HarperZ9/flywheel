@@ -15,7 +15,7 @@ Falsifier: corrupt any stage -> validate_chain -> DRIFT/UNVERIFIABLE, never MATC
 from __future__ import annotations
 import hashlib
 import json
-from dataclasses import dataclass, field, asdict
+from dataclasses import dataclass, field, asdict, is_dataclass
 from typing import Iterable
 
 
@@ -72,13 +72,27 @@ def validate_chain(stages: Iterable[StageReceipt | dict],
     prev = ""
     dicts = []
     for i, s in enumerate(stages):
-        sd = s if isinstance(s, dict) else asdict(s)
+        if isinstance(s, dict):
+            sd = s
+        elif is_dataclass(s) and not isinstance(s, type):
+            sd = asdict(s)
+        else:
+            # A stage arriving from JSON that is neither a dict nor a dataclass
+            # would make asdict() raise TypeError; validate_chain has no
+            # try/except, so name it as UNVERIFIABLE rather than crash.
+            return ChainValidation("UNVERIFIABLE", i, None,
+                                   f"stage {i} is not a receipt object")
         dicts.append(sd)
-        rh = StageReceipt(
-            stage=sd["stage"], inputs_hash=sd["inputs_hash"],
-            outputs_hash=sd["outputs_hash"], verdict=sd["verdict"],
-            prev_hash=sd.get("prev_hash", ""), evidence_ref=sd.get("evidence_ref"),
-            payload=sd.get("payload", {})).receipt_hash()
+        try:
+            rh = StageReceipt(
+                stage=sd["stage"], inputs_hash=sd["inputs_hash"],
+                outputs_hash=sd["outputs_hash"], verdict=sd["verdict"],
+                prev_hash=sd.get("prev_hash", ""),
+                evidence_ref=sd.get("evidence_ref"),
+                payload=sd.get("payload", {})).receipt_hash()
+        except (KeyError, TypeError) as e:
+            return ChainValidation("UNVERIFIABLE", i, None,
+                                   f"stage {i} is missing a required field: {e}")
         if sd.get("prev_hash", "") != prev:
             return ChainValidation(
                 "UNVERIFIABLE", i, rh,

@@ -135,14 +135,15 @@ def verify_world_part(doc: dict, proof: dict) -> bool:
     """Recompute the merkle_root from one part + its audit path; True iff it matches
     the doc's merkle_root, so a stranger checks one part without the whole world."""
     root = doc.get("merkle_root", "")
-    if not root.startswith("sha256:"):
+    if not isinstance(root, str) or not root.startswith("sha256:"):
         return False
     try:
         root_bytes = bytes.fromhex(root.split(":", 1)[1])
         path = [bytes.fromhex(h) for h in proof["proof"]]
-    except (ValueError, KeyError, TypeError):
+        leaf = proof["leaf"].encode()
+    except (ValueError, KeyError, TypeError, AttributeError):
         return False
-    return merkle.verify_inclusion(proof["leaf"].encode(), proof["index"],
+    return merkle.verify_inclusion(leaf, proof["index"],
                                    proof["size"], path, root_bytes)
 
 

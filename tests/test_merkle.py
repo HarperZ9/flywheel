@@ -50,3 +50,17 @@ def test_root_is_deterministic_and_moves_on_change():
 def test_out_of_range_index_raises():
     with pytest.raises(IndexError):
         inclusion_proof(_leaves(3), 5)
+
+
+@pytest.mark.parametrize("index,size,proof", [
+    (3, "8", []),        # str size -> `size <= 0` raises TypeError
+    ("3", 8, []),        # str index -> `0 <= index` raises TypeError
+    (3, 8, 5),           # non-list proof -> `len(proof)` raises TypeError
+    (3, 8, None),        # non-list proof -> `len(proof)` raises TypeError
+    (0, None, []),       # None size -> comparison raises TypeError
+])
+def test_verify_inclusion_returns_false_on_a_non_integer_shape(index, size, proof):
+    # verify_inclusion is a bool verifier a stranger recomputes. Its guard line
+    # compared size/index and called len(proof) with no type check, so a str
+    # size/index or a non-list proof raised TypeError instead of returning False.
+    assert verify_inclusion(b"leaf", index, size, proof, b"\x00" * 32) is False

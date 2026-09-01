@@ -80,7 +80,16 @@ def verify_anchor(anchor: dict, public_key: bytes, *, ots_bytes: bytes = None,
     signed = anchor["signed_head"]
     head_ok, head_reason = tree_head.check_signed_head(signed, public_key)
     result["head_ok"], result["head_reason"] = head_ok, head_reason
-    prefixed, raw = anchor_digest(signed)
+    try:
+        prefixed, raw = anchor_digest(signed)
+    except (ValueError, RecursionError) as e:
+        # canonical() refuses a signed_head it cannot encode. json.loads accepts
+        # NaN/Infinity but canonical() forbids them (allow_nan=False, a ValueError),
+        # and a head nested past the interpreter's limit raises RecursionError, which
+        # is not a ValueError. Both are a malformed record, named here so the
+        # verifier keeps its "raises nothing" promise instead of crashing.
+        result["head_reason"] = f"malformed_anchor: non-canonical head ({e})"
+        return result
     result["anchor_digest"] = prefixed
     if ots_bytes is not None:
         result["timestamp"] = ots_verify.verify(ots_bytes, raw, header_provider)

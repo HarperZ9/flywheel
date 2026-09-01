@@ -97,10 +97,19 @@ def _parse(status: int, body: bytes, *, ok: set, ctx: str) -> dict:
     if not body:
         return {}
     try:
-        return json.loads(body)
+        result = json.loads(body)
     except (json.JSONDecodeError, ValueError):
         raise DepositError(
             f"{ctx}: non-JSON body (HTTP {status}) {_snippet(body)}".rstrip())
+    if not isinstance(result, dict):
+        # Valid JSON, but not the object every leg's contract assumes. Without this
+        # a bare true/null/number/string/array slips through and the first
+        # record.get(...) downstream raises AttributeError, punching through the
+        # module's DepositError contract.
+        raise DepositError(
+            f"{ctx}: reply body is not a JSON object (HTTP {status}) "
+            f"{_snippet(body)}".rstrip())
+    return result
 
 
 def create(request, *, token: str, sandbox: bool = False) -> dict:
@@ -154,15 +163,18 @@ def deposit(request, *, token: str, files: list, metadata: dict,
     if not files:
         raise DepositError("deposit needs at least one file")
     record = create(request, token=token, sandbox=sandbox)
-    links = record.get("links") or {}
-    bucket = links.get("bucket")
-    self_url = links.get("self")
-    if not bucket or not self_url:
-        raise DepositError("create reply missing bucket or self link")
-    # The deposition now exists on Zenodo. Any later failure re-raises through
+    # The deposition now exists on Zenodo. Any later failure -- including the guard
+    # below, which rejects a create reply missing its links -- re-raises through
     # DepositError carrying this draft's id and url, so the operator can find and
-    # discard it instead of re-running blind and orphaning a second draft.
+    # discard it instead of re-running blind and orphaning a second draft. The
+    # extraction and guard sit inside the try so that same handler covers them; the
+    # three dict.get lookups cannot raise, so self_url is bound before the guard.
     try:
+        links = record.get("links") or {}
+        bucket = links.get("bucket")
+        self_url = links.get("self")
+        if not bucket or not self_url:
+            raise DepositError("create reply missing bucket or self link")
         uploaded = [upload_file(request, token=token, bucket_url=bucket, name=name,
                                 data=data) for name, data in files]
         set_metadata(request, token=token, deposition_url=self_url,

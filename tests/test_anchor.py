@@ -100,6 +100,84 @@ def test_verify_anchor_rejects_a_head_signed_by_another_key():
     assert r["head_ok"] is False
 
 
+def test_verify_anchor_names_a_non_finite_float_head_instead_of_crashing():
+    # json.loads accepts NaN/Infinity/-Infinity by default, but canonical() forbids
+    # them (allow_nan=False). A stranger running verify on an attacker record whose
+    # signed_head carries one must get a named reason, not a ValueError escaping the
+    # verifier the module docstring promises "raises nothing".
+    import json
+    for bad in ('{"signed_head": {"size": NaN}}',
+                '{"signed_head": {"size": Infinity}}',
+                '{"signed_head": {"size": -Infinity}}'):
+        rec = json.loads(bad)
+        r = anchor.verify_anchor(rec, b"\x00" * 32)
+        assert r["ok"] is False
+        assert "malformed_anchor" in r["head_reason"]
+
+
+def test_verify_anchor_returns_a_verdict_on_a_deeply_nested_head():
+    # A stranger runs verify on an attacker record whose signed_head is nested
+    # deep. canonical() inside anchor_digest can raise RecursionError, which the
+    # `except (ValueError, RecursionError)` guarding that call turns into a named
+    # drift verdict rather than an escape -- the "raises nothing" contract the NaN
+    # case honours one branch over. Whether json.dumps trips at a given depth is a
+    # property of the interpreter's C stack and differs by platform and build, so
+    # the REASON is not pinned: malformed_anchor when the recursion fires,
+    # wrong_schema when the platform serialises the structure and the cheap head
+    # check is what stands. Both are drift verdicts; the contract is a named
+    # (ok, reason), never an escape. The RecursionError branch is pinned
+    # deterministically in the test below.
+    deep = []
+    cur = deep
+    for _ in range(3000):
+        nxt = []
+        cur.append(nxt)
+        cur = nxt
+    rec = {"schema": anchor.SCHEMA,
+           "signed_head": {"schema": "nope", "root": deep}}
+    r = anchor.verify_anchor(rec, b"\x00" * 32)
+    assert r["ok"] is False
+    assert isinstance(r["head_reason"], str) and r["head_reason"]
+
+
+def test_a_recursion_error_from_anchor_digest_is_named_malformed_anchor(monkeypatch):
+    # A field nested deep enough trips canonical() inside anchor_digest with
+    # RecursionError, which is not a ValueError, so a bare `except ValueError`
+    # would let it break the "raises nothing" contract. Whether a real structure
+    # trips the interpreter is platform-variant (see the test above), so the branch
+    # is pinned directly here: anchor_digest raises RecursionError and the stranger
+    # still gets a named drift verdict.
+    def boom(_signed_head):
+        raise RecursionError("maximum recursion depth exceeded")
+
+    monkeypatch.setattr(anchor, "anchor_digest", boom)
+    rec = {"schema": anchor.SCHEMA,
+           "signed_head": {"schema": "nope", "root": "ab"}}
+    r = anchor.verify_anchor(rec, b"\x00" * 32)
+    assert r["ok"] is False
+    assert "malformed_anchor" in r["head_reason"]
+
+
+@pytest.mark.parametrize("bad_sig", [123, [1, 2], {"x": 1}, True, None])
+def test_verify_anchor_returns_a_verdict_on_a_non_string_signature(bad_sig):
+    # A stranger runs verify on an attacker record whose signed_head carries a
+    # non-string signature. check_signed_head does bytes.fromhex(signature), which
+    # raises TypeError -- a sibling of ValueError -- on int/list/dict/bool/None, and
+    # verify_anchor calls check_signed_head outside any try, so the crash escapes
+    # the verifier the module docstring promises "raises nothing". The signed_head
+    # clears the schema / sig_alg / log_id gates so line 142, not an earlier
+    # refusal, is what the call meets. The head check fails; the record is named.
+    _, _, pub = _key()
+    signed = {"schema": tree_head.SCHEMA, "sig_alg": "ed25519",
+              "log_id": tree_head.log_id_for(pub), "size": 1, "root": "ab",
+              "timestamp": TS, "signature": bad_sig, "public_key": pub.hex()}
+    rec = {"schema": anchor.SCHEMA, "signed_head": signed}
+    r = anchor.verify_anchor(rec, pub)
+    assert r["ok"] is False
+    assert r["head_ok"] is False
+    assert "malformed_head" in r["head_reason"]
+
+
 def test_does_not_prove_carries_the_header_trust_limitation():
     # The proof-of-work recheck bounds internal consistency and real work: it kills
     # the zero-work forgery. It does NOT establish that a bundle-carried header sits

@@ -79,6 +79,9 @@ def verify_inclusion(leaf_data: bytes, index: int, size: int, proof: list,
                      root: bytes) -> bool:
     """Recompute the root from one leaf + its audit path; True iff it matches. Needs
     only (leaf, index, size, proof, root), never the whole leaf set."""
+    if not isinstance(size, int) or not isinstance(index, int) \
+            or not isinstance(proof, list):
+        return False
     if size <= 0 or not 0 <= index < size or len(proof) != _proof_len(size, index):
         return False
     return _root_from_proof(leaf_hash(leaf_data), index, size, proof) == root
