@@ -116,12 +116,17 @@ def test_verify_anchor_names_a_non_finite_float_head_instead_of_crashing():
 
 
 def test_verify_anchor_returns_a_verdict_on_a_deeply_nested_head():
-    # A stranger runs verify on an attacker record whose signed_head is nested past
-    # the recursion limit. canonical() inside anchor_digest raises RecursionError,
-    # which is not a ValueError, so the `except ValueError` guarding that call would
-    # let it escape -- the same "raises nothing" contract the NaN case honours one
-    # branch over. The wrong schema makes check_signed_head refuse cheaply, so
-    # anchor_digest (not the head check) is where the deep nesting is met.
+    # A stranger runs verify on an attacker record whose signed_head is nested
+    # deep. canonical() inside anchor_digest can raise RecursionError, which the
+    # `except (ValueError, RecursionError)` guarding that call turns into a named
+    # drift verdict rather than an escape -- the "raises nothing" contract the NaN
+    # case honours one branch over. Whether json.dumps trips at a given depth is a
+    # property of the interpreter's C stack and differs by platform and build, so
+    # the REASON is not pinned: malformed_anchor when the recursion fires,
+    # wrong_schema when the platform serialises the structure and the cheap head
+    # check is what stands. Both are drift verdicts; the contract is a named
+    # (ok, reason), never an escape. The RecursionError branch is pinned
+    # deterministically in the test below.
     deep = []
     cur = deep
     for _ in range(3000):
@@ -130,6 +135,24 @@ def test_verify_anchor_returns_a_verdict_on_a_deeply_nested_head():
         cur = nxt
     rec = {"schema": anchor.SCHEMA,
            "signed_head": {"schema": "nope", "root": deep}}
+    r = anchor.verify_anchor(rec, b"\x00" * 32)
+    assert r["ok"] is False
+    assert isinstance(r["head_reason"], str) and r["head_reason"]
+
+
+def test_a_recursion_error_from_anchor_digest_is_named_malformed_anchor(monkeypatch):
+    # A field nested deep enough trips canonical() inside anchor_digest with
+    # RecursionError, which is not a ValueError, so a bare `except ValueError`
+    # would let it break the "raises nothing" contract. Whether a real structure
+    # trips the interpreter is platform-variant (see the test above), so the branch
+    # is pinned directly here: anchor_digest raises RecursionError and the stranger
+    # still gets a named drift verdict.
+    def boom(_signed_head):
+        raise RecursionError("maximum recursion depth exceeded")
+
+    monkeypatch.setattr(anchor, "anchor_digest", boom)
+    rec = {"schema": anchor.SCHEMA,
+           "signed_head": {"schema": "nope", "root": "ab"}}
     r = anchor.verify_anchor(rec, b"\x00" * 32)
     assert r["ok"] is False
     assert "malformed_anchor" in r["head_reason"]
