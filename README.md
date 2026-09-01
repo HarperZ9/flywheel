@@ -1,94 +1,107 @@
 # Flywheel
 
-> One platform: routing, verification, the lane layer, the closed loop, and the
-> projected world. The native desktop surface for accountable AI infrastructure.
+Flywheel runs an AI task with the local or hosted model and tools you choose. It
+records the run, and optional sealed tool-call receipts can be inspected and
+rechecked offline. The repository also includes a native desktop app.
 
-Flywheel is the engine and native client for a verified-inference loop: a model
-perceives only through witnessed organs, acts only through a gate it cannot
-talk past, journals everything, and verifies its own work by re-perceiving.
+Flywheel has two parts. The Python engine routes tasks, checks tool requests,
+runs verification, writes the run ledger, and serves a local gateway. The
+Flutter client provides the native desktop interface.
 
-The flagship tools (gather, crucible, index, forum, learn, telos) lead a
-twelve-lane roster inside Flywheel, each lane a provisioned, health-checked
-organ reachable through one surface. Every agent tool call carries a sealed,
-chain-linked receipt a third party re-verifies offline.
+## Try it
 
-**Proof before trust.**
-
-## What is in this repo
-
-This is a monorepo containing both halves of the platform:
-
-- **`harness/`** is the Python engine: the gateway (localhost HTTP API), the
-  agent loop, the receipt discipline, the lane layer, the verified-inference
-  loop, the tool-call receipt system. Zero runtime dependencies (stdlib only).
-- **`desktop/`** is the Flutter native client: 33 destinations on one side
-  rail, zero webview embedding. Talks to the gateway over localhost. Launches a bundled
-  frozen engine by absolute path on a clean machine (no Python, no PATH, no
-  network).
-- **`site/`** is a dev/CI fallback browser shell (not the primary UI).
-
-## Run it now
-
-Start the gateway (the engine keeps the loop, receipts, lanes, and routing):
-
-```
+```powershell
+python -m pip install flywheel-verify
 flywheel app --port 8799
 ```
 
-The **native surface is Flywheel Desktop**. From a dev checkout:
+This starts the local API gateway on `http://127.0.0.1:8799`.
+
+## Verification record
+
+The review for [pull request #60](https://github.com/HarperZ9/flywheel/pull/60)
+records the checks for this README change:
+
+- The file-size, standard-library verifier, claim-language, public-instruction,
+  and writing gates passed.
+- `python -m harness.cli_entry gate` returned `PASS` and an offline recheck of
+  `MATCH`.
+- GitHub Actions ran the whole test suite on Ubuntu and Windows. The linked CI
+  checks are the source of record; this README does not freeze a test count
+  that can change by revision or platform.
+
+These checks cover the repository's deterministic code and documentation
+paths. They do not prove that a model answer is correct, measure live provider
+reliability, or test every host and hardware configuration.
+
+## What is in this repo
+
+This monorepo contains both halves of the platform:
+
+- **`harness/`** is the Python engine. It runs tasks, checks tool requests,
+  writes receipts, discovers companion tools, and exposes the localhost API.
+  The installed runtime uses only the Python standard library.
+- **`desktop/`** is the Flutter client. It talks to the gateway over localhost
+  and can launch the bundled engine on a Windows machine without a separate
+  Python installation.
+- **`site/`** is the browser fallback used in development and CI.
+
+To run the native client from a development checkout:
 
 ```
 cd desktop
 flutter run -d windows --release
 ```
 
-The gateway also serves a `/site/index.html` shell as a dev/CI fallback.
+From a repository checkout, `python -m harness.cli_entry app --port 8799` also
+serves the development and CI fallback at `/site/index.html`.
 
-## The lane model
+## Included tools
 
-Flywheel encompasses the tool family. The registry ships twelve lanes; the
-six flagship repos:
+Flywheel can connect to twelve companion tools. Each has a public repository:
 
-| Lane | Repo | Role |
+| Tool | Repository | What it does |
 | --- | --- | --- |
-| gather | [gather](https://github.com/HarperZ9/gather) | Research intake + provenance receipts |
-| crucible | [crucible](https://github.com/HarperZ9/crucible) | Falsifiable verification (MATCH / DRIFT / UNVERIFIABLE) |
-| index | [index](https://github.com/HarperZ9/index) | Workspace map + symbol graph + context envelopes |
-| forum | [forum](https://github.com/HarperZ9/forum) | Witnessed causal ledger + model-agnostic routing |
-| learn | [learn](https://github.com/HarperZ9/learn) | Accountable learning forge |
-| telos | [telos](https://github.com/HarperZ9/telos) | The reconciliation lane |
+| gather | [gather](https://github.com/HarperZ9/gather) | Collect research and record its sources. |
+| crucible | [crucible](https://github.com/HarperZ9/crucible) | Recheck a claim and report a match, change, or missing evidence. |
+| index | [index](https://github.com/HarperZ9/index) | Map files and symbols in a workspace. |
+| forum | [forum](https://github.com/HarperZ9/forum) | Route work among models and record decisions. |
+| learn | [learn](https://github.com/HarperZ9/learn) | Turn your material and recorded attempts into a study plan. |
+| telos | [telos](https://github.com/HarperZ9/telos) | Reconcile findings from several tools. |
+| local-model | [archived predecessor](https://github.com/HarperZ9/local-model) | Historical engine repository. Its runtime is now part of Flywheel; the lane name remains for compatibility. |
+| relay | [relay](https://github.com/HarperZ9/relay) | Run a coding agent with a local or hosted model. |
+| plexus | [plexus](https://github.com/HarperZ9/plexus) | Find installed tools and connect them. |
+| mneme | [mneme](https://github.com/HarperZ9/mneme) | Store and retrieve memories with source checks. |
+| calibrate-pro | [calibrate-pro](https://github.com/HarperZ9/calibrate-pro) | Check display calibration targets and readiness. |
+| accountable-surface | [accountable-surface](https://github.com/HarperZ9/accountable-surface) | Require approval before actions and keep a tamper-evident record. |
 
-Six more lanes ship in the same registry: local-model (bundled), relay
-(remote access), plexus, mneme, calibrate-pro, and accountable-surface.
-Check their health through one surface:
+List their configured state or probe their live MCP connections:
 
 ```
 flywheel lanes
 flywheel lanes --probe    # live MCP handshake per lane
 ```
 
-## The receipt discipline
+## Run records and sealed receipts
 
-Every agent tool invocation carries a sealed receipt binding:
+Routed runs keep a ledger containing tool names, arguments, and outputs. When
+sealed tool-call receipts are enabled, they also record:
 
-- **what the tool was** (capability class: read / write / exec / external-mcp)
-- **what it was allowed to do** (admission decision from the gate)
-- **what it actually did** (witnessed args + output sha256 digests, never raw content)
-- **whether a stranger can re-walk it** (offline-verifiable, chain-linked)
+- the capability (`builtin-read`, `builtin-write`, `builtin-exec`,
+  `external-mcp`, or `unknown`);
+- the outcome;
+- argument and output hashes;
+- the prior receipt's hash for offline verification.
 
-Receipts compose into a transitive-witness DAG where a drifted action degrades
-exactly its downstream dependents. The flagship lanes emit organ-bundle entries
-on a shared proof-surface spine so cross-tool receipts compose end-to-end.
+Optional sealed receipts form an ordered hash chain. If one receipt is invalid,
+later entries in that chain become unverifiable.
 
-## The organizational learning loop
+## Lessons from recorded failures
 
-The layer above audit. The receipt discipline records what happened at machine
-resolution. The learning loop feeds forward: it derives lessons from witnessed
-divergences (an allowed action that rolled back, a memory whose source drifted,
-a graded failure), stores them in a durable, hash-chained, append-only memory,
-and surfaces recurring patterns as improvement candidates for human admission.
-A lesson is not a note a person wrote; it is a claim bound by hash to its
-evidence, re-checkable offline, fail-closed when the evidence is gone. See
+A proposed lesson includes hashes of its evidence and remains a proposal until
+a person accepts it. Verification detects changes to the lesson's sealed claim
+and evidence hashes. The originating system must separately recheck whether
+referenced evidence still exists or has changed. See
 [docs/LESSON-LOOP.md](docs/LESSON-LOOP.md).
 
 ## Offline-first
@@ -150,6 +163,13 @@ against the release's `SHA256SUMS.txt`.
 - [docs/GUIDE-LESSON-LOOP.md](docs/GUIDE-LESSON-LOOP.md): the organizational learning loop (full guide and spec)
 - [docs/ASSESSMENT-AGENTIC-SECURITY-2026-08.md](docs/ASSESSMENT-AGENTIC-SECURITY-2026-08.md): Flywheel against the July 2026 agentic security convergence
 - [CREDO.md](CREDO.md): the belief
+
+## Development disclosure
+
+Zain Dana Harper maintains this repository. AI-assisted tools are used for
+parts of development and documentation. Public source, tests, benchmark
+artifacts, and releases are the evidence for what ships; AI output is not
+treated as proof.
 
 ## License
 
