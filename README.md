@@ -17,17 +17,18 @@ flywheel app --port 8799
 
 This starts the local API gateway on `http://127.0.0.1:8799`.
 
-## Verification record for `b5b35f5`
+## Verification record
 
-Verified on 2026-08-31 against commit
-[`b5b35f5`](https://github.com/HarperZ9/flywheel/commit/b5b35f528d1b3bef83abc4dfd8412bd808c664fe):
+The review for [pull request #60](https://github.com/HarperZ9/flywheel/pull/60)
+records the checks for this README change:
 
 - The file-size, standard-library verifier, claim-language, public-instruction,
   and writing gates passed.
 - `python -m harness.cli_entry gate` returned `PASS` and an offline recheck of
   `MATCH`.
-- `python -m pytest tests/ -q` exited successfully. Pytest collected 5,683
-  tests; all executed tests passed, with platform-conditional cases skipped.
+- GitHub Actions ran the whole test suite on Ubuntu and Windows. The linked CI
+  checks are the source of record; this README does not freeze a test count
+  that can change by revision or platform.
 
 These checks cover the repository's deterministic code and documentation
 paths. They do not prove that a model answer is correct, measure live provider
@@ -67,7 +68,7 @@ Flywheel can connect to twelve companion tools. Each has a public repository:
 | forum | [forum](https://github.com/HarperZ9/forum) | Route work among models and record decisions. |
 | learn | [learn](https://github.com/HarperZ9/learn) | Turn your material and recorded attempts into a study plan. |
 | telos | [telos](https://github.com/HarperZ9/telos) | Reconcile findings from several tools. |
-| local-model | [local-model](https://github.com/HarperZ9/local-model) | Run local models through Flywheel's task and verification engine. |
+| local-model | [archived predecessor](https://github.com/HarperZ9/local-model) | Historical engine repository. Its runtime is now part of Flywheel; the lane name remains for compatibility. |
 | relay | [relay](https://github.com/HarperZ9/relay) | Run a coding agent with a local or hosted model. |
 | plexus | [plexus](https://github.com/HarperZ9/plexus) | Find installed tools and connect them. |
 | mneme | [mneme](https://github.com/HarperZ9/mneme) | Store and retrieve memories with source checks. |
