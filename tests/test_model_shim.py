@@ -21,7 +21,7 @@ from unittest import mock
 
 import pytest
 
-from harness import model_shim
+from harness import model_ollama, model_shim
 from harness.oracle import spawn_killable
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -137,7 +137,7 @@ def test_ollama_response_sanitized_to_one_line():
         def read(self):
             return fake_body
 
-    with mock.patch.object(model_shim.urllib.request, "urlopen",
+    with mock.patch.object(model_ollama.urllib.request, "urlopen",
                            return_value=_FakeResp()) as m:
         client_sock, server_sock = socket.socketpair()
         try:
@@ -160,7 +160,7 @@ def test_ollama_http_failure_is_fail_closed_empty_reply():
     a fabricated completion. No network: urlopen raises directly."""
     import urllib.error
 
-    with mock.patch.object(model_shim.urllib.request, "urlopen",
+    with mock.patch.object(model_ollama.urllib.request, "urlopen",
                            side_effect=urllib.error.URLError("connection refused")):
         client_sock, server_sock = socket.socketpair()
         try:
