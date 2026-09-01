@@ -1,6 +1,5 @@
 """Probe the running serve.py: print the raw model output + the extracted code."""
 import json, sys, urllib.request
-sys.path.insert(0, "/mnt/c/dev/local-model")
 from harness.extract import extract_code
 
 PROMPT = ("Implement the function add(a, b) in solution.py. It must return the "
