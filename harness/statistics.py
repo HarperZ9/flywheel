@@ -25,7 +25,7 @@ Stdlib only. Every function is deterministic given its seed.
 from __future__ import annotations
 
 import random
-from math import comb, sqrt
+from math import comb, exp, lgamma, log, sqrt
 
 SCHEMA = "flywheel.statistics/v1"
 
@@ -186,3 +186,147 @@ def mcnemar_mde(n_pairs: int, n_discordant: int, *, alpha: float = 0.05) -> dict
             f"{detectable}, i.e. a paired difference of "
             f"{detectable / n_pairs:.4f} over {n_pairs} pairs")
     return out
+
+
+def _mcnemar_critical_k(m: int, alpha: float):
+    """Largest smaller-cell count whose two-sided exact p meets alpha, or None.
+
+    Same binomial `mcnemar_mde` asks, from the other side: the two-sided exact
+    p grows with k, so the significant splits form a prefix [0..k] and the scan
+    stops at the first k past it.
+    """
+    cum = 0
+    total = 2 ** m
+    best = None
+    c = 1                                            # comb(m, 0)
+    for k in range(0, m // 2 + 1):
+        if k > 0:
+            c = c * (m - k + 1) // k                 # comb(m, k), exact
+        cum += c
+        if min(1.0, 2 * cum / total) <= alpha:
+            best = k
+        else:
+            break
+    return best
+
+
+def _binomial_tail_mass(m: int, k_crit: int, p1: float) -> float:
+    """P(B <= k_crit) + P(B >= m - k_crit) for B ~ Binomial(m, p1).
+
+    Log-space pmf, because (1 - p1) ** m underflows long before the plan sizes
+    stop being realistic.
+    """
+    if p1 >= 1.0:
+        return 1.0
+    lp, lq, lgm = log(p1), log(1.0 - p1), lgamma(m + 1)
+
+    def pmf(b: int) -> float:
+        return exp(lgm - lgamma(b + 1) - lgamma(m - b + 1)
+                   + b * lp + (m - b) * lq)
+
+    return (sum(pmf(b) for b in range(0, k_crit + 1))
+            + sum(pmf(b) for b in range(m - k_crit, m + 1)))
+
+
+def mcnemar_plan(target_delta: float, *, alpha: float = 0.05,
+                 power: float = 0.8,
+                 recorded_discordant_fraction: float | None = None,
+                 max_pairs: int = 20000) -> dict:
+    """The task-level N of pairs a future exact McNemar needs, or a refusal.
+
+    Inverse of `mcnemar_mde`: given a target paired delta, alpha, power, and a
+    discordant fraction, find the smallest N whose expected discordant count
+    gives the exact test at least the requested power against that delta, with
+    the design's own MDE at or under the target.
+
+    THE BASIS REQUIREMENT: `recorded_discordant_fraction` must be a fraction
+    RECORDED from a prior run of the same instrument (e.g. the pilot's
+    published per-task discordance). It has no default worth using; when it is
+    absent this function refuses, because sizing a decisive run from an
+    assumed discordance is a forking path -- the assumption would be chosen
+    after seeing what N it buys. A recorded basis is a fact; an assumed one is
+    a knob.
+
+    Sizing is conservative in one deliberate place: the expected discordant
+    count is the FLOOR of fraction * N. Under the alternative the discordant
+    pairs split with probability (1 + delta/fraction) / 2 toward the better
+    arm, which also bounds the target: a paired delta cannot exceed the
+    discordant fraction.
+    """
+    if recorded_discordant_fraction is None:
+        raise StatisticsError(
+            "mcnemar_plan refuses to size a run without a recorded discordance "
+            "basis. Supply recorded_discordant_fraction from a prior recorded "
+            "run of this instrument; sizing from an assumed discordance is a "
+            "forking path, and this refusal is the guard against it.")
+    f = float(recorded_discordant_fraction)
+    if not 0.0 < f <= 1.0:
+        raise StatisticsError(
+            f"a discordant fraction must sit in (0, 1], got {f}. Zero recorded "
+            "discordance sizes nothing: no discordant pairs, no paired test.")
+    d = float(target_delta)
+    if not 0.0 < d <= f:
+        raise StatisticsError(
+            f"target delta {d} is not in (0, {f}]. A paired delta cannot "
+            "exceed the discordant fraction: |b - c| <= b + c.")
+    if not 0.0 < alpha < 1.0:
+        raise StatisticsError(f"alpha must sit in (0,1), got {alpha}")
+    if not 0.0 < power < 1.0:
+        raise StatisticsError(f"power must sit in (0,1), got {power}")
+    if int(max_pairs) < 1:
+        raise StatisticsError(f"max_pairs must be positive, got {max_pairs}")
+
+    p1 = 0.5 * (1.0 + d / f)
+
+    def achieved(n: int):
+        """(m, k_crit, achieved_power) when n satisfies the plan, else None."""
+        m = int(f * n)
+        if m < 1:
+            return None
+        k = _mcnemar_critical_k(m, alpha)
+        if k is None:
+            return None
+        if (m - 2 * k) / n > d:                      # MDE must not exceed target
+            return None
+        pw = _binomial_tail_mass(m, k, p1)
+        return (m, k, pw) if pw >= power else None
+
+    n = 1
+    while n <= int(max_pairs) and achieved(n) is None:
+        n *= 2
+    if n > int(max_pairs):
+        raise StatisticsError(
+            f"no N of pairs up to max_pairs={int(max_pairs)} reaches power "
+            f"{power} for delta {d} at alpha {alpha} on a recorded discordant "
+            f"fraction of {f}. Raise max_pairs deliberately or accept that "
+            "the target is out of reach at this discordance.")
+    lo, hi = n // 2, n
+    while lo + 1 < hi:                               # quasi-monotone bisection
+        mid = (lo + hi) // 2
+        if achieved(mid) is not None:
+            hi = mid
+        else:
+            lo = mid
+    n = hi
+    while n > 1 and achieved(n - 1) is not None:     # tighten past discreteness
+        n -= 1
+    m, k_crit, achieved_power = achieved(n)
+    return {"schema": SCHEMA, "statistic": "mcnemar_plan",
+            "n_pairs": n, "expected_discordant": m,
+            "target_delta": round(d, 6), "alpha": f"{alpha:.4f}",
+            "power_target": f"{power:.4f}",
+            "achieved_power": round(achieved_power, 6),
+            "discordance_basis": {
+                "recorded_discordant_fraction": round(f, 6)},
+            "mde_at_plan": mcnemar_mde(n, m, alpha=alpha),
+            "note": (
+                f"the smallest N whose floor({f} * N) = {m} expected "
+                f"discordant pair(s) give the exact test power "
+                f"{achieved_power:.4f} against delta {d}; N - 1 fails at "
+                "least one plan condition."),
+            "does_not_prove": [
+                "NOT_PROVES_THE_NEXT_RUN_MATCHES_THE_BASIS: the plan holds "
+                "only as far as the future run's discordance resembles the "
+                "recorded fraction; discord less, and the achieved power "
+                "falls with it.",
+            ]}
