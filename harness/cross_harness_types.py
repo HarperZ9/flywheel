@@ -109,9 +109,14 @@ _SECRET_VALUE = re.compile(r"(?i)(authorization\s*:\s*bearer\s+|(?:token|api[_ -
 
 
 def sanitize_evidence(value: Any) -> Any:
-    """Remove secret-shaped keys and reject values canonical JSON cannot encode."""
+    """Remove secret-shaped keys and reject values canonical JSON cannot encode.
+
+    Plain-int values under secret-shaped keys pass: usage blocks name their
+    fields *_tokens and the values are token COUNTS. Credentials in provider
+    evidence are strings, so the carve-out drops nothing a receipt could leak.
+    """
     if isinstance(value, dict):
-        return {str(key): "[REDACTED]" if _SECRET_KEY.search(str(key)) else sanitize_evidence(item)
+        return {str(key): "[REDACTED]" if _SECRET_KEY.search(str(key)) and type(item) is not int else sanitize_evidence(item)
                 for key, item in value.items()}
     if isinstance(value, list): return [sanitize_evidence(item) for item in value]
     if isinstance(value, float) and (value != value or abs(value) == float("inf")): raise ValueError("nonfinite adapter evidence")

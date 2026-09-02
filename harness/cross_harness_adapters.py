@@ -13,7 +13,7 @@ from .local_session import SessionLedger
 from .local_tools import TOOLS_SYSTEM, ToolExecutor, ToolGate
 from .proposer import ProposerOutput, prompt_hash
 from .router_agent import RouterAgent
-from .cross_harness_process import ProcessOutcome, run_process; from .cross_harness_provider_error import ProviderRejected, inspect_provider_events
+from .cross_harness_process import ProcessOutcome, run_process; from .cross_harness_provider_error import ProviderRejected, inspect_provider_events; from .cross_harness_usage import attempt_usage, usage_from_events
 MAX_TRACE_EVENTS, MAX_TRACE_BYTES, MAX_LINE_BYTES, MAX_FIELD_BYTES, MAX_DEPTH = 1000, 1 << 20, 1 << 16, 1 << 14, 16
 READ_ONLY_SYSTEM = ("You are the outer Flywheel text-tool agent. Inspect the supplied workspace and return the requested artifact envelope. "
     "The following TOOL protocol is visible, but write, exec, and MCP calls are denied.\n\n" + TOOLS_SYSTEM + "\n\nRead-only override: never emit write_file, edit_file, apply_patch, run, or MCP tools.")
@@ -30,7 +30,7 @@ _URL_CREDS, _SECRET_KEY = re.compile(r"(https?://)[^/@\s:]+:[^/@\s]+@", re.I), r
 def _clean(value: Any) -> Any:
     if isinstance(value, dict):
         named_secret = _SECRET_KEY.search(str(value.get("name", "")))
-        return {str(k): ("[REDACTED]" if _SECRET_KEY.search(str(k)) or (k == "value" and named_secret)
+        return {str(k): ("[REDACTED]" if (k == "value" and named_secret) or (_SECRET_KEY.search(str(k)) and type(v) is not int)  # plain-int values are token COUNTS (usage *_tokens); credentials are strings
                          else _clean(v)) for k, v in value.items()}
     if isinstance(value, list): return [_clean(item) for item in value[:MAX_TRACE_EVENTS]]
     if not isinstance(value, str): return value
@@ -189,26 +189,26 @@ class CodexCliProposer:
         process = self.runner(_codex_argv(self.executable_resolver(), self.model_ref, self.workspace), cwd=self.workspace,
             stdin_text=(f"{system}\n\n{prompt}" if system else prompt), timeout_seconds=remaining)
         events, malformed = _parse_jsonl(process.stdout, "codex_inner")
-        rejection, terminal_malformed = inspect_provider_events(events); self.events.extend(events)
+        rejection, terminal_malformed = inspect_provider_events(events); self.events.extend({**event, "inner_call": self.calls} for event in events)
         if process.timed_out: raise TimeoutError("codex inner call timed out")
         if malformed or process.malformed_output: raise MalformedProviderOutput("codex inner provider output was malformed")
         if terminal_malformed: raise MalformedProviderOutput("codex inner provider output was malformed")
         if rejection: raise ProviderRejected(*rejection)
         final = _final_message(events)
         if process.returncode: raise RuntimeError(f"codex inner process exited {process.returncode}: {_clean(process.stderr)}")
-        return ProposerOutput(final, self.model_ref, seed, prompt_hash(prompt), "unsupported", served_model=next((event["model"] for event in reversed(events) if event.get("type") == "turn.completed" and isinstance(event.get("model"), str) and event["model"]), ""), usage=None)
+        return ProposerOutput(final, self.model_ref, seed, prompt_hash(prompt), "unsupported", served_model=next((event["model"] for event in reversed(events) if event.get("type") == "turn.completed" and isinstance(event.get("model"), str) and event["model"]), ""), usage=usage_from_events(events))
 class _ObservedProposer:
     def __init__(self, inner, timeout: float, clock: Callable, response_model_attested: bool = False):
-        self.inner, self.model_ref, self.observed, self.usage, self.basis, self.response_model_attested = inner, inner.model_ref, "", None, "unknown", response_model_attested
+        self.inner, self.model_ref, self.observed, self.usage_records, self.basis, self.response_model_attested = inner, inner.model_ref, "", [], "unknown", response_model_attested
         self.clock, self.deadline = clock, clock() + timeout
     def generate(self, *args, **kwargs):
         remaining = self.deadline - self.clock()
         if remaining <= 0: raise TimeoutError("shared attempt deadline expired")
         backend = getattr(self.inner, "backend", None)
         if backend is not None and hasattr(backend, "timeout"): backend.timeout = min(backend.timeout, remaining)
-        out = self.inner.generate(*args, **kwargs)
+        out = self.inner.generate(*args, **kwargs); self.usage_records.append(getattr(out, "usage", None))
         if self.clock() >= self.deadline: raise TimeoutError("shared attempt deadline expired")
-        self.observed, self.usage = out.served_model or (out.model_ref if self.response_model_attested else ""), out.usage
+        self.observed = out.served_model or (out.model_ref if self.response_model_attested else "")
         self.basis = "structured_provider_event" if out.served_model else "structured_provider_response" if self.observed else "unknown"; return out
 def _router_result(request, proposer, source: str, clock: Callable = time.monotonic, response_model_attested: bool = False) -> AdapterResult:
     ledger, events = SessionLedger(), []
@@ -229,7 +229,7 @@ def _router_result(request, proposer, source: str, clock: Callable = time.monoto
                    "max_output_control": None, "max_output_control_state": "unsupported"})
     inner = [{**_clean(event), "source": "codex_inner"} for event in getattr(proposer, "events", []) if isinstance(event, dict)]; events = inner + events
     capabilities, violations = _audit(events)
-    return AdapterResult(state, _clean(result.get("final", "")), events, max(0, round((time.perf_counter() - started) * 1000)), tracked.observed, "unsupported", failure, _clean(detail), {}, tracked.usage or {}, capabilities, violations, tracked.basis)
+    return AdapterResult(state, _clean(result.get("final", "")), events, max(0, round((time.perf_counter() - started) * 1000)), tracked.observed, "unsupported", failure, _clean(detail), {}, attempt_usage(tracked.usage_records), capabilities, violations, tracked.basis)
 class FlywheelRouterAdapter:
     role, adapter_id = "flywheel_harness", "flywheel_router/v1"
     def __init__(self, *, proposer=None, runner: Callable = _run_process, executable_resolver: Callable = _resolve_codex,
