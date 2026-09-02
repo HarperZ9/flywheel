@@ -16,7 +16,8 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from harness.paired_comparison import (                              # noqa: E402
-    MIN_TASK_CLUSTERS, SCHEMA, paired_comparison)
+    BUDGET_SCHEMA, MIN_TASK_CLUSTERS, SCHEMA, inner_call_budget_check,
+    paired_comparison)
 
 
 def _arm(name, rows):
@@ -154,3 +155,67 @@ def test_malformed_attempts_raise_rather_than_guess():
     with pytest.raises(ValueError):
         paired_comparison({"arm": "", "attempts": [
             {"task_id": "t1", "repetition": 0, "passed": True}]}, good)
+
+
+# --- B8: the inner-call budget check ----------------------------------------
+
+def _count_arm(name, rows):
+    return {"arm": name, "attempts": [
+        {"task_id": t, "repetition": r, "inner_call_count": c}
+        for t, r, c in rows]}
+
+
+def test_matched_budgets_admit_every_pair():
+    a = _count_arm("bare", [(f"t{i}", 0, 1) for i in range(1, 4)])
+    b = _count_arm("governed", [(f"t{i}", 0, 1) for i in range(1, 4)])
+    out = inner_call_budget_check(a, b, budgets={"bare": 1, "governed": 1})
+    assert out["schema"] == BUDGET_SCHEMA
+    assert out["budgets"] == {"bare": 1, "governed": 1}
+    assert out["n_pairs"] == 3 and out["admissible_pairs"] == 3
+    assert out["refused_pairs"] == [] and "refused" not in out
+
+
+def test_mismatched_pair_is_refused_and_names_the_cap():
+    a = _count_arm("bare", [("t1", 0, 1), ("t2", 0, 1)])
+    b = _count_arm("governed", [("t1", 0, 1), ("t2", 0, 2)])
+    out = inner_call_budget_check(a, b, budgets={"bare": 1, "governed": 1})
+    assert out["n_pairs"] == 2 and out["admissible_pairs"] == 1
+    (row,) = out["refused_pairs"]
+    assert (row["task_id"], row["repetition"]) == ("t2", 0)
+    assert row["reason"] == "inner_call_budget_mismatch"
+    assert "proposer_invocations_max=1" in row["detail"]
+    assert row["a_inner_call_count"] == 1 and row["b_inner_call_count"] == 2
+
+
+def test_unrecorded_count_refuses_the_pair_not_the_check():
+    a = _count_arm("bare", [("t1", 0, 1)])
+    b = {"arm": "governed", "attempts": [{"task_id": "t1", "repetition": 0}]}
+    out = inner_call_budget_check(a, b, budgets={"bare": 1, "governed": 1})
+    (row,) = out["refused_pairs"]
+    assert row["reason"] == "inner_call_count_unrecorded"
+    assert "governed" in row["detail"] and out["admissible_pairs"] == 0
+
+
+def test_unequal_pair_sets_refuse_the_whole_budget_check():
+    a = _count_arm("bare", [("t1", 0, 1), ("t2", 0, 1)])
+    b = _count_arm("governed", [("t1", 0, 1)])
+    out = inner_call_budget_check(a, b, budgets={"bare": 1, "governed": 1})
+    assert out["refused"]["reason"] == "unequal_task_sets"
+    reps = inner_call_budget_check(
+        _count_arm("bare", [("t1", 0, 1)]),
+        _count_arm("governed", [("t1", 1, 1)]),
+        budgets={"bare": 1, "governed": 1})
+    assert reps["refused"]["reason"] == "unequal_repetition_sets"
+
+
+def test_budget_check_malformation_raises():
+    a = _count_arm("bare", [("t1", 0, 1)])
+    b = _count_arm("governed", [("t1", 0, 1)])
+    with pytest.raises(ValueError):
+        inner_call_budget_check(a, b, budgets={"bare": 1})
+    with pytest.raises(ValueError):
+        inner_call_budget_check(a, b, budgets={"bare": 1, "governed": 0})
+    with pytest.raises(ValueError):
+        inner_call_budget_check(
+            _count_arm("bare", [("t1", 0, 1.5)]), b,
+            budgets={"bare": 1, "governed": 1})

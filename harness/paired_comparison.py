@@ -22,6 +22,8 @@ from .statistics import mcnemar_mde
 
 SCHEMA = "flywheel.paired-comparison/v1"
 
+BUDGET_SCHEMA = "flywheel.inner-call-budget/v1"
+
 MIN_TASK_CLUSTERS = 5
 
 _DOES_NOT_PROVE = [
@@ -162,3 +164,98 @@ def paired_comparison(arm_a: dict, arm_b: dict, *, alpha: float = 0.05,
            "does_not_prove": list(_DOES_NOT_PROVE)}
     return _pool_or_refuse(out, reps_by_task, a_index, b_index,
                            alpha, min_clusters)
+
+
+def _count_index(arm: dict) -> tuple[str, dict]:
+    """Validate one arm and index inner_call_count by (task_id, repetition).
+
+    A missing or None count is kept as None: pre-budget receipts exist, and
+    the pair-level check refuses those pairs by name instead of guessing.
+    A present count of the wrong type is caller malformation and raises.
+    """
+    name = arm.get("arm")
+    if not isinstance(name, str) or not name.strip():
+        raise ValueError("an arm needs a nonempty 'arm' name")
+    attempts = arm.get("attempts")
+    if not isinstance(attempts, list) or not attempts:
+        raise ValueError(f"arm {name!r} needs a nonempty 'attempts' list")
+    index: dict = {}
+    for row in attempts:
+        task = row.get("task_id")
+        rep = row.get("repetition")
+        count = row.get("inner_call_count")
+        if not isinstance(task, str) or not task.strip():
+            raise ValueError(f"arm {name!r}: attempt without a task_id")
+        if type(rep) is not int or rep < 0:
+            raise ValueError(
+                f"arm {name!r} task {task!r}: repetition must be a "
+                "nonnegative integer")
+        if count is not None and (type(count) is not int or count < 0):
+            raise ValueError(
+                f"arm {name!r} task {task!r} rep {rep}: inner_call_count "
+                "must be a nonnegative integer or absent")
+        if (task, rep) in index:
+            raise ValueError(
+                f"arm {name!r}: duplicate attempt for task {task!r} rep {rep}")
+        index[(task, rep)] = count
+    return name, index
+
+
+def _pair_budget_row(key: tuple, a_count, b_count, name_a: str, name_b: str,
+                     budget_a: int, budget_b: int) -> dict | None:
+    task, rep = key
+    row = {"task_id": task, "repetition": rep,
+           "a_inner_call_count": a_count, "b_inner_call_count": b_count}
+    unrecorded = [name for name, count in
+                  ((name_a, a_count), (name_b, b_count)) if count is None]
+    if unrecorded:
+        return {**row, "reason": "inner_call_count_unrecorded",
+                "detail": (f"arm(s) {unrecorded} did not record "
+                           "inner_call_count; a pair without a recorded "
+                           "count cannot be shown on budget")}
+    if a_count != budget_a or b_count != budget_b:
+        return {**row, "reason": "inner_call_budget_mismatch",
+                "detail": (f"{name_a} recorded {a_count} inner call(s) "
+                           f"against proposer_invocations_max={budget_a}; "
+                           f"{name_b} recorded {b_count} against "
+                           f"proposer_invocations_max={budget_b}")}
+    return None
+
+
+def inner_call_budget_check(arm_a: dict, arm_b: dict, *,
+                            budgets: dict) -> dict:
+    """Refuse pairs whose inner-call counts differ from preregistered budgets.
+
+    Each arm is ``{"arm": name, "attempts": [{"task_id", "repetition",
+    "inner_call_count"}, ...]}`` and ``budgets`` maps each arm name to its
+    preregistered inner-call budget (a positive int; the bare arm's is 1 by
+    construction). A pair whose recorded counts differ from the budgets, or
+    whose count is unrecorded, is refused by name; unequal task or repetition
+    sets refuse the whole check because pairing is undefined.
+    """
+    name_a, a_index = _count_index(arm_a)
+    name_b, b_index = _count_index(arm_b)
+    for name in (name_a, name_b):
+        budget = budgets.get(name) if isinstance(budgets, dict) else None
+        if type(budget) is not int or budget < 1:
+            raise ValueError(
+                f"budgets must map arm {name!r} to a positive int "
+                "preregistered inner-call budget")
+    base = {"schema": BUDGET_SCHEMA, "statistic": "inner_call_budget_check",
+            "arm_a": name_a, "arm_b": name_b,
+            "budgets": {name_a: budgets[name_a], name_b: budgets[name_b]}}
+    if set(a_index) != set(b_index):
+        reason = ("unequal_task_sets"
+                  if {t for t, _ in a_index} != {t for t, _ in b_index}
+                  else "unequal_repetition_sets")
+        return _refusal(
+            base, reason,
+            "the arms cover different (task, repetition) pairs, so "
+            "pair-level budget comparison is undefined")
+    refused = [row for row in (
+        _pair_budget_row(key, a_index[key], b_index[key], name_a, name_b,
+                         budgets[name_a], budgets[name_b])
+        for key in sorted(a_index)) if row is not None]
+    return {**base, "n_pairs": len(a_index),
+            "admissible_pairs": len(a_index) - len(refused),
+            "refused_pairs": refused}

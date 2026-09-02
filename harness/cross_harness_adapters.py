@@ -37,8 +37,7 @@ def _clean(value: Any) -> Any:
     text = _ASSIGN.sub(r"\1[REDACTED]", _BEARER.sub(r"\1[REDACTED]", value))
     text = _API_KEY.sub("[REDACTED]", _JWT.sub("[REDACTED]", text))
     return _URL_CREDS.sub(r"\1[REDACTED]@", text)
-def _run_process(argv: list[str], **kwargs) -> ProcessOutcome:
-    return run_process(argv, **kwargs)
+def _run_process(argv: list[str], **kwargs) -> ProcessOutcome: return run_process(argv, **kwargs)
 def _json_pairs(rows):
     if len(rows) != len({key for key, _ in rows}): raise ValueError("duplicate JSON key")
     return dict(rows)
@@ -175,7 +174,7 @@ class DirectCodexAdapter:
         elif final_invalid: state, failure, detail = "malformed", "malformed_jsonl", "final agent message missing or malformed"
         elif process.returncode: state, failure, detail = "internal_error", "process_nonzero", process.stderr
         observed = next((event["model"] for event in reversed(events) if event.get("type") == "turn.completed" and isinstance(event.get("model"), str) and event["model"]), "")
-        return AdapterResult(state, output_text if state == "returned" else "", events, process.elapsed_ms, observed, "unsupported", failure, _clean(detail), {}, {}, capabilities, violations, "structured_provider_event" if observed else "unknown")
+        return AdapterResult(state, output_text if state == "returned" else "", events, process.elapsed_ms, observed, "unsupported", failure, _clean(detail), {"inner_call_count": 1}, {}, capabilities, violations, "structured_provider_event" if observed else "unknown")
 class CodexCliProposer:
     def __init__(self, model_ref: str, *, workspace: Path, artifact_dir: Path, timeout_seconds: float, runner: Callable = _run_process,
                  executable_resolver: Callable = _resolve_codex, clock: Callable = time.monotonic):
@@ -198,21 +197,22 @@ class CodexCliProposer:
         if process.returncode: raise RuntimeError(f"codex inner process exited {process.returncode}: {_clean(process.stderr)}")
         return ProposerOutput(final, self.model_ref, seed, prompt_hash(prompt), "unsupported", served_model=next((event["model"] for event in reversed(events) if event.get("type") == "turn.completed" and isinstance(event.get("model"), str) and event["model"]), ""), usage=usage_from_events(events))
 class _ObservedProposer:
-    def __init__(self, inner, timeout: float, clock: Callable, response_model_attested: bool = False):
+    def __init__(self, inner, timeout: float, clock: Callable, response_model_attested: bool = False, max_calls: int | None = None):
         self.inner, self.model_ref, self.observed, self.usage_records, self.basis, self.response_model_attested = inner, inner.model_ref, "", [], "unknown", response_model_attested
-        self.clock, self.deadline = clock, clock() + timeout
+        self.clock, self.deadline, self.max_calls, self.calls = clock, clock() + timeout, max_calls, 0
     def generate(self, *args, **kwargs):
         remaining = self.deadline - self.clock()
         if remaining <= 0: raise TimeoutError("shared attempt deadline expired")
-        backend = getattr(self.inner, "backend", None)
+        if self.max_calls is not None and self.calls >= self.max_calls: raise TimeoutError(f"inner proposer invocation budget exhausted: proposer_invocations_max={self.max_calls}")
+        self.calls += 1; backend = getattr(self.inner, "backend", None)
         if backend is not None and hasattr(backend, "timeout"): backend.timeout = min(backend.timeout, remaining)
         out = self.inner.generate(*args, **kwargs); self.usage_records.append(getattr(out, "usage", None))
         if self.clock() >= self.deadline: raise TimeoutError("shared attempt deadline expired")
         self.observed = out.served_model or (out.model_ref if self.response_model_attested else "")
         self.basis = "structured_provider_event" if out.served_model else "structured_provider_response" if self.observed else "unknown"; return out
-def _router_result(request, proposer, source: str, clock: Callable = time.monotonic, response_model_attested: bool = False) -> AdapterResult:
+def _router_result(request, proposer, source: str, clock: Callable = time.monotonic, response_model_attested: bool = False, proposer_invocations_max: int | None = None) -> AdapterResult:
     ledger, events = SessionLedger(), []
-    tracked = _ObservedProposer(proposer, request.timeout_seconds, clock, response_model_attested)
+    tracked = _ObservedProposer(proposer, request.timeout_seconds, clock, response_model_attested, proposer_invocations_max)
     agent = RouterAgent(model=request.model_id, proposer=tracked, system=READ_ONLY_SYSTEM, max_tokens=request.tool_policy.get("max_output_tokens", 2048))
     executor = ToolExecutor(root=str(request.workspace_root), gate=ToolGate(False, False, False), external={})
     started = time.perf_counter()
@@ -229,23 +229,23 @@ def _router_result(request, proposer, source: str, clock: Callable = time.monoto
                    "max_output_control": None, "max_output_control_state": "unsupported"})
     inner = [{**_clean(event), "source": "codex_inner"} for event in getattr(proposer, "events", []) if isinstance(event, dict)]; events = inner + events
     capabilities, violations = _audit(events)
-    return AdapterResult(state, _clean(result.get("final", "")), events, max(0, round((time.perf_counter() - started) * 1000)), tracked.observed, "unsupported", failure, _clean(detail), {}, attempt_usage(tracked.usage_records), capabilities, violations, tracked.basis)
+    return AdapterResult(state, _clean(result.get("final", "")), events, max(0, round((time.perf_counter() - started) * 1000)), tracked.observed, "unsupported", failure, _clean(detail), {"inner_call_count": tracked.calls}, attempt_usage(tracked.usage_records), capabilities, violations, tracked.basis)
 class FlywheelRouterAdapter:
     role, adapter_id = "flywheel_harness", "flywheel_router/v1"
     def __init__(self, *, proposer=None, runner: Callable = _run_process, executable_resolver: Callable = _resolve_codex,
-                 clock: Callable = time.monotonic, task_identity_by_id: dict[str, dict[str, Any]] | None = None):
+                 clock: Callable = time.monotonic, task_identity_by_id: dict[str, dict[str, Any]] | None = None, proposer_invocations_max: int | None = 1):
         self.proposer, self.runner, self.executable_resolver, self.clock = proposer, runner, executable_resolver, clock
-        self.task_identities = _freeze_identities(task_identity_by_id)
+        self.task_identities, self.proposer_invocations_max = _freeze_identities(task_identity_by_id), proposer_invocations_max
     def enforcement(self, request) -> EnforcementResult:
         return _enforcement({"boundary": "flywheel_outer_plus_codex_inner", "outer_tool_gate": {"allow_write": False, "allow_exec": False, "allow_mcp": False},
-            "inner_codex_sandbox": "read-only", "denied_tools_visible": True, "randomness_control": "unsupported", "max_output_control": None})
+            "inner_codex_sandbox": "read-only", "denied_tools_visible": True, "randomness_control": "unsupported", "max_output_control": None, "proposer_invocations_max": self.proposer_invocations_max})
     def availability(self, request) -> AvailabilityResult:
         present = self.proposer is not None or bool(self.executable_resolver()); failure, evidence = _identity(request, self.task_identities)
         failure = failure or ("" if present else "codex_cli_missing")
         return AvailabilityResult(not failure, failure, failure or "adapter metadata ready", {"process_present": present, "provider_called": False, **evidence})
     def execute(self, request) -> AdapterResult:
         proposer = self.proposer or CodexCliProposer(request.requested_model_reference, workspace=request.workspace_root, artifact_dir=request.artifact_dir, timeout_seconds=request.timeout_seconds, runner=self.runner, executable_resolver=self.executable_resolver)
-        return _router_result(request, proposer, "flywheel_outer", self.clock)
+        return _router_result(request, proposer, "flywheel_outer", self.clock, proposer_invocations_max=self.proposer_invocations_max)
 def _profile_error(profile: dict[str, Any]) -> str:
     if profile.get("backend") not in {"serve", "ollama"}: return "unsupported_local_backend"
     parsed = urlsplit(str(profile.get("endpoint_url", "")))

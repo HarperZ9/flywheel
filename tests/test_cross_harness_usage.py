@@ -16,7 +16,7 @@ def turn(usage, model="served-spark"):
     return json.dumps({"type": "turn.completed", "model": model, "usage": usage})
 def governed(tmp_path):
     outs = [outcome(turn(USAGE_A), 'TOOL read_file {"path":"x"}'), outcome(turn(USAGE_B), "final answer")]
-    adapter = FlywheelRouterAdapter(runner=lambda *a, **k: outs.pop(0), executable_resolver=lambda: "codex.cmd")
+    adapter = FlywheelRouterAdapter(runner=lambda *a, **k: outs.pop(0), executable_resolver=lambda: "codex.cmd", proposer_invocations_max=None)
     result = adapter.execute(request(tmp_path))
     assert result.execution_state == "returned" and not outs
     return result
@@ -37,6 +37,7 @@ def test_governed_arm_receipt_carries_recomputable_usage(tmp_path):
         "cached_input_tokens": 20, "input_tokens": 300, "output_tokens": 80,
         "reasoning_output_tokens": 15, "total_tokens": 395}}
     assert recheck_inner_usage(result.tool_trace, result.usage) == {"verified": True, "recomputed": result.usage}
+    assert result.resource_observation == {"inner_call_count": 2}
 def test_perturbed_transcript_or_claim_trips_refusal(tmp_path):
     result = governed(tmp_path)
     trace = [dict(event) for event in result.tool_trace]
