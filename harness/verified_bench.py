@@ -14,9 +14,24 @@ import json
 from pathlib import Path
 
 from .evidence_json import canonical_sha256
+from .pool_arms import _wilson
 
 SCHEMA = "flywheel.verified-bench/v1"
 FRONTIER_SCHEMA = "flywheel.verified-frontier/v1"
+
+
+def wilson_95_fields(passes: int, attempts: int) -> dict:
+    """Wilson 95% interval fields for a verified pass rate, reusing the
+    pool_arms implementation. A zero denominator refuses the interval:
+    with no attempts there is no rate to bracket, and printing [0, 0]
+    would claim certainty where there is no data."""
+    if attempts <= 0:
+        return {"wilson_95": None,
+                "wilson_95_refused": (
+                    "ZERO_DENOMINATOR: no attempts, so no pass rate "
+                    "exists to put an interval around")}
+    lo, hi = _wilson(passes, attempts)
+    return {"wilson_95": [round(lo, 6), round(hi, 6)]}
 
 
 def load_task_set(path: Path | str) -> list[dict]:
@@ -109,6 +124,7 @@ def verified_frontier(bench: dict,
             "verified_passes": row["passes"],
             "attempts": row["attempts"],
             "verified_pass_rate": rate,
+            **wilson_95_fields(row["passes"], row["attempts"]),
             "cost_per_task": cost,
         })
     ranked = sorted(rankings,

@@ -18,6 +18,7 @@ from harness.verified_bench import (
     load_task_set,
     run_benchmark,
     verified_frontier,
+    wilson_95_fields,
 )
 
 
@@ -130,6 +131,40 @@ def test_frontier_names_the_pareto_set():
         "strong": 0.02, "weak": 0.001, "mid": 0.05})
     assert "mid" not in frontier3["pareto"], (
         "mid passes nothing and costs more than strong: dominated")
+
+
+def test_wilson_95_fields_match_hand_computed_references():
+    # Hand-checked against the Wilson score formula at z = 1.959963984540054:
+    # 8/10 -> [0.490162, 0.943318]; 2/2 -> [0.342380, 1.0];
+    # 0/2 -> [0.0, 0.657620]. Rounded to 6 places as pool_arms does.
+    assert wilson_95_fields(8, 10)["wilson_95"] == pytest.approx(
+        [0.490162, 0.943318], abs=1e-6)
+    assert wilson_95_fields(2, 2)["wilson_95"] == pytest.approx(
+        [0.342380, 1.0], abs=1e-6)
+    assert wilson_95_fields(0, 2)["wilson_95"] == pytest.approx(
+        [0.0, 0.657620], abs=1e-6)
+
+
+def test_wilson_95_refuses_a_zero_denominator():
+    fields = wilson_95_fields(0, 0)
+    assert fields["wilson_95"] is None
+    assert "ZERO_DENOMINATOR" in fields["wilson_95_refused"]
+
+
+def test_frontier_rows_carry_wilson_95():
+    propose, gate = _runner(passing_endpoints=["strong"])
+    bench = run_benchmark(tasks=TASKS, endpoints=["strong", "weak"],
+                          propose=propose, run_gate=gate,
+                          created_at="2026-08-23T00:00:00Z")
+    frontier = verified_frontier(bench, cost_per_task=None)
+    by_endpoint = {r["endpoint"]: r for r in frontier["rankings"]}
+    # strong: 2/2 passes; weak: 0/2. Same hand-checked references as above.
+    assert by_endpoint["strong"]["wilson_95"] == pytest.approx(
+        [0.342380, 1.0], abs=1e-6)
+    assert by_endpoint["weak"]["wilson_95"] == pytest.approx(
+        [0.0, 0.657620], abs=1e-6)
+    for row in frontier["rankings"]:
+        assert "wilson_95_refused" not in row
 
 
 def test_frontier_without_cost_still_ranks_pass_rates():
