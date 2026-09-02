@@ -37,7 +37,8 @@ def test_governed_arm_receipt_carries_recomputable_usage(tmp_path):
         "cached_input_tokens": 20, "input_tokens": 300, "output_tokens": 80,
         "reasoning_output_tokens": 15, "total_tokens": 395}}
     assert recheck_inner_usage(result.tool_trace, result.usage) == {"verified": True, "recomputed": result.usage}
-    assert result.resource_observation == {"inner_call_count": 2}
+    assert result.resource_observation == {"inner_call_count": 2,
+        "cli_version": "", "resolved_binary_path": "codex.cmd", "reasoning_effort": "unspecified"}
 def test_perturbed_transcript_or_claim_trips_refusal(tmp_path):
     result = governed(tmp_path)
     trace = [dict(event) for event in result.tool_trace]

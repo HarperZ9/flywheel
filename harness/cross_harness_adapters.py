@@ -13,7 +13,7 @@ from .local_session import SessionLedger
 from .local_tools import TOOLS_SYSTEM, ToolExecutor, ToolGate
 from .proposer import ProposerOutput, prompt_hash
 from .router_agent import RouterAgent
-from .cross_harness_process import ProcessOutcome, run_process; from .cross_harness_provider_error import ProviderRejected, inspect_provider_events; from .cross_harness_usage import attempt_usage, usage_from_events
+from .cross_harness_process import ProcessOutcome, run_process; from .cross_harness_provider_error import ProviderRejected, inspect_provider_events; from .cross_harness_usage import attempt_usage, usage_from_events; from .cross_harness_cli_identity import cli_identity_fields, codex_cli_version
 MAX_TRACE_EVENTS, MAX_TRACE_BYTES, MAX_LINE_BYTES, MAX_FIELD_BYTES, MAX_DEPTH = 1000, 1 << 20, 1 << 16, 1 << 14, 16
 READ_ONLY_SYSTEM = ("You are the outer Flywheel text-tool agent. Inspect the supplied workspace and return the requested artifact envelope. "
     "The following TOOL protocol is visible, but write, exec, and MCP calls are denied.\n\n" + TOOLS_SYSTEM + "\n\nRead-only override: never emit write_file, edit_file, apply_patch, run, or MCP tools.")
@@ -148,9 +148,9 @@ def _identity(request, identities: dict[str, str]) -> tuple[str, dict[str, Any]]
 class DirectCodexAdapter:
     role, adapter_id = "codex_harness", "codex_cli_json/v1"
     def __init__(self, *, runner: Callable = _run_process, executable_resolver: Callable = _resolve_codex,
-                 task_identity_by_id: dict[str, dict[str, Any]] | None = None):
+                 task_identity_by_id: dict[str, dict[str, Any]] | None = None, version_probe: Callable = codex_cli_version):
         self.runner, self.executable_resolver = runner, executable_resolver
-        self.task_identities = _freeze_identities(task_identity_by_id)
+        self.task_identities, self.cli_version = _freeze_identities(task_identity_by_id), version_probe(executable_resolver())
     def enforcement(self, request) -> EnforcementResult:
         return _enforcement({"boundary": "codex_exec", "sandbox": "read-only", "ephemeral": True,
             "ignore_user_config": True, "skip_git_repo_check": True, "shell": False, "prompt_transport": "stdin", "randomness_control": "unsupported",
@@ -160,7 +160,7 @@ class DirectCodexAdapter:
         failure = identity or ("" if exe else "codex_cli_missing")
         return AvailabilityResult(not failure, failure, failure or "codex CLI present", {"process_present": bool(exe), "provider_called": False, **evidence})
     def execute(self, request) -> AdapterResult:
-        process = self.runner(_codex_argv(self.executable_resolver(), request.requested_model_reference, request.workspace_root), cwd=request.workspace_root, stdin_text=request.prompt, timeout_seconds=request.timeout_seconds)
+        exe = self.executable_resolver(); process = self.runner(_codex_argv(exe, request.requested_model_reference, request.workspace_root), cwd=request.workspace_root, stdin_text=request.prompt, timeout_seconds=request.timeout_seconds)
         events, malformed = _parse_jsonl(process.stdout, "codex_direct")
         rejection, terminal_malformed = inspect_provider_events(events); malformed |= terminal_malformed
         try: output_text = "" if rejection or terminal_malformed else _final_message(events)
@@ -174,7 +174,7 @@ class DirectCodexAdapter:
         elif final_invalid: state, failure, detail = "malformed", "malformed_jsonl", "final agent message missing or malformed"
         elif process.returncode: state, failure, detail = "internal_error", "process_nonzero", process.stderr
         observed = next((event["model"] for event in reversed(events) if event.get("type") == "turn.completed" and isinstance(event.get("model"), str) and event["model"]), "")
-        return AdapterResult(state, output_text if state == "returned" else "", events, process.elapsed_ms, observed, "unsupported", failure, _clean(detail), {"inner_call_count": 1}, {}, capabilities, violations, "structured_provider_event" if observed else "unknown")
+        return AdapterResult(state, output_text if state == "returned" else "", events, process.elapsed_ms, observed, "unsupported", failure, _clean(detail), {"inner_call_count": 1, **cli_identity_fields(self.cli_version, exe)}, {}, capabilities, violations, "structured_provider_event" if observed else "unknown")
 class CodexCliProposer:
     def __init__(self, model_ref: str, *, workspace: Path, artifact_dir: Path, timeout_seconds: float, runner: Callable = _run_process,
                  executable_resolver: Callable = _resolve_codex, clock: Callable = time.monotonic):
@@ -210,7 +210,7 @@ class _ObservedProposer:
         if self.clock() >= self.deadline: raise TimeoutError("shared attempt deadline expired")
         self.observed = out.served_model or (out.model_ref if self.response_model_attested else "")
         self.basis = "structured_provider_event" if out.served_model else "structured_provider_response" if self.observed else "unknown"; return out
-def _router_result(request, proposer, source: str, clock: Callable = time.monotonic, response_model_attested: bool = False, proposer_invocations_max: int | None = None) -> AdapterResult:
+def _router_result(request, proposer, source: str, clock: Callable = time.monotonic, response_model_attested: bool = False, proposer_invocations_max: int | None = None, cli_identity: dict[str, str] | None = None) -> AdapterResult:
     ledger, events = SessionLedger(), []
     tracked = _ObservedProposer(proposer, request.timeout_seconds, clock, response_model_attested, proposer_invocations_max)
     agent = RouterAgent(model=request.model_id, proposer=tracked, system=READ_ONLY_SYSTEM, max_tokens=request.tool_policy.get("max_output_tokens", 2048))
@@ -229,13 +229,13 @@ def _router_result(request, proposer, source: str, clock: Callable = time.monoto
                    "max_output_control": None, "max_output_control_state": "unsupported"})
     inner = [{**_clean(event), "source": "codex_inner"} for event in getattr(proposer, "events", []) if isinstance(event, dict)]; events = inner + events
     capabilities, violations = _audit(events)
-    return AdapterResult(state, _clean(result.get("final", "")), events, max(0, round((time.perf_counter() - started) * 1000)), tracked.observed, "unsupported", failure, _clean(detail), {"inner_call_count": tracked.calls}, attempt_usage(tracked.usage_records), capabilities, violations, tracked.basis)
+    return AdapterResult(state, _clean(result.get("final", "")), events, max(0, round((time.perf_counter() - started) * 1000)), tracked.observed, "unsupported", failure, _clean(detail), {"inner_call_count": tracked.calls, **(cli_identity or {})}, attempt_usage(tracked.usage_records), capabilities, violations, tracked.basis)
 class FlywheelRouterAdapter:
     role, adapter_id = "flywheel_harness", "flywheel_router/v1"
     def __init__(self, *, proposer=None, runner: Callable = _run_process, executable_resolver: Callable = _resolve_codex,
-                 clock: Callable = time.monotonic, task_identity_by_id: dict[str, dict[str, Any]] | None = None, proposer_invocations_max: int | None = 1):
+                 clock: Callable = time.monotonic, task_identity_by_id: dict[str, dict[str, Any]] | None = None, proposer_invocations_max: int | None = 1, version_probe: Callable = codex_cli_version):
         self.proposer, self.runner, self.executable_resolver, self.clock = proposer, runner, executable_resolver, clock
-        self.task_identities, self.proposer_invocations_max = _freeze_identities(task_identity_by_id), proposer_invocations_max
+        self.task_identities, self.proposer_invocations_max, self.cli_version = _freeze_identities(task_identity_by_id), proposer_invocations_max, ("" if proposer is not None else version_probe(executable_resolver()))
     def enforcement(self, request) -> EnforcementResult:
         return _enforcement({"boundary": "flywheel_outer_plus_codex_inner", "outer_tool_gate": {"allow_write": False, "allow_exec": False, "allow_mcp": False},
             "inner_codex_sandbox": "read-only", "denied_tools_visible": True, "randomness_control": "unsupported", "max_output_control": None, "proposer_invocations_max": self.proposer_invocations_max})
@@ -244,8 +244,8 @@ class FlywheelRouterAdapter:
         failure = failure or ("" if present else "codex_cli_missing")
         return AvailabilityResult(not failure, failure, failure or "adapter metadata ready", {"process_present": present, "provider_called": False, **evidence})
     def execute(self, request) -> AdapterResult:
-        proposer = self.proposer or CodexCliProposer(request.requested_model_reference, workspace=request.workspace_root, artifact_dir=request.artifact_dir, timeout_seconds=request.timeout_seconds, runner=self.runner, executable_resolver=self.executable_resolver)
-        return _router_result(request, proposer, "flywheel_outer", self.clock, proposer_invocations_max=self.proposer_invocations_max)
+        exe = "" if self.proposer is not None else self.executable_resolver(); proposer = self.proposer or CodexCliProposer(request.requested_model_reference, workspace=request.workspace_root, artifact_dir=request.artifact_dir, timeout_seconds=request.timeout_seconds, runner=self.runner, executable_resolver=self.executable_resolver)
+        return _router_result(request, proposer, "flywheel_outer", self.clock, proposer_invocations_max=self.proposer_invocations_max, cli_identity=cli_identity_fields(self.cli_version, exe))
 def _profile_error(profile: dict[str, Any]) -> str:
     if profile.get("backend") not in {"serve", "ollama"}: return "unsupported_local_backend"
     parsed = urlsplit(str(profile.get("endpoint_url", "")))
