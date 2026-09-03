@@ -9,6 +9,7 @@ summary names both what is uniquely witnessed here and where the field is
 ahead -- the gap list is the point, not the scoreboard."""
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
@@ -70,7 +71,13 @@ ROWS = [
      "codex": True, "cursor": True, "claude-code": True},
     {"key": "live-agent-stream",
      "desc": "every turn, tool call, and result streamed as it happens",
-     "witnesses": [("route", "_sse_agent")],
+     # Was ("route", "_sse_agent"), a name that never existed. The capability
+     # is real and lives on the operation route, which returns a streaming
+     # response when the operation asks for one and serves an events feed per
+     # run; the witness had simply been pointed at a dead branch in _post that
+     # `_route_operation` intercepts before it can run.
+     "witnesses": [("module", "harness/gateway_operation_route.py"),
+                   ("test", "tests/test_gateway_operation_route.py")],
      "codex": True, "cursor": True, "claude-code": True},
     {"key": "projected-world-hash",
      "desc": "root-hashed projected state; tampering any receipt moves it",
@@ -120,11 +127,34 @@ ROWS = [
 ]
 
 
+def _route_witnessed(ref: str, src: str) -> bool:
+    """A route witness must find the route SERVED, not merely mentioned.
+
+    `ref in src` cannot tell a call site from a definition, so a handler that
+    is only ever called audits as present: `live-agent-stream` reported
+    WITNESSED for months on the strength of `self._sse_agent(...)` at its one
+    call site, while no such method existed and the route raised
+    AttributeError on first use. A matrix that cannot catch that is the
+    theater its own tests warn about.
+
+    An HTTP path is witnessed by a dispatch comparison against it. A bare
+    identifier is witnessed by a `def`.
+    """
+    if ref.startswith("/"):
+        quoted = (f'"{ref}"', f"'{ref}'")
+        return any(
+            f"== {q}" in src or f"=={q}" in src
+            or f".startswith({q}" in src or f"{q}:" in src or f"{q}," in src
+            for q in quoted)
+    return bool(re.search(rf"^\s*(?:async\s+)?def\s+{re.escape(ref)}\s*\(",
+                          src, re.M))
+
+
 def _check_witness(kind: str, ref: str, gateway_src: str) -> bool:
     if kind == "module" or kind == "test":
         return (REPO / ref).is_file()
     if kind == "route":
-        return ref in gateway_src
+        return _route_witnessed(ref, gateway_src)
     return False
 
 

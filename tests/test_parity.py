@@ -52,4 +52,28 @@ def test_declarations_are_labeled_and_dated():
     for key in s["uniquely_witnessed"]:
         assert by_key[key]["flywheel"] == "WITNESSED"
         assert not any(v is True
-                       for v in by_key[key]["competitors"].values())
+                        for v in by_key[key]["competitors"].values())
+
+
+def test_a_called_but_undefined_route_audits_absent():
+    """The falsifier for the bug that shipped: `ref in src` counted a CALL
+    site as a witness, so `live-agent-stream` reported WITNESSED on the
+    strength of `self._sse_agent(...)` while no such method existed and the
+    route raised AttributeError on first use."""
+    src = "        return self._sse_agent(req, goal, endpoint)\n"
+    assert parity._route_witnessed("_sse_agent", src) is False
+
+
+def test_a_defined_route_handler_audits_witnessed():
+    src = "    def _sse_agent(self, req, goal, endpoint):\n        return 1\n"
+    assert parity._route_witnessed("_sse_agent", src) is True
+    assert parity._route_witnessed(
+        "_sse_agent", "    async def _sse_agent(self):\n        pass\n") is True
+
+
+def test_an_http_path_needs_a_dispatch_not_a_mention():
+    """A path named only in a comment or a docstring is not a served route."""
+    assert parity._route_witnessed(
+        "/api/x", "# the /api/x route is planned\n") is False
+    assert parity._route_witnessed(
+        "/api/x", '        if p == "/api/x":\n') is True
