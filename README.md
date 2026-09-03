@@ -41,6 +41,19 @@ an error the run dies on: the reason goes back to the model, which can pick a
 different route. What the ledger keeps is the request, the refusal, and the
 reason, so a reader later can see what was asked for as well as what ran.
 
+## What the capability check decides
+
+Stage four reads a shell command the way a shell reads it, then names what
+the command is able to do. That name settles the decision. Seven commands
+are below with the reason each one lands where it does.
+
+<p align="center"><img src="docs/art/what-runs.svg" alt="Seven shell commands and what the capability check does with each of them. A dangerous word inside quotes is a printed string and runs, while the same word reached through a command substitution is found and blocked. A pipe records both of its capability classes even though one of them names the decision. An environment prefix does not hide the executable behind it. A command that will not parse is escalated to a person rather than admitted. The marked row is the honest gap: an executable the curated map has never seen is admitted, and written down as unknown." width="100%"></p>
+
+A denied word matters only in the executable position, so quoted text
+prints and a substitution gets walked into. The marked row is the gap this
+repository does not paper over: the map of names is curated by hand, and an
+executable it has never seen is admitted, then written down as unknown.
+
 ## Verification record
 
 The review for [pull request #60](https://github.com/HarperZ9/flywheel/pull/60)
