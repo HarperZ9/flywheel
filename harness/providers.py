@@ -58,6 +58,16 @@ REGISTRY: dict[str, ProviderSpec] = {s.name: s for s in (
     ProviderSpec("nvidia", "https://integrate.api.nvidia.com/v1", "NVIDIA_API_KEY",
                  "meta/llama-3.3-70b-instruct"),
     ProviderSpec("zhipu", "https://open.bigmodel.cn/api/paas/v4", "GLM_API_KEY", "glm-4.6"),
+    # GLM-5.3-Flash routed through OpenRouter. Distinct from `zhipu`, which is
+    # the same family direct from the vendor under vendor-native model ids.
+    ProviderSpec("glm-flash", "https://openrouter.ai/api/v1", "OPENROUTER_API_KEY",
+                 "z-ai/glm-5.3-flash"),
+    # Operator-supplied endpoint serving weights whose refusal direction has
+    # been orthogonalized away. It proposes on the same terms as every other
+    # entry here: the criterion stays external, and a proposer gains no
+    # authority from which slot produced it.
+    ProviderSpec("abliteration", "https://api.abliteration.ai/v1",
+                 "ABLITERATION_API_KEY", "abliterated-model-large-v2"),
     ProviderSpec("dashscope", "https://dashscope.aliyuncs.com/compatible-mode/v1",
                  "DASHSCOPE_API_KEY", "qwen-max"),
     ProviderSpec("perplexity", "https://api.perplexity.ai", "PERPLEXITY_API_KEY", "sonar"),
