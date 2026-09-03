@@ -416,25 +416,28 @@ learning loop.
 | 18 (Run BOM) | `run_bom.py` | Complete run configuration BOM: model, tools, scopes, limits, safeguards removed, dependency hashes. Reproducible. |
 | 23 (Partner Assurance) | `partner_assurance.py` | Third-party evaluation assurance. Joint threat model, exchanged baselines, telemetry ownership, dual-party network state confirmation. |
 
+### What closed since (0.3.11)
+
+| Was a gap | Module | What it is now |
+|---|---|---|
+| Native anomaly detection | `native_detect.py` | z-score, IQR, PELT changepoint and Granger causality, in pure Python by default and through the compiled `_flywheel_native` extension when it is present. The two paths compute the same closed-form quantities, so detection works everywhere and compilation only makes it faster. |
+| Mathematical oracles | `lean_adapter.py` | A stdlib subprocess wrapper that runs `lean` over a proof artifact and emits a sealed `flywheel.lean-check/v1` measurement. Without Lean installed it returns UNVERIFIABLE, never a silent pass. |
+| Live cloud IAM | `cloud_iam.py` | AWS IAM, GCP IAM and Vault revocation adapters behind the same dual-authority confirmation, emitting `flywheel.credential-revocation/v1`. Still inert unless `FLYWHEEL_KILL_SWITCH_LIVE=1`, and in dry run each adapter reports what it would have called. |
+| No surface for any of it | `harness/infra_route.py` + `desktop/lib/views/infra_view.dart` | Six gateway routes and one native destination. Three read the boundary (trust model, run BOM, egress) and three act on it (credential scan, isolation probe, kill switch), each of the three through the operator grant sheet rather than a plain button. |
+
 ### Remaining gaps (honest)
 
-1. **Native bindings for anomaly-kernels and signal-kernels.** The C++
-   detection engines exist (`anomaly-kernels`: baseline/z-score/IQR/correlation;
-   `signal-kernels`: PELT changepoint, Granger causality) but have no pybind11
-   wrappers. The Python correlator uses heuristic detection today; the native
-   bindings would upgrade it to statistical anomaly detection. Follow-up.
-
-2. **Physical infrastructure controls.** Electricity, compute hardware, supply
+1. **Physical infrastructure controls.** Electricity, compute hardware, supply
    chains. Out of scope for any software toolkit.
 
-3. **Mathematical oracles.** Flywheel verifies that a verification is
-   reproducible, not that a claim is true. A Lean/Coq compiler integration that
-   emits a crucible measurement is the follow-up for the ten-proofs challenge.
+2. **The native extension is not built here.** `native_detect.py` runs its
+   Python path on this machine. The C++ acceleration is exercised by its own
+   tests when the extension compiles, and no timing claim is made for it.
 
-4. **Live cloud IAM integration.** The kill switch's credential revocation is a
-   stub (safe by default). A real deployment needs Vault/IAM API bindings. The
-   receipt schema and dual-confirmation protocol are shipped; the cloud API
-   calls are stubs.
+3. **The cloud adapters have not been fired against a live account.** The
+   request path, the dual-authority refusal and the receipt are tested; an AWS,
+   GCP or Vault call in anger is not. That is a deployment-time proof, not one
+   this repository can produce for itself.
 
 ---
 
@@ -468,7 +471,7 @@ depth (native bindings, cloud IAM APIs) not coverage breadth.
 
 ## 8. Recommendations (updated after harness/infra/ build)
 
-### Shipped (recommendations 1-2 from the original assessment)
+### Shipped (recommendations 1-6)
 
 1. **Network egress receipt.** SHIPPED. `harness/infra/egress.py` emits sealed
    `flywheel.egress/v1` receipts for every connection event, classified against
@@ -478,30 +481,30 @@ depth (native bindings, cloud IAM APIs) not coverage breadth.
    joins tool-call receipts, egress events, and credential findings into
    correlated event envelopes with behavioral detections.
 
+3. **Lean compiler integration for crucible.** SHIPPED.
+   `harness/infra/lean_adapter.py` runs `lean` over a proof artifact and seals
+   the type-check result as a crucible measurement, with UNVERIFIABLE when the
+   compiler is absent. Reached from the desktop through `lean.check`.
+
+4. **Native bindings for anomaly-kernels and signal-kernels.** SHIPPED.
+   `harness/infra/native_detect.py` computes z-score, IQR, PELT changepoint and
+   Granger causality, using the compiled extension when it is importable and
+   the equivalent pure-Python path when it is not.
+
+5. **Live cloud IAM integration.** SHIPPED.
+   `harness/infra/cloud_iam.py` binds credential revocation to AWS IAM, GCP IAM
+   and Vault under the same dual-authority confirmation, still off unless
+   `FLYWHEEL_KILL_SWITCH_LIVE=1`.
+
+6. **Gateway routes for infra controls.** SHIPPED. Six routes in
+   `harness/infra_route.py` (`/api/infra/trust-model`, `/api/infra/bom`,
+   `/api/infra/egress`, `/api/infra/credential-scan`, `/api/infra/isolation`,
+   `/api/infra/kill`) and the Infra destination in the desktop app. The three
+   that act pass through the operator grant, so a credential scan, a boundary
+   probe and the kill switch each name their destination and scopes before
+   anything runs.
+
 ### Next priorities
-
-3. **Lean compiler integration for crucible.** A measurement adapter that runs
-   `lean --check` over a proof artifact and emits a crucible measurement. This
-   closes the ten-proofs verification gap: a mathematical claim paired with a
-   Lean proof becomes a crucible thesis whose measurement is the type-check
-   result. (Follow-up)
-
-4. **Native bindings for anomaly-kernels and signal-kernels.** pybind11
-   wrappers for the C++ detection engines. The Python correlator uses heuristic
-   detection today; native bindings would upgrade it to statistical anomaly
-   detection (z-score, IQR, PELT changepoint, Granger causality). (Follow-up)
-
-5. **Live cloud IAM integration.** The kill switch's credential revocation is a
-   stub. Bind it to real Vault/AWS IAM/GCP IAM APIs. The receipt schema and
-   dual-confirmation protocol are shipped; the cloud API calls need wiring.
-   (Follow-up)
-
-6. **Gateway routes for infra controls.** Wire the infra modules into the
-   gateway (`/api/infra/egress`, `/api/infra/credentials`, `/api/infra/kill`,
-   etc.) and add a desktop view. (Follow-up)
-   runtimes, sudden access to model checkpoints or vector indexes.
-
-### Lower priority (extends the platform)
 
 7. **Agent governance control matrix.** A proof-surface contract that
    validates an organization's agent governance posture (tool allowlists, deny-
