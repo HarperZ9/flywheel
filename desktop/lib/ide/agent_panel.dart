@@ -7,6 +7,7 @@ import '../controllers/operation_controller.dart';
 import '../models/gateway_models.dart';
 import '../models/operation_models.dart';
 import '../theme/flywheel_theme.dart';
+import '../widgets/effort_dial.dart';
 import '../widgets/fw.dart';
 import '../widgets/operation_grant_sheet.dart';
 import '../widgets/operation_controls.dart';
@@ -45,6 +46,7 @@ class _AgentPanelState extends State<AgentPanel> {
   List<EndpointRow> _endpoints = [];
   String? _endpoint, _error;
   bool _allowWrite = false, _allowExec = false, _attachContext = true;
+  EffortLevel _effort = EffortLevel.standard;
   bool _authorizing = false, _started = false, _pastOpen = false;
   List<Map<String, dynamic>> _events = [], _pastRuns = [];
   late final GatewayOperations _operations;
@@ -111,7 +113,11 @@ class _AgentPanelState extends State<AgentPanel> {
           operation: {
             'goal': input,
             'endpoint': endpoint,
-            'max_steps': 10,
+            // The dial nominates the budget. The engine re-resolves `effort`
+            // and stamps both the dial and what it actually enforced, so
+            // these two agreeing here is not something the receipt assumes.
+            'effort': _effort.wire,
+            'max_steps': _effort.maxSteps,
             'allow_write': _allowWrite,
             'allow_exec': _allowExec,
             'stream': true,
@@ -247,6 +253,11 @@ class _AgentPanelState extends State<AgentPanel> {
               onWrite: (v) => setState(() => _allowWrite = v),
               onExec: (v) => setState(() => _allowExec = v),
               onAttach: (v) => setState(() => _attachContext = v),
+              effort: _effort,
+              onEffort: (v) => setState(() => _effort = v),
+              // Changing the dial mid-run would describe a run that never
+              // happened, so it locks while one is in flight.
+              effortEnabled: !_started && !_authorizing,
             ),
             if (_error != null) ...[
               const SizedBox(height: FwLayout.s2),
