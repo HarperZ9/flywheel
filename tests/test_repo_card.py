@@ -6,6 +6,13 @@ clipped by the renderer, so a sentence that outgrows its column draws over the
 one next to it and every other check stays green. These measure the drawing
 rather than read the spec.
 
+The measuring is done here, from scripts/face-metrics.json, and not by calling
+the renderer. An earlier version asked repo_card how wide its own text was, so
+the check and the drawing shared one guess and agreed with each other whatever
+that guess said. Four cards shipped past the right rule under a green suite.
+This walks each measured face on its own instead, and asks whether the line
+fits in that face, so the two can now disagree.
+
 Everything here settles whether the card fits its columns and matches its
 spec. Whether the card is TRUE of what the capability check does to a shell
 command is a different question, and tests/test_shell_admission.py settles that
@@ -32,6 +39,25 @@ def _load(name):
 
 
 CARD = _load("repo_card")
+FACES = json.loads(
+    (SCRIPTS / "face-metrics.json").read_text(encoding="utf-8"))
+FIRST, LAST = FACES["range"]
+
+# What draws each element: which font stack, which weight, its size in pixels
+# and its letter-spacing in em. Taken from the card's own <style> block and
+# from the two elements that override the family on themselves.
+DRAWN = {
+    "note": ("sans", "regular", 11.5, 0.0),
+    "foot": ("sans", "regular", 11.5, 0.0),
+    "title": ("sans", "bold", 21.0, 0.0),
+    "kicker": ("mono", "regular", 11.0, 0.16),
+    "head": ("mono", "regular", 11.0, 0.16),
+    "source": ("mono", "regular", 11.5, 0.0),
+    "key": ("mono", "bold", 13.0, 0.0),
+    "value": ("mono", "regular", 12.0, 0.0),
+}
+BOUND = {("sans", "regular"): CARD.SANS, ("sans", "bold"): CARD.SANS_BOLD,
+         ("mono", "regular"): CARD.MONO_REG, ("mono", "bold"): CARD.MONO_BOLD}
 
 
 def _cards() -> list[dict]:
@@ -40,7 +66,27 @@ def _cards() -> list[dict]:
     return [card for spec in specs for card in spec.get("cards", [])]
 
 
-def _lines_that_run_long(text: str, label: str, budget: float,
+def _widest_face(text: str, role: str) -> tuple[str, float]:
+    """The face that draws this string widest, and what it draws, in pixels."""
+    group, weight, size, tracking = DRAWN[role]
+    drawn = {}
+    for name, face in FACES[group][weight].items():
+        off = max(face)
+        total = sum(face[ord(c) - FIRST] if FIRST <= ord(c) <= LAST else off
+                    for c in text)
+        drawn[name] = total / 1000.0 * size + tracking * size * len(text)
+    return max(drawn.items(), key=lambda pair: pair[1])
+
+
+def _over(text: str, role: str, budget: float, label: str) -> list[str]:
+    name, width = _widest_face(text, role)
+    if width <= budget:
+        return []
+    return [f"{label} draws {width:.0f}px into a {budget:.0f}px column "
+            f"in {name}: {text!r}"]
+
+
+def _lines_that_run_long(text: str, label: str, role: str, budget: float,
                          limit: int) -> list[str]:
     """Two ways a wrapped column goes wrong, and the second is the one a
     joined-text check misses. Dropping the ending is the obvious one. The other
@@ -52,32 +98,30 @@ def _lines_that_run_long(text: str, label: str, budget: float,
     if " ".join(drawn) != " ".join(text.split()):
         bad.append(f"{label} loses its ending")
     for line in drawn:
-        width = CARD.text_width(line)
-        if width > budget:
-            bad.append(f"{label} draws {width:.0f}px into a {budget:.0f}px "
-                       f"column: {line!r}")
+        bad += _over(line, role, budget, label)
     return bad
 
 
 def _card_text_that_overflows(card: dict) -> list[str]:
-    """A row holds a key and a value on one unwrapped line each, and a note
-    wrapped to two."""
-    # Characters, not glyphs, for the key and the value: both of those columns
-    # are mono, where a character count is a fair proxy. The note column is
-    # proportional, so it is measured with the renderer's own width table.
-    key_budget = int((CARD.KEY_W + CARD.GUTTER - 16) / 7.8)
-    value_budget = int(CARD.VAL_W / 7.2)
+    """Every string the card draws, against the room it is drawn in."""
+    page = CARD.W - CARD.PAD * 2
     bad = []
     for field in card["fields"]:
-        if len(field["key"]) > key_budget:
-            bad.append(f'the key {field["key"]!r} is wider than its column')
-        if len(field["value"]) > value_budget:
-            bad.append(f'the value {field["value"]!r} is wider than its column')
+        bad += _over(field["key"], "key", CARD.KEY_W + CARD.GUTTER - 16,
+                     "the key")
+        bad += _over(field["value"], "value", CARD.VAL_W, "the value")
         bad += _lines_that_run_long(
-            field["note"], f'the note under {field["key"]!r}',
+            field["note"], f'the note under {field["key"]!r}', "note",
             CARD.NOTE_BUDGET, CARD.NOTE_LINES)
-    bad += _lines_that_run_long(card["footnote"], "the footnote",
+    bad += _lines_that_run_long(card["footnote"], "the footnote", "foot",
                                 CARD.FOOT_BUDGET, CARD.FOOT_LINES)
+    for label, role, text in (
+            ("the title", "title", card.get("title", "")),
+            ("the kicker", "kicker", card.get("kicker", "").upper()),
+            ("the source line", "source", "$ " + card.get("source", ""))):
+        bad += _over(text, role, page, label)
+    for head in card.get("heads", CARD.HEADS):
+        bad += _over(head.upper(), "head", CARD.NOTE_W, "the column head")
     return bad
 
 
@@ -98,8 +142,38 @@ def test_that_card_check_can_actually_fail():
                    {"key": "k", "value": "v", "note": "word " * 200},
                    {"key": "k", "value": "v", "note": "x" * 120}],
         "footnote": "word " * 400,
+        "title": "T" * 200, "kicker": "k" * 200, "source": "s" * 200,
+        "heads": ["H" * 60, "h", "h"],
     }
-    assert len(_card_text_that_overflows(control)) == 5
+    assert len(_card_text_that_overflows(control)) == 9
+
+
+def test_the_renderer_wraps_to_a_bound_no_measured_face_exceeds():
+    """The renderer wraps with one table and this file measures with another,
+    and this is what keeps them honest about each other. For every character,
+    what the renderer assumes has to be at least what each measured face draws.
+    A width guessed from a character's class fails on the first lowercase m."""
+    for (group, weight), bound in BOUND.items():
+        assert len(bound) == LAST - FIRST + 1, f"{group} {weight} is short"
+        for name, face in FACES[group][weight].items():
+            for index, thousandths in enumerate(face):
+                assert bound[index] >= thousandths / 1000.0 - 1e-9, (
+                    f"{name} draws {chr(FIRST + index)!r} wider than the "
+                    f"renderer assumes it does")
+
+
+def test_every_character_a_card_draws_was_measured():
+    """A character outside the measured range falls back to the widest glyph
+    in the face, which is a guess. Cards are written in ASCII so that never has
+    to happen, and this is what holds them to it."""
+    for card in _cards():
+        strings = [card["title"], card["kicker"], card["source"],
+                   card["footnote"], *card.get("heads", ())]
+        for field in card["fields"]:
+            strings += [field["key"], field["value"], field["note"]]
+        for text in strings:
+            off = sorted({c for c in text if not FIRST <= ord(c) <= LAST})
+            assert not off, f'{card["file"]} draws unmeasured {off!r}'
 
 
 def test_a_card_wears_exactly_one_hot_mark():
