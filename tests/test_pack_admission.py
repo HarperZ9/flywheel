@@ -12,9 +12,14 @@ import pytest
 
 from harness import pack_admission
 from harness.accountable_hooks import register_hook, save_registry
+from harness.gateway_grant_route import gateway_grant_post
+from harness.journey_store import JourneyStore, MutationCommand
 from harness.pack_admission import admit_pack, list_admitted
 
 REPO_PACKS = Path(__file__).resolve().parents[1] / "packs"
+NOW = "2026-08-25T01:00:00Z"
+OWNER = "owner_" + "a" * 32
+JOURNEY = "jrn_" + "a" * 32
 
 
 def _blocking_hook(tmp_path):
@@ -116,17 +121,47 @@ def test_routes_round_trip_through_the_gateway(tmp_path, monkeypatch):
         return sent
 
     for attr, val in (("run_root", str(tmp_path)),
-                      ("owner_ref", "owner_" + "a" * 32),
+                      ("owner_ref", OWNER),
                       ("flywheel_home", tmp_path),
-                      ("clock", lambda *a: "2026-08-25T01:00:00Z")):
+                      ("clock", lambda *a: NOW)):
         monkeypatch.setattr(gateway._Handler, attr, val, raising=False)
 
     manifest = json.loads(
         (REPO_PACKS / "finance-compliance" / "domain-pack.json")
         .read_text(encoding="utf-8"))
+    operation = {"manifest": manifest,
+                 "fixtures_root": str(REPO_PACKS / "finance-compliance"),
+                 "data_refs": [], "credential_refs": []}
+
+    # Admission writes run-root state, so the route is an operator-granted
+    # action. A bare body carries no approval and is refused before any pack
+    # is read, which is the check worth having: the grant is not optional.
+    assert _post("/api/packs/admit", operation)["code"] == 422
+
+    state = tmp_path / "state"
+    head = JourneyStore(state).create(MutationCommand(
+        OWNER, JOURNEY, None, "genesis", "intake",
+        {"legacy_label": None, "goal": "admit", "intake": {},
+         "occurred_at": NOW})).event_head_sha256
+    envelope = {"schema": "flywheel.gateway-operation/v1",
+                "journey_ref": JOURNEY, "expected_event_head": head,
+                "client_request_id": "admit-1"}
+    prepared, prepared_code = gateway_grant_post(
+        "/api/gateway-grants/prepare/packs.admit",
+        json.dumps({**envelope, "operation": operation}).encode(),
+        owner_ref=OWNER, state_root=state, clock=lambda: NOW)
+    assert prepared_code == 200
+    assert prepared["destination"] == {
+        "kind": "pack", "ref": "flywheel.finance.claims"}
+    assert prepared["scopes"] == ["write"]
+    approved, approved_code = gateway_grant_post(
+        "/api/gateway-grants/approve-once",
+        json.dumps({"proposal_ref": prepared["proposal_ref"]}).encode(),
+        owner_ref=OWNER, state_root=state, clock=lambda: NOW)
+    assert approved_code == 200
+
     sent = _post("/api/packs/admit",
-                 {"manifest": manifest,
-                  "fixtures_root": str(REPO_PACKS / "finance-compliance")})
+                 {**envelope, "grant_ref": approved["grant_ref"], **operation})
     assert sent["code"] == 200
     assert sent["body"]["pack_id"] == "flywheel.finance.claims"
 

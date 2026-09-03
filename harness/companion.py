@@ -24,6 +24,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 from .adaptive_select import AdaptiveSelector
+from .effort import (candidate_budget, resolve_effort, stamp_candidates,
+                     stamp_unapplied)
 from .selector import ACCEPT_VERDICTS
 
 CACHE = "cache"
@@ -72,7 +74,15 @@ class CompanionSeat:
         self.ledger.append({"n": len(self.ledger) + 1, **result.to_dict()})
         return result
 
-    def answer(self, task, *, solution_sig: str = "") -> CompanionResult:
+    def answer(self, task, *, solution_sig: str = "",
+               effort: str | None = None) -> CompanionResult:
+        """Route one task. `effort` is the operator dial: this seat spends its
+        budget in candidates, so the dial sets the selection loop's starting
+        batch and its ceiling for THIS call only. The seat is shared across
+        requests, so nothing here is stored on self."""
+        dial = resolve_effort(effort) if effort else None
+        budget = candidate_budget(dial) if dial else {}
+
         # 1. proof-cache: a verified fact answered locally at ~0 cost.
         if self.cache is not None:
             try:
@@ -80,24 +90,39 @@ class CompanionSeat:
             except Exception:
                 hit = None
             if hit and self._cache_hit_valid(task, hit):
-                return self._record(CompanionResult(
-                    CACHE, hit.get("text"), hit.get("receipt", {})))
+                receipt = dict(hit.get("receipt", {}))
+                if dial:    # the cache answered before the loop; nothing spent
+                    receipt["effort"] = stamp_unapplied(
+                        dial, "answered from the proof cache; no candidates generated")
+                return self._record(CompanionResult(CACHE, hit.get("text"), receipt))
 
         # 2. local, verified selection (the AdaptiveSelector raise-N loop).
-        res = self.selector.select(task, solution_sig=solution_sig, oracle=self.oracle)
+        res = self.selector.select(task, solution_sig=solution_sig,
+                                   oracle=self.oracle, **budget)
+
+        def receipt_of(r) -> dict:
+            out = r.receipt.to_dict()
+            if dial:
+                out["effort"] = stamp_candidates(
+                    dial,
+                    initial_n_applied=budget["initial_n"],
+                    max_n_applied=budget["max_n"],
+                    candidates_generated=r.budget_spent)
+            return out
+
         verdict = res.receipt.verdict
         if verdict == "PASS":                       # external oracle accepted
-            out = CompanionResult(LOCAL_VERIFIED, res.text, res.receipt.to_dict())
+            out = CompanionResult(LOCAL_VERIFIED, res.text, receipt_of(res))
             self._maybe_cache(task, solution_sig, out)
             return self._record(out)
         if verdict == "CONSENSUS_PASS":             # behavioral agreement, not verified
             return self._record(CompanionResult(
-                LOCAL_CONSENSUS, res.text, res.receipt.to_dict(),
+                LOCAL_CONSENSUS, res.text, receipt_of(res),
                 best_effort_text=res.best_effort_text))
 
         # 3. escalate: budget exhausted below confidence -> a costlier tier.
         return self._record(CompanionResult(
-            ESCALATE, None, res.receipt.to_dict(),
+            ESCALATE, None, receipt_of(res),
             escalate_to=self.escalation_endpoint,
             best_effort_text=res.best_effort_text))
 

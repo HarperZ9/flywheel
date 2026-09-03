@@ -75,13 +75,38 @@ class AdaptiveSelector:
         self.max_n = max_n
         self.confidence_threshold = confidence_threshold
 
+    def _budget(self, initial_n: int | None, max_n: int | None) -> tuple[int, int]:
+        """Resolve a per-call budget against the same rule the constructor
+        holds. An out-of-range request is refused rather than clamped: a
+        silently clamped budget produces a receipt that names a spend the run
+        never had permission to make."""
+        first = self.initial_n if initial_n is None else int(initial_n)
+        ceiling = self.max_n if max_n is None else int(max_n)
+        if first < 1 or ceiling < first:
+            raise ValueError(f"need 1 <= initial_n ({first}) <= max_n ({ceiling})")
+        if ceiling > SCHEDULE_CAPACITY:
+            raise ValueError(
+                f"max_n {ceiling} exceeds schedule capacity {SCHEDULE_CAPACITY} "
+                f"(past that, raising N repeats generations)")
+        return first, ceiling
+
     def select(self, task: Task, *, solution_sig: str = "",
-               oracle: Oracle | None = None) -> AdaptiveResult:
-        schedule = budget_schedule(self.max_n)
+               oracle: Oracle | None = None,
+               initial_n: int | None = None,
+               max_n: int | None = None) -> AdaptiveResult:
+        """One selection. `initial_n` and `max_n` override the budget for THIS
+        call only; the instance is never mutated, because a gateway holds one
+        selector for its whole lifetime and a mutation would leak one request's
+        budget into the next. The hard bound is SCHEDULE_CAPACITY rather than
+        the configured ceiling: the configured value is this selector's default
+        spend, while the capacity is a correctness bound (past it the schedule
+        repeats pairs and more candidates buy no diversity)."""
+        first, ceiling = self._budget(initial_n, max_n)
+        schedule = budget_schedule(ceiling)
         candidates: list[str] = []
         trail: list[dict] = []
         raises = 0
-        target = min(self.initial_n, self.max_n)
+        target = min(first, ceiling)
 
         gen_failed = False
         while True:
@@ -112,9 +137,9 @@ class AdaptiveSelector:
                 return AdaptiveResult(result.text, result.receipt,
                                       budget_spent=len(candidates), raises=raises,
                                       trail=trail, best_effort_text=result.text)
-            if gen_failed or len(candidates) >= self.max_n:
+            if gen_failed or len(candidates) >= ceiling:
                 break
-            target = min(self.max_n, max(target * 2, len(candidates) + 1))
+            target = min(ceiling, max(target * 2, len(candidates) + 1))
             raises += 1
 
         # Budget exhausted (or proposer failed) below confidence -> escalate.

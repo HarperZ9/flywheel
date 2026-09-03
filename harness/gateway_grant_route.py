@@ -9,7 +9,7 @@ from typing import Callable
 from .evidence_json import canonical_sha256, strict_load_json
 from .evidence_public import TransportError, error_response, exact_request, parse_json
 from .grant_route import _replace, _request_from
-from .gateway_operation import (AuthorizedOperation, GatewayOperationError, PROPOSAL_REF_PATTERN,
+from .gateway_operation import (AuthorizedOperation, GatewayOperationError, GRANTABLE_ACTIONS, PROPOSAL_REF_PATTERN,
     PROPOSAL_SCHEMA, REQUEST_SCHEMA, canonicalize_operation, thaw_operation)
 from .gateway_envelope import parse_gateway_envelope
 from .gateway_secret_boundary import validate_no_raw_secrets
@@ -288,11 +288,7 @@ def gateway_grant_post(
         if not route.startswith("prepare/") or "/" in route[8:]:
             raise GatewayOperationError("NOT_FOUND")
         action = route[8:]
-        if action not in {"chat.complete", "agent.run", "workflow.run",
-                "plugin.probe", "plugin.call", "plugin.register",
-                "plugin.toggle", "plugin.remove", "marketplace.install",
-                "marketplace.add", "marketplace.remove", "operation.cancel",
-                "plan.run"}:
+        if action not in GRANTABLE_ACTIONS:
             raise GatewayOperationError("NOT_FOUND")
         return _prepare(action, body, owner_ref, state_root, clock), 200
     except (TransportError, GatewayOperationError, GrantError,

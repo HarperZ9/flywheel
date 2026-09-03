@@ -435,12 +435,16 @@ def get_companion_seat(serve_url: str):
     return _COMPANION_SEAT
 
 
-def companion_answer(seat, prompt: str, solution_sig: str = "") -> dict:
+def companion_answer(seat, prompt: str, solution_sig: str = "",
+                     effort: str | None = None) -> dict:
     """Route one task through the seat and shape a JSON response. The frontier tier
     is only NAMED on escalate (escalate_to); it is never called from here -- routing
     to it is the caller's gated action, so a cache hit provably triggers no frontier
-    call (SUPERAPP increment-5 falsifier)."""
-    res = seat.answer(_companion_task(prompt, solution_sig), solution_sig=solution_sig)
+    call (SUPERAPP increment-5 falsifier). `effort` is per-call: the seat is one
+    object for the gateway's lifetime, so a dial that mutated it would leak into
+    the next request."""
+    res = seat.answer(_companion_task(prompt, solution_sig), solution_sig=solution_sig,
+                      effort=effort)
     out = res.to_dict()
     out["text"] = res.text
     out["best_effort_text"] = res.best_effort_text
@@ -915,10 +919,16 @@ class _Handler(BaseHTTPRequestHandler):
             store = LessonStore.load(Path(self.run_root) / "lessons.jsonl")
             return self._json({"patterns": [p.to_dict() for p in store.patterns()]})
         if p == "/api/governance/tiers":               # TADR tier definitions
-            from harness.governance.tadr_tier import TADR_TIERS, TADR_MODIFIERS
+            from harness.governance.tadr_tier import (TADR_TIERS,
+                TADR_MODIFIERS, T2_OVERRIDES, T3_OVERRIDES)
             return self._json({
                 "tiers": TADR_TIERS,
                 "modifiers": sorted(TADR_MODIFIERS),
+                # The consequence vocabulary classify() accepts. A client that
+                # kept its own copy would drift the day an override is added,
+                # and would offer the operator a token the engine refuses.
+                "t2_overrides": sorted(T2_OVERRIDES),
+                "t3_overrides": sorted(T3_OVERRIDES),
             })
         if p == "/api/governance/compliance":          # control baseline compliance check
             from harness.governance.control_baseline import check_compliance
@@ -930,7 +940,14 @@ class _Handler(BaseHTTPRequestHandler):
             from urllib.parse import parse_qs
             params = parse_qs(qs) if qs else {}
             overrides = params.get("override", [])
-            result = classify(overrides)
+            try:
+                result = classify(overrides)
+            except ValueError as e:
+                # An override outside the vocabulary is a caller mistake, so
+                # it must read as one. Left uncaught it surfaced as a 500,
+                # which tells the operator the engine broke rather than that
+                # the word was wrong.
+                return self._json({"error": str(e)}, 400)
             return self._json(result.to_dict())
         if p == "/api/lanes/callable":                # list lanes + their tier requirements
             from harness.lane_caller import list_available_lanes
@@ -952,6 +969,13 @@ class _Handler(BaseHTTPRequestHandler):
         if p == "/api/tension":                      # measurement disagreements, kept re-checkable
             from harness.tension_ledger import tension_ledger
             return self._json(tension_ledger())
+        # Each infra route is named in full rather than dispatched by prefix.
+        # A prefix collapses the family into one entry the coverage gate can
+        # satisfy with a single client reference; named, each one is counted.
+        if (p == "/api/infra/trust-model" or p == "/api/infra/bom"
+                or p == "/api/infra/egress"):        # infrastructure, read side
+            from harness.infra_route import handle_infra_get
+            return self._json(*handle_infra_get(p))
         if p == "/api/instruments":                  # the evaluation-engineering register
             from harness.eval_engineering import instrument_register
             return self._json(instrument_register())
@@ -1737,87 +1761,18 @@ class _Handler(BaseHTTPRequestHandler):
                 return self._json({"error": "companion seat unavailable"}, 503)
             from harness.scaffold import scaffold_answer, scaffold_turn
             env = scaffold_turn(prompt)
-            body = companion_answer(seat, prompt, req.get("solution_sig", ""))
+            body = companion_answer(seat, prompt, req.get("solution_sig", ""),
+                                    effort=req.get("effort"))
             body["scaffold"] = scaffold_answer(
                 str(body.get("text", "")), env,
                 provenance={"endpoint": "companion",
                             "model_ref": str(body.get("model_ref")
                                              or body.get("source") or "")})
             return self._json(body)
-        if p == "/api/agent":                          # the agentic tool loop over ANY provider
-            req, bad = self._req_json()
-            if bad:
-                return bad
-            goal = (req.get("goal") or "").strip()
-            endpoint = (req.get("endpoint") or "").strip()
-            if not goal or not endpoint:
-                return self._json({"error": "provide non-empty 'goal' and 'endpoint'"}, 400)
-            if req.get("stream"):
-                return self._sse_agent(req, goal, endpoint)
-            effort = None
-            if req.get("effort"):
-                from harness.effort import resolve_effort
-                effort = resolve_effort(str(req["effort"]))
-            try:
-                max_steps = max(1, min(int(req.get("max_steps",
-                                            (effort or {}).get("max_steps", 6))), 12))
-            except (TypeError, ValueError):
-                max_steps = 6
-            root, err = _resolve_workspace_root(req.get("root"), self.root)
-            if err:
-                return self._json({"error": err}, 400)
-            # freeze the goal's named sources BEFORE the agent runs, so the
-            # pre-pass is a pre-pass (not an after-the-fact re-freeze)
-            from harness.scaffold import scaffold_answer as _sa, \
-                scaffold_turn as _st
-            env = _st(goal)
-            from harness.router_agent import run_router_agent
-            events: list = []
-            try:
-                result = run_router_agent(
-                    goal, endpoint, root=str(root),
-                    allow_write=bool(req.get("allow_write", False)),
-                    allow_exec=bool(req.get("allow_exec", False)),
-                    max_steps=max_steps, test_cmd=(req.get("test_cmd") or None),
-                    model=(req.get("model") or None),
-                    compact_budget=int(req.get("compact_budget", 0) or 0),
-                    credential_bindings=getattr(
-                        self, "_gateway_bindings", None),
-                    on_event=events.append)
-            except Exception:
-                # failed runs land in history too, with their partial trace
-                try:
-                    from harness.eval_store import save_agent_run, trim_events
-                    save_agent_run(
-                        self.run_root,
-                        {"goal_excerpt": goal[:200], "endpoint": endpoint,
-                         "status": "ERROR",
-                         "error": "authorized external action failed",
-                         "events": trim_events(events)})
-                except Exception:
-                    pass  # the 502 already carries the primary error
-                return self._json({"error": "authorized external action failed"}, 502)
-            if effort is not None:
-                # stamp what was ENFORCED, not the nominal dial: a caller
-                # max_steps override past the dial, and this route not fanning
-                # out n_candidates, must show in the receipt
-                from harness.effort import stamp_applied
-                result["effort"] = stamp_applied(effort, max_steps_applied=max_steps,
-                                                 n_candidates_applied=False)
-            result["scaffold"] = _sa(
-                str(result.get("final") or ""), env,
-                provenance={"endpoint": endpoint,
-                            "model_ref": str(req.get("model") or endpoint)})
-            result["run_receipt"] = _countersign_run(result)
-            try:
-                from harness.eval_store import save_agent_run, trim_events
-                result["run_id"] = save_agent_run(
-                    self.run_root,
-                    dict(result, goal_excerpt=goal[:200],
-                         events=trim_events(events)))["run_id"]
-            except Exception:
-                result["receipt_note"] = "authorized external action failed"
-            return self._json(result)
+        # /api/agent has no branch here on purpose. `_route_operation`
+        # claims it and returns True before `_gateway_method` calls this
+        # fallback, so any copy of the handler placed here is unreachable.
+        # One sat here for a release and the effort dial went with it.
         if p == "/api/workflow":                       # staged run with a chained receipt, any endpoint
             req, bad = self._req_json()
             if bad:
@@ -2210,27 +2165,19 @@ class _Handler(BaseHTTPRequestHandler):
             body, code = handle_usage_verify(req)
             return self._json(body, code)
         if p.startswith("/api/lane/"):                   # generic lane caller
-            parts = p.split("/")
-            if len(parts) < 5:
-                return self._json({"error": "use /api/lane/<name>/<tool>"}, 400)
-            lane_name = parts[3]
-            tool_name = parts[4]
-            length = self._content_length()
-            if length is None:
-                return self._json({"error": "invalid Content-Length"}, 400)
-            try:
-                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
-            except Exception:
-                req = {}
-            args = req.get("args", {}) if isinstance(req, dict) else {}
-            gov_tier = str(req.get("governance_tier", "")) if isinstance(req, dict) else ""
-            timeout = int(req.get("timeout", 20)) if isinstance(req, dict) else 20
-            from harness.lane_caller import call_lane_tool
-            result = call_lane_tool(lane_name, tool_name, args,
-                                    timeout=timeout, governance_tier=gov_tier)
-            code = 403 if result.get("governance_denied") else (
-                400 if "error" in result else 200)
-            return self._json(result, code)
+            req, bad = self._req_json()
+            if bad:
+                return bad
+            from harness.lane_call_route import handle_lane_call
+            return self._json(*handle_lane_call(p, req))
+        if (p == "/api/infra/credential-scan"
+                or p == "/api/infra/isolation"
+                or p == "/api/infra/kill"):              # infrastructure, act side
+            req, bad = self._req_json()
+            if bad:
+                return bad
+            from harness.infra_route import handle_infra_post
+            return self._json(*handle_infra_post(p, req))
         return self._json({"error": "not found"}, 404)
 def _build_parser() -> argparse.ArgumentParser:
     ap = argparse.ArgumentParser(description="flywheel superapp gateway (one origin)")
