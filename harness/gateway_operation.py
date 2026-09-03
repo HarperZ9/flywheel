@@ -63,9 +63,12 @@ class AuthorizedOperation(CanonicalOperation):
 _REFS = {"data_refs", "credential_refs"}
 _FIELDS = {
     "chat.complete": ({"model", "messages", "stream"} | _REFS, set()),
+    # `effort` is optional so a client that predates the dial keeps working;
+    # when present it is the named dial the receipt reports, while max_steps
+    # stays the enforced budget and any divergence is stamped as an override.
     "agent.run": ({"goal", "endpoint", "max_steps", "allow_write",
                    "allow_exec", "stream"} | _REFS,
-                  {"root", "test_cmd", "attachment"}),
+                  {"root", "test_cmd", "attachment", "effort"}),
     "workflow.run": ({"workflow", "goal", "endpoint", "allow_write",
                       "allow_exec"} | _REFS,
                      {"profile", "root", "test_cmd"}),
