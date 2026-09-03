@@ -176,49 +176,16 @@ def test_explicit_empty_key_never_falls_back_to_ambient(monkeypatch):
     assert "Authorization" not in sink["headers"]
 
 
-def test_ox_alpha_dormant_without_key(monkeypatch):
-    # The slot points at OpenRouter's OpenAI-compatible API, but stays OFF
-    # the ladder until the operator sets OX_ALPHA_API_KEY. No credential,
-    # no dispatch, never a silent default.
-    for v in ("OX_ALPHA_API_KEY", "OX_ALPHA_BASE_URL", "OX_ALPHA_MODEL"):
-        monkeypatch.delenv(v, raising=False)
-    assert build_endpoints(providers=["ox-alpha"],
-                           modes=("api", "provider", "cloud")) == []
-
-
-def test_ox_alpha_joins_ladder_when_configured(monkeypatch):
-    monkeypatch.setenv("OX_ALPHA_API_KEY", "k")
-    lad = build_endpoints(providers=["ox-alpha"], modes=("api",))
-    assert [b.name for b in lad] == ["ox-alpha"]
-    b = lad[0]
-    sink = {}
-    b.transport = _tx(200, {"choices": [{"message": {"content": "hey"}}]}, sink)
-    out = b.chat(_MSG, system="", max_tokens=8, temperature=0, seed=0)
-    assert out["text"] == "hey"
-    assert out["model_ref"] == "ox-alpha:stealth/ox-alpha"
-    assert sink["url"].startswith(
-        "https://openrouter.ai/api/v1/chat/completions")
-    assert sink["headers"]["Authorization"] == "Bearer k"
-
-
-def test_ox_alpha_model_and_base_overridable(monkeypatch):
-    monkeypatch.setenv("OX_ALPHA_API_KEY", "k")
-    monkeypatch.setenv("OX_ALPHA_MODEL", "stealth/ox-alpha-next")
-    monkeypatch.setenv("OX_ALPHA_BASE_URL", "https://gateway.example/v1")
-    lad = build_endpoints(providers=["ox-alpha"], modes=("api",))
-    sink = {}
-    lad[0].transport = _tx(200, {"choices": [{"message": {"content": "x"}}]},
-                           sink)
-    lad[0].chat(_MSG, system="", max_tokens=4, temperature=0, seed=0)
-    assert sink["url"].startswith("https://gateway.example/v1/chat/completions")
+# Provider-slot registry contracts (dormancy, overrides, retired slots) live
+# in test_endpoints_provider_slots.py.
 
 
 def test_openai_compat_null_content_is_a_typed_error_not_none_text():
     # Reasoning models can spend the whole completion budget and return
     # content: null with HTTP 200. The backend must refuse honestly instead
     # of returning text=None and letting the loop ship an empty reply.
-    b = OpenAICompatBackend("ox-alpha", "https://openrouter.ai/api/v1",
-                            "stealth/ox-alpha", key_env="OX_ALPHA_API_KEY",
+    b = OpenAICompatBackend("glm-flash", "https://openrouter.ai/api/v1",
+                            "z-ai/glm-5.3-flash", key_env="OPENROUTER_API_KEY",
                             transport=_tx(200, {"choices": [{"message": {
                                 "role": "assistant", "content": None}}]}))
     with pytest.raises(BackendError):
@@ -249,8 +216,8 @@ def test_openai_compat_passthrough_tools_and_parses_tool_calls():
         "name": "verify_receipt_inclusion",
         "parameters": {"type": "object",
                        "properties": {"leaf": {"type": "string"}}}}}]
-    b = OpenAICompatBackend("ox-alpha", "https://openrouter.ai/api/v1",
-                            "stealth/ox-alpha", key_env="OX_ALPHA_API_KEY",
+    b = OpenAICompatBackend("glm-flash", "https://openrouter.ai/api/v1",
+                            "z-ai/glm-5.3-flash", key_env="OPENROUTER_API_KEY",
                             transport=tx, tools=tools)
     out = b.chat(_MSG, system="", max_tokens=8, temperature=0, seed=0)
     assert captured["body"]["tools"] == tools
@@ -259,7 +226,7 @@ def test_openai_compat_passthrough_tools_and_parses_tool_calls():
                         "arguments": {"leaf": "ab"}}
     assert calls[1]["arguments"] == {}
     assert "parse" in calls[1]["arguments_error"]
-    assert out["model_ref"] == "ox-alpha:stealth/ox-alpha"
+    assert out["model_ref"] == "glm-flash:z-ai/glm-5.3-flash"
 
 
 def test_openai_compat_tool_choice_travels_and_absent_tools_stay_off_wire():
@@ -269,7 +236,7 @@ def test_openai_compat_tool_choice_travels_and_absent_tools_stay_off_wire():
         captured["body"] = json.loads(body)
         return 200, {"choices": [{"message": {"content": "ok"}}]}
 
-    b = OpenAICompatBackend("ox-alpha", "https://x/v1", "m", key_env="K",
+    b = OpenAICompatBackend("glm-flash", "https://x/v1", "m", key_env="K",
                             transport=tx,
                             tools=[{"type": "function", "function": {
                                 "name": "f", "parameters": {}}}],
@@ -279,7 +246,7 @@ def test_openai_compat_tool_choice_travels_and_absent_tools_stay_off_wire():
     assert captured["body"]["tool_choice"] == {"type": "function",
                                                "function": {"name": "f"}}
 
-    plain = OpenAICompatBackend("ox-alpha", "https://x/v1", "m", key_env="K",
+    plain = OpenAICompatBackend("glm-flash", "https://x/v1", "m", key_env="K",
                                 transport=tx)
     plain.chat(_MSG, system="", max_tokens=4, temperature=0, seed=0)
     assert "tools" not in captured["body"] and "tool_choice" not in captured["body"]
