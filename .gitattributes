@@ -16,6 +16,8 @@ artifacts/closeout/**/stderr.txt -text -diff
 # rewrites the fixtures to CRLF and the hash check fails.
 packs/**/fixtures/** -text -diff
 
-# Generated artwork is compared byte-for-byte against a fresh render, so the
-# checked-out bytes must match what the renderer writes on any platform.
+# Generated artwork. render_repo_art.py writes LF on every platform, so pin the
+# checkout to LF as well and each file's size and hash stay the same whoever
+# cloned the repository.
 docs/art/*.svg text eol=lf
+docs/art/*.json text eol=lf
