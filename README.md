@@ -10,12 +10,21 @@ Flutter client provides the native desktop interface.
 
 ## Try it
 
+For the native desktop app, download the Windows installer from
+[Releases](https://github.com/HarperZ9/flywheel/releases). It carries its own
+engine, so the app runs on a clean machine with no Python installed, and it
+starts that engine itself.
+
+For the engine on its own:
+
 ```powershell
 python -m pip install flywheel-verify
-flywheel app --port 8799
+flywheel up
 ```
 
-This starts the local API gateway on `http://127.0.0.1:8799`.
+This starts the local API gateway on `http://127.0.0.1:8799` and serves a
+browser shell there. The shell is the fallback surface for development and
+CI; the desktop app is the native one.
 
 ## Verification record
 
