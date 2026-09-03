@@ -2,8 +2,10 @@
 import hashlib, json, pathlib
 import harness.cross_harness_cli_identity as identity_module
 from harness.cross_harness_adapters import DirectCodexAdapter, FlywheelRouterAdapter, ProcessOutcome
+from harness.cross_harness_adapters import _resolve_codex
 from harness.cross_harness_cli_identity import (REASONING_EFFORT_UNSPECIFIED, cli_identity_fields,
-    codex_cli_version, validate_executable_path)
+    codex_cli_version, resolve_binary, validate_executable_path)
+from harness.cross_harness_peer_adapters import _resolve_claude, _resolve_cursor
 from harness.cross_harness_executor import execute_cross_harness_manifest
 
 ENVELOPE = json.dumps({"artifacts": {"result.json": {}}})
@@ -81,6 +83,33 @@ def test_validate_executable_path_rejects_non_exe_fixture(tmp_path):
     assert validate_executable_path("").startswith("EXECUTABLE_PATH_EMPTY")
     assert validate_executable_path("codex.cmd").startswith("EXECUTABLE_PATH_NOT_ABSOLUTE")
     assert validate_executable_path(str(tmp_path / "missing.exe")).startswith("EXECUTABLE_PATH_MISSING")
+
+
+def test_resolve_binary_takes_the_binary_out_of_the_npm_shim_layout(monkeypatch):
+    """The layout that shipped a blocked codex arm, reproduced.
+
+    An npm install puts codex.cmd, codex.ps1, and an extensionless shell script
+    on PATH, and hides the real codex.exe in a vendor directory. Resolving the
+    first PATH hit picks a wrapper, which validate_executable_path then refuses,
+    so the arm records unavailable while the harness is installed and working.
+    """
+    on_path = {"codex.cmd": "C:/npm/codex.cmd", "codex.ps1": "C:/npm/codex.ps1",
+               "codex": "C:/npm/codex", "codex.exe": "C:/npm/vendor/codex.exe"}
+    monkeypatch.setattr("shutil.which", on_path.get)
+    assert resolve_binary(("codex.exe", "codex")) == "C:/npm/vendor/codex.exe"
+    assert resolve_binary(("codex.cmd", "codex.ps1")) == ""
+    assert resolve_binary(("absent",)) == ""
+
+
+def test_no_cli_resolver_returns_a_wrapper_when_that_is_all_it_finds(monkeypatch):
+    """Every adapter resolves through one rule, so one test covers all of them."""
+    resolvers = (_resolve_codex, _resolve_claude, _resolve_cursor)
+    monkeypatch.setattr("shutil.which", lambda name: f"C:/npm/{name}.cmd")
+    for resolve in resolvers:
+        assert resolve() == "", f"{resolve.__name__} accepted a wrapper"
+    monkeypatch.setattr("shutil.which", lambda name: f"/usr/local/bin/{name}")
+    for resolve in resolvers:
+        assert resolve().startswith("/usr/local/bin/"), resolve.__name__
 
 
 def test_fixture_receipts_from_both_codex_adapters_carry_cli_identity(tmp_path):

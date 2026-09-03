@@ -1,7 +1,7 @@
 """Injected execution boundaries for the cross-harness executor."""
 from __future__ import annotations
 from dataclasses import asdict, replace
-import base64, binascii, json, math, os, re, shlex, shutil, time, urllib.error, urllib.request
+import base64, binascii, json, math, os, re, shlex, time, urllib.error, urllib.request
 from pathlib import Path; from typing import Any, Callable
 from urllib.parse import urlsplit
 from .cross_harness_artifacts import canonical_sha256
@@ -12,17 +12,20 @@ from .local_session import SessionLedger
 from .local_tools import TOOLS_SYSTEM, ToolExecutor, ToolGate
 from .proposer import ProposerOutput, prompt_hash
 from .router_agent import RouterAgent
-from .cross_harness_process import ProcessOutcome, run_process; from .cross_harness_provider_error import ProviderRejected, inspect_provider_events; from .cross_harness_usage import attempt_usage, usage_from_events; from .cross_harness_cli_identity import cli_identity_fields, codex_cli_version
+from .cross_harness_process import ProcessOutcome, run_process; from .cross_harness_provider_error import ProviderRejected, inspect_provider_events; from .cross_harness_usage import attempt_usage, usage_from_events; from .cross_harness_cli_identity import cli_identity_fields, codex_cli_version, resolve_binary
 MAX_TRACE_EVENTS, MAX_TRACE_BYTES, MAX_LINE_BYTES, MAX_FIELD_BYTES, MAX_DEPTH = 1000, 1 << 20, 1 << 16, 1 << 14, 16
 READ_ONLY_SYSTEM = ("You are the outer Flywheel text-tool agent. Inspect the supplied workspace and return the requested artifact envelope. "
     "The following TOOL protocol is visible, but write, exec, and MCP calls are denied.\n\n" + TOOLS_SYSTEM + "\n\nRead-only override: never emit write_file, edit_file, apply_patch, run, or MCP tools.")
 class MalformedProviderOutput(RuntimeError): pass
 def _resolve_codex() -> str:
-    candidates = ("codex.cmd", "codex") if os.name == "nt" else ("codex",)
-    for name in candidates:
-        found = shutil.which(name)
-        if found and not found.lower().endswith(".ps1"): return found
-    return ""
+    """The native codex binary, never the npm shim that wraps it.
+
+    On Windows the npm install puts codex.cmd, codex.ps1, and an extensionless
+    shell script on PATH ahead of the vendored codex.exe. All three are text, so
+    validate_executable_path refuses them and the arm records unavailable. Name
+    the binary first and let resolve_binary drop the wrappers.
+    """
+    return resolve_binary(("codex.exe", "codex") if os.name == "nt" else ("codex",))
 _BEARER, _ASSIGN = re.compile(r"(?i)(bearer\s+)[^\s,;\"']+"), re.compile(r"(?i)((?:api[_-]?key|token|password|secret|authorization)\s*[:=]\s*)[^\s,;\"']+")
 _JWT, _API_KEY = re.compile(r"\beyJ[A-Za-z0-9_-]{6,}\.[A-Za-z0-9_-]{6,}\.[A-Za-z0-9_-]{3,}\b"), re.compile(r"\b(?:sk|rk|pk)-[A-Za-z0-9_-]{12,}\b", re.I)
 _URL_CREDS, _SECRET_KEY = re.compile(r"(https?://)[^/@\s:]+:[^/@\s]+@", re.I), re.compile(r"authorization|credential|password|secret|token|api[_ -]?key|jwt", re.I)
