@@ -209,9 +209,14 @@ def run_agent(agent, goal: str, executor: ToolExecutor,
                    "\n\nContinue if you need more tools, otherwise give the final "
                    "answer with no TOOL line.")
 
+    # A configured test_cmd that never ran yields False, not None: an
+    # unwitnessed run must not read as neutral. The note keeps it separable.
+    unrun = last_test_ok is None and bool(test_cmd)
     return _done("[max_steps reached without a final answer]", max_steps, ledger,
                  tests_pass=(last_test_ok if last_test_ok is not None
                              else (False if test_cmd else None)),
+                 note=("step budget exhausted; the test command never ran, so "
+                       "this is unwitnessed, not an observed failure") if unrun else "",
                  system=agent.system, goal=goal, criteria=criteria)
 
 
