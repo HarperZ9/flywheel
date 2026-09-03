@@ -27,6 +27,7 @@ import '../views/instruments_view.dart';
 import '../views/journey_view.dart';
 import '../views/forum_view.dart';
 import '../views/lanes_view.dart';
+import '../views/registry_view.dart';
 import '../views/relay_view.dart';
 import '../views/lessons_view.dart';
 import '../views/lint_view.dart';
@@ -164,6 +165,8 @@ Widget? _advanced(DestinationId id, DestinationInputs i) => switch (id) {
       DestinationId.instruments =>
         InstrumentsView(client: i.client, alive: i.alive),
       DestinationId.forum => ForumView(client: i.client),
+      DestinationId.registry =>
+        RegistryView(client: i.client, alive: i.alive),
       DestinationId.lanes => LanesView(
           client: i.client,
           roster: i.roster,

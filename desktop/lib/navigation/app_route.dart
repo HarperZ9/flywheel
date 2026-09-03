@@ -36,6 +36,7 @@ enum DestinationId {
   instruments,
   lanes,
   forum,
+  registry,
   relay,
   train,
   uplift,

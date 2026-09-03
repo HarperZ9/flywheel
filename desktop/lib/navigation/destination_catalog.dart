@@ -83,6 +83,8 @@ const destinationCatalog = <DestinationSpec>[
       abbr: 'LN', group: DestinationGroup.advanced),
   DestinationSpec(DestinationId.forum, 'Forum',
       abbr: 'FM', group: DestinationGroup.advanced),
+  DestinationSpec(DestinationId.registry, 'Registry',
+      abbr: 'RG', group: DestinationGroup.advanced),
   DestinationSpec(DestinationId.relay, 'Relay',
       abbr: 'RL', group: DestinationGroup.code),
   DestinationSpec(DestinationId.train, 'Train',

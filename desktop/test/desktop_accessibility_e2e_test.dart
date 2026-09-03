@@ -1,6 +1,6 @@
-// Desktop accessibility end-to-end: one deterministic pass over the
-// shell's critical flows — journey home, typed navigation, the palette,
-// keyboard activation, semantics, and the assistive display modes — with
+﻿// Desktop accessibility end-to-end: one deterministic pass over the
+// shell's critical flows â€” journey home, typed navigation, the palette,
+// keyboard activation, semantics, and the assistive display modes â€” with
 // fakes, no network.
 import 'dart:io';
 
@@ -32,8 +32,8 @@ void main() {
     // 1. Journey is home with its resumed evidence.
     expect(find.text('Journey'), findsOneWidget);
 
-    // 2. The catalog holds exactly thirty-four destinations in five groups.
-    expect(destinationCatalog, hasLength(34));
+    // 2. The catalog holds exactly thirty-five destinations in five groups.
+    expect(destinationCatalog, hasLength(35));
     expect(destinationCatalog.map((d) => d.group.name).toSet(),
         hasLength(5));
 

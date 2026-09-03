@@ -27,7 +27,7 @@ DART = ROOT / "desktop" / "lib"
 # Frozen at the current gap. This may only shrink: a route that gains a native
 # surface leaves the list and cannot come back, and a new unreferenced route
 # fails the gate.
-BASELINE = 21
+BASELINE = 15
 
 
 def _api_strings(node: ast.AST) -> set:
