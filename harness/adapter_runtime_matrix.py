@@ -122,7 +122,7 @@ def _runtime_row(
     profiles = _profile_matches(selector, endpoint_profiles)
     auth = _auth_matches(role, endpoint_auth_status)
     needs_endpoint = role in {"local_14b", "local_32b"}
-    needs_auth = role in {"codex_harness", "flywheel_harness", "claude_code"}
+    needs_auth = role in {"codex_harness", "flywheel_harness", "claude_code", "cursor"}
     profile_code = ("endpoint_profile_selection_mismatch" if needs_endpoint and len(profiles) != 1 else
                     _profile_failure(profiles[0], selector) if needs_endpoint else "")
     profile_ready = len(profiles) == 1 and profiles[0]["root_exists"] and profiles[0]["supports_agentic_workflow"] and not profile_code if needs_endpoint else True
@@ -185,7 +185,8 @@ def _strings(value: Any) -> list[str]:
 
 
 def _auth_matches(role: str, data: dict[str, Any]) -> list[dict[str, Any]]:
-    provider = "codex" if role in {"codex_harness", "flywheel_harness"} else "claude" if role == "claude_code" else ""
+    provider = ("codex" if role in {"codex_harness", "flywheel_harness"} else
+                "claude" if role == "claude_code" else "cursor" if role == "cursor" else "")
     if not provider:
         return []
     lanes = data.get("lanes") if isinstance(data.get("lanes"), list) else []

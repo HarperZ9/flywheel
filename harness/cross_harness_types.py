@@ -147,10 +147,22 @@ def validate_elapsed_ms(value: Any) -> int:
     return value
 
 
+def _reported_cost(metrics: dict[str, Any]) -> bool:
+    """Did the provider itself put a cost figure on this attempt?
+
+    Only the provider's own number counts. Nothing here prices tokens, so a
+    harness that reports no cost keeps its null reason rather than acquiring a
+    figure this repository computed for it."""
+    observation = metrics.get("resource_observation")
+    if not isinstance(observation, dict): return False
+    value = observation.get("provider_reported_cost_usd")
+    return not isinstance(value, bool) and isinstance(value, (int, float))
+
+
 def metric_null_reasons(metrics: dict[str, Any]) -> dict[str, str]:
     reasons = {}
     if "latency_ms" not in metrics: reasons["latency"] = "attempt_did_not_report_latency"
     if not metrics.get("usage"): reasons["usage"] = "provider_usage_unavailable"
-    reasons["cost"] = "provider_cost_unavailable"
+    if not _reported_cost(metrics): reasons["cost"] = "provider_cost_unavailable"
     if not metrics.get("resource_observation"): reasons["resource"] = "resource_observation_unavailable"
     return reasons

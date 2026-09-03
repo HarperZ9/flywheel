@@ -1,11 +1,8 @@
-"""Emit a non-secret Claude/Codex endpoint auth status receipt.
+"""Emit a non-secret endpoint auth status receipt for every account lane.
 
-The harness has four distinct account lanes:
-
-- Claude subscription account through the official Claude CLI.
-- Claude API through ANTHROPIC_API_KEY.
-- Codex subscription account through the official Codex CLI.
-- Codex/OpenAI API through OPENAI_API_KEY.
+The lanes themselves are declared in scripts/endpoint_auth_lanes.py: the
+Claude and Codex subscription CLIs, their two API-key lanes, and the Cursor
+CLI, which has no documented API-key lane.
 
 This command does not sign in, read token stores, print secrets, or invoke
 provider CLIs. It only reports whether the harness can see each lane's local
@@ -27,50 +24,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from harness.endpoints import build_endpoints  # noqa: E402
 from harness.file_backed_store import FileBackedHarnessStore  # noqa: E402
+from scripts.endpoint_auth_lanes import LANES  # noqa: E402
 
-
-LANES = [
-    {
-        "id": "claude_subscription",
-        "provider": "claude",
-        "mode": "plan",
-        "kind": "subscription_cli",
-        "cli_env": "CLAUDE_CLI",
-        "fallback_commands": ["claude.exe", "claude"] if os.name == "nt" else ["claude"],
-        "next_action": (
-            "Authenticate the official Claude CLI in an operator-controlled "
-            "terminal. Set CLAUDE_CLI only if the command is nonstandard."
-        ),
-    },
-    {
-        "id": "claude_api",
-        "provider": "claude",
-        "mode": "api",
-        "kind": "api_key",
-        "key_env": "ANTHROPIC_API_KEY",
-        "next_action": "Set ANTHROPIC_API_KEY in the local secret environment.",
-    },
-    {
-        "id": "codex_subscription",
-        "provider": "codex",
-        "mode": "plan",
-        "kind": "subscription_cli",
-        "cli_env": "CODEX_CLI",
-        "fallback_commands": ["codex.cmd", "codex"] if os.name == "nt" else ["codex"],
-        "next_action": (
-            "Authenticate the official Codex CLI in an operator-controlled "
-            "terminal. Set CODEX_CLI only if the command is nonstandard."
-        ),
-    },
-    {
-        "id": "codex_api",
-        "provider": "codex",
-        "mode": "api",
-        "kind": "api_key",
-        "key_env": "OPENAI_API_KEY",
-        "next_action": "Set OPENAI_API_KEY in the local secret environment.",
-    },
-]
 
 
 def _split_csv(raw: str) -> list[str]:

@@ -44,13 +44,25 @@
       "provider_role": "claude_code",
       "harness_id": "claude_code",
       "adapter_id": "claude_code_cli_json/v1",
-      "model_id": "configured_by_operator",
-      "model_display_name": "Configured by operator",
-      "requested_model_reference": "configured_by_operator",
-      "current_evidence": ["no local execution evidence recorded in this contract"],
+      "model_id": "claude-sonnet-5",
+      "model_display_name": "Claude Sonnet 5",
+      "requested_model_reference": "sonnet",
+      "current_evidence": ["adapter present in this repository as DirectClaudeCodeAdapter; CLI 2.1.251 observed on the measurement host on 2026-09-03, where the reference sonnet resolved to claude-sonnet-5; no benchmark row has been executed through it"],
+      "adapter_state": "contract_only",
+      "allowed_modes": ["manifest_only", "dry_plan", "focused_run_after_approval"],
+      "required_receipts": ["raw_prompt", "raw_output", "tool_trace", "harness_receipt", "metric_row"]
+    },
+    {
+      "provider_role": "cursor",
+      "harness_id": "cursor",
+      "adapter_id": "cursor_agent_cli_json/v1",
+      "model_id": "cursor_account_default",
+      "model_display_name": "Cursor account default model",
+      "requested_model_reference": "default",
+      "current_evidence": ["adapter present in this repository as DirectCursorAdapter; the cursor-agent CLI is absent from the measurement host, so its stream shape was read from vendor documentation on 2026-09-03 and nothing about it has been observed locally"],
       "adapter_state": "needs_discovery",
       "allowed_modes": ["manifest_only", "focused_run_after_approval"],
-      "required_receipts": ["raw_prompt", "raw_output", "tool_trace_if_available", "harness_receipt", "metric_row"]
+      "required_receipts": ["raw_prompt", "raw_output", "tool_trace", "harness_receipt", "metric_row"]
     },
     {
       "provider_role": "opencode",

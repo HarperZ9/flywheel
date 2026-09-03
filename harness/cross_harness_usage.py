@@ -22,6 +22,12 @@ from typing import Any
 
 INNER_SOURCE = "codex_inner"
 
+# The terminal event on which a peer reports the call's usage block. codex ends
+# an inner call with turn.completed; the peer adapters record the block their
+# provider puts on its result event as usage.observed. Both name the same
+# thing, so the recompute reads both rather than being blind to one of them.
+USAGE_EVENT_TYPES = ("turn.completed", "usage.observed")
+
 
 def usage_from_events(events: list) -> "dict | None":
     """The verbatim usage block of one inner call's transcript, or None.
@@ -91,9 +97,26 @@ def usage_records_from_trace(tool_trace: list, source: str = INNER_SOURCE) -> li
         if type(index) is not int:
             continue
         calls.setdefault(index, None)
-        if event.get("type") == "turn.completed" and isinstance(event.get("usage"), dict):
+        if event.get("type") in USAGE_EVENT_TYPES and isinstance(event.get("usage"), dict):
             calls[index] = dict(event["usage"])
     return [calls[index] for index in sorted(calls)]
+
+
+def inner_source(tool_trace: list) -> str:
+    """The one event source that tagged inner calls in this transcript.
+
+    Each harness names its own inner events: codex_inner for the governed arm,
+    claude_code_inner for the Claude Code adapter. Reading the name off the
+    transcript keeps the recompute honest for every adapter without any of them
+    having to mislabel its events as another harness's.
+
+    Exactly one tagged source is the only readable case. Zero and more than one
+    both fall back to INNER_SOURCE, which recomputes a subset and so refuses a
+    claim built from the whole; that is the fail-closed direction."""
+    sources = {event.get("source") for event in tool_trace
+               if isinstance(event, dict) and type(event.get("inner_call")) is int
+               and isinstance(event.get("source"), str)}
+    return sources.pop() if len(sources) == 1 else INNER_SOURCE
 
 
 def recheck_inner_usage(tool_trace: Any, claimed: Any) -> dict:
@@ -108,7 +131,8 @@ def recheck_inner_usage(tool_trace: Any, claimed: Any) -> dict:
     if not isinstance(claimed, dict):
         return {"verified": False, "usage_cell_refused":
                 "USAGE_CLAIM_MALFORMED: the receipt's usage cell is not an object"}
-    recomputed = attempt_usage(usage_records_from_trace(tool_trace))
+    recomputed = attempt_usage(
+        usage_records_from_trace(tool_trace, inner_source(tool_trace)))
     if recomputed == claimed:
         return {"verified": True, "recomputed": recomputed}
     return {"verified": False, "usage_cell_refused":

@@ -28,19 +28,28 @@ def contract():
     return load_json(V2)
 
 
+def role(value, role_id):
+    """Address a contract role by its id, never by its position.
+
+    Roles get inserted as adapters land, so an index is a reference that
+    silently starts pointing at a different harness.
+    """
+    return next(row for row in value["provider_roles"] if row["provider_role"] == role_id)
+
+
 def test_current_runtime_default_uses_v2_contract():
     assert Path(DEFAULT_CONTRACT).name == V2.name
 
 
 @pytest.mark.parametrize(("mutate", "message"), [
-    (lambda value: value["provider_roles"][0].pop("model_id"), "model_id"),
-    (lambda value: value["provider_roles"][0].pop("model_display_name"), "model_display_name"),
-    (lambda value: value["provider_roles"][0].pop("requested_model_reference"), "requested_model_reference"),
-    (lambda value: value["provider_roles"][0].update(target_model="legacy"), "target_model"),
-    (lambda value: value["provider_roles"][4]["endpoint_selector"].pop("profile_id"), "profile_id"),
-    (lambda value: value["provider_roles"][4]["endpoint_selector"].pop("backend"), "backend"),
-    (lambda value: value["provider_roles"][4]["endpoint_selector"].pop("model_reference"), "model_reference"),
-    (lambda value: value["provider_roles"][4]["endpoint_selector"].pop("release_asset_sha256"), "release_asset_sha256"),
+    (lambda value: role(value, "codex_harness").pop("model_id"), "model_id"),
+    (lambda value: role(value, "codex_harness").pop("model_display_name"), "model_display_name"),
+    (lambda value: role(value, "codex_harness").pop("requested_model_reference"), "requested_model_reference"),
+    (lambda value: role(value, "codex_harness").update(target_model="legacy"), "target_model"),
+    (lambda value: role(value, "local_14b")["endpoint_selector"].pop("profile_id"), "profile_id"),
+    (lambda value: role(value, "local_14b")["endpoint_selector"].pop("backend"), "backend"),
+    (lambda value: role(value, "local_14b")["endpoint_selector"].pop("model_reference"), "model_reference"),
+    (lambda value: role(value, "local_14b")["endpoint_selector"].pop("release_asset_sha256"), "release_asset_sha256"),
 ])
 def test_v2_contract_rejects_malformed_identity_and_local_selector(mutate, message):
     value = copy.deepcopy(contract())
