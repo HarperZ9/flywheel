@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import json, os
+import json, os, shutil
 from pathlib import Path
 
 import pytest
@@ -85,11 +85,53 @@ class ContextReadingAdapter:
         )
 
 
-def _manifest():
+@pytest.fixture(scope="session")
+def staged_source(tmp_path_factory):
+    """A source tree holding exactly the files this manifest names.
+
+    The executor snapshots its whole source root, SHA-256ing every file, twice
+    per run (before and after). Pointed at the repo root that is honest but
+    unbounded: it hashes whatever the checkout happens to contain, so the cost
+    is a property of the machine rather than of the test. On a clean CI
+    checkout that is small; on a working tree carrying artifacts/, build/,
+    dist/ and worktrees it reached ~36.5k files / ~2.9 GB and blew the
+    per-test timeout. A test whose verdict depends on how much unrelated
+    output is lying around is not measuring what it claims to.
+
+    The manifest needs 18 repo-relative inputs, ~289 KB. Staging those keeps
+    the snapshot exact -- the copies are byte-identical, so every
+    input_sha256 still matches -- while making the cost a property of the
+    task set. Inputs carrying a scheme (external://, operator://,
+    workspace://) are not repo-relative and the manifest resolves them
+    itself."""
+    task_set = load_json(ROOT / "benchmarks" / "agentic-task-set-v1.json")
+    wanted = {
+        "benchmarks/agentic-task-set-v1.json",
+        "benchmarks/cross-harness-adapter-contract-v2.json",
+    }
+    for task in task_set["tasks"]:
+        wanted.update(task.get("required_inputs", []))
+        fixture = (task.get("oracle") or {}).get("fixture")
+        if fixture:
+            wanted.add(fixture)
+    root = tmp_path_factory.mktemp("cross-harness-source")
+    for rel in sorted(wanted):
+        if "://" in rel:
+            continue
+        src = ROOT / rel
+        if not src.is_file():
+            continue
+        dst = root / rel
+        dst.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(src, dst)
+    return root
+
+
+def _manifest(source_root):
     return build_manifest(
         load_json(ROOT / "benchmarks" / "agentic-task-set-v1.json"),
         load_json(ROOT / "benchmarks" / "cross-harness-adapter-contract-v2.json"),
-        source_root=str(ROOT),
+        source_root=str(source_root),
         provider_roles=["codex_harness"],
     )
 
@@ -108,8 +150,9 @@ def _runtime():
     }
 
 
-def test_manifest_prompt_requires_role_neutral_runtime_context_and_compact_json():
-    prompt = next(row for row in _manifest()["task_rows"] if row["task_id"].startswith("agt-001"))["raw_prompt"]
+def test_manifest_prompt_requires_role_neutral_runtime_context_and_compact_json(staged_source):
+    prompt = next(row for row in _manifest(staged_source)["task_rows"]
+                  if row["task_id"].startswith("agt-001"))["raw_prompt"]
     assert "benchmark/context.json" in prompt
     assert "Do not run commands" in prompt
     assert "one compact JSON object on one line" in prompt
@@ -118,12 +161,14 @@ def test_manifest_prompt_requires_role_neutral_runtime_context_and_compact_json(
     assert "codex_harness" not in prompt and "flywheel_harness" not in prompt
 
 
-def test_executor_stages_receipt_bound_role_neutral_runtime_context(tmp_path):
+def test_executor_stages_receipt_bound_role_neutral_runtime_context(tmp_path, staged_source):
     adapter = ContextReadingAdapter()
     run = execute_cross_harness_manifest(
-        _manifest(), _runtime(), {"codex_harness": adapter}, artifact_root=tmp_path / "artifacts",
-        source_root=ROOT, run_id="runtime-context", phase="admission-smoke", selectors=["agt-001"],
-        roles=["codex_harness"], repetitions=1, source_commit="test-commit",
+        _manifest(staged_source), _runtime(), {"codex_harness": adapter},
+        artifact_root=tmp_path / "artifacts",
+        source_root=staged_source, run_id="runtime-context", phase="admission-smoke",
+        selectors=["agt-001"], roles=["codex_harness"], repetitions=1,
+        source_commit="test-commit",
     )
     row = run["rows"][0]
     assert (row["primary_outcome"], row["oracle_state"], row["receipt_state"]) == ("completed", "pass", "verified")
