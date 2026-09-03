@@ -48,7 +48,8 @@ def test_good_backend_verifies_at_one(tmp_path):
         workspace_root=tmp_path,
         created_at="2026-08-29T00:00:00Z",
     )
-    assert bench["denominator"] == {"tasks": 3, "endpoints": 1, "attempts": 3}
+    assert bench["denominator"] == {"tasks": 3, "endpoints": 1,
+                                    "replicates": 1, "attempts": 3}
     assert bench["bench_sha256"]
     assert "does_not_prove" in bench
     frontier = verified_frontier(bench, None)

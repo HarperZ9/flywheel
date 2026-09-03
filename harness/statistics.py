@@ -186,3 +186,10 @@ def mcnemar_mde(n_pairs: int, n_discordant: int, *, alpha: float = 0.05) -> dict
             f"{detectable}, i.e. a paired difference of "
             f"{detectable / n_pairs:.4f} over {n_pairs} pairs")
     return out
+
+
+def mcnemar_plan(*args, **kwargs) -> dict:
+    """Compatibility entrypoint for the planner's dedicated module."""
+    from .mcnemar_planner import mcnemar_plan as _mcnemar_plan
+
+    return _mcnemar_plan(*args, **kwargs)

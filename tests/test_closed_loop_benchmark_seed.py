@@ -9,7 +9,7 @@ class Args:
     preflight_timeout_seconds = 120.0
     index_timeout_seconds = 180.0
     benchmark_timeout_seconds = 600.0
-    context_roots = "C:/tmp;C:/dev/local-model/.scratch"
+    context_roots = "C:/tmp;C:/dev/public/flywheel/.scratch"
     context_max_depth = 3
     context_max_entries_per_root = 500
     tool_readiness_tools = "index,forum,gather,crucible,telos,aleph,mneme,relay,plexus,pubscan"
@@ -17,37 +17,37 @@ class Args:
     tool_readiness_tool_root = ["aleph=C:/dev/aleph"]
     model_release_models = "14B,32B"
     model_release_base_root = "E:/local-model-run"
-    model_release_artifact_roots = "C:/dev/local-model/artifacts;C:/tmp"
+    model_release_artifact_roots = "C:/dev/public/flywheel/artifacts;C:/tmp"
     model_release_max_entries = 200
     model_publish_name_prefix = "Flywheel-Local-Coder"
     model_endpoint_gate_timeout_seconds = 30.0
     gather_readiness_root = "C:/dev/public/gather"
-    gather_readiness_config_roots = "C:/dev/local-model/configs"
+    gather_readiness_config_roots = "C:/dev/public/flywheel/configs"
     gather_readiness_config_pattern = "gather-*.json"
     gather_readiness_credential_vars = "GATHER_DISCORD_BOT_TOKEN,DISCORD_TOKEN"
     gather_readiness_max_configs = 100
     skip_harness_registry = False
     skip_benchmark_execution_matrix = False
     benchmark_profile_providers = "serve,codex,ollama,claude,opencode,dry"
-    benchmark_profile_artifact_roots = "C:/tmp;C:/dev/local-model/artifacts"
+    benchmark_profile_artifact_roots = "C:/tmp;C:/dev/public/flywheel/artifacts"
     benchmark_profile_max_artifacts = 200
-    schematic_graph = "C:/dev/local-model/project-docs/schematics/closed-loop-integration.graph.json"
-    schematic_report = "C:/dev/local-model/project-docs/records/CLOSED-LOOP-INTEGRATION-SCHEMATIC-2026-07-09.md"
-    agentic_task_set = "C:/dev/local-model/benchmarks/agentic-task-set-v1.json"
-    agentic_task_adapter = "C:/dev/local-model/benchmarks/agentic-task-set-adapter-v1.json"
+    schematic_graph = "C:/dev/public/flywheel/project-docs/schematics/closed-loop-integration.graph.json"
+    schematic_report = "C:/dev/public/flywheel/project-docs/records/CLOSED-LOOP-INTEGRATION-SCHEMATIC-2026-07-09.md"
+    agentic_task_set = "C:/dev/public/flywheel/benchmarks/agentic-task-set-v1.json"
+    agentic_task_adapter = "C:/dev/public/flywheel/benchmarks/agentic-task-set-adapter-v1.json"
     agentic_task_provider_roles = "dry"
-    cross_harness_contract = "C:/dev/local-model/benchmarks/cross-harness-adapter-contract-v2.json"
-    cross_harness_source_root = "C:/dev/local-model"
+    cross_harness_contract = "C:/dev/public/flywheel/benchmarks/cross-harness-adapter-contract-v2.json"
+    cross_harness_source_root = "C:/dev/public/flywheel"
     cross_harness_provider_roles = "codex_harness,flywheel_harness,claude_code,opencode,local_14b,local_32b,dry"
-    embodied_realtime_contract = "C:/dev/local-model/benchmarks/embodied-realtime-multimodal-v1.json"
+    embodied_realtime_contract = "C:/dev/public/flywheel/benchmarks/embodied-realtime-multimodal-v1.json"
     embodied_realtime_providers = "dry"
     embodied_realtime_latency_budgets_ms = "250,500,1000"
-    model_card_claim_contract = "C:/dev/local-model/benchmarks/embodied-realtime-multimodal-v1.json"
+    model_card_claim_contract = "C:/dev/public/flywheel/benchmarks/embodied-realtime-multimodal-v1.json"
     model_card_claim_evidence = ""
     skip_benchmark_coverage = False
     workspace_root = "C:/dev"
     index_root = "C:/dev/public/index"
-    index_context_root = "C:/dev/local-model"
+    index_context_root = "C:/dev/public/flywheel"
     index_budget = 12000
     index_focus = "local-model harness"
     index_hops = 2
@@ -248,7 +248,7 @@ def test_index_context_step_uses_bounded_context_root(tmp_path):
 
     assert "scripts/run_index_receipt.py" in index.command
     root_pos = index.command.index("--root")
-    assert index.command[root_pos + 1] == "C:/dev/local-model"
+    assert index.command[root_pos + 1] == "C:/dev/public/flywheel"
     assert "--focus" in index.command
     assert "local-model harness" in index.command
 
@@ -288,7 +288,7 @@ def test_adapter_runtime_matrix_step_consumes_endpoint_and_auth_metadata(tmp_pat
 
     assert "scripts/run_adapter_runtime_matrix.py" in matrix.command
     assert "--contract" in matrix.command
-    assert "C:/dev/local-model/benchmarks/cross-harness-adapter-contract-v2.json" in matrix.command
+    assert "C:/dev/public/flywheel/benchmarks/cross-harness-adapter-contract-v2.json" in matrix.command
     assert "--endpoint-profiles" in matrix.command
     assert str(tmp_path / "model_endpoint_profiles.json") in matrix.command
     assert "--endpoint-auth-status" in matrix.command
@@ -333,7 +333,7 @@ def test_agentic_task_manifest_step_is_metadata_only(tmp_path):
 
     assert "scripts/run_agentic_task_set_manifest.py" in manifest.command
     assert "--task-set" in manifest.command
-    assert "C:/dev/local-model/benchmarks/agentic-task-set-v1.json" in manifest.command
+    assert "C:/dev/public/flywheel/benchmarks/agentic-task-set-v1.json" in manifest.command
     assert "--provider-roles" in manifest.command
     assert "dry" in manifest.command
     assert str(tmp_path / "agentic_task_manifest.json") in manifest.expected_artifacts
@@ -346,9 +346,9 @@ def test_schematic_drift_step_is_metadata_only(tmp_path):
 
     assert "scripts/run_schematic_drift_check.py" in drift.command
     assert "--graph" in drift.command
-    assert "C:/dev/local-model/project-docs/schematics/closed-loop-integration.graph.json" in drift.command
+    assert "C:/dev/public/flywheel/project-docs/schematics/closed-loop-integration.graph.json" in drift.command
     assert "--report" in drift.command
-    assert "C:/dev/local-model/project-docs/records/CLOSED-LOOP-INTEGRATION-SCHEMATIC-2026-07-09.md" in drift.command
+    assert "C:/dev/public/flywheel/project-docs/records/CLOSED-LOOP-INTEGRATION-SCHEMATIC-2026-07-09.md" in drift.command
     assert str(tmp_path / "schematic_drift_check.json") in drift.expected_artifacts
     assert str(tmp_path / "schematic_drift_check.md") in drift.expected_artifacts
 
@@ -359,7 +359,7 @@ def test_embodied_realtime_step_is_metadata_only(tmp_path):
 
     assert "scripts/run_embodied_realtime_multimodal_plan.py" in embodied.command
     assert "--contract" in embodied.command
-    assert "C:/dev/local-model/benchmarks/embodied-realtime-multimodal-v1.json" in embodied.command
+    assert "C:/dev/public/flywheel/benchmarks/embodied-realtime-multimodal-v1.json" in embodied.command
     assert "--providers" in embodied.command
     assert "dry" in embodied.command
     assert "--latency-budgets-ms" in embodied.command
@@ -374,7 +374,7 @@ def test_model_card_claim_table_step_is_metadata_only(tmp_path):
 
     assert "scripts/run_model_card_claim_table.py" in claims.command
     assert "--contract" in claims.command
-    assert "C:/dev/local-model/benchmarks/embodied-realtime-multimodal-v1.json" in claims.command
+    assert "C:/dev/public/flywheel/benchmarks/embodied-realtime-multimodal-v1.json" in claims.command
     assert "--artifact-dir" in claims.command
     assert str(tmp_path / "model_card_claim_table.json") in claims.expected_artifacts
     assert str(tmp_path / "model_card_claim_table.md") in claims.expected_artifacts
@@ -385,9 +385,9 @@ def test_cross_harness_manifest_step_is_metadata_only(tmp_path):
     manifest = [step for step in steps if step.step_id == "cross_harness_manifest"][0]
     assert "scripts/run_cross_harness_manifest.py" in manifest.command; assert manifest.command[manifest.command.index("--source-root") + 1] == Args.cross_harness_source_root
     assert "--task-set" in manifest.command
-    assert "C:/dev/local-model/benchmarks/agentic-task-set-v1.json" in manifest.command
+    assert "C:/dev/public/flywheel/benchmarks/agentic-task-set-v1.json" in manifest.command
     assert "--contract" in manifest.command
-    assert "C:/dev/local-model/benchmarks/cross-harness-adapter-contract-v2.json" in manifest.command
+    assert "C:/dev/public/flywheel/benchmarks/cross-harness-adapter-contract-v2.json" in manifest.command
     assert "--provider-roles" in manifest.command
     assert "codex_harness,flywheel_harness,claude_code,opencode,local_14b,local_32b,dry" in manifest.command
     assert str(tmp_path / "cross_harness_manifest.json") in manifest.expected_artifacts

@@ -17,6 +17,6 @@ for %%A in (%*) do if "%%A"=="--smoke" set TAG=smoke
 set LOG=%RUN%\logs\phase2-%TAG%.log
 set ERR=%RUN%\logs\phase2-%TAG%.err
 echo === %DATE% %TIME% phase2 (%TAG%) START ===>> "%LOG%" 2>>"%ERR%"
-"%PY%" -u "C:\dev\local-model\train\qlora_cpt.py" %* 1>>"%LOG%" 2>>"%ERR%"
+"%PY%" -u "C:\dev\public\flywheel\train\qlora_cpt.py" %* 1>>"%LOG%" 2>>"%ERR%"
 echo === %DATE% %TIME% phase2 (%TAG%) DONE rc=%ERRORLEVEL% ===>> "%LOG%" 2>>"%ERR%"
 endlocal

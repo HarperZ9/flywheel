@@ -11,7 +11,7 @@
 # batch 32) one epoch is ~8,076 steps, so --epochs 0.25 lands ~2,019 steps.
 # Checkpoints every 50 steps (trainer default) keep the run resumable.
 #
-# Usage (from WSL):   bash /mnt/c/dev/local-model/scripts/run_phase2_32b_supervised.sh
+# Usage (from WSL):   bash /mnt/c/dev/public/flywheel/scripts/run_phase2_32b_supervised.sh
 # Monitor:            tail -f /mnt/e/local-model-run/logs/phase2-linux-32b-full.log
 #                     tail -f /mnt/e/local-model-run/logs/phase2-32b-supervisor.log
 # Stop:               touch /mnt/e/local-model-run/STOP_32B  (checked between attempts)
@@ -78,7 +78,7 @@ while [ "$attempt" -lt "$MAX_ATTEMPTS" ]; do
     esac
     attempt=$((attempt + 1))
     log "attempt $attempt/$MAX_ATTEMPTS (resume_flag='$resume_flag')"
-    MODEL_SIZE=32B bash /mnt/c/dev/local-model/scripts/run_phase2_linux.sh \
+    MODEL_SIZE=32B bash /mnt/c/dev/public/flywheel/scripts/run_phase2_linux.sh \
         --seq-len "$SEQ_LEN" --epochs "$EPOCHS" $resume_flag
     rc=$?
     if [ "$rc" -eq 0 ]; then

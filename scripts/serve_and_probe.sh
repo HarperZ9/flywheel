@@ -5,7 +5,7 @@ set -uo pipefail
 
 RUN=/mnt/e/local-model-run
 PY="$HOME/venv-lm/bin/python"
-SRC=/mnt/c/dev/local-model
+SRC=/mnt/c/dev/public/flywheel
 CKPT="$RUN/checkpoints/phase2-linux-qlora-cpt-14b/checkpoint-2020"
 
 "$PY" -c "import pytest" 2>/dev/null || "$PY" -m pip install -q pytest

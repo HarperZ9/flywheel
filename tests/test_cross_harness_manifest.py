@@ -296,5 +296,5 @@ def test_manifest_cli_safely_defaults_source_root_for_checkout_contract(tmp_path
     assert json.loads(out.read_text(encoding="utf-8"))["schema"] == "harness.cross-harness-manifest/v1"
     deck = json.loads((ROOT / "benchmarks/dry-run-preflight-command-deck-v1.json").read_text(encoding="utf-8"))
     command = next(row["command"] for row in deck["commands"] if row["id"] == "deck-012-cross-harness-manifest")
-    assert "--source-root C:/dev/local-model" in command and "cross-harness-adapter-contract-v2.json" in command
+    assert "--source-root C:/dev/public/flywheel" in command and "cross-harness-adapter-contract-v2.json" in command
     capsys.readouterr()

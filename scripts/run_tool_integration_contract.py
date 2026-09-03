@@ -313,7 +313,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--tools", default=DEFAULT_TOOL_SET)
     parser.add_argument("--base-root", default="C:/dev/public")
     parser.add_argument("--tool-root", action="append", default=[], help="override a tool root as name=path")
-    parser.add_argument("--package-root", default="C:/dev/local-model/artifacts/exe")
+    parser.add_argument("--package-root", default="C:/dev/public/flywheel/artifacts/exe")
     parser.add_argument("--out", default="")
     parser.add_argument("--markdown-out", default="")
     parser.add_argument("--store-root", default="")

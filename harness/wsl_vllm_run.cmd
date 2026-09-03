@@ -4,5 +4,5 @@ REM PREREQ: WSL2 installed (run, elevated:  wsl --install  ; reboot only if it a
 REM         and the default distro (Ubuntu) launched once to set a UNIX user/pass.
 REM Runs wsl_vllm_spike.sh inside the default WSL2 distro.
 echo === launching vLLM/WSL2 spike in default WSL2 distro ===
-wsl bash /mnt/c/dev/local-model/harness/wsl_vllm_spike.sh
+wsl bash /mnt/c/dev/public/flywheel/harness/wsl_vllm_spike.sh
 echo === spike script returned rc=%ERRORLEVEL% ===

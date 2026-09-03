@@ -106,14 +106,37 @@ class CrossHarnessAdapter(Protocol):
 
 _SECRET_KEY = re.compile(r"(?:authorization|credential|password|secret|token|api[_ -]?key)", re.I)
 _SECRET_VALUE = re.compile(r"(?i)(authorization\s*:\s*bearer\s+|(?:token|api[_ -]?key|password|secret)\s*[:=]\s*)\S+")
+_USAGE_COUNT_KEYS = frozenset({
+    "accepted_prediction_tokens", "audio_tokens", "cache_creation_input_tokens",
+    "cache_read_input_tokens", "cached_input_tokens", "cached_tokens",
+    "completion_tokens", "input_tokens", "output_tokens", "prompt_tokens",
+    "reasoning_output_tokens", "reasoning_tokens", "rejected_prediction_tokens",
+    "total_tokens",
+})
+_USAGE_DETAIL_KEYS = frozenset({"input_tokens_details", "output_tokens_details"})
 
 
-def sanitize_evidence(value: Any) -> Any:
-    """Remove secret-shaped keys and reject values canonical JSON cannot encode."""
+def _usage_secret_field_allowed(key: str, value: Any, in_usage: bool) -> bool:
+    return in_usage and ((key in _USAGE_COUNT_KEYS and type(value) is int)
+                         or (key in _USAGE_DETAIL_KEYS and isinstance(value, dict)))
+
+
+def sanitize_evidence(value: Any, _in_usage: bool = False) -> Any:
+    """Remove secret-shaped keys and reject values canonical JSON cannot encode.
+
+    Only recognized integer count fields inside a ``usage`` block pass the
+    secret-key filter. Numeric credentials and token-shaped fields elsewhere
+    still redact; recognized input/output detail objects remain traversable.
+    """
     if isinstance(value, dict):
-        return {str(key): "[REDACTED]" if _SECRET_KEY.search(str(key)) else sanitize_evidence(item)
-                for key, item in value.items()}
-    if isinstance(value, list): return [sanitize_evidence(item) for item in value]
+        cleaned = {}
+        for key, item in value.items():
+            name = str(key); child_in_usage = _in_usage or name == "usage"
+            cleaned[name] = ("[REDACTED]" if _SECRET_KEY.search(name)
+                             and not _usage_secret_field_allowed(name, item, _in_usage)
+                             else sanitize_evidence(item, child_in_usage))
+        return cleaned
+    if isinstance(value, list): return [sanitize_evidence(item, _in_usage) for item in value]
     if isinstance(value, float) and (value != value or abs(value) == float("inf")): raise ValueError("nonfinite adapter evidence")
     if isinstance(value, str): return _SECRET_VALUE.sub(lambda match: match.group(1) + "[REDACTED]", value)
     return value if isinstance(value, (int, float, bool, type(None))) else sanitize_evidence(str(value))

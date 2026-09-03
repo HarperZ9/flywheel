@@ -32,7 +32,8 @@ def test_direct_codex_uses_stdin_hardened_read_only_argv_and_captures_jsonl(tmp_
     ]
     assert seen["stdin_text"] == "do the task" and seen["cwd"] == tmp_path
     assert result.execution_state == "returned" and result.output_text == "answer" and len(result.tool_trace) == 4
-    assert result.usage == {} and result.resource_observation == {}
+    assert result.usage == {} and result.resource_observation == {"inner_call_count": 1,
+        "cli_version": "", "resolved_binary_path": "C:/bin/codex.cmd", "reasoning_effort": "unspecified"}
     assert result.randomness_control == "unsupported"
     assert result.observed_capabilities == ["read", "shell"]
     assert result.policy_violations == ["exec_not_allowed"]
@@ -135,7 +136,7 @@ def test_outer_loop_uses_one_deadline_across_turns(tmp_path):
     assert result.execution_state == "timeout" and result.failure_class == "timeout" and len(calls) == 1
 def test_flywheel_runs_outer_loop_with_read_only_gate_and_distinct_enforcement(tmp_path):
     proposer = StubProposer('TOOL write_file {"path":"x","content":"bad"}', "spark")
-    adapter = FlywheelRouterAdapter(proposer=proposer)
+    adapter = FlywheelRouterAdapter(proposer=proposer, proposer_invocations_max=None)
     req = request(tmp_path, "flywheel_harness", "flywheel_router/v1")
     result = adapter.execute(req)
     direct = DirectCodexAdapter(executable_resolver=lambda: "codex.cmd")
@@ -144,6 +145,20 @@ def test_flywheel_runs_outer_loop_with_read_only_gate_and_distinct_enforcement(t
     assert "write_not_allowed" in result.policy_violations and not (tmp_path / "x").exists()
     assert adapter.enforcement(req).description_sha256 != direct.enforcement(req).description_sha256
     assert adapter.enforcement(req).equivalence_class == "non_equivalent"
+    assert result.resource_observation == {"inner_call_count": 6,  # max_steps=6, one inner call per outer step
+        "cli_version": "", "resolved_binary_path": "", "reasoning_effort": "unspecified"}
+def test_flywheel_cap_refuses_second_inner_call_and_names_the_cap(tmp_path):
+    calls = []
+    class Proposer:
+        model_ref = "spark"
+        def generate(self, *a, **k): calls.append(1); return type("Out", (), {"text": 'TOOL read_file {"path":"x"}', "model_ref": "spark", "usage": None, "served_model": ""})()
+    adapter = FlywheelRouterAdapter(proposer=Proposer())  # default proposer_invocations_max=1 (pilot value)
+    result = adapter.execute(request(tmp_path, "flywheel_harness", "flywheel_router/v1"))
+    assert result.execution_state == "timeout" and result.failure_class == "timeout" and len(calls) == 1
+    assert "proposer_invocations_max=1" in result.failure_detail
+    assert result.resource_observation == {"inner_call_count": 1,
+        "cli_version": "", "resolved_binary_path": "", "reasoning_effort": "unspecified"}
+    assert adapter.enforcement(request(tmp_path, "flywheel_harness", "flywheel_router/v1")).description["proposer_invocations_max"] == 1
 class FakeBackend:
     name = "serve"
     def __init__(self): self.calls = 0

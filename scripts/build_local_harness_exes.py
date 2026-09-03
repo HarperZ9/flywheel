@@ -615,7 +615,7 @@ def main() -> int:
     ap.add_argument("--serve-runtime-32b", default="cpu-offload")
     ap.add_argument("--tools", default=DEFAULT_TOOLS)
     ap.add_argument("--tool-base-root", default="C:/dev/public")
-    ap.add_argument("--tool-root", action="append", default=["aleph=C:/dev/aleph", "local-model=C:/dev/local-model"])
+    ap.add_argument("--tool-root", action="append", default=["aleph=C:/dev/aleph", "local-model=C:/dev/public/flywheel"])
     ap.add_argument("--codex-config", default="C:/Users/Zain/.codex/config.toml")
     ap.add_argument("--codex-mcp-tools", default="index,forum,gather,crucible,telos")
     ap.add_argument("--enterprise-tools", default="mneme,relay,plexus")
@@ -623,18 +623,18 @@ def main() -> int:
     ap.add_argument("--model-run-root", default="E:/local-model-run")
     ap.add_argument("--log-root", default="C:/tmp/local_model_serve_logs")
     ap.add_argument("--model-release-models", default="14B,32B")
-    ap.add_argument("--model-release-artifact-roots", default="C:/dev/local-model/artifacts;C:/tmp")
+    ap.add_argument("--model-release-artifact-roots", default="C:/dev/public/flywheel/artifacts;C:/tmp")
     ap.add_argument("--model-release-max-entries", type=int, default=200)
     ap.add_argument("--model-publish-name-prefix", default="Flywheel-Local-Coder")
-    ap.add_argument("--model-repo-docs-root", default="C:/dev/local-model/project-docs/releases")
+    ap.add_argument("--model-repo-docs-root", default="C:/dev/public/flywheel/project-docs/releases")
     ap.add_argument("--huggingface-namespace", default="zaindanaharper")
     ap.add_argument("--huggingface-private", action="store_true")
     ap.add_argument(
         "--context-roots",
         default=(
-            "C:/dev/local-model/.scratch;"
-            "C:/dev/local-model/scratch;"
-            "C:/dev/local-model/artifacts;"
+            "C:/dev/public/flywheel/.scratch;"
+            "C:/dev/public/flywheel/scratch;"
+            "C:/dev/public/flywheel/artifacts;"
             "C:/tmp;"
             "C:/Users/Zain/.codex;"
             "C:/Users/Zain/.claude;"
@@ -644,7 +644,7 @@ def main() -> int:
     ap.add_argument("--context-max-depth", type=int, default=3)
     ap.add_argument("--context-max-entries-per-root", type=int, default=500)
     ap.add_argument("--pubscan-root", default="C:/dev/public/pubscan")
-    ap.add_argument("--pubscan-render-roots", default="C:/dev/public;C:/dev/tools;C:/dev/local-model")
+    ap.add_argument("--pubscan-render-roots", default="C:/dev/public;C:/dev/tools;C:/dev/public/flywheel")
     ap.add_argument("--pubscan-storage-roots", default="C:/tmp;C:/dev;E:/local-model-run")
     ap.add_argument("--pubscan-max-depth", type=int, default=3)
     ap.add_argument("--pubscan-max-entries", type=int, default=2000)

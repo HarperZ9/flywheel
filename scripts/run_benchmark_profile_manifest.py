@@ -256,7 +256,7 @@ BENCHMARK_ROWS = [
         "status": "planned_full",
         "suite": "full",
         "purpose": "Run bounded source capture receipts when credentials and configs are present.",
-        "command_template": "python scripts/run_gather_readiness.py --gather-root C:/dev/public/gather --config-roots C:/dev/local-model/configs",
+        "command_template": "python scripts/run_gather_readiness.py --gather-root C:/dev/public/gather --config-roots C:/dev/public/flywheel/configs",
         "evidence_schema": "harness.gather-readiness/v1",
         "metrics": ["groundedness", "reproducibility", "accountability_receipts", "failure_mode_clarity"],
         "failure_classes": ["missing_credential", "capture_skipped", "source_unavailable", "receipt_missing"],
