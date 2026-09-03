@@ -1,0 +1,128 @@
+/* Flywheel benchmark surface, in the ecosystem Design and Voice Canon.
+   Two faces only (Hanken Grotesk for text, Conso for data and labels).
+   Color means a verdict and nothing else: verified for a measured pass,
+   drift for a caution or an honest null, unverifiable for what was not
+   measured. Ink on a ceramic ground, one hot mark per view, hairline rules
+   instead of boxes. No em-dashes in this file. */
+@font-face{font-family:"Hanken Grotesk";src:url("fonts/hanken-grotesk.woff2") format("woff2");font-weight:100 900;font-style:normal;font-display:swap}
+@font-face{font-family:"Conso";src:url("fonts/conso-regular.woff2") format("woff2");font-weight:400;font-style:normal;font-display:swap}
+@font-face{font-family:"Conso";src:url("fonts/conso-medium.woff2") format("woff2");font-weight:500;font-style:normal;font-display:swap}
+
+:root{
+  --void:#f4f3ef; --void-2:#eceae4; --panel:rgba(255,255,255,.62);
+  --bone:#0b0c0e; --ink-soft:#24272c; --ink-muted:#43474e; --ink-faint:#6c707a;
+  --verified:#1f7a52; --drift:#3a2bd6; --drift-soft:#5a4ce0; --unverifiable:#6c707a;
+  --line:rgba(11,12,14,.14); --hairline:rgba(11,12,14,.08);
+  --display:"Hanken Grotesk",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  --mono:"Conso","JetBrains Mono",ui-monospace,"SFMono-Regular",monospace;
+}
+:root[data-theme="dark"]{
+  --void:#0b0e0f; --void-2:#121617; --panel:rgba(255,255,255,.045);
+  --bone:#eef1ee; --ink-soft:#cfd5d1; --ink-muted:#9aa39c; --ink-faint:#7b857e;
+  --verified:#5fae93; --drift:#a99cf5; --drift-soft:#c3bcf7; --unverifiable:#9aa39c;
+  --line:rgba(238,241,238,.16); --hairline:rgba(238,241,238,.10);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --void:#0b0e0f; --void-2:#121617; --panel:rgba(255,255,255,.045);
+    --bone:#eef1ee; --ink-soft:#cfd5d1; --ink-muted:#9aa39c; --ink-faint:#7b857e;
+    --verified:#5fae93; --drift:#a99cf5; --drift-soft:#c3bcf7; --unverifiable:#9aa39c;
+    --line:rgba(238,241,238,.16); --hairline:rgba(238,241,238,.10);
+  }
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+html{overflow-x:clip}
+body{background:var(--void);color:var(--bone);font-family:var(--display);
+  font-size:16px;line-height:1.62;-webkit-font-smoothing:antialiased}
+.wrap{max-width:68rem;margin:0 auto;padding:0 clamp(1.4rem,5vw,4rem)}
+h1,h2,h3{letter-spacing:-.01em;text-wrap:balance;font-weight:600}
+h1{font-size:clamp(1.9rem,4.4vw,2.9rem);line-height:1.14}
+h2{font-size:clamp(1.15rem,2.2vw,1.45rem);margin-bottom:.5rem}
+h3{font-size:1rem;margin-bottom:.35rem}
+p{color:var(--ink-soft);max-width:56ch}
+a{color:var(--drift);text-decoration:none;border-bottom:1px solid transparent}
+a:hover{border-bottom-color:currentColor}
+:focus-visible{outline:2px solid var(--drift);outline-offset:3px}
+
+header.top{display:flex;justify-content:space-between;align-items:baseline;gap:1rem;
+  padding:1.2rem 0;border-bottom:1px solid var(--hairline)}
+.brand{font-weight:700;font-size:1.02rem}
+.brand .dot{color:var(--drift)}
+.theme{cursor:pointer;font-family:var(--mono);font-size:.64rem;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--ink-muted);background:transparent;
+  border:1px solid var(--hairline);border-radius:8px;padding:.5em .85em}
+.theme:hover{color:var(--bone);border-color:var(--drift)}
+
+.eyebrow{font-family:var(--mono);font-size:.66rem;letter-spacing:.3em;
+  text-transform:uppercase;color:var(--drift);margin-bottom:.9rem}
+.hero{padding:clamp(2.4rem,6vw,4.2rem) 0 clamp(1.6rem,3vw,2.6rem)}
+.hero p{font-size:1.05rem;margin-top:1rem}
+.seal{font-family:var(--mono);font-size:.72rem;color:var(--ink-faint);
+  margin-top:1.4rem}
+.seal .hash{word-break:break-all}
+
+section{padding:clamp(1.8rem,4vw,3rem) 0;border-top:1px solid var(--hairline)}
+.lede{color:var(--ink-muted);margin-bottom:1.5rem}
+
+.cards{display:grid;gap:.9rem;grid-template-columns:repeat(auto-fit,minmax(15rem,1fr));margin-top:1.2rem}
+.card{background:var(--panel);border:1px solid var(--hairline);border-radius:10px;padding:1.05rem 1.15rem}
+.card h3{font-family:var(--mono);font-size:.7rem;letter-spacing:.16em;
+  text-transform:uppercase;color:var(--ink-muted);font-weight:500}
+.card .big{font-family:var(--mono);font-size:1.7rem;font-weight:500;color:var(--verified);line-height:1.2}
+.card .big.null{color:var(--unverifiable)}
+.card .q{font-size:.86rem;color:var(--ink-muted);margin-top:.35rem}
+.card dl{margin-top:.7rem;font-family:var(--mono);font-size:.74rem;color:var(--ink-faint)}
+.card dl div{display:flex;justify-content:space-between;gap:1rem;padding:.1rem 0}
+.card dl dd{color:var(--ink-soft)}
+/* What a number does not show, printed with the number. The list is set in
+   the unverifiable color because a caveat is not a verdict. */
+.card .caveats{list-style:none;margin-top:.7rem;padding-top:.6rem;
+  border-top:1px solid var(--hairline);display:grid;gap:.4rem}
+.card .caveats li{font-size:.78rem;line-height:1.5;color:var(--ink-faint);
+  padding-left:.75rem;border-left:2px solid var(--unverifiable)}
+
+.bars{margin-top:1.2rem;display:grid;gap:.5rem}
+.bar{display:grid;grid-template-columns:minmax(9rem,13rem) 1fr;gap:.9rem;align-items:center}
+.bar .name{font-family:var(--mono);font-size:.74rem;color:var(--ink-muted)}
+.bar .pair{display:grid;gap:2px}
+.bar .track{position:relative;display:block;height:1.1rem;background:var(--void-2);
+  border-radius:3px;overflow:hidden}
+.bar .fill{position:absolute;inset:0 auto 0 0;background:var(--verified);border-radius:3px}
+/* A zero-width strawman bar still needs an edge, otherwise the row reads as
+   missing data rather than as a system that scored nothing. */
+.bar .fill.straw{background:var(--unverifiable);min-width:3px}
+.bar .val{position:absolute;right:.5rem;top:50%;transform:translateY(-50%);
+  font-family:var(--mono);font-size:.64rem;color:var(--ink-soft);white-space:nowrap}
+/* The harness label rides inside its own fill, so it is read against the
+   verdict color rather than against the empty track behind it. */
+.bar .fill .val{color:var(--void)}
+.bar .val.unmeasured{color:var(--ink-faint)}
+.legend{font-family:var(--mono);font-size:.7rem;color:var(--ink-faint);margin-top:.9rem}
+
+.tablewrap{overflow-x:auto;margin-top:1.2rem;border:1px solid var(--hairline);border-radius:10px}
+table{border-collapse:collapse;width:100%;min-width:44rem;font-size:.86rem}
+th,td{text-align:left;padding:.55rem .8rem;border-bottom:1px solid var(--hairline);vertical-align:top}
+thead th{font-family:var(--mono);font-size:.66rem;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--ink-muted);font-weight:500;background:var(--panel);position:sticky;top:0}
+tbody tr:last-child td{border-bottom:0}
+td.key{font-family:var(--mono);font-size:.76rem;color:var(--bone);white-space:nowrap}
+td.desc{color:var(--ink-muted);max-width:34rem}
+td.cell{font-family:var(--mono);font-size:.72rem;text-align:center;white-space:nowrap}
+.yes{color:var(--verified)}
+.part{color:var(--drift)}
+.no{color:var(--ink-faint)}
+.absent{color:var(--drift);font-weight:500}
+
+.nulls{display:grid;gap:.75rem;margin-top:1.2rem}
+.null-item{border-left:2px solid var(--drift);padding:.15rem 0 .15rem .95rem}
+.null-item .what{font-family:var(--mono);font-size:.78rem;color:var(--bone)}
+.null-item .why{color:var(--ink-muted);font-size:.9rem}
+.null-item .where{font-family:var(--mono);font-size:.72rem;color:var(--ink-faint)}
+
+pre.cmd{font-family:var(--mono);font-size:.78rem;background:var(--void-2);
+  border:1px solid var(--hairline);border-radius:8px;padding:.75rem .9rem;
+  overflow-x:auto;color:var(--ink-soft);margin-top:.9rem}
+
+footer{padding:2.4rem 0 3.4rem;border-top:1px solid var(--hairline);
+  font-family:var(--mono);font-size:.74rem;color:var(--ink-faint)}

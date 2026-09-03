@@ -12,119 +12,16 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
+from .parity_rows import ROWS
+
 REPO = Path(__file__).resolve().parent.parent
 
-DECLARED_ON = "2026-07-13"
+DECLARED_ON = "2026-09-03"
 
-# (key, description, witness) where witness is:
-#   ("module", "harness/x.py")            -- file exists
-#   ("route",  "/api/x")                  -- string present in gateway source
-#   ("test",   "tests/test_x.py")         -- test file exists
-# plus per-competitor declarations: True (ships it), False (does not),
-# "partial". Competitors: codex (OpenAI Codex app), cursor, claude-code.
-ROWS = [
-    {"key": "any-provider-routing",
-     "desc": "one request shape routed to any provider with failover chains",
-     "witnesses": [("route", "/v1/chat/completions"), ("module", "harness/endpoint_registry.py")],
-     "codex": False, "cursor": "partial", "claude-code": False},
-    {"key": "receipt-on-every-answer",
-     "desc": "re-checkable receipt attached to every routed answer",
-     "witnesses": [("module", "harness/envelope.py")],
-     "codex": False, "cursor": False, "claude-code": False},
-    {"key": "integrity-guard",
-     "desc": "reward-hacking guard: a tampered pass is flagged, never accepted",
-     "witnesses": [("module", "harness/integrity.py")],
-     "codex": False, "cursor": False, "claude-code": False},
-    {"key": "verifier-ensembling",
-     "desc": "consensus across oracles (all/any/majority/weighted)",
-     "witnesses": [("module", "harness/consensus.py")],
-     "codex": False, "cursor": False, "claude-code": False},
-    {"key": "staged-workflows",
-     "desc": "multi-step workflows with one chained receipt per run",
-     "witnesses": [("module", "harness/workflows.py"), ("test", "tests/test_profiles_workflows.py")],
-     "codex": False, "cursor": False, "claude-code": "partial"},
-    {"key": "profile-manifests",
-     "desc": "named operating profiles over one substrate, any endpoint",
-     "witnesses": [("module", "harness/profiles.py"), ("route", "/api/profiles")],
-     "codex": "partial", "cursor": "partial", "claude-code": "partial"},
-    {"key": "plugin-registry",
-     "desc": "lanes, builtin tools, and custom MCP servers in one registry",
-     "witnesses": [("module", "harness/plugins.py"), ("route", "/api/plugins"),
-                   ("test", "tests/test_plugins.py")],
-     "codex": True, "cursor": "partial", "claude-code": True},
-    {"key": "mcp-client-and-server",
-     "desc": "consumes MCP servers (gated, witnessed) and serves itself as one",
-     "witnesses": [("module", "harness/mcp_client.py"), ("module", "harness/local_mcp.py")],
-     "codex": True, "cursor": True, "claude-code": True},
-    {"key": "durable-memory-recall",
-     "desc": "content-addressed memory with verbatim, provenance-carrying recall",
-     "witnesses": [("module", "harness/memory_api.py"), ("route", "/api/memory"),
-                   ("test", "tests/test_memory_api.py")],
-     "codex": False, "cursor": "partial", "claude-code": "partial"},
-    {"key": "context-compaction-receipt",
-     "desc": "bounded context with a receipt for every fold, recallable later",
-     "witnesses": [("module", "harness/compaction.py"), ("module", "harness/fold_index.py")],
-     "codex": "partial", "cursor": "partial", "claude-code": "partial"},
-    {"key": "workspace-sandbox",
-     "desc": "agent runs scoped to a validated workspace root, refused by name",
-     "witnesses": [("route", "_resolve_workspace_root"), ("test", "tests/test_workspace_root.py")],
-     "codex": True, "cursor": True, "claude-code": True},
-    {"key": "live-agent-stream",
-     "desc": "every turn, tool call, and result streamed as it happens",
-     # Was ("route", "_sse_agent"), a name that never existed. The capability
-     # is real and lives on the operation route, which returns a streaming
-     # response when the operation asks for one and serves an events feed per
-     # run; the witness had simply been pointed at a dead branch in _post that
-     # `_route_operation` intercepts before it can run.
-     "witnesses": [("module", "harness/gateway_operation_route.py"),
-                   ("test", "tests/test_gateway_operation_route.py")],
-     "codex": True, "cursor": True, "claude-code": True},
-    {"key": "projected-world-hash",
-     "desc": "root-hashed projected state; tampering any receipt moves it",
-     "witnesses": [("module", "harness/world.py")],
-     "codex": False, "cursor": False, "claude-code": False},
-    {"key": "loop-closure-audit",
-     "desc": "falsifiable self-audit of the whole perceive-verify-memory loop",
-     "witnesses": [("module", "harness/loop_closure.py")],
-     "codex": False, "cursor": False, "claude-code": False},
-    {"key": "adaptive-routing-scoreboard",
-     "desc": "observed per-provider success, latency, circuit breakers",
-     "witnesses": [("module", "harness/router_stats.py"), ("route", "/api/router/stats")],
-     "codex": False, "cursor": False, "claude-code": False},
-    # Known gaps: rows the field ships and Flywheel does not, kept visible.
-    {"key": "native-receipted-linter",
-     "desc": "a built-in extensible linter whose findings are content-"
-             "addressed and re-checkable, not deferred to external tools",
-     "witnesses": [("module", "harness/linter.py"),
-                   ("route", "/api/lint"),
-                   ("test", "tests/test_linter.py")],
-     "codex": False, "cursor": False, "claude-code": False},
-    {"key": "lsp-go-to-definition",
-     "desc": "editor go-to-definition over any user-named LSP server",
-     "witnesses": [("module", "harness/lsp_bridge.py"),
-                   ("route", "/api/lsp"),
-                   ("test", "tests/test_lsp_bridge.py")],
-     "codex": False, "cursor": True, "claude-code": False},
-    {"key": "lsp-diagnostics-references",
-     "desc": "diagnostics and find-references in the editor",
-     "witnesses": [("module", "harness/lsp_diagnostics.py"),
-                   ("test", "tests/test_lsp_diagnostics.py")],
-     "codex": False, "cursor": True, "claude-code": False},
-    {"key": "plugin-marketplace",
-     "desc": "discoverable third-party plugin catalog with one-step install",
-     "witnesses": [("module", "harness/marketplace.py"),
-                   ("route", "/api/marketplace"),
-                   ("test", "tests/test_marketplace.py")],
-     "codex": True, "cursor": True, "claude-code": True},
-    {"key": "secure-credentials",
-     "desc": "provider secrets in the OS keychain (presence-only everywhere "
-             "else) plus reuse of provider CLI logins; first-party account "
-             "OAuth does not apply to a bring-your-own-provider tool",
-     "witnesses": [("module", "harness/keychain.py"),
-                   ("route", "/api/keychain"),
-                   ("test", "tests/test_keychain.py")],
-     "codex": True, "cursor": True, "claude-code": True},
-]
+# Re-exported so `parity.ROWS` stays the one name callers and tests reach
+# for. parity_matrix reads it off this module at call time, which is what
+# lets a test swap in a row with a missing witness and watch the audit fail.
+__all__ = ["ROWS", "DECLARED_ON", "parity_matrix"]
 
 
 def _route_witnessed(ref: str, src: str) -> bool:

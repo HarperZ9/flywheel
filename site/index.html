@@ -281,12 +281,22 @@ footer .rule{color:var(--ink-faint);max-width:72ch;font-size:.82rem;line-height:
         </tbody>
       </table>
     </div>
-    <div class="note"><b>We do not claim a capability uplift.</b> Verified inference beats single-shot
-      by <span id="liftPoint">+0.100</span> here, but the 95% interval is <span id="liftCI">[-0.236, +0.420]</span>, which includes zero, and plain
-      best-of-4 sampling ties it. So the honest, measurable claims today are 100% receipt
-      reproducibility, pass parity, and local cost. A real effect at this size would need roughly a
-      hundred tasks to separate from noise, which is exactly what the curated hard lane is building
-      toward. The number moves the day the evidence does, not before.</div>
+    <div class="note"><b>This table is retired, and the reason is worse than a wide interval.</b>
+      Verified inference reads <span id="liftPoint">+0.100</span> over single-shot with a 95% interval of
+      <span id="liftCI">[-0.236, +0.420]</span> that includes zero, and plain best-of-4 ties it. The
+      deeper problem is that the arms were not independent: the treatment's first attempt is the
+      same call as the baseline's only attempt, so the treatment cannot score lower and the
+      difference is not a comparison. What the table measures is verified pass@k.
+      Retired on 2026-07-26. It stays on the page because withdrawing a number in public is worth
+      more than deleting it. No capability uplift is claimed. The measurable claims today are 100% receipt
+      reproducibility, pass parity, and local cost, and settling the capability question needs an
+      instrument whose arms are actually independent.</div>
+    <p class="sub" style="margin-top:16px">Six suites need no endpoint at all and re-run on your
+      machine, alongside a capability matrix whose Flywheel column is checked against the repository
+      every time it is read. One of those suites recomputes the project's only capability
+      comparison, and that result is negative: continued pretraining moved general code completion
+      -3.05 points over 164 tasks, p = 0.40. It is published for the same reason this table is:
+      <a href="benchmarks.html">the benchmark record</a>.</p>
   </section>
 
   <section id="run">
@@ -400,9 +410,9 @@ ollama run flywheel-local-coder-14b</pre>
       });
     });
   }
-  function mark(id,mod){
+  function mark(id,mod,label){
     var el=document.getElementById(id), a=mod?age(mod):'';
-    if(el){ el.textContent='live from receipts'+(a?' · '+a+' old':''); }
+    if(el){ el.textContent=(label||'live from receipts')+(a?' · '+a+' old':''); }
   }
   function signed(x){ return (x>=0?'+':'')+x.toFixed(3); }
 
@@ -428,7 +438,7 @@ ollama run flywheel-local-coder-14b</pre>
       if(lp) lp.textContent=signed(diff.point);
       if(lc) lc.textContent='['+signed(diff.ci_95[0])+', '+signed(diff.ci_95[1])+']';
     }
-    mark('benchFresh',res.mod);
+    mark('benchFresh',res.mod,'retired instrument, kept on the page');
   }).catch(function(){});
 
   // Benchmark-lane count <- the curated registry itself

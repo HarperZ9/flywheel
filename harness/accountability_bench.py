@@ -1,28 +1,28 @@
-"""accountability_bench.py — a NEW benchmark category: measure accountability, not capability.
+"""accountability_bench.py, a NEW benchmark category: measure accountability, not capability.
 
 Existing benchmarks (HumanEval, SWE-bench, MMLU, and live-agent suites like Hermes X-search)
 measure CAPABILITY: did the system get the right answer. None measures the variables THIS
 project introduced, so a fully capable, fully UNACCOUNTABLE system scores identically to an
 accountable one. M7 was inconclusive precisely because pass@k saturated and could not see
 these axes. This benchmark scores them, each dimension backed by a real harness module that
-already computes it — the benchmark is an aggregation, not new machinery.
+already computes it, so the benchmark is an aggregation, not new machinery.
 
 The dimensions (the "and more"):
-  1. RE-CHECKABILITY   — can a third party re-run the receipt to the same verdict? (witness)
-  2. EXTERNALIZATION    — does a non-self-authored check catch cheats self-authorship accepts?
+  1. RE-CHECKABILITY   : can a third party re-run the receipt to the same verdict? (witness)
+  2. EXTERNALIZATION    : does a non-self-authored check catch cheats self-authorship accepts?
                           (externalization_ablation)
-  3. ADVERSARIAL SOUNDNESS — 0 false-accepts over the crafted attack corpus? (adversarial_corpus)
-  4. NO-REGRESSION      — is banked verified progress monotone (a ratchet)? (backflow/valve)
-  5. INVARIANT-FIDELITY — in chaos, is the statistical invariant conserved not the trajectory?
-                          (turbulence) — i.e. does the system witness the RIGHT invariant?
-  6. NULL-SPACE HONESTY — does the system report what it CANNOT recover, not fake it? (silhouette)
-  7. PROVENANCE         — is every accepted result bound to its grounding? (proof_cache/chain)
+  3. ADVERSARIAL SOUNDNESS : 0 false-accepts over the crafted attack corpus? (adversarial_corpus)
+  4. NO-REGRESSION      : is banked verified progress monotone (a ratchet)? (backflow/valve)
+  5. INVARIANT-FIDELITY : in chaos, is the statistical invariant conserved not the trajectory?
+                          (turbulence), i.e. does the system witness the RIGHT invariant?
+  6. NULL-SPACE HONESTY : does the system report what it CANNOT recover, not fake it? (silhouette)
+  7. PROVENANCE         : is every accepted result bound to its grounding? (proof_cache/chain)
 
 CREDIBILITY (the R&D discipline turned on the benchmark itself): a benchmark this project
 designs MUST be able to score badly. `score_strawman()` runs an unaccountable system (no
 external check, self-authored, blind reuse) and it MUST score near 0. If the strawman also
 scored high, the benchmark measures nothing. HONEST non-goal: this measures accountability,
-NOT capability — a system can be 100% accountable and useless. Pair it with a capability
+NOT capability. A system can be 100% accountable and useless. Pair it with a capability
 benchmark; neither substitutes for the other.
 """
 from __future__ import annotations
@@ -149,13 +149,13 @@ def score_harness() -> dict:
             "overall": round(overall, 3),
             "dimensions": [{"name": d.name, "score": round(d.score, 3),
                             "grounded_in": d.grounded_in, "detail": d.detail} for d in dims],
-            "non_goal": "measures accountability, NOT capability — pair with a capability bench",
+            "non_goal": "measures accountability, NOT capability. Pair it with a capability bench",
             "self_authored_caveat": (
                 "the harness scoring ~1.0 is EXPECTED and near-tautological: each dimension is "
                 "backed by a module the harness was built to hold, so this measures 'does the "
                 "harness do what the harness does', not 'is the harness good'. The real value is "
                 "scoring OTHER systems (capability-first agents like SWE-agent / Hermes X-search) "
-                "on the accountability axes they ignore — that is where differentiation shows. And "
+                "on the accountability axes they ignore, which is where differentiation shows. And "
                 "the benchmark DELIBERATELY excludes a capability/uplift axis, because the uplift is "
                 "unearned. Next credibility step: have the dimension set audited/authored externally, "
                 "and score external systems.")}

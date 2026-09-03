@@ -1,0 +1,824 @@
+{
+  "declared_on": "2026-09-03",
+  "note": "flywheel cells are audited against this repo at read time; competitor cells are dated declarations from public docs and configs, not measurements",
+  "rows": [
+    {
+      "checks": [
+        {
+          "kind": "route",
+          "present": true,
+          "ref": "/v1/chat/completions"
+        },
+        {
+          "kind": "module",
+          "present": true,
+          "ref": "harness/endpoint_registry.py"
+        }
+      ],
+      "competitors": {
+        "claude-code": false,
+        "codex": false,
+        "cursor": "partial"
+      },
+      "desc": "one request shape routed to any provider with failover chains",
+      "flywheel": "WITNESSED",
+      "key": "any-provider-routing"
+    },
+    {
+      "checks": [
+        {
+          "kind": "module",
+          "present": true,
+          "ref": "harness/envelope.py"
+        }
+      ],
+      "competitors": {
+        "claude-code": false,
+        "codex": false,
+        "cursor": false
+      },
+      "desc": "re-checkable receipt attached to every routed answer",
+      "flywheel": "WITNESSED",
+      "key": "receipt-on-every-answer"
+    },
+    {
+      "checks": [
+        {
+          "kind": "module",
+          "present": true,
+          "ref": "harness/integrity.py"
+        }
+      ],
+      "competitors": {
+        "claude-code": false,
+        "codex": false,
+        "cursor": false
+      },
+      "desc": "reward-hacking guard: a tampered pass is flagged, never accepted",
+      "flywheel": "WITNESSED",
+      "key": "integrity-guard"
+    },
+    {
+      "checks": [
+        {
+          "kind": "module",
+          "present": true,
+          "ref": "harness/consensus.py"
+        }
+      ],
+      "competitors": {
+        "claude-code": false,
+        "codex": false,
+        "cursor": false
+      },
+      "desc": "consensus across oracles (all/any/majority/weighted)",
+      "flywheel": "WITNESSED",
+      "key": "verifier-ensembling"
+    },
+    {
+      "checks": [
+        {
+          "kind": "module",
+          "present": true,
+          "ref": "harness/workflows.py"
+        },
+        {
+          "kind": "test",
+          "present": true,
+          "ref": "tests/test_profiles_workflows.py"
+        }
+      ],
+      "competitors": {
+        "claude-code": "partial",
+        "codex": false,
+        "cursor": false
+      },
+      "desc": "multi-step workflows with one chained receipt per run",
+      "flywheel": "WITNESSED",
+      "key": "staged-workflows"
+    },
+    {
+      "checks": [
+        {
+          "kind": "module",
+          "present": true,
+          "ref": "harness/profiles.py"
+        },
+        {
+          "kind": "route",
+          "present": true,
+          "ref": "/api/profiles"
+        }
+      ],
+      "competitors": {
+        "claude-code": "partial",
+        "codex": "partial",
+        "cursor": "partial"
+      },
+      "desc": "named operating profiles over one substrate, any endpoint",
+      "flywheel": "WITNESSED",
+      "key": "profile-manifests"
+    },
+    {
+      "checks": [
+        {
+          "kind": "module",
+          "present": true,
+          "ref": "harness/plugins.py"
+        },
+        {
+          "kind": "route",
+          "present": true,
+          "ref": "/api/plugins"
+        },
+        {
+          "kind": "test",
+          "present": true,
+          "ref": "tests/test_plugins.py"
+        }
+      ],
+      "competitors": {
+        "claude-code": true,
+        "codex": true,
+        "cursor": "partial"
+      },
+      "desc": "lanes, builtin tools, and custom MCP servers in one registry",
+      "flywheel": "WITNESSED",
+      "key": "plugin-registry"
+    },
+    {
+      "checks": [
+        {
+          "kind": "module",
+          "present": true,
+          "ref": "harness/mcp_client.py"
+        },
+        {
+          "kind": "module",
+          "present": true,
+          "ref": "harness/local_mcp.py"
+        }
+      ],
+      "competitors": {
+        "claude-code": true,
+        "codex": true,
+        "cursor": true
+      },
+      "desc": "consumes MCP servers (gated, witnessed) and serves itself as one",
+      "flywheel": "WITNESSED",
+      "key": "mcp-client-and-server"
+    },
+    {
+      "checks": [
+        {
+          "kind": "module",
+          "present": true,
+          "ref": "harness/memory_api.py"
+        },
+        {
+          "kind": "route",
+          "present": true,
+          "ref": "/api/memory"
+        },
+        {
+          "kind": "test",
+          "present": true,
+          "ref": "tests/test_memory_api.py"
+        }
+      ],
+      "competitors": {
+        "claude-code": "partial",
+        "codex": false,
+        "cursor": "partial"
+      },
+      "desc": "content-addressed memory with verbatim, provenance-carrying recall",
+      "flywheel": "WITNESSED",
+      "key": "durable-memory-recall"
+    },
+    {
+      "checks": [
+        {
+          "kind": "module",
+          "present": true,
+          "ref": "harness/compaction.py"
+        },
+        {
+          "kind": "module",
+          "present": true,
+          "ref": "harness/fold_index.py"
+        }
+      ],
+      "competitors": {
+        "claude-code": "partial",
+        "codex": "partial",
+        "cursor": "partial"
+      },
+      "desc": "bounded context with a receipt for every fold, recallable later",
+      "flywheel": "WITNESSED",
+      "key": "context-compaction-receipt"
+    },
+    {
+      "checks": [
+        {
+          "kind": "route",
+          "present": true,
+          "ref": "_resolve_workspace_root"
+        },
+        {
+          "kind": "test",
+          "present": true,
+          "ref": "tests/test_workspace_root.py"
+        }
+      ],
+      "competitors": {
+        "claude-code": true,
+        "codex": true,
+        "cursor": true
+      },
+      "desc": "agent runs scoped to a validated workspace root, refused by name",
+      "flywheel": "WITNESSED",
+      "key": "workspace-sandbox"
+    },
+    {
+      "checks": [
+        {
+          "kind": "module",
+          "present": true,
+          "ref": "harness/gateway_operation_route.py"
+        },
+        {
+          "kind": "test",
+          "present": true,
+          "ref": "tests/test_gateway_operation_route.py"
+        }
+      ],
+      "competitors": {
+        "claude-code": true,
+        "codex": true,
+        "cursor": true
+      },
+      "desc": "every turn, tool call, and result streamed as it happens",
+      "flywheel": "WITNESSED",
+      "key": "live-agent-stream"
+    },
+    {
+      "checks": [
+        {
+          "kind": "module",
+          "present": true,
+          "ref": "harness/world.py"
+        }
+      ],
+      "competitors": {
+        "claude-code": false,
+        "codex": false,
+        "cursor": false
+      },
+      "desc": "root-hashed projected state; tampering any receipt moves it",
+      "flywheel": "WITNESSED",
+      "key": "projected-world-hash"
+    },
+    {
+      "checks": [
+        {
+          "kind": "module",
+          "present": true,
+          "ref": "harness/loop_closure.py"
+        }
+      ],
+      "competitors": {
+        "claude-code": false,
+        "codex": false,
+        "cursor": false
+      },
+      "desc": "falsifiable self-audit of the whole perceive-verify-memory loop",
+      "flywheel": "WITNESSED",
+      "key": "loop-closure-audit"
+    },
+    {
+      "checks": [
+        {
+          "kind": "module",
+          "present": true,
+          "ref": "harness/router_stats.py"
+        },
+        {
+          "kind": "route",
+          "present": true,
+          "ref": "/api/router/stats"
+        }
+      ],
+      "competitors": {
+        "claude-code": false,
+        "codex": false,
+        "cursor": false
+      },
+      "desc": "observed per-provider success, latency, circuit breakers",
+      "flywheel": "WITNESSED",
+      "key": "adaptive-routing-scoreboard"
+    },
+    {
+      "checks": [
+        {
+          "kind": "module",
+          "present": true,
+          "ref": "harness/linter.py"
+        },
+        {
+          "kind": "route",
+          "present": true,
+          "ref": "/api/lint"
+        },
+        {
+          "kind": "test",
+          "present": true,
+          "ref": "tests/test_linter.py"
+        }
+      ],
+      "competitors": {
+        "claude-code": false,
+        "codex": false,
+        "cursor": false
+      },
+      "desc": "a built-in extensible linter whose findings are content-addressed and re-checkable, not deferred to external tools",
+      "flywheel": "WITNESSED",
+      "key": "native-receipted-linter"
+    },
+    {
+      "checks": [
+        {
+          "kind": "module",
+          "present": true,
+          "ref": "harness/lsp_bridge.py"
+        },
+        {
+          "kind": "route",
+          "present": true,
+          "ref": "/api/lsp"
+        },
+        {
+          "kind": "test",
+          "present": true,
+          "ref": "tests/test_lsp_bridge.py"
+        }
+      ],
+      "competitors": {
+        "claude-code": false,
+        "codex": false,
+        "cursor": true
+      },
+      "desc": "editor go-to-definition over any user-named LSP server",
+      "flywheel": "WITNESSED",
+      "key": "lsp-go-to-definition"
+    },
+    {
+      "checks": [
+        {
+          "kind": "module",
+          "present": true,
+          "ref": "harness/lsp_diagnostics.py"
+        },
+        {
+          "kind": "test",
+          "present": true,
+          "ref": "tests/test_lsp_diagnostics.py"
+        }
+      ],
+      "competitors": {
+        "claude-code": false,
+        "codex": false,
+        "cursor": true
+      },
+      "desc": "diagnostics and find-references in the editor",
+      "flywheel": "WITNESSED",
+      "key": "lsp-diagnostics-references"
+    },
+    {
+      "checks": [
+        {
+          "kind": "module",
+          "present": true,
+          "ref": "harness/marketplace.py"
+        },
+        {
+          "kind": "route",
+          "present": true,
+          "ref": "/api/marketplace"
+        },
+        {
+          "kind": "test",
+          "present": true,
+          "ref": "tests/test_marketplace.py"
+        }
+      ],
+      "competitors": {
+        "claude-code": true,
+        "codex": true,
+        "cursor": true
+      },
+      "desc": "discoverable third-party plugin catalog with one-step install",
+      "flywheel": "WITNESSED",
+      "key": "plugin-marketplace"
+    },
+    {
+      "checks": [
+        {
+          "kind": "module",
+          "present": true,
+          "ref": "harness/keychain.py"
+        },
+        {
+          "kind": "route",
+          "present": true,
+          "ref": "/api/keychain"
+        },
+        {
+          "kind": "test",
+          "present": true,
+          "ref": "tests/test_keychain.py"
+        }
+      ],
+      "competitors": {
+        "claude-code": true,
+        "codex": true,
+        "cursor": true
+      },
+      "desc": "provider secrets in the OS keychain (presence-only everywhere else) plus reuse of provider CLI logins; first-party account OAuth does not apply to a bring-your-own-provider tool",
+      "flywheel": "WITNESSED",
+      "key": "secure-credentials"
+    },
+    {
+      "checks": [
+        {
+          "kind": "module",
+          "present": true,
+          "ref": "harness/infra/trust_model.py"
+        },
+        {
+          "kind": "module",
+          "present": true,
+          "ref": "harness/infra/run_bom.py"
+        },
+        {
+          "kind": "module",
+          "present": true,
+          "ref": "harness/infra/egress_matrix.py"
+        },
+        {
+          "kind": "route",
+          "present": true,
+          "ref": "/api/infra/trust-model"
+        },
+        {
+          "kind": "test",
+          "present": true,
+          "ref": "tests/test_infra_route.py"
+        }
+      ],
+      "competitors": {
+        "claude-code": false,
+        "codex": false,
+        "cursor": false
+      },
+      "desc": "read the trust model, the run bill of materials, and the classified egress of the process the agent is running in",
+      "flywheel": "WITNESSED",
+      "key": "agent-boundary-audit"
+    },
+    {
+      "checks": [
+        {
+          "kind": "module",
+          "present": true,
+          "ref": "harness/infra/isolation_test.py"
+        },
+        {
+          "kind": "route",
+          "present": true,
+          "ref": "/api/infra/isolation"
+        }
+      ],
+      "competitors": {
+        "claude-code": false,
+        "codex": false,
+        "cursor": false
+      },
+      "desc": "actively test the boundaries the agent is claimed to run inside, and seal every boundary that was tried",
+      "flywheel": "WITNESSED",
+      "key": "isolation-probe"
+    },
+    {
+      "checks": [
+        {
+          "kind": "module",
+          "present": true,
+          "ref": "harness/infra/credential_scanner.py"
+        },
+        {
+          "kind": "route",
+          "present": true,
+          "ref": "/api/infra/credential-scan"
+        }
+      ],
+      "competitors": {
+        "claude-code": false,
+        "codex": false,
+        "cursor": false
+      },
+      "desc": "find reachable secrets and report non-reversible fingerprints, never the values, in a sealed receipt",
+      "flywheel": "WITNESSED",
+      "key": "credential-exposure-scan"
+    },
+    {
+      "checks": [
+        {
+          "kind": "module",
+          "present": true,
+          "ref": "harness/infra/kill_switch.py"
+        },
+        {
+          "kind": "route",
+          "present": true,
+          "ref": "/api/infra/kill"
+        }
+      ],
+      "competitors": {
+        "claude-code": false,
+        "codex": false,
+        "cursor": false
+      },
+      "desc": "stop a running agent only under two different authorities, sealed whether it fires or refuses",
+      "flywheel": "WITNESSED",
+      "key": "two-authority-kill-switch"
+    },
+    {
+      "checks": [
+        {
+          "kind": "module",
+          "present": true,
+          "ref": "harness/gateway_operation.py"
+        },
+        {
+          "kind": "module",
+          "present": true,
+          "ref": "harness/gateway_grant_route.py"
+        },
+        {
+          "kind": "route",
+          "present": true,
+          "ref": "/api/gateway-grants/"
+        },
+        {
+          "kind": "test",
+          "present": true,
+          "ref": "tests/test_gateway_operation_grants.py"
+        }
+      ],
+      "competitors": {
+        "claude-code": "partial",
+        "codex": "partial",
+        "cursor": "partial"
+      },
+      "desc": "every mutating action prepares a named proposal (destination, tool, scopes) and needs a single-use grant before dispatch",
+      "flywheel": "WITNESSED",
+      "key": "per-action-operator-grant"
+    },
+    {
+      "checks": [
+        {
+          "kind": "module",
+          "present": true,
+          "ref": "harness/receipt_signer.py"
+        },
+        {
+          "kind": "module",
+          "present": true,
+          "ref": "harness/anchor.py"
+        },
+        {
+          "kind": "test",
+          "present": true,
+          "ref": "tests/test_anchor.py"
+        }
+      ],
+      "competitors": {
+        "claude-code": false,
+        "codex": false,
+        "cursor": false
+      },
+      "desc": "receipts signed with a key you hold and anchored to a record outside this project, so the timestamp is not self-attested",
+      "flywheel": "WITNESSED",
+      "key": "signed-receipt-external-anchor"
+    },
+    {
+      "checks": [
+        {
+          "kind": "module",
+          "present": true,
+          "ref": "harness/infra/lean_adapter.py"
+        },
+        {
+          "kind": "route",
+          "present": true,
+          "ref": "/api/lean"
+        }
+      ],
+      "competitors": {
+        "claude-code": false,
+        "codex": false,
+        "cursor": false
+      },
+      "desc": "a proof assistant as a gate, reporting UNVERIFIABLE when it is absent instead of assuming the check passed",
+      "flywheel": "WITNESSED",
+      "key": "formal-proof-oracle"
+    },
+    {
+      "checks": [
+        {
+          "kind": "module",
+          "present": true,
+          "ref": "harness/infra/native_detect.py"
+        }
+      ],
+      "competitors": {
+        "claude-code": false,
+        "codex": false,
+        "cursor": false
+      },
+      "desc": "optional compiled kernels with a mathematically equivalent pure-Python path, so a result never depends on a built extension",
+      "flywheel": "WITNESSED",
+      "key": "native-acceleration-with-fallback"
+    },
+    {
+      "checks": [
+        {
+          "kind": "module",
+          "present": true,
+          "ref": "harness/governance/tadr_tier.py"
+        },
+        {
+          "kind": "module",
+          "present": true,
+          "ref": "harness/governance/tadr_receipt.py"
+        },
+        {
+          "kind": "route",
+          "present": true,
+          "ref": "/api/governance/tiers"
+        },
+        {
+          "kind": "test",
+          "present": true,
+          "ref": "tests/test_governance_tadr.py"
+        }
+      ],
+      "competitors": {
+        "claude-code": false,
+        "codex": false,
+        "cursor": false
+      },
+      "desc": "what the agent may do is gated by a recorded autonomy tier, and the architecture decision behind that tier carries a receipt",
+      "flywheel": "WITNESSED",
+      "key": "autonomy-tiers-and-decision-records"
+    },
+    {
+      "checks": [
+        {
+          "kind": "module",
+          "present": true,
+          "ref": "harness/lesson.py"
+        },
+        {
+          "kind": "route",
+          "present": true,
+          "ref": "/api/lessons"
+        },
+        {
+          "kind": "test",
+          "present": true,
+          "ref": "tests/test_lesson.py"
+        }
+      ],
+      "competitors": {
+        "claude-code": "partial",
+        "codex": false,
+        "cursor": "partial"
+      },
+      "desc": "a recorded failure becomes a lesson only after a person accepts it, and the lesson carries the hashes of its evidence",
+      "flywheel": "WITNESSED",
+      "key": "accepted-lesson-loop"
+    },
+    {
+      "checks": [
+        {
+          "kind": "module",
+          "present": true,
+          "ref": "harness/verified_bench.py"
+        },
+        {
+          "kind": "route",
+          "present": true,
+          "ref": "/api/bench/run"
+        },
+        {
+          "kind": "test",
+          "present": true,
+          "ref": "tests/test_verified_bench.py"
+        }
+      ],
+      "competitors": {
+        "claude-code": false,
+        "codex": false,
+        "cursor": false
+      },
+      "desc": "run a private task set across every endpoint, dispose each attempt through a gate you own, and price verified quality",
+      "flywheel": "WITNESSED",
+      "key": "private-verified-benchmarks"
+    },
+    {
+      "checks": [
+        {
+          "kind": "module",
+          "present": true,
+          "ref": "harness/uplift_bench.py"
+        },
+        {
+          "kind": "route",
+          "present": true,
+          "ref": "/api/uplift"
+        },
+        {
+          "kind": "test",
+          "present": true,
+          "ref": "tests/test_uplift_bench.py"
+        }
+      ],
+      "competitors": {
+        "claude-code": false,
+        "codex": false,
+        "cursor": false
+      },
+      "desc": "same task set, same provider, paired arms, and an interval that is allowed to include zero and say so",
+      "flywheel": "WITNESSED",
+      "key": "paired-uplift-measurement"
+    },
+    {
+      "checks": [
+        {
+          "kind": "module",
+          "present": true,
+          "ref": "docs/REMOTE-ACCESS.md"
+        },
+        {
+          "kind": "module",
+          "present": true,
+          "ref": "desktop/lib/assistant/speech_voice.dart"
+        },
+        {
+          "kind": "module",
+          "present": true,
+          "ref": "desktop/lib/assistant/url_device_sink.dart"
+        }
+      ],
+      "competitors": {
+        "claude-code": true,
+        "codex": true,
+        "cursor": false
+      },
+      "desc": "drive the same loop from a phone over a tunnel you run, with no vendor cloud between the phone and the engine",
+      "flywheel": "WITNESSED",
+      "key": "phone-access-own-tunnel"
+    }
+  ],
+  "schema": "flywheel.parity/v1",
+  "summary": {
+    "absent": 0,
+    "gaps": [],
+    "uniquely_witnessed": [
+      "any-provider-routing",
+      "receipt-on-every-answer",
+      "integrity-guard",
+      "verifier-ensembling",
+      "staged-workflows",
+      "profile-manifests",
+      "durable-memory-recall",
+      "context-compaction-receipt",
+      "projected-world-hash",
+      "loop-closure-audit",
+      "adaptive-routing-scoreboard",
+      "native-receipted-linter",
+      "agent-boundary-audit",
+      "isolation-probe",
+      "credential-exposure-scan",
+      "two-authority-kill-switch",
+      "per-action-operator-grant",
+      "signed-receipt-external-anchor",
+      "formal-proof-oracle",
+      "native-acceleration-with-fallback",
+      "autonomy-tiers-and-decision-records",
+      "accepted-lesson-loop",
+      "private-verified-benchmarks",
+      "paired-uplift-measurement"
+    ],
+    "witnessed": 33
+  }
+}

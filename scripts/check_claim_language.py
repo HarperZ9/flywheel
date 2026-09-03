@@ -40,6 +40,10 @@ PUBLIC_GLOBS = (
     "project-docs/releases/**/README.md",
     "site/**/*.md",
     "site/**/*.html",
+    # The generated benchmark document. Its HTML twin under site/ is
+    # already scanned and a test holds the two to the same record, but
+    # the markdown is what a reader on GitHub sees first.
+    "docs/BENCHMARKS.md",
 )
 
 # A claim, and the honest phrasing it must be replaced by.
