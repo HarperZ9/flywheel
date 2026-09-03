@@ -15,3 +15,7 @@ artifacts/closeout/**/stderr.txt -text -diff
 # must not normalize them. Without this, a Windows checkout (core.autocrlf=true)
 # rewrites the fixtures to CRLF and the hash check fails.
 packs/**/fixtures/** -text -diff
+
+# Generated artwork is compared byte-for-byte against a fresh render, so the
+# checked-out bytes must match what the renderer writes on any platform.
+docs/art/*.svg text eol=lf
