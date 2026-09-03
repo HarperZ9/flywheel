@@ -1,0 +1,8 @@
+# Template for android/key.properties, which is gitignored and never committed.
+# Generate the keystore yourself:
+#   keytool -genkey -v -keystore flywheel-release.jks -keyalg RSA -keysize 2048 -validity 10000 -alias flywheel
+# storeFile is resolved relative to android/app/.
+storeFile=../../flywheel-release.jks
+storePassword=CHANGE_ME
+keyAlias=flywheel
+keyPassword=CHANGE_ME

@@ -23,6 +23,7 @@ import '../views/family_view.dart';
 import '../views/feeds_view.dart';
 import '../views/governance_view.dart';
 import '../views/graph_view.dart';
+import '../views/infra_view.dart';
 import '../views/instruments_view.dart';
 import '../views/journey_view.dart';
 import '../views/forum_view.dart';
@@ -150,6 +151,7 @@ Widget? _evidence(DestinationId id, DestinationInputs i) => switch (id) {
       DestinationId.governance =>
         GovernanceView(client: i.client, alive: i.alive),
       DestinationId.usage => UsageView(client: i.client, alive: i.alive),
+      DestinationId.infra => InfraView(client: i.client, alive: i.alive),
       _ => null,
     };
 

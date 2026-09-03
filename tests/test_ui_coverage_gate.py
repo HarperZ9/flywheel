@@ -17,12 +17,32 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
 import check_ui_coverage as G  # noqa: E402
 
 
-def test_the_dead_agent_branch_is_recorded_as_dead():
-    """`_route_operation` claims /api/agent and returns True before
-    `_gateway_method` calls its fallback, so the branch inside `_post` never
-    executes. The gate must know that, because reasoning from that branch is
-    how effort handling sat unreachable for a release."""
-    _, dead = G.live_routes()
+# A gateway in miniature: `_route_operation` claims /api/agent, and `_post`
+# carries a copy of the handler that can therefore never run. The real file no
+# longer contains such a branch, so the rule is held against this fixture
+# instead. Deleting the last dead branch must not delete the rule that finds
+# the next one.
+_FIXTURE = '''
+class _Handler:
+    def _route_operation(self, method):
+        path = self.path
+        return path == "/api/agent" or path.startswith("/api/operations/")
+
+    def _post(self):
+        p = self.path
+        if p == "/api/agent":
+            return self._run()
+        if p == "/api/world":
+            return self._world()
+'''
+
+
+def test_a_branch_the_operation_route_claims_is_recorded_as_dead():
+    """`_route_operation` returns True before `_gateway_method` calls its
+    fallback, so a copy of the handler inside `_post` never executes. The gate
+    must know that, because reasoning from such a branch is how effort
+    handling sat unreachable for a release."""
+    _, dead = G.live_routes(_FIXTURE)
     assert "/api/agent" in dead
 
 
@@ -31,9 +51,19 @@ def test_the_route_stays_live_even_though_its_post_branch_is_dead():
     ROUTE. The operation route serves /api/agent, so the capability is real
     and must not vanish from the denominator just because one handler's copy
     of it is unreachable."""
-    live, dead = G.live_routes()
+    live, dead = G.live_routes(_FIXTURE)
     assert "/api/agent" in dead
     assert "/api/agent" in live, "the operation route serves it"
+    assert "/api/world" in live, "an unclaimed branch is an ordinary route"
+
+
+def test_the_live_gateway_carries_no_dead_branch():
+    """The branch that taught the lesson is gone. Its absence is now a
+    property: a new copy of an operation-route handler in `_get` or `_post`
+    fails here rather than sitting unreachable for another release."""
+    live, dead = G.live_routes()
+    assert dead == set(), f"unreachable handler branch(es): {sorted(dead)}"
+    assert "/api/agent" in live, "the operation route still serves it"
     assert any(r.startswith("/api/operations") for r in live)
 
 

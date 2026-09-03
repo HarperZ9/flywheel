@@ -15,6 +15,7 @@ import '../client/gateway_registry.dart';
 import '../models/registry_models.dart';
 import '../theme/flywheel_theme.dart';
 import '../widgets/fw.dart';
+import '../widgets/pack_admit_panel.dart';
 
 class RegistryView extends StatefulWidget {
   final GatewayClient client;
@@ -125,6 +126,8 @@ class _RegistryViewState extends State<RegistryView> {
           const SizedBox(height: FwLayout.s3),
           _credoCard(t, _credo!),
         ],
+        const SizedBox(height: FwLayout.s5),
+        PackAdmitPanel(client: widget.client),
       ],
     );
   }

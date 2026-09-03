@@ -65,6 +65,8 @@ const destinationCatalog = <DestinationSpec>[
       abbr: 'GV', group: DestinationGroup.evidence),
   DestinationSpec(DestinationId.usage, 'Usage',
       abbr: 'US', group: DestinationGroup.evidence),
+  DestinationSpec(DestinationId.infra, 'Infra',
+      abbr: 'IF', group: DestinationGroup.evidence),
   DestinationSpec(DestinationId.studio, 'Studio',
       abbr: 'ST', group: DestinationGroup.advanced),
   DestinationSpec(DestinationId.graph, 'Graph',

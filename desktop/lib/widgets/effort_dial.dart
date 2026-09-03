@@ -6,31 +6,53 @@
 // the API can turn is not a knob.
 //
 // Color is verdict-only in this app, so the levels read by weight and
-// hairline rather than hue. The step budget is the honest consequence of the
-// choice and is shown with the choice, not hidden behind it.
+// hairline rather than hue. The budget is the honest consequence of the choice
+// and is shown with the choice, not hidden behind it.
+//
+// The dial has two parameters and each route enforces the one it actually has:
+// an agent spends steps, a selection loop spends candidates. The control shows
+// whichever the surface it sits on will really spend, because showing a step
+// count on a route with no step loop is a number the run cannot honor.
 
 import 'package:flutter/material.dart';
 
 import '../theme/flywheel_theme.dart';
 
-/// A named dial and the step budget it nominates. Mirrors harness/effort.py;
-/// the engine remains the authority and re-resolves whatever is sent.
-enum EffortLevel {
-  low('low', 4),
-  standard('standard', 8),
-  high('high', 12),
-  ultra('ultra', 12);
+/// Which budget the surface hosting this dial actually enforces.
+enum EffortConsequence { steps, candidates }
 
-  const EffortLevel(this.wire, this.maxSteps);
+/// A named dial and the budgets it nominates. Mirrors harness/effort.py
+/// (`EFFORTS` and `CANDIDATE_BUDGET`); the engine remains the authority and
+/// re-resolves whatever is sent.
+enum EffortLevel {
+  low('low', 4, 1, 4),
+  standard('standard', 8, 4, 16),
+  high('high', 12, 8, 32),
+  ultra('ultra', 12, 16, 64);
+
+  const EffortLevel(this.wire, this.maxSteps, this.initialN, this.maxN);
 
   /// The value sent as `effort`. The engine names its own fallback if it
   /// does not recognize this, so a newer app cannot silently downgrade.
   final String wire;
 
-  /// The step budget this level nominates. `ultra` matches `high` on steps
-  /// and differs by candidate count, which this control does not set, so the
-  /// two deliberately show the same number rather than implying otherwise.
+  /// The step budget this level nominates. `ultra` matches `high` on steps and
+  /// differs by candidates, so on a step surface the two show the same number
+  /// rather than implying a difference the run will not produce.
   final int maxSteps;
+
+  /// The starting batch a selection loop generates before it raises N.
+  final int initialN;
+
+  /// The candidate ceiling. This is where `ultra` separates from `high`.
+  final int maxN;
+
+  int budgetFor(EffortConsequence c) =>
+      c == EffortConsequence.candidates ? maxN : maxSteps;
+
+  String labelFor(EffortConsequence c) => c == EffortConsequence.candidates
+      ? '$maxN candidates'
+      : '$maxSteps steps';
 
   static EffortLevel fromWire(String? value) => EffortLevel.values.firstWhere(
         (level) => level.wire == value,
@@ -46,11 +68,16 @@ class EffortDial extends StatelessWidget {
   /// describe a run that never happened.
   final bool enabled;
 
+  /// The budget this surface enforces. Steps by default, because that is what
+  /// the agent panel this control was built for spends.
+  final EffortConsequence consequence;
+
   const EffortDial({
     super.key,
     required this.value,
     required this.onChanged,
     this.enabled = true,
+    this.consequence = EffortConsequence.steps,
   });
 
   @override
@@ -58,7 +85,7 @@ class EffortDial extends StatelessWidget {
     final t = context.fw;
     return Semantics(
       label: 'Model effort',
-      value: '${value.wire}, ${value.maxSteps} steps',
+      value: '${value.wire}, ${value.labelFor(consequence)}',
       // Wrap, not Row: the gate strip this sits in is itself a Wrap, and a
       // fixed Row here overflowed a narrow viewport by a fraction of a pixel
       // rather than reflowing with everything around it.
@@ -88,7 +115,7 @@ class EffortDial extends StatelessWidget {
               ],
             ),
           ),
-          Text('${value.maxSteps} steps',
+          Text(value.labelFor(consequence),
               style: TextStyle(
                   fontFamily: t.monoFamily, fontSize: 11, color: t.inkFaint)),
         ],

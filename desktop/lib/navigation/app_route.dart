@@ -27,6 +27,7 @@ enum DestinationId {
   memory,
   governance,
   usage,
+  infra,
   studio,
   graph,
   feeds,

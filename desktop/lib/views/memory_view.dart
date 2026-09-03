@@ -7,6 +7,8 @@ import 'package:flutter/material.dart';
 import '../client/gateway_client.dart';
 import '../theme/flywheel_theme.dart';
 import '../widgets/fw.dart';
+import '../widgets/retrieval_panel.dart';
+import '../widgets/store_entity_panel.dart';
 
 class MemoryView extends StatefulWidget {
   final GatewayClient client;
@@ -218,6 +220,10 @@ class _MemoryViewState extends State<MemoryView> {
             FilledButton(onPressed: _addNote, child: const Text('Keep')),
           ],
         ),
+        const SizedBox(height: FwLayout.s5),
+        RetrievalPanel(client: widget.client),
+        const SizedBox(height: FwLayout.s4),
+        StoreEntityPanel(client: widget.client),
       ],
     );
   }

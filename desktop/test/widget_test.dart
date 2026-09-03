@@ -61,10 +61,11 @@ const _types = <DestinationId, String>{
   DestinationId.family: 'FamilyView',
   DestinationId.relay: 'RelayView',
   DestinationId.plugins: 'PluginsView',
+  DestinationId.infra: 'InfraView',
 };
 
 void main() {
-  testWidgets('factory preserves all thirty-five exact destination mappings',
+  testWidgets('factory preserves all thirty-six exact destination mappings',
       (tester) async {
     final dir = Directory.systemTemp.createTempSync('journey-factory-');
     addTearDown(() => dir.deleteSync(recursive: true));
@@ -106,7 +107,7 @@ void main() {
     await unmount(tester);
   });
 
-  testWidgets('thirty-five labels remain reachable at ordinary scaled viewport',
+  testWidgets('thirty-six labels remain reachable at ordinary scaled viewport',
       (tester) async {
     tester.view.physicalSize = const Size(1440, 900);
     tester.view.devicePixelRatio = 1;

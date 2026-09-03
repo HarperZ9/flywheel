@@ -32,8 +32,8 @@ void main() {
     // 1. Journey is home with its resumed evidence.
     expect(find.text('Journey'), findsOneWidget);
 
-    // 2. The catalog holds exactly thirty-five destinations in five groups.
-    expect(destinationCatalog, hasLength(35));
+    // 2. The catalog holds exactly thirty-six destinations in five groups.
+    expect(destinationCatalog, hasLength(36));
     expect(destinationCatalog.map((d) => d.group.name).toSet(),
         hasLength(5));
 

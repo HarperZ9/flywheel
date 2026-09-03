@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import '../client/gateway_client.dart';
 import '../theme/flywheel_theme.dart';
 import '../widgets/fw.dart';
+import '../widgets/governance_classify_panel.dart';
 
 class GovernanceView extends StatefulWidget {
   final GatewayClient client;
@@ -85,10 +86,21 @@ class _GovernanceViewState extends State<GovernanceView> {
         const SizedBox(height: FwLayout.s4),
         _TierDefinitions(tiers: _tiers!),
         const SizedBox(height: FwLayout.s4),
+        GovernanceClassifyPanel(
+          client: widget.client,
+          t2Overrides: _strings(_tiers!['t2_overrides']),
+          t3Overrides: _strings(_tiers!['t3_overrides']),
+        ),
+        const SizedBox(height: FwLayout.s4),
         if (_compliance != null) _ComplianceReport(report: _compliance!),
       ],
     );
   }
+
+  /// An older engine has no override vocabulary to report; the panel then
+  /// says so rather than offering words that build refuses.
+  List<String> _strings(Object? value) =>
+      value is List ? value.whereType<String>().toList() : const [];
 }
 
 class _TierDefinitions extends StatelessWidget {

@@ -14,6 +14,7 @@ import '../models/gateway_models.dart';
 import '../models/render_status.dart';
 import '../theme/flywheel_theme.dart';
 import '../widgets/endpoint_details.dart';
+import '../widgets/frontier_panel.dart';
 import '../widgets/fw.dart';
 import '../widgets/keys_panel.dart';
 import '../widgets/session_tokens_panel.dart';
@@ -142,6 +143,8 @@ class _EndpointsViewState extends State<EndpointsView> {
         const Kicker('providers · credential presence only, never values'),
         const SizedBox(height: FwLayout.s3),
         ProviderRoster(roster: _roster),
+        const SizedBox(height: FwLayout.s5),
+        FrontierPanel(client: widget.client, endpoints: _roster),
         if (_auth != null) ...[
           const SizedBox(height: FwLayout.s5),
           const Kicker('sign in · a subscription can carry usage'),

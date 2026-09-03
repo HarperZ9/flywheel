@@ -10,7 +10,9 @@ import '../models/gateway_models.dart';
 import '../models/render_status.dart';
 import '../theme/flywheel_theme.dart';
 import '../widgets/fw.dart';
+import '../widgets/packet_recheck_panel.dart';
 import '../widgets/receipt_proof_panel.dart';
+import '../widgets/scaffold_panel.dart';
 
 class ReceiptsView extends StatefulWidget {
   final GatewayClient client;
@@ -186,6 +188,10 @@ class _ReceiptsViewState extends State<ReceiptsView> {
               children: [for (final e in l.envelopes) _envelopeRow(t, e)],
             ),
           ),
+        const SizedBox(height: FwLayout.s5),
+        PacketRecheckPanel(client: widget.client),
+        const SizedBox(height: FwLayout.s4),
+        ScaffoldPanel(client: widget.client),
       ],
     );
   }

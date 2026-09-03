@@ -6,10 +6,11 @@ than assuming, and worth freezing so it only shrinks.
 
 Reachability, not grep. `_route_operation` claims `/api/agent` and
 `/api/operations/` and returns True before `_gateway_method` calls its
-fallback, so the `/api/agent` branch inside `_post` is dead code. Counting it
-as a live route inflates the denominator and hides the real gap; an earlier
-hand audit did exactly that. The dispatch model is read from the source here
-rather than hardcoded.
+fallback, so any copy of those handlers inside `_get` or `_post` is dead code.
+Counting such a branch as a live route inflates the denominator and hides the
+real gap; an earlier hand audit did exactly that. The route itself stays live,
+because the operation route serves what it claims. The dispatch model is read
+from the source here rather than hardcoded.
 
 Run: python scripts/check_ui_coverage.py [--list]
 """
@@ -24,10 +25,10 @@ ROOT = Path(__file__).resolve().parent.parent
 GATEWAY = ROOT / "harness" / "gateway.py"
 DART = ROOT / "desktop" / "lib"
 
-# Frozen at the current gap. This may only shrink: a route that gains a native
-# surface leaves the list and cannot come back, and a new unreferenced route
-# fails the gate.
-BASELINE = 15
+# Frozen at the current gap, which is now closed: every route the gateway
+# dispatches has a native surface. This may only shrink, so at zero the gate
+# is an equality. A new route without a surface fails it.
+BASELINE = 0
 
 
 def _api_strings(node: ast.AST) -> set:
@@ -48,9 +49,16 @@ def _api_strings(node: ast.AST) -> set:
     return found
 
 
-def live_routes() -> tuple[set, set]:
-    """(reachable, dead) route literals, per the handler's own dispatch."""
-    tree = ast.parse(GATEWAY.read_text(encoding="utf-8", errors="replace"))
+def live_routes(source: str | None = None) -> tuple[set, set]:
+    """(reachable, dead) route literals, per the handler's own dispatch.
+
+    `source` overrides the gateway text. The dead-branch rule has to stay
+    falsifiable after the last dead branch is deleted, so the property is
+    testable against a fixture rather than against whatever the live file
+    happens to contain today.
+    """
+    tree = ast.parse(source if source is not None
+                     else GATEWAY.read_text(encoding="utf-8", errors="replace"))
     handler = next(n for n in ast.walk(tree)
                    if isinstance(n, ast.ClassDef) and n.name == "_Handler")
     methods = {n.name: n for n in handler.body if isinstance(n, ast.FunctionDef)}

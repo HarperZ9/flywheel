@@ -10,6 +10,11 @@ const gatewayOperationSchema = 'flywheel.gateway-operation/v1';
 final _credentialRef = RegExp(r'^cred_[0-9a-f]{32}$');
 final _dataRef = RegExp(r'^data_[A-Za-z0-9._:-]{0,123}$');
 final _requestId = RegExp(r'^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$');
+/// Operation fields the engine declares as filesystem paths: the workspace to
+/// import, the suite to audit, the fixtures a pack admission reads. A path in
+/// any other field is a mistake, so the exemption is named rather than a
+/// blanket allowance.
+const _pathFields = {'root', 'path', 'fixtures_root'};
 final _secretKey = RegExp(
     r'(?:^|[_-])(api[_-]?key|token|secret|password|credential)(?:$|[_-])',
     caseSensitive: false);
@@ -22,7 +27,10 @@ Object? _snapshot(Object? value, List<int> budget, int depth,
   if (value == null || value is bool || value is int) return value;
   if (value is num) return value.isFinite ? value : _invalid();
   if (value is String) {
-    if (!isSafePublicText(value) && key != 'root') _invalid();
+    if (!isSafePublicText(value) &&
+        !(_pathFields.contains(key) && isSafeLocalPath(value))) {
+      _invalid();
+    }
     return value;
   }
   if (value is List) {
@@ -55,8 +63,12 @@ final class GatewayOperation {
         credentialRefs =
             List<String>.unmodifiable(raw['credential_refs'] as List<String>) {
     if (!_requestId.hasMatch(clientRequestId) ||
-        [destination.kind, destination.ref, tool]
+        [destination.kind, tool]
             .any((v) => v.isEmpty || !isSafePublicText(v)) ||
+        destination.ref.isEmpty ||
+        !(pathDestinationKinds.contains(destination.kind)
+            ? isSafeLocalPath(destination.ref)
+            : isSafePublicText(destination.ref)) ||
         dataRefs.any((ref) => !_dataRef.hasMatch(ref)) ||
         credentialRefs.any((ref) => !_credentialRef.hasMatch(ref)) ||
         dataRefs.toSet().length != dataRefs.length ||
@@ -127,7 +139,7 @@ final class GatewayOperation {
           credentialRefs: const []);
 
   factory GatewayOperation.companionAsk(String request, String prompt,
-          {String? solutionSig}) =>
+          {String? solutionSig, String? effort}) =>
       GatewayOperation._withRefs(
           'companion.ask',
           request,
@@ -136,6 +148,10 @@ final class GatewayOperation {
           {
             'prompt': prompt,
             if (solutionSig != null) 'solution_sig': solutionSig,
+            // The dial travels in the grant, so the operator approves the
+            // budget they are actually authorizing rather than a default the
+            // sheet never showed them.
+            if (effort != null) 'effort': effort,
           },
           dataRefs: const [],
           credentialRefs: const []);

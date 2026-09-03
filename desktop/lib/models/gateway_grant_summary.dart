@@ -20,6 +20,12 @@ const _proposalFields = {
   'expires_at',
   'summary'
 };
+/// Destination kinds whose ref is a directory on this machine. Every other
+/// kind names a model, an endpoint, a plugin: text that is safe to show
+/// anywhere. These three name a path, so they are read with the narrower
+/// local-path rule instead of being blanked. A credential scan with no root
+/// reads the environment and names it that way, which the same rule accepts.
+const pathDestinationKinds = {'suite', 'workspace', 'scan'};
 final _journeyRef = RegExp(r'^jrn_[0-9a-f]{32}$');
 final _credentialRef = RegExp(r'^cred_[0-9a-f]{32}$');
 final _dataRef = RegExp(r'^data_[A-Za-z0-9._:-]{0,123}$');
@@ -37,8 +43,15 @@ final class GatewayDestination {
       addParseIssue(issues, field, raw);
       return const GatewayDestination('', '');
     }
-    return GatewayDestination(
-        readText(raw, 'kind', issues), readText(raw, 'ref', issues));
+    final kind = readText(raw, 'kind', issues);
+    final ref = raw['ref'];
+    if (pathDestinationKinds.contains(kind) &&
+        ref is String &&
+        ref.isNotEmpty &&
+        isSafeLocalPath(ref)) {
+      return GatewayDestination(kind, ref);
+    }
+    return GatewayDestination(kind, readText(raw, 'ref', issues));
   }
 
   Map<String, String> toJson() => {'kind': kind, 'ref': ref};

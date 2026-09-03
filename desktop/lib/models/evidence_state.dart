@@ -44,6 +44,14 @@ bool isSafePublicText(String value) =>
     !_fileUri.hasMatch(value) &&
     !_secretValue.hasMatch(value) &&
     !_assignedSecret.hasMatch(value);
+
+/// A local filesystem path the engine needs verbatim: the workspace it should
+/// import, the suite it should audit. Such a value fails isSafePublicText by
+/// construction, because that predicate exists to keep paths off published
+/// surfaces. A field declared to carry one is still checked for the secret
+/// shapes, so the exemption is narrow rather than a hole.
+bool isSafeLocalPath(String value) =>
+    !_secretValue.hasMatch(value) && !_assignedSecret.hasMatch(value);
 String? safeRawValue(Object? raw) {
   if (raw == null) return null;
   if (raw is String) return isSafePublicText(raw) ? raw : '[redacted]';

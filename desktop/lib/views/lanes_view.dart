@@ -13,6 +13,7 @@ import '../models/lane_identity.dart';
 import '../theme/flywheel_theme.dart';
 import '../widgets/callable_lanes_panel.dart';
 import '../widgets/fw.dart';
+import '../widgets/lane_call_panel.dart';
 
 class LanesView extends StatelessWidget {
   final LaneRoster? roster;
@@ -78,6 +79,8 @@ class LanesView extends StatelessWidget {
         if (client != null) ...[
           const SizedBox(height: FwLayout.s5),
           CallableLanesPanel(client: client!, alive: alive),
+          const SizedBox(height: FwLayout.s4),
+          LaneCallPanel(client: client!),
         ],
       ],
     );

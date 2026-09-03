@@ -116,3 +116,9 @@ artifacts/closeout/FW-2026-08-02-CLOSEOUT/task-1-proof-surface-reviewed/230-whee
 # The handoff record carries the stable facts; these self-referential receipts
 # stay local.
 artifacts/closeout/FW-2026-08-02-CLOSEOUT/task-checkpoint/
+
+# Android release signing: the keystore and its passwords never ship.
+desktop/android/key.properties
+!desktop/android/key.properties.example
+*.jks
+*.keystore
