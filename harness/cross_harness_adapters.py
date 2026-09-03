@@ -5,8 +5,7 @@ import base64, binascii, json, math, os, re, shlex, shutil, time, urllib.error, 
 from pathlib import Path; from typing import Any, Callable
 from urllib.parse import urlsplit
 from .cross_harness_artifacts import canonical_sha256
-from .cross_harness_types import AdapterResult, AvailabilityResult, EnforcementResult
-from .endpoint_registry import BackendProposer
+from .cross_harness_types import AdapterResult, AvailabilityResult, EnforcementResult, _usage_secret_field_allowed; from .endpoint_registry import BackendProposer
 from .local_agent import MalformedBackendOutput, OllamaBackend, ServeBackend
 from .local_loop import run_agent
 from .local_session import SessionLedger
@@ -27,12 +26,13 @@ def _resolve_codex() -> str:
 _BEARER, _ASSIGN = re.compile(r"(?i)(bearer\s+)[^\s,;\"']+"), re.compile(r"(?i)((?:api[_-]?key|token|password|secret|authorization)\s*[:=]\s*)[^\s,;\"']+")
 _JWT, _API_KEY = re.compile(r"\beyJ[A-Za-z0-9_-]{6,}\.[A-Za-z0-9_-]{6,}\.[A-Za-z0-9_-]{3,}\b"), re.compile(r"\b(?:sk|rk|pk)-[A-Za-z0-9_-]{12,}\b", re.I)
 _URL_CREDS, _SECRET_KEY = re.compile(r"(https?://)[^/@\s:]+:[^/@\s]+@", re.I), re.compile(r"authorization|credential|password|secret|token|api[_ -]?key|jwt", re.I)
-def _clean(value: Any) -> Any:
+def _clean(value: Any, _in_usage: bool = False) -> Any:
     if isinstance(value, dict):
         named_secret = _SECRET_KEY.search(str(value.get("name", "")))
-        return {str(k): ("[REDACTED]" if (k == "value" and named_secret) or (_SECRET_KEY.search(str(k)) and type(v) is not int)  # plain-int values are token COUNTS (usage *_tokens); credentials are strings
-                         else _clean(v)) for k, v in value.items()}
-    if isinstance(value, list): return [_clean(item) for item in value[:MAX_TRACE_EVENTS]]
+        return {str(key): ("[REDACTED]" if (str(key) == "value" and named_secret)
+                 or (_SECRET_KEY.search(str(key)) and not _usage_secret_field_allowed(str(key), item, _in_usage))
+                 else _clean(item, _in_usage or str(key) == "usage")) for key, item in value.items()}
+    if isinstance(value, list): return [_clean(item, _in_usage) for item in value[:MAX_TRACE_EVENTS]]
     if not isinstance(value, str): return value
     text = _ASSIGN.sub(r"\1[REDACTED]", _BEARER.sub(r"\1[REDACTED]", value))
     text = _API_KEY.sub("[REDACTED]", _JWT.sub("[REDACTED]", text))

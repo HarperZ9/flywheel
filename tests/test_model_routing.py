@@ -212,6 +212,8 @@ def test_role_chain_all_absent_auth_exhausts_cleanly(monkeypatch):
     # candidate and exhausts honestly rather than pretending to answer.
     for env in ("ANTHROPIC_API_KEY", "DASHSCOPE_API_KEY", "OPENROUTER_API_KEY"):
         monkeypatch.delenv(env, raising=False)
+    monkeypatch.setattr("harness.model_router.credential_source",
+                        lambda _name: "absent")
     r = route_role(FLAGSHIP)
     with pytest.raises(RoutingExhausted) as e:
         r.generate("x", seed=0, temperature=0.0, max_new_tokens=8)

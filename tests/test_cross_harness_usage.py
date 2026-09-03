@@ -82,3 +82,33 @@ def test_redaction_passes_token_counts_and_keeps_string_secrets(tmp_path):
     event = next(e for e in proposer.events if e.get("type") == "turn.completed")
     assert event["api_token"] == "[REDACTED]" and event["usage"] == USAGE_A
     assert sanitize_evidence({"usage": dict(USAGE_A), "session_token": "abc"}) == {"usage": USAGE_A, "session_token": "[REDACTED]"}
+
+
+def test_redaction_rejects_numeric_secret_values_outside_usage(tmp_path):
+    stdout = json.dumps({"type": "turn.completed", "model": "m", "session_token": 8675309})
+    proposer = CodexCliProposer("spark", workspace=tmp_path, artifact_dir=tmp_path, timeout_seconds=3,
+        runner=lambda *a, **k: outcome(stdout, "inner answer"), executable_resolver=lambda: "codex.cmd")
+    proposer.generate("prompt", seed=1, temperature=.7, max_new_tokens=9)
+    event = next(e for e in proposer.events if e.get("type") == "turn.completed")
+    assert event["session_token"] == "[REDACTED]"
+    assert sanitize_evidence({"session_token": 8675309}) == {"session_token": "[REDACTED]"}
+
+
+def test_redaction_preserves_nested_token_details_only_inside_usage(tmp_path):
+    usage = {"input_tokens": 100, "input_tokens_details": {"cached_tokens": 20},
+             "output_tokens": 30, "output_tokens_details": {"reasoning_tokens": 5},
+             "total_tokens": 130}
+    unsafe_usage = {**usage, "session_token": 8675309}
+    expected_usage = {**usage, "session_token": "[REDACTED]"}
+    stdout = json.dumps({"type": "turn.completed", "model": "m", "usage": unsafe_usage,
+                         "input_tokens": 999, "input_tokens_details": {"cached_tokens": 999}})
+    proposer = CodexCliProposer("spark", workspace=tmp_path, artifact_dir=tmp_path, timeout_seconds=3,
+        runner=lambda *a, **k: outcome(stdout, "inner answer"), executable_resolver=lambda: "codex.cmd")
+    proposer.generate("prompt", seed=1, temperature=.7, max_new_tokens=9)
+    event = next(e for e in proposer.events if e.get("type") == "turn.completed")
+    assert event["usage"] == expected_usage
+    assert event["input_tokens"] == "[REDACTED]"
+    assert event["input_tokens_details"] == "[REDACTED]"
+    assert sanitize_evidence({"usage": unsafe_usage, "input_tokens": 999,
+                              "input_tokens_details": {"cached_tokens": 999}}) == {
+        "usage": expected_usage, "input_tokens": "[REDACTED]", "input_tokens_details": "[REDACTED]"}

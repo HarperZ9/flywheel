@@ -208,19 +208,40 @@ def test_the_plan_feeds_back_through_the_mde_at_or_under_target():
 
 def test_the_planned_power_is_exact_not_approximate():
     """Independent recomputation with exact rational arithmetic. The planned
-    design at d=0.25, f=0.5 is N=70, m=35, critical smaller cell 11, and the
-    binomial(35, 0.75) mass on the rejection region is 0.857887."""
+    design at d=0.25, f=0.5 is N=60, m=30, critical smaller cell 9, and the
+    binomial(30, 0.75) mass on the rejection region is 0.803407."""
     from fractions import Fraction
     from math import comb as _comb
     out = mcnemar_plan(0.25, recorded_discordant_fraction=0.5)
-    assert out["n_pairs"] == 70
-    assert out["expected_discordant"] == 35
-    m, k_crit = 35, 11
+    assert out["n_pairs"] == 60
+    assert out["expected_discordant"] == 30
+    m, k_crit = 30, 9
     p1 = Fraction(3, 4)                              # (1 + d/f) / 2
     mass = sum(_comb(m, b) * p1 ** b * (1 - p1) ** (m - b)
                for b in list(range(k_crit + 1)) + list(range(m - k_crit, m + 1)))
     assert out["achieved_power"] == pytest.approx(float(mass), abs=1e-6)
     assert out["achieved_power"] >= 0.8
+
+
+@pytest.mark.parametrize(
+    ("delta", "fraction", "max_pairs", "expected_n"),
+    (
+        (0.25, 0.333, 20000, 37),
+        (0.05, 0.333, 2000, 1058),
+    ),
+)
+def test_the_plan_finds_the_first_valid_n_across_nonmonotone_boundaries(
+        delta, fraction, max_pairs, expected_n):
+    """Exact-test critical values and floor(fraction * N) make feasibility
+    nonmonotone in N. The planner must therefore find the first valid integer,
+    even when a later power-of-two probe fails or the next probe exceeds the
+    configured cap."""
+    out = mcnemar_plan(
+        delta,
+        recorded_discordant_fraction=fraction,
+        max_pairs=max_pairs,
+    )
+    assert out["n_pairs"] == expected_n
 
 
 def test_a_smaller_target_delta_needs_more_pairs():
