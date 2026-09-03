@@ -31,10 +31,10 @@
 
   <!-- Row 1: inputs -->
   <g>
-    <rect class="card" x="150" y="92" width="290" height="46" rx="12"/>
+    <rect class="card" x="150" y="92" width="290" height="46" rx="3"/>
     <text class="t" x="170" y="113">Browser: the shell</text>
     <text class="s" x="170" y="129">router, world, companion, studio, receipts</text>
-    <rect class="card" x="520" y="92" width="290" height="46" rx="12"/>
+    <rect class="card" x="520" y="92" width="290" height="46" rx="3"/>
     <text class="t" x="540" y="113">CLI / curl / MCP</text>
     <text class="s" x="540" y="129">same routes, one origin</text>
   </g>
@@ -42,21 +42,21 @@
   <path class="flow" d="M665,138 L665,164" marker-end="url(#ar)"/>
 
   <!-- Row 2: gateway -->
-  <rect class="accentbox" x="150" y="166" width="660" height="52" rx="12"/>
+  <rect class="accentbox" x="150" y="166" width="660" height="52" rx="3"/>
   <text class="t" x="180" y="190">Gateway  ·  one origin  ·  127.0.0.1:8799</text>
   <text class="s" x="180" y="207">stdlib HTTP, zero dependencies, fully offline; every response is re-checkable JSON</text>
 
   <!-- Row 3: routes -->
   <g>
-    <rect class="card" x="40"  y="250" width="150" height="44" rx="10"/>
+    <rect class="card" x="40"  y="250" width="150" height="44" rx="3"/>
     <text class="t" x="55" y="270">/api/world</text><text class="s" x="55" y="285">root-hashed state</text>
-    <rect class="card" x="205" y="250" width="160" height="44" rx="10"/>
+    <rect class="card" x="205" y="250" width="160" height="44" rx="3"/>
     <text class="t" x="220" y="270">/api/endpoints</text><text class="s" x="220" y="285">the router roster</text>
-    <rect class="card" x="380" y="250" width="150" height="44" rx="10"/>
+    <rect class="card" x="380" y="250" width="150" height="44" rx="3"/>
     <text class="t" x="395" y="270">/api/forge</text><text class="s" x="395" y="285">the studio</text>
-    <rect class="accentbox" x="545" y="250" width="175" height="44" rx="10"/>
-    <text class="t" x="560" y="270">/api/companion</text><text class="s" x="560" y="285">the seat</text>
-    <rect class="card" x="735" y="250" width="185" height="44" rx="10"/>
+    <rect class="accentbox" x="545" y="250" width="175" height="44" rx="3"/>
+    <text class="t" x="560" y="270">/api/companion</text><text class="s" x="560" y="285">the assistant</text>
+    <rect class="card" x="735" y="250" width="185" height="44" rx="3"/>
     <text class="t" x="750" y="270">/api/training/status</text><text class="s" x="750" y="285">read-only</text>
   </g>
   <path class="flow" d="M115,218 L115,250" marker-end="url(#ar)"/>
@@ -67,35 +67,35 @@
 
   <!-- Row 4: the seat pipeline -->
   <path class="flowa" d="M632,294 L632,326" marker-end="url(#ara)"/>
-  <rect class="accentbox" x="360" y="328" width="545" height="50" rx="12"/>
-  <text class="t" x="380" y="350">Companion seat  →  AdaptiveSelector (raise N on evidence)</text>
+  <rect class="accentbox" x="360" y="328" width="545" height="50" rx="3"/>
+  <text class="t" x="380" y="350">Companion  →  selector: more candidates, then escalate</text>
   <text class="s" x="380" y="367">cache hit  →  local verified  →  local agreement  →  escalate</text>
 
   <!-- propose / dispose -->
-  <rect class="card" x="360" y="410" width="255" height="58" rx="12"/>
+  <rect class="card" x="360" y="410" width="255" height="58" rx="3"/>
   <text class="cap" x="378" y="430">PROPOSE</text>
   <text class="t" x="378" y="449">Local model  ·  any provider</text>
-  <text class="s" x="378" y="463">the replaceable half; presence-only creds</text>
+  <text class="s" x="378" y="463">swap it freely; key presence only</text>
 
-  <rect class="card" x="650" y="410" width="255" height="58" rx="12"/>
+  <rect class="card" x="650" y="410" width="255" height="58" rx="3"/>
   <text class="cap" x="668" y="430">DISPOSE</text>
-  <text class="t" x="668" y="449">External oracle</text>
-  <text class="s" x="668" y="463">the only thing that can accept (C2)</text>
+  <text class="t" x="668" y="449">External check</text>
+  <text class="s" x="668" y="463">the only thing that can accept an answer</text>
 
   <path class="flow" d="M470,378 L470,410" marker-end="url(#ar)"/>
   <path class="flowa" d="M760,378 L760,410" marker-end="url(#ara)"/>
 
   <!-- Row 5: outcomes -->
-  <rect class="card" x="360" y="500" width="255" height="54" rx="12" stroke="var(--ok)"/>
+  <rect class="card" x="360" y="500" width="255" height="54" rx="3" stroke="var(--ok)"/>
   <text class="ok" x="378" y="521">PASS  →  Receipt</text>
   <text class="s" x="378" y="538">re-checkable; tamper and the check fails</text>
 
-  <rect class="card" x="650" y="500" width="255" height="54" rx="12" stroke="var(--warm)"/>
+  <rect class="card" x="650" y="500" width="255" height="54" rx="3" stroke="var(--warm)"/>
   <text class="t" x="668" y="521" fill="var(--warm)">Escalate  →  frontier tier</text>
   <text class="s" x="668" y="538">named, never called for you</text>
 
   <path class="flow" d="M487,468 L487,500" marker-end="url(#ar)"/>
   <path class="flow" d="M777,468 L777,500" marker-end="url(#ar)"/>
 
-  <text class="s" x="40" y="588">No learned model on the accept path. The oracle disposes; the provider proposes; escalation is a confidence threshold, not a guess.</text>
+  <text class="s" x="40" y="588">Nothing learned decides what passes. The model proposes, an external check accepts or rejects, and escalation follows a threshold rather than a guess.</text>
 </svg>
