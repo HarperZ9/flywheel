@@ -165,6 +165,7 @@ Widget? _advanced(DestinationId id, DestinationInputs i) => switch (id) {
         InstrumentsView(client: i.client, alive: i.alive),
       DestinationId.forum => ForumView(client: i.client),
       DestinationId.lanes => LanesView(
+          client: i.client,
           roster: i.roster,
           alive: i.alive,
           onProbe: i.onProbe,

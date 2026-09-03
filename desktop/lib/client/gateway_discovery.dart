@@ -254,4 +254,9 @@ extension GatewayDiscovery on GatewayClient {
         '$baseUrl/api/receipts/proof?leaf=${Uri.encodeQueryComponent(leaf)}'));
     return _decode(r);
   }
+
+  /// GET /api/lanes/callable - which lanes can be called, and the governance
+  /// tier each one demands before it will run.
+  Future<Map<String, dynamic>> callableLanes() =>
+      getJson('/api/lanes/callable');
 }

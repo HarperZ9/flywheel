@@ -7,9 +7,11 @@
 
 import 'package:flutter/material.dart';
 
+import '../client/gateway_client.dart';
 import '../models/gateway_models.dart';
 import '../models/lane_identity.dart';
 import '../theme/flywheel_theme.dart';
+import '../widgets/callable_lanes_panel.dart';
 import '../widgets/fw.dart';
 
 class LanesView extends StatelessWidget {
@@ -18,12 +20,18 @@ class LanesView extends StatelessWidget {
   final VoidCallback? onProbe;
   final Future<Map<String, dynamic>> Function(String name)? onInstall;
 
+  /// Needed for the callable list, which answers a different question from
+  /// the roster: not what is installed, but what may be invoked and at what
+  /// governance tier. Optional so a caller with no client still renders.
+  final GatewayClient? client;
+
   const LanesView(
       {super.key,
       this.roster,
       required this.alive,
       this.onProbe,
-      this.onInstall});
+      this.onInstall,
+      this.client});
 
   @override
   Widget build(BuildContext context) {
@@ -67,6 +75,10 @@ class LanesView extends StatelessWidget {
             return _laneGrid(lanes, twoCol);
           },
         ),
+        if (client != null) ...[
+          const SizedBox(height: FwLayout.s5),
+          CallableLanesPanel(client: client!, alive: alive),
+        ],
       ],
     );
   }
