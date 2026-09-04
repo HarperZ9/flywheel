@@ -116,6 +116,29 @@ producer, and stops on a pass, on a repeated failure signature, or on running
 out of attempts. Inside the harness loop, pass `output_contract` and
 `output_authorities` to `run_loop` and a held answer does not accept.
 
+## Closing out a piece of work
+Answer four questions at the end of a task, a goal, or a session: what we set
+out to do, what we did, what is left, and what decisions the operator owes.
+Derive the factual half rather than recalling it:
+
+    python scripts/run_session_summary.py --scope task --out "" --markdown-out ""
+
+Feed your own claims back through the same command so they get checked. An
+empty `--remaining ""` claims nothing is left, and the verdict returns
+`SUMMARY_DISAGREES` when the tree still holds uncommitted or unpushed work.
+Fix the claim, not the check. Scopes are `task` (head commit plus working
+tree), `goal` (branch against its base), and `session` (goal plus receipts).
+
+`--validation-ledger <path>` folds the output checks recorded during the run
+into the third answer. Every entry short of a clean release is work that is
+left, worst first, and a held entry raises a decision as well. The ledger
+carries which fields were short, never the value an answer failed against.
+
+`--strict` puts the result on the exit code: `1` a stated answer contradicts
+the tree, `3` work is left, `0` nothing outstanding. Unfinished and wrong are
+separate facts, and a script that merged them would report a run with held
+output as clean.
+
 ## Hygiene
 Never commit secrets, `.env` files, tokens, or private material to this public
 repository. Verify before every commit. Branch before committing to a default

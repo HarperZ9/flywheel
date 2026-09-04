@@ -210,6 +210,19 @@ def build_manifest(*, store_root: str = DEFAULT_STORE_ROOT) -> dict:
                 "recommended_validation_slice": "python -m pytest tests/test_schematic_drift_check.py tests/test_harness_cli.py -q",
             },
             {
+                "name": "session-summary",
+                "delegates_to": "scripts/run_session_summary.py",
+                "purpose": "Answer the four end-of-work questions with git-derived evidence and stated claims kept apart, and flag any claim the tree does not support.",
+                "schemas": ["harness.session-summary/v1"],
+                "evidence_surface": "branch window, commits, uncommitted paths, upstream position, added attention markers, receipt metadata",
+                "default_artifacts": [
+                    "C:/tmp/session_summary.json",
+                    "C:/tmp/session_summary.md",
+                ],
+                "long_running_risk": "low",
+                "recommended_validation_slice": "python -m pytest tests/test_session_summary.py tests/test_harness_cli.py -q",
+            },
+            {
                 "name": "agentic-tasks",
                 "delegates_to": "scripts/run_agentic_task_set_manifest.py",
                 "purpose": "Expand the custom agentic task set into prompt hashes, planned artifacts, and manifest-only dry scorecard rows.",
@@ -784,6 +797,14 @@ def build_parser() -> argparse.ArgumentParser:
     schematic.add_argument("--graph", default="C:/dev/public/flywheel/project-docs/schematics/closed-loop-integration.graph.json")
     schematic.add_argument("--report", default="C:/dev/public/flywheel/project-docs/records/CLOSED-LOOP-INTEGRATION-SCHEMATIC-2026-07-09.md")
 
+    session_summary = subparsers.add_parser("session-summary", help="emit the four-question run summary with derived evidence")
+    _add_common_io(session_summary)
+    session_summary.add_argument("--scope", choices=("task", "goal", "session"), default="session")
+    for flag in ("--base", "--since", "--receipt-store", "--statements", "--validation-ledger"):
+        session_summary.add_argument(flag, default="")
+    for flag in ("--fail-on-disagreement", "--strict"):
+        session_summary.add_argument(flag, action="store_true")
+
     agentic = subparsers.add_parser("agentic-tasks", help="emit non-executing agentic task manifest")
     _add_common_io(agentic)
     agentic.add_argument("--task-set", default="C:/dev/public/flywheel/benchmarks/agentic-task-set-v1.json")
@@ -997,10 +1018,8 @@ def build_command(args, *, repo_root: Path) -> list[str]:
         command = [
             py,
             "scripts/run_benchmark_profile_manifest.py",
-            "--providers",
-            args.providers,
-            "--artifact-roots",
-            args.artifact_roots,
+            "--providers", args.providers,
+            "--artifact-roots", args.artifact_roots,
             "--max-artifacts",
             str(args.max_artifacts),
         ]
@@ -1026,8 +1045,7 @@ def build_command(args, *, repo_root: Path) -> list[str]:
         command = [
             py,
             "scripts/run_mcp_tool_health_receipts.py",
-            "--tools",
-            args.tools,
+            "--tools", args.tools,
         ]
         for observation in args.observation:
             command.extend(["--observation", observation])
@@ -1037,10 +1055,8 @@ def build_command(args, *, repo_root: Path) -> list[str]:
         command = [
             py,
             "scripts/run_codex_mcp_launch_contract.py",
-            "--codex-config",
-            args.codex_config,
-            "--tools",
-            args.tools,
+            "--codex-config", args.codex_config,
+            "--tools", args.tools,
         ]
         for observation in args.observation:
             command.extend(["--observation", observation])
@@ -1050,10 +1066,8 @@ def build_command(args, *, repo_root: Path) -> list[str]:
         command = [
             py,
             "scripts/run_package_ship_doctor.py",
-            "--package-summary",
-            args.package_summary,
-            "--repo-root",
-            args.repo_root,
+            "--package-summary", args.package_summary,
+            "--repo-root", args.repo_root,
         ]
         if args.strict_exit:
             command.append("--strict-exit")
@@ -1063,8 +1077,7 @@ def build_command(args, *, repo_root: Path) -> list[str]:
         command = [
             py,
             "scripts/run_harness_architecture_report.py",
-            "--dist",
-            args.dist,
+            "--dist", args.dist,
         ]
         _append_if(command, "--release-manifest", args.release_manifest)
         _append_if(command, "--executable-manifest", args.executable_manifest)
@@ -1090,10 +1103,8 @@ def build_command(args, *, repo_root: Path) -> list[str]:
         command = [
             py,
             "scripts/run_enterprise_readiness_report.py",
-            "--tool-contract",
-            args.tool_contract,
-            "--tools",
-            args.tools,
+            "--tool-contract", args.tool_contract,
+            "--tools", args.tools,
         ]
         _common_outputs(command, args)
         return command
@@ -1101,12 +1112,9 @@ def build_command(args, *, repo_root: Path) -> list[str]:
         command = [
             py,
             "scripts/run_tool_integration_contract.py",
-            "--tools",
-            args.tools,
-            "--base-root",
-            args.base_root,
-            "--package-root",
-            args.package_root,
+            "--tools", args.tools,
+            "--base-root", args.base_root,
+            "--package-root", args.package_root,
         ]
         for tool_root in args.tool_root:
             command.extend(["--tool-root", tool_root])
@@ -1116,14 +1124,10 @@ def build_command(args, *, repo_root: Path) -> list[str]:
         command = [
             py,
             "scripts/run_runtime_activation_contract.py",
-            "--package-root",
-            args.package_root,
-            "--repo-root",
-            args.repo_root,
-            "--model-run-root",
-            args.model_run_root,
-            "--log-root",
-            args.log_root,
+            "--package-root", args.package_root,
+            "--repo-root", args.repo_root,
+            "--model-run-root", args.model_run_root,
+            "--log-root", args.log_root,
         ]
         _append_if(command, "--env-vars", args.env_vars)
         _common_outputs(command, args)
@@ -1132,8 +1136,7 @@ def build_command(args, *, repo_root: Path) -> list[str]:
         command = [
             py,
             "scripts/run_benchmark_profile_coverage.py",
-            "--profile",
-            args.profile,
+            "--profile", args.profile,
         ]
         _append_if(command, "--artifacts", args.artifacts)
         _common_outputs(command, args)
@@ -1142,12 +1145,9 @@ def build_command(args, *, repo_root: Path) -> list[str]:
         command = [
             py,
             "scripts/run_harness_comparison_report.py",
-            "--artifacts",
-            args.artifacts,
-            "--flywheel-role",
-            args.flywheel_role,
-            "--codex-role",
-            args.codex_role,
+            "--artifacts", args.artifacts,
+            "--flywheel-role", args.flywheel_role,
+            "--codex-role", args.codex_role,
         ]
         _common_outputs(command, args)
         return command
@@ -1155,10 +1155,8 @@ def build_command(args, *, repo_root: Path) -> list[str]:
         command = [
             py,
             "scripts/run_benchmark_execution_matrix.py",
-            "--providers",
-            args.providers,
-            "--artifact-dir",
-            args.artifact_dir,
+            "--providers", args.providers,
+            "--artifact-dir", args.artifact_dir,
         ]
         _common_outputs(command, args)
         return command
@@ -1166,25 +1164,30 @@ def build_command(args, *, repo_root: Path) -> list[str]:
         command = [
             py,
             "scripts/run_schematic_drift_check.py",
-            "--graph",
-            args.graph,
-            "--report",
-            args.report,
+            "--graph", args.graph,
+            "--report", args.report,
         ]
+        _common_outputs(command, args)
+        return command
+    if args.command_name == "session-summary":
+        command = [py, "scripts/run_session_summary.py", "--scope", args.scope]
+        for flag, value in (("--base", args.base), ("--since", args.since),
+                            ("--receipt-store", args.receipt_store), ("--statements", args.statements),
+                            ("--validation-ledger", args.validation_ledger)):
+            if value:
+                command += [flag, value]
+        command += [flag for flag, on in (("--fail-on-disagreement", args.fail_on_disagreement),
+                                          ("--strict", args.strict)) if on]
         _common_outputs(command, args)
         return command
     if args.command_name == "agentic-tasks":
         command = [
             py,
             "scripts/run_agentic_task_set_manifest.py",
-            "--task-set",
-            args.task_set,
-            "--adapter",
-            args.adapter,
-            "--artifact-dir",
-            args.artifact_dir,
-            "--provider-roles",
-            args.provider_roles,
+            "--task-set", args.task_set,
+            "--adapter", args.adapter,
+            "--artifact-dir", args.artifact_dir,
+            "--provider-roles", args.provider_roles,
         ]
         _common_outputs(command, args)
         return command
@@ -1219,8 +1222,7 @@ def build_command(args, *, repo_root: Path) -> list[str]:
         command = [
             py,
             "scripts/run_adapter_runtime_matrix.py",
-            "--contract",
-            args.contract,
+            "--contract", args.contract,
         ]
         _append_if(command, "--endpoint-profiles", args.endpoint_profiles)
         _append_if(command, "--endpoint-auth-status", args.endpoint_auth_status)
@@ -1230,14 +1232,10 @@ def build_command(args, *, repo_root: Path) -> list[str]:
         command = [
             py,
             "scripts/run_embodied_realtime_multimodal_plan.py",
-            "--contract",
-            args.contract,
-            "--providers",
-            args.providers,
-            "--latency-budgets-ms",
-            args.latency_budgets_ms,
-            "--artifact-dir",
-            args.artifact_dir,
+            "--contract", args.contract,
+            "--providers", args.providers,
+            "--latency-budgets-ms", args.latency_budgets_ms,
+            "--artifact-dir", args.artifact_dir,
         ]
         _common_outputs(command, args)
         return command
@@ -1245,10 +1243,8 @@ def build_command(args, *, repo_root: Path) -> list[str]:
         command = [
             py,
             "scripts/run_model_card_claim_table.py",
-            "--contract",
-            args.contract,
-            "--artifact-dir",
-            args.artifact_dir,
+            "--contract", args.contract,
+            "--artifact-dir", args.artifact_dir,
         ]
         _append_if(command, "--evidence", args.evidence)
         _common_outputs(command, args)
@@ -1257,8 +1253,7 @@ def build_command(args, *, repo_root: Path) -> list[str]:
         command = [
             py,
             "scripts/run_tool_hardening_plan.py",
-            "--readiness-artifact",
-            args.readiness_artifact,
+            "--readiness-artifact", args.readiness_artifact,
         ]
         _common_outputs(command, args)
         return command
@@ -1266,20 +1261,13 @@ def build_command(args, *, repo_root: Path) -> list[str]:
         command = [
             py,
             "scripts/run_classifier_friction_benchmark.py",
-            "--providers",
-            args.providers,
-            "--modes-to-test",
-            args.modes_to_test,
-            "--endpoint-model",
-            args.endpoint_model,
-            "--modes",
-            args.modes,
-            "--serve-url",
-            args.serve_url,
-            "--ollama-url",
-            args.ollama_url,
-            "--local-model",
-            args.local_model,
+            "--providers", args.providers,
+            "--modes-to-test", args.modes_to_test,
+            "--endpoint-model", args.endpoint_model,
+            "--modes", args.modes,
+            "--serve-url", args.serve_url,
+            "--ollama-url", args.ollama_url,
+            "--local-model", args.local_model,
             "--max-tasks",
             str(args.max_tasks),
             "--timeout-seconds",
@@ -1296,8 +1284,7 @@ def build_command(args, *, repo_root: Path) -> list[str]:
         command = [
             py,
             "scripts/run_model_endpoint_gate.py",
-            "--profile-artifact",
-            args.profile_artifact,
+            "--profile-artifact", args.profile_artifact,
             "--timeout-seconds",
             str(args.timeout_seconds),
             "--max-tokens",
@@ -1313,8 +1300,7 @@ def build_command(args, *, repo_root: Path) -> list[str]:
         command = [
             py,
             "scripts/run_local_model_launch_readiness.py",
-            "--profile-artifact",
-            args.profile_artifact,
+            "--profile-artifact", args.profile_artifact,
         ]
         _append_if(command, "--models", args.models)
         _append_if(command, "--backends", args.backends)
@@ -1326,14 +1312,11 @@ def build_command(args, *, repo_root: Path) -> list[str]:
         command = [
             py,
             "scripts/run_local_model_serve_launcher.py",
-            "--profile-artifact",
-            args.profile_artifact,
-            "--serve-python",
-            args.serve_python,
+            "--profile-artifact", args.profile_artifact,
+            "--serve-python", args.serve_python,
             "--wait-seconds",
             str(args.wait_seconds),
-            "--log-dir",
-            args.log_dir,
+            "--log-dir", args.log_dir,
         ]
         _append_if(command, "--models", args.models)
         if args.start:
@@ -1348,8 +1331,7 @@ def build_command(args, *, repo_root: Path) -> list[str]:
         command = [
             py,
             "scripts/run_local_model_resource_preflight.py",
-            "--profile-artifact",
-            args.profile_artifact,
+            "--profile-artifact", args.profile_artifact,
         ]
         _append_if(command, "--models", args.models)
         if args.strict_exit:
@@ -1360,10 +1342,8 @@ def build_command(args, *, repo_root: Path) -> list[str]:
         command = [
             py,
             "scripts/run_model_publish_plan.py",
-            "--release-readiness-artifact",
-            args.release_readiness_artifact,
-            "--name-prefix",
-            args.name_prefix,
+            "--release-readiness-artifact", args.release_readiness_artifact,
+            "--name-prefix", args.name_prefix,
         ]
         _common_outputs(command, args)
         return command
@@ -1372,19 +1352,15 @@ def build_command(args, *, repo_root: Path) -> list[str]:
             py,
             "scripts/run_closed_loop_benchmark_seed.py",
             "--dry-plan",
-            "--out",
-            args.out,
+            "--out", args.out,
         ]
     if args.command_name == "seed":
         command = [
             py,
             "scripts/run_closed_loop_benchmark_seed.py",
-            "--store-root",
-            args.store_root,
-            "--artifact-dir",
-            args.artifact_dir,
-            "--out",
-            args.out,
+            "--store-root", args.store_root,
+            "--artifact-dir", args.artifact_dir,
+            "--out", args.out,
         ]
         if args.unisonai_repair_json:
             command.append("--unisonai-repair-json")
@@ -1400,8 +1376,7 @@ def build_command(args, *, repo_root: Path) -> list[str]:
         command = [
             py,
             "scripts/run_harness_store_query.py",
-            "--store-root",
-            args.store_root,
+            "--store-root", args.store_root,
             "--limit",
             str(args.limit),
         ]

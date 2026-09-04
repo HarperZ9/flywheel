@@ -73,11 +73,17 @@ EXTRA_ROOTS = (REPO,)
 # The rule these hold is the canon's: internal register docs may carry local
 # paths, published surfaces may not. So this scans releases, cards and READMEs,
 # and deliberately NOT project-docs/records, plans or specs.
+# A skill or slash command shipped in a public repo is an instruction file that
+# a stranger reads and a model then executes, so it belongs under the same rule
+# as the three root instruction filenames. It was outside the selection until
+# .claude/skills/summarize landed and made the omission concrete.
 SURFACE_GLOBS = (
     "README.md",
     "MODEL_CARD.md",
     "project-docs/releases/*/*.md",
     "project-docs/releases/*.md",
+    ".claude/skills/*/SKILL.md",
+    ".claude/commands/*.md",
 )
 
 
