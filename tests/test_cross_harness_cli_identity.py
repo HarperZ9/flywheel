@@ -101,6 +101,21 @@ def test_resolve_binary_takes_the_binary_out_of_the_npm_shim_layout(monkeypatch)
     assert resolve_binary(("absent",)) == ""
 
 
+def test_resolve_binary_rejects_extensionless_windows_wrapper_without_exe(monkeypatch):
+    """A Windows binary candidate set never falls back to an npm text shim."""
+    on_path = {"codex.exe": None, "codex": "C:/npm/codex"}
+    monkeypatch.setattr("shutil.which", on_path.get)
+
+    assert resolve_binary(("codex.exe", "codex")) == ""
+
+
+def test_resolve_binary_keeps_extensionless_posix_executable(monkeypatch):
+    """A POSIX lookup still accepts its normal extensionless executable."""
+    monkeypatch.setattr("shutil.which", lambda name: f"/usr/local/bin/{name}")
+
+    assert resolve_binary(("codex",)) == "/usr/local/bin/codex"
+
+
 def test_no_cli_resolver_returns_a_wrapper_when_that_is_all_it_finds(monkeypatch):
     """Every adapter resolves through one rule, so one test covers all of them."""
     resolvers = (_resolve_codex, _resolve_claude, _resolve_cursor)

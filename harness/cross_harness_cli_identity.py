@@ -29,12 +29,18 @@ def resolve_binary(candidates: tuple[str, ...]) -> str:
 
     Every CLI adapter resolves through here, so one rule covers all of them:
     name the native binary first, and never accept a wrapper that happens to
-    sit earlier on PATH. Returning "" is a real answer, and the caller records
-    an unavailable arm rather than measuring something else.
+    sit earlier on PATH. A candidate set containing an explicit ``.exe`` is a
+    Windows-native lookup, so its extensionless npm wrapper is not a fallback;
+    POSIX lookups remain free to return extensionless executables. Returning
+    "" is a real answer, and the caller records an unavailable arm rather than
+    measuring something else.
     """
+    windows_native = any(name.lower().endswith(".exe") for name in candidates)
     for name in candidates:
         found = shutil.which(name)
-        if found and not found.lower().endswith(_SHIM_SUFFIXES): return found
+        if (found and not found.lower().endswith(_SHIM_SUFFIXES)
+                and (not windows_native or found.lower().endswith(".exe"))):
+            return found
     return ""
 
 
