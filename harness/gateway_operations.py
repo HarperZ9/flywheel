@@ -36,8 +36,14 @@ class OperationSnapshot:
 class GatewayOperations:
     """One gateway-lifetime registry over durable Journey operation events."""
     def __init__(self, state_root: Path, *, clock: Callable[[], str],
-                 authorizer=None, credential_resolver=None) -> None:
+                 authorizer=None, credential_resolver=None,
+                 lock_timeout_s: float = 2.0) -> None:
         self.state_root, self.clock = Path(state_root), clock
+        # How long a request waits for the journey lock before giving up
+        # with STORE_BUSY. The production default stands; a caller on a
+        # contended machine can raise it rather than reading a wait as a
+        # busy store.
+        self.lock_timeout_s = lock_timeout_s
         if authorizer is None:
             from .gateway_grant_route import authorize_gateway_operation
             authorizer = authorize_gateway_operation
@@ -195,7 +201,9 @@ class GatewayOperations:
     def _journey(self, owner_ref: str) -> JourneyService:
         try:
             return JourneyService(
-                owner_ref=owner_ref, store=JourneyStore(self.state_root),
+                owner_ref=owner_ref,
+                store=JourneyStore(self.state_root,
+                                   lock_timeout_s=self.lock_timeout_s),
                 grants=GrantStore(self.state_root, clock=self.clock),
                 clock=self.clock)
         except (OSError, TypeError, ValueError) as exc:

@@ -33,7 +33,7 @@ class Factory:
         self.calls += 1
         progress({"type": "assistant", "text": "bounded"})
         return self.process
-def _setup(root, *, stream=True, authorize_calls=None):
+def _setup(root, *, stream=True, authorize_calls=None, lock_timeout_s=2.0):
     head = JourneyStore(root).create(MutationCommand(
         OWNER, JOURNEY, None, "genesis", "intake",
         {"legacy_label": None, "goal": "route", "intake": {},
@@ -55,7 +55,8 @@ def _setup(root, *, stream=True, authorize_calls=None):
             freeze_execution_plan(canonical), {})
     service = GatewayOperations(
         root, clock=lambda: NOW, authorizer=authorize,
-        credential_resolver=lambda value, _root: value)
+        credential_resolver=lambda value, _root: value,
+        lock_timeout_s=lock_timeout_s)
     raw = json.dumps({"schema": "flywheel.gateway-operation/v1",
                       "journey_ref": JOURNEY, "expected_event_head": head,
                       "client_request_id": "agent-1", "grant_ref": "gnt_" + "a" * 32,
@@ -111,11 +112,11 @@ def test_exact_start_replay_precedes_authorization_and_second_worker(tmp_path):
     assert mismatch.status == 409
     assert mismatch.body["error"]["code"] == "IDEMPOTENCY_MISMATCH"
 def test_guarded_route_thread_start_failure_commits_one_terminal(monkeypatch, tmp_path):
-    authorizations = []; service, raw = _setup(tmp_path, authorize_calls=authorizations)
+    authorizations = []
+    service, raw = _setup(tmp_path, authorize_calls=authorizations, lock_timeout_s=.05)
     service.credential_resolver = lambda authorized, _root: replace(
         authorized, credential_bindings={"TOKEN": "synthetic-route-launch"})
     factory = Factory(Process(WorkerOutcome("completed", {"ignored": True})))
-    monkeypatch.setattr("harness.gateway_operations.JourneyStore", lambda root: JourneyStore(root, lock_timeout_s=.05))
     monkeypatch.setattr(threading.Thread, "start", lambda _thread: (_ for _ in ()).throw(OSError("thread unavailable")))
     request = lambda: route_gateway_operation(
         "POST", "/api/agent", owner_ref=OWNER, raw=raw, content_type="application/json", service=service,
@@ -276,7 +277,12 @@ def test_cancel_grant_is_exact_one_use_and_replay_digest_is_pure(tmp_path):
     assert getattr(reused.value, "code", None) == "APPROVAL_EXPIRED"
 def test_concurrent_exact_start_replays_before_second_authorization(tmp_path):
     calls = []
-    service, raw = _setup(tmp_path, authorize_calls=calls)
+    # The second request waits on the journey lock while the first one sits in
+    # a deliberately slow authorizer. On a loaded runner that wait can outlast
+    # the production default, and a request that gives up reports STORE_BUSY,
+    # which reads as a broken store rather than a contended one. The wait is
+    # what this test is about, so it gets a timeout no scheduler will beat.
+    service, raw = _setup(tmp_path, authorize_calls=calls, lock_timeout_s=30.0)
     authorize = service.authorizer
     def slow_authorize(*args, **kwargs):
         time.sleep(.1)
@@ -295,6 +301,12 @@ def test_concurrent_exact_start_replays_before_second_authorization(tmp_path):
     threads = [threading.Thread(target=request) for _ in range(2)]
     for thread in threads: thread.start()
     gate.wait()
-    for thread in threads: thread.join(2)
+    for thread in threads:
+        # Generous, because a slow machine is not a failure. join() returns
+        # whether or not the thread finished, so the liveness assertion is what
+        # turns a genuine deadlock into a named failure instead of the
+        # confusing [200] != [200, 200] a silent timeout produces.
+        thread.join(60)
+        assert not thread.is_alive(), "a request thread never finished"
     assert statuses == [200, 200]
     assert calls == ["agent.run"] and factory.calls == 1
