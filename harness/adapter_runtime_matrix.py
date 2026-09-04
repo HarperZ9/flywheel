@@ -8,7 +8,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from .model_profiles import ollama_digest_value as _digest
+from harness.model_ollama import normalize_ollama_digest
 
 
 SCHEMA = "harness.adapter-runtime-matrix/v1"
@@ -242,8 +242,15 @@ def _gate_failure(gate: dict[str, Any], profile: dict[str, Any], run_id: str, no
          or gate.get("failure_class") != "", "endpoint_gate_failed"),
         (profile["backend"].lower() == "ollama" and (not isinstance(gate.get("ollama_digest"), str)
          or not gate["ollama_digest"].strip()), "endpoint_gate_ollama_digest_missing"),
-        (profile["backend"].lower() == "ollama" and (_digest(gate.get("expected_ollama_digest", "")) != _digest(profile["expected_ollama_digest"])
-         or _digest(gate.get("ollama_digest", "")) != _digest(profile["expected_ollama_digest"])), "endpoint_gate_ollama_digest_mismatch"),
+        # The gate reports the digest the daemon answered with, which is bare hex,
+        # and a profile pins it with the `sha256:` prefix. Comparing the spellings
+        # called one model a mismatch with itself and held both local roles out of
+        # the 2026-09-03 head-to-head. Compare the hex, not how it was written.
+        (profile["backend"].lower() == "ollama"
+         and (gate.get("expected_ollama_digest") != profile["expected_ollama_digest"]
+              or normalize_ollama_digest(gate.get("ollama_digest") or "")
+              != normalize_ollama_digest(profile["expected_ollama_digest"])),
+         "endpoint_gate_ollama_digest_mismatch"),
     )
     return next((code for failed, code in checks if failed), "")
 

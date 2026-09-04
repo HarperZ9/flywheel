@@ -220,6 +220,16 @@ def build_manifest(*, store_root: str = DEFAULT_STORE_ROOT) -> dict:
                 "recommended_validation_slice": "python -m pytest tests/test_agentic_task_set_manifest.py tests/test_harness_cli.py -q",
             },
             {
+                "name": "task-set-executability",
+                "delegates_to": "scripts/run_task_set_executability.py",
+                "purpose": "Report how many tasks in a set can be provisioned and how many can be scored, before any provider is called.",
+                "schemas": ["flywheel.task_set_executability/v1"],
+                "evidence_surface": "pre-run task set denominator, provider-free",
+                "default_artifacts": ["C:/tmp/task_set_executability.json", "C:/tmp/task_set_executability.md"],
+                "long_running_risk": "low",
+                "recommended_validation_slice": "python -m pytest tests/test_task_set_executability.py tests/test_harness_cli.py -q",
+            },
+            {
                 "name": "null-floor",
                 "delegates_to": "scripts/run_null_floor.py",
                 "purpose": "Score every oracle checker against candidates that did not do the task, so a pass rate has something that ought to fail it.",
@@ -781,6 +791,14 @@ def build_parser() -> argparse.ArgumentParser:
     agentic.add_argument("--artifact-dir", default="C:/tmp/agentic_task_runs")
     agentic.add_argument("--provider-roles", default="dry")
 
+    executability = subparsers.add_parser("task-set-executability", help="report the provisionable and scorable denominators of a task set")
+    executability.add_argument("--task-set", default="C:/dev/public/flywheel/benchmarks/agentic-task-set-v1.json")
+    executability.add_argument("--root", default="")
+    executability.add_argument("--out", default="")
+    executability.add_argument("--markdown-out", default="")
+    executability.add_argument("--require-measurable", action="store_true")
+    executability.add_argument("--min-measured", type=int, default=0)
+
     null_floor = subparsers.add_parser("null-floor", help="score the oracle checkers against candidates that did not answer")
     _add_common_io(null_floor)
     null_floor.add_argument("--fail-on-breach", action="store_true")
@@ -836,7 +854,7 @@ def build_parser() -> argparse.ArgumentParser:
     endpoint_gate.add_argument("--profile-artifact", default="C:/tmp/model_endpoint_profiles_20260709.json")
     endpoint_gate.add_argument("--models", default="")
     endpoint_gate.add_argument("--backends", default="")
-    endpoint_gate.add_argument("--timeout-seconds", type=float, default=30.0)
+    endpoint_gate.add_argument("--timeout-seconds", type=float, default=300.0)  # cold 32B load
     endpoint_gate.add_argument("--max-tokens", type=int, default=64)
     endpoint_gate.add_argument("--strict-exit", action="store_true")
 
@@ -1169,6 +1187,16 @@ def build_command(args, *, repo_root: Path) -> list[str]:
             args.provider_roles,
         ]
         _common_outputs(command, args)
+        return command
+    if args.command_name == "task-set-executability":
+        command = [py, "scripts/run_task_set_executability.py", "--task-set", args.task_set,
+                   "--root", args.root or str(repo_root)]
+        _append_if(command, "--out", args.out)
+        _append_if(command, "--markdown-out", args.markdown_out)
+        if args.require_measurable:
+            command.append("--require-measurable")
+        if args.min_measured:
+            command.extend(["--min-measured", str(args.min_measured)])
         return command
     if args.command_name == "null-floor":
         command = [py, "scripts/run_null_floor.py"]

@@ -9,6 +9,8 @@ from harness.cross_harness_adapters import _enforcement
 from harness.cross_harness_artifacts import materialize_response_envelope, remove_readonly_tree
 from harness.cross_harness_executor import execute_cross_harness_manifest
 from harness.cross_harness_manifest import build_manifest, load_json
+from harness.cross_harness_oracles import _CHECKERS as REGISTERED_CHECKERS
+from harness.cross_harness_runtime_context import build_runtime_context
 from harness.cross_harness_types import AdapterResult, AvailabilityResult
 
 
@@ -186,3 +188,45 @@ def test_runtime_context_name_is_reserved_from_provider_artifacts(tmp_path):
         materialize_response_envelope(
             '{"artifacts":{"benchmark-context.json":{}}}', ["benchmark-context.json"], tmp_path,
         )
+
+
+def test_every_registered_checker_publishes_the_type_of_each_field_it_requires():
+    """A checker states the fields it needs. It also enforces their types, and
+    until now it kept those to itself.
+
+    `index_fallback_integrity/v1` wants `failure_classes` as a sorted array of
+    strings. A provider that answered with an array of objects, one per event,
+    raised `failure_classes_type_invalid`, scored `malformed`, and produced no
+    graded metrics at all, on work whose content was right. Nothing in the task
+    prompt or in benchmark/context.json had said which shape to use. That scores
+    shape-guessing rather than the capability, so the contract now travels with
+    the field names, and a new checker cannot ship without one.
+    """
+    task_set = load_json(ROOT / "benchmarks" / "agentic-task-set-v1.json")
+    published = task_set["oracle_contract"]["checkers"]
+    assert set(published) == set(REGISTERED_CHECKERS), set(published) ^ set(REGISTERED_CHECKERS)
+    for checker_id, block in published.items():
+        contract = block.get("json_field_contract")
+        assert isinstance(contract, dict), checker_id
+        assert list(contract) == list(block["required_json_fields"]), checker_id
+        assert all(isinstance(text, str) and text.strip() for text in contract.values()), checker_id
+
+
+def test_the_staged_context_carries_the_type_of_every_field_it_requires(staged_source):
+    """What the gate above proves about the task set has to reach the provider.
+
+    The provider never reads the task set. It reads benchmark/context.json, so
+    the types have to be in that document, beside the names they describe.
+    """
+    manifest = _manifest(staged_source)
+    rows = {row["task_id"]: row for row in manifest["task_rows"]}
+    scored = [row for row in rows.values() if (row.get("oracle") or {}).get("checker_id")]
+    assert scored
+    for row in scored:
+        context = build_runtime_context(row, {"task_id": row["task_id"], "raw_prompt_sha256": row["raw_prompt_sha256"],
+                                              "tool_policy_sha256": "b" * 64}, {})
+        assert list(context["required_json_field_types"]) == context["required_json_fields"], row["task_id"]
+    unscored = [row for row in rows.values() if not (row.get("oracle") or {}).get("checker_id")]
+    context = build_runtime_context(unscored[0], {"task_id": unscored[0]["task_id"],
+                                                  "raw_prompt_sha256": "a" * 64, "tool_policy_sha256": "b" * 64}, {})
+    assert context["required_json_field_types"] == {}

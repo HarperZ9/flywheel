@@ -1,0 +1,47 @@
+{
+  "fixture_id": "budgeted-evidence-pool-v1",
+  "reading": "Choose the subset of evidence items with the highest total value whose cost fits the budget. Items are indivisible and each may be taken at most once. Taking the densest item first does not reach the best total on this pool.",
+  "budget_usd": 1.0,
+  "items": [
+    {
+      "item_id": "e1",
+      "cost_usd": 0.51,
+      "evidence_value": 52
+    },
+    {
+      "item_id": "e2",
+      "cost_usd": 0.5,
+      "evidence_value": 50
+    },
+    {
+      "item_id": "e3",
+      "cost_usd": 0.5,
+      "evidence_value": 50
+    },
+    {
+      "item_id": "e4",
+      "cost_usd": 0.2,
+      "evidence_value": 8
+    },
+    {
+      "item_id": "e5",
+      "cost_usd": 0.25,
+      "evidence_value": 9
+    },
+    {
+      "item_id": "e6",
+      "cost_usd": 0.1,
+      "evidence_value": 0
+    },
+    {
+      "item_id": "e7",
+      "cost_usd": 0.15,
+      "evidence_value": 5
+    },
+    {
+      "item_id": "e8",
+      "cost_usd": 0.3,
+      "evidence_value": 10
+    }
+  ]
+}

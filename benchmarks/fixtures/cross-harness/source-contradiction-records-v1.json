@@ -1,0 +1,98 @@
+{
+  "fixture_id": "source-contradiction-records-v1",
+  "reading": "Two records contradict when they state different values for the same field. Records that agree, and records that state different fields, do not contradict however close their values look.",
+  "records": [
+    {
+      "record_id": "r1",
+      "field": "python_package_version",
+      "value": "0.3.11",
+      "source": "pyproject.toml"
+    },
+    {
+      "record_id": "r2",
+      "field": "python_package_version",
+      "value": "0.3.9",
+      "source": "README quickstart block"
+    },
+    {
+      "record_id": "r3",
+      "field": "desktop_app_version",
+      "value": "1.4.0",
+      "source": "desktop/pubspec.yaml"
+    },
+    {
+      "record_id": "r4",
+      "field": "registered_checker_count",
+      "value": "4",
+      "source": "harness/cross_harness_oracles.py"
+    },
+    {
+      "record_id": "r5",
+      "field": "registered_checker_count",
+      "value": "7",
+      "source": "benchmarks overview page"
+    },
+    {
+      "record_id": "r6",
+      "field": "declared_task_count",
+      "value": "14",
+      "source": "benchmarks/agentic-task-set-v1.json"
+    },
+    {
+      "record_id": "r7",
+      "field": "scored_task_count",
+      "value": "4",
+      "source": "cross-harness run receipt"
+    },
+    {
+      "record_id": "r8",
+      "field": "attempts_collected",
+      "value": "70",
+      "source": "cross-harness run receipt"
+    },
+    {
+      "record_id": "r9",
+      "field": "attempts_collected",
+      "value": "84",
+      "source": "run planning note"
+    },
+    {
+      "record_id": "r10",
+      "field": "python_package_version",
+      "value": "0.3.11",
+      "source": "CHANGELOG.md"
+    }
+  ],
+  "contradiction_pairs": [
+    [
+      "r1",
+      "r2"
+    ],
+    [
+      "r2",
+      "r10"
+    ],
+    [
+      "r4",
+      "r5"
+    ],
+    [
+      "r8",
+      "r9"
+    ]
+  ],
+  "reconcilable_pairs": [
+    [
+      "r1",
+      "r10"
+    ],
+    [
+      "r1",
+      "r3"
+    ],
+    [
+      "r6",
+      "r7"
+    ]
+  ]
+}

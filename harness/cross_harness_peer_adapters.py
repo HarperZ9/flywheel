@@ -187,7 +187,8 @@ class DirectClaudeCodeAdapter:
                              observed, "unsupported", failure, _clean(detail), resource,
                              attempt_usage([usage]) if usage is not None else {},
                              capabilities, merge_violations(violations, boundary),
-                             "structured_provider_event" if observed else "unknown")
+                             "structured_provider_event" if observed else "unknown",
+                             "" if state == "returned" else _clean(process.stdout))
 
 
 class DirectCursorAdapter:
@@ -242,4 +243,5 @@ class DirectCursorAdapter:
         return AdapterResult(state, output_text if state == "returned" else "", events, process.elapsed_ms,
                              observed, "unsupported", failure, _clean(detail), resource, {},
                              capabilities, violations,
-                             "structured_provider_event" if observed else "unknown")
+                             "structured_provider_event" if observed else "unknown",
+                             "" if state == "returned" else _clean(process.stdout))
