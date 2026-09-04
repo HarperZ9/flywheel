@@ -2,22 +2,22 @@
 from __future__ import annotations
 from contextlib import nullcontext
 from dataclasses import dataclass
-import os, threading, time
+import threading, time
 from pathlib import Path
 from typing import Callable, Iterator
-from .evidence_json import canonical_bytes, canonical_sha256
+from .evidence_json import canonical_sha256
 from .gateway_envelope import parse_gateway_envelope
 from .gateway_operation import AuthorizedOperation, GatewayOperationError, OPERATION_REF_PATTERN
 from .gateway_operation_process import MAX_RESULT_BYTES, OperationProcessFactory, WorkerOutcome
 from .journey_service import JourneyService
 from .journey_store import JourneyStore, JourneyStoreError
-from .operation_grants import GrantStore, _secure_owner_only
-from .gateway_operation_recovery import (LIFECYCLE, history_state, normalize_outcome, seal_outcome,
-    started_event, validate_history, validate_operation_value, validate_result)
+from .operation_grants import GrantStore
+from .gateway_operation_recovery import (LIFECYCLE, RESULT_SCHEMA, history_state, normalize_outcome,
+    result_dir, seal_outcome, seal_result, started_event, validate_history,
+    validate_operation_value, validate_result)
 from .gateway_operation_route import (OperationEventBus, authorization_sha256, operation_ref_for,
     queued_payload, replay_authorization_sha256)
 SNAPSHOT_SCHEMA = "flywheel.gateway-operation-snapshot/v1"
-RESULT_SCHEMA = "flywheel.gateway-operation-result/v1"
 TERMINALS = frozenset(("completed", "failed", "cancelled"))
 @dataclass(frozen=True)
 class OperationSnapshot:
@@ -269,32 +269,12 @@ class GatewayOperations:
         return terminal
     def _seal(self, owner_ref: str, ref: str, action: str,
               state: str, result: dict) -> str:
-        value = {"schema": RESULT_SCHEMA, "operation_ref": ref,
-                 "action": action, "state": state, "result": result}
-        self._validate(owner_ref, ref, value, "STORE_COMMIT_FAILED")
-        data = canonical_bytes(value)
-        if len(data) > MAX_RESULT_BYTES:
-            raise GatewayOperationError("STORE_COMMIT_FAILED")
-        digest, directory = canonical_sha256(value), self._result_dir(owner_ref)
-        path = directory / f"{digest}.json"
-        try:
-            with path.open("x+b") as stream:
-                stream.write(data); stream.flush(); os.fsync(stream.fileno())
-            _secure_owner_only(path, directory=False)
-        except FileExistsError:
-            if path.read_bytes() != data:
-                raise GatewayOperationError("STORE_COMMIT_FAILED")
-        except (OSError, PermissionError):
-            raise GatewayOperationError("STORE_COMMIT_FAILED") from None
-        return digest
+        return seal_result(
+            self.state_root,
+            lambda value, code: self._validate(owner_ref, ref, value, code),
+            owner_ref, ref, action, state, result, max_bytes=MAX_RESULT_BYTES)
     def _result_dir(self, owner_ref: str) -> Path:
-        directory = self.state_root / "gateway-operations" / "v1" / "owners" / owner_ref / "results"
-        try:
-            directory.mkdir(parents=True, exist_ok=True)
-            _secure_owner_only(directory, directory=True)
-            return directory
-        except (OSError, PermissionError):
-            raise GatewayOperationError("STORE_COMMIT_FAILED") from None
+        return result_dir(self.state_root, owner_ref)
     def _publish(self, owner_ref: str, ref: str, kind: str, data: dict) -> None:
         self._validate(owner_ref, ref, data, "EXTERNAL_ACTION_FAILED")
         self.events.publish(owner_ref, ref, kind, data)

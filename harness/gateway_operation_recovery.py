@@ -2,13 +2,17 @@
 from __future__ import annotations
 
 from pathlib import Path
+import os
 import re
 
 from .evidence_json import canonical_bytes, canonical_sha256
+from .gateway_operation import GatewayOperationError
 from .journey_service import JourneyService
 from .journey_store import JourneyStore
 from .journey_types import SHA256_PATTERN
-from .operation_grants import GrantStore, OWNER_REF_PATTERN
+from .operation_grants import GrantStore, OWNER_REF_PATTERN, _secure_owner_only
+
+RESULT_SCHEMA = "flywheel.gateway-operation-result/v1"
 
 LIFECYCLE = frozenset((
     "operation_queued", "operation_started", "cancel_requested",
@@ -101,6 +105,47 @@ def seal_outcome(seal, owner_ref: str, operation_ref: str, action: str,
         failed = {"reason": "RESULT_SEAL_FAILED"}
         return "failed", failed, seal(
             owner_ref, operation_ref, action, "failed", failed)
+
+
+def result_dir(state_root: Path, owner_ref: str) -> Path:
+    """Where one owner's sealed results live, created owner-only."""
+    directory = (Path(state_root) / "gateway-operations" / "v1"
+                 / "owners" / owner_ref / "results")
+    try:
+        directory.mkdir(parents=True, exist_ok=True)
+        _secure_owner_only(directory, directory=True)
+        return directory
+    except (OSError, PermissionError):
+        raise GatewayOperationError("STORE_COMMIT_FAILED") from None
+
+
+def seal_result(state_root: Path, validate, owner_ref: str, operation_ref: str,
+                action: str, state: str, result: dict, *, max_bytes: int) -> str:
+    """Write the sealed result and return its digest.
+
+    Content-addressed, so a rewrite of the same result is the same file. A file
+    already there holding different bytes is a commit failure, not an overwrite.
+    """
+    value = {"schema": RESULT_SCHEMA, "operation_ref": operation_ref,
+             "action": action, "state": state, "result": result}
+    validate(value, "STORE_COMMIT_FAILED")
+    data = canonical_bytes(value)
+    if len(data) > max_bytes:
+        raise GatewayOperationError("STORE_COMMIT_FAILED")
+    digest = canonical_sha256(value)
+    path = result_dir(state_root, owner_ref) / f"{digest}.json"
+    try:
+        with path.open("x+b") as stream:
+            stream.write(data)
+            stream.flush()
+            os.fsync(stream.fileno())
+        _secure_owner_only(path, directory=False)
+    except FileExistsError:
+        if path.read_bytes() != data:
+            raise GatewayOperationError("STORE_COMMIT_FAILED")
+    except (OSError, PermissionError):
+        raise GatewayOperationError("STORE_COMMIT_FAILED") from None
+    return digest
 
 
 def validate_history(history: list[dict], operation_ref: str) -> None:
