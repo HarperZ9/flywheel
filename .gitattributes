@@ -16,6 +16,11 @@ artifacts/closeout/**/stderr.txt -text -diff
 # rewrites the fixtures to CRLF and the hash check fails.
 packs/**/fixtures/** -text -diff
 
+# The model-boundary-receipt golden fixture is a cross-language seal pin: its
+# canonical-bytes and reseal tests hash the fixture bytes, so Git must not
+# normalize the stream (same reason as packs/**/fixtures/** above).
+tests/fixtures/model-receipt-golden.json -text -diff
+
 # Generated artwork. render_repo_art.py writes LF on every platform, so pin the
 # checkout to LF as well and each file's size and hash stay the same whoever
 # cloned the repository.

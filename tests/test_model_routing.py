@@ -208,14 +208,20 @@ def test_route_role_constructs():
 
 
 def test_role_chain_all_absent_auth_exhausts_cleanly(monkeypatch):
-    # With no provider keys configured, a role route fails over through every
-    # candidate and exhausts honestly rather than pretending to answer.
+    # With no provider credential reachable, a role route fails over through
+    # every candidate and exhausts honestly rather than pretending to answer.
+    # The environment is one of two places the router looks. Clearing it is
+    # half the setup, because on a machine whose OS keychain holds a provider
+    # key the first candidate resolves, calls out, and the failure gets read as
+    # a routing defect when it is really a fact about that machine.
     for env in ("ANTHROPIC_API_KEY", "DASHSCOPE_API_KEY", "OPENROUTER_API_KEY"):
         monkeypatch.delenv(env, raising=False)
+    monkeypatch.setattr("harness.keychain.keychain_get", lambda name: None)
     r = route_role(FLAGSHIP)
     with pytest.raises(RoutingExhausted) as e:
         r.generate("x", seed=0, temperature=0.0, max_new_tokens=8)
     assert all(a.outcome == "auth_absent" for a in e.value.attempts)
+    assert all(a.auth_source == "absent" for a in e.value.attempts)
 
 
 def test_unknown_provider_and_role_fail_closed():
