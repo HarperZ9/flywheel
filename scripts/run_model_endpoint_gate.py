@@ -15,6 +15,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from harness.benchmark_receipts import store_benchmark_outputs  # noqa: E402
 from harness.local_agent import BackendError, OllamaBackend, ServeBackend  # noqa: E402
+from harness.model_profiles import ollama_digest_value, ollama_reference  # noqa: E402
 
 
 DEFAULT_PROMPT = "Reply with a short sentence confirming the local endpoint gate is active."
@@ -62,13 +63,13 @@ def _backend_for_profile(profile: dict[str, Any], *, timeout_seconds: float, tra
 
 def _ollama_identity(profile: dict[str, Any], obj: dict[str, Any]) -> tuple[str, str]:
     selectors = profile.get("selectors") if isinstance(profile.get("selectors"), list) else []
-    wanted = str(selectors[0]) if selectors else ""
+    wanted = ollama_reference(str(selectors[0]) if selectors else "")
     models = obj.get("models") if isinstance(obj.get("models"), list) else []
     for model in models:
         if not isinstance(model, dict):
             continue
         name = str(model.get("name") or model.get("model") or "")
-        if name == wanted:
+        if wanted and ollama_reference(name) == wanted:
             digest = model.get("digest", "")
             return f"ollama:{name}", digest.strip() if isinstance(digest, str) else ""
     return "", ""
@@ -101,7 +102,7 @@ def _health_probe(profile: dict[str, Any], backend: Any) -> tuple[bool, str, dic
         expected = profile.get("expected_ollama_digest", "")
         if profile.get("release_asset_sha256") and not expected:
             return False, "ollama_expected_digest_missing", detail
-        if expected and digest != expected:
+        if expected and ollama_digest_value(digest) != ollama_digest_value(str(expected)):
             return False, "ollama_digest_mismatch", detail
         return True, "", detail
     if status == 404:

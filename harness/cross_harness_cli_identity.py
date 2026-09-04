@@ -8,6 +8,7 @@ helpers, and validate_executable_path is the shared check that a resolved
 path is a real native binary rather than a shim script on PATH.
 """
 from __future__ import annotations
+import shutil
 from pathlib import Path
 from typing import Callable
 
@@ -15,8 +16,26 @@ from .cross_harness_process import run_process
 
 REASONING_EFFORT_UNSPECIFIED = "unspecified"
 _EXECUTABLE_MAGIC = (b"MZ", b"\x7fELF")
+# Shim scripts on PATH re-enter a wrapper instead of the harness under test.
+# The magic-byte check in validate_executable_path is the real gate; this
+# suffix list keeps a resolver from picking a shim when a binary sits beside it.
+_SHIM_SUFFIXES = (".ps1", ".cmd", ".bat")
 _VERSION_TIMEOUT_SECONDS = 30.0
 _version_cache: dict[str, str] = {}
+
+
+def resolve_binary(candidates: tuple[str, ...]) -> str:
+    """First candidate on PATH that is not a shim script, else "".
+
+    Every CLI adapter resolves through here, so one rule covers all of them:
+    name the native binary first, and never accept a wrapper that happens to
+    sit earlier on PATH. Returning "" is a real answer, and the caller records
+    an unavailable arm rather than measuring something else.
+    """
+    for name in candidates:
+        found = shutil.which(name)
+        if found and not found.lower().endswith(_SHIM_SUFFIXES): return found
+    return ""
 
 
 def codex_cli_version(executable: str, *, runner: Callable = run_process) -> str:

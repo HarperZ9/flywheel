@@ -59,6 +59,67 @@ def test_ollama_identity_strips_string_digest():
     assert evidence == "sha256:abc"
 
 
+DIGEST_HEX = "7ff88ed3fd95eac7e79cb38a0a5ee3db39b7103a09d5a51d75fcda908522f6d8"
+
+
+def released_profile(selector, expected_digest):
+    row = profile("ollama")
+    row.update(selectors=[selector], model_ref=f"ollama:{selector}", expected_ollama_digest=expected_digest)
+    return row
+
+
+def released_transport(name, digest):
+    """An Ollama daemon that answers /api/tags the way the real one does."""
+    def answer(method, url, body, timeout):
+        if url.endswith("/api/tags"):
+            return 200, {"models": [{"name": name, "model": name, "digest": digest}]}
+        if url.endswith("/api/chat"):
+            return 200, {"message": {"content": "active"}, "model": name.split(":")[0]}
+        return transport(method, url, body, timeout)
+    return answer
+
+
+def test_untagged_selector_matches_the_latest_tag_ollama_reports(tmp_path):
+    """A pulled model read as absent, reproduced.
+
+    `ollama create name` registers `name:latest`, and /api/tags never omits the
+    tag. A profile selector written without one therefore matched nothing, and
+    both local arms recorded an unavailable endpoint while the model was loaded
+    and answering.
+    """
+    report = build_report(
+        profile_artifact=str(write_profiles(tmp_path, [released_profile("flywheel-local-coder-14b", DIGEST_HEX)])),
+        models=[], backends=[],
+        transport=released_transport("flywheel-local-coder-14b:latest", DIGEST_HEX), run_id="tag-run")
+    row = report["rows"][0]
+    assert row["failure_class"] == "", row["failure_class"]
+    assert row["health_ok"] is True and row["generation_ok"] is True
+    assert row["ollama_digest"] == DIGEST_HEX
+
+
+@pytest.mark.parametrize("recorded,reported", [
+    (f"sha256:{DIGEST_HEX}", DIGEST_HEX),
+    (DIGEST_HEX, f"sha256:{DIGEST_HEX}"),
+    (f"sha256:{DIGEST_HEX}", f"SHA256:{DIGEST_HEX.upper()}"),
+])
+def test_digest_check_compares_the_value_not_the_spelling(tmp_path, recorded, reported):
+    """The sealed provenance record and the daemon spell one digest two ways."""
+    report = build_report(
+        profile_artifact=str(write_profiles(tmp_path, [released_profile("flywheel-local-coder-14b", recorded)])),
+        models=[], backends=[],
+        transport=released_transport("flywheel-local-coder-14b:latest", reported), run_id="digest-spelling")
+    assert report["rows"][0]["failure_class"] == ""
+
+
+def test_digest_check_still_rejects_a_different_manifest(tmp_path):
+    """Normalizing the prefix must not make two different digests compare equal."""
+    report = build_report(
+        profile_artifact=str(write_profiles(tmp_path, [released_profile("flywheel-local-coder-14b", f"sha256:{DIGEST_HEX}")])),
+        models=[], backends=[],
+        transport=released_transport("flywheel-local-coder-14b:latest", "b" * 64), run_id="digest-other")
+    assert report["rows"][0]["failure_class"] == "ollama_digest_mismatch"
+
+
 def tag_transport(digest):
     def tagged(method, url, body, timeout):
         if url.endswith("/api/tags"):
