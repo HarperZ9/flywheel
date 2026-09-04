@@ -160,19 +160,29 @@ without a shared secret. This is the encryption-based receipt path.
 ## Explore the lanes
 
 ```bash
-flywheel lanes              # list the 7 registered lanes
+flywheel lanes              # list the 12 registered lanes
 flywheel lanes --probe      # live MCP handshake per lane
 ```
 
-| Lane | Role | Tier |
-|---|---|---|
-| gather | Research intake + provenance receipts | T1 |
-| crucible | Falsifiable verification + re-check | T1 |
-| index | Workspace map + symbol graph | T1 |
-| forum | Witnessed causal ledger + routing | T1 |
-| learn | Accountable learning forge | T1 |
-| telos | Reconciliation lane (5-tool workflow) | T1 |
-| local-model | Trained proposer + verified-inference | T2 |
+Six flagships, then six more in the same registry:
+
+| Lane | Role |
+|---|---|
+| gather | Research intake + provenance receipts |
+| crucible | Falsifiable verification + re-check |
+| index | Workspace map + symbol graph + verified wiki |
+| forum | Witnessed causal ledger + model-agnostic routing |
+| learn | Accountable learning forge |
+| telos | Reconciliation lane (5-tool workflow) + creative engine |
+| local-model | Trained 14B proposer + verified-inference harness |
+| relay | Accountable coding agent on any model endpoint |
+| plexus | Capability discovery + auto-wiring of the tool mesh |
+| mneme | Accountable memory: recall with re-derivable ranking receipts |
+| calibrate-pro | Evidence-labeled display calibration (read-only over MCP) |
+| accountable-surface | Witnessed perception + operator-grant execution gate |
+
+`flywheel lanes` is the authority on this list; the registry decides, not this
+table.
 
 Call any lane via the generic lane caller:
 

@@ -13,6 +13,7 @@ Schema: flywheel.lean-check/v1. Sealed.
 """
 from __future__ import annotations
 
+import functools
 import hashlib
 import json
 import os
@@ -28,6 +29,19 @@ MATCH = "MATCH"
 DRIFT = "DRIFT"
 UNVERIFIABLE = "UNVERIFIABLE"
 
+NOT_INSTALLED = "not installed"
+
+# Why a check produced no verdict. UNVERIFIABLE is honest but silent about its
+# cause, and the causes are not interchangeable: an absent compiler is a fact
+# about the machine, a timeout is a fact about the budget, and only the second
+# one moves with load. A caller that cannot tell them apart has to guess, and a
+# test that guesses becomes load-dependent.
+REASON_NONE = ""
+REASON_NOT_INSTALLED = "lean-not-installed"
+REASON_TIMEOUT = "lean-timed-out"
+REASON_FILE_MISSING = "file-not-found"
+REASON_ERROR = "check-failed"
+
 
 def _sha256_hex(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
@@ -37,26 +51,39 @@ def _canonical_bytes(obj: dict[str, Any]) -> bytes:
     return json.dumps(obj, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
 
 
-def lean_available() -> bool:
-    """True if the `lean` binary is on PATH."""
-    try:
-        result = subprocess.run(
-            ["lean", "--version"], capture_output=True, text=True, timeout=10)
-        return result.returncode == 0
-    except (FileNotFoundError, subprocess.TimeoutExpired):
-        return False
+@functools.lru_cache(maxsize=1)
+def _probe_lean() -> str:
+    """One `lean --version` per process.
 
-
-def lean_version() -> str:
-    """Return the Lean version string, or 'not installed'."""
+    A check used to spawn this twice, once through `lean_version` and again
+    through `lean_available`, and each spawn carries a timeout of its own.
+    Three subprocesses to type-check one small file is how a 30-second proof
+    budget reached pytest's 60-second ceiling under parallel workers.
+    """
     try:
         result = subprocess.run(
             ["lean", "--version"], capture_output=True, text=True, timeout=10)
         if result.returncode == 0:
             return result.stdout.strip().split("\n")[0]
-    except (FileNotFoundError, subprocess.TimeoutExpired):
+    except (OSError, subprocess.SubprocessError):
         pass
-    return "not installed"
+    return NOT_INSTALLED
+
+
+def reset_lean_probe() -> None:
+    """Drop the memoized probe, for a caller that changes what is installed."""
+    _probe_lean.cache_clear()
+
+
+def lean_available() -> bool:
+    """True if the `lean` binary is on PATH. Shares one probe with
+    `lean_version`, so asking both costs one subprocess rather than two."""
+    return _probe_lean() != NOT_INSTALLED
+
+
+def lean_version() -> str:
+    """Return the Lean version string, or 'not installed'."""
+    return _probe_lean()
 
 
 @dataclass
@@ -68,6 +95,7 @@ class LeanCheckResult:
     error: str = ""
     elapsed_s: float = 0.0
     lean_version: str = ""
+    reason: str = REASON_NONE
 
     def to_measurement(self) -> dict[str, Any]:
         """Convert to a crucible-compatible measurement dict."""
@@ -79,6 +107,7 @@ class LeanCheckResult:
             "elapsed_s": round(self.elapsed_s, 3),
             "output_excerpt": self.output[:500] if self.output else "",
             "error_excerpt": self.error[:500] if self.error else "",
+            "reason": self.reason,
         }
 
 
@@ -90,14 +119,16 @@ def check_lean_file(path: Path, *, timeout: int = 60) -> LeanCheckResult:
     """
     path = Path(path)
     if not path.exists():
-        return LeanCheckResult(verdict=UNVERIFIABLE, error=f"file not found: {path}")
+        return LeanCheckResult(verdict=UNVERIFIABLE, reason=REASON_FILE_MISSING,
+                               error=f"file not found: {path}")
 
     file_hash = _sha256_hex(path.read_bytes())
     ver = lean_version()
 
-    if not lean_available():
+    if ver == NOT_INSTALLED:
         return LeanCheckResult(
             verdict=UNVERIFIABLE, file_hash=file_hash,
+            reason=REASON_NOT_INSTALLED,
             error="lean binary not found on PATH", lean_version=ver)
 
     import time
@@ -118,12 +149,16 @@ def check_lean_file(path: Path, *, timeout: int = 60) -> LeanCheckResult:
             output=result.stdout, error=result.stderr,
             elapsed_s=elapsed, lean_version=ver)
     except subprocess.TimeoutExpired:
+        # The budget ran out, which says nothing about the proof. The reason
+        # travels with the verdict so a reader cannot mistake a busy machine
+        # for an unsound argument.
         return LeanCheckResult(
-            verdict=UNVERIFIABLE, file_hash=file_hash,
+            verdict=UNVERIFIABLE, file_hash=file_hash, reason=REASON_TIMEOUT,
+            elapsed_s=time.monotonic() - start,
             error=f"lean timed out after {timeout}s", lean_version=ver)
     except Exception as e:
         return LeanCheckResult(
-            verdict=UNVERIFIABLE, file_hash=file_hash,
+            verdict=UNVERIFIABLE, file_hash=file_hash, reason=REASON_ERROR,
             error=str(e), lean_version=ver)
 
 

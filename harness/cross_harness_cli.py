@@ -10,6 +10,7 @@ from .adapter_runtime_matrix import _endpoint_gate_result
 from .cross_harness_adapters import DirectCodexAdapter, FlywheelRouterAdapter, LocalRouterAdapter
 from .cross_harness_artifacts import canonical_sha256, recheck_attempt_receipt, snapshot_source_tree, write_artifact_index
 from .cross_harness_executor import SHARED_TOOL_POLICY, execute_cross_harness_manifest, resolve_task_ids
+from .cross_harness_peer_adapters import DirectClaudeCodeAdapter, DirectCursorAdapter
 from .cross_harness_types import model_observation_pair_error, project_model_identity
 
 def _pairs(rows: list[tuple[str, Any]]) -> dict[str, Any]:
@@ -209,6 +210,8 @@ def build_adapter_registry(matrix: dict[str, Any], roles: list[str],
     for role in roles:
         if role == "codex_harness": adapters[role] = DirectCodexAdapter(task_identity_by_id=task_identities)
         elif role == "flywheel_harness": adapters[role] = FlywheelRouterAdapter(task_identity_by_id=task_identities)
+        elif role == "claude_code": adapters[role] = DirectClaudeCodeAdapter(task_identity_by_id=task_identities)
+        elif role == "cursor": adapters[role] = DirectCursorAdapter(task_identity_by_id=task_identities)
         elif role.startswith("local_"):
             fallback = {"profile_id": "", "backend": "", "model_ref": "", "endpoint_url": ""}
             adapters[role] = LocalRouterAdapter(role, selected.get(role, fallback), task_identity_by_id=task_identities)

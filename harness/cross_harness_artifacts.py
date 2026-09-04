@@ -4,6 +4,7 @@ from __future__ import annotations
 import hashlib, json, os
 from pathlib import Path
 import shutil, stat
+from harness.cross_harness_input_refs import partition_inputs
 from typing import Any, Iterable
 
 
@@ -123,7 +124,7 @@ def _safe_relative(value: str, label: str) -> Path:
 
 _STANDARD_NAMES = {"prompt.txt", "output.txt", "tool_trace.json", "receipt.json", "metrics.json",
                    "limitations.md", "enforcement.json", "availability.json", "provider-receipt.json",
-                   "oracle.json", "resource.json", "workspace-before.json", "workspace-after.json", "benchmark-context.json"}
+                   "oracle.json", "resource.json", "workspace-before.json", "workspace-after.json", "benchmark-context.json", "rejected-output.txt"}
 _DEVICES = {"con", "prn", "aux", "nul", *(f"com{i}" for i in range(1, 10)),
             *(f"lpt{i}" for i in range(1, 10))}
 
@@ -146,16 +147,15 @@ def validate_execution_components(task_rows: list[dict[str, Any]], run_id: str, 
     for role in roles: validate_path_component(role, "provider role")
 
 
-def create_attempt_workspace(
-    source_root: Path, required_inputs: list[str], expected_sha256s: dict[str, str], attempt_dir: Path,
-) -> tuple[Path, dict[str, str]]:
+def create_attempt_workspace(source_root: Path, required_inputs: list[str],
+                             expected_sha256s: dict[str, str], attempt_dir: Path) -> tuple[Path, dict[str, str]]:
     source, workspace = Path(source_root).resolve(strict=True), Path(attempt_dir) / "workspace"
-    if workspace.exists():
-        raise ValueError("attempt workspace already exists")
+    if workspace.exists(): raise ValueError("attempt workspace already exists")
     workspace.mkdir(parents=True)
     workspace = workspace.resolve(strict=True)
     observed: dict[str, str] = {}
-    for reference in required_inputs:
+    provisioned, _ = partition_inputs(required_inputs)  # typed refs are declared, never sealed in
+    for reference in provisioned:
         relative = _safe_relative(reference, "required input")
         origin = (source / relative).resolve(strict=True)
         if not origin.is_file() or not _inside(source, origin):
@@ -177,8 +177,7 @@ def create_attempt_workspace(
 def remove_readonly_tree(root: Path) -> None:
     root = Path(root); root.chmod(0o700)
     def retry(function, path, _error):
-        target = Path(path)
-        target.chmod(0o700 if target.is_dir() else 0o600); target.parent.chmod(0o700)
+        target = Path(path); target.chmod(0o700 if target.is_dir() else 0o600); target.parent.chmod(0o700)
         function(path)
     shutil.rmtree(root, onerror=retry)
 

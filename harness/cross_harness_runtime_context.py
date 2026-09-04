@@ -11,6 +11,12 @@ def build_runtime_context(task: dict[str, Any], row: dict[str, Any], observed: d
     return {
         "schema": SCHEMA,
         "required_json_fields": list(task.get("oracle", {}).get("required_json_fields", [])),
+        # The names alone left every provider to guess the shape. A checker that
+        # wants a sorted array of strings and gets an array of objects raises
+        # `<field>_type_invalid`, the attempt scores malformed, and the graded
+        # metrics behind it are never computed. That measures shape-guessing, not
+        # the capability. The contract states the type of every required field.
+        "required_json_field_types": dict(task.get("oracle", {}).get("json_field_contract", {})),
         "expected_artifacts": list(task.get("expected_artifacts", [])),
         "harness_values": {
             "task_id": row["task_id"], "input_sha256s": observed, "receipt_input_sha256s": observed,

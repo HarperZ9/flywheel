@@ -15,6 +15,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from harness.benchmark_receipts import store_benchmark_outputs  # noqa: E402
 from harness.local_agent import BackendError, OllamaBackend, ServeBackend  # noqa: E402
+from harness.model_ollama import normalize_ollama_digest, ollama_name_matches  # noqa: E402
 
 
 DEFAULT_PROMPT = "Reply with a short sentence confirming the local endpoint gate is active."
@@ -43,6 +44,13 @@ def _load_profiles(path_text: str) -> list[dict[str, Any]]:
     return [row for row in rows if isinstance(row, dict)]
 
 
+# A cold 32B load answers in tens of seconds, and the health probe has already
+# proved the endpoint is up before this budget is spent, so a dead endpoint
+# still fails in about two seconds. At 30 the gate timed out on a correctly
+# installed model and reported endpoint_error, which reads as a broken daemon.
+GENERATION_TIMEOUT_SECONDS = 300.0
+
+
 def _backend_for_profile(profile: dict[str, Any], *, timeout_seconds: float, transport=None):
     backend = str(profile.get("backend", "")).lower()
     endpoint = str(profile.get("endpoint_url", "")).rstrip("/")
@@ -68,7 +76,7 @@ def _ollama_identity(profile: dict[str, Any], obj: dict[str, Any]) -> tuple[str,
         if not isinstance(model, dict):
             continue
         name = str(model.get("name") or model.get("model") or "")
-        if name == wanted:
+        if ollama_name_matches(wanted, name):
             digest = model.get("digest", "")
             return f"ollama:{name}", digest.strip() if isinstance(digest, str) else ""
     return "", ""
@@ -98,10 +106,12 @@ def _health_probe(profile: dict[str, Any], backend: Any) -> tuple[bool, str, dic
         detail.update(health_model_ref=observed, ollama_digest=digest)
         if not digest:
             return False, "ollama_digest_missing", detail
-        expected = profile.get("expected_ollama_digest", "")
+        expected = normalize_ollama_digest(profile.get("expected_ollama_digest", ""))
         if profile.get("release_asset_sha256") and not expected:
             return False, "ollama_expected_digest_missing", detail
-        if expected and digest != expected:
+        # The daemon answers bare hex and a pinned profile carries the prefix.
+        # Compare what the digest is, not how each side happened to spell it.
+        if expected and normalize_ollama_digest(digest) != expected:
             return False, "ollama_digest_mismatch", detail
         return True, "", detail
     if status == 404:
@@ -177,7 +187,8 @@ def probe_profile(
 
 def build_report(
     *, profile_artifact: str, models: list[str], backends: list[str], prompt: str = DEFAULT_PROMPT,
-    timeout_seconds: float = 30.0, max_tokens: int = 64, seed: int = 0, run_id: str = "", transport=None,
+    timeout_seconds: float = GENERATION_TIMEOUT_SECONDS, max_tokens: int = 64, seed: int = 0,
+    run_id: str = "", transport=None,
 ) -> dict[str, Any]:
     profiles = _load_profiles(profile_artifact)
     wanted_models, wanted_backends = {item.lower() for item in models}, {item.lower() for item in backends}
@@ -237,7 +248,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--models", default="")
     parser.add_argument("--backends", default="")
     parser.add_argument("--prompt", default=DEFAULT_PROMPT)
-    parser.add_argument("--timeout-seconds", type=float, default=30.0)
+    parser.add_argument("--timeout-seconds", type=float, default=GENERATION_TIMEOUT_SECONDS)
     parser.add_argument("--max-tokens", type=int, default=64)
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--out", default="")

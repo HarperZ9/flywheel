@@ -10,8 +10,13 @@ import pytest
 
 from harness import keychain
 
-pytestmark = pytest.mark.skipif(sys.platform != "win32",
-                                reason="no supported OS credential store")
+# real_keychain: this module is the one that exercises the OS store itself,
+# so it opts out of the suite-wide keychain blanking in conftest.
+pytestmark = [
+    pytest.mark.skipif(sys.platform != "win32",
+                       reason="no supported OS credential store"),
+    pytest.mark.real_keychain,
+]
 
 _NAME = "FLYWHEEL_TEST_KEY_XYZ"
 

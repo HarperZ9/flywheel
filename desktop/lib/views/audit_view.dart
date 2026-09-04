@@ -14,6 +14,7 @@ import '../client/gateway_client.dart';
 import '../theme/flywheel_theme.dart';
 import '../widgets/audit_receipt_panel.dart';
 import '../widgets/fw.dart';
+import '../widgets/suite_audit_panel.dart';
 
 class AuditView extends StatelessWidget {
   final GatewayClient client;
@@ -45,6 +46,8 @@ class AuditView extends StatelessWidget {
         onVerify: (auditReceipt, workReceipt) =>
             client.auditVerify(auditReceipt, workReceipt: workReceipt),
       ),
+      const SizedBox(height: FwLayout.s5),
+      SuiteAuditPanel(client: client),
     ]);
   }
 }

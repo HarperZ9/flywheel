@@ -33,8 +33,19 @@ class RunEvidenceCard extends StatelessWidget {
         ttva == null ? 'null: nothing verified' : '${ttva}s',
         ttva == null ? 'unverifiable' : 'verified'
       ),
+      // The dial's nominal budget is not necessarily the budget the run got.
+      // When the engine stamps an override, say so: reporting the nominal
+      // number alone would describe a budget the run never had.
       if (effort.isNotEmpty)
-        ('effort', '${effort['name']} · ${effort['max_steps']} steps', null),
+        (
+          'effort',
+          effort['max_steps_overridden'] == true
+              ? '${effort['name']} · ${effort['max_steps_applied']} of '
+                  '${effort['max_steps']} steps (capped)'
+              : '${effort['name']} · '
+                  '${effort['max_steps_applied'] ?? effort['max_steps']} steps',
+          null
+        ),
       if (manifest.isNotEmpty)
         ('window',
          '${(manifest['reads'] as List?)?.length ?? 0} reads · '

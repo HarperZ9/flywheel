@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../client/gateway_client.dart';
 import '../theme/flywheel_theme.dart';
 import '../widgets/fw.dart';
+import '../widgets/import_config_panel.dart';
 import '../widgets/project_panels.dart';
 
 class ProjectsView extends StatefulWidget {
@@ -170,6 +171,8 @@ class _ProjectsViewState extends State<ProjectsView> {
             ],
           ),
         ),
+        const SizedBox(height: FwLayout.s4),
+        ImportConfigPanel(client: widget.client),
         const SizedBox(height: FwLayout.s4),
         for (final p in _projects) _projectCard(t, p),
         if (_selected != null) ...[

@@ -1,0 +1,120 @@
+{
+  "fixture_id": "evidence-bound-claims-v1",
+  "source": "cross-harness run hh-focused-20260903-194505, five roles over fourteen tasks",
+  "reading": "Report every measurement with its denominator and its interval. A claim with no supporting measurement is unverifiable, not false.",
+  "measurements": [
+    {
+      "measurement_id": "m1",
+      "metric": "attempt_launch_rate",
+      "value": 0.2857,
+      "numerator": 20,
+      "denominator": 70,
+      "interval_95": [
+        0.1932,
+        0.4005
+      ],
+      "counts": "attempts that reached a provider"
+    },
+    {
+      "measurement_id": "m2",
+      "metric": "oracle_pass_rate",
+      "value": 0.0,
+      "numerator": 0,
+      "denominator": 20,
+      "interval_95": [
+        0.0,
+        0.1611
+      ],
+      "counts": "launched attempts that passed an oracle"
+    },
+    {
+      "measurement_id": "m3",
+      "metric": "scorable_task_fraction",
+      "value": 0.2857,
+      "numerator": 4,
+      "denominator": 14,
+      "interval_95": [
+        0.1172,
+        0.5465
+      ],
+      "counts": "tasks carrying a registered checker"
+    },
+    {
+      "measurement_id": "m4",
+      "metric": "raw_output_loss_rate",
+      "value": 0.2,
+      "numerator": 4,
+      "denominator": 20,
+      "interval_95": [
+        0.0807,
+        0.416
+      ],
+      "counts": "launched attempts that recorded no raw output"
+    },
+    {
+      "measurement_id": "m5",
+      "metric": "cost_reporting_coverage",
+      "value": 0.2,
+      "numerator": 1,
+      "denominator": 5,
+      "interval_95": [
+        0.0362,
+        0.6245
+      ],
+      "counts": "provider roles that report a cost"
+    }
+  ],
+  "claims": [
+    {
+      "claim_id": "c1",
+      "text": "Fewer than half of the collected attempts reached a provider.",
+      "supported_by": [
+        "m1"
+      ]
+    },
+    {
+      "claim_id": "c2",
+      "text": "No launched attempt passed an oracle.",
+      "supported_by": [
+        "m2"
+      ]
+    },
+    {
+      "claim_id": "c3",
+      "text": "Most declared tasks cannot be scored by any registered checker.",
+      "supported_by": [
+        "m3"
+      ]
+    },
+    {
+      "claim_id": "c4",
+      "text": "One in five launched attempts left no raw output behind.",
+      "supported_by": [
+        "m4"
+      ]
+    },
+    {
+      "claim_id": "c5",
+      "text": "The run cost 0.3402 USD in total.",
+      "supported_by": []
+    },
+    {
+      "claim_id": "c6",
+      "text": "The flywheel harness outperformed the codex harness.",
+      "supported_by": []
+    },
+    {
+      "claim_id": "c7",
+      "text": "Attempts failed because the tasks were badly written.",
+      "supported_by": []
+    },
+    {
+      "claim_id": "c8",
+      "text": "Launch rate and pass rate were both measured on the same run.",
+      "supported_by": [
+        "m1",
+        "m2"
+      ]
+    }
+  ]
+}

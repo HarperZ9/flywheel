@@ -247,9 +247,9 @@ def _persist_failed_run(run_root: Path, goal: str, endpoint: str,
 def _run_agent(operation: dict, bindings: Mapping[str, str],
                repo_root: Path, run_root: Path) -> dict:
     from .gateway import _countersign_run, _resolve_workspace_root
-    from .router_agent import run_router_agent
+    from .router_agent import run_router_agent; from .effort import resolve_effort, stamp_applied
     from .scaffold import scaffold_answer, scaffold_turn
-    goal, endpoint = operation["goal"], operation["endpoint"]
+    goal, endpoint = operation["goal"], operation["endpoint"]; effort = resolve_effort(operation["effort"]) if operation.get("effort") else None
     root, error = _resolve_workspace_root(operation.get("root"), repo_root)
     if error: raise ValueError
     events: list[dict] = []
@@ -269,8 +269,8 @@ def _run_agent(operation: dict, bindings: Mapping[str, str],
         result["scaffold"] = scaffold_answer(
             str(result.get("final") or ""), scaffold_turn(goal),
             provenance={"endpoint": endpoint, "model_ref": endpoint})
-        _check_child_value(result, secrets)
-        result["run_receipt"] = _countersign_run(result)
+        if effort: result["effort"] = stamp_applied(effort, max_steps_applied=operation["max_steps"], n_candidates_applied=False)
+        _check_child_value(result, secrets); result["run_receipt"] = _countersign_run(result)
         _check_child_value(result, secrets)
     except _SecretOutput: raise
     except Exception:

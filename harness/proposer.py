@@ -26,7 +26,10 @@ class ProposerOutput:
     cache: str
     served_model: str = ""    # the model the provider SAYS served the call
     # Provider-REPORTED token usage, when the API returned it, normalized to
-    # {"prompt", "completion", "total"} ints. None means the provider gave no
+    # {"prompt", "completion", "total"} ints. CLI proposers that retain the
+    # provider's event transcript (CodexCliProposer) instead carry the usage
+    # block VERBATIM, provider field names untouched, so a checker can
+    # recompute it from the transcript. None means the provider gave no
     # usage object -- a caller that needs a token count must ESTIMATE and say so,
     # never silently pass an invented number off as reported.
     usage: dict | None = None

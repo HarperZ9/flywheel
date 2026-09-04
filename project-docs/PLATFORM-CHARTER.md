@@ -21,7 +21,7 @@ design studio alike -- and then it gets out of the way.
 |---|---|---|
 | IDE | 30-destination desktop, 24 views, installer, a11y, recovery | `desktop/` |
 | Coding harness | agent loop, tools, write/exec permissions, per-step tool receipts | `harness/local_agent.py`, `/api/agent` |
-| Model freedom | multi-provider ladder (Claude, ox-alpha, DeepSeek, GLM, Gemini, local), BYOK | `harness/endpoints.py` |
+| Model freedom | multi-provider ladder (Claude, GLM, DeepSeek, Gemini, operator-supplied, local), subscription CLI tiers, BYOK | `harness/endpoints.py` |
 | Accountability floor | receipts, Merkle transparency log, disproof gate, certificates, exact grants | `harness/receipts.py`, `transparency_log.py`, `operation_grants.py` |
 | Evaluation | private verified benchmarks, verified frontier, regression loop from traces | `verified_bench.py`, `trace_bench.py` |
 | Parallel agents | role-prompted swarms, per-child receipts, quorum fan-in, `agent.completed` hooks | `subagents.py`, `/api/subagents` |

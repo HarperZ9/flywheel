@@ -23,60 +23,12 @@ class OracleResult:
     evidence: dict[str, Any]
     failure_codes: list[str]
     checked_artifacts: list[dict[str, str]]
-class _DuplicateKey(ValueError): pass
-class _Malformed(ValueError): pass
+from harness.cross_harness_oracle_support import _DuplicateKey, _Malformed, _admit, _checked, _digest, _inside, _pairs, _read, _root, _rows, _sha, _strings  # noqa: F401
 _UNPARSED = object()
-def _pairs(rows: list[tuple[str, Any]]) -> dict[str, Any]:
-    out: dict[str, Any] = {}
-    for key, value in rows:
-        if key in out: raise _DuplicateKey(key)
-        out[key] = value
-    return out
-def _sha(data: bytes) -> str: return hashlib.sha256(data).hexdigest()
-def _read(checked, role: str, path: Path) -> bytes:
-    for seen, data in checked.values():
-        if seen == path: checked[role] = (path, data); return data
-    data = path.read_bytes(); checked[role] = (path, data)
-    return data
-def _checked(items) -> list[dict[str, str]]:
-    return [{"role": role, "basename": path.name, "sha256": _sha(data)}
-            for role, (path, data) in sorted(items.items())]
 def _result(context: OracleContext, state: str, codes=(), *, evidence=None, checked=None) -> OracleResult:
     checker_id = str(context.oracle_spec.get("checker_id", ""))
     return OracleResult(state, checker_id, checker_id.rsplit("/", 1)[-1] if "/" in checker_id else "",
                         evidence or {}, sorted(set(codes)), _checked(checked or {}))
-def _inside(root: Path, value: Any) -> Path | None:
-    if not isinstance(value, str) or not value: return None
-    relative = Path(value)
-    if relative.is_absolute() or ".." in relative.parts: return None
-    try:
-        path = (root / relative).resolve()
-        return path if path.is_relative_to(root.resolve()) and path.is_file() else None
-    except (OSError, RuntimeError): return None
-def _admit(root: Path, value: Any) -> Path:
-    if not isinstance(value, Path) or ".." in value.parts: raise _Malformed("attempt_path_invalid")
-    try: path = (value if value.is_absolute() else root / value).resolve()
-    except (OSError, RuntimeError) as exc: raise _Malformed("attempt_path_invalid") from exc
-    if not path.is_relative_to(root): raise _Malformed("attempt_path_invalid")
-    return path
-def _rows(value: Any, field: str) -> list[dict[str, Any]]:
-    if not isinstance(value, list) or any(not isinstance(row, dict) for row in value):
-        raise _Malformed(f"{field}_type_invalid")
-    return value
-def _strings(value: Any, field: str) -> list[str]:
-    if not isinstance(value, list) or any(not isinstance(item, str) for item in value):
-        raise _Malformed(f"{field}_type_invalid")
-    return value
-def _root(context: OracleContext, field: str) -> Path:
-    value = context.scorecard_core.get(field)
-    if not isinstance(value, str) or not value: raise _Malformed(f"{field}_type_invalid")
-    path = Path(value)
-    if not path.is_dir(): raise _Malformed(f"{field}_directory_invalid")
-    return path.resolve()
-def _digest(value: Any, field: str) -> str:
-    if not isinstance(value, str) or re.fullmatch(r"[0-9a-f]{64}", value) is None:
-        raise _Malformed(f"{field}_type_invalid")
-    return value
 def _raw_boundary(context: OracleContext, checked, attempt: Path) -> tuple[dict[str, Any] | None, OracleResult | None]:
     try:
         path = _admit(attempt, context.raw_output_path)
@@ -279,8 +231,9 @@ def _docs(context, report, texts, fixture, checked):
         if row.get("path") != reference.get("path"): codes.append("surface_path_invalid")
     if _claim_violation(texts): codes.append("claim_language_violation")
     return codes
-_CHECKERS = {"index_fallback_integrity/v1": _index, "shared_task_artifact/v1": _shared,
-             "paired_friction/v1": _paired, "documentation_maintenance/v1": _docs}
+from harness.cross_harness_checkers import CHECKERS as _GRADED
+_CHECKERS = {"index_fallback_integrity/v1": _index, "shared_task_artifact/v1": _shared, "paired_friction/v1": _paired, "documentation_maintenance/v1": _docs, **_GRADED}
+from harness.cross_harness_oracles_v2 import register as _register_v2; _register_v2(_CHECKERS)  # noqa: E402  v2 imports back at call time, so it registers here rather than above
 def evaluate_task_oracle(context: OracleContext) -> OracleResult:
     checked = {}
     try:
@@ -294,7 +247,8 @@ def evaluate_task_oracle(context: OracleContext) -> OracleResult:
         fixture, fixture_error = _load_fixture(context, checked)
         if fixture_error == "input_hash_mismatch": return _result(context, "fail", [fixture_error], checked=checked)
         if fixture_error: return _result(context, "unverifiable", evidence={"reason": fixture_error}, checked=checked)
-        codes = checker(context, report, texts, fixture, checked)
-        return _result(context, "fail" if codes else "pass", codes, evidence={"failure_code_count": len(set(codes))}, checked=checked)
+        outcome = checker(context, report, texts, fixture, checked)
+        codes, metrics = outcome if isinstance(outcome, tuple) else (outcome, {})
+        return _result(context, "fail" if codes else "pass", codes, evidence={"failure_code_count": len(set(codes)), **metrics}, checked=checked)
     except _Malformed as exc:
         return _result(context, "malformed", ["json_invalid"], evidence={"reason": str(exc)}, checked=checked)

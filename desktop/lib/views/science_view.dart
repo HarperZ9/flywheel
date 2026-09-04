@@ -12,6 +12,8 @@ import '../services/settings.dart';
 import '../theme/flywheel_theme.dart';
 import '../widgets/composer_results.dart';
 import '../widgets/fw.dart';
+import '../widgets/invent_panel.dart';
+import '../widgets/lean_check_panel.dart';
 import '../widgets/plan_cards.dart';
 import '../widgets/science_composer.dart';
 import '../widgets/science_history.dart';
@@ -164,6 +166,10 @@ class _ScienceViewState extends State<ScienceView> {
           const SizedBox(height: FwLayout.s3),
           ScienceHistoryList(runs: _history, onOpen: _openStored),
         ],
+        const SizedBox(height: FwLayout.s5),
+        LeanCheckPanel(client: widget.client),
+        const SizedBox(height: FwLayout.s4),
+        InventPanel(client: widget.client),
       ],
     );
   }

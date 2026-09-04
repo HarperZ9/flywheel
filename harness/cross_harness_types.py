@@ -93,6 +93,9 @@ class AdapterResult:
     observed_capabilities: list[str]
     policy_violations: list[str]
     model_observation_basis: str = "unknown"
+    # What the provider actually said on an attempt the harness refused to
+    # grade. Empty for a returned attempt, whose text is `output_text`.
+    rejected_output: str = ""
 
 
 class CrossHarnessAdapter(Protocol):
@@ -106,14 +109,37 @@ class CrossHarnessAdapter(Protocol):
 
 _SECRET_KEY = re.compile(r"(?:authorization|credential|password|secret|token|api[_ -]?key)", re.I)
 _SECRET_VALUE = re.compile(r"(?i)(authorization\s*:\s*bearer\s+|(?:token|api[_ -]?key|password|secret)\s*[:=]\s*)\S+")
+_USAGE_COUNT_KEYS = frozenset({
+    "accepted_prediction_tokens", "audio_tokens", "cache_creation_input_tokens",
+    "cache_read_input_tokens", "cached_input_tokens", "cached_tokens",
+    "completion_tokens", "input_tokens", "output_tokens", "prompt_tokens",
+    "reasoning_output_tokens", "reasoning_tokens", "rejected_prediction_tokens",
+    "total_tokens",
+})
+_USAGE_DETAIL_KEYS = frozenset({"input_tokens_details", "output_tokens_details"})
 
 
-def sanitize_evidence(value: Any) -> Any:
-    """Remove secret-shaped keys and reject values canonical JSON cannot encode."""
+def _usage_secret_field_allowed(key: str, value: Any, in_usage: bool) -> bool:
+    return in_usage and ((key in _USAGE_COUNT_KEYS and type(value) is int)
+                         or (key in _USAGE_DETAIL_KEYS and isinstance(value, dict)))
+
+
+def sanitize_evidence(value: Any, _in_usage: bool = False) -> Any:
+    """Remove secret-shaped keys and reject values canonical JSON cannot encode.
+
+    Only recognized integer count fields inside a ``usage`` block pass the
+    secret-key filter. Numeric credentials and token-shaped fields elsewhere
+    still redact; recognized input/output detail objects remain traversable.
+    """
     if isinstance(value, dict):
-        return {str(key): "[REDACTED]" if _SECRET_KEY.search(str(key)) else sanitize_evidence(item)
-                for key, item in value.items()}
-    if isinstance(value, list): return [sanitize_evidence(item) for item in value]
+        cleaned = {}
+        for key, item in value.items():
+            name = str(key); child_in_usage = _in_usage or name == "usage"
+            cleaned[name] = ("[REDACTED]" if _SECRET_KEY.search(name)
+                             and not _usage_secret_field_allowed(name, item, _in_usage)
+                             else sanitize_evidence(item, child_in_usage))
+        return cleaned
+    if isinstance(value, list): return [sanitize_evidence(item, _in_usage) for item in value]
     if isinstance(value, float) and (value != value or abs(value) == float("inf")): raise ValueError("nonfinite adapter evidence")
     if isinstance(value, str): return _SECRET_VALUE.sub(lambda match: match.group(1) + "[REDACTED]", value)
     return value if isinstance(value, (int, float, bool, type(None))) else sanitize_evidence(str(value))
@@ -124,10 +150,22 @@ def validate_elapsed_ms(value: Any) -> int:
     return value
 
 
+def _reported_cost(metrics: dict[str, Any]) -> bool:
+    """Did the provider itself put a cost figure on this attempt?
+
+    Only the provider's own number counts. Nothing here prices tokens, so a
+    harness that reports no cost keeps its null reason rather than acquiring a
+    figure this repository computed for it."""
+    observation = metrics.get("resource_observation")
+    if not isinstance(observation, dict): return False
+    value = observation.get("provider_reported_cost_usd")
+    return not isinstance(value, bool) and isinstance(value, (int, float))
+
+
 def metric_null_reasons(metrics: dict[str, Any]) -> dict[str, str]:
     reasons = {}
     if "latency_ms" not in metrics: reasons["latency"] = "attempt_did_not_report_latency"
     if not metrics.get("usage"): reasons["usage"] = "provider_usage_unavailable"
-    reasons["cost"] = "provider_cost_unavailable"
+    if not _reported_cost(metrics): reasons["cost"] = "provider_cost_unavailable"
     if not metrics.get("resource_observation"): reasons["resource"] = "resource_observation_unavailable"
     return reasons

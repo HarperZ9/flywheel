@@ -1,0 +1,355 @@
+{
+  "not_run": [
+    {
+      "needs": "a live local or frontier endpoint",
+      "standing_result": "retired on 2026-07-26. The arms were not independent: the treatment's first attempt is the same call as the baseline's only attempt, so the treatment cannot score lower and the difference is not a comparison. The quantity measured is verified pass@k. The retired table read verified inference 9/10 against single-shot 8/10, difference +0.100 with 95% CI [-0.236, +0.420], an interval that includes zero, and no capability uplift is claimed.",
+      "suite": "m7 capability arms",
+      "where": "handoff/site-designer/BENCHMARKS.md, docs/claims/2026-07-13-uplift"
+    },
+    {
+      "needs": "a provider list and an oracle",
+      "standing_result": null,
+      "suite": "uplift_bench paired arms",
+      "where": "harness/uplift_bench.py, POST /api/uplift"
+    },
+    {
+      "needs": "endpoints and a private task set the operator supplies",
+      "standing_result": null,
+      "suite": "verified_bench private task set",
+      "where": "harness/verified_bench.py, POST /api/bench/run"
+    },
+    {
+      "needs": "a chat backend per mode",
+      "standing_result": null,
+      "suite": "classifier friction backend modes",
+      "where": "harness/classifier_friction_bench.py"
+    },
+    {
+      "needs": "a chat backend; the deterministic variants below ran instead",
+      "standing_result": null,
+      "suite": "backend variants of the governed, recovery, stateful and source-mined suites",
+      "where": "run_backend_* in the same modules"
+    }
+  ],
+  "parity": {
+    "absent": 0,
+    "declared_on": "2026-09-03",
+    "gaps": [],
+    "rows": 33,
+    "uniquely_witnessed": 24,
+    "witnessed": 33
+  },
+  "python": "3.12.10",
+  "result_sha256": "107a33f920629afb53ddaf0d960ea54f3bed96d6c21c9ed99a0acecd2ac1579b",
+  "schema": "flywheel.offline-benchmarks/v1",
+  "suites": [
+    {
+      "credible": true,
+      "detail": [
+        {
+          "name": "re_checkability",
+          "score": 1.0,
+          "strawman": 0.0
+        },
+        {
+          "name": "externalization",
+          "score": 1.0,
+          "strawman": 0.0
+        },
+        {
+          "name": "adversarial_soundness",
+          "score": 1.0,
+          "strawman": 0.0
+        },
+        {
+          "name": "no_regression",
+          "score": 1.0,
+          "strawman": 0.0
+        },
+        {
+          "name": "invariant_fidelity",
+          "score": 1.0,
+          "strawman": 0.0
+        },
+        {
+          "name": "null_space_honesty",
+          "score": 1.0,
+          "strawman": 0.0
+        },
+        {
+          "name": "provenance",
+          "score": 1.0,
+          "strawman": 0.0
+        },
+        {
+          "name": "buildc_receipt_bridge",
+          "score": 1.0,
+          "strawman": null
+        }
+      ],
+      "headline": {
+        "dimensions": 8,
+        "harness_overall": 1.0,
+        "separation": 1.0,
+        "strawman_overall": 0.0
+      },
+      "name": "accountability",
+      "non_goal": "measures accountability, NOT capability. Pair it with a capability bench",
+      "question": "does an unaccountable system score badly here",
+      "schema": "accountability/v1",
+      "seconds": 8.008
+    },
+    {
+      "detail": [
+        {
+          "name": "failed_cases",
+          "score": 0
+        },
+        {
+          "name": "mean_autonomy_promotion_evidence_score",
+          "score": 0.5
+        },
+        {
+          "name": "mean_docs_schematic_drift_score",
+          "score": 1.0
+        },
+        {
+          "name": "mean_execution_graph_coverage",
+          "score": 1.0
+        },
+        {
+          "name": "mean_fitness_metric_coverage",
+          "score": 0.167
+        },
+        {
+          "name": "mean_hitl_gate_score",
+          "score": 0.667
+        },
+        {
+          "name": "mean_maturity_gate_score",
+          "score": 0.833
+        },
+        {
+          "name": "mean_organic_doc_update_score",
+          "score": 1.0
+        },
+        {
+          "name": "mean_quality_score",
+          "score": 0.542
+        },
+        {
+          "name": "mean_receipt_auditability_score",
+          "score": 1.0
+        },
+        {
+          "name": "mean_sandboxed_skill_mutation_score",
+          "score": 0.167
+        },
+        {
+          "name": "mean_source_of_truth_score",
+          "score": 1.0
+        },
+        {
+          "name": "mean_ui_state_grounding_score",
+          "score": 0.167
+        },
+        {
+          "name": "mean_vector_acceleration_boundary",
+          "score": 0.167
+        },
+        {
+          "name": "pass_rate",
+          "score": 1.0
+        },
+        {
+          "name": "passed_cases",
+          "score": 6
+        },
+        {
+          "name": "unauthorized_write_count",
+          "score": 0
+        },
+        {
+          "name": "unsafe_mutation_count",
+          "score": 0
+        }
+      ],
+      "headline": {
+        "failed": 0,
+        "mean_quality_score": 0.542,
+        "pass_rate": 1.0,
+        "passed": 6,
+        "scenarios": 6
+      },
+      "name": "governed-agent",
+      "question": "does a workflow refuse an action above its tier",
+      "schema": "governed-agent-workflow-benchmark/v1",
+      "seconds": 0.011
+    },
+    {
+      "detail": [
+        {
+          "name": "avg_attempts",
+          "score": 1.5
+        },
+        {
+          "name": "avg_retries",
+          "score": 0.5
+        },
+        {
+          "name": "fallback_quality",
+          "score": 0.958
+        },
+        {
+          "name": "fallback_use_rate",
+          "score": 0.167
+        },
+        {
+          "name": "max_recovery_latency",
+          "score": 1745
+        },
+        {
+          "name": "mean_recovery_latency",
+          "score": 756.667
+        },
+        {
+          "name": "p95_recovery_latency",
+          "score": 1745
+        },
+        {
+          "name": "receipt_completeness",
+          "score": 1.0
+        },
+        {
+          "name": "recovery_success_rate",
+          "score": 1.0
+        },
+        {
+          "name": "retry_budget_compliance",
+          "score": 1.0
+        },
+        {
+          "name": "retry_use_rate",
+          "score": 0.5
+        },
+        {
+          "name": "scenario_fail_count",
+          "score": 0
+        },
+        {
+          "name": "scenario_pass_count",
+          "score": 6
+        },
+        {
+          "name": "silent_failure_rate",
+          "score": 0.0
+        },
+        {
+          "name": "task_correct_rate",
+          "score": 0.833
+        },
+        {
+          "name": "typed_escalation_rate",
+          "score": 0.167
+        }
+      ],
+      "headline": {
+        "receipt_completeness": 1.0,
+        "recovery_success_rate": 1.0,
+        "scenarios": 6,
+        "silent_failure_rate": 0.0
+      },
+      "name": "agent-recovery",
+      "question": "does an injected fault recover without failing quietly",
+      "schema": "agent.recovery-benchmark/v1",
+      "seconds": 0.042
+    },
+    {
+      "detail": [
+        {
+          "name": "correction_permanence_score",
+          "score": 1.0
+        },
+        {
+          "name": "negative_ledger_enforcement",
+          "score": 1.0
+        },
+        {
+          "name": "persistent_memory_replay_score",
+          "score": 1.0
+        },
+        {
+          "name": "teacher_exit_evidence_score",
+          "score": 1.0
+        },
+        {
+          "name": "selfplay_nonreinforcement_score",
+          "score": 1.0
+        },
+        {
+          "name": "fixed_item_scorecard_reproducibility",
+          "score": 1.0
+        },
+        {
+          "name": "negative_result_preservation",
+          "score": 1.0
+        },
+        {
+          "name": "discord_scope_lock_score",
+          "score": 1.0
+        },
+        {
+          "name": "tool_trace_receipt_completeness",
+          "score": 1.0
+        },
+        {
+          "name": "secret_boundary_score",
+          "score": 1.0
+        }
+      ],
+      "headline": {
+        "checks": 10,
+        "pass_rate": 1.0,
+        "passed": true
+      },
+      "name": "stateful-provider-swap",
+      "question": "does state survive a provider swap",
+      "schema": "unisonai.stateful-benchmark/v1",
+      "seconds": 0.006
+    },
+    {
+      "detail": [],
+      "headline": {
+        "cases": 26,
+        "failed": 0,
+        "metrics_asserted": 170,
+        "pass_rate": 1.0,
+        "passed": 26
+      },
+      "name": "source-mined",
+      "question": "do the mined checks still hold against their datasets",
+      "schema": "source-mined.executable-benchmark/v1",
+      "seconds": 0.014
+    },
+    {
+      "caveats": [
+        "The model references in these artifacts no longer resolve to anything on a live roster, so the exact weights behind each arm cannot be fetched again from the reference alone. The per-task outcomes are committed and the arithmetic here is reproducible; the generation is not.",
+        "One deterministic sample per task per arm. A single sample measures the greedy decode, not the model.",
+        "This compares base weights against continued-pretrained weights on general code completion. It is not a measurement of the verification harness, which is the thing this repository is."
+      ],
+      "detail": [],
+      "headline": {
+        "delta_points": -0.0305,
+        "gains": 9,
+        "p_exact": 0.4049,
+        "regressions": 14,
+        "tasks": 164
+      },
+      "name": "paired-replication",
+      "non_goal": "continued pretraining on the workspace corpus did not improve general code completion and did not significantly harm it; the point estimate is a regression inside the noise",
+      "question": "did continued pretraining change general code completion",
+      "schema": "flywheel.paired-replication/v1",
+      "seconds": 0.001
+    }
+  ]
+}

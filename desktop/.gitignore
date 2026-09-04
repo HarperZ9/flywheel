@@ -14,3 +14,8 @@ build/
 
 # Session handoff notes (local only, never shipped)
 HANDOFF-*.md
+
+# Android release signing: the keystore and its passwords never ship.
+android/key.properties
+*.jks
+*.keystore

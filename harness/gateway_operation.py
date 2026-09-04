@@ -7,6 +7,7 @@ from types import MappingProxyType
 from typing import Mapping
 from urllib.parse import unquote
 from .evidence_json import canonical_sha256
+from .gateway_operation_infra import INFRA_FIELDS, INFRA_PATHS
 from .gateway_secret_boundary import validate_no_raw_secrets
 REQUEST_SCHEMA = "flywheel.gateway-operation/v1"
 PROPOSAL_SCHEMA = "flywheel.gateway-grant-proposal/v1"
@@ -63,9 +64,12 @@ class AuthorizedOperation(CanonicalOperation):
 _REFS = {"data_refs", "credential_refs"}
 _FIELDS = {
     "chat.complete": ({"model", "messages", "stream"} | _REFS, set()),
+    # `effort` is optional so a client that predates the dial keeps working;
+    # when present it is the named dial the receipt reports, while max_steps
+    # stays the enforced budget and any divergence is stamped as an override.
     "agent.run": ({"goal", "endpoint", "max_steps", "allow_write",
                    "allow_exec", "stream"} | _REFS,
-                  {"root", "test_cmd", "attachment"}),
+                  {"root", "test_cmd", "attachment", "effort"}),
     "workflow.run": ({"workflow", "goal", "endpoint", "allow_write",
                       "allow_exec"} | _REFS,
                      {"profile", "root", "test_cmd"}),
@@ -82,7 +86,7 @@ _FIELDS = {
                          } | _REFS, set()),
     "marketplace.remove": ({"name"} | _REFS, set()),
     "operation.cancel": ({"operation_ref", "timeout_ms"} | _REFS, set()),
-    "companion.ask": ({"prompt"} | _REFS, {"solution_sig"}),
+    "companion.ask": ({"prompt"} | _REFS, {"solution_sig", "effort"}),
     "route.send": ({"prompt", "endpoint"} | _REFS, {"model"}),
     "bench.run": ({"tasks", "endpoints"} | _REFS,
                   {"timeout_s", "cost_per_task", "created_at"}),
@@ -91,8 +95,28 @@ _FIELDS = {
                       "intent_source", "architecture_source"}),
     "forge.recheck": ({"prp_id"} | _REFS, set()),
     "embeddings.create": ({"input"} | _REFS, {"model"}),
+    # The action routes. Each reaches the network, spawns a process, or
+    # writes custody, so each is expressible only as a granted operation.
+    "capability.probe": ({"endpoint"} | _REFS, {"disk_gb"}),
+    "invent.round": ({"k"} | _REFS, {"offset"}),
+    "lean.check": ({"code"} | _REFS, set()),
+    "suite.audit": ({"path"} | _REFS, {"oracle_cmd", "max_mutants"}),
+    "lane.call": ({"name", "tool", "args"} | _REFS,
+                  {"governance_tier", "timeout"}),
+    "packs.admit": ({"manifest"} | _REFS, {"fixtures_root"}),
+    "store.put": ({"kind", "data"} | _REFS, {"project"}),
+    "import.config": ({"root"} | _REFS, set()),
 }
+_FIELDS.update(INFRA_FIELDS)          # the infrastructure controls; one table
+# Every action the engine can canonicalize is an action the operator can be
+# asked to grant. Deriving the set here rather than restating it at the
+# prepare route means a new action cannot ship with a surface the grant sheet
+# refuses: the two cannot disagree because there is only one list.
+GRANTABLE_ACTIONS = frozenset(_FIELDS)
+LANE_CALL_PREFIX = "/api/lane/"
 def action_for_path(path: str) -> str | None:
+    if path.startswith(LANE_CALL_PREFIX):
+        return "lane.call"
     return {
         "/v1/chat/completions": "chat.complete", "/api/agent": "agent.run",
         "/api/workflow": "workflow.run", "/api/plan/run": "plan.run",
@@ -111,6 +135,14 @@ def action_for_path(path: str) -> str | None:
         "/api/forge/recheck": "forge.recheck",
         "/v1/embeddings": "embeddings.create",
         "/api/bench/run": "bench.run",
+        "/api/capability": "capability.probe",
+        "/api/invent": "invent.round",
+        "/api/lean": "lean.check",
+        "/api/suite": "suite.audit",
+        "/api/packs/admit": "packs.admit",
+        "/api/store/entity": "store.put",
+        "/api/import": "import.config",
+        **INFRA_PATHS,
     }.get(path)
 def canonicalize_operation(action: str, operation: object) -> CanonicalOperation:
     try:

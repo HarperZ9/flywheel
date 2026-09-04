@@ -23,9 +23,12 @@ import '../views/family_view.dart';
 import '../views/feeds_view.dart';
 import '../views/governance_view.dart';
 import '../views/graph_view.dart';
+import '../views/infra_view.dart';
 import '../views/instruments_view.dart';
 import '../views/journey_view.dart';
+import '../views/forum_view.dart';
 import '../views/lanes_view.dart';
+import '../views/registry_view.dart';
 import '../views/relay_view.dart';
 import '../views/lessons_view.dart';
 import '../views/lint_view.dart';
@@ -148,6 +151,7 @@ Widget? _evidence(DestinationId id, DestinationInputs i) => switch (id) {
       DestinationId.governance =>
         GovernanceView(client: i.client, alive: i.alive),
       DestinationId.usage => UsageView(client: i.client, alive: i.alive),
+      DestinationId.infra => InfraView(client: i.client, alive: i.alive),
       _ => null,
     };
 
@@ -162,7 +166,11 @@ Widget? _advanced(DestinationId id, DestinationInputs i) => switch (id) {
       DestinationId.lessons => LessonsView(client: i.client, alive: i.alive),
       DestinationId.instruments =>
         InstrumentsView(client: i.client, alive: i.alive),
+      DestinationId.forum => ForumView(client: i.client),
+      DestinationId.registry =>
+        RegistryView(client: i.client, alive: i.alive),
       DestinationId.lanes => LanesView(
+          client: i.client,
           roster: i.roster,
           alive: i.alive,
           onProbe: i.onProbe,

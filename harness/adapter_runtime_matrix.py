@@ -8,6 +8,8 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from harness.model_ollama import normalize_ollama_digest
+
 
 SCHEMA = "harness.adapter-runtime-matrix/v1"
 DEFAULT_CONTRACT = str(Path(__file__).resolve().parent.parent / "benchmarks" / "cross-harness-adapter-contract-v2.json")
@@ -122,7 +124,7 @@ def _runtime_row(
     profiles = _profile_matches(selector, endpoint_profiles)
     auth = _auth_matches(role, endpoint_auth_status)
     needs_endpoint = role in {"local_14b", "local_32b"}
-    needs_auth = role in {"codex_harness", "flywheel_harness", "claude_code"}
+    needs_auth = role in {"codex_harness", "flywheel_harness", "claude_code", "cursor"}
     profile_code = ("endpoint_profile_selection_mismatch" if needs_endpoint and len(profiles) != 1 else
                     _profile_failure(profiles[0], selector) if needs_endpoint else "")
     profile_ready = len(profiles) == 1 and profiles[0]["root_exists"] and profiles[0]["supports_agentic_workflow"] and not profile_code if needs_endpoint else True
@@ -185,7 +187,8 @@ def _strings(value: Any) -> list[str]:
 
 
 def _auth_matches(role: str, data: dict[str, Any]) -> list[dict[str, Any]]:
-    provider = "codex" if role in {"codex_harness", "flywheel_harness"} else "claude" if role == "claude_code" else ""
+    provider = ("codex" if role in {"codex_harness", "flywheel_harness"} else
+                "claude" if role == "claude_code" else "cursor" if role == "cursor" else "")
     if not provider:
         return []
     lanes = data.get("lanes") if isinstance(data.get("lanes"), list) else []
@@ -239,8 +242,15 @@ def _gate_failure(gate: dict[str, Any], profile: dict[str, Any], run_id: str, no
          or gate.get("failure_class") != "", "endpoint_gate_failed"),
         (profile["backend"].lower() == "ollama" and (not isinstance(gate.get("ollama_digest"), str)
          or not gate["ollama_digest"].strip()), "endpoint_gate_ollama_digest_missing"),
-        (profile["backend"].lower() == "ollama" and (gate.get("expected_ollama_digest") != profile["expected_ollama_digest"]
-         or gate.get("ollama_digest") != profile["expected_ollama_digest"]), "endpoint_gate_ollama_digest_mismatch"),
+        # The gate reports the digest the daemon answered with, which is bare hex,
+        # and a profile pins it with the `sha256:` prefix. Comparing the spellings
+        # called one model a mismatch with itself and held both local roles out of
+        # the 2026-09-03 head-to-head. Compare the hex, not how it was written.
+        (profile["backend"].lower() == "ollama"
+         and (gate.get("expected_ollama_digest") != profile["expected_ollama_digest"]
+              or normalize_ollama_digest(gate.get("ollama_digest") or "")
+              != normalize_ollama_digest(profile["expected_ollama_digest"])),
+         "endpoint_gate_ollama_digest_mismatch"),
     )
     return next((code for failed, code in checks if failed), "")
 

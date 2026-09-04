@@ -12,6 +12,7 @@ import 'package:flutter/material.dart';
 import '../client/gateway_client.dart';
 import '../models/gateway_models.dart';
 import '../theme/flywheel_theme.dart';
+import '../widgets/bench_run_panel.dart';
 import '../widgets/eval_receipt_panel.dart';
 import '../widgets/fw.dart';
 
@@ -84,6 +85,8 @@ class _EvalViewState extends State<EvalView> {
         ),
         onVerify: (receipt) => widget.client.evalVerify(receipt),
       ),
+      const SizedBox(height: FwLayout.s6),
+      BenchRunPanel(client: widget.client, endpoints: _endpoints),
     ]);
   }
 }

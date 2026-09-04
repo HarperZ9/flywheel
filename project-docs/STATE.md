@@ -8,7 +8,61 @@
 > Update on every material step. If context is lost: read PROJECT.md, then
 > this. (`ROADMAP.md` is the original program framing, kept for history.)
 
-Last updated: 2026-09-03
+Last updated: 2026-09-04
+
+## 2026-09-04 -- 0.3.11: the release that ships everything main was already carrying
+
+`v0.3.11` is the first tag since `v0.3.10` (2026-08-18). `git rev-list
+v0.3.10..v0.3.11` counts 275 commits: the 208 that had accumulated on `main`
+untagged and are listed in the entry below, the 66 that landed on
+`release/0.3.11`, and the commit that merged the two.
+
+- **The verifier answers on any input.** `verify()` names a drift or
+  unverifiable verdict instead of crashing on hostile, wrongly-typed,
+  deeply-nested, non-finite, or non-utf-8 input, across receipts, construction
+  certificates, the bundle manifest, the merkle/world inclusion path, the anchor
+  path, and the Zenodo deposit path.
+- **External anchoring is confirmed.** The Zenodo DOI record and the
+  OpenTimestamps/Bitcoin attestations, heads confirmed at named blocks with
+  redundancy calendars. The anchor self-heals a confirmed proof stranded under a
+  pending record and re-verifies against the block header.
+- **Relay is a submodule and a destination the desktop app can select**,
+  with a unified CLI, installer, and Docker path.
+- **Cross-harness runs drive Claude Code and Cursor as peer adapters**, and the
+  Codex adapter names `codex.exe` on Windows so the npm text wrapper cannot be
+  mistaken for the binary.
+- **The benchmark oracles measure something an echo cannot pass.**
+  `documentation_maintenance/v2` requires the sha256 of every surface and code
+  reference read from the workspace, which the fixture cannot supply. The null
+  floor harness that found the v1 hole ships with it (`flywheel null-floor`).
+  Every checker now publishes the type of each field it requires, so a provider
+  that guessed the wrong shape is no longer scored as incapable, and
+  `flywheel task-set-executability` reports the provisionable and scorable
+  denominators of a task set before a run spends anything.
+- **Statistics carry their intervals.** Wilson 95% intervals on verified
+  frontier rows, cluster-aware paired comparison, Holm-Bonferroni adjustment,
+  a prospective McNemar planner, and labelled replicate SD.
+- **Output validation is native.** `flywheel check-output` checks an answer
+  against the sources that decide it, with domain packs for finance, law, and
+  medicine (`harness/domain_packs/`), and a validation ledger a later reader can
+  read back. This is the plan-iterate-check-assess-retry path: the model's
+  answer is checked before it reaches the user, not after.
+- **Proof and document formats are native.** Markdown, LaTeX, PDF, and Lean
+  outputs (`harness/answer_docs.py`, `harness/report_docs.py`,
+  `harness/lean_export.py`, `harness/proof_lean.py`), with the relation layer in
+  `harness/proof_relations.py` that turns a probabilistic answer into a
+  deterministic check.
+- **`flywheel session-summary`** closes a stretch of work with four answered
+  questions, the factual half derived from git and receipt metadata and the
+  narrated half labelled, with a disagreement check against the tree.
+
+**What the tag does and does not do.** Pushing `v0.3.11` publishes
+`flywheel-verify` to PyPI over Trusted Publishing, and builds the Windows
+installer as a workflow artifact. It does not publish the installer:
+`windows-publish.yml` is `workflow_call`-only, nothing in the repository calls
+it, and the `publish_token` secret it requires does not exist. The installer
+reaches users only when the candidate artifact is attached to the GitHub
+release by hand.
 
 ## 2026-09-03 -- Consolidated bring-forward: 0.3.6 through 0.3.10, and what is in flight
 
@@ -66,8 +120,8 @@ below (0.3.5 and earlier) are the original append-only log, left untouched.
 
 **In flight, not on main (as of 2026-09-03):** `release/0.3.11` (lane
 version parity), and active feature branches for task-set executability, a
-benchmark oracle floor, session summary, and model-boundary receipts. These
-are not shipped; do not cite them as released.
+benchmark oracle floor, session summary, and model-boundary receipts. All of
+these landed on `release/0.3.11` and shipped in `v0.3.11`; see the entry above.
 
 ## 2026-08-04 -- Subscription sign-in (0.3.5)
 

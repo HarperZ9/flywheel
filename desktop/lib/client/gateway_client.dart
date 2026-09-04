@@ -103,13 +103,16 @@ class GatewayClient {
 
   /// POST /api/companion — answer locally, escalate the hard slice.
   Future<CompanionResult> companion(String prompt,
-      {String? solutionSig, Map<String, dynamic>? authorizedBody}) async {
+      {String? solutionSig,
+      String? effort,
+      Map<String, dynamic>? authorizedBody}) async {
     final r = await _http.post(
       Uri.parse('$baseUrl/api/companion'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode(authorizedBody ?? {
         'prompt': prompt,
         if (solutionSig != null) 'solution_sig': solutionSig,
+        if (effort != null) 'effort': effort,
       }),
     );
     return CompanionResult.fromJson(_decode(r));
@@ -149,6 +152,24 @@ class GatewayClient {
         )
         .timeout(timeout);
     return _decode(r);
+  }
+
+  /// POST returning the decoded body whatever the status came back as.
+  /// Some routes answer a real finding with a non-200: an evidence packet
+  /// that drifted is a 422 whose body IS the verdict, and a suite that
+  /// cannot be audited is a 400 that names why. Throwing those away would
+  /// report a transport failure where the engine actually answered.
+  Future<Map<String, dynamic>> postJsonLenient(
+      String path, Map<String, dynamic> body,
+      {Duration timeout = const Duration(seconds: 15)}) async {
+    final r = await _http
+        .post(
+          Uri.parse('$baseUrl$path'),
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode(body),
+        )
+        .timeout(timeout);
+    return _decodeLenient(r);
   }
 
   Map<String, dynamic> _decode(http.Response r) {

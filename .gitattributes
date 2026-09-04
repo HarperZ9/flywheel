@@ -16,6 +16,16 @@ artifacts/closeout/**/stderr.txt -text -diff
 # rewrites the fixtures to CRLF and the hash check fails.
 packs/**/fixtures/** -text -diff
 
+# Cross-harness oracles hash fixture bytes into every receipt as input_sha256s,
+# so a CRLF checkout would record a different hash than an LF one for the same
+# fixture. Same reason as the packs rule above.
+benchmarks/fixtures/** -text -diff
+
+# The task set and the adapter contracts are hashed into every manifest as
+# task_set_sha256 and adapter_sha256. Same reason as the fixture rule above:
+# a CRLF checkout would record a different hash for identical content.
+benchmarks/*.json -text -diff
+
 # The model-boundary-receipt golden fixture is a cross-language seal pin: its
 # canonical-bytes and reseal tests hash the fixture bytes, so Git must not
 # normalize the stream (same reason as packs/**/fixtures/** above).

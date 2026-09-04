@@ -7,7 +7,9 @@ from harness.cross_harness_artifacts import (bind_attempt_receipt, canonical_sha
     materialize_response_envelope, preflight_artifact_root, recheck_attempt_receipt, remove_readonly_tree,
     snapshot_source_tree, validate_execution_components, write_artifact_index)
 from harness.cross_harness_oracles import OracleContext, evaluate_task_oracle
-from harness.cross_harness_runtime_context import stage_runtime_context
+from harness.cross_harness_rejected_output import record_rejected_output; from harness.cross_harness_runtime_context import stage_runtime_context
+from harness.cross_harness_run_seal import seal_run, write_json as _write_json
+from harness.cross_harness_usage import recheck_inner_usage
 from harness.cross_harness_types import (AttemptRequest, metric_null_reasons, model_observation_pair_error, sanitize_evidence,
     validate_elapsed_ms)
 class _MalformedAttempt(ValueError): pass
@@ -29,7 +31,6 @@ def resolve_task_ids(task_rows: list[dict[str, Any]], selectors: list[str]) -> l
         if matches[0] not in resolved:
             resolved.append(matches[0])
     return resolved
-
 def derive_primary_outcome(execution_state: str, oracle_state: str, receipt_state: str) -> tuple[str, str]:
     allowed = (
         {"not_started", "unavailable", "launched", "returned", "timeout", "malformed", "internal_error"},
@@ -136,8 +137,6 @@ def _write_json(path: Path, value: Any) -> Path:
     path.write_text(json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False,
                                allow_nan=False) + "\n", encoding="utf-8", newline="")
     return path
-
-
 def _seal_row(row: dict[str, Any], files: dict[str, Path], attempt: Path) -> Path:
     metrics = attempt / "metrics.json"; _write_json(metrics, row["metrics"]); files[metrics.name] = metrics
     limits = attempt / "limitations.md"; limits.write_text("\n".join(f"- {item}" for item in row["limitations"]) + "\n", encoding="utf-8"); files[limits.name] = limits
@@ -153,8 +152,6 @@ def _seal_row(row: dict[str, Any], files: dict[str, Path], attempt: Path) -> Pat
     row["orthogonal_states"]["receipt_state"] = row["receipt_state"]
     row["primary_outcome"], row["status"] = derive_primary_outcome(*row["orthogonal_states"].values())
     return receipt_path
-
-
 def execute_cross_harness_manifest(
     manifest: dict[str, Any], runtime_matrix: dict[str, Any], adapters: dict[str, Any], *,
     artifact_root: Path, source_root: Path, run_id: str, phase: str, selectors: list[str],
@@ -180,7 +177,7 @@ def execute_cross_harness_manifest(
                         "source_snapshot_sha256": before["sha256"], "input_sha256s": dict(task.get("input_sha256s", {})),
                         "execution_state": "not_started", "oracle_state": "not_run", "receipt_state": "not_emitted",
                         "raw_prompt_sha256": str(task.get("raw_prompt_sha256", "")), "raw_output_sha256": "",
-                        "raw_output_path": "", "tool_trace_path": "", "failure_class": "", "failure_detail": "", "model_observed": "", "model_observation_basis": "unknown",
+                        "raw_output_path": "", "rejected_output_path": "", "rejected_output_sha256": "", "rejected_output_bytes": 0, "rejected_output_arrived_bytes": 0, "rejected_output_truncated": False, "tool_trace_path": "", "failure_class": "", "failure_detail": "", "model_observed": "", "model_observation_basis": "unknown",
                         "metrics": {}, "limitations": ["Actual enforcement is not assumed equivalent across adapters."],
                         "policy_equivalence": "non_equivalent", "availability_evidence": dict(plan["runtime_evidence"]),
                         "planned": True, "admitted": False, "launched": False, "blocked": False})
@@ -230,12 +227,14 @@ def execute_cross_harness_manifest(
                             if result.output_text:
                                 raw = attempt / "output.txt"; raw.write_text(result.output_text, encoding="utf-8", newline=""); files[raw.name] = raw
                                 row.update(raw_output_path=str(raw), raw_output_sha256=hashlib.sha256(raw.read_bytes()).hexdigest())
-                            elapsed_ms = validate_elapsed_ms(result.elapsed_ms)
+                            elapsed_ms = validate_elapsed_ms(result.elapsed_ms); row.update(record_rejected_output(result.rejected_output, attempt, files))
                             observation_error = model_observation_pair_error(result.model_observed, result.model_observation_basis)
                             metadata = sanitize_evidence({"usage": result.usage, "resource": result.resource_observation, "capabilities": result.observed_capabilities,
                                 "violations": result.policy_violations, "tool_trace": result.tool_trace, "model": result.model_observed, "model_observation_basis": result.model_observation_basis, "randomness": result.randomness_control, "failure_detail": result.failure_detail})
+                            usage_verification = recheck_inner_usage(metadata["tool_trace"], metadata["usage"])
+                            verified_usage = metadata["usage"] if usage_verification["verified"] else {}
                             row.update(execution_state="malformed" if observation_error else result.execution_state, failure_class="invalid_model_observation" if observation_error else sanitize_evidence(result.failure_class), failure_detail=observation_error or metadata["failure_detail"],
-                                       metrics={"latency_ms": elapsed_ms, "usage": metadata["usage"], "resource_observation": metadata["resource"]}, model_observed="" if observation_error or metadata["model_observation_basis"] == "unknown" else metadata["model"], model_observation_basis="unknown" if observation_error else metadata["model_observation_basis"], randomness_control=metadata["randomness"],
+                                       metrics={"latency_ms": elapsed_ms, "usage": verified_usage, "resource_observation": metadata["resource"]}, usage_verification=usage_verification, model_observed="" if observation_error or metadata["model_observation_basis"] == "unknown" else metadata["model"], model_observation_basis="unknown" if observation_error else metadata["model_observation_basis"], randomness_control=metadata["randomness"],
                                        observed_capabilities=metadata["capabilities"], policy_violations=metadata["violations"])
                             trace = attempt / "tool_trace.json"; _write_json(trace, metadata["tool_trace"]); files[trace.name] = trace; row["tool_trace_path"] = str(trace)
                             if row["execution_state"] == "returned":
@@ -278,6 +277,8 @@ def execute_cross_harness_manifest(
                     row["policy_violations"] = sorted(set(row.get("policy_violations", [])) | {"workspace_drift"})
             row["blocked"] = row["execution_state"] == "unavailable"
             row["metric_null_reasons"] = metric_null_reasons(row["metrics"])
+            if not row.get("usage_verification", {}).get("verified", True):
+                row["metric_null_reasons"]["usage"] = row["usage_verification"]["usage_cell_refused"]
             raw_path = attempt / "output.txt"
             if raw_path.is_file() and raw_path not in files.values(): files[raw_path.name] = raw_path; row.update(raw_output_path=str(raw_path), raw_output_sha256=hashlib.sha256(raw_path.read_bytes()).hexdigest())
             row["comparison_key"] = comparison_key(row)
@@ -290,11 +291,10 @@ def execute_cross_harness_manifest(
             if row["primary_outcome"] == "completed": clean.append(Path(row["workspace_root"]))
     finally:
         after = snapshot_source_tree(source)
-    if before != after: raise RuntimeError("source_tree_changed")
+    run, state = seal_run(run_root, run_id=run_id, phase=phase, rows=rows,
+                          before=before, after=after, indexed=indexed)
+    # Raised after the documents land, and the workspaces stay: a drifted tree
+    # is a fact about the run rather than a reason to lose what it paid for.
+    if state == "drift": raise RuntimeError("source_tree_changed")
     for workspace in clean: remove_readonly_tree(workspace)
-    run = {"schema": "harness.cross-harness-run-receipt/v1", "run_id": run_id, "phase": phase,
-           "rows": rows, "source_snapshot_before": before, "source_snapshot_after": after}
-    comparison = run_root / "comparison-input.json"; _write_json(comparison, {"schema": "harness.cross-harness-task-scorecard/v1", "rows": rows})
-    run_path = run_root / "run.json"; _write_json(run_path, run); indexed.extend((comparison, run_path))
-    write_artifact_index(run_root, indexed)
     return run

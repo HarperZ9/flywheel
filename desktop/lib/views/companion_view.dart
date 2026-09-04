@@ -11,6 +11,8 @@ import '../models/render_status.dart';
 import '../theme/flywheel_theme.dart';
 import '../widgets/escalate_row.dart';
 import '../widgets/companion_input_bar.dart';
+import '../widgets/companion_receipt_strip.dart';
+import '../widgets/effort_dial.dart';
 import '../widgets/fw.dart';
 import '../widgets/operation_grant_sheet.dart';
 import '../widgets/scaffold_strip.dart';
@@ -44,6 +46,10 @@ class _CompanionViewState extends State<CompanionView> {
   List<EndpointRow> _endpoints = [];
   // per-endpoint model override, session-lived; absent means the default
   final Map<String, String> _chosenModels = {};
+  // The seat spends its budget in candidates, so the dial sets the selection
+  // loop's batch and ceiling. standard is the seat's own constructed default,
+  // so the control starts where the engine already was.
+  EffortLevel _effort = EffortLevel.standard;
 
   @override
   void initState() {
@@ -110,10 +116,12 @@ class _CompanionViewState extends State<CompanionView> {
     try {
       final requestId =
           'companion-ask-${DateTime.now().microsecondsSinceEpoch}';
+      final effort = _effort.wire;
       final r = await authorizeGatewayOperation<CompanionResult>(
         context,
-        GatewayOperation.companionAsk(requestId, prompt),
-        (body) => widget.client.companion(prompt, authorizedBody: body),
+        GatewayOperation.companionAsk(requestId, prompt, effort: effort),
+        (body) => widget.client
+            .companion(prompt, effort: effort, authorizedBody: body),
         currentOperation: () => null,
       );
       setState(() {
@@ -164,7 +172,15 @@ class _CompanionViewState extends State<CompanionView> {
                   );
                 }),
         ),
-        CompanionInputBar(controller: _controller, onSend: _send),
+        CompanionInputBar(
+          controller: _controller,
+          onSend: _send,
+          controls: EffortDial(
+            value: _effort,
+            consequence: EffortConsequence.candidates,
+            onChanged: (level) => setState(() => _effort = level),
+          ),
+        ),
       ],
     );
   }
@@ -222,8 +238,7 @@ class _CompanionViewState extends State<CompanionView> {
               VerdictPill(chip, status: status),
               if (r.source == 'escalate' && body != null) ...[
                 const SizedBox(width: FwLayout.s2),
-                VerdictPill('best effort, unverified',
-                    status: 'unverifiable'),
+                VerdictPill('best effort, unverified', status: 'unverifiable'),
               ],
             ],
           ),
@@ -238,7 +253,7 @@ class _CompanionViewState extends State<CompanionView> {
           ],
           if (r.receipt != null && r.receipt!.isNotEmpty) ...[
             const SizedBox(height: FwLayout.s3),
-            HashText('receipt', r.receipt!, keep: 32),
+            CompanionReceiptStrip(r.receipt),
           ],
           if (r.source == 'escalate') ...[
             const SizedBox(height: FwLayout.s3),
@@ -255,8 +270,7 @@ class _CompanionViewState extends State<CompanionView> {
               onModel: (v) => setState(() => v.isEmpty
                   ? _chosenModels.remove(turn.routeEndpoint)
                   : _chosenModels[turn.routeEndpoint!] = v),
-              loadModels: () =>
-                  widget.client.models(turn.routeEndpoint ?? ''),
+              loadModels: () => widget.client.models(turn.routeEndpoint ?? ''),
               onRoute: () => _route(turn),
             ),
           ],
@@ -265,5 +279,4 @@ class _CompanionViewState extends State<CompanionView> {
       ),
     );
   }
-
 }

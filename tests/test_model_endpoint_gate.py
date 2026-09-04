@@ -1,108 +1,15 @@
-import hashlib
+"""What the endpoint gate's report says: identity, verdict, and strict exit.
+
+The Ollama name and digest rules are in test_model_endpoint_gate_ollama_identity.py.
+"""
 import json
 from datetime import datetime
 
 import pytest
 
 from harness.local_agent import OllamaBackend, ServeBackend
-from scripts.run_model_endpoint_gate import _backend_for_profile, _ollama_identity, build_report, main
-
-
-def profile(backend="serve", model="14B"):
-    selector = "qwen:14b"
-    row = {
-        "profile_id": f"{backend}-{model.lower()}", "model": model, "model_key": model.lower(),
-        "model_ref": "serve:expected" if backend == "serve" else f"ollama:{selector}",
-        "backend": backend, "provider_role": "flywheel", "endpoint_url": "http://127.0.0.1:8765",
-    }
-    if backend == "ollama":
-        row["selectors"] = [selector]
-        row["release_asset_sha256"] = "a" * 64
-        row["expected_ollama_digest"] = "sha256:abc"
-    return row
-
-
-def write_profiles(tmp_path, rows):
-    path = tmp_path / "profiles.json"
-    path.write_text(json.dumps({"schema": "harness.model-endpoint-profiles/v1", "profiles": rows}), encoding="utf-8")
-    return path
-
-
-def transport(method, url, body, timeout):
-    if url.endswith("/health"):
-        return 200, {"ok": True, "model_ref": "serve:expected"}
-    if url.endswith("/generate"):
-        return 200, {"text": "active", "model_ref": "serve:expected", "seed": 0}
-    if url.endswith("/api/tags"):
-        return 200, {"models": [{"name": "qwen:14b", "digest": "sha256:abc"}]}
-    if url.endswith("/api/chat"):
-        return 200, {"message": {"content": "active"}, "model": "qwen:14b"}
-    return 404, {}
-
-
-def canonical_hash(row):
-    encoded = json.dumps(row, ensure_ascii=False, separators=(",", ":"), sort_keys=True).encode("utf-8")
-    return hashlib.sha256(encoded).hexdigest()
-
-
-@pytest.mark.parametrize("digest", [True, False, 0, 1, [], {}, "   "])
-def test_ollama_identity_rejects_non_string_or_blank_digest(digest):
-    observed, evidence = _ollama_identity(
-        profile("ollama"), {"models": [{"name": "qwen:14b", "digest": digest}]})
-    assert observed == "ollama:qwen:14b"
-    assert evidence == ""
-
-
-def test_ollama_identity_strips_string_digest():
-    _, evidence = _ollama_identity(
-        profile("ollama"), {"models": [{"name": "qwen:14b", "digest": " sha256:abc "}]})
-    assert evidence == "sha256:abc"
-
-
-def tag_transport(digest):
-    def tagged(method, url, body, timeout):
-        if url.endswith("/api/tags"):
-            model = {"name": "qwen:14b"}
-            if digest != "missing":
-                model["digest"] = digest
-            return 200, {"models": [model]}
-        return transport(method, url, body, timeout)
-    return tagged
-
-
-@pytest.mark.parametrize("digest", [True, "   ", "missing"])
-def test_ollama_report_fails_without_valid_digest(tmp_path, digest):
-    report = build_report(
-        profile_artifact=str(write_profiles(tmp_path, [profile("ollama")])), models=[], backends=[],
-        transport=tag_transport(digest), run_id="digest-run")
-    row = report["rows"][0]
-    assert row["health_ok"] is False and row["generation_attempted"] is False
-    assert row["failure_class"] == "ollama_digest_missing"
-    assert report["summary"]["failed_rows"] > 0
-    assert report["verdict"] != "MODEL_ENDPOINT_GATE_PASS"
-
-
-def test_ollama_report_fails_when_observed_digest_differs_from_profile(tmp_path):
-    report = build_report(
-        profile_artifact=str(write_profiles(tmp_path, [profile("ollama")])), models=[], backends=[],
-        transport=tag_transport("sha256:other"), run_id="digest-run")
-    row = report["rows"][0]
-    assert row["expected_ollama_digest"] == "sha256:abc"
-    assert row["ollama_digest"] == "sha256:other"
-    assert row["failure_class"] == "ollama_digest_mismatch"
-    assert report["verdict"] != "MODEL_ENDPOINT_GATE_PASS"
-
-
-@pytest.mark.parametrize(("digest", "expected"), [
-    (True, 1), ("   ", 1), ("missing", 1), ("sha256:abc", 0),
-])
-def test_strict_exit_tracks_ollama_digest_gate(tmp_path, monkeypatch, digest, expected):
-    profiles = write_profiles(tmp_path, [profile("ollama")])
-    monkeypatch.setattr(
-        "scripts.run_model_endpoint_gate._backend_for_profile",
-        lambda selected, *, timeout_seconds, transport=None: _backend_for_profile(
-            selected, timeout_seconds=timeout_seconds, transport=tag_transport(digest)))
-    assert main(["--profile-artifact", str(profiles), "--strict-exit"]) == expected
+from scripts.run_model_endpoint_gate import _backend_for_profile, build_report, main
+from tests.model_endpoint_gate_fixtures import canonical_hash, profile, transport, write_profiles
 
 
 def test_backend_for_profile_preserves_defaults():

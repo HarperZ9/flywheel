@@ -6,10 +6,15 @@ model_shim's docstring governs this module too. Two conversations live here:
 the /api/generate completion POST and the /api/tags daemon-digest fetch a
 model boundary receipt records.
 
-UNTESTED-LIVE: as of this commit neither path has been exercised against a
-running ollama instance (hardware gated). Both are stdlib urllib and are unit
+The /api/tags shape was confirmed against a running daemon on 2026-09-03: a
+model entry answers `{"name": "<model>:latest", "digest": "<64 hex>"}`, with
+the tag spelled out and the digest carrying no `sha256:` prefix. Both of those
+details had been guessed the other way and refused a correctly installed model.
+
+UNTESTED-LIVE: the /api/generate completion path has still not been exercised
+against a running instance (hardware gated). It is stdlib urllib and is unit
 tested with the network mocked at the urllib boundary, but no live call has
-been made -- treat them as unverified until a hardware session confirms them
+been made -- treat it as unverified until a hardware session confirms it
 end-to-end.
 
 Fail-closed everywhere: a connection failure, a non-2xx status, a malformed
@@ -62,15 +67,45 @@ def is_sha256_hex(value: str) -> bool:
     return len(value) == 64 and all(c in "0123456789abcdefABCDEF" for c in value)
 
 
+def ollama_name_matches(wanted: str, name: str) -> bool:
+    """Whether a daemon-reported model name is the one asked for.
+
+    Ollama fills in an implicit `latest` tag and then always answers with it
+    spelled out, so a pinned reference of `flywheel-local-coder-14b` and a
+    daemon entry of `flywheel-local-coder-14b:latest` are one model. Comparing
+    the two strings raw refuses a model that is installed and correct, which is
+    what the 2026-09-03 head-to-head lost both local roles to.
+
+    A reference that already carries a tag still has to match it exactly. This
+    resolves the implicit tag, it does not match on prefixes.
+    """
+    wanted, name = str(wanted).strip(), str(name).strip()
+    if not wanted or not name:
+        return False
+    return name == wanted or (":" not in wanted and name == f"{wanted}:latest")
+
+
+def normalize_ollama_digest(value: str) -> str:
+    """The hex of a digest, however it was spelled.
+
+    /api/tags returns the digest bare and a pinned profile usually carries the
+    `sha256:` prefix. Comparing the spellings reports a mismatch between one
+    model and itself. Blank stays blank, so a missing digest still fails.
+    """
+    text = str(value).strip()
+    if text.lower().startswith("sha256:"):
+        text = text[len("sha256:"):]
+    return text.strip().lower()
+
+
 def fetch_ollama_daemon_digest(model: str, endpoint: str, timeout: float) -> dict:
     """GET <endpoint>/api/tags and extract the digest ollama declares for
     `model`, for the receipt's `model.daemon_digest` field.
 
-    UNTESTED-LIVE (see the module docstring): the /api/tags response shape
-    assumed here (`{"models": [{"name": ..., "digest": ...}, ...]}`, digest
-    optionally prefixed `sha256:`) has not been confirmed against a running
-    daemon; pin it during the hardware-gated live session the ollama path
-    already needs. Fails closed to `{"status": "UNAVAILABLE"}` on ANY problem
+    The response shape (`{"models": [{"name": ..., "digest": ...}, ...]}`) is
+    the one a live daemon answered with on 2026-09-03, and the name match
+    resolves ollama's implicit `latest` tag rather than comparing raw strings.
+    Fails closed to `{"status": "UNAVAILABLE"}` on ANY problem
     -- network failure, unexpected response shape, no matching model entry,
     or a digest that is not a well-formed 64-hex-char sha256 -- because a
     receipt claiming FETCHED must be right: "weights I could not identify" is
@@ -88,15 +123,14 @@ def fetch_ollama_daemon_digest(model: str, endpoint: str, timeout: float) -> dic
         if not isinstance(models, list):
             return {"status": "UNAVAILABLE"}
         for entry in models:
-            if not isinstance(entry, dict) or entry.get("name") != model:
+            if not isinstance(entry, dict) or not ollama_name_matches(model, entry.get("name", "")):
                 continue
             digest = entry.get("digest")
             if not isinstance(digest, str):
                 break
-            if digest.startswith("sha256:"):
-                digest = digest[len("sha256:"):]
+            digest = normalize_ollama_digest(digest)
             if is_sha256_hex(digest):
-                return {"status": "FETCHED", "hex": digest.lower()}
+                return {"status": "FETCHED", "hex": digest}
             break
         return {"status": "UNAVAILABLE"}
     except (urllib.error.URLError, TimeoutError, OSError, ValueError,

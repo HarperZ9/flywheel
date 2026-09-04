@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 
 import '../models/gateway_models.dart';
 import '../theme/flywheel_theme.dart';
+import '../widgets/effort_dial.dart';
 
 class AgentGates extends StatelessWidget {
   final List<EndpointRow> endpoints;
@@ -17,6 +18,9 @@ class AgentGates extends StatelessWidget {
   final ValueChanged<bool> onWrite;
   final ValueChanged<bool> onExec;
   final ValueChanged<bool> onAttach;
+  final EffortLevel effort;
+  final ValueChanged<EffortLevel> onEffort;
+  final bool effortEnabled;
   const AgentGates(
       {super.key,
       required this.endpoints,
@@ -27,7 +31,10 @@ class AgentGates extends StatelessWidget {
       required this.onEndpoint,
       required this.onWrite,
       required this.onExec,
-      required this.onAttach});
+      required this.onAttach,
+      required this.effort,
+      required this.onEffort,
+      this.effortEnabled = true});
 
   @override
   Widget build(BuildContext context) {
@@ -53,6 +60,8 @@ class AgentGates extends StatelessWidget {
         _toggle(t, 'write', allowWrite, onWrite),
         _toggle(t, 'exec', allowExec, onExec),
         _toggle(t, 'attach file', attachContext, onAttach),
+        EffortDial(
+            value: effort, onChanged: onEffort, enabled: effortEnabled),
       ],
     );
   }

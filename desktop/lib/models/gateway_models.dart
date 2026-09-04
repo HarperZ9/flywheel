@@ -179,8 +179,7 @@ class TurnScaffold {
         chainHash: j['chain_hash'] ?? '',
       );
 
-  bool get isEmpty =>
-      sourcesFrozen.isEmpty && degraded.isEmpty && eid.isEmpty;
+  bool get isEmpty => sourcesFrozen.isEmpty && degraded.isEmpty && eid.isEmpty;
 }
 
 /// A companion routing result (POST /api/companion).
@@ -189,7 +188,11 @@ class CompanionResult {
   final String? text;
   final String? escalateTo;
   final String? bestEffortText;
-  final String? receipt;
+
+  /// The engine's selection receipt, as the engine sends it: an object, not a
+  /// hash. This field was typed as a string for a release, so every real
+  /// answer threw on parse and the Companion view could not show one at all.
+  final Map<String, dynamic>? receipt;
   final String? verdict;
   final TurnScaffold? scaffold;
 
@@ -203,19 +206,35 @@ class CompanionResult {
     this.scaffold,
   });
 
-  factory CompanionResult.fromJson(Map<String, dynamic> j) => CompanionResult(
-        source: j['source'] ?? '',
-        text: j['text'],
-        escalateTo: j['escalate_to'],
-        bestEffortText: j['best_effort_text'],
-        receipt: j['receipt'],
-        verdict: j['verdict'],
-        scaffold: j['scaffold'] is Map<String, dynamic>
-            ? TurnScaffold.fromJson(j['scaffold'])
-            : null,
-      );
+  factory CompanionResult.fromJson(Map<String, dynamic> j) {
+    final receipt =
+        j['receipt'] is Map ? Map<String, dynamic>.from(j['receipt']) : null;
+    return CompanionResult(
+      source: j['source'] is String ? j['source'] : '',
+      text: j['text'] is String ? j['text'] : null,
+      escalateTo: j['escalate_to'] is String ? j['escalate_to'] : null,
+      bestEffortText:
+          j['best_effort_text'] is String ? j['best_effort_text'] : null,
+      receipt: receipt,
+      // The verdict is the receipt's own field. Reading only the top level
+      // left every answer's chip on its fallback, because the engine never
+      // sent one there.
+      verdict: j['verdict'] is String
+          ? j['verdict']
+          : (receipt?['verdict'] is String ? receipt!['verdict'] : null),
+      scaffold: j['scaffold'] is Map<String, dynamic>
+          ? TurnScaffold.fromJson(j['scaffold'])
+          : null,
+    );
+  }
 
   bool get escalated => source == 'escalate';
+
+  /// The effort stamp, when the operator set a dial. Absent means no dial was
+  /// sent, which is not the same as a dial that ran at zero.
+  Map<String, dynamic>? get effort => receipt?['effort'] is Map
+      ? Map<String, dynamic>.from(receipt!['effort'])
+      : null;
 }
 
 /// One in-repo catalog receipt (GET /api/receipts).
@@ -290,4 +309,3 @@ class ReceiptsLedger {
         passCount: j['pass_count'] ?? 0,
       );
 }
-

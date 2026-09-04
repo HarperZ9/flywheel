@@ -81,8 +81,21 @@ class OpenAICompatBackend:
             else:
                 # A 200 with content: null (a reasoning model that spent
                 # its whole budget) is refusal-shaped, not an empty reply.
+                # finish_reason separates the two causes an operator can act
+                # on: "length" means raise max_tokens, anything else means the
+                # turn really did come back empty. Naming it here saves a
+                # round of guesswork at the only point that knows.
+                reason = ""
+                try:
+                    reason = obj["choices"][0].get("finish_reason") or ""
+                except (KeyError, IndexError, TypeError):
+                    pass
+                detail = f" (finish_reason={reason})" if reason else ""
+                if reason == "length":
+                    detail += "; the completion budget was spent before any " \
+                              "content was emitted -- raise max_tokens"
                 raise BackendError(
-                    f"{self.name} returned {status} with no message content")
+                    f"{self.name} returned {status} with no message content{detail}")
         out["text"] = text
         return out
 
@@ -112,6 +125,36 @@ def _parse_tool_call(call: dict) -> dict:
     return out
 
 
+# Models that reject `temperature` outright. Anthropic began retiring the
+# parameter with the claude-*-5 generation: the request 400s rather than
+# clamping, so a ladder that always sends it cannot reach those models at all.
+# Learned at runtime from the provider's own error, then remembered, so one
+# request pays for the discovery and the set needs no hand maintenance as more
+# models adopt the behaviour.
+_NO_TEMPERATURE: set = set()
+
+
+def _error_message(obj) -> str:
+    """The provider's error text, whether it arrives nested under 'error' or
+    flat at the top level."""
+    if not isinstance(obj, dict):
+        return ""
+    err = obj.get("error")
+    if isinstance(err, dict):
+        return str(err.get("message", ""))
+    if isinstance(err, str):
+        return err
+    return str(obj.get("message", ""))
+
+
+def _rejects_temperature(status: int, obj) -> bool:
+    if status != 400:
+        return False
+    msg = _error_message(obj).lower()
+    return "temperature" in msg and (
+        "deprecat" in msg or "unsupported" in msg or "not supported" in msg)
+
+
 @dataclass
 class AnthropicBackend:
     """Anthropic /v1/messages (claude api) — native shape."""
@@ -127,16 +170,28 @@ class AnthropicBackend:
     def health(self) -> bool:
         return bool(_credential(self.key_env, self.api_key))
 
+    def _post(self, payload, headers):
+        return _guard(self.transport, "POST", f"{self.base_url}/v1/messages",
+                      headers, json.dumps(payload).encode(), self.timeout,
+                      self.name)
+
     def chat(self, messages, *, system, max_tokens, temperature, seed) -> dict:
         headers = {"Content-Type": "application/json",
                    "x-api-key": _credential(self.key_env, self.api_key),
                    "anthropic-version": self.version}
-        payload = {"model": self.model, "max_tokens": max_tokens, "temperature": temperature,
+        payload = {"model": self.model, "max_tokens": max_tokens,
                    "messages": [{"role": m["role"], "content": m["content"]} for m in messages]}
         if system:
             payload["system"] = system
-        status, obj = _guard(self.transport, "POST", f"{self.base_url}/v1/messages",
-                             headers, json.dumps(payload).encode(), self.timeout, self.name)
+        if self.model not in _NO_TEMPERATURE:
+            payload["temperature"] = temperature
+        status, obj = self._post(payload, headers)
+        if _rejects_temperature(status, obj) and "temperature" in payload:
+            # The provider named the offending parameter. Drop it, remember the
+            # model, and retry once -- never silently return the 400 as text.
+            _NO_TEMPERATURE.add(self.model)
+            payload.pop("temperature")
+            status, obj = self._post(payload, headers)
         try:
             text = "".join(b.get("text", "") for b in obj["content"] if b.get("type") == "text")
         except (KeyError, TypeError):
@@ -276,8 +331,11 @@ PROVIDERS = {
                      "--output-last-message", "{output}",
                      "{prompt}",
                  ]},
+    # Model id tracks endpoint_registry._NATIVE, which already routed to
+    # claude-sonnet-5; the two disagreeing meant the router's default and the
+    # ladder's default were different models.
     "claude":   {"kind": "anthropic", "base": "https://api.anthropic.com",
-                 "key": "ANTHROPIC_API_KEY", "model": "claude-sonnet-4-5",
+                 "key": "ANTHROPIC_API_KEY", "model": "claude-sonnet-5",
                  "cli": [
                      "claude", "-p", "{prompt}",
                      "--model", "{model}",
@@ -296,11 +354,23 @@ PROVIDERS = {
                  "key": "GEMINI_API_KEY", "model": "gemini-2.5-flash"},
     "deepseek": {"kind": "openai", "base": "https://api.deepseek.com/v1",
                  "key": "DEEPSEEK_API_KEY", "model": "deepseek-chat"},
-    # ox-alpha: OpenRouter's stealth reasoning model (slug stealth/ox-alpha,
-    # OpenAI-compatible, 1M context, tool calling). Dormant until
-    # OX_ALPHA_API_KEY is set, so an unconfigured slot can never dispatch.
-    "ox-alpha": {"kind": "openai", "base": "https://openrouter.ai/api/v1",
-                 "key": "OX_ALPHA_API_KEY", "model": "stealth/ox-alpha"},
+    # glm-flash: GLM-5.3-Flash on OpenRouter (slug z-ai/glm-5.3-flash,
+    # OpenAI-compatible). This slot replaces `ox-alpha`, which carried the
+    # stealth pre-release of the same model under slug stealth/ox-alpha; that
+    # slug was withdrawn when the model shipped under its own name, so the old
+    # slot could resolve a credential and still 404 at dispatch. Dormant until
+    # OPENROUTER_API_KEY is set.
+    "glm-flash": {"kind": "openai", "base": "https://openrouter.ai/api/v1",
+                  "key": "OPENROUTER_API_KEY", "model": "z-ai/glm-5.3-flash"},
+    # abliteration: operator-supplied OpenAI-compatible endpoint. The served
+    # weights have had their refusal direction orthogonalized away, so this
+    # backend proposes with no provider-side refusal behaviour of its own.
+    # Nothing downstream changes: a proposer never gains authority by which
+    # slot it came from, and the accept path stays external (C2). Dormant
+    # until ABLITERATION_API_KEY is set.
+    "abliteration": {"kind": "openai", "base": "https://api.abliteration.ai/v1",
+                     "key": "ABLITERATION_API_KEY",
+                     "model": "abliterated-model-large-v2"},
 }
 
 _KINDS = {"openai": OpenAICompatBackend, "anthropic": AnthropicBackend, "gemini": GeminiBackend}

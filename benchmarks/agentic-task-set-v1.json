@@ -19,43 +19,293 @@
       "JSON rejects duplicate keys and matches canonical task_id plus executor input_sha256s",
       "Markdown names the canonical task_id; JSON object order and insignificant whitespace do not affect verdicts"
     ],
-    "common_failure_codes": ["artifact_set_mismatch", "artifact_not_regular", "artifact_not_utf8", "artifact_empty", "json_invalid", "json_duplicate_key", "task_id_mismatch", "input_hash_mismatch", "markdown_task_id_missing"],
+    "common_failure_codes": [
+      "artifact_set_mismatch",
+      "artifact_not_regular",
+      "artifact_not_utf8",
+      "artifact_empty",
+      "json_invalid",
+      "json_duplicate_key",
+      "task_id_mismatch",
+      "input_hash_mismatch",
+      "markdown_task_id_missing"
+    ],
     "checkers": {
       "index_fallback_integrity/v1": {
-        "required_json_fields": ["task_id", "input_sha256s", "failure_classes", "cited_event_ids", "receipt_input_sha256s"],
-        "predicates": ["derive failure classes and citations from typed events", "derive stale preservation from before/after hashes", "support MCP health only from a successful call", "match receipt input hashes"],
-        "failure_codes": ["failure_classes_mismatch", "event_citation_mismatch", "stale_artifact_mutated", "unsupported_mcp_health_claim", "receipt_input_hash_mismatch"]
+        "required_json_fields": [
+          "task_id",
+          "input_sha256s",
+          "failure_classes",
+          "cited_event_ids",
+          "receipt_input_sha256s"
+        ],
+        "predicates": [
+          "derive failure classes and citations from typed events",
+          "derive stale preservation from before/after hashes",
+          "support MCP health only from a successful call",
+          "match receipt input hashes"
+        ],
+        "failure_codes": [
+          "failure_classes_mismatch",
+          "event_citation_mismatch",
+          "stale_artifact_mutated",
+          "unsupported_mcp_health_claim",
+          "receipt_input_hash_mismatch"
+        ],
+        "json_field_contract": {
+          "task_id": "string, exactly the canonical task id",
+          "input_sha256s": "object mapping each required input path to its 64-character lowercase hex sha256",
+          "failure_classes": "array of strings, sorted ascending, no duplicates, drawn only from live_mcp_failure, stale_artifact_use, invalid_json, degraded_match",
+          "cited_event_ids": "array of strings, sorted ascending, each the event_id of an event that produced a reported failure class",
+          "receipt_input_sha256s": "object mapping each required input path to its 64-character lowercase hex sha256"
+        }
       },
       "shared_task_artifact/v1": {
-        "required_json_fields": ["task_id", "input_sha256s", "raw_prompt_sha256", "tool_policy_sha256", "raw_artifact_path", "receipt_path", "failure_modes"],
-        "predicates": ["match prompt, input, and tool-policy hashes to executor facts", "contain and hash raw artifact and receipt paths", "derive failure modes from orthogonal executor states", "reject preregistered forbidden claims"],
-        "failure_codes": ["prompt_hash_mismatch", "tool_policy_hash_mismatch", "raw_artifact_path_invalid", "raw_artifact_hash_mismatch", "failure_modes_mismatch", "receipt_path_invalid", "forbidden_claim"]
+        "required_json_fields": [
+          "task_id",
+          "input_sha256s",
+          "raw_prompt_sha256",
+          "tool_policy_sha256",
+          "raw_artifact_path",
+          "receipt_path",
+          "failure_modes"
+        ],
+        "predicates": [
+          "match prompt, input, and tool-policy hashes to executor facts",
+          "contain and hash raw artifact and receipt paths",
+          "derive failure modes from orthogonal executor states",
+          "reject preregistered forbidden claims"
+        ],
+        "failure_codes": [
+          "prompt_hash_mismatch",
+          "tool_policy_hash_mismatch",
+          "raw_artifact_path_invalid",
+          "raw_artifact_hash_mismatch",
+          "failure_modes_mismatch",
+          "receipt_path_invalid",
+          "forbidden_claim"
+        ],
+        "json_field_contract": {
+          "task_id": "string, exactly the canonical task id",
+          "input_sha256s": "object mapping each required input path to its 64-character lowercase hex sha256",
+          "raw_prompt_sha256": "string, 64 lowercase hex characters",
+          "tool_policy_sha256": "string, 64 lowercase hex characters",
+          "raw_artifact_path": "string, a non-empty path relative to the attempt directory",
+          "receipt_path": "string, a non-empty path relative to the attempt directory",
+          "failure_modes": "array of strings, sorted ascending, derived from the orthogonal states in benchmark/context.json"
+        }
       },
       "paired_friction/v1": {
-        "required_json_fields": ["task_id", "input_sha256s", "modes", "task_keys", "pairs", "aggregates", "denominator"],
-        "predicates": ["derive exact modes, unique task keys, complete pairs, denominator, and required safety-control state from observations"],
-        "failure_codes": ["fixture_mode_set_invalid", "fixture_pair_incomplete", "reported_task_keys_mismatch", "reported_pair_mismatch", "denominator_mismatch", "fixture_safety_control_disabled"]
+        "required_json_fields": [
+          "task_id",
+          "input_sha256s",
+          "modes",
+          "task_keys",
+          "pairs",
+          "aggregates",
+          "denominator"
+        ],
+        "predicates": [
+          "derive exact modes, unique task keys, complete pairs, denominator, and required safety-control state from observations"
+        ],
+        "failure_codes": [
+          "fixture_mode_set_invalid",
+          "fixture_pair_incomplete",
+          "reported_task_keys_mismatch",
+          "reported_pair_mismatch",
+          "denominator_mismatch",
+          "fixture_safety_control_disabled"
+        ],
+        "json_field_contract": {
+          "task_id": "string, exactly the canonical task id",
+          "input_sha256s": "object mapping each required input path to its 64-character lowercase hex sha256",
+          "modes": "array of strings, sorted ascending, the exact mode set the oracle spec declares",
+          "task_keys": "array of strings, sorted ascending, every task_key present in the fixture",
+          "pairs": "array of objects, one per task key, each {task_key: string, modes: array of strings sorted ascending}",
+          "aggregates": "array of objects, one per mode in sorted order, each {mode: string, denominator: integer, completion_counts: object mapping completion value to integer count with keys sorted ascending, friction_events: integer, correction_steps: integer}",
+          "denominator": "integer, the number of task keys"
+        }
       },
       "documentation_maintenance/v1": {
-        "required_json_fields": ["task_id", "input_sha256s", "surfaces"],
-        "predicates": ["derive four surfaces with repository-relative paths and code references", "contain every reference below the task workspace", "scan both artifacts with the public claim rules"],
-        "failure_codes": ["fixture_surface_set_invalid", "surface_set_mismatch", "surface_path_invalid", "code_refs_mismatch", "claim_language_violation"]
+        "required_json_fields": [
+          "task_id",
+          "input_sha256s",
+          "surfaces"
+        ],
+        "predicates": [
+          "derive four surfaces with repository-relative paths and code references",
+          "contain every reference below the task workspace",
+          "scan both artifacts with the public claim rules"
+        ],
+        "failure_codes": [
+          "fixture_surface_set_invalid",
+          "surface_set_mismatch",
+          "surface_path_invalid",
+          "code_refs_mismatch",
+          "claim_language_violation"
+        ],
+        "json_field_contract": {
+          "task_id": "string, exactly the canonical task id",
+          "input_sha256s": "object mapping each required input path to its 64-character lowercase hex sha256",
+          "surfaces": "array of objects, each {surface: string, path: string relative to the workspace root, code_refs: array of strings, each a path relative to the workspace root}"
+        }
+      },
+      "documentation_maintenance/v2": {
+        "required_json_fields": [
+          "task_id",
+          "input_sha256s",
+          "surfaces"
+        ],
+        "predicates": [
+          "derive four surfaces with repository-relative paths and code references",
+          "contain every reference below the task workspace",
+          "report the sha256 of every surface file and every code reference, read from the workspace",
+          "scan both artifacts with the public claim rules"
+        ],
+        "failure_codes": [
+          "fixture_surface_set_invalid",
+          "surface_set_mismatch",
+          "surface_path_invalid",
+          "code_refs_mismatch",
+          "surface_digest_missing",
+          "surface_digest_mismatch",
+          "code_ref_digest_mismatch",
+          "claim_language_violation"
+        ],
+        "json_field_contract": {
+          "task_id": "string, exactly the canonical task id",
+          "input_sha256s": "object mapping each required input path to its 64-character lowercase hex sha256",
+          "surfaces": "array of objects, each {surface: string, path: string relative to the workspace root, code_refs: array of strings, each a path relative to the workspace root, content_sha256: 64-character lowercase hex sha256 of the surface file, code_ref_sha256s: array of the same digests, one per code_refs entry and in that order}"
+        }
+      },
+      "evidence_bound_reporting/v1": {
+        "required_json_fields": [
+          "task_id",
+          "input_sha256s",
+          "measurements",
+          "claim_verdicts"
+        ],
+        "predicates": [
+          "copy every fixture measurement exactly, including its denominator and interval",
+          "rule every fixture claim either supported or unverifiable",
+          "cite exactly the measurements the fixture grounds a supported claim with",
+          "cite nothing for a claim the fixture does not ground"
+        ],
+        "failure_codes": [
+          "measurement_not_faithful",
+          "measurement_not_in_evidence",
+          "measurement_set_mismatch",
+          "claim_set_mismatch",
+          "claim_supported_without_evidence",
+          "grounded_claim_withheld",
+          "unverifiable_claim_cites_evidence"
+        ],
+        "json_field_contract": {
+          "task_id": "string, exactly the canonical task id",
+          "input_sha256s": "object mapping each required input path to its 64-character lowercase hex sha256",
+          "measurements": "array of objects, one per fixture measurement, each {measurement_id: string, value: number, denominator: number, interval_95: array of exactly two numbers, low first}",
+          "claim_verdicts": "array of objects, one per fixture claim, each {claim_id: string, verdict: either supported or unverifiable, evidence: array of measurement_id strings, empty for unverifiable}"
+        }
+      },
+      "contradiction_detection/v1": {
+        "required_json_fields": [
+          "task_id",
+          "input_sha256s",
+          "contradictions"
+        ],
+        "predicates": [
+          "report every pair of records that state different values for one field",
+          "report no pair that differs only on which fields it states",
+          "cite only record ids the fixture contains"
+        ],
+        "failure_codes": [
+          "contradiction_cites_unknown_record",
+          "contradiction_missed",
+          "contradiction_fabricated",
+          "reconcilable_pair_reported_as_contradiction"
+        ],
+        "json_field_contract": {
+          "task_id": "string, exactly the canonical task id",
+          "input_sha256s": "object mapping each required input path to its 64-character lowercase hex sha256",
+          "contradictions": "array of objects, each {records: array of exactly two distinct record_id strings}, no pair repeated"
+        }
+      },
+      "budgeted_evidence_selection/v1": {
+        "required_json_fields": [
+          "task_id",
+          "input_sha256s",
+          "selected",
+          "total_cost_usd",
+          "total_value"
+        ],
+        "predicates": [
+          "select only items the pool contains",
+          "keep the total cost within the budget",
+          "reach the highest total value the budget allows",
+          "report totals that equal the sum over the selected items"
+        ],
+        "failure_codes": [
+          "item_not_in_pool",
+          "budget_exceeded",
+          "selection_not_optimal",
+          "selection_arithmetic_mismatch"
+        ],
+        "json_field_contract": {
+          "task_id": "string, exactly the canonical task id",
+          "input_sha256s": "object mapping each required input path to its 64-character lowercase hex sha256",
+          "selected": "array of strings, distinct item_id values from the fixture pool",
+          "total_cost_usd": "number, the summed cost_usd of the selected items, exact to whole cents",
+          "total_value": "number, the summed evidence_value of the selected items"
+        }
       }
     },
     "provider_authored_scores_or_booleans_are_non_authoritative": true
   },
   "metrics": [
-    {"id": "task_completion", "weight": 0.16},
-    {"id": "quality", "weight": 0.12},
-    {"id": "groundedness", "weight": 0.10},
-    {"id": "tool_use_success", "weight": 0.10},
-    {"id": "workflow_state_management", "weight": 0.10},
-    {"id": "reliability", "weight": 0.10},
-    {"id": "failure_mode_clarity", "weight": 0.08},
-    {"id": "latency", "weight": 0.07},
-    {"id": "cost_resource_use", "weight": 0.06},
-    {"id": "reproducibility", "weight": 0.06},
-    {"id": "accountability_receipts", "weight": 0.05}
+    {
+      "id": "task_completion",
+      "weight": 0.16
+    },
+    {
+      "id": "quality",
+      "weight": 0.12
+    },
+    {
+      "id": "groundedness",
+      "weight": 0.1
+    },
+    {
+      "id": "tool_use_success",
+      "weight": 0.1
+    },
+    {
+      "id": "workflow_state_management",
+      "weight": 0.1
+    },
+    {
+      "id": "reliability",
+      "weight": 0.1
+    },
+    {
+      "id": "failure_mode_clarity",
+      "weight": 0.08
+    },
+    {
+      "id": "latency",
+      "weight": 0.07
+    },
+    {
+      "id": "cost_resource_use",
+      "weight": 0.06
+    },
+    {
+      "id": "reproducibility",
+      "weight": 0.06
+    },
+    {
+      "id": "accountability_receipts",
+      "weight": 0.05
+    }
   ],
   "lanes": [
     {
@@ -93,6 +343,10 @@
     {
       "id": "embodied_realtime_multimodal",
       "description": "Tasks that measure tiny/realtime model behavior for robotics-style sensing, code-drawn spatial grounding, simplified multimodal streams, and affective drift."
+    },
+    {
+      "id": "evidence_economics",
+      "description": "Tasks that measure whether reported numbers stay bound to their evidence, and how much verified value a fixed budget buys."
     }
   ],
   "tasks": [
@@ -101,144 +355,454 @@
       "lane": "agentic_tool_workflows",
       "difficulty": "focused",
       "prompt": "Inspect the local harness Index fallback path and produce a receipt-backed plan that distinguishes live MCP failure, stale artifact use, invalid JSON, and degraded-match behavior without leaking sensitive file contents.",
-      "required_inputs": ["benchmarks/fixtures/cross-harness/index-events-v1.json"],
-      "expected_artifacts": ["index_fallback_integrity_report.json", "index_fallback_integrity_report.md"],
-      "scoring_focus": ["groundedness", "failure_mode_clarity", "accountability_receipts", "reproducibility"],
-      "must_not": ["claim MCP health without a successful MCP call", "overwrite stale artifacts during analysis"],
-      "oracle": {"checker_id": "index_fallback_integrity/v1", "fixture": "benchmarks/fixtures/cross-harness/index-events-v1.json"}
+      "required_inputs": [
+        "benchmarks/fixtures/cross-harness/index-events-v1.json"
+      ],
+      "expected_artifacts": [
+        "index_fallback_integrity_report.json",
+        "index_fallback_integrity_report.md"
+      ],
+      "scoring_focus": [
+        "groundedness",
+        "failure_mode_clarity",
+        "accountability_receipts",
+        "reproducibility"
+      ],
+      "must_not": [
+        "claim MCP health without a successful MCP call",
+        "overwrite stale artifacts during analysis"
+      ],
+      "oracle": {
+        "checker_id": "index_fallback_integrity/v1",
+        "fixture": "benchmarks/fixtures/cross-harness/index-events-v1.json"
+      }
     },
     {
       "id": "agt-002-forum-deep-verify-scale",
       "lane": "replayable_causal_ledger_scaling",
       "difficulty": "full",
       "prompt": "Design and, when execution is authorized, run a forum ledger scaling benchmark that separates verify(), verify(deep=True), checkpoint(), warm storage, cold FileStorage reload, redacted payloads, and tampered payload negative controls.",
-      "required_inputs": ["workspace://public/forum/src/forum/ledger.py", "workspace://public/forum/src/forum/storage.py"],
-      "expected_artifacts": ["forum_deep_verify_scaling.json", "forum_deep_verify_scaling.md"],
-      "scoring_focus": ["quality", "reproducibility", "latency", "cost_resource_use", "accountability_receipts"],
-      "must_not": ["treat forum bench summary comparison as deep-verify timing", "print payload bodies"]
+      "required_inputs": [
+        "workspace://public/forum/src/forum/ledger.py",
+        "workspace://public/forum/src/forum/storage.py"
+      ],
+      "expected_artifacts": [
+        "forum_deep_verify_scaling.json",
+        "forum_deep_verify_scaling.md"
+      ],
+      "scoring_focus": [
+        "quality",
+        "reproducibility",
+        "latency",
+        "cost_resource_use",
+        "accountability_receipts"
+      ],
+      "must_not": [
+        "treat forum bench summary comparison as deep-verify timing",
+        "print payload bodies"
+      ]
     },
     {
       "id": "agt-003-codex-flywheel-shared-task",
       "lane": "cross_harness_reproducibility",
       "difficulty": "focused",
       "prompt": "Run or prepare the same bounded repo-grounded task through Codex harness and Flywheel harness, preserving raw prompts, outputs, tool calls, receipts, metrics, and failure modes for a same-task comparison.",
-      "required_inputs": ["benchmarks/fixtures/cross-harness/shared-task-facts-v1.json"],
-      "expected_artifacts": ["codex_flywheel_shared_task_scorecard.json", "codex_flywheel_shared_task_scorecard.md"],
-      "scoring_focus": ["task_completion", "quality", "tool_use_success", "reproducibility", "workflow_state_management"],
-      "must_not": ["compare different task prompts as if equivalent", "summarize without raw artifact paths"],
-      "oracle": {"checker_id": "shared_task_artifact/v1", "fixture": "benchmarks/fixtures/cross-harness/shared-task-facts-v1.json"}
+      "required_inputs": [
+        "benchmarks/fixtures/cross-harness/shared-task-facts-v1.json"
+      ],
+      "expected_artifacts": [
+        "codex_flywheel_shared_task_scorecard.json",
+        "codex_flywheel_shared_task_scorecard.md"
+      ],
+      "scoring_focus": [
+        "task_completion",
+        "quality",
+        "tool_use_success",
+        "reproducibility",
+        "workflow_state_management"
+      ],
+      "must_not": [
+        "compare different task prompts as if equivalent",
+        "summarize without raw artifact paths"
+      ],
+      "oracle": {
+        "checker_id": "shared_task_artifact/v1",
+        "fixture": "benchmarks/fixtures/cross-harness/shared-task-facts-v1.json"
+      }
     },
     {
       "id": "agt-004-local-14b-endpoint-gate",
       "lane": "endpoint_release_gates",
       "difficulty": "focused",
       "prompt": "Profile and gate the 14B local model endpoint without starting unrequested services; capture endpoint configuration, health status, one fixed generation result if available, latency, and failure class.",
-      "required_inputs": ["operator://local-model-base-root", "scripts/run_model_endpoint_profiles.py", "scripts/run_model_endpoint_gate.py"],
-      "expected_artifacts": ["local_14b_endpoint_gate.json", "local_14b_endpoint_gate.md"],
-      "scoring_focus": ["tool_use_success", "latency", "failure_mode_clarity", "accountability_receipts"],
-      "must_not": ["claim model readiness from root presence alone", "read model weights into prompt context"]
+      "required_inputs": [
+        "operator://local-model-base-root",
+        "scripts/run_model_endpoint_profiles.py",
+        "scripts/run_model_endpoint_gate.py"
+      ],
+      "expected_artifacts": [
+        "local_14b_endpoint_gate.json",
+        "local_14b_endpoint_gate.md"
+      ],
+      "scoring_focus": [
+        "tool_use_success",
+        "latency",
+        "failure_mode_clarity",
+        "accountability_receipts"
+      ],
+      "must_not": [
+        "claim model readiness from root presence alone",
+        "read model weights into prompt context"
+      ]
     },
     {
       "id": "agt-005-local-32b-endpoint-gate",
       "lane": "endpoint_release_gates",
       "difficulty": "focused",
       "prompt": "Profile and gate the 32B local model endpoint without starting unrequested services; capture endpoint configuration, health status, one fixed generation result if available, latency, and failure class.",
-      "required_inputs": ["operator://local-model-base-root", "scripts/run_model_endpoint_profiles.py", "scripts/run_model_endpoint_gate.py"],
-      "expected_artifacts": ["local_32b_endpoint_gate.json", "local_32b_endpoint_gate.md"],
-      "scoring_focus": ["tool_use_success", "latency", "failure_mode_clarity", "accountability_receipts"],
-      "must_not": ["claim model readiness from root presence alone", "read model weights into prompt context"]
+      "required_inputs": [
+        "operator://local-model-base-root",
+        "scripts/run_model_endpoint_profiles.py",
+        "scripts/run_model_endpoint_gate.py"
+      ],
+      "expected_artifacts": [
+        "local_32b_endpoint_gate.json",
+        "local_32b_endpoint_gate.md"
+      ],
+      "scoring_focus": [
+        "tool_use_success",
+        "latency",
+        "failure_mode_clarity",
+        "accountability_receipts"
+      ],
+      "must_not": [
+        "claim model readiness from root presence alone",
+        "read model weights into prompt context"
+      ]
     },
     {
       "id": "agt-006-mneme-enterprise-readiness",
       "lane": "agentic_tool_workflows",
       "difficulty": "focused",
       "prompt": "Assess mneme enterprise readiness for purpose, CLI/MCP surface, docs, tests, CI, observability, security posture, release artifacts, ownership, and retirement criteria; produce a prioritized hardening plan.",
-      "required_inputs": ["workspace://public/mneme", "scripts/run_tool_readiness_receipts.py"],
-      "expected_artifacts": ["mneme_enterprise_readiness.json", "mneme_enterprise_readiness.md"],
-      "scoring_focus": ["groundedness", "quality", "failure_mode_clarity", "accountability_receipts"],
-      "must_not": ["claim shipped changes without code diffs and validation evidence"]
+      "required_inputs": [
+        "workspace://public/mneme",
+        "scripts/run_tool_readiness_receipts.py"
+      ],
+      "expected_artifacts": [
+        "mneme_enterprise_readiness.json",
+        "mneme_enterprise_readiness.md"
+      ],
+      "scoring_focus": [
+        "groundedness",
+        "quality",
+        "failure_mode_clarity",
+        "accountability_receipts"
+      ],
+      "must_not": [
+        "claim shipped changes without code diffs and validation evidence"
+      ]
     },
     {
       "id": "agt-007-relay-enterprise-readiness",
       "lane": "agentic_tool_workflows",
       "difficulty": "focused",
       "prompt": "Assess relay enterprise readiness for purpose, CLI/MCP surface, docs, tests, CI, observability, security posture, release artifacts, ownership, and retirement criteria; produce a prioritized hardening plan.",
-      "required_inputs": ["workspace://public/relay", "scripts/run_tool_readiness_receipts.py"],
-      "expected_artifacts": ["relay_enterprise_readiness.json", "relay_enterprise_readiness.md"],
-      "scoring_focus": ["groundedness", "quality", "failure_mode_clarity", "accountability_receipts"],
-      "must_not": ["claim shipped changes without code diffs and validation evidence"]
+      "required_inputs": [
+        "workspace://public/relay",
+        "scripts/run_tool_readiness_receipts.py"
+      ],
+      "expected_artifacts": [
+        "relay_enterprise_readiness.json",
+        "relay_enterprise_readiness.md"
+      ],
+      "scoring_focus": [
+        "groundedness",
+        "quality",
+        "failure_mode_clarity",
+        "accountability_receipts"
+      ],
+      "must_not": [
+        "claim shipped changes without code diffs and validation evidence"
+      ]
     },
     {
       "id": "agt-008-plexus-enterprise-readiness",
       "lane": "agentic_tool_workflows",
       "difficulty": "focused",
       "prompt": "Assess plexus enterprise readiness for purpose, CLI/MCP surface, docs, tests, CI, observability, security posture, release artifacts, ownership, and retirement criteria; produce a prioritized hardening plan.",
-      "required_inputs": ["workspace://public/plexus", "scripts/run_tool_readiness_receipts.py"],
-      "expected_artifacts": ["plexus_enterprise_readiness.json", "plexus_enterprise_readiness.md"],
-      "scoring_focus": ["groundedness", "quality", "failure_mode_clarity", "accountability_receipts"],
-      "must_not": ["claim shipped changes without code diffs and validation evidence"]
+      "required_inputs": [
+        "workspace://public/plexus",
+        "scripts/run_tool_readiness_receipts.py"
+      ],
+      "expected_artifacts": [
+        "plexus_enterprise_readiness.json",
+        "plexus_enterprise_readiness.md"
+      ],
+      "scoring_focus": [
+        "groundedness",
+        "quality",
+        "failure_mode_clarity",
+        "accountability_receipts"
+      ],
+      "must_not": [
+        "claim shipped changes without code diffs and validation evidence"
+      ]
     },
     {
       "id": "agt-009-receipts-vs-guardrails-friction",
       "lane": "guardrail_accountability_friction",
       "difficulty": "focused",
       "prompt": "Run or prepare a paired evaluation where one mode uses external guardrail/classifier gating and the other uses accountable receipts; measure completion, refusal/friction, correction cost, auditability, and failure-mode clarity.",
-      "required_inputs": ["benchmarks/fixtures/cross-harness/paired-friction-observations-v1.json"],
-      "expected_artifacts": ["receipts_vs_guardrails_friction.json", "receipts_vs_guardrails_friction.md"],
-      "scoring_focus": ["task_completion", "failure_mode_clarity", "workflow_state_management", "accountability_receipts"],
-      "must_not": ["turn off externally required safety systems in live services", "claim classifier impact without paired tasks"],
-      "oracle": {"checker_id": "paired_friction/v1", "fixture": "benchmarks/fixtures/cross-harness/paired-friction-observations-v1.json", "exact_modes": ["accountable_receipt", "external_guardrail"], "required_safety_controls": ["live_service_safety"]}
+      "required_inputs": [
+        "benchmarks/fixtures/cross-harness/paired-friction-observations-v1.json"
+      ],
+      "expected_artifacts": [
+        "receipts_vs_guardrails_friction.json",
+        "receipts_vs_guardrails_friction.md"
+      ],
+      "scoring_focus": [
+        "task_completion",
+        "failure_mode_clarity",
+        "workflow_state_management",
+        "accountability_receipts"
+      ],
+      "must_not": [
+        "turn off externally required safety systems in live services",
+        "claim classifier impact without paired tasks"
+      ],
+      "oracle": {
+        "checker_id": "paired_friction/v1",
+        "fixture": "benchmarks/fixtures/cross-harness/paired-friction-observations-v1.json",
+        "exact_modes": [
+          "accountable_receipt",
+          "external_guardrail"
+        ],
+        "required_safety_controls": [
+          "live_service_safety"
+        ]
+      }
     },
     {
       "id": "agt-010-documentation-schematic-maintenance",
       "lane": "source_mined_codebase_tasks",
       "difficulty": "focused",
       "prompt": "Given a small harness/tool change, update the corresponding documentation, capability catalog, roadmap status, and schematic notes so code and docs stay synchronized.",
-      "required_inputs": ["benchmarks/fixtures/cross-harness/documentation-topology-v1.json", "README.md", "project-docs/records/CAPABILITY-CATALOG-2026-07-09.md", "project-docs/records/ROADMAP-STATUS-2026-07-09.md", "project-docs/schematics/closed-loop-integration.graph.json", "harness/cross_harness_manifest.py", "harness/lanes.py", "scripts/run_cross_harness_manifest.py", "harness/schematic_drift.py"],
-      "expected_artifacts": ["documentation_schematic_maintenance_receipt.json", "documentation_schematic_maintenance_receipt.md"],
-      "scoring_focus": ["quality", "groundedness", "reproducibility", "accountability_receipts"],
-      "must_not": ["update docs with claims unsupported by code or run artifacts"],
-      "oracle": {"checker_id": "documentation_maintenance/v1", "fixture": "benchmarks/fixtures/cross-harness/documentation-topology-v1.json", "expected_surfaces": ["capability_catalog", "documentation", "roadmap", "schematic_notes"]}
+      "required_inputs": [
+        "benchmarks/fixtures/cross-harness/documentation-topology-v1.json",
+        "README.md",
+        "project-docs/records/CAPABILITY-CATALOG-2026-07-09.md",
+        "project-docs/records/ROADMAP-STATUS-2026-07-09.md",
+        "project-docs/schematics/closed-loop-integration.graph.json",
+        "harness/cross_harness_manifest.py",
+        "harness/lanes.py",
+        "scripts/run_cross_harness_manifest.py",
+        "harness/schematic_drift.py"
+      ],
+      "expected_artifacts": [
+        "documentation_schematic_maintenance_receipt.json",
+        "documentation_schematic_maintenance_receipt.md"
+      ],
+      "scoring_focus": [
+        "quality",
+        "groundedness",
+        "reproducibility",
+        "accountability_receipts"
+      ],
+      "must_not": [
+        "update docs with claims unsupported by code or run artifacts"
+      ],
+      "oracle": {
+        "checker_id": "documentation_maintenance/v1",
+        "fixture": "benchmarks/fixtures/cross-harness/documentation-topology-v1.json",
+        "expected_surfaces": [
+          "capability_catalog",
+          "documentation",
+          "roadmap",
+          "schematic_notes"
+        ]
+      }
     },
     {
       "id": "agt-011-opencode-adapter-readiness",
       "lane": "cross_harness_reproducibility",
       "difficulty": "focused",
       "prompt": "Inspect OpenCode app root and prepare an adapter readiness report for running the same benchmark task set through OpenCode against the configured local or frontier endpoint.",
-      "required_inputs": ["operator://opencode-installation-root"],
-      "expected_artifacts": ["opencode_adapter_readiness.json", "opencode_adapter_readiness.md"],
-      "scoring_focus": ["groundedness", "tool_use_success", "failure_mode_clarity", "reproducibility"],
-      "must_not": ["modify user app installation without explicit approval", "claim OpenCode execution without run artifact"]
+      "required_inputs": [
+        "operator://opencode-installation-root"
+      ],
+      "expected_artifacts": [
+        "opencode_adapter_readiness.json",
+        "opencode_adapter_readiness.md"
+      ],
+      "scoring_focus": [
+        "groundedness",
+        "tool_use_success",
+        "failure_mode_clarity",
+        "reproducibility"
+      ],
+      "must_not": [
+        "modify user app installation without explicit approval",
+        "claim OpenCode execution without run artifact"
+      ]
     },
     {
       "id": "agt-012-local-resource-pressure",
       "lane": "local_resource_pressure",
       "difficulty": "full",
       "prompt": "Run or prepare a local-resource pressure benchmark over bounded agentic tasks, measuring context size, wall time, memory pressure if available, generation success, tool-call success, and graceful degradation for 14B and 32B models.",
-      "required_inputs": ["operator://local-model-base-root", "scripts/run_model_endpoint_gate.py"],
-      "expected_artifacts": ["local_resource_pressure_14b_32b.json", "local_resource_pressure_14b_32b.md"],
-      "scoring_focus": ["latency", "cost_resource_use", "reliability", "failure_mode_clarity", "task_completion"],
-      "must_not": ["treat OOM or timeout as unexplained failure", "run unbounded generation"]
+      "required_inputs": [
+        "operator://local-model-base-root",
+        "scripts/run_model_endpoint_gate.py"
+      ],
+      "expected_artifacts": [
+        "local_resource_pressure_14b_32b.json",
+        "local_resource_pressure_14b_32b.md"
+      ],
+      "scoring_focus": [
+        "latency",
+        "cost_resource_use",
+        "reliability",
+        "failure_mode_clarity",
+        "task_completion"
+      ],
+      "must_not": [
+        "treat OOM or timeout as unexplained failure",
+        "run unbounded generation"
+      ]
     },
     {
       "id": "agt-013-embodied-realtime-multimodal",
       "lane": "embodied_realtime_multimodal",
       "difficulty": "full",
       "prompt": "Prepare a benchmark inspired by Boris/ENBSeries feedback: compare tiny/local and frontier candidates on robotics-style latency budgets, synthetic sensor-token streams, code-drawn letter/shape correction, simplified multimodal projections, and affective possessiveness/jealousy drift. Treat named model claims as unverified leads until model cards are checked.",
-      "required_inputs": ["benchmarks/embodied-realtime-multimodal-v1.json", "operator://local-model-base-root"],
-      "expected_artifacts": ["embodied_realtime_multimodal_scorecard.json", "embodied_realtime_multimodal_scorecard.md"],
-      "scoring_focus": ["latency", "quality", "groundedness", "cost_resource_use", "failure_mode_clarity", "reliability"],
-      "must_not": ["claim model-card facts without source verification", "use explicit sexual content in affective-drift probes", "treat code drawing as image generation without checking the rendered output"]
+      "required_inputs": [
+        "benchmarks/embodied-realtime-multimodal-v1.json",
+        "operator://local-model-base-root"
+      ],
+      "expected_artifacts": [
+        "embodied_realtime_multimodal_scorecard.json",
+        "embodied_realtime_multimodal_scorecard.md"
+      ],
+      "scoring_focus": [
+        "latency",
+        "quality",
+        "groundedness",
+        "cost_resource_use",
+        "failure_mode_clarity",
+        "reliability"
+      ],
+      "must_not": [
+        "claim model-card facts without source verification",
+        "use explicit sexual content in affective-drift probes",
+        "treat code drawing as image generation without checking the rendered output"
+      ]
     },
     {
       "id": "agt-014-embodied-model-card-claim-grounding",
       "lane": "embodied_realtime_multimodal",
       "difficulty": "focused",
       "prompt": "Convert the relayed Boris/ENBSeries model leads into a source-grounded claim table before any embodied realtime benchmark result is reported. Verify model identity, primary model-card URL, modality claims, context length claims, license/provenance notes, and local execution constraints; mark every unresolved item unverified.",
-      "required_inputs": ["benchmarks/embodied-realtime-multimodal-v1.json", "external://project-docs/records"],
-      "expected_artifacts": ["embodied_realtime_model_card_claims.json", "embodied_realtime_model_card_claims.md"],
-      "scoring_focus": ["groundedness", "reproducibility", "failure_mode_clarity", "accountability_receipts"],
-      "must_not": ["treat relayed chat excerpts as primary model-card evidence", "download model weights during claim grounding", "publish capability or license claims without source URL and retrieval date"]
+      "required_inputs": [
+        "benchmarks/embodied-realtime-multimodal-v1.json",
+        "external://project-docs/records"
+      ],
+      "expected_artifacts": [
+        "embodied_realtime_model_card_claims.json",
+        "embodied_realtime_model_card_claims.md"
+      ],
+      "scoring_focus": [
+        "groundedness",
+        "reproducibility",
+        "failure_mode_clarity",
+        "accountability_receipts"
+      ],
+      "must_not": [
+        "treat relayed chat excerpts as primary model-card evidence",
+        "download model weights during claim grounding",
+        "publish capability or license claims without source URL and retrieval date"
+      ]
+    },
+    {
+      "id": "agt-015-evidence-bound-reporting",
+      "lane": "evidence_economics",
+      "difficulty": "focused",
+      "prompt": "Read the measurement and claim fixture, report every measurement as the evidence states it, and rule on every claim. The JSON artifact carries measurements as a list of objects with measurement_id, value, denominator, and interval_95 as a two-element list, copied from the fixture without rounding or restatement. It also carries claim_verdicts as a list of objects with claim_id, verdict set to either supported or unverifiable, and evidence as the list of measurement ids that ground the claim. A claim the fixture grounds with no measurement is unverifiable and cites nothing.",
+      "required_inputs": [
+        "benchmarks/fixtures/cross-harness/evidence-bound-claims-v1.json"
+      ],
+      "expected_artifacts": [
+        "evidence_bound_reporting_report.json",
+        "evidence_bound_reporting_report.md"
+      ],
+      "scoring_focus": [
+        "groundedness",
+        "quality",
+        "accountability_receipts",
+        "reproducibility"
+      ],
+      "must_not": [
+        "report a measurement the fixture does not contain",
+        "mark a claim supported when no measurement grounds it"
+      ],
+      "oracle": {
+        "checker_id": "evidence_bound_reporting/v1",
+        "fixture": "benchmarks/fixtures/cross-harness/evidence-bound-claims-v1.json"
+      }
+    },
+    {
+      "id": "agt-016-source-contradiction-detection",
+      "lane": "evidence_economics",
+      "difficulty": "focused",
+      "prompt": "Read the record fixture and report every pair of records that contradict each other. Two records contradict when they state different values for the same field of the same subject. Records that state different fields do not contradict, and reporting such a pair is an error. The JSON artifact carries contradictions as a list of objects, each with records set to a two-element list of record ids. Report each pair once.",
+      "required_inputs": [
+        "benchmarks/fixtures/cross-harness/source-contradiction-records-v1.json"
+      ],
+      "expected_artifacts": [
+        "source_contradiction_report.json",
+        "source_contradiction_report.md"
+      ],
+      "scoring_focus": [
+        "groundedness",
+        "failure_mode_clarity",
+        "quality",
+        "reliability"
+      ],
+      "must_not": [
+        "report a pair whose records state different fields",
+        "cite a record id the fixture does not contain"
+      ],
+      "oracle": {
+        "checker_id": "contradiction_detection/v1",
+        "fixture": "benchmarks/fixtures/cross-harness/source-contradiction-records-v1.json"
+      }
+    },
+    {
+      "id": "agt-017-budgeted-evidence-selection",
+      "lane": "evidence_economics",
+      "difficulty": "focused",
+      "prompt": "Read the evidence pool and choose the subset with the highest total evidence value whose total cost fits the budget. Items are indivisible and each may be taken at most once. Taking the highest value-per-dollar item first does not reach the best total on this pool. The JSON artifact carries selected as the list of chosen item ids, total_cost_usd as their summed cost, and total_value as their summed evidence value.",
+      "required_inputs": [
+        "benchmarks/fixtures/cross-harness/budgeted-evidence-pool-v1.json"
+      ],
+      "expected_artifacts": [
+        "budgeted_evidence_selection.json",
+        "budgeted_evidence_selection.md"
+      ],
+      "scoring_focus": [
+        "cost_resource_use",
+        "quality",
+        "task_completion",
+        "reproducibility"
+      ],
+      "must_not": [
+        "exceed the stated budget",
+        "report a total that does not equal the sum over the selected items"
+      ],
+      "oracle": {
+        "checker_id": "budgeted_evidence_selection/v1",
+        "fixture": "benchmarks/fixtures/cross-harness/budgeted-evidence-pool-v1.json"
+      }
     }
   ],
   "execution_gates": [
