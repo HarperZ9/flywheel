@@ -38,6 +38,91 @@ A benchmark everything passes measures nothing. The strawman is a system with no
 
 Overall 100% against 0%. This measures accountability, NOT capability. Pair it with a capability bench.
 
+## Head to head
+
+35 attempts across 5 harnesses, 35 launched, 11 readable, on task set flywheel_agentic_gauntlet_v1.
+
+### What an attempt cost
+
+| harness | launched | readable | pass rate | median latency | cost | cost coverage |
+| --- | --- | --- | --- | --- | --- | --- |
+| claude_code | 7/7 | 2/7 | 50% | 49.1 s | $0.4997 | 86% |
+| codex_harness | 7/7 | 4/7 | 75% | 25.8 s | not reported | 0% |
+| flywheel_harness | 7/7 | 4/7 | 50% | 24.3 s | not reported | 0% |
+| local_14b | 7/7 | 0/7 | not reported | 16.8 s | not reported | 0% |
+| local_32b | 7/7 | 1/7 | 0% | 240.0 s | not reported | 0% |
+
+What the numbers above need beside them:
+
+- **claude_code.** Ungraded: 1 over the time budget; 3 refused at the envelope; 1 the provider's own stream was unreadable.
+- **claude_code.** 3 of 3 refused answers held a complete envelope behind other text.
+- **claude_code.** Only some attempts reported a cost.
+- **codex_harness.** Ungraded: 1 artifact inside the envelope was invalid; 1 refused at the envelope; 1 the provider's own stream was unreadable.
+- **codex_harness.** 0 of 1 refused answers held a complete envelope behind other text.
+- **codex_harness.** This provider states no cost.
+- **flywheel_harness.** Ungraded: 1 artifact inside the envelope was invalid; 1 refused at the envelope; 1 the inner provider's output was unreadable.
+- **flywheel_harness.** 1 of 1 refused answers held a complete envelope behind other text.
+- **flywheel_harness.** This provider states no cost.
+- **local_14b.** Ungraded: 7 refused at the envelope.
+- **local_14b.** 3 of 7 refused answers held a complete envelope behind other text.
+- **local_14b.** This provider states no cost.
+- **local_32b.** Ungraded: 1 artifact inside the envelope was invalid; 1 refused at the envelope; 4 the model endpoint did not answer.
+- **local_32b.** 0 of 1 refused answers held a complete envelope behind other text.
+- **local_32b.** This provider states no cost.
+
+### budgeted_evidence_selection/v1
+
+Scored 2 attempts and reported no numeric evidence, so there is nothing to chart for this checker.
+
+### contradiction_detection/v1
+
+| metric | better | claude_code | codex_harness | flywheel_harness |
+| --- | --- | --- | --- | --- |
+| failure_code_count | lower | not reported | 0.0 | 0.0 |
+| false_pair_count | lower | not reported | 0.0 | 0.0 |
+| pair_precision | higher | not reported | 1.0 | 1.0 |
+| pair_recall | higher | not reported | 1.0 | 1.0 |
+| trap_pairs_reported | lower | not reported | 0.0 | 0.0 |
+
+### evidence_bound_reporting/v1
+
+| metric | better | codex_harness | flywheel_harness |
+| --- | --- | --- | --- |
+| evidence_bound_score | higher | 1.0 | 1.0 |
+| fabricated_measurements | lower | 0.0 | 0.0 |
+| failure_code_count | lower | 0.0 | 0.0 |
+| measurement_fidelity | higher | 1.0 | 1.0 |
+| supported_claim_precision | higher | 1.0 | 1.0 |
+| unsupported_claim_recall | higher | 1.0 | 1.0 |
+
+### index_fallback_integrity/v1
+
+| metric | better | claude_code |
+| --- | --- | --- |
+| failure_code_count | lower | 0.0 |
+
+### paired_friction/v1
+
+| metric | better | codex_harness | flywheel_harness |
+| --- | --- | --- | --- |
+| failure_code_count | lower | 0.0 | 1.0 |
+
+### shared_task_artifact/v1
+
+| metric | better | local_32b |
+| --- | --- | --- |
+| failure_code_count | lower | 1.0 |
+
+### What this does not prove
+
+- A mean over one repetition is a reading, not an estimate. No interval is reported because none is earned at this sample size.
+- Cost covers the attempts whose provider stated a cost. A role with no cost coverage is not cheaper, it is unmeasured.
+- Latency is wall clock on one machine and includes local model load time.
+- A role that never returned a readable result has no quality numbers here, which is a fact about this run and not a score of zero. Why an attempt went ungraded is reported beside it, because a malformed answer and a missing one are different failures.
+- An envelope found inside a refused answer was still refused, and no checker graded it. That it was there says the harness produced an answer, and it does not say the answer was right.
+- The graded metrics come from in-tree fixtures. They measure a harness against those tasks and not against a customer workload.
+- The run raised before sealing, so nothing ever checked that the source tree still matched the commit these rows name. The attempts each verified their own workspace, which is a narrower claim.
+
 ## Against the field
 
 The Flywheel column is checked against this repository every time the matrix is read. The competitor columns are dated declarations from public documentation, read on 2026-09-03, and are not measurements taken here.

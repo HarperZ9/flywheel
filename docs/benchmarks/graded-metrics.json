@@ -1,0 +1,574 @@
+{
+  "checkers": [
+    {
+      "checker_id": "budgeted_evidence_selection/v1",
+      "metrics": [],
+      "scored_attempts": 2,
+      "task_ids": [
+        "agt-017-budgeted-evidence-selection"
+      ]
+    },
+    {
+      "checker_id": "contradiction_detection/v1",
+      "metrics": [
+        {
+          "direction": "lower",
+          "metric": "failure_code_count",
+          "roles": [
+            {
+              "max": null,
+              "mean": null,
+              "min": null,
+              "n": 0,
+              "provider_role": "claude_code"
+            },
+            {
+              "max": 0.0,
+              "mean": 0.0,
+              "min": 0.0,
+              "n": 1,
+              "provider_role": "codex_harness"
+            },
+            {
+              "max": 0.0,
+              "mean": 0.0,
+              "min": 0.0,
+              "n": 1,
+              "provider_role": "flywheel_harness"
+            }
+          ]
+        },
+        {
+          "direction": "lower",
+          "metric": "false_pair_count",
+          "roles": [
+            {
+              "max": null,
+              "mean": null,
+              "min": null,
+              "n": 0,
+              "provider_role": "claude_code"
+            },
+            {
+              "max": 0.0,
+              "mean": 0.0,
+              "min": 0.0,
+              "n": 1,
+              "provider_role": "codex_harness"
+            },
+            {
+              "max": 0.0,
+              "mean": 0.0,
+              "min": 0.0,
+              "n": 1,
+              "provider_role": "flywheel_harness"
+            }
+          ]
+        },
+        {
+          "direction": "higher",
+          "metric": "pair_precision",
+          "roles": [
+            {
+              "max": null,
+              "mean": null,
+              "min": null,
+              "n": 0,
+              "provider_role": "claude_code"
+            },
+            {
+              "max": 1.0,
+              "mean": 1.0,
+              "min": 1.0,
+              "n": 1,
+              "provider_role": "codex_harness"
+            },
+            {
+              "max": 1.0,
+              "mean": 1.0,
+              "min": 1.0,
+              "n": 1,
+              "provider_role": "flywheel_harness"
+            }
+          ]
+        },
+        {
+          "direction": "higher",
+          "metric": "pair_recall",
+          "roles": [
+            {
+              "max": null,
+              "mean": null,
+              "min": null,
+              "n": 0,
+              "provider_role": "claude_code"
+            },
+            {
+              "max": 1.0,
+              "mean": 1.0,
+              "min": 1.0,
+              "n": 1,
+              "provider_role": "codex_harness"
+            },
+            {
+              "max": 1.0,
+              "mean": 1.0,
+              "min": 1.0,
+              "n": 1,
+              "provider_role": "flywheel_harness"
+            }
+          ]
+        },
+        {
+          "direction": "lower",
+          "metric": "trap_pairs_reported",
+          "roles": [
+            {
+              "max": null,
+              "mean": null,
+              "min": null,
+              "n": 0,
+              "provider_role": "claude_code"
+            },
+            {
+              "max": 0.0,
+              "mean": 0.0,
+              "min": 0.0,
+              "n": 1,
+              "provider_role": "codex_harness"
+            },
+            {
+              "max": 0.0,
+              "mean": 0.0,
+              "min": 0.0,
+              "n": 1,
+              "provider_role": "flywheel_harness"
+            }
+          ]
+        }
+      ],
+      "scored_attempts": 3,
+      "task_ids": [
+        "agt-016-source-contradiction-detection"
+      ]
+    },
+    {
+      "checker_id": "evidence_bound_reporting/v1",
+      "metrics": [
+        {
+          "direction": "higher",
+          "metric": "evidence_bound_score",
+          "roles": [
+            {
+              "max": 1.0,
+              "mean": 1.0,
+              "min": 1.0,
+              "n": 1,
+              "provider_role": "codex_harness"
+            },
+            {
+              "max": 1.0,
+              "mean": 1.0,
+              "min": 1.0,
+              "n": 1,
+              "provider_role": "flywheel_harness"
+            }
+          ]
+        },
+        {
+          "direction": "lower",
+          "metric": "fabricated_measurements",
+          "roles": [
+            {
+              "max": 0.0,
+              "mean": 0.0,
+              "min": 0.0,
+              "n": 1,
+              "provider_role": "codex_harness"
+            },
+            {
+              "max": 0.0,
+              "mean": 0.0,
+              "min": 0.0,
+              "n": 1,
+              "provider_role": "flywheel_harness"
+            }
+          ]
+        },
+        {
+          "direction": "lower",
+          "metric": "failure_code_count",
+          "roles": [
+            {
+              "max": 0.0,
+              "mean": 0.0,
+              "min": 0.0,
+              "n": 1,
+              "provider_role": "codex_harness"
+            },
+            {
+              "max": 0.0,
+              "mean": 0.0,
+              "min": 0.0,
+              "n": 1,
+              "provider_role": "flywheel_harness"
+            }
+          ]
+        },
+        {
+          "direction": "higher",
+          "metric": "measurement_fidelity",
+          "roles": [
+            {
+              "max": 1.0,
+              "mean": 1.0,
+              "min": 1.0,
+              "n": 1,
+              "provider_role": "codex_harness"
+            },
+            {
+              "max": 1.0,
+              "mean": 1.0,
+              "min": 1.0,
+              "n": 1,
+              "provider_role": "flywheel_harness"
+            }
+          ]
+        },
+        {
+          "direction": "higher",
+          "metric": "supported_claim_precision",
+          "roles": [
+            {
+              "max": 1.0,
+              "mean": 1.0,
+              "min": 1.0,
+              "n": 1,
+              "provider_role": "codex_harness"
+            },
+            {
+              "max": 1.0,
+              "mean": 1.0,
+              "min": 1.0,
+              "n": 1,
+              "provider_role": "flywheel_harness"
+            }
+          ]
+        },
+        {
+          "direction": "higher",
+          "metric": "unsupported_claim_recall",
+          "roles": [
+            {
+              "max": 1.0,
+              "mean": 1.0,
+              "min": 1.0,
+              "n": 1,
+              "provider_role": "codex_harness"
+            },
+            {
+              "max": 1.0,
+              "mean": 1.0,
+              "min": 1.0,
+              "n": 1,
+              "provider_role": "flywheel_harness"
+            }
+          ]
+        }
+      ],
+      "scored_attempts": 2,
+      "task_ids": [
+        "agt-015-evidence-bound-reporting"
+      ]
+    },
+    {
+      "checker_id": "index_fallback_integrity/v1",
+      "metrics": [
+        {
+          "direction": "lower",
+          "metric": "failure_code_count",
+          "roles": [
+            {
+              "max": 0.0,
+              "mean": 0.0,
+              "min": 0.0,
+              "n": 1,
+              "provider_role": "claude_code"
+            }
+          ]
+        }
+      ],
+      "scored_attempts": 1,
+      "task_ids": [
+        "agt-001-index-fallback-integrity"
+      ]
+    },
+    {
+      "checker_id": "paired_friction/v1",
+      "metrics": [
+        {
+          "direction": "lower",
+          "metric": "failure_code_count",
+          "roles": [
+            {
+              "max": 0.0,
+              "mean": 0.0,
+              "min": 0.0,
+              "n": 1,
+              "provider_role": "codex_harness"
+            },
+            {
+              "max": 1.0,
+              "mean": 1.0,
+              "min": 1.0,
+              "n": 1,
+              "provider_role": "flywheel_harness"
+            }
+          ]
+        }
+      ],
+      "scored_attempts": 2,
+      "task_ids": [
+        "agt-009-receipts-vs-guardrails-friction"
+      ]
+    },
+    {
+      "checker_id": "shared_task_artifact/v1",
+      "metrics": [
+        {
+          "direction": "lower",
+          "metric": "failure_code_count",
+          "roles": [
+            {
+              "max": 1.0,
+              "mean": 1.0,
+              "min": 1.0,
+              "n": 1,
+              "provider_role": "local_32b"
+            }
+          ]
+        }
+      ],
+      "scored_attempts": 1,
+      "task_ids": [
+        "agt-003-codex-flywheel-shared-task"
+      ]
+    }
+  ],
+  "counts": {
+    "attempts": 35,
+    "graded_checkers": 6,
+    "launched": 35,
+    "roles": 5,
+    "scored": 11
+  },
+  "does_not_prove": [
+    "A mean over one repetition is a reading, not an estimate. No interval is reported because none is earned at this sample size.",
+    "Cost covers the attempts whose provider stated a cost. A role with no cost coverage is not cheaper, it is unmeasured.",
+    "Latency is wall clock on one machine and includes local model load time.",
+    "A role that never returned a readable result has no quality numbers here, which is a fact about this run and not a score of zero. Why an attempt went ungraded is reported beside it, because a malformed answer and a missing one are different failures.",
+    "An envelope found inside a refused answer was still refused, and no checker graded it. That it was there says the harness produced an answer, and it does not say the answer was right.",
+    "The graded metrics come from in-tree fixtures. They measure a harness against those tasks and not against a customer workload.",
+    "The run raised before sealing, so nothing ever checked that the source tree still matched the commit these rows name. The attempts each verified their own workspace, which is a narrower claim."
+  ],
+  "roles": [
+    {
+      "attempts": 7,
+      "blocked": 0,
+      "cost_coverage": 0.8571,
+      "cost_reported_attempts": 6,
+      "cost_usd_per_scored_attempt": null,
+      "cost_usd_total": 0.4997,
+      "envelope_recovery": {
+        "held_an_envelope": 3,
+        "refused": 3,
+        "unread": 0
+      },
+      "latency_ms_median": 49147.0,
+      "latency_ms_p90": 113565.0,
+      "launch_rate": 1.0,
+      "launched": 7,
+      "models_observed": [
+        "claude-sonnet-5"
+      ],
+      "null_reasons": {
+        "cost_usd_per_scored_attempt": "partial_cost_coverage",
+        "output_tokens_total": "provider_usage_unavailable"
+      },
+      "oracle_pass": 1,
+      "output_tokens_total": null,
+      "pass_rate": 0.5,
+      "provider_role": "claude_code",
+      "readable_rate": 0.2857,
+      "returned": 2,
+      "scored": 2,
+      "unreadable_reasons": {
+        "over the time budget": 1,
+        "refused at the envelope": 3,
+        "the provider's own stream was unreadable": 1
+      }
+    },
+    {
+      "attempts": 7,
+      "blocked": 0,
+      "cost_coverage": 0.0,
+      "cost_reported_attempts": 0,
+      "cost_usd_per_scored_attempt": null,
+      "cost_usd_total": null,
+      "envelope_recovery": {
+        "held_an_envelope": 0,
+        "refused": 1,
+        "unread": 0
+      },
+      "latency_ms_median": 25814.0,
+      "latency_ms_p90": 47792.0,
+      "launch_rate": 1.0,
+      "launched": 7,
+      "models_observed": [
+        "gpt-5.3-codex-spark"
+      ],
+      "null_reasons": {
+        "cost_usd_per_scored_attempt": "provider_cost_unavailable",
+        "cost_usd_total": "provider_cost_unavailable",
+        "output_tokens_total": "provider_usage_unavailable"
+      },
+      "oracle_pass": 3,
+      "output_tokens_total": null,
+      "pass_rate": 0.75,
+      "provider_role": "codex_harness",
+      "readable_rate": 0.5714,
+      "returned": 4,
+      "scored": 4,
+      "unreadable_reasons": {
+        "artifact inside the envelope was invalid": 1,
+        "refused at the envelope": 1,
+        "the provider's own stream was unreadable": 1
+      }
+    },
+    {
+      "attempts": 7,
+      "blocked": 0,
+      "cost_coverage": 0.0,
+      "cost_reported_attempts": 0,
+      "cost_usd_per_scored_attempt": null,
+      "cost_usd_total": null,
+      "envelope_recovery": {
+        "held_an_envelope": 1,
+        "refused": 1,
+        "unread": 0
+      },
+      "latency_ms_median": 24270.0,
+      "latency_ms_p90": 65684.0,
+      "launch_rate": 1.0,
+      "launched": 7,
+      "models_observed": [
+        "gpt-5.3-codex-spark"
+      ],
+      "null_reasons": {
+        "cost_usd_per_scored_attempt": "provider_cost_unavailable",
+        "cost_usd_total": "provider_cost_unavailable"
+      },
+      "oracle_pass": 2,
+      "output_tokens_total": 37520,
+      "pass_rate": 0.5,
+      "provider_role": "flywheel_harness",
+      "readable_rate": 0.5714,
+      "returned": 4,
+      "scored": 4,
+      "unreadable_reasons": {
+        "artifact inside the envelope was invalid": 1,
+        "refused at the envelope": 1,
+        "the inner provider's output was unreadable": 1
+      }
+    },
+    {
+      "attempts": 7,
+      "blocked": 0,
+      "cost_coverage": 0.0,
+      "cost_reported_attempts": 0,
+      "cost_usd_per_scored_attempt": null,
+      "cost_usd_total": null,
+      "envelope_recovery": {
+        "held_an_envelope": 3,
+        "refused": 7,
+        "unread": 0
+      },
+      "latency_ms_median": 16817.0,
+      "latency_ms_p90": 33773.0,
+      "launch_rate": 1.0,
+      "launched": 7,
+      "models_observed": [
+        "flywheel-local-coder-14b"
+      ],
+      "null_reasons": {
+        "cost_usd_per_scored_attempt": "provider_cost_unavailable",
+        "cost_usd_total": "provider_cost_unavailable",
+        "output_tokens_total": "provider_usage_unavailable"
+      },
+      "oracle_pass": 0,
+      "output_tokens_total": null,
+      "pass_rate": null,
+      "provider_role": "local_14b",
+      "readable_rate": 0.0,
+      "returned": 0,
+      "scored": 0,
+      "unreadable_reasons": {
+        "refused at the envelope": 7
+      }
+    },
+    {
+      "attempts": 7,
+      "blocked": 0,
+      "cost_coverage": 0.0,
+      "cost_reported_attempts": 0,
+      "cost_usd_per_scored_attempt": null,
+      "cost_usd_total": null,
+      "envelope_recovery": {
+        "held_an_envelope": 0,
+        "refused": 1,
+        "unread": 0
+      },
+      "latency_ms_median": 240013.0,
+      "latency_ms_p90": 240031.0,
+      "launch_rate": 1.0,
+      "launched": 7,
+      "models_observed": [
+        "flywheel-local-coder-32b"
+      ],
+      "null_reasons": {
+        "cost_usd_per_scored_attempt": "provider_cost_unavailable",
+        "cost_usd_total": "provider_cost_unavailable",
+        "output_tokens_total": "provider_usage_unavailable"
+      },
+      "oracle_pass": 0,
+      "output_tokens_total": null,
+      "pass_rate": 0.0,
+      "provider_role": "local_32b",
+      "readable_rate": 0.1429,
+      "returned": 1,
+      "scored": 1,
+      "unreadable_reasons": {
+        "artifact inside the envelope was invalid": 1,
+        "refused at the envelope": 1,
+        "the model endpoint did not answer": 4
+      }
+    }
+  ],
+  "run_ids": [
+    "hh3-graded-20260904-050752"
+  ],
+  "schema": "flywheel.graded_metric_report/v1",
+  "scorecards": [
+    {
+      "name": "comparison-input.json",
+      "repo_path": null,
+      "sha256": "a131530fb1bb4c1509a558fb7248dd913ff3627e0bddd636bdb0fc81ee353a07"
+    }
+  ],
+  "source_commits": [
+    "66c8498108b8e08a920c717cda7d320409524080"
+  ],
+  "task_set_ids": [
+    "flywheel_agentic_gauntlet_v1"
+  ]
+}
