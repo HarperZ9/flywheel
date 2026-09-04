@@ -54,4 +54,12 @@ jobs:
         with:
           name: dist
           path: dist/
-      - uses: pypa/gh-action-pypi-publish@76f52bc884231f62b9a034ebfe128415bbaabdfc # v1.12.4
+      # Pinned by SHA, and the pin has to be kept current. The publish
+      # container runs its own twine against its own locked SPDX license
+      # list, which is not the twine the build job installs above. v1.12.4
+      # (2025-01-24) carried a list old enough to reject FSL-1.1-MIT, so the
+      # v0.3.11 upload failed the container check after the build job's fresh
+      # twine had already passed it -- on metadata byte-identical to the
+      # 0.3.10 wheel PyPI itself accepted. A stale pin here fails a release
+      # at the last step, with the package unchanged.
+      - uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # v1.14.2
