@@ -65,10 +65,7 @@ def build_manifest(*, store_root: str = DEFAULT_STORE_ROOT) -> dict:
                 "purpose": "Emit this executable-surface manifest as JSON/Markdown and optional receipt.",
                 "schemas": ["harness.executable-manifest/v1"],
                 "evidence_surface": "front-controller command registry",
-                "default_artifacts": [
-                    "C:/tmp/harness_executable_manifest.json",
-                    "C:/tmp/harness_executable_manifest.md",
-                ],
+                "default_artifacts": ["C:/tmp/harness_executable_manifest.json", "C:/tmp/harness_executable_manifest.md"],
                 "long_running_risk": "low",
                 "recommended_validation_slice": "python -m pytest tests/test_harness_cli.py -q",
             },
@@ -78,10 +75,7 @@ def build_manifest(*, store_root: str = DEFAULT_STORE_ROOT) -> dict:
                 "purpose": "Emit a static local HTML command registry generated from the executable manifest.",
                 "schemas": ["harness.command-registry-html/v1"],
                 "evidence_surface": "human-readable command/risk/artifact registry",
-                "default_artifacts": [
-                    "C:/tmp/harness_command_registry.html",
-                    "C:/tmp/harness_command_registry.json",
-                ],
+                "default_artifacts": ["C:/tmp/harness_command_registry.html", "C:/tmp/harness_command_registry.json"],
                 "long_running_risk": "low",
                 "recommended_validation_slice": "python -m pytest tests/test_harness_cli.py -q",
             },
@@ -91,10 +85,7 @@ def build_manifest(*, store_root: str = DEFAULT_STORE_ROOT) -> dict:
                 "purpose": "Emit the weighted benchmark profile manifest and metadata-only existing artifact inventory.",
                 "schemas": ["harness.benchmark-profile-manifest/v1"],
                 "evidence_surface": "benchmark suite definitions, metric weights, provider matrix, and artifact inventory",
-                "default_artifacts": [
-                    "C:/tmp/harness_benchmark_profile_manifest.json",
-                    "C:/tmp/harness_benchmark_profile_manifest.md",
-                ],
+                "default_artifacts": ["C:/tmp/harness_benchmark_profile_manifest.json", "C:/tmp/harness_benchmark_profile_manifest.md"],
                 "long_running_risk": "low",
                 "recommended_validation_slice": "python -m pytest tests/test_benchmark_profile_manifest.py tests/test_harness_cli.py -q",
             },
@@ -104,10 +95,7 @@ def build_manifest(*, store_root: str = DEFAULT_STORE_ROOT) -> dict:
                 "purpose": "Emit metadata-only Forum route prompt hashes and optional observed route-frame metadata.",
                 "schemas": ["harness.forum-route-receipts/v1"],
                 "evidence_surface": "route prompt hashes, observed route confidence, escalation state, domain, intent, posture, and proof lane",
-                "default_artifacts": [
-                    "C:/tmp/forum_route_receipts.json",
-                    "C:/tmp/forum_route_receipts.md",
-                ],
+                "default_artifacts": ["C:/tmp/forum_route_receipts.json", "C:/tmp/forum_route_receipts.md"],
                 "long_running_risk": "low",
                 "recommended_validation_slice": "python -m pytest tests/test_forum_route_receipts.py tests/test_harness_cli.py -q",
             },
@@ -117,10 +105,7 @@ def build_manifest(*, store_root: str = DEFAULT_STORE_ROOT) -> dict:
                 "purpose": "Emit metadata-only MCP/tool root posture and optional non-secret live status observations.",
                 "schemas": ["harness.mcp-tool-health/v1"],
                 "evidence_surface": "configured tool roots plus observed healthy/degraded/unobserved/missing-root posture",
-                "default_artifacts": [
-                    "C:/tmp/mcp_tool_health.json",
-                    "C:/tmp/mcp_tool_health.md",
-                ],
+                "default_artifacts": ["C:/tmp/mcp_tool_health.json", "C:/tmp/mcp_tool_health.md"],
                 "long_running_risk": "low",
                 "recommended_validation_slice": "python -m pytest tests/test_mcp_tool_health_receipts.py tests/test_harness_cli.py -q",
             },
@@ -130,10 +115,7 @@ def build_manifest(*, store_root: str = DEFAULT_STORE_ROOT) -> dict:
                 "purpose": "Emit the Codex MCP launch, stale-transport reload, and direct CLI fallback contract for the core tool fabric.",
                 "schemas": ["harness.codex-mcp-launch-contract/v1"],
                 "evidence_surface": "Codex MCP config posture, source-checkout launch profiles, reload boundary, and fallback commands",
-                "default_artifacts": [
-                    "C:/tmp/codex_mcp_launch_contract.json",
-                    "C:/tmp/codex_mcp_launch_contract.md",
-                ],
+                "default_artifacts": ["C:/tmp/codex_mcp_launch_contract.json", "C:/tmp/codex_mcp_launch_contract.md"],
                 "long_running_risk": "low",
                 "recommended_validation_slice": "python -m pytest tests/test_codex_mcp_launch_contract.py tests/test_harness_cli.py -q",
             },
@@ -143,10 +125,7 @@ def build_manifest(*, store_root: str = DEFAULT_STORE_ROOT) -> dict:
                 "purpose": "Verify a packaged local harness bundle summary, required files, contract schemas, zip hash, model profile coverage, and no-secret posture.",
                 "schemas": ["harness.package-ship-doctor/v1"],
                 "evidence_surface": "package summary, bundled metadata files, required release contents, and text secret scan",
-                "default_artifacts": [
-                    "C:/tmp/package_ship_doctor.json",
-                    "C:/tmp/package_ship_doctor.md",
-                ],
+                "default_artifacts": ["C:/tmp/package_ship_doctor.json", "C:/tmp/package_ship_doctor.md"],
                 "long_running_risk": "low",
                 "recommended_validation_slice": "python -m pytest tests/test_package_ship_doctor.py tests/test_harness_cli.py -q",
             },
@@ -156,10 +135,7 @@ def build_manifest(*, store_root: str = DEFAULT_STORE_ROOT) -> dict:
                 "purpose": "Emit the harness architecture and endpoint report by stitching generated executable, endpoint, tool, runtime, Codex MCP, and release-gate artifacts.",
                 "schemas": ["harness.architecture-report/v1"],
                 "evidence_surface": "generated manifests and contracts, verified facts, assumptions, local model endpoint summaries, and next gates",
-                "default_artifacts": [
-                    "C:/tmp/harness_architecture_report.json",
-                    "C:/tmp/harness_architecture_report.md",
-                ],
+                "default_artifacts": ["C:/tmp/harness_architecture_report.json", "C:/tmp/harness_architecture_report.md"],
                 "long_running_risk": "low",
                 "recommended_validation_slice": "python -m pytest tests/test_harness_architecture_report.py tests/test_harness_cli.py -q",
             },
@@ -169,10 +145,7 @@ def build_manifest(*, store_root: str = DEFAULT_STORE_ROOT) -> dict:
                 "purpose": "Emit mneme, relay, and plexus enterprise-readiness reports from the packaged tool integration contract.",
                 "schemas": ["harness.enterprise-readiness-report/v1"],
                 "evidence_surface": "tool contract readiness scores, entrypoints, state contracts, verified facts, and release gates",
-                "default_artifacts": [
-                    "C:/tmp/enterprise_readiness_report.json",
-                    "C:/tmp/enterprise_readiness_report.md",
-                ],
+                "default_artifacts": ["C:/tmp/enterprise_readiness_report.json", "C:/tmp/enterprise_readiness_report.md"],
                 "long_running_risk": "low",
                 "recommended_validation_slice": "python -m pytest tests/test_enterprise_readiness_report.py tests/test_harness_cli.py -q",
             },
@@ -182,10 +155,7 @@ def build_manifest(*, store_root: str = DEFAULT_STORE_ROOT) -> dict:
                 "purpose": "Emit the packaged sidecar integration contract for index, forum, gather, crucible, telos, aleph, mneme, relay, plexus, pubscan, and local-model.",
                 "schemas": ["harness.tool-integration-contract/v1"],
                 "evidence_surface": "tool roots, roles, packaged modes, harness commands, state contracts, and static readiness summaries",
-                "default_artifacts": [
-                    "C:/tmp/tool_integration_contract.json",
-                    "C:/tmp/tool_integration_contract.md",
-                ],
+                "default_artifacts": ["C:/tmp/tool_integration_contract.json", "C:/tmp/tool_integration_contract.md"],
                 "long_running_risk": "low",
                 "recommended_validation_slice": "python -m pytest tests/test_tool_integration_contract.py tests/test_harness_cli.py -q",
             },
@@ -195,10 +165,7 @@ def build_manifest(*, store_root: str = DEFAULT_STORE_ROOT) -> dict:
                 "purpose": "Emit the packaged runtime activation contract for storage, env knobs, local model runtime roots, sidecars, and launch boundaries.",
                 "schemas": ["harness.runtime-activation-contract/v1"],
                 "evidence_surface": "package paths, storage paths, env-var presence booleans, activation steps, and runtime boundaries",
-                "default_artifacts": [
-                    "C:/tmp/runtime_activation_contract.json",
-                    "C:/tmp/runtime_activation_contract.md",
-                ],
+                "default_artifacts": ["C:/tmp/runtime_activation_contract.json", "C:/tmp/runtime_activation_contract.md"],
                 "long_running_risk": "low",
                 "recommended_validation_slice": "python -m pytest tests/test_runtime_activation_contract.py tests/test_harness_cli.py -q",
             },
@@ -208,10 +175,7 @@ def build_manifest(*, store_root: str = DEFAULT_STORE_ROOT) -> dict:
                 "purpose": "Compare the weighted benchmark profile against observed scorecard artifacts and flag missing coverage.",
                 "schemas": ["harness.benchmark-profile-coverage/v1"],
                 "evidence_surface": "declared-vs-observed benchmark/provider coverage report",
-                "default_artifacts": [
-                    "C:/tmp/harness_benchmark_profile_coverage.json",
-                    "C:/tmp/harness_benchmark_profile_coverage.md",
-                ],
+                "default_artifacts": ["C:/tmp/harness_benchmark_profile_coverage.json", "C:/tmp/harness_benchmark_profile_coverage.md"],
                 "long_running_risk": "low",
                 "recommended_validation_slice": "python -m pytest tests/test_benchmark_profile_coverage.py tests/test_harness_cli.py -q",
             },
@@ -221,10 +185,7 @@ def build_manifest(*, store_root: str = DEFAULT_STORE_ROOT) -> dict:
                 "purpose": "Synthesize Codex-vs-Flywheel deltas from existing scorecard artifacts.",
                 "schemas": ["harness.comparison-report/v1"],
                 "evidence_surface": "artifact-ingested provider-role comparison rows and Flywheel-minus-Codex deltas",
-                "default_artifacts": [
-                    "C:/tmp/harness_comparison_report.json",
-                    "C:/tmp/harness_comparison_report.md",
-                ],
+                "default_artifacts": ["C:/tmp/harness_comparison_report.json", "C:/tmp/harness_comparison_report.md"],
                 "long_running_risk": "low",
                 "recommended_validation_slice": "python -m pytest tests/test_harness_comparison_report.py tests/test_harness_cli.py -q",
             },
@@ -234,10 +195,7 @@ def build_manifest(*, store_root: str = DEFAULT_STORE_ROOT) -> dict:
                 "purpose": "Emit non-executing benchmark tiers, commands, artifacts, schemas, and evidence gates.",
                 "schemas": ["harness.benchmark-execution-matrix/v1"],
                 "evidence_surface": "dry/focused/full run matrix with provider roles, approval gates, artifact paths, and expected schemas",
-                "default_artifacts": [
-                    "C:/tmp/benchmark_execution_matrix_20260709.json",
-                    "C:/tmp/benchmark_execution_matrix_20260709.md",
-                ],
+                "default_artifacts": ["C:/tmp/benchmark_execution_matrix_20260709.json", "C:/tmp/benchmark_execution_matrix_20260709.md"],
                 "long_running_risk": "low",
                 "recommended_validation_slice": "python -m pytest tests/test_benchmark_execution_matrix.py tests/test_harness_cli.py -q",
             },
@@ -247,10 +205,7 @@ def build_manifest(*, store_root: str = DEFAULT_STORE_ROOT) -> dict:
                 "purpose": "Check closed-loop graph and schematic report for metadata-only drift.",
                 "schemas": ["harness.schematic-drift-check/v1"],
                 "evidence_surface": "missing schematic nodes, edges, files, and stale prose markers",
-                "default_artifacts": [
-                    "C:/tmp/schematic_drift_check.json",
-                    "C:/tmp/schematic_drift_check.md",
-                ],
+                "default_artifacts": ["C:/tmp/schematic_drift_check.json", "C:/tmp/schematic_drift_check.md"],
                 "long_running_risk": "low",
                 "recommended_validation_slice": "python -m pytest tests/test_schematic_drift_check.py tests/test_harness_cli.py -q",
             },
@@ -260,12 +215,19 @@ def build_manifest(*, store_root: str = DEFAULT_STORE_ROOT) -> dict:
                 "purpose": "Expand the custom agentic task set into prompt hashes, planned artifacts, and manifest-only dry scorecard rows.",
                 "schemas": ["harness.agentic-task-manifest/v1", "harness.agentic-task-scorecard/v1"],
                 "evidence_surface": "non-executing custom agentic benchmark task manifest",
-                "default_artifacts": [
-                    "C:/tmp/agentic_task_manifest.json",
-                    "C:/tmp/agentic_task_manifest.md",
-                ],
+                "default_artifacts": ["C:/tmp/agentic_task_manifest.json", "C:/tmp/agentic_task_manifest.md"],
                 "long_running_risk": "low",
                 "recommended_validation_slice": "python -m pytest tests/test_agentic_task_set_manifest.py tests/test_harness_cli.py -q",
+            },
+            {
+                "name": "task-set-executability",
+                "delegates_to": "scripts/run_task_set_executability.py",
+                "purpose": "Report how many tasks in a set can be provisioned and how many can be scored, before any provider is called.",
+                "schemas": ["flywheel.task_set_executability/v1"],
+                "evidence_surface": "pre-run task set denominator, provider-free",
+                "default_artifacts": ["C:/tmp/task_set_executability.json", "C:/tmp/task_set_executability.md"],
+                "long_running_risk": "low",
+                "recommended_validation_slice": "python -m pytest tests/test_task_set_executability.py tests/test_harness_cli.py -q",
             },
             {
                 "name": "cross-harness",
@@ -273,10 +235,7 @@ def build_manifest(*, store_root: str = DEFAULT_STORE_ROOT) -> dict:
                 "purpose": "Expand the cross-harness adapter contract into same-task prompt hashes and provider-role planned receipt rows.",
                 "schemas": ["harness.cross-harness-manifest/v1", "harness.cross-harness-task-scorecard/v1"],
                 "evidence_surface": "non-executing Codex/Flywheel/Claude/OpenCode/local-model comparability manifest",
-                "default_artifacts": [
-                    "C:/tmp/cross_harness_manifest.json",
-                    "C:/tmp/cross_harness_manifest.md",
-                ],
+                "default_artifacts": ["C:/tmp/cross_harness_manifest.json", "C:/tmp/cross_harness_manifest.md"],
                 "long_running_risk": "low",
                 "recommended_validation_slice": "python -m pytest tests/test_cross_harness_manifest.py tests/test_harness_cli.py -q",
             },
@@ -286,10 +245,7 @@ def build_manifest(*, store_root: str = DEFAULT_STORE_ROOT) -> dict:
                 "purpose": "Emit metadata-only adapter/runtime compatibility across Codex, Flywheel, Claude Code, OpenCode, and local endpoints.",
                 "schemas": ["harness.adapter-runtime-matrix/v1"],
                 "evidence_surface": "contract roles joined with optional endpoint-profile and endpoint-auth metadata",
-                "default_artifacts": [
-                    "C:/tmp/adapter_runtime_matrix.json",
-                    "C:/tmp/adapter_runtime_matrix.md",
-                ],
+                "default_artifacts": ["C:/tmp/adapter_runtime_matrix.json", "C:/tmp/adapter_runtime_matrix.md"],
                 "long_running_risk": "low",
                 "recommended_validation_slice": "python -m pytest tests/test_adapter_runtime_matrix.py tests/test_harness_cli.py -q",
             },
@@ -299,10 +255,7 @@ def build_manifest(*, store_root: str = DEFAULT_STORE_ROOT) -> dict:
                 "purpose": "Emit a metadata-only embodied realtime multimodal benchmark plan from the Boris/ENBSeries feedback contract.",
                 "schemas": ["harness.embodied-realtime-multimodal/v1"],
                 "evidence_surface": "non-executing robotics latency, sensor grounding, code-drawing, multimodal, and affective-drift probe plan",
-                "default_artifacts": [
-                    "C:/tmp/embodied_realtime_multimodal_plan.json",
-                    "C:/tmp/embodied_realtime_multimodal_plan.md",
-                ],
+                "default_artifacts": ["C:/tmp/embodied_realtime_multimodal_plan.json", "C:/tmp/embodied_realtime_multimodal_plan.md"],
                 "long_running_risk": "low",
                 "recommended_validation_slice": "python -m pytest tests/test_embodied_realtime_multimodal_plan.py tests/test_harness_cli.py -q",
             },
@@ -312,10 +265,7 @@ def build_manifest(*, store_root: str = DEFAULT_STORE_ROOT) -> dict:
                 "purpose": "Emit a non-executing model-card claim table for benchmark model leads before result claims.",
                 "schemas": ["harness.model-card-claim-table/v1"],
                 "evidence_surface": "candidate model identity, source URL, license, modality, provenance, and local-execution claim status",
-                "default_artifacts": [
-                    "C:/tmp/model_card_claim_table.json",
-                    "C:/tmp/model_card_claim_table.md",
-                ],
+                "default_artifacts": ["C:/tmp/model_card_claim_table.json", "C:/tmp/model_card_claim_table.md"],
                 "long_running_risk": "low",
                 "recommended_validation_slice": "python -m pytest tests/test_model_card_claim_table.py tests/test_harness_cli.py -q",
             },
@@ -325,10 +275,7 @@ def build_manifest(*, store_root: str = DEFAULT_STORE_ROOT) -> dict:
                 "purpose": "Generate an enterprise hardening action plan from a tool-readiness receipt.",
                 "schemas": ["harness.tool-hardening-plan/v1"],
                 "evidence_surface": "observed readiness gaps converted into prioritized actions and release gates",
-                "default_artifacts": [
-                    "C:/tmp/tool_hardening_plan_20260709.json",
-                    "C:/tmp/tool_hardening_plan_20260709.md",
-                ],
+                "default_artifacts": ["C:/tmp/tool_hardening_plan_20260709.json", "C:/tmp/tool_hardening_plan_20260709.md"],
                 "long_running_risk": "low",
                 "recommended_validation_slice": "python -m pytest tests/test_tool_hardening_plan.py tests/test_harness_cli.py -q",
             },
@@ -338,10 +285,7 @@ def build_manifest(*, store_root: str = DEFAULT_STORE_ROOT) -> dict:
                 "purpose": "Run prompt-layer guardrail/accountability friction benchmark across selected providers.",
                 "schemas": ["classifier-friction-benchmark/v1"],
                 "evidence_surface": "provider x mode x task quality, refusal, latency, receipt, and friction deltas",
-                "default_artifacts": [
-                    "C:/tmp/classifier_friction_benchmark.json",
-                    "C:/tmp/classifier_friction_benchmark.md",
-                ],
+                "default_artifacts": ["C:/tmp/classifier_friction_benchmark.json", "C:/tmp/classifier_friction_benchmark.md"],
                 "long_running_risk": "medium",
                 "recommended_validation_slice": "python -m pytest tests/test_classifier_friction_benchmark.py tests/test_harness_cli.py -q",
             },
@@ -351,10 +295,7 @@ def build_manifest(*, store_root: str = DEFAULT_STORE_ROOT) -> dict:
                 "purpose": "Run bounded live health/generation gates against local model endpoint profiles.",
                 "schemas": ["harness.model-endpoint-gate/v1"],
                 "evidence_surface": "local 14B/32B endpoint health and fixed generation rows",
-                "default_artifacts": [
-                    "C:/tmp/model_endpoint_gate_20260709.json",
-                    "C:/tmp/model_endpoint_gate_20260709.md",
-                ],
+                "default_artifacts": ["C:/tmp/model_endpoint_gate_20260709.json", "C:/tmp/model_endpoint_gate_20260709.md"],
                 "long_running_risk": "medium",
                 "recommended_validation_slice": "python -m pytest tests/test_model_endpoint_gate.py tests/test_harness_cli.py -q",
             },
@@ -364,10 +305,7 @@ def build_manifest(*, store_root: str = DEFAULT_STORE_ROOT) -> dict:
                 "purpose": "Emit non-destructive local model serve launch readiness and port-owner diagnostics from endpoint profiles.",
                 "schemas": ["harness.local-model-launch-readiness/v1"],
                 "evidence_surface": "model root presence, endpoint port ownership, wrong-service conflicts, and launch command templates",
-                "default_artifacts": [
-                    "C:/tmp/local_model_launch_readiness_20260709.json",
-                    "C:/tmp/local_model_launch_readiness_20260709.md",
-                ],
+                "default_artifacts": ["C:/tmp/local_model_launch_readiness_20260709.json", "C:/tmp/local_model_launch_readiness_20260709.md"],
                 "long_running_risk": "low",
                 "recommended_validation_slice": "python -m pytest tests/test_local_model_launch_readiness.py tests/test_harness_cli.py -q",
             },
@@ -377,10 +315,7 @@ def build_manifest(*, store_root: str = DEFAULT_STORE_ROOT) -> dict:
                 "purpose": "Plan or start local harness/serve.py processes from endpoint profiles with receipt-backed PID, log, and health status.",
                 "schemas": ["harness.local-model-serve-launch/v1"],
                 "evidence_surface": "serve launch commands, optional process IDs, log paths, and bounded health-poll status",
-                "default_artifacts": [
-                    "C:/tmp/local_model_serve_launch_20260709.json",
-                    "C:/tmp/local_model_serve_launch_20260709.md",
-                ],
+                "default_artifacts": ["C:/tmp/local_model_serve_launch_20260709.json", "C:/tmp/local_model_serve_launch_20260709.md"],
                 "long_running_risk": "medium",
                 "recommended_validation_slice": "python -m pytest tests/test_local_model_serve_launcher.py tests/test_harness_cli.py -q",
             },
@@ -390,10 +325,7 @@ def build_manifest(*, store_root: str = DEFAULT_STORE_ROOT) -> dict:
                 "purpose": "Emit GPU resource preflight before local harness/serve.py launch attempts.",
                 "schemas": ["harness.local-model-resource-preflight/v1"],
                 "evidence_surface": "GPU free/used memory, calibrated 14B/32B VRAM estimates, and launch resource verdicts",
-                "default_artifacts": [
-                    "C:/tmp/local_model_resource_preflight_20260709.json",
-                    "C:/tmp/local_model_resource_preflight_20260709.md",
-                ],
+                "default_artifacts": ["C:/tmp/local_model_resource_preflight_20260709.json", "C:/tmp/local_model_resource_preflight_20260709.md"],
                 "long_running_risk": "low",
                 "recommended_validation_slice": "python -m pytest tests/test_local_model_resource_preflight.py tests/test_harness_cli.py -q",
             },
@@ -403,10 +335,7 @@ def build_manifest(*, store_root: str = DEFAULT_STORE_ROOT) -> dict:
                 "purpose": "Generate 14B/32B candidate names and publication blockers from release-readiness evidence.",
                 "schemas": ["harness.model-publish-plan/v1"],
                 "evidence_surface": "model release gates, candidate names, required artifacts, blockers, and do-not-publish status",
-                "default_artifacts": [
-                    "C:/tmp/model_publish_plan_20260709.json",
-                    "C:/tmp/model_publish_plan_20260709.md",
-                ],
+                "default_artifacts": ["C:/tmp/model_publish_plan_20260709.json", "C:/tmp/model_publish_plan_20260709.md"],
                 "long_running_risk": "low",
                 "recommended_validation_slice": "python -m pytest tests/test_model_publish_plan.py tests/test_harness_cli.py -q",
             },
@@ -426,10 +355,7 @@ def build_manifest(*, store_root: str = DEFAULT_STORE_ROOT) -> dict:
                 "purpose": "Execute the current closed-loop seed receipt bundle.",
                 "schemas": ["harness.closed-loop-benchmark-seed/v1"],
                 "evidence_surface": "run/events/receipts/artifacts",
-                "default_artifacts": [
-                    "C:/tmp/harness_closed_loop_seed.json",
-                    "C:/tmp/harness_closed_loop_seed",
-                ],
+                "default_artifacts": ["C:/tmp/harness_closed_loop_seed.json", "C:/tmp/harness_closed_loop_seed"],
                 "long_running_risk": "high",
                 "recommended_validation_slice": "python -m pytest tests/test_closed_loop_benchmark_seed.py tests/test_receipt_store_sinks.py -q",
             },
@@ -439,10 +365,7 @@ def build_manifest(*, store_root: str = DEFAULT_STORE_ROOT) -> dict:
                 "purpose": "Synthesize a seed report or stored run into outcome JSON/Markdown.",
                 "schemas": ["harness.closed-loop-outcome/v1"],
                 "evidence_surface": "parsed child artifacts and outcome receipt",
-                "default_artifacts": [
-                    "C:/tmp/harness_closed_loop_outcome.json",
-                    "C:/tmp/harness_closed_loop_outcome.md",
-                ],
+                "default_artifacts": ["C:/tmp/harness_closed_loop_outcome.json", "C:/tmp/harness_closed_loop_outcome.md"],
                 "long_running_risk": "low",
                 "recommended_validation_slice": "python -m pytest tests/test_closed_loop_outcome_report.py -q",
             },
@@ -452,10 +375,7 @@ def build_manifest(*, store_root: str = DEFAULT_STORE_ROOT) -> dict:
                 "purpose": "Query the zero-dependency file-backed harness store.",
                 "schemas": ["harness.file-store-query/v1"],
                 "evidence_surface": "runs/events/receipts/artifacts JSONL",
-                "default_artifacts": [
-                    "C:/tmp/harness_file_store_query.json",
-                    "C:/tmp/harness_file_store_query.md",
-                ],
+                "default_artifacts": ["C:/tmp/harness_file_store_query.json", "C:/tmp/harness_file_store_query.md"],
                 "long_running_risk": "low",
                 "recommended_validation_slice": "python -m pytest tests/test_harness_store_query.py -q",
             },
@@ -877,6 +797,14 @@ def build_parser() -> argparse.ArgumentParser:
     agentic.add_argument("--artifact-dir", default="C:/tmp/agentic_task_runs")
     agentic.add_argument("--provider-roles", default="dry")
 
+    executability = subparsers.add_parser("task-set-executability", help="report the provisionable and scorable denominators of a task set")
+    executability.add_argument("--task-set", default="C:/dev/public/flywheel/benchmarks/agentic-task-set-v1.json")
+    executability.add_argument("--root", default="")
+    executability.add_argument("--out", default="")
+    executability.add_argument("--markdown-out", default="")
+    executability.add_argument("--require-measurable", action="store_true")
+    executability.add_argument("--min-measured", type=int, default=0)
+
     cross = subparsers.add_parser("cross-harness", help="emit non-executing cross-harness manifest")
     _add_common_io(cross)
     cross.add_argument("--task-set", default="C:/dev/public/flywheel/benchmarks/agentic-task-set-v1.json")
@@ -1261,6 +1189,16 @@ def build_command(args, *, repo_root: Path) -> list[str]:
             args.provider_roles,
         ]
         _common_outputs(command, args)
+        return command
+    if args.command_name == "task-set-executability":
+        command = [py, "scripts/run_task_set_executability.py", "--task-set", args.task_set,
+                   "--root", args.root or str(repo_root)]
+        _append_if(command, "--out", args.out)
+        _append_if(command, "--markdown-out", args.markdown_out)
+        if args.require_measurable:
+            command.append("--require-measurable")
+        if args.min_measured:
+            command.extend(["--min-measured", str(args.min_measured)])
         return command
     if args.command_name == "cross-harness":
         command = [
