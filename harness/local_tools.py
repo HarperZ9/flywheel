@@ -228,16 +228,23 @@ class ToolExecutor:
     _receipt_run_id: str = ""
     _receipt_seq: int = 0
     _receipt_prev_sha256: str = ""
+    _action_log: "object | None" = None
 
     def init_receipt_chain(self, run_id: str) -> None:
-        """Start a sealed tool-call receipt chain. Called by run_agent."""
+        """Start the run's byte-witness chain, and its receipt chain. Called by run_agent."""
+        from .tool_witness import open_chain
         self._receipt_run_id = run_id
         self._receipt_seq = 0
         self._receipt_prev_sha256 = ""
+        self._action_log = open_chain(run_id, self.receipt_dir)
 
     def receipt_chain_head(self) -> str:
         """The sha256 of the last emitted receipt (the chain head), or ''."""
         return self._receipt_prev_sha256
+
+    def action_witness_head(self) -> str:
+        """The head of the run's byte-witness chain, or '' when there is none."""
+        return self._action_log.head() if self._action_log is not None else ""
 
     def _classify_capability(self, name: str) -> "tuple[str, str]":
         """Return (capability_class, admission) for a tool call."""
@@ -257,37 +264,28 @@ class ToolExecutor:
         self, name: str, args: dict, result: ToolResult,
         rationale: dict | None = None,
     ) -> None:
-        """Emit one sealed tool-call receipt. Never raises."""
-        if not self.receipt_dir or not self._receipt_run_id:
-            return
-        try:
-            from pathlib import Path
-            from .tool_call_receipt import build_receipt, emit_receipt, _canonical_bytes, _sha256_hex
+        """Witness the bytes this call moved, then seal a receipt over them.
 
-            cap, admission = self._classify_capability(name)
-            outcome = "COMPLETED" if result.ok else ("BLOCKED" if result.output.startswith("[gate]") else "ERROR")
-            self._receipt_seq += 1
-            receipt = build_receipt(
-                tool=name,
-                capability=cap,
-                admission=admission,
-                args=args,
-                output=result.output,
-                ok=result.ok,
-                rc=0 if result.ok else 1,
-                run_id=self._receipt_run_id,
-                seq=self._receipt_seq,
-                prev_receipt_sha256=self._receipt_prev_sha256,
-                outcome=outcome,
-                rationale=rationale,
-            )
-            emit_receipt(receipt, Path(self.receipt_dir))
-            # advance the chain: compute the canonical sha256 of this receipt
-            probe = dict(receipt)
-            probe["seal"] = {"algorithm": "sha256", "hex": ""}
-            self._receipt_prev_sha256 = _sha256_hex(_canonical_bytes(probe))
-        except Exception:
-            pass  # emission must never break the tool-call path
+        The witness runs whether or not receipts are being written, because the
+        chain is what the run did and the receipt directory is an opt-in. Both
+        hash the same argument bytes, so the two records name one digest.
+        """
+        if not self._receipt_run_id:
+            return
+        from .tool_witness import seal_call, witness_call
+        cap, admission = self._classify_capability(name)
+        outcome = "COMPLETED" if result.ok else ("BLOCKED" if result.output.startswith("[gate]") else "ERROR")
+        self._receipt_seq += 1
+        witness_call(self._action_log, tool=name, args=args, output=result.output,
+                     ok=result.ok, seq=self._receipt_seq, capability=cap,
+                     outcome=outcome)
+        if not self.receipt_dir:
+            return
+        self._receipt_prev_sha256 = seal_call(
+            self.receipt_dir, tool=name, capability=cap, admission=admission,
+            args=args, output=result.output, ok=result.ok, outcome=outcome,
+            run_id=self._receipt_run_id, seq=self._receipt_seq,
+            prev=self._receipt_prev_sha256, rationale=rationale)
 
     def external_tools_system(self) -> str:
         """Advertise registered external (MCP) tools to the model, in the same
