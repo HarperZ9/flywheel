@@ -222,12 +222,26 @@ def test_a_malformed_record_inside_a_chain_is_unverifiable_not_tampered():
 
 
 def test_a_resolver_that_raises_leaves_the_links_checked_and_the_bytes_not():
+    # A caller who passes a resolver is asking for the bytes to be checked. When
+    # the archive cannot produce them, MATCH would claim every byte sequence
+    # reproduced, which is the exact misreading this module exists to refuse.
+    # The links still held, so this is not an accusation either.
     def broken(_digest):
         raise OSError("the archive is offline")
 
     result = verify_chain(_chain_of_three(), resolve=broken)
-    assert result["verdict"] == MATCH  # the links held; no bytes contradicted them
+    assert (result["verdict"], result["failure_class"]) == (UNVERIFIABLE, BYTES_UNAVAILABLE)
+    assert "3 could not be resolved" in result["detail"]
     assert result["checked"] == 3
+    assert result["head"]
+
+
+def test_one_unresolved_record_is_enough_to_stop_a_chain_reading_as_match():
+    chain = _chain_of_three()
+    store = {witness_bytes(b, label="x").sha256: b for b in FRAMES[:2]}
+    result = verify_chain(chain, resolve=store.__getitem__)
+    assert (result["verdict"], result["failure_class"]) == (UNVERIFIABLE, BYTES_UNAVAILABLE)
+    assert "1 could not be resolved" in result["detail"]
 
 
 def test_a_resolver_returning_the_wrong_bytes_is_tampered():

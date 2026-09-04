@@ -187,7 +187,7 @@ def verify_chain(records: Any, *, start: str = GENESIS,
     if start != GENESIS and not _digest_well_formed(start):
         return _chain_result(UNVERIFIABLE, MALFORMED, None, None, 0,
                              "start is empty at genesis, or a 64-character link")
-    expected, head = start, None
+    expected, head, unresolved = start, None, 0
     for index, record in enumerate(records):
         one = verify_witness(record, _resolved(resolve, record)[0]
                              if isinstance(record, dict) and "sha256" in record else None)
@@ -197,6 +197,11 @@ def verify_chain(records: Any, *, start: str = GENESIS,
         if one["failure_class"] == MALFORMED:
             return _chain_result(UNVERIFIABLE, MALFORMED, index, head, index,
                                  f"record {index}: {one['detail']}")
+        if one["failure_class"] == BYTES_UNAVAILABLE:
+            # The link is still checked below. A resolver was asked for
+            # these bytes and could not produce them, so the chain is linked
+            # but not fully reproduced, and MATCH would overstate what ran.
+            unresolved += 1
         if record["prev"] != expected:
             return _chain_result(TAMPERED, LINK_BROKEN, index, head, index,
                                  f"record {index} points back at "
@@ -212,6 +217,11 @@ def verify_chain(records: Any, *, start: str = GENESIS,
         return _chain_result(UNVERIFIABLE, BYTES_UNAVAILABLE, None, head, len(records),
                              f"{len(records)} records link into one chain; no "
                              "resolver was given, so no bytes were checked")
+    if unresolved:
+        return _chain_result(UNVERIFIABLE, BYTES_UNAVAILABLE, None, head, len(records),
+                             f"{len(records)} records link into one chain; "
+                             f"{unresolved} could not be resolved to bytes, so the "
+                             "chain is linked but not fully reproduced")
     return _chain_result(MATCH, None, None, head, len(records),
                          f"{len(records)} records link into one chain and every "
                          "witnessed byte sequence reproduced")
