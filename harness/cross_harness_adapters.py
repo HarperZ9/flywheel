@@ -18,13 +18,9 @@ READ_ONLY_SYSTEM = ("You are the outer Flywheel text-tool agent. Inspect the sup
     "The following TOOL protocol is visible, but write, exec, and MCP calls are denied.\n\n" + TOOLS_SYSTEM + "\n\nRead-only override: never emit write_file, edit_file, apply_patch, run, or MCP tools.")
 class MalformedProviderOutput(RuntimeError): pass
 def _resolve_codex() -> str:
-    """The native codex binary, never the npm shim that wraps it.
-
-    On Windows the npm install puts codex.cmd, codex.ps1, and an extensionless
-    shell script on PATH ahead of the vendored codex.exe. All three are text, so
-    validate_executable_path refuses them and the arm records unavailable. Name
-    the binary first and let resolve_binary drop the wrappers.
-    """
+    # The npm install hides the real codex.exe under a vendor directory and puts
+    # three text wrappers on PATH ahead of it, which the magic-byte check then
+    # refuses. Name the binary first so a working install is not read as absent.
     return resolve_binary(("codex.exe", "codex") if os.name == "nt" else ("codex",))
 _BEARER, _ASSIGN = re.compile(r"(?i)(bearer\s+)[^\s,;\"']+"), re.compile(r"(?i)((?:api[_-]?key|token|password|secret|authorization)\s*[:=]\s*)[^\s,;\"']+")
 _JWT, _API_KEY = re.compile(r"\beyJ[A-Za-z0-9_-]{6,}\.[A-Za-z0-9_-]{6,}\.[A-Za-z0-9_-]{3,}\b"), re.compile(r"\b(?:sk|rk|pk)-[A-Za-z0-9_-]{12,}\b", re.I)
