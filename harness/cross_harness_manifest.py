@@ -5,6 +5,7 @@ import json
 import tempfile
 from datetime import UTC, datetime
 from pathlib import Path
+from harness.cross_harness_input_refs import partition_inputs
 from typing import Any
 SCHEMA, SCORECARD_SCHEMA, DEFAULT_ARTIFACT_DIR = "harness.cross-harness-manifest/v1", "harness.cross-harness-task-scorecard/v1", str(Path(tempfile.gettempdir()) / "cross_harness_runs")
 def now_utc() -> str: return datetime.now(UTC).isoformat().replace("+00:00", "Z")
@@ -200,12 +201,9 @@ def _required_metrics(contract: dict[str, Any]) -> list[str]:
     return [str(metric) for metric in row_contract.get("required_metrics", []) if metric]
 def _input_hashes(root: Path, inputs: list[Any], pilot: bool) -> dict[str, str]:
     hashes, root = {}, root.resolve()
-    for item in inputs:
-        ref, relative = str(item), Path(str(item))
-        if "://" in ref:
-            scheme, _, payload = ref.partition("://"); typed = Path(payload)
-            if pilot or scheme not in {"workspace", "external", "operator"} or not payload or payload != payload.strip() or payload.startswith(("/", "\\")) or len(payload) > 1 and payload[0].isalpha() and payload[1] == ":" or typed.is_absolute() or typed.drive or ".." in typed.parts or str(typed).replace("\\", "/") != payload: raise ValueError(f"required input typed reference invalid: {ref}")
-            continue
+    provisioned, _ = partition_inputs(inputs, pilot=pilot)
+    for ref in provisioned:
+        relative = Path(ref)
         path = (root / relative).resolve()
         if relative.is_absolute() or ".." in relative.parts or not path.is_relative_to(root) or not path.is_file():
             raise ValueError(f"required input is not a repo-relative file: {ref}")
@@ -246,10 +244,12 @@ def _prompt_text(task_set: dict[str, Any], contract: dict[str, Any], task: dict[
         json.dumps(envelope, sort_keys=True, separators=(",", ":")),
     ]
     return "\n".join(parts).strip() + "\n"
+# One canonical task per registered checker. A scored task is scored against a sealed workspace, so this pairing is what keeps a score readable.
+PILOT_TASKS = {"index_fallback_integrity/v1": "agt-001-index-fallback-integrity", "shared_task_artifact/v1": "agt-003-codex-flywheel-shared-task", "paired_friction/v1": "agt-009-receipts-vs-guardrails-friction", "documentation_maintenance/v1": "agt-010-documentation-schematic-maintenance"}
 def _task_row(task_set: dict[str, Any], contract: dict[str, Any], task: dict[str, Any], *, artifact_dir: str, source_root: Path | None) -> dict[str, Any]:
     prompt, task_id = _prompt_text(task_set, contract, task), str(task["id"])
     oracle_contract, oracle = task_set.get("oracle_contract", {}), dict(task.get("oracle", {}))
-    pilots = {"index_fallback_integrity/v1": "agt-001-index-fallback-integrity", "shared_task_artifact/v1": "agt-003-codex-flywheel-shared-task", "paired_friction/v1": "agt-009-receipts-vs-guardrails-friction", "documentation_maintenance/v1": "agt-010-documentation-schematic-maintenance"}
+    pilots = PILOT_TASKS
     checker_id = oracle.get("checker_id")
     if (checker_id in pilots and task_id != pilots[checker_id]) or (task_id in pilots.values() and pilots.get(checker_id) != task_id): raise ValueError("registered checker and canonical task id must pair")
     inputs = list(task.get("required_inputs", []))
