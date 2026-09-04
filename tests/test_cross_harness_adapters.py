@@ -1,6 +1,8 @@
 import json, pytest, sys
+from types import SimpleNamespace
+import harness.cross_harness_adapters as adapters_module
 from harness.cross_harness_adapters import (CodexCliProposer, DirectCodexAdapter, FlywheelRouterAdapter,
-    LocalRouterAdapter, ProcessOutcome, _run_process)
+    LocalRouterAdapter, ProcessOutcome, _resolve_codex, _run_process)
 from harness.cross_harness_artifacts import canonical_sha256
 from harness.cross_harness_cli import _csv, _exit
 from harness.cross_harness_executor import SHARED_TOOL_POLICY, execute_cross_harness_manifest
@@ -16,6 +18,22 @@ def outcome(stdout="", output="answer", *, rc=0, stderr="", elapsed=7):
 def test_empty_cli_selections_are_rejected():
     with pytest.raises(ValueError, match="selection must not be empty"): _csv("")
     assert _exit([], True) == 1
+def test_resolve_codex_rejects_extensionless_windows_wrapper_without_exe(monkeypatch):
+    calls = []
+    on_path = {"codex.exe": None, "codex": "C:/npm/codex"}
+    monkeypatch.setattr(adapters_module, "os", SimpleNamespace(name="nt"))
+    monkeypatch.setattr(adapters_module.shutil, "which", lambda name: calls.append(name) or on_path.get(name))
+    assert _resolve_codex() == ""
+    assert calls == ["codex.exe"]
+def test_resolve_codex_accepts_native_windows_exe(monkeypatch):
+    monkeypatch.setattr(adapters_module, "os", SimpleNamespace(name="nt"))
+    monkeypatch.setattr(adapters_module.shutil, "which",
+                        lambda name: "C:/npm/vendor/codex.exe" if name == "codex.exe" else None)
+    assert _resolve_codex() == "C:/npm/vendor/codex.exe"
+def test_resolve_codex_keeps_extensionless_posix_executable(monkeypatch):
+    monkeypatch.setattr(adapters_module, "os", SimpleNamespace(name="posix"))
+    monkeypatch.setattr(adapters_module.shutil, "which", lambda name: f"/usr/local/bin/{name}")
+    assert _resolve_codex() == "/usr/local/bin/codex"
 def test_direct_codex_uses_stdin_hardened_read_only_argv_and_captures_jsonl(tmp_path):
     seen = {}
     trace = '\n'.join([

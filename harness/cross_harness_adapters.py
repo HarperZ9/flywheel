@@ -19,11 +19,9 @@ READ_ONLY_SYSTEM = ("You are the outer Flywheel text-tool agent. Inspect the sup
     "The following TOOL protocol is visible, but write, exec, and MCP calls are denied.\n\n" + TOOLS_SYSTEM + "\n\nRead-only override: never emit write_file, edit_file, apply_patch, run, or MCP tools.")
 class MalformedProviderOutput(RuntimeError): pass
 def _resolve_codex() -> str:
-    candidates = ("codex.cmd", "codex") if os.name == "nt" else ("codex",)
-    for name in candidates:
-        found = shutil.which(name)
-        if found and not found.lower().endswith(".ps1"): return found
-    return ""
+    if os.name != "nt": return shutil.which("codex") or ""
+    found = shutil.which("codex.exe")
+    return found if found and found.lower().endswith(".exe") else ""
 _BEARER, _ASSIGN = re.compile(r"(?i)(bearer\s+)[^\s,;\"']+"), re.compile(r"(?i)((?:api[_-]?key|token|password|secret|authorization)\s*[:=]\s*)[^\s,;\"']+")
 _JWT, _API_KEY = re.compile(r"\beyJ[A-Za-z0-9_-]{6,}\.[A-Za-z0-9_-]{6,}\.[A-Za-z0-9_-]{3,}\b"), re.compile(r"\b(?:sk|rk|pk)-[A-Za-z0-9_-]{12,}\b", re.I)
 _URL_CREDS, _SECRET_KEY = re.compile(r"(https?://)[^/@\s:]+:[^/@\s]+@", re.I), re.compile(r"authorization|credential|password|secret|token|api[_ -]?key|jwt", re.I)
