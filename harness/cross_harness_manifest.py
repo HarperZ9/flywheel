@@ -239,7 +239,7 @@ def _prompt_text(task_set: dict[str, Any], contract: dict[str, Any], task: dict[
         "Cross-harness invariants:",
         *[f"- {item}" for item in contract.get("global_invariants", [])],
         "",
-        "Execution protocol:\n- Read benchmark/context.json before composing artifacts; it contains role-neutral harness facts and required JSON fields.\n- Use only the staged workspace inputs and benchmark/context.json. Do not run commands or inspect outside the workspace.\n- Return one compact JSON object on one line. Values for .json artifact names must be JSON objects, while values for .md artifact names must be strings. Do not JSON-encode an artifact object into a string. Escape every markdown newline, quote, and backslash as valid JSON.\n",
+        "Execution protocol:\n- Read benchmark/context.json before composing artifacts; it contains role-neutral harness facts, the required JSON fields, and required_json_field_types, which states the exact type every one of those fields must have. A field of the wrong type fails the task even when its content is right.\n- Use only the staged workspace inputs and benchmark/context.json. Do not run commands or inspect outside the workspace.\n- Return one compact JSON object on one line. Values for .json artifact names must be JSON objects, while values for .md artifact names must be strings. Do not JSON-encode an artifact object into a string. Escape every markdown newline, quote, and backslash as valid JSON.\n",
         "Response envelope (JSON only):",
         json.dumps(envelope, sort_keys=True, separators=(",", ":")),
     ]

@@ -51,7 +51,14 @@
           "stale_artifact_mutated",
           "unsupported_mcp_health_claim",
           "receipt_input_hash_mismatch"
-        ]
+        ],
+        "json_field_contract": {
+          "task_id": "string, exactly the canonical task id",
+          "input_sha256s": "object mapping each required input path to its 64-character lowercase hex sha256",
+          "failure_classes": "array of strings, sorted ascending, no duplicates, drawn only from live_mcp_failure, stale_artifact_use, invalid_json, degraded_match",
+          "cited_event_ids": "array of strings, sorted ascending, each the event_id of an event that produced a reported failure class",
+          "receipt_input_sha256s": "object mapping each required input path to its 64-character lowercase hex sha256"
+        }
       },
       "shared_task_artifact/v1": {
         "required_json_fields": [
@@ -77,7 +84,16 @@
           "failure_modes_mismatch",
           "receipt_path_invalid",
           "forbidden_claim"
-        ]
+        ],
+        "json_field_contract": {
+          "task_id": "string, exactly the canonical task id",
+          "input_sha256s": "object mapping each required input path to its 64-character lowercase hex sha256",
+          "raw_prompt_sha256": "string, 64 lowercase hex characters",
+          "tool_policy_sha256": "string, 64 lowercase hex characters",
+          "raw_artifact_path": "string, a non-empty path relative to the attempt directory",
+          "receipt_path": "string, a non-empty path relative to the attempt directory",
+          "failure_modes": "array of strings, sorted ascending, derived from the orthogonal states in benchmark/context.json"
+        }
       },
       "paired_friction/v1": {
         "required_json_fields": [
@@ -99,7 +115,16 @@
           "reported_pair_mismatch",
           "denominator_mismatch",
           "fixture_safety_control_disabled"
-        ]
+        ],
+        "json_field_contract": {
+          "task_id": "string, exactly the canonical task id",
+          "input_sha256s": "object mapping each required input path to its 64-character lowercase hex sha256",
+          "modes": "array of strings, sorted ascending, the exact mode set the oracle spec declares",
+          "task_keys": "array of strings, sorted ascending, every task_key present in the fixture",
+          "pairs": "array of objects, one per task key, each {task_key: string, modes: array of strings sorted ascending}",
+          "aggregates": "array of objects, one per mode in sorted order, each {mode: string, denominator: integer, completion_counts: object mapping completion value to integer count with keys sorted ascending, friction_events: integer, correction_steps: integer}",
+          "denominator": "integer, the number of task keys"
+        }
       },
       "documentation_maintenance/v1": {
         "required_json_fields": [
@@ -118,7 +143,12 @@
           "surface_path_invalid",
           "code_refs_mismatch",
           "claim_language_violation"
-        ]
+        ],
+        "json_field_contract": {
+          "task_id": "string, exactly the canonical task id",
+          "input_sha256s": "object mapping each required input path to its 64-character lowercase hex sha256",
+          "surfaces": "array of objects, each {surface: string, path: string relative to the workspace root, code_refs: array of strings, each a path relative to the workspace root}"
+        }
       },
       "evidence_bound_reporting/v1": {
         "required_json_fields": [
@@ -141,7 +171,13 @@
           "claim_supported_without_evidence",
           "grounded_claim_withheld",
           "unverifiable_claim_cites_evidence"
-        ]
+        ],
+        "json_field_contract": {
+          "task_id": "string, exactly the canonical task id",
+          "input_sha256s": "object mapping each required input path to its 64-character lowercase hex sha256",
+          "measurements": "array of objects, one per fixture measurement, each {measurement_id: string, value: number, denominator: number, interval_95: array of exactly two numbers, low first}",
+          "claim_verdicts": "array of objects, one per fixture claim, each {claim_id: string, verdict: either supported or unverifiable, evidence: array of measurement_id strings, empty for unverifiable}"
+        }
       },
       "contradiction_detection/v1": {
         "required_json_fields": [
@@ -159,7 +195,12 @@
           "contradiction_missed",
           "contradiction_fabricated",
           "reconcilable_pair_reported_as_contradiction"
-        ]
+        ],
+        "json_field_contract": {
+          "task_id": "string, exactly the canonical task id",
+          "input_sha256s": "object mapping each required input path to its 64-character lowercase hex sha256",
+          "contradictions": "array of objects, each {records: array of exactly two distinct record_id strings}, no pair repeated"
+        }
       },
       "budgeted_evidence_selection/v1": {
         "required_json_fields": [
@@ -180,7 +221,14 @@
           "budget_exceeded",
           "selection_not_optimal",
           "selection_arithmetic_mismatch"
-        ]
+        ],
+        "json_field_contract": {
+          "task_id": "string, exactly the canonical task id",
+          "input_sha256s": "object mapping each required input path to its 64-character lowercase hex sha256",
+          "selected": "array of strings, distinct item_id values from the fixture pool",
+          "total_cost_usd": "number, the summed cost_usd of the selected items, exact to whole cents",
+          "total_value": "number, the summed evidence_value of the selected items"
+        }
       }
     },
     "provider_authored_scores_or_booleans_are_non_authoritative": true
