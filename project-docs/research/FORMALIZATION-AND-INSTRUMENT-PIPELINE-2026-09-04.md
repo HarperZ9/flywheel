@@ -145,12 +145,52 @@ gave up early.
 | Quantity against a stated interval | `arithmetic` | the instrument or pack that produced it |
 | Statute or source text | `citation` | the corpus edition |
 
-Two worked declarations ship under `examples/workstreams/`.
+Three worked declarations ship under `examples/workstreams/`.
 `formalization.json` is a milestone over one closed Lean theorem and one open
 lemma carried as an assumption. `instrument.json` is a delivered dose over a
 conversion, a plate-reader interval, a driver safety limit, and a calibration,
-with the last two carried and disclosed. Run either with
+with the last two carried and disclosed. `mission.json` is a decomposition
+eighteen obligations deep whose lemmas are small facts a bare Lean kernel decides
+on its own, so it runs anywhere Lean is installed. Run any of them with
 `flywheel workstream run examples/workstreams/instrument.json`.
+
+### The bounded audit surface
+
+Requirement 4 above. A verified goal over thirty thousand lemmas is worth nothing
+if the top statement does not say what the paper says, and no kernel decides
+that. `harness/workstream_audit.py` bounds the reading instead: it names the
+statements a person has to look at, says why each one is on the list, and pins
+each reading to the exact text that was read.
+
+Membership is structural, so nobody picks what gets audited. Three rules and no
+more: the goal, a direct dependency of the goal, and an assumption. Everything
+else is delegated. The reason is that faithfulness is a question at the boundary
+between a formal statement and an informal one. An intermediate lemma a kernel
+accepted, used by a kernel-accepted proof, carries the goal whether or not its
+wording reads well to a person. Reuse does not change that, so a lemma many
+others rest on is delegated too, which is what keeps the surface from growing as
+a shared corpus grows.
+
+The bound is a property rather than an intention. Adding an obligation that is
+not the goal, not a direct dependency of the goal, and not assumed leaves the
+surface exactly as it was, and `tests/test_workstream_audit.py` asserts that over
+generated graphs. `mission.json` shows the ratio: six statements to read over
+eighteen obligations, twelve delegated.
+
+A reading pins the statement, its check kind, and its environment, and
+deliberately not the subtree beneath it. The workstream digest folds in
+dependencies, which is right for a verdict and wrong for a reading, because a
+proof rewritten three levels down does not change what a milestone statement
+says. Pinning the folded digest would expire every human reading on every proof
+edit, and an audit nobody can keep current is an audit nobody does. Editing the
+statement, the check kind, or the environment does expire it, and the reading
+lands `stale` rather than silently carrying forward.
+
+`flywheel workstream audit <file>` exits 0 when every statement on the surface is
+read and current, 1 when a reading went stale, and 2 when something is unread.
+Stale sits with the refusals rather than with unfinished work: someone read a
+statement, the statement changed, and the record still carried the earlier
+reading, which is drift.
 
 ### Correspondence with Property 1, and where it stops
 
@@ -218,7 +258,10 @@ one merge queue. Atomizing statements removes the queue. The skip economy in
 
 - It does not establish that a statement says what a reader takes it to say.
   That is the faithfulness problem, and the Prove2Me answer is the sub-agent
-  read-back with a human comparison. Nothing here implements read-back yet.
+  read-back with a human comparison. Nothing here implements read-back yet. The
+  audit surface bounds who has to read what and records that a reading happened.
+  It does not say the reading was right, and nothing in it compares a statement
+  against the source it was formalized from.
 - It does not verify a library revision, only a Lean version.
 - It does not talk to an instrument. There is no MHS driver client in this
   repository, so an `instrument` obligation needs a caller-supplied checker, and

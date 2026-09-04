@@ -1,0 +1,156 @@
+{
+  "note": "A decomposition shape. The lemmas are small facts a bare Lean kernel decides on its own, so the example runs anywhere Lean is installed and the audit surface is what it demonstrates: six statements to read over eighteen obligations, and the twelve intermediate ones delegated.",
+  "goal": "mission",
+  "obligations": [
+    {
+      "id": "defn_domain",
+      "check": "assumed",
+      "environment": "flywheel.workstream/definitions",
+      "statement": "the domain this mission quantifies over is the natural numbers; nothing in this declaration proves the definition, a reader accepts it"
+    },
+    {
+      "id": "open_lemma",
+      "check": "assumed",
+      "environment": "lean4:v4.9.0+mathlib:2026-08-01",
+      "statement": "stated but not yet closed; milestone_c is a proof-sketch conditional on this, and closing it elsewhere resolves the sketch without rewriting it"
+    },
+    {
+      "id": "base_a",
+      "check": "lean",
+      "environment": "lean4",
+      "statement": "theorem base_a : 1 + 1 = 2 := rfl"
+    },
+    {
+      "id": "base_b",
+      "check": "lean",
+      "environment": "lean4",
+      "statement": "theorem base_b (n : Nat) : n + 0 = n := by simp"
+    },
+    {
+      "id": "base_c",
+      "check": "lean",
+      "environment": "lean4",
+      "statement": "theorem base_c (n : Nat) : 0 + n = n := by simp"
+    },
+    {
+      "id": "base_d",
+      "check": "lean",
+      "environment": "lean4",
+      "statement": "theorem base_d (n : Nat) : n <= n + 1 := by omega"
+    },
+    {
+      "id": "step_a1",
+      "check": "lean",
+      "environment": "lean4",
+      "statement": "theorem step_a1 (n : Nat) : n + 1 = 1 + n := by omega",
+      "depends_on": [
+        "base_a",
+        "defn_domain"
+      ]
+    },
+    {
+      "id": "step_a2",
+      "check": "lean",
+      "environment": "lean4",
+      "statement": "theorem step_a2 (n : Nat) : n * 1 = n := by simp",
+      "depends_on": [
+        "step_a1"
+      ]
+    },
+    {
+      "id": "step_a3",
+      "check": "lean",
+      "environment": "lean4",
+      "statement": "theorem step_a3 (n : Nat) : 1 * n = n := by simp",
+      "depends_on": [
+        "step_a2"
+      ]
+    },
+    {
+      "id": "step_b1",
+      "check": "lean",
+      "environment": "lean4",
+      "statement": "theorem step_b1 (n m : Nat) : n + m = m + n := by omega",
+      "depends_on": [
+        "base_b"
+      ]
+    },
+    {
+      "id": "step_b2",
+      "check": "lean",
+      "environment": "lean4",
+      "statement": "theorem step_b2 (n : Nat) : n - n = 0 := by omega",
+      "depends_on": [
+        "step_b1",
+        "step_a1"
+      ]
+    },
+    {
+      "id": "step_b3",
+      "check": "lean",
+      "environment": "lean4",
+      "statement": "theorem step_b3 (n : Nat) : n <= 2 * n := by omega",
+      "depends_on": [
+        "step_b2",
+        "base_d"
+      ]
+    },
+    {
+      "id": "step_c1",
+      "check": "lean",
+      "environment": "lean4",
+      "statement": "theorem step_c1 (p q : Prop) (h : p) (_ : q) : p := h",
+      "depends_on": [
+        "base_c"
+      ]
+    },
+    {
+      "id": "step_c2",
+      "check": "lean",
+      "environment": "lean4",
+      "statement": "theorem step_c2 (p : Prop) (h : p) : p := h",
+      "depends_on": [
+        "step_c1"
+      ]
+    },
+    {
+      "id": "milestone_a",
+      "check": "lean",
+      "environment": "lean4",
+      "statement": "theorem milestone_a (n : Nat) : n + 2 = 2 + n := by omega",
+      "depends_on": [
+        "step_a3"
+      ]
+    },
+    {
+      "id": "milestone_b",
+      "check": "lean",
+      "environment": "lean4",
+      "statement": "theorem milestone_b (n : Nat) : 2 * n = n + n := by omega",
+      "depends_on": [
+        "step_b3"
+      ]
+    },
+    {
+      "id": "milestone_c",
+      "check": "lean",
+      "environment": "lean4",
+      "statement": "theorem milestone_c (n : Nat) : n < n + 1 := by omega",
+      "depends_on": [
+        "step_c2",
+        "open_lemma"
+      ]
+    },
+    {
+      "id": "mission",
+      "check": "lean",
+      "environment": "lean4",
+      "statement": "theorem mission (n : Nat) : n + 3 = 3 + n := by omega",
+      "depends_on": [
+        "milestone_a",
+        "milestone_b",
+        "milestone_c"
+      ]
+    }
+  ]
+}

@@ -11,6 +11,8 @@ from pathlib import Path
 import pytest
 
 from harness import cli_entry
+from harness.workstream import Obligation
+from harness.workstream_audit import statement_digest
 from harness.workstream_cli import EXAMPLE, main
 
 
@@ -128,17 +130,95 @@ def test_the_command_is_reachable_from_the_flywheel_entry_point():
     assert cli_entry._PACKAGED["workstream"] == "harness.workstream_cli"
 
 
+def _audit_declaration(pins):
+    """Two obligations, with a reading recorded against whichever ids are given."""
+    document = {"goal": "top", "obligations": [
+        {"id": "base", "check": "arithmetic", "environment": "e",
+         "statement": '{"value": 1, "interval": [0, 2]}'},
+        {"id": "top", "check": "arithmetic", "environment": "e",
+         "depends_on": ["base"], "statement": '{"value": 1, "interval": [0, 2]}'}]}
+    for entry in document["obligations"]:
+        pin = pins.get(entry["id"])
+        if pin is not None:
+            entry["audited"] = pin
+    return document
+
+
+def _pins(document):
+    return {entry["id"]: statement_digest(Obligation(
+        obligation_id=entry["id"], statement=entry["statement"],
+        check=entry["check"], environment=entry["environment"],
+        depends_on=tuple(entry.get("depends_on", []))))
+        for entry in document["obligations"]}
+
+
+def test_an_audit_with_every_statement_read_and_current_exits_zero(tmp_path, capsys):
+    blank = _audit_declaration({})
+    document = _audit_declaration(_pins(blank))
+    code, out, _ = _run(capsys, "audit", _write(tmp_path / "read.json", document))
+    assert code == 0
+    assert "2 read, 0 stale, 0 unread" in out
+    assert out.count("audited    ") == 2
+
+
+def test_a_statement_edited_after_it_was_read_exits_one(tmp_path, capsys):
+    # Stale lands with the refusals rather than with unfinished work. Someone
+    # read a statement, the statement changed, and the record still carried the
+    # earlier reading, which is drift and not a build that has not run yet.
+    blank = _audit_declaration({})
+    document = _audit_declaration(_pins(blank))
+    document["obligations"][1]["statement"] = '{"value": 1, "interval": [0, 3]}'
+    code, out, _ = _run(capsys, "audit", _write(tmp_path / "drift.json", document))
+    assert code == 1
+    assert "stale" in out and "top" in out
+    assert "changed after they were read" in out
+
+
+def test_an_unread_surface_exits_two_rather_than_zero(tmp_path, capsys):
+    path = _write(tmp_path / "fresh.json", _audit_declaration({}))
+    code, out, _ = _run(capsys, "audit", path)
+    assert code == 2
+    assert "0 read, 0 stale, 2 unread" in out
+    assert "have no recorded reading" in out
+
+
+def test_the_audit_json_form_carries_the_pin_a_reader_records(tmp_path, capsys):
+    path = _write(tmp_path / "fresh.json", _audit_declaration({}))
+    code, out, _ = _run(capsys, "audit", path, "--json")
+    surface = json.loads(out)
+    assert code == 2
+    assert surface["schema"] == "flywheel.workstream.audit/v1"
+    assert len(surface["surface"]["top"]["statement_digest"]) == 64
+    assert surface["surface"]["top"]["reasons"] == ["the goal statement"]
+    assert surface["does_not_prove"]
+
+
 EXAMPLES = sorted((Path(__file__).resolve().parents[1]
                    / "examples" / "workstreams").glob("*.json"))
+BY_NAME = {path.stem: path for path in EXAMPLES}
+
+
+def _lean_obligations(path):
+    body = json.loads(path.read_text(encoding="utf-8"))
+    return sum(1 for entry in body["obligations"] if entry["check"] == "lean")
+
+
+# Running a declaration costs one toolchain invocation per lean obligation on a
+# machine that has Lean, and pytest.ini caps a test at 60 s. So the cheap
+# examples get run, and every example gets audited, which exercises the same
+# parsing and reachability without paying for a proof assistant.
+CHEAP = [path for path in EXAMPLES if _lean_obligations(path) <= 3]
 
 
 def test_there_are_shipped_examples_to_check():
-    # Without this, a rename would empty the parametrization below and the
+    # Without this, a rename would empty the parametrizations below and the
     # examples would go unchecked while the suite stayed green.
-    assert [path.name for path in EXAMPLES] == ["formalization.json", "instrument.json"]
+    assert [path.name for path in EXAMPLES] == [
+        "formalization.json", "instrument.json", "mission.json"]
+    assert [path.name for path in CHEAP] == ["formalization.json", "instrument.json"]
 
 
-@pytest.mark.parametrize("path", EXAMPLES, ids=lambda p: p.stem)
+@pytest.mark.parametrize("path", CHEAP, ids=lambda p: p.stem)
 def test_a_shipped_example_still_runs(capsys, path):
     code, out, err = _run(capsys, "run", str(path))
     assert not err
@@ -148,8 +228,24 @@ def test_a_shipped_example_still_runs(capsys, path):
     assert code in (0, 2)
 
 
+@pytest.mark.parametrize("path", EXAMPLES, ids=lambda p: p.stem)
+def test_a_shipped_example_names_the_reading_it_owes(capsys, path):
+    code, out, err = _run(capsys, "audit", str(path))
+    assert not err
+    assert code == 2  # shipped declarations carry no readings
+    assert "obligations to read" in out and "does not prove:" in out
+
+
 def test_the_instrument_example_settles_without_a_proof_assistant(capsys):
-    code, out, _ = _run(capsys, "run", str(EXAMPLES[1]))
+    code, out, _ = _run(capsys, "run", str(BY_NAME["instrument"]))
     assert code == 0
     assert "goal dose_delivered is VERIFIED" in out
     assert "driver_limit" in out and "calibration" in out
+
+
+def test_the_mission_example_delegates_most_of_its_stack(capsys):
+    # The demonstration the audit surface exists for: the stack grows and the
+    # reading does not. Eighteen obligations, six of them on the surface.
+    code, out, _ = _run(capsys, "audit", str(BY_NAME["mission"]))
+    assert code == 2
+    assert "6 of 18 obligations to read, 12 delegated" in out

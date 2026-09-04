@@ -4,6 +4,7 @@
     flywheel workstream run dose.json           run the wired checkers, settle
     flywheel workstream settle dose.json        recompose results decided elsewhere
     flywheel workstream run dose.json --json    the receipt, for a harness
+    flywheel workstream audit dose.json         what a person still has to read
 
 A declaration is a goal and a list of obligations. Each obligation carries the
 exact statement that gets checked, which kind of checker decides it, the pinned
@@ -36,6 +37,7 @@ import sys
 from pathlib import Path
 
 from .workstream import WorkstreamError, settle
+from .workstream_audit import audit_surface, recorded_audits
 from .workstream_receipt import workstream_receipt
 from .workstream_run import load_workstream, run_workstream
 
@@ -90,11 +92,11 @@ def _render(receipt: dict) -> str:
     return "\n".join(lines)
 
 
-def _load(path: str) -> tuple:
+def _read(path: str) -> str:
     source = Path(path)
     if not source.is_file():
         raise WorkstreamError(f"no declaration at {path}")
-    return load_workstream(source.read_text(encoding="utf-8"))
+    return source.read_text(encoding="utf-8")
 
 
 def _exit_code(receipt: dict) -> int:
@@ -112,6 +114,40 @@ def _exit_code(receipt: dict) -> int:
     return 1 if refused else 2
 
 
+def _render_audit(surface: dict) -> str:
+    """The reading list, with the reason each statement is on it."""
+    counts = surface["counts"]
+    lines = [f"audit surface for {surface['goal']}",
+             f"  workstream {surface['workstream_id'][:16]}",
+             f"  {counts['surface']} of {counts['reached']} obligations to read, "
+             f"{counts['delegated']} delegated",
+             f"  {counts['audited']} read, {counts['stale']} stale, "
+             f"{counts['unaudited']} unread",
+             ""]
+    for node_id, row in surface["surface"].items():
+        lines.append(f"  {row['state']:<11}{node_id:<22}{row['check']:<13}"
+                     f"{row['environment']}")
+        lines.append(f"     {row['statement'][:88]}")
+        lines.append(f"     because: {'; '.join(row['reasons'])}")
+        # The pin is what a reader records once they have read the statement.
+        lines.append(f"     pin: {row['statement_digest']}")
+    lines += ["", "does not prove:"]
+    lines += [f"  - {line}" for line in surface["does_not_prove"]]
+    return "\n".join(lines)
+
+
+def _audit_exit(surface: dict) -> int:
+    """0 every statement read and current, 1 a reading went stale, 2 unread.
+
+    Stale is a drift failure and not unfinished work: someone read a statement,
+    the statement changed, and the record still carried the earlier reading. It
+    lands with the refusals so a build cannot treat it as work in progress.
+    """
+    if surface["stale"]:
+        return 1
+    return 2 if surface["unaudited"] else 0
+
+
 def _emit(receipt: dict, as_json: bool) -> int:
     print(json.dumps(receipt, indent=2) if as_json else _render(receipt))
     return _exit_code(receipt)
@@ -121,7 +157,7 @@ def main(argv=None) -> int:
     parser = argparse.ArgumentParser(prog="flywheel workstream",
                                      description=__doc__.splitlines()[0],
                                      allow_abbrev=False)
-    parser.add_argument("action", choices=("run", "settle", "example"))
+    parser.add_argument("action", choices=("run", "settle", "audit", "example"))
     parser.add_argument("declaration", nargs="?", default="")
     parser.add_argument("--json", action="store_true",
                         help="emit the receipt instead of the rendering")
@@ -132,7 +168,12 @@ def main(argv=None) -> int:
     if not args.declaration:
         parser.error(f"{args.action} needs a declaration file")
     try:
-        workstream, recorded = _load(args.declaration)
+        document = _read(args.declaration)
+        workstream, recorded = load_workstream(document)
+        if args.action == "audit":
+            surface = audit_surface(workstream, recorded_audits(document))
+            print(json.dumps(surface, indent=2) if args.json else _render_audit(surface))
+            return _audit_exit(surface)
         if args.action == "run":
             if recorded:
                 print("note: results in the declaration are ignored by run; "
