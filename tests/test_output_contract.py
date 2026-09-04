@@ -12,10 +12,10 @@ passed.
 """
 import pytest
 
+from harness.contract_feedback import feedback
 from harness.output_contract import (AUTHORITY_UNAVAILABLE, CITED, DISAGREES,
                                      FIELD_ABSENT, OUT_OF_RANGE, TABLE, UNCITED,
-                                     ContractError, check_answer, feedback,
-                                     new_contract)
+                                     ContractError, check_answer, new_contract)
 from harness.verdict import Verdict
 from tests.tax_authority_fixture import (SCHEDULE_ID, TABLE_ID, schedule,
                                          tax_table_authority)

@@ -17,7 +17,8 @@ authority is where the rigor lives. This only guarantees one was consulted.
 """
 from __future__ import annotations
 
-from .output_contract import check_answer, feedback
+from .contract_feedback import feedback
+from .output_contract import check_answer
 from .verdict import Verdict
 
 SCHEMA = "flywheel.validated-answer/v1"

@@ -121,8 +121,11 @@ def test_the_failing_field_is_printed_before_the_ones_that_passed():
                               "tax": {"value": 1, "source": "b"}},
                    base_dir=".", allow_commands=False)
     lines = render(report).splitlines()
-    assert lines[1].strip().startswith("UNVERIFIABLE")
-    assert "PASS" in lines[2]
+    # Line 0 is the verdict, line 1 the release decision, then the
+    # fields worst first.
+    assert lines[1].startswith("RELEASE_WITH_CAVEAT")
+    assert lines[2].strip().startswith("UNVERIFIABLE")
+    assert "PASS" in lines[3]
 
 
 def test_a_contract_that_requires_nothing_is_refused_rather_than_passing(tmp_path):

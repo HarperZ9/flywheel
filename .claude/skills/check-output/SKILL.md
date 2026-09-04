@@ -55,6 +55,16 @@ A field's `authority` is what has to happen for it to count:
   anything a reader will act on.
 - `CITED` only asks that the answer name where it looked. It can never fail, so
   it never confirms a number. Use it for provenance, not for values.
+- `UNIT` says which unit the value has to be in. A dose of 600 is correct in
+  milligrams and a thousandfold overdose in micrograms.
+- `BOUND` says whether the value is permitted. A perfectly computed figure above
+  a ceiling is still an error, and no comparison of numbers reaches it.
+
+Two more keys matter on a field. `criticality` is `advisory`, `standard`, or
+`critical`, and it decides what an unconfirmed field blocks rather than changing
+any verdict. `method` names how the value had to be produced, and it is checked
+before the value: an answer that used a different method fails even when the two
+methods happen to agree.
 
 An authority's `kind` is how the value gets produced:
 
@@ -62,6 +72,23 @@ An authority's `kind` is how the value gets produced:
 - `table` looks the value up in a JSON file that shipped with the task.
 - `command` runs a program that is not the one being checked. This is the kind
   with teeth, because independence from the producer is the entire point.
+
+## When the domain already decides
+
+For a financial, medical, or legal answer, name a pack and use its templates.
+The pack supplies the authority kind, the criticality, and the method mandate.
+The document supplies what the pack cannot know: the field name and the source.
+
+```json
+{"pack": "medicine",
+ "fields": [{"use": "dose", "name": "dose", "source": "formulary:2026-03"},
+            {"use": "maximum", "name": "dose", "source": "formulary:max-daily"}]}
+```
+
+A pack ships no domain data. There is no formulary in it, no rate table, no
+court calendar. Every authority is still yours to supply, and a critical field
+with nothing behind it comes back unchecked, which holds the answer. Run
+`flywheel packs` to see what each one declares and what it refuses to decide.
 
 ## The answer
 
@@ -92,6 +119,31 @@ Three exit codes, and they mean different things:
 
 Exit `2` is a usage error from argparse. Fix the command rather than retrying
 the task.
+
+## Whether it may ship
+
+The verdict says whether the values are confirmed. The report's `release` line
+answers the narrower question of whether the answer may go to the reader:
+
+- `RELEASE`. Everything passed.
+- `RELEASE_WITH_CAVEAT`. Something is unconfirmed and nothing critical is. Send
+  it, and say what is unconfirmed.
+- `HOLD`. A field disagreed, or a critical field went unchecked. The `blocking`
+  list names the fields responsible. Do not send it.
+
+`--strict` puts that on the exit code, so a held answer exits `1` where the
+verdict alone would have exited `3`. Use it from a script that cannot carry a
+caveat in its head.
+
+## Across a task, a goal, a session
+
+Add `--scope task|goal|session --subject <id>` to append the check to a
+validation ledger. The end-of-session question is what went out unverified over
+the whole run, and it cannot be answered from the last check alone. Without a
+scope, subject, or `--ledger`, nothing is written.
+
+The roll-up takes the worst entry, never the latest. A session whose last check
+passed is not a clean session if something went out held in the middle of it.
 
 ## Rules for the retry
 
@@ -136,3 +188,15 @@ out = emission(result)
 `produce` is called with `None` on the first attempt and with the feedback block
 on every attempt after. The loop stops on a pass, on a repeated failure
 signature, or on running out of attempts, and `emission` attaches the notice.
+
+A lane that declares a contract gets the check on its accept path:
+
+```python
+result = run_loop(task, proposer, oracle,
+                  output_contract=contract, output_authorities=authorities)
+```
+
+An oracle answers whether the code did what the task asked. It has no opinion
+about which source decides the numbers that code produced, so a candidate can
+pass every test and still be held. A held answer does not accept and writes no
+envelope.

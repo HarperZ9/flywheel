@@ -149,9 +149,25 @@ flywheel check-output --contract task.contract.json --answer answer.json --allow
 ```
 
 Exit 0 confirmed, exit 1 disagrees, exit 3 unchecked. An unchecked value never
-reads as a confirmed one. See
+reads as a confirmed one. The report also says whether the answer may ship:
+`RELEASE`, `RELEASE_WITH_CAVEAT`, or `HOLD` with the fields that blocked it.
+Inside a lane, a held answer does not accept.
+
+Tax was the example. Finance, medicine, and law each ship a pack of field
+templates for the values that go wrong the same way: a dose banded by a formulary
+rather than computed, a deadline counted in calendar days where the rule counts
+court days, an amount carried to two decimals in a currency that has none.
+
+```
+flywheel packs medicine
+```
+
+A pack ships field shapes and arithmetic and no domain data. The authorities
+stay yours to supply. See
 [docs/OUTPUT-VALIDATION.md](docs/OUTPUT-VALIDATION.md) for the contract format,
-the checker protocol, and the retry loop.
+the checker protocol, and the retry loop, and
+[docs/CRITICAL-DOMAINS.md](docs/CRITICAL-DOMAINS.md) for the packs and the
+failure classes they catch.
 
 ## Lessons from recorded failures
 
@@ -220,6 +236,7 @@ against the release's `SHA256SUMS.txt`.
 - [docs/GUIDE-LESSON-LOOP.md](docs/GUIDE-LESSON-LOOP.md): the organizational learning loop (full guide and spec)
 - [docs/ASSESSMENT-AGENTIC-SECURITY-2026-08.md](docs/ASSESSMENT-AGENTIC-SECURITY-2026-08.md): Flywheel against the July 2026 agentic security convergence
 - [docs/OUTPUT-VALIDATION.md](docs/OUTPUT-VALIDATION.md): check an answer against the source that decides it
+- [docs/CRITICAL-DOMAINS.md](docs/CRITICAL-DOMAINS.md): the finance, medicine, and law packs, and what each catches
 - [CREDO.md](CREDO.md): the belief
 
 ## Development disclosure

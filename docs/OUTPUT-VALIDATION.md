@@ -13,6 +13,10 @@ decide, and self-review does not reach it.
 
 So the check runs against an authority instead of against the reasoning.
 
+Tax is the example, not the scope. The same defect reaches doses, deadlines,
+citations, and units. [CRITICAL-DOMAINS.md](CRITICAL-DOMAINS.md) covers the
+domain packs for finance, medicine, and law.
+
 ## Three outcomes
 
 Two outcomes would be a lie. A value nobody was able to check is not the same
@@ -32,15 +36,35 @@ The worst field decides the run. There is no majority and no average, because a
 report that averaged one wrong field against four right ones would publish the
 wrong one.
 
+## Criticality and the release decision
+
+The verdict says whether the values are confirmed. A second question follows
+from it and is not the same question: may this answer leave the building.
+
+A field carries a criticality, `advisory` or `standard` or `critical`, and
+`standard` is the default. Criticality never changes a verdict. What it decides
+is what a non-PASS blocks, because an unchecked footnote and an unchecked dose
+arrive as the same verdict and carry different risk.
+
+| Release | When | What a caller does |
+| --- | --- | --- |
+| `RELEASE` | every field passed | send it |
+| `RELEASE_WITH_CAVEAT` | something is unconfirmed, nothing critical | send it saying what is unconfirmed |
+| `HOLD` | a field failed, or a critical field is short of PASS | do not send it |
+
+The report carries `release` and a `blocking` list naming the fields that held
+it. `--strict` puts that on the exit code for a caller that cannot carry a
+caveat: a held answer exits 1 where the verdict alone would have exited 3.
+
 ## Run it
 
 ```bash
 flywheel check-output --contract task.contract.json --answer answer.json --allow-commands
 ```
 
-Add `--json` for the machine-readable report, `--out report.json` to keep it.
-From a source checkout, `python scripts/run_output_check.py` takes the same
-flags.
+Add `--json` for the machine-readable report, `--out report.json` to keep it,
+`--strict` to put the release decision on the exit code. From a source checkout,
+`python scripts/run_output_check.py` takes the same flags.
 
 A runnable version of the case above, with the contract, both answers, and the
 checker program, is in
@@ -56,6 +80,7 @@ name a source for is a field about to be guessed at.
 {
   "fields": [
     {"name": "tax", "authority": "TABLE", "source": "irs-2025-tax-table-single",
+     "criticality": "critical", "method": "tax-table-lookup",
      "describes": "Form 1040 line 16"},
     {"name": "filing_status", "authority": "CITED", "source": "the return"}
   ],
@@ -67,9 +92,26 @@ name a source for is a field about to be guessed at.
 }
 ```
 
-`authority` says what has to happen for the field to count. `TABLE` and
-`RECOMPUTE` both produce a value to compare against. `CITED` asks only that the
-answer name where it looked, so it can never fail and never confirms a number.
+`authority` says what has to happen for the field to count:
+
+| Kind | What it asks |
+| --- | --- |
+| `TABLE` | the value is what a source that supersedes any formula says |
+| `RECOMPUTE` | an independent derivation gets the same value |
+| `CITED` | the answer names where it looked, and nothing more |
+| `UNIT` | the value is in the unit the source requires |
+| `BOUND` | the value is inside what the source permits |
+
+`UNIT` and `BOUND` are there because a right number can still be wrong. A dose
+of 600 is correct in milligrams and a thousandfold overdose in micrograms, and a
+perfectly computed 600 mg is still an error above a 500 mg ceiling. Neither
+failure is reachable by comparing numbers.
+
+`method` mandates how the value had to be produced, and it is checked before the
+value. An answer that states a different method fails on `METHOD_MISMATCH` even
+when the two methods happen to agree, because agreeing by luck this time is not
+a check. An answer that states no method is `METHOD_UNSTATED`, which is
+unverified rather than wrong.
 
 `kind` says how the value gets produced:
 
@@ -83,13 +125,18 @@ answer name where it looked, so it can never fail and never confirms a number.
 A contract with no fields is refused rather than passing, because it would exit
 clean on any answer at all.
 
+A contract may also name a domain pack and use its templates instead of
+spelling out what the domain already decides. See
+[CRITICAL-DOMAINS.md](CRITICAL-DOMAINS.md).
+
 ## The answer
 
 Each field carries its value and the source it came from.
 
 ```json
 {"taxable_income": {"value": 36700, "source": "the return"},
- "tax": {"value": 4169, "source": "irs-2025-tax-table-single"}}
+ "tax": {"value": 4169, "source": "irs-2025-tax-table-single",
+         "method": "tax-table-lookup"}}
 ```
 
 Money comparison is exact by default. A tolerance has to be asked for per field,
@@ -151,6 +198,65 @@ The feedback never carries the authoritative value. An attempt that copied the
 right number out of its own failure report would pass the check while learning
 the opposite lesson, so the report names the source and the retry has to go
 there.
+
+## In the harness loop
+
+A task that declares a contract gets the check on the accept path, after the
+oracle and the re-witness:
+
+```python
+result = run_loop(task, proposer, oracle,
+                  output_contract=contract,
+                  output_authorities=authorities,
+                  validation_ledger=path)
+```
+
+`output_extract` pulls the answer out of the candidate when the task does not
+emit JSON directly. The loop records at task scope under the task id, so a run
+of many tasks leaves a ledger the goal and session scopes can roll up.
+
+An oracle answers whether the code did what the task asked. It has no opinion
+about whether the number that code produced came from the source that decides
+it, so a candidate can pass every test and still hold. When the output stage
+holds, `result.accepted` is false and no envelope is written. The gate is on
+`HOLD` rather than on any non-PASS, so a contract author sets the strictness
+through criticality rather than through the loop.
+
+`result.output` carries the report. A lane with no contract behaves as it did
+before, which is why this could go into the live loop without changing what
+existing lanes do.
+
+## Post-task, post-goal, post-session
+
+One check answers one question about one answer. The accumulated question is the
+one an operator asks at the end: across this task, this goal, this whole
+session, what went out unverified.
+
+Every check can append a line to a ledger, and the three scopes read the same
+file.
+
+```bash
+flywheel check-output --contract c.json --answer a.json --scope goal --subject sprint-14
+```
+
+Without `--scope`, `--subject`, or `--ledger`, nothing is written. A command a
+person runs to look at one answer should not accumulate a record of them.
+
+```python
+from harness.validation_ledger import outstanding, read_ledger, roll_up
+
+roll_up(read_ledger(scope="session"))
+outstanding(read_ledger(scope="session"))
+```
+
+The roll-up takes the worst entry, never the latest. A session whose last check
+passed is not a clean session if something went out on hold in the middle of it.
+`outstanding` returns the entries still short of a clean release, worst first,
+which is the list an operator has to work through.
+
+A torn last line is skipped rather than raising. A ledger written by a process
+that was killed mid-write still answers the question about every entry before
+it.
 
 ## Emitting an answer that never validated
 

@@ -85,11 +85,21 @@ From a checkout, `python scripts/run_output_check.py` takes the same flags.
   retry.
 - Emit an answer that never validated, and emit it with the reason. Dropping it
   hides the work. Emitting it clean is the failure this exists to prevent.
+- Read the `release` line as well as the verdict. `HOLD` means a field
+  disagreed or a critical field went unchecked, and the answer does not ship.
+  `--strict` puts that on the exit code.
+- For a financial, medical, or legal answer, name a domain pack and use its
+  templates rather than inventing field shapes. `flywheel packs` lists them. A
+  pack holds no domain data, so the authorities are still yours to supply.
+- Add `--scope task|goal|session --subject <id>` to record the check. The
+  end-of-session question is what went out unverified across the whole run, and
+  the last check alone does not answer it.
 
 In Python the loop is `harness.validated_answer.run_validated(produce, contract,
 authorities)`, which produces, checks, hands the unresolved fields back to the
 producer, and stops on a pass, on a repeated failure signature, or on running
-out of attempts.
+out of attempts. Inside the harness loop, pass `output_contract` and
+`output_authorities` to `run_loop` and a held answer does not accept.
 
 ## Hygiene
 Never commit secrets, `.env` files, tokens, or private material to this public
