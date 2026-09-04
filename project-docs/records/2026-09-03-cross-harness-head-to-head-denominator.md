@@ -111,6 +111,10 @@ scorable:       4 of 14
 measured:       4 of 14
 ```
 
+Those are the numbers on the day of this run. Three graded oracles landed later
+the same day and moved the scorable set to seven of seventeen, recorded in
+`2026-09-03-graded-oracles-evidence-economics.md`.
+
 ## The gate that would have caught this for free
 
 `harness/task_set_executability.py` and `flywheel task-set-executability` answer

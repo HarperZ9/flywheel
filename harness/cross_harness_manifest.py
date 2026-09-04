@@ -245,7 +245,7 @@ def _prompt_text(task_set: dict[str, Any], contract: dict[str, Any], task: dict[
     ]
     return "\n".join(parts).strip() + "\n"
 # One canonical task per registered checker. A scored task is scored against a sealed workspace, so this pairing is what keeps a score readable.
-PILOT_TASKS = {"index_fallback_integrity/v1": "agt-001-index-fallback-integrity", "shared_task_artifact/v1": "agt-003-codex-flywheel-shared-task", "paired_friction/v1": "agt-009-receipts-vs-guardrails-friction", "documentation_maintenance/v1": "agt-010-documentation-schematic-maintenance"}
+PILOT_TASKS = {"index_fallback_integrity/v1": "agt-001-index-fallback-integrity", "shared_task_artifact/v1": "agt-003-codex-flywheel-shared-task", "paired_friction/v1": "agt-009-receipts-vs-guardrails-friction", "documentation_maintenance/v1": "agt-010-documentation-schematic-maintenance", "evidence_bound_reporting/v1": "agt-015-evidence-bound-reporting", "contradiction_detection/v1": "agt-016-source-contradiction-detection", "budgeted_evidence_selection/v1": "agt-017-budgeted-evidence-selection"}
 def _task_row(task_set: dict[str, Any], contract: dict[str, Any], task: dict[str, Any], *, artifact_dir: str, source_root: Path | None) -> dict[str, Any]:
     prompt, task_id = _prompt_text(task_set, contract, task), str(task["id"])
     oracle_contract, oracle = task_set.get("oracle_contract", {}), dict(task.get("oracle", {}))
