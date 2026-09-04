@@ -19,9 +19,12 @@ READ_ONLY_SYSTEM = ("You are the outer Flywheel text-tool agent. Inspect the sup
 class MalformedProviderOutput(RuntimeError): pass
 def _resolve_codex() -> str:
     # The npm install hides the real codex.exe under a vendor directory and puts
-    # three text wrappers on PATH ahead of it, which the magic-byte check then
-    # refuses. Name the binary first so a working install is not read as absent.
-    return resolve_binary(("codex.exe", "codex") if os.name == "nt" else ("codex",))
+    # text wrappers on PATH ahead of it. Naming codex.exe first finds a working
+    # install; naming nothing after it is deliberate, because the extensionless
+    # `codex` on a Windows PATH is one of those wrappers and no magic-byte check
+    # runs on this path to catch it. On POSIX the extensionless name is the
+    # binary. resolve_binary applies the shared shim-suffix rule either way.
+    return resolve_binary(("codex.exe",) if os.name == "nt" else ("codex",))
 _BEARER, _ASSIGN = re.compile(r"(?i)(bearer\s+)[^\s,;\"']+"), re.compile(r"(?i)((?:api[_-]?key|token|password|secret|authorization)\s*[:=]\s*)[^\s,;\"']+")
 _JWT, _API_KEY = re.compile(r"\beyJ[A-Za-z0-9_-]{6,}\.[A-Za-z0-9_-]{6,}\.[A-Za-z0-9_-]{3,}\b"), re.compile(r"\b(?:sk|rk|pk)-[A-Za-z0-9_-]{12,}\b", re.I)
 _URL_CREDS, _SECRET_KEY = re.compile(r"(https?://)[^/@\s:]+:[^/@\s]+@", re.I), re.compile(r"authorization|credential|password|secret|token|api[_ -]?key|jwt", re.I)
