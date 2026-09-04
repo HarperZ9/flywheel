@@ -1,0 +1,27 @@
+{
+  "goal": "milestone",
+  "obligations": [
+    {
+      "id": "open_lemma",
+      "check": "assumed",
+      "environment": "lean4:v4.9.0+mathlib:2026-08-01",
+      "statement": "child lemma stated but not yet closed; the sketch above it is conditional on this statement, exactly as an imported open theorem is"
+    },
+    {
+      "id": "closed_lemma",
+      "check": "lean",
+      "environment": "lean4",
+      "statement": "theorem closed_lemma : 1 + 1 = 2 := rfl"
+    },
+    {
+      "id": "milestone",
+      "check": "lean",
+      "environment": "lean4",
+      "depends_on": [
+        "closed_lemma",
+        "open_lemma"
+      ],
+      "statement": "theorem milestone : 2 + 2 = 4 := rfl"
+    }
+  ]
+}
