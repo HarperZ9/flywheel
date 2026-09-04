@@ -856,7 +856,7 @@ def build_parser() -> argparse.ArgumentParser:
     endpoint_gate.add_argument("--profile-artifact", default="C:/tmp/model_endpoint_profiles_20260709.json")
     endpoint_gate.add_argument("--models", default="")
     endpoint_gate.add_argument("--backends", default="")
-    endpoint_gate.add_argument("--timeout-seconds", type=float, default=30.0)
+    endpoint_gate.add_argument("--timeout-seconds", type=float, default=300.0)  # cold 32B load
     endpoint_gate.add_argument("--max-tokens", type=int, default=64)
     endpoint_gate.add_argument("--strict-exit", action="store_true")
 

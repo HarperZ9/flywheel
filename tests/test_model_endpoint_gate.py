@@ -82,6 +82,56 @@ def test_ollama_report_fails_without_valid_digest(tmp_path, digest):
     assert report["verdict"] != "MODEL_ENDPOINT_GATE_PASS"
 
 
+def live_daemon_transport(method, url, body, timeout):
+    """What a real ollama daemon answered on 2026-09-03, which is not what the
+    fixtures above assume. /api/tags spells the implicit `latest` tag out even
+    when the profile pins the model without one, and returns the digest as bare
+    hex with no `sha256:` prefix. The fixtures use an exact name and a prefixed
+    digest, so neither detail was exercised, and both refused a correctly
+    installed model in the head-to-head.
+
+    The two endpoints do not agree with each other: /api/chat echoes the model
+    string back exactly as it was sent, tag and all, so the strict comparison in
+    OllamaBackend is right and only the /api/tags side needed resolving. Both
+    behaviours were checked against a running daemon."""
+    if url.endswith("/api/tags"):
+        return 200, {"models": [{"name": "flywheel-local-coder-14b:latest", "digest": "abc"}]}
+    if url.endswith("/api/chat"):
+        return 200, {"message": {"content": "active"}, "model": "flywheel-local-coder-14b"}
+    return transport(method, url, body, timeout)
+
+
+def untagged_profile():
+    """A profile pinning a model without a tag, which is how the shipped local
+    profiles reference the release weights."""
+    row = profile("ollama")
+    row["selectors"] = ["flywheel-local-coder-14b"]
+    row["model_ref"] = "ollama:flywheel-local-coder-14b"
+    return row
+
+
+def test_a_live_daemons_tag_and_bare_digest_admit_the_model(tmp_path):
+    report = build_report(
+        profile_artifact=str(write_profiles(tmp_path, [untagged_profile()])), models=[], backends=[],
+        transport=live_daemon_transport, run_id="digest-run")
+    row = report["rows"][0]
+    assert row["health_ok"] is True, row.get("failure_class")
+    assert row["failure_class"] == ""
+    # The receipt keeps the digest the daemon actually stated, unrewritten. The
+    # comparison normalizes; the record of what was observed does not.
+    assert row["ollama_digest"] == "abc"
+    assert row["health_model_ref"] == "ollama:flywheel-local-coder-14b:latest"
+
+
+def test_a_tagged_reference_still_has_to_match_that_tag(tmp_path):
+    """Resolving the implicit tag is not permission to accept another one. A
+    profile that names `qwen:14b` must not admit a daemon serving `:latest`."""
+    report = build_report(
+        profile_artifact=str(write_profiles(tmp_path, [profile("ollama")])), models=[], backends=[],
+        transport=live_daemon_transport, run_id="digest-run")
+    assert report["rows"][0]["failure_class"] == "ollama_digest_missing"
+
+
 def test_ollama_report_fails_when_observed_digest_differs_from_profile(tmp_path):
     report = build_report(
         profile_artifact=str(write_profiles(tmp_path, [profile("ollama")])), models=[], backends=[],
