@@ -246,19 +246,21 @@ class ToolExecutor:
         """The head of the run's byte-witness chain, or '' when there is none."""
         return self._action_log.head() if self._action_log is not None else ""
 
+    def action_witness_records(self) -> list:
+        """The run's byte-witness records in order, or [] when there is none."""
+        return self._action_log.records() if self._action_log is not None else []
+
+    # A builtin's capability class; a name absent here is "unknown".
+    _BUILTIN_CAPABILITY = {
+        "write_file": "builtin-write", "apply_patch": "builtin-write",
+        "run": "builtin-exec", "read_file": "builtin-read",
+        "list_dir": "builtin-read", "grep": "builtin-read"}
+
     def _classify_capability(self, name: str) -> "tuple[str, str]":
         """Return (capability_class, admission) for a tool call."""
         if name in self.external:
-            cap = "external-mcp"
-        elif name in ("write_file", "apply_patch"):
-            cap = "builtin-write"
-        elif name == "run":
-            cap = "builtin-exec"
-        elif name in ("read_file", "list_dir", "grep"):
-            cap = "builtin-read"
-        else:
-            cap = "unknown"
-        return cap, "ALLOWED"
+            return "external-mcp", "ALLOWED"
+        return self._BUILTIN_CAPABILITY.get(name, "unknown"), "ALLOWED"
 
     def _emit_tool_receipt(
         self, name: str, args: dict, result: ToolResult,
