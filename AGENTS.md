@@ -55,6 +55,19 @@ archived and read-only; nothing lands there.
 - Truth over approval. Verify a specific claim or label it high / moderate / low /
   unknown. "Unknown" beats a plausible fabrication.
 
+## Closing out a piece of work
+Answer four questions at the end of a task, a goal, or a session: what we set
+out to do, what we did, what is left, and what decisions the operator owes.
+Derive the factual half rather than recalling it:
+
+    python scripts/run_session_summary.py --scope task --out "" --markdown-out ""
+
+Feed your own claims back through the same command so they get checked. An
+empty `--remaining ""` claims nothing is left, and the verdict returns
+`SUMMARY_DISAGREES` when the tree still holds uncommitted or unpushed work.
+Fix the claim, not the check. Scopes are `task` (head commit plus working
+tree), `goal` (branch against its base), and `session` (goal plus receipts).
+
 ## Hygiene
 Never commit secrets, `.env` files, tokens, or private material to this public
 repository. Verify before every commit. Branch before committing to a default

@@ -170,6 +170,19 @@ def test_a_model_card_is_scanned_like_an_instruction_file(tmp_path):
     assert hits and "local run-drive path" in hits[0]
 
 
+def test_a_shipped_skill_is_scanned_like_an_instruction_file(tmp_path):
+    """A skill in a public repo is read by a stranger and executed by a model,
+    so a local path in one leaks exactly the way it does from AGENTS.md."""
+    sep, eol = chr(92), chr(10)
+    surface(tmp_path, ".claude/skills/example/SKILL.md",
+            "Run it from `C:" + sep + "dev" + sep + "x`." + eol)
+    surface(tmp_path, ".claude/commands/example.md", "cd E:" + sep + "scratch" + eol)
+    found = G.published_surface_files(tmp_path, extra_roots=(tmp_path,))
+    skill = next(p for p in found if p.name == "SKILL.md")
+    assert G.scan(skill, tmp_path)
+    assert any(p.name == "example.md" for p in found)
+
+
 def test_internal_register_docs_are_not_scanned(tmp_path):
     """The canon permits local paths in records, plans and specs. A gate that
     flagged them would push the operator to switch it off."""
