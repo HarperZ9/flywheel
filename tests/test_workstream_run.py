@@ -26,8 +26,8 @@ from harness.workstream import (
     WorkstreamError,
 )
 from harness.workstream_run import (
-    arithmetic_checker, default_checkers, dimensional_checker, lean_checker,
-    run_workstream,
+    _lean_environment, arithmetic_checker, default_checkers, dimensional_checker,
+    lean_checker, run_workstream,
 )
 
 ENV = "lean4:v4.9.0+mathlib:2026-08-01"
@@ -225,3 +225,35 @@ def test_a_mixed_domain_stack_composes_end_to_end():
     assert len(receipt["environment_footprint"]) == 3
     assert receipt["run"]["checked"] == 3
     assert any("conditional" in line for line in receipt["does_not_prove"])
+
+
+@pytest.mark.parametrize("environment, toolchain, matched, fragment", [
+    ("lean4:v4.9.0", "Lean (version 4.9.0, x86_64)", True, "matching the pinned"),
+    ("lean4:v4.9.0+mathlib:2026-08-01", "Lean (version 4.9.0)", True, "4.9.0"),
+    ("lean4:v4.9.0", "Lean (version 4.33.1)", False, "ran on 4.33.1"),
+    ("lean4:4.9.0", "Lean (version 4.33.1)", False, "pins lean 4.9.0"),
+    ("lean4", "Lean (version 4.33.1)", True, "names no lean version"),
+    ("prove2me:mission-7", "Lean (version 4.33.1)", True, "names no lean version"),
+    ("lean4:v4.9.0", "injected", False, "did not report a version"),
+])
+def test_a_pinned_lean_environment_is_confirmed_against_the_toolchain(
+        environment, toolchain, matched, fragment):
+    # The environment is folded into the workstream identity, so a receipt that
+    # names a version the check did not run in reads stronger than it is.
+    got, note = _lean_environment(environment, toolchain)
+    assert got is matched
+    assert fragment in note
+
+
+def test_a_toolchain_mismatch_settles_unverifiable_not_refuted():
+    from harness.lean_oracle import _lean_exe
+
+    if _lean_exe() is None:
+        pytest.skip("no lean toolchain on this machine")
+    verdict, detail = lean_checker(
+        _ob("a", check="lean", env="lean4:v0.0.1",
+            statement="theorem a : 1 + 1 = 2 := rfl"))
+    # The statement is true and the kernel accepted it. What is unverifiable is
+    # the claim that it was decided in the environment the obligation names.
+    assert verdict == "UNVERIFIABLE"
+    assert "pins lean 0.0.1" in detail

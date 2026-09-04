@@ -68,7 +68,11 @@ def _render(receipt: dict) -> str:
         lines.append(f" {mark} {record['standing']:<13}{node_id:<22}"
                      f"{record['check']:<13}{record['environment']}")
         detail = record.get("detail") or ""
-        if detail and record["standing"] != "verified":
+        if detail:
+            # Printed on a passing row too. "lean 4.33.1, matching the pinned
+            # environment" and "nothing pins this result" are both verified, and
+            # a reader who cannot tell them apart is reading a weaker record
+            # than the one that was settled.
             lines.append(f"     {detail[:96]}")
     run = receipt.get("run")
     if run:

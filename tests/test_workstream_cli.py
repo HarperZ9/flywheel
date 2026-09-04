@@ -6,6 +6,7 @@ under it was refused. 2 means nothing decided it yet, which a build must not
 read as success, and which is also what a malformed declaration returns.
 """
 import json
+from pathlib import Path
 
 import pytest
 
@@ -125,3 +126,30 @@ def test_the_json_form_carries_the_caveat_and_the_identity(tmp_path, capsys):
 
 def test_the_command_is_reachable_from_the_flywheel_entry_point():
     assert cli_entry._PACKAGED["workstream"] == "harness.workstream_cli"
+
+
+EXAMPLES = sorted((Path(__file__).resolve().parents[1]
+                   / "examples" / "workstreams").glob("*.json"))
+
+
+def test_there_are_shipped_examples_to_check():
+    # Without this, a rename would empty the parametrization below and the
+    # examples would go unchecked while the suite stayed green.
+    assert [path.name for path in EXAMPLES] == ["formalization.json", "instrument.json"]
+
+
+@pytest.mark.parametrize("path", EXAMPLES, ids=lambda p: p.stem)
+def test_a_shipped_example_still_runs(capsys, path):
+    code, out, err = _run(capsys, "run", str(path))
+    assert not err
+    assert "does not prove:" in out
+    # 0 established, 2 nothing decided it yet, which is what a machine with no
+    # Lean toolchain gets. 1 would mean a shipped example refutes itself.
+    assert code in (0, 2)
+
+
+def test_the_instrument_example_settles_without_a_proof_assistant(capsys):
+    code, out, _ = _run(capsys, "run", str(EXAMPLES[1]))
+    assert code == 0
+    assert "goal dose_delivered is VERIFIED" in out
+    assert "driver_limit" in out and "calibration" in out

@@ -25,12 +25,16 @@ of "this board has no way to decide that" and is never a pass.
 """
 from __future__ import annotations
 
+import re
+
 from harness.evidence_json import strict_load_json
 from harness.workstream import CHECKS, Obligation, Workstream, WorkstreamError
 from harness.workstream_receipt import workstream_receipt
 
 _TOLERANCE = 1e-9
 _MAX_DOCUMENT = 32_000_000
+_LEAN_PIN = re.compile(r"lean4?[:/]v?(\d+(?:\.\d+)*)")
+_LEAN_RUNNING = re.compile(r"version (\d+(?:\.\d+)*)")
 
 
 def _pair(raw: object) -> tuple[str, str]:
@@ -56,6 +60,30 @@ def _payload(obligation: Obligation, fields: tuple[str, ...]) -> dict:
     return body
 
 
+def _lean_environment(environment: str, toolchain: str) -> tuple[bool, str]:
+    """Whether the toolchain that answered is the one the obligation pinned.
+
+    The environment string is folded into the workstream identity, so a receipt
+    naming a version the check did not run in is worse than one naming none.
+    A mismatch is not the statement's fault, so it settles unverifiable.
+
+    Only the Lean version is confirmed here. A library revision written into the
+    same string is carried into the identity and is not checked against what was
+    on the path.
+    """
+    pinned = _LEAN_PIN.search(environment or "")
+    if pinned is None:
+        return True, "the environment names no lean version, so nothing pins this result"
+    running = _LEAN_RUNNING.search(toolchain or "")
+    if running is None:
+        return False, (f"the environment pins lean {pinned.group(1)} and the toolchain "
+                       "that answered did not report a version")
+    if running.group(1) != pinned.group(1):
+        return False, (f"the environment pins lean {pinned.group(1)} and the check ran "
+                       f"on {running.group(1)}")
+    return True, f"lean {running.group(1)}, matching the pinned environment"
+
+
 def lean_checker(obligation: Obligation) -> tuple[str, str]:
     """Ask the Lean kernel. A missing toolchain is declared, never a pass."""
     from harness.lean_oracle import lean_check
@@ -63,11 +91,17 @@ def lean_checker(obligation: Obligation) -> tuple[str, str]:
     receipt = lean_check(obligation.statement)
     passed = receipt.get("passed")
     output = str(receipt.get("kernel_output", ""))[:400]
+    toolchain = str(receipt.get("toolchain", ""))
     if passed is None:
         return "UNVERIFIABLE", output or "no lean toolchain installed"
-    if passed is True:
-        return "PASS", f"lean toolchain {receipt.get('toolchain', '')}".strip()
-    return "FAIL", output or "the kernel refused the statement"
+    if passed is False and not toolchain:
+        # An admitted hole is refused before the kernel runs, so there is no
+        # toolchain to compare and nothing about the environment to settle.
+        return "FAIL", output or "the kernel refused the statement"
+    matched, note = _lean_environment(obligation.environment, toolchain)
+    if not matched:
+        return "UNVERIFIABLE", note
+    return ("PASS", note) if passed is True else ("FAIL", output or note)
 
 
 def arithmetic_checker(obligation: Obligation) -> tuple[str, str]:
