@@ -85,3 +85,25 @@ def test_gate_is_deterministic(tmp_path):
     assert a.group_signal_hash == b.group_signal_hash
     assert a.envelope_hash == b.envelope_hash
     assert a.claim_hash == b.claim_hash
+
+
+def test_the_report_records_no_absolute_path(tmp_path):
+    """The report is a tracked artifact. An absolute path inside it rewrites the
+    file on every run from a different checkout, so a clean tree turns dirty for
+    a reason that has nothing to do with the gate. The seal step still names the
+    envelope, and the hashes still identify it."""
+    run_gate(tmp_path)
+    body = (tmp_path / "gate_report.json").read_text(encoding="utf-8")
+    assert str(tmp_path) not in body
+    assert ":\\\\" not in body and '":/' not in body
+    steps = {s["step"]: s for s in json.loads(body)["steps"]}
+    assert steps["seal"]["path"] == "gate_envelope.json"
+
+
+def test_two_runs_from_different_directories_write_the_same_report(tmp_path):
+    """The property the tracked artifact needs: same inputs, same bytes, no
+    matter where the gate ran."""
+    first, second = tmp_path / "a", tmp_path / "b"
+    run_gate(first)
+    run_gate(second)
+    assert (first / "gate_report.json").read_bytes() == (second / "gate_report.json").read_bytes()

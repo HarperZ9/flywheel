@@ -218,20 +218,22 @@ def _dispatch_umbrella(command: str, argv: list[str]) -> int:
         from harness.relay_bridge import cmd_relay
         return cmd_relay(argv)
     return 2
+# Commands that live in the package and run without a source checkout.
+_PACKAGED = {"cross-harness-execute": "harness.cross_harness_cli",
+             "evidence": "harness.evidence_cli",
+             "check-output": "harness.output_check_cli",
+             "packs": "harness.packs_cli",
+             "journey": "harness.journey_cli",
+             "grant": "harness.journey_cli"}
 def _dispatch_packaged(command: str, raw: list[str]) -> int | None:
-    if command == "cross-harness-execute":
-        from harness.cross_harness_cli import main as packaged
-        rest = list(raw); rest.remove(command)
-        return packaged(rest)
-    if command in {"journey", "grant"}:
-        from harness.journey_cli import main as packaged
-        rest = list(raw); rest.remove(command)
-        return packaged([command, *rest])
-    if command == "evidence":
-        from harness.evidence_cli import main as packaged
-        rest = list(raw); rest.remove(command)
-        return packaged(rest)
-    return None
+    module = _PACKAGED.get(command)
+    if module is None:
+        return None
+    from importlib import import_module
+    rest = list(raw); rest.remove(command)  # the token, not a later equal value
+    # journey and grant are two commands of one parser, so it keeps the name.
+    return import_module(module).main([command, *rest]
+                                      if command in {"journey", "grant"} else rest)
 def main(argv: list[str] | None = None) -> int:
     raw = list(argv if argv is not None else sys.argv[1:])
     # Peek at the first positional to decide umbrella-vs-passthrough. The
@@ -270,7 +272,8 @@ def main(argv: list[str] | None = None) -> int:
             print("usage: flywheel <command> [options]\n"
                   "Umbrella commands (run from a bare install): up, lanes, "
                   "loop-status, install, corpus-export, gate, why, down, "
-                  "remote, relay, grant, journey, evidence, cross-harness-execute\n"
+                  "remote, relay, grant, journey, evidence, cross-harness-execute,\n"
+                  "check-output, packs\n"
                   "Passthrough commands need a source checkout "
                   "(scripts/run_harness_cli.py).",
                   file=sys.stdout if wants_help else sys.stderr)
