@@ -100,6 +100,12 @@ From a checkout, `python scripts/run_output_check.py` takes the same flags.
 - For a financial, medical, or legal answer, name a domain pack and use its
   templates rather than inventing field shapes. `flywheel packs` lists them. A
   pack holds no domain data, so the authorities are still yours to supply.
+- Three domains ship and the defect reaches many more. For a domain that does
+  not ship here, write the pack as a `flywheel.domain-pack-declaration/v1`
+  document and pass its path anywhere a pack name goes. A declaration may not
+  carry a value, so a `maximum`, a `rate` or a `table` inside it is refused,
+  and every template has to say what it catches.
+  `examples/output-validation/water-treatment.pack.json` is a worked one.
 - Add `--scope task|goal|session --subject <id>` to record the check. The
   end-of-session question is what went out unverified across the whole run, and
   the last check alone does not answer it.
