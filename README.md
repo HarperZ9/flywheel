@@ -137,6 +137,22 @@ sealed tool-call receipts are enabled, they also record:
 Optional sealed receipts form an ordered hash chain. If one receipt is invalid,
 later entries in that chain become unverifiable.
 
+## Checking an answer before it ships
+
+An assistant that rechecks its own arithmetic gets the same wrong number twice.
+So Flywheel checks a value against the source that decides it, and reports three
+outcomes rather than two: the value agrees and the answer names its source, the
+value disagrees, or nothing could confirm it.
+
+```
+flywheel check-output --contract task.contract.json --answer answer.json --allow-commands
+```
+
+Exit 0 confirmed, exit 1 disagrees, exit 3 unchecked. An unchecked value never
+reads as a confirmed one. See
+[docs/OUTPUT-VALIDATION.md](docs/OUTPUT-VALIDATION.md) for the contract format,
+the checker protocol, and the retry loop.
+
 ## Lessons from recorded failures
 
 A proposed lesson includes hashes of its evidence and remains a proposal until
@@ -203,6 +219,7 @@ against the release's `SHA256SUMS.txt`.
 - [docs/LESSON-LOOP.md](docs/LESSON-LOOP.md): the organizational learning loop (architecture)
 - [docs/GUIDE-LESSON-LOOP.md](docs/GUIDE-LESSON-LOOP.md): the organizational learning loop (full guide and spec)
 - [docs/ASSESSMENT-AGENTIC-SECURITY-2026-08.md](docs/ASSESSMENT-AGENTIC-SECURITY-2026-08.md): Flywheel against the July 2026 agentic security convergence
+- [docs/OUTPUT-VALIDATION.md](docs/OUTPUT-VALIDATION.md): check an answer against the source that decides it
 - [CREDO.md](CREDO.md): the belief
 
 ## Development disclosure

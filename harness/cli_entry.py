@@ -231,6 +231,10 @@ def _dispatch_packaged(command: str, raw: list[str]) -> int | None:
         from harness.evidence_cli import main as packaged
         rest = list(raw); rest.remove(command)
         return packaged(rest)
+    if command == "check-output":
+        from harness.output_check_cli import main as packaged
+        rest = list(raw); rest.remove(command)
+        return packaged(rest)
     return None
 def main(argv: list[str] | None = None) -> int:
     raw = list(argv if argv is not None else sys.argv[1:])
@@ -270,7 +274,8 @@ def main(argv: list[str] | None = None) -> int:
             print("usage: flywheel <command> [options]\n"
                   "Umbrella commands (run from a bare install): up, lanes, "
                   "loop-status, install, corpus-export, gate, why, down, "
-                  "remote, relay, grant, journey, evidence, cross-harness-execute\n"
+                  "remote, relay, grant, journey, evidence, cross-harness-execute,\n"
+                  "check-output\n"
                   "Passthrough commands need a source checkout "
                   "(scripts/run_harness_cli.py).",
                   file=sys.stdout if wants_help else sys.stderr)

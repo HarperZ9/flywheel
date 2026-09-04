@@ -1,0 +1,4 @@
+{
+  "taxable_income": {"value": 36700, "source": "the return"},
+  "tax": {"value": 4165.50, "source": "irs-2025-rate-schedule-single"}
+}
